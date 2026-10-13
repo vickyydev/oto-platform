@@ -1,0 +1,20 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1791921263802,
+      "tag": "0000_radar_baseline",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791921280170,
+      "tag": "0001_spin_reward_codes",
+      "breakpoints": true
+    }
+  ]
+}

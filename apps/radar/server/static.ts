@@ -12,10 +12,17 @@ export function serveStatic(app: Express) {
 
   app.use(express.static(distPath));
 
+  // An unknown API path is a 404, never the SPA's HTML: otherwise a removed
+  // route (or a typo) answers 200 to any method.
+  app.use("/api", (_req, res) => {
+    res.status(404).json({ message: "Not found" });
+  });
+
   const indexHtmlPath = path.resolve(distPath, "index.html");
 
   // fall through to index.html if the file doesn't exist
   app.use("*", (req, res) => {
+    if (req.method !== "GET" && req.method !== "HEAD") return res.status(404).json({ message: "Not found" });
     const url = req.originalUrl || "";
     const isRedeem = url === "/redeem" || url.startsWith("/redeem?") || url.startsWith("/redeem/");
     if (isRedeem) {

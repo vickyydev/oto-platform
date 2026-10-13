@@ -62,6 +62,18 @@ import {
   validateMarketingDateRange,
 } from "./marketingSummary";
 
+/**
+ * The trends assistant's client. Both names are read here and nowhere else:
+ * AI_INTEGRATIONS_OPENAI_API_KEY (required; unset means the assistant answers
+ * 503) and AI_INTEGRATIONS_OPENAI_BASE_URL (optional; unset uses the
+ * provider's default endpoint instead of the old Replit proxy).
+ */
+function createAssistantClient(): OpenAI | null {
+  const apiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
+  if (!apiKey) return null;
+  return new OpenAI({ apiKey, baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || undefined });
+}
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -1575,10 +1587,10 @@ export async function registerRoutes(
 
   app.post("/api/funtopia/trends", async (req, res, next) => {
     try {
-      const openai = new OpenAI({
-        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-      });
+      const openai = createAssistantClient();
+      if (!openai) {
+        return res.status(503).json({ message: "The AI assistant is not configured (AI_INTEGRATIONS_OPENAI_API_KEY)." });
+      }
 
       const { question, history } = req.body;
       if (!question) return res.status(400).json({ error: "question required" });
@@ -1843,10 +1855,10 @@ RULES: Only use metrics from the catalog. For pie charts, add "pieNames". Be bri
 
   app.post("/api/funtopia/trends-parse", async (req, res, next) => {
     try {
-      const openai = new OpenAI({
-        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-      });
+      const openai = createAssistantClient();
+      if (!openai) {
+        return res.status(503).json({ message: "The AI assistant is not configured (AI_INTEGRATIONS_OPENAI_API_KEY)." });
+      }
 
       const { message, today, previousChart } = req.body;
       if (!message) return res.status(400).json({ error: "message required" });
