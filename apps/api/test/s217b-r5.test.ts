@@ -315,7 +315,7 @@ describe.skipIf(!HAS_APP_RUNTIME)('F. the real app: the attendance check over HT
       });
       const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
       expect(result.status, output).toBe(0);
-      expect(output).toMatch(/attendance\.check: 32 checks passed/);
+      expect(output).toMatch(/attendance\.check: 33 checks passed/);
       for (const hazard of ['(Q1, H14)', '(Q2, H15)', '(H13)']) expect(output, hazard).toContain(hazard);
       for (const finding of ['FINDING Q39', 'FINDING Q40', 'FINDING Q41', 'FINDING Q46']) expect(output, finding).toContain(finding);
       const back = spawnSync(process.execPath, [READBACK], { env: { ...process.env, DATABASE_URL: url }, encoding: 'utf8' });

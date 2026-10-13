@@ -20162,9 +20162,15 @@ OTO Company Limited`,
         // (a) Directly assigned to this employee
         if (hasDirectEmployee && template.assignedEmployeeId === employeeId) return true;
 
-        // (b) No assignment fields set at all — visible only when template.departmentId
-        //     matches the actor's primary department (completely unassigned = hidden)
+        // (b) No assignment fields set at all. A legacy department-bound template
+        //     (departmentId set) stays visible only when it matches the actor's
+        //     primary department. A completely unassigned template is the
+        //     editors' "Everyone" choice (SCRUM-525): visible to every signed-in
+        //     actor, linked employee or not. Reach is unchanged — the candidates
+        //     are already this park group's templates for the permitted branch,
+        //     and staff still never see checker templates (finalTemplates above).
         if (!hasDirectEmployee && !hasRole && !hasDept) {
+          if (!template.departmentId) return true;
           return !!(employeeDepartmentId && template.departmentId === employeeDepartmentId);
         }
 

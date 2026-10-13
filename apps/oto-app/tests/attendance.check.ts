@@ -916,6 +916,33 @@ try {
     const started = await call("POST", "/api/checklist-runs/start", { cookie: cookie.aLimited, body: { templateId: tplX } });
     assert.ok([200, 201].includes(started.status), show(started));
   });
+  // SCRUM-525: tplX and tplY carry no assignment and no department — the
+  // editors' "Everyone" choice. None of these sign-ins has a linked employee.
+  await check("checklists in Today (SCRUM-525): an Everyone template shows in its permitted branch only; department-bound and role-assigned ones keep their rules; reads make no runs", async () => {
+    const tplDept = randomUUID();
+    await q("insert into checklist_templates (id, tenant_id, branch_id, department_id, name) values ($1, $2, $3, $4, $5)", [tplDept, A.tenant, A.x, A.department, `ZZ TEST r5 dept ${run}`]);
+    const tplRole = randomUUID();
+    await q("insert into checklist_templates (id, tenant_id, branch_id, assigned_role_id, name) values ($1, $2, $3, $4, $5)", [tplRole, A.tenant, A.x, A.role, `ZZ TEST r5 role ${run}`]);
+    const runs = () => count("select count(*) as n from checklist_runs where template_id = any($1::uuid[])", [[tplX, tplY, tplDept, tplRole]]);
+    const runsBefore = await runs();
+    const today = async (cookieValue: string, branch?: string) => {
+      const res = await call("GET", `/api/checklists/today${branch ? `?branchId=${branch}` : ""}`, { cookie: cookieValue });
+      assert.equal(res.status, 200, show(res));
+      return (res.body as { id: string }[]).map((t) => t.id);
+    };
+    for (let i = 0; i < 2; i++) {
+      const ids = await today(cookie.aLimited, A.x);
+      assert.ok(ids.includes(tplX), JSON.stringify(ids));
+      assert.ok(!ids.includes(tplY) && !ids.includes(tplDept) && !ids.includes(tplRole), JSON.stringify(ids));
+    }
+    assert.equal((await call("GET", `/api/checklists/today?branchId=${A.y}`, { cookie: cookie.aLimited })).status, 403);
+    const adminIds = await today(cookie.a);
+    assert.ok(adminIds.includes(tplX) && adminIds.includes(tplY), JSON.stringify(adminIds));
+    assert.ok(!adminIds.includes(tplDept) && !adminIds.includes(tplRole), JSON.stringify(adminIds));
+    const otherParkIds = await today(cookie.b);
+    assert.ok(![tplX, tplY, tplDept, tplRole].some((id) => otherParkIds.includes(id)), JSON.stringify(otherParkIds));
+    assert.equal(await runs(), runsBefore);
+  });
   // Q46's record (round 5's review): the reach as it stands, the app's
   // default until the owner answers.
   await check("FINDING Q46 (checklists): a manager limited to X reads Y's checklist history, though Y's template itself is refused them (the app has no branch rule on the history)", async () => {
