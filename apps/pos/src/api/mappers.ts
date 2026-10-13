@@ -10,7 +10,7 @@ import type {
   WeekdayWeekendPrice,
   PricingOverride,
 } from '@/types';
-import type { ApiBranch, ApiChild, ApiMember, ApiTicketPackage } from './platform';
+import type { ApiBranch, ApiChild, ApiMember, ApiTicketPackage, PublicSavedChild } from './platform';
 
 const b = (satang: number): number => satang / 100;
 const s = (baht: number): number => Math.round(baht * 100);
@@ -23,6 +23,26 @@ const wwToSatang = (p: WeekdayWeekendPrice): { weekday: number; weekend: number 
   weekday: s(p.weekday),
   weekend: s(p.weekend),
 });
+
+/**
+ * A saved child as the booking site receives it, once the family has typed back
+ * the code sent to its phone (SCRUM-357): the review fields only. Same reading
+ * as `apiChildToSavedChild` for the fields both carry.
+ */
+export function publicChildToSavedChild(c: PublicSavedChild): SavedChild {
+  const now = new Date().toISOString();
+  return {
+    id: c.id,
+    childName: c.name,
+    childAge: c.ageYears ?? ageFromDob(c.dateOfBirth) ?? 0,
+    dateOfBirth: c.dateOfBirth ?? undefined,
+    allergiesMedical: c.allergies ?? undefined,
+    foodRestrictions: c.foodRestrictions ?? undefined,
+    savedAt: now,
+    updatedAt: now,
+    savedBy: undefined,
+  };
+}
 
 export function apiChildToSavedChild(c: ApiChild): SavedChild {
   return {

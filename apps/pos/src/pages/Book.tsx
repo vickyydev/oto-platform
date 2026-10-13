@@ -23,6 +23,7 @@ import { slotPatchFromSavedChild } from '@/lib/savedChildren';
 import type { SavedChild } from '@/types';
 import { ConsentCapture } from '@/components/till/ConsentCapture';
 import { BookIdentify } from '@/components/book/BookIdentify';
+import { BookVerifyFamily } from '@/components/book/BookVerifyFamily';
 import { BookTickets } from '@/components/book/BookTickets';
 import { BookPayment } from '@/components/book/BookPayment';
 import { BookConfirmation } from '@/components/book/BookConfirmation';
@@ -47,6 +48,7 @@ import { toast } from '@/hooks/use-toast';
 
 type Stage =
   | 'identify'
+  | 'verifyFamily'
   | 'tickets'
   | 'pass'
   | 'savedChildren'
@@ -724,8 +726,18 @@ export default function Book() {
       // resolution — never re-overwrite it with the stored preference here, or a manual
       // change made right before tapping Continue would be silently discarded.
       setContactChannel(channel);
-      setStage('tickets');
+      // SCRUM-357: a returning member may load the family's saved children,
+      // once a code sent to the phone is typed back. Skippable.
+      setStage(found ? 'verifyFamily' : 'tickets');
     })();
+  };
+
+  // The children saved on the family's record, answered by the platform for
+  // the code typed back. They pre-fill the per-child forms and the review step
+  // exactly as the prototype's member lookup did (text only, never a photo).
+  const handleFamilyVerified = (children: SavedChild[]) => {
+    setMember((m) => (m ? { ...m, savedChildren: children } : m));
+    setStage('tickets');
   };
 
   // A different park is a different catalogue: the basket starts again.
@@ -787,8 +799,8 @@ export default function Book() {
   };
 
   // "Still correct?" → mark done. Edits stay on this booking's slot: the
-  // member this page identifies comes from the open lookup, which carries no
-  // saved children and writes none (S2-09b).
+  // saved children come from the open, code-gated read (SCRUM-357), and the
+  // booking site has no route that writes a member (S2-09b).
   const handleConfirmSlot = (id: string) => {
     setConfirmedSavedIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
   };
@@ -1063,6 +1075,15 @@ export default function Book() {
           <BookIdentify onContinue={handleIdentify} park={park} parks={parks} onParkChange={handleParkChange} />
         )}
 
+        {stage === 'verifyFamily' && (
+          <BookVerifyFamily
+            phone={phone}
+            branchCode={park}
+            onVerified={handleFamilyVerified}
+            onSkip={() => setStage('tickets')}
+            onBack={() => setStage('identify')}
+          />
+        )}
 
         {stage === 'tickets' && (
           <BookTickets
@@ -1117,13 +1138,12 @@ export default function Book() {
               onBack={() => setStage('tickets')}
               onContinue={() => setStage('supervise')}
               canContinue={reviewCanContinue}
-              // SCRUM-338: on /book, Confirm and Remove write nothing —
-              // handleConfirmSlot and handleRemoveSaved above touch no store
-              // (S2-09b removed the fixture writes), and the stage never opens
-              // here because the public lookup returns no saved children. The
-              // note keeps the browser-only sentence until the booking site
-              // has a member write route of its own.
-              detailsStore="browser-memory"
+              // SCRUM-338 / SCRUM-357: on /book, Confirm and Remove write
+              // nothing — handleConfirmSlot and handleRemoveSaved above touch
+              // no store. The saved children come from the family's record once
+              // the phone's code is typed back; edits here stay on this booking,
+              // and the note says so.
+              detailsStore="booking-only"
             />
           </div>
         )}

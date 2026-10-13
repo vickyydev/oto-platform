@@ -205,6 +205,15 @@ describe('route guards (S2-01b)', () => {
        * round, held by `route-write-conformance.test.ts`'s no-write list.
        */
       'POST /public/bookings/return',
+      /**
+       * SCRUM-357 — a returning family's saved children on the booking site,
+       * only behind a six-digit code sent to the member's phone. `code` sends
+       * it (same answer for any phone, per-phone code budget); `verify` spends
+       * it and answers the children's review fields — no member id, phone,
+       * notes or photo.
+       */
+      'POST /public/saved-children/code',
+      'POST /public/saved-children/verify',
       /** S2-12 — a press of pay / fail on the simulated hosted page. Simulator only. */
       'POST /webhooks/2c2p/hosted/:attemptId',
       /**

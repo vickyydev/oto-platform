@@ -10,7 +10,9 @@ import { errors } from '../lib/errors';
  * Render restarts the api on every deploy and a memory counter would hand an
  * attacker a clean slate each time. Keys are namespaced by their caller
  * (`rl:*`, `code:*`, `phone:*`, `ip:*`, `unlock:*`) so the buckets never
- * collide.
+ * collide. `mcode:*` rows are not counters: they are the booking site's
+ * outstanding saved-children codes, held here with their expiry in
+ * `locked_until` (SCRUM-357, `services/member-code.ts`).
  */
 
 export interface Window {

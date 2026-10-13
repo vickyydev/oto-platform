@@ -49,18 +49,19 @@ interface SavedChildrenReviewProps<Child extends SavedChildrenReviewChoice> {
    * The component is shared by two flows that no longer answer the same way.
    * On the till, Confirm writes to the member's record through the member API
    * (SCRUM-233) and Remove archives the child there (SCRUM-337), both audited;
-   * on the booking site the same buttons write nothing — the public lookup
-   * returns no saved children, so the stage does not open there (S2-09b removed
-   * the fixture writes). One note cannot be true for both, and
+   * on the booking site the same buttons write nothing: the saved children are
+   * read from the family's record once the code sent to the phone is typed
+   * back (SCRUM-357), and an edit stays on that booking — the site has no
+   * route that writes a member (S2-09b). One note cannot be true for both, and
    * the one it carried — "a prototype convenience held in memory only" — was
    * false exactly where staff read it most.
    *
    * The caller names its store rather than passing wording, so the sentence
    * stays here with the screen that shows it. Left out it reads as the
-   * member's record: both of the till's uses are on the API, and a screen that
-   * keeps its details in this browser says so, which is the booking site.
+   * member's record: both of the till's uses are on the API, and the booking
+   * site says its edits are this booking's only.
    */
-  detailsStore?: 'member-record' | 'browser-memory';
+  detailsStore?: 'member-record' | 'booking-only';
   /** The separate display reviews saved names and ages; other changes use staff. */
   publicMode?: boolean;
   busy?: boolean;
@@ -275,12 +276,11 @@ export function SavedChildrenReview<Child extends SavedChildrenReviewChoice>({
           {publicMode ? (
             <p>Edits stay on this display until you press Confirm. Wait for the member's record to be
               confirmed before pressing Done. Adding or removing a child continues on the staff screen.</p>
-          ) : detailsStore === 'browser-memory' ? (
+          ) : detailsStore === 'booking-only' ? (
             <p>
-              These saved details are a prototype convenience held in memory only and reset on
-              reload. Real storage of children's data needs explicit consent records, retention
-              limits and access control (a backend concern). The photo is never saved — it's
-              re-taken each visit.
+              These details come from your family's saved record. Changes you make here apply to
+              this booking only — to update the saved record, ask at reception. The photo is never
+              saved — it's re-taken each visit.
             </p>
           ) : (
             <p>

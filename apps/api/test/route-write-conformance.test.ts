@@ -619,6 +619,15 @@ const OPEN_WITHOUT_A_KEY = [
    */
   'POST /public/bookings/:id/checkout',
   'POST /public/bookings/return',
+  /**
+   *   - **bounded and single-use, as the staff code pair is** —
+   *     `POST /public/saved-children/code` sends a second SMS on purpose and is
+   *     bounded by `rl:saved-children:<phone>`; `POST /public/saved-children/verify`
+   *     spends the code by the DELETE that finds it, so a second send of the
+   *     same code deletes nothing and is refused (SCRUM-357).
+   */
+  'POST /public/saved-children/code',
+  'POST /public/saved-children/verify',
   'POST /webhooks/2c2p/hosted/:attemptId',
   /**
    *   - **the delivery is its own unique key** — `POST /webhooks/2c2p/payment`

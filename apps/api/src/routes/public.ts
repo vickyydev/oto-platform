@@ -40,6 +40,8 @@ import {
 } from '../services/booking-checkout';
 import { supervisionConfigOf } from '../services/checkin';
 import { eventPassesFor } from '../services/events';
+import { startMemberCode, verifyMemberCode } from '../services/member-code';
+import { limitPrincipal } from '../services/throttle';
 import { opCtx } from '../services/tx';
 
 /**
@@ -48,8 +50,10 @@ import { opCtx } from '../services/tx';
  *   - catalog: active packages (with translations) + tiers + today's rate mode
  *   - parks: the parks a guest can book, by code and name (SCRUM-507)
  *   - member-tier: phone → nickname + tier ONLY (no children / PII — the
- *     prototype's "members are recognised automatically" UX; OD-A14 keeps it
- *     that way: saved children never appear on the open site)
+ *     prototype's "members are recognised automatically" UX; a phone number
+ *     alone never shows saved children)
+ *   - saved-children: a member's saved children, ONLY after a six-digit code
+ *     sent to that phone is typed back (SCRUM-357, `services/member-code.ts`)
  *   - bookings: creates a PENDING booking + attendees; the TOTAL IS COMPUTED
  *     SERVER-SIDE through the S2-09a engine — the client figure is never
  *     charged (S2-12, `services/booking-checkout.ts`)
@@ -375,6 +379,91 @@ export async function publicRoutes(app: App): Promise<void> {
         tierCode: m.tierCode,
         preferredChannel: m.preferredChannel,
       };
+    },
+  );
+
+  /**
+   * SCRUM-357 — A RETURNING FAMILY'S SAVED CHILDREN, BEHIND A CODE TO THE PHONE.
+   *
+   * Two steps. `code` sends six digits to the phone if a member holds it, and
+   * answers `{ ok: true }` either way; `verify` takes the digits back and, when
+   * they are right, spends them and answers the saved children's details — the
+   * fields the booking site's review step pre-fills and nothing more (no member
+   * id, phone, email, notes, medical notes or photo). A wrong, expired or spent
+   * code and a phone with no member are refused in the same words. The phone's
+   * code budget is the staff code routes' (`RATE_LIMIT_CODE_*`, per phone, on
+   * top of the per-address bucket); wrong guesses `CODE_MAX_ATTEMPTS`.
+   */
+  const SavedChildrenScope = z.object({ phone: z.string().min(6).max(32), branch: z.string().min(1).max(64) });
+
+  app.post(
+    '/public/saved-children/code',
+    {
+      config: { ...ipLimited, public: true },
+      schema: {
+        description:
+          "Send a six-digit code to a member's phone so the booking site can show the family's saved children. Answers the same whether or not the phone is a member's.",
+        body: SavedChildrenScope,
+        response: { 200: z.object({ ok: z.literal(true) }) },
+      },
+    },
+    async (req) => {
+      const br = await loadBranchByCode(req.body.branch);
+      const phone = normalizePhone(req.body.phone);
+      if (!phone) throw errors.badRequest('Invalid phone number');
+      // Counted for every phone, member or not: an SMS costs money, and a
+      // differing answer would say which phones are members'.
+      await limitPrincipal(
+        app.db,
+        `saved-children:${phone}`,
+        app.env.RATE_LIMIT_CODE_MAX,
+        app.env.RATE_LIMIT_CODE_WINDOW_SECONDS,
+      );
+      await startMemberCode(app.db, app.sms, opCtx(req), {
+        operatorId: br.operatorId,
+        branchId: br.id,
+        phone,
+      });
+      return { ok: true as const };
+    },
+  );
+
+  app.post(
+    '/public/saved-children/verify',
+    {
+      config: { ...ipLimited, public: true },
+      schema: {
+        description:
+          "Check the code sent to a member's phone and, when it is right, spend it and answer the family's saved children: name, date of birth, age, allergies and food restrictions only.",
+        body: SavedChildrenScope.extend({ code: z.string().regex(/^\d{6}$/) }),
+        response: {
+          200: z.object({
+            children: z.array(
+              z.object({
+                id: z.string().uuid(),
+                name: z.string(),
+                dateOfBirth: z.string().nullable(),
+                ageYears: z.number().int().nullable(),
+                allergies: z.string().nullable(),
+                foodRestrictions: z.string().nullable(),
+              }),
+            ),
+          }),
+        },
+      },
+    },
+    async (req) => {
+      const br = await loadBranchByCode(req.body.branch);
+      const phone = normalizePhone(req.body.phone);
+      if (!phone) throw errors.badRequest('Invalid phone number');
+      const children = await verifyMemberCode(app.db, app.sms, opCtx(req), {
+        operatorId: br.operatorId,
+        branchId: br.id,
+        phone,
+        code: req.body.code,
+        maxAttempts: app.env.CODE_MAX_ATTEMPTS,
+      });
+      return { children };
     },
   );
 

@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { attendee, auditLog, booking, branch, operator } from '@oto/db';
 import { newId } from '@oto/shared';
-import { createTestContext, teardownAll, type TestContext } from './helpers';
+import { createTestContext, lastCode, teardownAll, type TestContext } from './helpers';
 
 /**
  * A plain weekday inside the bookable window (the server refuses a visit date
@@ -262,6 +262,71 @@ describe('public park list', () => {
     expect(codes.length).toBeGreaterThan(1);
     expect(codes).not.toContain('closed-park');
     expect(codes, 'another operator’s park is never offered').not.toContain('elsewhere-park');
+  });
+});
+
+/**
+ * SCRUM-357 — a returning family's saved children, only after a code sent to
+ * the phone is typed back; single use; the same refusal for every miss.
+ */
+describe('public saved children behind a code to the phone', () => {
+  const send = (phone: string) =>
+    ctx.app.inject({ method: 'POST', url: '/public/saved-children/code', payload: { phone, branch: 'hkt-central' } });
+  const verifyWith = (phone: string, code: string) =>
+    ctx.app.inject({
+      method: 'POST',
+      url: '/public/saved-children/verify',
+      payload: { phone, branch: 'hkt-central', code },
+    });
+
+  it('a right code answers the children with the review fields only, once', async () => {
+    const sent = ctx.smsLog.length;
+    const res = await send('0811111111');
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({ ok: true });
+    expect(ctx.smsLog.length).toBe(sent + 1);
+    const code = lastCode(ctx.smsLog);
+
+    const ok = await verifyWith('+66811111111', code);
+    expect(ok.statusCode).toBe(200);
+    const { children } = ok.json() as { children: Array<Record<string, unknown>> };
+    expect(Object.keys(ok.json())).toEqual(['children']);
+    expect(children.map((c) => c.name).sort()).toEqual(['Nong Ploy', 'Nong Tan']);
+    for (const c of children) {
+      expect(Object.keys(c).sort()).toEqual(
+        ['ageYears', 'allergies', 'dateOfBirth', 'foodRestrictions', 'id', 'name'],
+      );
+    }
+    expect(children.find((c) => c.name === 'Nong Ploy')).toMatchObject({
+      allergies: 'Peanut allergy — carries an EpiPen',
+      foodRestrictions: 'No pork',
+    });
+    const [row] = await ctx.db
+      .select()
+      .from(auditLog)
+      .where(eq(auditLog.action, 'member.saved_children_read'));
+    expect(row?.actorAccountId).toBeNull();
+
+    // Spent: the same code a second time is refused like a wrong one.
+    const again = await verifyWith('0811111111', code);
+    expect(again.statusCode).toBe(400);
+    expect(again.json().error.message).toBe('Invalid code');
+  });
+
+  it('a wrong code, and a phone with no member, are refused in the same words', async () => {
+    await send('0811111111');
+    const code = lastCode(ctx.smsLog);
+    const wrong = await verifyWith('0811111111', code === '000000' ? '111111' : '000000');
+    expect(wrong.statusCode).toBe(400);
+    expect(wrong.json().error.message).toBe('Invalid code');
+
+    const sent = ctx.smsLog.length;
+    const stranger = await send('0600000001');
+    expect(stranger.json()).toEqual({ ok: true });
+    expect(ctx.smsLog.length, 'no SMS for a phone with no member').toBe(sent);
+    const miss = await verifyWith('0600000001', code);
+    expect(miss.statusCode).toBe(400);
+    expect(miss.json().error.message).toBe('Invalid code');
   });
 });
 

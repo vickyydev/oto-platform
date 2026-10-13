@@ -537,6 +537,16 @@ export interface PublicAddOn {
   translations: AddOn['translations'] | null;
 }
 
+/** A saved child, as the open route answers it once the phone's code is typed back. */
+export interface PublicSavedChild {
+  id: string;
+  name: string;
+  dateOfBirth: string | null;
+  ageYears: number | null;
+  allergies: string | null;
+  foodRestrictions: string | null;
+}
+
 export const publicApi = {
   catalog: (branchCode: string) => api.get<PublicCatalog>(`/public/branches/${branchCode}/catalog`),
   /** SCRUM-507 — the parks the booking site offers: those of the operator running `branchCode`. */
@@ -544,6 +554,20 @@ export const publicApi = {
     api.get<{ branches: Array<{ code: string; name: string }> }>(
       `/public/branches/${encodeURIComponent(branchCode)}/parks`,
     ),
+  /**
+   * SCRUM-357 — send a six-digit code to the phone, so a returning family can
+   * see its saved children. The answer is the same whether or not the phone is
+   * a member's.
+   */
+  savedChildrenCode: (phone: string, branchCode: string) =>
+    api.post<{ ok: true }>('/public/saved-children/code', { phone, branch: branchCode }),
+  /** The code typed back: right, it is spent and the family's saved children come back. */
+  savedChildrenVerify: (phone: string, branchCode: string, code: string) =>
+    api.post<{ children: PublicSavedChild[] }>('/public/saved-children/verify', {
+      phone,
+      branch: branchCode,
+      code,
+    }),
   /** `branchCode` scopes the lookup to one operator — required by the API. */
   memberTier: (phone: string, branchCode: string) =>
     api.get<
