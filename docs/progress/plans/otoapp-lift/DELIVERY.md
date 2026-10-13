@@ -1,6 +1,6 @@
 # OTO App delivery board - SCRUM-191
 
-**14:20 Bangkok status check:** SCRUM-193 and516 are Deployed with final proof attached. All eleven delivered child tickets under191 are Deployed; only523 remains To Do. The umbrella stays In Progress for that scheduled follow-through. The fix block starts with276.
+**13 October, 15:39 Bangkok status check:** Eleven child tickets are Deployed with evidence. SCRUM-523 is Testing and is the final active child under SCRUM-191. Its corrected scheduling candidate is in the hosted release gate; source landing, staging proof and exact fixture cleanup remain. The owner has prioritized completing this story before returning to SCRUM-276 and the remaining fix block. No owner answer is pending.
 
 ## Current delivery - 13 October 2026
 
@@ -20,7 +20,7 @@ SCRUM-194 and SCRUM-517 through SCRUM-522 are **Deployed** with their recorded p
 | SCRUM-521, inbox delivery | **Deployed.** [Delivery and recovery evidence](../../../qa/oto-app-lift/round-8/feature-inbox-delivery.md) records the current inbox delivery states and retry controls. | Delivery means the existing staff inbox. It does not establish SMS, email or push delivery. |
 | SCRUM-522, returning-family SMS | **Deployed.** [Actual SMS receipt, screen verification/prefill and saved-registration API controls](../../../qa/oto-app-lift/round-8/feature-family-verification.md) passed, including consumed-grant and other-park boundaries. | The saved-registration write used the API after real screen verification; the normal screen Submit action was not exercised. Existing signature/consent fields were retained, with no new consent or signature claimed. |
 | SCRUM-194 / SCRUM-516, review and movement history | [Explicit manager Complete, terms Save and transfer](../../../qa/oto-app-lift/round-8/feature-employee-history.md) passed on the disposable employee, with replay and ownership controls. Reload retained the saved changes; actor/time were present in the API. | Existing immediate actions and contract prompts remain. No additional approval stage or contract generation was exercised; the history screen itself does not display the actor. |
-| SCRUM-523, scheduling scope (Q39) | **To Do** under SCRUM-191. The existing recorded scheduling boundary item now has its matching ticket. | Keep it in the recorded fix block, which begins with SCRUM-276. It is not treated as completed by the feature deployment. |
+| SCRUM-523, scheduling scope (Q39) | **Testing.** Caller-park checks cover scheduling readers/writers and canonical parents; 32 independent runtime controls cover own use, foreign/mixed requests, replay and rollback. | Complete the corrected candidate gate, main release gate, observed deployment, staging proof and exact fixture cleanup before closing SCRUM-191. |
 
 ## Release and job evidence
 
@@ -34,7 +34,7 @@ Exact cleanup removed 297 rows and ten objects, followed by seven parent rows an
 
 Protected-row fingerprints matched immediately before and after cleanup. A later Som fingerprint differed, with its cause still unattributed; the cleanup comparison does not establish that his whole row remains unchanged afterward. Preserve this distinction in the final acceptance record.
 
-Complete the remaining SCRUM-191 acceptance and recorded consistency work using these verified results and limits. The OPEN_ITEMS section 2 fix block, beginning with SCRUM-276 and retaining Q39/SCRUM-523 in its worked order, comes before any new story. SCRUM-223 remains paused. Local databases remain off.
+Complete the remaining SCRUM-191 acceptance and recorded consistency work using these verified results and limits. The current owner priority completes Q39/SCRUM-523 under SCRUM-191 first. The remaining OPEN_ITEMS section 2 fix block then begins with SCRUM-276 and comes before any new story. SCRUM-223 remains paused. Local databases remain off.
 
 ## Historical source checkpoints
 
