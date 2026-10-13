@@ -103,6 +103,17 @@ async function seedOtoAppUser(opts: {
 const otoAppUserById = async (id: string) =>
   (await ctx.db.select().from(otoappUsers).where(eq(otoappUsers.id, id)))[0] ?? null;
 
+/** A live OTO App session, as express-session and passport store one. */
+async function seedOtoAppSession(sid: string, userId: string): Promise<void> {
+  const sess = JSON.stringify({ cookie: { httpOnly: true, path: '/' }, passport: { user: userId } });
+  await ctx.db.execute(
+    sql`insert into otoapp.session (sid, sess, expire) values (${sid}, ${sess}::jsonb, now() + interval '1 day')`,
+  );
+}
+
+const otoAppSessionIds = async (): Promise<string[]> =>
+  (await ctx.db.execute<{ sid: string }>(sql`select sid from otoapp.session`)).rows.map((r) => r.sid);
+
 /** An extra account with one role at one scope, password set directly. */
 async function makeAccount(opts: {
   phone: string;
@@ -285,6 +296,9 @@ describe('DELETE /admin/apps/:app/users/:accountId', () => {
 
   it('removes the link and withdraws the access the link granted', async () => {
     expect(await canOpenOtoApp(accountId)).toBe(true);
+    // SCRUM-288: a session the link opened in the app, and one of somebody else's.
+    await seedOtoAppSession('zz-unlink-own', 'otoapp-user-3');
+    await seedOtoAppSession('zz-unlink-other', 'otoapp-user-someone-else');
 
     const res = await ctx.app.inject({
       method: 'DELETE',
@@ -303,6 +317,11 @@ describe('DELETE /admin/apps/:app/users/:accountId', () => {
     // as that user anyway.
     expect(await canOpenOtoApp(accountId)).toBe(false);
     expect((await otoAppUserById('otoapp-user-3'))!.platformUserId).toBeNull();
+    // The open app session ends with the link (the app then answers 401); the
+    // user row stays active, because unlinking is not offboarding.
+    expect(await otoAppSessionIds()).not.toContain('zz-unlink-own');
+    expect(await otoAppSessionIds()).toContain('zz-unlink-other');
+    expect((await otoAppUserById('otoapp-user-3'))!.isActive).toBe(true);
 
     const rows = await ctx.db
       .select()
@@ -332,6 +351,79 @@ describe('DELETE /admin/apps/:app/users/:accountId', () => {
     expect(res.json().appUserCreated).toBe(false);
     expect(await canOpenOtoApp(accountId)).toBe(true);
     expect((await otoAppUserById('otoapp-user-3'))!.platformUserId).toBe(accountId);
+  });
+});
+
+describe('PATCH /accounts/:id to inactive (SCRUM-288)', () => {
+  it('switches off the linked OTO App user and ends their app sessions', async () => {
+    await seedOtoAppUser({ id: 'otoapp-user-288', email: 'user288@otopark.test' });
+    const linked = await ctx.app.inject({
+      method: 'POST',
+      url: '/admin/apps/oto_app/users',
+      headers: { cookie: adminCookie },
+      payload: { phone: '0812882888', name: 'Leaving Soon', externalUserId: 'otoapp-user-288' },
+    });
+    expect(linked.statusCode).toBe(200);
+    const accountId = linked.json().accountId as string;
+    await seedOtoAppSession('zz-288-own-1', 'otoapp-user-288');
+    await seedOtoAppSession('zz-288-own-2', 'otoapp-user-288');
+    await seedOtoAppSession('zz-288-other', 'otoapp-user-someone-else');
+
+    const res = await ctx.app.inject({
+      method: 'PATCH',
+      url: `/accounts/${accountId}`,
+      headers: { cookie: adminCookie },
+      payload: { status: 'inactive' },
+    });
+    expect(res.statusCode).toBe(200);
+
+    const user = await otoAppUserById('otoapp-user-288');
+    expect(user!.isActive).toBe(false);
+    // The stamp stays: still the same person, history kept under it.
+    expect(user!.platformUserId).toBe(accountId);
+    const sids = await otoAppSessionIds();
+    expect(sids).not.toContain('zz-288-own-1');
+    expect(sids).not.toContain('zz-288-own-2');
+    expect(sids).toContain('zz-288-other');
+
+    const [row] = await ctx.db
+      .select()
+      .from(auditLog)
+      .where(and(eq(auditLog.action, 'account.update'), eq(auditLog.entityId, accountId)));
+    expect(row!.after).toEqual({
+      status: 'inactive',
+      phone: '+66812882888',
+      otoApp: { userIds: ['otoapp-user-288'], sessionsEnded: 2 },
+    });
+  });
+
+  it('deactivates an account with no app user exactly as before', async () => {
+    const accountId = await makeAccount({
+      phone: '0812882999',
+      password: 'never-used-288',
+      roleName: 'staff',
+      scopeType: 'operator',
+      scopeId: operatorId,
+    });
+    await seedOtoAppUser({ id: 'otoapp-user-288-bystander', email: 'bystander288@otopark.test' });
+    await seedOtoAppSession('zz-288-unlinked-bystander', 'otoapp-user-288-bystander');
+
+    const res = await ctx.app.inject({
+      method: 'PATCH',
+      url: `/accounts/${accountId}`,
+      headers: { cookie: adminCookie },
+      payload: { status: 'inactive' },
+    });
+    expect(res.statusCode).toBe(200);
+    const [acc] = await ctx.db.select().from(account).where(eq(account.id, accountId));
+    expect(acc!.status).toBe('inactive');
+    expect(await otoAppSessionIds()).toContain('zz-288-unlinked-bystander');
+    expect((await otoAppUserById('otoapp-user-288-bystander'))!.isActive).toBe(true);
+    const [row] = await ctx.db
+      .select()
+      .from(auditLog)
+      .where(and(eq(auditLog.action, 'account.update'), eq(auditLog.entityId, accountId)));
+    expect(row!.after).toEqual({ status: 'inactive', phone: '+66812882999' });
   });
 });
 

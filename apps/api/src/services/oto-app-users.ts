@@ -143,7 +143,88 @@ export async function unlinkOtoAppUser(
     .set({ platformUserId: null, updatedAt: new Date() })
     .where(eq(otoappUsers.platformUserId, opts.platformAccountId))
     .returning({ id: otoappUsers.id });
+  // SCRUM-288: a session the stamp opened outlives the stamp otherwise. The
+  // app keeps serving it as the same user until it expires, so "unlinked"
+  // would still be signed in. The user row itself stays active: unlinking is
+  // not offboarding.
+  await endOtoAppSessions(
+    exec,
+    cleared.map((u) => u.id),
+  );
   return cleared.length > 0;
+}
+
+/** What deactivating a platform account did to the OTO App user stamped with it. */
+export interface OtoAppUserDeactivation {
+  /** `otoapp.users.id` switched off — empty for an account with no app user. */
+  userIds: string[];
+  /** Live app sessions ended for them. */
+  sessionsEnded: number;
+}
+
+/**
+ * Switch off the OTO App user a platform account is stamped on, and end their
+ * live sessions there (SCRUM-288).
+ *
+ * Deactivating somebody on the platform ends their platform sessions, and a
+ * launcher session in the app finds that out on its next liveness check. Two
+ * doors stayed open: the app's own password login, which is off only while
+ * `OTOAPP_LEGACY_LOGIN` stays unset on the deployment, and an app session that
+ * is not backed by a platform session at all. `is_active = false` closes the
+ * first — the app refuses an inactive user at sign-in and at every
+ * `requireAuth` — and removing the session rows closes the second.
+ *
+ * The stamp stays: the person is still the same person, and the app keeps
+ * their history under it. Reactivating the account does not switch the app
+ * user back on; that stays the app's own decision.
+ *
+ * Runs on the caller's transaction, so it commits with the deactivation or not
+ * at all. A database with no OTO App on it answers with nothing done.
+ */
+export async function deactivateOtoAppUser(
+  exec: Exec,
+  opts: { platformAccountId: string },
+): Promise<OtoAppUserDeactivation> {
+  if (!(await relationInstalled(exec, 'otoapp.users'))) return { userIds: [], sessionsEnded: 0 };
+  const switchedOff = await exec
+    .update(otoappUsers)
+    .set({ isActive: false, updatedAt: new Date() })
+    .where(eq(otoappUsers.platformUserId, opts.platformAccountId))
+    .returning({ id: otoappUsers.id });
+  const userIds = switchedOff.map((u) => u.id);
+  return { userIds, sessionsEnded: await endOtoAppSessions(exec, userIds) };
+}
+
+/**
+ * Remove the OTO App's session rows for these users.
+ *
+ * The app keeps its sessions in `otoapp.session` (express-session through
+ * `connect-pg-simple`), one jsonb `sess` per row, and passport writes the
+ * signed-in user's id at `sess.passport.user`. A row gone is a request that
+ * arrives unauthenticated, which the app answers with 401.
+ */
+async function endOtoAppSessions(exec: Exec, userIds: readonly string[]): Promise<number> {
+  if (userIds.length === 0) return 0;
+  if (!(await relationInstalled(exec, 'otoapp.session'))) return 0;
+  const ended = await exec.execute<{ sid: string }>(
+    sql`delete from otoapp.session where sess -> 'passport' ->> 'user' in (${sql.join(
+      userIds.map((id) => sql`${id}`),
+      sql`, `,
+    )}) returning sid`,
+  );
+  return ended.rows.length;
+}
+
+/**
+ * Is this relation on the database? `to_regclass` answers null rather than
+ * raising, because a missing relation inside a transaction would abort the
+ * operation it is part of.
+ */
+async function relationInstalled(exec: Exec, name: string): Promise<boolean> {
+  const res = await exec.execute<{ reg: string | null }>(
+    sql`select to_regclass(${name})::text as reg`,
+  );
+  return Boolean(res.rows[0]?.reg);
 }
 
 /** How the OTO App's branch was found for a person being provisioned. */

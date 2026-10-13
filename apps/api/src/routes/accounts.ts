@@ -11,6 +11,7 @@ import { audit } from '../services/audit';
 import { ClientIdSchema, REPLAY_HEADER, claimClientId } from '../services/client-id';
 import { opCtx, withTx } from '../services/tx';
 import { deliverCode, invalidateAllSessions, mintCode, type PendingCode } from '../services/auth';
+import { deactivateOtoAppUser, type OtoAppUserDeactivation } from '../services/oto-app-users';
 import { resolveEffectivePermissions, type EffectivePermission } from '../services/permissions';
 import {
   assertDominatesAccount,
@@ -475,7 +476,13 @@ export async function accountRoutes(app: App): Promise<void> {
       // must not be able to come apart.
       return withTx(app.db, opCtx(req), 'account.update', async (tx) => {
         const [after] = await tx.update(account).set(patch).where(eq(account.id, req.params.id)).returning();
-        if (req.body.status === 'inactive') await invalidateAllSessions(tx, req.params.id, 'deactivated');
+        // SCRUM-288: and the OTO App user stamped with this account, with any
+        // session open there, in the same transaction.
+        let otoApp: OtoAppUserDeactivation | null = null;
+        if (req.body.status === 'inactive') {
+          await invalidateAllSessions(tx, req.params.id, 'deactivated');
+          otoApp = await deactivateOtoAppUser(tx, { platformAccountId: req.params.id });
+        }
         await audit.record(tx, {
           actorAccountId: auth.accountId,
           operatorId: auth.operatorId,
@@ -483,7 +490,13 @@ export async function accountRoutes(app: App): Promise<void> {
           entityType: 'account',
           entityId: req.params.id,
           before: { status: before.status, phone: before.phone },
-          after: { status: after?.status, phone: after?.phone },
+          after: {
+            status: after?.status,
+            phone: after?.phone,
+            // Only when there was an app user: an account with no link is
+            // recorded exactly as before.
+            ...(otoApp && otoApp.userIds.length > 0 ? { otoApp } : {}),
+          },
           requestId: req.id,
         });
         return { ok: true as const };
