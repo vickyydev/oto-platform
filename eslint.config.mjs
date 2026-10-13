@@ -19,6 +19,8 @@ export default tseslint.config(
       // by a vendored copy of the platform's redactor that every log line and
       // every `console.*` call goes through.
       'apps/oto-app/**',
+      // Radar is lifted the same way (S2-18); its own check:ratchet gates it.
+      'apps/radar/**',
       '**/migrations/**',
       // Generated from the api's OpenAPI document (SCRUM-272); its drift
       // check is `pnpm api-types:check`, not a style rule.
