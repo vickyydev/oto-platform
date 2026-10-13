@@ -118,35 +118,7 @@ app.use((req, res, next) => {
     },
     () => {
       log(`serving on port ${port}`);
-      
-      setTimeout(async () => {
-        try {
-          const { seedCashReports } = await import("./funtopia");
-          const result = await seedCashReports();
-          if (result.inserted > 0) {
-            log(`Seeded ${result.inserted} cash report records`, "funtopia");
-          }
-        } catch (error) {
-          log(`Cash reports seed error: ${error}`, "funtopia");
-        }
 
-        try {
-          const { backfillWalletPassesOnStartup } = await import("./funtopia");
-          // Run in the background — it can take minutes for large date ranges
-          backfillWalletPassesOnStartup().catch((err) =>
-            log(`Wallet-pass backfill error: ${err?.message || err}`, "funtopia"),
-          );
-        } catch (error) {
-          log(`Wallet-pass backfill init error: ${error}`, "funtopia");
-        }
-
-        try {
-          const { startRevenueDivergenceMonitor } = await import("./funtopia");
-          startRevenueDivergenceMonitor();
-        } catch (error) {
-          log(`Revenue divergence monitor init error: ${error}`, "funtopia");
-        }
-      }, 3000);
     },
   );
 

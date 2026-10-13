@@ -5,16 +5,9 @@ import {
   type SourceBreakdownEntry,
 } from "./sourceRegistry";
 
-const PAPAYA_API_URL = "https://api.papaya.co.th/api/v1";
-const PAPAYA_RECEPTION_TOKEN = process.env.PAPAYA_RECEPTION_TOKEN || "";
-const PAPAYA_RESTAURANT_TOKEN = process.env.PAPAYA_RESTAURANT_TOKEN || "";
-
-if (!PAPAYA_RECEPTION_TOKEN) {
-  console.warn("[Papaya] WARNING: PAPAYA_RECEPTION_TOKEN is not set — park/reception data will use cache only!");
-}
-if (!PAPAYA_RESTAURANT_TOKEN) {
-  console.warn("[Papaya] WARNING: PAPAYA_RESTAURANT_TOKEN is not set — cafe/restaurant data will use cache only!");
-}
+// The Papaya sync pipeline (API client, today/range/resync jobs) was not lifted
+// onto the platform: Radar's figures come from the OTO POS rollup instead
+// (S2-18). What remains here reads tables only, and is rewired in R3.
 
 const CATEGORY_MAP: Record<string, string> = {
   "01JKR48K5B9M2CQPJP2SG5P5D0": "Tickets & Packages",
@@ -143,97 +136,6 @@ export interface PapayaDailySummary {
   // new builds, but the field is preserved on the type so existing v2 cache
   // rows still parse without losing data before they get rebuilt.
   birthdayAllocation?: PapayaBirthdayAllocation;
-}
-
-async function fetchPapayaOrdersSlice(
-  token: string,
-  from: string,
-  to: string,
-  seenIds: Set<string>
-): Promise<any[]> {
-  const url = `${PAPAYA_API_URL}/orders?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
-  const TIMEOUT_MS = 45000;
-  const MAX_RETRIES = 2;
-
-  for (let tryNum = 1; tryNum <= MAX_RETRIES; tryNum++) {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
-    try {
-      const resp = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` },
-        signal: ctrl.signal,
-      });
-      clearTimeout(timer);
-      if (!resp.ok) throw new Error(`Papaya API HTTP ${resp.status}`);
-      const json = await resp.json();
-      const rawOrders = json.orders || [];
-      const orders: any[] = [];
-      for (const order of rawOrders) {
-        const id = order.id || order.orderId;
-        if (id && seenIds.has(id)) continue;
-        if (id) seenIds.add(id);
-        orders.push(order);
-      }
-      return orders;
-    } catch (e: any) {
-      clearTimeout(timer);
-      if (e.name === "AbortError") {
-        console.error(`[Papaya] Request timed out after ${TIMEOUT_MS}ms (attempt ${tryNum}/${MAX_RETRIES}): ${url}`);
-        if (tryNum < MAX_RETRIES) {
-          await new Promise(r => setTimeout(r, 1000));
-          continue;
-        }
-        return [];
-      }
-      throw e;
-    }
-  }
-  return [];
-}
-
-function toBangkokISO(utcMs: number): string {
-  const bkk = new Date(utcMs + 7 * 3600 * 1000);
-  const y = bkk.getUTCFullYear();
-  const m = String(bkk.getUTCMonth() + 1).padStart(2, "0");
-  const dd = String(bkk.getUTCDate()).padStart(2, "0");
-  const hh = String(bkk.getUTCHours()).padStart(2, "0");
-  const mm = String(bkk.getUTCMinutes()).padStart(2, "0");
-  const ss = String(bkk.getUTCSeconds()).padStart(2, "0");
-  return `${y}-${m}-${dd}T${hh}:${mm}:${ss}+07:00`;
-}
-
-async function fetchPapayaOrders(
-  token: string,
-  from: string,
-  to: string,
-  _maxPages: number = 20
-): Promise<any[]> {
-  const seenIds = new Set<string>();
-  const allOrders: any[] = [];
-
-  const fromMs = new Date(from).getTime();
-  const toMs = new Date(to).getTime();
-  const totalMs = toMs - fromMs;
-
-  if (totalMs <= 2 * 3600 * 1000) {
-    return fetchPapayaOrdersSlice(token, from, to, seenIds);
-  }
-
-  const SLICE_MS = 2 * 3600 * 1000;
-  let cursor = fromMs;
-
-  while (cursor < toMs) {
-    const sliceEnd = Math.min(cursor + SLICE_MS, toMs);
-    const sliceFrom = toBangkokISO(cursor);
-    const sliceTo = toBangkokISO(sliceEnd);
-
-    const orders = await fetchPapayaOrdersSlice(token, sliceFrom, sliceTo, seenIds);
-    allOrders.push(...orders);
-    cursor = sliceEnd;
-    if (cursor < toMs) await new Promise((r) => setTimeout(r, 220));
-  }
-
-  return allOrders;
 }
 
 function getCafeCategory(item: any): string {
@@ -1531,63 +1433,6 @@ export async function getPapayaDailySummary(
   return await ensureSourceBreakdown(aligned, terminal);
 }
 
-export async function syncPapayaToday(terminal: string = "reception"): Promise<PapayaDailySummary | null> {
-  const token = terminal === "reception" ? PAPAYA_RECEPTION_TOKEN : PAPAYA_RESTAURANT_TOKEN;
-  if (!token) return null;
-
-  const nowTH = new Date(Date.now() + 7 * 3600 * 1000);
-  const todayStr = nowTH.toISOString().split("T")[0];
-
-  try {
-    const from = `${todayStr}T00:00:00+07:00`;
-    const to = `${todayStr}T23:59:59+07:00`;
-    const orders = await fetchPapayaOrders(token, from, to);
-    await storeRawPapayaOrders(orders, terminal);
-    const storedOrders = await loadRawOrdersForDate(todayStr, terminal);
-    const summary = buildPapayaSummary(todayStr, storedOrders.length > 0 ? storedOrders : orders, terminal);
-    applyPapayaBirthdayOverride(summary, await loadPapayaBirthdayOverride(todayStr, terminal));
-
-    const warnings: string[] = [];
-    let syncStatus: "clean" | "partial" | "skipped" = "clean";
-    const completedOrders = orders.filter((o: any) => o.status === "complete");
-    if (orders.length > 0 && summary.totalOrders === 0) {
-      syncStatus = "partial";
-      warnings.push(`Fetched ${orders.length} orders but 0 completed`);
-    } else if (orders.length > 0 && summary.totalOrders < completedOrders.length * 0.97) {
-      syncStatus = "partial";
-      warnings.push(`Expected ~${completedOrders.length} completed orders, got ${summary.totalOrders} in summary`);
-    }
-
-    const existingCached = await getCachedPapayaSummary(todayStr, terminal);
-    if (existingCached && existingCached.totalOrders > 0 && summary.totalOrders < existingCached.totalOrders * 0.97) {
-      warnings.push(`Drop protection bypassed for today (${summary.totalOrders} vs ${existingCached.totalOrders} existing)`);
-    }
-
-    if (summary.totalOrders > 0) {
-      await setCachedPapayaSummary(todayStr, summary, terminal);
-    }
-
-    await recordPapayaSyncHealth({
-      date: todayStr,
-      terminal,
-      status: syncStatus,
-      ordersExpected: completedOrders.length,
-      ordersReceived: summary.totalOrders,
-      warnings: warnings.length > 0 ? warnings : undefined,
-    });
-    return summary;
-  } catch (e: any) {
-    console.error(`[Papaya] syncPapayaToday failed for ${terminal}:`, e);
-    await recordPapayaSyncHealth({
-      date: todayStr,
-      terminal,
-      status: "failed",
-      errorMessage: e.message || "syncPapayaToday failed",
-    }).catch(() => {});
-    return null;
-  }
-}
-
 export async function getPapayaDateRangeSummary(
   startDate: string,
   endDate: string,
@@ -1623,179 +1468,6 @@ export async function getPapayaDateRangeSummary(
 
   await Promise.all(summaries.map((s) => ensureSourceBreakdown(s, terminal)));
   return summaries;
-}
-
-export async function syncPapayaDateRange(
-  startDate: string,
-  endDate: string,
-  terminal: string = "reception",
-  onProgress?: (msg: string) => void,
-  syncMode: "quick" | "full" = "full"
-): Promise<{ synced: number; dates: string[] }> {
-  const token = terminal === "reception" ? PAPAYA_RECEPTION_TOKEN : PAPAYA_RESTAURANT_TOKEN;
-  if (!token) throw new Error(`No token configured for Papaya ${terminal}`);
-
-  const dates: string[] = [];
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-    dates.push(d.toISOString().split("T")[0]);
-  }
-
-  let synced = 0;
-  for (const date of dates) {
-    try {
-      const from = `${date}T00:00:00+07:00`;
-      const to = `${date}T23:59:59+07:00`;
-      const orders = await fetchPapayaOrders(token, from, to);
-      await storeRawPapayaOrders(orders, terminal);
-      const storedOrders = await loadRawOrdersForDate(date, terminal);
-      const summary = buildPapayaSummary(date, storedOrders.length > 0 ? storedOrders : orders, terminal);
-      applyPapayaBirthdayOverride(summary, await loadPapayaBirthdayOverride(date, terminal));
-
-      const dayWarnings: string[] = [];
-      let dayStatus: "clean" | "partial" | "skipped" = "clean";
-      const completedOrders = orders.filter((o: any) => o.status === "complete");
-
-      if (orders.length > 0 && summary.totalOrders === 0) {
-        dayStatus = "partial";
-        dayWarnings.push(`Fetched ${orders.length} orders but 0 completed`);
-      } else if (completedOrders.length > 0 && summary.totalOrders < completedOrders.length * 0.97) {
-        dayStatus = "partial";
-        dayWarnings.push(`Expected ~${completedOrders.length} orders but only ${summary.totalOrders} stored (${Math.round(summary.totalOrders / completedOrders.length * 100)}%)`);
-      }
-
-      const nowTH = new Date(Date.now() + 7 * 3600 * 1000);
-      const todayStr = nowTH.toISOString().split("T")[0];
-      const yesterdayTH = new Date(nowTH);
-      yesterdayTH.setDate(yesterdayTH.getDate() - 1);
-      const yesterdayStr = yesterdayTH.toISOString().split("T")[0];
-      const isRecentDate = date === todayStr || date === yesterdayStr;
-
-      const existingCached = await getCachedPapayaSummary(date, terminal);
-      if (existingCached && existingCached.totalOrders > 0 && summary.totalOrders < existingCached.totalOrders * 0.97) {
-        if (syncMode === "quick" && isRecentDate) {
-          dayWarnings.push(`Drop protection bypassed for ${date} in quick mode (${summary.totalOrders} vs ${existingCached.totalOrders} existing)`);
-        } else {
-          dayStatus = "skipped";
-          dayWarnings.push(`New data has ${summary.totalOrders} orders vs ${existingCached.totalOrders} existing (>${Math.round((1 - summary.totalOrders / existingCached.totalOrders) * 100)}% drop)`);
-        }
-      }
-
-      if (dayStatus !== "skipped") {
-        await setCachedPapayaSummary(date, summary, terminal);
-      }
-
-      synced++;
-      if (onProgress) onProgress(`${synced}/${dates.length}: ${date} → ${summary.totalOrders} orders, ฿${summary.totalRevenue}${dayStatus !== "clean" ? ` [${dayStatus.toUpperCase()}]` : ""}`);
-
-      await recordPapayaSyncHealth({
-        date,
-        terminal,
-        status: dayStatus,
-        ordersExpected: completedOrders.length,
-        ordersReceived: summary.totalOrders,
-        warnings: dayWarnings.length > 0 ? dayWarnings : undefined,
-      });
-      await new Promise((r) => setTimeout(r, 300));
-    } catch (e: any) {
-      console.error(`[Papaya] Sync failed for ${date}:`, e);
-      if (onProgress) onProgress(`${synced}/${dates.length}: ${date} → FAILED`);
-      await recordPapayaSyncHealth({
-        date,
-        terminal,
-        status: "failed",
-        errorMessage: e.message || "Sync failed",
-      }).catch(() => {});
-    }
-  }
-
-  return { synced, dates };
-}
-
-export async function resyncPapayaDate(date: string): Promise<{ summary: PapayaDailySummary | null; syncHealth: PapayaSyncHealthRecord }> {
-  await clearPapayaCacheForDate(date);
-
-  const terminals = getPapayaTerminals();
-  const activeTerminals = terminals.length > 0 ? terminals : ["reception"];
-  let combinedSummary: PapayaDailySummary | null = null;
-  const terminalResults: Record<string, { expected: number; received: number; error?: string; warning?: string }> = {};
-
-  for (const terminal of activeTerminals) {
-    const token = terminal === "reception" ? PAPAYA_RECEPTION_TOKEN : PAPAYA_RESTAURANT_TOKEN;
-    if (!token) continue;
-
-    try {
-      const from = `${date}T00:00:00+07:00`;
-      const to = `${date}T23:59:59+07:00`;
-
-      await pool.query(
-        `DELETE FROM papaya_orders WHERE terminal = $1 AND order_date >= $2 AND order_date <= $3`,
-        [terminal, from, to]
-      );
-
-      const orders = await fetchPapayaOrders(token, from, to);
-      await storeRawPapayaOrders(orders, terminal);
-      const storedOrders = await loadRawOrdersForDate(date, terminal);
-      const summary = buildPapayaSummary(date, storedOrders.length > 0 ? storedOrders : orders, terminal);
-      applyPapayaBirthdayOverride(summary, await loadPapayaBirthdayOverride(date, terminal));
-      await setCachedPapayaSummary(date, summary, terminal);
-
-      const completedOrders = orders.filter((o: any) => o.status === "complete");
-      terminalResults[terminal] = { expected: completedOrders.length, received: summary.totalOrders };
-
-      if (orders.length > 0 && summary.totalOrders === 0) {
-        terminalResults[terminal].warning = `Fetched ${orders.length} orders but 0 completed`;
-      }
-
-      if (!combinedSummary) {
-        combinedSummary = summary;
-      } else if (summary.totalOrders > 0) {
-        combinedSummary = mergePapayaSummaries(combinedSummary, summary);
-      }
-    } catch (e: any) {
-      console.error(`[Papaya] resyncPapayaDate failed for ${terminal}:${date}:`, e);
-      terminalResults[terminal] = { expected: 0, received: 0, error: e.message || "Re-sync failed" };
-    }
-  }
-
-  await pool.query(`DELETE FROM papaya_sync_health WHERE date = $1`, [date]);
-
-  if (Object.keys(terminalResults).length === 0) {
-    await recordPapayaSyncHealth({
-      date,
-      terminal: "combined",
-      status: "failed",
-      errorMessage: "No terminal tokens configured",
-    });
-  } else {
-    for (const terminal of activeTerminals) {
-      const result = terminalResults[terminal];
-      if (!result) continue;
-
-      let termStatus: "clean" | "partial" | "failed" = "clean";
-      if (result.error) {
-        termStatus = "failed";
-      } else if (result.expected > 0 && result.received < result.expected * 0.97) {
-        termStatus = "partial";
-      } else if (result.warning) {
-        termStatus = "partial";
-      }
-
-      await recordPapayaSyncHealth({
-        date,
-        terminal,
-        status: termStatus,
-        ordersExpected: result.expected,
-        ordersReceived: result.received,
-        errorMessage: result.error,
-        warnings: result.warning ? [result.warning] : undefined,
-      });
-    }
-  }
-
-  const healthRecords = await getPapayaSyncHealth([date]);
-  return { summary: combinedSummary, syncHealth: healthRecords[0] };
 }
 
 export function mergePapayaSummaries(a: PapayaDailySummary, b: PapayaDailySummary): PapayaDailySummary {
@@ -1911,7 +1583,7 @@ export function mergePapayaSummaries(a: PapayaDailySummary, b: PapayaDailySummar
 export async function getCombinedPapayaDailySummary(date: string): Promise<PapayaDailySummary | null> {
   const parkSummary = await getPapayaDailySummary(date, "reception");
   const cafeSummary = await getPapayaDailySummary(date, "restaurant");
-  console.log(`[Papaya] Combined ${date}: park=${parkSummary?.totalOrders || 0} orders ฿${parkSummary?.totalRevenue || 0}, cafe=${cafeSummary?.totalOrders || 0} orders ฿${cafeSummary?.totalRevenue || 0}${!PAPAYA_RECEPTION_TOKEN ? " (no reception token)" : ""}`);
+  console.log(`[Papaya] Combined ${date}: park=${parkSummary?.totalOrders || 0} orders ฿${parkSummary?.totalRevenue || 0}, cafe=${cafeSummary?.totalOrders || 0} orders ฿${cafeSummary?.totalRevenue || 0}`);
 
   if (parkSummary && cafeSummary && cafeSummary.totalOrders > 0) {
     return mergePapayaSummaries(parkSummary, cafeSummary);
@@ -2342,96 +2014,13 @@ export async function getPapayaOrdersByDiscount(
   return { orders };
 }
 
-export async function fetchPapayaOrdersByDiscount(
-  date: string,
-  discountName: string
-): Promise<any[]> {
-  const from = `${date}T00:00:00+07:00`;
-  const to = `${date}T23:59:59+07:00`;
-  const results: any[] = [];
-
-  for (const terminal of ["reception", "restaurant"] as const) {
-    const token = terminal === "reception" ? PAPAYA_RECEPTION_TOKEN : PAPAYA_RESTAURANT_TOKEN;
-    if (!token) continue;
-    const orders = await fetchPapayaOrders(token, from, to);
-    const completed = orders.filter((o) => o.status === "complete");
-    for (const order of completed) {
-      const discounts = order.appliedDiscounts || [];
-      const hasDiscount = discounts.some((d: any) => (d.name || "Unknown Discount") === discountName);
-      if (!hasDiscount) continue;
-
-      const revenue = order.total != null ? (order.total as number) : (order.billTotal || 0);
-
-      const items = (order.items || []).map((it: any) => ({
-        name: it.name || "Unknown",
-        quantity: it.quantity || 1,
-        price: it.itemTotal || 0,
-      }));
-
-      const payments = (order.payments || [])
-        .filter((p: any) => p.paid || p.status === "succeeded")
-        .map((p: any) => ({
-          method: normalizePapayaPaymentMethod(p),
-          amount: p.amount || 0,
-        }));
-
-      const orderTime = order.createdAt || order.completedAt || "";
-      const discountItems = discounts
-        .filter((d: any) => (d.name || "Unknown Discount") === discountName)
-        .map((d: any) => ({ name: d.name || "Unknown Discount", total: d.total || 0 }));
-
-      results.push({
-        orderId: order.id || order.orderId || "unknown",
-        orderNumber: order.orderNumber || order.receiptNumber || "",
-        time: orderTime,
-        channel: order.channelName || "Unknown",
-        terminal,
-        billTotal: order.billTotal || 0,
-        discountTotal: order.discountTotal || 0,
-        revenue,
-        items,
-        payments,
-        discountItems,
-      });
-    }
-  }
-
-  return results.sort((a, b) => (a.time || "").localeCompare(b.time || ""));
-}
-
+/** No Papaya credentials exist on the platform; the pipeline was not lifted. */
 export function isPapayaConfigured(): boolean {
-  return !!(PAPAYA_RECEPTION_TOKEN || PAPAYA_RESTAURANT_TOKEN);
+  return false;
 }
 
 export function getPapayaTerminals(): string[] {
-  const terminals: string[] = [];
-  if (PAPAYA_RECEPTION_TOKEN) terminals.push("reception");
-  if (PAPAYA_RESTAURANT_TOKEN) terminals.push("restaurant");
-  return terminals;
-}
-
-export async function setPapayaSyncMeta(mode: "quick" | "full"): Promise<void> {
-  await initPapayaCache();
-  let existing: any = {};
-  try {
-    const metaResult = await pool.query(
-      "SELECT summary_json FROM papaya_daily_cache WHERE date = '__meta__'"
-    );
-    if (metaResult.rows.length > 0) {
-      existing = metaResult.rows[0].summary_json || {};
-    }
-  } catch {}
-
-  const now = new Date().toISOString();
-  if (mode === "full") existing.lastFullSyncAt = now;
-  if (mode === "quick") existing.lastQuickSyncAt = now;
-
-  await pool.query(
-    `INSERT INTO papaya_daily_cache (date, terminal, synced_at, summary_json)
-     VALUES ('__meta__', 'meta', NOW(), $1)
-     ON CONFLICT (date) DO UPDATE SET synced_at = NOW(), summary_json = $1`,
-    [JSON.stringify(existing)]
-  );
+  return [];
 }
 
 export async function getPapayaSyncStatus(): Promise<{
@@ -2476,8 +2065,8 @@ export async function getPapayaSyncStatus(): Promise<{
     lastSyncedAt: row?.last_synced ? new Date(row.last_synced).toISOString() : null,
     lastFullSyncAt,
     lastQuickSyncAt,
-    receptionConnected: !!PAPAYA_RECEPTION_TOKEN,
-    restaurantConnected: !!PAPAYA_RESTAURANT_TOKEN,
+    receptionConnected: false,
+    restaurantConnected: false,
   };
 }
 
