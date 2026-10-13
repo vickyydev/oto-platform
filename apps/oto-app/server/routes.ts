@@ -1,4 +1,4 @@
-import { requireSchedulePark, scheduleParkPredicate } from "./schedule-scope";
+import { requireSchedulePark, ScheduleScopeError, scheduleParkPredicate } from "./schedule-scope";
 import { attendanceEvidenceUpload, attendanceConfirmationBody } from "./attendance-evidence-upload";
 import { persistAttendanceEvidence, canReadAttendanceEvidence, ATTENDANCE_EVIDENCE_FOLDER } from "./attendance-evidence";
 import { registerTimekeepingReviewRoutes } from "./timekeeping-review-routes";
@@ -27026,6 +27026,9 @@ ${context}`;
 
   // General error handler for non-Directory API routes
   app.use(async (err: Error, req: Request, res: Response, _next: NextFunction) => {
+    if (err instanceof ScheduleScopeError) {
+      return res.status(404).json({ message: err.message });
+    }
     console.error("Error:", err);
     Sentry.captureException(err);
     await Sentry.flush(2000);
