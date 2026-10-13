@@ -1,5 +1,7 @@
 # The OTO App lifted whole: the build plan for S2-17b (SCRUM-193)
 
+**13 October 2026, 14:46 Bangkok, story completion priority:** SCRUM-191 completion is the active work. The live Jira check confirms eleven child items Deployed with image evidence and all eleven linked lift items Deployed. SCRUM-523 is now In Progress for the remaining scheduling park-group boundary. Its route/storage implementation and independent review proceed in parallel; existing within-park behavior is retained. A final acceptance read also identified the department action evidence still to capture with exact fixture cleanup. No owner answer is pending. SCRUM-276 remains To Do and its completed read-only source assessment is retained; the remaining fix block follows this story. Current staging remains5b2f049f through app0015; no new source release is claimed. Local databases remain off.
+
 **13 October 2026, 14:20 Bangkok, lift release acceptance recorded:** Jira193 and516 are now Deployed with inspected job-recovery and cleanup proofs attached. All seven original feature items under194 are also Deployed. A live child-ticket check shows eleven SCRUM-191 children Deployed and only SCRUM-523 To Do. The umbrella191 remains In Progress for that scheduling follow-through; it is not marked fully complete.
 
 All six services still run green source5b2f049fba750403fe60284bf2b8b4855eb934b4, with app0015. The app deployed at04:33:44 Bangkok; later commits contain documentation and evidence only. No new deployment is implied. The full source gate remains API4033 passed,89 feature runtime controls,30 Console browser checks, workspace/API compiler zero and app446 diagnostics/59files/118buckets with the457 ceiling retained; genuine hosted restore/replay passed.
@@ -2223,3 +2225,16 @@ Release sequencing: R7a introduces app 0009 and the owning Data Admin writers wh
 | H26 | A dev or maintenance route runs on a deployment or across park groups | With `DEPLOY_ENV=staging`: `seed`, `prod-sync`, the dev import, `test-sentry` and `test-object-storage` are refused and write nothing. A park group's admin calling the four maintenance routes changes only its own park group's rows |
 | H27 | The old voucher ledger takes a write | Every write route in `server/voucher-routes.ts` answers with the Console notice and writes no row; the reads still answer |
 | H28 | A linked app user is deleted under the platform | `DELETE /api/users/:id` on a user with `platform_user_id` answers 409 in words, and the user and its `core.app_identity` row are unchanged |
+
+
+## 13. Scheduling park-group completion ? SCRUM-523
+
+13 October: finish this remaining story item before returning to the fix block. No new within-park permission rule is introduced. The existing grouped-row requirement, branch choices, scheduling calculations and template behavior remain the defaults.
+
+- Inventory every scheduling reader and writer, including rota/duty alternatives, bulk operations, templates, saved snapshots and break generation. Resolve every supplied parent and child inside the request park before mutation.
+- Read and derive data through the same park context; preserve legitimate same-park branch behavior. Refuse mixed foreign parents and replay without changes.
+- Independent house review: `apps/api/test/s217b-scheduling-review.test.ts`; passing controls and severity/prescribed-fix FINDINGs. The historical attendance Q39 check keeps the within-park default while its foreign read/write outcomes change only after verification.
+- Hosted full source gate, complete compiler comparison and touched lint; then main full-SHA gate, observed deployment, inspected own/foreign staging evidence and exact fixture cleanup.
+- Complete the previously local-only department action on staging with a recorded exact removal path. Reconcile every child and linked ticket before story release acceptance.
+
+Current state: implementation and independent review in progress; no scheduling release or staging correction is claimed.
