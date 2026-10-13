@@ -57,6 +57,7 @@ import {
 } from './store';
 import {
   BOX_AGENT_VERSION,
+  BOX_REGISTER_JOURNALS_MAX,
   BOX_COMMAND_KINDS,
   BOX_CLOCK_SKEW_ERROR,
   BOX_HEARTBEAT_STALE_ERROR,
@@ -1273,10 +1274,16 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
    * is — registering again does not restart a journal, and one that waits
    * for a new epoch goes on waiting.
    */
-  async function takeRegisteredEpoch(boxId: string, epoch: number): Promise<void> {
+  async function takeRegisteredEpoch(boxId: string, epoch: number, fresh: boolean): Promise<void> {
     if (!store) return;
     if (await stateRowHeld(boxId)) return;
-    const hold = options.journalHoldFor === boxId;
+    /**
+     * SCRUM-447: an epoch the platform minted for THIS registration has
+     * nothing sealed under it anywhere, which is exactly what the hold waits
+     * for — so a fresh one is taken even by a claim of the same box again.
+     * Anything else the hold still waits on.
+     */
+    const hold = options.journalHoldFor === boxId && !(fresh && Number.isInteger(epoch) && epoch > 0);
     const at = new Date(clock()).toISOString();
     const named = await store.atomically(async (tx) => {
       const persisted = await tx.init(boxId);
@@ -1293,7 +1300,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     });
     // A held row says so as it is attached, a moment from now.
     if (!hold) {
-      note('info', 'the store took its journal epoch from the registration', { boxId, epoch: named });
+      note('info', 'the store took its journal epoch from the registration', { boxId, epoch: named, fresh });
     }
   }
 
@@ -1936,6 +1943,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       return false;
     }
     const pair = generateSyncKeyPair();
+    const journalsKept = await keptJournals();
     const { status, body } = await request<BoxRegisterResponse>('/box/v1/register', {
       method: 'POST',
       auth: false,
@@ -1945,6 +1953,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
         hostname: options.hostname,
         syncPublicKey: pair.publicKeyPem,
         syncKeyAlgorithm: 'ed25519',
+        ...(journalsKept ? { journalsKept } : {}),
       },
     });
     if (status !== 200 || !body) {
@@ -1969,9 +1978,29 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     note('info', 'box registered', { boxId: body.boxId, slot: body.slot, epoch: body.epoch });
     // Before the store is attached, so a store made by this registration
     // seals under the epoch the platform just named, and never the default.
-    await takeRegisteredEpoch(body.boxId, body.epoch);
+    await takeRegisteredEpoch(body.boxId, body.epoch, body.journalFresh === true);
     await attachStore(body.boxId);
     return true;
+  }
+
+  /**
+   * SCRUM-447 — the journals this store keeps, for the registration to name.
+   * Null — the field left out, and the platform answering as it always has —
+   * when there is no store, or it cannot say, or it keeps more than the
+   * request may carry: an incomplete list could leave out the very box being
+   * registered and have the platform restart a journal this store still keeps.
+   */
+  async function keptJournals(): Promise<string[] | null> {
+    if (!store) return null;
+    try {
+      const ids = await store.journalBoxIds(BOX_REGISTER_JOURNALS_MAX + 1);
+      return ids.length > BOX_REGISTER_JOURNALS_MAX ? null : ids;
+    } catch (err) {
+      note('warn', 'the store could not say which journals it keeps; registering without naming them', {
+        error: err instanceof Error ? err.message : String(err),
+      });
+      return null;
+    }
   }
 
   /**

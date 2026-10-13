@@ -11,6 +11,7 @@ import {
   printTemplate,
   station,
   stationDevice,
+  syncCursor,
   type Db,
 } from '@oto/db';
 import { newId } from '@oto/shared';
@@ -498,13 +499,64 @@ export async function registerBox(
       .where(and(eq(box.id, candidate.id), eq(box.claimCodeHash, claimHash)))
       .returning();
 
-    const row = updated[0];
+    let row = updated[0];
     if (!row) {
       throw new AppError(
         409,
         'BOX_CLAIM_CONSUMED',
         'That claim code was used a moment ago — ask for a new one',
       );
+    }
+
+    /**
+     * SCRUM-447 — A BOX REGISTERED AGAIN ONTO A STORE THAT KEEPS NO JOURNAL
+     * FOR IT gets a fresh journal epoch.
+     *
+     * Its current epoch is the one an earlier store sealed under, and a new
+     * store starting there seals at addresses this platform already holds
+     * (refused, or filed as replays). So when the box has registered before
+     * and its store says it keeps no journal for it (`journalsKept`), the
+     * epoch moves on here, in the registration's own transaction, and the old
+     * epoch's cursor is closed exactly as a store reset closes it — whatever
+     * the set-aside store still held comes back as `epoch_regressed`, set
+     * aside for a person, never applied on the new journal.
+     *
+     * Only on the box's word: an agent that does not send `journalsKept`, or
+     * a store that names this box (the virtual box on every redeploy, a Pi
+     * whose credential file was lost but whose store was not), keeps its
+     * epoch and its journal as before.
+     */
+    let journalFresh = false;
+    if (input.journalsKept && !input.journalsKept.includes(row.id)) {
+      const usedBefore =
+        candidate.registeredAt !== null ||
+        (
+          await tx
+            .select({ id: syncCursor.id })
+            .from(syncCursor)
+            .where(and(eq(syncCursor.boxId, row.id), eq(syncCursor.journalEpoch, row.currentEpoch)))
+            .limit(1)
+        ).length > 0;
+      if (usedBefore) {
+        const previousEpoch = row.currentEpoch;
+        const [minted] = await tx
+          .update(box)
+          .set({ currentEpoch: sql`${box.currentEpoch} + 1` })
+          .where(and(eq(box.id, row.id), eq(box.currentEpoch, previousEpoch)))
+          .returning();
+        // The epoch moved under this registration (a reset completing in the
+        // same instant): the box is not told an epoch is fresh that may not be.
+        if (!minted) {
+          throw new AppError(
+            409,
+            'BOX_EPOCH_MOVED',
+            'This box’s journal changed while it registered — ask for a new claim code',
+          );
+        }
+        await closeCursorEpoch(tx, row.id, previousEpoch);
+        row = minted;
+        journalFresh = true;
+      }
     }
 
     /**
@@ -533,13 +585,18 @@ export async function registerBox(
       action: 'box.register',
       entityType: 'box',
       entityId: row.id,
-      before: { status: candidate.status, registeredAt: candidate.registeredAt?.toISOString() ?? null },
+      before: {
+        status: candidate.status,
+        registeredAt: candidate.registeredAt?.toISOString() ?? null,
+        epoch: candidate.currentEpoch,
+      },
       after: {
         slot: row.slot,
         role: row.role,
         hostname: row.hostname,
         agentVersion: row.agentVersion,
         epoch: row.currentEpoch,
+        journalFresh,
         // The fingerprint, never the key itself: the public half is public and
         // is still noise in an audit row, and the fingerprint is what a person
         // compares against what the box says it holds.
@@ -558,6 +615,7 @@ export async function registerBox(
       branchId: row.branchId,
       operatorId: row.operatorId,
       epoch: row.currentEpoch,
+      ...(journalFresh ? { journalFresh: true } : {}),
       heartbeatIntervalS: settings.heartbeatIntervalS,
       minSupportedAgentVersion: settings.minAgentVersion,
     };

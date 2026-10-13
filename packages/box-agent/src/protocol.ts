@@ -41,6 +41,9 @@ export function boxCredential(boxId: string, secret: string): string {
 
 // --- Registration -----------------------------------------------------------
 
+/** The most journals a registration may say its store keeps (SCRUM-447). */
+export const BOX_REGISTER_JOURNALS_MAX = 1000;
+
 export const BoxRegisterRequestSchema = z.object({
   /** Single-use, short-lived, issued by an administrator on the Console. */
   claimCode: z.string().min(6).max(64),
@@ -58,6 +61,15 @@ export const BoxRegisterRequestSchema = z.object({
    */
   syncPublicKey: z.string().max(1024).optional(),
   syncKeyAlgorithm: z.enum(['ed25519']).optional(),
+  /**
+   * SCRUM-447 — the box ids whose journal this box's store already keeps
+   * (its `box_state` rows), read before registering. A box that registered
+   * before and is NOT among them is coming onto a store that keeps no journal
+   * for it, so the platform mints it a fresh journal epoch rather than naming
+   * the one an earlier store sealed under. Optional: an agent that does not
+   * send it is answered as before, with the box's current epoch.
+   */
+  journalsKept: z.array(z.string().uuid()).max(BOX_REGISTER_JOURNALS_MAX).optional(),
 });
 export type BoxRegisterRequest = z.infer<typeof BoxRegisterRequestSchema>;
 
@@ -76,6 +88,14 @@ export interface BoxRegisterResponse {
   operatorId: string;
   /** The journal epoch this box stamps its events with (S2-05). */
   epoch: number;
+  /**
+   * SCRUM-447 — true when THIS registration minted `epoch`: the box had
+   * registered before and its store keeps no journal for it, so nothing has
+   * been sealed under `epoch` anywhere. A store with no journal for the box
+   * may then start on it even where it would otherwise wait for a reset.
+   * Absent or false: `epoch` is the box's current one, as before.
+   */
+  journalFresh?: boolean;
   heartbeatIntervalS: number;
   minSupportedAgentVersion: string;
 }

@@ -479,6 +479,12 @@ export interface BoxStore extends PrintJobStore {
   atomically<T>(fn: (tx: BoxStore) => Promise<T>): Promise<T>;
 
   readState(boxId: string): Promise<BoxStateRecord>;
+  /**
+   * SCRUM-447 — the box ids this store keeps a journal for (its `box_state`
+   * rows), at most `limit` of them. What a registration tells the platform,
+   * so a box coming onto a store with no journal for it is given a fresh one.
+   */
+  journalBoxIds(limit: number): Promise<string[]>;
   setOffline(
     boxId: string,
     offline: boolean,

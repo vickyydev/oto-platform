@@ -113,6 +113,14 @@ interface FakeCloud {
   /** Commands the next poll hands out. */
   queued: Array<{ id: string; kind: string }>;
   results: Array<{ id: string; body: unknown }>;
+  /**
+   * SCRUM-447 — answer as the platform does: a box that registered before,
+   * onto a store whose `journalsKept` does not name it, gets the next epoch
+   * and `journalFresh`. Off by default, so the cases above stay as they were.
+   */
+  mintOnReregister: boolean;
+  registered: Set<string>;
+  registerBodies: Array<Record<string, unknown>>;
 }
 
 /** A cloud with one booth on the box, a wheel with one prize, and no push. */
@@ -125,6 +133,9 @@ function fakeCloud(): FakeCloud {
     refuseHeartbeats: false,
     queued: [],
     results: [],
+    mintOnReregister: false,
+    registered: new Set(),
+    registerBodies: [],
     fetch: async (url, init) => {
       const path = new URL(url).pathname;
       const body = init.body ? (JSON.parse(init.body) as Record<string, unknown>) : undefined;
@@ -177,7 +188,19 @@ function fakeCloud(): FakeCloud {
           if ((body as { claimCode?: string } | undefined)?.claimCode !== CODE) {
             return reply(401, { error: { code: 'BOX_CLAIM_INVALID' } });
           }
-          cloud.epoch = cloud.registerEpoch;
+          cloud.registerBodies.push(body ?? {});
+          const kept = (body as { journalsKept?: unknown } | undefined)?.journalsKept;
+          const fresh =
+            cloud.mintOnReregister &&
+            Array.isArray(kept) &&
+            !kept.includes(cloud.registersAs) &&
+            cloud.registered.has(cloud.registersAs);
+          if (fresh) {
+            cloud.epoch += 1;
+          } else if (!cloud.mintOnReregister) {
+            cloud.epoch = cloud.registerEpoch;
+          }
+          cloud.registered.add(cloud.registersAs);
           return reply(200, {
             boxId: cloud.registersAs,
             secret: 'fake-secret-for-tests-only',
@@ -186,7 +209,8 @@ function fakeCloud(): FakeCloud {
             role: 'booth',
             branchId: BRANCH_ID,
             operatorId: OPERATOR_ID,
-            epoch: cloud.registerEpoch,
+            epoch: cloud.mintOnReregister ? cloud.epoch : cloud.registerEpoch,
+            ...(fresh ? { journalFresh: true } : {}),
             heartbeatIntervalS: 60,
             minSupportedAgentVersion: '0.1.0',
           });
@@ -1179,6 +1203,79 @@ test('a claim that registers the same box again onto a new store waits for a new
   } finally {
     await fresh.stop();
   }
+});
+
+test('SCRUM-447: a box claimed again with its credential AND store gone starts on the fresh epoch the platform mints, not the old one', async () => {
+  const cloud = fakeCloud();
+  cloud.mintOnReregister = true;
+  const home = await ranOnce(cloud);
+  const paths = runnerPaths(home);
+  const first = await run(home, cloud);
+  try {
+    assert.equal((await hit(first.port, 'POST', '/booth/spin', { idempotencyKey: 'old-447' })).status, 200);
+  } finally {
+    await first.stop();
+  }
+  assert.deepEqual(cloud.registerBodies[0]?.journalsKept, [], 'a new store keeps no journal');
+
+  // The card lost both files: no credential to set aside, so no hold.
+  for (const file of [paths.credential, paths.database, `${paths.database}-wal`, `${paths.database}-shm`]) {
+    if (existsSync(file)) renameSync(file, `${file}.lost`);
+  }
+  await claimBox({ home, apiBaseUrl: 'http://cloud.test', code: CODE, fetch: cloud.fetch, log: quiet });
+  assert.deepEqual(cloud.registerBodies[1]?.journalsKept, []);
+  assert.equal(cloud.epoch, 2, 'the platform minted a new journal epoch for it');
+
+  const box = await run(home, cloud);
+  try {
+    assert.equal(box.agent.state.journalAwaitingEpoch, false);
+    assert.equal((await hit(box.port, 'POST', '/booth/spin', { idempotencyKey: 'new-447' })).status, 200);
+  } finally {
+    await box.stop();
+  }
+  // Sealed at (2, 1…), never at the addresses the lost store used under epoch 1.
+  assertJournal(paths.database, 2);
+});
+
+test('SCRUM-447: a same-box claim with a minted epoch starts on it; a store that keeps the journal is named and keeps its epoch', async () => {
+  const cloud = fakeCloud();
+  cloud.mintOnReregister = true;
+  const home = await ranOnce(cloud);
+  const paths = runnerPaths(home);
+
+  // The same box again with --force: the old credential and store set aside.
+  await claimBox({ home, apiBaseUrl: 'http://cloud.test', code: CODE, fetch: cloud.fetch, log: quiet, force: true });
+  assert.equal(cloud.epoch, 2);
+  const same = await run(home, cloud);
+  try {
+    assert.equal(same.agent.state.journalAwaitingEpoch, false, 'the minted epoch is what the hold waited for');
+    assert.equal((await hit(same.port, 'POST', '/booth/spin', { idempotencyKey: 'same-447' })).status, 200);
+  } finally {
+    await same.stop();
+  }
+  assertJournal(paths.database, 2);
+
+  // Only the credential lost: the store keeps this box's journal, says so, and keeps it.
+  renameSync(paths.credential, `${paths.credential}.lost`);
+  await claimBox({ home, apiBaseUrl: 'http://cloud.test', code: CODE, fetch: cloud.fetch, log: quiet });
+  assert.deepEqual(cloud.registerBodies[cloud.registerBodies.length - 1]?.journalsKept, [BOX]);
+  assert.equal(cloud.epoch, 2, 'nothing minted for a store that keeps the journal');
+  const kept = await run(home, cloud);
+  try {
+    assert.equal(kept.agent.state.journalAwaitingEpoch, false);
+    assert.equal((await hit(kept.port, 'POST', '/booth/spin', { idempotencyKey: 'kept-447' })).status, 200);
+  } finally {
+    await kept.stop();
+  }
+  const facts = readRows<{ journal_epoch: number; box_seq: number }>(
+    paths.database,
+    'select journal_epoch, box_seq from box_outbox order by box_seq',
+  );
+  assert.deepEqual(
+    facts.map((f) => [f.journal_epoch, f.box_seq]),
+    facts.map((_, i) => [2, i + 1]),
+    'one journal, its sequence carried on',
+  );
 });
 
 test('a same-box claim whose new store the running box made in the moment after the set-aside still waits for a new epoch', async () => {

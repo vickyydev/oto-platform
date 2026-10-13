@@ -407,6 +407,14 @@ export class SqlBoxStore implements BoxStore {
     return decodeState(row);
   }
 
+  async journalBoxIds(limit: number): Promise<string[]> {
+    const rows = await this.driver.query(
+      `select box_id from ${this.table('box_state')} order by box_id limit ?`,
+      [Math.max(0, Math.floor(limit))],
+    );
+    return rows.map((row) => String(row.box_id));
+  }
+
   async setOffline(
     boxId: string,
     offline: boolean,

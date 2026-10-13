@@ -179,6 +179,44 @@ describe('box registration (S2-04)', () => {
     expect(res.json().error.code).toBe('BOX_DISABLED');
     await ctx.db.update(box).set({ status: 'offline' }).where(eq(box.id, row.id));
   });
+
+  it('SCRUM-447: mints a fresh journal epoch for a box registered again onto a store that keeps no journal for it, and only then', async () => {
+    const row = await boxBySlot(ctx.db, 'virtual-2');
+    expect(row.registeredAt, 'a box that never registered').toBeNull();
+    const start = row.currentEpoch;
+    const register = async (extra: Record<string, unknown>) => {
+      const { code: claimCode } = await issueClaimCode(ctx.db, row.id);
+      const res = await ctx.app.inject({
+        method: 'POST',
+        url: '/box/v1/register',
+        payload: { claimCode, agentVersion: '0.1.0', ...extra },
+      });
+      expect(res.statusCode, res.body).toBe(200);
+      return res.json() as { epoch: number; journalFresh?: boolean };
+    };
+
+    // A new box's journal is clean: its first registration keeps the epoch.
+    expect(await register({ journalsKept: [] })).toMatchObject({ epoch: start });
+    // A store that keeps this box's journal, and an agent that says nothing: as before.
+    const kept = await register({ journalsKept: [newId(), row.id] });
+    expect(kept.epoch).toBe(start);
+    expect(kept.journalFresh).toBeUndefined();
+    expect((await register({})).epoch).toBe(start);
+
+    // Registered before, onto a store with no journal for it: the next epoch, said to be fresh.
+    const fresh = await register({ journalsKept: [newId()] });
+    expect(fresh).toMatchObject({ epoch: start + 1, journalFresh: true });
+    const [after] = await ctx.db.select().from(box).where(eq(box.id, row.id)).limit(1);
+    expect(after!.currentEpoch).toBe(start + 1);
+    const [recorded] = await ctx.db
+      .select()
+      .from(auditLog)
+      .where(and(eq(auditLog.action, 'box.register'), eq(auditLog.entityId, row.id)))
+      .orderBy(desc(auditLog.createdAt))
+      .limit(1);
+    expect(recorded!.before).toMatchObject({ epoch: start });
+    expect(recorded!.after).toMatchObject({ epoch: start + 1, journalFresh: true });
+  });
 });
 
 describe('box heartbeat (S2-04)', () => {
