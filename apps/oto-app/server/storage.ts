@@ -1,3 +1,4 @@
+import { assertScheduleSnapshotScope, assertScheduleWriteScope, ScheduleScopeError, scheduleParkPredicate } from "./schedule-scope";
 import {
         users,
         type User,
@@ -1193,81 +1194,81 @@ export interface IStorage {
         // Week plans
         getWeekPlan(
                 branchId: string,
-                weekStartDate: string,
+                weekStartDate: string, requestedTenantId?: string,
         ): Promise<ScheduleWeekPlanWithDetails | undefined>;
-        getWeekPlanById(id: string): Promise<ScheduleWeekPlan | undefined>;
+        getWeekPlanById(id: string, requestedTenantId?: string): Promise<ScheduleWeekPlan | undefined>;
         getOrCreateWeekPlan(
                 branchId: string,
                 weekStartDate: string,
-                userId?: string,
+                userId?: string, requestedTenantId?: string,
         ): Promise<ScheduleWeekPlan>;
-        deleteWeekPlan(id: string): Promise<void>;
+        deleteWeekPlan(id: string, requestedTenantId?: string): Promise<void>;
         deleteTimeOffByBranchAndDateRange(
                 branchId: string,
                 startDate: Date,
                 endDate: Date,
-                type?: string,
+                type?: string, requestedTenantId?: string,
         ): Promise<void>;
 
         // Shift rows
-        getShiftRow(id: string): Promise<ScheduleShiftRowWithDetails | undefined>;
-        getShiftRowsByDepartment(departmentId: string): Promise<ScheduleShiftRow[]>;
+        getShiftRow(id: string, requestedTenantId?: string): Promise<ScheduleShiftRowWithDetails | undefined>;
+        getShiftRowsByDepartment(departmentId: string, requestedTenantId?: string): Promise<ScheduleShiftRow[]>;
         createShiftRow(
                 shiftRow: InsertScheduleShiftRow,
-                roleIds?: string[],
+                roleIds?: string[], requestedTenantId?: string,
         ): Promise<ScheduleShiftRow>;
         updateShiftRow(
                 id: string,
                 shiftRow: Partial<InsertScheduleShiftRow>,
-                roleIds?: string[],
+                roleIds?: string[], requestedTenantId?: string,
         ): Promise<ScheduleShiftRow>;
-        deleteShiftRow(id: string): Promise<void>;
+        deleteShiftRow(id: string, requestedTenantId?: string): Promise<void>;
 
         // Shift Groups
-        getShiftGroupsByBranch(branchId: string): Promise<ShiftGroup[]>;
-        getShiftGroup(id: string): Promise<ShiftGroup | undefined>;
-        createShiftGroup(group: InsertShiftGroup): Promise<ShiftGroup>;
+        getShiftGroupsByBranch(branchId: string, requestedTenantId?: string): Promise<ShiftGroup[]>;
+        getShiftGroup(id: string, requestedTenantId?: string): Promise<ShiftGroup | undefined>;
+        createShiftGroup(group: InsertShiftGroup, requestedTenantId?: string): Promise<ShiftGroup>;
         updateShiftGroup(
                 id: string,
-                updates: Partial<InsertShiftGroup>,
+                updates: Partial<InsertShiftGroup>, requestedTenantId?: string,
         ): Promise<ShiftGroup>;
-        deleteShiftGroup(id: string): Promise<void>;
-        getShiftRowsByGroup(shiftGroupId: string): Promise<ScheduleShiftRow[]>;
+        deleteShiftGroup(id: string, requestedTenantId?: string): Promise<void>;
+        getShiftRowsByGroup(shiftGroupId: string, requestedTenantId?: string): Promise<ScheduleShiftRow[]>;
 
         // Assignments
-        getAssignment(id: string): Promise<ScheduleAssignment | undefined>;
+        getAssignment(id: string, requestedTenantId?: string): Promise<ScheduleAssignment | undefined>;
         getAssignmentsForDate(
                 branchId: string,
-                date: string,
+                date: string, requestedTenantId?: string,
         ): Promise<ScheduleAssignment[]>;
         createAssignment(
-                assignment: InsertScheduleAssignment,
+                assignment: InsertScheduleAssignment, requestedTenantId?: string,
         ): Promise<ScheduleAssignment>;
         updateAssignment(
                 id: string,
-                updates: Partial<InsertScheduleAssignment>,
+                updates: Partial<InsertScheduleAssignment>, requestedTenantId?: string,
         ): Promise<ScheduleAssignment>;
-        deleteAssignment(id: string): Promise<void>;
+        deleteAssignment(id: string, requestedTenantId?: string): Promise<void>;
         deleteAssignmentsByShiftRowAndDate(
                 shiftRowId: string,
                 date: string,
-                employeeId?: string,
+                employeeId?: string, requestedTenantId?: string,
         ): Promise<void>;
         deleteAssignmentsByEmployeeAndDateRange(
                 employeeId: string,
                 startDate: string,
-                endDate: string,
+                endDate: string, executor?: DbExecutor, requestedTenantId?: string,
         ): Promise<ScheduleAssignment[]>;
 
         // Eligibility for week scheduling
         getEligibleEmployeesForShiftRow(
                 shiftRowId: string,
-                date: string,
+                date: string, requestedTenantId?: string,
         ): Promise<Employee[]>;
         getBorrowCandidates(
                 shiftRowId: string,
                 date: string,
-                destinationBranchId: string,
+                destinationBranchId: string, requestedTenantId?: string,
         ): Promise<{
                 candidates: {
                         employeeId: string;
@@ -1283,12 +1284,12 @@ export interface IStorage {
         }>;
         getEmployeeAssignmentsOnDate(
                 employeeId: string,
-                date: string,
+                date: string, requestedTenantId?: string,
         ): Promise<ScheduleAssignment[]>;
         getBorrowedOutAssignments(
                 branchId: string,
                 startDate: string,
-                endDate: string,
+                endDate: string, requestedTenantId?: string,
         ): Promise<
                 {
                         id: string;
@@ -1306,18 +1307,18 @@ export interface IStorage {
         hasEmployeeShiftOnDate(
                 employeeId: string,
                 date: string,
-                excludeAssignmentId?: string,
+                excludeAssignmentId?: string, requestedTenantId?: string,
         ): Promise<boolean>;
         hasEmployeeTimeOffOnDate(
                 employeeId: string,
                 date: string,
-                excludeTimeOffId?: string,
+                excludeTimeOffId?: string, requestedTenantId?: string,
         ): Promise<boolean>;
         canAssignEmployeeToShift(
                 employeeId: string,
                 shiftRowId: string,
                 date: string,
-                options?: { isBorrowed?: boolean },
+                options?: { isBorrowed?: boolean }, requestedTenantId?: string,
         ): Promise<{
                 ok: boolean;
                 reasonCode?: string;
@@ -1331,7 +1332,7 @@ export interface IStorage {
         canAssignCasualWorkerToShift(
                 casualWorkerId: string,
                 shiftRowId: string,
-                date: string,
+                date: string, requestedTenantId?: string,
         ): Promise<{
                 ok: boolean;
                 reasonCode?: string;
@@ -1345,62 +1346,62 @@ export interface IStorage {
 
         // Duty Types & Duty Blocks
         getDutyTypes(tenantId: string): Promise<DutyType[]>;
-        getDutyType(id: string): Promise<DutyType | undefined>;
-        createDutyType(dutyType: InsertDutyType): Promise<DutyType>;
+        getDutyType(id: string, requestedTenantId?: string): Promise<DutyType | undefined>;
+        createDutyType(dutyType: InsertDutyType, requestedTenantId?: string): Promise<DutyType>;
         updateDutyType(
                 id: string,
-                updates: Partial<InsertDutyType>,
+                updates: Partial<InsertDutyType>, requestedTenantId?: string,
         ): Promise<DutyType>;
-        deleteDutyType(id: string): Promise<void>;
+        deleteDutyType(id: string, requestedTenantId?: string): Promise<void>;
         getDutyBlocks(options: {
                 branchId: string;
                 date: string;
                 employeeId?: string;
-        }): Promise<DutyBlock[]>;
+        }, requestedTenantId?: string): Promise<DutyBlock[]>;
         getDutyBlocksByDateRange(options: {
                 branchId: string;
                 startDate: string;
                 endDate: string;
-        }): Promise<DutyBlock[]>;
-        getDutyBlock(id: string): Promise<DutyBlock | undefined>;
-        createDutyBlock(dutyBlock: InsertDutyBlock): Promise<DutyBlock>;
+        }, requestedTenantId?: string): Promise<DutyBlock[]>;
+        getDutyBlock(id: string, requestedTenantId?: string): Promise<DutyBlock | undefined>;
+        createDutyBlock(dutyBlock: InsertDutyBlock, requestedTenantId?: string): Promise<DutyBlock>;
         updateDutyBlock(
                 id: string,
-                updates: Partial<InsertDutyBlock>,
+                updates: Partial<InsertDutyBlock>, requestedTenantId?: string,
         ): Promise<DutyBlock>;
-        deleteDutyBlock(id: string): Promise<void>;
+        deleteDutyBlock(id: string, requestedTenantId?: string): Promise<void>;
 
         // Templates (structural-only: shift rows + requirements + break config)
         getScheduleTemplates(
                 branchId: string,
                 departmentId?: string,
-                shiftGroupId?: string,
+                shiftGroupId?: string, requestedTenantId?: string,
         ): Promise<any[]>;
         getScheduleTemplate(
-                id: string,
+                id: string, requestedTenantId?: string,
         ): Promise<ScheduleTemplateWithDetails | undefined>;
         createScheduleTemplate(
-                template: InsertScheduleTemplate,
+                template: InsertScheduleTemplate, requestedTenantId?: string,
         ): Promise<ScheduleTemplate>;
         saveWeekAsTemplate(
                 weekPlanId: string,
                 name: string,
                 userId?: string,
                 departmentId?: string,
-                shiftGroupId?: string,
+                shiftGroupId?: string, branchId?: string, weekStartDate?: string, requestedTenantId?: string,
         ): Promise<ScheduleTemplate>;
         applyTemplate(
                 templateId: string,
                 weekPlanId: string,
-                userId?: string,
+                userId?: string, requestedTenantId?: string,
         ): Promise<void>;
-        deleteScheduleTemplate(id: string): Promise<void>;
+        deleteScheduleTemplate(id: string, requestedTenantId?: string): Promise<void>;
 
         // Additive template apply - adds missing shift rows only
         previewTemplateApply(
                 templateId: string,
                 branchId: string,
-                weekStartDate: string,
+                weekStartDate: string, requestedTenantId?: string,
         ): Promise<{
                 templateRows: number;
                 rowsToAdd: Array<{
@@ -1424,7 +1425,7 @@ export interface IStorage {
                 templateId: string,
                 branchId: string,
                 weekStartDate: string,
-                userId: string,
+                userId: string, requestedTenantId?: string,
         ): Promise<{
                 rowsAdded: number;
                 rowsSkipped: number;
@@ -2073,6 +2074,42 @@ function documentOwnedBy(tenantColumn: AnyPgColumn, tenantId: string, branchColu
                 ? sql`coalesce((select hob.tenant_id from branches hob where hob.id = ${branchColumn}), ${DEFAULT_PARK_GROUP_SQL})`
                 : DEFAULT_PARK_GROUP_SQL;
         return sql`(${tenantColumn} = ${tenantId}::uuid or (${tenantColumn} is null and ${handOver} = ${tenantId}::uuid))`;
+}
+
+// Parent removal must not cascade into a historical child outside the caller's park.
+const scheduleDeleteChildren: Record<string, Array<[string, string]>> = {
+        schedule_week_plans: [["schedule_shift_rows", "week_plan_id"], ["schedule_assignments", "week_plan_id"], ["schedule_templates", "source_week_plan_id"]],
+        schedule_shift_rows: [["schedule_shift_row_roles", "shift_row_id"], ["schedule_assignments", "shift_row_id"], ["schedule_shift_breaks", "shift_row_id"]],
+        schedule_assignments: [["schedule_shift_breaks", "assignment_id"], ["duty_blocks", "assignment_id"]],
+        schedule_templates: [["schedule_template_rows", "template_id"], ["schedule_template_time_off", "template_id"]],
+        schedule_template_rows: [["schedule_template_row_roles", "template_row_id"], ["schedule_template_assignments", "template_row_id"]],
+        schedule_template_assignments: [["schedule_template_duty_blocks", "template_assignment_id"]],
+};
+
+export async function assertScheduleDeleteScope(
+        tableName: string, ids: readonly string[], tenantId?: string, executor: DbExecutor = db,
+): Promise<void> {
+        if (tenantId === undefined || ids.length === 0) return;
+        if (!tenantId) throw new ScheduleScopeError();
+        for (const [child, foreignKey] of scheduleDeleteChildren[tableName] || []) {
+                const table = sql.raw('"otoapp"."' + child + '"');
+                const column = sql.raw('"' + child + '"."' + foreignKey + '"');
+                const values = sql.join(ids.map((id) => sql`${id}`), sql`, `);
+                const scope = scheduleParkPredicate(child, tenantId);
+                const invalid = await executor.execute(sql`SELECT 1 FROM ${table}
+                        WHERE ${column} IN (${values}) AND (${scope}) IS NOT TRUE LIMIT 1`);
+                if (invalid.rows.length) throw new ScheduleScopeError();
+                if (scheduleDeleteChildren[child]) {
+                        const children = await executor.execute(sql`SELECT id FROM ${table} WHERE ${column} IN (${values})`);
+                        await assertScheduleDeleteScope(child, children.rows.map((row) => String(row.id)), tenantId, executor);
+                }
+        }
+}
+
+function scheduleOwnedValues<T>(value: T, tenantId?: string): T {
+        if (tenantId === undefined) return value;
+        if (Array.isArray(value)) return value.map((row) => ({ ...row, tenantId })) as T;
+        return { ...value, tenantId };
 }
 
 export class DatabaseStorage implements IStorage {
@@ -7360,23 +7397,23 @@ export class DatabaseStorage implements IStorage {
 
         async getWeekPlan(
                 branchId: string,
-                weekStartDate: string,
+                weekStartDate: string, requestedTenantId?: string,
         ): Promise<ScheduleWeekPlanWithDetails | undefined> {
                 // Query for week plan - may not exist yet (created on-demand when user creates assignments)
                 const [weekPlan] = await db
                         .select()
                         .from(scheduleWeekPlans)
                         .where(
-                                and(
+                                and(and(
                                         eq(scheduleWeekPlans.branchId, branchId),
                                         eq(scheduleWeekPlans.weekStartDate, weekStartDate),
-                                ),
+                                ), scheduleParkPredicate("schedule_week_plans", requestedTenantId)),
                         );
 
                 const [branch] = await db
                         .select()
                         .from(branches)
-                        .where(eq(branches.id, branchId));
+                        .where(and(eq(branches.id, branchId), scheduleParkPredicate("branches", requestedTenantId)));
 
                 // Query shift rows by branch + date range overlap instead of weekPlanId
                 // A shift row is active for a week if: activeFromDate <= weekEnd AND (activeUntilDate IS NULL OR activeUntilDate >= weekStart)
@@ -7388,7 +7425,7 @@ export class DatabaseStorage implements IStorage {
                         .select()
                         .from(scheduleShiftRows)
                         .where(
-                                and(
+                                and(and(
                                         eq(scheduleShiftRows.branchId, branchId),
                                         or(
                                                 isNull(scheduleShiftRows.activeFromDate),
@@ -7398,7 +7435,7 @@ export class DatabaseStorage implements IStorage {
                                                 isNull(scheduleShiftRows.activeUntilDate),
                                                 sql`${scheduleShiftRows.activeUntilDate} >= ${weekStartDate}::date`,
                                         ),
-                                ),
+                                ), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)),
                         )
                         .orderBy(scheduleShiftRows.rowOrder);
 
@@ -7407,7 +7444,7 @@ export class DatabaseStorage implements IStorage {
                                 const [dept] = await db
                                         .select()
                                         .from(departments)
-                                        .where(eq(departments.id, row.departmentId));
+                                        .where(and(eq(departments.id, row.departmentId), scheduleParkPredicate("departments", requestedTenantId)));
 
                                 const rolesData = await db
                                         .select({
@@ -7417,8 +7454,8 @@ export class DatabaseStorage implements IStorage {
                                                 role: roles,
                                         })
                                         .from(scheduleShiftRowRoles)
-                                        .leftJoin(roles, eq(scheduleShiftRowRoles.roleId, roles.id))
-                                        .where(eq(scheduleShiftRowRoles.shiftRowId, row.id));
+                                        .leftJoin(roles, and(eq(scheduleShiftRowRoles.roleId, roles.id), scheduleParkPredicate("roles", requestedTenantId)))
+                                        .where(and(eq(scheduleShiftRowRoles.shiftRowId, row.id), scheduleParkPredicate("schedule_shift_row_roles", requestedTenantId)));
 
                                 // Only fetch assignments if a week plan exists for this week
                                 const assignmentsData = weekPlan
@@ -7446,33 +7483,33 @@ export class DatabaseStorage implements IStorage {
                                                         .from(scheduleAssignments)
                                                         .leftJoin(
                                                                 employees,
-                                                                eq(
+                                                                and(eq(
                                                                         scheduleAssignments.employeeId,
                                                                         employees.id,
-                                                                ),
+                                                                ), scheduleParkPredicate("employees", requestedTenantId)),
                                                         )
                                                         .leftJoin(
                                                                 casualWorkers,
-                                                                eq(
+                                                                and(eq(
                                                                         scheduleAssignments.casualWorkerId,
                                                                         casualWorkers.id,
-                                                                ),
+                                                                ), scheduleParkPredicate("casual_workers", requestedTenantId)),
                                                         )
                                                         .where(
-                                                                and(
+                                                                and(and(
                                                                         eq(scheduleAssignments.shiftRowId, row.id),
                                                                         eq(
                                                                                 scheduleAssignments.weekPlanId,
                                                                                 weekPlan.id,
                                                                         ),
-                                                                ),
+                                                                ), scheduleParkPredicate("schedule_assignments", requestedTenantId)),
                                                         )
                                         : [];
 
                                 const breaksData = await db
                                         .select()
                                         .from(scheduleShiftBreaks)
-                                        .where(eq(scheduleShiftBreaks.shiftRowId, row.id));
+                                        .where(and(eq(scheduleShiftBreaks.shiftRowId, row.id), scheduleParkPredicate("schedule_shift_breaks", requestedTenantId)));
 
                                 return {
                                         ...row,
@@ -7509,10 +7546,10 @@ export class DatabaseStorage implements IStorage {
                         .select()
                         .from(shiftGroups)
                         .where(
-                                and(
+                                and(and(
                                         eq(shiftGroups.branchId, branchId),
                                         eq(shiftGroups.isActive, true),
-                                ),
+                                ), scheduleParkPredicate("shift_groups", requestedTenantId)),
                         )
                         .orderBy(shiftGroups.sortOrder);
 
@@ -7531,16 +7568,16 @@ export class DatabaseStorage implements IStorage {
         async getOrCreateWeekPlan(
                 branchId: string,
                 weekStartDate: string,
-                userId?: string,
+                userId?: string, requestedTenantId?: string,
         ): Promise<ScheduleWeekPlan> {
                 const [existing] = await db
                         .select()
                         .from(scheduleWeekPlans)
                         .where(
-                                and(
+                                and(and(
                                         eq(scheduleWeekPlans.branchId, branchId),
                                         eq(scheduleWeekPlans.weekStartDate, weekStartDate),
-                                ),
+                                ), scheduleParkPredicate("schedule_week_plans", requestedTenantId)),
                         );
 
                 if (existing) return existing;
@@ -7549,27 +7586,27 @@ export class DatabaseStorage implements IStorage {
                 const [branch] = await db
                         .select()
                         .from(branches)
-                        .where(eq(branches.id, branchId));
+                        .where(and(eq(branches.id, branchId), scheduleParkPredicate("branches", requestedTenantId)));
                 if (!branch) throw new Error("Branch not found");
 
                 const [newPlan] = await db
                         .insert(scheduleWeekPlans)
-                        .values({
+                        .values(scheduleOwnedValues({
                                 tenantId: branch.tenantId,
                                 branchId,
                                 weekStartDate,
                                 createdBy: userId,
-                        })
+                        }, requestedTenantId))
                         .returning();
 
                 return newPlan;
         }
 
-        async snapshotWeekPlan(weekPlanId: string): Promise<any> {
+        async snapshotWeekPlan(weekPlanId: string, requestedTenantId?: string): Promise<any> {
                 const [weekPlan] = await db
                         .select()
                         .from(scheduleWeekPlans)
-                        .where(eq(scheduleWeekPlans.id, weekPlanId));
+                        .where(and(eq(scheduleWeekPlans.id, weekPlanId), scheduleParkPredicate("schedule_week_plans", requestedTenantId)));
                 if (!weekPlan) return null;
 
                 // Query shift rows by branch + date range overlap for this week
@@ -7585,7 +7622,7 @@ export class DatabaseStorage implements IStorage {
                         .select()
                         .from(scheduleShiftRows)
                         .where(
-                                and(
+                                and(and(
                                         eq(scheduleShiftRows.branchId, weekPlan.branchId),
                                         or(
                                                 isNull(scheduleShiftRows.activeFromDate),
@@ -7595,7 +7632,7 @@ export class DatabaseStorage implements IStorage {
                                                 isNull(scheduleShiftRows.activeUntilDate),
                                                 sql`${scheduleShiftRows.activeUntilDate} >= ${wpStart}::date`,
                                         ),
-                                ),
+                                ), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)),
                         );
 
                 const rowIds = shiftRows.map((r) => r.id);
@@ -7605,11 +7642,11 @@ export class DatabaseStorage implements IStorage {
                                                 .select()
                                                 .from(scheduleAssignments)
                                                 .where(
-                                                        and(
+                                                        and(and(
                                                                 inArray(scheduleAssignments.shiftRowId, rowIds),
                                                                 gte(scheduleAssignments.shiftDate, wpStart),
                                                                 lte(scheduleAssignments.shiftDate, wpEndStr),
-                                                        ),
+                                                        ), scheduleParkPredicate("schedule_assignments", requestedTenantId)),
                                                 )
                                 : [];
                 const rowRoles =
@@ -7618,7 +7655,7 @@ export class DatabaseStorage implements IStorage {
                                                 .select()
                                                 .from(scheduleShiftRowRoles)
                                                 .where(
-                                                        inArray(scheduleShiftRowRoles.shiftRowId, rowIds),
+                                                        and(inArray(scheduleShiftRowRoles.shiftRowId, rowIds), scheduleParkPredicate("schedule_shift_row_roles", requestedTenantId)),
                                                 )
                                 : [];
 
@@ -7628,7 +7665,7 @@ export class DatabaseStorage implements IStorage {
                                 ? await db
                                                 .select()
                                                 .from(scheduleShiftBreaks)
-                                                .where(inArray(scheduleShiftBreaks.assignmentId, assignmentIds))
+                                                .where(and(inArray(scheduleShiftBreaks.assignmentId, assignmentIds), scheduleParkPredicate("schedule_shift_breaks", requestedTenantId)))
                                 : [];
 
                 return { weekPlan, shiftRows, assignments, rowRoles, breaks };
@@ -7638,14 +7675,14 @@ export class DatabaseStorage implements IStorage {
                 branchId: string,
                 departmentId: string,
                 weekStart: string,
-                weekEnd: string,
+                weekEnd: string, requestedTenantId?: string,
         ): Promise<{ shiftRows: any[]; assignments: any[]; breaks: any[]; timeOff: any[]; meta: { branchId: string; departmentId: string; weekStart: string; weekEnd: string } }> {
                 // Get shift rows that belong to this branch AND this department, active during the week
                 const deptRows = await db
                         .select()
                         .from(scheduleShiftRows)
                         .where(
-                                and(
+                                and(and(
                                         eq(scheduleShiftRows.branchId, branchId),
                                         eq(scheduleShiftRows.departmentId, departmentId),
                                         or(
@@ -7656,7 +7693,7 @@ export class DatabaseStorage implements IStorage {
                                                 isNull(scheduleShiftRows.activeUntilDate),
                                                 sql`${scheduleShiftRows.activeUntilDate} >= ${weekStart}::date`,
                                         ),
-                                ),
+                                ), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)),
                         );
 
                 const rowIds = deptRows.map((r) => r.id);
@@ -7668,11 +7705,11 @@ export class DatabaseStorage implements IStorage {
                                                 .select()
                                                 .from(scheduleAssignments)
                                                 .where(
-                                                        and(
+                                                        and(and(
                                                                 inArray(scheduleAssignments.shiftRowId, rowIds),
                                                                 gte(scheduleAssignments.shiftDate, weekStart),
                                                                 lte(scheduleAssignments.shiftDate, weekEnd),
-                                                        ),
+                                                        ), scheduleParkPredicate("schedule_assignments", requestedTenantId)),
                                                 )
                                 : [];
 
@@ -7682,7 +7719,7 @@ export class DatabaseStorage implements IStorage {
                                 ? await db
                                                 .select()
                                                 .from(scheduleShiftBreaks)
-                                                .where(inArray(scheduleShiftBreaks.assignmentId, assignmentIds))
+                                                .where(and(inArray(scheduleShiftBreaks.assignmentId, assignmentIds), scheduleParkPredicate("schedule_shift_breaks", requestedTenantId)))
                                 : [];
 
                 // CHANGE_DAY_OFF entries: scope to employees assigned to this department's rows in this week
@@ -7695,13 +7732,13 @@ export class DatabaseStorage implements IStorage {
                                                 .select()
                                                 .from(employeeTimeOff)
                                                 .where(
-                                                        and(
+                                                        and(and(
                                                                 eq(employeeTimeOff.branchId, branchId),
                                                                 inArray(employeeTimeOff.employeeId, assignedEmployeeIds),
                                                                 sql`${employeeTimeOff.startDate}::date >= ${weekStart}::date`,
                                                                 sql`${employeeTimeOff.endDate}::date <= ${weekEnd}::date`,
                                                                 eq(employeeTimeOff.type, "CHANGE_DAY_OFF"),
-                                                        ),
+                                                        ), scheduleParkPredicate("employee_time_off", requestedTenantId)),
                                                 )
                                 : [];
 
@@ -7743,8 +7780,10 @@ export class DatabaseStorage implements IStorage {
         }
 
         async restoreFromDeptWeekSnapshot(
-                snapshotData: any,
+                snapshotData: any, requestedTenantId?: string,
         ): Promise<{ restored: boolean; shiftRows: number; assignments: number; breaks: number }> {
+                if (requestedTenantId !== undefined) await assertScheduleSnapshotScope(snapshotData, requestedTenantId);
+                return await db.transaction(async (tx) => {
                 if (!snapshotData?.meta) throw new Error("Invalid scoped snapshot data");
 
                 const { assignments, breaks, timeOff, meta } = snapshotData;
@@ -7758,11 +7797,11 @@ export class DatabaseStorage implements IStorage {
                 };
 
                 // Get all shift rows for this branch+department active in the week range (same scope used when clearing)
-                const deptRows = await db
+                const deptRows = await tx
                         .select({ id: scheduleShiftRows.id })
                         .from(scheduleShiftRows)
                         .where(
-                                and(
+                                and(and(
                                         eq(scheduleShiftRows.branchId, branchId),
                                         eq(scheduleShiftRows.departmentId, departmentId),
                                         or(
@@ -7773,36 +7812,37 @@ export class DatabaseStorage implements IStorage {
                                                 isNull(scheduleShiftRows.activeUntilDate),
                                                 sql`${scheduleShiftRows.activeUntilDate} >= ${weekStart}::date`,
                                         ),
-                                ),
+                                ), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)),
                         );
                 const deptRowIds = deptRows.map((r) => r.id);
 
                 // Delete existing assignments (and their breaks) scoped to these dept rows + date range
                 if (deptRowIds.length > 0) {
-                        const existingAssignments = await db
+                        const existingAssignments = await tx
                                 .select({ id: scheduleAssignments.id })
                                 .from(scheduleAssignments)
                                 .where(
-                                        and(
+                                        and(and(
                                                 inArray(scheduleAssignments.shiftRowId, deptRowIds),
                                                 gte(scheduleAssignments.shiftDate, weekStart),
                                                 lte(scheduleAssignments.shiftDate, weekEnd),
-                                        ),
+                                        ), scheduleParkPredicate("schedule_assignments", requestedTenantId)),
                                 );
                         const existingIds = existingAssignments.map((a) => a.id);
+                        await assertScheduleDeleteScope("schedule_assignments", existingIds, requestedTenantId, tx);
                         if (existingIds.length > 0) {
-                                await db
+                                await tx
                                         .delete(scheduleShiftBreaks)
-                                        .where(inArray(scheduleShiftBreaks.assignmentId, existingIds));
+                                        .where(and(inArray(scheduleShiftBreaks.assignmentId, existingIds), scheduleParkPredicate("schedule_shift_breaks", requestedTenantId)));
                         }
-                        await db
+                        await tx
                                 .delete(scheduleAssignments)
                                 .where(
-                                        and(
+                                        and(and(
                                                 inArray(scheduleAssignments.shiftRowId, deptRowIds),
                                                 gte(scheduleAssignments.shiftDate, weekStart),
                                                 lte(scheduleAssignments.shiftDate, weekEnd),
-                                        ),
+                                        ), scheduleParkPredicate("schedule_assignments", requestedTenantId)),
                                 );
                 }
 
@@ -7811,16 +7851,16 @@ export class DatabaseStorage implements IStorage {
                         (assignments || []).map((a: any) => a.employeeId).filter(Boolean) as string[],
                 )];
                 if (snapshotEmployeeIds.length > 0) {
-                        await db
+                        await tx
                                 .delete(employeeTimeOff)
                                 .where(
-                                        and(
+                                        and(and(
                                                 eq(employeeTimeOff.branchId, branchId),
                                                 inArray(employeeTimeOff.employeeId, snapshotEmployeeIds),
                                                 sql`${employeeTimeOff.startDate}::date >= ${weekStart}::date`,
                                                 sql`${employeeTimeOff.endDate}::date <= ${weekEnd}::date`,
                                                 eq(employeeTimeOff.type, "CHANGE_DAY_OFF"),
-                                        ),
+                                        ), scheduleParkPredicate("employee_time_off", requestedTenantId)),
                                 );
                 }
 
@@ -7828,20 +7868,20 @@ export class DatabaseStorage implements IStorage {
                 for (const assignment of assignments || []) {
                         const { id: _id, ...aCopy } = assignment;
                         if (aCopy.assignedAt) aCopy.assignedAt = toDate(aCopy.assignedAt);
-                        await db.insert(scheduleAssignments).values(aCopy);
+                        await tx.insert(scheduleAssignments).values(scheduleOwnedValues(aCopy, requestedTenantId));
                 }
 
                 // Re-fetch newly inserted assignments to remap break assignmentIds
                 const newAssignments = deptRowIds.length > 0
-                        ? await db
+                        ? await tx
                                 .select()
                                 .from(scheduleAssignments)
                                 .where(
-                                        and(
+                                        and(and(
                                                 inArray(scheduleAssignments.shiftRowId, deptRowIds),
                                                 gte(scheduleAssignments.shiftDate, weekStart),
                                                 lte(scheduleAssignments.shiftDate, weekEnd),
-                                        ),
+                                        ), scheduleParkPredicate("schedule_assignments", requestedTenantId)),
                                 )
                         : [];
 
@@ -7858,7 +7898,7 @@ export class DatabaseStorage implements IStorage {
                         const newAssignmentId = newAssignmentMap.get(key);
                         if (!newAssignmentId) continue;
                         const { id: _id, createdAt: _c, updatedAt: _u, ...brkCopy } = brk;
-                        await db.insert(scheduleShiftBreaks).values({ ...brkCopy, assignmentId: newAssignmentId });
+                        await tx.insert(scheduleShiftBreaks).values(scheduleOwnedValues({ ...brkCopy, assignmentId: newAssignmentId }, requestedTenantId));
                         restoredBreaks++;
                 }
 
@@ -7869,7 +7909,7 @@ export class DatabaseStorage implements IStorage {
                         // startDate and endDate are timestamp columns — must be Date objects, not JSON strings
                         if (toCopy.startDate) toCopy.startDate = toDate(toCopy.startDate);
                         if (toCopy.endDate) toCopy.endDate = toDate(toCopy.endDate);
-                        await db.insert(employeeTimeOff).values(toCopy);
+                        await tx.insert(employeeTimeOff).values(scheduleOwnedValues(toCopy, requestedTenantId));
                 }
 
                 return {
@@ -7878,20 +7918,24 @@ export class DatabaseStorage implements IStorage {
                         assignments: (assignments || []).length,
                         breaks: restoredBreaks,
                 };
+                });
         }
 
         async restoreWeekPlanFromSnapshot(
                 snapshotData: any,
-                _userId?: string,
+                _userId?: string, requestedTenantId?: string,
         ): Promise<{ restored: boolean; shiftRows: number; assignments: number; breaks: number }> {
+                if (requestedTenantId !== undefined) await assertScheduleSnapshotScope(snapshotData, requestedTenantId);
                 // If this is a scoped dept/week snapshot (from new clear_week), use the scoped restore
                 if (snapshotData?.meta) {
-                        return this.restoreFromDeptWeekSnapshot(snapshotData);
+                        return this.restoreFromDeptWeekSnapshot(snapshotData, requestedTenantId);
                 }
 
+                return await db.transaction(async (tx) => {
                 if (!snapshotData?.weekPlan) throw new Error("Invalid snapshot data");
 
                 const { weekPlan, shiftRows, assignments, rowRoles, breaks } = snapshotData;
+                await assertScheduleDeleteScope("schedule_shift_rows", shiftRows.map((row: ScheduleShiftRow) => row.id), requestedTenantId, tx);
 
                 const toDate = (v: any): Date | undefined => {
                         if (!v) return undefined;
@@ -7900,40 +7944,40 @@ export class DatabaseStorage implements IStorage {
                         return isNaN(d.getTime()) ? undefined : d;
                 };
 
-                const [existingPlan] = await db
+                const [existingPlan] = await tx
                         .select()
                         .from(scheduleWeekPlans)
-                        .where(eq(scheduleWeekPlans.id, weekPlan.id));
+                        .where(and(eq(scheduleWeekPlans.id, weekPlan.id), scheduleParkPredicate("schedule_week_plans", requestedTenantId)));
 
                 if (!existingPlan) {
                         const wpCopy = { ...weekPlan };
                         if (wpCopy.createdAt) wpCopy.createdAt = toDate(wpCopy.createdAt);
                         if (wpCopy.updatedAt) wpCopy.updatedAt = toDate(wpCopy.updatedAt);
-                        await db.insert(scheduleWeekPlans).values(wpCopy);
+                        await tx.insert(scheduleWeekPlans).values(scheduleOwnedValues(wpCopy, requestedTenantId));
                 } else {
                         // For restore, scope cleanup to the snapshot's shift row IDs
                         const snapshotRowIds = shiftRows.map((r: any) => r.id);
                         if (snapshotRowIds.length > 0) {
                                 // First get existing assignment IDs to clean up breaks
-                                const existingAssignments = await db
+                                const existingAssignments = await tx
                                         .select({ id: scheduleAssignments.id })
                                         .from(scheduleAssignments)
-                                        .where(inArray(scheduleAssignments.shiftRowId, snapshotRowIds));
+                                        .where(and(inArray(scheduleAssignments.shiftRowId, snapshotRowIds), scheduleParkPredicate("schedule_assignments", requestedTenantId)));
                                 const existingAssignmentIds = existingAssignments.map((a) => a.id);
                                 if (existingAssignmentIds.length > 0) {
-                                        await db
+                                        await tx
                                                 .delete(scheduleShiftBreaks)
-                                                .where(inArray(scheduleShiftBreaks.assignmentId, existingAssignmentIds));
+                                                .where(and(inArray(scheduleShiftBreaks.assignmentId, existingAssignmentIds), scheduleParkPredicate("schedule_shift_breaks", requestedTenantId)));
                                 }
-                                await db
+                                await tx
                                         .delete(scheduleAssignments)
-                                        .where(inArray(scheduleAssignments.shiftRowId, snapshotRowIds));
-                                await db
+                                        .where(and(inArray(scheduleAssignments.shiftRowId, snapshotRowIds), scheduleParkPredicate("schedule_assignments", requestedTenantId)));
+                                await tx
                                         .delete(scheduleShiftRowRoles)
-                                        .where(inArray(scheduleShiftRowRoles.shiftRowId, snapshotRowIds));
-                                await db
+                                        .where(and(inArray(scheduleShiftRowRoles.shiftRowId, snapshotRowIds), scheduleParkPredicate("schedule_shift_row_roles", requestedTenantId)));
+                                await tx
                                         .delete(scheduleShiftRows)
-                                        .where(inArray(scheduleShiftRows.id, snapshotRowIds));
+                                        .where(and(inArray(scheduleShiftRows.id, snapshotRowIds), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)));
                         }
                 }
 
@@ -7943,27 +7987,23 @@ export class DatabaseStorage implements IStorage {
                                 rowCopy.createdAt = toDate(rowCopy.createdAt);
                         if (rowCopy.updatedAt)
                                 rowCopy.updatedAt = toDate(rowCopy.updatedAt);
-                        await db.insert(scheduleShiftRows).values(rowCopy);
+                        await tx.insert(scheduleShiftRows).values(scheduleOwnedValues(rowCopy, requestedTenantId));
                 }
 
                 for (const role of rowRoles || []) {
-                        await db.insert(scheduleShiftRowRoles).values(role);
+                        await tx.insert(scheduleShiftRowRoles).values(scheduleOwnedValues(role, requestedTenantId));
                 }
 
                 for (const assignment of assignments || []) {
                         const aCopy = { ...assignment };
                         if (aCopy.assignedAt) aCopy.assignedAt = toDate(aCopy.assignedAt);
-                        await db.insert(scheduleAssignments).values(aCopy);
+                        await tx.insert(scheduleAssignments).values(scheduleOwnedValues(aCopy, requestedTenantId));
                 }
 
                 // Restore breaks if present in snapshot
                 for (const brk of breaks || []) {
                         const { id: _id, createdAt: _c, updatedAt: _u, ...brkCopy } = brk;
-                        try {
-                                await db.insert(scheduleShiftBreaks).values(brkCopy);
-                        } catch {
-                                // skip if assignment no longer exists
-                        }
+                        await tx.insert(scheduleShiftBreaks).values(scheduleOwnedValues(brkCopy, requestedTenantId));
                 }
 
                 return {
@@ -7972,17 +8012,19 @@ export class DatabaseStorage implements IStorage {
                         assignments: assignments?.length ?? 0,
                         breaks: breaks?.length ?? 0,
                 };
+                });
         }
 
-        async deleteWeekPlan(id: string): Promise<void> {
-                await db.delete(scheduleWeekPlans).where(eq(scheduleWeekPlans.id, id));
+        async deleteWeekPlan(id: string, requestedTenantId?: string): Promise<void> {
+                await assertScheduleDeleteScope("schedule_week_plans", [id], requestedTenantId);
+                await db.delete(scheduleWeekPlans).where(and(eq(scheduleWeekPlans.id, id), scheduleParkPredicate("schedule_week_plans", requestedTenantId)));
         }
 
-        async getWeekPlanById(id: string): Promise<ScheduleWeekPlan | undefined> {
+        async getWeekPlanById(id: string, requestedTenantId?: string): Promise<ScheduleWeekPlan | undefined> {
                 const [plan] = await db
                         .select()
                         .from(scheduleWeekPlans)
-                        .where(eq(scheduleWeekPlans.id, id));
+                        .where(and(eq(scheduleWeekPlans.id, id), scheduleParkPredicate("schedule_week_plans", requestedTenantId)));
                 return plan || undefined;
         }
 
@@ -7990,7 +8032,7 @@ export class DatabaseStorage implements IStorage {
                 branchId: string,
                 startDate: Date,
                 endDate: Date,
-                type?: string,
+                type?: string, requestedTenantId?: string,
         ): Promise<void> {
                 const startStr = startDate.toISOString().split("T")[0];
                 const endStr = endDate.toISOString().split("T")[0];
@@ -8005,22 +8047,22 @@ export class DatabaseStorage implements IStorage {
                         conditions.push(eq(employeeTimeOff.type, type));
                 }
 
-                await db.delete(employeeTimeOff).where(and(...conditions));
+                await db.delete(employeeTimeOff).where(and(and(...conditions), scheduleParkPredicate("employee_time_off", requestedTenantId)));
         }
 
         async getShiftRow(
-                id: string,
+                id: string, requestedTenantId?: string,
         ): Promise<ScheduleShiftRowWithDetails | undefined> {
                 const [row] = await db
                         .select()
                         .from(scheduleShiftRows)
-                        .where(eq(scheduleShiftRows.id, id));
+                        .where(and(eq(scheduleShiftRows.id, id), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)));
                 if (!row) return undefined;
 
                 const [dept] = await db
                         .select()
                         .from(departments)
-                        .where(eq(departments.id, row.departmentId));
+                        .where(and(eq(departments.id, row.departmentId), scheduleParkPredicate("departments", requestedTenantId)));
 
                 const rolesData = await db
                         .select({
@@ -8030,8 +8072,8 @@ export class DatabaseStorage implements IStorage {
                                 role: roles,
                         })
                         .from(scheduleShiftRowRoles)
-                        .leftJoin(roles, eq(scheduleShiftRowRoles.roleId, roles.id))
-                        .where(eq(scheduleShiftRowRoles.shiftRowId, id));
+                        .leftJoin(roles, and(eq(scheduleShiftRowRoles.roleId, roles.id), scheduleParkPredicate("roles", requestedTenantId)))
+                        .where(and(eq(scheduleShiftRowRoles.shiftRowId, id), scheduleParkPredicate("schedule_shift_row_roles", requestedTenantId)));
 
                 const assignmentsData = await db
                         .select({
@@ -8049,9 +8091,9 @@ export class DatabaseStorage implements IStorage {
                         .from(scheduleAssignments)
                         .leftJoin(
                                 employees,
-                                eq(scheduleAssignments.employeeId, employees.id),
+                                and(eq(scheduleAssignments.employeeId, employees.id), scheduleParkPredicate("employees", requestedTenantId)),
                         )
-                        .where(eq(scheduleAssignments.shiftRowId, id));
+                        .where(and(eq(scheduleAssignments.shiftRowId, id), scheduleParkPredicate("schedule_assignments", requestedTenantId)));
 
                 return {
                         ...row,
@@ -8079,15 +8121,16 @@ export class DatabaseStorage implements IStorage {
 
         async createShiftRow(
                 shiftRow: InsertScheduleShiftRow,
-                roleIds?: string[],
+                roleIds?: string[], requestedTenantId?: string,
         ): Promise<ScheduleShiftRow> {
+                if (requestedTenantId !== undefined) await assertScheduleWriteScope({ ...shiftRow, roleIds }, requestedTenantId);
                 // Auto-assign colorIndex if not provided - find max colorIndex in the branch and add 1
                 let colorIndex = shiftRow.colorIndex;
                 if (colorIndex == null && shiftRow.branchId) {
                         const existingRows = await db
                                 .select({ colorIndex: scheduleShiftRows.colorIndex })
                                 .from(scheduleShiftRows)
-                                .where(eq(scheduleShiftRows.branchId, shiftRow.branchId));
+                                .where(and(eq(scheduleShiftRows.branchId, shiftRow.branchId), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)));
 
                         const maxColorIndex = existingRows.reduce((max, row) => {
                                 const idx = row.colorIndex ?? -1;
@@ -8103,18 +8146,18 @@ export class DatabaseStorage implements IStorage {
 
                 const [row] = await db
                         .insert(scheduleShiftRows)
-                        .values({ ...shiftRow, colorIndex, activeFromDate })
+                        .values(scheduleOwnedValues({ ...shiftRow, colorIndex, activeFromDate }, requestedTenantId))
                         .returning();
 
                 if (roleIds && roleIds.length > 0) {
                         await db
                                 .insert(scheduleShiftRowRoles)
                                 .values(
-                                        roleIds.map((roleId) => ({
+                                        scheduleOwnedValues(roleIds.map((roleId) => ({
                                                 shiftRowId: row.id,
                                                 roleId,
                                                 tenantId: shiftRow.tenantId,
-                                        })),
+                                        })), requestedTenantId),
                                 );
                 }
 
@@ -8124,27 +8167,29 @@ export class DatabaseStorage implements IStorage {
         async updateShiftRow(
                 id: string,
                 shiftRow: Partial<InsertScheduleShiftRow>,
-                roleIds?: string[],
+                roleIds?: string[], requestedTenantId?: string,
         ): Promise<ScheduleShiftRow> {
+                if (requestedTenantId !== undefined) await assertScheduleWriteScope({ ...shiftRow, roleIds }, requestedTenantId);
                 const [row] = await db
                         .update(scheduleShiftRows)
-                        .set({ ...shiftRow, updatedAt: new Date() })
-                        .where(eq(scheduleShiftRows.id, id))
+                        .set(scheduleOwnedValues({ ...shiftRow, updatedAt: new Date() }, requestedTenantId))
+                        .where(and(eq(scheduleShiftRows.id, id), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)))
                         .returning();
+                if (requestedTenantId !== undefined && !row) throw new ScheduleScopeError();
 
                 if (roleIds !== undefined) {
                         await db
                                 .delete(scheduleShiftRowRoles)
-                                .where(eq(scheduleShiftRowRoles.shiftRowId, id));
+                                .where(and(eq(scheduleShiftRowRoles.shiftRowId, id), scheduleParkPredicate("schedule_shift_row_roles", requestedTenantId)));
                         if (roleIds.length > 0) {
                                 await db
                                         .insert(scheduleShiftRowRoles)
                                         .values(
-                                                roleIds.map((roleId) => ({
+                                                scheduleOwnedValues(roleIds.map((roleId) => ({
                                                         shiftRowId: id,
                                                         roleId,
                                                         tenantId: row.tenantId,
-                                                })),
+                                                })), requestedTenantId),
                                         );
                         }
                 }
@@ -8152,7 +8197,7 @@ export class DatabaseStorage implements IStorage {
                 return row;
         }
 
-        async deleteShiftRow(id: string): Promise<void> {
+        async deleteShiftRow(id: string, requestedTenantId?: string): Promise<void> {
                 // Soft-delete: set activeUntilDate to yesterday so the row is excluded
                 // from the current week immediately (the visibility filter is
                 // activeUntilDate >= weekStart, so setting it to today would still
@@ -8162,75 +8207,77 @@ export class DatabaseStorage implements IStorage {
                 const yesterdayStr = yesterday.toISOString().split("T")[0];
                 await db
                         .update(scheduleShiftRows)
-                        .set({ activeUntilDate: yesterdayStr, updatedAt: new Date() })
-                        .where(eq(scheduleShiftRows.id, id));
+                        .set(scheduleOwnedValues({ activeUntilDate: yesterdayStr, updatedAt: new Date() }, requestedTenantId))
+                        .where(and(eq(scheduleShiftRows.id, id), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)));
         }
 
         async getShiftRowsByDepartment(
-                departmentId: string,
+                departmentId: string, requestedTenantId?: string,
         ): Promise<ScheduleShiftRow[]> {
                 return await db
                         .select()
                         .from(scheduleShiftRows)
-                        .where(eq(scheduleShiftRows.departmentId, departmentId))
+                        .where(and(eq(scheduleShiftRows.departmentId, departmentId), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)))
                         .orderBy(scheduleShiftRows.rowOrder);
         }
 
-        async getShiftGroupsByBranch(branchId: string): Promise<ShiftGroup[]> {
+        async getShiftGroupsByBranch(branchId: string, requestedTenantId?: string): Promise<ShiftGroup[]> {
                 return await db
                         .select()
                         .from(shiftGroups)
                         .where(
-                                and(
+                                and(and(
                                         eq(shiftGroups.branchId, branchId),
                                         eq(shiftGroups.isActive, true),
-                                ),
+                                ), scheduleParkPredicate("shift_groups", requestedTenantId)),
                         )
                         .orderBy(shiftGroups.sortOrder);
         }
 
-        async getShiftGroup(id: string): Promise<ShiftGroup | undefined> {
+        async getShiftGroup(id: string, requestedTenantId?: string): Promise<ShiftGroup | undefined> {
                 const [group] = await db
                         .select()
                         .from(shiftGroups)
-                        .where(eq(shiftGroups.id, id));
+                        .where(and(eq(shiftGroups.id, id), scheduleParkPredicate("shift_groups", requestedTenantId)));
                 return group || undefined;
         }
 
-        async createShiftGroup(group: InsertShiftGroup): Promise<ShiftGroup> {
+        async createShiftGroup(group: InsertShiftGroup, requestedTenantId?: string): Promise<ShiftGroup> {
+                if (requestedTenantId !== undefined) await assertScheduleWriteScope(group, requestedTenantId);
                 const [created] = await db
                         .insert(shiftGroups)
-                        .values(group)
+                        .values(scheduleOwnedValues(group, requestedTenantId))
                         .returning();
                 return created;
         }
 
         async updateShiftGroup(
                 id: string,
-                updates: Partial<InsertShiftGroup>,
+                updates: Partial<InsertShiftGroup>, requestedTenantId?: string,
         ): Promise<ShiftGroup> {
+                if (requestedTenantId !== undefined) await assertScheduleWriteScope(updates, requestedTenantId);
                 const [updated] = await db
                         .update(shiftGroups)
-                        .set({ ...updates, updatedAt: new Date() })
-                        .where(eq(shiftGroups.id, id))
+                        .set(scheduleOwnedValues({ ...updates, updatedAt: new Date() }, requestedTenantId))
+                        .where(and(eq(shiftGroups.id, id), scheduleParkPredicate("shift_groups", requestedTenantId)))
                         .returning();
                 return updated;
         }
 
-        async deleteShiftGroup(id: string): Promise<void> {
+        async deleteShiftGroup(id: string, requestedTenantId?: string): Promise<void> {
                 await db
                         .update(shiftGroups)
-                        .set({ isActive: false, updatedAt: new Date() })
-                        .where(eq(shiftGroups.id, id));
+                        .set(scheduleOwnedValues({ isActive: false, updatedAt: new Date() }, requestedTenantId))
+                        .where(and(eq(shiftGroups.id, id), scheduleParkPredicate("shift_groups", requestedTenantId)));
         }
 
         async getShiftRowsByGroup(
-                shiftGroupId: string,
+                shiftGroupId: string, requestedTenantId?: string,
         ): Promise<ScheduleShiftRow[]> {
                 return await db
                         .select()
                         .from(scheduleShiftRows)
-                        .where(eq(scheduleShiftRows.shiftGroupId, shiftGroupId))
+                        .where(and(eq(scheduleShiftRows.shiftGroupId, shiftGroupId), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)))
                         .orderBy(scheduleShiftRows.sortOrderWithinGroup);
         }
 
@@ -8243,46 +8290,48 @@ export class DatabaseStorage implements IStorage {
                         .orderBy(dutyTypes.name);
         }
 
-        async getDutyType(id: string): Promise<DutyType | undefined> {
+        async getDutyType(id: string, requestedTenantId?: string): Promise<DutyType | undefined> {
                 const [dt] = await db
                         .select()
                         .from(dutyTypes)
-                        .where(eq(dutyTypes.id, id));
+                        .where(and(eq(dutyTypes.id, id), scheduleParkPredicate("duty_types", requestedTenantId)));
                 return dt || undefined;
         }
 
-        async createDutyType(dutyType: InsertDutyType): Promise<DutyType> {
+        async createDutyType(dutyType: InsertDutyType, requestedTenantId?: string): Promise<DutyType> {
+                if (requestedTenantId !== undefined) await assertScheduleWriteScope(dutyType, requestedTenantId);
                 const [created] = await db
                         .insert(dutyTypes)
-                        .values(dutyType)
+                        .values(scheduleOwnedValues(dutyType, requestedTenantId))
                         .returning();
                 return created;
         }
 
         async updateDutyType(
                 id: string,
-                updates: Partial<InsertDutyType>,
+                updates: Partial<InsertDutyType>, requestedTenantId?: string,
         ): Promise<DutyType> {
+                if (requestedTenantId !== undefined) await assertScheduleWriteScope(updates, requestedTenantId);
                 const [updated] = await db
                         .update(dutyTypes)
-                        .set({ ...updates, updatedAt: new Date() })
-                        .where(eq(dutyTypes.id, id))
+                        .set(scheduleOwnedValues({ ...updates, updatedAt: new Date() }, requestedTenantId))
+                        .where(and(eq(dutyTypes.id, id), scheduleParkPredicate("duty_types", requestedTenantId)))
                         .returning();
                 return updated;
         }
 
-        async deleteDutyType(id: string): Promise<void> {
+        async deleteDutyType(id: string, requestedTenantId?: string): Promise<void> {
                 await db
                         .update(dutyTypes)
-                        .set({ isActive: false, updatedAt: new Date() })
-                        .where(eq(dutyTypes.id, id));
+                        .set(scheduleOwnedValues({ isActive: false, updatedAt: new Date() }, requestedTenantId))
+                        .where(and(eq(dutyTypes.id, id), scheduleParkPredicate("duty_types", requestedTenantId)));
         }
 
         async getDutyBlocks(options: {
                 branchId: string;
                 date: string;
                 employeeId?: string;
-        }): Promise<DutyBlock[]> {
+        }, requestedTenantId?: string): Promise<DutyBlock[]> {
                 const conditions = [
                         eq(dutyBlocks.branchId, options.branchId),
                         eq(dutyBlocks.date, options.date),
@@ -8293,7 +8342,7 @@ export class DatabaseStorage implements IStorage {
                 return await db
                         .select()
                         .from(dutyBlocks)
-                        .where(and(...conditions))
+                        .where(and(and(...conditions), scheduleParkPredicate("duty_blocks", requestedTenantId)))
                         .orderBy(dutyBlocks.startTime);
         }
 
@@ -8301,114 +8350,119 @@ export class DatabaseStorage implements IStorage {
                 branchId: string;
                 startDate: string;
                 endDate: string;
-        }): Promise<DutyBlock[]> {
+        }, requestedTenantId?: string): Promise<DutyBlock[]> {
                 return await db
                         .select()
                         .from(dutyBlocks)
                         .where(
-                                and(
+                                and(and(
                                         eq(dutyBlocks.branchId, options.branchId),
                                         gte(dutyBlocks.date, options.startDate),
                                         lte(dutyBlocks.date, options.endDate),
-                                ),
+                                ), scheduleParkPredicate("duty_blocks", requestedTenantId)),
                         )
                         .orderBy(dutyBlocks.date, dutyBlocks.startTime);
         }
 
-        async getDutyBlock(id: string): Promise<DutyBlock | undefined> {
+        async getDutyBlock(id: string, requestedTenantId?: string): Promise<DutyBlock | undefined> {
                 const [block] = await db
                         .select()
                         .from(dutyBlocks)
-                        .where(eq(dutyBlocks.id, id));
+                        .where(and(eq(dutyBlocks.id, id), scheduleParkPredicate("duty_blocks", requestedTenantId)));
                 return block || undefined;
         }
 
-        async createDutyBlock(dutyBlock: InsertDutyBlock): Promise<DutyBlock> {
+        async createDutyBlock(dutyBlock: InsertDutyBlock, requestedTenantId?: string): Promise<DutyBlock> {
+                if (requestedTenantId !== undefined) await assertScheduleWriteScope(dutyBlock, requestedTenantId);
                 const [created] = await db
                         .insert(dutyBlocks)
-                        .values(dutyBlock)
+                        .values(scheduleOwnedValues(dutyBlock, requestedTenantId))
                         .returning();
                 return created;
         }
 
         async updateDutyBlock(
                 id: string,
-                updates: Partial<InsertDutyBlock>,
+                updates: Partial<InsertDutyBlock>, requestedTenantId?: string,
         ): Promise<DutyBlock> {
+                if (requestedTenantId !== undefined) await assertScheduleWriteScope(updates, requestedTenantId);
                 const [updated] = await db
                         .update(dutyBlocks)
-                        .set({ ...updates, updatedAt: new Date() })
-                        .where(eq(dutyBlocks.id, id))
+                        .set(scheduleOwnedValues({ ...updates, updatedAt: new Date() }, requestedTenantId))
+                        .where(and(eq(dutyBlocks.id, id), scheduleParkPredicate("duty_blocks", requestedTenantId)))
                         .returning();
                 return updated;
         }
 
-        async deleteDutyBlock(id: string): Promise<void> {
-                await db.delete(dutyBlocks).where(eq(dutyBlocks.id, id));
+        async deleteDutyBlock(id: string, requestedTenantId?: string): Promise<void> {
+                await db.delete(dutyBlocks).where(and(eq(dutyBlocks.id, id), scheduleParkPredicate("duty_blocks", requestedTenantId)));
         }
 
         async getAssignmentsForDate(
                 branchId: string,
-                date: string,
+                date: string, requestedTenantId?: string,
         ): Promise<ScheduleAssignment[]> {
                 const assignments = await db
                         .select()
                         .from(scheduleAssignments)
                         .innerJoin(
                                 scheduleShiftRows,
-                                eq(scheduleAssignments.shiftRowId, scheduleShiftRows.id),
+                                and(eq(scheduleAssignments.shiftRowId, scheduleShiftRows.id), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)),
                         )
                         .where(
-                                and(
+                                and(and(
                                         eq(scheduleShiftRows.branchId, branchId),
                                         eq(scheduleAssignments.shiftDate, date),
-                                ),
+                                ), scheduleParkPredicate("schedule_assignments", requestedTenantId)),
                         );
 
                 return assignments.map((a) => a.schedule_assignments);
         }
 
         async createAssignment(
-                assignment: InsertScheduleAssignment,
+                assignment: InsertScheduleAssignment, requestedTenantId?: string,
         ): Promise<ScheduleAssignment> {
+                if (requestedTenantId !== undefined) await assertScheduleWriteScope(assignment, requestedTenantId);
                 const [result] = await db
                         .insert(scheduleAssignments)
-                        .values(assignment)
+                        .values(scheduleOwnedValues(assignment, requestedTenantId))
                         .returning();
                 return result;
         }
 
-        async getAssignment(id: string): Promise<ScheduleAssignment | undefined> {
+        async getAssignment(id: string, requestedTenantId?: string): Promise<ScheduleAssignment | undefined> {
                 const [assignment] = await db
                         .select()
                         .from(scheduleAssignments)
-                        .where(eq(scheduleAssignments.id, id))
+                        .where(and(eq(scheduleAssignments.id, id), scheduleParkPredicate("schedule_assignments", requestedTenantId)))
                         .limit(1);
                 return assignment;
         }
 
         async updateAssignment(
                 id: string,
-                updates: Partial<InsertScheduleAssignment>,
+                updates: Partial<InsertScheduleAssignment>, requestedTenantId?: string,
         ): Promise<ScheduleAssignment> {
+                if (requestedTenantId !== undefined) await assertScheduleWriteScope(updates, requestedTenantId);
                 const [assignment] = await db
                         .update(scheduleAssignments)
-                        .set(updates)
-                        .where(eq(scheduleAssignments.id, id))
+                        .set(scheduleOwnedValues(updates, requestedTenantId))
+                        .where(and(eq(scheduleAssignments.id, id), scheduleParkPredicate("schedule_assignments", requestedTenantId)))
                         .returning();
                 return assignment;
         }
 
-        async deleteAssignment(id: string): Promise<void> {
+        async deleteAssignment(id: string, requestedTenantId?: string): Promise<void> {
+                await assertScheduleDeleteScope("schedule_assignments", [id], requestedTenantId);
                 await db
                         .delete(scheduleAssignments)
-                        .where(eq(scheduleAssignments.id, id));
+                        .where(and(eq(scheduleAssignments.id, id), scheduleParkPredicate("schedule_assignments", requestedTenantId)));
         }
 
         async deleteAssignmentsByShiftRowAndDate(
                 shiftRowId: string,
                 date: string,
-                employeeId?: string,
+                employeeId?: string, requestedTenantId?: string,
         ): Promise<void> {
                 const conditions = [
                         eq(scheduleAssignments.shiftRowId, shiftRowId),
@@ -8417,37 +8471,42 @@ export class DatabaseStorage implements IStorage {
                 if (employeeId) {
                         conditions.push(eq(scheduleAssignments.employeeId, employeeId));
                 }
-                await db.delete(scheduleAssignments).where(and(...conditions));
+                const affected = await db.select({ id: scheduleAssignments.id }).from(scheduleAssignments)
+                        .where(and(...conditions, scheduleParkPredicate("schedule_assignments", requestedTenantId)));
+                await assertScheduleDeleteScope("schedule_assignments", affected.map((row) => row.id), requestedTenantId);
+                await db.delete(scheduleAssignments).where(and(and(...conditions), scheduleParkPredicate("schedule_assignments", requestedTenantId)));
         }
 
         async deleteAssignmentsByEmployeeAndDateRange(
                 employeeId: string,
                 startDate: string,
                 endDate: string,
-                executor: DbExecutor = db,
+                executor: DbExecutor = db, requestedTenantId?: string,
         ): Promise<ScheduleAssignment[]> {
                 // First get the assignments that will be deleted (to return them for attention items)
                 const affected = await executor
                         .select()
                         .from(scheduleAssignments)
                         .where(
-                                and(
+                                and(and(
                                         eq(scheduleAssignments.employeeId, employeeId),
                                         gte(scheduleAssignments.shiftDate, startDate),
                                         lte(scheduleAssignments.shiftDate, endDate),
-                                ),
+                                ), scheduleParkPredicate("schedule_assignments", requestedTenantId)),
                         );
+
+                await assertScheduleDeleteScope("schedule_assignments", affected.map((row) => row.id), requestedTenantId, executor);
 
                 // Delete them
                 if (affected.length > 0) {
                         await executor
                                 .delete(scheduleAssignments)
                                 .where(
-                                        and(
+                                        and(and(
                                                 eq(scheduleAssignments.employeeId, employeeId),
                                                 gte(scheduleAssignments.shiftDate, startDate),
                                                 lte(scheduleAssignments.shiftDate, endDate),
-                                        ),
+                                        ), scheduleParkPredicate("schedule_assignments", requestedTenantId)),
                                 );
                 }
 
@@ -8456,19 +8515,19 @@ export class DatabaseStorage implements IStorage {
 
         async getEligibleEmployeesForShiftRow(
                 shiftRowId: string,
-                date: string,
+                date: string, requestedTenantId?: string,
         ): Promise<Employee[]> {
                 const [shiftRow] = await db
                         .select()
                         .from(scheduleShiftRows)
-                        .where(eq(scheduleShiftRows.id, shiftRowId));
+                        .where(and(eq(scheduleShiftRows.id, shiftRowId), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)));
 
                 if (!shiftRow) return [];
 
                 const requiredRoles = await db
                         .select({ roleId: scheduleShiftRowRoles.roleId })
                         .from(scheduleShiftRowRoles)
-                        .where(eq(scheduleShiftRowRoles.shiftRowId, shiftRowId));
+                        .where(and(eq(scheduleShiftRowRoles.shiftRowId, shiftRowId), scheduleParkPredicate("schedule_shift_row_roles", requestedTenantId)));
 
                 // Get employees currently in this branch who are active (signed contract) and whose start date is on/before the shift date
                 // Include both ACTIVE employees and LEAVING employees (those who have resigned but last working day hasn't passed)
@@ -8477,7 +8536,7 @@ export class DatabaseStorage implements IStorage {
                         .select()
                         .from(employees)
                         .where(
-                                and(
+                                and(and(
                                         eq(employees.branchId, shiftRow.branchId),
                                         eq(employees.status, "active"),
                                         or(
@@ -8494,7 +8553,7 @@ export class DatabaseStorage implements IStorage {
                                                 isNull(employees.startDate),
                                                 lte(employees.startDate, new Date(date)),
                                         ),
-                                ),
+                                ), scheduleParkPredicate("employees", requestedTenantId)),
                         );
 
                 let eligibleEmployees = await eligibleQuery;
@@ -8505,11 +8564,11 @@ export class DatabaseStorage implements IStorage {
                         .select()
                         .from(employeeChanges)
                         .where(
-                                and(
+                                and(and(
                                         eq(employeeChanges.changeType, "branch_transfer"),
                                         eq(employeeChanges.oldBranchId, shiftRow.branchId),
                                         sql`${employeeChanges.effectiveDate}::date > ${date}::date`, // effectiveDate > shiftDate means transfer hasn't taken effect yet
-                                ),
+                                ), scheduleParkPredicate("employee_changes", requestedTenantId)),
                         );
 
                 if (transferredFromBranch.length > 0) {
@@ -8520,7 +8579,7 @@ export class DatabaseStorage implements IStorage {
                                 .select()
                                 .from(employees)
                                 .where(
-                                        and(
+                                        and(and(
                                                 inArray(employees.id, transferredEmployeeIds),
                                                 eq(employees.status, "active"),
                                                 or(
@@ -8540,7 +8599,7 @@ export class DatabaseStorage implements IStorage {
                                                         isNull(employees.startDate),
                                                         lte(employees.startDate, new Date(date)),
                                                 ),
-                                        ),
+                                        ), scheduleParkPredicate("employees", requestedTenantId)),
                                 );
 
                         // Add them to eligible list if not already there
@@ -8566,7 +8625,7 @@ export class DatabaseStorage implements IStorage {
                         const employeesWithRoles = await db
                                 .select({ employeeId: employeeRoles.employeeId })
                                 .from(employeeRoles)
-                                .where(inArray(employeeRoles.roleId, roleIds));
+                                .where(and(inArray(employeeRoles.roleId, roleIds), scheduleParkPredicate("employee_roles", requestedTenantId)));
 
                         const eligibleEmployeeIds = new Set(
                                 employeesWithRoles.map((e) => e.employeeId),
@@ -8580,14 +8639,14 @@ export class DatabaseStorage implements IStorage {
                         .select()
                         .from(employeeTimeOff)
                         .where(
-                                and(
+                                and(and(
                                         inArray(
                                                 employeeTimeOff.employeeId,
                                                 eligibleEmployees.map((e) => e.id),
                                         ),
                                         sql`${employeeTimeOff.startDate}::date <= ${date}::date`,
                                         sql`${employeeTimeOff.endDate}::date >= ${date}::date`,
-                                ),
+                                ), scheduleParkPredicate("employee_time_off", requestedTenantId)),
                         );
 
                 const employeesOnLeave = new Set(
@@ -8618,13 +8677,13 @@ export class DatabaseStorage implements IStorage {
                                 })
                                 .from(scheduleAssignments)
                                 .where(
-                                        and(
+                                        and(and(
                                                 inArray(
                                                         scheduleAssignments.employeeId,
                                                         eligibleEmployees.map((e) => e.id),
                                                 ),
                                                 eq(scheduleAssignments.shiftDate, date),
-                                        ),
+                                        ), scheduleParkPredicate("schedule_assignments", requestedTenantId)),
                                 );
 
                         if (existingAssignments.length > 0) {
@@ -8638,7 +8697,7 @@ export class DatabaseStorage implements IStorage {
                                                 endTime: scheduleShiftRows.endTime,
                                         })
                                         .from(scheduleShiftRows)
-                                        .where(inArray(scheduleShiftRows.id, assignedShiftRowIds));
+                                        .where(and(inArray(scheduleShiftRows.id, assignedShiftRowIds), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)));
 
                                 const shiftRowTimes = new Map(
                                         assignedShiftRows.map((r) => [
@@ -8676,7 +8735,7 @@ export class DatabaseStorage implements IStorage {
         async getBorrowCandidates(
                 shiftRowId: string,
                 date: string,
-                destinationBranchId: string,
+                destinationBranchId: string, requestedTenantId?: string,
         ): Promise<{
                 candidates: {
                         employeeId: string;
@@ -8693,21 +8752,21 @@ export class DatabaseStorage implements IStorage {
                 const [shiftRow] = await db
                         .select()
                         .from(scheduleShiftRows)
-                        .where(eq(scheduleShiftRows.id, shiftRowId));
+                        .where(and(eq(scheduleShiftRows.id, shiftRowId), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)));
                 if (!shiftRow) return { candidates: [], hasSiblingBranches: false };
 
                 // Get the destination branch to find its operator (or tenant for fallback)
                 const [destBranch] = await db
                         .select()
                         .from(branches)
-                        .where(eq(branches.id, destinationBranchId));
+                        .where(and(eq(branches.id, destinationBranchId), scheduleParkPredicate("branches", requestedTenantId)));
                 if (!destBranch) return { candidates: [], hasSiblingBranches: false };
 
                 // Get required roles for this shift
                 const requiredRoles = await db
                         .select({ roleId: scheduleShiftRowRoles.roleId })
                         .from(scheduleShiftRowRoles)
-                        .where(eq(scheduleShiftRowRoles.shiftRowId, shiftRowId));
+                        .where(and(eq(scheduleShiftRowRoles.shiftRowId, shiftRowId), scheduleParkPredicate("schedule_shift_row_roles", requestedTenantId)));
                 const requiredRoleIds = requiredRoles.map((r) => r.roleId);
 
                 // Find sibling branches: use operator scope when configured, otherwise fall
@@ -8718,20 +8777,20 @@ export class DatabaseStorage implements IStorage {
                                 .select()
                                 .from(branches)
                                 .where(
-                                        and(
+                                        and(and(
                                                 eq(branches.operatorId, destBranch.operatorId),
                                                 sql`${branches.id} != ${destinationBranchId}`,
-                                        ),
+                                        ), scheduleParkPredicate("branches", requestedTenantId)),
                                 );
                 } else {
                         siblingBranches = await db
                                 .select()
                                 .from(branches)
                                 .where(
-                                        and(
+                                        and(and(
                                                 eq(branches.tenantId, destBranch.tenantId),
                                                 sql`${branches.id} != ${destinationBranchId}`,
-                                        ),
+                                        ), scheduleParkPredicate("branches", requestedTenantId)),
                                 );
                 }
                 const otherBranchIds = siblingBranches.map((b) => b.id);
@@ -8743,10 +8802,10 @@ export class DatabaseStorage implements IStorage {
                         .select()
                         .from(employees)
                         .where(
-                                and(
+                                and(and(
                                         inArray(employees.branchId, otherBranchIds),
                                         eq(employees.employmentState, "ACTIVE"),
-                                ),
+                                ), scheduleParkPredicate("employees", requestedTenantId)),
                         );
 
                 if (candidates.length === 0)
@@ -8761,8 +8820,8 @@ export class DatabaseStorage implements IStorage {
                                 roleName: roles.name,
                         })
                         .from(employeeRoles)
-                        .innerJoin(roles, eq(employeeRoles.roleId, roles.id))
-                        .where(inArray(employeeRoles.employeeId, candidateIds));
+                        .innerJoin(roles, and(eq(employeeRoles.roleId, roles.id), scheduleParkPredicate("roles", requestedTenantId)))
+                        .where(and(inArray(employeeRoles.employeeId, candidateIds), scheduleParkPredicate("employee_roles", requestedTenantId)));
 
                 // Group roles by employee
                 const rolesByEmployee = new Map<
@@ -8794,14 +8853,14 @@ export class DatabaseStorage implements IStorage {
                         .select()
                         .from(employeeTimeOff)
                         .where(
-                                and(
+                                and(and(
                                         inArray(
                                                 employeeTimeOff.employeeId,
                                                 candidates.map((c) => c.id),
                                         ),
                                         sql`${employeeTimeOff.startDate}::date <= ${date}::date`,
                                         sql`${employeeTimeOff.endDate}::date >= ${date}::date`,
-                                ),
+                                ), scheduleParkPredicate("employee_time_off", requestedTenantId)),
                         );
                 const employeesOnLeave = new Set(
                         timeOffRecords.map((t) => t.employeeId),
@@ -8827,13 +8886,13 @@ export class DatabaseStorage implements IStorage {
                         })
                         .from(scheduleAssignments)
                         .where(
-                                and(
+                                and(and(
                                         inArray(
                                                 scheduleAssignments.employeeId,
                                                 candidates.map((c) => c.id),
                                         ),
                                         eq(scheduleAssignments.shiftDate, date),
-                                ),
+                                ), scheduleParkPredicate("schedule_assignments", requestedTenantId)),
                         );
 
                 // Get shift row times for conflict checking
@@ -8849,7 +8908,7 @@ export class DatabaseStorage implements IStorage {
                                         endTime: scheduleShiftRows.endTime,
                                 })
                                 .from(scheduleShiftRows)
-                                .where(inArray(scheduleShiftRows.id, assignedShiftRowIds));
+                                .where(and(inArray(scheduleShiftRows.id, assignedShiftRowIds), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)));
                         shiftRowTimes = new Map(
                                 assignedShiftRows.map((r) => [
                                         r.id,
@@ -8939,7 +8998,7 @@ export class DatabaseStorage implements IStorage {
                 employeeId: string,
                 shiftRowId: string,
                 date: string,
-                options?: { isBorrowed?: boolean; excludeAssignmentId?: string },
+                options?: { isBorrowed?: boolean; excludeAssignmentId?: string }, requestedTenantId?: string,
         ): Promise<{
                 ok: boolean;
                 reasonCode?: string;
@@ -8955,7 +9014,7 @@ export class DatabaseStorage implements IStorage {
                 const [shiftRow] = await db
                         .select()
                         .from(scheduleShiftRows)
-                        .where(eq(scheduleShiftRows.id, shiftRowId));
+                        .where(and(eq(scheduleShiftRows.id, shiftRowId), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)));
                 if (!shiftRow)
                         return {
                                 ok: false,
@@ -8966,7 +9025,7 @@ export class DatabaseStorage implements IStorage {
                 const [employee] = await db
                         .select()
                         .from(employees)
-                        .where(eq(employees.id, employeeId));
+                        .where(and(eq(employees.id, employeeId), scheduleParkPredicate("employees", requestedTenantId)));
                 if (!employee)
                         return {
                                 ok: false,
@@ -9026,11 +9085,11 @@ export class DatabaseStorage implements IStorage {
                         .select()
                         .from(scheduleAssignments)
                         .where(
-                                and(
+                                and(and(
                                         eq(scheduleAssignments.shiftRowId, shiftRowId),
                                         eq(scheduleAssignments.shiftDate, date),
                                         eq(scheduleAssignments.employeeId, employeeId),
-                                ),
+                                ), scheduleParkPredicate("schedule_assignments", requestedTenantId)),
                         );
                 if (existingThisShift.length > 0) {
                         return {
@@ -9062,7 +9121,7 @@ export class DatabaseStorage implements IStorage {
                 const requiredRoles = await db
                         .select({ roleId: scheduleShiftRowRoles.roleId })
                         .from(scheduleShiftRowRoles)
-                        .where(eq(scheduleShiftRowRoles.shiftRowId, shiftRowId));
+                        .where(and(eq(scheduleShiftRowRoles.shiftRowId, shiftRowId), scheduleParkPredicate("schedule_shift_row_roles", requestedTenantId)));
 
                 if (requiredRoles.length > 0) {
                         const roleIds = requiredRoles.map((r) => r.roleId);
@@ -9070,10 +9129,10 @@ export class DatabaseStorage implements IStorage {
                                 .select({ roleId: employeeRoles.roleId })
                                 .from(employeeRoles)
                                 .where(
-                                        and(
+                                        and(and(
                                                 eq(employeeRoles.employeeId, employeeId),
                                                 inArray(employeeRoles.roleId, roleIds),
-                                        ),
+                                        ), scheduleParkPredicate("employee_roles", requestedTenantId)),
                                 );
 
                         if (employeeRoleRecords.length === 0) {
@@ -9092,7 +9151,7 @@ export class DatabaseStorage implements IStorage {
                 const [weekPlan] = await db
                         .select()
                         .from(scheduleWeekPlans)
-                        .where(eq(scheduleWeekPlans.id, shiftRow.weekPlanId));
+                        .where(and(eq(scheduleWeekPlans.id, shiftRow.weekPlanId), scheduleParkPredicate("schedule_week_plans", requestedTenantId)));
 
                 if (weekPlan && !isBorrowed) {
                         const shiftBranchId = weekPlan.branchId;
@@ -9103,12 +9162,12 @@ export class DatabaseStorage implements IStorage {
                                         .select()
                                         .from(employeeChanges)
                                         .where(
-                                                and(
+                                                and(and(
                                                         eq(employeeChanges.employeeId, employeeId),
                                                         eq(employeeChanges.changeType, "branch_transfer"),
                                                         eq(employeeChanges.oldBranchId, shiftBranchId),
                                                         sql`${employeeChanges.effectiveDate}::date <= ${date}::date`,
-                                                ),
+                                                ), scheduleParkPredicate("employee_changes", requestedTenantId)),
                                         )
                                         .orderBy(desc(employeeChanges.effectiveDate))
                                         .limit(1);
@@ -9129,11 +9188,11 @@ export class DatabaseStorage implements IStorage {
                         .select()
                         .from(employeeTimeOff)
                         .where(
-                                and(
+                                and(and(
                                         eq(employeeTimeOff.employeeId, employeeId),
                                         sql`${employeeTimeOff.startDate}::date <= ${date}::date`,
                                         sql`${employeeTimeOff.endDate}::date >= ${date}::date`,
-                                ),
+                                ), scheduleParkPredicate("employee_time_off", requestedTenantId)),
                         );
 
                 if (timeOffRecords.length > 0) {
@@ -9212,7 +9271,7 @@ export class DatabaseStorage implements IStorage {
                                 shiftRowId: scheduleAssignments.shiftRowId,
                         })
                         .from(scheduleAssignments)
-                        .where(and(...assignmentConditions));
+                        .where(and(and(...assignmentConditions), scheduleParkPredicate("schedule_assignments", requestedTenantId)));
 
                 if (existingAssignments.length > 0) {
                         const assignedShiftRowIds = existingAssignments.map(
@@ -9225,7 +9284,7 @@ export class DatabaseStorage implements IStorage {
                                         endTime: scheduleShiftRows.endTime,
                                 })
                                 .from(scheduleShiftRows)
-                                .where(inArray(scheduleShiftRows.id, assignedShiftRowIds));
+                                .where(and(inArray(scheduleShiftRows.id, assignedShiftRowIds), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)));
 
                         for (const existingShift of assignedShiftRows) {
                                 const existingStartMin = this.timeToMinutes(
@@ -9259,7 +9318,7 @@ export class DatabaseStorage implements IStorage {
         async canAssignCasualWorkerToShift(
                 casualWorkerId: string,
                 shiftRowId: string,
-                date: string,
+                date: string, requestedTenantId?: string,
         ): Promise<{
                 ok: boolean;
                 reasonCode?: string;
@@ -9270,11 +9329,12 @@ export class DatabaseStorage implements IStorage {
                         endTime: string;
                 };
         }> {
+                if (requestedTenantId !== undefined) await assertScheduleWriteScope({ casualWorkerId }, requestedTenantId);
                 // Get the target shift row to know its time
                 const [shiftRow] = await db
                         .select()
                         .from(scheduleShiftRows)
-                        .where(eq(scheduleShiftRows.id, shiftRowId));
+                        .where(and(eq(scheduleShiftRows.id, shiftRowId), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)));
 
                 if (!shiftRow) {
                         return {
@@ -9291,10 +9351,10 @@ export class DatabaseStorage implements IStorage {
                         })
                         .from(scheduleAssignments)
                         .where(
-                                and(
+                                and(and(
                                         eq(scheduleAssignments.casualWorkerId, casualWorkerId),
                                         eq(scheduleAssignments.shiftDate, date),
-                                ),
+                                ), scheduleParkPredicate("schedule_assignments", requestedTenantId)),
                         );
 
                 if (existingAssignments.length > 0) {
@@ -9308,7 +9368,7 @@ export class DatabaseStorage implements IStorage {
                                         endTime: scheduleShiftRows.endTime,
                                 })
                                 .from(scheduleShiftRows)
-                                .where(inArray(scheduleShiftRows.id, assignedShiftRowIds));
+                                .where(and(inArray(scheduleShiftRows.id, assignedShiftRowIds), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)));
 
                         // Helper to convert HH:MM time to minutes for easy comparison
                         const timeToMinutes = (time: string): number => {
@@ -9365,19 +9425,19 @@ export class DatabaseStorage implements IStorage {
         async hasEmployeeShiftOnDate(
                 employeeId: string,
                 date: string,
-                excludeAssignmentId?: string,
+                excludeAssignmentId?: string, requestedTenantId?: string,
         ): Promise<boolean> {
                 const query = db
                         .select({ id: scheduleAssignments.id })
                         .from(scheduleAssignments)
                         .where(
-                                and(
+                                and(and(
                                         eq(scheduleAssignments.employeeId, employeeId),
                                         eq(scheduleAssignments.shiftDate, date),
                                         excludeAssignmentId
                                                 ? ne(scheduleAssignments.id, excludeAssignmentId)
                                                 : undefined,
-                                ),
+                                ), scheduleParkPredicate("schedule_assignments", requestedTenantId)),
                         )
                         .limit(1);
                 const assignments = await query;
@@ -9389,20 +9449,20 @@ export class DatabaseStorage implements IStorage {
         async hasEmployeeTimeOffOnDate(
                 employeeId: string,
                 date: string,
-                excludeTimeOffId?: string,
+                excludeTimeOffId?: string, requestedTenantId?: string,
         ): Promise<boolean> {
                 const records = await db
                         .select({ id: employeeTimeOff.id })
                         .from(employeeTimeOff)
                         .where(
-                                and(
+                                and(and(
                                         eq(employeeTimeOff.employeeId, employeeId),
                                         sql`${employeeTimeOff.startDate}::date <= ${date}::date`,
                                         sql`${employeeTimeOff.endDate}::date >= ${date}::date`,
                                         excludeTimeOffId
                                                 ? ne(employeeTimeOff.id, excludeTimeOffId)
                                                 : undefined,
-                                ),
+                                ), scheduleParkPredicate("employee_time_off", requestedTenantId)),
                         )
                         .limit(1);
                 return records.length > 0;
@@ -9410,23 +9470,23 @@ export class DatabaseStorage implements IStorage {
 
         async getEmployeeAssignmentsOnDate(
                 employeeId: string,
-                date: string,
+                date: string, requestedTenantId?: string,
         ): Promise<ScheduleAssignment[]> {
                 return db
                         .select()
                         .from(scheduleAssignments)
                         .where(
-                                and(
+                                and(and(
                                         eq(scheduleAssignments.employeeId, employeeId),
                                         eq(scheduleAssignments.shiftDate, date),
-                                ),
+                                ), scheduleParkPredicate("schedule_assignments", requestedTenantId)),
                         );
         }
 
         async getBorrowedOutAssignments(
                 branchId: string,
                 startDate: string,
-                endDate: string,
+                endDate: string, requestedTenantId?: string,
         ): Promise<
                 {
                         id: string;
@@ -9458,24 +9518,24 @@ export class DatabaseStorage implements IStorage {
                         .from(scheduleAssignments)
                         .innerJoin(
                                 employees,
-                                eq(scheduleAssignments.employeeId, employees.id),
+                                and(eq(scheduleAssignments.employeeId, employees.id), scheduleParkPredicate("employees", requestedTenantId)),
                         )
                         .innerJoin(
                                 scheduleShiftRows,
-                                eq(scheduleAssignments.shiftRowId, scheduleShiftRows.id),
+                                and(eq(scheduleAssignments.shiftRowId, scheduleShiftRows.id), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)),
                         )
-                        .innerJoin(branches, eq(scheduleShiftRows.branchId, branches.id))
+                        .innerJoin(branches, and(eq(scheduleShiftRows.branchId, branches.id), scheduleParkPredicate("branches", requestedTenantId)))
                         .leftJoin(
                                 departments,
-                                eq(scheduleShiftRows.departmentId, departments.id),
+                                and(eq(scheduleShiftRows.departmentId, departments.id), scheduleParkPredicate("departments", requestedTenantId)),
                         )
                         .where(
-                                and(
+                                and(and(
                                         eq(employees.branchId, branchId),
                                         ne(scheduleShiftRows.branchId, branchId),
                                         gte(scheduleAssignments.shiftDate, startDate),
                                         lte(scheduleAssignments.shiftDate, endDate),
-                                ),
+                                ), scheduleParkPredicate("schedule_assignments", requestedTenantId)),
                         );
                 return result.map((r) => ({
                         id: r.id,
@@ -9495,7 +9555,7 @@ export class DatabaseStorage implements IStorage {
         async getScheduleTemplates(
                 branchId: string,
                 departmentId?: string,
-                shiftGroupId?: string,
+                shiftGroupId?: string, requestedTenantId?: string,
         ): Promise<any[]> {
                 const conditions = [eq(scheduleTemplates.branchId, branchId)];
                 if (shiftGroupId) {
@@ -9512,13 +9572,13 @@ export class DatabaseStorage implements IStorage {
                         .from(scheduleTemplates)
                         .leftJoin(
                                 departments,
-                                eq(scheduleTemplates.departmentId, departments.id),
+                                and(eq(scheduleTemplates.departmentId, departments.id), scheduleParkPredicate("departments", requestedTenantId)),
                         )
                         .leftJoin(
                                 shiftGroups,
-                                eq(scheduleTemplates.shiftGroupId, shiftGroups.id),
+                                and(eq(scheduleTemplates.shiftGroupId, shiftGroups.id), scheduleParkPredicate("shift_groups", requestedTenantId)),
                         )
-                        .where(and(...conditions))
+                        .where(and(and(...conditions), scheduleParkPredicate("schedule_templates", requestedTenantId)))
                         .orderBy(desc(scheduleTemplates.createdAt));
 
                 return results.map((r) => ({
@@ -9529,24 +9589,24 @@ export class DatabaseStorage implements IStorage {
         }
 
         async getScheduleTemplate(
-                id: string,
+                id: string, requestedTenantId?: string,
         ): Promise<ScheduleTemplateWithDetails | undefined> {
                 const [template] = await db
                         .select()
                         .from(scheduleTemplates)
-                        .where(eq(scheduleTemplates.id, id));
+                        .where(and(eq(scheduleTemplates.id, id), scheduleParkPredicate("schedule_templates", requestedTenantId)));
 
                 if (!template) return undefined;
 
                 const [branch] = await db
                         .select()
                         .from(branches)
-                        .where(eq(branches.id, template.branchId));
+                        .where(and(eq(branches.id, template.branchId), scheduleParkPredicate("branches", requestedTenantId)));
 
                 const rowsData = await db
                         .select()
                         .from(scheduleTemplateRows)
-                        .where(eq(scheduleTemplateRows.templateId, id))
+                        .where(and(eq(scheduleTemplateRows.templateId, id), scheduleParkPredicate("schedule_template_rows", requestedTenantId)))
                         .orderBy(scheduleTemplateRows.rowOrder);
 
                 const allRowIds = rowsData.map((r) => r.id);
@@ -9564,13 +9624,13 @@ export class DatabaseStorage implements IStorage {
                                                 .from(scheduleTemplateRowRoles)
                                                 .leftJoin(
                                                         roles,
-                                                        eq(scheduleTemplateRowRoles.roleId, roles.id),
+                                                        and(eq(scheduleTemplateRowRoles.roleId, roles.id), scheduleParkPredicate("roles", requestedTenantId)),
                                                 )
                                                 .where(
-                                                        inArray(
+                                                        and(inArray(
                                                                 scheduleTemplateRowRoles.templateRowId,
                                                                 allRowIds,
-                                                        ),
+                                                        ), scheduleParkPredicate("schedule_template_row_roles", requestedTenantId)),
                                                 )
                                 : [];
 
@@ -9582,7 +9642,7 @@ export class DatabaseStorage implements IStorage {
                                 ? await db
                                                 .select()
                                                 .from(departments)
-                                                .where(inArray(departments.id, deptIds))
+                                                .where(and(inArray(departments.id, deptIds), scheduleParkPredicate("departments", requestedTenantId)))
                                 : [];
                 const deptMap = new Map(allDepts.map((d) => [d.id, d]));
 
@@ -9606,14 +9666,14 @@ export class DatabaseStorage implements IStorage {
                         ? await db
                                         .select()
                                         .from(departments)
-                                        .where(eq(departments.id, template.departmentId))
+                                        .where(and(eq(departments.id, template.departmentId), scheduleParkPredicate("departments", requestedTenantId)))
                         : [undefined];
 
                 const [shiftGroup] = template.shiftGroupId
                         ? await db
                                         .select()
                                         .from(shiftGroups)
-                                        .where(eq(shiftGroups.id, template.shiftGroupId))
+                                        .where(and(eq(shiftGroups.id, template.shiftGroupId), scheduleParkPredicate("shift_groups", requestedTenantId)))
                         : [undefined];
 
                 return {
@@ -9626,11 +9686,12 @@ export class DatabaseStorage implements IStorage {
         }
 
         async createScheduleTemplate(
-                template: InsertScheduleTemplate,
+                template: InsertScheduleTemplate, requestedTenantId?: string,
         ): Promise<ScheduleTemplate> {
+                if (requestedTenantId !== undefined) await assertScheduleWriteScope(template, requestedTenantId);
                 const [result] = await db
                         .insert(scheduleTemplates)
-                        .values(template)
+                        .values(scheduleOwnedValues(template, requestedTenantId))
                         .returning();
                 return result;
         }
@@ -9642,15 +9703,16 @@ export class DatabaseStorage implements IStorage {
                 departmentId?: string,
                 shiftGroupId?: string,
                 branchId?: string,
-                weekStartDate?: string,
+                weekStartDate?: string, requestedTenantId?: string,
         ): Promise<ScheduleTemplate> {
+                if (requestedTenantId !== undefined) await assertScheduleWriteScope({ branchId, departmentId, shiftGroupId }, requestedTenantId);
                 let weekPlan: ScheduleWeekPlan | undefined;
 
                 if (weekPlanId) {
                         const [found] = await db
                                 .select()
                                 .from(scheduleWeekPlans)
-                                .where(eq(scheduleWeekPlans.id, weekPlanId));
+                                .where(and(eq(scheduleWeekPlans.id, weekPlanId), scheduleParkPredicate("schedule_week_plans", requestedTenantId)));
                         weekPlan = found;
                 }
 
@@ -9661,7 +9723,7 @@ export class DatabaseStorage implements IStorage {
                         weekPlan = await this.getOrCreateWeekPlan(
                                 branchId,
                                 weekStartDate,
-                                userId,
+                                userId, requestedTenantId,
                         );
                 }
 
@@ -9693,19 +9755,19 @@ export class DatabaseStorage implements IStorage {
                                 .from(scheduleAssignments)
                                 .innerJoin(
                                         employees,
-                                        eq(scheduleAssignments.employeeId, employees.id),
+                                        and(eq(scheduleAssignments.employeeId, employees.id), scheduleParkPredicate("employees", requestedTenantId)),
                                 )
                                 .innerJoin(
                                         scheduleShiftRows,
-                                        eq(scheduleAssignments.shiftRowId, scheduleShiftRows.id),
+                                        and(eq(scheduleAssignments.shiftRowId, scheduleShiftRows.id), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)),
                                 )
                                 .where(
-                                        and(
+                                        and(and(
                                                 eq(scheduleShiftRows.branchId, weekPlan.branchId),
                                                 eq(employees.primaryDepartmentId, departmentId),
                                                 gte(scheduleAssignments.shiftDate, weekStartStr),
                                                 sql`${scheduleAssignments.shiftDate} <= ${weekEndStr}`,
-                                        ),
+                                        ), scheduleParkPredicate("schedule_assignments", requestedTenantId)),
                                 );
 
                         // Collect the distinct shift rows referenced by those assignments
@@ -9720,7 +9782,7 @@ export class DatabaseStorage implements IStorage {
                                                         .select()
                                                         .from(scheduleShiftRows)
                                                         .where(
-                                                                and(
+                                                                and(and(
                                                                         inArray(
                                                                                 scheduleShiftRows.id,
                                                                                 deptShiftRowIds,
@@ -9731,7 +9793,7 @@ export class DatabaseStorage implements IStorage {
                                                                                 ),
                                                                                 sql`${scheduleShiftRows.activeUntilDate} >= CURRENT_DATE`,
                                                                         ),
-                                                                ),
+                                                                ), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)),
                                                         )
                                                         .orderBy(scheduleShiftRows.rowOrder)
                                         : [];
@@ -9752,7 +9814,7 @@ export class DatabaseStorage implements IStorage {
                         shiftRows = await db
                                 .select()
                                 .from(scheduleShiftRows)
-                                .where(and(...shiftRowConditions))
+                                .where(and(and(...shiftRowConditions), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)))
                                 .orderBy(scheduleShiftRows.rowOrder);
 
                         if (shiftRows.length === 0) {
@@ -9764,7 +9826,7 @@ export class DatabaseStorage implements IStorage {
 
                 const [template] = await db
                         .insert(scheduleTemplates)
-                        .values({
+                        .values(scheduleOwnedValues({
                                 tenantId: weekPlan.tenantId,
                                 branchId: weekPlan.branchId,
                                 departmentId: departmentId || null,
@@ -9772,7 +9834,7 @@ export class DatabaseStorage implements IStorage {
                                 name,
                                 sourceWeekPlanId: weekPlan.id,
                                 createdBy: userId,
-                        })
+                        }, requestedTenantId))
                         .returning();
 
                 const allRowIds = shiftRows.map((r) => r.id);
@@ -9782,10 +9844,10 @@ export class DatabaseStorage implements IStorage {
                                                 .select()
                                                 .from(scheduleShiftRowRoles)
                                                 .where(
-                                                        inArray(
+                                                        and(inArray(
                                                                 scheduleShiftRowRoles.shiftRowId,
                                                                 allRowIds,
-                                                        ),
+                                                        ), scheduleParkPredicate("schedule_shift_row_roles", requestedTenantId)),
                                                 )
                                 : [];
 
@@ -9821,7 +9883,7 @@ export class DatabaseStorage implements IStorage {
                         templateRowValues.length > 0
                                 ? await db
                                                 .insert(scheduleTemplateRows)
-                                                .values(templateRowValues)
+                                                .values(scheduleOwnedValues(templateRowValues, requestedTenantId))
                                                 .returning()
                                 : [];
 
@@ -9844,7 +9906,7 @@ export class DatabaseStorage implements IStorage {
                 }));
 
                 if (roleValues.length > 0) {
-                        await db.insert(scheduleTemplateRowRoles).values(roleValues);
+                        await db.insert(scheduleTemplateRowRoles).values(scheduleOwnedValues(roleValues, requestedTenantId));
                 }
 
                 // Save assignments from the source week.
@@ -9853,11 +9915,11 @@ export class DatabaseStorage implements IStorage {
                         .select()
                         .from(scheduleAssignments)
                         .where(
-                                and(
+                                and(and(
                                         inArray(scheduleAssignments.shiftRowId, allRowIds),
                                         gte(scheduleAssignments.shiftDate, weekStartStr),
                                         sql`${scheduleAssignments.shiftDate} <= ${weekEndStr}`,
-                                ),
+                                ), scheduleParkPredicate("schedule_assignments", requestedTenantId)),
                         );
 
                 const filteredAssignments = deptScopedAssignmentIds
@@ -9912,10 +9974,10 @@ export class DatabaseStorage implements IStorage {
                                                                 .select()
                                                                 .from(dutyBlocks)
                                                                 .where(
-                                                                        inArray(
+                                                                        and(inArray(
                                                                                 dutyBlocks.assignmentId,
                                                                                 sourceAssignmentIds,
-                                                                        ),
+                                                                        ), scheduleParkPredicate("duty_blocks", requestedTenantId)),
                                                                 )
                                                 : [];
 
@@ -9963,7 +10025,7 @@ export class DatabaseStorage implements IStorage {
                         const deptEmployeeIds = await db
                                 .select({ id: employees.id })
                                 .from(employees)
-                                .where(eq(employees.primaryDepartmentId, departmentId))
+                                .where(and(eq(employees.primaryDepartmentId, departmentId), scheduleParkPredicate("employees", requestedTenantId)))
                                 .then((rows) => rows.map((r) => r.id));
                         if (deptEmployeeIds.length > 0) {
                                 timeOffConditions.push(
@@ -9977,7 +10039,7 @@ export class DatabaseStorage implements IStorage {
                 const weekTimeOff = await db
                         .select()
                         .from(employeeTimeOff)
-                        .where(and(...timeOffConditions));
+                        .where(and(and(...timeOffConditions), scheduleParkPredicate("employee_time_off", requestedTenantId)));
 
                 if (weekTimeOff.length > 0) {
                         const templateTimeOffValues: InsertScheduleTemplateTimeOff[] = [];
@@ -9995,7 +10057,7 @@ export class DatabaseStorage implements IStorage {
                         if (templateTimeOffValues.length > 0) {
                                 await db
                                         .insert(scheduleTemplateTimeOff)
-                                        .values(templateTimeOffValues);
+                                        .values(scheduleOwnedValues(templateTimeOffValues, requestedTenantId));
                         }
                 }
 
@@ -10005,15 +10067,15 @@ export class DatabaseStorage implements IStorage {
         async applyTemplate(
                 templateId: string,
                 weekPlanId: string,
-                userId?: string,
+                userId?: string, requestedTenantId?: string,
         ): Promise<void> {
-                const template = await this.getScheduleTemplate(templateId);
+                const template = await this.getScheduleTemplate(templateId, requestedTenantId);
                 if (!template) throw new Error("Template not found");
 
                 const [weekPlan] = await db
                         .select()
                         .from(scheduleWeekPlans)
-                        .where(eq(scheduleWeekPlans.id, weekPlanId));
+                        .where(and(eq(scheduleWeekPlans.id, weekPlanId), scheduleParkPredicate("schedule_week_plans", requestedTenantId)));
 
                 if (!weekPlan) throw new Error("Week plan not found");
 
@@ -10022,13 +10084,13 @@ export class DatabaseStorage implements IStorage {
                         .select()
                         .from(scheduleShiftRows)
                         .where(
-                                and(
+                                and(and(
                                         eq(scheduleShiftRows.branchId, weekPlan.branchId),
                                         or(
                                                 isNull(scheduleShiftRows.activeUntilDate),
                                                 sql`${scheduleShiftRows.activeUntilDate} >= CURRENT_DATE`,
                                         ),
-                                ),
+                                ), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)),
                         );
 
                 for (const templateRow of template.rows) {
@@ -10053,7 +10115,7 @@ export class DatabaseStorage implements IStorage {
                         if (sameNameRow) {
                                 await db
                                         .update(scheduleShiftRows)
-                                        .set({
+                                        .set(scheduleOwnedValues({
                                                 startTime: templateRow.startTime,
                                                 endTime: templateRow.endTime,
                                                 staffRequired:
@@ -10071,15 +10133,15 @@ export class DatabaseStorage implements IStorage {
                                                 breakStaggerMinutes:
                                                         templateRow.breakStaggerMinutes ??
                                                         sameNameRow.breakStaggerMinutes,
-                                        })
-                                        .where(eq(scheduleShiftRows.id, sameNameRow.id));
+                                        }, requestedTenantId))
+                                        .where(and(eq(scheduleShiftRows.id, sameNameRow.id), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)));
                                 continue;
                         }
 
                         const today = new Date().toISOString().split("T")[0];
                         const [newRow] = await db
                                 .insert(scheduleShiftRows)
-                                .values({
+                                .values(scheduleOwnedValues({
                                         tenantId: weekPlan.tenantId,
                                         branchId: weekPlan.branchId,
                                         departmentId: templateRow.departmentId,
@@ -10097,31 +10159,32 @@ export class DatabaseStorage implements IStorage {
                                         breakStaggerMinutes: templateRow.breakStaggerMinutes,
                                         activeFromDate: today,
                                         createdBy: userId,
-                                })
+                                }, requestedTenantId))
                                 .returning();
 
                         if (templateRow.roles.length > 0) {
                                 await db
                                         .insert(scheduleShiftRowRoles)
                                         .values(
-                                                templateRow.roles.map((r) => ({
+                                                scheduleOwnedValues(templateRow.roles.map((r) => ({
                                                         tenantId: weekPlan.tenantId,
                                                         shiftRowId: newRow.id,
                                                         roleId: r.roleId,
-                                                })),
+                                                })), requestedTenantId),
                                         );
                         }
                 }
         }
 
-        async deleteScheduleTemplate(id: string): Promise<void> {
-                await db.delete(scheduleTemplates).where(eq(scheduleTemplates.id, id));
+        async deleteScheduleTemplate(id: string, requestedTenantId?: string): Promise<void> {
+                await assertScheduleDeleteScope("schedule_templates", [id], requestedTenantId);
+                await db.delete(scheduleTemplates).where(and(eq(scheduleTemplates.id, id), scheduleParkPredicate("schedule_templates", requestedTenantId)));
         }
 
         async previewTemplateApply(
                 templateId: string,
                 branchId: string,
-                weekStartDate: string,
+                weekStartDate: string, requestedTenantId?: string,
         ): Promise<{
                 templateRows: number;
                 rowsToAdd: Array<{
@@ -10141,7 +10204,8 @@ export class DatabaseStorage implements IStorage {
                 assignmentsToApply: number;
                 timeOffToApply: number;
         }> {
-                const template = await this.getScheduleTemplate(templateId);
+                if (requestedTenantId !== undefined) await assertScheduleWriteScope({ branchId }, requestedTenantId);
+                const template = await this.getScheduleTemplate(templateId, requestedTenantId);
                 if (!template) throw new Error("Template not found");
 
                 // Query existing active shift rows by branch (not weekPlan-scoped)
@@ -10156,13 +10220,13 @@ export class DatabaseStorage implements IStorage {
                         })
                         .from(scheduleShiftRows)
                         .where(
-                                and(
+                                and(and(
                                         eq(scheduleShiftRows.branchId, branchId),
                                         or(
                                                 isNull(scheduleShiftRows.activeUntilDate),
                                                 sql`${scheduleShiftRows.activeUntilDate} >= CURRENT_DATE`,
                                         ),
-                                ),
+                                ), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)),
                         );
 
                 const rowsToAdd: Array<{
@@ -10217,10 +10281,10 @@ export class DatabaseStorage implements IStorage {
                                                 .select()
                                                 .from(scheduleTemplateAssignments)
                                                 .where(
-                                                        inArray(
+                                                        and(inArray(
                                                                 scheduleTemplateAssignments.templateRowId,
                                                                 allTemplateRowIds,
-                                                        ),
+                                                        ), scheduleParkPredicate("schedule_template_assignments", requestedTenantId)),
                                                 )
                                 : [];
 
@@ -10245,7 +10309,7 @@ export class DatabaseStorage implements IStorage {
                                                 .select()
                                                 .from(scheduleAssignments)
                                                 .where(
-                                                        and(
+                                                        and(and(
                                                                 inArray(
                                                                         scheduleAssignments.shiftRowId,
                                                                         targetShiftRowIds,
@@ -10255,7 +10319,7 @@ export class DatabaseStorage implements IStorage {
                                                                         targetStartStr,
                                                                 ),
                                                                 sql`${scheduleAssignments.shiftDate} <= ${targetEndStr}`,
-                                                        ),
+                                                        ), scheduleParkPredicate("schedule_assignments", requestedTenantId)),
                                                 )
                                 : [];
 
@@ -10280,7 +10344,7 @@ export class DatabaseStorage implements IStorage {
                 const templateTimeOffEntries = await db
                         .select()
                         .from(scheduleTemplateTimeOff)
-                        .where(eq(scheduleTemplateTimeOff.templateId, templateId));
+                        .where(and(eq(scheduleTemplateTimeOff.templateId, templateId), scheduleParkPredicate("schedule_template_time_off", requestedTenantId)));
 
                 const existingTimeOff =
                         templateTimeOffEntries.length > 0
@@ -10288,14 +10352,14 @@ export class DatabaseStorage implements IStorage {
                                                 .select()
                                                 .from(employeeTimeOff)
                                                 .where(
-                                                        and(
+                                                        and(and(
                                                                 eq(employeeTimeOff.branchId, branchId),
                                                                 gte(
                                                                         employeeTimeOff.startDate,
                                                                         new Date(targetStartStr),
                                                                 ),
                                                                 sql`${employeeTimeOff.startDate} <= ${targetEndStr}::date`,
-                                                        ),
+                                                        ), scheduleParkPredicate("employee_time_off", requestedTenantId)),
                                                 )
                                 : [];
                 const existingTimeOffKeys = new Set(
@@ -10327,9 +10391,9 @@ export class DatabaseStorage implements IStorage {
                 templateId: string,
                 branchId: string,
                 weekStartDate: string,
-                userId: string,
+                userId: string, requestedTenantId?: string,
         ): Promise<{ rowsAdded: number; rowsSkipped: number }> {
-                const template = await this.getScheduleTemplate(templateId);
+                const template = await this.getScheduleTemplate(templateId, requestedTenantId);
                 if (!template) throw new Error("Template not found");
 
                 const tenantId = template.tenantId;
@@ -10337,7 +10401,7 @@ export class DatabaseStorage implements IStorage {
                 const weekPlan = await this.getOrCreateWeekPlan(
                         branchId,
                         weekStartDate,
-                        userId,
+                        userId, requestedTenantId,
                 );
 
                 // Query existing active shift rows by branch (not weekPlan-scoped)
@@ -10345,13 +10409,13 @@ export class DatabaseStorage implements IStorage {
                         .select()
                         .from(scheduleShiftRows)
                         .where(
-                                and(
+                                and(and(
                                         eq(scheduleShiftRows.branchId, branchId),
                                         or(
                                                 isNull(scheduleShiftRows.activeUntilDate),
                                                 sql`${scheduleShiftRows.activeUntilDate} >= CURRENT_DATE`,
                                         ),
-                                ),
+                                ), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)),
                         );
 
                 let rowsAdded = 0;
@@ -10382,7 +10446,7 @@ export class DatabaseStorage implements IStorage {
                         const today = new Date().toISOString().split("T")[0];
                         const [newRow] = await db
                                 .insert(scheduleShiftRows)
-                                .values({
+                                .values(scheduleOwnedValues({
                                         tenantId,
                                         branchId,
                                         departmentId: templateRow.departmentId || null,
@@ -10400,7 +10464,7 @@ export class DatabaseStorage implements IStorage {
                                         breakStaggerMinutes: templateRow.breakStaggerMinutes,
                                         activeFromDate: today,
                                         createdBy: userId,
-                                })
+                                }, requestedTenantId))
                                 .returning();
 
                         templateRowIdToShiftRowId.set(templateRow.id, newRow.id);
@@ -10409,11 +10473,11 @@ export class DatabaseStorage implements IStorage {
                                 await db
                                         .insert(scheduleShiftRowRoles)
                                         .values(
-                                                templateRow.roles.map((r) => ({
+                                                scheduleOwnedValues(templateRow.roles.map((r) => ({
                                                         tenantId,
                                                         shiftRowId: newRow.id,
                                                         roleId: r.roleId,
-                                                })),
+                                                })), requestedTenantId),
                                         );
                         }
 
@@ -10428,10 +10492,10 @@ export class DatabaseStorage implements IStorage {
                                                 .select()
                                                 .from(scheduleTemplateAssignments)
                                                 .where(
-                                                        inArray(
+                                                        and(inArray(
                                                                 scheduleTemplateAssignments.templateRowId,
                                                                 allTemplateRowIds,
-                                                        ),
+                                                        ), scheduleParkPredicate("schedule_template_assignments", requestedTenantId)),
                                                 )
                                 : [];
 
@@ -10460,7 +10524,7 @@ export class DatabaseStorage implements IStorage {
                                                         .select()
                                                         .from(scheduleAssignments)
                                                         .where(
-                                                                and(
+                                                                and(and(
                                                                         inArray(
                                                                                 scheduleAssignments.shiftRowId,
                                                                                 targetShiftRowIds,
@@ -10470,7 +10534,7 @@ export class DatabaseStorage implements IStorage {
                                                                                 targetStartStr,
                                                                         ),
                                                                         sql`${scheduleAssignments.shiftDate} <= ${targetEndStr}`,
-                                                                ),
+                                                                ), scheduleParkPredicate("schedule_assignments", requestedTenantId)),
                                                         )
                                         : [];
 
@@ -10509,7 +10573,7 @@ export class DatabaseStorage implements IStorage {
                                         ta.employeeId,
                                         shiftRowId,
                                         shiftDate,
-                                        { isBorrowed: false },
+                                        { isBorrowed: false }, requestedTenantId,
                                 );
                                 if (!validation.ok) continue;
 
@@ -10526,7 +10590,7 @@ export class DatabaseStorage implements IStorage {
                         if (newAssignments.length > 0) {
                                 const insertedAssignments = await db
                                         .insert(scheduleAssignments)
-                                        .values(newAssignments)
+                                        .values(scheduleOwnedValues(newAssignments, requestedTenantId))
                                         .returning();
                                 assignmentsApplied = insertedAssignments.length;
 
@@ -10537,10 +10601,10 @@ export class DatabaseStorage implements IStorage {
                                                                 .select()
                                                                 .from(scheduleTemplateDutyBlocks)
                                                                 .where(
-                                                                        inArray(
+                                                                        and(inArray(
                                                                                 scheduleTemplateDutyBlocks.templateAssignmentId,
                                                                                 newAssignmentTemplateIds,
-                                                                        ),
+                                                                        ), scheduleParkPredicate("schedule_template_duty_blocks", requestedTenantId)),
                                                                 )
                                                 : [];
 
@@ -10571,7 +10635,7 @@ export class DatabaseStorage implements IStorage {
                                                 }
                                         });
                                         if (dutyBlocksToInsert.length > 0) {
-                                                await db.insert(dutyBlocks).values(dutyBlocksToInsert);
+                                                await db.insert(dutyBlocks).values(scheduleOwnedValues(dutyBlocksToInsert, requestedTenantId));
                                         }
                                 }
                         }
@@ -10581,7 +10645,7 @@ export class DatabaseStorage implements IStorage {
                 const templateTimeOffEntries = await db
                         .select()
                         .from(scheduleTemplateTimeOff)
-                        .where(eq(scheduleTemplateTimeOff.templateId, templateId));
+                        .where(and(eq(scheduleTemplateTimeOff.templateId, templateId), scheduleParkPredicate("schedule_template_time_off", requestedTenantId)));
 
                 let timeOffApplied = 0;
                 if (templateTimeOffEntries.length > 0) {
@@ -10594,11 +10658,11 @@ export class DatabaseStorage implements IStorage {
                                 .select()
                                 .from(employeeTimeOff)
                                 .where(
-                                        and(
+                                        and(and(
                                                 eq(employeeTimeOff.branchId, branchId),
                                                 gte(employeeTimeOff.startDate, new Date(weekStartDate)),
                                                 sql`${employeeTimeOff.startDate} <= ${targetWeekEnd.toISOString().split("T")[0]}::date`,
-                                        ),
+                                        ), scheduleParkPredicate("employee_time_off", requestedTenantId)),
                                 );
 
                         const existingTimeOffKeys = new Set(
@@ -10629,7 +10693,7 @@ export class DatabaseStorage implements IStorage {
                         }
 
                         if (newTimeOff.length > 0) {
-                                await db.insert(employeeTimeOff).values(newTimeOff);
+                                await db.insert(employeeTimeOff).values(scheduleOwnedValues(newTimeOff, requestedTenantId));
                                 timeOffApplied = newTimeOff.length;
                         }
                 }

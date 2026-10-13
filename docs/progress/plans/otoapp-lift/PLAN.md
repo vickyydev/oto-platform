@@ -2238,3 +2238,8 @@ Release sequencing: R7a introduces app 0009 and the owning Data Admin writers wh
 - Complete the previously local-only department action on staging with a recorded exact removal path. Reconcile every child and linked ticket before story release acceptance.
 
 Current state: implementation and independent review in progress; no scheduling release or staging correction is claimed.
+
+
+13 October, source candidate: 51 scheduling/rota/duty routes now carry caller-park checks. The shared reader predicate follows canonical parents, including historical mixed links. Destructive requests preflight incoming descendants; both saved-schedule restore paths are transactional. The independent review has30 runtime pins, including21 high-severity findings with their prescribed corrections applied. These cover direct and mixed-parent requests, full-array preflight, history/role-link ID collisions, foreign descendants, break inputs and injected restore rollback. No finding is silently removed; all21 are ordinary assertions in the named review file pending hosted execution. Existing within-park branch access and shared role definitions remain positive controls.
+
+Syntax and touched-file lint are complete (zero errors; routes retains300 existing warnings). The hosted runtime/full compiler/build gate remains required. No source deployment is claimed yet. No migration is introduced.
