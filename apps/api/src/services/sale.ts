@@ -731,7 +731,13 @@ async function resolveTier(
   requestedTier?: string,
 ): Promise<{ code: string; source: 'member' | 'default' }> {
   if (memberId) {
-    const [m] = await db.select().from(member).where(eq(member.id, memberId)).limit(1);
+    // A member archived since the till found them prices nothing (SCRUM-273):
+    // the same 404 as a member of another operator.
+    const [m] = await db
+      .select()
+      .from(member)
+      .where(and(eq(member.id, memberId), isNull(member.archivedAt)))
+      .limit(1);
     if (!m || m.operatorId !== operatorId) throw errors.notFound('Member not found');
     if (requestedTier !== undefined && requestedTier !== m.tierCode) {
       const [baseline] = await db

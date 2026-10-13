@@ -119,15 +119,23 @@ export async function catalogRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const auth = req.requireAuth();
+      // Only a live tier holds its code (SCRUM-273, `tier_code_unique` is
+      // partial): archiving refuses while any live member is priced at the
+      // tier, so a reused code re-points no live member.
       const [clash] = await app.db
         .select()
         .from(tier)
-        .where(and(eq(tier.operatorId, auth.operatorId), eq(tier.code, req.body.code)))
+        .where(
+          and(
+            eq(tier.operatorId, auth.operatorId),
+            eq(tier.code, req.body.code),
+            isNull(tier.archivedAt),
+          ),
+        )
         .limit(1);
       if (clash) {
         throw errors.conflict('TIER_CODE_EXISTS', `A tier with the code "${req.body.code}" already exists`, {
           code: req.body.code,
-          archived: clash.archivedAt !== null,
         });
       }
       const id = newId();

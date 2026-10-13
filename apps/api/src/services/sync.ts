@@ -1411,10 +1411,15 @@ const HANDLERS: Record<string, EventHandler> = {
         return { entityType: 'member', entityId: byId.id };
       }
 
+      // A live member only (SCRUM-273): an archived one no longer holds the
+      // phone, so a box's new member is created rather than merged into a
+      // record nobody can find.
       const [byPhone] = await tx
         .select()
         .from(member)
-        .where(and(eq(member.operatorId, operatorId), eq(member.phone, phone)))
+        .where(
+          and(eq(member.operatorId, operatorId), eq(member.phone, phone), isNull(member.archivedAt)),
+        )
         .limit(1);
 
       if (byPhone) {

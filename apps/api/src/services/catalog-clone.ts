@@ -188,9 +188,10 @@ export async function planBranchClone(
   };
 
   // --- Ticket packages ------------------------------------------------------
-  // Key: the name, because `ticket_package_name_unique` is (branch, name) and
-  // is NOT partial — the note on that index says an archived package holds its
-  // name for ever — so an archived row at the target still counts as taken.
+  // Key: the name, because `ticket_package_name_unique` is (branch, name). The
+  // index ignores archived rows since SCRUM-273, but an archived row at the
+  // target still counts as taken HERE on purpose: a package the target park
+  // archived is one it chose not to sell, and a clone does not put it back.
   {
     const sourceRows = await exec
       .select()

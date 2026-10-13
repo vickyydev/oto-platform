@@ -74,12 +74,20 @@ export async function visitRoutes(app: App): Promise<void> {
 
       // The member is the operator's, checked before the children are read
       // against it: a foreign member id would otherwise have matched its own
-      // children and put somebody else's family on this park's visit.
+      // children and put somebody else's family on this park's visit. And
+      // live (SCRUM-273): an archived member is off the lookup, so a screen
+      // still holding its id gets the same 404 as an id that was never real.
       if (req.body.memberId) {
         const [m] = await app.db
           .select({ id: member.id })
           .from(member)
-          .where(and(eq(member.id, req.body.memberId), eq(member.operatorId, auth.operatorId)))
+          .where(
+            and(
+              eq(member.id, req.body.memberId),
+              eq(member.operatorId, auth.operatorId),
+              isNull(member.archivedAt),
+            ),
+          )
           .limit(1);
         if (!m) throw errors.notFound('Member not found');
       }

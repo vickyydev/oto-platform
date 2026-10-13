@@ -111,10 +111,16 @@ async function staffName(app: App, accountId: string | null): Promise<string | n
  * one it has is the caller's own session.
  */
 async function memberWithChildren(app: App, memberId: string, operatorId: string) {
+  // SCRUM-273 — and never an archived member. This answer carries every
+  // child's allergies and medical notes; a member archived at the counter is
+  // off the lookup, and has to be off this read too, or its id (in an audit
+  // row, a sale, a support request) still opens the whole family.
   const [m] = await app.db
     .select()
     .from(member)
-    .where(and(eq(member.id, memberId), eq(member.operatorId, operatorId)))
+    .where(
+      and(eq(member.id, memberId), eq(member.operatorId, operatorId), isNull(member.archivedAt)),
+    )
     .limit(1);
   if (!m) return null;
   const children = await app.db
@@ -340,14 +346,28 @@ export async function memberRoutes(app: App): Promise<void> {
         (row) => row.operatorId === auth.operatorId,
       );
       if (claim.replay) {
+        // A create replayed after the member was archived answers what any
+        // read of that member now answers.
+        const replayed = await memberWithChildren(app, claim.row.id, auth.operatorId);
+        if (!replayed) throw errors.notFound('Member not found');
         reply.header(REPLAY_HEADER, 'true');
-        return { member: await memberWithChildren(app, claim.row.id, auth.operatorId) };
+        return { member: replayed };
       }
 
+      // SCRUM-273 — only a live member holds the phone. An archived one
+      // stays archived, with its children, visits and sales, and the new
+      // member owns the number from here: the prototype's admin delete freed
+      // it outright, and `member_phone_unique` ignores archived rows to match.
       const [existing] = await app.db
         .select()
         .from(member)
-        .where(and(eq(member.operatorId, auth.operatorId), eq(member.phone, phone)))
+        .where(
+          and(
+            eq(member.operatorId, auth.operatorId),
+            eq(member.phone, phone),
+            isNull(member.archivedAt),
+          ),
+        )
         .limit(1);
       if (existing) {
         // Same code the unique-violation mapper produces when two tills race
@@ -412,10 +432,17 @@ export async function memberRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const auth = req.requireAuth();
+      // An archived member is not edited back into the box feed (SCRUM-273).
       const [before] = await app.db
         .select()
         .from(member)
-        .where(and(eq(member.id, req.params.id), eq(member.operatorId, auth.operatorId)))
+        .where(
+          and(
+            eq(member.id, req.params.id),
+            eq(member.operatorId, auth.operatorId),
+            isNull(member.archivedAt),
+          ),
+        )
         .limit(1);
       if (!before) throw errors.notFound('Member not found');
       const patch: Partial<typeof member.$inferInsert> = {};
@@ -711,11 +738,18 @@ export async function memberRoutes(app: App): Promise<void> {
     async (req, reply) => {
       const auth = req.requireAuth();
       // The guardian proves the tenancy: a child is only reachable through a
-      // member of the caller's own operator.
+      // live member of the caller's own operator — an archived guardian takes
+      // no new children (SCRUM-273).
       const [m] = await app.db
         .select()
         .from(member)
-        .where(and(eq(member.id, req.params.id), eq(member.operatorId, auth.operatorId)))
+        .where(
+          and(
+            eq(member.id, req.params.id),
+            eq(member.operatorId, auth.operatorId),
+            isNull(member.archivedAt),
+          ),
+        )
         .limit(1);
       if (!m) throw errors.notFound('Member not found');
       const { id: sentId, ...details } = req.body;
@@ -791,14 +825,23 @@ export async function memberRoutes(app: App): Promise<void> {
         .from(child)
         .where(eq(child.id, req.params.childId))
         .limit(1);
-      if (!before) throw errors.notFound('Child not found');
+      // SCRUM-273 — a child taken off the saved list, or whose guardian was
+      // archived, is not edited: the edit would publish its allergies to the
+      // boxes again. Same 404 as an id that never existed.
+      if (!before || before.archivedAt) throw errors.notFound('Child not found');
       // A child id carries no operator, so the guardian is what proves the
       // caller may touch this record — and the refusal is the same 404 as an
       // id that does not exist at all.
       const [owner] = await app.db
         .select()
         .from(member)
-        .where(and(eq(member.id, before.memberId), eq(member.operatorId, auth.operatorId)))
+        .where(
+          and(
+            eq(member.id, before.memberId),
+            eq(member.operatorId, auth.operatorId),
+            isNull(member.archivedAt),
+          ),
+        )
         .limit(1);
       if (!owner) throw errors.notFound('Child not found');
       const patch: Partial<typeof child.$inferInsert> = {};

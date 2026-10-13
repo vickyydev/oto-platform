@@ -454,6 +454,20 @@ describe('SCRUM-228 — customer tiers are data, not a screen-local list', () =>
     expect(listed.json().tiers.some((t: { id: string }) => t.id === code)).toBe(false);
   });
 
+  it("frees an archived tier's code for a new tier (SCRUM-273)", async () => {
+    const again = await ctx.app.inject({
+      method: 'POST',
+      url: '/tiers',
+      headers: { cookie },
+      payload: { code, name: 'Student, again' },
+    });
+    expect(again.statusCode).toBe(200);
+    const listed = await ctx.app.inject({ method: 'GET', url: '/tiers', headers: { cookie } });
+    const live = listed.json().tiers.filter((t: { id: string }) => t.id === code);
+    expect(live).toHaveLength(1);
+    expect(live[0].name).toBe('Student, again');
+  });
+
   it('refuses to archive the baseline tier', async () => {
     const res = await ctx.app.inject({ method: 'DELETE', url: '/tiers/tourist', headers: { cookie } });
     expect(res.statusCode).toBe(400);

@@ -1110,6 +1110,32 @@ describe('the same phone at two counters', () => {
       mergedFromMemberId: (atCounterTwo.payload as { memberId: string }).memberId,
     });
   });
+
+  it('creates a new member rather than merging into an archived one (SCRUM-273)', async () => {
+    const one = await freshBox();
+    const two = await freshBox();
+    await registerKey(one);
+    await registerKey(two);
+
+    const phone = uniquePhone();
+    const first = mint(one, 'member.created', memberPayload(phone));
+    expect((await push(one, [first])).body.applied).toBe(1);
+    const archivedId = (first.payload as { memberId: string }).memberId;
+    await ctx.db.update(member).set({ archivedAt: new Date() }).where(eq(member.id, archivedId));
+
+    const second = mint(two, 'member.created', memberPayload(phone, 'The real family'));
+    expect((await push(two, [second])).body.applied).toBe(1);
+
+    const rows = await ctx.db.select().from(member).where(eq(member.phone, phone));
+    expect(rows).toHaveLength(2);
+    const live = rows.filter((r) => r.archivedAt === null);
+    expect(live.map((r) => r.id)).toEqual([(second.payload as { memberId: string }).memberId]);
+    const merges = await ctx.db
+      .select()
+      .from(syncAnomaly)
+      .where(and(eq(syncAnomaly.kind, 'merge'), eq(syncAnomaly.eventId, second.eventId)));
+    expect(merges).toHaveLength(0);
+  });
 });
 
 describe('quarantine, from the Console', () => {

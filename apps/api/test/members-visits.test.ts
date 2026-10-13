@@ -584,3 +584,103 @@ describe('tenancy — another operator\'s member (S2-01d)', () => {
     expect(after!.allergies).toBe('Cashew — EpiPen');
   });
 });
+
+describe('SCRUM-273 — an archived member answers nothing and holds no phone', () => {
+  const phone = '0655552730';
+  let archivedId: string;
+  let childId: string;
+
+  beforeAll(async () => {
+    const created = await ctx.app.inject({
+      method: 'POST',
+      url: '/members',
+      headers: { cookie },
+      payload: { phone, nickname: 'ZZ Archived Member' },
+    });
+    expect(created.statusCode).toBe(200);
+    archivedId = created.json().member.id as string;
+    const kid = await ctx.app.inject({
+      method: 'POST',
+      url: `/members/${archivedId}/children`,
+      headers: { cookie },
+      payload: { name: 'Nong Archived', allergies: 'Sesame — EpiPen', medicalNotes: 'Inhaler' },
+    });
+    expect(kid.statusCode).toBe(200);
+    childId = kid.json().child.id as string;
+    const archived = await ctx.app.inject({
+      method: 'DELETE',
+      url: `/members/${archivedId}`,
+      headers: { cookie },
+    });
+    expect(archived.statusCode).toBe(200);
+  });
+
+  it('does not answer the member, its children or their medical notes by id', async () => {
+    const res = await ctx.app.inject({ method: 'GET', url: `/members/${archivedId}`, headers: { cookie } });
+    expect(res.statusCode).toBe(404);
+    expect(res.json().error.code).toBe('NOT_FOUND');
+    expect(res.body).not.toContain('Sesame');
+  });
+
+  it('refuses a visit, an edit, a new child and a child edit — each the same 404', async () => {
+    const attempts = [
+      { method: 'POST', url: '/visits', payload: { memberId: archivedId, childIds: [] } },
+      { method: 'PATCH', url: `/members/${archivedId}`, payload: { notes: 'still here?' } },
+      { method: 'POST', url: `/members/${archivedId}/children`, payload: { name: 'Nong New' } },
+      { method: 'PATCH', url: `/members/children/${childId}`, payload: { allergies: 'None' } },
+    ] as const;
+    for (const a of attempts) {
+      const res = await ctx.app.inject({ ...a, headers: { cookie } });
+      expect(res.statusCode, `${a.method} ${a.url}`).toBe(404);
+    }
+    const visits = await ctx.db.select().from(visit).where(eq(visit.memberId, archivedId));
+    expect(visits).toHaveLength(0);
+    const children = await ctx.db.select().from(child).where(eq(child.memberId, archivedId));
+    expect(children).toHaveLength(1);
+    expect(children[0]!.allergies).toBe('Sesame — EpiPen');
+  });
+
+  it('prices no sale for the archived member', async () => {
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: '/sales/quote',
+      headers: { cookie },
+      payload: { memberId: archivedId, lines: [], items: [] },
+    });
+    expect(res.statusCode).toBe(404);
+    expect(res.json().error.message).toBe('Member not found');
+  });
+
+  it('lets reception register the phone again: the new member owns it, the archived one stays archived', async () => {
+    const again = await ctx.app.inject({
+      method: 'POST',
+      url: '/members',
+      headers: { cookie },
+      payload: { phone: '+66 65 555 2730', nickname: 'ZZ Real Person' },
+    });
+    expect(again.statusCode).toBe(200);
+    const liveId = again.json().member.id as string;
+    expect(liveId).not.toBe(archivedId);
+    expect(again.json().member.children).toEqual([]);
+
+    const found = await ctx.app.inject({
+      method: 'GET',
+      url: `/members/lookup?phone=${phone}`,
+      headers: { cookie },
+    });
+    expect(found.json().member.id).toBe(liveId);
+
+    const [old] = await ctx.db.select().from(member).where(eq(member.id, archivedId));
+    expect(old!.archivedAt).not.toBeNull();
+
+    // And the live one holds the phone as before: a third is refused.
+    const third = await ctx.app.inject({
+      method: 'POST',
+      url: '/members',
+      headers: { cookie },
+      payload: { phone, nickname: 'ZZ Third' },
+    });
+    expect(third.statusCode).toBe(409);
+    expect(third.json().error.code).toBe('MEMBER_PHONE_EXISTS');
+  });
+});
