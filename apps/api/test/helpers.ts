@@ -2,7 +2,7 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import { and, eq } from 'drizzle-orm';
 import pg from 'pg';
 import { schema, type Db } from '@oto/db';
-import { createTestDatabase, stopTestServer } from '@oto/db/testing';
+import { TestSetupError, createTestDatabase, setupStep, stopTestServer } from '@oto/db/testing';
 import { seed } from '@oto/db/seed';
 import { buildApp, type App } from '../src/app';
 import { loadEnv, type Env } from '../src/env';
@@ -35,20 +35,37 @@ export async function createTestContext(
     env?: Partial<Record<keyof Env, string>>;
   } = {},
 ): Promise<TestContext> {
+  // Every boot step runs through `setupStep` (SCRUM-510): a failure under CI
+  // load names the step and its full cause chain instead of "Unknown Error:
+  // undefined". `createTestDatabase` names its own steps (server, CREATE, migrate).
   const { url, drop } = await createTestDatabase({ otoapp: opts.otoapp });
-  const pool = new pg.Pool({ connectionString: url });
+  const dbName = url.slice(url.lastIndexOf('/') + 1);
+  const pool = new pg.Pool({ connectionString: url, application_name: 'oto-test-api' });
   // Dropping the test database terminates any connection still finishing its
   // goodbye (57P01). Expected only once close() has begun; anything else stays loud.
   let closing = false;
   pool.on('error', (err: Error & { code?: string }) => {
     if (closing && err.code === '57P01') return;
-    throw err;
+    throw new TestSetupError(`idle connection to ${dbName} (pool error outside any query)`, err);
   });
   const db = drizzle(pool, { schema }) as Db;
-  await seed(db);
+  // A step that fails after the database exists releases it before rethrowing,
+  // so a broken boot does not leave a pool holding the worker open. The cleanup
+  // never replaces the step's own error.
+  const releaseOnFailure = async <T>(run: () => Promise<T>): Promise<T> => {
+    try {
+      return await run();
+    } catch (err) {
+      closing = true;
+      await pool.end().catch(() => undefined);
+      await drop().catch(() => undefined);
+      throw err;
+    }
+  };
+  await releaseOnFailure(() => setupStep(`seed ${dbName}`, () => seed(db)));
   // Throttle counters live in Postgres now (S2-01a), so the reset needs the
   // database and each test gets a fresh one anyway — this is belt and braces.
-  await _resetThrottle(db);
+  await releaseOnFailure(() => setupStep(`reset the auth throttle in ${dbName}`, () => _resetThrottle(db)));
 
   const smsLog: string[] = [];
   const sms: SmsSender = {
@@ -58,29 +75,33 @@ export async function createTestContext(
   };
 
   const build = async (): Promise<App> => {
-    const env = loadEnv({ NODE_ENV: 'test', DATABASE_URL: url, ...opts.env });
-    const app = await buildApp({
-      env,
-      db,
-      fileStorage: opts.files ? buildFileStorage(env) : null,
-    });
+    const env = await setupStep('load the test env', () =>
+      loadEnv({ NODE_ENV: 'test', DATABASE_URL: url, ...opts.env }),
+    );
+    const app = await setupStep(`build the api on ${dbName} (buildApp)`, () =>
+      buildApp({
+        env,
+        db,
+        fileStorage: opts.files ? buildFileStorage(env) : null,
+      }),
+    );
     // Replace the console SMS adapter with the capturing one.
     (app as { sms: SmsSender }).sms = sms;
     return app;
   };
 
   const ctx: TestContext = {
-    app: await build(),
+    app: await releaseOnFailure(build),
     db,
     smsLog,
     restart: async () => {
-      await ctx.app.close();
-      ctx.app = await build();
+      await setupStep('restart: close the api', () => ctx.app.close());
+      ctx.app = await setupStep('restart', build);
     },
     close: async () => {
       closing = true;
-      await ctx.app.close();
-      await pool.end();
+      await setupStep('teardown: close the api', () => ctx.app.close());
+      await setupStep(`teardown: end the pool on ${dbName}`, () => pool.end());
       await drop();
     },
   };

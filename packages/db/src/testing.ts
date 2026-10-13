@@ -11,12 +11,116 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { inspect } from 'node:util';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import pg from 'pg';
 
 const PKG_DIR = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OTOAPP_MIGRATIONS = join(PKG_DIR, '..', '..', 'apps', 'oto-app', 'migrations');
+
+// =============================================================================
+// Naming a setup failure (SCRUM-510)
+// =============================================================================
+//
+// Under CI load a suite has fallen over in setup with nothing but
+// "Unknown Error: undefined" — a rejection whose reason carried no name and no
+// message — and then a teardown crash on the context that was never built.
+// Every boot step below runs through `setupStep`, which names the step and
+// writes the whole cause chain into the message itself, so the line survives
+// the trip from the worker to the reporter even when `cause` does not.
+//
+// Only node built-ins are used here: the api CI shards install no app
+// node_modules, and a formatter that reached for one would replace the real
+// cause with its own module-not-found.
+
+/** Fields worth printing from a pg, socket, child-process or Postgres error. */
+const DETAIL_FIELDS = [
+  'code',
+  'errno',
+  'syscall',
+  'address',
+  'port',
+  'severity',
+  'detail',
+  'hint',
+  'where',
+  'schema',
+  'table',
+  'constraint',
+  'routine',
+  'status',
+  'signal',
+] as const;
+
+const MAX_DEPTH = 6;
+
+function describeOne(err: unknown): string {
+  if (err === undefined) return 'the step rejected with undefined (no error object, no message)';
+  if (err === null) return 'the step rejected with null (no error object, no message)';
+  if (typeof err !== 'object') return `a non-Error value was thrown: ${inspect(err)}`;
+  const e = err as Record<string, unknown> & { name?: unknown; message?: unknown };
+  const name = typeof e.name === 'string' && e.name ? e.name : (err.constructor?.name ?? 'Object');
+  const message = typeof e.message === 'string' && e.message.trim() ? e.message.trim() : '(empty message)';
+  const fields = DETAIL_FIELDS.filter((k) => e[k] !== undefined && e[k] !== null && e[k] !== '').map(
+    (k) => `${k}=${String(e[k])}`,
+  );
+  const lines = [`${name}: ${message}${fields.length ? ` [${fields.join(' ')}]` : ''}`];
+  // A child process (execFileSync) keeps what it printed on the error itself.
+  for (const stream of ['stderr', 'stdout'] as const) {
+    const out = e[stream];
+    const text = out instanceof Buffer ? out.toString('utf8') : typeof out === 'string' ? out : '';
+    if (text.trim()) lines.push(`${stream}:\n${text.trim()}`);
+  }
+  // A plain object with no message at all: show what it is.
+  if (!(err instanceof Error) && message === '(empty message)') lines.push(inspect(err, { depth: 2 }));
+  return lines.join('\n');
+}
+
+/**
+ * The whole cause chain of a failure, one link per line: each `cause`, and each
+ * member of an AggregateError (which is what a `localhost` connect that fails
+ * on both ::1 and 127.0.0.1 throws, with an empty message of its own).
+ */
+export function describeFailure(err: unknown, depth = 0): string {
+  const head = describeOne(err);
+  if (depth >= MAX_DEPTH || !err || typeof err !== 'object') return head;
+  const parts = [head];
+  const errors = (err as { errors?: unknown }).errors;
+  if (Array.isArray(errors)) {
+    errors.forEach((inner, i) => {
+      parts.push(`  [${i + 1}/${errors.length}] ${describeFailure(inner, depth + 1).replace(/\n/g, '\n  ')}`);
+    });
+  }
+  if ('cause' in err && (err as { cause?: unknown }).cause !== undefined) {
+    parts.push(`caused by: ${describeFailure((err as { cause?: unknown }).cause, depth + 1)}`);
+  }
+  return parts.join('\n');
+}
+
+/** A harness failure (setup or teardown) that names the step and carries the original as `cause`. */
+export class TestSetupError extends Error {
+  readonly step: string;
+  readonly reason: string;
+  constructor(step: string, cause: unknown) {
+    const inner = cause instanceof TestSetupError ? cause : null;
+    const path = inner ? `${step} > ${inner.step}` : step;
+    const reason = inner ? inner.reason : describeFailure(cause);
+    super(`test harness step "${path}" failed: ${reason}`, { cause: inner ? inner.cause : cause });
+    this.name = 'TestSetupError';
+    this.step = path;
+    this.reason = reason;
+  }
+}
+
+/** Run one boot step; if it fails, throw a `TestSetupError` that names it. */
+export async function setupStep<T>(step: string, run: () => Promise<T> | T): Promise<T> {
+  try {
+    return await run();
+  } catch (err) {
+    throw new TestSetupError(step, err);
+  }
+}
 
 let embedded: { stop: () => Promise<void> } | null = null;
 let serverUrl: string | null = null; // connection string to the server's postgres db
@@ -90,7 +194,10 @@ export async function applyOtoAppMigrations(url: string): Promise<void> {
 export async function createTestDatabase(
   opts: { otoapp?: boolean } = {},
 ): Promise<{ url: string; drop: () => Promise<void> }> {
-  const server = await ensureServer();
+  const server = await setupStep(
+    process.env.TEST_DATABASE_URL ? 'use the test Postgres server' : 'start the embedded test Postgres server',
+    ensureServer,
+  );
   // The process id and a random tail keep parallel workers apart: each worker's
   // counter starts at zero, and two of them starting in the same millisecond
   // once collided on the database name.
@@ -98,46 +205,63 @@ export async function createTestDatabase(
   // once; three tries, each on a fresh name, and a readable error after the last.
   let name = '';
   let url = '';
+  // Every attempt's failure is kept, each under the step that died, so the
+  // final error says whether the tries failed the same way or three different ways.
+  const failures: string[] = [];
   for (let attempt = 1; ; attempt += 1) {
     name = `oto_test_${Date.now()}_${process.pid}_${Math.random().toString(36).slice(2, 6)}_${dbCounter++}`;
     url = server.replace(/\/[^/]*$/, `/${name}`);
     try {
-      const admin = new pg.Client({ connectionString: server });
-      await admin.connect();
+      const admin = new pg.Client({ connectionString: server, application_name: 'oto-test-create' });
+      await setupStep('connect to the test Postgres server', () => admin.connect());
       try {
-        await admin.query(`CREATE DATABASE ${name}`);
+        await setupStep(`CREATE DATABASE ${name}`, () => admin.query(`CREATE DATABASE ${name}`));
       } finally {
-        await admin.end();
+        await admin.end().catch(() => undefined);
       }
       // Apply committed migrations with drizzle-kit (same path as production).
-      execFileSync('node', [join(PKG_DIR, 'node_modules', 'drizzle-kit', 'bin.cjs'), 'migrate'], {
-        cwd: PKG_DIR,
-        env: { ...process.env, DATABASE_URL: url },
-        stdio: 'pipe',
+      await setupStep(`apply migrations to ${name} (drizzle-kit migrate)`, () => {
+        execFileSync('node', [join(PKG_DIR, 'node_modules', 'drizzle-kit', 'bin.cjs'), 'migrate'], {
+          cwd: PKG_DIR,
+          env: { ...process.env, DATABASE_URL: url },
+          stdio: 'pipe',
+        });
       });
       break;
     } catch (err) {
-      const e = err as { message?: string; stderr?: Buffer | string; stdout?: Buffer | string };
-      const detail = [e.message, e.stderr?.toString(), e.stdout?.toString()].filter(Boolean).join('\n');
+      failures.push(
+        `attempt ${attempt}: ${err instanceof TestSetupError ? `step "${err.step}": ${err.reason}` : describeFailure(err)}`,
+      );
       const cleanup = new pg.Client({ connectionString: server });
       await cleanup.connect().catch(() => undefined);
       await cleanup.query(`DROP DATABASE IF EXISTS ${name} WITH (FORCE)`).catch(() => undefined);
       await cleanup.end().catch(() => undefined);
       if (attempt >= 3) {
-        throw new Error(`Could not create a migrated test database after ${attempt} tries:\n${detail || String(err)}`);
+        // Each attempt's cause chain is already written out in `failures`.
+        throw new TestSetupError(
+          'create a migrated test database',
+          new Error(`all ${attempt} tries failed:\n${failures.join('\n')}`),
+        );
       }
     }
   }
 
-  if (opts.otoapp) await applyOtoAppMigrations(url);
+  if (opts.otoapp) {
+    await setupStep(`apply the OTO App migrations to ${name} (schema otoapp)`, () => applyOtoAppMigrations(url));
+  }
 
   return {
     url,
     drop: async () => {
       const c = new pg.Client({ connectionString: server });
-      await c.connect();
-      await c.query(`DROP DATABASE IF EXISTS ${name} WITH (FORCE)`);
-      await c.end();
+      await setupStep(`teardown: connect to drop ${name}`, () => c.connect());
+      try {
+        await setupStep(`teardown: DROP DATABASE ${name}`, () =>
+          c.query(`DROP DATABASE IF EXISTS ${name} WITH (FORCE)`),
+        );
+      } finally {
+        await c.end().catch(() => undefined);
+      }
     },
   };
 }
