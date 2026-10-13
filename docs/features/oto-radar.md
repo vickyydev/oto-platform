@@ -110,8 +110,8 @@ Forecast model, targets, pace, holidays and the two-branch merge are computed
 | Code review of the export | done | 2026-09-19 |
 | Real database dump | **missing** | structure listing only |
 | POS API credentials | **missing** | Replit Secrets |
-| Lift to Render: `radar` schema, sign-on gate, push/wipe routes removed | planned | Sprint 2 — S2-18 |
-| Figures from the OTO POS rollup for every branch (one adapter, no legacy pipelines, no fixtures, no parity view) | planned | Sprint 2 — S2-18, narrowed by the owner 2026-10-14 |
+| Lift to Render: `radar` schema, sign-on gate, push/wipe routes removed | **live on staging** | S2-18, deployed 2026-10-14: 46 classified routes (was 85), census test, launcher hand-off, 3 migrations / 13 tables |
+| Figures from the OTO POS rollup for every branch (one adapter, no legacy pipelines, no fixtures, no parity view) | **live on staging** | S2-18: a ฿200 till sale reached the dashboard within ~5 minutes (staging proof on SCRUM-219) |
 | Summary API on `analytics` (the contract Radar reads for OTO POS branches) | planned | Sprint 2 — S2-15b |
 | History restore (dump → `analytics.daily_summary` loader; no API re-fetch) | not started | needs the real dump (Open decision 18); Sprint 3 |
 
