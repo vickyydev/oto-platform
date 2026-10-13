@@ -137,6 +137,55 @@ say "Clock: NTP on, timezone $TIMEZONE"
 timedatectl set-ntp true || warn "could not switch NTP on"
 timedatectl set-timezone "$TIMEZONE" || warn "could not set the timezone"
 
+# --- The box stays awake (SCRUM-467) -------------------------------------------
+# At the park the red button, and then the mouse beside it, stopped answering
+# after the box had sat idle, and the box's SSH turned flaky in the same spells.
+# The red button is a USB keyboard: the kernel's USB autosuspend lets an idle
+# input device (or a wireless receiver) power down, and its next press can be
+# lost; Wi-Fi power saving parks the radio between packets. Both are pinned
+# off here, on every run, so a booth box ships fully awake from its first
+# boot. (The screen never blanking is set with the television, below.) A udev
+# rule rather than the kernel command line: it holds for a device plugged in
+# later too, and leaves the boot files alone. Nothing here needs a reboot.
+say "Box stays awake: USB autosuspend off, Wi-Fi power saving off"
+USB_AWAKE_RULE="/etc/udev/rules.d/50-oto-box-usb-awake.rules"
+cat >"$USB_AWAKE_RULE" <<'EOF'
+# Written by the OTO box installer (SCRUM-467): every USB device stays powered,
+# so the red button and the keyboard never sleep. Rewritten on every install run.
+ACTION=="add", SUBSYSTEM=="usb", TEST=="power/control", ATTR{power/control}="on"
+EOF
+chmod 0644 "$USB_AWAKE_RULE"
+udevadm control --reload-rules 2>/dev/null || warn "udev did not reload its rules; they take effect at the next boot"
+# Now, for what is already plugged in, and for the kernel's default.
+for control in /sys/bus/usb/devices/*/power/control; do
+  [ -w "$control" ] && { echo on >"$control" 2>/dev/null || true; }
+done
+if [ -w /sys/module/usbcore/parameters/autosuspend ]; then
+  echo -1 >/sys/module/usbcore/parameters/autosuspend 2>/dev/null || true
+fi
+if command -v nmcli >/dev/null; then
+  install -d -m 0755 /etc/NetworkManager/conf.d
+  cat >/etc/NetworkManager/conf.d/oto-box-wifi-powersave.conf <<'EOF'
+# Written by the OTO box installer (SCRUM-467): Wi-Fi power saving off
+# (2 = disable) for every Wi-Fi connection. Rewritten on every install run.
+[connection]
+wifi.powersave = 2
+EOF
+  chmod 0644 /etc/NetworkManager/conf.d/oto-box-wifi-powersave.conf
+  # Reload the configuration, never restart NetworkManager: this run may be
+  # over SSH on that same Wi-Fi. The connection up now gets it from `iw`.
+  nmcli general reload conf >/dev/null 2>&1 || warn "NetworkManager did not reload its configuration; Wi-Fi power saving goes off at the next boot"
+else
+  warn "nmcli is not on this system (no NetworkManager): Wi-Fi power saving was left as it is"
+fi
+if command -v iw >/dev/null; then
+  for wifi in /sys/class/net/*/wireless; do
+    [ -e "$wifi" ] || continue
+    iface="$(basename "$(dirname "$wifi")")"
+    iw dev "$iface" set power_save off 2>/dev/null || warn "could not switch power saving off on $iface now; it goes off at the next boot"
+  done
+fi
+
 # --- The printer cable ------------------------------------------------------
 # The booth's standard (PI_BOOTH.md section 1): the receipt printer plugs by
 # network cable straight into the Pi's Ethernet socket, with no router between

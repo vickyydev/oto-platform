@@ -125,9 +125,15 @@ voucher ledger. The standard single-use promise is omitted in this mode.
   idle does nothing); the Wi-Fi radio's power saving makes the box vanish from the
   network between heartbeats (SSH refused or timing out until the box is poked); and
   screen blanking would darken the wheel (the installer already disables this one).
-  Releases up to and including `d10d78f` do **not** set the first two — the fix round
-  for SCRUM-467 puts all three into the installer, and until a release carries that,
-  every new box gets them by hand, once:
+  Releases up to and including `d10d78f` do **not** set the first two. The installer
+  from the SCRUM-467 fix round sets all three on every run: a udev rule,
+  `/etc/udev/rules.d/50-oto-box-usb-awake.rules`, keeps every USB device powered
+  (and the installer switches the ones already plugged in on at once), and
+  `/etc/NetworkManager/conf.d/oto-box-wifi-powersave.conf` turns Wi-Fi power saving
+  off without restarting NetworkManager, so an install over Wi-Fi SSH is not cut
+  off. The booth page itself also takes the keyboard back if its window loses
+  focus (`#debug` shows *keyboard lost* / *keyboard back*). A box on an older
+  release gets the first two by hand, once:
   `echo on` into every `/sys/bus/usb/devices/*/power/control` plus
   `usbcore.autosuspend=-1` appended to the one line of `/boot/firmware/cmdline.txt`
   (it is a single-line file — append, never add a second line);
