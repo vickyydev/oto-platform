@@ -13,6 +13,7 @@ import {
   Lock,
   LogOut,
   MonitorSmartphone,
+  Tablet,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -43,6 +44,8 @@ import {
 import { PhoneInput } from '@/components/shared/PhoneInput';
 import { toast } from '@/hooks/use-toast';
 import { adminApi, authApi } from '@/api/platform';
+import { useOperator } from '@/auth/OperatorContext';
+import { staffTokenEndedWhy, staffTokenRowState, staffTokenSettingsWords } from '@/auth/staffToken';
 import { useCatalogStore } from '@/store/CatalogStoreContext';
 import { AccountAppsDialog } from './AccountAppsDialog';
 import { UnlinkedOtoAppUsers } from './UnlinkedOtoAppUsers';
@@ -68,6 +71,12 @@ import { UnlinkedOtoAppUsers } from './UnlinkedOtoAppUsers';
  * account's last role left it with no access and no screen able to give any
  * back. And a phone could be mistyped on an invitation and never corrected —
  * the route has always accepted one, this panel only ever sent `status`.
+ *
+ * SCRUM-512 puts the shift tokens beside the sessions. A shift token is what
+ * unlocks a till from the box's own copy when the internet is down, so an iPad
+ * that walks away holding one could still be opened with the password. The
+ * Sessions dialog lists the person's tokens and ends one, through the routes
+ * that have always existed and that no screen called.
  */
 type AccountRow = {
   id: string;
@@ -86,6 +95,26 @@ type SessionRow = {
   expiresAt: string;
   createdAt: string;
 };
+
+type StaffTokenRow = {
+  jti: string;
+  stationId: string;
+  boxId: string;
+  issuedAt: string;
+  expiresAt: string;
+  revokedAt: string | null;
+  revokedReason: string | null;
+};
+
+type StaffTokenSettings = {
+  available: boolean;
+  kid: string | null;
+  ttlSeconds: number | null;
+  offlineSignIn: boolean;
+};
+
+/** An id as a person can match it by eye: its first eight characters. */
+const shortId = (id: string): string => id.slice(0, 8);
 
 type DenialRow = {
   id: string;
@@ -115,6 +144,7 @@ type ScopeKey = 'operator' | 'platform' | `branch:${string}`;
 
 export function LoginUsersPanel() {
   const { branches } = useCatalogStore();
+  const { can } = useOperator();
   const [accounts, setAccounts] = useState<AccountRow[]>([]);
   const [query, setQuery] = useState('');
   const [busy, setBusy] = useState(false);
@@ -147,6 +177,12 @@ export function LoginUsersPanel() {
   const [sessionsFor, setSessionsFor] = useState<AccountRow | null>(null);
   const [sessions, setSessions] = useState<SessionRow[] | null>(null);
   const [denials, setDenials] = useState<DenialRow[]>([]);
+
+  /** Shift tokens for the account in the Sessions dialog (SCRUM-512); null while loading. */
+  const [staffTokens, setStaffTokens] = useState<StaffTokenRow[] | null>(null);
+  const [staffTokensFailed, setStaffTokensFailed] = useState<string | null>(null);
+  const [tokenSettings, setTokenSettings] = useState<StaffTokenSettings | null>(null);
+  const [endingToken, setEndingToken] = useState<StaffTokenRow | null>(null);
 
   /** Correcting a mistyped phone (SCRUM-239). */
   const [phoneFor, setPhoneFor] = useState<AccountRow | null>(null);
@@ -341,6 +377,18 @@ export function LoginUsersPanel() {
     }
   };
 
+  const loadStaffTokens = (a: AccountRow) => {
+    setStaffTokens(null);
+    setStaffTokensFailed(null);
+    void adminApi
+      .accountStaffTokens(a.id)
+      .then((r) => setStaffTokens(r.tokens))
+      .catch((err: unknown) => {
+        setStaffTokens([]);
+        setStaffTokensFailed(err instanceof Error ? err.message : 'Unknown error');
+      });
+  };
+
   const showSessions = (a: AccountRow) => {
     setSessionsFor(a);
     setSessions(null);
@@ -348,7 +396,40 @@ export function LoginUsersPanel() {
       .accountSessions(a.id)
       .then((r) => setSessions(r.sessions))
       .catch(apiFail("Couldn't load sessions"));
+    loadStaffTokens(a);
+    // The deployment's terms do not change between accounts: read once.
+    if (!tokenSettings) {
+      void adminApi
+        .staffTokenSettings()
+        .then(setTokenSettings)
+        .catch(() => setTokenSettings(null));
+    }
   };
+
+  /**
+   * End one shift token (SCRUM-512). The api asks `admin:account:update` at
+   * the branch the token was minted at, so its refusal is the authority and
+   * its message is what the toast shows.
+   */
+  const endStaffToken = (t: StaffTokenRow, a: AccountRow) =>
+    adminApi
+      .endStaffToken(t.jti)
+      .then((r) => {
+        toast({
+          title: r.revoked > 0 ? 'Shift token ended' : 'Already ended',
+          description:
+            r.revoked > 0
+              ? `${a.employee?.name ?? a.phone} can no longer unlock station ${shortId(
+                  t.stationId,
+                )} offline with it. A box that is offline right now honours this from its next pull.`
+              : 'That token had already ended or run out, so nothing changed.',
+        });
+        if (sessionsFor?.id === a.id) loadStaffTokens(a);
+      })
+      .catch((err: unknown) => {
+        apiFail("Couldn't end the shift token")(err);
+        void refreshDenials();
+      });
 
   /** Force sign-out: every device this account holds returns to sign-in. */
   const revokeSessions = (a: AccountRow) =>
@@ -752,6 +833,73 @@ export function LoginUsersPanel() {
                   </div>
                 </div>
               ))}
+              {/* Shift tokens (SCRUM-512) */}
+              <div className="mt-1 flex flex-col gap-2">
+                <h3 className="flex items-center gap-2 text-sm font-bold">
+                  <Tablet className="w-4 h-4 text-foreground/40" />
+                  Shift tokens
+                </h3>
+                <p className="text-xs text-foreground/50">
+                  Issued when they pick a station. With the password, a token unlocks that till from
+                  the box's own copy when the internet is down, so end it when a device goes missing.
+                  {tokenSettings && ` ${staffTokenSettingsWords(tokenSettings)}`}
+                </p>
+                {staffTokens === null ? (
+                  <div className="flex justify-center py-3">
+                    <Loader2 className="w-5 h-5 animate-spin text-foreground/40" />
+                  </div>
+                ) : staffTokensFailed ? (
+                  <p className="text-sm text-destructive">
+                    Couldn't load shift tokens: {staffTokensFailed}
+                  </p>
+                ) : staffTokens.length === 0 ? (
+                  <p className="text-sm text-foreground/50">No shift tokens on record.</p>
+                ) : (
+                  staffTokens.map((t) => {
+                    const state = staffTokenRowState(t);
+                    return (
+                      <div
+                        key={t.jti}
+                        className="flex items-center justify-between gap-3 rounded-lg border border-foreground/10 px-3 py-2 text-sm"
+                      >
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2 font-medium">
+                            <span title={t.stationId}>
+                              Station <span className="font-mono text-xs">{shortId(t.stationId)}</span>
+                            </span>
+                            <span className="text-xs text-foreground/40" title={t.boxId}>
+                              box <span className="font-mono">{shortId(t.boxId)}</span>
+                            </span>
+                            {state === 'live' ? (
+                              <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-semibold text-emerald-600">
+                                live
+                              </span>
+                            ) : (
+                              <span className="rounded-full bg-foreground/10 px-2 py-0.5 text-xs font-semibold text-foreground/50">
+                                {state === 'ended' ? staffTokenEndedWhy(t.revokedReason) : 'expired'}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs text-foreground/50 tabular-nums">
+                            issued {when(t.issuedAt)} ·{' '}
+                            {t.revokedAt ? `ended ${when(t.revokedAt)}` : `expires ${when(t.expiresAt)}`}
+                          </div>
+                        </div>
+                        {state === 'live' && can('admin:account:update') && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive h-7 shrink-0"
+                            onClick={() => setEndingToken(t)}
+                          >
+                            End
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
               <Button
                 variant="outline"
                 className="mt-1 text-destructive"
@@ -766,6 +914,35 @@ export function LoginUsersPanel() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Ending one shift token (SCRUM-512) */}
+      <AlertDialog open={endingToken !== null} onOpenChange={(o) => !o && setEndingToken(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              End {sessionsFor?.employee?.name ?? sessionsFor?.phone}'s shift token at station{' '}
+              {endingToken ? shortId(endingToken.stationId) : ''}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              That till can no longer be unlocked from the box's offline copy with this token. A box
+              that is offline right now honours it from its next pull; until then the token's own
+              expiry is the limit. Their sessions stay signed in — Sign out everywhere ends those.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (endingToken && sessionsFor) void endStaffToken(endingToken, sessionsFor);
+                setEndingToken(null);
+              }}
+            >
+              End shift token
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Effective permissions dialog (SCRUM-22) */}
       <Dialog open={permsFor !== null} onOpenChange={(o) => !o && setPermsFor(null)}>

@@ -714,6 +714,41 @@ export const adminApi = {
   /** S2-01a — "Sign out everywhere": end every session this account holds. */
   revokeSessions: (id: string) =>
     api.post<{ sessionsEnded: number }>(`/accounts/${id}/sessions/revoke`),
+  /**
+   * SCRUM-512 — the shift tokens minted for one account, newest first, as far
+   * as this session's `admin:account:read` reaches. A shift token is what
+   * unlocks a till when the box decides offline, so a lost iPad's is ended
+   * here, one at a time, with `endStaffToken`.
+   */
+  accountStaffTokens: (id: string) =>
+    api.get<{
+      tokens: Array<{
+        jti: string;
+        accountId: string;
+        stationId: string;
+        boxId: string;
+        issuedAt: string;
+        expiresAt: string;
+        revokedAt: string | null;
+        revokedReason: string | null;
+      }>;
+    }>(`/accounts/${id}/staff-tokens`),
+  /**
+   * End one shift token. Asks `admin:account:update` at the branch it was
+   * minted at; `revoked: 0` means it had already ended or expired. It joins
+   * the deny-list every box pulls, so an offline box honours it from its next
+   * pull.
+   */
+  endStaffToken: (jti: string) =>
+    api.delete<{ revoked: number }>(`/staff-tokens/${encodeURIComponent(jti)}`),
+  /** Whether this deployment mints shift tokens at all, and on what terms. Never the key. */
+  staffTokenSettings: () =>
+    api.get<{
+      available: boolean;
+      kid: string | null;
+      ttlSeconds: number | null;
+      offlineSignIn: boolean;
+    }>('/staff-tokens/settings'),
   /** S2-01a — refusals recorded by the API, newest first. */
   recentDenials: (limit = 10) =>
     api.get<{
