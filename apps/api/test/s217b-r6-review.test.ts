@@ -427,7 +427,7 @@ function statementsOf(tag: string): string[] {
 // =============================================================================
 
 describe('A. fences and seams', () => {
-  it('0006 and 0007 and their snapshots are byte for byte what staging applied; the round-6 prefix ends at 0008 and the platform adds none', () => {
+  it('0006 and 0007 and their snapshots are byte for byte what staging applied; the round-6 app prefix ends at 0008; the platform journal through 0075 is unchanged', () => {
     const applied = {
       '0006_tenant_ownership_expand.sql': 'e2f9c20269d7a508c636e8bc2b84e11ac5f82418df98890fc70b894e5d1e1225',
       '0007_tenant_ownership_contract.sql': '7c0408d7329f4d19ff26914f0eeaa0d8e855dc20f98f7eba6412279ba40b1a18',
@@ -442,7 +442,11 @@ describe('A. fences and seams', () => {
     expect(entries.find((e) => e.idx === 8)!.when).toBeGreaterThan(1791482998619);
     expect(readdirSync(APP_MIGRATIONS).filter((f) => /^0008_.*\.sql$/.test(f))).toEqual([`${MIGRATION}.sql`]);
     const platform = JSON.parse(committed(join(REPO, 'packages', 'db', 'migrations', 'meta', '_journal.json'))) as { entries: { tag: string }[] };
-    expect(platform.entries.at(-1)?.tag).toBe('0075_event_booking_pass');
+    // The era fence held the platform journal's TAIL, which froze it for
+    // ever; the invariant this pin protects is that the prefix this round
+    // shipped against is never edited. Later work may append (0076+).
+    expect(platform.entries[75]?.tag).toBe('0075_event_booking_pass');
+    expect(platform.entries.length).toBeGreaterThanOrEqual(76);
   });
 
   it('0008 is EXPAND ONLY: added columns, keys and indexes; no NOT NULL, no drop, rename or retype; no unique dropped; nothing of round 7', () => {
