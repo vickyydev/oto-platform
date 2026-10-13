@@ -2,6 +2,8 @@
 
 13 October 2026
 
+[Presentation PDF](OWNER_CONFIRMATIONS_2026-10-13.pdf) - aligned meeting questions, clickable contents and four inspected staging illustrations.
+
 This document gathers the remaining business choices and practical inputs recorded across the project. Each point explains the question, the current default and what an answer would change. The original plan or ticket number remains beside each question so the answer can be recorded in the right place.
 
 **SCRUM-191 and all twelve child tickets are Deployed. The owner will move them to Done after the full and final test suite. None of these business questions blocks that final testing.** Some answers are needed before a named upcoming item can proceed. Others concern production preparation or an optional change to behavior already accepted. Keeping an accepted default does not require another approval.
