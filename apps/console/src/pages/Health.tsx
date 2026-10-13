@@ -10,7 +10,11 @@ import {
   type Readiness,
   type TestControl,
 } from '@/api/observability';
-import { analyticsFreshnessLines, type AnalyticsFreshnessLine } from '@/lib/analyticsFreshness';
+import {
+  analyticsFreshnessLines,
+  radarFreshnessLine,
+  type AnalyticsFreshnessLine,
+} from '@/lib/analyticsFreshness';
 import { Button } from '@/components/ui/button';
 import { BoothSummary } from '@/components/health/BoothSummary';
 import { KioskSummary } from '@/components/health/KioskSummary';
@@ -72,6 +76,8 @@ export function Health() {
   const checks = [...apiCheck(ready), ...(snapshot?.checks ?? checksFromReady(ready).slice(1))];
   const jobs = snapshot?.jobs ?? [];
   const rollups = snapshot?.rollups ?? [];
+  // S2-18 — Radar's freshness, for those who can open Radar.
+  const radarLine = has('app:radar:access') ? radarFreshnessLine(rollups) : null;
   const alerts = (snapshot?.alerts ?? []).filter((a) => !a.resolvedAt);
   const problems = listProblems(ready, checks, jobs, alerts);
   const verdict = overallTone(ready, checks, jobs, alerts, problems);
@@ -239,7 +245,8 @@ export function Health() {
             note="when each park's day, report and booth figures were last brought up to date"
           >
             <StripedList label="Analytics rollup">
-              {/* Each park's daily figures, then (round 6) its report figures and (round 5) its booth figures. */}
+              {/* Radar's freshness (S2-18), then each park's daily figures, then (round 6) its report figures and (round 5) its booth figures. */}
+              {radarLine && <RollupRow key={radarLine.key} line={radarLine} timezone={timezone} />}
               {analyticsFreshnessLines(rollups).map((line) => (
                 <RollupRow key={line.key} line={line} timezone={timezone} />
               ))}

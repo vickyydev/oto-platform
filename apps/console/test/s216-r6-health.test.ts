@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { analyticsFreshnessLines } from '@/lib/analyticsFreshness';
+import { analyticsFreshnessLines, radarFreshnessLine } from '@/lib/analyticsFreshness';
 
 /**
  * S2-15b round 6 closing sweep — Health's analytics card names every figure
@@ -34,6 +34,18 @@ describe('Health — the analytics freshness lines', () => {
       { key: `booth-${central.branchId}`, label: 'Central · booth figures', at: central.boothLastRolledUpAt, today: '2026-10-07' },
       { key: `booth-${chalong.branchId}`, label: 'Chalong · booth figures', at: null, today: '2026-10-07' },
     ]);
+  });
+
+  it('reads Radar as fresh as its least recent park, and not refreshed while any park never was (S2-18)', () => {
+    const earlier = { ...central, branchId: 'b3', name: 'Rawai', lastRolledUpAt: '2026-10-07T02:00:00.000Z' };
+    expect(radarFreshnessLine([central, earlier])).toEqual({
+      key: 'radar',
+      label: 'Radar last refreshed',
+      at: '2026-10-07T02:00:00.000Z',
+      today: '2026-10-07',
+    });
+    expect(radarFreshnessLine([central, chalong])?.at).toBeNull();
+    expect(radarFreshnessLine([])).toBeNull();
   });
 
   it('leaves out a line an older API does not report, rather than calling it never rolled up', () => {

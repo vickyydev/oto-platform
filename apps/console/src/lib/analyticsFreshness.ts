@@ -35,3 +35,24 @@ export function analyticsFreshnessLines(rows: readonly RollupFreshness[]): Analy
   );
   return [...daily, ...reports, ...booth];
 }
+
+/**
+ * S2-18 — one line that answers "how fresh is Radar?" for someone who does not
+ * know Radar reads the daily rollup.
+ *
+ * Radar reads every park's daily figures, so it is only as fresh as the park
+ * that was brought up to date LEAST recently, and it is "not refreshed yet" while
+ * any park has never been rolled up — the same rule as the summary's own
+ * `lastRolledUpAt` (analytics-summary.ts). The trading day shown is that park's.
+ * No line at all when the API reported no park.
+ */
+export function radarFreshnessLine(rows: readonly RollupFreshness[]): AnalyticsFreshnessLine | null {
+  if (rows.length === 0) return null;
+  // ISO strings of one format compare as the instants they name.
+  const behind = rows.reduce((oldest, row) => {
+    if (oldest.lastRolledUpAt === null) return oldest;
+    if (row.lastRolledUpAt === null) return row;
+    return row.lastRolledUpAt < oldest.lastRolledUpAt ? row : oldest;
+  });
+  return { key: 'radar', label: 'Radar last refreshed', at: behind.lastRolledUpAt, today: behind.today };
+}
