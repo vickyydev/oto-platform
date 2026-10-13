@@ -43,7 +43,8 @@ Object.assign(globalThis, {
   },
 });
 
-const { installPressListener, registerButtonOverlay } = await import('../src/press.ts');
+const { installKeyboardKeeper, installPressListener, KEYBOARD_CHECK_MS, KEYBOARD_RECLAIM_DELAY_MS, registerButtonOverlay } =
+  await import('../src/press.ts');
 
 function key(type: 'keydown' | 'keyup', target: FakeElement, repeat = false): FakeKey {
   const event: FakeKey = {
@@ -153,4 +154,61 @@ test('a release whose press was swallowed elsewhere is still a press — but not
   key('keyup', password);
   assert.equal(seen.presses, 1, 'a release in a field is the field’s');
   remove();
+});
+
+test('SCRUM-467: a wall clock stepped back does not hold the lockout', (t) => {
+  t.mock.timers.enable({ apis: ['Date'], now: 50_000_000 });
+  let presses = 0;
+  const remove = installPressListener({ buttonKey: 'Space', lockoutMs: () => 350, onPress: () => presses++ });
+  key('keydown', body);
+  key('keyup', body);
+  assert.equal(presses, 1);
+  key('keydown', body);
+  key('keyup', body);
+  assert.equal(presses, 1, 'a bounce inside the lockout is still ignored');
+  // Time sync pulls a clock that ran an hour ahead back into step.
+  t.mock.timers.setTime(50_000_000 - 3_600_000);
+  key('keydown', body);
+  key('keyup', body);
+  assert.equal(presses, 2, 'the button answers at once, not an hour later');
+  remove();
+});
+
+test('SCRUM-467: the kiosk takes the keyboard back when its window loses it', (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'setInterval'] });
+  const on = new Map<string, () => void>();
+  let focused = true;
+  let focusCalls = 0;
+  const win = {
+    addEventListener: (type: string, h: () => void) => on.set(`win:${type}`, h),
+    removeEventListener: (type: string) => on.delete(`win:${type}`),
+    focus: () => {
+      focusCalls++;
+    },
+  };
+  const doc = {
+    addEventListener: (type: string, h: () => void) => on.set(`doc:${type}`, h),
+    removeEventListener: (type: string) => on.delete(`doc:${type}`),
+    hasFocus: () => focused,
+  };
+  const log: string[] = [];
+  const remove = installKeyboardKeeper({ win, doc, onLost: () => log.push('lost'), onBack: () => log.push('back') });
+  t.mock.timers.tick(KEYBOARD_CHECK_MS);
+  assert.equal(focusCalls, 0, 'a focused window is left alone');
+  focused = false;
+  on.get('win:blur')?.();
+  t.mock.timers.tick(KEYBOARD_RECLAIM_DELAY_MS);
+  assert.equal(focusCalls, 1, 'the blur is answered within a second');
+  t.mock.timers.tick(KEYBOARD_CHECK_MS);
+  assert.equal(focusCalls, 2, 'and retried while the window stays unfocused');
+  on.get('doc:visibilitychange')?.();
+  assert.equal(focusCalls, 3, 'the page shown again asks at once');
+  assert.deepEqual(log, ['lost'], 'one line per loss, not one per try');
+  focused = true;
+  on.get('win:focus')?.();
+  t.mock.timers.tick(KEYBOARD_CHECK_MS);
+  assert.equal(focusCalls, 3);
+  assert.deepEqual(log, ['lost', 'back']);
+  remove();
+  assert.equal(on.size, 0, 'every listener is removed');
 });

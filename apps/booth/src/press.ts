@@ -162,7 +162,10 @@ export function installPressListener(options: PressListenerOptions): () => void 
       return;
     }
     const now = Date.now();
-    if (now - lastPressAt < lockoutMs()) {
+    // A wall clock that stepped BACK since the last press (time sync correcting
+    // a Pi whose clock was ahead) would otherwise hold the lockout for the
+    // whole step — hours of dead button until a reload resets it (SCRUM-467).
+    if (now >= lastPressAt && now - lastPressAt < lockoutMs()) {
       onKeyRecorded?.('press ignored (lockout)');
       return;
     }
@@ -236,5 +239,88 @@ export function installPressListener(options: PressListenerOptions): () => void 
     clearTimeout(single);
     window.removeEventListener('keydown', onKeyDown);
     window.removeEventListener('keyup', onKeyUp);
+  };
+}
+
+/** How often the booth checks that its window still has the keyboard. */
+export const KEYBOARD_CHECK_MS = 5_000;
+/** After the window loses the keyboard, the first try to take it back. */
+export const KEYBOARD_RECLAIM_DELAY_MS = 1_000;
+
+interface KeyboardWindow {
+  addEventListener(type: string, handler: () => void): void;
+  removeEventListener(type: string, handler: () => void): void;
+  focus(): void;
+}
+interface KeyboardDocument {
+  addEventListener(type: string, handler: () => void): void;
+  removeEventListener(type: string, handler: () => void): void;
+  hasFocus(): boolean;
+}
+
+/**
+ * Keeps the booth's window holding the keyboard (SCRUM-467).
+ *
+ * The press listener above sits on `window` and is never removed while the
+ * page runs, so the page cannot lose its button by itself. What it can lose
+ * is the keyboard: the button is a USB keyboard, and key events only reach
+ * the window the desktop has focused. Once anything takes focus away from the
+ * kiosk browser — a desktop notification, a dialog, the compositor after the
+ * screen woke — every press goes elsewhere and the wheel looks dead until the
+ * browser is restarted, which hands it focus again.
+ *
+ * So whenever the document reports it no longer has focus — on the window's
+ * blur, when the page is shown again, and on a slow periodic check — it asks
+ * for focus back. Focus INSIDE the page is left alone: a staff field or a
+ * panel button keeps the keyboard it has. `onLost` / `onBack` fire once per
+ * loss, for the `#debug` input line.
+ */
+export function installKeyboardKeeper(
+  options: {
+    onLost?: () => void;
+    onBack?: () => void;
+    win?: KeyboardWindow;
+    doc?: KeyboardDocument;
+  } = {},
+): () => void {
+  const win = options.win ?? window;
+  const doc = options.doc ?? document;
+  let lost = false;
+  let soon: ReturnType<typeof setTimeout> | undefined;
+  const reclaim = (): void => {
+    if (doc.hasFocus()) return;
+    if (!lost) {
+      lost = true;
+      options.onLost?.();
+    }
+    try {
+      win.focus();
+    } catch {
+      // A window that refuses is tried again on the next check.
+    }
+  };
+  const onBlur = (): void => {
+    clearTimeout(soon);
+    soon = setTimeout(reclaim, KEYBOARD_RECLAIM_DELAY_MS);
+  };
+  const onFocus = (): void => {
+    clearTimeout(soon);
+    if (lost) {
+      lost = false;
+      options.onBack?.();
+    }
+  };
+  const timer = setInterval(reclaim, KEYBOARD_CHECK_MS);
+  win.addEventListener('blur', onBlur);
+  win.addEventListener('focus', onFocus);
+  win.addEventListener('pageshow', reclaim);
+  doc.addEventListener('visibilitychange', reclaim);
+  return () => {
+    clearTimeout(soon);
+    clearInterval(timer);
+    win.removeEventListener('blur', onBlur);
+    win.removeEventListener('focus', onFocus);
+    win.removeEventListener('pageshow', reclaim);
+    doc.removeEventListener('visibilitychange', reclaim);
   };
 }

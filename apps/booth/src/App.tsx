@@ -9,6 +9,7 @@ import { sliceIndexFor, visiblePrizes } from './booth/wheel-view';
 import { COPY, noWheelScreen, refusalLine, type BilingualLine } from './copy';
 import { flags, parseHash } from './flags';
 import {
+  installKeyboardKeeper,
   installPressListener,
   isForbiddenButtonKey,
   PRESS_LOCKOUT_MS,
@@ -592,6 +593,16 @@ export default function App() {
       }),
     [buttonKey, onPress, onPressWhileTyping, recordKey],
   );
+
+  // The kiosk television only: a desktop browser tab is the tester's, not ours
+  // to pull focus back to (SCRUM-467, src/press.ts).
+  useEffect(() => {
+    if (!IN_BOX) return;
+    return installKeyboardKeeper({
+      onLost: () => recordKey('keyboard lost (window not focused): taking it back'),
+      onBack: () => recordKey('keyboard back'),
+    });
+  }, [recordKey]);
 
   // ---- Timers ----------------------------------------------------------
 
