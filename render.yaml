@@ -1159,6 +1159,73 @@ services:
       # variable left to set wrongly.
 
 # -----------------------------------------------------------------------------
+# radar — the owners' dashboard, lifted (S2-18). DOCUMENTATION ONLY.
+#
+# Commented out on purpose, like the worker below: this file is not synced to
+# Render, but a blueprint applied from it would create every uncommented
+# service as a paid one. The real service is created by hand in the dashboard;
+# this block records what it is meant to carry, so the file still describes
+# the whole deployment. Take the build and start commands, and the app's own
+# variable names, from apps/radar once it lands — the ones below are what the
+# lift is expected to read and are marked where that is an assumption.
+#
+# Radar reads its figures from this platform's api (GET /analytics/summary,
+# the OTO POS rollup only — docs/features/oto-radar.md), so its database login
+# is for its own tables (the wheel, its campaign codes), not for the figures.
+#
+# Three things move together when the service exists, exactly as for the OTO
+# App, or the launcher's tile opens onto a refusal:
+#   1. radar=<its origin> appended to HANDOFF_APP_ORIGINS on oto-api-staging;
+#   2. the same origin appended to ALLOWED_ORIGINS there (the exchange is a
+#      POST, and the origin check refuses an unlisted one before the route);
+#   3. VITE_RADAR_URL on oto-launcher-staging (build time — a rebuild).
+# Who sees the tile is `app:radar:access`: platform_admin and operator_admin
+# through their bundles, anyone else by a per-person grant.
+#
+#  - type: web
+#    name: oto-radar-staging
+#    runtime: node
+#    region: singapore
+#    plan: starter
+#    branch: main
+#    rootDir: apps/radar
+#    # ONE INSTANCE until its timers (the wheel's resets, if any survive the
+#    # lift) take a lock — the same reason the OTO App gives above.
+#    numInstances: 1
+#    autoDeployTrigger: checksPass
+#    envVars:
+#      - key: NODE_ENV
+#        value: production
+#      - key: TZ
+#        value: UTC
+#      - key: DATABASE_URL
+#        # Its OWN login, not `fromDatabase` (that one belongs to the api), on
+#        # the database above, inside the 10 the connection budget gives Radar:
+#        #
+#        #   CREATE ROLE oto_radar LOGIN PASSWORD '<generated>';
+#        #   ALTER ROLE oto_radar CONNECTION LIMIT 10;
+#        #   CREATE SCHEMA IF NOT EXISTS radar AUTHORIZATION oto_radar;
+#        #   ALTER ROLE oto_radar SET search_path = radar;
+#        #
+#        # A direct connection, not a transaction pooler (advisory locks).
+#        sync: false
+#      # Signing on from the launcher. Names follow the OTO App's
+#      # (PLATFORM_API_URL / its own public origin) — an assumption until
+#      # apps/radar's own .env.example says otherwise.
+#      - key: PLATFORM_API_URL
+#        value: https://oto-api-staging.onrender.com
+#      - key: RADAR_PUBLIC_ORIGIN
+#        # Must equal the radar= entry in the api's HANDOFF_APP_ORIGINS.
+#        sync: false
+#      - key: AI_INTEGRATIONS_OPENAI_API_KEY
+#        # Optional: the chart assistant. Unset, the feature reports itself
+#        # unconfigured. Leave AI_INTEGRATIONS_OPENAI_BASE_URL unset off Replit.
+#        sync: false
+#      # NOT SET, and deliberately: the Pisell and Papaya pipeline credentials
+#      # (FUNTOPIA_*, PAPAYA_*) — the pipelines are not lifted (owner,
+#      # 2026-10-14) — and STAFF_PASSWORD, which gates nothing.
+
+# -----------------------------------------------------------------------------
 # worker — the future home of PROCESS_ROLES=jobs. Not enabled yet.
 #
 # Today the api process runs the jobs role itself: pg-boss under advisory
