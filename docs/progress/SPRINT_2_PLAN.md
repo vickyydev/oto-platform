@@ -92,7 +92,7 @@ nothing. The OTO App, Radar and Inbox milestones follow the POS.
 | M8 — POS complete | S2-21 | Everything the contract names on the POS side works: events, parties and camps with attendee records and passes, the self-service kiosk redeeming a booking on its own, and staff benefit profiles applied at checkout. |
 | M9 — the park's own data | S2-22 | The suite runs on the real production data: the OTO App's live rows restored into the central database, members and employees the park's team recognise, Radar showing real figures. |
 | M10 — OTO App on the platform | S2-17c | The live OTO App runs from the launcher on the central database with one sign-on: every module the export has works against the `otoapp` schema, the POS-facing seams (members, events, employees) read the same rows the POS writes, and the contract features listed in `docs/briefs/AGENCY_PROPOSAL.md` §6 are built. |
-| M11 — Radar live | S2-18 | Radar opens from the launcher; each branch has a source preference — legacy (seeded Pisell/Papaya-shaped fixtures) or OTO POS — and a demo sale made on the staging POS changes the Radar dashboard for that branch within the rollup interval. |
+| M11 — Radar live | S2-18 | Radar opens from the launcher reading the OTO POS rollup only (owner 2026-10-14: no Pisell/Papaya integration logic); a demo sale made on the staging POS changes the Radar dashboard for that branch within the rollup interval. |
 | M12 — Inbox working | S2-19 | The Inbox tile opens the prototype's design backed by the `inbox` schema: conversations route by category to the right team, an owner and support assignees, reply and Handled, templates, the dashboard; messages flow through the channel adapters end to end on the simulator, and a real WhatsApp/Instagram/LINE account is connected by configuration when the business accounts exist. |
 | M13 — the owner's console | S2-23 | One place that controls everything: every account and app grant across the suite, activity and data-access logs, failures and alerts, health, boxes and devices, integrations, analytics sources, money oversight, support tools (cross-app lookup, audited impersonation, "what happened to this sale"), release flags and kill switches. |
 | M14 — ready for the park | S2-24 | The branch-box image builds and boots, the on-site bring-up runbook is written against the real device list, and every simulator has a documented switch to its real transport. |
@@ -116,7 +116,7 @@ what the reports say.
 | POS frontend — still on mock | `apps/pos/src/mockApi.ts` (5,837 lines, 141 exports, imported by 80 files) + `store/catalogStore.ts` (1,837 lines, 27 importers): selling (`recordSale`, wallets, wristbands, `lib/printRouting.tsx`), F&B, Shop, Events, Check-in, History, Today/EOD, Messages, Stock, and 20+ admin panels; the split-view customer display shares React state by props; the "pending lookup" round trip is staged and consumed by the same browser and cookie (`routes/me.ts` lines 121-154); `MobileTill`, `BookIdentify`, `PartyTicketModal` and the Till's event-pass path still read mock members. | Every tab except Events/parties and Messages is wired; those two stay on mock behind the existing flag and are labelled as such in the play-test guide. |
 | Booking site | `/book` wizard (`pages/Book.tsx`) loads the public catalogue and calls `POST /public/bookings`, but the mock `createBooking` still produces the confirmation QR and the till's `RedeemBookingModal` reads mock bookings only; no payment. | 2C2P Redirect (sandbox or simulator), signed booking QR, redemption at the till and kiosk-ready redemption service. |
 | OTO App (`imports/oto-app/`) | Export of the live system: Express 4 + Passport-local + Drizzle, 796 routes (517 in one 25,504-line `routes.ts`), 184 tables, React front end with 122 routes, Dockerfile present, scrypt password hashes, S3 storage without endpoint option, four local-disk writers, Replit-keyed cookie security; the intake's re-hosting work list and sign-on swap are in `docs/architecture/intake-2026-09-19/01-oto-app-backend.md` §10. Not on the platform. | S2-17: `otoapp` schema on the central database, hand-off sign-on middleware + `platform_user_id`, provisioning from the Console, Docker service on Render, storage on the platform bucket, jobs under `ops_run`, POS seam views, contract features from the proposal. |
-| Radar (`imports/oto-radar/`) | Export of the live dashboard: Express + React, 107 routes (96 public, no auth), Pisell (v30) and Papaya (v21) sync pipelines with credentials in Replit Secrets, structure-only database listing, dev-to-prod push routes that leak data; work list in `05-radar-api-auth-env-schema.md` §9. Not on the platform. | S2-18: `radar` schema, sign-on in front of everything private, push/wipe routes deleted, per-branch source preference, fixture adapters for the legacy pulls, OTO POS figures from `GET /analytics/summary`, parity test. |
+| Radar (`imports/oto-radar/`) | Export of the live dashboard: Express + React, 107 routes (96 public, no auth), Pisell (v30) and Papaya (v21) sync pipelines with credentials in Replit Secrets, structure-only database listing, dev-to-prod push routes that leak data; work list in `05-radar-api-auth-env-schema.md` §9. Not on the platform. | S2-18 (narrowed 2026-10-14): `radar` schema, sign-on in front of everything private, push/wipe routes deleted, figures from `GET /analytics/summary` only — no legacy pipelines, fixtures or parity view; history comes from dump loaders (S2-22, Open decision 18). |
 | Inbox (`imports/oto-asset-manager/`) | The park's Replit prototype: React front end on 17 hard-coded conversations, Express skeleton with one health route, empty Drizzle schema, no auth, no channel code; briefs and screenshots in `attached_assets/` (`docs/features/inbox.md`). | S2-19: `inbox` schema and permissions, seed, read-only routes, static shell in the prototype's design, `MessagingChannel` contract with a console adapter. |
 | Payment gateway | Nothing: `POST /public/bookings` marks bookings paid with no payment; PROJECT_CONTEXT §7.2 chose 2C2P; no credentials. | `packages/payments-2c2p` (Payment Token, Do Payment PromptPay QR, Redirect API, backend notification, Payment Inquiry, Payment Maintenance) on the sandbox with real QR codes, a gateway simulator for CI, `PGW_*` variables (`docs/architecture/PAYMENT_GATEWAY.md`). |
 | Deployment and CI | `.github/workflows/ci.yml` (typecheck, lint, migrate twice, test on a Postgres service container, build); `infra/docker-compose.yml` for Postgres 16 + MinIO; `.env.example` (missing `NODE_ENV`, `LOG_LEVEL`, `TEST_DATABASE_URL`); `env.ts` bakes dev MinIO credentials as defaults. No `render.yaml`, nothing deployed. | `render.yaml` (one api web service running `PROCESS_ROLES=api,edge,jobs` at `numInstances: 1`, static sites with `/api/*` rewrites for launcher/POS/console/booth/shells, managed Postgres in Singapore on a paid instance type for its backups and PITR, a commented-out worker service — every service `-staging`-named in one region, with production as a second environment of the same shape later), CI-gated deploy, migrations + `platform:sync` on deploy, staging profile (`DEPLOY_ENV=staging`, `SMS_ADAPTER=twilio`, `ALERT_CHANNELS=console,webhook`) with an audited "Reset demo data" action. |
@@ -146,10 +146,11 @@ what the reports say.
   contract still owes, taken from `docs/briefs/AGENCY_PROPOSAL.md` §6
   (S2-17c). The OTO App keeps its own admin controls; the POS keeps its own
   admin panels.
-- Radar live on the platform (S2-18): schema `radar`, sign-on required, a
-  per-branch source preference (legacy | OTO POS), seeded Pisell/Papaya-shaped
-  legacy fixtures for the demo, and the OTO POS branch reading the analytics
-  rows the POS writes, so a demo sale on staging shows up in Radar.
+- Radar live on the platform (S2-18, narrowed 2026-10-14): schema `radar`,
+  sign-on required, and every branch reading the analytics rows our POS
+  writes through the platform summary endpoint, so a demo sale on staging
+  shows up in Radar. No Pisell/Papaya integration logic is built; legacy
+  history arrives later as dump-loaded rows through the same endpoint.
 - Unified Inbox (S2-19): schema `inbox`, the prototype's design, routing by
   category to the four teams, primary and support assignees, reply, Handled,
   templates, tags, the management dashboard, and the channel adapters
@@ -250,7 +251,7 @@ is connecting, not coding.
 | The Pi 5 boxes themselves | The box image, the agent, the `Store` interface with its SQLite implementation, `schema_version` and version reporting (S2-24) | Flashing and booting real hardware; the image is proven on the first Pi that reaches a desk or the park |
 | 2C2P production go-live | The full 2C2P integration against the sandbox, real QR codes, webhook, inquiry, refunds, settlement import (S2-10a, S2-12, S2-15a) | Production merchant credentials, the QR channel enabled, return URLs registered — configuration only (`PAYMENT_GATEWAY.md` §5) |
 | Live WhatsApp Business, Instagram, LINE and email accounts | The channel adapters, inbound webhook receivers, outbound send, media handling and the whole Inbox against a channel simulator (S2-19) | Business accounts and BSP approval (weeks of paperwork, outside our control); connecting one is an environment variable and a webhook URL |
-| Radar's live Pisell and Papaya pulls | Both pipelines running against fixture adapters shaped like the real responses, the per-branch source switch, and the parity test (S2-18) | The Pisell and Papaya credentials, still in Replit Secrets; switching `*_MODE` from `fixture` to `live` |
+| Radar's Pisell and Papaya history | Nothing — the owner ruled on 2026-10-14 that no Pisell/Papaya integration logic is built; Radar reads only our POS's rollup | A one-time load of the history into `analytics.daily_summary` (`source = 'legacy'`) from the Radar dump when it arrives (Open decision 18) and from S2-22's OTO App events loader — data imports, not API integrations |
 | Real staging domain, parent-domain cookie shortcut, separate api/edge/worker services, per-service database logins | The hand-off sign-on that works on any domain, `PROCESS_ROLES` as the split switch, the worker service present in `render.yaml` | DNS for the real domain; the service split is flipped before the suite carries production traffic |
 | Thai TV fonts, Benzin font, dragon art and audio licences; seasonal wheel layouts beyond the first | The layout engine, the publish/version pickup, one complete template (S2-07b) | The owner's licence decisions and artwork |
 | Spin eligibility modes `band` and `phone` | Both modes implemented and tested; publishing them refused with a clear message until a park booth exists (S2-07b) | A booth inside the park |
@@ -2606,50 +2607,53 @@ QA / demo steps:
 
 Depends on: S2-17b, Open decision 30. Size: L–XL (by the confirmed list).
 
-### S2-18 — Radar live on the platform: `radar` schema, sign-on, per-branch source preference, seeded legacy figures, OTO POS analytics from the rollup
+### S2-18 — Radar live on the platform: `radar` schema, launcher sign-on, figures from the OTO POS rollup only
+
+> **Narrowed 2026-10-14 by the owner:** no Pisell/Papaya integration logic is
+> built — no sync pipelines, no fixture adapters, no parity view. Radar reads
+> the figures of the POS we are building, through the platform's one summary
+> endpoint. Legacy HISTORY is not lost by this: it arrives later as loaded
+> rows (`analytics.daily_summary` with `source = 'legacy'`) from the dump
+> restores — S2-22's OTO App events loader and the Radar dump (Open
+> decision 18) — served through the same endpoint with no Radar-side work.
+> The paragraphs below are the narrowed scope; the original two-source scope
+> is in git history.
 
 Feature area: Radar
 
-Rules: PLATFORM_PLAN §5 (analytics continuity), OWNER_DIRECTION 2026-09-19 (analytics from our database plus Radar's history) and 2026-09-20 item 3; intake notes `03-radar-pisell-pipeline.md`, `04-radar-papaya-pipeline.md`, `05-radar-api-auth-env-schema.md`, `06-radar-frontend.md`.
+Rules: PLATFORM_PLAN §5 (analytics continuity), OWNER_DIRECTION 2026-09-19 (analytics from our database plus Radar's history), 2026-09-20 item 3, and **2026-10-14 (no Papaya/Pisell integration logic; our POS only)**; intake notes `05-radar-api-auth-env-schema.md`, `06-radar-frontend.md` (03/04, the pipeline notes, stay as reference for the dump-era formulas only).
 
 Description. Radar (Express + React, 107 routes of which 96 are public, its
 own Postgres on Replit; `imports/oto-radar/`) is the revenue dashboard the
-owner reads every day. It computes per-branch daily summaries from Pisell
-(Floresta, formula v30) and Papaya (Chalong, formula v21). The owner wants it
-active on the platform now with two sources per branch: the legacy figures
-(seeded, because the Pisell/Papaya credentials are still in Replit Secrets)
-and the real OTO POS analytics, so a demo sale on the staging POS shows up in
-Radar when that branch prefers OTO POS. Revenue is defined exactly as Radar's
-code defines it (Open decision 15, closed).
+owner reads every day. On the platform it becomes the dashboard over the
+**OTO POS's own analytics**: every branch's figures come from
+`GET /analytics/summary` (S2-15b), which already serves the rolled-up POS
+days and will equally serve dump-loaded history rows when they exist. A demo
+sale on the staging POS shows up in Radar within the rollup interval.
+Revenue is defined exactly as Radar's code defines it (Open decision 15,
+closed); the platform rollup already carries `formula_version` on every row.
 
 Includes:
-- Lift: schema `radar` on the central database (restore of the structure
-  listing; the real dump replaces it when it arrives, Open decision 18),
-  Docker web service `radar` (`TZ=UTC`, `trust proxy`, `/healthz` added,
-  Replit pieces removed, source maps off), the five push/import/wipe routes
-  deleted, auth in front of every route except the public campaign/survey/
-  redeem/report routes and the key-protected ones, sign-on through the
-  launcher hand-off (same middleware pattern as S2-17a; `radar` has no user
-  table, so the platform session is the identity and `app:radar:access`
-  gates it), the staff-auth and seed-admin credentials rotated, Sentry DSN
-  removed, the OpenAI key env names corrected (`routes.ts:2575`, `2843`).
-- Source preference: `analytics.branch_source_switch` gains
-  `preference` (`legacy` | `oto_pos` | `both`) editable on the Console
-  (Integrations > Analytics sources) and on Radar's config tab; the dashboard,
-  trends, calendar and cash-report queries take the branch's preference: for
-  `oto_pos` they read `GET /analytics/summary` (S2-15b) through a small
-  adapter module in Radar (`server/sources/otoPos.ts`), for `legacy` they
-  read Radar's own tables, for `both` they show the two side by side with a
-  parity delta.
-- Legacy figures on staging: the Pisell and Papaya sync jobs run against
-  **fixture adapters** (`FUNTOPIA_MODE=fixture`, `PAPAYA_MODE=fixture`) that
-  replay two frozen months shaped like each pipeline's real responses (from
-  the intake notes' shapes; no real data), producing daily summaries with
-  the right `formula_version`; switching to live pulls is configuration when
-  the credentials arrive.
-- Rollup parity: a test computes one seeded day both ways (Radar's formula on
-  a fixture, the platform rollup on the same sales expressed as POS facts)
-  and asserts equality field by field; `formula_version` on every row.
+- Lift: schema `radar` on the central database for Radar's own features —
+  campaigns, surveys, redeem ledger, targets, settings (restore of the
+  structure listing; the real dump replaces it when it arrives, Open
+  decision 18) — Docker web service `radar` (`TZ=UTC`, `trust proxy`,
+  `/healthz` added, Replit pieces removed, source maps off), the five
+  push/import/wipe routes deleted, auth in front of every route except the
+  public campaign/survey/redeem/report routes and the key-protected ones,
+  sign-on through the launcher hand-off (same middleware pattern as S2-17a;
+  `radar` has no user table, so the platform session is the identity and
+  `app:radar:access` gates it), the staff-auth and seed-admin credentials
+  rotated, Sentry DSN removed, the OpenAI key env names corrected
+  (`routes.ts:2575`, `2843`).
+- One source of figures: the dashboard, trends, calendar and cash-report
+  queries read `GET /analytics/summary` through a small adapter module in
+  Radar (`server/sources/otoPos.ts`) for **every** branch. The 19 legacy
+  analytics tables (`funtopia_*`, `papaya_*`) are not created on the
+  platform; the Pisell/Papaya sync code is not lifted. The platform-side
+  `analytics.branch_source_switch` stays as S2-15b built it (it decides
+  which rows the summary serves), but Radar itself has no source switch to
+  operate — one dashboard, one endpoint.
 - Freshness: the platform rollup (`job:rollup.daily`, hourly summariser)
   runs every 15 minutes on staging (`ROLLUP_INTERVAL_S`) and marks
   `dirty_date` on late syncs, so a demo sale reaches Radar within that
@@ -2661,39 +2665,36 @@ Includes:
   then deleted.
 - Docs: `docs/features/oto-radar.md` status; `.env.example` block.
 
-Excludes: live Pisell/Papaya pulls on staging; the real Radar dump restore
-(when it arrives); moving Radar's settings tables to the platform; the
-Console analytics overview (Sprint 3); Radar UI changes beyond the source
-switch and sign-on.
+Excludes: ALL Pisell/Papaya integration logic — pipelines, fixture adapters,
+`FUNTOPIA_MODE`/`PAPAYA_MODE`, the parity test and the `both` comparison view
+(owner, 2026-10-14); the real Radar dump restore (when it arrives — it loads
+history rows, it does not revive pipelines); moving Radar's settings tables
+to the platform; the Console analytics overview (Sprint 3); Radar UI changes
+beyond sign-on and the retirement of surfaces the dropped sources fed.
 
 Acceptance criteria:
 - [ ] The Radar tile opens Radar signed in through the launcher; an
       unauthenticated request to a dashboard route is refused; the public
       campaign, survey and redeem routes still work (test list).
-- [ ] With HKT Central set to `oto_pos` and Demo Branch 2 to `legacy`, the
-      dashboard shows the seeded legacy month for Demo Branch 2 and the
-      platform rollup for HKT Central; a cash ticket sale on the staging POS
-      appears in HKT Central's figures within `ROLLUP_INTERVAL_S` (QA times
-      it); setting HKT Central to `both` shows the parity delta.
-- [ ] The parity test passes (dev evidence) and every summary row carries
-      `formula_version`.
-- [ ] The fixture sync jobs appear on Health with last-success times; a
-      forced failure shows on Failures; no Replit push/import/wipe route
-      exists (route-enumeration test).
+- [ ] The dashboard shows the platform rollup's figures per branch; a cash
+      ticket sale on the staging POS appears in that branch's figures within
+      `ROLLUP_INTERVAL_S` (QA times it).
+- [ ] No Pisell/Papaya pipeline, fixture mode or push/import/wipe route
+      exists in the lifted service (route-enumeration test); every summary
+      row read carries `formula_version`.
 - [ ] The booth report in Radar reads the platform booth rows.
+- [ ] Health shows "Radar last refreshed".
 
 QA / demo steps:
-1. QA (UI): Open Radar from the launcher; screenshot the dashboard for both
-   branches; open a dashboard URL in a private window; screenshot the
-   refusal.
+1. QA (UI): Open Radar from the launcher; screenshot the dashboard; open a
+   dashboard URL in a private window; screenshot the refusal.
 2. QA (UI): Make a cash ticket sale on the POS; wait for the interval;
-   screenshot the changed HKT Central figures; switch to `both`; screenshot
-   the parity view.
-3. QA (UI): On Health screenshot the fixture sync jobs and the "Radar last
-   refreshed" row.
-4. Dev evidence: the parity test and the route-enumeration test output.
+   screenshot the changed figures.
+3. QA (UI): On Health screenshot the "Radar last refreshed" row.
+4. Dev evidence: the route-enumeration test output.
 
-Depends on: S2-15b, S2-17a (sign-on pattern). Size: L.
+Depends on: S2-15b, S2-17a (sign-on pattern). Size: M (was L before the
+2026-10-14 narrowing).
 
 ### S2-19 — Unified Inbox: the prototype's design working end to end on the `inbox` schema, with channel adapters ready for a real account
 
@@ -3196,7 +3197,8 @@ recognises. This ticket turns that one-off into a scripted, repeatable
 procedure — scratch database, schema rename, load order, sequence check,
 post-import fixes, verification counts — run against the private staging
 database; seeds the platform's own tables from the rows where identity is
-genuinely shared; gives Radar real figures in place of S2-18's fixtures; and
+genuinely shared; gives Radar its first legacy history rows (S2-18 ships on
+the POS rollup alone, with no fixtures, per the owner's 2026-10-14 ruling); and
 rehearses the cutover against a fresh dump until two timed runs agree. The
 data is real staff, children's and customer data, so the handling section is
 part of the ticket, not a footnote. Where the OTO App has no source table —
@@ -3329,13 +3331,14 @@ Includes:
   `studio_event_bookings.amount_total` and `amount_paid`, `camp_attendance`'s
   per-day payments, `core_events.total_value` and `prepayment_*` (intake §8) —
   into `analytics.daily_summary` rows with `source = 'legacy'` and
-  `formula_version = 'otoapp-events-v1'`, per branch and business date,
-  replacing S2-18's fixture rows for the days they cover. Stated plainly on
+  `formula_version = 'otoapp-events-v1'`, per branch and business date —
+  the first legacy history Radar shows, since S2-18 ships with no fixtures
+  (owner, 2026-10-14). Stated plainly on
   the Console page and in the report: these are the park's **event, party and
   camp** takings, which is the revenue the OTO App actually holds; admissions
   and F&B revenue lived in Pisell and Papaya and are not in this dump, so
-  those lines stay on the fixtures until the Radar dump (Open decision 18) or
-  the credentials arrive. HKT Central's
+  those lines stay absent until the Radar dump is loaded (Open decision 18).
+  HKT Central's
   `analytics.branch_source_switch.preference` is set to `oto_pos`, so a sale
   made on the staging POS moves its figures within `ROLLUP_INTERVAL_S`; the
   second demo branch is set to `legacy`, so the park's team see restored history
@@ -3687,8 +3690,9 @@ Includes:
   station), job runner and each defined job with its last run and next due,
   boxes and booths (online, version, uptime, heartbeat age, outbox depth,
   clock offset), devices per box with printer reachability and paper state
-  (R-16, S2-04/S2-06), gates and their readers (S2-12), sync lag per box and
-  per legacy source (Pisell/Papaya freshness from S2-18), queue depths,
+  (R-16, S2-04/S2-06), gates and their readers (S2-12), sync lag per box
+  (no legacy-source freshness row: S2-18 builds no Pisell/Papaya pipelines,
+  owner 2026-10-14), queue depths,
   database size and connection headroom, object-storage reachability and
   bucket size, and the external pinger's last result. Read-only; every tile
   links to the page that can act. Test controls ("Run watchdog now", "Stop
@@ -3719,8 +3723,9 @@ Includes:
   (`inbox.channel_account` per channel and branch, S2-19), the AI provider
   (S2-19), Xero (S2-17b), object storage, OTel/HyperDX
   (`OTEL_EXPORTER_OTLP_*`, `TRACE_URL_TEMPLATE`), Sentry, the alert
-  webhook, and Radar's legacy sources (`FUNTOPIA_MODE`, `PAPAYA_MODE`,
-  S2-18). Each shows: **variable presence only, never a value** (generated
+  webhook. (Radar's legacy-source modes were dropped with the owner's
+  2026-10-14 ruling — S2-18 builds no Pisell/Papaya pipelines.) Each shows:
+  **variable presence only, never a value** (generated
   from `apps/api/src/env.ts` as in S2-03), which service reads it, whether
   the provider or its simulator is active and why, last success and last
   failure from `ops_last`/`ops_run` kind `integration`, a failure history
@@ -3749,8 +3754,9 @@ Includes:
   platform admin unfreezes with a reason; cross-branch KPIs read from
   `GET /analytics/summary?branches=…&group=day|total` (S2-15b) — revenue,
   guests, kid/adult mix, tier mix, marketing-channel breakdown, booth
-  funnel and prize cost, wallet liability — with a parity delta column for
-  branches set to `both`; and a deep link into Radar for analysis, which
+  funnel and prize cost, wallet liability — (the parity delta column fell
+  away with the owner's 2026-10-14 ruling: no branch has two live sources
+  to compare); and a deep link into Radar for analysis, which
   stays Radar's job.
 
 - Configuration and content (`/config`, read `console:config:read`, write
@@ -4633,8 +4639,10 @@ chose them and the owner may change them at any time.
     revenue is computed exactly as Radar's code computes it — formula v30 for
     Floresta-style branches and v21 for Chalong-style (intake notes 03/04
     document both) — and `formula_version` records which; the OTO POS
-    rollup reproduces the same definition from POS facts and a parity test
-    proves it (S2-18).
+    rollup reproduces the same definition from POS facts. (The parity test
+    left S2-18 with the owner's 2026-10-14 ruling dropping the legacy
+    pipelines; the formula notes stay as the reference for the dump-era
+    history loaders.)
 16. **Receipt and tax-invoice numbering.** Resolved 2026-09-20: no
     accountant session now. The prototype's receipt component is the layout
     source, the per-station series `{branch}{station}-{series}-{seq}` ships,

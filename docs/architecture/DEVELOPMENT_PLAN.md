@@ -438,13 +438,16 @@ One contract, two sources, so Radar and the POS can be compared:
   is the only writer.
 - `GET /analytics/summary?branches=a,b&from&to&group=day|total` merges on the
   server and is the contract Radar consumes through a small adapter module
-  (`server/sources/otoPos.ts` inside the lifted Radar). For `legacy` branches
-  Radar reads its own rows; for `both` it shows the two side by side with a
-  parity delta.
+  (`server/sources/otoPos.ts` inside the lifted Radar) — for **every** branch
+  (owner 2026-10-14: Radar builds no legacy pipelines and keeps no analytics
+  tables of its own; dump-loaded `source = 'legacy'` rows are served through
+  this same endpoint when they exist).
 - **Revenue is defined exactly as Radar's code defines it** — formula v30 for
   Floresta-style branches and v21 for Chalong-style — recorded as
-  `formula_version` on every row, with a parity test proving the platform
-  rollup reproduces it (owner decision 2026-09-20; Open decision 15).
+  `formula_version` on every row (owner decision 2026-09-20; Open
+  decision 15). The parity test against the legacy formulas left S2-18 with
+  the pipelines; it returns, if ever, with the dump loaders that first put
+  legacy-formula rows beside POS-rollup rows.
 
 ### 3.9 Observability
 
@@ -507,7 +510,7 @@ S2-17b → S2-17c → CP5 → S2-18 → S2-19 → CP6 → S2-16 → CP7
 |---|---|---|
 | **P1 — POS and booth** | S2-01a/b/c, S2-02, S2-03, **S2-17a (pulled forward, before CP1)**, S2-04, S2-05, S2-06, S2-07a/b, S2-08, S2-09a/b, S2-10a/b, S2-11, S2-12, S2-13, S2-14a/b, S2-15a/b | The hardened platform, the launcher and Console on Render, the station/box model with the cloud virtual box, the Lucky Wheel, the two-device POS, the whole money path, arrival and the gate, check-in, wallets, stock, day close and the analytics rows |
 | **P2 — OTO App** | S2-17b, S2-17c | The live app lifted onto Render against the `otoapp` schema with every module working, the POS seams, then the contract features |
-| **P3 — Radar** | S2-18 | Radar live on the platform with the per-branch source preference, seeded legacy fixtures and the POS analytics contract |
+| **P3 — Radar** | S2-18 | Radar live on the platform reading the POS analytics contract only (narrowed 2026-10-14: no legacy fixtures or source preference inside Radar) |
 | **P4 — Inbox** | S2-19 | The `inbox` schema pillars, seed and the mockup shell |
 | **Close** | S2-16 | Acceptance run, load and soak, `sprint-2` tag, report, Jira evidence, play-test guide |
 
@@ -900,22 +903,17 @@ have already been printed, and the `qr_device_id` cookie and saved AI
 conversations are bound to the origin — so preserve the hostname or keep a
 redirect from the old one (Open decision on DNS ownership).
 
-**Source preference.** `analytics.branch_source_switch` gains
-`preference` (`legacy` | `oto_pos` | `both`), editable from the Console
-(Integrations > Analytics sources) and from Radar's config tab. A small
-adapter module inside Radar (`server/sources/otoPos.ts`) reads
-`GET /analytics/summary` for `oto_pos` branches; `legacy` branches read
-Radar's own tables; `both` shows the two side by side with a parity delta.
-
-**Legacy figures on staging** come from **fixture adapters**
-(`FUNTOPIA_MODE=fixture`, `PAPAYA_MODE=fixture`) replaying two frozen months
-shaped like each pipeline's real responses — the Pisell and Papaya credentials
-are still in Replit Secrets. Switching to live pulls is configuration.
-
-**Parity.** A test computes one seeded day both ways — Radar's formula on a
-fixture, and the platform rollup on the same sales expressed as POS facts —
-and asserts equality field by field. Every summary row carries
-`formula_version`. The definitions being reproduced are:
+**One source (narrowed 2026-10-14 by the owner).** Radar builds no
+Pisell/Papaya integration logic — no sync pipelines, no fixture adapters
+(`FUNTOPIA_MODE`/`PAPAYA_MODE` never exist), no source preference inside
+Radar, no parity view. The small adapter module inside Radar
+(`server/sources/otoPos.ts`) reads `GET /analytics/summary` for every
+branch. The platform-side `analytics.branch_source_switch` stays as S2-15b
+built it; legacy history, when it exists, is dump-loaded
+`source = 'legacy'` rows served through the same endpoint (S2-22, Open
+decision 18). The paragraphs below keep the legacy formula definitions as
+the reference for those future loaders — they are no longer S2-18 build
+work. Every summary row carries `formula_version`. The definitions are:
 
 - **v30, Floresta/Pisell:** `totalRevenue = Σ(pay_amount − refund_amount)`
   over active payments, **minus** the same sum over voucher-method payments —
@@ -1308,9 +1306,10 @@ what S2-18 adds. All set on the `radar` Render service.
 - Keys: `SPIN_WIN_REDEEM_KEY`, `OTO_RADAR_MARKETING_API_KEY`
 - AI: `AI_INTEGRATIONS_OPENAI_API_KEY`, `AI_INTEGRATIONS_OPENAI_BASE_URL`
   (two name references in `routes.ts` need correcting during the lift)
-- Added by S2-18: `FUNTOPIA_MODE` and `PAPAYA_MODE` (`fixture` on staging,
-  `live` when the credentials arrive), and the platform summary endpoint the
-  `oto_pos` source adapter calls
+- Added by S2-18: the platform summary endpoint the source adapter calls
+  (`FUNTOPIA_MODE`/`PAPAYA_MODE` were dropped with the owner's 2026-10-14
+  ruling — no legacy pipelines are lifted, so the Pisell/Papaya credential
+  names above are never configured on the platform either)
 - **Removed:** `STAFF_PASSWORD` (it gates nothing), the Replit and dead-GCS
   names, and the Sentry DSN that must be rotated
 

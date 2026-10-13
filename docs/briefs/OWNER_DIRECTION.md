@@ -213,3 +213,21 @@ them in the comment when staging proof is available; Deployed still requires
 that evidence. Record questions in OPEN_QUESTIONS.md, continue independent
 work and bring concrete proposals back later. Use parallel workflows for
 independent parts of the same story.
+
+
+## 2026-10-14 - Radar reads our POS only; no Papaya/Pisell integration logic
+
+For S2-18 (Radar live on the platform), the owner ruled: do not build the
+logic to integrate Papaya, Pisell or any other third-party POS API. Radar is
+built against the analytics of the OTO POS we are building - every branch's
+dashboard figures come from the platform's own summary endpoint. This drops
+the fixture pipelines, the per-branch legacy/both preference inside Radar
+and the parity view from S2-18, and resizes the story from L to M.
+
+Unchanged by this ruling: the request for Radar's historical figures. The
+history path is data, not integration - the OTO App events loader (S2-22)
+and the real Radar database dump (Open decision 18) load legacy rows into
+the platform's analytics tables, where the same summary endpoint serves
+them to Radar with no pipeline code. The standing asks above (the Radar
+dump; no cancellation of Pisell or Papaya until the history export is done)
+therefore remain open.

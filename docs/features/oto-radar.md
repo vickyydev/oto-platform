@@ -77,12 +77,17 @@ Forecast model, targets, pace, holidays and the two-branch merge are computed
 - **Data:** own schema `radar`. Before first boot insert the migration baseline
   row, or the app creates 107 HR tables. Drop the HR leftovers. Delete the five
   push / import / wipe routes; rotate the Pisell credentials.
-- **History:** restore a real dump of the published database, re-fetch every
-  day from both POS APIs while the credentials work, reconcile, then freeze
-  legacy days. See [`PLATFORM_PLAN.md` §5](../architecture/PLATFORM_PLAN.md).
-- **Future:** OTO POS becomes a third source writing the same daily shape into
-  `analytics`; one branch-parameterised summary API replaces the browser merge;
-  forecast constants, holidays, targets and notes move into tables.
+- **History (narrowed 2026-10-14):** no re-fetch from the POS APIs — the
+  owner ruled no Papaya/Pisell integration logic is built. History arrives as
+  loaded rows: the real dump of the published database (Open decision 18) and
+  S2-22's OTO App events loader write `source = 'legacy'` rows into
+  `analytics.daily_summary`, then legacy days freeze. See
+  [`PLATFORM_PLAN.md` §5](../architecture/PLATFORM_PLAN.md).
+- **Figures (narrowed 2026-10-14):** OTO POS is THE source: Radar's dashboard
+  reads the branch-parameterised summary API (`GET /analytics/summary`) for
+  every branch through one adapter module; Radar keeps no analytics tables of
+  its own on the platform. Forecast constants, holidays, targets and notes
+  move into tables later.
 - **Hostnames:** campaign poster QR codes and the wheel point at the Replit
   host; keep a redirect there after the move.
 - **Launcher tile:** "Radar", shown with `app:radar:access`.
@@ -92,8 +97,8 @@ Forecast model, targets, pace, holidays and the two-branch merge are computed
 |---|---|
 | Required to boot | `DATABASE_URL` (direct connection, table owner) |
 | Runtime | `PORT`, `NODE_ENV`, `TZ=UTC`, `LOG_RESPONSE_BODY=false` |
-| Pisell (Floresta) | `FUNTOPIA_API_URL` (defaults to the Pisell host), `FUNTOPIA_CLIENT_ID`, `FUNTOPIA_CLIENT_SECRET`, `FUNTOPIA_ACCESS_TOKEN` |
-| Papaya (Chalong) | `PAPAYA_RECEPTION_TOKEN`, `PAPAYA_RESTAURANT_TOKEN` |
+| Pisell (Floresta) | `FUNTOPIA_API_URL`, `FUNTOPIA_CLIENT_ID`, `FUNTOPIA_CLIENT_SECRET`, `FUNTOPIA_ACCESS_TOKEN` — **never configured on the platform** (owner 2026-10-14: the pipelines are not lifted) |
+| Papaya (Chalong) | `PAPAYA_RECEPTION_TOKEN`, `PAPAYA_RESTAURANT_TOKEN` — likewise never configured on the platform |
 | Spin wheel | `SPIN_WIN_REDEEM_KEY` |
 | External marketing API | `OTO_RADAR_MARKETING_API_KEY` |
 | AI chart assistant | `AI_INTEGRATIONS_OPENAI_API_KEY` (`_BASE_URL` unset off Replit) |
@@ -106,9 +111,9 @@ Forecast model, targets, pace, holidays and the two-branch merge are computed
 | Real database dump | **missing** | structure listing only |
 | POS API credentials | **missing** | Replit Secrets |
 | Lift to Render: `radar` schema, sign-on gate, push/wipe routes removed | planned | Sprint 2 — S2-18 |
-| Per-branch source preference (legacy / OTO POS / both), seeded legacy fixtures, parity test | planned | Sprint 2 — S2-18; live Pisell/Papaya pulls when the credentials arrive |
+| Figures from the OTO POS rollup for every branch (one adapter, no legacy pipelines, no fixtures, no parity view) | planned | Sprint 2 — S2-18, narrowed by the owner 2026-10-14 |
 | Summary API on `analytics` (the contract Radar reads for OTO POS branches) | planned | Sprint 2 — S2-15b |
-| History restore and reconciliation | not started | needs the real dump; Sprint 3 |
+| History restore (dump → `analytics.daily_summary` loader; no API re-fetch) | not started | needs the real dump (Open decision 18); Sprint 3 |
 
 ## Open questions
 - Which database is authoritative, dev or published?
