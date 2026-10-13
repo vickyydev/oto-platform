@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Wristband } from '@/types';
 import { getWristbandByCode, getMockWristbands } from '@/mockApi';
 import { ApiError } from '@/api/client';
-import { BOX_CREDIT_REFUSAL_CODES, lookupBandFoodOnBox, lookupWalletOnBox, scanBand, wristbandOfBoxScan } from '@/api/wallet';
+import { BOX_CREDIT_REFUSAL_CODES, lookupBandFoodOnBox, lookupWalletOnBox, scanBand, walletKeyOf, wristbandOfBoxScan, wristbandOfBoxWallet } from '@/api/wallet';
 import { apiBranchIdForSlug } from '@/api/catalogBridge';
 import { getActiveBranch } from '@/store/catalogStore';
-import { currentLane, isBoxLaneTrigger, laneStation, noteLaneFailure } from '@/lib/lane';
+import { currentLane, isBoxLaneTrigger, laneStation, noteLaneFailure, useLane } from '@/lib/lane';
+import { useDemoControls } from '@/lib/demoControls';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -37,6 +38,8 @@ export function ScanWristband({
   // spendable balance is a platform wallet's, so a demo band reads ฿0 rather
   // than offering money the platform does not hold.
   const presets = getMockWristbands().map(withoutLocalCredit);
+  // SCRUM-515 — and only where people play, never on a real park's till.
+  const showDemoBands = useDemoControls();
 
   const submit = async (value: string) => {
     if (looking) return;
@@ -103,7 +106,7 @@ export function ScanWristband({
           </div>
         )}
 
-        <div className="mt-6">
+        {showDemoBands && <div className="mt-6">
           <div className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-3">
             Demo wristbands
           </div>
@@ -157,7 +160,7 @@ export function ScanWristband({
               </Card>
             ))}
           </div>
-        </div>
+        </div>}
 
         {onGuest && (
           <>
@@ -284,4 +287,75 @@ async function loadFromBox(
       ? `This counter’s box could not look this band up: ${said}`
       : 'Could not reach this counter’s box to look this band up — check the connection and scan again.' };
   }
+}
+
+/**
+ * SCRUM-483 — A BAND HELD WHEN THE COUNTER MOVES TO ITS BOX.
+ *
+ * A band scanned while the counter was online carries the platform's whole
+ * balance. When the link drops before payment the counter works through its
+ * box, which will take only what its snapshot and the day's offline cap allow
+ * — so the guest's screen could say the credit covers an order the box will
+ * then only part-pay. The held band is read again on the box (`wallet.lookup`,
+ * as a scan on the box lane is) and its credit replaced by what the box will
+ * really take, the cap's sentence with it.
+ *
+ * Only the credit is replaced; the band's stay, notes and prepaid items stay
+ * as they were read. Only a band showing credit is asked about, because a band
+ * with none has nothing to over-promise. A box that does not answer at all
+ * leaves the band as it was: the press then meets the box, as before.
+ */
+export type HeldBandCredit = { creditBalanceTHB: number; creditNote?: string };
+
+export async function rereadHeldBandOnBox(held: Wristband): Promise<HeldBandCredit | null> {
+  const station = laneStation();
+  const key = walletKeyOf(held).trim();
+  if (!station || currentLane() !== 'box' || !key || held.creditBalanceTHB <= 0) return null;
+  try {
+    const tab = wristbandOfBoxWallet(await lookupWalletOnBox(station, key), key);
+    return { creditBalanceTHB: tab.creditBalanceTHB, ...(tab.creditNote ? { creditNote: tab.creditNote } : {}) };
+  } catch (err) {
+    if (err instanceof ApiError && BOX_CREDIT_REFUSAL_CODES.includes(err.code)) {
+      return { creditBalanceTHB: 0, creditNote: err.message };
+    }
+    return null;
+  }
+}
+
+/** The held band with its credit replaced by the box's answer. */
+export function withHeldBandCredit(held: Wristband, credit: HeldBandCredit): Wristband {
+  const { creditNote: _previous, ...rest } = held;
+  return { ...rest, ...credit };
+}
+
+/**
+ * Re-read the held band on the box the moment the counter moves there.
+ * `canReread` is asked when the lane moves and again when the box answers:
+ * a station passes false once the payment has taken any money, so a figure
+ * already being settled is never changed under it. The answer is applied only
+ * while the same band is still held.
+ */
+export function useHeldBandOnBox(
+  held: Wristband | null,
+  apply: (next: Wristband) => void,
+  canReread: () => boolean,
+): void {
+  const lane = useLane();
+  const previousLane = useRef(lane);
+  const latest = useRef({ held, apply, canReread });
+  latest.current = { held, apply, canReread };
+  useEffect(() => {
+    const was = previousLane.current;
+    previousLane.current = lane;
+    if (was === 'box' || lane !== 'box') return;
+    const band = latest.current.held;
+    if (!band || !latest.current.canReread()) return;
+    let live = true;
+    void rereadHeldBandOnBox(band).then((credit) => {
+      const now = latest.current.held;
+      if (!live || !credit || !now || walletKeyOf(now) !== walletKeyOf(band) || !latest.current.canReread()) return;
+      latest.current.apply(withHeldBandCredit(now, credit));
+    });
+    return () => { live = false; };
+  }, [lane]);
 }

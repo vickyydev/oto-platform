@@ -41,7 +41,7 @@ import {
 import { QuoteRefusalNote } from '@/components/fnb/QuoteRefusalNote';
 import { QuoteFaultNote } from '@/components/fnb/QuoteFaultNote';
 import { VariantPickerModal } from '@/components/shared/VariantPickerModal';
-import { ScanWristband } from '@/components/fnb/ScanWristband';
+import { ScanWristband, useHeldBandOnBox } from '@/components/fnb/ScanWristband';
 import { MerchGrid } from '@/components/merch/MerchGrid';
 import { MerchCart } from '@/components/merch/MerchCart';
 import { FnbPayment, fnbPaymentResult, walletBalanceAfter } from '@/components/fnb/FnbPayment';
@@ -597,6 +597,11 @@ export default function MerchStation() {
       ? { key: walletKeyOf(wristband), useCredit, previewSatang: Math.round(wristband.creditBalanceTHB * 100) }
       : null,
   });
+  // SCRUM-483 — the counter moved to its box with a band held: read the band
+  // again there, so the credit offered is what the box will take. Not once the
+  // payment has taken anything, so a figure being settled is never changed.
+  useHeldBandOnBox(wristband, setWristband, () => stage !== 'confirmation' && !paymentStage.busy
+    && paymentStage.state.settlements.length === 0 && paymentStage.state.creditSaleId === null);
   const backFromPayment = () => {
     if (!paymentStage.canBack) return;
     saleEpochRef.current += 1;

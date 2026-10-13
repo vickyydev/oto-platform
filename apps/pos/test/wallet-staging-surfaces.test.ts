@@ -21,7 +21,10 @@ import { VOUCHER_AFTER_PAY, VOUCHER_NEEDS_TIER, VOUCHER_NOT_COMBINABLE, ticketTi
 import type { usePaymentStage } from '@/lib/usePaymentStage';
 import { FnbCustomerDisplay } from '@/components/fnb/FnbCustomerDisplay';
 import { FnbPayment } from '@/components/fnb/FnbPayment';
-import { loadScannedTab } from '@/components/fnb/ScanWristband';
+import { ScanWristband, loadScannedTab, rereadHeldBandOnBox, withHeldBandCredit } from '@/components/fnb/ScanWristband';
+import { opsApi } from '@/api/platform';
+import { demoControlsShown, resetDemoControls } from '@/lib/demoControls';
+import type { Wristband } from '@/types';
 import { PublicMerchCustomerDisplay } from '@/components/merch/PublicMerchCustomerDisplay';
 import { IssueVoucherRow, definitionUsedUp } from '@/components/till/RedeemVoucher';
 import { paymentSubmitLabel } from '@/components/till/PaymentTenderPanel';
@@ -275,6 +278,100 @@ describe('F3 — a band scanned on the box lane is looked up on the box', () => 
     const found = await loadScannedTab(KEY);
     expect(intent).not.toHaveBeenCalled();
     expect(found.wristband).toMatchObject({ id: 'w', creditBalanceTHB: 350 });
+  });
+});
+
+// --- SCRUM-483 -------------------------------------------------------------------------
+
+describe('SCRUM-483 — a band held when the counter moves to its box is read again there', () => {
+  /** A band scanned online: the platform's whole ฿350, its stay's notes on it. */
+  const heldOnline = (): Wristband => ({
+    id: balance().walletId, code: KEY, customerNickname: 'Mint', creditBalanceTHB: 350, gateAccess: false,
+    holderName: 'Mint', allergiesMedical: 'Peanuts', stayId: 'stay-1',
+  });
+
+  it('offers what the box will take — ฿300 under the cap — and keeps the band’s stay and notes', async () => {
+    onBoxLane();
+    const intent = vi.spyOn(bridgeApi, 'intent').mockResolvedValueOnce({ document: {} as never, result: { wallet: balance() } });
+    const credit = await rereadHeldBandOnBox(heldOnline());
+    expect(intent).toHaveBeenCalledTimes(1);
+    expect(intent).toHaveBeenCalledWith('station-1', BRIDGE_WALLET_INTENTS.lookup, { key: KEY });
+    expect(credit).toEqual({ creditBalanceTHB: 300 });
+    expect(withHeldBandCredit(heldOnline(), credit!)).toEqual({ ...heldOnline(), creditBalanceTHB: 300 });
+  });
+
+  it('the day’s cap used up: ฿0 with the box’s cap sentence, an earlier note replaced', async () => {
+    onBoxLane();
+    vi.spyOn(bridgeApi, 'intent').mockResolvedValueOnce({ document: {} as never,
+      result: { wallet: balance({ capLeftSatang: 0, spendableSatang: 0 }) } });
+    const credit = await rereadHeldBandOnBox(heldOnline());
+    expect(credit).toEqual({ creditBalanceTHB: 0, creditNote: walletOfflineCapMessage(30_000) });
+    const next = withHeldBandCredit({ ...heldOnline(), creditNote: 'older words' }, credit!);
+    expect(next.creditNote).toBe(walletOfflineCapMessage(30_000));
+    expect(next.creditBalanceTHB).toBe(0);
+  });
+
+  it('the box refuses the credit: ฿0 in the box’s words; a box that does not answer leaves the band as it was', async () => {
+    onBoxLane();
+    const intent = vi.spyOn(bridgeApi, 'intent')
+      .mockRejectedValueOnce(new ApiError(404, BOX_WALLET_REFUSALS.unknown.code, BOX_WALLET_REFUSALS.unknown.message))
+      .mockRejectedValueOnce(new NetworkError('box gone'));
+    expect(await rereadHeldBandOnBox(heldOnline())).toEqual({ creditBalanceTHB: 0, creditNote: BOX_WALLET_REFUSALS.unknown.message });
+    expect(await rereadHeldBandOnBox(heldOnline())).toBeNull();
+    expect(intent).toHaveBeenCalledTimes(2);
+  });
+
+  it('asks nothing on the platform lane, nor for a band showing no credit', async () => {
+    setLaneStation('station-1');
+    const intent = vi.spyOn(bridgeApi, 'intent');
+    expect(await rereadHeldBandOnBox(heldOnline())).toBeNull();
+    onBoxLane();
+    expect(await rereadHeldBandOnBox({ ...heldOnline(), creditBalanceTHB: 0 })).toBeNull();
+    expect(intent).not.toHaveBeenCalled();
+  });
+});
+
+// --- SCRUM-515 -------------------------------------------------------------------------
+
+describe('SCRUM-515 — the demo wristbands only where the deployment is a playground', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    resetDemoControls();
+  });
+  const scanScreen = () => html(React.createElement(ScanWristband, { onLoadTab: () => undefined }));
+
+  it('a production build hides the grid until the deployment says it is a playground', async () => {
+    vi.stubEnv('DEV', false);
+    const status = vi.spyOn(opsApi, 'demoResetStatus').mockResolvedValue({ available: false, confirmationPhrase: 'x', playground: true });
+    expect(scanScreen()).not.toContain('Demo wristbands');
+    expect(await demoControlsShown()).toBe(true);
+    // Asked once; the answer is kept, and the next screen draws the grid at once.
+    expect(await demoControlsShown()).toBe(true);
+    expect(status).toHaveBeenCalledTimes(1);
+    expect(scanScreen()).toContain('Demo wristbands');
+  });
+
+  it('a real park, an api without the answer, or no answer at all: hidden; a failed ask is asked again', async () => {
+    vi.stubEnv('DEV', false);
+    const status = vi.spyOn(opsApi, 'demoResetStatus')
+      .mockResolvedValueOnce({ available: false, confirmationPhrase: 'x', playground: false });
+    expect(await demoControlsShown()).toBe(false);
+    resetDemoControls();
+    status.mockResolvedValueOnce({ available: false, confirmationPhrase: 'x' });
+    expect(await demoControlsShown()).toBe(false);
+    resetDemoControls();
+    status.mockRejectedValueOnce(new NetworkError('offline')).mockResolvedValueOnce({ available: false, confirmationPhrase: 'x', playground: true });
+    expect(await demoControlsShown()).toBe(false);
+    expect(await demoControlsShown()).toBe(true);
+    expect(scanScreen()).toContain('Demo wristbands');
+  });
+
+  it('a development build keeps the grid without asking', async () => {
+    vi.stubEnv('DEV', true);
+    const status = vi.spyOn(opsApi, 'demoResetStatus');
+    expect(scanScreen()).toContain('Demo wristbands');
+    expect(await demoControlsShown()).toBe(true);
+    expect(status).not.toHaveBeenCalled();
   });
 });
 

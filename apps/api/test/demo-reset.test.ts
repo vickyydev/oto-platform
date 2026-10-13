@@ -140,6 +140,8 @@ describe('demo reset — refusals', () => {
         headers: { cookie },
       });
       expect(status.json().available).toBe(false);
+      // SCRUM-515: nor is it a playground, so the till hides its demo bands.
+      expect(status.json().playground).toBe(false);
 
       const res = await off.app.inject({
         method: 'POST',
@@ -163,7 +165,7 @@ describe('demo reset — the happy path', () => {
       url: '/ops/demo-reset',
       headers: { cookie: adminCookie },
     });
-    expect(res.json()).toEqual({ available: true, confirmationPhrase: CONFIRM });
+    expect(res.json()).toEqual({ available: true, confirmationPhrase: CONFIRM, playground: true });
   });
 
   it('is invisible to reception even on staging', async () => {
@@ -173,6 +175,8 @@ describe('demo reset — the happy path', () => {
       headers: { cookie: receptionCookie },
     });
     expect(res.json().available).toBe(false);
+    // SCRUM-515: the deployment's own answer still reaches the till's staff.
+    expect(res.json().playground).toBe(true);
   });
 
   it('clears the facts, keeps the accounts, the catalogue and the seeded families', async () => {

@@ -1246,6 +1246,10 @@ export async function opsRoutes(app: App): Promise<void> {
       return {
         available: app.env.OPS_TEST_CONTROLS && isPlatformWide(effective),
         confirmationPhrase: DEMO_RESET_CONFIRMATION,
+        // SCRUM-515 — the deployment's half of the gate on its own, for any
+        // signed-in caller: the till shows its demo wristbands only where the
+        // deployment says it is a playground, never on a real park.
+        playground: app.env.OPS_TEST_CONTROLS,
       };
     },
   );

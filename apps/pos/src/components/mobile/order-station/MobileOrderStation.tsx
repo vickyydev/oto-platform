@@ -36,7 +36,7 @@ import { PriceSourceNote } from '@/components/till/SaleWriteStatus';
 import { PaymentExpiry, PaymentQr } from '@/components/till/PaymentQr';
 import { toast } from '@/hooks/use-toast';
 
-import { ScanWristband } from '@/components/fnb/ScanWristband';
+import { ScanWristband, useHeldBandOnBox } from '@/components/fnb/ScanWristband';
 import { FoodSafetyBanner } from '@/components/fnb/FoodSafetyBanner';
 import { MenuGrid } from '@/components/fnb/MenuGrid';
 import { ModifierSheet } from '@/components/fnb/ModifierSheet';
@@ -445,6 +445,11 @@ export function MobileOrderStation() {
       ? { key: walletKeyOf(wristband), useCredit, previewSatang: Math.round(wristband.creditBalanceTHB * 100) }
       : null,
   });
+  // SCRUM-483 — the counter moved to its box with a band held: read the band
+  // again there, so the credit offered is what the box will take. Not once the
+  // payment has taken anything, so a figure being settled is never changed.
+  useHeldBandOnBox(wristband, setWristband, () => stage !== 'confirmation' && !paymentStage.busy
+    && paymentStage.state.settlements.length === 0 && paymentStage.state.creditSaleId === null);
   const paymentContextLocked = stage === 'payment' && (paymentStage.locked || paymentStage.state.settlements.length > 0);
   useEffect(() => {
     setPaymentContextLocked('mobile-fnb', paymentContextLocked);

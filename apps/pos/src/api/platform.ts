@@ -1271,7 +1271,7 @@ export const opsApi = {
    * who is not a platform admin and on a deployment that did not opt in.
    */
   demoResetStatus: () =>
-    api.get<{ available: boolean; confirmationPhrase: string }>('/ops/demo-reset'),
+    api.get<{ available: boolean; confirmationPhrase: string; playground?: boolean }>('/ops/demo-reset'),
   demoReset: (confirm: string) =>
     api.post<{ deleted: Record<string, number> }>(
       '/ops/demo-reset',
