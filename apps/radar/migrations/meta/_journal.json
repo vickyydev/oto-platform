@@ -15,6 +15,13 @@
       "when": 1791921280170,
       "tag": "0001_spin_reward_codes",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791923160148,
+      "tag": "0002_radar_settings",
+      "breakpoints": true
     }
   ]
 }

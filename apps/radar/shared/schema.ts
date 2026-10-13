@@ -245,3 +245,40 @@ export const insertStaffBirthdaySchema = createInsertSchema(staffBirthdays).omit
 });
 export type InsertStaffBirthday = z.infer<typeof insertStaffBirthdaySchema>;
 export type StaffBirthday = typeof staffBirthdays.$inferSelect;
+
+// ============================================
+// RADAR'S OWN SETTINGS (S2-18 R3)
+// ============================================
+// What survived the one-source ruling of Radar's runtime-created tables: the
+// revenue planner's per-branch settings, the calendar's day notes and the pace
+// forecast snapshots. Dates are YYYY-MM-DD text, as the code compares them.
+
+export const branchSettings = pgTable("branch_settings", {
+  branch: text("branch").notNull(),
+  key: text("key").notNull(),
+  value: jsonb("value").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("branch_settings_branch_key").on(table.branch, table.key),
+]);
+
+export const calendarNotes = pgTable("calendar_notes", {
+  date: text("date").primaryKey(),
+  note: text("note").notNull().default(""),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const paceForecastSnapshots = pgTable("pace_forecast_snapshots", {
+  date: text("date").notNull(),
+  branch: text("branch").notNull(),
+  month: text("month").notNull(),
+  forecastRevenue: numeric("forecast_revenue").notNull(),
+  revenueToDate: numeric("revenue_to_date").notNull().default("0"),
+  elapsedDays: integer("elapsed_days").notNull().default(0),
+  target: numeric("target"),
+  model: text("model"),
+  recordedAt: timestamp("recorded_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("pace_forecast_snapshots_date_branch").on(table.date, table.branch),
+  index("idx_pace_forecast_snapshots_branch_month").on(table.branch, table.month),
+]);

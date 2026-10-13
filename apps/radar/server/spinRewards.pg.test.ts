@@ -35,10 +35,13 @@ async function run() {
     // This historical code must stay redeemable after it is reserved.
     await isolated.query("INSERT INTO campaign_qrs (short_code) VALUES ('1234')");
 
-    const migration = await readFile(
-      path.resolve(process.cwd(), "migrations/0010_spin_reward_codes.sql"),
+    // The spin-reward half of 0001 (the export's 0010); its first statement
+    // belongs to booth_events and is not what this test is about.
+    const full = await readFile(
+      path.resolve(process.cwd(), "migrations/0001_spin_reward_codes.sql"),
       "utf8",
     );
+    const migration = full.slice(full.indexOf("-- From the export's 0010"));
     await isolated.query(migration);
 
     const reservation = await isolated.query<{ code: string }>(
