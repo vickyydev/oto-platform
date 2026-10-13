@@ -28,6 +28,20 @@ const disjointImport = new AsyncLocalStorage<"first" | "second">();
 let mode: "normal" | "tracking-fail" | "pl-fail" | "cash-fail" | "daily-fail" = "normal";
 let revision = 1;
 
+async function withinDeadline<T>(operation: Promise<T>, label: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      operation,
+      new Promise<never>((_resolve, reject) => {
+        timer = setTimeout(() => reject(new Error(`finance.check: timed out waiting for ${label}`)), 10_000);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 globalThis.fetch = async (input, init) => {
   const url = new URL(String(input));
   assert.equal(url.origin, "https://api.xero.com");
@@ -169,32 +183,45 @@ try {
   await q("update xero_tokens set expires_at=now()-interval '1 minute' where xero_tenant_id=$1", [organisations[0]]);
   const mockedFetch = globalThis.fetch;
   let refreshCalls = 0;
+  let firstEntered!: () => void;
+  let firstFailed!: (reason: unknown) => void;
   let bothStarted!: () => void;
   let releaseFailure!: () => void;
+  const first = new Promise<void>((resolve, reject) => { firstEntered = resolve; firstFailed = reject; });
   const both = new Promise<void>((resolve) => { bothStarted = resolve; });
   const failureMayReturn = new Promise<void>((resolve) => { releaseFailure = resolve; });
   globalThis.fetch = async (input, init) => {
     if (new URL(String(input)).origin !== "https://identity.xero.com") return mockedFetch(input, init);
     refreshCalls++;
     if (refreshCalls === 1) {
-      await both;
+      firstEntered();
+      await withinDeadline(both, "both refresh requests");
       return Response.json({ access_token: randomBytes(24).toString("hex"), refresh_token: randomBytes(24).toString("hex"), expires_in: 3600 });
     }
     bothStarted();
-    await failureMayReturn;
+    await withinDeadline(failureMayReturn, "the renewed token before the late refusal");
     return new Response("ZZ TEST refresh refused", { status: 400 });
   };
   try {
     const renewed = ensureFreshToken(organisations[0]);
+    // Concurrent database reads need not arrive at fetch in invocation order.
+    // Start the late request only after renewed is held at the first mock fetch;
+    // it still reads the old credentials before either response is released.
+    void renewed.catch(firstFailed);
+    await withinDeadline(first, "the first refresh request");
     const late = ensureFreshToken(organisations[0]);
-    assert.equal(typeof await renewed, "string");
+    // Observe an early failure while renewed is awaited; the assertion below
+    // still checks the original promise and its exact reconnect requirement.
+    void late.catch(() => {});
+    assert.equal(typeof await withinDeadline(renewed, "the renewed token"), "string");
     releaseFailure();
-    await assert.rejects(late, /Please reconnect/);
+    await assert.rejects(withinDeadline(late, "the late refresh refusal"), /Please reconnect/);
     const state = (await q("select is_active,expires_at from xero_tokens where xero_tenant_id=$1", [organisations[0]]))[0];
     assert.equal(state.is_active, true);
     assert.equal(new Date(state.expires_at).getTime() > Date.now(), true);
     assert.equal(refreshCalls, 2);
   } finally {
+    bothStarted();
     releaseFailure();
     globalThis.fetch = mockedFetch;
   }
