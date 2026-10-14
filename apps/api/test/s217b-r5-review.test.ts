@@ -1032,7 +1032,7 @@ describe.skipIf(!HAS_APP_RUNTIME)('B to E. over HTTP against the app’s routes'
     expect((await call('DELETE', `/api/kiosk-devices/${tablet.device}/revoke`, { cookie: A.limited.cookie })).status).toBe(403);
   });
 
-  it('E5. the builder’s "no rule" claims, re-driven with writes: a manager limited to X assigns onto Y’s rota and retires Y’s row (Q39), and the leave-policy read refuses even X (Q40)', async () => {
+  it('E5. the builder’s "no rule" claims, re-driven with writes: a manager limited to X assigns onto Y’s rota and retires Y’s row (Q39), and the leave-policy read allows X and refuses Y (Q40, the field read fixed by SCRUM-544)', async () => {
     const R = await rota(A, A.y, day(25));
     const empY = await employee(A, A.y, 'rota-y');
     const assigned = await call('POST', '/api/schedule/assignments', {
@@ -1042,7 +1042,10 @@ describe.skipIf(!HAS_APP_RUNTIME)('B to E. over HTTP against the app’s routes'
     expect(assigned.status, assigned.text).toBe(201);
     const retired = await call('DELETE', `/api/schedule/shift-rows/${R.r2}`, { cookie: A.limited.cookie });
     expect([200, 204], retired.text).toContain(retired.status);
-    expect((await call('GET', `/api/leave-policies?branchId=${A.x}`, { cookie: A.limited.cookie })).status).toBe(403);
+    // SCRUM-544 fixed the branch check's field read (user.branchIds never
+    // existed, so even X was refused); the ported rule now runs: X yes, Y no.
+    expect((await call('GET', `/api/leave-policies?branchId=${A.x}`, { cookie: A.limited.cookie })).status).toBe(200);
+    expect((await call('GET', `/api/leave-policies?branchId=${A.y}`, { cookie: A.limited.cookie })).status).toBe(403);
     expect((await call('GET', `/api/sick-leave-balances?branchId=${A.y}`, { cookie: A.limited.cookie })).status).toBe(200);
   });
 });
