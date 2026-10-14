@@ -127,6 +127,28 @@ export interface SalePrintSnapshot {
    */
   bandHolder?: SalePrintBandHolder | null;
   note: string | null;
+  /**
+   * SCRUM-527 — the sale's discounts in the order they were applied: promo
+   * codes, manual discounts and the staff benefit, each as History's money
+   * card shows it. Optional so a snapshot written before it existed (a box's
+   * stored printout) prints exactly as it did.
+   */
+  discounts?: SalePrintDiscount[];
+}
+
+/**
+ * One discount row as the sale filed it (`pos.sale_discount`), carrying the
+ * words History shows beside its amount (`DiscountLabel`, `SaleDetail.tsx`).
+ * A voucher's label arrives already masked: a receipt is never a credential.
+ */
+export interface SalePrintDiscount {
+  kind: 'manual' | 'promo';
+  label: string | null;
+  targetLabel: string | null;
+  amountSatang: number;
+  reason: string | null;
+  note: string | null;
+  appliedByName: string | null;
 }
 
 /** The band holder of an F&B order, for the prep ticket. */
@@ -154,6 +176,8 @@ export interface SaleReceiptDocument {
   memberNickname?: string;
   lines: SalePrintedLine[];
   subtotal?: string;
+  /** SCRUM-527 — one row per discount, between the subtotal and the service charge. */
+  discounts?: SaleReceiptDiscountRow[];
   service?: string;
   vat?: string;
   total: string;
@@ -165,6 +189,13 @@ export interface SaleReceiptDocument {
   taxRows?: { label: string; amount: string; kind: string }[];
   /** True on a copy History (or the box's reprint) asked for. */
   copy?: boolean;
+}
+
+/** A discount on paper: its words, "−฿100", and the small line under it when there is one. */
+export interface SaleReceiptDiscountRow {
+  label: string;
+  amount: string;
+  detail?: string;
 }
 
 export interface SalePrepDocument {
@@ -247,6 +278,23 @@ function tenderLabel(tender: SalePrintTender): string {
 }
 
 /**
+ * SCRUM-527 — a discount's row on paper, worded as History's money card words
+ * it (`DiscountLabel` and the reason line under it in `SaleDetail.tsx`): the
+ * label, else "Promo" or "Discount"; " · " and what it was aimed at; and under
+ * it the reason, " — " the note, " · by " who applied it.
+ */
+export function receiptDiscountRow(d: SalePrintDiscount): SaleReceiptDiscountRow {
+  const label = `${d.label ?? (d.kind === 'promo' ? 'Promo' : 'Discount')}${
+    d.targetLabel ? ` · ${d.targetLabel}` : ''
+  }`;
+  const detail =
+    d.reason || d.appliedByName
+      ? `${d.reason ?? ''}${d.note ? ` — ${d.note}` : ''}${d.appliedByName ? ` · by ${d.appliedByName}` : ''}`
+      : undefined;
+  return { label, amount: `−${formatTHB(d.amountSatang)}`, ...(detail ? { detail } : {}) };
+}
+
+/**
  * The allergy line for a prep ticket: each child's allergies and medical notes,
  * named. Every child on the order, because the kitchen cannot know which child
  * a plate is for and an allergy left off is the one mistake that matters.
@@ -316,6 +364,7 @@ export function saleReceiptDocument(snapshot: SalePrintSnapshot, copy = false): 
       .filter((l) => l.quantity > 0)
       .map((l) => ({ qty: l.quantity, name: lineName(l), price: formatTHB(l.grossSatang), note: lineNote(l) })),
     subtotal: formatTHB(snapshot.subtotalSatang),
+    ...(snapshot.discounts?.length ? { discounts: snapshot.discounts.map(receiptDiscountRow) } : {}),
     service: service > 0 ? formatTHB(service) : undefined,
     vat: included > 0 ? formatTHB(included) : undefined,
     total: formatTHB(snapshot.grossSatang),

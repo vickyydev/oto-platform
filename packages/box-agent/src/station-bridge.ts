@@ -2529,6 +2529,28 @@ export class StationBridge {
         // The prep ticket prints the band holder's own name and allergy line, as online.
         bandHolder: food.holder ? { name: food.holder.childName, allergiesMedical: food.holder.allergiesMedical } : null,
         note: body.note ?? null,
+        // SCRUM-527 — the receipt lists the discounts as the platform files
+        // them: the manual ones (the staff benefit's row last), then the codes.
+        discounts: [
+          ...pricing.manualDiscounts.map((d) => ({
+            kind: 'manual' as const,
+            label: null,
+            targetLabel: d.targetLabel ?? null,
+            amountSatang: pricing.totals.manualAmounts[d.id] ?? 0,
+            reason: d.reason,
+            note: d.note ?? null,
+            appliedByName: body.staffName ?? null,
+          })),
+          ...pricing.totals.appliedPromos.map((p) => ({
+            kind: 'promo' as const,
+            label: p.label,
+            targetLabel: null,
+            amountSatang: p.amount,
+            reason: null,
+            note: null,
+            appliedByName: null,
+          })),
+        ],
       },
       factCart: {
         ...sentCart,

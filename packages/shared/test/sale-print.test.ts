@@ -154,6 +154,25 @@ describe('the receipt', () => {
     expect(copy.title).toBe('Receipt (copy)');
     expect(JSON.stringify(copy)).not.toContain(snapshot().bands[0]!.code);
   });
+
+  it('SCRUM-527: lists each discount under the subtotal as History words it, and none when there are none', () => {
+    expect(saleReceiptDocument(snapshot()).discounts).toBeUndefined();
+    const receipt = saleReceiptDocument({
+      ...snapshot(),
+      discounts: [
+        { kind: 'promo', label: 'SONGKRAN', targetLabel: null, amountSatang: 10000, reason: null, note: null, appliedByName: null },
+        { kind: 'manual', label: null, targetLabel: 'Kids', amountSatang: 5050, reason: 'Birthday', note: 'staff family', appliedByName: 'Nok' },
+        { kind: 'manual', label: null, targetLabel: null, amountSatang: 3000, reason: 'Staff benefit', note: null, appliedByName: null },
+        { kind: 'promo', label: null, targetLabel: null, amountSatang: 0, reason: null, note: null, appliedByName: null },
+      ],
+    });
+    expect(receipt.discounts).toEqual([
+      { label: 'SONGKRAN', amount: '−฿100' },
+      { label: 'Discount · Kids', amount: '−฿50.50', detail: 'Birthday — staff family · by Nok' },
+      { label: 'Discount', amount: '−฿30', detail: 'Staff benefit' },
+      { label: 'Promo', amount: '−฿0' },
+    ]);
+  });
 });
 
 describe('the bands, the prep ticket and the voucher', () => {

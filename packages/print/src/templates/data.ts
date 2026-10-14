@@ -41,6 +41,13 @@ export interface ReceiptData {
   memberNickname?: string;
   lines: PrintLine[];
   subtotal?: string;
+  /**
+   * SCRUM-527 — the sale's discounts, in the order they were applied: promo
+   * codes, manual discounts and the staff benefit, worded as History shows
+   * them. `amount` is pre-formatted with its sign ("−฿100"); `detail` is the
+   * small line under it (the reason, a note, who applied it).
+   */
+  discounts?: { label: string; amount: string; detail?: string }[];
   service?: string;
   vat?: string;
   total: string;

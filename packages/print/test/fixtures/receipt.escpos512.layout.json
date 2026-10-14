@@ -1,6 +1,6 @@
 {
   "widthDots": 512,
-  "heightDots": 645,
+  "heightDots": 715,
   "overflow": [],
   "items": [
     {
@@ -245,12 +245,57 @@
       "w": 100,
       "sizeDots": 22,
       "weight": "regular",
-      "text": "฿1,090.50"
+      "text": "฿1,240.50"
     },
     {
       "k": "text",
       "x": 8,
       "baselineY": 374,
+      "w": 246,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "Songkran Family Promo"
+    },
+    {
+      "k": "text",
+      "x": 441,
+      "baselineY": 374,
+      "w": 63,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "−฿100"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 400,
+      "w": 152,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "Discount · Kids"
+    },
+    {
+      "k": "text",
+      "x": 453,
+      "baselineY": 400,
+      "w": 51,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "−฿50"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 419,
+      "w": 275,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "  Birthday — staff family · by Nok"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 444,
       "w": 73,
       "sizeDots": 22,
       "weight": "regular",
@@ -259,7 +304,7 @@
     {
       "k": "text",
       "x": 479,
-      "baselineY": 374,
+      "baselineY": 444,
       "w": 25,
       "sizeDots": 22,
       "weight": "regular",
@@ -268,7 +313,7 @@
     {
       "k": "text",
       "x": 8,
-      "baselineY": 396,
+      "baselineY": 466,
       "w": 97,
       "sizeDots": 22,
       "weight": "regular",
@@ -277,7 +322,7 @@
     {
       "k": "text",
       "x": 435,
-      "baselineY": 396,
+      "baselineY": 466,
       "w": 69,
       "sizeDots": 22,
       "weight": "regular",
@@ -286,14 +331,14 @@
     {
       "k": "rect",
       "x": 8,
-      "y": 403,
+      "y": 473,
       "w": 496,
       "h": 1
     },
     {
       "k": "text",
       "x": 8,
-      "baselineY": 429,
+      "baselineY": 499,
       "w": 92,
       "sizeDots": 30,
       "weight": "bold",
@@ -302,7 +347,7 @@
     {
       "k": "text",
       "x": 367,
-      "baselineY": 430,
+      "baselineY": 500,
       "w": 137,
       "sizeDots": 30,
       "weight": "bold",
@@ -311,7 +356,7 @@
     {
       "k": "text",
       "x": 8,
-      "baselineY": 458,
+      "baselineY": 528,
       "w": 50,
       "sizeDots": 22,
       "weight": "regular",
@@ -320,7 +365,7 @@
     {
       "k": "text",
       "x": 435,
-      "baselineY": 458,
+      "baselineY": 528,
       "w": 69,
       "sizeDots": 22,
       "weight": "regular",
@@ -329,7 +374,7 @@
     {
       "k": "text",
       "x": 8,
-      "baselineY": 481,
+      "baselineY": 551,
       "w": 79,
       "sizeDots": 22,
       "weight": "regular",
@@ -338,7 +383,7 @@
     {
       "k": "text",
       "x": 448,
-      "baselineY": 481,
+      "baselineY": 551,
       "w": 56,
       "sizeDots": 22,
       "weight": "regular",
@@ -347,14 +392,14 @@
     {
       "k": "dashes",
       "x": 8,
-      "y": 490,
+      "y": 560,
       "w": 496,
       "t": 1
     },
     {
       "k": "text",
       "x": 8,
-      "baselineY": 508,
+      "baselineY": 578,
       "w": 126,
       "sizeDots": 18,
       "weight": "bold",
@@ -363,7 +408,7 @@
     {
       "k": "text",
       "x": 8,
-      "baselineY": 526,
+      "baselineY": 596,
       "w": 103,
       "sizeDots": 18,
       "weight": "regular",
@@ -372,7 +417,7 @@
     {
       "k": "text",
       "x": 8,
-      "baselineY": 544,
+      "baselineY": 614,
       "w": 103,
       "sizeDots": 18,
       "weight": "regular",
@@ -381,14 +426,14 @@
     {
       "k": "dashes",
       "x": 8,
-      "y": 548,
+      "y": 618,
       "w": 496,
       "t": 1
     },
     {
       "k": "text",
       "x": 8,
-      "baselineY": 566,
+      "baselineY": 636,
       "w": 127,
       "sizeDots": 18,
       "weight": "bold",
@@ -397,7 +442,7 @@
     {
       "k": "text",
       "x": 8,
-      "baselineY": 584,
+      "baselineY": 654,
       "w": 106,
       "sizeDots": 18,
       "weight": "regular",
@@ -406,7 +451,7 @@
     {
       "k": "text",
       "x": 8,
-      "baselineY": 603,
+      "baselineY": 673,
       "w": 205,
       "sizeDots": 18,
       "weight": "regular",
@@ -415,14 +460,14 @@
     {
       "k": "dashes",
       "x": 8,
-      "y": 611,
+      "y": 681,
       "w": 496,
       "t": 1
     },
     {
       "k": "text",
       "x": 60,
-      "baselineY": 629,
+      "baselineY": 699,
       "w": 392,
       "sizeDots": 18,
       "weight": "regular",

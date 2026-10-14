@@ -16,6 +16,7 @@ import {
   printJob,
   printTemplate,
   sale,
+  saleDiscount,
   saleLine,
   station,
   visitChild,
@@ -53,6 +54,7 @@ import { attachSaleBandKeys, creditVoucherDocumentOf, creditVoucherWalletsOf } f
 import { bandHolderOfSale, isPrepaidSetAside } from './band-food';
 import { endOfDayReceiptDocumentOf } from './end-of-day-receipt';
 import { tillVoucherDocumentOf } from './voucher-promotions';
+import { maskedVoucherLineLabel, saleVoucherCodes } from './vouchers';
 import type { Exec, Tx } from './tx';
 
 /**
@@ -1201,7 +1203,37 @@ export async function salePrintSnapshotOf(db: Exec, saleRow: SaleRow): Promise<S
     // SCRUM-494 — an order taken against a band prints that child's own line.
     bandHolder: await bandHolderOfSale(db, saleRow, lines),
     note: saleRow.note,
+    discounts: await discountsOf(db, saleRow),
   };
+}
+
+/**
+ * SCRUM-527 — the sale's discounts as the receipt prints them: every row in
+ * the order it was applied, worded from the same columns History's money card
+ * reads (`saleDetail` in `sale.ts`). A voucher's label is masked to its last
+ * four exactly as the screen masks it — a receipt is not a second credential.
+ */
+async function discountsOf(db: Exec, saleRow: SaleRow): Promise<SalePrintSnapshot['discounts']> {
+  const rows = await db
+    .select()
+    .from(saleDiscount)
+    .where(eq(saleDiscount.saleId, saleRow.id))
+    .orderBy(asc(saleDiscount.sequence));
+  if (rows.length === 0) return [];
+  const voucherCodes = await saleVoucherCodes(db, saleRow.operatorId, saleRow.id);
+  return rows.map((d) => {
+    const voucherCode =
+      d.kind === 'promo' && d.code !== null && voucherCodes.has(d.code) ? d.code : null;
+    return {
+      kind: d.kind,
+      label: voucherCode && d.label !== null ? maskedVoucherLineLabel(d.label, voucherCode) : d.label,
+      targetLabel: d.targetLabel,
+      amountSatang: d.amountSatang,
+      reason: d.reason,
+      note: d.note,
+      appliedByName: d.appliedByName,
+    };
+  });
 }
 
 /** The receipt's extra rows ride beside the template's own: `taxRows` and `copy`. */

@@ -309,6 +309,40 @@ describe('a finalised ticket sale prints its receipt and its signed bands', () =
 
 // --- Printing an F&B order (printRouting.tsx:fnbPrintJobs) --------------------
 
+describe('SCRUM-527 — the printed receipt carries the sale’s discounts', () => {
+  it('a manual discount prints under the subtotal as History shows it, and the copy keeps it', async () => {
+    const lineId = newId();
+    const { saleId } = await commit({
+      memberId: jamesId,
+      lines: [{ id: lineId, packageId: twoHoursId, kids: 1, adults: 1 }],
+      manualDiscounts: [
+        {
+          id: newId(),
+          scope: 'line',
+          targetLineId: lineId,
+          targetLabel: 'Kids',
+          type: 'fixed',
+          value: 5_000,
+          reason: 'Service recovery',
+          note: 'slide closed',
+        },
+      ],
+    });
+    const done = await finalise(saleId);
+    const receiptJob = (done.printing.jobs as { id: string; kind: string }[]).find((j) => j.kind === 'receipt')!;
+    const doc = (await documentOf(receiptJob.id)).json();
+    const shown = (await detail(saleId)).discounts as { amountSatang: number; appliedByName: string | null }[];
+    expect(shown).toHaveLength(1);
+    expect(doc.job.data.discounts).toEqual([
+      {
+        label: 'Discount · Kids',
+        amount: '−฿50',
+        detail: `Service recovery — slide closed · by ${shown[0]!.appliedByName}`,
+      },
+    ]);
+  });
+});
+
 describe('an F&B order prints one prep ticket per station', () => {
   it('kitchen and bar items: a kitchen ticket with the allergy line, and a bar ticket skipped for want of a printer', async () => {
     const { saleId } = await commit({

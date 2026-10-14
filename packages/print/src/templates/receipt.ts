@@ -4,7 +4,9 @@
  * Section order follows the prototype's preview
  * (`PrintTemplatePreview.tsx:151-281`) with the S2-11 additions slotted where
  * they belong: the abbreviated tax-invoice block and the receipt number under
- * the header, tenders and band codes after the totals.
+ * the header, tenders and band codes after the totals. SCRUM-527 adds the
+ * discount rows between the subtotal and the service charge, where History's
+ * money card shows them.
  *
  * One rule that looks like a bug and is not: on a receipt an item's note prints
  * whether or not `orderNotes` is on (`:215`) — `orderNotes` is not even an
@@ -89,6 +91,12 @@ export function buildReceipt({ template, data, device }: ReceiptInput): PrintDoc
   if (fieldOn(template, 'receipt', 'taxServiceBreakdown')) {
     blocks.push(divider());
     if (data.subtotal) blocks.push(moneyRow('Subtotal', data.subtotal));
+    // SCRUM-527 — each discount under the subtotal it came off, as History's
+    // money card lists them, with its reason line in the small size.
+    for (const discount of data.discounts ?? []) {
+      blocks.push(moneyRow(discount.label, discount.amount));
+      if (discount.detail) blocks.push(text(`  ${discount.detail}`, small));
+    }
     if (data.service) blocks.push(moneyRow('Service', data.service));
     if (data.vat) blocks.push(moneyRow('VAT (incl.)', data.vat));
     blocks.push({ k: 'rule', style: 'solid', thicknessDots: 1 });

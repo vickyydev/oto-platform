@@ -89,7 +89,12 @@ export const FIXTURES: Fixture[] = [
           { qty: 2, name: 'Grip Socks', price: '฿120', note: 'Size 24' },
           { qty: 1, name: THAI_HELLO, price: '฿120.50' },
         ],
-        subtotal: '฿1,090.50',
+        subtotal: '฿1,240.50',
+        // SCRUM-527 — a promo code, and a manual discount with its reason line.
+        discounts: [
+          { label: 'Songkran Family Promo', amount: '−฿100' },
+          { label: 'Discount · Kids', amount: '−฿50', detail: 'Birthday — staff family · by Nok' },
+        ],
         service: '฿0',
         vat: '฿71.32',
         total: '฿1,090.50',

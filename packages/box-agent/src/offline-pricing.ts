@@ -533,6 +533,12 @@ export interface OfflineSalePricing {
    * QR. Null when the cart carries none or it relieved nothing.
    */
   benefitRecord: OfflineBenefitRecord | null;
+  /**
+   * SCRUM-527 — the manual discounts priced, the staff benefit's row last, in
+   * the order the engine applied them: what the receipt lists, with
+   * `totals.manualAmounts` saying what each took.
+   */
+  manualDiscounts: ManualDiscount[];
 }
 
 /**
@@ -1064,7 +1070,7 @@ export function priceOfflineSale(
       tierDiffers: cart.tier !== undefined && cart.tier !== tierCode,
     },
   };
-  return { quote, cartLines, ctx, totals, items, basis, benefitRecord };
+  return { quote, cartLines, ctx, totals, items, basis, benefitRecord, manualDiscounts };
 }
 
 // --- The ledger's lines, on the box (plan §2.5, Round 4) ----------------------------

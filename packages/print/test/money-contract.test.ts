@@ -25,6 +25,9 @@ describe('the money strings in the fixtures are what @oto/shared emits', () => {
     [7132, '฿71.32'],
     [119950, '฿1,199.50'],
     [123450, '฿1,234.50'],
+    [124050, '฿1,240.50'],
+    [10000, '฿100'],
+    [5000, '฿50'],
   ];
 
   for (const [satang, expected] of cases) {
