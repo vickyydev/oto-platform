@@ -93,15 +93,12 @@ export default function SupplierTokensPage() {
         }
       }
       
-      const res = await apiRequest("/api/settings/supplier-tokens", {
-        method: "POST",
-        body: JSON.stringify({
-          name: newName.trim(),
-          allowedBranchIds: selectedBranches,
-          expiresAt,
-        }),
+      const res = await apiRequest("POST", "/api/settings/supplier-tokens", {
+        name: newName.trim(),
+        allowedBranchIds: selectedBranches,
+        expiresAt,
       });
-      return res as NewTokenResponse;
+      return (await res.json()) as NewTokenResponse;
     },
     onSuccess: (data) => {
       setNewTokenData(data);
@@ -113,24 +110,22 @@ export default function SupplierTokensPage() {
       queryClient.invalidateQueries({ queryKey: ["/api/settings/supplier-tokens"] });
       toast({ title: "Supplier token created" });
     },
-    onError: () => {
-      toast({ title: "Failed to create token", variant: "destructive" });
+    onError: (error: Error) => {
+      toast({ title: "Failed to create token", description: error.message, variant: "destructive" });
     },
   });
   
   const deleteTokenMutation = useMutation({
     mutationFn: async (id: string) => {
-      await apiRequest(`/api/settings/supplier-tokens/${id}`, {
-        method: "DELETE",
-      });
+      await apiRequest("DELETE", `/api/settings/supplier-tokens/${id}`);
     },
     onSuccess: () => {
       setTokenToDelete(null);
       queryClient.invalidateQueries({ queryKey: ["/api/settings/supplier-tokens"] });
       toast({ title: "Token revoked" });
     },
-    onError: () => {
-      toast({ title: "Failed to revoke token", variant: "destructive" });
+    onError: (error: Error) => {
+      toast({ title: "Failed to revoke token", description: error.message, variant: "destructive" });
     },
   });
   

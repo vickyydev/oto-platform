@@ -26,6 +26,7 @@ import {
   FileText,
   Scale,
   DollarSign,
+  Calendar,
 } from "lucide-react";
 import { DatePicker } from "@/components/ui/date-picker";
 
@@ -158,7 +159,7 @@ export default function PayrollStatutoryRulesPage() {
 
   const seedMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest("/api/payroll/statutory-rule-sets/seed", { method: "POST" });
+      return apiRequest("POST", "/api/payroll/statutory-rule-sets/seed");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/payroll/statutory-rule-sets"] });
@@ -172,7 +173,7 @@ export default function PayrollStatutoryRulesPage() {
   const createMutation = useMutation({
     mutationFn: async (data: RuleSetFormData) => {
       const payload = formDataToPayload(data);
-      return apiRequest("/api/payroll/statutory-rule-sets", { method: "POST", body: JSON.stringify(payload) });
+      return apiRequest("POST", "/api/payroll/statutory-rule-sets", payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/payroll/statutory-rule-sets"] });
@@ -188,7 +189,7 @@ export default function PayrollStatutoryRulesPage() {
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: RuleSetFormData }) => {
       const payload = formDataToPayload(data);
-      return apiRequest(`/api/payroll/statutory-rule-sets/${id}`, { method: "PUT", body: JSON.stringify(payload) });
+      return apiRequest("PUT", `/api/payroll/statutory-rule-sets/${id}`, payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/payroll/statutory-rule-sets"] });
@@ -203,7 +204,7 @@ export default function PayrollStatutoryRulesPage() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest(`/api/payroll/statutory-rule-sets/${id}`, { method: "DELETE" });
+      return apiRequest("DELETE", `/api/payroll/statutory-rule-sets/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/payroll/statutory-rule-sets"] });
@@ -294,7 +295,10 @@ export default function PayrollStatutoryRulesPage() {
     (b) => !selectedOperatorId || b.operatorId === selectedOperatorId
   );
 
-  const RuleSetForm = ({ onSubmit, isLoading: isPending, submitLabel }: { onSubmit: () => void; isLoading: boolean; submitLabel: string }) => (
+  // A render function, not a component defined in here: a component made
+  // anew on every render would remount the form, and its inputs lose focus,
+  // on each keystroke.
+  const renderRuleSetForm = ({ onSubmit, isLoading: isPending, submitLabel }: { onSubmit: () => void; isLoading: boolean; submitLabel: string }) => (
     <div className="flex min-h-0 flex-1 flex-col gap-4" data-testid="form-rule-set">
       <DialogBody className="grid gap-x-8 gap-y-4 lg:grid-cols-2">
       <div className="min-w-0 space-y-4">
@@ -589,11 +593,11 @@ export default function PayrollStatutoryRulesPage() {
                   Define SSO and PIT rules that apply to payroll calculations.
                 </DialogDescription>
               </DialogHeader>
-              <RuleSetForm
-                onSubmit={() => createMutation.mutate(formData)}
-                isLoading={createMutation.isPending}
-                submitLabel="Create Rule Set"
-              />
+              {renderRuleSetForm({
+                onSubmit: () => createMutation.mutate(formData),
+                isLoading: createMutation.isPending,
+                submitLabel: "Create Rule Set",
+              })}
             </DialogContent>
           </Dialog>
         </div>
@@ -732,11 +736,11 @@ export default function PayrollStatutoryRulesPage() {
               Update SSO and PIT rules for this rule set.
             </DialogDescription>
           </DialogHeader>
-          <RuleSetForm
-            onSubmit={() => selectedRuleSet && updateMutation.mutate({ id: selectedRuleSet.id, data: formData })}
-            isLoading={updateMutation.isPending}
-            submitLabel="Save Changes"
-          />
+          {renderRuleSetForm({
+            onSubmit: () => { if (selectedRuleSet) updateMutation.mutate({ id: selectedRuleSet.id, data: formData }); },
+            isLoading: updateMutation.isPending,
+            submitLabel: "Save Changes",
+          })}
         </DialogContent>
       </Dialog>
     </div>
