@@ -33,6 +33,7 @@ import {
 } from './contract';
 import { FakeBooth } from './fake';
 import { boothHost } from './host';
+import { launcherSignOn } from './signon';
 
 /**
  * The paired screen's credential (SCRUM-244).
@@ -254,6 +255,10 @@ class HttpBooth implements BoothTransport {
 function chooseTransport(): BoothTransport {
   // A booth box is always the real thing: there is no demo mode on a Pi.
   if (boothHost === 'box') return new HttpBooth();
+  // Opened from the launcher (SCRUM-528): the demonstration wheel, with the
+  // person on duty. A paired screen never arrives with a hand-off, so the
+  // pairing path below is the same as it was.
+  if (launcherSignOn.active) return new FakeBooth();
   if (flags.live) return new HttpBooth();
   if (flags.fake) return new FakeBooth();
   const configured = import.meta.env.VITE_BOOTH_FAKE;

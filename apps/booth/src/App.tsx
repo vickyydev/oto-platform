@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { boothSpinDurationSeconds, type BoothConfigBundle, type SpinResponse } from '@oto/shared';
 import { booth, boothCredential } from './booth/client';
+import { FakeBooth } from './booth/fake';
+import { launcherSignOn } from './booth/signon';
 import { BoothCallError, type BoothStatus } from './booth/contract';
 import { readAssetManifest, readColor, readDesign, type WheelDesign } from './booth/design';
 import { boothHost } from './booth/host';
@@ -389,6 +391,26 @@ export default function App() {
       if (timer !== undefined) window.clearTimeout(timer);
     };
   }, [refreshStatus, wheelLive, boothKey]);
+
+  /**
+   * Opened from the launcher (SCRUM-528): spend the hand-off once and put the
+   * person on duty on the demonstration wheel. A refused or missing hand-off
+   * leaves the demo running with nobody signed in, which is what `#fake`
+   * shows anyone; it never falls through to a paired booth.
+   */
+  useEffect(() => {
+    if (!launcherSignOn.active || !(booth instanceof FakeBooth)) return;
+    const fake = booth;
+    let cancelled = false;
+    void launcherSignOn.exchange().then((identity) => {
+      if (cancelled || identity === null) return;
+      fake.signOnAs(identity);
+      void refreshStatus();
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshStatus]);
 
   // ---- The press -------------------------------------------------------
 

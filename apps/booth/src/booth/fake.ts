@@ -27,6 +27,7 @@ import {
   type SpinResponse,
 } from '@oto/shared';
 import { flags } from '../flags';
+import { launcherSignOn, type LauncherIdentity } from './signon';
 import { backoffFor, FREE_ATTEMPTS } from '../staff-backoff';
 import {
   BoothCallError,
@@ -197,7 +198,7 @@ export class FakeBooth implements BoothTransport {
   private readonly bundle: BoothConfigBundle;
   private readonly version: number;
   private signedIn = false;
-  /** Who the fake says is on duty — a made-up person, never a real one. */
+  /** Who the fake says is on duty — a made-up person, unless the launcher named one (SCRUM-528). */
   private onDuty: BoothStaffOnDuty | null = null;
   /** The last voucher this tab minted, for the fake's reprint. */
   private lastVoucher: { spinId: string; printState: SpinResponse['printState'] } | null = null;
@@ -244,8 +245,8 @@ export class FakeBooth implements BoothTransport {
       // still pending — which is what the offline dot is meant to sit beside.
       vouchersPending: flags.offline ? this.minted : 0,
       lastSpinAt: this.lastSpinAt,
-      staffSignedIn: this.signedIn,
-      staff: this.signedIn ? this.onDuty : null,
+      staffSignedIn: this.signedIn && !this.onDutyEnded(),
+      staff: this.signedIn && !this.onDutyEnded() ? this.onDuty : null,
       dailyCapsReached: this.cappedPrizeIds(),
     });
   }
@@ -414,6 +415,32 @@ export class FakeBooth implements BoothTransport {
   async signOut(): Promise<void> {
     this.signedIn = false;
     this.onDuty = null;
+    // Signing out of the panel also ends a launcher sign-on (SCRUM-528).
+    launcherSignOn.forget();
+  }
+
+  /**
+   * Put the person the launcher signed on at the booth (SCRUM-528): their
+   * name and staff code on the badge, until their session would have ended.
+   * The one place the fake names a real person — it was told who by the api.
+   */
+  signOnAs(identity: LauncherIdentity): void {
+    this.failures = 0;
+    this.lockedUntil = 0;
+    this.signedIn = true;
+    this.onDuty = {
+      name: identity.name,
+      code: identity.code,
+      method: 'account',
+      signedInAt: new Date().toISOString(),
+      expiresAt: identity.expiresAt,
+    };
+  }
+
+  /** A launcher sign-on outlives nothing: it ends when its session does. */
+  private onDutyEnded(): boolean {
+    const ends = this.onDuty?.expiresAt;
+    return ends != null && Date.parse(ends) <= Date.now();
   }
 
   private demoStaff(method: BoothStaffOnDuty['method']): BoothStaffOnDuty {
