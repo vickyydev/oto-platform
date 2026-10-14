@@ -1,5 +1,7 @@
 import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { isProductBarcode } from '@oto/box-agent';
 import {
+  branch,
   branchHoliday,
   branchTaxConfig,
   discountDefinition,
@@ -59,16 +61,25 @@ import type { Exec, Tx } from './tx';
  *     etc."; a device is hardware standing in a mall, and copying its row would
  *     invent a printer nobody has plugged in.
  *
- * WHAT CANNOT BE COPIED EVEN THOUGH IT IS BRANCH-OWNED. A product's `code` and
- * `sku`, and a discount's `code`, are unique **per operator**, not per branch
- * (`product_code_unique`, `product_sku_unique`, `discount_definition_code_unique`
- * in `packages/db/src/schema/catalog.ts`). One operator therefore cannot hold
- * the same coded item twice, and an item pinned to the source branch has no
- * second row available to it at the target. That does not fail the clone and it
- * is not hidden either: every such row is reported BLOCKED, with the reason, in
- * the preview and in the audit row. Widening those three indexes to include
- * `branch_id` is what would unblock them, and that is a migration this slice
- * does not own.
+ * CODES ARE UNIQUE PER OPERATOR, SO A COPY CARRIES THE TARGET'S OWN (SCRUM-345).
+ * A product's `code` and `sku`, and a discount's `code`, are unique **per
+ * operator** (`product_code_unique`, `product_sku_unique`,
+ * `discount_definition_code_unique` in `packages/db/src/schema/catalog.ts`), so
+ * the copy cannot hold the source row's code as it is. It gets the code with the
+ * target branch's own code on the end — `FB-NUGGETS` cloned to Robinson Chalong
+ * is `FB-NUGGETS-ROBINSON-CHALONG` — which keeps every code naming one row and
+ * tells anyone reading it which park's row it is. The preview names each change
+ * (`FB-NUGGETS → FB-NUGGETS-ROBINSON-CHALONG`). A branch-scoped discount code
+ * travels the same way, with the items and packages it points at mapped to the
+ * target's own rows.
+ *
+ * WHAT STILL CANNOT BE COPIED: a real BARCODE — an `sku` shaped like one
+ * (`isProductBarcode`), or one on a size. That string is printed on a label the
+ * scanner reads, so it cannot be renamed, and it names one live item across the
+ * operator; a second holder is exactly what the Merch panel refuses. Such an
+ * item is reported BLOCKED, with the reason, in the preview and in the audit
+ * row. So is a renamed code that would run past 32 characters or is already
+ * held, and a discount that points at something the clone could not map.
  */
 
 export const CLONE_ENTITIES = [
@@ -153,11 +164,62 @@ export interface CloneScope {
   targetBranchId: string;
 }
 
-const OPERATOR_UNIQUE_CODE =
-  'a product code and a barcode name one product for the whole operator (product_code_unique / product_sku_unique), so the same coded item cannot exist twice under one operator';
+const OPERATOR_UNIQUE_BARCODE =
+  'a barcode names one product for the whole operator (product_sku_unique, and the same rule for a size’s barcode), and a printed barcode cannot be renamed for the copy';
 
-const OPERATOR_UNIQUE_DISCOUNT =
-  'a discount code names one definition for the whole operator (discount_definition_code_unique), so the same code cannot exist twice under one operator';
+/** The longest code the catalogue screens accept (`CodeSchema` in `@oto/shared`). */
+const MAX_CODE_LENGTH = 32;
+
+/** `robinson-chalong` → `ROBINSON-CHALONG`: the target park's part of a cloned code. */
+export function cloneCodeSuffix(branchCode: string): string {
+  return branchCode
+    .toUpperCase()
+    .replace(/[^A-Z0-9_-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+/** The code a copied row carries at the target: the source's, with the target's suffix. */
+export function clonedCode(code: string, suffix: string): string {
+  return suffix ? `${code}-${suffix}` : code;
+}
+
+/**
+ * A discount's `target` with every branch-owned id it names swapped for the
+ * target branch's own. Undefined when one of them has no row there.
+ */
+function mapDiscountTarget(
+  target: unknown,
+  productHere: (id: string) => string | null,
+  packageHere: (id: string) => string | null,
+): unknown {
+  if (target === null || target === undefined) return null;
+  const t = target as { kind?: string; addOnId?: string; menuItemIds?: string[]; ticketTypeId?: string };
+  if (t.kind === 'addOn' && t.addOnId) {
+    const id = productHere(t.addOnId);
+    return id === null ? undefined : { ...t, addOnId: id };
+  }
+  if (t.kind === 'menuItems') {
+    const ids = (t.menuItemIds ?? []).map(productHere);
+    return ids.some((id) => id === null) ? undefined : { ...t, menuItemIds: ids };
+  }
+  if (t.kind === 'ticketType' && t.ticketTypeId) {
+    const id = packageHere(t.ticketTypeId);
+    return id === null ? undefined : { ...t, ticketTypeId: id };
+  }
+  return target;
+}
+
+/** Why a renamed code cannot be used, or null when it can. Pairs each code with the set it must not be in. */
+function codeBlockReason(codes: (string | null)[], held: Set<string>[]): string | null {
+  for (const [i, code] of codes.entries()) {
+    if (code === null) continue;
+    if (code.length > MAX_CODE_LENGTH) {
+      return `its code with this branch's suffix (${code}) would be longer than ${MAX_CODE_LENGTH} characters — give it a shorter code first`;
+    }
+    if (held[i]?.has(code)) return `the code it would carry here (${code}) is already held by another row of this operator`;
+  }
+  return null;
+}
 
 /**
  * Read both branches and work out, row by row, what a clone would do.
@@ -186,6 +248,14 @@ export async function planBranchClone(
     printTemplates: [],
     stockLocations: [],
   };
+  const [targetBranch] = await exec
+    .select({ code: branch.code })
+    .from(branch)
+    .where(eq(branch.id, targetBranchId))
+    .limit(1);
+  const suffix = cloneCodeSuffix(targetBranch?.code ?? '');
+  /** Source package id → its id at the target (copied, or matched by name). */
+  const packageIdAtTarget = new Map<string, string>();
 
   // --- Ticket packages ------------------------------------------------------
   // Key: the name, because `ticket_package_name_unique` is (branch, name). The
@@ -198,18 +268,26 @@ export async function planBranchClone(
       .from(ticketPackage)
       .where(and(eq(ticketPackage.branchId, sourceBranchId), isNull(ticketPackage.archivedAt)));
     const targetRows = await exec
-      .select({ name: ticketPackage.name })
+      .select({ id: ticketPackage.id, name: ticketPackage.name, archivedAt: ticketPackage.archivedAt })
       .from(ticketPackage)
       .where(eq(ticketPackage.branchId, targetBranchId));
-    const taken = new Set(targetRows.map((r) => r.name));
+    // A live row wins over an archived one of the same name (live rows last).
+    const taken = new Map(
+      [...targetRows].sort((a, b) => Number(!a.archivedAt) - Number(!b.archivedAt)).map((r) => [r.name, r]),
+    );
     for (const row of sourceRows) {
-      if (taken.has(row.name)) {
+      const existing = taken.get(row.name);
+      if (existing) {
         plan.ticketPackages.exists.push(row.name);
+        // A package the target archived is not one a copied discount may point at.
+        if (!existing.archivedAt) packageIdAtTarget.set(row.id, existing.id);
         continue;
       }
       plan.ticketPackages.create.push(row.name);
       const { id: _id, branchId: _branchId, createdAt: _c, updatedAt: _u, ...rest } = row;
-      writes.ticketPackages.push({ ...rest, id: newId(), operatorId, branchId: targetBranchId });
+      const id = newId();
+      packageIdAtTarget.set(row.id, id);
+      writes.ticketPackages.push({ ...rest, id, operatorId, branchId: targetBranchId });
     }
   }
 
@@ -287,31 +365,45 @@ export async function planBranchClone(
   {
     const nameKey = (p: { kind: string; name: string }) => `${p.kind} ${p.name}`;
     const targetByName = new Map(targetProducts.map((p) => [nameKey(p), p.id]));
+    // Every live code and sku the operator holds, so a renamed one is checked
+    // here rather than refused by the index in the middle of the insert.
+    const live = await exec
+      .select({ code: product.code, sku: product.sku })
+      .from(product)
+      .where(and(eq(product.operatorId, operatorId), isNull(product.archivedAt)));
+    const codesHeld = new Set(live.flatMap((r) => (r.code ? [r.code] : [])));
+    const skusHeld = new Set(live.flatMap((r) => (r.sku ? [r.sku] : [])));
     for (const row of sourceProducts) {
       const label = row.code ? `${row.name} (${row.code})` : row.name;
-      // The operator-unique keys. See the header: a schema limit, reported
-      // rather than worked around — dropping the code would leave the copy
-      // unscannable and un-reimportable, and changing it would invent data.
-      // A barcode on one of the item's sizes is the same kind of key (S2-09b):
-      // the Merch panel refuses a second live holder of one across the
-      // operator, and a copy would be exactly that.
-      if (row.code !== null || row.sku !== null || row.variants.some((v) => !!v.barcode)) {
-        plan.products.blocked.push({ name: label, reason: OPERATOR_UNIQUE_CODE });
-        continue;
-      }
       const match = targetByName.get(nameKey(row));
       if (match) {
         plan.products.exists.push(label);
         productIdAtTarget.set(row.id, match);
         continue;
       }
+      // A real barcode is printed on a label and names one live item across
+      // the operator (S2-09b): it cannot be renamed for the copy. See the header.
+      if ((row.sku !== null && isProductBarcode(row.sku)) || row.variants.some((v) => !!v.barcode)) {
+        plan.products.blocked.push({ name: label, reason: OPERATOR_UNIQUE_BARCODE });
+        continue;
+      }
+      // SCRUM-345 — the code and a non-barcode sku carry the target's suffix.
+      const code = row.code === null ? null : clonedCode(row.code, suffix);
+      const sku = row.sku === null ? null : clonedCode(row.sku, suffix);
+      const blocked = codeBlockReason([code, sku], [codesHeld, skusHeld]);
+      if (blocked) {
+        plan.products.blocked.push({ name: label, reason: blocked });
+        continue;
+      }
+      if (code !== null) codesHeld.add(code);
+      if (sku !== null) skusHeld.add(sku);
       const id = newId();
       productIdAtTarget.set(row.id, id);
       copiedProductIds.add(row.id);
-      plan.products.create.push(label);
+      plan.products.create.push(row.code ? `${row.name} (${row.code} → ${code})` : label);
       const { id: _id, branchId: _branchId, createdAt: _c, updatedAt: _u, ...rest } = row;
       // S2-14b: a stock link is the source branch's shelf; the copy starts untracked.
-      writes.products.push({ ...rest, stockItemId: null, id, operatorId, branchId: targetBranchId });
+      writes.products.push({ ...rest, code, sku, stockItemId: null, id, operatorId, branchId: targetBranchId });
     }
   }
 
@@ -391,9 +483,15 @@ export async function planBranchClone(
   // --- Discount codes -------------------------------------------------------
   // Only the BRANCH-SCOPED ones are the source branch's to give: `branch_id`
   // null means every branch of the operator, which already includes the target.
+  //
+  // SCRUM-345: the copy carries the code with the target's suffix (see the
+  // header), and what it points at is mapped to the target's own rows — a
+  // branch-pinned item or package the clone copied or matched. An operator-wide
+  // item needs no mapping. Anything it points at that has no row at the target
+  // blocks it, as an override pointing at the source's row would.
   {
     const sourceRows = await exec
-      .select({ code: discountDefinition.code })
+      .select()
       .from(discountDefinition)
       .where(
         and(
@@ -401,8 +499,77 @@ export async function planBranchClone(
           isNull(discountDefinition.archivedAt),
         ),
       );
+    const liveCodes = await exec
+      .select({ code: discountDefinition.code, branchId: discountDefinition.branchId })
+      .from(discountDefinition)
+      .where(and(eq(discountDefinition.operatorId, operatorId), isNull(discountDefinition.archivedAt)));
+    const codesHeld = new Set(liveCodes.map((r) => r.code));
+    const atTarget = new Set(liveCodes.filter((r) => r.branchId === targetBranchId).map((r) => r.code));
+    // The products the source's discounts name that no map above covers: kept
+    // only when they belong to every branch.
+    const named = new Set<string>();
     for (const row of sourceRows) {
-      plan.discountCodes.blocked.push({ name: row.code, reason: OPERATOR_UNIQUE_DISCOUNT });
+      if (row.freeProductId) named.add(row.freeProductId);
+      const t = row.target as { kind?: string; addOnId?: string; menuItemIds?: string[] } | null;
+      if (t?.kind === 'addOn' && t.addOnId) named.add(t.addOnId);
+      if (t?.kind === 'menuItems') for (const id of t.menuItemIds ?? []) named.add(id);
+    }
+    // An add-on can be named by a slug rather than a product id; a slug is no
+    // branch's row and travels as it is.
+    const isRowId = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    const unmapped = [...named].filter((id) => isRowId(id) && !productIdAtTarget.has(id));
+    const operatorWide = new Set(
+      unmapped.length === 0
+        ? []
+        : (
+            await exec
+              .select({ id: product.id })
+              .from(product)
+              .where(
+                and(
+                  eq(product.operatorId, operatorId),
+                  inArray(product.id, unmapped),
+                  isNull(product.branchId),
+                  isNull(product.archivedAt),
+                ),
+              )
+          ).map((r) => r.id),
+    );
+    const productHere = (id: string): string | null =>
+      productIdAtTarget.get(id) ?? (operatorWide.has(id) || !isRowId(id) ? id : null);
+
+    for (const row of sourceRows) {
+      const code = clonedCode(row.code, suffix);
+      if (atTarget.has(code)) {
+        plan.discountCodes.exists.push(code);
+        continue;
+      }
+      const blocked = codeBlockReason([code], [codesHeld]);
+      if (blocked) {
+        plan.discountCodes.blocked.push({ name: row.code, reason: blocked });
+        continue;
+      }
+      const freeProductId = row.freeProductId === null ? null : productHere(row.freeProductId);
+      const target = mapDiscountTarget(row.target, productHere, (id) => packageIdAtTarget.get(id) ?? null);
+      if ((row.freeProductId !== null && freeProductId === null) || target === undefined) {
+        plan.discountCodes.blocked.push({
+          name: row.code,
+          reason: 'it points at an item or ticket package that could not be copied to this branch',
+        });
+        continue;
+      }
+      codesHeld.add(code);
+      plan.discountCodes.create.push(`${row.code} → ${code}`);
+      const { id: _id, branchId: _branchId, createdAt: _c, updatedAt: _u, ...rest } = row;
+      writes.discountCodes.push({
+        ...rest,
+        id: newId(),
+        operatorId,
+        branchId: targetBranchId,
+        code,
+        freeProductId,
+        target,
+      });
     }
   }
 

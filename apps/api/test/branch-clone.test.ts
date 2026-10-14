@@ -6,6 +6,7 @@ import {
   branch,
   branchHoliday,
   branchTaxConfig,
+  discountDefinition,
   modifierGroup,
   modifierOption,
   printTemplate,
@@ -130,10 +131,12 @@ describe('the preview', () => {
     expect(body.plan.printTemplates.exists).toContain('receipt');
 
     // The menu is seeded at Central only, so its items are the ones a clone
-    // would carry — except that every seeded item has a code, and a code names
-    // one product per operator. Those are reported blocked, with the reason.
-    expect(body.counts.products.blocked).toBeGreaterThan(0);
-    expect(body.plan.products.blocked[0].reason).toMatch(/whole operator/);
+    // would carry. Every seeded item has a code, unique per operator, so the
+    // copy carries the code with the target's suffix (SCRUM-345); only an item
+    // with a real barcode stays blocked, with the reason.
+    expect(body.plan.products.create).toContain('Chicken Nuggets (FB-NUGGETS → FB-NUGGETS-ROBINSON-CHALONG)');
+    expect(body.counts.products.created).toBeGreaterThan(body.counts.products.blocked);
+    for (const b of body.plan.products.blocked) expect(b.reason).toMatch(/barcode/);
 
     // What a cloned item points at rather than copies is named on the answer.
     expect(body.shared).toContain('product categories');
@@ -215,6 +218,21 @@ describe('the clone', () => {
       productId: sourceProductId,
       modifierGroupId: sharedLibraryGroupId,
       sortOrder: 0,
+    });
+    // SCRUM-345: a branch-scoped code pointing at the coded nuggets.
+    const [nuggets] = await ctx.db
+      .select({ id: product.id })
+      .from(product)
+      .where(and(eq(product.operatorId, operatorId), eq(product.code, 'FB-NUGGETS')));
+    await ctx.db.insert(discountDefinition).values({
+      id: newId(),
+      operatorId,
+      branchId: centralId,
+      code: 'NUGGET10',
+      label: 'Nuggets 10%',
+      kind: 'percent',
+      valueBp: 1000,
+      target: { kind: 'menuItems', menuItemIds: [nuggets!.id] },
     });
   });
 
@@ -309,6 +327,25 @@ describe('the clone', () => {
     expect(clonedLinks).toHaveLength(1);
     // REFERENCED, not copied: the same library group id as the source item's.
     expect(clonedLinks[0]!.modifierGroupId).toBe(sharedLibraryGroupId);
+  });
+
+  it('copies coded items and branch codes under the target’s own code, leaving the source’s untouched (SCRUM-345)', async () => {
+    // The clone itself ran in the test above; this reads what it wrote.
+    const [copy] = await ctx.db
+      .select()
+      .from(product)
+      .where(and(eq(product.branchId, emptyBranchId), eq(product.name, 'Chicken Nuggets')));
+    expect(copy!.code).toBe('FB-NUGGETS-CLONE-TARGET');
+    const [source] = await ctx.db
+      .select()
+      .from(product)
+      .where(and(eq(product.branchId, centralId), eq(product.name, 'Chicken Nuggets')));
+    expect(source!.code).toBe('FB-NUGGETS');
+    const [code] = await ctx.db
+      .select()
+      .from(discountDefinition)
+      .where(and(eq(discountDefinition.branchId, emptyBranchId), eq(discountDefinition.code, 'NUGGET10-CLONE-TARGET')));
+    expect(code!.target).toEqual({ kind: 'menuItems', menuItemIds: [copy!.id] });
   });
 
   it('is audited as catalog.clone with the source branch and the counts', async () => {
