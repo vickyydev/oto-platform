@@ -272,23 +272,19 @@ test('Booths: somebody is added to Booth 1, given a PIN that is never shown agai
   await expect(manager).toBeVisible({ timeout: 30_000 });
   await expect(manager).toContainText('no PIN');
 
-  const pin = '59370';
-  await manager.getByRole('button', { name: 'Set PIN', exact: true }).click();
-  await manager.getByLabel('PIN', { exact: true }).fill(pin);
-  await manager.getByLabel('PIN again').fill('59380');
-  await expect(manager.getByRole('button', { name: 'Save PIN', exact: true })).toBeDisabled();
-  await manager.getByLabel('PIN again').fill(pin);
-  await manager.getByRole('button', { name: 'Save PIN', exact: true }).click();
-
-  await expect(panel).toContainText('PIN set for Khun Lek (Manager)', { timeout: 30_000 });
+  // SCRUM-428 — the PIN is issued by the platform with one press, shown once.
+  await manager.getByRole('button', { name: 'Issue PIN', exact: true }).click();
+  await expect(panel).toContainText('PIN issued for Khun Lek (Manager)', { timeout: 30_000 });
   await expect(manager).toContainText('PIN set');
-  // The digits are nowhere on the page once saved, and the fields are gone.
-  await expect(manager.getByLabel('PIN again')).toHaveCount(0);
-  expect(await page.locator('body').innerText()).not.toContain(pin);
-  const inputs = await page.locator('input').evaluateAll((els) =>
-    els.map((el) => (el as HTMLInputElement).value),
-  );
-  expect(inputs).not.toContain(pin);
+  const issued = (await manager.locator('strong.font-mono').innerText()).trim();
+  expect(issued).toMatch(/^\d{5}$/);
+  // Nobody types one: no PIN field is offered anywhere on the row.
+  await expect(manager.locator('input[type="password"]')).toHaveCount(0);
+  // Done takes the digits off the page, and they are nowhere after that.
+  await manager.getByRole('button', { name: 'Done', exact: true }).click();
+  expect(await page.locator('body').innerText()).not.toContain(issued);
+  // Replacing it is the same single press.
+  await expect(manager.getByRole('button', { name: 'Issue new PIN', exact: true })).toBeVisible();
 
   await manager.getByRole('button', { name: 'Remove', exact: true }).click();
   await manager.getByRole('button', { name: 'Remove', exact: true }).click();

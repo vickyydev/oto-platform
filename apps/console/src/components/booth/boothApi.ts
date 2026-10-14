@@ -391,16 +391,19 @@ export interface BoothStaffRow {
   pinExpiresAt: string | null;
 }
 
+/**
+ * Issuing a booth PIN (SCRUM-428): the platform draws it, so the only thing
+ * asked is when it ends. There is no typed PIN — the api refuses one.
+ */
 export interface BoothPinInput {
-  pin?: string;
-  generate?: boolean;
   expiresAt?: string | null;
 }
 export interface BoothPinResult {
   accountId: string;
   hasPin: true;
   pinExpiresAt: string | null;
-  pin?: string;
+  /** The issued PIN, answered once. */
+  pin: string;
 }
 
 /** What a prize create or edit sends. Every field but the name is optional. */

@@ -352,17 +352,17 @@ describe('a prize that never expires, worded by the park, published and printed 
     expect(running!.version, 'the box is not on the version just published').toBe(2);
     expect(running!.bundle.settings.staffSessionMinutes).toBe(600);
 
-    // A PIN of this test's own, set through the Console's route and hashed
-    // there; the box verifies the typed digits against that hash.
+    // A PIN issued through the Console's route (SCRUM-428) and hashed there;
+    // the box verifies the typed digits against that hash.
     const pin = await ctx.app.inject({
       method: 'PUT',
       url: `/booths/${boothId}/staff/${receptionAccountId}/pin`,
       headers: { cookie: adminCookie },
-      payload: { pin: '48260' },
+      payload: {},
     });
     expect(pin.statusCode, pin.body).toBe(200);
     await agent.syncCache();
-    const signedIn = await booth.signIn({ pin: '48260' });
+    const signedIn = await booth.signIn({ pin: pin.json().pin as string });
     expect(signedIn.ok, 'the booth refused the PIN the Console set').toBe(true);
     const session = await booth.staffSession();
     expect(Date.parse(session!.expiresAt!) - Date.parse(session!.signedInAt)).toBe(600 * 60_000);

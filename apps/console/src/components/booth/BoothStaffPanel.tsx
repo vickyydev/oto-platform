@@ -14,14 +14,15 @@ import { CONTROL } from '@/components/Filters';
 import { StatusChip } from '@/components/redesign/chips';
 import { CardShell, StripedList } from '@/components/redesign/layout';
 import { EmptyNote } from '@/components/redesign/StatTile';
-import { cn } from '@/lib/utils';
 import type { BoothPinInput, BoothPinResult, BoothStaffRow } from './boothApi';
 import type { Read } from './readState';
 
 /**
  * Staff assigned to the booth, with person-wide PIN management.
- * Typed PINs are cleared after saving; generated PINs are displayed once.
- * Only hashes and expiry reach the box, where offline sign-in is checked.
+ * Booth PINs are ISSUED by the platform (SCRUM-428): nobody types one, the
+ * issued digits are shown once, and issuing again is the one action that
+ * replaces a PIN. Only hashes and expiry reach the box, where offline sign-in
+ * is checked.
  *
  * On the page's card language (SCRUM-474): the people as striped rows, the
  * forms beneath the row or the list they belong to, the words unchanged.
@@ -68,12 +69,10 @@ export function BoothStaffPanel({
   const [candidatesFailed, setCandidatesFailed] = useState<string | null>(null);
   const [adding, setAdding] = useState('');
   const [query, setQuery] = useState('');
-  /** Whose PIN form is open, and the two fields — the only place a PIN is held. */
+  /** Whose expiry form is open — an issue with an end date is the only one asked anything. */
   const [pinFor, setPinFor] = useState<string | null>(null);
-  const [pin, setPin] = useState('');
-  const [again, setAgain] = useState('');
-  const [generate, setGenerate] = useState(false);
   const [expires, setExpires] = useState('');
+  /** The PIN just issued, shown once — the only place a PIN is held. */
   const [generated, setGenerated] = useState<{ accountId: string; pin: string } | null>(null);
   const [confirm, setConfirm] = useState<{ accountId: string; what: 'remove' | 'withdraw' } | null>(
     null,
@@ -118,29 +117,26 @@ export function BoothStaffPanel({
     return c?.name ?? c?.phone ?? `Account ${boothStaffCode(accountId)}`;
   };
 
-  const pinValid = /^\d{5}$/.test(pin);
-  const pinsMatch = pin === again;
   const closePin = () => {
     setPinFor(null);
-    setPin('');
-    setAgain('');
     setExpires('');
-    setGenerate(false);
   };
 
-  const submitPin = async (accountId: string) => {
-    if (!generate && (!pinValid || !pinsMatch)) return;
+  /**
+   * Issue a PIN: one press, no digits typed (SCRUM-428). The platform draws
+   * five digits nobody else on this person's booths holds and answers them
+   * once; issuing again replaces them.
+   */
+  const issuePin = async (accountId: string, expiresAt: string | null) => {
+    setNotice(null);
+    setConfirm(null);
     setGenerated(null);
-    const result = await onSetPin(accountId, {
-      ...(generate ? { generate: true } : { pin }),
-      expiresAt: expires ? new Date(expires).toISOString() : null,
-    });
-    // Emptied whatever the answer: a PIN is not kept on screen for a retry.
+    const result = await onSetPin(accountId, { expiresAt });
     closePin();
     if (result) {
       if (result.pin) setGenerated({ accountId, pin: result.pin });
       setNotice(
-        `PIN set for ${nameOf(accountId)}. It reaches the booth at the box's next pull — within about a minute when the box is online.`,
+        `PIN issued for ${nameOf(accountId)}. It reaches the booth at the box's next pull — within about a minute when the box is online.`,
       );
     }
   };
@@ -247,35 +243,25 @@ export function BoothStaffPanel({
                           size="sm"
                           className="rounded-full bg-card px-3.5"
                           disabled={busy}
-                          onClick={() => {
-                            setNotice(null);
-                            setConfirm(null);
-                            setPin('');
-                            setAgain('');
-                            setGenerate(false);
-                            setExpires('');
-                            setGenerated(null);
-                            setPinFor(member.accountId);
-                          }}
+                          onClick={() => void issuePin(member.accountId, null)}
                         >
                           <KeyRound className="w-4 h-4" />
-                          Set PIN
+                          {member.hasPin ? 'Issue new PIN' : 'Issue PIN'}
                         </Button>
                         <Button
-                          variant="outline"
+                          variant="ghost"
                           size="sm"
-                          className="rounded-full bg-card px-3.5"
+                          className="rounded-full px-3.5"
                           disabled={busy}
                           onClick={() => {
-                            closePin();
                             setConfirm(null);
                             setNotice(null);
                             setGenerated(null);
-                            setGenerate(true);
+                            setExpires('');
                             setPinFor(member.accountId);
                           }}
                         >
-                          Generate PIN
+                          With an end date…
                         </Button>
                         {member.hasPin && (
                           <Button
@@ -339,51 +325,13 @@ export function BoothStaffPanel({
 
                 {pinFor === member.accountId && (
                   <form
-                    className="grid gap-3 rounded-[14px] border border-border bg-card p-3 @lg:grid-cols-[1fr_1fr_auto] @lg:items-end"
+                    className="grid gap-3 rounded-[14px] border border-border bg-card p-3 @lg:grid-cols-[1fr_auto] @lg:items-end"
                     onSubmit={(e) => {
                       e.preventDefault();
-                      void submitPin(member.accountId);
+                      if (expires) void issuePin(member.accountId, new Date(expires).toISOString());
                     }}
                   >
-                    {!generate && (
-                      <>
-                        <Field
-                          label={member.hasPin ? 'New PIN' : 'PIN'}
-                          hint={
-                            pin !== '' && !pinValid ? (
-                              <span className="text-status-down">Exactly five digits.</span>
-                            ) : (
-                              'Exactly five digits, including any leading zero.'
-                            )
-                          }
-                        >
-                          <PinInput
-                            label={member.hasPin ? 'New PIN' : 'PIN'}
-                            value={pin}
-                            onChange={setPin}
-                            disabled={busy}
-                          />
-                        </Field>
-                        <Field
-                          label="PIN again"
-                          hint={
-                            again !== '' && !pinsMatch ? (
-                              <span className="text-status-down">The two PINs are not the same.</span>
-                            ) : (
-                              'Never shown again once saved.'
-                            )
-                          }
-                        >
-                          <PinInput
-                            label="PIN again"
-                            value={again}
-                            onChange={setAgain}
-                            disabled={busy}
-                          />
-                        </Field>
-                      </>
-                    )}
-                    <Field label="Expires" hint="Optional. Leave empty for no expiry.">
+                    <Field label="Expires" hint="When this PIN stops working.">
                       <input
                         type="datetime-local"
                         aria-label="Expires"
@@ -398,9 +346,9 @@ export function BoothStaffPanel({
                         type="submit"
                         size="sm"
                         className="rounded-full px-3.5 font-bold"
-                        disabled={busy || (!generate && (!pinValid || !pinsMatch))}
+                        disabled={busy || expires === ''}
                       >
-                        {generate ? 'Generate PIN' : 'Save PIN'}
+                        {member.hasPin ? 'Issue new PIN' : 'Issue PIN'}
                       </Button>
                       <Button
                         type="button"
@@ -412,16 +360,16 @@ export function BoothStaffPanel({
                         Cancel
                       </Button>
                     </div>
-                    <p className="text-xs text-muted-foreground @lg:col-span-3">
-                      This replaces the person's PIN at every booth. A generated PIN is shown once:
-                      write it down before closing.
+                    <p className="text-xs text-muted-foreground @lg:col-span-2">
+                      The platform issues the PIN and shows it once: write it down before closing.
+                      It replaces the person's PIN at every booth.
                     </p>
                   </form>
                 )}
                 {generated?.accountId === member.accountId && (
                   <div className="flex flex-wrap items-center gap-3 rounded-[14px] border border-border bg-card p-3">
                     <span className="text-sm">
-                      Generated PIN:{' '}
+                      Issued PIN:{' '}
                       <strong className="font-mono tracking-widest">{generated.pin}</strong>. Shown
                       once — write it down.
                     </span>
@@ -514,36 +462,3 @@ const ROLE_NAMES: Record<SystemRole, string> = {
   reception: 'Reception',
   staff: 'Staff',
 };
-
-/**
- * Digits only, masked, and marked as a NEW secret: `new-password` is the hint
- * browsers honour for not filling in a saved one. A booth PIN is not this
- * administrator's password, and an autofill that put the administrator's own
- * digits in here would set them as somebody else's PIN.
- */
-function PinInput({
-  label,
-  value,
-  onChange,
-  disabled,
-}: {
-  /** The field's own name, so it is not read out with the hint under it. */
-  label: string;
-  value: string;
-  onChange: (next: string) => void;
-  disabled?: boolean;
-}) {
-  return (
-    <input
-      aria-label={label}
-      type="password"
-      inputMode="numeric"
-      autoComplete="new-password"
-      maxLength={5}
-      value={value}
-      disabled={disabled}
-      onChange={(e) => onChange(e.target.value.replace(/\D/g, ''))}
-      className={cn(CONTROL, 'font-mono tracking-[0.4em] disabled:opacity-60')}
-    />
-  );
-}

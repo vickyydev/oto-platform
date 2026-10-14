@@ -1,5 +1,5 @@
 import { createHash, randomInt } from 'node:crypto';
-import { hash as argonHash } from '@node-rs/argon2';
+import { hash as argonHash, verify as argonVerify } from '@node-rs/argon2';
 import { and, asc, count, desc, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
 import {
   account,
@@ -2112,11 +2112,20 @@ function drawBoothPin(): string {
   return String(randomInt(0, 10 ** BOOTH_PIN_LENGTH)).padStart(BOOTH_PIN_LENGTH, '0');
 }
 
-/** What setting a PIN takes: one typed, or one drawn here — and when it ends. */
+/**
+ * What issuing a PIN takes: when it ends, and nothing else (SCRUM-428).
+ *
+ * Booth PINs are ISSUED by the platform — five random digits shown once to
+ * the person issuing them — and never chosen or typed by staff. A typed `pin`
+ * is refused by name (`BOOTH_PIN_ISSUED_ONLY`) rather than ignored, so an
+ * older Console or a script that still sends one learns why. `generate: true`
+ * is still accepted, because issuing is all this does now; `false` is refused
+ * with the same reason.
+ */
 export interface BoothPinInput {
-  /** Five digits typed by the administrator. Exactly one of this and `generate`. */
+  /** Refused: booth PINs are issued, not typed. Present only to be named. */
   pin?: string;
-  /** Draw a random five-digit PIN here and hand it back once. */
+  /** Accepted for older callers; issuing is the only thing this does. */
   generate?: boolean;
   /** When it stops working. Null or absent: never. Must be in the future. */
   expiresAt?: Date | null;
@@ -2127,18 +2136,78 @@ export interface BoothPinSetResult {
   hasPin: true;
   pinExpiresAt: string | null;
   /**
-   * The PIN the platform drew, present only when `generate` was asked for.
-   * This answer is the only place it exists in clear: the row holds its
-   * argon2id hash, the audit row says only that one was drawn, and the route
-   * declares `secretResponse`, so the replay store never keeps this body.
+   * The PIN the platform drew. This answer is the only place it exists in
+   * clear: the row holds its argon2id hash, the audit row says only that one
+   * was issued, and the route declares `secretResponse`, so the replay store
+   * never keeps this body.
    */
-  pin?: string;
+  pin: string;
+}
+
+/** How many draws before issuing gives up; a clash is 1 in 100,000 per colleague. */
+const BOOTH_PIN_DRAWS = 20;
+
+/**
+ * The live PIN hashes of everybody who shares a booth with this person.
+ *
+ * "The person's booths" is every booth whose staff list names them, because
+ * their PIN is theirs at all of them (one live PIN per account), and a box
+ * tries a PIN against its own booth's list only. Expired PINs are included:
+ * they open nothing, but they are still somebody's digits on a list.
+ */
+async function colleaguePinHashes(db: Db, accountId: string): Promise<string[]> {
+  const mine = await db
+    .select({ stationId: boothStaffAssignment.stationId })
+    .from(boothStaffAssignment)
+    .where(eq(boothStaffAssignment.accountId, accountId));
+  if (mine.length === 0) return [];
+  const others = await db
+    .selectDistinct({ accountId: boothStaffAssignment.accountId })
+    .from(boothStaffAssignment)
+    .where(inArray(boothStaffAssignment.stationId, mine.map((m) => m.stationId)));
+  const colleagues = others.map((o) => o.accountId).filter((id) => id !== accountId);
+  const pins = await livePinsByAccount(db, colleagues);
+  return [...pins.values()].map((p) => p.secretHash);
 }
 
 /**
- * Set somebody's booth PIN: five digits the administrator typed, or five the
- * platform draws and hands back once (`generate`), with an optional moment it
- * stops working (`expiresAt`, migration 0027).
+ * Five random digits that nobody else on this person's booths holds (M10, T29).
+ *
+ * The check is not an oracle, which is why it is safe here and was refused
+ * at a typed PIN: nobody chose these digits, so a clash tells nobody
+ * anything, and it is never reported — the platform simply draws again. Each
+ * comparison is an argon2id verify against a list the size of a booth's
+ * staff.
+ *
+ * Two people issued PINs at the same instant could in principle draw the same
+ * digits; the box's own rule — a PIN that matches two people signs in nobody
+ * and does not count toward the lock — is what holds then.
+ */
+export async function drawUnsharedBoothPin(
+  db: Db,
+  accountId: string,
+  /** The draw itself; a test passes a fixed sequence to make a clash happen. */
+  draw: () => string = drawBoothPin,
+): Promise<string> {
+  const taken = await colleaguePinHashes(db, accountId);
+  for (let attempt = 0; attempt < BOOTH_PIN_DRAWS; attempt += 1) {
+    const candidate = draw();
+    const clashes = await Promise.all(
+      taken.map((hash) => argonVerify(hash, candidate).catch(() => false)),
+    );
+    if (!clashes.some(Boolean)) return candidate;
+  }
+  throw new AppError(
+    503,
+    'BOOTH_PIN_UNAVAILABLE',
+    'A PIN nobody else on these booths holds could not be drawn. Try again.',
+  );
+}
+
+/**
+ * Issue somebody's booth PIN: five digits the platform draws and hands back
+ * once, with an optional moment it stops working (`expiresAt`, migration
+ * 0027). Issuing again is the one action that replaces it (SCRUM-428).
  *
  * **Three rules, and each of them is about where the five digits go.**
  *
@@ -2147,21 +2216,19 @@ export interface BoothPinSetResult {
  *     and PIN out of the simulator panel. The PIN reaches a booth only as an
  *     argon2id hash on the `staff` cache scope, which is the same path the
  *     password hash already takes.
- *   - **Never into the idempotency store.** That store keeps a request hash
- *     for a day, and a plain SHA-256 over a body holding five digits is a
- *     hundred thousand guesses. The route declares `secretResponse: true` so
- *     no key is claimed, no hash of this body is ever written, and the answer
- *     that carries a drawn PIN is never kept to be replayed.
- *   - **Never in the audit row.** The row says a PIN was set, by whom, for
- *     whom, whether the platform drew it and when it expires. Not what it is,
- *     and not its hash.
+ *   - **Never into the idempotency store.** The answer carries the PIN itself.
+ *     The route declares `secretResponse: true` so no key is claimed and the
+ *     answer is never kept to be replayed.
+ *   - **Never in the audit row.** The row says a PIN was issued, by whom, for
+ *     whom and when it expires. Not what it is, and not its hash.
  *
  * The PIN is the ACCOUNT's, not this booth's: `credential_active_kind_unique`
- * allows one live `pin` per person, so setting a new one revokes the old in
+ * allows one live `pin` per person, so issuing a new one revokes the old in
  * the same transaction and the person types the same digits at every booth
- * they are allowed to work. That is why who may set it is decided about the
- * person, not the booth (`requirePinTarget`, M9): they must work at this
- * booth's branch, and the caller must hold every role they hold.
+ * they are allowed to work — which is why the draw avoids every colleague on
+ * every one of those booths (`drawUnsharedBoothPin`). Who may issue it is
+ * decided about the person, not the booth (`requirePinTarget`, M9): they must
+ * work at this booth's branch, and the caller must hold every role they hold.
  */
 export async function setBoothPin(
   db: Db,
@@ -2171,16 +2238,12 @@ export async function setBoothPin(
   accountId: string,
   input: BoothPinInput,
 ): Promise<BoothPinSetResult> {
-  const generated = input.generate === true;
-  if (generated === (input.pin !== undefined)) {
+  if (input.pin !== undefined || input.generate === false) {
     throw new AppError(
       400,
-      'BOOTH_PIN_INPUT',
-      'Type a five-digit PIN, or ask for one to be generated — one of the two.',
+      'BOOTH_PIN_ISSUED_ONLY',
+      'Booth PINs are issued by the platform, not typed. Issue a new PIN and read it off the screen.',
     );
-  }
-  if (!generated && !isBoothPin(input.pin)) {
-    throw new AppError(400, 'BOOTH_PIN_INVALID', BOOTH_PIN_RULE);
   }
   const expiresAt = input.expiresAt ?? null;
   if (expiresAt && expiresAt.getTime() <= Date.now()) {
@@ -2200,7 +2263,7 @@ export async function setBoothPin(
     );
   }
 
-  const pin = generated ? drawBoothPin() : input.pin!;
+  const pin = await drawUnsharedBoothPin(db, accountId);
   const secretHash = await argonHash(pin);
   await withTx(db, ctx, 'booth_pin.set', async (tx) => {
     const now = new Date();
@@ -2230,13 +2293,13 @@ export async function setBoothPin(
       action: 'booth_pin.set',
       entityType: 'credential',
       entityId: id,
-      // The fact, never the secret and never its hash — "drawn by the
+      // The fact, never the secret and never its hash — "issued by the
       // platform" is said, the digits it drew are not.
       after: {
         accountId,
         kind: 'pin',
         stationId: row.stationId,
-        generated,
+        generated: true,
         expiresAt: expiresAt?.toISOString() ?? null,
       },
       requestId: ctx.requestId,
@@ -2246,7 +2309,7 @@ export async function setBoothPin(
     accountId,
     hasPin: true,
     pinExpiresAt: expiresAt?.toISOString() ?? null,
-    ...(generated ? { pin } : {}),
+    pin,
   };
 }
 

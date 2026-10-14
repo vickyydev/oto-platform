@@ -58,7 +58,7 @@ What is the same for every booth voucher, and is therefore not a setting: it is 
 ## 3. Booth staff and PINs — Console → Booths → the booth → Booth staff
 
 - **Add somebody**: choose them under **Person** (search by name or phone) → **Add to booth**. The list offers the people of the booth's branch and the park's administrators — add yourself too.
-- **Set PIN**: exactly five digits, typed twice → **Save PIN**. Leading zeros count. **Generate PIN** makes five random digits and shows them once with **Copy PIN**; write them down before closing. A PIN belongs to the person and replaces their previous PIN at every booth they work. Give each person their own PIN.
+- **Issue PIN**: the platform draws five random digits that nobody else on that person's booths holds and shows them once with **Copy PIN**; write them down before pressing **Done**. Nobody types a PIN. **Issue new PIN** replaces it in one press; **With an end date…** issues one that stops working at a set time. A PIN belongs to the person and replaces their previous PIN at every booth they work.
 - **Expires** is optional. Once that time passes, the box refuses the PIN even offline and asks the person to get a new one from a manager. Leave it empty for no expiry.
 - **Remove PIN** stops the PIN working; **Remove** takes the person off this booth (their PIN stays theirs for other booths). Existing four-digit PINs must be replaced with five-digit PINs before using this release.
 - People on the list can also sign in at the booth with **their own phone and password** when their role allows it — the panel names those roles. Somebody not on the list cannot sign in at this booth either way.

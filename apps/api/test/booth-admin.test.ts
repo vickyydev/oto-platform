@@ -40,7 +40,7 @@ import {
   teardownAll,
   type TestContext,
 } from './helpers';
-import { listBooths } from '../src/services/booth-admin';
+import { drawUnsharedBoothPin, listBooths } from '../src/services/booth-admin';
 import { provisionVirtualBox } from '../src/services/box';
 
 /**
@@ -1212,17 +1212,37 @@ describe('voucher definitions (S2-07b)', () => {
  * locking it out.
  */
 describe('the booth PIN (S2-07b)', () => {
-  const PIN = '13570';
+  /** Issued by the platform in the first test (SCRUM-428), and read by the rest. */
+  let PIN = '';
 
-  it('sets a PIN nobody can read back, and the booth then lets that person in', async () => {
+  it('refuses a typed PIN by name: booth PINs are issued, not chosen (SCRUM-428)', async () => {
+    for (const payload of [{ pin: '13570' }, { generate: false }]) {
+      const res = await ctx.app.inject({
+        method: 'PUT',
+        url: `/booths/${boothId}/staff/${receptionAccountId}/pin`,
+        headers: { cookie: adminCookie, 'idempotency-key': newId() },
+        payload,
+      });
+      expect(res.statusCode, res.body).toBe(400);
+      expect(res.json().error.code).toBe('BOOTH_PIN_ISSUED_ONLY');
+    }
+  });
+
+  it('issues a PIN shown once and nobody can read back, and the booth then lets that person in', async () => {
     const res = await ctx.app.inject({
       method: 'PUT',
       url: `/booths/${boothId}/staff/${receptionAccountId}/pin`,
       headers: { cookie: adminCookie, 'idempotency-key': newId() },
-      payload: { pin: PIN },
+      payload: {},
     });
     expect(res.statusCode, res.body).toBe(200);
-    expect(res.json()).toEqual({ accountId: receptionAccountId, hasPin: true, pinExpiresAt: null });
+    expect(res.json()).toEqual({
+      accountId: receptionAccountId,
+      hasPin: true,
+      pinExpiresAt: null,
+      pin: expect.stringMatching(/^\d{5}$/),
+    });
+    PIN = res.json().pin as string;
 
     const [row] = await db
       .select()
@@ -1271,6 +1291,44 @@ describe('the booth PIN (S2-07b)', () => {
     const signedIn = await booth.signIn({ pin: PIN });
     expect(signedIn.ok, 'the booth refused a PIN the Console had just set').toBe(true);
     expect(signedIn.accountId).toBe(receptionAccountId);
+  });
+
+  /**
+   * SCRUM-428 (audit M10, T29) — an issued PIN is one nobody else on the
+   * person's booths holds. A colleague's digits drawn are drawn again, and
+   * never reported: nobody chose them, so the clash tells nobody anything.
+   */
+  it('draws again when the digits are a colleague’s on the same booth, and gives up rather than issue a shared PIN', async () => {
+    const [b1] = await db
+      .select({ operatorId: station.operatorId })
+      .from(station)
+      .where(eq(station.id, boothId))
+      .limit(1);
+    const [other] = await db
+      .select({ id: account.id })
+      .from(account)
+      .where(eq(account.operatorId, b1!.operatorId))
+      .limit(50)
+      .then((rows) => rows.filter((r) => r.id !== receptionAccountId));
+    expect(other, 'no second account to put on the booth').toBeTruthy();
+    const planted = newId();
+    await db.insert(boothStaffAssignment).values({
+      id: planted,
+      stationId: boothId,
+      accountId: other!.id,
+      addedBy: receptionAccountId,
+    });
+    try {
+      const free = PIN === '24680' ? '13579' : '24680';
+      const sequence = [PIN, PIN, free];
+      const drawn = await drawUnsharedBoothPin(db, other!.id, () => sequence.shift()!);
+      expect(drawn, 'the colleague’s PIN was issued again').toBe(free);
+      await expect(drawUnsharedBoothPin(db, other!.id, () => PIN)).rejects.toMatchObject({
+        code: 'BOOTH_PIN_UNAVAILABLE',
+      });
+    } finally {
+      await db.delete(boothStaffAssignment).where(eq(boothStaffAssignment.id, planted));
+    }
   });
 
   it('attributes the spin that follows to the person who signed in', async () => {
@@ -1427,7 +1485,6 @@ describe('booth staff and PINs stop at the person’s branch and role (M9)', () 
   let chalongPin: string;
 
   /** Four digits drawn at run time, so no PIN is written into this file. */
-  const freshPin = (): string => String(randomInt(10_000, 100_000));
 
   const accountIdOf = async (phone: string): Promise<string> => {
     const [row] = await db.select({ id: account.id }).from(account).where(eq(account.phone, phone)).limit(1);
@@ -1483,11 +1540,9 @@ describe('booth staff and PINs stop at the person’s branch and role (M9)', () 
     // Chalong's manager puts himself on his own booth, with a PIN of his own.
     const added = await put(`/booths/${chalongBoothId}/staff/${chalongManagerId}`, chalongCookie);
     expect(added.statusCode, added.body).toBe(200);
-    chalongPin = freshPin();
-    const pinned = await put(`/booths/${chalongBoothId}/staff/${chalongManagerId}/pin`, chalongCookie, {
-      pin: chalongPin,
-    });
+    const pinned = await put(`/booths/${chalongBoothId}/staff/${chalongManagerId}/pin`, chalongCookie, {});
     expect(pinned.statusCode, pinned.body).toBe(200);
+    chalongPin = pinned.json().pin as string;
   });
 
   it('refuses to add somebody from another park with STAFF_NOT_AT_BRANCH, and still adds the operator administrator', async () => {
@@ -1517,7 +1572,7 @@ describe('booth staff and PINs stop at the person’s branch and role (M9)', () 
   });
 
   it('refuses to set or withdraw the PIN of somebody above the caller with 403 ROLE_NOT_DOMINATED', async () => {
-    const set = await put(`/booths/${boothId}/staff/${adminId}/pin`, managerCookie, { pin: freshPin() });
+    const set = await put(`/booths/${boothId}/staff/${adminId}/pin`, managerCookie, {});
     expect(set.statusCode, set.body).toBe(403);
     expect(set.json().error.code).toBe('ROLE_NOT_DOMINATED');
     expect(await livePin(adminId), 'the manager gave the administrator a PIN').toBeUndefined();
@@ -1550,9 +1605,7 @@ describe('booth staff and PINs stop at the person’s branch and role (M9)', () 
       addedBy: adminId,
     });
     try {
-      const set = await put(`/booths/${boothId}/staff/${chalongManagerId}/pin`, managerCookie, {
-        pin: freshPin(),
-      });
+      const set = await put(`/booths/${boothId}/staff/${chalongManagerId}/pin`, managerCookie, {});
       expect(set.statusCode, set.body).toBe(403);
       expect(set.json().error.code).toBe('OUT_OF_BRANCH_SCOPE');
 
@@ -1567,7 +1620,7 @@ describe('booth staff and PINs stop at the person’s branch and role (M9)', () 
     expect(offList.statusCode, offList.body).toBe(403);
     expect(offList.json().error.code).toBe('OUT_OF_BRANCH_SCOPE');
 
-    // The same credential, still live, still the digits he chose.
+    // The same credential, still live, still the digits he was issued.
     const after = await livePin(chalongManagerId);
     expect(after?.id).toBe(before!.id);
     expect(await verifyArgon2(after!.secretHash, chalongPin)).toBe(true);
@@ -1587,9 +1640,7 @@ describe('booth staff and PINs stop at the person’s branch and role (M9)', () 
 
   it('refuses to withdraw the PIN of somebody not on this booth, and withdraws it once they are back on', async () => {
     // The ordinary case still works: the manager sets his own reception's PIN.
-    const set = await put(`/booths/${boothId}/staff/${receptionAccountId}/pin`, managerCookie, {
-      pin: freshPin(),
-    });
+    const set = await put(`/booths/${boothId}/staff/${receptionAccountId}/pin`, managerCookie, {});
     expect(set.statusCode, set.body).toBe(200);
     const pin = await livePin(receptionAccountId);
     expect(pin, 'no PIN was set').toBeTruthy();

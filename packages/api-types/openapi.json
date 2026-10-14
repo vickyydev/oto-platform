@@ -24677,7 +24677,7 @@
     },
     "/booths/{id}/staff/{accountId}/pin": {
       "put": {
-        "description": "Set this person’s booth PIN: exactly 5 digits typed in `pin`, or `generate: true` for the platform to draw 5 random digits and answer them ONCE in `pin` — one of the two, anything else refused with 400 (`BOOTH_PIN_INVALID`, `BOOTH_PIN_INPUT`). `expiresAt` (ISO 8601, in the future, else 400 `BOOTH_PIN_EXPIRY_PAST`) is when it stops working; absent or null, never. It is hashed with argon2id and stored on the account — one live PIN per person, so this replaces and revokes any previous one, at every booth they work — and it reaches a booth only as that hash, with its expiry, on the staff cache scope, never on the box command queue whose payloads are stored and shown on a Console screen; the box checks expiry with its corrected clock. The PIN itself is held nowhere: not in the audit row, not in the idempotency store, not in a log. Because the PIN is the person’s, the person must be yours: somebody who does not work at this booth’s branch is refused with 403 `OUT_OF_BRANCH_SCOPE`, and somebody holding a role you do not hold in full — an operator administrator, to a branch manager — with 403 `ROLE_NOT_DOMINATED`, as a temporary password is. They must also be on this booth (400 `BOOTH_STAFF_NOT_FOUND`).",
+        "description": "Issue this person’s booth PIN: the platform draws 5 random digits that nobody else on any of this person’s booths holds, and answers them ONCE in `pin` (SCRUM-428). Booth PINs are issued, never typed: a `pin` in the body, or `generate: false`, is refused with 400 `BOOTH_PIN_ISSUED_ONLY`; `generate: true` is accepted and changes nothing. Issuing again is the one action that replaces a PIN. `expiresAt` (ISO 8601, in the future, else 400 `BOOTH_PIN_EXPIRY_PAST`) is when it stops working; absent or null, never. It is hashed with argon2id and stored on the account — one live PIN per person, so this replaces and revokes any previous one, at every booth they work — and it reaches a booth only as that hash, with its expiry, on the staff cache scope, never on the box command queue whose payloads are stored and shown on a Console screen; the box checks expiry with its corrected clock. The PIN itself is held nowhere: not in the audit row, not in the idempotency store, not in a log. Because the PIN is the person’s, the person must be yours: somebody who does not work at this booth’s branch is refused with 403 `OUT_OF_BRANCH_SCOPE`, and somebody holding a role you do not hold in full — an operator administrator, to a branch manager — with 403 `ROLE_NOT_DOMINATED`, as a temporary password is. They must also be on this booth (400 `BOOTH_STAFF_NOT_FOUND`). 503 `BOOTH_PIN_UNAVAILABLE` if no unshared PIN could be drawn.",
         "requestBody": {
           "required": true,
           "content": {
@@ -24752,7 +24752,8 @@
                   "required": [
                     "accountId",
                     "hasPin",
-                    "pinExpiresAt"
+                    "pinExpiresAt",
+                    "pin"
                   ],
                   "additionalProperties": false
                 }

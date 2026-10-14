@@ -1185,19 +1185,18 @@ export async function boothRoutes(app: App): Promise<void> {
        * shape is a hundred thousand guesses; and with `generate` the answer
        * carries the PIN itself, which a replay store would hand back to
        * anybody holding the key. Declaring this makes the plugin claim no key
-       * at all, so neither is ever written. A retry of a typed PIN sets the
-       * same PIN again; a retry of `generate` draws a new one and revokes the
-       * first — the one on screen is always the one that works.
+       * at all, so neither is ever written. A retry draws a new PIN and
+       * revokes the first — the one on screen is always the one that works.
        */
       config: { dynamicPermission: true, secretResponse: true },
       schema: {
-        description: `Set this person’s booth PIN: exactly ${BOOTH_PIN_LENGTH} digits typed in \`pin\`, or \`generate: true\` for the platform to draw ${BOOTH_PIN_LENGTH} random digits and answer them ONCE in \`pin\` — one of the two, anything else refused with 400 (\`BOOTH_PIN_INVALID\`, \`BOOTH_PIN_INPUT\`). \`expiresAt\` (ISO 8601, in the future, else 400 \`BOOTH_PIN_EXPIRY_PAST\`) is when it stops working; absent or null, never. It is hashed with argon2id and stored on the account — one live PIN per person, so this replaces and revokes any previous one, at every booth they work — and it reaches a booth only as that hash, with its expiry, on the staff cache scope, never on the box command queue whose payloads are stored and shown on a Console screen; the box checks expiry with its corrected clock. The PIN itself is held nowhere: not in the audit row, not in the idempotency store, not in a log. Because the PIN is the person’s, the person must be yours: somebody who does not work at this booth’s branch is refused with 403 \`OUT_OF_BRANCH_SCOPE\`, and somebody holding a role you do not hold in full — an operator administrator, to a branch manager — with 403 \`ROLE_NOT_DOMINATED\`, as a temporary password is. They must also be on this booth (400 \`BOOTH_STAFF_NOT_FOUND\`).`,
+        description: `Issue this person’s booth PIN: the platform draws ${BOOTH_PIN_LENGTH} random digits that nobody else on any of this person’s booths holds, and answers them ONCE in \`pin\` (SCRUM-428). Booth PINs are issued, never typed: a \`pin\` in the body, or \`generate: false\`, is refused with 400 \`BOOTH_PIN_ISSUED_ONLY\`; \`generate: true\` is accepted and changes nothing. Issuing again is the one action that replaces a PIN. \`expiresAt\` (ISO 8601, in the future, else 400 \`BOOTH_PIN_EXPIRY_PAST\`) is when it stops working; absent or null, never. It is hashed with argon2id and stored on the account — one live PIN per person, so this replaces and revokes any previous one, at every booth they work — and it reaches a booth only as that hash, with its expiry, on the staff cache scope, never on the box command queue whose payloads are stored and shown on a Console screen; the box checks expiry with its corrected clock. The PIN itself is held nowhere: not in the audit row, not in the idempotency store, not in a log. Because the PIN is the person’s, the person must be yours: somebody who does not work at this booth’s branch is refused with 403 \`OUT_OF_BRANCH_SCOPE\`, and somebody holding a role you do not hold in full — an operator administrator, to a branch manager — with 403 \`ROLE_NOT_DOMINATED\`, as a temporary password is. They must also be on this booth (400 \`BOOTH_STAFF_NOT_FOUND\`). 503 \`BOOTH_PIN_UNAVAILABLE\` if no unshared PIN could be drawn.`,
         params: StaffParams,
         body: z.object({
           /**
-           * Digits, because a booth overlay on a television is a number pad.
-           * Bounded here and judged by the service, whose refusal names the
-           * rule — "exactly five digits" — rather than a schema path.
+           * Refused (SCRUM-428): booth PINs are issued, not typed. Kept in the
+           * schema so the service can refuse it by name instead of the schema
+           * silently stripping it and issuing a PIN nobody asked to replace.
            */
           pin: z.string().max(16).optional(),
           generate: z.boolean().optional(),
@@ -1208,8 +1207,8 @@ export async function boothRoutes(app: App): Promise<void> {
             accountId: z.string().uuid(),
             hasPin: z.literal(true),
             pinExpiresAt: z.string().nullable(),
-            /** Only for `generate`: the drawn PIN, shown once and kept nowhere. */
-            pin: z.string().optional(),
+            /** The issued PIN, shown once and kept nowhere. */
+            pin: z.string(),
           }),
         },
       },
