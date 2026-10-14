@@ -305,6 +305,10 @@ const PLATFORM_NAMED: Record<string, string> = {
   'POST /stations/:id/kiosks/claim': 'derived: the credential a paired self-service kiosk is answered with, once',
   'POST /tiers': CODE_NAMED,
   'POST /voucher-definitions': NEXT_PASS,
+  // SCRUM-469: an admin replacing which branches a person's OTO App access
+  // covers — the access rows are seated whole each save; their ids are
+  // internal and nothing outside refers to them.
+  'PUT /admin/apps/oto_app/users/:accountId/branches': NEXT_PASS,
   // S2-14a round 5: the voucher's CODE is what anybody refers to, and it is
   // minted here on purpose (a bearer code never comes from a client); a press
   // is made once by its Idempotency-Key, and online only.

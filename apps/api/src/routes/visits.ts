@@ -199,6 +199,9 @@ export async function visitRoutes(app: App): Promise<void> {
         description: "Add confirmed children to an open visit (the family's one visit for the day)",
         params: z.object({ id: z.string().uuid() }),
         body: z.object({ childIds: z.array(z.string().uuid()).min(1) }),
+        response: {
+          200: z.object({ id: z.string().uuid(), visitDate: z.string(), status: z.string() }),
+        },
       },
     },
     async (req) => {

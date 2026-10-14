@@ -1,3 +1,4 @@
+import type { ApiResponse } from '@oto/api-types';
 import type {
   BookingEventPass,
   BookingEventPassInput,
@@ -308,7 +309,7 @@ export const visitsApi = {
   addChildren: (visitId: string, body: { memberId: string; childIds: string[] }) =>
     viaLane(
       () =>
-        api.post<{ id: string; visitDate: string; status: string }>(
+        api.post<ApiResponse<'/visits/{id}/children', 'post'>>(
           `/visits/${visitId}/children`,
           { childIds: body.childIds },
           { idempotencyKey: idemKey() },
@@ -1214,7 +1215,7 @@ export const stationsApi = {
    * presses are two pieces of paper.
    */
   testPrint: (stationId: string, role: StationDeviceRole) =>
-    api.post<{ printJob: ApiPrintJob; commandId: string; actionId: string }>(
+    api.post<ApiResponse<'/stations/{id}/test-print', 'post'>>(
       `/stations/${encodeURIComponent(stationId)}/test-print`,
       { kind: 'test_page', role },
       { idempotencyKey: idemKey() },
@@ -1323,7 +1324,7 @@ export const appIdentitiesApi = {
    * `null` is all branches.
    */
   setOtoAppBranches: (accountId: string, branchIds: string[] | null) =>
-    api.put<{ ok: true; accessChanged: boolean }>(
+    api.put<ApiResponse<'/admin/apps/oto_app/users/{accountId}/branches', 'put'>>(
       `/admin/apps/oto_app/users/${accountId}/branches`,
       { branchIds },
       { idempotencyKey: idemKey() },

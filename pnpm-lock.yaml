@@ -216,6 +216,9 @@ importers:
 
   apps/console:
     devDependencies:
+      '@oto/api-types':
+        specifier: workspace:*
+        version: link:../../packages/api-types
       '@oto/shared':
         specifier: workspace:*
         version: link:../../packages/shared

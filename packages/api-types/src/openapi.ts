@@ -1173,7 +1173,22 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            ok: true;
+                            accessBranches: string[] | null;
+                            accessChanged: boolean;
+                            appBranch: {
+                                branchId: string | null;
+                                branchName: string | null;
+                                branchIds: string[];
+                                matchedBy: string | null;
+                                seatedFrom: string | null;
+                                unplacedReason: string | null;
+                            } | null;
+                        };
+                    };
                 };
             };
         };
@@ -2103,7 +2118,14 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            visitDate: string;
+                            status: string;
+                        };
+                    };
                 };
             };
         };

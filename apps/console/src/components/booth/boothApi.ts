@@ -25,6 +25,7 @@
  * console that type-errored on a new one would be a console that cannot be
  * told about a new way to be wrong.
  */
+import type { ApiResponse } from '@oto/api-types';
 import { api, apiUrl, ApiError, idemKey, isMissingRoute } from '@/api/client';
 import type { BoothEligibilityMode } from '@oto/shared';
 
@@ -525,7 +526,7 @@ export const boothApi = {
 
   /** SCRUM-405 — the product a free-product voucher gives at one park; null clears it. */
   setParkProduct: (id: string, branchId: string, productId: string | null) =>
-    api.put<{ definition: VoucherDefinitionRow }>(
+    api.put<ApiResponse<'/voucher-definitions/{id}/park-products/{branchId}', 'put'>>(
       `/voucher-definitions/${encodeURIComponent(id)}/park-products/${encodeURIComponent(branchId)}`,
       { productId },
       { idempotencyKey: idemKey() },

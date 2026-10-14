@@ -1031,7 +1031,81 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "accessBranches": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "nullable": true
+                    },
+                    "accessChanged": {
+                      "type": "boolean"
+                    },
+                    "appBranch": {
+                      "type": "object",
+                      "properties": {
+                        "branchId": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "branchName": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "branchIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "matchedBy": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "seatedFrom": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "unplacedReason": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "branchId",
+                        "branchName",
+                        "branchIds",
+                        "matchedBy",
+                        "seatedFrom",
+                        "unplacedReason"
+                      ],
+                      "additionalProperties": false,
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "accessBranches",
+                    "accessChanged",
+                    "appBranch"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -1997,7 +2071,32 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "visitDate": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "visitDate",
+                    "status"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }

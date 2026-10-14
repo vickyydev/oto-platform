@@ -575,6 +575,23 @@ export async function appIdentityRoutes(app: App): Promise<void> {
         description: "Change which branches an account's OTO App access covers",
         params: z.object({ accountId: z.string().uuid() }),
         body: z.object({ branchIds: BranchIds.nullable() }),
+        response: {
+          200: z.object({
+            ok: z.literal(true),
+            accessBranches: z.array(z.string().uuid()).nullable(),
+            accessChanged: z.boolean(),
+            appBranch: z
+              .object({
+                branchId: z.string().nullable(),
+                branchName: z.string().nullable(),
+                branchIds: z.array(z.string()),
+                matchedBy: z.string().nullable(),
+                seatedFrom: z.string().nullable(),
+                unplacedReason: z.string().nullable(),
+              })
+              .nullable(),
+          }),
+        },
       },
     },
     async (req) => {
