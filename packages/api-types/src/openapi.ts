@@ -277,7 +277,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Exchange a hand-off token for a session cookie on this origin */
+        /** @description Exchange a hand-off token for a session cookie on this origin. An app with no server of its own (booth) gets no cookie and no credential: the answer names who signed on (`identity`) and nothing more. */
         post: {
             parameters: {
                 query?: never;
@@ -1025,6 +1025,7 @@ export interface paths {
                         name?: string;
                         /** Format: uuid */
                         branchId?: string;
+                        branchIds?: string[];
                         otoApp?: {
                             /** Format: email */
                             email: string;
@@ -1134,6 +1135,48 @@ export interface paths {
             };
         };
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/apps/oto_app/users/{accountId}/branches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Change which branches an account's OTO App access covers */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    accountId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        branchIds: string[] | null;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
         post?: never;
         delete?: never;
         options?: never;
@@ -13873,6 +13916,15 @@ export interface paths {
                                     prizeNameTh: string | null;
                                     active: boolean;
                                 }[];
+                                parkProducts: {
+                                    /** Format: uuid */
+                                    branchId: string;
+                                    branchName: string;
+                                    /** Format: uuid */
+                                    productId: string;
+                                    productName: string;
+                                    live: boolean;
+                                }[];
                                 unredeemedVouchers: number;
                                 target: ({
                                     /** @enum {string} */
@@ -14056,6 +14108,15 @@ export interface paths {
                                     prizeNameTh: string | null;
                                     active: boolean;
                                 }[];
+                                parkProducts: {
+                                    /** Format: uuid */
+                                    branchId: string;
+                                    branchName: string;
+                                    /** Format: uuid */
+                                    productId: string;
+                                    productName: string;
+                                    live: boolean;
+                                }[];
                                 unredeemedVouchers: number;
                                 target: ({
                                     /** @enum {string} */
@@ -14164,6 +14225,15 @@ export interface paths {
                                     prizeNameTh: string | null;
                                     active: boolean;
                                 }[];
+                                parkProducts: {
+                                    /** Format: uuid */
+                                    branchId: string;
+                                    branchName: string;
+                                    /** Format: uuid */
+                                    productId: string;
+                                    productName: string;
+                                    live: boolean;
+                                }[];
                                 unredeemedVouchers: number;
                                 target: ({
                                     /** @enum {string} */
@@ -14213,7 +14283,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description What a voucher type can point at: the operator’s products on sale and its live ticket packages, each with its branch. A 1+1’s package is honoured at any park with a live ticket package of the same name, so its branch is only where the link was made. A free product is honoured only where it is on sale — its own park, or every park when it belongs to no branch — and, once it is archived, at a park with a live product of its own with the same code. */
+        /** @description What a voucher type can point at: the operator’s products on sale and its live ticket packages, each with its branch. A 1+1’s package is honoured at any park with a live ticket package of the same name, so its branch is only where the link was made. A free product is honoured where it is on sale — its own park, or every park when it belongs to no branch — at a park with its own product linked to it (PUT /voucher-definitions/:id/park-products/:branchId), and, once it is archived, at a park with a live product of its own with the same code. */
         get: {
             parameters: {
                 query?: never;
@@ -14357,6 +14427,15 @@ export interface paths {
                                     prizeName: string;
                                     prizeNameTh: string | null;
                                     active: boolean;
+                                }[];
+                                parkProducts: {
+                                    /** Format: uuid */
+                                    branchId: string;
+                                    branchName: string;
+                                    /** Format: uuid */
+                                    productId: string;
+                                    productName: string;
+                                    live: boolean;
                                 }[];
                                 unredeemedVouchers: number;
                                 target: ({
@@ -14544,6 +14623,15 @@ export interface paths {
                                     prizeNameTh: string | null;
                                     active: boolean;
                                 }[];
+                                parkProducts: {
+                                    /** Format: uuid */
+                                    branchId: string;
+                                    branchName: string;
+                                    /** Format: uuid */
+                                    productId: string;
+                                    productName: string;
+                                    live: boolean;
+                                }[];
                                 unredeemedVouchers: number;
                                 target: ({
                                     /** @enum {string} */
@@ -14580,6 +14668,160 @@ export interface paths {
                 };
             };
         };
+        trace?: never;
+    };
+    "/voucher-definitions/{id}/park-products/{branchId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description SCRUM-405 — the product a free-product voucher hands over at one park. At that park the voucher gives this product, when it is on sale there; at a park with none linked it gives the definition’s own product where that is on sale, and is refused elsewhere. `productId` null clears the park’s link. The product must be this operator’s and on sale at that park (400 VOUCHER_PARK_PRODUCT_NOT_ON_SALE otherwise); only a free-product voucher takes one (400 VOUCHER_PARK_PRODUCT_KIND). Audited when it changes anything. */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    branchId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        productId: string | null;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            definition: {
+                                /** Format: uuid */
+                                id: string;
+                                code: string;
+                                nameEn: string;
+                                nameTh: string | null;
+                                /** @enum {string} */
+                                kind: "discount" | "free_item" | "free_ticket" | "wallet_credit" | "manual";
+                                /** @enum {string} */
+                                valueType: "amount" | "percent" | "item" | "none";
+                                valueSatang: number | null;
+                                valueBp: number | null;
+                                /** Format: uuid */
+                                productId: string | null;
+                                /** Format: uuid */
+                                ticketPackageId: string | null;
+                                expiryDays: number | null;
+                                /** @enum {string} */
+                                offlinePolicy: "allow" | "refuse";
+                                singleUse: boolean;
+                                costSatang: number;
+                                titleEn: string | null;
+                                titleTh: string | null;
+                                instructionEn: string | null;
+                                instructionTh: string | null;
+                                termsEn: string | null;
+                                termsTh: string | null;
+                                active: boolean;
+                                /** @enum {string} */
+                                codeMode: "generated" | "fixed";
+                                fixedCode: string | null;
+                                legacyQrPayload: string | null;
+                                createdAt: string;
+                                updatedAt: string;
+                                archivedAt: string | null;
+                                product: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                    code: string | null;
+                                    /** Format: uuid */
+                                    branchId: string | null;
+                                    branchName: string | null;
+                                    live: boolean;
+                                } | null;
+                                ticketPackage: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                    code: string | null;
+                                    /** Format: uuid */
+                                    branchId: string | null;
+                                    branchName: string | null;
+                                    live: boolean;
+                                } | null;
+                                usedBy: {
+                                    /** Format: uuid */
+                                    boothId: string;
+                                    boothName: string;
+                                    /** Format: uuid */
+                                    branchId: string;
+                                    /** Format: uuid */
+                                    prizeId: string;
+                                    prizeName: string;
+                                    prizeNameTh: string | null;
+                                    active: boolean;
+                                }[];
+                                parkProducts: {
+                                    /** Format: uuid */
+                                    branchId: string;
+                                    branchName: string;
+                                    /** Format: uuid */
+                                    productId: string;
+                                    productName: string;
+                                    live: boolean;
+                                }[];
+                                unredeemedVouchers: number;
+                                target: ({
+                                    /** @enum {string} */
+                                    kind: "tickets";
+                                } | {
+                                    /** @enum {string} */
+                                    kind: "ticketType";
+                                    /** Format: uuid */
+                                    ticketTypeId: string;
+                                } | {
+                                    /** @enum {string} */
+                                    kind: "fnb";
+                                } | {
+                                    /** @enum {string} */
+                                    kind: "fnbCategory";
+                                    /** Format: uuid */
+                                    category: string;
+                                } | {
+                                    /** @enum {string} */
+                                    kind: "menuItems";
+                                    menuItemIds: string[];
+                                } | {
+                                    /** @enum {string} */
+                                    kind: "merch";
+                                }) | null;
+                                usageLimit: number | null;
+                                perCustomerLimit: number | null;
+                                validFrom: string | null;
+                                validUntil: string | null;
+                                redeemedVouchers: number;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/voucher-definitions/{id}/restore": {
@@ -14676,6 +14918,15 @@ export interface paths {
                                     prizeName: string;
                                     prizeNameTh: string | null;
                                     active: boolean;
+                                }[];
+                                parkProducts: {
+                                    /** Format: uuid */
+                                    branchId: string;
+                                    branchName: string;
+                                    /** Format: uuid */
+                                    productId: string;
+                                    productName: string;
+                                    live: boolean;
                                 }[];
                                 unredeemedVouchers: number;
                                 target: ({
