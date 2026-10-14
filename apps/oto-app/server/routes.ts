@@ -16510,6 +16510,10 @@ OTO Company Limited`,
     try {
       const tenantId = req.userWithAccess!.tenantId!;
       const { branchId } = req.body;
+      // Every read and delete below stays in the requested branch: a person
+      // with a duplicate here may have shifts on the same day in another
+      // branch, and those are not this scan's to remove.
+      const branchFilter = branchId ? eq(scheduleShiftRows.branchId, branchId as string) : undefined;
       
       const duplicates = await db.select({
         employeeId: scheduleAssignments.employeeId,
@@ -16519,7 +16523,7 @@ OTO Company Limited`,
         .innerJoin(scheduleShiftRows, eq(scheduleAssignments.shiftRowId, scheduleShiftRows.id))
         .where(and(and(
           eq(scheduleShiftRows.tenantId, tenantId),
-          branchId ? eq(scheduleShiftRows.branchId, branchId as string) : undefined,
+          branchFilter,
           isNotNull(scheduleAssignments.employeeId)
         ), scheduleParkPredicate("schedule_assignments", req.userWithAccess!.tenantId!)))
         .groupBy(scheduleAssignments.employeeId, scheduleAssignments.shiftDate)
@@ -16528,7 +16532,8 @@ OTO Company Limited`,
       // Check every affected parent before the first automatic removal.
       for (const duplicate of duplicates) {
         const candidates = await db.select({ id: scheduleAssignments.id }).from(scheduleAssignments)
-          .where(and(eq(scheduleAssignments.employeeId, duplicate.employeeId!), eq(scheduleAssignments.shiftDate, duplicate.shiftDate), scheduleParkPredicate("schedule_assignments", tenantId)));
+          .innerJoin(scheduleShiftRows, eq(scheduleAssignments.shiftRowId, scheduleShiftRows.id))
+          .where(and(eq(scheduleAssignments.employeeId, duplicate.employeeId!), eq(scheduleAssignments.shiftDate, duplicate.shiftDate), branchFilter, scheduleParkPredicate("schedule_assignments", tenantId)));
         await assertScheduleDeleteScope("schedule_assignments", candidates.map(candidate => candidate.id), tenantId);
       }
 
@@ -16547,7 +16552,8 @@ OTO Company Limited`,
           .innerJoin(scheduleShiftRows, eq(scheduleAssignments.shiftRowId, scheduleShiftRows.id))
           .where(and(and(
             eq(scheduleAssignments.employeeId, dup.employeeId),
-            eq(scheduleAssignments.shiftDate, dup.shiftDate)
+            eq(scheduleAssignments.shiftDate, dup.shiftDate),
+            branchFilter,
           ), scheduleParkPredicate("schedule_assignments", req.userWithAccess!.tenantId!)));
         
         if (assignments.length <= 1) continue;
@@ -16577,7 +16583,8 @@ OTO Company Limited`,
         await db.delete(employeeTimeOff).where(and(and(
           eq(employeeTimeOff.employeeId, dup.employeeId),
           sql`${employeeTimeOff.startDate}::date = ${dup.shiftDate}::date`,
-          eq(employeeTimeOff.type, 'CHANGE_DAY_OFF')
+          eq(employeeTimeOff.type, 'CHANGE_DAY_OFF'),
+          branchId ? eq(employeeTimeOff.branchId, branchId as string) : undefined,
         ), scheduleParkPredicate("employee_time_off", req.userWithAccess!.tenantId!)));
         
         totalFixed++;

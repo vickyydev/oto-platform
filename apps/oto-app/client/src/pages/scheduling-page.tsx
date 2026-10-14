@@ -465,6 +465,7 @@ function SchedulingPageInner() {
   const [conflictScanResults, setConflictScanResults] = useState<any>(null);
   const [conflictScanLoading, setConflictScanLoading] = useState(false);
   const [autoFixLoading, setAutoFixLoading] = useState(false);
+  const [autoFixConfirming, setAutoFixConfirming] = useState(false);
   const [conflictResolutions, setConflictResolutions] = useState<Map<string, { kept: string; type: 'shift' | 'dayoff' }>>(new Map());
   const [conflictUndoStack, setConflictUndoStack] = useState<string[]>([]);
   const [departmentFilter, setDepartmentFilter] = useState<string[]>([]);
@@ -2532,6 +2533,7 @@ function SchedulingPageInner() {
   const handleScanConflicts = async () => {
     setConflictScanLoading(true);
     setConflictScanResults(null);
+    setAutoFixConfirming(false);
     setConflictResolutions(new Map());
     setConflictUndoStack([]);
     try {
@@ -2571,14 +2573,15 @@ function SchedulingPageInner() {
     try {
       const res = await apiRequest("POST", "/api/schedule/conflicts/auto-fix", { branchId: selectedBranchId || undefined });
       const data = await res.json();
-      toast({ title: "Conflicts fixed", description: `${data.conflictsFixed} conflicts resolved, ${data.recordsDeleted} records removed.` });
+      toast({ title: "Duplicate shifts removed", description: `${data.conflictsFixed} ${data.conflictsFixed === 1 ? "person-day" : "person-days"} fixed, ${data.recordsDeleted} duplicate ${data.recordsDeleted === 1 ? "shift" : "shifts"} removed. Shift and day-off clashes are left for you to resolve.` });
       setConflictScanDialogOpen(false);
       setConflictScanResults(null);
       queryClient.invalidateQueries({ queryKey: ["/api/schedule"] });
     } catch (error: any) {
-      toast({ title: "Auto-fix failed", description: error.message, variant: "destructive" });
+      toast({ title: "Duplicate shifts not removed", description: error.message, variant: "destructive" });
     } finally {
       setAutoFixLoading(false);
+      setAutoFixConfirming(false);
     }
   };
 
@@ -5955,6 +5958,7 @@ function SchedulingPageInner() {
           setConflictScanResults(null);
           setConflictResolutions(new Map());
           setConflictUndoStack([]);
+          setAutoFixConfirming(false);
         }
       }}>
         <DialogContent className="sm:max-w-xl">
@@ -6010,14 +6014,29 @@ function SchedulingPageInner() {
                       <Button 
                         size="sm" 
                         variant="destructive" 
-                        onClick={handleAutoFixConflicts}
-                        disabled={autoFixLoading}
+                        onClick={() => setAutoFixConfirming(true)}
+                        disabled={autoFixLoading || autoFixConfirming}
                         data-testid="button-auto-fix-all"
                       >
-                        {autoFixLoading ? "Fixing..." : "Auto-Fix All"}
+                        Remove Duplicate Shifts
                       </Button>
                     </div>
                   </div>
+                  {autoFixConfirming && (
+                    <div className="rounded border border-destructive/40 bg-destructive/5 p-3 space-y-2" data-testid="panel-auto-fix-confirm">
+                      <p className="text-sm">
+                        For each person with more than one shift on the same day{selectedBranchId ? " in this branch" : ""}, the longest shift is kept and the others are removed, together with any day-off change recorded for that day. Shift and day-off clashes are not changed; resolve those one by one below.
+                      </p>
+                      <div className="flex items-center justify-end gap-2">
+                        <Button size="sm" variant="outline" onClick={() => setAutoFixConfirming(false)} disabled={autoFixLoading} data-testid="button-auto-fix-back">
+                          Back
+                        </Button>
+                        <Button size="sm" variant="destructive" onClick={handleAutoFixConflicts} disabled={autoFixLoading} data-testid="button-auto-fix-confirm">
+                          {autoFixLoading ? "Removing..." : "Remove Duplicates"}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                   <div className="space-y-2">
                     {conflictScanResults.conflicts.map((conflict: any, idx: number) => {
                       const conflictKey = `${conflict.employeeId}_${conflict.date}`;

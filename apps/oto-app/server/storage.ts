@@ -7864,31 +7864,50 @@ export class DatabaseStorage implements IStorage {
                         if (wpCopy.createdAt) wpCopy.createdAt = toDate(wpCopy.createdAt);
                         if (wpCopy.updatedAt) wpCopy.updatedAt = toDate(wpCopy.updatedAt);
                         await tx.insert(scheduleWeekPlans).values(scheduleOwnedValues(wpCopy, requestedTenantId));
-                } else {
-                        // For restore, scope cleanup to the snapshot's shift row IDs
-                        const snapshotRowIds = shiftRows.map((r: any) => r.id);
-                        if (snapshotRowIds.length > 0) {
-                                // First get existing assignment IDs to clean up breaks
-                                const existingAssignments = await tx
-                                        .select({ id: scheduleAssignments.id })
-                                        .from(scheduleAssignments)
-                                        .where(and(inArray(scheduleAssignments.shiftRowId, snapshotRowIds), scheduleParkPredicate("schedule_assignments", requestedTenantId)));
-                                const existingAssignmentIds = existingAssignments.map((a) => a.id);
-                                if (existingAssignmentIds.length > 0) {
-                                        await tx
-                                                .delete(scheduleShiftBreaks)
-                                                .where(and(inArray(scheduleShiftBreaks.assignmentId, existingAssignmentIds), scheduleParkPredicate("schedule_shift_breaks", requestedTenantId)));
-                                }
+                }
+
+                // The snapshot holds ONE week: the branch's rows active that
+                // week, and only that week's assignments and breaks. A shift row
+                // spans many weeks, so the restore never deletes rows (their
+                // other weeks' assignments, breaks and duty blocks would go
+                // with them by cascade); it puts each row back as it was, and
+                // replaces assignments only on the snapshot's own dates.
+                const weekStart =
+                        typeof weekPlan.weekStartDate === "string"
+                                ? weekPlan.weekStartDate.slice(0, 10)
+                                : new Date(weekPlan.weekStartDate).toISOString().split("T")[0];
+                const weekEndDate = new Date(`${weekStart}T00:00:00Z`);
+                weekEndDate.setUTCDate(weekEndDate.getUTCDate() + 6);
+                const weekEnd = weekEndDate.toISOString().split("T")[0];
+                const snapshotRowIds: string[] = shiftRows.map((r: any) => r.id);
+                const existingRowIds = new Set<string>();
+                if (snapshotRowIds.length > 0) {
+                        const weekAssignments = await tx
+                                .select({ id: scheduleAssignments.id })
+                                .from(scheduleAssignments)
+                                .where(and(
+                                        inArray(scheduleAssignments.shiftRowId, snapshotRowIds),
+                                        gte(scheduleAssignments.shiftDate, weekStart),
+                                        lte(scheduleAssignments.shiftDate, weekEnd),
+                                        scheduleParkPredicate("schedule_assignments", requestedTenantId),
+                                ));
+                        const weekAssignmentIds = weekAssignments.map((a) => a.id);
+                        if (weekAssignmentIds.length > 0) {
+                                await tx
+                                        .delete(scheduleShiftBreaks)
+                                        .where(and(inArray(scheduleShiftBreaks.assignmentId, weekAssignmentIds), scheduleParkPredicate("schedule_shift_breaks", requestedTenantId)));
                                 await tx
                                         .delete(scheduleAssignments)
-                                        .where(and(inArray(scheduleAssignments.shiftRowId, snapshotRowIds), scheduleParkPredicate("schedule_assignments", requestedTenantId)));
-                                await tx
-                                        .delete(scheduleShiftRowRoles)
-                                        .where(and(inArray(scheduleShiftRowRoles.shiftRowId, snapshotRowIds), scheduleParkPredicate("schedule_shift_row_roles", requestedTenantId)));
-                                await tx
-                                        .delete(scheduleShiftRows)
-                                        .where(and(inArray(scheduleShiftRows.id, snapshotRowIds), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)));
+                                        .where(and(inArray(scheduleAssignments.id, weekAssignmentIds), scheduleParkPredicate("schedule_assignments", requestedTenantId)));
                         }
+                        await tx
+                                .delete(scheduleShiftRowRoles)
+                                .where(and(inArray(scheduleShiftRowRoles.shiftRowId, snapshotRowIds), scheduleParkPredicate("schedule_shift_row_roles", requestedTenantId)));
+                        const present = await tx
+                                .select({ id: scheduleShiftRows.id })
+                                .from(scheduleShiftRows)
+                                .where(and(inArray(scheduleShiftRows.id, snapshotRowIds), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)));
+                        for (const row of present) existingRowIds.add(row.id);
                 }
 
                 for (const row of shiftRows) {
@@ -7897,7 +7916,15 @@ export class DatabaseStorage implements IStorage {
                                 rowCopy.createdAt = toDate(rowCopy.createdAt);
                         if (rowCopy.updatedAt)
                                 rowCopy.updatedAt = toDate(rowCopy.updatedAt);
-                        await tx.insert(scheduleShiftRows).values(scheduleOwnedValues(rowCopy, requestedTenantId));
+                        if (existingRowIds.has(row.id)) {
+                                const { id: rowId, ...rowFields } = scheduleOwnedValues(rowCopy, requestedTenantId);
+                                await tx
+                                        .update(scheduleShiftRows)
+                                        .set(rowFields)
+                                        .where(and(eq(scheduleShiftRows.id, rowId), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)));
+                        } else {
+                                await tx.insert(scheduleShiftRows).values(scheduleOwnedValues(rowCopy, requestedTenantId));
+                        }
                 }
 
                 for (const role of rowRoles || []) {
