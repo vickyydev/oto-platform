@@ -31,6 +31,7 @@ import {
   roleAccepts,
   rolesForStationKind,
   stationKindWord,
+  stationTakesMoney,
 } from '@/lib/fleetWords';
 
 /**
@@ -39,7 +40,8 @@ import {
  * The box first, because it is a machine already standing at a counter. Then
  * what the station is. Then its devices — and only ever the ones that box
  * reported, because a printer is reachable through the box it is plugged into
- * and nowhere else. Then how money reaches it. And last, who may use it,
+ * and nowhere else. Then how money reaches it — not for a booth, whose wheel
+ * is free. And last, who may use it,
  * chosen from the staff of that branch or left open to all of them.
  *
  * Staff never see this screen. A station is set up by a manager or an
@@ -109,7 +111,9 @@ export function StationDrawer({
     [boxList, boxId],
   );
   const roles = rolesForStationKind(kind);
-  const takesMoney = kind === 'till' || kind === 'kiosk' || kind === 'booth';
+  // A booth is a free prize wheel and is not asked how money reaches it
+  // (SCRUM-434); a paid spin would bring the step back — see `stationTakesMoney`.
+  const takesMoney = stationTakesMoney(kind);
 
   const write = (): StationWrite => ({
     name: name.trim(),
@@ -127,7 +131,13 @@ export function StationDrawer({
     // Merged rather than replaced: the routing document is shared with tenders
     // this page does not know about yet, and sending only what it understands
     // would delete the rest.
-    paymentRouting: takesMoney ? mergeRouting(station?.paymentRouting, routing) : null,
+    paymentRouting: takesMoney
+      ? mergeRouting(station?.paymentRouting, routing)
+      : // A booth's step is hidden, not cleared: whatever an older setup saved is
+        // sent back as it was rather than wiped by a form that never showed it.
+        kind === 'booth'
+        ? (station?.paymentRouting ?? null)
+        : null,
     offlineWalletCapSatang: walletCap,
   });
 

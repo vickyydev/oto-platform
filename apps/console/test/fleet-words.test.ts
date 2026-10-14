@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { boxRetirementOffer, commandLabel, isDrawerPulse } from '@/lib/fleetWords';
+import { boxRetirementOffer, commandLabel, isDrawerPulse, stationTakesMoney } from '@/lib/fleetWords';
 
 /**
  * THE DEVICES DRAWER'S PRINTING WORDS — `src/lib/fleetWords.ts` (SCRUM-208,
@@ -108,5 +108,19 @@ describe('boxRetirementOffer', () => {
       archive: false,
       archiveBlockedBy: null,
     });
+  });
+});
+
+/**
+ * SCRUM-434 — a new booth station is not asked how money reaches it. The
+ * Lucky Wheel is free; a till and a kiosk still get the payment step.
+ */
+describe('stationTakesMoney', () => {
+  it('asks a till and a kiosk how money reaches them, and never a booth', () => {
+    expect(stationTakesMoney('till')).toBe(true);
+    expect(stationTakesMoney('kiosk')).toBe(true);
+    expect(stationTakesMoney('booth')).toBe(false);
+    expect(stationTakesMoney('gate')).toBe(false);
+    expect(stationTakesMoney('display')).toBe(false);
   });
 });

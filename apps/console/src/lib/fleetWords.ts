@@ -349,6 +349,19 @@ export function rolesForStationKind(kind: string): StationDeviceRole[] {
   return KIND_ROLES[kind as StationKind] ?? KIND_ROLES.till;
 }
 
+/**
+ * Whether setting a station of this kind up asks how money reaches it (the
+ * station drawer's payment step: cards, QR, cash, offline wallet cap).
+ *
+ * A till and a kiosk take money. **A booth does not** (SCRUM-434): the Lucky
+ * Wheel is a free prize wheel, so a new booth station is not asked about cards
+ * or cash it will never see. If a paid spin ever comes, this is where the step
+ * returns — `booth` joins the list here, and the drawer asks again.
+ */
+export function stationTakesMoney(kind: string): boolean {
+  return kind === 'till' || kind === 'kiosk';
+}
+
 /** The kinds of screen that pair to a station. A box pairs by claim code instead. */
 export const PAIRABLE_KINDS: CredentialKind[] = ['display', 'kiosk', 'booth'];
 
