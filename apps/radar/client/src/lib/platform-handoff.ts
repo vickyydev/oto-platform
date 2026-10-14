@@ -8,10 +8,14 @@
  * own httpOnly cookie. Same contract as the OTO App's (apps/oto-app).
  */
 
+import { launcherUrlFrom } from "./launcher";
+
 export interface HandoffProblem {
   reason: string;
   title: string;
   detail: string;
+  /** The launcher's address when the server names it (SCRUM-529). */
+  launcherUrl?: string | null;
 }
 
 const FRAGMENT = /(?:^|&)handoff=([^&]*)/;
@@ -54,6 +58,7 @@ async function redeem(token: string): Promise<HandoffProblem | null> {
     reason: typeof body?.reason === "string" ? body.reason : "unknown",
     title: "That launcher sign-in did not work",
     detail: typeof body?.message === "string" ? body.message : FALLBACK_DETAIL,
+    launcherUrl: launcherUrlFrom(body),
   };
 }
 

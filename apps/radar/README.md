@@ -71,6 +71,7 @@ DATABASE_URL=postgres://... npm run dev          # or: npm run build && npm star
 | `DATABASE_URL` | Always. A direct (non-transaction-pooled) Postgres URL. |
 | `PLATFORM_API_URL` | Sign-on and every figure: the platform api's base URL. Unset, private routes answer 503. |
 | `RADAR_PUBLIC_ORIGIN` | Sign-on: Radar's own origin, equal to the `radar=` entry of the api's `HANDOFF_APP_ORIGINS` (and listed in its `ALLOWED_ORIGINS`). |
+| `LAUNCHER_URL` | Optional: the OTO launcher's address (absolute http/https). Set, signing out of Radar lands there, and every signed-out or refused screen carries an "Open the launcher" button. Unset, sign-out stays on Radar's own "open from the launcher" page with no link. |
 | `PORT` | Listen port (default 5000; 8080 in the image). |
 | `AI_INTEGRATIONS_OPENAI_API_KEY` | The trends assistant; unset answers 503. |
 | `AI_INTEGRATIONS_OPENAI_BASE_URL` | Optional; unset uses the provider default. |

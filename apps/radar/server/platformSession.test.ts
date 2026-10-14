@@ -4,6 +4,7 @@ import type { Request, Response } from "express";
 import {
   RADAR_SESSION_COOKIE,
   holdsRadarAccess,
+  launcherUrl,
   platformSessionFromSetCookie,
   requireRadarSession,
 } from "./platformSession";
@@ -67,5 +68,29 @@ test("the guard refuses no cookie, a dead session and a missing permission; admi
     assert.equal(ok.body.identity.accountId, "acc-holder");
   } finally {
     globalThis.fetch = realFetch;
+  }
+});
+
+test("a signed-out answer names the launcher when LAUNCHER_URL is set, and nothing else (SCRUM-529)", async () => {
+  process.env.PLATFORM_API_URL = "http://platform.test";
+  const before = process.env.LAUNCHER_URL;
+  try {
+    process.env.LAUNCHER_URL = "https://launcher.example.test";
+    const refused = await call(null);
+    assert.equal(refused.status, 401);
+    assert.equal(refused.body.reason, "signed_out");
+    assert.equal(refused.body.launcherUrl, "https://launcher.example.test/");
+
+    delete process.env.LAUNCHER_URL;
+    assert.equal((await call(null)).body.launcherUrl, null);
+
+    // Not an address a browser should be sent to: treated as unset.
+    process.env.LAUNCHER_URL = "javascript:alert(1)";
+    assert.equal(launcherUrl(), null);
+    process.env.LAUNCHER_URL = "not a url";
+    assert.equal(launcherUrl(), null);
+  } finally {
+    if (before === undefined) delete process.env.LAUNCHER_URL;
+    else process.env.LAUNCHER_URL = before;
   }
 });

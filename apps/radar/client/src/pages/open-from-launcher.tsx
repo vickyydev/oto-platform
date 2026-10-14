@@ -6,14 +6,18 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
  *
  * Radar has no sign-in form of its own: the platform session is the identity
  * and the launcher is the only way in. So this names that way, and — when the
- * launcher's hand-off itself was refused — what went wrong with it.
+ * launcher's hand-off itself was refused — what went wrong with it. When the
+ * server names the launcher's address (LAUNCHER_URL, SCRUM-529) the way in is
+ * one button away.
  */
 export default function OpenFromLauncherPage({
   title = "Open Radar from the OTO launcher",
   detail = "Radar opens from the launcher: sign in there and choose the Radar tile, and you will land here signed in.",
+  launcherUrl = null,
 }: {
   title?: string;
   detail?: string;
+  launcherUrl?: string | null;
 }) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-8">
@@ -30,6 +34,11 @@ export default function OpenFromLauncherPage({
           <p className="text-sm text-muted-foreground" data-testid="text-open-from-launcher-detail">
             {detail}
           </p>
+          {launcherUrl && (
+            <Button asChild className="w-full" data-testid="button-open-launcher">
+              <a href={launcherUrl}>Open the launcher</a>
+            </Button>
+          )}
           <Button
             className="w-full"
             variant="outline"

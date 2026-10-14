@@ -7,7 +7,13 @@ import "./index.css";
 const root = createRoot(document.getElementById("root")!);
 
 function show(problem: HandoffProblem | null): void {
-  root.render(problem ? <OpenFromLauncherPage title={problem.title} detail={problem.detail} /> : <App />);
+  root.render(
+    problem ? (
+      <OpenFromLauncherPage title={problem.title} detail={problem.detail} launcherUrl={problem.launcherUrl} />
+    ) : (
+      <App />
+    ),
+  );
 }
 
 // A launcher arrival is exchanged for Radar's cookie before the first screen

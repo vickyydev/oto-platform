@@ -61,6 +61,28 @@ export function platformApiUrl(): string | null {
   return apiUrl || null;
 }
 
+/**
+ * The OTO launcher's address (SCRUM-529), where a signed-out person is sent
+ * back to. Only an absolute http(s) URL counts: anything else is treated as
+ * unset rather than handed to the browser as a place to go. Null on a laptop
+ * without the launcher, and the client then stays on Radar's own page.
+ */
+export function launcherUrl(): string | null {
+  const raw = (process.env.LAUNCHER_URL ?? "").trim();
+  if (!raw) return null;
+  try {
+    const url = new URL(raw);
+    return url.protocol === "https:" || url.protocol === "http:" ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
+/** A signed-out or refused answer, carrying the way back to the launcher when it is known. */
+export function withLauncher<T extends object>(body: T): T & { launcherUrl: string | null } {
+  return { ...body, launcherUrl: launcherUrl() };
+}
+
 // --- Cookies -----------------------------------------------------------------
 
 export function readCookie(req: Request, name: string): string | null {
@@ -316,15 +338,17 @@ declare global {
 export function requireRadarSession(req: Request, res: Response, next: NextFunction): void {
   const apiUrl = platformApiUrl();
   if (!apiUrl) {
-    res.status(503).json({
-      reason: "unconfigured",
-      message: "Radar cannot check who you are: PLATFORM_API_URL is not set on this deployment.",
-    });
+    res.status(503).json(
+      withLauncher({
+        reason: "unconfigured",
+        message: "Radar cannot check who you are: PLATFORM_API_URL is not set on this deployment.",
+      }),
+    );
     return;
   }
   const token = readCookie(req, RADAR_SESSION_COOKIE);
   if (!token) {
-    res.status(401).json({ reason: "signed_out", message: "Open Radar from the OTO launcher." });
+    res.status(401).json(withLauncher({ reason: "signed_out", message: "Open Radar from the OTO launcher." }));
     return;
   }
   resolveIdentity(apiUrl, token)
@@ -337,16 +361,18 @@ export function requireRadarSession(req: Request, res: Response, next: NextFunct
           clearRadarCookie(res);
           return void res
             .status(401)
-            .json({ reason: "signed_out", message: "Your session has ended. Open Radar from the OTO launcher." });
+            .json(withLauncher({ reason: "signed_out", message: "Your session has ended. Open Radar from the OTO launcher." }));
         case "no_access":
-          return void res.status(403).json({
-            reason: "no_access",
-            message: "Your account may not open Radar. Ask an administrator for Radar access.",
-          });
+          return void res.status(403).json(
+            withLauncher({
+              reason: "no_access",
+              message: "Your account may not open Radar. Ask an administrator for Radar access.",
+            }),
+          );
         case "unavailable":
           return void res
             .status(503)
-            .json({ reason: "platform_unavailable", message: "The platform did not answer. Try again in a moment." });
+            .json(withLauncher({ reason: "platform_unavailable", message: "The platform did not answer. Try again in a moment." }));
       }
     })
     .catch(next);

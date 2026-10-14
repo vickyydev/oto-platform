@@ -3,6 +3,7 @@ import { Route, Switch } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import OpenFromLauncherPage from "@/pages/open-from-launcher";
+import { launcherUrlFrom } from "@/lib/launcher";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -44,13 +45,18 @@ function SignedIn({ children }: { children: ReactNode }) {
   if (me.isLoading) return <PageLoader />;
   if (me.data?.status === 200) return <>{children}</>;
   const refusal = me.data?.body as { reason?: string; message?: string } | null | undefined;
+  const launcherUrl = launcherUrlFrom(refusal);
   if (refusal?.reason === "no_access") {
-    return <OpenFromLauncherPage title="Radar is not open to your account" detail={refusal.message} />;
+    return (
+      <OpenFromLauncherPage title="Radar is not open to your account" detail={refusal.message} launcherUrl={launcherUrl} />
+    );
   }
   if (me.data && me.data.status >= 500) {
-    return <OpenFromLauncherPage title="Radar could not check your sign-in" detail={refusal?.message} />;
+    return (
+      <OpenFromLauncherPage title="Radar could not check your sign-in" detail={refusal?.message} launcherUrl={launcherUrl} />
+    );
   }
-  return <OpenFromLauncherPage />;
+  return <OpenFromLauncherPage launcherUrl={launcherUrl} />;
 }
 
 function App() {
