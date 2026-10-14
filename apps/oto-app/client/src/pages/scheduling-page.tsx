@@ -430,6 +430,9 @@ function SchedulingPageInner() {
   const [createShiftGroupOpen, setCreateShiftGroupOpen] = useState(false);
   const [newShiftGroupName, setNewShiftGroupName] = useState("");
   const [editingShiftGroupId, setEditingShiftGroupId] = useState<string | null>(null);
+  // Deleting a shift group: a group with shifts on the rota needs the group they move to (SCRUM-536).
+  const [deletingShiftGroup, setDeletingShiftGroup] = useState<{ id: string; name: string; hasShifts: boolean } | null>(null);
+  const [deleteShiftGroupTargetId, setDeleteShiftGroupTargetId] = useState("");
   const [editingShiftGroupName, setEditingShiftGroupName] = useState("");
   const [assignmentPopover, setAssignmentPopover] = useState<{
     shiftRowId: string;
@@ -1175,14 +1178,26 @@ function SchedulingPageInner() {
   });
 
   const deleteShiftGroupMutation = useMutation({
-    mutationFn: async (id: string) => {
-      await apiRequest("DELETE", `/api/schedule/shift-groups/${id}`);
+    mutationFn: async ({ id, targetGroupId }: { id: string; targetGroupId?: { id: string; name: string } }) => {
+      const query = targetGroupId ? `?targetGroupId=${encodeURIComponent(targetGroupId.id)}` : "";
+      await apiRequest("DELETE", `/api/schedule/shift-groups/${id}${query}`);
     },
-    onSuccess: () => {
+    onSuccess: (_data, { targetGroupId }) => {
       queryClient.invalidateQueries({ queryKey: ["/api/schedule/week", selectedBranchId, weekStartFormatted] });
-      toast({ title: "Shift group deleted" });
+      setDeletingShiftGroup(null);
+      setEditingShiftGroupId(null);
+      toast({
+        title: "Shift group deleted",
+        description: targetGroupId ? `Its shifts moved to "${targetGroupId.name}".` : undefined,
+      });
     },
-    onError: (err: Error) => {
+    onError: (err: Error, { targetGroupId }) => {
+      // The group still has shifts on the rota (this week's view may not show them all):
+      // keep the dialog open and ask where they go.
+      if (!targetGroupId && err instanceof ApiError && err.status === 400) {
+        setDeletingShiftGroup((current) => (current ? { ...current, hasShifts: true } : current));
+        return;
+      }
       toast({ title: "Failed to delete shift group", description: err.message, variant: "destructive" });
     },
   });
@@ -4319,10 +4334,8 @@ function SchedulingPageInner() {
                                   size="icon"
                                   className="h-6 w-6 shrink-0 text-destructive"
                                   onClick={() => {
-                                    if (confirm(`Delete "${group.name}"? Shifts in this group will be ungrouped.`)) {
-                                      deleteShiftGroupMutation.mutate(group.id);
-                                      setEditingShiftGroupId(null);
-                                    }
+                                    setDeleteShiftGroupTargetId("");
+                                    setDeletingShiftGroup({ id: group.id, name: group.name, hasShifts: rows.length > 0 });
                                   }}
                                   data-testid={`button-delete-shift-group-${group.id}`}
                                   title="Delete group"
@@ -5006,6 +5019,63 @@ function SchedulingPageInner() {
               {createShiftGroupMutation.isPending ? "Creating..." : "Create"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!deletingShiftGroup} onOpenChange={(open) => { if (!open) setDeletingShiftGroup(null); }}>
+        <DialogContent className="sm:max-w-md">
+          {deletingShiftGroup && (() => {
+            const otherGroups = shiftGroupsList.filter((g: any) => g.id !== deletingShiftGroup.id);
+            const target = otherGroups.find((g: any) => g.id === deleteShiftGroupTargetId);
+            const blocked = deletingShiftGroup.hasShifts && otherGroups.length === 0;
+            return (
+              <>
+                <DialogHeader>
+                  <DialogTitle>Delete "{deletingShiftGroup.name}"?</DialogTitle>
+                  <DialogDescription>
+                    {!deletingShiftGroup.hasShifts
+                      ? "This group has no shifts on the rota. It will be deleted."
+                      : blocked
+                        ? "This group still has shifts on the rota and there is no other group to move them to. Create another group first."
+                        : target
+                          ? `Its shifts move to "${target.name}", then "${deletingShiftGroup.name}" is deleted.`
+                          : "This group still has shifts on the rota. Choose the group they move to."}
+                  </DialogDescription>
+                </DialogHeader>
+                {deletingShiftGroup.hasShifts && !blocked && (
+                  <div className="space-y-2">
+                    <Label>Move its shifts to</Label>
+                    <Select value={deleteShiftGroupTargetId} onValueChange={setDeleteShiftGroupTargetId}>
+                      <SelectTrigger data-testid="select-delete-shift-group-target">
+                        <SelectValue placeholder="Choose a group" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {otherGroups.map((g: any) => (
+                          <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                <DialogFooter className="gap-2">
+                  <Button variant="outline" onClick={() => setDeletingShiftGroup(null)} data-testid="button-cancel-delete-shift-group">
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() => deleteShiftGroupMutation.mutate({
+                      id: deletingShiftGroup.id,
+                      targetGroupId: deletingShiftGroup.hasShifts && target ? { id: target.id, name: target.name } : undefined,
+                    })}
+                    disabled={blocked || (deletingShiftGroup.hasShifts && !target) || deleteShiftGroupMutation.isPending}
+                    data-testid="button-confirm-delete-shift-group"
+                  >
+                    {deleteShiftGroupMutation.isPending ? "Deleting..." : deletingShiftGroup.hasShifts ? "Move shifts and delete" : "Delete"}
+                  </Button>
+                </DialogFooter>
+              </>
+            );
+          })()}
         </DialogContent>
       </Dialog>
 

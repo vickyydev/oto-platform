@@ -44,7 +44,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 import { FACE_CLOCK_OFF_REFUSAL, FACE_ENROLMENT_OFF_REFUSAL, FACE_OFF_NO_MATCH } from "../server/lib/faceOff";
-import { SHIFT_GROUP_DELETE_NEEDS_TARGET, SHIFT_GROUP_REQUIRED } from "../server/lib/shiftGroupRequired";
+import { SHIFT_GROUP_DELETE_NEEDS_TARGET, SHIFT_GROUP_REQUIRED, retiredShiftEndDate } from "../server/lib/shiftGroupRequired";
 
 const APP_DIR = join(dirname(fileURLToPath(import.meta.url)), "..");
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -564,6 +564,34 @@ try {
     const empty = randomUUID();
     await q("insert into shift_groups (id, tenant_id, branch_id, name) values ($1, $2, $3, $4)", [empty, A.tenant, A.y, `ZZ TEST r5 empty ${run}`]);
     assert.equal((await call("DELETE", `/api/schedule/shift-groups/${empty}`, { cookie: cookie.a })).status, 204, "an empty group deletes as before");
+  });
+  await check("a deleted shift leaves the current week and no longer blocks deleting its group (SCRUM-536)", async () => {
+    // Retiring ends the shift the day before this week's Monday, whatever the weekday.
+    for (const [now, ends] of [["2026-10-12T09:00:00Z", "2026-10-11"], ["2026-10-14T09:00:00Z", "2026-10-11"], ["2026-10-18T23:00:00Z", "2026-10-11"]] as const) {
+      assert.equal(retiredShiftEndDate(new Date(now)), ends, now);
+    }
+    const g = await rota(A, A.y);
+    for (const row of [g.r1, g.r2]) {
+      assert.equal((await call("DELETE", `/api/schedule/shift-rows/${row}`, { cookie: cookie.a })).status, 204);
+    }
+    const ended = await q<{ active_until_date: string }>("select active_until_date::text from schedule_shift_rows where id = $1", [g.r1]);
+    assert.equal(ended[0]!.active_until_date, retiredShiftEndDate());
+    const res = await call("DELETE", `/api/schedule/shift-groups/${g.group}`, { cookie: cookie.a });
+    assert.equal(res.status, 204, show(res));
+    assert.equal(await count("select count(*) as n from shift_groups where id = $1 and is_active = false", [g.group]), 1);
+  });
+  await check("a group with a shift still on the rota is refused without a destination; with one, every row moves to it (SCRUM-536)", async () => {
+    const g = await rota(A, A.y);
+    assert.equal((await call("DELETE", `/api/schedule/shift-rows/${g.r2}`, { cookie: cookie.a })).status, 204);
+    const refused = await call("DELETE", `/api/schedule/shift-groups/${g.group}`, { cookie: cookie.a });
+    assert.equal(refused.status, 400, show(refused));
+    assert.deepEqual(refused.body, SHIFT_GROUP_DELETE_NEEDS_TARGET);
+    const target = randomUUID();
+    await q("insert into shift_groups (id, tenant_id, branch_id, name) values ($1, $2, $3, $4)", [target, A.tenant, A.y, `ZZ TEST 536 target ${run}`]);
+    const ok = await call("DELETE", `/api/schedule/shift-groups/${g.group}?targetGroupId=${target}`, { cookie: cookie.a });
+    assert.equal(ok.status, 204, show(ok));
+    assert.equal(await groupOf(g.r1), target);
+    assert.equal(await groupOf(g.r2), target);
   });
 
   // ── 3. Casual workers' ungrouped-row case ───────────────────────────────────

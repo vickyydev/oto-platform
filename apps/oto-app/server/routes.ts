@@ -144,7 +144,7 @@ import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempt
 import { hashSessionToken, validateKioskSession } from "./kiosk-auth";
 import { DEACTIVATE_INSTEAD, deleteManagedUser } from "./lib/userDeletion";
 import { FACE_CLOCK_OFF_REFUSAL, FACE_ENROLMENT_OFF_REFUSAL, FACE_OFF_NO_MATCH, faceClockInOn } from "./lib/faceOff";
-import { SHIFT_GROUP_DELETE_NEEDS_TARGET, SHIFT_GROUP_REQUIRED, noShiftGroup } from "./lib/shiftGroupRequired";
+import { SHIFT_GROUP_DELETE_NEEDS_TARGET, SHIFT_GROUP_REQUIRED, noShiftGroup, shiftStillOnRota } from "./lib/shiftGroupRequired";
 import {
   BRANCH_NOT_FOUND,
   CATALOG_ITEM_NOT_FOUND,
@@ -15381,21 +15381,27 @@ OTO Company Limited`,
     }
   });
 
-  // Delete/archive shift group (moves shifts to target group or ungroups them)
+  // Delete/archive shift group (moves its shifts to the target group when one is given)
   app.delete("/api/schedule/shift-groups/:id", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
     try {
       const { id } = req.params;
       const targetGroupId = req.query.targetGroupId as string;
 
-      const shiftsInGroup = await storage.getShiftRowsByGroup(id, req.userWithAccess!.tenantId!);
-      // Its rows would be left with no shift group, which the database refuses
+      const rowsInGroup = await storage.getShiftRowsByGroup(id, req.userWithAccess!.tenantId!);
+      // Only shifts still on the rota need a destination: a deleted shift is
+      // retired, not removed, and counting it left a group that ever held one
+      // undeletable (SCRUM-536).
+      const shiftsInGroup = rowsInGroup.filter((row) => shiftStillOnRota(row.activeUntilDate));
+      // Its shifts would be left with no shift group, which the database refuses
       // (Q2, H15): say so before anything is moved or deleted.
       if (shiftsInGroup.length > 0 && noShiftGroup(targetGroupId)) {
         return res.status(400).json(SHIFT_GROUP_DELETE_NEEDS_TARGET);
       }
-      if (shiftsInGroup.length > 0) {
-        for (const shift of shiftsInGroup) {
-          await storage.updateShiftRow(shift.id, { shiftGroupId: targetGroupId || null }, undefined, req.userWithAccess!.tenantId!);
+      // With a destination, every row moves — retired ones too, so past weeks
+      // keep showing them under a group that still exists.
+      if (!noShiftGroup(targetGroupId)) {
+        for (const shift of rowsInGroup) {
+          await storage.updateShiftRow(shift.id, { shiftGroupId: targetGroupId }, undefined, req.userWithAccess!.tenantId!);
         }
       }
       await storage.deleteShiftGroup(id, req.userWithAccess!.tenantId!);

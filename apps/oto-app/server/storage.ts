@@ -350,6 +350,7 @@ import {
         settingsReadRank,
         settingsWritableBy,
 } from "./lib/parkGroupSettings";
+import { retiredShiftEndDate } from "./lib/shiftGroupRequired";
 
 /**
  * The database, or a transaction on it: the storage methods an offboarding
@@ -8198,16 +8199,15 @@ export class DatabaseStorage implements IStorage {
         }
 
         async deleteShiftRow(id: string, requestedTenantId?: string): Promise<void> {
-                // Soft-delete: set activeUntilDate to yesterday so the row is excluded
-                // from the current week immediately (the visibility filter is
-                // activeUntilDate >= weekStart, so setting it to today would still
-                // show the row for the rest of the current week).
-                const yesterday = new Date();
-                yesterday.setDate(yesterday.getDate() - 1);
-                const yesterdayStr = yesterday.toISOString().split("T")[0];
+                // Soft-delete: end the row before the current week so it is excluded
+                // from the current week immediately. The visibility filter is
+                // activeUntilDate >= weekStart (Monday), so yesterday — what this
+                // used to set — still showed the row for the rest of the week on
+                // any day but Monday (SCRUM-536). The day before this week's
+                // Monday is what the filter needs.
                 await db
                         .update(scheduleShiftRows)
-                        .set(scheduleOwnedValues({ activeUntilDate: yesterdayStr, updatedAt: new Date() }, requestedTenantId))
+                        .set(scheduleOwnedValues({ activeUntilDate: retiredShiftEndDate(), updatedAt: new Date() }, requestedTenantId))
                         .where(and(eq(scheduleShiftRows.id, id), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)));
         }
 
