@@ -172,6 +172,7 @@ type TemplatePreviewResult = {
   rowsToAdd: Array<{ label: string | null; startTime: string; endTime: string; shiftGroupName?: string; departmentName?: string }>;
   rowsAlreadyExist: Array<{ label: string | null; startTime: string; endTime: string; shiftGroupName?: string; departmentName?: string }>;
   assignmentsToApply: number;
+  assignmentsIneligible?: number;
   timeOffToApply: number;
 };
 
@@ -1016,7 +1017,7 @@ function SchedulingPageInner() {
     mutationFn: async (id: string) => apiRequest("DELETE", `/api/schedule/shift-rows/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/schedule/week"] });
-      toast({ title: "Shift retired", description: "The shift row has been retired. It no longer appears on this week or any later week; past weeks keep it." });
+      toast({ title: "Shift retired", description: "The shift row has been retired and will no longer appear on future schedules." });
     },
   });
 
@@ -1979,6 +1980,8 @@ function SchedulingPageInner() {
       setTemplatePreviewLoading(false);
     }
   };
+
+  const clearViewLabel = timelineMode === "day" ? "Day" : timelineMode === "3day" ? "3 Days" : timelineMode === "month" ? "Month" : "Week";
 
   const clearWeekMutation = useMutation({
     mutationFn: async () => {
@@ -3243,7 +3246,7 @@ function SchedulingPageInner() {
                 data-testid="button-clear-week"
               >
                 <Trash2 className="h-3.5 w-3.5 mr-2" />
-                Clear Week
+                Clear {clearViewLabel}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -5672,6 +5675,7 @@ function SchedulingPageInner() {
               <div className="text-sm text-muted-foreground">
                 Template has {templatePreview.templateRows} shift row{templatePreview.templateRows !== 1 ? 's' : ''}{templatePreview.assignmentsToApply > 0 ? ` and ${templatePreview.assignmentsToApply} assignment${templatePreview.assignmentsToApply !== 1 ? 's' : ''} to apply` : ''}{(templatePreview.timeOffToApply ?? 0) > 0 ? ` and ${templatePreview.timeOffToApply} leave entr${templatePreview.timeOffToApply !== 1 ? 'ies' : 'y'} to apply` : ''}.
                 Applying will only add missing rows and assignments — existing ones are never touched.
+                {" "}Anyone who can no longer take a shift (left, changed role, on leave or already on another shift that day) is left out{(templatePreview.assignmentsIneligible ?? 0) > 0 ? ` — ${templatePreview.assignmentsIneligible} assignment${templatePreview.assignmentsIneligible !== 1 ? 's' : ''} from this template will be left out for that reason` : ''}.
               </div>
 
               {templatePreview.rowsToAdd.length > 0 && (
@@ -5772,7 +5776,7 @@ function SchedulingPageInner() {
           <DialogHeader>
             <DialogTitle>Clear Week Schedule</DialogTitle>
             <DialogDescription>
-              Removes all assignments for <strong>one department only</strong> in the selected week. All other departments are completely unaffected. Shift row definitions and other leave records are kept, but any day-off changes recorded for the affected people in this week are removed.
+              Removes all assignments for <strong>one department only</strong> in the selected week. Their breaks and duty blocks go with them, and so do any day-off changes (Change Day Off) that week for the people on those shifts, in any department. Shift row definitions and other leave records are kept. Restoring from Schedule History brings all of it back.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
@@ -6160,7 +6164,7 @@ function SchedulingPageInner() {
           <DialogHeader>
             <DialogTitle>Merge Shift Rows</DialogTitle>
             <DialogDescription>
-              Choose which shift row to keep, then all assignments from the others will be merged into it.
+              Choose which shift row to keep, then all assignments from the others, in every week, will be merged into it. The other rows are then deleted for good; this does not appear in Schedule History and cannot be restored from there.
             </DialogDescription>
           </DialogHeader>
 
@@ -6389,10 +6393,10 @@ function ScheduleHistoryDialog({ open, onOpenChange, branchId, onRestored }: {
   const actionLabels: Record<string, string> = {
     apply_template: "Template Applied",
     apply_template_safe: "Template Applied (Safe)",
+    apply_template_additive: "Template Applied (Added Only)",
     clear_week: "Week Cleared",
     overwrite_department: "Department Overwritten",
     restore_from_snapshot: "Restored from Snapshot",
-    apply_template_additive: "Template Applied (Additive)",
   };
 
   const formatWeekRange = (weekStartDate: string | null) => {

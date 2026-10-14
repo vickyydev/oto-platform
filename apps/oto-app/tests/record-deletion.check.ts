@@ -475,6 +475,36 @@ try {
     assert.ok(await exists("schedule_shift_rows", r.row));
   });
 
+  await check("a department's week clear takes the duty blocks with its assignments, and restoring it from history puts them back (SCRUM-544)", async () => {
+    const week = monday(day(35));
+    const person = await employee(A, A.y, "duty");
+    const r = await rota(A, A.y, week);
+    const dept = randomUUID();
+    await q("insert into departments (id, tenant_id, name) values ($1, $2, $3)", [dept, A.tenant, `ZZ TEST m3 ${run}`]);
+    await q("update schedule_shift_rows set department_id = $1 where id = $2", [dept, r.row]);
+    const shift = await assignment(A, r.plan, r.row, plus(week, 2), person);
+    const dutyType = randomUUID();
+    await q("insert into duty_types (id, tenant_id, name) values ($1, $2, 'ZZ TEST m3 duty')", [dutyType, A.tenant]);
+    await q(
+      `insert into duty_blocks (tenant_id, branch_id, date, employee_id, assignment_id, duty_type_id, duty_name, start_time, end_time)
+       values ($1, $2, $3, $4, $5, $6, 'ZZ TEST m3 duty', '10:00', '11:00')`,
+      [A.tenant, A.y, plus(week, 2), person, shift, dutyType],
+    );
+    const cleared = await call("POST", "/api/schedule/clear", cookie.a, { branchId: A.y, departmentId: dept, startDate: week, endDate: plus(week, 6) });
+    assert.equal(cleared.status, 200, show(cleared));
+    assert.equal((await q("select id from duty_blocks where employee_id = $1", [person])).length, 0, "the clear takes the duty block");
+    const [entry] = await q("select id from schedule_audit_log where action = 'clear_week' and department_id = $1", [dept]);
+    const restored = await call("POST", `/api/schedule/audit-log/${entry!.id}/restore`, cookie.a);
+    assert.equal(restored.status, 200, show(restored));
+    assert.equal((restored.body as { shiftRows: number }).shiftRows, 0, "a department restore reports no shift rows, as it touches none");
+    const back = await q(
+      `select d.start_time, d.duty_type_id from duty_blocks d join schedule_assignments s on s.id = d.assignment_id
+        where d.employee_id = $1 and s.shift_row_id = $2 and s.shift_date = $3`,
+      [person, r.row, plus(week, 2)],
+    );
+    assert.deepEqual(back, [{ start_time: "10:00", duty_type_id: dutyType }], "the duty block is back on the restored assignment");
+  });
+
   // ── 6. Duplicate-shift removal ──────────────────────────────────────────────
   console.log("6. duplicate-shift removal:");
   await check("removing duplicates in branch X keeps one there and never touches the same person's shift in branch Y", async () => {

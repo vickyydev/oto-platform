@@ -15022,11 +15022,14 @@ OTO Company Limited`,
       let skipped = 0;
       let replaced = 0;
 
-      // Track what's already in target (including newly moved assignments)
-      const occupiedKeys = new Set(
+      // Who holds each person+date on the target row: its own assignment, or
+      // one already moved in from an earlier source row. "Keep source" replaces
+      // that holder, so a clash between two source rows no longer moves a
+      // second copy in (SCRUM-544).
+      const occupantByKey = new Map<string, string>(
         targetAssignments.map((ta: any) => {
           const k = ta.casualWorkerId ? `casual:${ta.casualWorkerId}` : `emp:${ta.employeeId}`;
-          return `${k}:${ta.shiftDate}`;
+          return [`${k}:${ta.shiftDate}`, ta.id] as [string, string];
         })
       );
 
@@ -15040,23 +15043,17 @@ OTO Company Limited`,
             : `emp:${sa.employeeId}`;
           const comboKey = `${assigneeKey}:${sa.shiftDate}`;
 
-          if (occupiedKeys.has(comboKey)) {
+          const occupantId = occupantByKey.get(comboKey);
+          if (occupantId) {
             // Conflict with target or previously moved source assignment
             const resolution = resolutionMap.get(sa.id);
             if (resolution === "keep_source") {
-              // Find and remove the conflicting assignment in target
-              const existingInTarget = targetAssignments.find((ta: any) => {
-                const taKey = ta.casualWorkerId
-                  ? `casual:${ta.casualWorkerId}`
-                  : `emp:${ta.employeeId}`;
-                return taKey === assigneeKey && ta.shiftDate === sa.shiftDate;
-              });
-              if (existingInTarget) {
-                await db.delete(scheduleAssignments).where(and(eq(scheduleAssignments.id, existingInTarget.id), scheduleParkPredicate("schedule_assignments", req.userWithAccess!.tenantId!)));
-              }
+              // Remove whichever assignment holds this person+date on the target now
+              await db.delete(scheduleAssignments).where(and(eq(scheduleAssignments.id, occupantId), scheduleParkPredicate("schedule_assignments", req.userWithAccess!.tenantId!)));
               await db.update(scheduleAssignments)
                 .set({ shiftRowId: targetRowId })
                 .where(and(eq(scheduleAssignments.id, sa.id), scheduleParkPredicate("schedule_assignments", req.userWithAccess!.tenantId!)));
+              occupantByKey.set(comboKey, sa.id);
               replaced++;
             } else {
               // keep_target (default): delete the source assignment
@@ -15069,7 +15066,7 @@ OTO Company Limited`,
               .set({ shiftRowId: targetRowId })
               .where(and(eq(scheduleAssignments.id, sa.id), scheduleParkPredicate("schedule_assignments", req.userWithAccess!.tenantId!)));
             moved++;
-            occupiedKeys.add(comboKey);
+            occupantByKey.set(comboKey, sa.id);
           }
         }
 

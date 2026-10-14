@@ -1419,6 +1419,7 @@ export interface IStorage {
                         departmentName?: string;
                 }>;
                 assignmentsToApply: number;
+                assignmentsIneligible: number;
                 timeOffToApply: number;
         }>;
         applyTemplateAdditive(
@@ -7586,7 +7587,7 @@ export class DatabaseStorage implements IStorage {
                 departmentId: string,
                 weekStart: string,
                 weekEnd: string, requestedTenantId?: string,
-        ): Promise<{ shiftRows: any[]; assignments: any[]; breaks: any[]; timeOff: any[]; meta: { branchId: string; departmentId: string; weekStart: string; weekEnd: string } }> {
+        ): Promise<{ shiftRows: any[]; assignments: any[]; breaks: any[]; dutyBlocks: any[]; timeOff: any[]; meta: { branchId: string; departmentId: string; weekStart: string; weekEnd: string } }> {
                 // Get shift rows that belong to this branch AND this department, active during the week
                 const deptRows = await db
                         .select()
@@ -7632,6 +7633,19 @@ export class DatabaseStorage implements IStorage {
                                                 .where(and(inArray(scheduleShiftBreaks.assignmentId, assignmentIds), scheduleParkPredicate("schedule_shift_breaks", requestedTenantId)))
                                 : [];
 
+                // Duty blocks go with their assignment (ON DELETE cascade), so a
+                // clear takes them; keep them here, keyed by their assignment's
+                // row|date|person, so a restore can put them back (SCRUM-544).
+                const assignmentKeyById = new Map(assignments.map((a) => [a.id, `${a.shiftRowId}|${a.shiftDate}|${a.employeeId}`]));
+                const dutyBlockRows =
+                        assignmentIds.length > 0
+                                ? await db
+                                                .select()
+                                                .from(dutyBlocks)
+                                                .where(and(inArray(dutyBlocks.assignmentId, assignmentIds), scheduleParkPredicate("duty_blocks", requestedTenantId)))
+                                : [];
+                const dutyBlockSnapshot = dutyBlockRows.map((d) => ({ ...d, assignmentKey: assignmentKeyById.get(d.assignmentId) }));
+
                 // CHANGE_DAY_OFF entries: scope to employees assigned to this department's rows in this week
                 const assignedEmployeeIds = [...new Set(
                         assignments.map((a) => a.employeeId).filter(Boolean) as string[],
@@ -7656,6 +7670,7 @@ export class DatabaseStorage implements IStorage {
                         shiftRows: deptRows,
                         assignments,
                         breaks,
+                        dutyBlocks: dutyBlockSnapshot,
                         timeOff,
                         meta: { branchId, departmentId, weekStart, weekEnd },
                 };
@@ -7812,6 +7827,26 @@ export class DatabaseStorage implements IStorage {
                         restoredBreaks++;
                 }
 
+                // Restore duty blocks onto the recreated assignments (snapshots
+                // taken before SCRUM-544 carry none). A block whose duty type has
+                // since been deleted is left out, as the delete would have taken it.
+                for (const block of (snapshotData.dutyBlocks || []) as any[]) {
+                        const newAssignmentId = block.assignmentKey ? newAssignmentMap.get(block.assignmentKey) : undefined;
+                        if (!newAssignmentId) continue;
+                        if (block.dutyTypeId) {
+                                const [type] = await tx.select({ id: dutyTypes.id }).from(dutyTypes)
+                                        .where(and(eq(dutyTypes.id, block.dutyTypeId), scheduleParkPredicate("duty_types", requestedTenantId)));
+                                if (!type) continue;
+                        }
+                        const { id: _id, createdAt: _c, updatedAt: _u, assignmentKey: _k, ...blockCopy } = block;
+                        await tx.insert(dutyBlocks).values(scheduleOwnedValues({
+                                ...blockCopy,
+                                branchId,
+                                employeeId: String(block.assignmentKey).split("|")[2],
+                                assignmentId: newAssignmentId,
+                        }, requestedTenantId));
+                }
+
                 // Restore time-off entries
                 for (const to of timeOff || []) {
                         const { id: _id, createdAt: _c, updatedAt: _u, ...rest } = to;
@@ -7824,7 +7859,9 @@ export class DatabaseStorage implements IStorage {
 
                 return {
                         restored: true,
-                        shiftRows: (snapshotData.shiftRows || []).length,
+                        // A department restore never touches the shift rows (a
+                        // clear never removes them), so it reports none restored.
+                        shiftRows: 0,
                         assignments: (assignments || []).length,
                         breaks: restoredBreaks,
                 };
@@ -10138,6 +10175,7 @@ export class DatabaseStorage implements IStorage {
                         departmentName?: string;
                 }>;
                 assignmentsToApply: number;
+                assignmentsIneligible: number;
                 timeOffToApply: number;
         }> {
                 if (requestedTenantId !== undefined) await assertScheduleWriteScope({ branchId }, requestedTenantId);
@@ -10265,15 +10303,33 @@ export class DatabaseStorage implements IStorage {
                         ),
                 );
 
+                // Count what applyTemplateAdditive does: assignments on rows that
+                // already exist (skipping ones already there and people who can no
+                // longer take the shift) AND assignments on the rows it will add.
+                // A row that does not exist yet cannot be checked for eligibility
+                // here, so those are counted as attempts; the apply skips anyone
+                // ineligible, which the dialog says.
                 let assignmentsToApply = 0;
+                let assignmentsIneligible = 0;
                 for (const ta of templateAssignments) {
-                        const shiftRowId = templateRowIdToShiftRowId.get(ta.templateRowId);
-                        if (!shiftRowId) continue;
                         const targetDate = new Date(targetWeekStart);
                         targetDate.setDate(targetDate.getDate() + ta.dayOfWeek);
                         const shiftDate = targetDate.toISOString().split("T")[0];
+                        const shiftRowId = templateRowIdToShiftRowId.get(ta.templateRowId);
+                        if (!shiftRowId) {
+                                assignmentsToApply++;
+                                continue;
+                        }
                         const key = `${shiftRowId}|${shiftDate}|${ta.employeeId}`;
-                        if (!existingAssignmentKeys.has(key)) assignmentsToApply++;
+                        if (existingAssignmentKeys.has(key)) continue;
+                        const validation = await this.canAssignEmployeeToShift(
+                                ta.employeeId,
+                                shiftRowId,
+                                shiftDate,
+                                { isBorrowed: false }, requestedTenantId,
+                        );
+                        if (validation.ok) assignmentsToApply++;
+                        else assignmentsIneligible++;
                 }
 
                 // Count time-off entries that would be applied
@@ -10319,6 +10375,7 @@ export class DatabaseStorage implements IStorage {
                         rowsToAdd,
                         rowsAlreadyExist,
                         assignmentsToApply,
+                        assignmentsIneligible,
                         timeOffToApply,
                 };
         }
