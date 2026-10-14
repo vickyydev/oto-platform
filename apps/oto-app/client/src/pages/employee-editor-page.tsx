@@ -60,6 +60,7 @@ import {
   DialogContent,
   DialogDescription,
   DialogHeader,
+  DialogBody,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { differenceInDays } from "date-fns";
@@ -966,7 +967,7 @@ function AccessStatusSection({ employeeId, personId, employee, forceOpen }: { em
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4">
+          <DialogBody className="space-y-4">
             <div className="space-y-2">
               <Label>Access Level</Label>
               <Select 
@@ -1106,24 +1107,24 @@ function AccessStatusSection({ employeeId, personId, employee, forceOpen }: { em
                 )}
               </div>
             )}
-            
-            <div className="flex justify-end gap-2 pt-2">
-              <Button 
-                variant="outline" 
-                onClick={() => setEditAccessModalOpen(false)}
-                data-testid="button-cancel-edit-access"
-              >
-                Cancel
-              </Button>
-              <Button 
-                onClick={() => editAccessMutation.mutate()} 
-                disabled={editAccessMutation.isPending || (editBranchScope === "SELECTED" && editBranchIds.length === 0)}
-                data-testid="button-save-edit-access"
-              >
-                {editAccessMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Save Changes
-              </Button>
-            </div>
+          </DialogBody>
+
+          <div className="flex shrink-0 justify-end gap-2 pt-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setEditAccessModalOpen(false)}
+              data-testid="button-cancel-edit-access"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => editAccessMutation.mutate()} 
+              disabled={editAccessMutation.isPending || (editBranchScope === "SELECTED" && editBranchIds.length === 0)}
+              data-testid="button-save-edit-access"
+            >
+              {editAccessMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Save Changes
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

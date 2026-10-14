@@ -17,6 +17,7 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
+  DialogBody,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -220,7 +221,8 @@ export function IssueWarningModal({ open, onOpenChange, employee, onSuccess }: I
 
         {step === "details" && (
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="flex min-h-0 flex-1 flex-col gap-4">
+              <DialogBody className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -349,6 +351,8 @@ export function IssueWarningModal({ open, onOpenChange, employee, onSuccess }: I
                 )}
               />
 
+              </DialogBody>
+
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={handleClose}>
                   Cancel
@@ -369,7 +373,8 @@ export function IssueWarningModal({ open, onOpenChange, employee, onSuccess }: I
         )}
 
         {step === "letter" && (
-          <div className="space-y-4">
+          <div className="flex min-h-0 flex-1 flex-col gap-4">
+            <DialogBody className="space-y-4">
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
@@ -435,6 +440,8 @@ export function IssueWarningModal({ open, onOpenChange, employee, onSuccess }: I
               </CardContent>
             </Card>
 
+            </DialogBody>
+
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setStep("details")}>
                 Back
@@ -467,7 +474,8 @@ export function IssueWarningModal({ open, onOpenChange, employee, onSuccess }: I
         )}
 
         {step === "complete" && (
-          <div className="space-y-4">
+          <div className="flex min-h-0 flex-1 flex-col gap-4">
+            <DialogBody className="space-y-4">
             <div className="rounded-md border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30 p-4 text-center">
               <AlertTriangle className="h-10 w-10 mx-auto mb-3 text-amber-500" />
               <p className="font-medium text-lg">Warning Recorded</p>
@@ -514,6 +522,8 @@ export function IssueWarningModal({ open, onOpenChange, employee, onSuccess }: I
                 </CardContent>
               </Card>
             )}
+
+            </DialogBody>
 
             <DialogFooter>
               <Button onClick={handleClose} data-testid="button-close-warning-modal">

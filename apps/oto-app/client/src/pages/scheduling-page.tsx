@@ -22,7 +22,7 @@ import { Pencil, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -5111,7 +5111,7 @@ function SchedulingPageInner() {
       </Dialog>
 
       <Dialog open={createShiftRowOpen} onOpenChange={setCreateShiftRowOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[90dvh]">
           <DialogHeader>
             <DialogTitle>Add Shift</DialogTitle>
             <DialogDescription>
@@ -5120,7 +5120,7 @@ function SchedulingPageInner() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <DialogBody className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="label">Shift Name <span className="text-destructive">*</span></Label>
               <Input
@@ -5263,7 +5263,7 @@ function SchedulingPageInner() {
               </div>
               <p className="text-xs text-muted-foreground">Click to select a color. Click again to remove.</p>
             </div>
-          </div>
+          </DialogBody>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setCreateShiftRowOpen(false)}>
@@ -5281,15 +5281,15 @@ function SchedulingPageInner() {
       </Dialog>
 
       <Dialog open={editShiftRowOpen} onOpenChange={setEditShiftRowOpen}>
-        <DialogContent className="max-h-[85vh] overflow-hidden flex flex-col !grid-rows-none">
-          <DialogHeader className="flex-shrink-0">
+        <DialogContent className="max-h-[90dvh]">
+          <DialogHeader>
             <DialogTitle>Edit Shift</DialogTitle>
             <DialogDescription>
               Update the shift details
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 overflow-y-auto pr-2 min-h-0">
+          <DialogBody className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="editLabel">Shift Name <span className="text-destructive">*</span></Label>
               <Input
@@ -5453,9 +5453,9 @@ function SchedulingPageInner() {
               </div>
               <p className="text-xs text-muted-foreground">Click to select a color. Click again to remove.</p>
             </div>
-          </div>
+          </DialogBody>
 
-          <DialogFooter className="flex gap-2 flex-shrink-0">
+          <DialogFooter className="flex gap-2">
             {editingShiftRow && (
               <Button
                 variant="destructive"
