@@ -79,3 +79,25 @@ if (process.argv[1]?.endsWith('render.mjs')) {
   else if (cmd === 'job') await job(rest.join(' '));
   else if (cmd) console.log('commands: status | deploys <name> | deploy <name|all> [sha] | job "<command>"');
 }
+
+/**
+ * One env var's value, whatever shape the API answers with. The flat and the
+ * wrapped shapes both occur, and mistaking one for the other once emptied
+ * HANDOFF_APP_ORIGINS on staging (2026-10-14) — every read goes through here.
+ */
+export const envValue = async (serviceId, key) => {
+  const r = await render('GET', `/services/${serviceId}/env-vars/${key}`);
+  return r?.envVar?.value ?? r?.value ?? null;
+};
+
+/**
+ * Append to a comma-list env var, refusing the write when the current value
+ * cannot be read: an append that starts from '' silently REPLACES the list,
+ * which is how the launcher lost one sign-on for every app.
+ */
+export const appendEnvList = async (serviceId, key, entry) => {
+  const old = await envValue(serviceId, key);
+  if (old === null || old === '') throw new Error(`${key}: current value unreadable or empty — refusing to append`);
+  if (old.includes(entry)) return { key, unchanged: true };
+  return render('PUT', `/services/${serviceId}/env-vars/${key}`, { value: `${old},${entry}` });
+};
