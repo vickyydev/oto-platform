@@ -164,11 +164,17 @@ export default tseslint.config(
     // wrong, which is the worst moment to discover it carries a phone number
     // or a child's medical note. The redactor in @oto/telemetry catches these
     // at runtime; this catches them at the keyboard, where they are cheap to
-    // fix. Deliberately NOT listing : it is the error code on every
+    // fix. Deliberately NOT listing `code`: it is the error code on every
     // envelope we send and the SQLSTATE on every pg error, so a rule that
     // fired on it would be switched off within a week - the redactor, which
     // can see the value, still refuses a six-digit one.
-    files: ['**/*.ts', '**/*.mjs'],
+    //
+    // `.tsx` and `.js` are in the glob on purpose (SCRUM-286): the till is
+    // almost entirely `.tsx` and holds phone numbers, children's names and
+    // allergy notes, and its service worker is `.js`. With only `.ts` and
+    // `.mjs` here the one app that handles that data on screen sat outside
+    // the rule, and nothing compensated for it.
+    files: ['**/*.{ts,tsx,mts,cts}', '**/*.{js,mjs,cjs}'],
     plugins: { oto: otoTelemetry },
     rules: { 'oto/no-pii-in-logs': 'error' },
   },
