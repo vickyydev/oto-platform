@@ -34,16 +34,17 @@ const SECRET = 'handoff-test-secret-0123456789abcdef';
 const POS_ORIGIN = 'https://pos.test';
 const CONSOLE_ORIGIN = 'https://console.test';
 const RADAR_ORIGIN = 'https://radar.test';
+const BOOTH_ORIGIN = 'https://booth.test';
 
 let ctx: TestContext;
 beforeAll(async () => {
   ctx = await createTestContext({
     env: {
       HANDOFF_SIGNING_KEY: `${KID}:${SECRET}`,
-      HANDOFF_APP_ORIGINS: `pos=${POS_ORIGIN},console=${CONSOLE_ORIGIN},radar=${RADAR_ORIGIN}`,
+      HANDOFF_APP_ORIGINS: `pos=${POS_ORIGIN},console=${CONSOLE_ORIGIN},radar=${RADAR_ORIGIN},booth=${BOOTH_ORIGIN}`,
       // Each app origin must also be allowed to write at all, or the origin
       // check in app.ts refuses the exchange before it reaches the route.
-      ALLOWED_ORIGINS: `${POS_ORIGIN},${CONSOLE_ORIGIN},${RADAR_ORIGIN}`,
+      ALLOWED_ORIGINS: `${POS_ORIGIN},${CONSOLE_ORIGIN},${RADAR_ORIGIN},${BOOTH_ORIGIN}`,
     },
   });
 });
@@ -150,6 +151,37 @@ describe('Radar signs on like any other app (S2-18)', () => {
       payload: { app: 'radar' },
     });
     expect(refused.statusCode).toBe(403);
+  });
+});
+
+describe('the Lucky Wheel signs on with an identity and no credential (SCRUM-528)', () => {
+  it('exchanges a booth token for who signed on — no cookie, no session token — once, at the booth only', async () => {
+    const launcher = await signInAs(ctx.app, ADMIN.phone, ADMIN.password);
+
+    // Aimed at the booth, a token is refused anywhere else, and still spent.
+    const stray = await mint(launcher, 'booth');
+    const elsewhere = await exchange(stray.token, POS_ORIGIN);
+    expect(elsewhere.statusCode).toBe(401);
+    expect(rejectionReason(elsewhere)).toBe('origin');
+    expect(elsewhere.headers['set-cookie']).toBeUndefined();
+
+    const issued = await mint(launcher, 'booth');
+    expect(issued.launchUrl).toBe(`${BOOTH_ORIGIN}/#handoff=${issued.token}`);
+    const res = await exchange(issued.token, BOOTH_ORIGIN);
+    expect(res.statusCode).toBe(200);
+    // The static page has no server to keep a cookie, and must not be handed
+    // the session's own token instead.
+    expect(res.headers['set-cookie']).toBeUndefined();
+    const body = res.json() as Record<string, unknown> & { identity: Record<string, unknown> };
+    expect(body.audience).toBe('booth');
+    expect(body.identity).toMatchObject({ code: expect.stringMatching(/^S-[A-Z0-9]{4}$/) });
+    expect(Object.keys(body.identity).sort()).toEqual(['accountId', 'code', 'expiresAt', 'name']);
+    expect(Object.keys(body).sort()).toEqual(['accountId', 'audience', 'identity', 'mustChangePassword', 'sessionLocked']);
+
+    // One go only.
+    const again = await exchange(issued.token, BOOTH_ORIGIN);
+    expect(again.statusCode).toBe(401);
+    expect(rejectionReason(again)).toBe('replayed');
   });
 });
 

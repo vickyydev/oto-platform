@@ -25,6 +25,8 @@ import {
   handoffConfig,
   HandoffRejected,
   HANDOFF_APPS,
+  handoffIdentity,
+  IDENTITY_ONLY_AUDIENCES,
   issueHandoff,
   type HandoffConfig,
 } from '../services/handoff';
@@ -255,7 +257,8 @@ export async function authRoutes(app: App): Promise<void> {
     {
       config: { ...ipLimited, public: true },
       schema: {
-        description: 'Exchange a hand-off token for a session cookie on this origin',
+        description:
+          'Exchange a hand-off token for a session cookie on this origin. An app with no server of its own (booth) gets no cookie and no credential: the answer names who signed on (`identity`) and nothing more.',
         body: z.object({ token: z.string().min(20).max(8192) }),
       },
     },
@@ -274,11 +277,23 @@ export async function authRoutes(app: App): Promise<void> {
           requestId: req.id,
         });
 
-        // The SAME session row, so signing out anywhere ends every app at
-        // once; the cookie is host-only to this origin and never outlives the
-        // session behind it.
-        const remainingHours = (result.sessionExpiresAt.getTime() - Date.now()) / 3600_000;
-        setSessionCookie(reply, result.sessionToken, remainingHours, app.env.COOKIE_SECURE);
+        /**
+         * SCRUM-528 — an app with no server (the Lucky Wheel) gets an identity
+         * and no credential: no cookie, and never the session token in the
+         * body. Decided by the audience signed INTO the token, not by anything
+         * the caller asks for, so a cookie app's token cannot be talked into
+         * this shape and a booth token can never yield a cookie.
+         */
+        const identityOnly = IDENTITY_ONLY_AUDIENCES.has(result.audience);
+        const identity = identityOnly ? await handoffIdentity(app.db, result) : null;
+
+        if (!identityOnly) {
+          // The SAME session row, so signing out anywhere ends every app at
+          // once; the cookie is host-only to this origin and never outlives
+          // the session behind it.
+          const remainingHours = (result.sessionExpiresAt.getTime() - Date.now()) / 3600_000;
+          setSessionCookie(reply, result.sessionToken, remainingHours, app.env.COOKIE_SECURE);
+        }
 
         await audit.record(app.db, {
           actorAccountId: result.accountId,
@@ -286,7 +301,7 @@ export async function authRoutes(app: App): Promise<void> {
           action: 'auth.handoff_exchange',
           entityType: 'session',
           entityId: result.sessionId,
-          after: { jti: result.jti, audience: result.audience },
+          after: { jti: result.jti, audience: result.audience, ...(identityOnly ? { identityOnly: true } : {}) },
           requestId: req.id,
         });
 
@@ -295,6 +310,7 @@ export async function authRoutes(app: App): Promise<void> {
           audience: result.audience,
           mustChangePassword: result.mustChangePassword,
           sessionLocked: result.sessionLocked,
+          ...(identity ? { identity } : {}),
         };
       } catch (err) {
         if (err instanceof HandoffRejected) {

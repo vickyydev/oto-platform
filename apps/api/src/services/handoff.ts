@@ -9,15 +9,17 @@ import {
 import { and, eq, gt, isNull, lte } from 'drizzle-orm';
 import {
   account,
+  employee,
   handoffToken,
   session as sessionTable,
   HANDOFF_AUDIENCES,
   type Db,
   type HandoffAudience,
 } from '@oto/db';
-import { newId, type Permission } from '@oto/shared';
+import { boothStaffCode, newId, type Permission } from '@oto/shared';
 import { AppError } from '../lib/errors';
 import { audit } from './audit';
+import { hasPermission, resolveEffectivePermissions } from './permissions';
 import { withTx, type Exec } from './tx';
 
 /**
@@ -352,6 +354,8 @@ export interface ExchangedHandoff {
   /** The session's opaque token — goes into the app's cookie, nowhere else. */
   sessionToken: string;
   sessionExpiresAt: Date;
+  /** The session's seat, for a permission re-check at the exchange. */
+  branchId: string | null;
   mustChangePassword: boolean;
   sessionLocked: boolean;
 }
@@ -482,6 +486,7 @@ export async function exchangeHandoff(
     audience: row.audience,
     sessionToken,
     sessionExpiresAt: live.s.expiresAt,
+    branchId: live.s.branchId,
     mustChangePassword: live.a.mustChangePassword,
     sessionLocked: live.s.lockedAt !== null,
   };
@@ -504,6 +509,64 @@ async function classifyLostClaim(
   // Either way the claim cannot be established, and refusing it as a replay is
   // the only answer that is never too generous.
   return new HandoffRejected('replayed', 'This hand-off has already been used', seen);
+}
+
+// --- Apps with no server of their own (SCRUM-528) ---------------------------
+
+/**
+ * The audiences whose exchange sets NO cookie and hands back no credential.
+ *
+ * The Lucky Wheel is a static site: the page itself posts the token, and no
+ * server on its origin could keep a cookie for it. Handing the page the
+ * session's own token instead would put the one credential that opens every
+ * app — for the session's whole life — into script on an origin that also
+ * serves an unattended television in a shopping centre (D15). What the page
+ * signed on through the launcher actually does is the demonstration wheel,
+ * which runs in the page and calls nothing, so it needs to know WHO, not to
+ * hold anything that acts. The exchange therefore returns an identity and
+ * stops there: the token is spent, its origin and audience are checked, and
+ * nothing leaves the api that a script on that origin could replay.
+ */
+export const IDENTITY_ONLY_AUDIENCES: ReadonlySet<HandoffApp> = new Set<HandoffApp>(['booth']);
+
+export interface HandoffIdentity {
+  accountId: string;
+  /** Nickname, else name, of the linked employee — as the booth's badge shows it. */
+  name: string | null;
+  /** The staff code the booth shows beside the name. */
+  code: string;
+  /** The page forgets the identity no later than the session behind it ends. */
+  expiresAt: string;
+}
+
+/**
+ * Who an identity-only exchange signed on, after re-checking the app
+ * permission: unlike a cookie app, nothing on this audience comes back to the
+ * api afterwards, so the exchange is the last place access can be checked.
+ */
+export async function handoffIdentity(db: Db, exchanged: ExchangedHandoff): Promise<HandoffIdentity> {
+  const effective = await resolveEffectivePermissions(db, exchanged.accountId);
+  const permission = appAccessPermission(exchanged.audience);
+  if (
+    !hasPermission(effective, permission, {
+      operatorId: exchanged.operatorId,
+      branchId: exchanged.branchId ?? undefined,
+    })
+  ) {
+    throw new AppError(403, 'FORBIDDEN', `Missing permission ${permission}`);
+  }
+  const [row] = await db
+    .select({ name: employee.name, nickname: employee.nickname })
+    .from(account)
+    .leftJoin(employee, eq(account.employeeId, employee.id))
+    .where(eq(account.id, exchanged.accountId))
+    .limit(1);
+  return {
+    accountId: exchanged.accountId,
+    name: row?.nickname ?? row?.name ?? null,
+    code: boothStaffCode(exchanged.accountId),
+    expiresAt: exchanged.sessionExpiresAt.toISOString(),
+  };
 }
 
 // --- Housekeeping -----------------------------------------------------------
