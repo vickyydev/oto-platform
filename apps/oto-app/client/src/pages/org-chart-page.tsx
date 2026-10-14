@@ -18,6 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogBody,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -831,11 +832,11 @@ function EditNodeDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Edit {isVacant ? "Vacant Position" : displayName}</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
+        <DialogBody className="space-y-4">
           {isVacant ? (
             <div>
               <Label htmlFor="edit-title">Position Name</Label>
@@ -1163,7 +1164,8 @@ function EditNodeDialog({
             </Collapsible>
           )}
 
-          <div className="flex gap-2">
+        </DialogBody>
+          <div className="flex shrink-0 gap-2">
             <Button
               onClick={handleSubmit}
               disabled={isSubmitting}
@@ -1191,7 +1193,6 @@ function EditNodeDialog({
               </Button>
             )}
           </div>
-        </div>
       </DialogContent>
     </Dialog>
   );

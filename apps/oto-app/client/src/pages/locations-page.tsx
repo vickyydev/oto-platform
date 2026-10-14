@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogBody } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -356,14 +356,16 @@ export default function LocationsPage() {
                 Add Location
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-h-[90vh] overflow-y-auto" data-testid="dialog-create-location">
+            <DialogContent data-testid="dialog-create-location">
               <DialogHeader>
                 <DialogTitle>Create Location</DialogTitle>
                 <DialogDescription>
                   Add a new location tag for organizing checklists and tasks
                 </DialogDescription>
               </DialogHeader>
+              <DialogBody>
               {renderLocationForm(false)}
+              </DialogBody>
               <DialogFooter>
                 <Button
                   variant="outline"
@@ -410,14 +412,16 @@ export default function LocationsPage() {
       )}
 
       <Dialog open={!!editingLocation} onOpenChange={(open) => !open && setEditingLocation(null)}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto" data-testid="dialog-edit-location">
+        <DialogContent data-testid="dialog-edit-location">
           <DialogHeader>
             <DialogTitle>Edit Location</DialogTitle>
             <DialogDescription>
               Update location details and branch access
             </DialogDescription>
           </DialogHeader>
+          <DialogBody>
           {renderLocationForm(true)}
+          </DialogBody>
           <DialogFooter>
             <Button
               variant="outline"

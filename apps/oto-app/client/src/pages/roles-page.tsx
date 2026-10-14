@@ -7,9 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogBody } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
@@ -483,7 +482,7 @@ export default function RolesPage() {
               Select employees to assign to this role. Changes will sync with employee profiles.
             </DialogDescription>
           </DialogHeader>
-          <ScrollArea className="h-[400px] pr-4">
+          <DialogBody>
             <div className="space-y-2">
               {loadingRoleEmployees ? (
                 <div className="space-y-2">
@@ -536,7 +535,7 @@ export default function RolesPage() {
                 );
               })}
             </div>
-          </ScrollArea>
+          </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={() => {
               setAssigningRole(null);

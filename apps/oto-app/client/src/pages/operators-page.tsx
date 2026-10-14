@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogBody } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -353,14 +353,16 @@ export default function OperatorsPage() {
               Add Operator
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle>Create Operator</DialogTitle>
               <DialogDescription>
                 Add a new operator and assign branches and admin users
               </DialogDescription>
             </DialogHeader>
+            <DialogBody>
             {formFields}
+            </DialogBody>
             <DialogFooter>
               <Button variant="outline" onClick={() => setCreateOpen(false)} data-testid="button-cancel-create">
                 Cancel
@@ -425,14 +427,16 @@ export default function OperatorsPage() {
           resetForm();
         }
       }}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Edit Operator</DialogTitle>
             <DialogDescription>
               Update operator details, branches, and admin users
             </DialogDescription>
           </DialogHeader>
+          <DialogBody>
           {formFields}
+          </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditingOperator(null)} data-testid="button-cancel-edit">
               Cancel

@@ -20,6 +20,7 @@ import {
   DialogTitle,
   DialogFooter,
   DialogDescription,
+  DialogBody,
 } from "@/components/ui/dialog";
 import {
   Table,
@@ -661,7 +662,7 @@ export default function PermissionsPage() {
       )}
 
       <Dialog open={!!editPerson} onOpenChange={(open) => !open && setEditPerson(null)}>
-        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>
               Edit Permissions - {editPerson?.nickname || editPerson?.preferredName || editPerson?.fullName}
@@ -672,7 +673,7 @@ export default function PermissionsPage() {
           </DialogHeader>
 
           {editPerson && (
-            <div className="space-y-5 py-2">
+            <DialogBody className="space-y-5 py-2">
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Access Level</Label>
                 <Select value={editAccessLevel} onValueChange={setEditAccessLevel}>
@@ -762,7 +763,7 @@ export default function PermissionsPage() {
                   </div>
                 </div>
               )}
-            </div>
+            </DialogBody>
           )}
 
           <DialogFooter className="gap-2">

@@ -8,10 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogBody } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useBranchContext } from "@/hooks/use-branch-context";
@@ -496,7 +495,7 @@ export default function DepartmentsPage() {
               Select employees to assign to this department. Changes will update employee profiles.
             </DialogDescription>
           </DialogHeader>
-          <ScrollArea className="h-[400px] pr-4">
+          <DialogBody>
             <div className="space-y-2">
               {loadingDeptEmployees ? (
                 <div className="space-y-2">
@@ -526,7 +525,7 @@ export default function DepartmentsPage() {
                 );
               })}
             </div>
-          </ScrollArea>
+          </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={() => {
               setAssigningDept(null);
