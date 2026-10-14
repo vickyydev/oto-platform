@@ -247,7 +247,10 @@ describe('A. the screen and the plan, read off the code', () => {
 
   it('the drag and the group delete show the server’s words; the create and edit row mutations keep their own sentences only where the server gives none (the arrangement of finding 5)', () => {
     expect(mutation('moveShiftRowGroupMutation')).toMatch(/onError: \(err: Error\) => \{\s*toast\(\{ title: "Failed to move shift", description: err\.message,/);
-    expect(mutation('deleteShiftGroupMutation')).toMatch(/onError: \(err: Error\) => \{\s*toast\(\{ title: "Failed to delete shift group", description: err\.message,/);
+    // SCRUM-536 rearranged this one: the error first routes a still-has-shifts
+    // 400 back into the delete dialog's destination picker; every OTHER error
+    // still shows the server's words, which is what this pin protects.
+    expect(mutation('deleteShiftGroupMutation')).toMatch(/onError: \(err: Error, \{ targetGroupId \}\) => \{[\s\S]*toast\(\{ title: "Failed to delete shift group", description: err\.message,/);
     expect(mutation('createShiftRowMutation')).toMatch(/onError: \(err: Error\) => \{\s*toast\(\{ title: "Error", description: err\.message \|\| "Failed to create shift row",/);
     expect(mutation('updateShiftRowMutation')).toMatch(/onError: \(err: Error\) => \{\s*toast\(\{ title: "Error", description: err\.message \|\| "Failed to update shift row",/);
     // The create sends no group when none is chosen, and the edit form's "Ungrouped" sends null: both reach the 400.
