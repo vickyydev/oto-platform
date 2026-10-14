@@ -10,7 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -295,7 +295,9 @@ export default function PayrollStatutoryRulesPage() {
   );
 
   const RuleSetForm = ({ onSubmit, isLoading: isPending, submitLabel }: { onSubmit: () => void; isLoading: boolean; submitLabel: string }) => (
-    <div className="space-y-4" data-testid="form-rule-set">
+    <div className="flex min-h-0 flex-1 flex-col gap-4" data-testid="form-rule-set">
+      <DialogBody className="grid gap-x-8 gap-y-4 lg:grid-cols-2">
+      <div className="min-w-0 space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="name">Name</Label>
@@ -411,7 +413,10 @@ export default function PayrollStatutoryRulesPage() {
         </Select>
       </div>
 
-      <div className="border-t pt-4">
+      </div>
+
+      <div className="min-w-0 space-y-4">
+      <div className="border-t pt-4 lg:border-t-0 lg:pt-0">
         <h4 className="font-semibold mb-3 flex items-center gap-2">
           <Scale className="h-4 w-4" />
           SSO (Social Security) Rules
@@ -499,6 +504,8 @@ export default function PayrollStatutoryRulesPage() {
           </p>
         </div>
       </div>
+      </div>
+      </DialogBody>
 
       <DialogFooter>
         <Button type="button" variant="outline" onClick={() => {
@@ -575,7 +582,7 @@ export default function PayrollStatutoryRulesPage() {
                 Create Rule Set
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-5xl">
               <DialogHeader>
                 <DialogTitle>Create Statutory Rule Set</DialogTitle>
                 <DialogDescription>
@@ -718,7 +725,7 @@ export default function PayrollStatutoryRulesPage() {
       )}
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-5xl">
           <DialogHeader>
             <DialogTitle>Edit Statutory Rule Set</DialogTitle>
             <DialogDescription>

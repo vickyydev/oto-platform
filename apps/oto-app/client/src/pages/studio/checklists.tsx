@@ -6,7 +6,7 @@ import { LoadingScreen } from "@/components/ui/loading-spinner";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -1534,12 +1534,14 @@ export default function StudioChecklistsPage() {
       </Dialog>
 
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent className="max-w-md max-h-[90vh] h-[calc(100vh-4rem)] sm:h-auto overflow-y-auto">
+        <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>Create Checklist Template</DialogTitle>
           </DialogHeader>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="flex min-h-0 flex-1 flex-col gap-4">
+              <DialogBody className="grid gap-x-6 gap-y-4 md:grid-cols-2">
+                <div className="min-w-0 space-y-4">
               <FormField
                 control={form.control}
                 name="name"
@@ -1799,6 +1801,8 @@ export default function StudioChecklistsPage() {
                 )}
               />
 
+                </div>
+                <div className="min-w-0 space-y-4">
               <div className={`grid gap-3 ${checklistType === "checker" ? 'grid-cols-1' : 'grid-cols-2'}`}>
                 <FormField
                   control={form.control}
@@ -2319,6 +2323,9 @@ export default function StudioChecklistsPage() {
                   Add Item
                 </Button>
               </div>
+
+                </div>
+              </DialogBody>
 
               <DialogFooter className="flex-col gap-3">
                 <UploadStatusBanner 

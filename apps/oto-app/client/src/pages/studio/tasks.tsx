@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -621,13 +621,14 @@ export default function StudioTasksPage() {
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>
               {editingTask ? "Edit Task" : "Create Task"}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
+          <DialogBody className="grid gap-x-6 gap-y-4 md:grid-cols-2">
+            <div className="min-w-0 space-y-4">
             <div className="space-y-2">
               <Label htmlFor="title">Title *</Label>
               <Input
@@ -801,6 +802,8 @@ export default function StudioTasksPage() {
               />
             </div>
 
+            </div>
+            <div className="min-w-0 space-y-4">
             <div className="space-y-2">
               <Label>Branches</Label>
               <div className="border rounded-md p-3 space-y-2 max-h-40 overflow-y-auto">
@@ -958,21 +961,22 @@ export default function StudioTasksPage() {
               </div>
             )}
 
-            <div className="flex justify-end gap-2 pt-4 border-t">
-              <Button variant="outline" onClick={closeDialog}>
-                Cancel
-              </Button>
-              <Button 
-                onClick={handleSubmit}
-                disabled={createMutation.isPending || updateMutation.isPending}
-                data-testid="button-submit-task"
-              >
-                {(createMutation.isPending || updateMutation.isPending) && (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                )}
-                {editingTask ? "Update" : "Create"}
-              </Button>
             </div>
+          </DialogBody>
+          <div className="flex shrink-0 justify-end gap-2 border-t pt-4">
+            <Button variant="outline" onClick={closeDialog}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSubmit}
+              disabled={createMutation.isPending || updateMutation.isPending}
+              data-testid="button-submit-task"
+            >
+              {(createMutation.isPending || updateMutation.isPending) && (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              )}
+              {editingTask ? "Update" : "Create"}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

@@ -10,6 +10,7 @@ import {
   Dialog,
   DialogContent,
   DialogHeader,
+  DialogBody,
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
@@ -369,11 +370,12 @@ export default function UsersPage() {
           resetForm();
         }
       }}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>{editingUser ? "Edit User" : "Create New User"}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <DialogBody className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
+            <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="fullName">Full Name</Label>
               <Input
@@ -427,6 +429,8 @@ export default function UsersPage() {
                 </p>
               </div>
             )}
+            </div>
+            <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="role">Role</Label>
               <Select
@@ -497,7 +501,8 @@ export default function UsersPage() {
                 )}
               </>
             )}
-          </div>
+            </div>
+          </DialogBody>
           <DialogFooter>
             <Button
               variant="outline"

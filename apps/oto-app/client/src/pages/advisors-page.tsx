@@ -10,6 +10,7 @@ import {
   Dialog,
   DialogContent,
   DialogHeader,
+  DialogBody,
   DialogTitle,
   DialogFooter,
   DialogDescription,
@@ -530,14 +531,15 @@ export default function AdvisorsPage() {
       </Dialog>
 
       <Dialog open={isCreateDialogOpen} onOpenChange={(open) => { setIsCreateDialogOpen(open); if (!open) setSelectedPerson(null); }}>
-        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+        <DialogContent className={selectedPerson ? "max-w-md" : "max-w-3xl"}>
           <DialogHeader>
             <DialogTitle>{selectedPerson ? "Edit Advisor" : "Add New Advisor"}</DialogTitle>
             <DialogDescription>
               {selectedPerson ? "Update the advisor's details" : "Create a new advisor account"}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <DialogBody className={selectedPerson ? undefined : "grid gap-6 md:grid-cols-2"}>
+            <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="fullName">Full Name *</Label>
               <Input
@@ -605,9 +607,10 @@ export default function AdvisorsPage() {
                 Assign this advisor to a department for reporting and filtering
               </p>
             </div>
+            </div>
 
             {!selectedPerson && (
-              <div className="border-t pt-4 mt-4 space-y-4">
+              <div className="space-y-4 border-t pt-4 md:border-l md:border-t-0 md:pl-6 md:pt-0">
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="createLogin"
@@ -657,7 +660,7 @@ export default function AdvisorsPage() {
                     </div>
                     <div className="space-y-2">
                       <Label>Modules</Label>
-                      <div className="flex gap-4">
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                         {(["core", "ops", "hr", "studio", "events", "setup"] as const).map((mod) => (
                           <div key={mod} className="flex items-center space-x-2">
                             <Checkbox
@@ -723,7 +726,7 @@ export default function AdvisorsPage() {
                 )}
               </div>
             )}
-          </div>
+          </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>Cancel</Button>
             <Button 
