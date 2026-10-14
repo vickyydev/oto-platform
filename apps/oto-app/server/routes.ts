@@ -18987,17 +18987,23 @@ OTO Company Limited`,
       const maxOrder = Math.max(...allStatuses.map(s => s.sortOrder), -1);
       
       // Auto-generate value from name (lowercase, spaces to underscores)
-      const name = req.body.name || "";
-      const value = name.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
-      
-      // Check for duplicate value
-      const existingWithValue = allStatuses.find(s => s.value === value);
-      if (existingWithValue) {
-        return res.status(400).json({ message: `A status with value "${value}" already exists. Please choose a different name.` });
+      const name = typeof req.body.name === "string" ? req.body.name.trim() : "";
+      if (!name) return res.status(400).json({ message: "Enter a name for the status." });
+      if (allStatuses.some(s => s.name.trim().toLowerCase() === name.toLowerCase())) {
+        return res.status(400).json({ message: `A status named "${name}" already exists. Please choose a different name.` });
       }
-      
+      // The stored value is internal. A name with no Latin letters (Thai, for
+      // example) leaves nothing to build it from, and two different names can
+      // reduce to the same value; either way a free value is generated so the
+      // names themselves decide what is a duplicate.
+      const base = name.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "") || "status";
+      const taken = new Set(allStatuses.map(s => s.value));
+      let value = base;
+      for (let n = 2; taken.has(value); n++) value = `${base}_${n}`;
+
       const parsed = insertEventStatusSchema.safeParse({
         ...req.body,
+        name,
         tenantId,
         value,
         sortOrder: maxOrder + 1,
