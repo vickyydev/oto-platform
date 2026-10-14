@@ -39,7 +39,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, MoreHorizontal, Pencil, UserCheck, Shield, Briefcase, Search, Loader2, KeyRound, Trash2, QrCode } from "lucide-react";
+import { Plus, MoreHorizontal, Pencil, UserCheck, Shield, Briefcase, Search, Loader2, KeyRound, Trash2, QrCode, LogIn } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -52,8 +52,19 @@ import {
 } from "@/components/ui/alert-dialog";
 import { formatDate } from "@/lib/format-utils";
 import { QRCodeSVG } from "qrcode.react";
+import { useLegacyLoginOff } from "@/lib/sign-in-options";
+import { SuiteSignInDialog } from "@/components/suite-sign-in";
 
 type PersonWithAccess = Person & { accessPolicy?: AccessPolicy | null };
+
+/** `GET /api/people/:id/suite-sign-in` (SCRUM-539). */
+type AdvisorSuiteSignIn = {
+  hasLogin: boolean;
+  linked: boolean;
+  phoneE164: string | null;
+  configured: boolean;
+  legacyLogin: boolean;
+};
 
 type CreateAdvisorFormData = {
   fullName: string;
@@ -100,6 +111,10 @@ export default function AdvisorsPage() {
   const [personToDelete, setPersonToDelete] = useState<PersonWithAccess | null>(null);
   const [enrollmentAdvisor, setEnrollmentAdvisor] = useState<PersonWithAccess | null>(null);
   const [enrollmentToken, setEnrollmentToken] = useState<string | null>(null);
+  // SCRUM-539: with this app's own sign-in closed, an initial password opens
+  // nothing; the advisor gets a suite sign-in from the Core Account tab.
+  const { off: legacyOff } = useLegacyLoginOff();
+  const [suiteSignInOpen, setSuiteSignInOpen] = useState(false);
 
   const [formData, setFormData] = useState<CreateAdvisorFormData>({
     fullName: "",
@@ -123,6 +138,12 @@ export default function AdvisorsPage() {
 
   const advisors = allPeople.filter((p) => p.personType === "ADVISOR");
 
+  const suiteSignInKey = ["/api/people", selectedPerson?.id ?? "", "suite-sign-in"];
+  const { data: suiteSignIn, isLoading: suiteSignInLoading } = useQuery<AdvisorSuiteSignIn>({
+    queryKey: suiteSignInKey,
+    enabled: isAccessDialogOpen && !!selectedPerson,
+  });
+
   const { data: branches = [] } = useQuery<Branch[]>({
     queryKey: ["/api/branches"],
   });
@@ -140,10 +161,10 @@ export default function AdvisorsPage() {
         phoneNumber: data.phoneNumber,
         departmentId: data.departmentId,
         personType: "ADVISOR" as const,
-        ...(data.createLogin && data.password.length >= 6
-          ? { 
-              createLogin: true, 
-              password: data.password, 
+        ...(data.createLogin && (legacyOff || data.password.length >= 6)
+          ? {
+              createLogin: true,
+              ...(legacyOff ? {} : { password: data.password }),
               accessLevel: data.accessLevel, 
               modules: data.modules,
               branchScope: data.branchScope,
@@ -555,11 +576,13 @@ export default function AdvisorsPage() {
                 type="tel"
                 value={formData.phoneNumber || ""}
                 onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value || null })}
-                placeholder="+66812345678"
+                placeholder="081 234 5678"
                 data-testid="input-phone-number"
               />
               <p className="text-xs text-muted-foreground">
-                Used for password reset via SMS. Include country code (e.g., +66 for Thailand)
+                {legacyOff
+                  ? "The number they sign in with at the OTO launcher (Thai format accepted)."
+                  : "Used for password reset via SMS. Include country code (e.g., +66 for Thailand)"}
               </p>
             </div>
             <div className="space-y-2">
@@ -595,12 +618,14 @@ export default function AdvisorsPage() {
                   <Label htmlFor="createLogin" className="font-medium">Create Login Account</Label>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Creates a user account so this advisor can log into the system
+                  {legacyOff
+                    ? "Creates this advisor's user in the app. They sign in at the OTO launcher once you provision their suite sign-in (Manage Access, Core Account)."
+                    : "Creates a user account so this advisor can log into the system"}
                 </p>
 
                 {formData.createLogin && (
                   <div className="space-y-4 pl-6 border-l-2 border-muted">
-                    <div className="space-y-2">
+                    {!legacyOff && <div className="space-y-2">
                       <Label htmlFor="password">Initial Password *</Label>
                       <Input
                         id="password"
@@ -613,7 +638,7 @@ export default function AdvisorsPage() {
                       <p className="text-xs text-muted-foreground">
                         User will be required to change this password on first login
                       </p>
-                    </div>
+                    </div>}
                     <div className="space-y-2">
                       <Label>Role</Label>
                       <Select
@@ -708,7 +733,7 @@ export default function AdvisorsPage() {
                 updateAdvisorMutation.isPending || 
                 !formData.fullName || 
                 !formData.email ||
-                (formData.createLogin && formData.password.length < 6)
+                (formData.createLogin && !legacyOff && formData.password.length < 6)
               }
               data-testid="button-save-advisor"
             >
@@ -810,13 +835,51 @@ export default function AdvisorsPage() {
             <TabsContent value="core" className="space-y-4 pt-4">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">OTO Core Account</CardTitle>
+                  <CardTitle className="text-base">Suite sign-in</CardTitle>
                   <CardDescription>
-                    Provision a user account in OTO Core for this advisor
+                    The advisor signs in at the OTO launcher with their phone number and opens the OTO App from there.
+                    What they see stays governed by the access policy.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {selectedPerson?.accessPolicy?.coreUserId ? (
+                  {suiteSignInLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  ) : suiteSignIn?.linked ? (
+                    <div className="space-y-2" data-testid="text-advisor-suite-signin-active">
+                      <Badge variant="default" className="gap-1">
+                        <UserCheck className="h-3 w-3" />
+                        Suite sign-in active
+                      </Badge>
+                      <p className="text-sm text-muted-foreground">
+                        They sign in at the launcher{suiteSignIn.phoneE164 ? ` with ${suiteSignIn.phoneE164}` : ""}. A forgotten
+                        password is reset there ("Forgot password?").
+                      </p>
+                    </div>
+                  ) : suiteSignIn && !suiteSignIn.configured ? (
+                    <p className="text-sm text-muted-foreground" data-testid="text-advisor-suite-signin-unconfigured">
+                      This deployment cannot give suite sign-ins yet (the platform link is not configured).
+                    </p>
+                  ) : suiteSignIn ? (
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">
+                        No suite sign-in yet. One press makes it; the temporary password is shown once.
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setSuiteSignInOpen(true)}
+                        disabled={!selectedPerson?.accessPolicy}
+                        data-testid="button-advisor-suite-signin"
+                      >
+                        <LogIn className="h-4 w-4 mr-2" />
+                        Provision suite sign-in
+                      </Button>
+                      {!selectedPerson?.accessPolicy && (
+                        <p className="text-xs text-muted-foreground">Save an access policy first.</p>
+                      )}
+                    </div>
+                  ) : null}
+                  {!legacyOff && selectedPerson?.accessPolicy?.coreUserId ? (
                     <div className="space-y-3">
                       <div className="flex items-center gap-2">
                         <Badge variant="default" className="gap-1">
@@ -843,6 +906,18 @@ export default function AdvisorsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <SuiteSignInDialog
+        open={suiteSignInOpen}
+        onOpenChange={setSuiteSignInOpen}
+        personName={selectedPerson?.preferredName || selectedPerson?.fullName || ""}
+        initialPhone={selectedPerson?.phoneNumber ?? suiteSignIn?.phoneE164 ?? null}
+        endpoint={`/api/people/${selectedPerson?.id}/suite-sign-in`}
+        onProvisioned={() => {
+          queryClient.invalidateQueries({ queryKey: suiteSignInKey });
+          queryClient.invalidateQueries({ queryKey: ["/api/people"] });
+        }}
+      />
 
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <AlertDialogContent>

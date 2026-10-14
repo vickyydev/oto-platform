@@ -4,6 +4,8 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
 import { Employee, Branch, insertEmployeeSchema, EmployeeChange, ContractInstance, employeeStatuses, EmployeeAsset, Department, Role, offboardingReasonLabel } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import { useLegacyLoginOff } from "@/lib/sign-in-options";
+import { LauncherPasswordNote } from "@/components/suite-sign-in";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useForm } from "react-hook-form";
@@ -89,6 +91,9 @@ function AccessStatusSection({ employeeId, personId, employee, forceOpen }: { em
 
   const [wizardStep, setWizardStep] = useState(1);
   const [tempPassword, setTempPassword] = useState("");
+  // SCRUM-539: with this app's own sign-in closed, a password made here opens
+  // nothing: the login is made without one, and passwords live at the launcher.
+  const { off: legacyOff, launcherUrl } = useLegacyLoginOff();
   const [showPassword, setShowPassword] = useState(false);
   const [accessLevel, setAccessLevel] = useState<"STAFF" | "MANAGER" | "ADMIN">("STAFF");
   const [enableCoreModule, setEnableCoreModule] = useState(true);
@@ -262,7 +267,7 @@ function AccessStatusSection({ employeeId, personId, employee, forceOpen }: { em
     mutationFn: async () => {
       const res = await apiRequest("POST", `/api/employees/${employeeId}/enable-login`, {
         email: loginEmail,
-        password: tempPassword,
+        ...(legacyOff ? {} : { password: tempPassword }),
         accessLevel,
         enableCoreModule,
         enableHrModule,
@@ -443,6 +448,9 @@ function AccessStatusSection({ employeeId, personId, employee, forceOpen }: { em
                     <span className="font-medium">Login account linked</span>
                   </div>
                   <div className="flex flex-wrap gap-2">
+                    {legacyOff ? (
+                      <LauncherPasswordNote launcherUrl={launcherUrl} className="text-xs text-muted-foreground basis-full" />
+                    ) : (
                     <Button 
                       variant="outline" 
                       size="sm" 
@@ -453,6 +461,7 @@ function AccessStatusSection({ employeeId, personId, employee, forceOpen }: { em
                       <RefreshCw className="h-4 w-4 mr-2" />
                       Reset Password
                     </Button>
+                    )}
                     <Button 
                       variant="outline" 
                       size="sm" 
@@ -590,6 +599,9 @@ function AccessStatusSection({ employeeId, personId, employee, forceOpen }: { em
                     <div className="md:col-span-2 pt-2 border-t">
                       <p className="text-sm text-muted-foreground mb-2 pt-2">Login Actions</p>
                       <div className="flex flex-wrap gap-2">
+                        {legacyOff ? (
+                          <LauncherPasswordNote launcherUrl={launcherUrl} className="text-xs text-muted-foreground basis-full" />
+                        ) : (
                         <Button 
                           variant="outline" 
                           size="sm" 
@@ -600,6 +612,7 @@ function AccessStatusSection({ employeeId, personId, employee, forceOpen }: { em
                           <RefreshCw className="h-4 w-4 mr-2" />
                           Reset Password
                         </Button>
+                        )}
                         <Button 
                           variant="outline" 
                           size="sm" 
@@ -747,6 +760,12 @@ function AccessStatusSection({ employeeId, personId, employee, forceOpen }: { em
           
           {wizardStep === 2 && (
             <div className="space-y-4">
+              {legacyOff ? (
+                <p className="text-sm text-muted-foreground" data-testid="text-enable-login-launcher">
+                  No password is set here. Once the login exists, give them a suite sign-in from Setup &gt; Users
+                  ("Provision suite sign-in"); they sign in at the OTO launcher with their phone number.
+                </p>
+              ) : (
               <div className="space-y-2">
                 <Label>Temporary Password</Label>
                 <div className="flex gap-2">
@@ -769,6 +788,7 @@ function AccessStatusSection({ employeeId, personId, employee, forceOpen }: { em
                   User must change password on first login.
                 </p>
               </div>
+              )}
               
               <div className="flex justify-between gap-2">
                 <Button variant="outline" onClick={() => setWizardStep(1)}>
@@ -776,7 +796,7 @@ function AccessStatusSection({ employeeId, personId, employee, forceOpen }: { em
                 </Button>
                 <Button 
                   onClick={() => enableLoginMutation.mutate()} 
-                  disabled={!tempPassword || tempPassword.length < 6 || enableLoginMutation.isPending}
+                  disabled={(!legacyOff && (!tempPassword || tempPassword.length < 6)) || enableLoginMutation.isPending}
                   data-testid="button-create-login"
                 >
                   {enableLoginMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
@@ -795,11 +815,17 @@ function AccessStatusSection({ employeeId, personId, employee, forceOpen }: { em
                 </div>
                 <div className="space-y-1 text-sm">
                   <p><span className="text-muted-foreground">Email:</span> {loginEmail}</p>
-                  <p><span className="text-muted-foreground">Temp Password:</span> <code className="bg-background px-1 py-0.5 rounded">{tempPassword}</code></p>
+                  {!legacyOff && <p><span className="text-muted-foreground">Temp Password:</span> <code className="bg-background px-1 py-0.5 rounded">{tempPassword}</code></p>}
                   <p><span className="text-muted-foreground">Access Level:</span> {accessLevel}</p>
                 </div>
               </div>
               
+              {legacyOff ? (
+                <p className="text-sm" data-testid="text-enable-login-done-launcher">
+                  Next: give them a suite sign-in from Setup &gt; Users ("Provision suite sign-in"). They sign in at the OTO launcher with their phone number.
+                </p>
+              ) : (
+              <>
               <div className="flex items-center gap-2 p-3 bg-amber-50 dark:bg-amber-950 rounded-lg">
                 <AlertTriangle className="h-5 w-5 text-amber-600" />
                 <p className="text-sm">User must change password on first login.</p>
@@ -811,6 +837,8 @@ function AccessStatusSection({ employeeId, personId, employee, forceOpen }: { em
               }}>
                 Copy Password
               </Button>
+              </>
+              )}
               
               <Button variant="outline" className="w-full" onClick={() => setEnableLoginModalOpen(false)}>
                 Done

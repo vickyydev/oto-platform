@@ -37,13 +37,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, MoreHorizontal, Pencil, UserX, UserCheck, KeyRound, Search } from "lucide-react";
+import { Plus, MoreHorizontal, Pencil, UserX, UserCheck, KeyRound, Search, LogIn } from "lucide-react";
 import { formatDate } from "@/lib/format-utils";
+import { useLegacyLoginOff } from "@/lib/sign-in-options";
+import { LauncherPasswordNote, SuiteSignInDialog } from "@/components/suite-sign-in";
 
 type UserFormData = {
   email: string;
   fullName: string;
   password: string;
+  phoneNumber: string;
   role: "admin" | "manager" | "staff";
   accessScope: "all_branches" | "selected_branches";
   branchIds: string[];
@@ -56,10 +59,16 @@ export default function UsersPage() {
   const [resetPasswordUser, setResetPasswordUser] = useState<UserWithBranchAccess | null>(null);
   const [newPassword, setNewPassword] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  // SCRUM-539: with this app's own sign-in closed, passwords typed here open
+  // nothing; people get a suite sign-in instead and manage it at the launcher.
+  const { off: legacyOff, launcherUrl } = useLegacyLoginOff();
+  const [suiteSignInUser, setSuiteSignInUser] = useState<UserWithBranchAccess | null>(null);
+  const [passwordNoteUser, setPasswordNoteUser] = useState<UserWithBranchAccess | null>(null);
   const [formData, setFormData] = useState<UserFormData>({
     email: "",
     fullName: "",
     password: "",
+    phoneNumber: "",
     role: "staff",
     accessScope: "selected_branches",
     branchIds: [],
@@ -126,6 +135,7 @@ export default function UsersPage() {
       email: "",
       fullName: "",
       password: "",
+      phoneNumber: "",
       role: "staff",
       accessScope: "selected_branches",
       branchIds: [],
@@ -138,6 +148,7 @@ export default function UsersPage() {
       email: user.email,
       fullName: user.fullName,
       password: "",
+      phoneNumber: user.phoneNumber ?? "",
       role: user.role as "admin" | "manager" | "staff",
       accessScope: user.hasAllBranchesAccess ? "all_branches" : "selected_branches",
       branchIds: user.allowedBranchIds,
@@ -149,13 +160,19 @@ export default function UsersPage() {
       const updateData: Partial<UserFormData> = {
         email: formData.email,
         fullName: formData.fullName,
+        phoneNumber: formData.phoneNumber.trim(),
         role: formData.role,
         accessScope: formData.accessScope,
         branchIds: formData.branchIds,
       };
       updateUserMutation.mutate({ id: editingUser.id, data: updateData });
     } else {
-      createUserMutation.mutate(formData);
+      const { password, phoneNumber, ...rest } = formData;
+      createUserMutation.mutate({
+        ...rest,
+        ...(legacyOff ? {} : { password }),
+        ...(phoneNumber.trim() ? { phoneNumber: phoneNumber.trim() } : {}),
+      } as UserFormData);
     }
   };
 
@@ -277,9 +294,14 @@ export default function UsersPage() {
                       <Badge variant={user.isActive ? "default" : "secondary"}>
                         {user.isActive ? "Active" : "Inactive"}
                       </Badge>
-                      {user.mustChangePassword && (
+                      {!legacyOff && user.mustChangePassword && (
                         <Badge variant="outline" className="text-xs">
                           Temp Password
+                        </Badge>
+                      )}
+                      {legacyOff && (
+                        <Badge variant="outline" className="text-xs" data-testid={`badge-suite-signin-${user.id}`}>
+                          {user.platformUserId ? "Suite sign-in" : "No suite sign-in"}
                         </Badge>
                       )}
                     </div>
@@ -299,10 +321,23 @@ export default function UsersPage() {
                           <Pencil className="h-4 w-4 mr-2" />
                           Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setResetPasswordUser(user)} data-testid={`button-reset-password-${user.id}`}>
-                          <KeyRound className="h-4 w-4 mr-2" />
-                          Reset Password
-                        </DropdownMenuItem>
+                        {!user.platformUserId && !["global_admin", "operator_admin", "advisor"].includes(user.role) && (
+                          <DropdownMenuItem onClick={() => setSuiteSignInUser(user)} data-testid={`button-suite-signin-${user.id}`}>
+                            <LogIn className="h-4 w-4 mr-2" />
+                            Provision suite sign-in
+                          </DropdownMenuItem>
+                        )}
+                        {legacyOff ? (
+                          <DropdownMenuItem onClick={() => setPasswordNoteUser(user)} data-testid={`button-password-launcher-${user.id}`}>
+                            <KeyRound className="h-4 w-4 mr-2" />
+                            Password help
+                          </DropdownMenuItem>
+                        ) : (
+                          <DropdownMenuItem onClick={() => setResetPasswordUser(user)} data-testid={`button-reset-password-${user.id}`}>
+                            <KeyRound className="h-4 w-4 mr-2" />
+                            Reset Password
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem onClick={() => toggleUserActive(user)}>
                           {user.isActive ? (
                             <>
@@ -360,7 +395,23 @@ export default function UsersPage() {
                 data-testid="input-user-email"
               />
             </div>
-            {!editingUser && (
+            <div className="space-y-2">
+              <Label htmlFor="phoneNumber">Phone Number</Label>
+              <Input
+                id="phoneNumber"
+                type="tel"
+                value={formData.phoneNumber}
+                onChange={(e) => setFormData((prev) => ({ ...prev, phoneNumber: e.target.value }))}
+                placeholder="081 234 5678"
+                data-testid="input-user-phone"
+              />
+              <p className="text-xs text-muted-foreground">
+                {editingUser?.platformUserId
+                  ? "Their suite sign-in keeps the phone it was made with; this changes the number shown here."
+                  : "Optional. The number they sign in with at the OTO launcher (Thai format accepted)."}
+              </p>
+            </div>
+            {!editingUser && !legacyOff && (
               <div className="space-y-2">
                 <Label htmlFor="password">Temporary Password</Label>
                 <Input
@@ -465,6 +516,32 @@ export default function UsersPage() {
             >
               {editingUser ? "Save Changes" : "Create User"}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <SuiteSignInDialog
+        open={!!suiteSignInUser}
+        onOpenChange={(open) => { if (!open) setSuiteSignInUser(null); }}
+        personName={suiteSignInUser?.fullName ?? ""}
+        initialPhone={suiteSignInUser?.phoneNumber ?? suiteSignInUser?.phoneE164 ?? null}
+        endpoint={`/api/users/${suiteSignInUser?.id}/suite-sign-in`}
+        onProvisioned={() => queryClient.invalidateQueries({ queryKey: ["/api/users"] })}
+      />
+      <Dialog open={!!passwordNoteUser} onOpenChange={(open) => { if (!open) setPasswordNoteUser(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Password help</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 space-y-3">
+            <p className="text-sm">
+              {passwordNoteUser?.platformUserId
+                ? <>{passwordNoteUser.fullName} signs in at the OTO launcher with their phone number.</>
+                : <>{passwordNoteUser?.fullName} has no suite sign-in yet: use "Provision suite sign-in" to give them one.</>}
+            </p>
+            <LauncherPasswordNote launcherUrl={launcherUrl} />
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setPasswordNoteUser(null)}>Done</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

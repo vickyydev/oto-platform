@@ -30,6 +30,18 @@ export function readSignInOptions(body: unknown): SignInOptions | null {
 }
 
 /**
+ * SCRUM-539 — for the signed-in screens: is this app's own sign-in closed?
+ * Then every control that only ever fed it (a password typed for somebody, a
+ * reset, a change) is replaced by a pointer to the launcher. `false` while
+ * asking and when the server did not say, so a legacy deployment never loses
+ * a control it still uses.
+ */
+export function useLegacyLoginOff(): { off: boolean; launcherUrl: string | null } {
+  const options = useSignInOptions();
+  return { off: options?.legacyLogin === false, launcherUrl: options?.launcherUrl ?? null };
+}
+
+/**
  * The signed-out screens' read. A plain fetch rather than a query, because the
  * hand-off problem page renders outside the app's QueryClientProvider.
  * `undefined` while asking; `null` when the server did not say, and the

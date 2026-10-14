@@ -10,8 +10,34 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AlertCircle, KeyRound, Lock } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useLegacyLoginOff } from "@/lib/sign-in-options";
+import { LauncherPasswordNote } from "@/components/suite-sign-in";
 
+/**
+ * SCRUM-539: this page only ever fed this app's own sign-in. While that is
+ * closed it says where passwords live instead (the launcher), rather than
+ * asking for an app password nobody signing in from the launcher has.
+ */
 export default function ChangePasswordPage() {
+  const { off, launcherUrl } = useLegacyLoginOff();
+  if (off) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Change password</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <LauncherPasswordNote launcherUrl={launcherUrl} />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+  return <ChangePasswordPageForm />;
+}
+
+function ChangePasswordPageForm() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();

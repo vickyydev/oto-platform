@@ -17,6 +17,8 @@ import {
 import { Loader2, ArrowLeft, Phone, KeyRound, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { useLegacyLoginOff } from "@/lib/sign-in-options";
+import { LauncherPasswordNote } from "@/components/suite-sign-in";
 import {
   Select,
   SelectContent,
@@ -53,7 +55,31 @@ type PasswordFormData = z.infer<typeof passwordSchema>;
 
 type Step = "phone" | "otp" | "password" | "success";
 
+/**
+ * SCRUM-539: this page only ever fed this app's own sign-in. While that is
+ * closed it says where passwords live instead (the launcher), rather than
+ * asking for an app password nobody signing in from the launcher has.
+ */
 export default function ForgotPasswordPage() {
+  const { off, launcherUrl } = useLegacyLoginOff();
+  if (off) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Forgot password</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <LauncherPasswordNote launcherUrl={launcherUrl} />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+  return <ForgotPasswordPageForm />;
+}
+
+function ForgotPasswordPageForm() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [step, setStep] = useState<Step>("phone");

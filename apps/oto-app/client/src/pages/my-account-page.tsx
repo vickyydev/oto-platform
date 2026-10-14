@@ -9,6 +9,8 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useLegacyLoginOff } from "@/lib/sign-in-options";
+import { LauncherPasswordNote } from "@/components/suite-sign-in";
 
 function ProfilePhotoCapture() {
   const { user } = useAuth();
@@ -277,6 +279,9 @@ function ProfilePhotoCapture() {
 
 export default function MyAccountPage() {
   const { user } = useAuth();
+  // SCRUM-539: the password and its SMS recovery here belong to this app's own
+  // sign-in; while that is closed both live at the launcher.
+  const { off: legacyOff, launcherUrl } = useLegacyLoginOff();
 
   type EmployeeInfo = {
     linked: boolean;
@@ -383,11 +388,13 @@ export default function MyAccountPage() {
 
         <ProfilePhotoCapture />
 
-        <PhoneVerification
-          currentPhone={(user as any).phoneNumber || (user as any).phoneE164}
-          isVerified={(user as any).phoneVerified}
-          verifiedAt={(user as any).phoneVerifiedAt}
-        />
+        {!legacyOff && (
+          <PhoneVerification
+            currentPhone={(user as any).phoneNumber || (user as any).phoneE164}
+            isVerified={(user as any).phoneVerified}
+            verifiedAt={(user as any).phoneVerifiedAt}
+          />
+        )}
 
         <Card>
           <CardHeader>
@@ -395,11 +402,15 @@ export default function MyAccountPage() {
             <CardDescription>Manage your password and security settings</CardDescription>
           </CardHeader>
           <CardContent>
-            <Link href="/change-password">
-              <Button variant="outline" data-testid="button-change-password">
-                Change Password
-              </Button>
-            </Link>
+            {legacyOff ? (
+              <LauncherPasswordNote launcherUrl={launcherUrl} />
+            ) : (
+              <Link href="/change-password">
+                <Button variant="outline" data-testid="button-change-password">
+                  Change Password
+                </Button>
+              </Link>
+            )}
           </CardContent>
         </Card>
       </div>
