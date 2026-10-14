@@ -1447,7 +1447,7 @@ export default function OpsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete {deleteTarget?.type === "task" ? "Task" : "Checklist"}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{deleteTarget?.name}"? This action cannot be undone.
+              Are you sure you want to delete "{deleteTarget?.name}"? {deleteTarget?.type === "task" ? "" : "Its run history and completion evidence are deleted with it. "}This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

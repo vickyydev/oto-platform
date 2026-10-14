@@ -278,7 +278,7 @@ export default function ChecklistRunPage() {
     if (run?.status === "completed") return;
 
     if (templateItem.isCritical && currentCompleted) {
-      if (!confirm("This is a critical item. Marking as incomplete may require escalation. Continue?")) {
+      if (!confirm("This is a critical item. Mark it as not done?")) {
         return;
       }
     }

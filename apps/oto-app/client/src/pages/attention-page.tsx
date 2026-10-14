@@ -365,7 +365,7 @@ function AttentionItemCard({
                 <span className="block mt-2 text-sm font-medium">{warningReason}</span>
               )}
               <span className="block mt-2">
-                Are you sure you want to snooze this item? It may reappear during the next system check if the underlying issue is still present.
+                Are you sure you want to snooze this item? It will be hidden for 24 hours, then show again if the issue is still present.
               </span>
             </AlertDialogDescription>
           </AlertDialogHeader>

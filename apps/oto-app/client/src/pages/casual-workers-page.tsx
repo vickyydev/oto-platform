@@ -375,7 +375,7 @@ export default function CasualWorkersPage() {
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>Delete Casual Worker</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    Are you sure you want to delete {worker.nickname}? This action cannot be undone.
+                                    Are you sure you want to delete {worker.nickname}? All of their past and future shifts are removed from the schedule too. This action cannot be undone.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>

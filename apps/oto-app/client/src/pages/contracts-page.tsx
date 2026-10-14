@@ -586,7 +586,7 @@ export default function ContractsPage() {
             <AlertDialogDescription>
               This contract for{" "}
               <strong>{employeeMap.get(contractToArchive?.employeeId || "")?.fullName || "Unknown"}</strong>{" "}
-              is signed and cannot be deleted. Moving it to the Archive will remove it from the active list 
+              is signed or active and cannot be deleted. Moving it to the Archive will remove it from the active list 
               while preserving it for legal compliance purposes.
             </AlertDialogDescription>
           </AlertDialogHeader>

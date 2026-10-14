@@ -641,7 +641,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false }: B
     queryKey: ["/api/events", eventId, "beo"],
     queryFn: async () => {
       const res = await fetch(`/api/events/${eventId}/beo`, { credentials: "include" });
-      if (res.status === 401) throw new Error("Session expired. Please refresh and log in again.");
+      if (res.status === 401) throw new Error("Session expired. Open the OTO App from the launcher again to sign in.");
       if (!res.ok) throw new Error("Failed to fetch BEO data");
       return res.json();
     },
@@ -2501,7 +2501,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false }: B
                                   onCheckedChange={(v) => {
                                     if (!v) {
                                       const hasSetMenuItems = [...kidsMenu, ...adultsMenu].some(m => m.source === "set_menu");
-                                      if (hasSetMenuItems && !window.confirm("Disabling Set Menu will keep existing set-menu items in the menu. Remove them first via Reset if needed. Continue?")) {
+                                      if (hasSetMenuItems && !window.confirm("Disabling Set Menu will keep existing set-menu items in the menu. To clear them, use Reset Selections beside the parent link first; that also clears the parent's submitted choices and replaces the parent link with a new one. Continue?")) {
                                         return;
                                       }
                                       setSetMenuTemplateId("");

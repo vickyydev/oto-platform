@@ -1016,7 +1016,7 @@ function SchedulingPageInner() {
     mutationFn: async (id: string) => apiRequest("DELETE", `/api/schedule/shift-rows/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/schedule/week"] });
-      toast({ title: "Shift retired", description: "The shift row has been retired and will no longer appear on future schedules." });
+      toast({ title: "Shift retired", description: "The shift row has been retired. It no longer appears on this week or any later week; past weeks keep it." });
     },
   });
 
@@ -1979,8 +1979,6 @@ function SchedulingPageInner() {
       setTemplatePreviewLoading(false);
     }
   };
-
-  const clearViewLabel = timelineMode === "day" ? "Day" : timelineMode === "3day" ? "3 Days" : timelineMode === "month" ? "Month" : "Week";
 
   const clearWeekMutation = useMutation({
     mutationFn: async () => {
@@ -3245,7 +3243,7 @@ function SchedulingPageInner() {
                 data-testid="button-clear-week"
               >
                 <Trash2 className="h-3.5 w-3.5 mr-2" />
-                Clear {clearViewLabel}
+                Clear Week
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -5774,7 +5772,7 @@ function SchedulingPageInner() {
           <DialogHeader>
             <DialogTitle>Clear Week Schedule</DialogTitle>
             <DialogDescription>
-              Removes all assignments for <strong>one department only</strong> in the selected week. All other departments are completely unaffected. Shift row definitions and leave records are never deleted.
+              Removes all assignments for <strong>one department only</strong> in the selected week. All other departments are completely unaffected. Shift row definitions and other leave records are kept, but any day-off changes recorded for the affected people in this week are removed.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
@@ -6394,6 +6392,7 @@ function ScheduleHistoryDialog({ open, onOpenChange, branchId, onRestored }: {
     clear_week: "Week Cleared",
     overwrite_department: "Department Overwritten",
     restore_from_snapshot: "Restored from Snapshot",
+    apply_template_additive: "Template Applied (Additive)",
   };
 
   const formatWeekRange = (weekStartDate: string | null) => {

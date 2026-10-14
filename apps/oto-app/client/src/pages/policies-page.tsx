@@ -1369,7 +1369,7 @@ export default function PoliciesPage() {
           <DialogHeader>
             <DialogTitle>Publish Policy Document?</DialogTitle>
             <DialogDescription>
-              Publishing this policy will make it the active version. All new contracts will include this policy document, and employees will be required to acknowledge it when signing.
+              Publishing this policy makes it available to attach to new contracts. A contract carries one policy document: when several are published for the same branch or company, the one with the highest version number is used. Employees must acknowledge it when signing.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
