@@ -8,11 +8,13 @@ import type {
   MerchOrderLine,
   TaxConfig,
 } from '@/types';
-import { getMenuCategories } from '@/store/catalogStore';
+import { getMenuCategories, getMenuItems, getMerchItems } from '@/store/catalogStore';
 import {
   engineItemLines,
+  engineItemPromos,
   engineManualDiscount,
   enginePromo,
+  freeItemLineOf,
   engineTaxConfig,
   pricingContext,
   toBaht,
@@ -98,7 +100,7 @@ export function computeItemPromoDiscount(
   if (engineLines.length === 0) return EMPTY_RESULT;
   const totals = computeTicketCartTotals(
     engineLines,
-    promos.map(enginePromo),
+    engineItemPromos(promos, lines),
     manualDiscounts.map(engineManualDiscount),
     engineTaxConfig(options.config),
     ctx,
@@ -153,29 +155,38 @@ export interface ValidateItemPromoOptions extends ItemPromoOptions {
  * and shows the platform's reason (`pages/OrderStation.tsx`,
  * `pages/MerchStation.tsx`); a code refused here simply never goes out.
  *
- * A FREE-ITEM CODE IS REFUSED HERE, and that is this station's own rule rather
- * than the engine's. The engine resolves a free-item code against the cart line
- * the till mints for it, keyed `promo-<CODE>` (`freeItemLineId`), and an item
- * line reaches the platform under a uuid derived from its id (`platformId`,
- * lib/cartWire.ts) because `POST /sales` takes nothing else. So the platform
- * would find no such line, take nothing off, and refuse the commit against a
- * screen that had shown the item free. Refusing at the entry is the honest half
- * of that: no station shows a discount the ledger will not agree to.
+ * A FREE-ITEM CODE TAKES ONE OF ITS ITEM OFF A LINE ALREADY ON THE ORDER
+ * (SCRUM-368). The platform aims such a code at the first line holding the
+ * code's product and takes one unit off it (`promo-codes.ts`, `judge`), and this
+ * station prices it the same way (`engineItemPromos`). The code adds nothing:
+ * where no line holds the item — a free ice cream typed on the shop screen, or
+ * on an F&B order with no ice cream on it — it is refused with the platform's
+ * own words, rather than accepted for a figure the ledger would not agree to.
  */
 export function validateItemPromoCode(
   promo: Discount,
   lines: readonly (FnbOrderLine | MerchOrderLine)[],
   options: ValidateItemPromoOptions = {},
 ): PromoValidation {
-  if (promo.type === 'free_item') {
-    return {
-      ok: false,
-      reason: `Code "${promo.code}" gives a free item, which only the ticket till can put on a bill.`,
-    };
-  }
   const categories = options.categories ?? getMenuCategories();
   const ctx = pricingContext(options.mode ?? todayRateMode().mode);
   const engineLines = engineItemLines(lines, categories, ctx);
+  let freeItem: { name: string; price: number } | null | undefined;
+  if (promo.type === 'free_item') {
+    // Lines other free-item codes on the order already took their item off.
+    const taken = new Set<string>();
+    for (const applied of options.applied ?? []) {
+      const line = freeItemLineOf(applied, lines, taken);
+      if (line) taken.add(line.id);
+    }
+    const line = freeItemLineOf(promo, lines, taken);
+    if (!line) {
+      const name = freeItemName(promo) ?? 'free item';
+      return { ok: false, reason: `Code "${promo.code}" gives a free ${name}, and there is no ${name} on this order.` };
+    }
+    const item = 'menuItem' in line ? line.menuItem : line.merchItem;
+    freeItem = { name: item.name, price: Math.round((line.lineTotal * 100) / Math.max(1, line.qty)) };
+  }
   return validateEnginePromoCode(
     enginePromo(promo),
     engineLines,
@@ -184,6 +195,17 @@ export function validateItemPromoCode(
     {
       ...(options.applied ? { appliedPromos: options.applied.map(enginePromo) } : {}),
       ...(options.customerPhone ? { customerPhone: options.customerPhone } : {}),
+      ...(freeItem !== undefined ? { freeItem } : {}),
     },
   );
+}
+
+/** The name of a free-item code's item from this station's catalogue copy, or null. */
+function freeItemName(promo: Discount): string | null {
+  if (!promo.freeItemId) return null;
+  const pool =
+    promo.freeItemKind === 'merch'
+      ? getMerchItems().map((m) => ({ id: m.id, name: m.name }))
+      : getMenuItems().map((m) => ({ id: m.id, name: m.name }));
+  return pool.find((item) => item.id === promo.freeItemId)?.name ?? null;
 }

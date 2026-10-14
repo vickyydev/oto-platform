@@ -154,12 +154,19 @@ describe('validatePromoCode — the ticket till', () => {
 describe('validateItemPromoCode — the F&B and shop stations', () => {
   const options = { today: TODAY, mode: 'weekday' as const };
 
-  it('refuses a free-item code: only the ticket till can put one on a bill', () => {
-    const iceCream = code({ code: 'ICECREAM', type: 'free_item', value: 0, freeItemId: 'm-icecream' });
-    expect(validateItemPromoCode(iceCream, [fnbLine()], options)).toEqual({
+  it('a free-item code takes one of its item off a line holding it, and is refused with no such line (SCRUM-368)', () => {
+    const nuggetFree = code({ code: 'FREENUG', type: 'free_item', value: 0, freeItemId: nuggets.id });
+    // No nuggets on the order: refused in the platform's words.
+    const other = { ...nuggets, id: 'm-other', name: 'Other' };
+    expect(validateItemPromoCode(nuggetFree, [fnbLine({ menuItem: other })], options)).toEqual({
       ok: false,
-      reason: 'Code "ICECREAM" gives a free item, which only the ticket till can put on a bill.',
+      reason: `Code "FREENUG" gives a free ${nuggets.name}, and there is no ${nuggets.name} on this order.`,
     });
+    // Two nuggets at ฿120 each: accepted, and one unit comes off.
+    const lines = [fnbLine({ qty: 2, lineTotal: 240 })];
+    expect(validateItemPromoCode(nuggetFree, lines, options).ok).toBe(true);
+    const priced = computeItemPromoDiscount(lines, [], [nuggetFree], { mode: 'weekday' });
+    expect(priced.discountAmount).toBe(120);
   });
 
   it('refuses a code already on the order, whatever its case', () => {

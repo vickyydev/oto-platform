@@ -30,6 +30,7 @@ import {
   summarizeTax,
   type AppliedPromo,
   type CartAddOn,
+  type CartPromo,
   type ManualDiscount as EngineManualDiscount,
   type PackagePricingShape,
   type PricingContext,
@@ -920,6 +921,48 @@ export function engineItemLines(
 }
 
 /**
+ * The F&B or shop line a free-item code takes its item off — SCRUM-368: the
+ * first line holding the code's product that no code before it has taken, and
+ * never a prepaid line (it was paid for at the door). The platform aims the
+ * code the same way (`judge` / `promoOf`, apps/api/src/services/promo-codes.ts),
+ * so the two totals agree. Null when the order holds no such line.
+ */
+export function freeItemLineOf(
+  promo: Discount,
+  lines: readonly (FnbOrderLine | MerchOrderLine)[],
+  taken: ReadonlySet<string> = new Set(),
+): FnbOrderLine | MerchOrderLine | null {
+  if (promo.type !== 'free_item' || !promo.freeItemId) return null;
+  return (
+    lines.find((line) => {
+      if (isFnbLine(line) && line.isPrepaid === true) return false;
+      const item = isFnbLine(line) ? line.menuItem : line.merchItem;
+      return item.id === promo.freeItemId && line.qty > 0 && !taken.has(line.id);
+    }) ?? null
+  );
+}
+
+/**
+ * The codes on an F&B or shop order in the engine's terms. A free-item code is
+ * ONE UNIT of its product, aimed at the line that holds it (`CartPromo.line`),
+ * as the platform prices it; every other code is `enginePromo` as it was.
+ */
+export function engineItemPromos(
+  promos: readonly Discount[],
+  lines: readonly (FnbOrderLine | MerchOrderLine)[],
+): CartPromo[] {
+  const taken = new Set<string>();
+  return promos.map((promo) => {
+    const engine = enginePromo(promo);
+    const line = freeItemLineOf(promo, lines, taken);
+    if (!line) return engine;
+    taken.add(line.id);
+    const unit = Math.round(toSatang(line.lineTotal) / Math.max(1, line.qty));
+    return { ...engine, value: unit, freeItemId: promo.freeItemId, line: { lineId: line.id } };
+  });
+}
+
+/**
  * An F&B or shop order's totals: `OrderTotals`, plus the two names the
  * prototype's `computeFnbTotals` and `computeMerchTotals` gave the code figures,
  * which the item screens still read.
@@ -954,7 +997,7 @@ export function itemOrderTotals(
   const ctx = pricingContext(options.mode ?? todayRateMode().mode);
   const satang = computeTicketCartTotals(
     engineItemLines(lines, options.categories ?? getMenuCategories(), ctx),
-    (options.promos ?? []).map(enginePromo),
+    engineItemPromos(options.promos ?? [], lines),
     manualDiscounts.map(engineManualDiscount),
     engineTaxConfig(options.config),
     ctx,
