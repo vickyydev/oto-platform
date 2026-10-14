@@ -22581,8 +22581,10 @@ Return ONLY valid JSON, no markdown or explanation.`,
         branchIds: knowledgeFile.branchId ? [knowledgeFile.branchId] : [],
         structuredSteps,
         steps: structuredSteps.map((s: any) => s.title),
+        // An AI-written SOP waits for a manager's review before staff see it.
+        status: "draft" as const,
       };
-      
+
       const newSop = await storage.createSopArticle(sopData);
       
       res.status(201).json({
