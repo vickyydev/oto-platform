@@ -1,6 +1,13 @@
 import { Switch, Route, useLocation, Link } from 'wouter';
 import { OccupancyChip } from '@/components/shared/OccupancyChip';
-import { ThemeMenu } from '@/components/shared/ThemeMenu';
+import { ThemeMenu, ThemeMenuItems } from '@/components/shared/ThemeMenu';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { OperatorBadge } from '@/components/auth/OperatorBadge';
 import { BranchSwitcher } from '@/components/shared/BranchSwitcher';
 import { usePaymentContextLocked } from '@/pwa/openSale';
@@ -16,7 +23,17 @@ import { MobileStock } from './stock/MobileStock';
 import StationSetup from '@/pages/StationSetup';
 import logoUrl from '@/assets/logo-oto.png';
 import { getTotalUnreadCount, UnreadBadge } from './messaging/messagingUtils';
-import { Ticket, GlassWater, Baby, Users, ReceiptText, Settings, BarChart3, MessageCircle } from 'lucide-react';
+import {
+  Ticket,
+  GlassWater,
+  Baby,
+  Users,
+  ReceiptText,
+  Settings,
+  BarChart3,
+  MessageCircle,
+  MoreVertical,
+} from 'lucide-react';
 
 const TABS = [
   { href: '/', label: 'Tickets', icon: Ticket, exact: true },
@@ -27,6 +44,37 @@ const TABS = [
   { href: '/today', label: 'Today', icon: BarChart3, exact: false },
   { href: '/messages', label: 'Messages', icon: MessageCircle, exact: false },
 ];
+
+/**
+ * SCRUM-509 — the phone bar's overflow menu: the theme switches and Station
+ * setup behind one button, in the theme menu's own trigger style. Drawn below
+ * `sm:` (640px) only, where the two buttons it replaces are hidden.
+ */
+function PhoneBarMenu() {
+  const [, navigate] = useLocation();
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          title="More"
+          aria-label="Theme and station setup"
+          className="sm:hidden shrink-0 inline-flex items-center justify-center h-8 w-8 rounded-full border border-border bg-muted text-muted-foreground hover-elevate active-elevate-2"
+        >
+          <MoreVertical className="w-4 h-4" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-44">
+        <ThemeMenuItems />
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={() => navigate('/station-setup')}>
+          <Settings className="w-4 h-4" />
+          Station setup
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
 function ComingSoon({ surface }: { surface: string }) {
   return (
@@ -72,16 +120,25 @@ export function MobileShell() {
 
   return (
     <div className="h-[100dvh] flex flex-col bg-background text-foreground overflow-hidden">
-      {/* Top bar — compact: logo | occupancy | spacer | settings | operator badge */}
+      {/* Top bar — compact: logo | occupancy | park | settings | operator badge.
+          SCRUM-509 — what gives way on a narrow phone, so the Lock button is
+          always on screen: below `sm:` the theme and Station setup buttons
+          fold into one overflow menu first; then the start cluster (logo,
+          occupancy, park) yields — the park chip narrows, and what still does
+          not fit is cut at the cluster's edge, never the end cluster. The
+          logo keeps its own width. From `sm:` up the bar is as it was. */}
       {!locked && <div className="shrink-0 flex items-center gap-3 px-4 h-14 border-b bg-card/30" inert={paymentContextLocked}>
-        <Link href="/" aria-label="Oto home">
-          <img src={logoUrl} alt="Oto" className="h-7 w-auto cursor-pointer" />
-        </Link>
-        <OccupancyChip />
-        <BranchSwitcher />
-        <div className="flex-1" />
-        <ThemeMenu />
-        <Link href="/station-setup" aria-label="Station setup">
+        <div className="flex-1 min-w-0 flex items-center gap-3 overflow-hidden">
+          <Link href="/" aria-label="Oto home" className="shrink-0">
+            <img src={logoUrl} alt="Oto" className="h-7 w-auto max-w-none cursor-pointer" />
+          </Link>
+          <OccupancyChip />
+          <div className="min-w-0 flex">
+            <BranchSwitcher />
+          </div>
+        </div>
+        <ThemeMenu triggerClassName="hidden sm:inline-flex shrink-0" />
+        <Link href="/station-setup" aria-label="Station setup" className="hidden sm:inline-flex shrink-0">
           <button
             type="button"
             title="Station setup"
@@ -90,6 +147,7 @@ export function MobileShell() {
             <Settings className="w-5 h-5" />
           </button>
         </Link>
+        <PhoneBarMenu />
         <OperatorBadge />
       </div>}
 

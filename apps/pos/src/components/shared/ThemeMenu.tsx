@@ -17,10 +17,13 @@ interface ThemeMenuProps {
   triggerClassName?: string;
 }
 
-// Single compact trigger that opens a menu holding both surface theme controls
-// (Staff + Display). Shared by the iPad station header and the mobile shell so
-// the two surfaces stay in sync and we avoid duplicating the toggle wiring.
-export function ThemeMenu({ triggerClassName }: ThemeMenuProps) {
+/**
+ * The theme controls themselves: the Staff and Display switches and the note
+ * under them. Shared by `ThemeMenu`'s own menu and the phone bar's overflow
+ * menu (SCRUM-509), which folds the theme and Station setup into one button on
+ * a narrow phone so the Lock button always stays on screen.
+ */
+export function ThemeMenuItems() {
   // Independent manual theme switches: one for the staff screens, one for the
   // customer-facing display. Both default to light and reset on reload.
   const [staffTheme, setStaffTheme] = useStaffTheme();
@@ -40,6 +43,47 @@ export function ThemeMenu({ triggerClassName }: ThemeMenuProps) {
   };
 
   return (
+    <>
+      <DropdownMenuLabel>Theme</DropdownMenuLabel>
+      {/* Keep the menu open while toggling so staff can flip both surfaces
+          in one pass; each control still flips only its own surface. */}
+      <DropdownMenuItem
+        onSelect={(e) => e.preventDefault()}
+        className="p-0 focus:bg-transparent"
+      >
+        <ThemeToggle
+          theme={staffTheme}
+          onToggle={handleStaffToggle}
+          label="Staff"
+          className="w-full justify-start"
+        />
+      </DropdownMenuItem>
+      <DropdownMenuItem
+        onSelect={(e) => e.preventDefault()}
+        className="p-0 focus:bg-transparent"
+      >
+        <ThemeToggle
+          theme={customerTheme}
+          onToggle={handleCustomerToggle}
+          label="Display"
+          className="w-full justify-start"
+        />
+      </DropdownMenuItem>
+      {/* SCRUM-238: `setOperatorThemePref` writes an in-memory map and no
+          route stores it, so the choice cannot outlive the tab. Said here
+          rather than left for staff to discover on the next reload. */}
+      <p className="px-2 py-1.5 text-[11px] leading-snug text-muted-foreground">
+        This device only, until reload (SCRUM-238).
+      </p>
+    </>
+  );
+}
+
+// Single compact trigger that opens a menu holding both surface theme controls
+// (Staff + Display). Shared by the iPad station header and the mobile shell so
+// the two surfaces stay in sync and we avoid duplicating the toggle wiring.
+export function ThemeMenu({ triggerClassName }: ThemeMenuProps) {
+  return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
@@ -55,37 +99,7 @@ export function ThemeMenu({ triggerClassName }: ThemeMenuProps) {
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-44">
-        <DropdownMenuLabel>Theme</DropdownMenuLabel>
-        {/* Keep the menu open while toggling so staff can flip both surfaces
-            in one pass; each control still flips only its own surface. */}
-        <DropdownMenuItem
-          onSelect={(e) => e.preventDefault()}
-          className="p-0 focus:bg-transparent"
-        >
-          <ThemeToggle
-            theme={staffTheme}
-            onToggle={handleStaffToggle}
-            label="Staff"
-            className="w-full justify-start"
-          />
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onSelect={(e) => e.preventDefault()}
-          className="p-0 focus:bg-transparent"
-        >
-          <ThemeToggle
-            theme={customerTheme}
-            onToggle={handleCustomerToggle}
-            label="Display"
-            className="w-full justify-start"
-          />
-        </DropdownMenuItem>
-        {/* SCRUM-238: `setOperatorThemePref` writes an in-memory map and no
-            route stores it, so the choice cannot outlive the tab. Said here
-            rather than left for staff to discover on the next reload. */}
-        <p className="px-2 py-1.5 text-[11px] leading-snug text-muted-foreground">
-          This device only, until reload (SCRUM-238).
-        </p>
+        <ThemeMenuItems />
       </DropdownMenuContent>
     </DropdownMenu>
   );

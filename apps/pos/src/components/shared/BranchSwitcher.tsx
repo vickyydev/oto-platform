@@ -21,6 +21,11 @@ import { useBranch } from '@/branch/BranchContext';
  * the name is never narrower than that line (`md:min-w-[110px]`): where the
  * till header runs short of room (an iPad upright) the chip is no narrower
  * than it was before, and both parks still read in full on two lines.
+ *
+ * SCRUM-509 — the chip may narrow below its name (`min-w-0`), cutting the name
+ * shorter, where its row gives it less room than that: the phone bar does, so
+ * the Lock button at the bar's end stays on screen. The till header keeps each
+ * cluster at its content width (SCRUM-505), so there it never narrows.
  */
 const BRANCH_NAME_CLASS =
   'truncate max-w-[110px] md:line-clamp-2 md:min-w-[110px] md:max-w-[120px] md:whitespace-normal md:break-words md:text-left md:leading-tight';
@@ -47,7 +52,7 @@ export function BranchSwitcher() {
 
   if (branches.length <= 1) {
     return (
-      <span className="flex items-center gap-1.5 text-xs text-muted-foreground px-2 h-8">
+      <span className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground px-2 h-8">
         <Building2 className="w-3.5 h-3.5 shrink-0" />
         <span className={BRANCH_NAME_CLASS} title={branch.name}>{branch.name}</span>
       </span>
@@ -55,11 +60,11 @@ export function BranchSwitcher() {
   }
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="relative min-w-0">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-1.5 text-xs font-medium rounded-md px-2 h-8 bg-muted/60 hover:bg-muted transition-colors text-foreground"
+        className="flex min-w-0 max-w-full items-center gap-1.5 text-xs font-medium rounded-md px-2 h-8 bg-muted/60 hover:bg-muted transition-colors text-foreground"
         title="Switch branch"
       >
         <Building2 className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />

@@ -69,18 +69,33 @@ function nameOf(el: Element): string {
   return (label || text || el.tagName.toLowerCase()).slice(0, 40);
 }
 
-/** The box an element paints: its own, grown by any descendant that spills out of it. */
+/**
+ * The box an element paints: its own, grown by any descendant that spills out
+ * of it — unless the element clips its overflow, when nothing past its own box
+ * is painted (SCRUM-509: the phone bar's start cluster cuts what does not fit).
+ */
 function paintedBox(el: Element, name: string): ControlBox {
   const rects = [el, ...Array.from(el.querySelectorAll('*'))]
     .map((e) => e.getBoundingClientRect())
     .filter((r) => r.width > 0 && r.height > 0);
-  return {
+  const box = {
     name,
     left: Math.min(...rects.map((r) => r.left)),
     right: Math.max(...rects.map((r) => r.right)),
     top: Math.min(...rects.map((r) => r.top)),
     bottom: Math.max(...rects.map((r) => r.bottom)),
   };
+  const style = getComputedStyle(el);
+  const own = el.getBoundingClientRect();
+  if (style.overflowX !== 'visible') {
+    box.left = Math.max(box.left, own.left);
+    box.right = Math.min(box.right, own.right);
+  }
+  if (style.overflowY !== 'visible') {
+    box.top = Math.max(box.top, own.top);
+    box.bottom = Math.min(box.bottom, own.bottom);
+  }
+  return box;
 }
 
 function ownBox(el: Element, name: string): ControlBox {

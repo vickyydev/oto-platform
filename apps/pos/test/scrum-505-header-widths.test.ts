@@ -33,14 +33,14 @@ import type { ControlBox, HeaderReading } from './support/header-harness/measure
  *  - the park's name is whole on two lines from 768px (SCRUM-443) and on its
  *    one line in the phone bar.
  *
- * THE PHONE BAR'S OWN WIDTH, recorded rather than asserted: at 360 and 400px
- * the phone top bar (`MobileShell`, untouched here) is wider than the phone —
- * 501px with a live count and Som, 601px with staging's "no gate" and Khun
- * Anan — and the shell's `overflow-hidden` cuts its end off: the lock button
- * with Som; the settings button as well with staging's content, and at 360
- * the theme button too. Nothing overlaps. The prototype's own phone bar does
- * the same at both widths (its lock button lies past the edge), so it is a
- * rule of its own to make, not part of this fix.
+ * THE PHONE BAR'S OWN WIDTH (SCRUM-509): at 360 and 400px the phone top bar
+ * (`MobileShell`) used to be wider than the phone — 501px with a live count
+ * and Som, 601px with staging's "no gate" and Khun Anan — and the shell's
+ * `overflow-hidden` cut its end off, the Lock button first. The rule adopted
+ * on 14 October: on a narrow phone the theme and Station setup buttons fold
+ * into one overflow menu first, and the Lock button always stays on screen;
+ * the start cluster (logo, occupancy, park) gives way instead, and the logo
+ * keeps its width. Asserted below at both phone widths.
  */
 
 const WIDTHS = [360, 400, 768, 790, 820, 900, 1024, 1280, 1600] as const;
@@ -154,6 +154,18 @@ describe.skipIf(!browser)('SCRUM-505 — the header at nine widths', () => {
             expect(r.chip.text).toBe(PARK);
             expect(r.chip.lines).toBe(1);
             expect(r.row.height).toBeCloseTo(56, 0);
+            // SCRUM-509 — nothing drawn past the edge, the Lock button and the
+            // overflow menu on screen, the theme and settings buttons folded
+            // into that menu, and the logo at its own width.
+            expect(r.outside).toEqual([]);
+            expect(r.row.scrollWidth).toBeLessThanOrEqual(r.row.width + 0.5);
+            const lock = named(r, 'Lock screen')!;
+            expect(lock).toBeDefined();
+            expect(lock.right).toBeLessThanOrEqual(width + 0.5);
+            expect(named(r, 'Theme and station setup')).toBeDefined();
+            expect(named(r, 'Theme settings')).toBeUndefined();
+            expect(named(r, 'Station setup')).toBeUndefined();
+            expect(r.logo.width).toBeGreaterThanOrEqual(r.logo.natural - 0.5);
             return;
           }
 
