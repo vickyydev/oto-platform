@@ -1557,25 +1557,47 @@ export async function registerRoutes(
    */
 
   /**
-   * The user an employee delete takes with it, found the way that delete has
-   * always found it: by the email of the employee's person record, or — with
-   * no person record linked — by the employee's own email when a person
-   * carries it.
+   * The login a person delete takes with it (SCRUM-547): the one the person's
+   * access policy links (`core_user_id`, written at enable-login) when that
+   * link names a user; only with no such link, the user matched by the
+   * person's email — so the login that leaves is the one actually linked, and
+   * an email-matched stranger is never taken in its place.
    */
-  const userLeavingWithEmployee = async (employee: { personId: string | null; email: string | null }) => {
+  const userLeavingWithPerson = async (person: { id: string; email: string | null }) => {
+    const policy = await storage.getAccessPolicy(person.id);
+    if (policy?.coreUserId) {
+      const linked = await storage.getUser(policy.coreUserId);
+      if (linked) return linked;
+    }
+    return person.email ? storage.getUserByEmail(person.email) : undefined;
+  };
+
+  /**
+   * The user an employee delete takes with it (SCRUM-547): the login the
+   * employee row links (`user_id`) first; then the one the person record's
+   * policy links; and only with neither link, the user matched by the email
+   * of the employee's person record — or, with no person record linked, by
+   * the employee's own email when a person carries it.
+   */
+  const userLeavingWithEmployee = async (employee: { userId?: string | null; personId: string | null; email: string | null }) => {
+    if (employee.userId) {
+      const linked = await storage.getUser(employee.userId);
+      if (linked) return linked;
+    }
     if (employee.personId) {
       const person = await storage.getPerson(employee.personId);
-      return person?.email ? storage.getUserByEmail(person.email) : undefined;
+      return person ? userLeavingWithPerson(person) : undefined;
     }
-    if (employee.email && (await storage.getPersonByEmail(employee.email))) {
-      return storage.getUserByEmail(employee.email);
+    if (employee.email) {
+      const person = await storage.getPersonByEmail(employee.email);
+      if (person) return userLeavingWithPerson(person);
     }
     return undefined;
   };
 
   /** What an employee delete takes with it: the person record and the login (SCRUM-542). */
   const employeeDeletionInput = async (
-    employee: { id: string; personId: string | null; email: string | null },
+    employee: { id: string; userId?: string | null; personId: string | null; email: string | null },
     tenantId: string,
   ) => {
     const personId = employee.personId
@@ -1631,7 +1653,7 @@ export async function registerRoutes(
    * employee doors answer the same, naming which, and nothing is written.
    */
   const employeeDeleteOutsideParkGroup = async (
-    employee: { tenantId: string; personId: string | null; email: string | null },
+    employee: { tenantId: string; userId?: string | null; personId: string | null; email: string | null },
     tenantId: string,
   ): Promise<{ message: string } | null> => {
     if (employee.tenantId !== tenantId) return { message: "Employee not found" };
@@ -14107,9 +14129,10 @@ OTO Company Limited`,
       // One transaction, checked before anything is written (SCRUM-542): a
       // person with an employee record, attendance or clock-ins is refused in
       // words naming them; otherwise the person, their access policy and the
-      // login matched by email (through the one gate every user delete uses)
-      // go together, or nothing does.
-      const user = await storage.getUserByEmail(person.email);
+      // login the policy links, or with no link the one matched by email
+      // (SCRUM-547; through the one gate every user delete uses) go
+      // together, or nothing does.
+      const user = await userLeavingWithPerson(person);
       const outcome = await deletePersonWhole(pool, { personId: id, leavingUserId: user?.id ?? null });
       if (!outcome.deleted) {
         const { deleted: _deleted, status, ...body } = outcome;

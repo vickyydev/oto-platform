@@ -14,7 +14,8 @@
 //      login deleted first is back (one transaction). The bulk door carries
 //      each refusal's words. SCRUM-547: a login linked the way enable-login
 //      links it goes with the employee; what the employee keeps is named
-//      before the login gate, whose platform-linked refusal comes last.
+//      before the login gate, whose platform-linked refusal comes last; the
+//      login that leaves is the LINKED one, never an email-matched stranger.
 //   2. Branch delete: a branch with employees is refused naming them; one
 //      still used by something else is refused and its rota is still there
 //      (one transaction); one with only a rota goes, rota and all.
@@ -400,6 +401,23 @@ try {
     assert.ok(await exists("users", userId));
     assert.deepEqual(await q("select user_id from employees where id = $1", [id]), [{ user_id: userId }]);
     assert.deepEqual(await q("select core_user_id from access_policies where person_id = $1", [person]), [{ core_user_id: userId }]);
+  });
+
+  await check("SCRUM-547: the LINKED login leaves with the employee, and a stranger matching the person's email is untouched", async () => {
+    // The person's email matches one user; enable-login made the employee's
+    // login under a different email and linked it.
+    const { email, userId: stranger, person } = await loginAndPerson(A, "linked-other");
+    const linkedEmail = `zz-m1-linked-own-${randomUUID().slice(0, 8)}@example.com`;
+    const linkedUser = await user(A.tenant, "staff", linkedEmail, null);
+    const id = await employee(A, A.x, "linked-other", { email, person_id: person, user_id: linkedUser });
+    await q("update access_policies set core_user_id = $2 where person_id = $1", [person, linkedUser]);
+    const res = await call("DELETE", `/api/employees/${id}`, cookie.a);
+    assert.equal(res.status, 204, show(res));
+    assert.ok(!(await exists("employees", id)));
+    assert.ok(!(await exists("people", person)));
+    assert.ok(!(await exists("users", linkedUser)), "the linked login is gone, not orphaned");
+    assert.ok(await exists("users", stranger), "the email-matched stranger is untouched");
+    assert.equal(await count("select count(*) as n from user_branch_access where user_id = $1", [stranger]), 1);
   });
 
   await check("SCRUM-547: a platform-linked login is refused with the deactivate words only when nothing else blocks", async () => {
