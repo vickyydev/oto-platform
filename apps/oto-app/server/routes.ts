@@ -9964,7 +9964,7 @@ OTO Company Limited`,
           livenessScore,
           message: enrolledEmployees.length === 0 
             ? "No employees enrolled for face recognition" 
-            : "No matching face found. Please use PIN entry." 
+            : "No matching face found. Please clock in with your phone number." 
         });
       }
 
@@ -10919,7 +10919,8 @@ OTO Company Limited`,
   // contract are different acts and this change only does the second — an
   // older bundle that sent a bare PIN now gets a 400, not a clock-in, so this
   // is NOT compatibility with anything in the field. Delete it when the PIN
-  // decision below is settled; SCRUM-243 tracks that.
+  // decision below is settled; SCRUM-243 tracks that. The employee editor no
+  // longer sets PINs (SCRUM-543): the kiosk has no PIN entry to use one.
   //
   // A PIN is checked against a named employee. It used to be looked up: the
   // digest of whatever PIN arrived was matched across the whole employee table,

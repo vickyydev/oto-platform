@@ -13,9 +13,9 @@
  * While it is off the face road stands down at every door, before it reads or
  * writes anything about a person:
  *
- *  - `POST /api/kiosk/identify-face` answers the app's own "no match, use PIN"
- *    reply without calling any matcher (not the stand-in, not liveness), so
- *    the tablet falls to its existing PIN and phone fallback;
+ *  - `POST /api/kiosk/identify-face` answers the app's own "no match" reply
+ *    without calling any matcher (not the stand-in, not liveness), so the
+ *    tablet falls to its phone fallback (it has no PIN entry, SCRUM-543);
  *  - the doors that write a time event by the face road — `/api/kiosk/clock`,
  *    which takes an employee id and a confidence score from the tablet and
  *    matches nothing on the server, its three follow-ups
@@ -40,25 +40,26 @@ export function faceClockInOn(env: NodeJS.ProcessEnv = process.env): boolean {
 /**
  * What `identify-face` answers while face is off: the app's own reply for a
  * face it could not match (`server/routes.ts`, "No matching face found. Please
- * use PIN entry."), which the tablet already turns into its PIN fallback.
+ * clock in with your phone number."), which the tablet turns into its phone
+ * fallback.
  */
 export const FACE_OFF_NO_MATCH = {
   success: true,
   matched: false,
   confidence: 0,
-  message: "No matching face found. Please use PIN entry.",
+  message: "No matching face found. Please clock in with your phone number.",
 } as const;
 
 /** What a face-road clock door answers while face is off. Nothing is read or written. */
 export const FACE_CLOCK_OFF_REFUSAL = {
   success: false,
   reason: "face_off",
-  message: "Face clock-in is switched off. Please use your PIN or phone number.",
+  message: "Face clock-in is switched off. Please clock in with your phone number.",
 } as const;
 
 /** What an enrolment door answers while face is off. Nothing is read or written. */
 export const FACE_ENROLMENT_OFF_REFUSAL = {
   success: false,
   reason: "face_off",
-  message: "Face clock-in is switched off, so faces are not enrolled. Staff clock in with their PIN or phone number.",
+  message: "Face clock-in is switched off, so faces are not enrolled. Staff clock in with their phone number on the kiosk.",
 } as const;

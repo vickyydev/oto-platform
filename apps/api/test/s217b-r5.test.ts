@@ -205,10 +205,10 @@ describe('C. face clock-in off, meaning off (H13)', () => {
   });
 
   it('identify-face answers the app’s own no-match words while off — after the kiosk credential, before liveness, the enrolled list and the matcher', () => {
-    expect(rules.FACE_OFF_NO_MATCH).toEqual({ success: true, matched: false, confidence: 0, message: 'No matching face found. Please use PIN entry.' });
+    expect(rules.FACE_OFF_NO_MATCH).toEqual({ success: true, matched: false, confidence: 0, message: 'No matching face found. Please clock in with your phone number.' });
     const routes = routesText();
-    // The app's own sentence, which the tablet turns into its PIN fallback.
-    expect(routes).toMatch(/: "No matching face found\. Please use PIN entry\."/);
+    // The app's own sentence, which the tablet turns into its phone fallback.
+    expect(routes).toMatch(/: "No matching face found\. Please clock in with your phone number\."/);
     const body = route(routes, 'post', '/api/kiosk/identify-face');
     const off = body.indexOf('if (!faceClockInOn()) {');
     expect(off).toBeGreaterThan(body.indexOf('resolveKioskDevice(deviceSecret)'));

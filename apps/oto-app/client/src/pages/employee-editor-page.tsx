@@ -1780,7 +1780,6 @@ function CollapsibleSection({
 
 function TimekeepingSection({ employeeId, canEdit, forceOpen }: { employeeId: string; canEdit: boolean; forceOpen?: boolean }) {
   const { toast } = useToast();
-  const [pinValue, setPinValue] = useState("");
   const [qrDialogOpen, setQrDialogOpen] = useState(false);
   const [enrollmentToken, setEnrollmentToken] = useState<string | null>(null);
 
@@ -1822,35 +1821,6 @@ function TimekeepingSection({ employeeId, canEdit, forceOpen }: { employeeId: st
       );
       if (!res.ok) throw new Error("Failed to fetch enrollment logs");
       return res.json();
-    },
-  });
-
-  const setPinMutation = useMutation({
-    mutationFn: async (pin: string) => {
-      const res = await apiRequest("POST", `/api/employees/${employeeId}/pin`, { pin });
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/employees", employeeId, "timekeeping-status"] });
-      toast({ title: "PIN set", description: "Timeclock PIN has been set successfully." });
-      setPinValue("");
-    },
-    onError: (error: any) => {
-      toast({ title: "Error", description: error.message || "Failed to set PIN.", variant: "destructive" });
-    },
-  });
-
-  const resetPinMutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest("DELETE", `/api/employees/${employeeId}/pin`);
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/employees", employeeId, "timekeeping-status"] });
-      toast({ title: "PIN reset", description: "Timeclock PIN has been cleared." });
-    },
-    onError: (error: any) => {
-      toast({ title: "Error", description: error.message || "Failed to reset PIN.", variant: "destructive" });
     },
   });
 
@@ -1903,7 +1873,7 @@ function TimekeepingSection({ employeeId, canEdit, forceOpen }: { employeeId: st
     <>
       <CollapsibleSection
         title="Enroll Face"
-        description="Face enrollment, PIN settings, and clock events"
+        description="Face enrollment and clock events"
         icon={Fingerprint}
         defaultOpen={false}
         forceOpen={forceOpen}
@@ -1958,61 +1928,6 @@ function TimekeepingSection({ employeeId, canEdit, forceOpen }: { employeeId: st
                     <RefreshCw className="mr-2 h-4 w-4" />
                     {resetFaceEnrollmentMutation.isPending ? "Resetting..." : "Reset Face"}
                   </Button>
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-3">
-              <h4 className="text-sm font-medium">Timeclock PIN</h4>
-              <div className="flex items-center gap-3">
-                <Badge 
-                  variant={status?.hasPinSet ? "default" : "secondary"}
-                  data-testid="badge-pin-status"
-                >
-                  {status?.hasPinSet ? (
-                    <><CheckCircle className="mr-1 h-3 w-3" /> PIN set</>
-                  ) : (
-                    <><XCircle className="mr-1 h-3 w-3" /> No PIN</>
-                  )}
-                </Badge>
-                {status?.pinUsageCount30d && status.pinUsageCount30d > 10 && (
-                  <Badge variant="outline" className="text-amber-600 border-amber-500/50">
-                    {status.pinUsageCount30d} PIN uses (30d)
-                  </Badge>
-                )}
-              </div>
-              {canEdit && (
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="password"
-                    placeholder="4-8 digit PIN"
-                    value={pinValue}
-                    onChange={(e) => setPinValue(e.target.value.replace(/\D/g, "").slice(0, 8))}
-                    className="w-32"
-                    data-testid="input-new-pin"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPinMutation.mutate(pinValue)}
-                    disabled={pinValue.length < 4 || setPinMutation.isPending}
-                    data-testid="button-set-pin"
-                  >
-                    Set PIN
-                  </Button>
-                  {status?.hasPinSet && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => resetPinMutation.mutate()}
-                      disabled={resetPinMutation.isPending}
-                      data-testid="button-reset-pin"
-                    >
-                      Reset
-                    </Button>
-                  )}
                 </div>
               )}
             </div>

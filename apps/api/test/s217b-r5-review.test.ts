@@ -768,7 +768,7 @@ describe.skipIf(!HAS_APP_RUNTIME)('B to E. over HTTP against the app’s routes'
       body: { faceImageBase64: 'zz', faceFramesBase64: ['zz1', 'zz2', 'zz3', 'zz4', 'zz5'], deviceSecret },
     });
     expect(identify.status, identify.text).toBe(200);
-    expect(identify.body).toEqual({ success: true, matched: false, confidence: 0, message: 'No matching face found. Please use PIN entry.' });
+    expect(identify.body).toEqual({ success: true, matched: false, confidence: 0, message: 'No matching face found. Please clock in with your phone number.' });
     for (const body of [
       { employeeId: enrolled, confidenceScore: 99.9, livenessScore: 99, deviceSecret, authMethod: 'FACE', method: 'FACE' },
       { employeeId: enrolled, deviceSecret },
