@@ -80,7 +80,7 @@ const SheetHeader = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      "flex flex-col space-y-2 text-center sm:text-left",
+      "flex shrink-0 flex-col space-y-2 text-center sm:text-left",
       className
     )}
     {...props}
@@ -88,13 +88,33 @@ const SheetHeader = ({
 )
 SheetHeader.displayName = "SheetHeader"
 
+/**
+ * The scrolling middle of a long sheet. Use it between SheetHeader and
+ * SheetFooter inside a SheetContent that is `flex flex-col gap-0
+ * overflow-hidden`: the body scrolls on its own while the header and footer
+ * stay pinned. Same idea as DialogBody in dialog.tsx.
+ */
+const SheetBody = ({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) => (
+  <div
+    className={cn(
+      "-mx-6 min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6",
+      className
+    )}
+    {...props}
+  />
+)
+SheetBody.displayName = "SheetBody"
+
 const SheetFooter = ({
   className,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      "flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2",
+      "flex shrink-0 flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2",
       className
     )}
     {...props}
@@ -134,6 +154,7 @@ export {
   SheetClose,
   SheetContent,
   SheetHeader,
+  SheetBody,
   SheetFooter,
   SheetTitle,
   SheetDescription,

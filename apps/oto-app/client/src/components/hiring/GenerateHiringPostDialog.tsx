@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogBody,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -196,7 +197,7 @@ export function GenerateHiringPostDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ImageIcon className="w-5 h-5" />
@@ -204,7 +205,7 @@ export function GenerateHiringPostDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <DialogBody className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-4">
             <div>
               <Label className="text-sm font-medium">Template Style</Label>
@@ -356,7 +357,7 @@ export function GenerateHiringPostDialog({
               {ASPECT_RATIO_LABELS[selectedRatio].desc}
             </Badge>
           </div>
-        </div>
+        </DialogBody>
 
         <div style={{ position: "absolute", left: "-9999px", top: "-9999px" }}>
           <div ref={exportRef}>

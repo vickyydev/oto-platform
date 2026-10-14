@@ -25,8 +25,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody } from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -522,11 +521,11 @@ export default function AskOtoPage() {
       </div>
 
       <Dialog open={!!selectedArticle} onOpenChange={(open) => !open && setSelectedArticle(null)}>
-        <DialogContent className="max-w-2xl max-h-[80vh]">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>{articleDetail?.title || selectedArticle?.title}</DialogTitle>
           </DialogHeader>
-          <ScrollArea className="max-h-[60vh]">
+          <DialogBody>
             {articleDetail ? (
               <div 
                 className="prose prose-sm dark:prose-invert max-w-none p-4"
@@ -537,7 +536,7 @@ export default function AskOtoPage() {
                 <LoadingSpinner />
               </div>
             )}
-          </ScrollArea>
+          </DialogBody>
         </DialogContent>
       </Dialog>
     </>

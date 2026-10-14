@@ -8,6 +8,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogBody,
 } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
@@ -1671,12 +1672,12 @@ export default function OpsPage() {
           });
         }
       }}>
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>{editingAnnouncementId ? "Edit Announcement" : "New Announcement"}</DialogTitle>
             <DialogDescription>Create announcements visible to your team on the Today page.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-2">
+          <DialogBody className="space-y-4 py-2">
             <div className="space-y-2">
               <Label>Title</Label>
               <Input
@@ -1807,7 +1808,7 @@ export default function OpsPage() {
                 </div>
               )}
             </div>
-          </div>
+          </DialogBody>
           <DialogFooter>
             <Button
               onClick={() => {

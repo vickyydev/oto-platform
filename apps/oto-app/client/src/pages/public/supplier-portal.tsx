@@ -13,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogBody,
 } from "@/components/ui/dialog";
 import { 
   Wrench, 
@@ -346,7 +347,7 @@ export default function SupplierPortalPage() {
       </main>
       
       <Dialog open={!!selectedReport} onOpenChange={(o) => !o && setSelectedReport(null)}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" data-testid="dialog-supplier-report-detail">
+        <DialogContent className="max-w-lg" data-testid="dialog-supplier-report-detail">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Wrench className="w-5 h-5" />
@@ -354,6 +355,7 @@ export default function SupplierPortalPage() {
             </DialogTitle>
           </DialogHeader>
           
+          <DialogBody>
           {loadingDetails ? (
             <div className="flex justify-center py-8">
               <LoadingSpinner />
@@ -485,6 +487,7 @@ export default function SupplierPortalPage() {
               </div>
             </div>
           )}
+          </DialogBody>
           
           {details?.status !== 'done' && (
             <DialogFooter className="flex-col gap-2 sm:flex-row">

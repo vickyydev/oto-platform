@@ -12,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogBody,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -364,11 +365,11 @@ export function SetMenuTemplatesSettings() {
       </Card>
 
       <Dialog open={showDialog} onOpenChange={(open) => { if (!open) setShowDialog(false); }}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{editingTemplate ? "Edit Set Menu Template" : "New Set Menu Template"}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-2">
+          <DialogBody className="space-y-4 py-2">
             <div className="space-y-2">
               <Label>Template Name *</Label>
               <Input
@@ -418,7 +419,7 @@ export function SetMenuTemplatesSettings() {
                 </Button>
               </div>
             </div>
-          </div>
+          </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDialog(false)}>
               Cancel

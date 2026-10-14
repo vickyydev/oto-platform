@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { LoadingScreen } from "@/components/ui/loading-spinner";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogBody } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -968,7 +968,7 @@ export default function TodayPage() {
 
       {/* Studio Event Check-in Dialog */}
       <Dialog open={!!checkinEvent} onOpenChange={(open) => !open && setCheckinEvent(null)}>
-        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{checkinEvent?.title}</DialogTitle>
             <DialogDescription>
@@ -980,6 +980,7 @@ export default function TodayPage() {
             </DialogDescription>
           </DialogHeader>
 
+          <DialogBody>
           {loadingCheckin ? (
             <div className="flex justify-center py-8">
               <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
@@ -1175,8 +1176,9 @@ export default function TodayPage() {
               </div>
             </div>
           )}
+          </DialogBody>
 
-          <div className="flex justify-end mt-4">
+          <div className="flex shrink-0 justify-end mt-4">
             <Button variant="outline" onClick={() => setCheckinEvent(null)} data-testid="button-close-checkin">
               Close
             </Button>

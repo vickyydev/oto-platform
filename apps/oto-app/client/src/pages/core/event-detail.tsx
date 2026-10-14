@@ -23,6 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogBody,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -218,11 +219,12 @@ function CreateTaskDialog({ eventId, eventDate, onCreated }: { eventId: string; 
           Add Task
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
+      <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>Add Task for Event</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col gap-4">
+          <DialogBody className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="title">Task Title</Label>
             <Input
@@ -304,9 +306,10 @@ function CreateTaskDialog({ eventId, eventDate, onCreated }: { eventId: string; 
               />
             </div>
           </div>
+          </DialogBody>
           <Button 
             type="submit" 
-            className="w-full" 
+            className="w-full shrink-0" 
             disabled={!title.trim() || createMutation.isPending}
             data-testid="button-create-task"
           >

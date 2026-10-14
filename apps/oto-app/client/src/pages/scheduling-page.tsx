@@ -5957,7 +5957,7 @@ function SchedulingPageInner() {
           setConflictUndoStack([]);
         }
       }}>
-        <DialogContent className="sm:max-w-xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-amber-500" />
@@ -5968,6 +5968,7 @@ function SchedulingPageInner() {
             </DialogDescription>
           </DialogHeader>
 
+          <DialogBody>
           {conflictScanLoading ? (
             <div className="py-8 text-center text-muted-foreground text-sm">Scanning...</div>
           ) : conflictScanResults ? (
@@ -6111,6 +6112,7 @@ function SchedulingPageInner() {
               )}
             </div>
           ) : null}
+          </DialogBody>
 
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setConflictScanDialogOpen(false)} data-testid="button-conflict-close">
@@ -6137,7 +6139,7 @@ function SchedulingPageInner() {
         setMergeDialogOpen(open);
         if (!open) { setMergePreview(null); setMergeTargetId(null); }
       }}>
-        <DialogContent className="sm:max-w-xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>Merge Shift Rows</DialogTitle>
             <DialogDescription>
@@ -6150,7 +6152,8 @@ function SchedulingPageInner() {
             const selectedRows = allShiftRowsForMerge.filter(r => mergeSelectedIds.has(r.id));
 
             return (
-              <div className="space-y-4">
+            <>
+              <DialogBody className="space-y-4">
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Select the row to keep (target):</Label>
                   <div className="space-y-1.5">
@@ -6302,20 +6305,22 @@ function SchedulingPageInner() {
                         </div>
                       </div>
                     )}
-
-                    <DialogFooter className="flex gap-2">
-                      <Button variant="outline" onClick={() => setMergeDialogOpen(false)}>Cancel</Button>
-                      <Button
-                        onClick={handleMergeExecute}
-                        disabled={mergeExecuting}
-                        data-testid="button-merge-execute"
-                      >
-                        {mergeExecuting ? "Merging..." : `Merge ${mergeSelectedIds.size - 1} row(s) into target`}
-                      </Button>
-                    </DialogFooter>
                   </div>
                 )}
-              </div>
+              </DialogBody>
+              {mergePreview && (
+                <DialogFooter className="flex gap-2">
+                  <Button variant="outline" onClick={() => setMergeDialogOpen(false)}>Cancel</Button>
+                  <Button
+                    onClick={handleMergeExecute}
+                    disabled={mergeExecuting}
+                    data-testid="button-merge-execute"
+                  >
+                    {mergeExecuting ? "Merging..." : `Merge ${mergeSelectedIds.size - 1} row(s) into target`}
+                  </Button>
+                </DialogFooter>
+              )}
+            </>
             );
           })()}
         </DialogContent>
@@ -6401,14 +6406,14 @@ function ScheduleHistoryDialog({ open, onOpenChange, branchId, onRestored }: {
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Schedule History</DialogTitle>
             <DialogDescription>
               View recent schedule changes and restore previous versions.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-2">
+          <DialogBody className="space-y-2">
             {auditLogQuery.isLoading && (
               <div className="space-y-2">
                 {[1,2,3].map(i => <Skeleton key={i} className="h-16 w-full" />)}
@@ -6461,7 +6466,7 @@ function ScheduleHistoryDialog({ open, onOpenChange, branchId, onRestored }: {
                 </div>
               </Card>
             ))}
-          </div>
+          </DialogBody>
         </DialogContent>
       </Dialog>
 

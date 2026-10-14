@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -292,7 +292,7 @@ export default function AccessConfigPage() {
       )}
 
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Lock className="h-5 w-5" />
@@ -300,7 +300,7 @@ export default function AccessConfigPage() {
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <DialogBody className="space-y-4">
             <div>
               <Label htmlFor="title">Title *</Label>
               <Input
@@ -443,7 +443,7 @@ export default function AccessConfigPage() {
                 </div>
               </div>
             )}
-          </div>
+          </DialogBody>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditDialogOpen(false)}>

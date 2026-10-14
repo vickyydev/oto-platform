@@ -853,14 +853,14 @@ function AccessStatusSection({ employeeId, personId, employee, forceOpen }: { em
       
       {/* Granular Permissions Override Dialog */}
       <Dialog open={granularOverridesOpen} onOpenChange={setGranularOverridesOpen}>
-        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Edit Module Overrides</DialogTitle>
             <DialogDescription>
               Configure per-module permission overrides for this employee. These override role defaults.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-2">
+          <DialogBody className="space-y-4 py-2">
             {MODULE_KEYS.map((key) => {
               const moduleDef = MODULES[key];
               const edit = overrideEdits[key];
@@ -934,7 +934,7 @@ function AccessStatusSection({ employeeId, personId, employee, forceOpen }: { em
                 </div>
               );
             })}
-          </div>
+          </DialogBody>
           <div className="flex justify-between gap-2 pt-2 flex-wrap">
             <Button
               variant="outline"
