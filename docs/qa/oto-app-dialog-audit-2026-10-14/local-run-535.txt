@@ -1,0 +1,66 @@
+add-advisor@1920x1080: box 768x664 top208 bot872 clipped=false natural=662 maxH=1048px footer={"txt":"Create Advisor","bottom":847}
+   scrollers: none  afterScroll: title moved 0, footer moved 0, footer bottom 847/1080
+add-advisor-login@1920x1080: box 768x826 top127 bot953 clipped=false natural=824 maxH=1048px footer={"txt":"Create Advisor","bottom":928}
+   scrollers: none  afterScroll: title moved 0, footer moved 0, footer bottom 928/1080
+create-user@1920x1080: box 672x538 top271 bot809 clipped=false natural=536 maxH=1048px footer={"txt":"Create User","bottom":784}
+   scrollers: none  afterScroll: title moved 0, footer moved 0, footer bottom 784/1080
+checklist-quick-create@1920x1080: box 896x658 top211 bot869 clipped=false natural=656 maxH=1048px footer={"txt":"Create","bottom":844}
+   scrollers: none  afterScroll: title moved 0, footer moved 0, footer bottom 844/1080
+studio-checklist-create@1920x1080: box 896x658 top211 bot869 clipped=false natural=656 maxH=1048px footer={"txt":"Create","bottom":844}
+   scrollers: none  afterScroll: title moved 0, footer moved 0, footer bottom 844/1080
+payroll-statutory@1920x1080: box 1024x679 top201 bot880 clipped=false natural=677 maxH=1048px footer={"txt":"Create Rule Set","bottom":855}
+   scrollers: V[856/176] flex min-h-[80px] w-full rounded-md border bo  afterScroll: title moved 0, footer moved 0, footer bottom 855/1080
+studio-task@1920x1080: box 896x687 top197 bot884 clipped=false natural=685 maxH=1048px footer={"txt":"Create","bottom":859}
+   scrollers: none  afterScroll: title moved 0, footer moved 0, footer bottom 859/1080
+casual-worker@1920x1080: box 448x672 top204 bot876 clipped=false natural=670 maxH=1048px footer={"txt":"Add Worker","bottom":851}
+   scrollers: none  afterScroll: title moved 0, footer moved 0, footer bottom 851/1080
+offboarding@1920x1080: box 512x812 top134 bot946 clipped=false natural=810 maxH=1048px footer={"txt":"Continue","bottom":921}
+   scrollers: none  afterScroll: title moved 0, footer moved 0, footer bottom 921/1080
+issue-warning@1920x1080: box 512x732 top174 bot906 clipped=false natural=730 maxH=1048px footer={"txt":"Continue","bottom":881}
+   scrollers: none  afterScroll: title moved 0, footer moved 0, footer bottom 881/1080
+edit-access@1920x1080: box 448x710 top185 bot895 clipped=false natural=708 maxH=1048px footer={"txt":"Save Changes","bottom":870}
+   scrollers: none  afterScroll: title moved 0, footer moved 0, footer bottom 870/1080
+add-shift@1920x1080: box 512x816 top132 bot948 clipped=false natural=814 maxH=972px footer={"txt":"Create","bottom":923}
+   scrollers: none  afterScroll: title moved 0, footer moved 0, footer bottom 923/1080
+edit-shift@1920x1080: box 512x900 top90 bot990 clipped=false natural=898 maxH=972px footer={"txt":"Save","bottom":965}
+   scrollers: none  afterScroll: title moved 0, footer moved 0, footer bottom 965/1080
+ops-quick-task@1920x1080: box 448x486 top297 bot783 clipped=false natural=484 maxH=1048px footer={"txt":"Create","bottom":758}
+   scrollers: none  afterScroll: title moved 0, footer moved 0, footer bottom 758/1080
+payroll-period@1920x1080: box 512x284 top398 bot682 clipped=false natural=282 maxH=1048px footer={"txt":"Create Period","bottom":657}
+   scrollers: none  afterScroll: title moved 0, footer moved 0, footer bottom 657/1080
+time-override@1920x1080: box 512x570 top255 bot825 clipped=false natural=568 maxH=1048px footer={"txt":"Add Override","bottom":800}
+   scrollers: none  afterScroll: title moved 0, footer moved 0, footer bottom 800/1080
+data-branches@1920x1080: page shot
+add-advisor@1280x800: box 768x664 top68 bot732 clipped=false natural=662 maxH=768px footer={"txt":"Create Advisor","bottom":707}
+   scrollers: none  afterScroll: title moved 0, footer moved 0, footer bottom 707/800
+add-advisor-login@1280x800: box 768x768 top16 bot784 clipped=false natural=766 maxH=768px footer={"txt":"Create Advisor","bottom":759}
+   scrollers: V[670/612] -mx-6 -my-1 min-h-0 flex-1 overflow-y-auto ov  afterScroll: title moved 0, footer moved 0, footer bottom 759/800
+create-user@1280x800: box 672x538 top131 bot669 clipped=false natural=536 maxH=768px footer={"txt":"Create User","bottom":644}
+   scrollers: none  afterScroll: title moved 0, footer moved 0, footer bottom 644/800
+checklist-quick-create@1280x800: box 896x658 top71 bot729 clipped=false natural=656 maxH=768px footer={"txt":"Create","bottom":704}
+   scrollers: none  afterScroll: title moved 0, footer moved 0, footer bottom 704/800
+studio-checklist-create@1280x800: box 896x658 top71 bot729 clipped=false natural=656 maxH=768px footer={"txt":"Create","bottom":704}
+   scrollers: none  afterScroll: title moved 0, footer moved 0, footer bottom 704/800
+payroll-statutory@1280x800: box 1024x679 top61 bot740 clipped=false natural=677 maxH=768px footer={"txt":"Create Rule Set","bottom":715}
+   scrollers: V[856/176] flex min-h-[80px] w-full rounded-md border bo  afterScroll: title moved 0, footer moved 0, footer bottom 715/800
+studio-task@1280x800: box 896x687 top57 bot744 clipped=false natural=685 maxH=768px footer={"txt":"Create","bottom":719}
+   scrollers: none  afterScroll: title moved 0, footer moved 0, footer bottom 719/800
+casual-worker@1280x800: box 448x672 top64 bot736 clipped=false natural=670 maxH=768px footer={"txt":"Add Worker","bottom":711}
+   scrollers: none  afterScroll: title moved 0, footer moved 0, footer bottom 711/800
+offboarding@1280x800: box 512x768 top16 bot784 clipped=false natural=766 maxH=768px footer={"txt":"Continue","bottom":759}
+   scrollers: V[654/610] -mx-6 -my-1 min-h-0 flex-1 overflow-y-auto ov  afterScroll: title moved 0, footer moved 0, footer bottom 759/800
+issue-warning@1280x800: box 512x732 top34 bot766 clipped=false natural=730 maxH=768px footer={"txt":"Continue","bottom":741}
+   scrollers: none  afterScroll: title moved 0, footer moved 0, footer bottom 741/800
+edit-access@1280x800: box 448x710 top45 bot755 clipped=false natural=708 maxH=768px footer={"txt":"Save Changes","bottom":730}
+   scrollers: none  afterScroll: title moved 0, footer moved 0, footer bottom 730/800
+add-shift@1280x800: box 512x720 top40 bot760 clipped=false natural=718 maxH=720px footer={"txt":"Create","bottom":735}
+   scrollers: V[660/564] -mx-6 -my-1 min-h-0 flex-1 overflow-y-auto ov  afterScroll: title moved 0, footer moved 0, footer bottom 735/800
+edit-shift@1280x800: box 512x720 top40 bot760 clipped=false natural=718 maxH=720px footer={"txt":"Save","bottom":735}
+   scrollers: V[744/564] -mx-6 -my-1 min-h-0 flex-1 overflow-y-auto ov  afterScroll: title moved 0, footer moved 0, footer bottom 735/800
+ops-quick-task@1280x800: box 448x486 top157 bot643 clipped=false natural=484 maxH=768px footer={"txt":"Create","bottom":618}
+   scrollers: none  afterScroll: title moved 0, footer moved 0, footer bottom 618/800
+payroll-period@1280x800: box 512x284 top258 bot542 clipped=false natural=282 maxH=768px footer={"txt":"Create Period","bottom":517}
+   scrollers: none  afterScroll: title moved 0, footer moved 0, footer bottom 517/800
+time-override@1280x800: box 512x570 top115 bot685 clipped=false natural=568 maxH=768px footer={"txt":"Add Override","bottom":660}
+   scrollers: none  afterScroll: title moved 0, footer moved 0, footer bottom 660/800
+data-branches@1280x800: page shot
