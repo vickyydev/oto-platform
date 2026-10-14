@@ -491,6 +491,17 @@ jobs:
       - name: The app's night-job checks
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/night-jobs.check.ts
+      # SCRUM-539: "Provision suite sign-in" — the app sends its provisioning
+      # key as a Bearer and never a platform session, names the press and the
+      # acting administrator, reads the platform's answers and refusals; and,
+      # over HTTP on the routes as registered, both doors are fenced to their
+      # park group, an advisor without a login gets one, and with the app's own
+      # sign-in closed nobody is sent to its password or SMS phone pages.
+      - name: The app's suite sign-in checks
+        if: steps.changes.outputs.app == 'true'
+        run: |
+          npx tsx tests/suite-sign-in.check.ts
+          npx tsx tests/suite-sign-in-routes.check.ts
       # S2-17b round 4: tenant ownership — settings read per park group and,
       # from 4b (migration 0007), saved by each park group as its own rows in
       # one transaction (H11, with the old unique put back to prove the words

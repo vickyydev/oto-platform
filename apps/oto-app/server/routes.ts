@@ -3,6 +3,9 @@ import { attendanceEvidenceUpload, attendanceConfirmationBody } from "./attendan
 import { persistAttendanceEvidence, canReadAttendanceEvidence, ATTENDANCE_EVIDENCE_FOLDER } from "./attendance-evidence";
 import { registerTimekeepingReviewRoutes } from "./timekeeping-review-routes";
 import { registerEmployeeActionRoutes } from "./employee-action-routes";
+import { registerSuiteSignInRoutes, unusablePassword } from "./suite-sign-in-routes";
+import { readPhone } from "./lib/suiteSignIn";
+import { legacyLoginEnabled } from "./middleware/platformSignOn";
 import _express, { type Express, type Request, type Response, type NextFunction } from "express";
 import { createServer as _createServer, type Server } from "http";
 import { storage, assertScheduleDeleteScope, resolveFixReportStatusFilter, type ActivityParkGroup, type AttentionReadScope } from "./storage";
@@ -989,13 +992,22 @@ export async function registerRoutes(
       if (!req.body || typeof req.body !== "object" || Array.isArray(req.body)) {
         return res.status(400).json({ message: "Invalid user data" });
       }
-      const { email, password, fullName, role, accessScope, branchIds, mustChangePassword = true } = req.body;
-      if (typeof email !== "string" || typeof password !== "string" || typeof fullName !== "string" ||
+      const { email, password, fullName, role, accessScope, branchIds, mustChangePassword = true, phoneNumber } = req.body;
+      // SCRUM-539: with this app's own sign-in closed, a password typed here
+      // opens nothing, so none is asked for: the person gets a suite sign-in
+      // from this screen instead. Legacy deployments still require one.
+      const passwordless = !legacyLoginEnabled() && (password === undefined || password === "");
+      if (typeof email !== "string" || (!passwordless && typeof password !== "string") || typeof fullName !== "string" ||
           !email.trim() || !fullName.trim()) {
-        return res.status(400).json({ message: "Email, password, and full name are required" });
+        return res.status(400).json({ message: passwordless ? "Email and full name are required" : "Email, password, and full name are required" });
       }
-      if (password.length < 6) {
+      if (!passwordless && password.length < 6) {
         return res.status(400).json({ message: "Password must be at least 6 characters" });
+      }
+      const phone = readPhone(phoneNumber);
+      if (phone && !phone.ok) return res.status(400).json({ message: phone.message });
+      if (phone?.ok && (await storage.getUserByPhoneE164(phone.phoneE164))) {
+        return res.status(409).json({ message: "Another user already has that phone number" });
       }
       if (typeof mustChangePassword !== "boolean") {
         return res.status(400).json({ message: "Invalid password change setting" });
@@ -1017,15 +1029,16 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Email already exists" });
       }
       
-      const hashedPassword = await hashPassword(password);
+      const hashedPassword = passwordless ? await unusablePassword() : await hashPassword(password);
       const user = await storage.createUser({
         email,
         password: hashedPassword,
         fullName,
         role: nextRole,
         isActive: true,
-        mustChangePassword: mustChangePassword,
+        mustChangePassword: passwordless ? false : mustChangePassword,
         createdBy: req.user?.id,
+        ...(phone?.ok ? { phoneNumber: phone.phoneNumber, phoneE164: phone.phoneE164 } : {}),
       }, tenantId);
       
       // Set branch access
@@ -1068,7 +1081,10 @@ export async function registerRoutes(
       if (!req.body || typeof req.body !== "object" || Array.isArray(req.body)) {
         return res.status(400).json({ message: "Invalid user data" });
       }
-      const { email, fullName, role, isActive, accessScope, branchIds } = req.body;
+      const { email, fullName, role, isActive, accessScope, branchIds, phoneNumber } = req.body;
+      // SCRUM-539: the phone a suite sign-in is made from; empty clears it.
+      const phone = readPhone(phoneNumber);
+      if (phone && !phone.ok) return res.status(400).json({ message: phone.message });
       const targetUser = await storage.getUser(req.params.id);
       if (!targetUser) return res.status(404).json({ message: "User not found" });
       if (["global_admin", "operator_admin", "advisor"].includes(targetUser.role)) {
@@ -1105,6 +1121,17 @@ export async function registerRoutes(
       if (fullName !== undefined) updateData.fullName = fullName;
       if (role !== undefined) updateData.role = role;
       if (isActive !== undefined) updateData.isActive = isActive;
+      if (phone?.ok) {
+        const holder = await storage.getUserByPhoneE164(phone.phoneE164);
+        if (holder && holder.id !== targetUser.id) {
+          return res.status(409).json({ message: "Another user already has that phone number" });
+        }
+        updateData.phoneNumber = phone.phoneNumber;
+        updateData.phoneE164 = phone.phoneE164;
+      } else if (phoneNumber === "" || phoneNumber === null) {
+        updateData.phoneNumber = null;
+        updateData.phoneE164 = null;
+      }
       
       const user = await storage.updateUser(req.params.id, updateData);
       
@@ -1589,6 +1616,10 @@ export async function registerRoutes(
     }
     return found.size === 1 ? [...found][0] : undefined;
   };
+
+  // SCRUM-539: "Provision suite sign-in" on Setup > Users and an advisor's
+  // Core Account tab, behind the same fences as those screens' own routes.
+  registerSuiteSignInRoutes(app, { requireAuth, requireAdmin, requireGlobalAdmin, managedUserTenant, userManagementTenant, personParkGroup });
 
   /**
    * Whether everything an employee delete takes with it is the caller's park
@@ -4084,7 +4115,10 @@ export async function registerRoutes(
       }
       
       // Validate password
-      if (!password || password.length < 6) {
+      // SCRUM-539: no password while this app's own sign-in is closed; the
+      // person gets a suite sign-in from Setup > Users instead.
+      const passwordless = !legacyLoginEnabled() && !password;
+      if (!passwordless && (!password || password.length < 6)) {
         return res.status(400).json({ message: "Password must be at least 6 characters" });
       }
       
@@ -4157,7 +4191,7 @@ export async function registerRoutes(
       }
       
       // Create user account
-      const hashedPassword = await hashPassword(password);
+      const hashedPassword = passwordless ? await unusablePassword() : await hashPassword(password);
       const userRole = accessLevel?.toLowerCase() as "admin" | "manager" | "staff" || "staff";
       const user = await storage.createUser({
         email: loginEmail,
@@ -4165,7 +4199,7 @@ export async function registerRoutes(
         fullName: employee.fullName,
         role: userRole,
         isActive: true,
-        mustChangePassword: true,
+        mustChangePassword: !passwordless,
         createdBy: req.user.id,
       }, resolvedTenantId);
       
@@ -13861,7 +13895,9 @@ OTO Company Limited`,
     branchScope: z.enum(["ALL", "SELECTED"]).optional(),
     branchIds: z.array(z.string()).optional(),
   }).refine(
-    (data) => !data.createLogin || (data.createLogin && data.password && data.password.length >= 6),
+    // SCRUM-539: no password while this app's own sign-in is closed; the
+    // advisor gets a suite sign-in from their Core Account tab instead.
+    (data) => !data.createLogin || !legacyLoginEnabled() || (data.createLogin && data.password && data.password.length >= 6),
     { message: "Password is required when creating a login", path: ["password"] }
   );
 
@@ -13870,6 +13906,8 @@ OTO Company Limited`,
     try {
       const { createLogin, password, accessLevel, modules, branchScope, branchIds, isProtected: _stripProtected, tenantId: _stripTenant, ...personData } = createPersonWithUserSchema.parse(req.body);
       
+      // A login with no password is made only while this app's own form is closed (SCRUM-539).
+      const makeLogin = !!createLogin && (!!password || !legacyLoginEnabled());
       const resolvedTenantId = await userManagementTenant(req);
       if (!resolvedTenantId) return res.status(403).json({ message: "Access denied" });
       const selectedPersonBranches = await managedBranchIds(branchIds ?? [], resolvedTenantId);
@@ -13880,7 +13918,7 @@ OTO Company Limited`,
       const relatedLogin = await storage.getUserByEmail(personData.email);
       if (relatedLogin && (await managedUserTenant(relatedLogin.id)) !== resolvedTenantId) return res.status(404).json({ message: "User not found" });
       // Only create user if createLogin is true AND password is provided
-      if (createLogin && password) {
+      if (makeLogin) {
         const existingUser = await storage.getUserByEmail(personData.email);
         if (existingUser && existingUser.isActive) {
           return res.status(400).json({ message: "A user with this email already exists" });
@@ -13903,8 +13941,8 @@ OTO Company Limited`,
       const person = await storage.createPerson({ ...personData, tenantId: resolvedTenantId, phoneE164: personPhoneE164 });
       
       // If createLogin is true and password provided, create user account
-      if (createLogin && password) {
-        const hashedPassword = await hashPassword(password);
+      if (makeLogin) {
+        const hashedPassword = password ? await hashPassword(password) : await unusablePassword();
         // Derive E164 from phoneNumber if not explicitly provided
         // Reuse the already-derived value
         const advisorPhoneE164 = personPhoneE164;
@@ -13924,7 +13962,7 @@ OTO Company Limited`,
           fullName: personData.fullName,
           role: "advisor",
           isActive: true,
-          mustChangePassword: true,
+          mustChangePassword: !!password,
           createdBy: req.user?.id,
           phoneNumber: personData.phoneNumber ?? null,
           phoneE164: advisorPhoneE164,

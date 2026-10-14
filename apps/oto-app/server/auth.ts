@@ -178,6 +178,23 @@ export function setupAuth(app: Express) {
       return res.sendStatus(401);
     }
     const { password: _, ...safeUser } = userWithAccess;
+    /**
+     * SCRUM-539: a session that came from the launcher never owes THIS app a
+     * password change. The flag is set on every user the app creates and at
+     * every admin reset, and the client sends anybody carrying it to
+     * `/change-password`, which asks for an app password a launcher user does
+     * not have — so they would be stranded there. Their password lives on the
+     * platform, which forces its own change at the launcher.
+     *
+     * The same for the forced phone check (`/verify-phone`): it verifies a
+     * phone by SMS so THIS app's password can be recovered by SMS. A launcher
+     * session recovers its password at the launcher, so a staff user given a
+     * phone for their suite sign-in must not be stopped at an SMS step that
+     * guards nothing here.
+     */
+    if (req.session?.platform || !legacyLoginEnabled()) {
+      return res.json({ ...safeUser, mustChangePassword: false, phoneVerified: true });
+    }
     res.json(safeUser);
   });
 

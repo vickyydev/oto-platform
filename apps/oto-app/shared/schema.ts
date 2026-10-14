@@ -1277,6 +1277,7 @@ export const activityTypes = [
   "USER_ENABLED",
   "USER_PASSWORD_RESET_BY_ADMIN",
   "USER_PASSWORD_CHANGED",
+  "USER_SUITE_SIGNIN_PROVISIONED", // SCRUM-539: a suite sign-in given from this app
   "attention_item_created",
   "attention_item_resolved",
   "template_created",
