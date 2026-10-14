@@ -5111,7 +5111,7 @@ function SchedulingPageInner() {
       </Dialog>
 
       <Dialog open={createShiftRowOpen} onOpenChange={setCreateShiftRowOpen}>
-        <DialogContent className="max-h-[90dvh]">
+        <DialogContent className="max-h-[min(94dvh,calc(100dvh-2rem))]">
           <DialogHeader>
             <DialogTitle>Add Shift</DialogTitle>
             <DialogDescription>
@@ -5281,7 +5281,7 @@ function SchedulingPageInner() {
       </Dialog>
 
       <Dialog open={editShiftRowOpen} onOpenChange={setEditShiftRowOpen}>
-        <DialogContent className="max-h-[90dvh]">
+        <DialogContent className="max-h-[min(94dvh,calc(100dvh-2rem))]">
           <DialogHeader>
             <DialogTitle>Edit Shift</DialogTitle>
             <DialogDescription>
