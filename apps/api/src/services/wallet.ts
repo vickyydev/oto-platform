@@ -6,6 +6,7 @@ import {
   checkin,
   employee,
   factWalletLiabilityDaily,
+  refund,
   sale,
   saleLine,
   ticketPackage,
@@ -1142,6 +1143,78 @@ export async function prepaidChargeOf(
   return line ?? null;
 }
 
+/** Whether a refund of this sale has already carried the line's money back. */
+async function saleLineRefunded(db: Exec, saleId: string, saleLineId: string): Promise<boolean> {
+  const rows = await db.select({ lines: refund.lines }).from(refund).where(eq(refund.saleId, saleId));
+  return rows.some((r) => (r.lines ?? []).some((l) => l.saleLineId === saleLineId && !l.restockOnly));
+}
+
+export function prepaidRefundActionId(refundId: string, checkinId: string): string {
+  return `refund:${refundId}:prepaid:${checkinId}`;
+}
+
+/**
+ * SCRUM-481 (ruled 14 October) — A REFUNDED PREPAID-FOOD LINE TAKES ITS CREDIT
+ * WITH IT. When staff refund a `food_provision` line by hand, the credit that
+ * line loaded onto the child's band comes off in the same transaction (a
+ * `spend` / `refund` entry naming the refund and the stay), so the family
+ * cannot both spend the credit and keep the refund. Once any of that credit
+ * has been spent — or already handed back at pickup — the refund is REFUSED,
+ * having written nothing. A stay never checked in has loaded nothing and
+ * refunds as before; give-back credit from a ticket is untouched (OD-W4).
+ *
+ * Call it inside the refund's transaction, after the refund row is written
+ * (the entry names it); a refusal rolls the whole refund back.
+ */
+export async function takeBackPrepaidForRefund(
+  tx: Tx,
+  actor: WalletActor,
+  input: {
+    refundId: string;
+    saleId: string;
+    lines: readonly { id: string; kind: string; cartLineId: string | null; label: string }[];
+    branchId: string;
+    stationId?: string | null;
+    now?: Date;
+  },
+): Promise<{ checkinId: string; walletId: string; amountSatang: number }[]> {
+  const taken: { checkinId: string; walletId: string; amountSatang: number }[] = [];
+  for (const line of input.lines) {
+    if (line.kind !== 'food_provision' || !line.cartLineId) continue;
+    const checkinId = line.cartLineId;
+    const loaded = await entryOfAction(tx, actor.operatorId, prepaidActionId(checkinId));
+    const loadPayload = (loaded?.payload ?? {}) as { saleLineId?: string };
+    if (!loaded || loaded.saleId !== input.saleId || (loadPayload.saleLineId && loadPayload.saleLineId !== line.id)) continue;
+    const held = await prepaidBalanceOf(tx, actor.operatorId, checkinId, { lock: true });
+    if (!held) continue;
+    if (held.refundableSatang < held.loadedSatang) {
+      const [w] = await tx.select({ holderName: wallet.holderName }).from(wallet).where(eq(wallet.id, held.walletId)).limit(1);
+      const who = w?.holderName ? `${w.holderName}'s` : 'The child’s';
+      throw errors.conflict(
+        'PREPAID_CREDIT_SPENT',
+        `${who} prepaid food credit has already been used (${formatTHB(held.loadedSatang - held.refundableSatang)} of ${formatTHB(
+          held.loadedSatang,
+        )}), so this food line cannot be refunded.`,
+        { checkinId, saleLineId: line.id, loadedSatang: held.loadedSatang, refundableSatang: held.refundableSatang },
+      );
+    }
+    await debitWallet(tx, actor, {
+      walletId: held.walletId,
+      actionId: prepaidRefundActionId(input.refundId, checkinId),
+      amountSatang: held.loadedSatang,
+      source: 'refund',
+      branchId: input.branchId,
+      refundId: input.refundId,
+      saleId: input.saleId,
+      stationId: input.stationId ?? null,
+      payload: { checkinId, saleLineId: line.id },
+      now: input.now,
+    });
+    taken.push({ checkinId, walletId: held.walletId, amountSatang: held.loadedSatang });
+  }
+  return taken;
+}
+
 /**
  * CHECK-IN-NOW LOADS THE CHILD'S OWN WALLET with their prepaid food credit
  * (prototype `checkInFamilyWithPayment`, `mockApi.ts:5030-5065`: top the band
@@ -1182,6 +1255,9 @@ export async function loadChildPrepaid(
     );
   }
   if (!charged || charged.grossSatang <= 0) return null;
+  // SCRUM-481 — a food line already refunded was handed back as money, so
+  // there is no credit left to load for it.
+  if (await saleLineRefunded(tx, saleRow.id, charged.lineId)) return null;
   const amount = charged.grossSatang;
   const now = input.now ?? new Date();
   const actionId = prepaidActionId(stay.id);
@@ -1276,7 +1352,26 @@ export async function prepaidBalanceOf(
   const spentSatang = since
     .filter((e) => e.id !== loaded.id && (e.createdAt > loaded.createdAt || (e.createdAt.getTime() === loaded.createdAt.getTime() && e.id > loaded.id)))
     .reduce((sum, e) => sum - e.amount, 0);
-  const refundableSatang = Math.max(0, Math.min(row.balanceSatang, loaded.amountSatang - Math.max(0, spentSatang)));
+  // SCRUM-481 — what THIS stay's credit has already been handed back as money:
+  // its own release's cash-out, or a refund of its prepaid-food line. Each is a
+  // `spend` / `refund` entry naming the stay, so a second refund of the same
+  // credit finds nothing left to give.
+  const [back] = await db
+    .select({ total: sql<string>`coalesce(sum(-${walletEntry.amountSatang}), 0)` })
+    .from(walletEntry)
+    .where(
+      and(
+        eq(walletEntry.walletId, row.id),
+        eq(walletEntry.kind, 'spend'),
+        eq(walletEntry.source, 'refund'),
+        sql`${walletEntry.payload}->>'checkinId' = ${checkinId}`,
+      ),
+    );
+  const handedBackSatang = Number(back?.total ?? 0);
+  const refundableSatang = Math.max(
+    0,
+    Math.min(row.balanceSatang, loaded.amountSatang - Math.max(0, spentSatang) - handedBackSatang),
+  );
   return { walletId: row.id, balanceSatang: row.balanceSatang, loadedSatang: loaded.amountSatang, spentSatang, refundableSatang };
 }
 

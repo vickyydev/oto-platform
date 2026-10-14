@@ -33,7 +33,7 @@ import { auditVoidReleases, lockVouchersHeldFor } from './vouchers';
 import { queueTerminalCommand } from './payments/terminal';
 import { accountNames, refundViewOf, settleRefundSlice, type RefundView } from './refund-slices';
 import { allocateReceipt, saleViewOf, type SaleView } from './sale';
-import { restoreForRefund, walletTenderOf } from './wallet';
+import { restoreForRefund, takeBackPrepaidForRefund, walletTenderOf } from './wallet';
 import { restockForRefund } from './stock';
 import { withTx, type Exec, type OpContext, type Tx } from './tx';
 
@@ -506,6 +506,14 @@ export async function refundSale(
     slices.splice(0, slices.length, ...settled);
   }
 
+  // SCRUM-481 — a refunded prepaid-food line takes its unspent credit off the
+  // child's band here, or refuses the whole refund once that credit is spent.
+  const prepaidTakenBack = await takeBackPrepaidForRefund(
+    tx,
+    { accountId: actor.accountId, operatorId: actor.operatorId, requestId: actor.requestId ?? null },
+    { refundId, saleId, lines: covered, branchId: row.branchId, stationId: actor.stationId, now },
+  );
+
   /**
    * S2-14b — THE STOCK GOES BACK, in this transaction: each line the restock
    * decision returns, to the place its units left from (the sale's own
@@ -613,6 +621,7 @@ export async function refundSale(
       approvedByAccountId: actor.accountId,
       slices: slices.map((s) => ({ attemptId: s.attemptId, route: s.route, amountSatang: s.amountSatang, status: s.status })),
       revokedBandIds,
+      ...(prepaidTakenBack.length ? { prepaidCreditTakenBack: prepaidTakenBack } : {}),
       ...(partPaidClose ? { partPaid: true, ...partPaidClose } : {}),
       restocked: restockedMovements.map((m) => ({
         stockItemId: m.stockItemId,

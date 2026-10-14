@@ -18,7 +18,7 @@ import { bandShortCode, mintVoucherQr, newId } from '@oto/shared';
 import { quoteBooking } from '../src/services/booking-checkout';
 import { buildPrintDocument } from '../src/services/sale-printing';
 import { createWalletWithGrant, debitWallet, prepaidBalanceOf } from '../src/services/wallet';
-import { CHALONG_BRANCH_CODE, CHALONG_MANAGER, RECEPTION, SECOND_OPERATOR_ADMIN, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
+import { BRANCH_MANAGER, CHALONG_BRANCH_CODE, CHALONG_MANAGER, RECEPTION, SECOND_OPERATOR_ADMIN, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
 
 /**
  * S2-14a round 1 — the wallet model and the grants (plan docs/progress/plans/
@@ -45,6 +45,7 @@ const ALL_CONFIRMATIONS = ['confirm-15min', 'confirm-no-refund', 'confirm-evac']
 let ctx: TestContext;
 let reception: string;
 let chalongManager: string;
+let manager: string;
 let operatorId: string;
 let branchId: string;
 let stationId: string;
@@ -55,6 +56,7 @@ beforeAll(async () => {
   ctx = await createTestContext({ files: true, env: STORAGE_ENV });
   reception = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
   chalongManager = await signInAs(ctx.app, CHALONG_MANAGER.phone, CHALONG_MANAGER.password);
+  manager = await signInAs(ctx.app, BRANCH_MANAGER.phone, BRANCH_MANAGER.password);
   const [hkt] = await ctx.db.select().from(branch).where(eq(branch.code, 'hkt-central'));
   branchId = hkt!.id;
   operatorId = hkt!.operatorId;
@@ -459,6 +461,45 @@ describe("a prepaid-credit child's food money is their own wallet", () => {
     expect(ledger.find((e) => e.source === 'refund')!.refundId).toBe(refunded!.id);
     const [stayRow] = await ctx.db.select().from(checkin).where(eq(checkin.id, family.checkinId));
     expect(stayRow!.status).toBe('out');
+    await assertLedgerTruth();
+  });
+
+  // SCRUM-481 (ruled 14 October): refunding the prepaid line removes the unspent credit; once spent, refused.
+  async function refundFoodLine(saleId: string) {
+    const detail = await linesOf(saleId);
+    const food = (detail.lines as { id: string; kind: string }[]).find((l) => l.kind === 'food_provision')!;
+    return ctx.app.inject({
+      method: 'POST',
+      url: `/sales/${saleId}/refunds`,
+      headers: { cookie: manager },
+      payload: { mode: 'items', lineIds: [food.id], reason: 'Lunch not wanted', actionId: newId() },
+    });
+  }
+
+  it('refunding the prepaid food line takes the unspent credit off the band in the same refund', async () => {
+    const family = await childInPark({ mode: 'prepaid_credit', paidSatang: 20_000, creditSatang: 20_000 });
+    const res = await refundFoodLine(family.saleId);
+    expect(res.statusCode, res.body).toBe(200);
+    const refundId = res.json().refund.id as string;
+    const held = await prepaidBalanceOf(ctx.db, operatorId, family.checkinId);
+    expect(held).toMatchObject({ balanceSatang: 0, refundableSatang: 0 });
+    const [taken] = await ctx.db.select().from(walletEntry).where(eq(walletEntry.refundId, refundId));
+    expect(taken).toMatchObject({ kind: 'spend', source: 'refund', amountSatang: -20_000, saleId: family.saleId });
+    await assertLedgerTruth();
+  });
+
+  it('once the prepaid credit has been spent the food line refund is refused and nothing is written', async () => {
+    const family = await childInPark({ mode: 'prepaid_credit', paidSatang: 20_000, creditSatang: 20_000 });
+    const held = await prepaidBalanceOf(ctx.db, operatorId, family.checkinId);
+    await ctx.db.transaction((tx) =>
+      debitWallet(tx, { accountId: null, operatorId }, { walletId: held!.walletId, actionId: `test-spend:${newId()}`, amountSatang: 5_000, source: 'fnb_order', branchId }),
+    );
+    const res = await refundFoodLine(family.saleId);
+    expect(res.statusCode, res.body).toBe(409);
+    expect(res.json().error).toMatchObject({ code: 'PREPAID_CREDIT_SPENT' });
+    expect(res.json().error.message).toContain('Mint');
+    expect(await ctx.db.select().from(refund).where(eq(refund.saleId, family.saleId))).toHaveLength(0);
+    expect((await prepaidBalanceOf(ctx.db, operatorId, family.checkinId))!.balanceSatang).toBe(15_000);
     await assertLedgerTruth();
   });
 });
