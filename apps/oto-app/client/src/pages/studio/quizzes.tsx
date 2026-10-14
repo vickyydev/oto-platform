@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody } from "@/components/ui/dialog";
 import { LoadingScreen } from "@/components/ui/loading-spinner";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useAuth } from "@/lib/auth";
@@ -182,9 +182,9 @@ export default function StudioQuizzesPage() {
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl">
           <DialogHeader><DialogTitle>{editingId ? "Edit training module" : "New training module"}</DialogTitle></DialogHeader>
-          <div className="space-y-4">
+          <DialogBody className="space-y-4">
             <div><Label htmlFor="training-title">Title</Label><Input id="training-title" value={form.title} onChange={event => setForm({ ...form, title: event.target.value })} /></div>
             <div><Label htmlFor="training-description">Description</Label><Textarea id="training-description" value={form.description} onChange={event => setForm({ ...form, description: event.target.value })} /></div>
             <div><Label htmlFor="training-content">Learning content</Label><Textarea id="training-content" rows={7} value={form.content} onChange={event => setForm({ ...form, content: event.target.value })} /></div>
@@ -211,8 +211,8 @@ export default function StudioQuizzesPage() {
                 <div><Label>Correct choice number</Label><Input type="number" min="1" max="6" value={question.correctChoice} onChange={event => updateQuestion(index, { correctChoice: event.target.value })} /></div>
               </CardContent></Card>)}
             </div>
-            <div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button><Button disabled={save.isPending || !form.title.trim()} onClick={() => save.mutate()} data-testid="button-save-training-module">Save module</Button></div>
-          </div>
+          </DialogBody>
+            <div className="flex shrink-0 justify-end gap-2"><Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button><Button disabled={save.isPending || !form.title.trim()} onClick={() => save.mutate()} data-testid="button-save-training-module">Save module</Button></div>
         </DialogContent>
       </Dialog>
     </StudioLayout>

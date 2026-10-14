@@ -23,6 +23,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogBody,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -464,11 +465,11 @@ export default function KnowledgeBasePage() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{editingArticle ? "Edit Article" : "Create Article"}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <DialogBody className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Title</Label>
@@ -614,7 +615,8 @@ export default function KnowledgeBasePage() {
               </div>
             )}
 
-            <div className="flex gap-2 pt-2 flex-wrap">
+          </DialogBody>
+            <div className="flex shrink-0 gap-2 pt-2 flex-wrap">
               {editingArticle && isAdmin && (
                 <Button
                   variant="destructive"
@@ -666,20 +668,19 @@ export default function KnowledgeBasePage() {
                 </Button>
               )}
             </div>
-          </div>
         </DialogContent>
       </Dialog>
 
       {/* Version History Dialog */}
       <Dialog open={isVersionDialogOpen} onOpenChange={setIsVersionDialogOpen}>
-        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <History className="h-5 w-5" />
               Version History
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
+          <DialogBody className="space-y-3">
             {versions.length === 0 ? (
               <p className="text-muted-foreground text-center py-4">No version history</p>
             ) : (
@@ -702,7 +703,7 @@ export default function KnowledgeBasePage() {
                 </Card>
               ))
             )}
-          </div>
+          </DialogBody>
         </DialogContent>
       </Dialog>
     </StudioLayout>

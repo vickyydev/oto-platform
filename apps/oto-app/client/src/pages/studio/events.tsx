@@ -22,6 +22,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogBody,
 } from "@/components/ui/dialog";
 import {
   Sheet,
@@ -30,6 +31,7 @@ import {
   SheetTitle,
   SheetDescription,
   SheetFooter,
+  SheetBody,
 } from "@/components/ui/sheet";
 import {
   Select,
@@ -2332,7 +2334,7 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
       </Dialog>
 
       <Dialog open={showCreateDialog || !!editingEvent} onOpenChange={(open) => { if (!open) { setShowCreateDialog(false); setEditingEvent(null); setSelectedBranchId(activeBranchId); } }}>
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-md" onOpenAutoFocus={(e) => e.preventDefault()}>
           <DialogHeader className="flex flex-row items-start justify-between gap-4">
             <div>
               <DialogTitle>{editingEvent ? "Edit Event" : "Create Event"}</DialogTitle>
@@ -2355,6 +2357,7 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
             </Tooltip>
           </DialogHeader>
           
+          <DialogBody className="space-y-4">
           {editingEvent && (
             <div className="flex gap-2 py-2 border-b mb-2 flex-wrap">
               <Button 
@@ -2667,6 +2670,7 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
               </>
             )}
           </div>
+          </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setShowCreateDialog(false); setEditingEvent(null); setSelectedBranchId(activeBranchId); }}>Cancel</Button>
             <Button onClick={handleSubmit} disabled={createMutation.isPending || updateMutation.isPending} data-testid="button-submit-event">
@@ -2772,7 +2776,7 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
 
       {/* One-off Event Sheet - slides in smoothly from the right. Used for both create and edit. */}
       <Sheet open={showOneOffWizard} onOpenChange={(open) => { if (!open) { setShowOneOffWizard(false); setEditingOneOffEvent(null); } }}>
-        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+        <SheetContent side="right" className="w-full sm:max-w-md flex flex-col gap-0 overflow-hidden">
           <SheetHeader className="text-left">
             <SheetTitle>{editingOneOffEvent ? `Edit ${EVENT_TYPE_LABELS[oneOffEventType]}` : `Create ${EVENT_TYPE_LABELS[oneOffEventType]}`}</SheetTitle>
             <SheetDescription>
@@ -2782,6 +2786,7 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
             </SheetDescription>
           </SheetHeader>
 
+          <SheetBody>
           {editingOneOffEvent && (
             <div className="flex gap-2 py-2 border-b mb-2 flex-wrap">
               <Button
@@ -2984,6 +2989,7 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
             </div>
 
           </div>
+          </SheetBody>
 
           <SheetFooter className="gap-2 pt-4">
             <Button variant="outline" onClick={() => { setShowOneOffWizard(false); setEditingOneOffEvent(null); }} data-testid="button-cancel-oneoff-event">
@@ -3157,7 +3163,7 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
 
       {/* Camp Event Creation / Edit Sheet */}
       <Sheet open={showCampSheet} onOpenChange={(open) => { if (!open) { setShowCampSheet(false); setEditingCampEvent(null); setShowCampStartCal(false); setShowCampEndCal(false); } }}>
-        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto" onInteractOutside={(e) => e.preventDefault()}>
+        <SheetContent side="right" className="w-full sm:max-w-md flex flex-col gap-0 overflow-hidden" onInteractOutside={(e) => e.preventDefault()}>
           <SheetHeader className="text-left">
             <SheetTitle>{editingCampEvent ? "Edit Camp Event" : "Create Camp Event"}</SheetTitle>
             <SheetDescription>
@@ -3165,6 +3171,7 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
             </SheetDescription>
           </SheetHeader>
 
+          <SheetBody>
           <div className="space-y-5 py-4">
             {/* Branch */}
             {branches && branches.length > 1 && (
@@ -3334,6 +3341,7 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
               />
             </div>
           </div>
+          </SheetBody>
 
           <SheetFooter className="gap-2 pt-2 flex-col sm:flex-row">
             {editingCampEvent && (
@@ -3405,7 +3413,7 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
 
       {/* Studio Event View/Manage Dialog - only show for studio events, not when BEO editor or one-off edit sheet is open */}
       <Dialog open={!!viewingStudioEvent && !showBeoEditor && !showBeoDayOf && !(showOneOffWizard && !!editingOneOffEvent)} onOpenChange={(open) => { if (!open) { setViewingStudioEvent(null); setStudioEventDetails(null); setStudioEventTasks([]); setStudioEventBookings([]); } }}>
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>{viewingStudioEvent?.title}</DialogTitle>
             <DialogDescription>
@@ -3415,7 +3423,7 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
           </DialogHeader>
 
           {/* Quick Actions - Always visible at top */}
-          <div className="flex gap-2 py-2 border-b">
+          <div className="flex shrink-0 gap-2 py-2 border-b">
             <Button 
               variant="default" 
               size="sm"
@@ -3436,6 +3444,7 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
             </Button>
           </div>
 
+          <DialogBody>
           {loadingStudioData ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin" />
@@ -3593,6 +3602,7 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
               </div>
             </div>
           )}
+          </DialogBody>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setViewingStudioEvent(null)} data-testid="button-close-studio-event-view">
@@ -3631,7 +3641,7 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
 
       {/* Booking Form Sheet */}
       <Sheet open={showBookingSheet} onOpenChange={setShowBookingSheet}>
-        <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
+        <SheetContent side="right" className="w-full sm:max-w-lg flex flex-col gap-0 overflow-hidden">
           <SheetHeader className="text-left">
             <SheetTitle>{editingBooking ? "Edit Booking" : "Add Booking"}</SheetTitle>
             <SheetDescription>
@@ -3639,6 +3649,7 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
             </SheetDescription>
           </SheetHeader>
 
+          <SheetBody>
           <div className="space-y-6 py-4">
             {/* Identity */}
             <div className="space-y-4">
@@ -3836,6 +3847,7 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
               />
             </div>
           </div>
+          </SheetBody>
 
           <SheetFooter className="gap-2 pt-4">
             <Button variant="outline" onClick={() => setShowBookingSheet(false)} data-testid="button-cancel-booking">

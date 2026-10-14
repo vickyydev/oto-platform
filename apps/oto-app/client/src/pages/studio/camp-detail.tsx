@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { QRCodeSVG } from "qrcode.react";
 import {
   Sheet,
@@ -20,6 +20,7 @@ import {
   SheetTitle,
   SheetDescription,
   SheetFooter,
+  SheetBody,
 } from "@/components/ui/sheet";
 import {
   Select,
@@ -1277,7 +1278,7 @@ export default function CampDetailPage() {
 
       {/* Child Profile Sheet */}
       <Sheet open={!!childProfileReg} onOpenChange={(open) => { if (!open) setChildProfileReg(null); }}>
-        <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto" onInteractOutside={(e) => e.preventDefault()}>
+        <SheetContent side="right" className="w-full sm:max-w-lg flex flex-col gap-0 overflow-hidden" onInteractOutside={(e) => e.preventDefault()}>
           <SheetHeader className="text-left">
             <SheetTitle className="flex items-center gap-2">
               <Baby className="h-5 w-5 text-teal-600" />
@@ -1288,6 +1289,7 @@ export default function CampDetailPage() {
             </SheetDescription>
           </SheetHeader>
 
+          <SheetBody>
           <div className="space-y-6 py-4">
             <ChildProfileEditor
               form={profileForm}
@@ -1447,6 +1449,7 @@ export default function CampDetailPage() {
               </>
             )}
           </div>
+          </SheetBody>
         </SheetContent>
       </Sheet>
 
@@ -1485,12 +1488,13 @@ export default function CampDetailPage() {
           if (!open) { setShowEditSheet(false); setShowStartCal(false); setShowEndCal(false); }
         }}
       >
-        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto" onInteractOutside={(e) => e.preventDefault()}>
+        <SheetContent side="right" className="w-full sm:max-w-md flex flex-col gap-0 overflow-hidden" onInteractOutside={(e) => e.preventDefault()}>
           <SheetHeader className="text-left">
             <SheetTitle>Edit Camp Event</SheetTitle>
             <SheetDescription>Update the camp details below.</SheetDescription>
           </SheetHeader>
 
+          <SheetBody>
           <div className="space-y-5 py-4">
             {/* Branch */}
             {branches.length > 1 && (
@@ -1667,6 +1671,7 @@ export default function CampDetailPage() {
               />
             </div>
           </div>
+          </SheetBody>
 
           <SheetFooter className="gap-2 pt-2 flex-col sm:flex-row">
             <Button
@@ -1811,7 +1816,7 @@ export default function CampDetailPage() {
 
       {/* Add Child Dialog */}
       <Dialog open={showAddChildDialog} onOpenChange={(open) => { if (!open) setShowAddChildDialog(false); }}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Baby className="h-5 w-5 text-teal-600" />
@@ -1827,7 +1832,7 @@ export default function CampDetailPage() {
 
           {/* Step 1: Pick flow */}
           {addChildFlow === "pick" && (
-            <div className="space-y-3 py-2">
+            <DialogBody className="space-y-3 py-2">
               <button
                 className="w-full flex items-start gap-3 p-4 rounded-lg border-2 border-input hover:border-teal-400 hover:bg-teal-50/50 transition-colors text-left group"
                 onClick={() => setAddChildFlow("existing")}
@@ -1864,12 +1869,13 @@ export default function CampDetailPage() {
                   <p className="text-xs text-muted-foreground mt-0.5">Minimum info only (name, age, contact). Appears in check-in and attendance stats. You can convert to a full profile later.</p>
                 </div>
               </button>
-            </div>
+            </DialogBody>
           )}
 
           {/* Step 2a: Add Existing */}
           {addChildFlow === "existing" && (
-            <div className="space-y-4 py-2">
+            <div className="flex min-h-0 flex-1 flex-col gap-4">
+              <DialogBody className="space-y-4 py-2">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                 <Input
@@ -1959,7 +1965,8 @@ export default function CampDetailPage() {
                 </div>
               )}
 
-              <div className="flex gap-2 pt-2">
+              </DialogBody>
+              <div className="flex shrink-0 gap-2 pt-2">
                 <Button variant="outline" className="flex-1" onClick={() => setAddChildFlow("pick")}>Back</Button>
                 <Button
                   className="flex-1 bg-teal-600 hover:bg-teal-700 text-white"
@@ -1991,7 +1998,8 @@ export default function CampDetailPage() {
 
           {/* Step 2b: Create New Child */}
           {addChildFlow === "new" && (
-            <div className="space-y-4 py-2">
+            <div className="flex min-h-0 flex-1 flex-col gap-4">
+              <DialogBody className="space-y-4 py-2">
               <div className="grid grid-cols-1 gap-3">
                 <div className="space-y-1.5">
                   <Label>Full Name <span className="text-destructive">*</span></Label>
@@ -2071,7 +2079,8 @@ export default function CampDetailPage() {
                 </div>
               </div>
 
-              <div className="flex gap-2">
+              </DialogBody>
+              <div className="flex shrink-0 gap-2">
                 <Button variant="outline" className="flex-1" onClick={() => setAddChildFlow("pick")}>Back</Button>
                 <Button
                   className="flex-1 bg-teal-600 hover:bg-teal-700 text-white"
@@ -2092,7 +2101,8 @@ export default function CampDetailPage() {
 
           {/* Step 2c: One-Time Entry */}
           {addChildFlow === "one_time" && (
-            <div className="space-y-4 py-2">
+            <div className="flex min-h-0 flex-1 flex-col gap-4">
+              <DialogBody className="space-y-4 py-2">
               <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-700 flex items-start gap-2">
                 <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
                 One-time entries do not become permanent profiles. You can convert them later from the child's row in the table.
@@ -2139,7 +2149,8 @@ export default function CampDetailPage() {
                 </div>
               </div>
 
-              <div className="flex gap-2">
+              </DialogBody>
+              <div className="flex shrink-0 gap-2">
                 <Button variant="outline" className="flex-1" onClick={() => setAddChildFlow("pick")}>Back</Button>
                 <Button
                   className="flex-1 bg-amber-500 hover:bg-amber-600 text-white"

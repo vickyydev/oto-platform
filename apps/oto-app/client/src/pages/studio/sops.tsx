@@ -32,6 +32,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogBody,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -42,7 +43,6 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import type { SopArticle, SopStep } from "@shared/schema";
 import { SopHistory } from "@/components/sop/sop-history";
 
@@ -712,7 +712,7 @@ export default function StudioSopsPage() {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh]">
+        <DialogContent className="max-w-2xl">
           <DialogHeader className="flex flex-row items-center justify-between gap-4">
             <DialogTitle>{editingSop ? "Edit SOP" : "Create SOP"}</DialogTitle>
             <div className="flex items-center gap-2">
@@ -730,7 +730,7 @@ export default function StudioSopsPage() {
             </div>
           </DialogHeader>
           
-          <ScrollArea className="max-h-[calc(90vh-120px)] pr-4">
+          <DialogBody>
             {showHistory && editingSop ? <SopHistory article={editingSop} onRestored={saved => openDialog(saved)} /> : isPreviewMode ? (
               <StaffPreview title={title} steps={steps} content={content} />
             ) : (
@@ -856,7 +856,7 @@ export default function StudioSopsPage() {
                 </div>
               </div>
             )}
-          </ScrollArea>
+          </DialogBody>
         </DialogContent>
       </Dialog>
     </StudioLayout>

@@ -910,8 +910,9 @@ export default function StudioChecklistsPage() {
           setItemAttachments({});
         }
       }}>
-        <DialogContent className="max-w-md max-h-[90vh] h-[calc(100vh-4rem)] sm:h-auto overflow-y-auto">
+        <DialogContent className="max-w-md">
           <MediaDropZone
+            className="flex min-h-0 flex-1 flex-col gap-4"
             target="checklist"
             checklistTemplateId={editingChecklist?.id}
             onUploadComplete={(attachment) => {
@@ -928,7 +929,8 @@ export default function StudioChecklistsPage() {
             </DialogTitle>
           </DialogHeader>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onEditSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onEditSubmit)} className="flex min-h-0 flex-1 flex-col gap-4">
+              <DialogBody className="space-y-4">
               <FormField
                 control={form.control}
                 name="name"
@@ -1519,6 +1521,7 @@ export default function StudioChecklistsPage() {
                 />
               )}
 
+              </DialogBody>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setShowEditDialog(false)} data-testid="button-cancel-edit">
                   Cancel
@@ -2356,10 +2359,11 @@ export default function StudioChecklistsPage() {
       </Dialog>
 
       <Dialog open={!!historyChecklistId} onOpenChange={(open) => !open && setHistoryChecklistId(null)}>
-        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Checker History</DialogTitle>
           </DialogHeader>
+          <DialogBody>
           {historyLoading && (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -2408,6 +2412,7 @@ export default function StudioChecklistsPage() {
               )}
             </div>
           )}
+          </DialogBody>
         </DialogContent>
       </Dialog>
     </StudioLayout>

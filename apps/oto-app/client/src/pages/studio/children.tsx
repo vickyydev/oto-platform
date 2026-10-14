@@ -12,6 +12,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetDescription,
+  SheetBody,
 } from "@/components/ui/sheet";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -28,6 +29,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogBody,
 } from "@/components/ui/dialog";
 import {
   Baby,
@@ -610,7 +612,7 @@ export default function ChildrenDatabasePage() {
 
       {/* ── Child Profile Sheet ── */}
       <Sheet open={!!selectedChild} onOpenChange={(open) => { if (!open) closeSheet(); }}>
-        <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto" onInteractOutside={(e) => e.preventDefault()}>
+        <SheetContent side="right" className="w-full sm:max-w-lg flex flex-col gap-0 overflow-hidden" onInteractOutside={(e) => e.preventDefault()}>
           <SheetHeader className="text-left">
             <SheetTitle className="flex items-center gap-2">
               <Baby className="h-5 w-5 text-teal-600" />
@@ -621,6 +623,7 @@ export default function ChildrenDatabasePage() {
             </SheetDescription>
           </SheetHeader>
 
+          <SheetBody>
           <div className="space-y-6 py-4">
             <ChildProfileEditor
               form={profileForm}
@@ -757,6 +760,7 @@ export default function ChildrenDatabasePage() {
               )}
             </div>
           </div>
+          </SheetBody>
         </SheetContent>
       </Sheet>
 
@@ -983,7 +987,7 @@ export default function ChildrenDatabasePage() {
           </DialogHeader>
 
           {mergeChild1 && mergeChild2 && (
-            <div className="space-y-4 py-2 max-h-[60vh] overflow-y-auto">
+            <DialogBody className="space-y-4 py-2">
               <p className="text-xs text-muted-foreground">Click the profile you want to keep as the primary record. The other profile's registrations will be moved into it.</p>
 
               {/* Profile picker — full field comparison */}
@@ -1102,7 +1106,7 @@ export default function ChildrenDatabasePage() {
                   </div>
                 );
               })()}
-            </div>
+            </DialogBody>
           )}
 
           <DialogFooter>
