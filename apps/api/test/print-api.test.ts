@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { randomUUID } from 'node:crypto';
 import { and, eq, sql } from 'drizzle-orm';
 import {
   BOX_COMMAND_KINDS as DB_BOX_COMMAND_KINDS,
@@ -1076,49 +1077,32 @@ describe('the Console’s Test print (SCRUM-364)', () => {
   });
 
   /**
-   * The door the drawer no longer uses, and why — kept as a reading rather
-   * than as a rule.
-   *
-   * `POST /boxes/:id/commands` queues the command and writes no print job, so
-   * the box prints and is then refused when it says what happened. That is
-   * still true of every caller of that route (the till's Station Setup screen
-   * is one, `apps/pos/src/api/platform.ts`), which is why this is written down
-   * here: whoever fixes those has this test to delete, and knows what it was
-   * for.
+   * SCRUM-381 — the till's Station Setup press, which used to queue the bare
+   * `test_print` command (one row, no print job, the box's report refused) and
+   * now sends what the drawer sends, with its own Idempotency-Key per press.
+   * The reading that recorded the bare route's behaviour is retired with it.
    */
-  it('a bare test_print command leaves no job, and the box’s report is refused', async () => {
+  it('the till’s Station Setup test print records a job the box’s outcome lands on', async () => {
     const { agent } = await buildAgent();
-    const { receipt } = await seededIds();
-    const [boxRow] = await ctx.db.select().from(box).where(eq(box.id, agent.state.boxId!)).limit(1);
-    // As above: anything left queued is collected before the mark, so the log
-    // line read afterwards belongs to this press.
+    const { till } = await seededIds();
     await agent.runPendingCommands();
     const logged = agent.recentLogs(500).length;
-    const before = await ctx.db.select().from(printJob).where(eq(printJob.boxId, boxRow!.id));
 
-    const queued = await post(`/boxes/${boxRow!.id}/commands`, {
-      kind: 'test_print',
-      payload: { deviceId: receipt.id },
-    });
-    expect(queued.statusCode, queued.body).toBe(200);
+    const pressed = await post(
+      `/stations/${till.id}/test-print`,
+      { kind: 'test_page', role: 'receipt' },
+      { 'idempotency-key': randomUUID() },
+    );
+    expect(pressed.statusCode, pressed.body).toBe(200);
+    const jobId = pressed.json().printJob.id as string;
     expect(await agent.runPendingCommands()).toBeGreaterThanOrEqual(1);
-
-    // The command itself is fine: the box understood it and paper came out.
-    const commands = (await get(`/boxes/${boxRow!.id}/commands?limit=25`)).json().commands as {
-      id: string;
-      state: string;
-    }[];
-    expect(commands.find((c) => c.id === queued.json().commandId)?.state).toBe('succeeded');
-
-    // And the platform has no record of the printout.
-    const after = await ctx.db.select().from(printJob).where(eq(printJob.boxId, boxRow!.id));
-    expect(after.length).toBe(before.length);
     expect(
       agent
         .recentLogs(500)
         .slice(logged)
         .some((line) => line.includes('did not accept a print job outcome')),
-      'the box reported an outcome against a job the cloud never wrote',
-    ).toBe(true);
+    ).toBe(false);
+    const [row] = await ctx.db.select().from(printJob).where(eq(printJob.id, jobId)).limit(1);
+    expect(row!.status).toBe('printed');
   });
 });

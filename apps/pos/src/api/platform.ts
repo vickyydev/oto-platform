@@ -1202,12 +1202,21 @@ export const stationsApi = {
   /**
    * A test print is a command to the box, not a message down a wire from this
    * iPad: the cloud queues it, the box collects it on its next poll and runs it
-   * there. So it can be sent while the station is still being set up.
+   * there.
+   *
+   * SCRUM-381 — through the station's print-jobs route, as the Console's Box
+   * drawer does (SCRUM-364), and not as a bare `test_print` command: that
+   * route writes the `edge.print_job` row first and hands the box its id, so
+   * the outcome the box reports lands on a row and shows in the Printing panel
+   * like any other print. The bare command wrote no row, and the box's report
+   * was refused. The box routes by the job a printer does at a station, so the
+   * station and the role are the whole address. Each press its own key: two
+   * presses are two pieces of paper.
    */
-  testPrint: (boxId: string, deviceId: string) =>
-    api.post<{ commandId: string; actionId?: string | null }>(
-      `/boxes/${encodeURIComponent(boxId)}/commands`,
-      { kind: 'test_print', payload: { deviceId } },
+  testPrint: (stationId: string, role: StationDeviceRole) =>
+    api.post<{ printJob: ApiPrintJob; commandId: string; actionId: string }>(
+      `/stations/${encodeURIComponent(stationId)}/test-print`,
+      { kind: 'test_page', role },
       { idempotencyKey: idemKey() },
     ),
 };

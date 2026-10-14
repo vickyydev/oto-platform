@@ -580,10 +580,23 @@ function StationEditor({ wizard }: { wizard: boolean }) {
   /**
    * A test print is a command to the box, not a message down a wire from this
    * iPad: the cloud queues it, the box runs it, and the result shows up in its
-   * command history. Without the fleet it stays the prototype's simulated
+   * Printing panel. Without the fleet it stays the prototype's simulated
    * message.
+   *
+   * SCRUM-381 — it goes through the station's print-jobs route, which records
+   * the print job the box reports its outcome against. The box prints a test
+   * on the printer SAVED for that job at that station — it routes by station
+   * and role, never by a device id — so a choice not saved yet is said rather
+   * than printed somewhere else.
    */
-  const runTestPrint = (deviceId?: string) => {
+  const savedDeviceFor: Record<DeviceRole, string | undefined> = {
+    receipt: seed?.receiptPrinterId,
+    kids: seed?.kidsBraceletPrinterId,
+    adult: seed?.adultBraceletPrinterId,
+    kitchen: seed?.kitchenPrinterId,
+    bar: seed?.barPrinterId,
+  };
+  const runTestPrint = (role: DeviceRole, deviceId?: string) => {
     if (!fleet) {
       testPrint(deviceById(deviceId));
       return;
@@ -592,13 +605,35 @@ function StationEditor({ wizard }: { wizard: boolean }) {
       toast({ title: 'No printer selected', description: 'Choose a printer first.' });
       return;
     }
+    if (!editingId) {
+      toast({
+        title: 'Save the station first',
+        description:
+          'A test print goes to the printer saved for this job at this station. Finish the setup, then test it from the station settings.',
+      });
+      return;
+    }
+    if (boxId !== seedStation?.boxId || savedDeviceFor[role] !== deviceId) {
+      toast({
+        title: 'Save the change first',
+        description: `${boxName} prints a test on the printer saved for this job, and this choice is not saved yet.`,
+      });
+      return;
+    }
     stationsApi
-      .testPrint(boxId, deviceId)
-      .then(() =>
-        toast({
-          title: 'Test print queued',
-          description: `${boxName} runs it on its next poll and records the result.`,
-        }),
+      .testPrint(editingId, ROLE_TO_API[role])
+      .then(({ printJob }) =>
+        toast(
+          printJob.status === 'skipped'
+            ? {
+                title: 'Nothing printed',
+                description: printJob.errorMessage ?? 'No printer took the test print.',
+              }
+            : {
+                title: 'Test print queued',
+                description: `${boxName} runs it on its next poll and records the result in its Printing panel.`,
+              },
+        ),
       )
       .catch(apiFail("Couldn't send the test print"));
   };
@@ -608,7 +643,7 @@ function StationEditor({ wizard }: { wizard: boolean }) {
     selectedId: id,
     onSelect: (value: string) => set(value),
     onClear: () => set(undefined),
-    onTest: () => runTestPrint(id),
+    onTest: () => runTestPrint(role, id),
     testLabel: 'Test print',
     empty: fleet ? emptyDeviceNote(boxId, boxDevices) : undefined,
   });
