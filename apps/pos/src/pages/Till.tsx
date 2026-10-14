@@ -127,6 +127,7 @@ import { DoorCheckInChoiceModal, type DoorCheckInGroup } from '@/components/till
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Baby } from 'lucide-react';
 import type { Booking } from '@/types';
+import { currentLane } from '@/lib/lane';
 
 // Break a ticket line into its discountable component rows (kids/adults/socks/
 // each add-on) for the manual-discount picker. Mirrors computeLineBreakdown so
@@ -2689,11 +2690,17 @@ export default function Till() {
     // S2-14b — the platform took the add-ons' stock when it closed the sale;
     // read what is left so the next guest's grid and guard are current.
     void refreshSellableStock();
-    // Increment each applied promo's usage counter after the sale is committed.
-    // Use the same identity key as validatePromoCode for consistent per-customer tracking.
-    discounts.forEach((d) =>
-      incrementPromoUsage(d.code, customerPhone || member?.phone || undefined)
-    );
+    // SCRUM-374 — the platform counts a code's uses on its ledger and refuses
+    // one past its limit at the quote and at the close, in its own words, which
+    // this till shows. So a sale the platform closed is NOT counted again here:
+    // a local count drifts (a voided sale stays counted) and refused codes the
+    // platform would take. Only a sale taken on the box lane, with the link
+    // down, is counted locally — the offline check is the one guard there.
+    if (currentLane() === 'box') {
+      discounts.forEach((d) =>
+        incrementPromoUsage(d.code, customerPhone || member?.phone || undefined)
+      );
+    }
     setSaleResult(newSale);
     setStep(6);
 

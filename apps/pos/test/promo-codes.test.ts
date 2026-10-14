@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { cartQuote } from './support/fixtures';
 import type { CartLine, Discount, FnbOrder, FnbOrderLine, ManualDiscount, MerchOrder } from '@/types';
@@ -339,5 +341,23 @@ describe('a code used at the F&B or shop counter, in the till’s own figures (S
     expect(promoDiscountImpact(filters).map((row) => [row.transactionId, row.code, row.amountSatang])).toEqual(
       expect.arrayContaining([['promo-fnb-1', 'FNB10', 1_500], ['promo-merch-1', 'SHOP10', 2_000]]),
     );
+  });
+});
+
+describe('SCRUM-374 — the platform counts a code’s uses; a till counts only what it took offline', () => {
+  const src = (rel: string) => readFileSync(path.resolve(import.meta.dirname, '..', 'src', rel), 'utf8');
+
+  it('both ticket tills count a use locally only on the box lane', () => {
+    for (const file of ['pages/Till.tsx', 'components/mobile/MobileTill.tsx']) {
+      const page = src(file);
+      const at = page.indexOf('incrementPromoUsage(d.code');
+      expect(at, file).toBeGreaterThan(-1);
+      expect(page.match(/incrementPromoUsage\(d\.code/g), file).toHaveLength(1);
+      // The nearest enclosing condition before the call is the lane check.
+      const guard = page.lastIndexOf("if (currentLane() === 'box') {", at);
+      expect(guard, file).toBeGreaterThan(-1);
+      // ...and no block closes between the check and the call.
+      expect(page.slice(guard, at)).not.toMatch(/\r?\n {4}\}/);
+    }
   });
 });

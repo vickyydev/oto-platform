@@ -90,6 +90,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ArrowLeft, CheckCircle2, Baby, User, UtensilsCrossed, Printer, QrCode as QrCodeIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { currentLane } from '@/lib/lane';
 
 // ─── Mobile step types ────────────────────────────────────────────────────────
 
@@ -1697,11 +1698,17 @@ export default function MobileTill() {
       quoted,
     });
     recordSale(newSale);
-    // Increment each applied promo's usage counter after the sale is committed.
-    // Use the same identity key as validatePromoCode for consistent per-customer tracking.
-    discounts.forEach((d) =>
-      incrementPromoUsage(d.code, customerPhone || member?.phone || undefined)
-    );
+    // SCRUM-374 — the platform counts a code's uses on its ledger and refuses
+    // one past its limit at the quote and at the close, in its own words, which
+    // this till shows. So a sale the platform closed is NOT counted again here:
+    // a local count drifts (a voided sale stays counted) and refused codes the
+    // platform would take. Only a sale taken on the box lane, with the link
+    // down, is counted locally — the offline check is the one guard there.
+    if (currentLane() === 'box') {
+      discounts.forEach((d) =>
+        incrementPromoUsage(d.code, customerPhone || member?.phone || undefined)
+      );
+    }
     // Walk-in F&B credit: mint ONE QR-keyed wallet per fnb_credit grant at sale time
     // (mirrors Till.tsx). The printed voucher is scannable at F&B immediately.
     newSale.creditGrants.forEach((grant, i) => {
