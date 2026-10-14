@@ -213,7 +213,7 @@ export default function ReceptionKiosk() {
             <CardContent className="flex flex-col items-center gap-4">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <QrCode className="h-4 w-4" />
-                <span>Ask an administrator to generate a new QR code from Branches</span>
+                <span>Ask an administrator to make a new setup code: Branches, then Staff Kiosk Setup on this branch</span>
               </div>
             </CardContent>
           )}
