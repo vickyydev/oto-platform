@@ -397,6 +397,8 @@ function AccessStatusSection({ employeeId, personId, employee, forceOpen }: { em
   // Check if login can be enabled (hasLogin checks legacy personId/accessPolicy, hasSimpleLogin checks new userId)
   const hasLogin = !!(personId && accessPolicy);
   const hasSimpleLogin = !!employee.userId;
+  // The toggle flips the login (SCRUM-543): it names what a press will do.
+  const loginOff = (employee as Employee & { loginActive?: boolean | null }).loginActive === false;
   const _canEnableLogin = !hasLogin;
 
   return (
@@ -470,8 +472,8 @@ function AccessStatusSection({ employeeId, personId, employee, forceOpen }: { em
                       disabled={toggleLoginMutation.isPending}
                       data-testid="button-toggle-login"
                     >
-                      <XCircle className="h-4 w-4 mr-2" />
-                      Disable Login
+                      {loginOff ? <CheckCircle className="h-4 w-4 mr-2" /> : <XCircle className="h-4 w-4 mr-2" />}
+                      {loginOff ? "Enable Login" : "Disable Login"}
                     </Button>
                   </div>
                 </div>
@@ -621,8 +623,8 @@ function AccessStatusSection({ employeeId, personId, employee, forceOpen }: { em
                           disabled={toggleLoginMutation.isPending}
                           data-testid="button-toggle-login-policy"
                         >
-                          <XCircle className="h-4 w-4 mr-2" />
-                          Disable Login
+                          {loginOff ? <CheckCircle className="h-4 w-4 mr-2" /> : <XCircle className="h-4 w-4 mr-2" />}
+                          {loginOff ? "Enable Login" : "Disable Login"}
                         </Button>
                       </div>
                     </div>

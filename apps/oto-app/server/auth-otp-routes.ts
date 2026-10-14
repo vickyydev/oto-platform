@@ -4,6 +4,7 @@ import { db } from "./db";
 import { users, people, authOtpEvents } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
 import { hashPassword, requireAuth } from "./auth";
+import { legacyPasswordsOnly } from "./middleware/platformSignOn";
 import {
   isTwilioConfigured,
   normalizePhoneToE164,
@@ -55,7 +56,7 @@ export function registerAuthOtpRoutes(app: Express) {
     });
   });
 
-  app.post("/api/auth/forgot-password/request-otp", async (req: Request, res: Response, next: NextFunction) => {
+  app.post("/api/auth/forgot-password/request-otp", legacyPasswordsOnly, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const parsed = phoneSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -83,7 +84,7 @@ export function registerAuthOtpRoutes(app: Express) {
     }
   });
 
-  app.post("/api/auth/forgot-password/verify-otp", async (req: Request, res: Response, next: NextFunction) => {
+  app.post("/api/auth/forgot-password/verify-otp", legacyPasswordsOnly, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const parsed = verifyOtpSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -111,7 +112,7 @@ export function registerAuthOtpRoutes(app: Express) {
     }
   });
 
-  app.post("/api/auth/forgot-password/reset", async (req: Request, res: Response, next: NextFunction) => {
+  app.post("/api/auth/forgot-password/reset", legacyPasswordsOnly, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const parsed = resetPasswordSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -255,7 +256,7 @@ export function registerAuthOtpRoutes(app: Express) {
     }
   });
 
-  app.post("/api/auth/advisor/forgot-password/request-otp", async (req: Request, res: Response, next: NextFunction) => {
+  app.post("/api/auth/advisor/forgot-password/request-otp", legacyPasswordsOnly, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const parsed = phoneSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -283,7 +284,7 @@ export function registerAuthOtpRoutes(app: Express) {
     }
   });
 
-  app.post("/api/auth/advisor/forgot-password/verify-otp", async (req: Request, res: Response, next: NextFunction) => {
+  app.post("/api/auth/advisor/forgot-password/verify-otp", legacyPasswordsOnly, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const parsed = verifyOtpSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -312,7 +313,7 @@ export function registerAuthOtpRoutes(app: Express) {
     }
   });
 
-  app.post("/api/auth/advisor/forgot-password/reset", async (req: Request, res: Response, next: NextFunction) => {
+  app.post("/api/auth/advisor/forgot-password/reset", legacyPasswordsOnly, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const parsed = resetPasswordSchema.safeParse(req.body);
       if (!parsed.success) {

@@ -5,7 +5,7 @@ import { registerTimekeepingReviewRoutes } from "./timekeeping-review-routes";
 import { registerEmployeeActionRoutes } from "./employee-action-routes";
 import { registerSuiteSignInRoutes, unusablePassword } from "./suite-sign-in-routes";
 import { readPhone } from "./lib/suiteSignIn";
-import { legacyLoginEnabled } from "./middleware/platformSignOn";
+import { legacyLoginEnabled, legacyPasswordsOnly } from "./middleware/platformSignOn";
 import _express, { type Express, type Request, type Response, type NextFunction } from "express";
 import { createServer as _createServer, type Server } from "http";
 import { storage, assertScheduleDeleteScope, resolveFixReportStatusFilter, type ActivityParkGroup, type AttentionReadScope } from "./storage";
@@ -1185,7 +1185,7 @@ export async function registerRoutes(
   });
 
   // Admin reset user password endpoint
-  app.post("/api/users/:id/reset-password", requireGlobalAdmin, async (req, res, next) => {
+  app.post("/api/users/:id/reset-password", requireGlobalAdmin, legacyPasswordsOnly, async (req, res, next) => {
     try {
       const tenantId = await userManagementTenant(req);
       if (!tenantId) return res.status(403).json({ message: "Access denied" });
@@ -3442,12 +3442,16 @@ export async function registerRoutes(
       }
       // Enrich with linked user's phone verification status
       let phoneVerificationInfo: { phoneVerified: boolean; phoneVerifiedAt: string | null; phoneE164: string | null } | null = null;
+      // Whether the linked login is switched on, so the screen's toggle names
+      // what a press will do (SCRUM-543); null with no linked login.
+      let loginActive: boolean | null = null;
       if (employee.userId) {
         const [linkedUser] = await db
           .select({
             phoneVerified: users.phoneVerified,
             phoneVerifiedAt: users.phoneVerifiedAt,
             phoneE164: users.phoneE164,
+            isActive: users.isActive,
           })
           .from(users)
           .where(eq(users.id, employee.userId));
@@ -3457,9 +3461,10 @@ export async function registerRoutes(
             phoneVerifiedAt: linkedUser.phoneVerifiedAt?.toISOString() || null,
             phoneE164: linkedUser.phoneE164,
           };
+          loginActive = linkedUser.isActive;
         }
       }
-      res.json({ ...employee, phoneVerificationInfo });
+      res.json({ ...employee, phoneVerificationInfo, loginActive });
     } catch (error) {
       next(error);
     }
@@ -4083,6 +4088,10 @@ export async function registerRoutes(
       if (!employee || !actorTenantId || employee.tenantId !== actorTenantId) {
         return res.status(404).json({ message: "Employee not found" });
       }
+      // The new login is linked to the employee below; never over one they have.
+      if (employee.userId) {
+        return res.status(409).json({ message: "Employee already has a login account" });
+      }
       
       // Check branch access
       const userWithAccess = req.userWithAccess;
@@ -4103,14 +4112,16 @@ export async function registerRoutes(
         return res.status(401).json({ message: "Not authenticated" });
       }
       
-      // Only admin can set ADMIN access level
+      // Only admin can set ADMIN access level. An administrator is every role
+      // the screen counts as one (SCRUM-543): admin, global_admin, operator_admin.
       const effectiveCallerRole = req.userWithAccess?.role ?? req.user.role;
-      if (accessLevel === "ADMIN" && effectiveCallerRole !== "admin") {
+      const callerIsAdmin = ["admin", "global_admin", "operator_admin"].includes(effectiveCallerRole);
+      if (accessLevel === "ADMIN" && !callerIsAdmin) {
         return res.status(403).json({ message: "Only administrators can grant ADMIN access level" });
       }
-      
+
       // Only admin can grant ALL branches
-      if (branchScope === "ALL" && effectiveCallerRole !== "admin") {
+      if (branchScope === "ALL" && !callerIsAdmin) {
         return res.status(403).json({ message: "Only administrators can grant access to all branches" });
       }
       
@@ -4228,7 +4239,16 @@ export async function registerRoutes(
         coreAccountEnabled: false,
         provisioningStatus: "NOT_STARTED",
       });
-      
+
+      // SCRUM-543: the login just made is this employee's and this person's.
+      // Reset Password and Disable Login find a login through these two links
+      // only, so without them they answered "does not have a login account"
+      // straight after it was created.
+      await storage.updateEmployee(employee.id, { userId: user.id });
+      await db.update(accessPolicies)
+        .set({ coreUserId: user.id, updatedAt: new Date() })
+        .where(eq(accessPolicies.id, accessPolicy.id));
+
       // Trigger attention engine to resolve MISSING_LOGIN_ACCESS
       evaluateForEmployee(employee.id).catch(err => console.error("[AttentionEngine] Enable login trigger failed:", err));
       
@@ -4245,7 +4265,7 @@ export async function registerRoutes(
   });
 
   // Generate login for employee (auto-username, no email required)
-  app.post("/api/employees/:id/generate-login", requireAuth, requireManager, async (req, res, next) => {
+  app.post("/api/employees/:id/generate-login", requireAuth, requireManager, legacyPasswordsOnly, async (req, res, next) => {
     try {
       const { generateUniqueUsername, generateTempPassword } = await import("./utils/username-generator");
       
@@ -4339,7 +4359,7 @@ export async function registerRoutes(
   });
 
   // Reset password for employee's user account
-  app.post("/api/employees/:id/reset-password", requireAuth, requireManager, async (req, res, next) => {
+  app.post("/api/employees/:id/reset-password", requireAuth, requireManager, legacyPasswordsOnly, async (req, res, next) => {
     try {
       const { generateTempPassword } = await import("./utils/username-generator");
 

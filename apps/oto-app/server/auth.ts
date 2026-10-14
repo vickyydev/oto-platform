@@ -10,6 +10,7 @@ import { TRUST_PROXY } from "./config/env";
 import {
   LEGACY_LOGIN_REFUSAL,
   legacyLoginEnabled,
+  legacyPasswordsOnly,
   registerPlatformSignOn,
   signInOptions,
 } from "./middleware/platformSignOn";
@@ -199,7 +200,7 @@ export function setupAuth(app: Express) {
   });
 
   // Change password endpoint (for first login password change and voluntary changes)
-  app.post("/api/change-password", requireAuth, async (req, res, next) => {
+  app.post("/api/change-password", requireAuth, legacyPasswordsOnly, async (req, res, next) => {
     try {
       const { currentPassword, newPassword } = req.body;
 

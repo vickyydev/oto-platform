@@ -137,6 +137,25 @@ export const LEGACY_LOGIN_REFUSAL =
   "This app is opened from the OTO suite launcher: sign in there and choose OTO App, " +
   "and you will land here without a second password. This form is kept only for the cutover rehearsal.";
 
+/**
+ * SCRUM-543: the answer every password door of this app gives while its own
+ * sign-in is closed. A password set, reset or recovered here would be one
+ * nothing accepts — the launcher owns the password — so the door says where
+ * it moved instead of doing work that cannot be used.
+ */
+export const LAUNCHER_PASSWORDS_REFUSAL =
+  "Passwords are managed on the OTO launcher. Change or recover a password there.";
+
+/**
+ * The guard on those doors: through while the legacy form is on, unchanged;
+ * a 403 naming the launcher while it is off. Read per request, as
+ * `legacyLoginEnabled` is everywhere else.
+ */
+export function legacyPasswordsOnly(_req: Request, res: Response, next: NextFunction): void {
+  if (legacyLoginEnabled()) return next();
+  res.status(403).json({ reason: "passwords_on_launcher", message: LAUNCHER_PASSWORDS_REFUSAL });
+}
+
 const NOT_PROVISIONED =
   "Your account may open the OTO App, but nobody has said which OTO App user you are. " +
   "An administrator has to link your platform account to your user here — Login Users, " +
