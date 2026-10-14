@@ -1597,7 +1597,7 @@ try {
     assert.deepEqual(EMPLOYEE_ROLE_WRITERS.map((w) => [w.writer, w.disposition]), [
       ["storage.setEmployeeRoles", "held"],
       ["storage.setRoleEmployees", "fenced"],
-      ["storage.deleteEmployee", "held"],
+      ["server/lib/recordDeletion.ts (deleteEmployeeWhole)", "held"],
       ["Data Admin's Employee Role and Role models", "later"],
       ["server/prod-sync.ts", "dev-only"],
     ]);

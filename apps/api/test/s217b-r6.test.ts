@@ -946,7 +946,7 @@ describe('D. read off the code', () => {
     expect(hr.EMPLOYEE_ROLE_WRITERS.map((w) => `${w.writer} -> ${w.disposition}`)).toEqual([
       'storage.setEmployeeRoles -> held',
       'storage.setRoleEmployees -> fenced',
-      'storage.deleteEmployee -> held',
+      'server/lib/recordDeletion.ts (deleteEmployeeWhole) -> held',
       "Data Admin's Employee Role and Role models -> later",
       'server/prod-sync.ts -> dev-only',
     ]);
@@ -956,7 +956,11 @@ describe('D. read off the code', () => {
       const fn = storage.lastIndexOf('\n        async ', m.index);
       return storage.slice(fn + 15, storage.indexOf('(', fn + 15));
     });
-    expect([...new Set(writers)].sort()).toEqual(['deleteEmployee', 'setEmployeeRoles', 'setRoleEmployees']);
+    // SCRUM-542 moved the employee delete's writes to server/lib/recordDeletion.ts.
+    expect([...new Set(writers)].sort()).toEqual(['setEmployeeRoles', 'setRoleEmployees']);
+    const recordDeletion = code(readFileSync(join(APP_SERVER, 'lib', 'recordDeletion.ts'), 'utf8'));
+    expect(recordDeletion).toContain('"employee_roles",');
+    expect(recordDeletion).toMatch(/delete from \$\{table\} where employee_id = \$1/);
     const set = storage.slice(storage.indexOf('async setRoleEmployees('), storage.indexOf('async getRoleWithBranches('));
     expect(set).toMatch(/await db\.delete\(employeeRoles\)\.where\(and\(\s*eq\(employeeRoles\.roleId, roleId\),\s*inArray\(\s*employeeRoles\.employeeId,\s*db\.select\(\{ id: employees\.id \}\)\.from\(employees\)\.where\(eq\(employees\.tenantId, tenantId\)\),/);
     const byRole = storage.slice(storage.indexOf('async getEmployeesByRole('), storage.indexOf('async setRoleEmployees('));
