@@ -171,18 +171,18 @@ export default function ContractDetailPage() {
       });
       return await res.json();
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/contracts", id] });
       queryClient.invalidateQueries({ queryKey: ["/api/contracts"] });
       setEmailDialogOpen(false);
       toast({
         title: "Email sent",
-        description: `Contract sent to ${emailTo}. Message ID: ${data.emailMessageId || "N/A"}`,
+        description: `Contract sent to ${emailTo}.`,
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Failed to send email",
+        title: "Email not sent",
         description: error.message,
         variant: "destructive",
       });

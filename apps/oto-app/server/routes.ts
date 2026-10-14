@@ -6250,6 +6250,11 @@ export async function registerRoutes(
         attachmentPath: contract.pdfPath,
       });
 
+      if (result.notConfigured) {
+        // Nothing was attempted: the contract stays finalized, not "failed".
+        return res.status(503).json({ message: `${result.error} Use 'Get Signing Link' on this contract and send the link to the employee yourself.` });
+      }
+
       if (!result.success) {
         const failedContract = await storage.updateContract(contract.id, {
           status: "failed",

@@ -12,6 +12,8 @@ interface EmailResult {
   success: boolean;
   messageId?: string;
   error?: string;
+  /** True when no mail server is configured: nothing was attempted. */
+  notConfigured?: boolean;
 }
 
 export async function sendEmail(options: EmailOptions): Promise<EmailResult> {
@@ -24,15 +26,13 @@ export async function sendEmail(options: EmailOptions): Promise<EmailResult> {
   const fromEmail = process.env.EMAIL_FROM || "noreply@company.com";
 
   if (!smtpHost || !smtpUser || !smtpPass) {
-    console.log("Email sending simulated (SMTP not configured)");
-    console.log(`To: ${to}`);
-    console.log(`Subject: ${subject}`);
-    console.log(`Body: ${body}`);
-    console.log(`Attachment: ${attachmentPath || "None"}`);
-
+    // Nothing is sent without a mail server; say so instead of reporting a
+    // simulated success the caller would record as "sent".
+    console.log("Email not sent: SMTP is not configured on this server");
     return {
-      success: true,
-      messageId: `simulated-${Date.now()}`,
+      success: false,
+      notConfigured: true,
+      error: "Email isn't set up on this server, so nothing was sent.",
     };
   }
 
