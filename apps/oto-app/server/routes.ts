@@ -21919,12 +21919,24 @@ OTO Company Limited`,
         updates.completedBy = user.id;
       }
       
-      await db.update(checklistRuns)
-        .set(updates)
-        .where(and(eq(checklistRuns.id, id), eq(checklistRuns.tenantId, tenantId)));
-      
-      console.log(`[AUDIT] Checklist run ${id} status override: ${oldStatus} -> ${newStatus} by user ${user.id} at ${now.toISOString()}`);
-      
+      // The status change and its override record are written together: the
+      // confirmation promises the change "will be logged as a manager override".
+      await db.transaction(async (tx) => {
+        await tx.update(checklistRuns)
+          .set(updates)
+          .where(and(eq(checklistRuns.id, id), eq(checklistRuns.tenantId, tenantId)));
+        const [template] = await tx.select({ name: checklistTemplates.name })
+          .from(checklistTemplates).where(eq(checklistTemplates.id, run.templateId)).limit(1);
+        await storage.createActivityLog({
+          tenantId,
+          branchId: run.branchId ?? null,
+          activityType: "checklist_status_overridden",
+          createdBy: user.id,
+          summaryText: `Manager override: checklist "${template?.name ?? "Checklist"}" changed from ${oldStatus} to ${newStatus}`,
+          metadataJson: JSON.stringify({ checklistRunId: id, oldStatus, newStatus }),
+        }, tx);
+      });
+
       res.json({ success: true, oldStatus, newStatus });
     } catch (error) {
       next(error);
