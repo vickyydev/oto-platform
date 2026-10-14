@@ -71,3 +71,18 @@ What remains is ARRANGEMENTS, not decisions:
 - **Domain/DNS:** who controls the otoplay domains, for the real staging
   domain and the Radar hostname redirect (printed QR posters point at the
   old host).
+
+## 4. Added 14 October (late) — three owner matters from the message audit
+
+- **Child-profile merge rule (for Anthony, child safety):** merging two child
+  profiles silently overwrites the second profile's allergies, notes, photo
+  and date of birth with the first's. Should the merge instead combine the
+  allergy/medical notes from both? Until answered, the dialog will at least
+  say plainly what is replaced (the wording fix ships with the audit batch).
+- **Leave-policy branch rule (yours):** the policies screen's branch check is
+  ported from the original app and currently requires an all-branches seat;
+  the audit batch fixes the broken field read, but whether branch-limited
+  managers should reach leave policies at all is a policy choice.
+- **Shift groups mandatory (yours):** the delete-group work keeps groups
+  required (shifts always live in one). Allowing ungrouped shifts would be a
+  structural change nobody has asked for; recorded for completeness.
