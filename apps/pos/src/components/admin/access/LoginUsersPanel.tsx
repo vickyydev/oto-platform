@@ -790,6 +790,9 @@ export function LoginUsersPanel() {
         account={appsFor}
         onClose={() => setAppsFor(null)}
         scopeLabel={scopeLabel}
+        branches={serverBranches
+          .filter((b) => b.active !== false)
+          .map((b) => ({ id: b.apiId!, name: b.name }))}
       />
 
       {/* Sessions this account holds (S2-01a) */}

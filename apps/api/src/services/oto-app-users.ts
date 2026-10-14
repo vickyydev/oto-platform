@@ -45,11 +45,12 @@ import type { Exec } from './tx';
  * What the app owns and this does not touch: access policies, and the employee
  * record a user is matched to. Those are set inside the OTO App.
  *
- * Branch access (`otoapp.user_branch_access`) used to be on that list, and one
- * row of it no longer is — see `seatInAppBranch` below (SCRUM-268). What is
- * written is the single row that seats a newly provisioned person in the
- * branch they already work at; changing anybody's branch access afterwards is
- * still the app's own screen.
+ * Branch access (`otoapp.user_branch_access`) used to be on that list and no
+ * longer is. Provisioning seats a new person in the branch they already work at
+ * (`seatInAppBranch`, SCRUM-268), or in exactly the branches the administrator
+ * chose (`seatInChosenBranches`, SCRUM-469); the same choice, made again later
+ * from the account's Apps dialog, replaces their rows through
+ * `setOtoAppUserBranches`. Nothing else on the platform writes that table.
  */
 
 /** Read back from every call. Never the password. */
@@ -246,8 +247,11 @@ export type OtoAppBranchMatch = 'core_branch_id' | 'name';
  *   it must not override what the platform knows.
  * - `operator_wide` — they administer the whole operator, so they are given
  *   every mapped branch rather than one.
+ * - `chosen` — the administrator picked the branches the grant covers
+ *   (SCRUM-469). Not a candidate in the order above: a choice replaces the
+ *   whole question, see `seatInChosenBranches`.
  */
-export type OtoAppSeatSource = 'request' | 'employee' | 'session' | 'operator_wide';
+export type OtoAppSeatSource = 'request' | 'employee' | 'session' | 'operator_wide' | 'chosen';
 
 /**
  * Why they were seated in none. Each is a different thing to fix, so they are
@@ -440,6 +444,213 @@ async function seatInAppBranch(
 }
 
 /**
+ * Seat a person in exactly the platform branches an administrator chose for
+ * their OTO App access (SCRUM-469), instead of the one branch
+ * `seatInAppBranch` would pick.
+ *
+ * All or nothing, and refused rather than half done: a choice that lands
+ * somewhere other than chosen is worse than an answer saying why it could not.
+ * Every chosen branch must be a live branch of this account's operator
+ * (`BRANCH_NOT_FOUND`), every one must have its row in the OTO App
+ * (`OTO_APP_BRANCH_UNMAPPED`, which `POST /branches/oto-app/reconcile` fixes),
+ * and all of them must sit in one park group (`OTO_APP_BRANCH_TENANTS`): the
+ * app takes a session's tenant from the FIRST access row a user has, so rows in
+ * two tenants would put them in whichever came back first.
+ *
+ * Rows are `selected_branches`, one per branch, never `all_branches`: that
+ * scope would also hand them Head Office and everything else in the park group
+ * (see `mappedAppBranches`), which is wider than the platform decides.
+ */
+async function seatInChosenBranches(
+  exec: Exec,
+  opts: { userId: string; platformAccountId: string; branchIds: readonly string[] },
+): Promise<OtoAppBranchPlacement> {
+  const wanted = [...new Set(opts.branchIds)];
+  if (wanted.length === 0) {
+    throw new AppError(400, 'BAD_REQUEST', 'Choose at least one branch, or all branches');
+  }
+  const [holder] = await exec
+    .select({ operatorId: account.operatorId })
+    .from(account)
+    .where(eq(account.id, opts.platformAccountId))
+    .limit(1);
+  // Provisioning loaded this account before it got here, so there is one.
+  const operatorId = holder!.operatorId;
+
+  // Inside this operator, always (SCRUM-248): a branch id carries no tenancy
+  // of its own, and an archived park is not somewhere to send anybody.
+  const platformRows = await exec
+    .select({ id: branch.id, name: branch.name })
+    .from(branch)
+    .where(
+      and(
+        inArray(branch.id, wanted),
+        eq(branch.operatorId, operatorId),
+        isNull(branch.archivedAt),
+      ),
+    );
+  const byId = new Map(platformRows.map((b) => [b.id, b]));
+  const missing = wanted.filter((id) => !byId.has(id));
+  if (missing.length > 0) {
+    throw new AppError(
+      400,
+      'BRANCH_NOT_FOUND',
+      'One of the chosen branches is not an open branch of this operator',
+      { branchIds: missing },
+    );
+  }
+
+  const seats: Array<{ id: string; name: string; tenantId: string; matchedBy: OtoAppBranchMatch }> =
+    [];
+  for (const id of wanted) {
+    const platform = byId.get(id)!;
+    const found = await findAppBranchForCore(exec, {
+      operatorId,
+      coreBranchId: platform.id,
+      name: platform.name,
+    });
+    if (!found || found === 'ambiguous') {
+      throw new AppError(
+        409,
+        'OTO_APP_BRANCH_UNMAPPED',
+        `${platform.name} has no single matching branch in the OTO App yet, so nobody can be given access to it there. Reconcile the branch lists first.`,
+        { branchId: platform.id, reason: found === 'ambiguous' ? 'ambiguous_name' : 'no_app_branch' },
+      );
+    }
+    seats.push(found);
+  }
+  if (new Set(seats.map((s) => s.tenantId)).size > 1) {
+    throw new AppError(
+      409,
+      'OTO_APP_BRANCH_TENANTS',
+      'The chosen branches belong to different park groups in the OTO App, and one person can only be in one',
+    );
+  }
+
+  for (const seat of seats) {
+    await exec.insert(otoappUserBranchAccess).values({
+      id: newId(),
+      tenantId: seat.tenantId,
+      userId: opts.userId,
+      branchId: seat.id,
+      accessScope: 'selected_branches',
+    });
+  }
+  return {
+    branchId: seats[0]!.id,
+    branchName: seats[0]!.name,
+    branchIds: seats.map((s) => s.id),
+    matchedBy: seats[0]!.matchedBy,
+    seatedFrom: 'chosen',
+    unplacedReason: null,
+  };
+}
+
+/**
+ * An advisor's branches are not this table's to say: the app resolves them
+ * from the advisor's access policy (`getUserWithBranchAccess`, intake 01 §3),
+ * and rows written here would only ever be read as a fallback nobody chose.
+ */
+function refuseAdvisor(role: string): void {
+  if (role === 'advisor') {
+    throw new AppError(
+      409,
+      'OTO_APP_ADVISOR_BRANCHES',
+      "An advisor's branches come from their access policy in the OTO App and are set there",
+    );
+  }
+}
+
+/**
+ * Change which branches of the OTO App a provisioned person covers
+ * (SCRUM-469): the branch choice made again, later, from the same dialog.
+ *
+ * Replaces every branch-access row the user has, including any set inside the
+ * app since: the administrator is looking at the current answer when they
+ * change it, and a merge would leave rows nobody chose. `null` is "all
+ * branches", and means exactly what it means at provisioning: the seat
+ * `seatInAppBranch` gives (their own branch, or every mapped branch for
+ * somebody who administers the whole operator).
+ *
+ * Runs on the caller's transaction, beside the grant's own scope change.
+ */
+export async function setOtoAppUserBranches(
+  exec: Exec,
+  opts: {
+    userId: string;
+    platformAccountId: string;
+    branchIds: readonly string[] | null;
+    sessionBranchId?: string | null;
+  },
+): Promise<OtoAppBranchPlacement> {
+  const [user] = await exec
+    .select({ role: otoappUsers.role })
+    .from(otoappUsers)
+    .where(eq(otoappUsers.id, opts.userId))
+    .limit(1);
+  if (!user) throw new AppError(404, 'NOT_FOUND', 'The OTO App has no user for this account');
+  refuseAdvisor(user.role);
+  await exec.delete(otoappUserBranchAccess).where(eq(otoappUserBranchAccess.userId, opts.userId));
+  return opts.branchIds === null
+    ? seatInAppBranch(exec, {
+        userId: opts.userId,
+        platformAccountId: opts.platformAccountId,
+        sessionBranchId: opts.sessionBranchId ?? null,
+      })
+    : seatInChosenBranches(exec, {
+        userId: opts.userId,
+        platformAccountId: opts.platformAccountId,
+        branchIds: opts.branchIds,
+      });
+}
+
+/** Where a linked user sits in the OTO App's branch list, as the Apps dialog shows it. */
+export interface OtoAppUserBranches {
+  /** An `all_branches` row: every branch of their park group, set inside the app. */
+  allBranches: boolean;
+  branches: UnlinkedOtoAppUserBranch[];
+}
+
+/**
+ * One user's branch access, for the dialog's "in the OTO App" line
+ * (SCRUM-469). Null on a database with no OTO App on it.
+ */
+export async function readOtoAppUserBranches(
+  exec: Exec,
+  userId: string,
+): Promise<OtoAppUserBranches | null> {
+  if (!(await otoAppBranchesInstalled(exec))) return null;
+  const rows = await exec
+    .select({
+      branchId: otoappUserBranchAccess.branchId,
+      accessScope: otoappUserBranchAccess.accessScope,
+    })
+    .from(otoappUserBranchAccess)
+    .where(eq(otoappUserBranchAccess.userId, userId));
+  const ids = rows.flatMap((r) => (r.branchId ? [r.branchId] : []));
+  const named = ids.length
+    ? await exec
+        .select({
+          id: otoappBranches.id,
+          name: otoappBranches.name,
+          coreBranchId: otoappBranches.coreBranchId,
+        })
+        .from(otoappBranches)
+        .where(inArray(otoappBranches.id, ids))
+    : [];
+  return {
+    allBranches: rows.some((r) => r.accessScope === 'all_branches'),
+    branches: named
+      .map((b) => ({
+        id: b.id,
+        name: b.name,
+        platformBranchId: b.coreBranchId ? canonicalCoreBranchId(b.coreBranchId) : null,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name)),
+  };
+}
+
+/**
  * The permission that says someone's reach is the whole operator rather than
  * one park. `platform_admin` and `operator_admin` carry it because they carry
  * the whole vocabulary; no branch-scoped bundle does.
@@ -499,6 +710,12 @@ export interface CreateOtoAppUserInput {
    */
   branchId?: string | null;
   sessionBranchId?: string | null;
+  /**
+   * The branches the administrator chose for this person's access (SCRUM-469).
+   * When given, exactly these are written and `branchId` / `sessionBranchId`
+   * play no part; when absent, the seat is `seatInAppBranch`'s, as before.
+   */
+  branchIds?: readonly string[] | null;
 }
 
 /**
@@ -521,6 +738,8 @@ export async function createOtoAppUser(
   // capitalised address stored here is one those lookups never find.
   const email = input.email.trim().toLowerCase();
   const phoneE164 = input.phoneE164?.trim() || null;
+  const chosen = input.branchIds ?? null;
+  if (chosen) refuseAdvisor(input.role);
 
   const clash = await findClash(exec, email, phoneE164);
   if (clash) {
@@ -562,12 +781,18 @@ export async function createOtoAppUser(
   const user = row!;
   return {
     ...user,
-    branch: await seatInAppBranch(exec, {
-      userId: user.id,
-      platformAccountId: input.platformAccountId,
-      branchId: input.branchId ?? null,
-      sessionBranchId: input.sessionBranchId ?? null,
-    }),
+    branch: chosen
+      ? await seatInChosenBranches(exec, {
+          userId: user.id,
+          platformAccountId: input.platformAccountId,
+          branchIds: chosen,
+        })
+      : await seatInAppBranch(exec, {
+          userId: user.id,
+          platformAccountId: input.platformAccountId,
+          branchId: input.branchId ?? null,
+          sessionBranchId: input.sessionBranchId ?? null,
+        }),
   };
 }
 

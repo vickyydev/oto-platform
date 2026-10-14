@@ -1209,6 +1209,18 @@ export interface AppIdentity {
    * that grants it and one derivation is better than two.
    */
   hasAccess: boolean;
+  /**
+   * OTO App only (SCRUM-469): where the access grant holds — `null` for every
+   * branch, else the platform branch ids — and where the app seats them. Absent
+   * on an older api.
+   */
+  branches?: {
+    accessBranches: string[] | null;
+    appBranches: {
+      allBranches: boolean;
+      branches: Array<{ id: string; name: string; platformBranchId: string | null }>;
+    } | null;
+  };
 }
 
 /**
@@ -1245,6 +1257,8 @@ export const appIdentitiesApi = {
       accountId: string;
       externalUserId?: string;
       otoApp?: { email: string; fullName?: string; role: OtoAppRole };
+      /** OTO App only (SCRUM-469). Left out, the access covers all branches. */
+      branchIds?: string[];
     },
   ) =>
     api.post<{
@@ -1254,6 +1268,17 @@ export const appIdentitiesApi = {
       externalUserId: string;
       appUserCreated?: boolean;
     }>(`/admin/apps/${app}/users`, body, { idempotencyKey: idemKey() }),
+  /**
+   * SCRUM-469 — change which branches someone's OTO App access covers: the
+   * tile's scope and their branch access inside the app move together.
+   * `null` is all branches.
+   */
+  setOtoAppBranches: (accountId: string, branchIds: string[] | null) =>
+    api.put<{ ok: true; accessChanged: boolean }>(
+      `/admin/apps/oto_app/users/${accountId}/branches`,
+      { branchIds },
+      { idempotencyKey: idemKey() },
+    ),
   /** `accessRevoked` is false when the permission also comes from another role. */
   unlink: (app: AppKey, accountId: string) =>
     api.delete<{ ok: true; accessRevoked: boolean }>(`/admin/apps/${app}/users/${accountId}`),

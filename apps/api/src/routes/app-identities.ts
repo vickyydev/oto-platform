@@ -12,7 +12,13 @@ import {
 } from '../services/access-control';
 import { audit } from '../services/audit';
 import { deliverCode, mintCode, type PendingCode } from '../services/auth';
-import { ensureAppAccessRole, grantAppAccess, revokeAppAccess } from '../services/app-identity';
+import {
+  appAccessBranches,
+  ensureAppAccessRole,
+  grantAppAccess,
+  revokeAppAccess,
+  setAppAccessBranches,
+} from '../services/app-identity';
 import { appAccessPermission, type HandoffApp } from '../services/handoff';
 import {
   createOtoAppUser,
@@ -20,6 +26,8 @@ import {
   linkOtoAppUser,
   listUnlinkedOtoAppUsers,
   otoAppUserIsOperators,
+  readOtoAppUserBranches,
+  setOtoAppUserBranches,
   unlinkOtoAppUser,
   type OtoAppBranchPlacement,
 } from '../services/oto-app-users';
@@ -71,6 +79,26 @@ export async function appIdentityRoutes(app: App): Promise<void> {
     }
   };
 
+  /**
+   * SCRUM-469 — the branches a grant may be scoped to. Each must be one the
+   * caller could assign a role at: choosing a branch is handing out access
+   * there, the same question `admin:role:assign` already answers per scope.
+   */
+  const assertMayScopeTo = (
+    effective: EffectivePermission[],
+    operatorId: string,
+    branchIds: readonly string[],
+  ): void => {
+    for (const branchId of branchIds) {
+      if (!hasPermission(effective, 'admin:role:assign', { operatorId, branchId })) {
+        throw accessErrors.roleNotDominated('admin:role:assign');
+      }
+    }
+  };
+
+  /** One to a hundred branch ids; absent (or null on a change) is all branches. */
+  const BranchIds = z.array(z.string().uuid()).min(1).max(100);
+
   app.post(
     '/:app/users',
     {
@@ -98,6 +126,14 @@ export async function appIdentityRoutes(app: App): Promise<void> {
            * they land in, and nothing else.
            */
           branchId: z.string().uuid().optional(),
+          /**
+           * The branches this OTO App access covers (SCRUM-469). Absent means
+           * all branches, as before: the tile at operator scope and the seat
+           * from `OtoAppSeatSource`. Given, the access role is assigned at each
+           * of these branches and the person's OTO App branch access is
+           * exactly these, on the create path and on the claim path alike.
+           */
+          branchIds: BranchIds.optional(),
           /**
            * What the OTO App's own user row needs. `role` is from that app's
            * vocabulary, not the platform's — the two describe different jobs.
@@ -135,6 +171,17 @@ export async function appIdentityRoutes(app: App): Promise<void> {
         throw errors.badRequest(
           'Name an existing OTO App user with externalUserId, or send otoApp to create one',
         );
+      }
+
+      const chosenBranches = req.body.branchIds ?? null;
+      if (chosenBranches && !isOtoApp) {
+        throw errors.badRequest('A branch choice is only taken for the OTO App');
+      }
+      if (chosenBranches && req.body.branchId) {
+        throw errors.badRequest('Send branchIds or branchId, not both');
+      }
+      if (chosenBranches) {
+        assertMayScopeTo(await req.effectivePermissions(), auth.operatorId, chosenBranches);
       }
 
       if ((req.body.accountId && req.body.phone) || (!req.body.accountId && !req.body.phone)) {
@@ -298,6 +345,16 @@ export async function appIdentityRoutes(app: App): Promise<void> {
                   )
                 : errors.notFound('The OTO App has no user with that id');
             }
+            // A claim leaves the user's branch access as the app holds it,
+            // unless this request chose branches (SCRUM-469): then the choice
+            // is what they cover, through the one service that writes it.
+            if (chosenBranches) {
+              appBranch = await setOtoAppUserBranches(tx, {
+                userId: externalUserIdGiven,
+                platformAccountId: accountId,
+                branchIds: chosenBranches,
+              });
+            }
           }
           externalUserId = externalUserIdGiven;
         } else if (otoAppUser) {
@@ -313,6 +370,7 @@ export async function appIdentityRoutes(app: App): Promise<void> {
             phoneE164: phone,
             branchId: req.body.branchId ?? null,
             sessionBranchId: auth.branchId,
+            branchIds: chosenBranches,
           });
           externalUserId = created.id;
           appUserCreated = true;
@@ -333,7 +391,13 @@ export async function appIdentityRoutes(app: App): Promise<void> {
           createdBy: auth.accountId,
         });
         const roleId = await ensureAppAccessRole(tx, auth.operatorId, target);
-        const accessGranted = await grantAppAccess(tx, accountId, roleId, auth.operatorId);
+        const accessGranted = await grantAppAccess(
+          tx,
+          accountId,
+          roleId,
+          auth.operatorId,
+          chosenBranches,
+        );
         await audit.record(tx, {
           actorAccountId: auth.accountId,
           operatorId: auth.operatorId,
@@ -347,6 +411,7 @@ export async function appIdentityRoutes(app: App): Promise<void> {
             accountCreated,
             appUserCreated,
             accessGranted,
+            accessBranches: chosenBranches,
             appBranch,
           },
           requestId: req.id,
@@ -458,6 +523,22 @@ export async function appIdentityRoutes(app: App): Promise<void> {
         .from(appIdentity)
         .where(eq(appIdentity.accountId, req.params.accountId));
       const effective = await resolveEffectivePermissions(app.db, req.params.accountId);
+      /**
+       * SCRUM-469 — for the OTO App, where the grant holds and where the app
+       * seats them, so the dialog can show (and start an edit from) both.
+       */
+      const otoAppRow = rows.find((r) => r.app === 'oto_app');
+      const otoAppBranches = otoAppRow
+        ? {
+            accessBranches: await appAccessBranches(
+              app.db,
+              req.params.accountId,
+              auth.operatorId,
+              'oto_app',
+            ),
+            appBranches: await readOtoAppUserBranches(app.db, otoAppRow.externalUserId),
+          }
+        : null;
       return {
         identities: rows.map((r) => ({
           id: r.id,
@@ -473,8 +554,77 @@ export async function appIdentityRoutes(app: App): Promise<void> {
           hasAccess: hasPermission(effective, appAccessPermission(r.app), {
             operatorId: auth.operatorId,
           }),
+          ...(r.app === 'oto_app' && otoAppBranches ? { branches: otoAppBranches } : {}),
         })),
       };
+    },
+  );
+
+  /**
+   * SCRUM-469 — change which branches someone's OTO App access covers, after
+   * the fact. Both halves move together, in one transaction: the access role's
+   * scope on the platform (the tile, branch by branch) and their branch access
+   * inside the app (what they see once in). `branchIds: null` is all branches,
+   * meaning what it means at provisioning.
+   */
+  app.put(
+    '/oto_app/users/:accountId/branches',
+    {
+      config: { permission: 'admin:role:assign' },
+      schema: {
+        description: "Change which branches an account's OTO App access covers",
+        params: z.object({ accountId: z.string().uuid() }),
+        body: z.object({ branchIds: BranchIds.nullable() }),
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const accountId = req.params.accountId;
+      const branchIds = req.body.branchIds;
+      await loadTargetAccount(app.db, auth.operatorId, accountId);
+      const effective = await req.effectivePermissions();
+      assertMayGrant(effective, auth.operatorId, 'oto_app');
+      await assertDominatesAccount(app.db, effective, auth.operatorId, accountId);
+      if (branchIds) assertMayScopeTo(effective, auth.operatorId, branchIds);
+
+      const [identity] = await app.db
+        .select()
+        .from(appIdentity)
+        .where(and(eq(appIdentity.app, 'oto_app'), eq(appIdentity.accountId, accountId)))
+        .limit(1);
+      if (!identity) throw errors.notFound('That account is not linked to the OTO App');
+
+      return withTx(app.db, opCtx(req), 'app_identity.branches', async (tx) => {
+        const before = {
+          accessBranches: await appAccessBranches(tx, accountId, auth.operatorId, 'oto_app'),
+          appBranches: await readOtoAppUserBranches(tx, identity.externalUserId),
+        };
+        const appBranch = await setOtoAppUserBranches(tx, {
+          userId: identity.externalUserId,
+          platformAccountId: accountId,
+          branchIds,
+          sessionBranchId: auth.branchId,
+        });
+        const roleId = await ensureAppAccessRole(tx, auth.operatorId, 'oto_app');
+        const accessChanged = await setAppAccessBranches(
+          tx,
+          accountId,
+          roleId,
+          auth.operatorId,
+          branchIds,
+        );
+        await audit.record(tx, {
+          actorAccountId: auth.accountId,
+          operatorId: auth.operatorId,
+          action: 'app_identity.branches',
+          entityType: 'app_identity',
+          entityId: identity.id,
+          before: { app: 'oto_app', ...before },
+          after: { app: 'oto_app', accessBranches: branchIds, accessChanged, appBranch },
+          requestId: req.id,
+        });
+        return { ok: true as const, accessBranches: branchIds, accessChanged, appBranch };
+      });
     },
   );
 

@@ -2,11 +2,14 @@ import { eq, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   account,
+  auditLog,
   employee,
   operator,
   otoappBranches,
   otoappUserBranchAccess,
   otoappUsers,
+  role,
+  roleAssignment,
 } from '@oto/db';
 import { newId, normalizePhone } from '@oto/shared';
 import { ADMIN, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
@@ -451,5 +454,155 @@ describe('the branch is the person’s, not the administrator’s (SCRUM-268)', 
 
     expect(result.appBranch.branchId).toBe(theirAppBranch);
     expect(result.appBranch.branchName).toBe('Kalim');
+  });
+});
+
+/**
+ * SCRUM-469 — the branch choice in the account's Apps dialog. Granting OTO App
+ * access can cover chosen branches instead of all of them: the platform's
+ * access role is assigned at each chosen branch, and the person's branch
+ * access inside the app is exactly those. Changing the choice later moves both
+ * halves through the same service.
+ */
+describe('a branch choice on OTO App access (SCRUM-469)', () => {
+  /** A platform branch with its app row, joined by id. */
+  async function mappedPair(name: string, code: string) {
+    const platform = await platformBranch(name, code);
+    await dropAppRowFor(platform);
+    const app = await appBranch({ name: `${name} (app)`, coreBranchId: platform });
+    return { platform, app };
+  }
+
+  /** Where the access role is assigned for this account: `scopeType:scopeId`. */
+  const grantScopes = async (accountId: string) =>
+    (
+      await ctx.db
+        .select({ scopeType: roleAssignment.scopeType, scopeId: roleAssignment.scopeId })
+        .from(roleAssignment)
+        .innerJoin(role, eq(role.id, roleAssignment.roleId))
+        .where(eq(roleAssignment.accountId, accountId))
+    )
+      .filter((r) => r.scopeType === 'operator' || r.scopeType === 'branch')
+      .map((r) => `${r.scopeType}:${r.scopeId}`)
+      .sort();
+
+  const appRowsOf = async (userId: string) =>
+    (await branchAccessOf(userId)).map((r) => r.branchId).sort();
+
+  it('provisions with chosen branches, reads them back, and changes them later', async () => {
+    const home = await mappedPair('Oto Play Park, Picker Home', 'pick-home');
+    const second = await mappedPair('Oto Play Park, Picker Two', 'pick-two');
+    const third = await mappedPair('Oto Play Park, Picker Three', 'pick-three');
+    const accountId = await seatedAccount({
+      phone: '+66900000469',
+      name: 'Picked Branches',
+      branchId: home.platform,
+    });
+
+    // Grant: two branches, neither of them the one they work at.
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: '/admin/apps/oto_app/users',
+      headers: { cookie: adminCookie },
+      payload: {
+        accountId,
+        branchIds: [second.platform, third.platform],
+        otoApp: { email: 'picked.branches@otopark.test', role: 'staff' },
+      },
+    });
+    expect(res.statusCode, res.body).toBe(200);
+    const created = res.json() as { externalUserId: string; appBranch: { seatedFrom: string } };
+    expect(created.appBranch.seatedFrom).toBe('chosen');
+    expect(await appRowsOf(created.externalUserId)).toEqual([second.app, third.app].sort());
+    expect(await grantScopes(accountId)).toEqual(
+      [`branch:${second.platform}`, `branch:${third.platform}`].sort(),
+    );
+
+    // Read back, as the dialog does.
+    const read = await ctx.app.inject({
+      method: 'GET',
+      url: `/admin/apps/users/${accountId}`,
+      headers: { cookie: adminCookie },
+    });
+    expect(read.statusCode, read.body).toBe(200);
+    const identity = (
+      read.json().identities as Array<{
+        app: string;
+        branches?: { accessBranches: string[] | null; appBranches: { branches: Array<{ id: string }> } };
+      }>
+    ).find((i) => i.app === 'oto_app')!;
+    expect([...identity.branches!.accessBranches!].sort()).toEqual(
+      [second.platform, third.platform].sort(),
+    );
+    expect(identity.branches!.appBranches.branches.map((b) => b.id).sort()).toEqual(
+      [second.app, third.app].sort(),
+    );
+
+    // Change: down to one branch. Both halves move.
+    const narrowed = await ctx.app.inject({
+      method: 'PUT',
+      url: `/admin/apps/oto_app/users/${accountId}/branches`,
+      headers: { cookie: adminCookie },
+      payload: { branchIds: [home.platform] },
+    });
+    expect(narrowed.statusCode, narrowed.body).toBe(200);
+    expect(narrowed.json()).toMatchObject({ accessChanged: true, appBranch: { seatedFrom: 'chosen' } });
+    expect(await appRowsOf(created.externalUserId)).toEqual([home.app]);
+    expect(await grantScopes(accountId)).toEqual([`branch:${home.platform}`]);
+
+    // Back to all branches: the operator-wide grant and the default seat.
+    const widened = await ctx.app.inject({
+      method: 'PUT',
+      url: `/admin/apps/oto_app/users/${accountId}/branches`,
+      headers: { cookie: adminCookie },
+      payload: { branchIds: null },
+    });
+    expect(widened.statusCode, widened.body).toBe(200);
+    expect(widened.json().appBranch).toMatchObject({ seatedFrom: 'employee', branchId: home.app });
+    expect(await grantScopes(accountId)).toEqual([`operator:${operatorId}`]);
+
+    // Every step is on the audit trail, naming the app.
+    const audited = await ctx.db
+      .select({ action: auditLog.action, after: auditLog.after })
+      .from(auditLog)
+      .where(eq(auditLog.entityType, 'app_identity'));
+    const ours = audited.filter(
+      (a) => (a.after as { accountId?: string; app?: string } | null)?.app === 'oto_app',
+    );
+    expect(ours.filter((a) => a.action === 'app_identity.branches')).toHaveLength(2);
+    expect(
+      ours.some(
+        (a) =>
+          a.action === 'app_identity.link' &&
+          (a.after as { accountId: string }).accountId === accountId &&
+          Array.isArray((a.after as { accessBranches: unknown }).accessBranches),
+      ),
+    ).toBe(true);
+  });
+
+  it('refuses a branch with no row in the app, and leaves nothing behind', async () => {
+    const lonely = await platformBranch('Oto Play Park, Picker Unmapped', 'pick-unmapped');
+    await dropAppRowFor(lonely);
+    const accountId = await seatedAccount({
+      phone: '+66900000470',
+      name: 'Nowhere Chosen',
+      branchId: lonely,
+    });
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: '/admin/apps/oto_app/users',
+      headers: { cookie: adminCookie },
+      payload: {
+        accountId,
+        branchIds: [lonely],
+        otoApp: { email: 'nowhere.chosen@otopark.test', role: 'staff' },
+      },
+    });
+    expect(res.statusCode, res.body).toBe(409);
+    expect(res.json().error.code).toBe('OTO_APP_BRANCH_UNMAPPED');
+    expect(
+      await ctx.db.select().from(otoappUsers).where(eq(otoappUsers.email, 'nowhere.chosen@otopark.test')),
+    ).toHaveLength(0);
+    expect(await grantScopes(accountId)).toEqual([]);
   });
 });

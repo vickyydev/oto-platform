@@ -95,21 +95,42 @@ type Grant = { roleName: string; scopeType: string; scopeId: string | null };
  * branch-scoped grant opens the app for someone while they are working that
  * branch. The scope is printed beside the role instead of being folded into
  * this boolean, because "opens, but only at HKT Central" is the answer an
- * administrator is after. Linking from here always grants operator-wide.
+ * administrator is after. Linking from here grants operator-wide unless the
+ * OTO App's branch choice narrows it (SCRUM-469).
  */
 const opensTile = (grants: Grant[]): boolean => grants.length > 0;
 const opensEverywhere = (grants: Grant[]): boolean =>
   grants.some((g) => g.scopeType === 'operator');
 
+/**
+ * The apps whose access can be scoped to chosen branches from here
+ * (SCRUM-469). The OTO App's branch access is written by the same provisioning
+ * service, so the choice reaches what the person sees inside it as well as
+ * where the tile opens.
+ */
+const BRANCH_SCOPED_APPS = new Set<AppKey>(['oto_app']);
+
+/** A branch the picker offers: the platform's own id and name. */
+export interface AppsDialogBranch {
+  id: string;
+  name: string;
+}
+
+/** `null` is all branches; a list is exactly those. */
+type BranchChoice = string[] | null;
+
 export function AccountAppsDialog({
   account,
   onClose,
   scopeLabel,
+  branches,
 }: {
   account: AppsDialogAccount | null;
   onClose: () => void;
   /** The Login Users panel's scope wording, so both dialogs read the same. */
   scopeLabel: (scopeType: string, scopeId: string | null) => string;
+  /** The operator's open branches, for the OTO App branch choice. */
+  branches: AppsDialogBranch[];
 }) {
   const [identities, setIdentities] = useState<AppIdentity[] | null>(null);
   const [grants, setGrants] = useState<Record<string, Grant[]>>({});
@@ -125,6 +146,11 @@ export function AccountAppsDialog({
   const [appEmail, setAppEmail] = useState('');
   const [appFullName, setAppFullName] = useState('');
   const [appRole, setAppRole] = useState<OtoAppRole>('staff');
+  /** The branch choice in the link form (SCRUM-469). All branches by default. */
+  const [linkBranches, setLinkBranches] = useState<BranchChoice>(null);
+  /** The app whose branches are being changed on an existing link, and the draft. */
+  const [editBranchesFor, setEditBranchesFor] = useState<AppKey | null>(null);
+  const [editBranches, setEditBranches] = useState<BranchChoice>(null);
   const [pendingUnlink, setPendingUnlink] = useState<AppIdentity | null>(null);
 
   const apiFail = (title: string) => (err: unknown) =>
@@ -156,6 +182,7 @@ export function AccountAppsDialog({
     setListMissing(false);
     setUnavailable([]);
     setLinkFor(null);
+    setEditBranchesFor(null);
 
     appIdentitiesApi
       .list(account.id)
@@ -185,9 +212,15 @@ export function AccountAppsDialog({
 
   const creating = (app: AppKey): boolean => CREATABLE_APPS.has(app) && linkMode === 'create';
 
+  /** A list with nothing ticked is not a choice yet; all branches always is. */
+  const choiceReady = (choice: BranchChoice): boolean => choice === null || choice.length > 0;
+
   /** Everything the chosen mode needs is filled in. */
   const linkReady = (app: AppKey): boolean =>
-    creating(app) ? appEmail.trim().length > 0 : externalUserId.trim().length > 0;
+    (creating(app) ? appEmail.trim().length > 0 : externalUserId.trim().length > 0) &&
+    (!BRANCH_SCOPED_APPS.has(app) || choiceReady(linkBranches));
+
+  const branchName = (id: string): string => branches.find((b) => b.id === id)?.name ?? 'a closed branch';
 
   const openLinkForm = (app: AppKey) => {
     setLinkFor(app);
@@ -195,6 +228,7 @@ export function AccountAppsDialog({
     setAppEmail('');
     setAppFullName('');
     setAppRole('staff');
+    setLinkBranches(null);
     // Creating is the common case: most people being provisioned are new to
     // the app. Someone who is already in it switches.
     setLinkMode(CREATABLE_APPS.has(app) ? 'create' : 'existing');
@@ -205,6 +239,8 @@ export function AccountAppsDialog({
     const accountId = account.id;
     const id = externalUserId.trim();
     const makeUser = creating(app);
+    // Sent only when narrowed: all branches is what the api does without one.
+    const scoped = BRANCH_SCOPED_APPS.has(app) && linkBranches ? { branchIds: linkBranches } : {};
     setBusy(true);
     try {
       const result = await appIdentitiesApi.link(
@@ -217,8 +253,9 @@ export function AccountAppsDialog({
                 fullName: appFullName.trim() || undefined,
                 role: appRole,
               },
+              ...scoped,
             }
-          : { accountId, externalUserId: id },
+          : { accountId, externalUserId: id, ...scoped },
       );
       setLinkFor(null);
       setExternalUserId('');
@@ -237,6 +274,34 @@ export function AccountAppsDialog({
     // Either way the rows on screen are out of date: the link landed, or the
     // refusal ("already linked", "that user is taken") says someone else has
     // moved since this dialog opened.
+    void refresh(accountId).catch(() => undefined);
+  };
+
+  const openBranchEdit = (identity: AppIdentity) => {
+    setEditBranchesFor(identity.app);
+    setEditBranches(identity.branches?.accessBranches ?? null);
+  };
+
+  /** SCRUM-469 — change the branches an existing OTO App link covers. */
+  const saveBranches = async () => {
+    if (!account || busy || editBranchesFor !== 'oto_app' || !choiceReady(editBranches)) return;
+    const accountId = account.id;
+    setBusy(true);
+    try {
+      await appIdentitiesApi.setOtoAppBranches(accountId, editBranches);
+      setEditBranchesFor(null);
+      toast({
+        title: 'OTO App branches changed',
+        description:
+          editBranches === null
+            ? `${accountName} now covers all branches.`
+            : `${accountName} now covers ${editBranches.map(branchName).join(', ')}.`,
+      });
+    } catch (err) {
+      apiFail("Couldn't change the branches")(err);
+    } finally {
+      setBusy(false);
+    }
     void refresh(accountId).catch(() => undefined);
   };
 
@@ -372,7 +437,68 @@ export function AccountAppsDialog({
                           `none in ${APP_NAMES[app]}`
                         )}
                       </dd>
+                      {identity && BRANCH_SCOPED_APPS.has(app) && identity.branches && (
+                        <>
+                          <dt className="text-foreground/40">Branches</dt>
+                          <dd className="flex items-start justify-between gap-2 text-foreground/60">
+                            <span>
+                              {identity.branches.accessBranches === null
+                                ? 'all branches'
+                                : identity.branches.accessBranches.map(branchName).join(', ')}
+                              <span className="text-foreground/40">
+                                {' '}
+                                · in {APP_NAMES[app]}:{' '}
+                                {appBranchesLine(identity.branches.appBranches)}
+                              </span>
+                            </span>
+                            {editBranchesFor !== app && (
+                              <button
+                                type="button"
+                                className="shrink-0 font-semibold text-foreground/70 hover:underline disabled:opacity-50"
+                                onClick={() => openBranchEdit(identity)}
+                                disabled={busy}
+                              >
+                                Change
+                              </button>
+                            )}
+                          </dd>
+                        </>
+                      )}
                     </dl>
+
+                    {identity && editBranchesFor === app && (
+                      <div className="mt-3 flex flex-col gap-2 rounded-lg bg-foreground/[0.03] p-3">
+                        <BranchPicker
+                          appName={APP_NAMES[app]}
+                          branches={branches}
+                          value={editBranches}
+                          onChange={setEditBranches}
+                          disabled={busy}
+                        />
+                        <div className="mt-1 flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => void saveBranches()}
+                            disabled={busy || !choiceReady(editBranches)}
+                          >
+                            {busy && <Loader2 className="w-4 h-4 animate-spin" />}
+                            Save branches
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setEditBranchesFor(null)}
+                            disabled={busy}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                        <p className="text-xs text-foreground/40">
+                          Replaces their branch access in {APP_NAMES[app]}, including any set there
+                          since, and moves where the tile opens with it.
+                        </p>
+                      </div>
+                    )}
 
                     {routeMissing && (
                       <p className="mt-2 flex items-start gap-1.5 text-xs text-foreground/50">
@@ -454,6 +580,24 @@ export function AccountAppsDialog({
                           </>
                         )}
 
+                        {BRANCH_SCOPED_APPS.has(app) && (
+                          <BranchPicker
+                            appName={APP_NAMES[app]}
+                            branches={branches}
+                            value={linkBranches}
+                            onChange={setLinkBranches}
+                            disabled={busy}
+                            allHint={
+                              creating(app)
+                                ? `In ${APP_NAMES[app]} they start at their own branch.`
+                                : `Their branches in ${APP_NAMES[app]} stay as they are.`
+                            }
+                            seesEverything={
+                              creating(app) && (appRole === 'admin' || appRole === 'global_admin')
+                            }
+                          />
+                        )}
+
                         <div className="mt-1 flex items-center gap-2">
                           <Button
                             size="sm"
@@ -480,8 +624,12 @@ export function AccountAppsDialog({
                           {creating(app) ? (
                             <>
                               The user is made in {APP_NAMES[app]} with no password of its own — the
-                              launcher is the only way in. Which branches they cover is set inside{' '}
-                              {APP_NAMES[app]}.
+                              launcher is the only way in.
+                            </>
+                          ) : BRANCH_SCOPED_APPS.has(app) ? (
+                            <>
+                              Their role in {APP_NAMES[app]} stays as it is there. Their branches stay
+                              too, unless you choose some above.
                             </>
                           ) : (
                             <>
@@ -530,6 +678,94 @@ export function AccountAppsDialog({
         </AlertDialogContent>
       </AlertDialog>
     </>
+  );
+}
+
+/** Where the app seats them, in words. */
+function appBranchesLine(
+  app: NonNullable<AppIdentity['branches']>['appBranches'],
+): string {
+  if (!app) return 'not on this deployment';
+  if (app.allBranches) return 'every branch (set there)';
+  if (app.branches.length === 0) return 'no branch yet';
+  return app.branches.map((b) => b.name).join(', ');
+}
+
+/**
+ * SCRUM-469 — which branches the access covers: all of them (the default, as
+ * every grant was before), or only the ones ticked.
+ */
+function BranchPicker({
+  appName,
+  branches,
+  value,
+  onChange,
+  disabled,
+  allHint,
+  seesEverything,
+}: {
+  appName: string;
+  branches: AppsDialogBranch[];
+  value: BranchChoice;
+  onChange: (next: BranchChoice) => void;
+  disabled: boolean;
+  /** What "all branches" means inside the app on this path. */
+  allHint?: string;
+  /** The role chosen sees every branch in the app whatever is ticked. */
+  seesEverything?: boolean;
+}) {
+  const toggle = (id: string) => {
+    const current = value ?? [];
+    onChange(current.includes(id) ? current.filter((x) => x !== id) : [...current, id]);
+  };
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className="text-xs font-semibold text-foreground/60">Branches</span>
+      <div className="flex items-center gap-1">
+        <Button
+          variant={value === null ? 'secondary' : 'ghost'}
+          size="sm"
+          onClick={() => onChange(null)}
+          disabled={disabled}
+        >
+          All branches
+        </Button>
+        <Button
+          variant={value !== null ? 'secondary' : 'ghost'}
+          size="sm"
+          onClick={() => onChange(value ?? [])}
+          disabled={disabled || branches.length === 0}
+        >
+          Only some
+        </Button>
+      </div>
+      {value === null ? (
+        allHint && <p className="text-xs text-foreground/40">{allHint}</p>
+      ) : (
+        <div className="flex flex-col gap-1">
+          {branches.map((b) => (
+            <label key={b.id} className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={value.includes(b.id)}
+                onChange={() => toggle(b.id)}
+                disabled={disabled}
+              />
+              {b.name}
+            </label>
+          ))}
+          <p className="text-xs text-foreground/40">
+            The tile opens only while they are working one of these, and in {appName} they see
+            only these.
+          </p>
+        </div>
+      )}
+      {seesEverything && (
+        <p className="text-xs text-amber-600">
+          An Admin or Global admin in {appName} sees every branch there, whatever is chosen here.
+        </p>
+      )}
+    </div>
   );
 }
 
