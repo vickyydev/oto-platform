@@ -670,6 +670,46 @@ describe('a booth fact is checked against the booth it names', () => {
     expect(counted!.printCount).toBe(won.printCount + 1);
   });
 
+  it('SCRUM-410: a second original of one voucher is quarantined; a copy is filed and audited as a reprint', async () => {
+    const won = await wonHere();
+    // The slip's first print, as the press reports it.
+    const first = newId();
+    await printFact({ voucherId: won.id, voucherCode: won.code, printJobId: first, reason: 'initial' });
+    await drained();
+    expect(await printsOf(won.id, first)).toHaveLength(1);
+
+    const before = await quarantinedIds('booth.voucher_printed');
+    const second = newId();
+    await printFact({ voucherId: won.id, voucherCode: won.code, printJobId: second, reason: 'initial' });
+    const refused = await agent.outbox()!.flush();
+    expect(refused.state).toBe('pushed');
+    expect(await refusedSince('booth.voucher_printed', before)).toEqual(['BOOTH_PRINT_SECOND_ORIGINAL']);
+    expect(await printsOf(won.id, second)).toHaveLength(0);
+
+    const copy = newId();
+    await printFact({
+      voucherId: won.id,
+      voucherCode: won.code,
+      printJobId: copy,
+      reason: 'reprint',
+      requestedByAccountId: await accountByPhone(RECEPTION.phone),
+    });
+    const filed = await agent.outbox()!.flush();
+    expect(filed.state).toBe('pushed');
+    if (filed.state !== 'pushed') throw new Error('unreachable');
+    expect(filed.quarantined).toBe(0);
+    expect(await printsOf(won.id, copy)).toHaveLength(1);
+    const audited = await ctx.db
+      .select({ action: auditLog.action, after: auditLog.after })
+      .from(auditLog)
+      .where(and(eq(auditLog.entityId, won.id), inArray(auditLog.action, ['voucher.print', 'voucher.reprint'])));
+    expect(audited.map((a) => a.action).sort()).toEqual(['voucher.print', 'voucher.reprint']);
+    expect(audited.find((a) => a.action === 'voucher.reprint')!.after).toMatchObject({
+      reason: 'reprint',
+      printJobId: copy,
+    });
+  });
+
   it('SCRUM-427: a voucher of a type no wheel of this booth ever carried is quarantined; one from an earlier wheel is filed', async () => {
     /**
      * Version 2 of Booth 1's wheel, with one prize taken off. Its type was on

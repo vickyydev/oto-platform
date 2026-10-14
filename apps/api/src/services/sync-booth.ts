@@ -831,6 +831,31 @@ export const BOOTH_HANDLERS: Record<string, EventHandler> = {
         .limit(1);
       if (existing) return { entityType: 'voucher_print', entityId: existing.id };
 
+      /**
+       * SCRUM-410 (audit L13, T10) — ONE ORIGINAL PER VOUCHER. The press
+       * prints the slip once, under one job (a retry is the same job, and a
+       * report of it is the same row, above); every copy after that is a
+       * staff reprint, marked "Reprint · <time>" on the paper and filed with
+       * reason `reprint`. So a second `initial` print under another job is
+       * not something the booth makes, and filing it would count a second
+       * original of a single-use code: it is quarantined for a person to
+       * look at, and no paper is counted.
+       */
+      if (payload.reason === 'initial') {
+        const [original] = await tx
+          .select({ id: voucherPrint.id })
+          .from(voucherPrint)
+          .where(and(eq(voucherPrint.voucherId, held.id), eq(voucherPrint.reason, 'initial')))
+          .limit(1);
+        if (original) {
+          throw new AppError(
+            422,
+            'BOOTH_PRINT_SECOND_ORIGINAL',
+            'That voucher already has its first print; any further copy is filed as a reprint',
+          );
+        }
+      }
+
       const requestedByAccountId = await assertOurAccount(
         tx,
         operatorId,
@@ -913,7 +938,10 @@ export const BOOTH_HANDLERS: Record<string, EventHandler> = {
         actorAccountId: event.envelope.actorAccountId ?? null,
         operatorId,
         branchId: scope.auth.branchId,
-        action: 'voucher.print',
+        // SCRUM-410 — a copy is audited as a reprint, under its own action,
+        // so the log answers "who printed this slip again" without opening
+        // each row.
+        action: payload.reason === 'reprint' ? 'voucher.reprint' : 'voucher.print',
         entityType: 'voucher',
         entityId: held.id,
         before: { printCount: held.printCount },
