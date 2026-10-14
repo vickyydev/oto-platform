@@ -545,9 +545,10 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
       const res = await apiRequest("PATCH", `/api/admin/events/${id}`, data);
       const updatedEvent = await res.json();
       
-      // Delete removed existing tasks
+      // Delete removed existing tasks — through the task delete the server has
+      // (tenant- and branch-fenced); there is no DELETE /api/tasks/:id (SCRUM-547).
       for (const taskId of deletedTaskIds) {
-        await apiRequest("DELETE", `/api/tasks/${taskId}`);
+        await apiRequest("DELETE", `/api/admin/tasks/${taskId}`);
       }
       
       // Create new tasks

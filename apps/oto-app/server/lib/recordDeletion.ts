@@ -7,12 +7,15 @@ import { deleteManagedUserWithin } from "./userDeletion";
  * a branch. Each one
  *
  *  - opens ONE transaction and locks the record;
- *  - deletes the login leaving with it first, through the one gate every user
- *    delete uses, so that gate's refusal stays the answer when there is one;
  *  - counts what must never be deleted with it (an employee's contracts, time
  *    and payroll records; an advisor's attendance; a branch's employees,
  *    contracts, template assignments and shifts) and, when anything is found,
  *    rolls back and answers a 409 naming it, so nothing is written;
+ *  - only then deletes the login leaving with it (SCRUM-547): the record's own
+ *    links to that login are cleared first, so they never hold it back, and
+ *    the login goes through the one gate every user delete uses — whose
+ *    refusal (a platform-linked login, or one something else still points at)
+ *    is then the answer, and only ever about the login itself;
  *  - otherwise deletes what goes with the record and the record, and commits;
  *  - and if anything still refuses on a foreign key part-way, rolls the whole
  *    transaction back and answers a 409 naming what still points at it, so a
@@ -104,10 +107,10 @@ async function blockersOf(
 const asBlocking = (blockers: Blocker[]) => blockers.map((b) => ({ label: b.plural, count: b.count }));
 
 /**
- * The login leaving with the record, deleted first — as the doors always
- * have, so its refusal (a platform-linked login, or one the app still
- * references) is the answer when there is one — but inside the transaction,
- * so a refusal found after it takes the login's delete back too.
+ * The login leaving with the record, deleted inside the transaction once
+ * nothing the record keeps blocks it (SCRUM-547: blockers are named first), so
+ * a refusal found after it takes the login's delete back too. Its refusal (a
+ * platform-linked login, or one something else still points at) is the answer.
  */
 async function leavingUserRefusal(client: Pick<PoolClient, "query">, userId: string | null): Promise<RecordDeletionOutcome | null> {
   if (!userId) return null;
@@ -195,9 +198,9 @@ export async function deleteEmployeeWhole(
       );
       const employee = rows[0];
       if (!employee) return { deleted: false, status: 404, message: "Employee not found" };
-      const userRefusal = await leavingUserRefusal(client, input.leavingUserId);
-      if (userRefusal) return userRefusal;
 
+      // What the employee keeps is named first (SCRUM-547), so an employee
+      // with a contract and a login hears about the contract.
       const blockers = await blockersOf(client, input.employeeId, EMPLOYEE_KEEPS);
       if (blockers.length > 0) {
         return {
@@ -210,6 +213,28 @@ export async function deleteEmployeeWhole(
       }
 
       const id = input.employeeId;
+      if (input.leavingUserId) {
+        // The employee's own links to the login leaving with them (SCRUM-543
+        // writes user_id and the policy's core_user_id at enable-login) must
+        // not hold that login back; a refusal below still rolls them back.
+        await client.query(
+          `update employees set
+             user_id = case when user_id = $2 then null else user_id end,
+             updated_by = case when updated_by = $2 then null else updated_by end,
+             profile_photo_updated_by = case when profile_photo_updated_by = $2 then null else profile_photo_updated_by end
+           where id = $1`,
+          [id, input.leavingUserId],
+        );
+        if (input.personId) {
+          await client.query("update access_policies set core_user_id = null where person_id = $1 and core_user_id = $2", [
+            input.personId,
+            input.leavingUserId,
+          ]);
+        }
+      }
+      const userRefusal = await leavingUserRefusal(client, input.leavingUserId);
+      if (userRefusal) return userRefusal;
+
       // History that names the employee keeps its rows, without the name.
       await client.query("update activity_log set employee_id = null where employee_id = $1", [id]);
       await client.query("update attention_items set employee_id = null where employee_id = $1", [id]);
@@ -269,9 +294,8 @@ export async function deletePersonWhole(
       const person = rows[0];
       if (!person) return { deleted: false, status: 404, message: "Person not found" };
       const name = person.full_name || person.email;
-      const userRefusal = await leavingUserRefusal(client, input.leavingUserId);
-      if (userRefusal) return userRefusal;
 
+      // What the person keeps is named first, then the login (SCRUM-547).
       // An employee record goes by the person's cascade; it is never deleted
       // from here.
       const employeeRows = await countOf(client, ["employees"], "person_id", input.personId);
@@ -297,6 +321,16 @@ export async function deletePersonWhole(
           blocking: asBlocking(blockers),
         };
       }
+
+      if (input.leavingUserId) {
+        // The person's own policy link to the login leaving with them.
+        await client.query("update access_policies set core_user_id = null where person_id = $1 and core_user_id = $2", [
+          input.personId,
+          input.leavingUserId,
+        ]);
+      }
+      const userRefusal = await leavingUserRefusal(client, input.leavingUserId);
+      if (userRefusal) return userRefusal;
 
       await client.query("delete from auth_reset_tokens where person_id = $1", [input.personId]);
       // Access policy and face enrolment go by the person's cascade.

@@ -12,7 +12,9 @@
 //      goes whole with their person and login; one still linked to something
 //      the delete does not handle is refused and NOTHING was written — the
 //      login deleted first is back (one transaction). The bulk door carries
-//      each refusal's words.
+//      each refusal's words. SCRUM-547: a login linked the way enable-login
+//      links it goes with the employee; what the employee keeps is named
+//      before the login gate, whose platform-linked refusal comes last.
 //   2. Branch delete: a branch with employees is refused naming them; one
 //      still used by something else is refused and its rota is still there
 //      (one transaction); one with only a rota goes, rota and all.
@@ -366,6 +368,58 @@ try {
     for (const [table, row] of [["employees", id], ["employee_documents", doc], ["people", person], ["users", userId]] as const) {
       assert.ok(!(await exists(table, row)), `${table} ${row} is gone`);
     }
+  });
+
+  /** As enable-login leaves it (SCRUM-543): the employee and the person's policy both point at the login. */
+  const linkedLogin = async (label: string) => {
+    const { email, userId, person } = await loginAndPerson(A, label);
+    const id = await employee(A, A.x, label, { email, person_id: person, user_id: userId });
+    await q("update access_policies set core_user_id = $2 where person_id = $1", [person, userId]);
+    return { id, userId, person };
+  };
+
+  await check("SCRUM-547: an employee with a LINKED login and no history goes whole, login and all", async () => {
+    const { id, userId, person } = await linkedLogin("linked-gone");
+    const res = await call("DELETE", `/api/employees/${id}`, cookie.a);
+    assert.equal(res.status, 204, show(res));
+    for (const [table, row] of [["employees", id], ["people", person], ["users", userId]] as const) {
+      assert.ok(!(await exists(table, row)), `${table} ${row} is gone`);
+    }
+    assert.equal(await count("select count(*) as n from access_policies where person_id = $1", [person]), 0);
+    assert.equal(await count("select count(*) as n from user_branch_access where user_id = $1", [userId]), 0);
+  });
+
+  await check("SCRUM-547: an employee with a linked login AND a contract is refused naming the contract, and every link is back", async () => {
+    const { id, userId, person } = await linkedLogin("linked-kept");
+    await contract(A, id);
+    const res = await call("DELETE", `/api/employees/${id}`, cookie.a);
+    assert.equal(res.status, 409, show(res));
+    assert.equal(res.body.reason, "has_records");
+    assert.match(res.body.message, /cannot be deleted: they have 1 contract\. .*offboard them instead/);
+    assert.deepEqual(res.body.blocking, [{ label: "contracts", count: 1 }]);
+    assert.ok(await exists("users", userId));
+    assert.deepEqual(await q("select user_id from employees where id = $1", [id]), [{ user_id: userId }]);
+    assert.deepEqual(await q("select core_user_id from access_policies where person_id = $1", [person]), [{ core_user_id: userId }]);
+  });
+
+  await check("SCRUM-547: a platform-linked login is refused with the deactivate words only when nothing else blocks", async () => {
+    const withContract = await linkedLogin("platform-kept");
+    await q("update users set platform_user_id = $2 where id = $1", [withContract.userId, randomUUID()]);
+    await contract(A, withContract.id);
+    const named = await call("DELETE", `/api/employees/${withContract.id}`, cookie.a);
+    assert.equal(named.status, 409, show(named));
+    assert.equal(named.body.reason, "has_records", "the contract is named before the login");
+
+    const clear = await linkedLogin("platform-only");
+    await q("update users set platform_user_id = $2 where id = $1", [clear.userId, randomUUID()]);
+    const res = await call("DELETE", `/api/employees/${clear.id}`, cookie.a);
+    assert.equal(res.status, 409, show(res));
+    assert.equal(res.body.reason, "linked_to_platform");
+    assert.equal(res.body.message, "Deactivate this account to preserve its HR record");
+    assert.ok(await exists("employees", clear.id));
+    assert.ok(await exists("users", clear.userId));
+    assert.deepEqual(await q("select user_id from employees where id = $1", [clear.id]), [{ user_id: clear.userId }]);
+    assert.deepEqual(await q("select core_user_id from access_policies where person_id = $1", [clear.person]), [{ core_user_id: clear.userId }]);
   });
 
   // ── 2. Branch delete ────────────────────────────────────────────────────────
