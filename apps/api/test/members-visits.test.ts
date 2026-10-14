@@ -181,6 +181,91 @@ describe('SCRUM-32 — children and the visit draft', () => {
   });
 });
 
+describe('SCRUM-339 — the membership check and the supervision gate share one visit', () => {
+  it("adds the gate's children to the open visit, idempotently, and audits it", async () => {
+    const lookup = await ctx.app.inject({
+      method: 'GET',
+      url: '/members/lookup?phone=0811111111',
+      headers: { cookie },
+    });
+    const m = lookup.json().member;
+    const [first, second] = m.children.map((c: { id: string }) => c.id) as [string, string];
+    const visitsOfMali = async () => (await ctx.db.select().from(visit).where(eq(visit.memberId, m.id))).length;
+
+    // The membership check opens the visit with one child.
+    const opened = await ctx.app.inject({
+      method: 'POST',
+      url: '/visits',
+      headers: { cookie },
+      payload: { memberId: m.id, childIds: [first] },
+    });
+    expect(opened.statusCode).toBe(200);
+    const visitId = opened.json().id as string;
+    const visitsBefore = await visitsOfMali();
+
+    // The gate confirms both children: they join that visit, no second one opens.
+    const add = () =>
+      ctx.app.inject({
+        method: 'POST',
+        url: `/visits/${visitId}/children`,
+        headers: { cookie },
+        payload: { childIds: [first, second] },
+      });
+    const res = await add();
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toMatchObject({ id: visitId, status: 'draft' });
+    expect(await visitsOfMali()).toBe(visitsBefore);
+    const onVisit = async () =>
+      (await ctx.db.select().from(visitChild).where(eq(visitChild.visitId, visitId))).map((r) => r.childId).sort();
+    expect(await onVisit()).toEqual([first, second].sort());
+    const [secondRow] = await ctx.db.select().from(child).where(eq(child.id, second));
+    expect(secondRow!.lastConfirmedAt).not.toBeNull();
+
+    // Again: nothing more is added.
+    expect((await add()).statusCode).toBe(200);
+    expect(await onVisit()).toEqual([first, second].sort());
+    expect(await visitsOfMali()).toBe(visitsBefore);
+
+    const rows = await ctx.db.select().from(auditLog).where(eq(auditLog.entityId, visitId));
+    const adds = rows.filter((r) => r.action === 'visit.children_add');
+    expect(adds.length).toBeGreaterThanOrEqual(1);
+    expect(adds[0]!.before).toEqual({ childIds: [first] });
+  });
+
+  it("refuses another member's child and a closed visit", async () => {
+    const mali = (
+      await ctx.app.inject({ method: 'GET', url: '/members/lookup?phone=0811111111', headers: { cookie } })
+    ).json().member;
+    const tom = (
+      await ctx.app.inject({ method: 'GET', url: '/members/lookup?phone=0866666666', headers: { cookie } })
+    ).json().member;
+    const opened = await ctx.app.inject({
+      method: 'POST',
+      url: '/visits',
+      headers: { cookie },
+      payload: { memberId: tom.id, childIds: [] },
+    });
+    const visitId = opened.json().id as string;
+    const foreign = await ctx.app.inject({
+      method: 'POST',
+      url: `/visits/${visitId}/children`,
+      headers: { cookie },
+      payload: { childIds: [mali.children[0].id] },
+    });
+    expect(foreign.statusCode).toBe(400);
+
+    await ctx.db.update(visit).set({ status: 'closed' }).where(eq(visit.id, visitId));
+    const closed = await ctx.app.inject({
+      method: 'POST',
+      url: `/visits/${visitId}/children`,
+      headers: { cookie },
+      payload: { childIds: tom.children.map((c: { id: string }) => c.id).slice(0, 1) },
+    });
+    expect(closed.statusCode).toBe(409);
+    expect(closed.json().error.code).toBe('VISIT_CLOSED');
+  });
+});
+
 describe('Tier verification — proof checked at the counter (beyond the prototype)', () => {
   let memberId: string;
 

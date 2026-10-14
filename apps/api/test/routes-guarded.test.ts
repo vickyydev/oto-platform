@@ -97,6 +97,8 @@ describe('route guards (S2-01b)', () => {
       'POST /sales/quote',
       'POST /sales/tier-claims',
       'POST /visits',
+      // SCRUM-339: the second screen's children join the family's open visit.
+      'POST /visits/:id/children',
       // S2-14a round 5: a voucher is issued and its credit printed by the
       // platform, at the till — online only, like a voucher's redemption.
       'POST /vouchers/:id/credit/print',

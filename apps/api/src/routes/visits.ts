@@ -175,6 +175,82 @@ export async function visitRoutes(app: App): Promise<void> {
     },
   );
 
+  /**
+   * SCRUM-339 — ONE VISIT PER FAMILY AT THE COUNTER.
+   *
+   * The membership check and the supervision gate both confirm children, and
+   * confirming is what stamps a child's `last_confirmed_at`. Each used to open
+   * its own visit, so a family that passed both screens had two, and the sale
+   * — which carries the membership check's — named on its bands only the
+   * children confirmed there, not a child added at the gate. The second screen
+   * now adds its children to the visit the first one opened.
+   *
+   * Idempotent by construction: a child already on the visit is left as it is
+   * (its first confirmation time kept) and only re-stamped as confirmed, so
+   * sending the same request twice changes nothing the second time. Same rules
+   * as opening one: the member's own children, not archived; read at the
+   * branch the visit is on. A closed visit takes no more children.
+   */
+  app.post(
+    '/:id/children',
+    {
+      config: { permission: 'pos:visit:create', stationTrading: true },
+      schema: {
+        description: "Add confirmed children to an open visit (the family's one visit for the day)",
+        params: z.object({ id: z.string().uuid() }),
+        body: z.object({ childIds: z.array(z.string().uuid()).min(1) }),
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const [v] = await app.db.select().from(visit).where(eq(visit.id, req.params.id)).limit(1);
+      if (!v || v.operatorId !== auth.operatorId) throw errors.notFound('Visit not found');
+      await req.requirePermission('pos:visit:create', { branchId: v.branchId });
+      if (v.status === 'closed') throw errors.conflict('VISIT_CLOSED', 'That visit is closed');
+      if (!v.memberId) throw errors.badRequest('childIds require a memberId');
+      const childIds = [...new Set(req.body.childIds)];
+      const rows = await app.db
+        .select({ id: child.id })
+        .from(child)
+        .where(and(inArray(child.id, childIds), eq(child.memberId, v.memberId), isNull(child.archivedAt)));
+      if (rows.length !== childIds.length) {
+        throw errors.badRequest('One or more children do not belong to this member');
+      }
+      const memberId = v.memberId;
+      const now = new Date();
+      return withTx(app.db, opCtx(req), 'visit.children_add', async (tx) => {
+        const before = (
+          await tx.select({ childId: visitChild.childId }).from(visitChild).where(eq(visitChild.visitId, v.id))
+        ).map((r) => r.childId);
+        const added = childIds.filter((id) => !before.includes(id));
+        if (added.length > 0) {
+          await tx
+            .insert(visitChild)
+            .values(added.map((childId) => ({ visitId: v.id, childId, confirmedAt: now })))
+            .onConflictDoNothing();
+        }
+        await tx.update(child).set({ lastConfirmedAt: now }).where(inArray(child.id, childIds));
+        // The same confirmation the create path clears the offline-merge flag on.
+        await tx
+          .update(member)
+          .set({ childrenReviewSince: null })
+          .where(and(eq(member.id, memberId), isNotNull(member.childrenReviewSince)));
+        await audit.record(tx, {
+          actorAccountId: auth.accountId,
+          operatorId: auth.operatorId,
+          branchId: v.branchId,
+          action: 'visit.children_add',
+          entityType: 'visit',
+          entityId: v.id,
+          before: { childIds: before },
+          after: { childIds: [...before, ...added], confirmedChildIds: childIds },
+          requestId: req.id,
+        });
+        return { id: v.id, visitDate: v.visitDate, status: v.status };
+      });
+    },
+  );
+
   app.get(
     '/:id',
     { config: { permission: 'pos:visit:read' }, schema: { description: 'Visit detail', params: z.object({ id: z.string().uuid() }) } },

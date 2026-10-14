@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
 import type { Member, SavedChild } from '@/types';
-import { membersApi, visitsApi, type ApiChild } from '@/api/platform';
+import { confirmVisitChildren, membersApi, type ApiChild } from '@/api/platform';
 import { apiChildToSavedChild } from '@/api/mappers';
 import {
   ChildDetailsFields,
@@ -25,6 +25,12 @@ interface VisitChildrenModalProps {
   open: boolean;
   member: Member | null;
   onClose: () => void;
+  /**
+   * SCRUM-339 — the visit this till already opened for this member today (at
+   * the supervision gate), or null. The children confirmed here join it rather
+   * than opening a second visit for the same family.
+   */
+  openVisitId?: string | null;
   /** Called with the refreshed children after the visit is confirmed. */
   onConfirmed: (children: SavedChild[], visitId: string) => void;
 }
@@ -49,7 +55,7 @@ interface VisitChildrenModalProps {
  * what the lookup already carried: the child list, the allergy line and the
  * confirm are all there, and that allergy line is then the only thing sent.
  */
-export function VisitChildrenModal({ open, member, onClose, onConfirmed }: VisitChildrenModalProps) {
+export function VisitChildrenModal({ open, member, openVisitId = null, onClose, onConfirmed }: VisitChildrenModalProps) {
   const children = member?.savedChildren ?? [];
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [allergyDrafts, setAllergyDrafts] = useState<Record<string, string>>({});
@@ -137,7 +143,7 @@ export function VisitChildrenModal({ open, member, onClose, onConfirmed }: Visit
           updated.push(c);
         }
       }
-      const visit = await visitsApi.create({ memberId: member.id, childIds: selectedIds });
+      const visitId = await confirmVisitChildren(openVisitId, { memberId: member.id, childIds: selectedIds });
       toast({
         title: 'Visit confirmed',
         description:
@@ -145,7 +151,7 @@ export function VisitChildrenModal({ open, member, onClose, onConfirmed }: Visit
             ? `${selectedIds.length} child${selectedIds.length > 1 ? 'ren' : ''} confirmed for today.`
             : 'Visit recorded with no children.',
       });
-      onConfirmed(updated, visit.id);
+      onConfirmed(updated, visitId);
       onClose();
     } catch (err) {
       toast({

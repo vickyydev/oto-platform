@@ -296,7 +296,47 @@ export const visitsApi = {
         }),
     );
   },
+  /**
+   * SCRUM-339 — add confirmed children to the visit this family already has
+   * today, so the membership check and the supervision gate share ONE visit.
+   * Answers with that visit's id.
+   *
+   * The box has no "add to a visit" step, so on the box lane the children get
+   * a visit of their own (the earlier behaviour) and its id is returned; the
+   * caller carries on with whichever id comes back.
+   */
+  addChildren: (visitId: string, body: { memberId: string; childIds: string[] }) =>
+    viaLane(
+      () =>
+        api.post<{ id: string; visitDate: string; status: string }>(
+          `/visits/${visitId}/children`,
+          { childIds: body.childIds },
+          { idempotencyKey: idemKey() },
+        ),
+      (stationId) =>
+        onBox<{ id: string; visitDate: string; status: string }>(stationId, 'visit.create', {
+          visitId: newRecordId(),
+          memberId: body.memberId,
+          childIds: body.childIds,
+        }),
+    ),
 };
+
+/**
+ * SCRUM-339 — the one place a counter screen confirms children for a visit:
+ * onto the family's open visit when the till already holds one for this
+ * member, otherwise as a new visit. Returns the visit id the sale should carry.
+ */
+export async function confirmVisitChildren(
+  openVisitId: string | null,
+  body: { memberId: string; childIds: string[] },
+): Promise<string> {
+  if (openVisitId && body.childIds.length > 0) {
+    return (await visitsApi.addChildren(openVisitId, body)).id;
+  }
+  if (openVisitId) return openVisitId;
+  return (await visitsApi.create(body)).id;
+}
 
 // --- branches / catalog -----------------------------------------------------
 export interface ApiBranch {

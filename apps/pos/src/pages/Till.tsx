@@ -40,7 +40,7 @@ import { Monitor, User } from 'lucide-react';
 
 import { useOperator } from '@/auth/OperatorContext';
 import { toast } from '@/hooks/use-toast';
-import { membersApi, visitsApi } from '@/api/platform';
+import { confirmVisitChildren, membersApi } from '@/api/platform';
 import { childrenApi, lookupMember } from '@/api/members';
 import { ApiError, isMissingRoute } from '@/api/client';
 import {
@@ -2051,8 +2051,18 @@ export default function Till() {
         }
         // The visit is what stamps each child as confirmed today — the same
         // step the membership check takes once its edits have landed.
+        //
+        // SCRUM-339 — and it is the family's ONE visit: when the membership
+        // check already opened one for this member, the gate's children join
+        // it, and a visit the gate opens becomes the one the sale carries, so
+        // a child confirmed only here is on the sale's visit (and its band).
         if (confirmedChildIds.length > 0) {
-          gateVisitId = (await visitsApi.create({ memberId: guardian.id, childIds: confirmedChildIds })).id;
+          const openVisitId = member && member.id === guardian.id ? confirmedVisitId : null;
+          gateVisitId = await confirmVisitChildren(openVisitId, {
+            memberId: guardian.id,
+            childIds: confirmedChildIds,
+          });
+          setConfirmedVisitId(gateVisitId);
         }
       }
     } catch (err) {
@@ -3679,6 +3689,7 @@ export default function Till() {
       <VisitChildrenModal
         open={showVisitChildren}
         member={member}
+        openVisitId={confirmedVisitId}
         onClose={() => setShowVisitChildren(false)}
         onConfirmed={(children, visitId) => {
           setMember((m) => (m ? { ...m, savedChildren: children } : m));

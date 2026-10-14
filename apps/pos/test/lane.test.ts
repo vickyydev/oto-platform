@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, NetworkError } from '@/api/client';
-import { membersApi, visitsApi } from '@/api/platform';
+import { confirmVisitChildren, membersApi, visitsApi } from '@/api/platform';
 import { salesApi } from '@/api/sales';
 import * as React from 'react';
 import { renderHook } from './support/hooks';
@@ -133,6 +133,29 @@ describe('which lane a call takes', () => {
       payload: { visitId: platformId, memberId: 'm-1', childIds: ['c-1'] },
     });
     expect(visit.id).toBe(platformId);
+  });
+
+  it('SCRUM-339: a second screen adds its children to the family’s open visit instead of opening another', async () => {
+    const calls: Array<{ url: string; body: Record<string, unknown> }> = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        const body = init?.body ? (JSON.parse(String(init.body)) as Record<string, unknown>) : {};
+        calls.push({ url, body });
+        if (url === '/api/visits') return reply({ id: body.id, visitDate: '2026-10-14', status: 'draft' });
+        return reply({ id: 'open-visit', visitDate: '2026-10-14', status: 'draft' });
+      }),
+    );
+    // With an open visit: the children join it, and its id comes back.
+    expect(await confirmVisitChildren('open-visit', { memberId: 'm-1', childIds: ['c-1', 'c-2'] })).toBe('open-visit');
+    expect(calls[0]).toEqual({ url: '/api/visits/open-visit/children', body: { childIds: ['c-1', 'c-2'] } });
+    // Nobody to add: the open visit stands and nothing is sent.
+    expect(await confirmVisitChildren('open-visit', { memberId: 'm-1', childIds: [] })).toBe('open-visit');
+    expect(calls).toHaveLength(1);
+    // No open visit yet: one is opened.
+    const opened = await confirmVisitChildren(null, { memberId: 'm-1', childIds: ['c-1'] });
+    expect(calls[1]!.url).toBe('/api/visits');
+    expect(opened).toBe(calls[1]!.body.id);
   });
 
   it('prices a cart on the box in the platform’s quote shape', async () => {
