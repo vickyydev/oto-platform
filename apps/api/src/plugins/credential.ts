@@ -12,6 +12,11 @@ import type { PermissionConfig } from './permission';
 import { authenticateDisplay, displayBearerHash, displayUnpaired, observeRejectedDisplayCall, type DisplayDeviceAuth } from '../services/display';
 import { authenticateKiosk, kioskUnpaired, type KioskDeviceAuth } from '../services/kiosk';
 import { kioskBearerHash } from '../services/kiosk-pairing';
+import {
+  authenticateOtoAppProvisioner,
+  parseOtoAppProvisionKeys,
+  type OtoAppProvisionKey,
+} from '../lib/otoapp-provision-keys';
 
 /**
  * `config.credential` was a label; this makes it a guard (S2-04 review, F3).
@@ -46,6 +51,8 @@ declare module 'fastify' {
     kioskDevice: KioskDeviceAuth | null;
     /** The unpaired kiosk browser's own bearer, hashed, on a `credential: 'kiosk-pairing'` route (S2-20 K2). */
     kioskPairingHash: string | null;
+    /** The operator whose provisioning key the OTO App's server presented (SCRUM-539). */
+    otoAppProvisioner: { operatorId: string } | null;
   }
 }
 
@@ -93,6 +100,14 @@ export function kioskPairingHashOf(req: FastifyRequest): string {
   return req.kioskPairingHash;
 }
 
+/** The OTO App server's operator, for a route that declared `credential: 'otoapp-provision'`. */
+export function otoAppProvisionerOf(req: FastifyRequest): { operatorId: string } {
+  if (!req.otoAppProvisioner) {
+    throw new AppError(401, 'OTOAPP_PROVISION_UNAUTHORIZED', 'This request does not carry a provisioning key this platform accepts');
+  }
+  return req.otoAppProvisioner;
+}
+
 export const credentialPlugin = fp(async (app: FastifyInstance) => {
   app.decorateRequest('boxAuth', null);
   app.decorateRequest('boothDevice', null);
@@ -100,6 +115,9 @@ export const credentialPlugin = fp(async (app: FastifyInstance) => {
   app.decorateRequest('displayPairingHash', null);
   app.decorateRequest('kioskDevice', null);
   app.decorateRequest('kioskPairingHash', null);
+  app.decorateRequest('otoAppProvisioner', null);
+  /** Parsed once; `env.ts` already refused a malformed value at boot. */
+  let provisionKeys: OtoAppProvisionKey[] | null = null;
 
   app.addHook('onRoute', (route: RouteOptions) => {
     const kind = (route.config as PermissionConfig | undefined)?.credential;
@@ -129,6 +147,16 @@ export const credentialPlugin = fp(async (app: FastifyInstance) => {
           }
           throw error;
         }
+        return;
+      }
+      if (kind === 'otoapp-provision') {
+        /**
+         * SCRUM-539 — the OTO App's server, never a browser: its key is
+         * compared by digest against every configured operator's, and the
+         * operator it belongs to is the only one the request may touch.
+         */
+        provisionKeys ??= parseOtoAppProvisionKeys(app.env.OTOAPP_PROVISION_KEYS);
+        req.otoAppProvisioner = authenticateOtoAppProvisioner(provisionKeys, req.headers.authorization);
         return;
       }
       if (kind === 'kiosk-pairing') {

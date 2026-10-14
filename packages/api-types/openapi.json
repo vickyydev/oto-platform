@@ -868,6 +868,93 @@
         }
       }
     },
+    "/admin/apps/oto_app/suite-sign-ins": {
+      "post": {
+        "description": "OTO App server only (provisioning key): give an existing OTO App user — an advisor or an app-created user — a new suite sign-in from their phone, with a one-time temporary password changed at first sign-in. Never touches an existing account.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "actionId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "appUserId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "phone": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 32
+                  },
+                  "actorAppUserId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  }
+                },
+                "required": [
+                  "actionId",
+                  "appUserId",
+                  "phone",
+                  "actorAppUserId"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "accountId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "phone": {
+                      "type": "string"
+                    },
+                    "externalUserId": {
+                      "type": "string"
+                    },
+                    "temporaryPassword": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "replayed": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "accountId",
+                    "phone",
+                    "externalUserId",
+                    "temporaryPassword",
+                    "replayed"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/apps/oto_app/unlinked-users": {
       "get": {
         "description": "OTO App users with no suite sign-in yet: no platform account is stamped on them, so they cannot open the app from the launcher until they are linked (POST /admin/apps/oto_app/users with externalUserId).",

@@ -1052,6 +1052,61 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/apps/oto_app/suite-sign-ins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description OTO App server only (provisioning key): give an existing OTO App user — an advisor or an app-created user — a new suite sign-in from their phone, with a one-time temporary password changed at first sign-in. Never touches an existing account. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        actionId: string;
+                        appUserId: string;
+                        phone: string;
+                        actorAppUserId: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            accountId: string;
+                            phone: string;
+                            externalUserId: string;
+                            temporaryPassword: string | null;
+                            replayed: boolean;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/apps/oto_app/unlinked-users": {
         parameters: {
             query?: never;

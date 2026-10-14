@@ -5,6 +5,7 @@ import { dirname, join } from 'node:path';
 import { z } from 'zod';
 import { parseAppOrigins, parseHandoffKeys } from './services/handoff';
 import { parseOtoAppJobKeys } from './services/otoapp-directory';
+import { parseOtoAppProvisionKeys } from './lib/otoapp-provision-keys';
 import { parseStaffTokenKey } from './lib/staff-token-key';
 
 // .env lives at the repository root; entrypoints may run from any package cwd.
@@ -630,6 +631,31 @@ const EnvSchema = z.object({
    * a directory write's limit.
    */
   OTOAPP_JOBS_TIMEOUT_MS: z.coerce.number().int().min(1000).max(600_000).default(120_000),
+
+  /**
+   * THE OTO APP'S PROVISIONING KEY (SCRUM-539).
+   *
+   * The OTO App's server gives an advisor or an app-created user a suite
+   * sign-in through `POST /admin/apps/oto_app/suite-sign-ins`, with a key of
+   * its own (`OTOAPP_PROVISION_KEY` on the app). Configured here as
+   * `<operator uuid>:<sha256 hex of the key>`, comma-separated, one per
+   * operator: the DIGEST, never the key, so this environment leaking hands
+   * nobody a working key. Mint one with
+   * `node -e "const k=require('crypto').randomBytes(32).toString('base64url');console.log(k);console.log(require('crypto').createHash('sha256').update(k).digest('hex'))"`,
+   * put the first line on the app and `<operator>:<second line>` here.
+   * Empty: the route refuses every caller and the app's button says so.
+   */
+  OTOAPP_PROVISION_KEYS: z
+    .string()
+    .default('')
+    .superRefine((value, ctx) => {
+      if (!value) return;
+      try {
+        parseOtoAppProvisionKeys(value);
+      } catch (err) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: `OTOAPP_PROVISION_KEYS: ${(err as Error).message}` });
+      }
+    }),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
@@ -897,6 +923,9 @@ export function loadEnv(overrides: Partial<Record<keyof Env, string>> = {}): Env
     // developer's `.env` would have a test's job runner run a real park
     // group's night batch. The suite passes its own where it needs one.
     if (overrides.OTOAPP_JOBS_KEYS === undefined) raw.OTOAPP_JOBS_KEYS = '';
+    // And the OTO App's provisioning key (SCRUM-539): one in `.env` would let
+    // a test mint accounts with it. The suite passes its own where it needs one.
+    if (overrides.OTOAPP_PROVISION_KEYS === undefined) raw.OTOAPP_PROVISION_KEYS = '';
   }
   const env = EnvSchema.parse(raw);
   assertProductionSafe(env);

@@ -37,6 +37,8 @@ import {
   type EffectivePermission,
 } from '../services/permissions';
 import { opCtx, withTx } from '../services/tx';
+import { otoAppProvisionerOf } from '../plugins/credential';
+import { provisionExistingOtoAppUser } from '../services/otoapp-provision';
 
 /**
  * S2-17a — provisioning a person into one of the suite's apps.
@@ -436,6 +438,55 @@ export async function appIdentityRoutes(app: App): Promise<void> {
       // A replay of the same idempotency key answers with the stored link;
       // `codeSent` describes one attempt at delivery, not the record of it.
       return pending ? { ...linked, ...(await deliverCode(app.sms, pending, req.log)) } : linked;
+    },
+  );
+
+  /**
+   * SCRUM-539 — a suite sign-in for somebody created inside the OTO App (an
+   * advisor, or a user added on its Setup > Users screen), asked for by the
+   * app's SERVER with its provisioning key rather than by a person with a
+   * session. Everything the key may and may not do is written down at
+   * `services/otoapp-provision.ts`.
+   *
+   * The answer is a working password, so the route can never enter the
+   * replay store (`secretResponse`). Its own replay is the action id the app
+   * mints per press: the identity row is created under it, and the same id
+   * again answers with that row and no password.
+   */
+  app.post(
+    '/oto_app/suite-sign-ins',
+    {
+      config: { credential: 'otoapp-provision', secretResponse: true },
+      schema: {
+        description:
+          "OTO App server only (provisioning key): give an existing OTO App user — an advisor or an app-created user — a new suite sign-in from their phone, with a one-time temporary password changed at first sign-in. Never touches an existing account.",
+        body: z
+          .object({
+            /** Minted by the app per press; the same id again is a replay. */
+            actionId: z.string().uuid(),
+            /** `otoapp.users.id` of the person getting the sign-in. */
+            appUserId: z.string().min(1).max(64),
+            /** Thai local formats accepted; normalised here. */
+            phone: z.string().min(1).max(32),
+            /** `otoapp.users.id` of the administrator who pressed the button. */
+            actorAppUserId: z.string().min(1).max(64),
+          })
+          .strict(),
+        response: {
+          200: z.object({
+            id: z.string().uuid(),
+            accountId: z.string().uuid(),
+            phone: z.string(),
+            externalUserId: z.string(),
+            temporaryPassword: z.string().nullable(),
+            replayed: z.boolean(),
+          }),
+        },
+      },
+    },
+    async (req) => {
+      const { operatorId } = otoAppProvisionerOf(req);
+      return provisionExistingOtoAppUser(app.db, opCtx(req), { operatorId, ...req.body });
     },
   );
 

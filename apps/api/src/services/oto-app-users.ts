@@ -109,7 +109,15 @@ export async function linkOtoAppUser(
 ): Promise<OtoAppUser | null> {
   const [row] = await exec
     .update(otoappUsers)
-    .set({ platformUserId: opts.platformAccountId, updatedAt: new Date() })
+    /**
+     * SCRUM-539: and the app's own forced password change switched off. The
+     * app sets `must_change_password` on every user it creates and at every
+     * admin reset, and its client sends anybody carrying it to
+     * `/change-password`, which asks for the app password they hold — which a
+     * person signing in from the launcher never uses. `createOtoAppUser` writes
+     * false for the same reason; a linked user is the same person afterwards.
+     */
+    .set({ platformUserId: opts.platformAccountId, mustChangePassword: false, updatedAt: new Date() })
     .where(
       and(
         eq(otoappUsers.id, opts.userId),

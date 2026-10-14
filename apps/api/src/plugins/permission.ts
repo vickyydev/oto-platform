@@ -70,7 +70,19 @@ export interface PermissionConfig {
    * five entries to the pinned list of genuinely open endpoints, which is the
    * one thing that list exists to stop.
    */
-  credential?: 'box' | 'box-claim' | 'booth' | 'display' | 'display-pairing' | 'kiosk' | 'kiosk-pairing';
+  credential?:
+    | 'box'
+    | 'box-claim'
+    | 'booth'
+    | 'display'
+    | 'display-pairing'
+    | 'kiosk'
+    | 'kiosk-pairing'
+    /**
+     * SCRUM-539 — the OTO App's SERVER, carrying its provisioning key
+     * (`OTOAPP_PROVISION_KEYS`). Not a device: a service, bound to one operator.
+     */
+    | 'otoapp-provision';
   /** Required capability of a paired display, checked without a staff cookie. */
   displayScope?: 'display:read' | 'display:intents';
   /**

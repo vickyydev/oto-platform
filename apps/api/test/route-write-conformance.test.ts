@@ -422,6 +422,14 @@ describe('one operation, one transaction (SCRUM-291)', () => {
  */
 const OUTSIDE_THE_REPLAY_STORE = [
   'POST /accounts/:id/temp-password [secretResponse]',
+  /**
+   * SCRUM-539 — the OTO App's SERVER giving an app-born person a suite
+   * sign-in. Its answer is a one-time temporary password and its principal is
+   * a service key, not a session. Its own replay is the action id the app
+   * mints per press: the identity row is created under that id, and the same
+   * id again answers with the account and no password.
+   */
+  'POST /admin/apps/oto_app/suite-sign-ins [secretResponse,credential:otoapp-provision]',
   'POST /auth/handoff [secretResponse]',
   /**
    * S2-21 round 3 (from the round 2 review) — a scanned staff benefit QR
