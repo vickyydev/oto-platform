@@ -24099,7 +24099,7 @@ ${context}`;
       const report = access.report;
 
       // Check if user has manager/admin access
-      if (!user.hasAllBranchesAccess && user.role !== 'manager' && user.role !== 'admin') {
+      if (!user.hasAllBranchesAccess && !['manager', 'admin', 'operator_admin', 'global_admin'].includes(user.role)) {
         return res.status(403).json({ message: "Your role cannot close fix reports" });
       }
 
