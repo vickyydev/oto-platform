@@ -1126,6 +1126,11 @@ services:
         # onrender.com subdomains are globally unique and a blueprint cannot
         # reference another service's URL, so it is a literal.
         value: https://oto-app-staging.onrender.com
+      - key: VITE_CONSOLE_URL
+        # Where the vouchers pages' "Open the Console" button points (vouchers
+        # moved there). Unset, it opens /console on this app, which is a
+        # not-found page. Same value as the launcher's VITE_CONSOLE_URL.
+        value: https://oto-console-staging.onrender.com
 
       # -- error reporting ---------------------------------------------------
       - key: SENTRY_DSN

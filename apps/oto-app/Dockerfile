@@ -52,6 +52,10 @@ ENV VITE_SENTRY_DSN=$VITE_SENTRY_DSN
 # this deployment to a host that is not ours.
 ARG VITE_HR_APP_URL
 ENV VITE_HR_APP_URL=$VITE_HR_APP_URL
+# Where the "Open the Console" buttons point (client/src/lib/other-apps.ts).
+# Unset, they open /console on this app, which is not a page here.
+ARG VITE_CONSOLE_URL
+ENV VITE_CONSOLE_URL=$VITE_CONSOLE_URL
 ARG APP_VERSION
 ARG APP_CHANGE_ID
 COPY . .
