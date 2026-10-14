@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "errors": 433,
+  "errors": 430,
   "description": "Inherited OTO App diagnostic ceilings by file and TypeScript code; reduce deliberately when debt is removed.",
   "counts": {
     "client/src/components/beo/beo-billing-module.tsx|TS2322": 1,
@@ -98,7 +98,7 @@
     "server/pdf.ts|TS2339": 2,
     "server/pdf.ts|TS2345": 1,
     "server/routes.ts|TS2322": 11,
-    "server/routes.ts|TS2339": 40,
+    "server/routes.ts|TS2339": 37,
     "server/routes.ts|TS2345": 7,
     "server/routes.ts|TS2353": 12,
     "server/routes.ts|TS2367": 2,

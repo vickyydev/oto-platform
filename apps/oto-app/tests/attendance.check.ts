@@ -882,11 +882,13 @@ try {
     assert.equal((await call("GET", `/api/leave-balances?branchId=${A.x}`, { cookie: cookie.aLimited })).status, 200);
     assert.equal((await call("GET", `/api/employees/${empY}/leave-balance`, { cookie: cookie.aLimited })).status, 403);
   });
-  await check("FINDING Q40 (leave): sick-leave balances answer branch Y, and the leave-policy and per-employee balance reads refuse even branch X (they read a field the user does not carry)", async () => {
+  await check("FINDING Q40 (leave): sick-leave balances answer branch Y; the leave-policy and per-employee balance reads answer branch X and refuse Y (SCRUM-544: they read the user's real branch list)", async () => {
     assert.equal((await call("GET", `/api/sick-leave-balances?branchId=${A.y}`, { cookie: cookie.aLimited })).status, 200);
     assert.equal((await call("GET", `/api/employees/${empY}/sick-leave-balance`, { cookie: cookie.aLimited })).status, 200);
-    assert.equal((await call("GET", `/api/leave-policies?branchId=${A.x}`, { cookie: cookie.aLimited })).status, 403);
-    assert.equal((await call("GET", `/api/leave-balances/employee/${empX}`, { cookie: cookie.aLimited })).status, 403);
+    assert.equal((await call("GET", `/api/leave-policies?branchId=${A.x}`, { cookie: cookie.aLimited })).status, 200);
+    assert.equal((await call("GET", `/api/leave-policies?branchId=${A.y}`, { cookie: cookie.aLimited })).status, 403);
+    assert.equal((await call("GET", `/api/leave-balances/employee/${empX}`, { cookie: cookie.aLimited })).status, 200);
+    assert.equal((await call("GET", `/api/leave-balances/employee/${empY}`, { cookie: cookie.aLimited })).status, 403);
   });
 
   const yRota = await rota(A, A.y);

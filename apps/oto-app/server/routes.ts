@@ -13187,7 +13187,7 @@ OTO Company Limited`,
       // Check branch access - global_admin and admin have all access
       const isGlobalAdmin = user.role === "global_admin" || user.role === "admin";
       if (!isGlobalAdmin && !user.hasAllBranchesAccess && employee.branchId) {
-        const userBranchIds = user.branchIds || [];
+        const userBranchIds = user.allowedBranchIds || [];
         if (!userBranchIds.includes(employee.branchId)) {
           return res.status(403).json({ message: "Access denied" });
         }
@@ -13209,7 +13209,9 @@ OTO Company Limited`,
   // Each park group's own (S2-17b round 6, migration 0008; plan Q31): the
   // lists answered every park group's policies, and a company-wide policy one
   // park group wrote set every park group's accrual. The branch rule below is
-  // the app's, `user.branchIds` and all (plan Q40).
+  // the app's (plan Q40); it reads the branches the user may reach,
+  // `allowedBranchIds` (it read a `branchIds` field that does not exist, so
+  // every branch-limited caller was refused; SCRUM-544).
   app.get("/api/leave-policies", requireAuth, async (req, res, next) => {
     try {
       const tenantId = documentParkGroup(req, res);
@@ -13226,7 +13228,7 @@ OTO Company Limited`,
         }
         // Check branch access
         if (!isGlobalAdmin && !user.hasAllBranchesAccess) {
-          const userBranchIds = user.branchIds || [];
+          const userBranchIds = user.allowedBranchIds || [];
           if (!userBranchIds.includes(branchId)) {
             return res.status(403).json({ message: "Access denied" });
           }
@@ -15813,7 +15815,7 @@ OTO Company Limited`,
       // Global admins and legacy admins bypass branch access checks
       const isGlobalAdmin = user.role === "global_admin" || user.role === "admin";
       if (!isGlobalAdmin && !user.hasAllBranchesAccess) {
-        const userBranchIds = user.branchIds || [];
+        const userBranchIds = user.allowedBranchIds || [];
         if (!userBranchIds.includes(targetShiftRow.branchId)) {
           return res.status(403).json({ message: "Access denied to target branch" });
         }
