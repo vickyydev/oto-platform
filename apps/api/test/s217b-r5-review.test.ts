@@ -866,7 +866,7 @@ describe.skipIf(!HAS_APP_RUNTIME)('B to E. over HTTP against the app’s routes'
     expect(await rows()).toBe(before);
     const del = await call('DELETE', `/api/schedule/shift-groups/${R.group}?targetGroupId=`, { cookie: A.admin.cookie });
     expect(del.status, del.text).toBe(400);
-    expect(del.body.message).toBe('Choose a shift group first: this group still has shifts, so pick the group to move them to.');
+    expect(del.body.message).toBe('Choose a shift group first: this group still has shifts on the rota, so pick the group they move to.');
     expect(await q('select shift_group_id from schedule_shift_rows where id = $1', [R.r1])).toEqual([{ shift_group_id: R.group }]);
     expect(await q('select casual_worker_id, daily_rate_snapshot from schedule_assignments where id = $1', [assigned.body.id])).toEqual([
       { casual_worker_id: casual, daily_rate_snapshot: 700 },
