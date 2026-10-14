@@ -147,7 +147,7 @@ test('Voucher types: a 50 THB off type is created, Kids Pizza is linked and word
   // Saving the wording alone is closed: a free product needs its product.
   await expect(edit.getByRole('button', { name: 'Save', exact: true })).toBeDisabled();
   await edit
-    .getByLabel('Product', { exact: true })
+    .getByTestId('voucher-type-product')
     .selectOption({ label: `Margherita Pizza (FB-PIZZA) — ${CENTRAL_FLORESTA}` });
   await edit.getByLabel('Title (English)').fill('FREE KIDS PIZZA');
   await edit.getByLabel('Title (Thai)').fill('พิซซ่าเด็กฟรี');

@@ -352,6 +352,7 @@ export function VoucherTypeEditor({
                 value={form.productId}
                 onChange={(productId) => set({ productId })}
                 groups={products}
+                testId="voucher-type-product"
                 placeholder={linkOptions ? '— choose a product —' : 'Loading products…'}
                 disabled={locked || !linkOptions}
                 current={definition?.product ?? null}
@@ -756,6 +757,7 @@ function GroupedSelect({
   placeholder,
   disabled,
   current,
+  testId,
 }: {
   value: string;
   onChange: (next: string) => void;
@@ -763,12 +765,14 @@ function GroupedSelect({
   placeholder: string;
   disabled?: boolean;
   current: { id: string; name: string; branchName: string | null } | null;
+  testId?: string;
 }) {
   const offered = groups.some((g) => g.options.some((o) => o.value === value));
   return (
     <select
       value={value}
       disabled={disabled}
+      data-testid={testId}
       onChange={(e) => onChange(e.target.value)}
       className={cn(CONTROL, 'disabled:opacity-60')}
     >
