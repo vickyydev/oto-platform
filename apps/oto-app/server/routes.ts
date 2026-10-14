@@ -2486,7 +2486,7 @@ export async function registerRoutes(
       const employeeCount = await storage.getEmployeeCountByDepartment(req.params.id);
       if (employeeCount > 0 && !req.body.force) {
         return res.status(400).json({ 
-          message: `Cannot deactivate department with ${employeeCount} employees assigned. Reassign them first or pass force=true.`,
+          message: `Cannot deactivate: ${employeeCount} employees are still in this department. Move them to another department first.`,
           employeeCount 
         });
       }
@@ -2719,7 +2719,7 @@ export async function registerRoutes(
       const employeeCount = await storage.getEmployeeCountByRole(req.params.id);
       if (employeeCount > 0 && !req.body.force) {
         return res.status(400).json({ 
-          message: `Cannot deactivate role with ${employeeCount} employees assigned. Reassign them first or pass force=true.`,
+          message: `Cannot deactivate: ${employeeCount} employees still have this role. Move them to another role first.`,
           employeeCount 
         });
       }
@@ -4407,7 +4407,7 @@ export async function registerRoutes(
           }
         }
         return res.status(400).json({ 
-          message: "User account was deleted. The orphaned data has been cleaned up. Please use 'Enable Login' to create a new account for this employee.",
+          message: "User account was deleted. The orphaned data has been cleaned up. Please use 'Create Login' to create a new account for this employee.",
           needsReprovisioning: true
         });
       }
@@ -13253,10 +13253,10 @@ OTO Company Limited`,
         return res.status(400).json({ message: "name is required" });
       }
       if (daysWorkedRequired === undefined || typeof daysWorkedRequired !== "number" || daysWorkedRequired < 1) {
-        return res.status(400).json({ message: "daysWorkedRequired must be a positive number" });
+        return res.status(400).json({ message: "Days worked required must be 1 or more" });
       }
       if (daysOffEarned === undefined || typeof daysOffEarned !== "number" || daysOffEarned < 1) {
-        return res.status(400).json({ message: "daysOffEarned must be a positive number" });
+        return res.status(400).json({ message: "Days off earned must be 1 or more" });
       }
       if (branchId && (typeof branchId !== "string" || !await branchInParkGroup(branchId, tenantId))) {
         return res.status(404).json(BRANCH_NOT_FOUND);
@@ -13297,13 +13297,13 @@ OTO Company Limited`,
       if (description !== undefined) updates.description = description;
       if (daysWorkedRequired !== undefined) {
         if (typeof daysWorkedRequired !== "number" || daysWorkedRequired < 1) {
-          return res.status(400).json({ message: "daysWorkedRequired must be a positive number" });
+          return res.status(400).json({ message: "Days worked required must be 1 or more" });
         }
         updates.daysWorkedRequired = daysWorkedRequired;
       }
       if (daysOffEarned !== undefined) {
         if (typeof daysOffEarned !== "number" || daysOffEarned < 1) {
-          return res.status(400).json({ message: "daysOffEarned must be a positive number" });
+          return res.status(400).json({ message: "Days off earned must be 1 or more" });
         }
         updates.daysOffEarned = daysOffEarned;
       }
@@ -13891,7 +13891,7 @@ OTO Company Limited`,
       }
       
       const relatedLogin = await storage.getUserByEmail(personData.email);
-      if (relatedLogin && (await managedUserTenant(relatedLogin.id)) !== resolvedTenantId) return res.status(404).json({ message: "User not found" });
+      if (relatedLogin && (await managedUserTenant(relatedLogin.id)) !== resolvedTenantId) return res.status(404).json({ message: "This email cannot be used for a new person" });
       // Only create user if createLogin is true AND password is provided
       if (makeLogin) {
         const existingUser = await storage.getUserByEmail(personData.email);
@@ -14021,7 +14021,7 @@ OTO Company Limited`,
       }
       if (updateData.email) {
         const login = await storage.getUserByEmail(updateData.email);
-        if (login && (await managedUserTenant(login.id)) !== req.userWithAccess?.tenantId) return res.status(404).json({ message: "User not found" });
+        if (login && (await managedUserTenant(login.id)) !== req.userWithAccess?.tenantId) return res.status(404).json({ message: "This email cannot be used for this person" });
       }
       const person = await storage.updatePerson(id, updateData);
       
@@ -22502,7 +22502,7 @@ OTO Company Limited`,
       // Get the text chunks from this file
       const chunks = await storage.getKnowledgeChunks(id);
       if (chunks.length === 0) {
-        return res.status(400).json({ message: "No text content found. Please wait for indexing to complete." });
+        return res.status(400).json({ message: "No readable text was found in this file (it may be a scanned image). Upload a text-based PDF." });
       }
       
       // Combine all chunks into full text
@@ -22510,7 +22510,7 @@ OTO Company Limited`,
       
       // Check for the AI key
       if (!aiConfigured()) {
-        return res.status(500).json({ message: "AI service not configured" });
+        return res.status(500).json({ message: "AI is not available on this server. Ask the system administrator." });
       }
 
       // Extract structured steps with the AI model
@@ -24076,7 +24076,7 @@ ${context}`;
 
       // Check if user has manager/admin access
       if (!user.hasAllBranchesAccess && user.role !== 'manager' && user.role !== 'admin') {
-        return res.status(403).json({ message: "Only managers and admins can close fix reports" });
+        return res.status(403).json({ message: "Your role cannot close fix reports" });
       }
 
       // Check branch access for managers
@@ -24717,7 +24717,7 @@ ${context}`;
       if (!parsed.success) return res.status(400).json({ message: "Invalid training module" });
       const input = parsed.data;
       if (!(await trainingBranchesAreValid(tenantId, input.scope, input.branchIds))) {
-        return res.status(400).json({ message: "Select branches in this tenant" });
+        return res.status(400).json({ message: "Choose at least one branch for this module" });
       }
       const module = await db.transaction(async tx => {
         const [created] = await tx.insert(trainingModules).values({
@@ -24753,7 +24753,7 @@ ${context}`;
       if (!parsed.success) return res.status(400).json({ message: "Invalid training module" });
       const input = parsed.data;
       if (!(await trainingBranchesAreValid(tenantId, input.scope, input.branchIds))) {
-        return res.status(400).json({ message: "Select branches in this tenant" });
+        return res.status(400).json({ message: "Choose at least one branch for this module" });
       }
       const module = await db.transaction(async tx => {
         const [updated] = await tx.update(trainingModules).set({
@@ -26370,7 +26370,7 @@ ${context}`;
         return res.status(404).json({ message: "Access item not found" });
       }
       const password = openAccessPassword(tenantId, item.passwordEncrypted);
-      if (password === null) return res.status(503).json({ message: "Credential unavailable; ask an administrator" });
+      if (password === null) return res.status(503).json({ message: "This saved password can no longer be read. An administrator must enter it again." });
 
       await storage.createAccessViewLog({
         tenantId,

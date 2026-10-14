@@ -14,7 +14,7 @@ import {
 async function getSettingValue(key: string, req: Request): Promise<string> {
   const setting = await storage.getSetting(key, req.userWithAccess?.tenantId ?? null);
   if (!setting) {
-    throw new Error(`Setting not found: ${key}. Please add this setting in System Settings.`);
+    throw new Error(`AI event extraction is not set up for this park group (missing setting: ${key}). Ask an administrator to restore the AI settings.`);
   }
   return setting.value;
 }
@@ -41,7 +41,7 @@ export function registerAIRoutes(app: Express, requireAuth: any) {
     try {
       if (!aiConfigured()) {
         return res.status(503).json({
-          message: "AI service not configured. Please set the Anthropic API key.",
+          message: "AI is not available on this server. Ask the system administrator.",
         });
       }
       const modelsList = await getAnthropic().models.list();
@@ -59,7 +59,7 @@ export function registerAIRoutes(app: Express, requireAuth: any) {
       console.error("[AI Available Models] Error:", error);
       if (error.status === 401 || error.message?.includes("API key")) {
         return res.status(503).json({ 
-          message: "AI service not configured. Please set up the Anthropic API key." 
+          message: "AI is not available on this server. Ask the system administrator." 
         });
       }
       next(error);
@@ -167,7 +167,7 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
       console.error("[AI Extract Event] Error:", error);
       if (error.status === 401 || error.message?.includes("API key")) {
         return res.status(503).json({ 
-          message: "AI service not configured. Please set up the Anthropic API key." 
+          message: "AI is not available on this server. Ask the system administrator." 
         });
       }
       if (error.code === "insufficient_quota" || error.status === 429) {
@@ -242,7 +242,7 @@ ${text}`
       console.error("[AI Parse BEO] Error:", error);
       if (error.status === 401 || error.message?.includes("API key")) {
         return res.status(503).json({
-          message: "AI service not configured. Please set up the Anthropic API key."
+          message: "AI is not available on this server. Ask the system administrator."
         });
       }
       if (error.code === "insufficient_quota" || error.status === 429) {

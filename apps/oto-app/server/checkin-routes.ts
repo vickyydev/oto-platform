@@ -1006,7 +1006,7 @@ router.post("/api/core/checkins/:id/assign-nanny", requireAuthOrKiosk, requireCh
     ));
     const roleIds = nannyRoles.map(role => role.id);
     if (roleIds.length === 0) {
-      return res.status(409).json({ message: "Employee does not have a nanny role" });
+      return res.status(409).json({ message: "No nanny role is set up for this park group" });
     }
     const assignedRoles = await db.select({ roleId: employeeRoles.roleId }).from(employeeRoles).where(and(
       eq(employeeRoles.employeeId, nannyEmployeeId), inArray(employeeRoles.roleId, roleIds)
