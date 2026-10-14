@@ -559,7 +559,6 @@ export interface IStorage {
                 id: string,
                 employee: Partial<InsertEmployee>,
         ): Promise<Employee>;
-        deleteEmployee(id: string): Promise<void>;
         // The order written to one park group's employees only (round 6's
         // re-review, F6): another park group's id is skipped as a missing id
         // is, its place in the list kept.
@@ -3377,96 +3376,6 @@ export class DatabaseStorage implements IStorage {
                         .update(activityLog)
                         .set({ employeeId: null })
                         .where(eq(activityLog.employeeId, employeeId));
-        }
-
-        async deleteEmployee(id: string): Promise<void> {
-                // Delete related records first to avoid foreign key violations
-                // 1. Delete employee change history
-                await db
-                        .delete(employeeChanges)
-                        .where(eq(employeeChanges.employeeId, id));
-                // 2. Delete employee documents
-                await db
-                        .delete(employeeDocuments)
-                        .where(eq(employeeDocuments.employeeId, id));
-                // 3. Delete enrollment sessions
-                await db
-                        .delete(enrollmentSessions)
-                        .where(eq(enrollmentSessions.employeeId, id));
-                // 4. Delete time events
-                await db.delete(timeEvents).where(eq(timeEvents.employeeId, id));
-                // 5. Delete kiosk auth attempts
-                await db
-                        .delete(kioskAuthAttempts)
-                        .where(eq(kioskAuthAttempts.employeeId, id));
-                // 6. Delete employee roles
-                await db.delete(employeeRoles).where(eq(employeeRoles.employeeId, id));
-                // 7. Delete employee time off
-                await db
-                        .delete(employeeTimeOff)
-                        .where(eq(employeeTimeOff.employeeId, id));
-                // 8. Delete offboarding checklist items BEFORE employee offboarding (FK dependency)
-                // Get all offboarding records for this employee first
-                const offboardingRecords = await db
-                        .select({ id: employeeOffboarding.id })
-                        .from(employeeOffboarding)
-                        .where(eq(employeeOffboarding.employeeId, id));
-                // Delete checklist items by offboarding_id to respect the FK constraint
-                for (const offboarding of offboardingRecords) {
-                        await db
-                                .delete(offboardingChecklist)
-                                .where(eq(offboardingChecklist.offboardingId, offboarding.id));
-                }
-                // 9. Now safe to delete employee offboarding records
-                await db
-                        .delete(employeeOffboarding)
-                        .where(eq(employeeOffboarding.employeeId, id));
-                // 10. Delete employee letters
-                await db
-                        .delete(employeeLetters)
-                        .where(eq(employeeLetters.employeeId, id));
-                // 11. Delete employee assets
-                await db
-                        .delete(employeeAssets)
-                        .where(eq(employeeAssets.employeeId, id));
-                // 12. Nullify employeeId in shifts (nullable FK)
-                await db
-                        .update(shifts)
-                        .set({ employeeId: null })
-                        .where(eq(shifts.employeeId, id));
-                // 13. Get contract IDs for this employee before deleting
-                const employeeContracts = await db
-                        .select({ id: contractInstances.id })
-                        .from(contractInstances)
-                        .where(eq(contractInstances.employeeId, id));
-                const contractIds = employeeContracts.map((c) => c.id);
-                // 6. Nullify contractInstanceId in activity log and attention items for these contracts
-                if (contractIds.length > 0) {
-                        await db
-                                .update(activityLog)
-                                .set({ contractInstanceId: null })
-                                .where(inArray(activityLog.contractInstanceId, contractIds));
-                        await db
-                                .update(attentionItems)
-                                .set({ contractInstanceId: null })
-                                .where(inArray(attentionItems.contractInstanceId, contractIds));
-                }
-                // 7. Delete contracts for this employee
-                await db
-                        .delete(contractInstances)
-                        .where(eq(contractInstances.employeeId, id));
-                // 8. Set employeeId to null in activity log (nullable FK)
-                await db
-                        .update(activityLog)
-                        .set({ employeeId: null })
-                        .where(eq(activityLog.employeeId, id));
-                // 9. Set employeeId to null in attention items (nullable FK)
-                await db
-                        .update(attentionItems)
-                        .set({ employeeId: null })
-                        .where(eq(attentionItems.employeeId, id));
-                // 10. Finally delete the employee
-                await db.delete(employees).where(eq(employees.id, id));
         }
 
         async reorderEmployees(orderedIds: string[], tenantId: string): Promise<void> {

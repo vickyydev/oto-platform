@@ -298,7 +298,7 @@ function EmployeeTableRow({
                 <AlertDialogHeader>
                   <AlertDialogTitle>Delete Employee</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Are you sure you want to delete {employee.fullName}? This action cannot be undone.
+                    Are you sure you want to delete {employee.fullName}? Their documents, letters, asset records and leave records are deleted with them, and their login is removed. An employee with contracts, time or payroll records cannot be deleted; offboard them instead. This action cannot be undone.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -542,7 +542,7 @@ function SortableEmployeeTableRow({
                 <AlertDialogHeader>
                   <AlertDialogTitle>Delete Employee</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Are you sure you want to delete {employee.fullName}? This action cannot be undone.
+                    Are you sure you want to delete {employee.fullName}? Their documents, letters, asset records and leave records are deleted with them, and their login is removed. An employee with contracts, time or payroll records cannot be deleted; offboard them instead. This action cannot be undone.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -993,7 +993,7 @@ export default function EmployeesPage() {
     },
     onError: (error: Error) => {
       toast({
-        title: "Error",
+        title: "Employee not deleted",
         description: error.message,
         variant: "destructive",
       });
@@ -1009,15 +1009,26 @@ export default function EmployeesPage() {
       const response = await apiRequest("POST", "/api/employees/bulk-delete", { employeeIds });
       return response.json();
     },
-    onSuccess: (data: { deletedCount: number; errorCount: number }) => {
+    onSuccess: (data: { deletedCount: number; errorCount: number; results?: { id: string; status: string; message: string }[] }) => {
       queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
       queryClient.invalidateQueries({ queryKey: ["/api/departments"] });
       queryClient.invalidateQueries({ queryKey: ["/api/roles"] });
       setSelectedEmployees(new Set());
       setShowBulkDeleteDialog(false);
+      // Each employee not deleted, with the server's reason, so a refusal is
+      // never reported as a bare count.
+      const refusals = (data.results ?? []).filter((r) => r.status !== "deleted").map((r) => {
+        const name = employees?.find((e) => e.id === r.id)?.fullName;
+        return name && !r.message.startsWith(name) ? `${name}: ${r.message}` : r.message;
+      });
+      const shown = refusals.slice(0, 3).join(" ");
+      const more = refusals.length > 3 ? ` And ${refusals.length - 3} more not deleted.` : "";
       toast({
-        title: "Bulk delete complete",
-        description: `${data.deletedCount} employees deleted${data.errorCount > 0 ? `, ${data.errorCount} errors` : ""}.`,
+        title: data.errorCount > 0
+          ? `${data.deletedCount} deleted, ${data.errorCount} not deleted`
+          : `${data.deletedCount} ${data.deletedCount === 1 ? "employee" : "employees"} deleted`,
+        description: refusals.length > 0 ? `${shown}${more}` : undefined,
+        variant: data.errorCount > 0 ? "destructive" : undefined,
       });
     },
     onError: (error: Error) => {
@@ -1125,7 +1136,7 @@ export default function EmployeesPage() {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Delete {selectedEmployees.size} Employees</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Are you sure you want to delete {selectedEmployees.size} employees? This action cannot be undone. All contracts and assets associated with these employees will be archived.
+                    Are you sure you want to delete {selectedEmployees.size} employees? Their documents, letters, asset records and leave records are deleted with them, and their logins are removed. Anyone with contracts, time or payroll records is not deleted; offboard them instead. This action cannot be undone.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

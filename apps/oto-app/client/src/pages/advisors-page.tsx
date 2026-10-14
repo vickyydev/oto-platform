@@ -927,7 +927,7 @@ export default function AdvisorsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Advisor</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete {personToDelete?.fullName}? This will also remove their user account and cannot be undone.
+              Are you sure you want to delete {personToDelete?.fullName}? This also removes their user account, their access settings and their face enrolment. An advisor with recorded attendance or clock-ins cannot be deleted; deactivate their login on the Users page instead. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

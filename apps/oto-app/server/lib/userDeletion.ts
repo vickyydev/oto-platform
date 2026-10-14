@@ -1,4 +1,4 @@
-import type { Pool } from "pg";
+import type { Pool, PoolClient } from "pg";
 
 /**
  * Deleting a user of the app — the last step of `DELETE /api/users/:id`, after
@@ -57,40 +57,52 @@ export async function deleteManagedUser(pool: Pool, userId: string): Promise<Use
   const client = await pool.connect();
   try {
     await client.query("begin");
-    // Locked, so a link written by the platform between this read and the
-    // delete waits for this transaction rather than being deleted under it.
-    const { rows } = await client.query<{ platform_user_id: string | null }>(
-      "select platform_user_id::text as platform_user_id from users where id = $1 for update",
-      [userId],
-    );
-    const user = rows[0];
-    if (!user) {
-      await client.query("rollback");
-      return { deleted: false, status: 404, message: "User not found" };
-    }
-    if (user.platform_user_id) {
-      await client.query("rollback");
-      return { deleted: false, status: 409, message: DEACTIVATE_INSTEAD, reason: "linked_to_platform" };
-    }
-    try {
-      await client.query("delete from user_branch_access where user_id = $1", [userId]);
-      await client.query("delete from users where id = $1", [userId]);
-    } catch (err) {
-      await client.query("rollback");
-      if ((err as { code?: string }).code === FOREIGN_KEY_VIOLATION) {
-        return { deleted: false, status: 409, message: DEACTIVATE_INSTEAD, reason: "still_referenced" };
-      }
-      throw err;
-    }
-    await client.query("commit");
-    return { deleted: true };
+    const outcome = await deleteManagedUserWithin(client, userId);
+    await client.query(outcome.deleted ? "commit" : "rollback");
+    return outcome;
   } catch (err) {
-    // Already rolled back above when it was ours to answer; a second rollback
-    // on an aborted or finished transaction is harmless and keeps the
-    // connection clean for the next borrower.
+    // A second rollback on an aborted or finished transaction is harmless and
+    // keeps the connection clean for the next borrower.
     await client.query("rollback").catch(() => undefined);
     throw err;
   } finally {
     client.release();
   }
+}
+
+/**
+ * The same delete, inside a transaction the caller has open — for the doors
+ * that delete a user together with an employee or person record of their own
+ * (SCRUM-542), so the whole delete commits or none of it does. The caller
+ * rolls back on any refusal answered here; a foreign-key refusal is caught at
+ * a savepoint, so the caller's transaction is still usable for that rollback.
+ */
+export async function deleteManagedUserWithin(
+  client: Pick<PoolClient, "query">,
+  userId: string,
+): Promise<UserDeletionOutcome> {
+  // Locked, so a link written by the platform between this read and the
+  // delete waits for this transaction rather than being deleted under it.
+  const { rows } = await client.query<{ platform_user_id: string | null }>(
+    "select platform_user_id::text as platform_user_id from users where id = $1 for update",
+    [userId],
+  );
+  const user = rows[0];
+  if (!user) return { deleted: false, status: 404, message: "User not found" };
+  if (user.platform_user_id) {
+    return { deleted: false, status: 409, message: DEACTIVATE_INSTEAD, reason: "linked_to_platform" };
+  }
+  await client.query("savepoint managed_user_delete");
+  try {
+    await client.query("delete from user_branch_access where user_id = $1", [userId]);
+    await client.query("delete from users where id = $1", [userId]);
+  } catch (err) {
+    await client.query("rollback to savepoint managed_user_delete");
+    if ((err as { code?: string }).code === FOREIGN_KEY_VIOLATION) {
+      return { deleted: false, status: 409, message: DEACTIVATE_INSTEAD, reason: "still_referenced" };
+    }
+    throw err;
+  }
+  await client.query("release savepoint managed_user_delete");
+  return { deleted: true };
 }

@@ -279,7 +279,7 @@ export default function BranchesPage() {
     },
     onError: (error: Error) => {
       toast({
-        title: "Error",
+        title: "Branch not deleted",
         description: error.message,
         variant: "destructive",
       });
@@ -671,8 +671,7 @@ export default function BranchesPage() {
           <DialogHeader>
             <DialogTitle>Delete Branch</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{branchToDelete?.name}"? This action cannot be undone.
-              Templates and contracts associated with this branch will need to be reassigned.
+              Are you sure you want to delete "{branchToDelete?.name}"? Its schedules are deleted with it: week plans, shift groups and rows, schedule templates and duty blocks. A branch that still has employees, contracts, contract template assignments or shifts cannot be deleted; move or remove those first. This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
