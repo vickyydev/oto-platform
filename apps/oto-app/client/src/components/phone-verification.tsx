@@ -197,7 +197,7 @@ export function PhoneVerification({
             Phone Verification
           </CardTitle>
           <CardDescription>
-            SMS verification is not configured. Contact your administrator.
+            Text-message verification is not set up on this server. Ask the system administrator.
           </CardDescription>
         </CardHeader>
       </Card>

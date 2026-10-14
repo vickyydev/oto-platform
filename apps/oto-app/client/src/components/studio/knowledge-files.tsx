@@ -193,7 +193,7 @@ export function KnowledgeFiles({ isAdmin }: KnowledgeFilesProps) {
     onSuccess: (data) => {
       toast({ 
         title: "SOP Created", 
-        description: `Created "${data.sop?.title}" with ${data.stepsCount} steps. Go to Articles to review and publish it.` 
+        description: `Created "${data.sop?.title}" (${data.stepsCount} steps) in SOPs. It is already published, so staff can see it now; open SOPs to review it.` 
       });
     },
     onError: (error: Error) => {

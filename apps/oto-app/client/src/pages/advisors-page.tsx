@@ -214,7 +214,7 @@ export default function AdvisorsPage() {
       setSelectedPerson(null);
       toast({
         title: "Access policy saved",
-        description: "The advisor's session has been signed out. They will see the new role on their next login.",
+        description: "The advisor stays signed in. The new access applies from their next page load.",
       });
     },
     onError: (error: Error) => {

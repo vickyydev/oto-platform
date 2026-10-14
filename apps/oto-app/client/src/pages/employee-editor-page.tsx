@@ -3472,7 +3472,7 @@ export default function EmployeeEditorPage() {
                     <p className="text-sm text-muted-foreground">Please select a branch first to see available roles</p>
                   )}
                   {selectedBranchId && filteredRoles.length === 0 && (
-                    <p className="text-sm text-muted-foreground">No roles available for this branch - an admin must assign roles to this branch first</p>
+                    <p className="text-sm text-muted-foreground">No roles available for this branch - assign roles to this branch on the Roles page first</p>
                   )}
                   {filteredRoles.map((role) => (
                     <div key={role.id} className="flex items-center gap-2">

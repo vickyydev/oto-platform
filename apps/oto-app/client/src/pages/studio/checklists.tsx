@@ -523,7 +523,7 @@ export default function StudioChecklistsPage() {
   });
 
   const handleDelete = (checklist: ChecklistTemplate) => {
-    if (window.confirm(`Are you sure you want to delete "${checklist.name}"? This cannot be undone.`)) {
+    if (window.confirm(`Are you sure you want to delete "${checklist.name}"? Its run history and completion evidence are deleted with it. This cannot be undone.`)) {
       deleteMutation.mutate(checklist.id);
     }
   };

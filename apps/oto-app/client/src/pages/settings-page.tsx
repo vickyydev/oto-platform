@@ -248,7 +248,7 @@ function ProductionSyncSection() {
     onSuccess: () => {
       setPollingEnabled(true);
       setSyncStartedThisSession(true);
-      toast({ title: "Sync started", description: "Copying production data to development. You'll be redirected to login when done." });
+      toast({ title: "Sync started", description: "Copying production data to development. When it finishes you'll land on the sign-in page; open the app from the launcher to sign back in." });
       refetch();
     },
     onError: (error: Error) => {

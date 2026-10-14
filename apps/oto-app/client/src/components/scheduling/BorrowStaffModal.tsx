@@ -173,8 +173,7 @@ export function BorrowStaffModal({
                 </>
               ) : (
                 <>
-                  <p>Cross-branch borrowing is not configured.</p>
-                  <p className="text-xs mt-1">Branches must be linked via Operators. Contact your administrator.</p>
+                  <p>There is no other branch to borrow staff from.</p>
                 </>
               )}
             </div>

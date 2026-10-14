@@ -442,7 +442,7 @@ export function AppSidebar() {
           items={filteredAdminItems}
           isOpen={sectionState.configuration}
           onToggle={() => toggleSection('configuration')}
-          branchHint={configHiddenByBranch ? "Select 'All Branches' to access configuration" : undefined}
+          branchHint={configHiddenByBranch ? "Configuration needs access to all branches. Ask an administrator." : undefined}
         />
 
         <CollapsibleSection

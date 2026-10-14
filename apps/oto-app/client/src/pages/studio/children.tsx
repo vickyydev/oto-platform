@@ -982,7 +982,7 @@ export default function ChildrenDatabasePage() {
               Merge Profiles
             </DialogTitle>
             <DialogDescription>
-              Choose which profile to keep. The other profile's camp registrations will be moved to the chosen one, and their parent contact will be saved in authorized pickup contacts.
+              Choose which profile to keep. The other profile's camp registrations move to the chosen one, and the other profile's allergies, notes, photo and date of birth are replaced by the chosen profile's. Their parent contact is saved in authorized pickup contacts.
             </DialogDescription>
           </DialogHeader>
 
@@ -1099,6 +1099,10 @@ export default function ChildrenDatabasePage() {
                     <p className="text-xs text-muted-foreground">
                       All camp registrations under <strong>{secondary.childFullName}</strong> will use{" "}
                       <strong>{primary.childFullName}</strong>'s profile going forward.
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      <strong>{secondary.childFullName}</strong>'s allergies, food restrictions, medical and behaviour notes, photo, date of birth and language are replaced by{" "}
+                      <strong>{primary.childFullName}</strong>'s. Anything only entered on <strong>{secondary.childFullName}</strong>'s profile is lost.
                     </p>
                     <p className="text-xs text-muted-foreground">
                       <strong>{secondary.parentGuardianName}</strong> ({secondary.emergencyContactNumber}) will be added to authorized pickup contacts so neither phone number is lost.
