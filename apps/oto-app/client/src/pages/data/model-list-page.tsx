@@ -218,8 +218,17 @@ export default function ModelListPage() {
                   }
                 >
                   {model?.listDisplay.map((field) => (
-                    <td key={field.key} className="px-4 py-2.5 max-w-xs">
-                      <CellValue field={field} row={row} modelSlug={modelSlug} />
+                    <td key={field.key} className="px-4 py-2.5">
+                      {/* A block with a real width cap: the table sizes the
+                          column to at most this, and longer text ends in an
+                          ellipsis (full text on hover) instead of running
+                          over the next column. */}
+                      <div
+                        className="max-w-xs truncate"
+                        title={typeof row[field.key] === "string" ? (row[field.key] as string) : undefined}
+                      >
+                        <CellValue field={field} row={row} modelSlug={modelSlug} />
+                      </div>
                     </td>
                   ))}
                 </tr>
