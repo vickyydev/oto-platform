@@ -12,7 +12,7 @@ interface RoleInfo {
 }
 
 interface AvailabilityData {
-  employeeId: string;
+  employeeId: string | null;
   roles: RoleInfo[];
   unavailableRoles: string[];
   date: string;
@@ -67,8 +67,8 @@ export default function MyAvailabilityPage() {
         <Card>
           <CardContent className="py-8 text-center text-muted-foreground">
             <UserCheck className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>No roles assigned to your profile.</p>
-            <p className="text-sm mt-2">Contact your manager to assign roles.</p>
+            <p>{data && !data.employeeId ? "Your account isn't linked to an employee record." : "No roles assigned to your profile."}</p>
+            <p className="text-sm mt-2">{data && !data.employeeId ? "Ask your manager to link your account to your employee record." : "Contact your manager to assign roles."}</p>
           </CardContent>
         </Card>
       </div>

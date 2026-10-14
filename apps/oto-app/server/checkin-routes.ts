@@ -60,6 +60,30 @@ function getRequestTenantId(req: Request): string {
   return tenantId;
 }
 
+// What makes a role a nanny role, one rule for every nanny route: the
+// schedule and availability matched nanny|พี่เลี้ยง while assign and reserve
+// matched nanny|caretaker, so a nanny listed on the schedule could be refused
+// when reserved.
+const nannyRoleMatch = () => or(
+  ilike(roles.name, "%nanny%"),
+  ilike(roles.name, "%caretaker%"),
+  ilike(roles.name, "%พี่เลี้ยง%"),
+);
+const NO_NANNY_ROLE = "No nanny role is set up for this park group. Add a role named Nanny (or พี่เลี้ยง) on the Roles page first.";
+
+// The signed-in user's employee record, matched the way the rota and My Time
+// Off match it (routes.ts /api/my-time-off): by login link or by email, the
+// login link first.
+async function myEmployee(user: UserWithBranchAccess, tenantId: string) {
+  const matches = await db.select()
+    .from(employees)
+    .where(and(
+      eq(employees.tenantId, tenantId),
+      user.email ? or(eq(employees.userId, user.id), eq(employees.email, user.email)) : eq(employees.userId, user.id),
+    ));
+  return matches.find(emp => emp.userId === user.id) || matches[0];
+}
+
 async function canAccessCheckinBranch(req: Request, branchId: string): Promise<boolean> {
   const tenantId = req.kioskSession?.tenantId ?? (req.user as UserWithBranchAccess | undefined)?.tenantId;
   if (!tenantId || !z.string().uuid().safeParse(branchId).success) return false;
@@ -832,10 +856,7 @@ router.get("/api/core/nannies/available", requireAuthOrKiosk, async (req: Reques
       .from(roles)
       .where(and(
         eq(roles.tenantId, tenantId),
-        or(
-          ilike(roles.name, "%nanny%"),
-          ilike(roles.name, "%caretaker%")
-        )
+        nannyRoleMatch()
       ));
 
     console.log("[Nannies Available] nannyRoles:", nannyRoles);
@@ -1002,11 +1023,11 @@ router.post("/api/core/checkins/:id/assign-nanny", requireAuthOrKiosk, requireCh
 
     const nannyRoles = await db.select({ id: roles.id }).from(roles).where(and(
       eq(roles.tenantId, tenantId),
-      or(ilike(roles.name, "%nanny%"), ilike(roles.name, "%caretaker%"))
+      nannyRoleMatch()
     ));
     const roleIds = nannyRoles.map(role => role.id);
     if (roleIds.length === 0) {
-      return res.status(409).json({ message: "No nanny role is set up for this park group" });
+      return res.status(409).json({ message: NO_NANNY_ROLE });
     }
     const assignedRoles = await db.select({ roleId: employeeRoles.roleId }).from(employeeRoles).where(and(
       eq(employeeRoles.employeeId, nannyEmployeeId), inArray(employeeRoles.roleId, roleIds)
@@ -1471,10 +1492,7 @@ router.get("/api/core/nanny-schedule", requireAuthOrKiosk, async (req: Request, 
       .from(roles)
       .where(and(
         eq(roles.tenantId, tenantId),
-        or(
-          ilike(roles.name, "%nanny%"),
-          ilike(roles.name, "%พี่เลี้ยง%")
-        )
+        nannyRoleMatch()
       ));
 
     const nannyRoleIds = nannyRoles.map(r => r.id);
@@ -1719,9 +1737,10 @@ router.post("/api/core/nanny-reservations", requireAuthOrKiosk, async (req: Requ
 
     const nannyRoles = await db.select({ id: roles.id }).from(roles).where(and(
       eq(roles.tenantId, tenantId),
-      or(ilike(roles.name, "%nanny%"), ilike(roles.name, "%caretaker%"))
+      nannyRoleMatch()
     ));
     const roleIds = nannyRoles.map(role => role.id);
+    if (roleIds.length === 0) return res.status(409).json({ message: NO_NANNY_ROLE });
     const assignedRoles = roleIds.length > 0
       ? await db.select({ roleId: employeeRoles.roleId }).from(employeeRoles).where(and(
           eq(employeeRoles.employeeId, nannyEmployeeId), inArray(employeeRoles.roleId, roleIds)
@@ -1892,9 +1911,10 @@ router.patch("/api/core/nanny-reservations/:id", requireAuthOrKiosk, async (req:
       }
       const nannyRoles = await db.select({ id: roles.id }).from(roles).where(and(
         eq(roles.tenantId, tenantId),
-        or(ilike(roles.name, "%nanny%"), ilike(roles.name, "%caretaker%"))
+        nannyRoleMatch()
       ));
       const roleIds = nannyRoles.map(role => role.id);
+      if (roleIds.length === 0) return res.status(409).json({ message: NO_NANNY_ROLE });
       const assignedRoles = roleIds.length > 0
         ? await db.select({ roleId: employeeRoles.roleId }).from(employeeRoles).where(and(
             eq(employeeRoles.employeeId, existing.nannyEmployeeId), inArray(employeeRoles.roleId, roleIds)
@@ -2034,14 +2054,11 @@ router.post("/api/core/nanny-availability/toggle", requireAuthOrKiosk, async (re
       .from(roles)
       .where(and(
         eq(roles.tenantId, tenantId),
-        or(
-          ilike(roles.name, "%nanny%"),
-          ilike(roles.name, "%พี่เลี้ยง%")
-        )
+        nannyRoleMatch()
       ));
 
     if (nannyRoles.length === 0) {
-      return res.status(400).json({ message: "No nanny roles configured" });
+      return res.status(400).json({ message: NO_NANNY_ROLE });
     }
 
     // Check if employee has a nanny role
@@ -2104,16 +2121,10 @@ router.get("/api/core/my-role-availability/:date?", requireAuth, async (req: Req
     const today = new Date().toISOString().split("T")[0];
     const targetDate = (req.params.date as string) || (req.query.date as string) || today;
 
-    // Get the employee record for this user
-    const [employee] = await db.select()
-      .from(employees)
-      .where(and(
-        eq(employees.userId, user.id),
-        eq(employees.tenantId, tenantId)
-      ));
+    const employee = await myEmployee(user, tenantId);
 
     if (!employee) {
-      return res.json({ roles: [], unavailableRoles: [] });
+      return res.json({ roles: [], unavailableRoles: [], employeeId: null });
     }
 
     // Get the employee's roles
@@ -2168,16 +2179,10 @@ router.post("/api/core/my-role-availability", requireAuth, async (req: Request, 
     const today = new Date().toISOString().split("T")[0];
     const targetDate = date || today;
 
-    // Get the employee record for this user
-    const [employee] = await db.select()
-      .from(employees)
-      .where(and(
-        eq(employees.userId, user.id),
-        eq(employees.tenantId, tenantId)
-      ));
+    const employee = await myEmployee(user, tenantId);
 
     if (!employee) {
-      return res.status(404).json({ message: "Employee record not found" });
+      return res.status(404).json({ message: "Your account isn't linked to an employee record." });
     }
 
     // Verify the employee actually has this role

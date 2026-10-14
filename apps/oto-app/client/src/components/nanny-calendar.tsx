@@ -127,7 +127,7 @@ export function NannyCalendar({
           reservationDate: today,
         }),
       });
-      if (!res.ok) throw new Error("Failed to create reservation");
+      if (!res.ok) throw new Error((await res.json().catch(() => null))?.message || "Failed to create reservation");
       return res.json();
     },
     onSuccess: () => {

@@ -1016,7 +1016,7 @@ export function CheckinsContent({ kioskMode = false, kioskToken, kioskBranchId }
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ nannyEmployeeId }),
       });
-      if (!res.ok) throw new Error("Failed to assign nanny");
+      if (!res.ok) throw new Error((await res.json().catch(() => null))?.message || "Failed to assign nanny");
       return res.json();
     },
     onSuccess: () => {
