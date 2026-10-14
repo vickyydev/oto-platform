@@ -613,6 +613,22 @@ test('what the box lane will not take is refused before anything is numbered', a
       },
       'PICKUP_CODE_REQUIRED',
     );
+    // SCRUM-294 — a fraction of a satang, refused by name and never rounded:
+    // a fixed discount, and a promo's fixed value, at the finalise and the quote.
+    const halfSatang = [{ id: uuidv7(), scope: 'order', type: 'fixed', value: 100.5, reason: 'Staff / family' }];
+    await refused({ ...body, cart: { ...body.cart, manualDiscounts: halfSatang } }, 'MONEY_FRACTIONAL');
+    await refused(
+      { ...body, cart: { ...body.cart, promos: [{ code: 'HALF', label: 'Half', type: 'fixed', value: 0.5 }] } },
+      'MONEY_FRACTIONAL',
+    );
+    await refused({ ...body.cart, manualDiscounts: halfSatang }, 'MONEY_FRACTIONAL', 'cart.quote');
+    // A percentage may still carry a fraction — 12.5% is a percentage, not money.
+    await assert.doesNotReject(
+      quote(box, {
+        ...body.cart,
+        manualDiscounts: [{ id: uuidv7(), scope: 'order', type: 'percent', value: 12.5, reason: 'Staff / family' }],
+      }),
+    );
     // Nothing was numbered or queued on the way.
     assert.equal((await box.agent.outbox()!.depth()).queued, 0);
     const next = await send(box, 'sale.finalise', body);

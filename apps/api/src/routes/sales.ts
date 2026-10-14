@@ -12,6 +12,7 @@ import {
   TaxableCategorySchema,
   WalletTenderInstructionSchema,
   normalizePhone,
+  wholeSatangWhenMoney,
   type Permission,
 } from '@oto/shared';
 import type { App } from '../app';
@@ -175,17 +176,8 @@ const CartItemLine = z.object({
  * carry money, and a fraction of a satang is refused by name rather than
  * reaching an engine that works in integers.
  */
-function wholeSatangWhenMoney(moneyTypes: readonly string[]) {
-  return (discount: { type: string; value: number }, ctx: z.RefinementCtx) => {
-    if (moneyTypes.includes(discount.type) && !Number.isInteger(discount.value)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['value'],
-        message: `A ${discount.type} discount's value is money, and money is whole satang`,
-      });
-    }
-  };
-}
+// The rule itself is `wholeSatangWhenMoney` in `@oto/shared` — the box's
+// bridge and the sync push (SCRUM-294) refuse with the same sentence.
 
 const ManualDiscount = z
   .object({

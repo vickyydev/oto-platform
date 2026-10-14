@@ -80,6 +80,7 @@ import {
   newId,
   normalizePhone,
   formatTHB,
+  fractionalMoneyRefusal,
   parseDayStart,
   type BusinessDateSource,
   type SyncEventEnvelope,
@@ -3346,6 +3347,18 @@ export async function pushEvents(
           }
           const parsed = handler.schema.safeParse(envelope.payload);
           if (!parsed.success) {
+            /**
+             * SCRUM-294 — a fraction of a satang is refused BY NAME. The box's
+             * own door refuses one (`MONEY_FRACTIONAL`), so a fact carrying
+             * one is a box on an older build or a bug, and the person reading
+             * the quarantine needs the rule, not "custom". Never rounded: a
+             * rounded amount is money nobody quoted. Poison, like any payload
+             * that cannot be applied as it stands — the fact keeps its bytes.
+             */
+            const fractional = fractionalMoneyRefusal(parsed.error);
+            if (fractional) {
+              throw new RefuseEvent('poison', 'SYNC_MONEY_FRACTIONAL', fractional.slice(0, 400));
+            }
             throw new RefuseEvent(
               'poison',
               'SYNC_PAYLOAD_INVALID',

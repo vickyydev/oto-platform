@@ -65,6 +65,7 @@ import {
   OfflineVisitCreatedSchema,
   bandShortCode,
   bridgeCartOf,
+  fractionalMoneyRefusal,
   childPhotosEnabled,
   BENEFIT_CREDENTIAL_REFUSALS,
   businessDate,
@@ -239,6 +240,21 @@ export class BridgeError extends Error {
     this.code = code;
     this.details = details;
   }
+}
+
+/**
+ * A cart the box could not read, as the refusal the till shows (SCRUM-294).
+ *
+ * A fraction of a satang is named — `MONEY_FRACTIONAL`, with the field and the
+ * rule — because it is a till bug somebody has to find, and "could not be
+ * read" sends them to the wrong end. It is refused before anything is priced,
+ * numbered or taken, and never rounded: the box's figure authorises taking
+ * money on this lane, and a rounded figure is one nobody quoted.
+ */
+function unreadableCart(err: unknown): BridgeError {
+  const fractional = fractionalMoneyRefusal(err);
+  if (fractional) return new BridgeError(400, 'MONEY_FRACTIONAL', fractional);
+  return new BridgeError(400, 'VALIDATION', 'That cart could not be read', { issue: String(err) });
 }
 
 /** The session manager's refusals, as the api's `/stations/:id/*` routes already answer them. */
@@ -1733,9 +1749,7 @@ export class StationBridge {
     try {
       cart = bridgeCartOf(payload);
     } catch (err) {
-      throw new BridgeError(400, 'VALIDATION', 'That cart could not be read', {
-        issue: String(err),
-      });
+      throw unreadableCart(err);
     }
     const food = await this.foodOrder(station, cart, catalogue);
     // The member's tier as this counter knows it: a tier changed here offline
@@ -2352,7 +2366,7 @@ export class StationBridge {
     try {
       cart = bridgeCartOf(body.cart);
     } catch (err) {
-      throw new BridgeError(400, 'VALIDATION', 'That cart could not be read', { issue: String(err) });
+      throw unreadableCart(err);
     }
     // Money already taken for this sale (a tender approved, credit held, a
     // booking paid): its food is recorded as served, never refused now.

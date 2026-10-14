@@ -463,6 +463,44 @@ describe('a sale taken with no internet reaches the ledger (SCRUM-206)', () => {
   });
 
   /**
+   * SCRUM-294 — THE LAST DOOR A FRACTION OF A SATANG COULD COME THROUGH.
+   *
+   * `POST /sales` refuses a fixed discount of 1050.5 satang by name; a box
+   * that sold offline sends the same cart as a fact. It is refused by name
+   * here too — `SYNC_MONEY_FRACTIONAL`, quarantined with its payload — and
+   * never rounded into a sale.
+   */
+  it('refuses a fixed discount carrying a fraction of a satang, by name, and files nothing', async () => {
+    const b = await freshBox();
+    const total = await quotedTotal(b.stationId);
+    const saleId = newId();
+    const fractional = {
+      ...cart(total),
+      manualDiscounts: [
+        { id: newId(), scope: 'order', type: 'fixed', value: 1050.5, reason: 'Staff / family' },
+      ],
+    };
+
+    const answer = await push(b, [
+      mint(b, 'sale.finalised', { saleId, cart: fractional, tenders: [cashTender(total)] }),
+    ]);
+    expect(answer.applied).toBe(0);
+    expect(answer.quarantined).toBe(1);
+    expect(answer.results[0]!.errorCode).toBe('SYNC_MONEY_FRACTIONAL');
+    expect(await saleRow(saleId)).toBeUndefined();
+
+    const [filed] = await ctx.db
+      .select()
+      .from(syncQuarantine)
+      .where(and(eq(syncQuarantine.boxId, b.boxId), eq(syncQuarantine.status, 'open')))
+      .limit(1);
+    expect(filed!.errorCode).toBe('SYNC_MONEY_FRACTIONAL');
+    expect(filed!.errorMessage).toMatch(/manualDiscounts\.0\.value: .*whole satang.*never rounded/);
+    // The rule, never the amount.
+    expect(filed!.errorMessage).not.toContain('1050.5');
+  });
+
+  /**
    * THE OTHER WAY A REPLAY BANKS A NUMBER NOBODY QUOTED: the box agrees about
    * the cart and sends more money than the cart is worth.
    *

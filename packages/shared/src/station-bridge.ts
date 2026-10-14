@@ -8,6 +8,7 @@ import { SALE_REPRINT_KINDS } from './print';
 import { TIER_PROOF_TYPES } from './tier-proof';
 import { STAFF_OFFLINE_SIGN_IN_DAYS, STAFF_TOKEN_TTL_S } from './staff-token';
 import type { StockLocationType } from './stock';
+import { wholeSatangWhenMoney } from './whole-satang';
 
 /**
  * THE STATION BRIDGE — how a till and a customer display reach their box
@@ -552,7 +553,10 @@ const BridgeManualDiscountSchema = z.object({
   appliedByAccountId: z.string().uuid().optional(),
   appliedByName: z.string().max(160).optional(),
   appliedAt: z.string().max(40).optional(),
-});
+})
+  // SCRUM-294 — the box's door: a fixed discount is satang, and a fraction of
+  // one is refused by name, as `POST /sales` refuses it, never rounded.
+  .superRefine(wholeSatangWhenMoney(['fixed']));
 
 const BridgePromoSchema = z.object({
   code: z.string().min(1).max(40),
@@ -562,7 +566,7 @@ const BridgePromoSchema = z.object({
   freeItemId: z.string().max(100).optional(),
   freeItemKind: z.enum(['menu', 'merch']).optional(),
   target: z.unknown().optional(),
-});
+}).superRefine(wholeSatangWhenMoney(['fixed', 'free_item']));
 
 const BridgeCartBodySchema = z.object({
   memberId: z.string().uuid().nullish(),

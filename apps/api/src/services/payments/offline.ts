@@ -16,6 +16,7 @@ import {
   normaliseBandCode,
   parseBandCode,
   verifyBandCode,
+  wholeSatangWhenMoney,
   type PaymentAttemptStatus,
 } from '@oto/shared';
 import { z } from 'zod';
@@ -244,7 +245,10 @@ const OfflineCartSchema = z.object({
         value: z.number().min(0).max(100_000_000).default(0),
         reason: z.string().min(1).max(120),
         note: z.string().max(500).optional(),
-      }),
+      })
+        // SCRUM-294 — the offline door refuses a fraction of a satang by name
+        // (`SYNC_MONEY_FRACTIONAL`, sync.ts), as `POST /sales` does. Never rounded.
+        .superRefine(wholeSatangWhenMoney(['fixed'])),
     )
     .max(20)
     .default([]),
@@ -267,7 +271,8 @@ const OfflineCartSchema = z.object({
          * give.
          */
         target: z.unknown().optional(),
-      }),
+      })
+        .superRefine(wholeSatangWhenMoney(['fixed', 'free_item'])),
     )
     .max(10)
     .default([]),
