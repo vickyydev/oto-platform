@@ -213,6 +213,30 @@ describe('s494-phone-till: the phone till issues nothing in the browser', () => 
   });
 });
 
+describe('SCRUM-407 — the counter till keeps its sale through a lock, and asks before a reload loses it', () => {
+  const src = (rel: string) => readFileSync(path.resolve(import.meta.dirname, '..', 'src', rel), 'utf8');
+
+  it('a staff lock draws over the counter till rather than in place of it (already true; proved here)', () => {
+    const app = src('App.tsx');
+    expect(app).toContain('const ticketTill = !isMobile && location === "/";');
+    expect(app).toContain('const retainedStation = ticketTill || guestOrderStation || guestMerchStation;');
+    // The till is kept in one shape locked or not, with the lock screen beside it.
+    expect(app).toMatch(/if \(retainedStation\) \{[\s\S]*hidden=\{locked\} inert=\{locked\}[\s\S]*ticketTill \? <Till [\s\S]*\{locked \? <LockScreen \/> : <InactivityWarning \/>\}/);
+    const till = src('pages/Till.tsx');
+    const lockedReturn = till.indexOf('if (locked) return null;');
+    expect(lockedReturn).toBeGreaterThan(till.indexOf('useLeftBehindSales({'));
+    expect(till.slice(lockedReturn)).not.toMatch(/\buse[A-Z]\w*\(/);
+  });
+
+  it('while a sale is rung up and unpaid the browser asks before the page goes; the till offers what a reload left', () => {
+    const till = src('pages/Till.tsx');
+    expect(till).toMatch(/const rungUpUnpaid =\s*saleWriter\.state\.kind === 'writing' \|\|\s*saleWriter\.state\.kind === 'committed' \|\|\s*saleWriter\.state\.kind === 'finalising';/);
+    expect(till).toMatch(/if \(!rungUpUnpaid\) return;[\s\S]*window\.addEventListener\('beforeunload', warn\)/);
+    expect(till).toContain("enabled: !locked && can('pos:sale:read'),");
+    expect(till).toContain('<LeftBehindSaleNotice');
+  });
+});
+
 describe('SCRUM-371 — the phone till keeps its sale through a staff lock, as the counter does', () => {
   const src = (rel: string) => readFileSync(path.resolve(import.meta.dirname, '..', 'src', rel), 'utf8');
 

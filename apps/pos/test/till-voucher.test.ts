@@ -23,6 +23,7 @@ import {
   VOUCHER_ONLINE_ONLY,
   voucherUnpricedReason,
 } from '@/lib/tillVoucher';
+import { useLeftBehindSales, VOIDED_LEFT_BEHIND } from '@/lib/leftBehindSale';
 
 /**
  * A LUCKY WHEEL VOUCHER ON THE TILL'S CART — `lib/tillVoucher.ts` (S2-10b,
@@ -38,7 +39,7 @@ vi.mock('@/api/vouchers', () => ({
   vouchersApi: { lookup: vi.fn(), hold: vi.fn(), release: vi.fn() },
 }));
 vi.mock('@/api/sales', () => ({
-  salesApi: { get: vi.fn(), voidSale: vi.fn() },
+  salesApi: { get: vi.fn(), voidSale: vi.fn(), list: vi.fn() },
 }));
 
 const lookup = vi.mocked(vouchersApi.lookup);
@@ -629,5 +630,73 @@ describe('formatVoucherStamp — a date on the branch clock', () => {
 
   it('hands back what it cannot read', () => {
     expect(formatVoucherStamp('not a date')).toBe('not a date');
+  });
+});
+
+describe('SCRUM-407 — an unpaid sale left at the counter till by a reload', () => {
+  const listSales = vi.mocked(salesApi.list);
+
+  it('offers this station’s unpaid sales the screen did not ring up, asked once, and voids one with its reason', async () => {
+    listSales.mockResolvedValue({
+      sales: [
+        apiSale({ id: 'left', stationId: 'station-1', status: 'tendering' }),
+        apiSale({ id: 'mine', stationId: 'station-1', status: 'tendering' }),
+        apiSale({ id: 'elsewhere', stationId: 'station-2', status: 'tendering' }),
+      ],
+    });
+    voidSale.mockResolvedValue({} as never);
+    const view = renderHook(() =>
+      useLeftBehindSales({
+        branchId: 'branch-1',
+        stationId: 'station-1',
+        stationName: 'Reception Till 1',
+        enabled: true,
+        ownsSale: (id) => id === 'mine',
+      }),
+    );
+    await settle();
+    expect(listSales).toHaveBeenCalledTimes(1);
+    expect(listSales).toHaveBeenCalledWith({
+      branchId: 'branch-1',
+      stationId: 'station-1',
+      status: 'tendering',
+      limit: 10,
+    });
+    expect(view.result.current.sales).toEqual([
+      {
+        saleId: 'left',
+        stationName: 'Reception Till 1',
+        occurredAt: apiSale().occurredAt,
+        grossSatang: apiSale().totals.grossSatang,
+      },
+    ]);
+
+    await view.result.current.voidSale('left');
+    await settle();
+    expect(voidSale).toHaveBeenCalledWith('left', VOIDED_LEFT_BEHIND);
+    expect(view.result.current.sales).toEqual([]);
+    expect(listSales).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the sale and shows the platform’s words when the void is refused; asks nothing while locked', async () => {
+    listSales.mockResolvedValue({ sales: [apiSale({ id: 'paid-part', stationId: 'station-1' })] });
+    voidSale.mockRejectedValue(
+      new ApiError(409, 'SALE_HAS_PAYMENTS', 'This sale has taken money — refund it instead'),
+    );
+    const locked = renderHook(() =>
+      useLeftBehindSales({ branchId: 'b', stationId: 'station-1', stationName: null, enabled: false, ownsSale: () => false }),
+    );
+    await settle();
+    expect(listSales).not.toHaveBeenCalled();
+    expect(locked.result.current.sales).toEqual([]);
+
+    const view = renderHook(() =>
+      useLeftBehindSales({ branchId: 'b', stationId: 'station-1', stationName: null, enabled: true, ownsSale: () => false }),
+    );
+    await settle();
+    await view.result.current.voidSale('paid-part');
+    await settle();
+    expect(view.result.current.refusal).toBe('This sale has taken money — refund it instead');
+    expect(view.result.current.sales.map((s) => s.saleId)).toEqual(['paid-part']);
   });
 });

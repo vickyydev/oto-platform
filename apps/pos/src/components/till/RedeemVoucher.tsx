@@ -288,10 +288,13 @@ function RungUpSaleOffer({
   sale,
   busy,
   onVoid,
+  voidLabel = 'Void that unpaid sale and use the voucher here',
 }: {
   sale: RungUpSale;
   busy?: boolean;
   onVoid?: () => void;
+  /** SCRUM-407 — the press's words where no voucher is waiting on the void. */
+  voidLabel?: string;
 }) {
   const facts = [
     sale.stationName ? `Unpaid sale at ${sale.stationName}` : 'Unpaid sale',
@@ -317,7 +320,7 @@ function RungUpSaleOffer({
           disabled={busy}
           onClick={onVoid}
         >
-          {busy ? 'Voiding the sale…' : 'Void that unpaid sale and use the voucher here'}
+          {busy ? 'Voiding the sale…' : voidLabel}
         </Button>
       ) : (
         <div className="text-xs leading-snug text-rose-700/70 dark:text-rose-300/70">
@@ -325,6 +328,40 @@ function RungUpSaleOffer({
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * SCRUM-407 — AN UNPAID SALE LEFT AT THIS TILL, found when the till opened
+ * (`lib/leftBehindSale.ts`): a reload or a tab pressed mid-payment took the
+ * screen that rang it up. The C1 card, in the same rose notice, offering the
+ * void; a sale that has taken money is refused by the platform in its words.
+ */
+export function LeftBehindSaleNotice({
+  sale,
+  busy,
+  onVoid,
+  onDismiss,
+}: {
+  sale: RungUpSale;
+  busy?: boolean;
+  /** Absent for an account without the void permission. */
+  onVoid?: () => void;
+  onDismiss: () => void;
+}) {
+  return (
+    <TillRefusalNotice
+      message="A sale rung up at this till was left unpaid"
+      onDismiss={onDismiss}
+      testId="left-behind-sale"
+    >
+      <RungUpSaleOffer
+        sale={sale}
+        voidLabel="Void that unpaid sale"
+        {...(busy !== undefined ? { busy } : {})}
+        {...(onVoid ? { onVoid } : {})}
+      />
+    </TillRefusalNotice>
   );
 }
 

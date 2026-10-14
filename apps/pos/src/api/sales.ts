@@ -767,9 +767,20 @@ export const salesApi = {
       { idempotencyKey: idemKey() },
     ),
   get: (id: string) => api.get<{ sale: ApiSale }>(`/sales/${encodeURIComponent(id)}`),
-  list: (params: { branchId?: string; businessDate?: string; limit?: number } = {}) => {
+  list: (
+    params: {
+      branchId?: string;
+      /** SCRUM-407 — one till's sales, e.g. the unpaid ones left at it. */
+      stationId?: string;
+      status?: ApiSale['status'];
+      businessDate?: string;
+      limit?: number;
+    } = {},
+  ) => {
     const query = new URLSearchParams();
     if (params.branchId) query.set('branchId', params.branchId);
+    if (params.stationId) query.set('stationId', params.stationId);
+    if (params.status) query.set('status', params.status);
     if (params.businessDate) query.set('businessDate', params.businessDate);
     if (params.limit !== undefined) query.set('limit', String(params.limit));
     const suffix = query.toString();

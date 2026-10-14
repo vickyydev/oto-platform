@@ -96,6 +96,7 @@ import {
 } from '@/lib/tillVoucher';
 import {
   IssueVoucherEntry,
+  LeftBehindSaleNotice,
   RedeemVoucherEntry,
   TillRefusalNotice,
   VoucherCard,
@@ -105,6 +106,7 @@ import {
   voucherIsGift,
 } from '@/components/till/RedeemVoucher';
 import { PriceSourceNote, SaleNotSavedNotice, SaleWriteFailure } from '@/components/till/SaleWriteStatus';
+import { useLeftBehindSales } from '@/lib/leftBehindSale';
 import { apiChildToSavedChild, apiMemberToMember } from '@/api/mappers';
 import { VisitChildrenModal } from '@/components/till/VisitChildrenModal';
 import { OrderSummary } from '@/components/till/OrderSummary';
@@ -273,6 +275,36 @@ export default function Till() {
     setSaleOpen('till', saleOnScreen);
     return () => setSaleOpen('till', false);
   }, [saleOnScreen]);
+
+  /**
+   * SCRUM-407 — THE COUNTER TILL'S SALE THROUGH A RELOAD. A staff lock keeps
+   * this till mounted (`App.tsx`), so the sale survives it. A reload or a
+   * closed tab does not: a sale rung up at Pay is held only in this screen's
+   * memory. So while one is rung up and unpaid the browser asks before the
+   * page goes, and when the till opens it offers any unpaid sale the platform
+   * still holds for this station (`useLeftBehindSales`).
+   */
+  const rungUpUnpaid =
+    saleWriter.state.kind === 'writing' ||
+    saleWriter.state.kind === 'committed' ||
+    saleWriter.state.kind === 'finalising';
+  useEffect(() => {
+    if (!rungUpUnpaid) return;
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      // Older engines ask for the property as well as the call.
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [rungUpUnpaid]);
+  const leftBehind = useLeftBehindSales({
+    branchId: apiBranchIdForSlug(branch.id),
+    stationId: station?.stationId ?? null,
+    stationName: station?.stationName ?? null,
+    enabled: !locked && can('pos:sale:read'),
+    ownsSale: saleWriter.ownsSale,
+  });
 
   // Event-pass flow — selling a flat-priced camp/event entry is self-contained
   // (capture → pay → check-in choice) and never touches the tier cart, so it runs
@@ -3396,6 +3428,25 @@ export default function Till() {
                     message={cancelRefusal}
                     onDismiss={() => setCancelRefusal(null)}
                     testId="cancel-refusal"
+                  />
+                )}
+                {/* SCRUM-407 — an unpaid sale a reload or a tab left behind at this till. */}
+                {leftBehind.sales.map((left) => (
+                  <LeftBehindSaleNotice
+                    key={left.saleId}
+                    sale={left}
+                    busy={leftBehind.busyId === left.saleId}
+                    onDismiss={() => leftBehind.dismiss(left.saleId)}
+                    {...(can('pos:sale:void')
+                      ? { onVoid: () => void leftBehind.voidSale(left.saleId) }
+                      : {})}
+                  />
+                ))}
+                {leftBehind.refusal && (
+                  <TillRefusalNotice
+                    message={leftBehind.refusal}
+                    onDismiss={leftBehind.dismissRefusal}
+                    testId="left-behind-refusal"
                   />
                 )}
               </div>
