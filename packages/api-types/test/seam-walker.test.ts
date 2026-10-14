@@ -83,6 +83,11 @@ const MACHINE_CALLERS: Array<{ prefix: string; except?: string; caller: string }
     caller: "the payment gateway's redirect back to the booking site",
   },
   { prefix: '/health', caller: "the host's health check" },
+  {
+    prefix: '/admin/apps/oto_app/suite-sign-ins',
+    caller:
+      "the OTO App's server (SCRUM-539), with the operator-bound provision key whose digest the api holds",
+  },
 ];
 
 /**
