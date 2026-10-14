@@ -588,6 +588,13 @@ export interface BoxStore extends PrintJobStore {
     opts: { errorCode: string; errorMessage: string; retryAt: string },
   ): Promise<void>;
   depth(boxId: string): Promise<OutboxDepth>;
+  /**
+   * How many facts of these types are still unsent (queued, sending or
+   * failed) — the same states `depth` counts, narrowed by type (SCRUM-419).
+   * What a booth reports beside its offline dot is vouchers, not the two or
+   * three facts each press files.
+   */
+  countUnsent(boxId: string, types: readonly string[]): Promise<number>;
   /** For "Replay last batch": the highest acked events, put back as queued. */
   requeueAcked(boxId: string, limit: number): Promise<number>;
   /**

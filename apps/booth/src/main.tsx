@@ -2,7 +2,11 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 import OrientationFrame from './components/OrientationFrame';
+import { installPointerIdle } from './pointer-idle';
 import './kiosk.css';
+
+// SCRUM-419 (L34): the pointer is hidden while nobody moves it.
+installPointerIdle();
 
 const container = document.getElementById('root');
 if (!container) throw new Error('no #root to mount the booth on');

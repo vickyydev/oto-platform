@@ -98,6 +98,7 @@ interface HealthBody {
         printerReachable: string;
         paperStatus: string;
         vouchersPending: number | null;
+        pendingUnit: string;
         lastSpinAt: string | null;
         staffSignedIn: boolean;
         dailyCapsReached: string[];
@@ -240,7 +241,10 @@ describe('a booth reaches the Health page (S2-07a)', () => {
 
     expect(reported.staffSignedIn).toBe(false);
     expect(reported.lastSpinAt, 'a booth that has spun twice reported no last spin').toBeTruthy();
-    expect(reported.vouchersPending).toBe(held.queued);
+    // SCRUM-419 (L16): the one voucher still held, not the facts around it.
+    expect(reported.vouchersPending).toBe(1);
+    expect(reported.pendingUnit).toBe('vouchers');
+    expect(held.queued, 'the outbox holds more than the voucher').toBeGreaterThan(1);
     // Measured, never defaulted: the simulator answers, so this is not `unknown`.
     expect(reported.printerReachable).toBe('reachable');
     expect(reported.paperStatus).toBe('ok');

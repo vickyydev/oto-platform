@@ -162,6 +162,14 @@ export interface BoothStationContext {
   name: string;
   /** `core.station.code_prefix` — `B1`. The first two characters of every code. */
   codePrefix: string | null;
+  /**
+   * The printers assigned to this booth station in the Console, by device id
+   * (SCRUM-419, closing audit L18). What the heartbeat reports the printer
+   * from before the first voucher has been printed, so the corner and Health
+   * read the probe the heartbeat already makes every minute rather than
+   * `unknown` until somebody wins.
+   */
+  printerDeviceIds?: readonly string[];
 }
 
 /** The branch, which is what turns an instant into a trading day. */
@@ -589,15 +597,33 @@ export interface BoothStatusReport {
   staff?: BoothStaffOnDuty | null;
 }
 
+/** The booth's trading day so far, counted on the box (SCRUM-419). */
+export interface BoothDayCounts {
+  businessDate: string;
+  /** Spins drawn today — one per press that was not refused. */
+  spins: number;
+  /** Vouchers issued today, from the per-prize counters. */
+  vouchers: number;
+}
+
 /** The heartbeat's booth block. Same fields, measured rather than defaulted. */
 export interface BoothHeartbeatReport {
   configVersion: number | null;
   printerReachable: BoothPrinterHealth['reachability'];
   paperStatus: BoothPrinterHealth['paperStatus'];
+  /** Vouchers minted here that the cloud has not acknowledged — see `pendingUnit`. */
   vouchersPending: number;
+  /**
+   * `vouchers` when the figure above counts vouchers (SCRUM-419, L16);
+   * `events` on a store too old to count by type, where it is the whole
+   * outbox. Health words the figure by this, never by guess.
+   */
+  pendingUnit: 'vouchers' | 'events';
   lastSpinAt: string | null;
   staffSignedIn: boolean;
   dailyCapsReached: string[];
+  /** Null where there is no wheel or branch to count a day against. */
+  today: BoothDayCounts | null;
 }
 
 export interface BoothSignInRequest {
@@ -2781,14 +2807,17 @@ export function createBooth(options: BoothOptions): BoothModule {
       // the same thing the spin path does with the same failure.
       staffSignedIn = false;
     }
+    const pending = await pendingCount();
     return {
       configVersion: applied?.version ?? null,
       printerReachable: health?.reachability ?? 'unknown',
       paperStatus: health?.paperStatus ?? 'unknown',
-      vouchersPending: await pendingCount(),
+      vouchersPending: pending.count,
+      pendingUnit: pending.unit,
       lastSpinAt,
       staffSignedIn,
       dailyCapsReached: await cappedToday(),
+      today: await countsToday(),
     };
   }
 
@@ -2805,29 +2834,70 @@ export function createBooth(options: BoothOptions): BoothModule {
     const all = options.printerHealth?.() ?? {};
     const deviceId = lastPrintDeviceId;
     if (deviceId) return all[deviceId] ?? null;
-    // Nothing has been printed on this run, so the box has not asked any
-    // printer anything. Reporting another station's printer would be worse
-    // than reporting nothing, so nothing it is — which surfaces as `unknown`.
+    /**
+     * Nothing has been printed on this run — but the heartbeat probes every
+     * assigned printer each minute (SCRUM-419, L18), so the printer the
+     * Console assigned to THIS booth station already has an answer. Only this
+     * station's own printers are read: reporting another station's would be
+     * worse than reporting nothing, which still surfaces as `unknown`.
+     */
+    for (const id of options.station()?.printerDeviceIds ?? []) {
+      const measured = all[id];
+      if (measured) return measured;
+    }
     return null;
   }
 
   /**
    * How much this box is holding that the cloud has not acknowledged.
    *
-   * **This is the whole outbox depth, not a count of vouchers**, and the
-   * difference is worth stating because the field it feeds is named
-   * `vouchersPending`. A booth box's queue is made of spins, vouchers and
-   * their print outcomes — roughly two to three rows per press — so the number
-   * is an upper bound on unsent vouchers rather than the count of them, and on
-   * a box that also ran a till it would include the till's facts too. What it
-   * is exactly is "facts this box has not had acknowledged", which is the
-   * thing an operator actually needs when deciding whether the booth can be
-   * left offline. Counting by event type would need a store method that does
-   * not exist.
+   * Vouchers, which is what the field `vouchersPending` and the number beside
+   * the TV's offline dot are named for. Until SCRUM-419 this was the whole
+   * outbox depth — spins, vouchers and print outcomes, two or three rows a
+   * press, and a till's facts too on a shared box — which read as "6" after
+   * two offline spins (closing audit L16).
    */
-  async function pendingCount(): Promise<number> {
-    const depth = await store.depth(boxId);
-    return depth.queued;
+  async function pendingCount(): Promise<{ count: number; unit: 'vouchers' | 'events' }> {
+    /**
+     * SCRUM-419 (L16): vouchers, counted by type — one `promo.voucher_issued`
+     * per voucher — rather than the outbox's two or three facts per press.
+     * A store that cannot count by type falls back to the whole depth and
+     * SAYS so, so nobody reads six events as six vouchers.
+     */
+    try {
+      return { count: await store.countUnsent(boxId, ['promo.voucher_issued']), unit: 'vouchers' };
+    } catch (err) {
+      note('warn', 'the booth could not count its unsent vouchers; it reports the whole outbox', {
+        err: String(err),
+      });
+      const depth = await store.depth(boxId);
+      return { count: depth.queued, unit: 'events' };
+    }
+  }
+
+  /**
+   * Today's spins and vouchers, from the counters the press itself bumps
+   * (SCRUM-419). Read from the box's own store, so the count is true while it
+   * is offline. Null without a wheel, a station or a branch to count against.
+   */
+  async function countsToday(): Promise<BoothDayCounts | null> {
+    const station = options.station();
+    const businessDate = todayForRoster();
+    if (!applied || !station || businessDate === null) return null;
+    try {
+      const spins = await store.readCounter(boxId, {
+        scope: BOOTH_SPIN_COUNTER_SCOPE,
+        key: station.id,
+        businessDate,
+      });
+      const prizes = await store.readCounters(boxId, BOOTH_PRIZE_COUNTER_SCOPE, businessDate);
+      const vouchers = Object.values(prizes).reduce((sum, n) => sum + n, 0);
+      return { businessDate, spins, vouchers };
+    } catch (err) {
+      if (err instanceof BoxStoreFeatureMissingError) return null;
+      note('warn', 'the booth could not count its day', { err: String(err) });
+      return null;
+    }
   }
 
   /** `booth_prize.id` of everything that has hit its cap on this booth today. */

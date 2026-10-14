@@ -11,6 +11,7 @@ import {
 import { boxBySlot, createTestContext, teardownAll, type TestContext } from './helpers';
 import { boxStoreFor } from '../src/lib/box-store';
 import { provisionVirtualBox } from '../src/services/box';
+import { fleetHealth } from '../src/services/ops';
 
 /**
  * S2-04 — the virtual box, driven as itself.
@@ -84,6 +85,11 @@ async function buildAgent(
      * rather than because the box is offline.
      */
     store?: boolean;
+    /** What a Pi's runner reads off the machine (SCRUM-419). */
+    hardware?: {
+      tempC?: () => Promise<number | null>;
+      pointerPresent?: () => Promise<boolean | null>;
+    };
   } = {},
 ): Promise<BoxAgent> {
   return createBoxAgent({
@@ -94,6 +100,7 @@ async function buildAgent(
     faults: opts.faults,
     store: opts.store ? boxStoreFor(ctx.db) : undefined,
     claimCode: async () => (await provisionVirtualBox(ctx.db, ctx.app.log))?.claimCode ?? null,
+    ...(opts.hardware ? { hardware: opts.hardware } : {}),
   });
 }
 
@@ -123,6 +130,40 @@ describe('the virtual box agent (S2-04)', () => {
     expect(row!.agentVersion).toBe(agent.version);
     // Null, not zero: a box with no thermometer must not read as cold.
     expect((row!.lastStatus as { tempC: number | null }).tempC).toBeNull();
+  });
+
+  /**
+   * SCRUM-419 — a Pi's own readings reach the Health page: its temperature on
+   * the box, and on the booth whether a pointer is plugged in, the vouchers
+   * it holds (counted as vouchers) and its day's counts. Readers stand in for
+   * the Pi's files here; the on-Pi reading rides the next bench session.
+   */
+  it('carries the temperature, the pointer and the booth’s day to Health', async () => {
+    const agent = await buildAgent({
+      store: true,
+      hardware: { tempC: async () => 61.4, pointerPresent: async () => true },
+    });
+    await agent.ensureRegistered();
+    await agent.syncConfig();
+    await agent.syncCache();
+    expect(await agent.heartbeat()).toBeTruthy();
+
+    const [row] = await ctx.db.select().from(box).where(eq(box.id, agent.state.boxId!)).limit(1);
+    const status = row!.lastStatus as {
+      tempC: number | null;
+      booth?: { pointerPresent?: boolean | null; pendingUnit?: string };
+    };
+    expect(status.tempC).toBe(61.4);
+    expect(status.booth?.pointerPresent).toBe(true);
+    expect(status.booth?.pendingUnit).toBe('vouchers');
+
+    const snapshot = await fleetHealth({ db: ctx.db });
+    const health = snapshot.boxes.find((b) => b.id === agent.state.boxId)!;
+    expect(health.tempC).toBe(61.4);
+    const reported = health.booths[0]!.reported!;
+    expect(reported.pointerPresent).toBe(true);
+    expect(reported.pendingUnit).toBe('vouchers');
+    expect(reported.today?.spins ?? 0).toBeGreaterThanOrEqual(0);
   });
 
   it('carries a simulated fault through to the device the Console shows', async () => {

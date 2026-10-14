@@ -1543,11 +1543,51 @@ test('the heartbeat block is measured, not defaulted', async () => {
   assert.equal(before?.staffSignedIn, false);
   assert.equal(before?.vouchersPending, 0);
 
+  assert.equal(before?.pendingUnit, 'vouchers');
+  assert.deepEqual(before?.today, { businessDate: '2026-09-21', spins: 0, vouchers: 0 });
+
   await h.booth.spin({ idempotencyKey: 'press-1' });
+  await h.booth.spin({ idempotencyKey: 'press-2' });
   const after = await h.booth.heartbeat();
   assert.equal(after?.lastSpinAt, AT);
-  assert.equal(after?.vouchersPending, 2, 'the spin and the voucher are both still queued');
+  // SCRUM-419 (L16): two presses are two vouchers, not the four-plus facts
+  // the outbox holds for them.
+  assert.equal(after?.vouchersPending, 2, 'two offline spins are two vouchers');
+  assert.ok((await h.store.depth(BOX_ID)).queued > 2, 'the outbox holds more than the vouchers');
+  assert.deepEqual(after?.today, { businessDate: '2026-09-21', spins: 2, vouchers: 2 });
   h.close();
+});
+
+test('the booth reports its own printer from the heartbeat probe before the first voucher (SCRUM-419, L18)', async () => {
+  const db = new DatabaseSync(':memory:');
+  prepareSqliteBoxStore(db);
+  const store = new SqlBoxStore({ driver: sqliteBoxDriver(db), now: () => new Date(AT) });
+  await store.init(BOX_ID);
+  const BOOTH_PRINTER = '018f1d2c-0000-7000-8000-00000000de01';
+  const TILL_PRINTER = '018f1d2c-0000-7000-8000-00000000de02';
+  const booth = createBooth({
+    boxId: BOX_ID,
+    store,
+    station: () => ({
+      id: STATION_ID,
+      name: 'Booth 1',
+      codePrefix: 'B1',
+      printerDeviceIds: [BOOTH_PRINTER],
+    }),
+    branch: () => null,
+    privateKey: () => keys.privateKeyPem,
+    printerHealth: () => ({
+      // Another station's printer, out of paper: never reported as the booth's.
+      [TILL_PRINTER]: { reachability: 'unreachable', paperStatus: 'out' },
+      [BOOTH_PRINTER]: { reachability: 'reachable', paperStatus: 'low' },
+    }),
+  });
+  const block = await booth.heartbeat();
+  assert.equal(block?.printerReachable, 'reachable');
+  assert.equal(block?.paperStatus, 'low');
+  // No branch: no trading day to count against, so no counts rather than zeros.
+  assert.equal(block?.today, null);
+  db.close();
 });
 
 test('a box with no booth station sends no booth block at all', async () => {

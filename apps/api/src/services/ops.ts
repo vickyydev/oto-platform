@@ -1021,13 +1021,25 @@ export interface BoothReport {
   configVersion: number | null;
   printerReachable: string;
   paperStatus: string;
-  /** The box's whole outbox depth, which is what the booth module reports. */
+  /** Unsent vouchers on the box — or, from an older agent, its whole outbox; see `pendingUnit`. */
   vouchersPending: number | null;
+  /**
+   * What `vouchersPending` counts (SCRUM-419). An agent before it sent no
+   * unit and counted the whole outbox, so absent reads as `events`.
+   */
+  pendingUnit: 'vouchers' | 'events';
   lastSpinAt: string | null;
   /** Whether SOMEBODY is signed in. Never who. */
   staffSignedIn: boolean;
   /** `booth.booth_prize` ids at their cap today — configuration, not people. */
   dailyCapsReached: string[];
+  /**
+   * The booth's trading day so far as the box counted it (SCRUM-419). Null
+   * where the box sent none — an older agent, or no wheel yet.
+   */
+  today: { businessDate: string; spins: number; vouchers: number } | null;
+  /** Whether a mouse or touchpad is plugged into the box. Null: it cannot tell. */
+  pointerPresent: boolean | null;
 }
 
 /** One booth station on a box, with what the cloud and the box each know of it. */
@@ -1299,10 +1311,22 @@ function boothReport(status: Record<string, unknown> | null): BoothReport | null
       typeof b.vouchersPending === 'number' && Number.isFinite(b.vouchersPending)
         ? b.vouchersPending
         : null,
+    pendingUnit: b.pendingUnit === 'vouchers' ? 'vouchers' : 'events',
     lastSpinAt: typeof b.lastSpinAt === 'string' ? b.lastSpinAt : null,
     staffSignedIn: b.staffSignedIn === true,
     dailyCapsReached: caps,
+    today: dayCounts(b.today),
+    pointerPresent: typeof b.pointerPresent === 'boolean' ? b.pointerPresent : null,
   };
+}
+
+/** The booth's day counts off the heartbeat, or null when any part of them is unreadable. */
+function dayCounts(value: unknown): BoothReport['today'] {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const t = value as Record<string, unknown>;
+  const whole = (n: unknown): n is number => typeof n === 'number' && Number.isInteger(n) && n >= 0;
+  if (typeof t.businessDate !== 'string' || !whole(t.spins) || !whole(t.vouchers)) return null;
+  return { businessDate: t.businessDate, spins: t.spins, vouchers: t.vouchers };
 }
 
 /**

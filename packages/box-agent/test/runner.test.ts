@@ -732,7 +732,8 @@ test('a box that boots with no internet still plays: the config copy on disk car
       vouchersPending: number;
     };
     assert.equal(status.online, false, 'the dot is off');
-    assert.ok(status.vouchersPending >= 2, 'and the spin and voucher wait for the line');
+    // SCRUM-419 (L16): the number beside the dot is vouchers — one press, one.
+    assert.equal(status.vouchersPending, 1, 'and the voucher waits for the line');
 
     // An account sign-in needs the cloud: refused with the words for the PIN.
     const account = await hit(second.port, 'POST', '/booth/staff/sign-in', {

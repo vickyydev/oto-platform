@@ -354,6 +354,19 @@ export interface BoxAgentOptions {
    * The module itself is built with no cloud transport at all (D2). Nothing
    * here can give it one.
    */
+  /**
+   * What the machine itself can say about its health (SCRUM-419): the CPU
+   * temperature and whether a pointing device is plugged in. A Raspberry Pi's
+   * runner supplies readers (`runner/hardware.ts`); the virtual box supplies
+   * none and reports null for both — a server in a data centre is not a booth
+   * in a mall, and its temperature would be a lie about one.
+   */
+  hardware?: {
+    /** °C, or null when it cannot be read. */
+    tempC?: () => Promise<number | null>;
+    /** True when a mouse or touchpad is attached; null when it cannot tell. */
+    pointerPresent?: () => Promise<boolean | null>;
+  };
   booth?: {
     /** Off only for a test that wants the agent without it. */
     enabled?: boolean;
@@ -2269,7 +2282,16 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       if (found) station = found;
       else if (booths.length > 1) return null;
     }
-    return { id: station.id, name: station.name, codePrefix: station.codePrefix };
+    return {
+      id: station.id,
+      name: station.name,
+      codePrefix: station.codePrefix,
+      // SCRUM-419 (L18): the printers assigned to this booth, so its health is
+      // the heartbeat's probe from the first minute rather than `unknown`.
+      printerDeviceIds: station.devices
+        .filter((d) => d.kind.endsWith('printer'))
+        .map((d) => d.id),
+    };
   }
 
   /**
@@ -3309,6 +3331,27 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     salesQueue = { boxId, queue: created };
     return created;
   }
+  /**
+   * One hardware reading, or null. A reader that throws or answers something
+   * that is not a finite number or a boolean is reported as "cannot tell",
+   * never as a value, and never stops the heartbeat that carries it.
+   */
+  async function readHardware<T extends number | boolean>(
+    reader: (() => Promise<T | null>) | undefined,
+  ): Promise<T | null> {
+    if (!reader) return null;
+    try {
+      const value = await reader();
+      if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+      return typeof value === 'boolean' ? value : null;
+    } catch (err) {
+      note('warn', 'a hardware reading failed; the heartbeat reports it as unknown', {
+        err: String(err),
+      });
+      return null;
+    }
+  }
+
   async function heartbeat(): Promise<BoxHeartbeatAck | null> {
     if (!credential || state.heartbeatsPaused) return null;
     // Read before the guard below, so the toggle coming back on is noticed on
@@ -3359,7 +3402,8 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       syncPublicKey: syncPrivateKeyPem ? publicKeyFor(syncPrivateKeyPem) : undefined,
       uptimeS: Math.floor((Date.now() - startedAt) / 1000),
       // Null, not zero: a virtual box has no thermometer, and zero reads as cold.
-      tempC: null,
+      // A Pi reads its own (SCRUM-419).
+      tempC: await readHardware(options.hardware?.tempC),
       outboxDepth: state.outboxDepth,
       oldestUnackedS: state.oldestUnackedS,
       configVersion: state.configVersion ?? undefined,
@@ -3414,7 +3458,13 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       });
       return null;
     });
-    if (boothBlock) payload.booth = boothBlock;
+    if (boothBlock) {
+      payload.booth = {
+        ...boothBlock,
+        // SCRUM-419 (L34) — whether there is a pointer for the kiosk to hide.
+        pointerPresent: await readHardware(options.hardware?.pointerPresent),
+      };
+    }
     /**
      * The measurement's two readings of the box's clocks, either side of the
      * exchange (see THE BOX'S CLOCK): the raw clock for the midpoint, and the

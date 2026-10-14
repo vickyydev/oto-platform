@@ -1506,3 +1506,11 @@ body {
 
 .k-panel [data-button-choice]:focus { outline: 4px solid #ff3030; outline-offset: 3px; }
 .k-staff-list { max-height: 380px; overflow-y: auto; }
+
+/* SCRUM-419 (closing audit L34): the pointer is hidden while nobody moves it,
+   so it does not sit on the wheel all day; any movement brings it back for
+   staff aiming at the sign-in panel (src/pointer-idle.ts). */
+html.pointer-idle,
+html.pointer-idle * {
+  cursor: none !important;
+}

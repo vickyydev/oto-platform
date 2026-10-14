@@ -124,6 +124,12 @@ function BoothCard({
    * file in a mall.
    */
   const waiting = reported?.vouchersPending ?? box.outboxDepth ?? null;
+  // Vouchers only when the box said so (SCRUM-419); an older agent counted
+  // its whole outbox, and the cloud's copy of the depth is events too.
+  const waitingNoun =
+    reported?.vouchersPending != null && reported.pendingUnit === 'vouchers'
+      ? 'voucher(s) not yet synced'
+      : 'event(s) held on the box';
 
   return (
     <article className="rounded-[14px] bg-foreground/[0.025] px-4 py-3.5">
@@ -195,10 +201,9 @@ function BoothCard({
         </Reading>
 
         {/*
-          The booth module counts the box's WHOLE outbox, not its vouchers: a
-          press files two or three facts and a booth box carries little else,
-          so this is the right order of magnitude and the wrong noun. It is
-          labelled for what it measures rather than for what it is nearly.
+          Vouchers, counted by type, from a box on SCRUM-419 or later; an older
+          agent's figure was its whole outbox — two or three facts a press —
+          and is labelled for what it measures.
         */}
         <Reading label="Waiting to sync">
           {waiting === null ? (
@@ -206,7 +211,37 @@ function BoothCard({
           ) : waiting === 0 ? (
             'nothing waiting'
           ) : (
-            <>{waiting} event(s) held on the box</>
+            <>
+              {waiting} {waitingNoun}
+            </>
+          )}
+        </Reading>
+
+        <Reading label={reported?.today ? `Today (${reported.today.businessDate})` : 'Today'}>
+          {reported?.today ? (
+            `${reported.today.spins} spin(s), ${reported.today.vouchers} voucher(s)`
+          ) : (
+            <Muted>not reported</Muted>
+          )}
+        </Reading>
+
+        <Reading label="Temperature">
+          {typeof box.tempC === 'number' ? (
+            <span className={box.tempC >= HOT_C ? 'text-status-warn' : undefined}>
+              {box.tempC.toFixed(1)} °C{box.tempC >= HOT_C ? ' — running hot' : ''}
+            </span>
+          ) : (
+            <Muted>not reported</Muted>
+          )}
+        </Reading>
+
+        <Reading label="Pointer">
+          {reported?.pointerPresent === true ? (
+            'plugged in — hidden on the screen while idle'
+          ) : reported?.pointerPresent === false ? (
+            'none plugged in'
+          ) : (
+            <Muted>not reported</Muted>
           )}
         </Reading>
 
@@ -247,6 +282,12 @@ function BoothCard({
     </article>
   );
 }
+
+/**
+ * Where a Pi's reading is worth a second look: a Raspberry Pi starts to slow
+ * itself down at 80 °C, so 75 °C is the warning before that.
+ */
+const HOT_C = 75;
 
 function Reading({ label, children }: { label: string; children: ReactNode }) {
   return (

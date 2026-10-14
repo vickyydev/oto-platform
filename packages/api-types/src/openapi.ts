@@ -24358,6 +24358,14 @@ export interface paths {
                             staffSignedIn: boolean;
                             /** @default [] */
                             dailyCapsReached?: string[];
+                            /** @enum {string} */
+                            pendingUnit?: "vouchers" | "events";
+                            today?: {
+                                businessDate: string;
+                                spins: number;
+                                vouchers: number;
+                            } | null;
+                            pointerPresent?: boolean | null;
                         };
                         cache?: {
                             /** Format: date-time */

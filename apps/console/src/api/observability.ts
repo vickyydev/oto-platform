@@ -195,13 +195,19 @@ export interface BoothReport {
   /** Tri-state: `unknown` is "the box could not ask", which is not "unreachable". */
   printerReachable: string;
   paperStatus: string;
-  /** The box's whole outbox depth, which is what the booth module reports. */
+  /** Unsent vouchers on the box; see `pendingUnit` for what an older agent counted. */
   vouchersPending: number | null;
+  /** `events` from an agent older than SCRUM-419, whose figure was the whole outbox. */
+  pendingUnit?: 'vouchers' | 'events';
   lastSpinAt: string | null;
   /** Whether somebody is signed in. Never who. */
   staffSignedIn: boolean;
   /** `booth.booth_prize` ids at their cap today — configuration, not people. */
   dailyCapsReached: string[];
+  /** The trading day so far, as the box counted it (SCRUM-419). */
+  today?: { businessDate: string; spins: number; vouchers: number } | null;
+  /** Whether a mouse or touchpad is plugged in. Null: the box cannot tell. */
+  pointerPresent?: boolean | null;
 }
 
 /** One booth on a box, as `/ops/health` reports it. */
@@ -242,6 +248,8 @@ export interface HealthBox {
   lastHeartbeatAt: string | null;
   heartbeatAgeSeconds?: number | null;
   outboxDepth?: number | null;
+  /** The CPU temperature the box last reported (SCRUM-419). Null: not reported, never "cold". */
+  tempC?: number | null;
   /** Read for its ids, which is how a `device.paper` alert is tied to a box. */
   devices?: HealthBoxDevice[];
   /** The alert keys true about this box right now. */

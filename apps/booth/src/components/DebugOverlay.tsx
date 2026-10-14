@@ -168,7 +168,7 @@ export function DebugOverlay(props: Props) {
         <Fact label="Link" value={status === null ? '—' : status.online ? 'online' : 'offline'} />
         <Fact label="Printer" value={status?.printerReachable ?? '—'} />
         <Fact label="Paper" value={status?.paperStatus ?? '—'} />
-        <Fact label="Queue depth" value={status === null ? '—' : String(status.vouchersPending)} />
+        <Fact label="Vouchers to sync" value={status === null ? '—' : String(status.vouchersPending)} />
         <Fact
           label="Caps reached"
           value={status === null ? '—' : String(status.dailyCapsReached.length)}

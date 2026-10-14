@@ -175,6 +175,32 @@ export const BoothHeartbeatSchema = z.object({
    * catalogue behind it.
    */
   dailyCapsReached: z.array(z.string().uuid()).max(64).default([]),
+  /**
+   * What `vouchersPending` counts (SCRUM-419, closing audit L16). `vouchers`
+   * from this build on; absent from an older agent, whose figure was the
+   * whole outbox — two or three facts a press — and is read as `events`.
+   */
+  pendingUnit: z.enum(['vouchers', 'events']).optional(),
+  /**
+   * The booth's trading day so far (SCRUM-419): spins and vouchers counted on
+   * the box, so they are true while it is offline. Null where the box has no
+   * wheel or branch to count a day against.
+   */
+  today: z
+    .object({
+      businessDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      spins: z.number().int().min(0),
+      vouchers: z.number().int().min(0),
+    })
+    .nullable()
+    .optional(),
+  /**
+   * Whether a pointing device — a mouse or a touchpad — is plugged into the
+   * box (SCRUM-419, L34). The kiosk hides the pointer while it is idle; this
+   * says whether there is one to hide. Null where the box cannot tell (a
+   * virtual box, or a machine with no input list to read).
+   */
+  pointerPresent: z.boolean().nullable().optional(),
 });
 export type BoothHeartbeat = z.infer<typeof BoothHeartbeatSchema>;
 
@@ -202,7 +228,11 @@ export const BoxHeartbeatRequestSchema = z.object({
    */
   syncPublicKey: z.string().max(1024).optional(),
   uptimeS: z.number().int().min(0).optional(),
-  /** Null on a virtual box, which has no thermometer — never 0, which reads as cold. */
+  /**
+   * The CPU temperature in °C, read by a Raspberry Pi from its thermal zone
+   * (SCRUM-419). Null on a virtual box, which has no thermometer — never 0,
+   * which reads as cold.
+   */
   tempC: z.number().nullable().optional(),
   /** Unsynced events waiting on the box: the number that says whether offline is safe. */
   outboxDepth: z.number().int().min(0).optional(),

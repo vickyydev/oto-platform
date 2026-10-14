@@ -77,6 +77,7 @@ import {
   type KioskState,
 } from './kiosk-server';
 import { applyPrinterOverride } from './printer-override';
+import { piHardware } from './hardware';
 import { createBridgeServer, type BridgeServer } from './bridge-server';
 
 /** A failure the person running the box can act on, worded for them. */
@@ -578,6 +579,14 @@ export interface RunnerOptions {
    * is given.
    */
   cloudTimeoutMs?: number;
+  /**
+   * The machine's own readings for the heartbeat (SCRUM-419): the Pi's
+   * thermal zone and input list by default. A test passes its own.
+   */
+  hardware?: {
+    tempC?: () => Promise<number | null>;
+    pointerPresent?: () => Promise<boolean | null>;
+  };
   log?: AgentLog;
   openDatabase?: OpenDatabase;
   /**
@@ -901,6 +910,7 @@ export async function startRunner(options: RunnerOptions): Promise<RunningBox> {
               : null,
           ),
       log,
+      hardware: options.hardware ?? piHardware(),
       ...(store ? { store } : {}),
       configCache: fileConfigCache(paths),
       configTransform: (bundle) => {

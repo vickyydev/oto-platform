@@ -813,6 +813,18 @@ export class SqlBoxStore implements BoxStore {
     };
   }
 
+  async countUnsent(boxId: string, types: readonly string[]): Promise<number> {
+    if (types.length === 0) return 0;
+    const rows = await this.driver.query(
+      `select count(*) as unsent
+         from ${this.table('box_outbox')}
+        where box_id = ? and state in ('queued', 'sending', 'failed')
+          and type in (${types.map(() => '?').join(', ')})`,
+      [boxId, ...types],
+    );
+    return toNum(rows[0]?.unsent ?? 0);
+  }
+
   async requeueAcked(boxId: string, limit: number): Promise<number> {
     const rows = await this.driver.query(
       `select event_id from ${this.table('box_outbox')}
