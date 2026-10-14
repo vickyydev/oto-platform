@@ -107,6 +107,32 @@ export function legacyLoginEnabled(): boolean {
   return (process.env.OTOAPP_LEGACY_LOGIN ?? "").toLowerCase() === "true";
 }
 
+/**
+ * The OTO launcher's address (SCRUM-529): where somebody who signs out, or
+ * arrives here signed out, is pointed back to. Only an absolute http(s) URL
+ * counts; anything else is treated as unset rather than handed to a browser
+ * as a place to go. Null on a laptop without the launcher.
+ */
+export function launcherUrl(): string | null {
+  const raw = (process.env.LAUNCHER_URL ?? "").trim();
+  if (!raw) return null;
+  try {
+    const url = new URL(raw);
+    return url.protocol === "https:" || url.protocol === "http:" ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * What a signed-out screen needs to know to show the right way in: the old
+ * form while it is still on, the launcher otherwise. Public: it names a
+ * switch and an address, nothing about anybody.
+ */
+export function signInOptions(): { legacyLogin: boolean; launcherUrl: string | null } {
+  return { legacyLogin: legacyLoginEnabled(), launcherUrl: launcherUrl() };
+}
+
 export const LEGACY_LOGIN_REFUSAL =
   "This app is opened from the OTO suite launcher: sign in there and choose OTO App, " +
   "and you will land here without a second password. This form is kept only for the cutover rehearsal.";

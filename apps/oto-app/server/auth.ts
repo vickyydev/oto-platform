@@ -11,6 +11,7 @@ import {
   LEGACY_LOGIN_REFUSAL,
   legacyLoginEnabled,
   registerPlatformSignOn,
+  signInOptions,
 } from "./middleware/platformSignOn";
 import { User as SelectUser } from "@shared/schema";
 
@@ -154,11 +155,20 @@ export function setupAuth(app: Express) {
     })(req, res, next);
   });
 
+  /**
+   * The answer carries the sign-in options so the client can send the person
+   * back to the launcher instead of to a form that is switched off (SCRUM-529).
+   */
   app.post("/api/logout", (req, res, next) => {
     req.logout((err) => {
       if (err) return next(err);
-      res.sendStatus(200);
+      res.json({ ok: true, ...signInOptions() });
     });
+  });
+
+  /** Open by necessity: it is what the signed-out screen reads (SCRUM-529). */
+  app.get("/api/auth/sign-in-options", (_req, res) => {
+    res.json(signInOptions());
   });
 
   app.get("/api/user", requireAuth, async (req, res) => {

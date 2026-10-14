@@ -8,13 +8,14 @@ import {
 import { User as SelectUser, InsertUser, UserWithBranchAccess } from "@shared/schema";
 import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { readSignInOptions, type SignInOptions } from "@/lib/sign-in-options";
 
 type AuthContextType = {
   user: UserWithBranchAccess | null;
   isLoading: boolean;
   error: Error | null;
   loginMutation: UseMutationResult<UserWithBranchAccess, Error, LoginData>;
-  logoutMutation: UseMutationResult<void, Error, void>;
+  logoutMutation: UseMutationResult<SignInOptions | null, Error, void>;
   registerMutation: UseMutationResult<UserWithBranchAccess, Error, InsertUser>;
 };
 
@@ -78,9 +79,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest("POST", "/api/logout");
+      const res = await apiRequest("POST", "/api/logout");
+      return readSignInOptions(await res.json().catch(() => null));
     },
-    onSuccess: () => {
+    onSuccess: (options: SignInOptions | null) => {
+      // With the old form switched off, the sign-in page here is a dead end:
+      // the way back in is the launcher, when this deployment names it
+      // (SCRUM-529). With the form on, or no launcher, as before.
+      if (options && !options.legacyLogin && options.launcherUrl) {
+        window.location.assign(options.launcherUrl);
+        return;
+      }
       queryClient.clear();
     },
     onError: (error: Error) => {

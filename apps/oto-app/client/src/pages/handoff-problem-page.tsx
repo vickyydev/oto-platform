@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import type { HandoffProblem } from "@/lib/platform-handoff";
+import { useSignInOptions } from "@/lib/sign-in-options";
 
 /**
  * What the person sees when the launcher sent them here and the app could not
@@ -17,6 +18,8 @@ import type { HandoffProblem } from "@/lib/platform-handoff";
  * it reads as this app rather than as a browser error.
  */
 export default function HandoffProblemPage({ problem }: { problem: HandoffProblem }) {
+  // The launcher's address, when the deployment names it (SCRUM-529).
+  const launcherUrl = useSignInOptions()?.launcherUrl ?? null;
   return (
     <div className="min-h-screen flex items-center justify-center bg-black p-8">
       <Card className="w-full max-w-md" data-testid="card-handoff-problem">
@@ -39,6 +42,11 @@ export default function HandoffProblemPage({ problem }: { problem: HandoffProble
           >
             Continue
           </Button>
+          {launcherUrl && (
+            <Button asChild className="w-full" variant="outline" data-testid="button-open-launcher">
+              <a href={launcherUrl}>Open the launcher</a>
+            </Button>
+          )}
         </CardContent>
       </Card>
     </div>

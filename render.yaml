@@ -1070,6 +1070,10 @@ services:
         # compares it against its HANDOFF_APP_ORIGINS entry for oto_app, so a
         # mismatch here is refused rather than ignored.
         value: https://oto-app-staging.onrender.com
+      - key: LAUNCHER_URL
+        # Where signing out lands, and the "Open the launcher" button on the
+        # signed-out page (SCRUM-529). Unset, the page has no link.
+        value: https://oto-launcher-staging.onrender.com
       - key: OTOAPP_JOBS
         # Who runs the night jobs (S2-17b plan section 5): `inprocess`, this
         # app's own timers, or `platform`, the platform's job runner. Under
@@ -1228,6 +1232,10 @@ services:
 #      - key: RADAR_PUBLIC_ORIGIN
 #        # Must equal the radar= entry in the api's HANDOFF_APP_ORIGINS.
 #        sync: false
+#      - key: LAUNCHER_URL
+#        # Where signing out of Radar lands, and the "Open the launcher"
+#        # button on its signed-out screens (SCRUM-529).
+#        value: https://oto-launcher-staging.onrender.com
 #      - key: SPIN_WIN_REDEEM_KEY
 #        # The legacy wheel's ingest/issue routes, until its URL retires at
 #        # cutover. Unset, those routes answer 503.

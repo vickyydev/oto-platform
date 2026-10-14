@@ -29,6 +29,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { Loader2, ChevronDown, Check, Phone, Mail } from "lucide-react";
+import { useSignInOptions } from "@/lib/sign-in-options";
 
 // ─── Country code data ────────────────────────────────────────────────────────
 
@@ -200,10 +201,46 @@ function ModeToggle({
   );
 }
 
+// ─── Signed out, with the form switched off ──────────────────────────────────
+
+/**
+ * What a signed-out visitor sees when the old form is off (SCRUM-529): the
+ * way in is the launcher, so this says so and, when the deployment names the
+ * launcher's address, is one button away from it. Same frame as the form.
+ */
+function OpenFromLauncherCard({ launcherUrl }: { launcherUrl: string | null }) {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-black p-8">
+      <Card className="w-full max-w-md" data-testid="card-open-from-launcher">
+        <CardHeader className="space-y-1">
+          <div className="flex items-center mb-2">
+            <img src="/oto-logo.png" alt="OTO" className="h-10 w-auto" />
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <h1 className="text-lg font-semibold" data-testid="text-open-from-launcher-title">
+            Open the OTO App from the OTO launcher
+          </h1>
+          <p className="text-sm text-muted-foreground" data-testid="text-open-from-launcher-detail">
+            You are signed out. The OTO App opens from the launcher: sign in there and choose the
+            OTO App tile, and you will land here signed in.
+          </p>
+          {launcherUrl && (
+            <Button asChild className="w-full" data-testid="button-open-launcher">
+              <a href={launcherUrl}>Open the launcher</a>
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AuthPage() {
   const { user, loginMutation } = useAuth();
+  const signInOptions = useSignInOptions();
   const [mode, setMode] = useState<"email" | "phone">("phone");
   const [selectedCountry, setSelectedCountry] = useState(DEFAULT_COUNTRY);
 
@@ -218,6 +255,20 @@ export default function AuthPage() {
 
   if (user) {
     return <Redirect to="/core/today" />;
+  }
+
+  if (signInOptions === undefined) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-black p-8">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  // The form only while it is switched on; when the server did not answer,
+  // the form as before.
+  if (signInOptions && !signInOptions.legacyLogin) {
+    return <OpenFromLauncherCard launcherUrl={signInOptions.launcherUrl} />;
   }
 
   const toggleMode = () => {
@@ -330,12 +381,17 @@ export default function AuthPage() {
           </Form>
         </CardContent>
 
-        <CardFooter className="flex justify-center">
+        <CardFooter className="flex flex-col items-center">
           <Link href="/forgot-password">
             <Button variant="ghost" className="text-sm underline-offset-4 hover:underline" data-testid="link-forgot-password">
               Forgot your password?
             </Button>
           </Link>
+          {signInOptions?.launcherUrl && (
+            <Button asChild variant="ghost" className="text-sm underline-offset-4 hover:underline" data-testid="button-open-launcher">
+              <a href={signInOptions.launcherUrl}>Open the launcher</a>
+            </Button>
+          )}
         </CardFooter>
       </Card>
     </div>
