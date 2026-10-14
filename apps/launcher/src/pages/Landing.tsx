@@ -7,6 +7,7 @@ import { LockedPanel } from '@/components/LockedPanel';
 import { ChangePasswordPanel } from '@/components/ChangePasswordPanel';
 import { SuiteHeader } from '@/components/SuiteHeader';
 import { AppTile } from '@/components/AppTile';
+import { SignOutNote } from '@/components/SignOutNote';
 import { Button } from '@/components/ui/button';
 import { SUITE_APPS } from '@/suite/apps';
 import { useSession, displayName } from '@/auth/SessionContext';
@@ -113,6 +114,7 @@ function SignedIn() {
       <SuiteHeader />
 
       <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+        <SignOutNote />
         <h1 className="text-3xl sm:text-4xl font-black tracking-tight">
           {greeting(me?.branch?.timezone)}, {displayName(me)}
         </h1>

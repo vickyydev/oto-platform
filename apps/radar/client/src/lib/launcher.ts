@@ -15,3 +15,20 @@ export function launcherUrlFrom(body: unknown): string | null {
     return null;
   }
 }
+
+/**
+ * The launcher address with the sign-out marker (`?from=signout`) added, so the
+ * launcher can say once that the person left one app and is still signed in to
+ * the suite (SCRUM-538). A query, not a fragment: fragments carry the hand-off.
+ * Used only where an own sign-out redirects; the "Open the launcher" buttons
+ * keep the plain address.
+ */
+export function withSignOutMarker(launcherUrl: string): string {
+  try {
+    const url = new URL(launcherUrl);
+    url.searchParams.set("from", "signout");
+    return url.toString();
+  } catch {
+    return launcherUrl;
+  }
+}

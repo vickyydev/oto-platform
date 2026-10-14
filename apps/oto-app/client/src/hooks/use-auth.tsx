@@ -8,7 +8,7 @@ import {
 import { User as SelectUser, InsertUser, UserWithBranchAccess } from "@shared/schema";
 import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { readSignInOptions, type SignInOptions } from "@/lib/sign-in-options";
+import { readSignInOptions, withSignOutMarker, type SignInOptions } from "@/lib/sign-in-options";
 
 type AuthContextType = {
   user: UserWithBranchAccess | null;
@@ -87,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // the way back in is the launcher, when this deployment names it
       // (SCRUM-529). With the form on, or no launcher, as before.
       if (options && !options.legacyLogin && options.launcherUrl) {
-        window.location.assign(options.launcherUrl);
+        window.location.assign(withSignOutMarker(options.launcherUrl));
         return;
       }
       queryClient.clear();

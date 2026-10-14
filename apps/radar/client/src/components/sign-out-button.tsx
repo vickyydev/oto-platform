@@ -1,5 +1,5 @@
 import { LogOut } from "lucide-react";
-import { launcherUrlFrom } from "@/lib/launcher";
+import { launcherUrlFrom, withSignOutMarker } from "@/lib/launcher";
 
 /**
  * Ends Radar's own cookie; the launcher's session stays for the other apps.
@@ -11,7 +11,8 @@ export function SignOutButton() {
     const body = await fetch("/api/auth/sign-out", { method: "POST", credentials: "include" })
       .then((res) => res.json())
       .catch(() => null);
-    window.location.assign(launcherUrlFrom(body) ?? "/");
+    const launcher = launcherUrlFrom(body);
+    window.location.assign(launcher ? withSignOutMarker(launcher) : "/");
   };
   return (
     <button
