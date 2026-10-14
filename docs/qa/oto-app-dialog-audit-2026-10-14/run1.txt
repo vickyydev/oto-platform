@@ -1,0 +1,102 @@
+add-advisor@1920x1080: box 448x918 top81 bot999 clipped=false natural=1111 ovY=auto maxH=918px footer={"txt":"Create Advisor","bottom":1169}
+   scrollers: VH[1111/916 w512/446 +title +footer] fixed left-[50%] top-[50%] z-50 grid w-full transl
+   OVERFLOW by 43px w464 <div>  "Add New Advisor Create a new advisor account" cls=flex flex-col space-y-1.5 text-center sm:text-left
+   OVERFLOW by 43px w464 <div>  "Full Name * Preferred Name Email * Phone Number Used for pas" cls=space-y-4 py-4
+   OVERFLOW by 43px w464 <div>  "Cancel Create Advisor" cls=flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2
+advisor-access@1920x1080: box 512x488 top296 bot784 clipped=false natural=486 ovY=visible maxH=none footer={"txt":"Save Access Policy","bottom":759}
+   scrollers: -
+add-shift@1920x1080: box 512x906 top87 bot993 clipped=false natural=904 ovY=visible maxH=none footer={"txt":"Create","bottom":968}
+   scrollers: -
+edit-shift@1920x1080: box 512x918 top81 bot999 clipped=false natural=916 ovY=hidden maxH=918px footer={"txt":"Save","bottom":974}
+   scrollers: V[826/754] space-y-4 overflow-y-auto pr-2 min-h-0
+checklist-quick-create@1920x1080: box 448x972 top54 bot1026 clipped=false natural=1080 ovY=auto maxH=972px footer={"txt":"Create","bottom":1111}
+   scrollers: V[1080/970 +title +footer] fixed left-[50%] top-[50%] z-50 grid w-full transl || V[313/158] border rounded-md p-3 space-y-2 max-h-40 overflow-
+ops-quick-task@1920x1080: box 448x486 top297 bot783 clipped=false natural=484 ovY=visible maxH=none footer={"txt":"Create","bottom":758}
+   scrollers: -
+ops-announcement@1920x1080: box 448x604 top238 bot842 clipped=false natural=602 ovY=auto maxH=972px footer={"txt":"Create","bottom":817}
+   scrollers: -
+  emp(no login) a0b9a4de-f343-4fc1-b3ba-e4cf6cb487c9
+enable-login@1920x1080: ERR locator.click: Timeout 30000ms exceeded.
+  emp(login) 05ed6faf-7ca4-4033-9704-a17b6e41b89b
+edit-access@1920x1080: ERR locator.click: Timeout 30000ms exceeded.
+offboarding@1920x1080: box 512x812 top134 bot946 clipped=false natural=810 ovY=visible maxH=none footer={"txt":"Continue","bottom":921}
+   scrollers: -
+update-terms@1920x1080: box 448x558 top261 bot819 clipped=false natural=556 ovY=visible maxH=none footer={"txt":"Save Changes","bottom":794}
+   scrollers: -
+issue-warning@1920x1080: box 512x732 top174 bot906 clipped=false natural=730 ovY=visible maxH=none footer={"txt":"Continue","bottom":881}
+   scrollers: -
+payroll-period@1920x1080: box 512x284 top398 bot682 clipped=false natural=282 ovY=visible maxH=none footer={"txt":"Create Period","bottom":657}
+   scrollers: -
+payroll-statutory@1920x1080: NO DIALOG
+   scrollers: -
+event-birthday@1920x1080: box 448x736 top172 bot908 clipped=false natural=734 ovY=auto maxH=972px footer={"txt":"Create","bottom":883}
+   scrollers: -
+event-camp@1920x1080: box 448x1080 top0 bot1080 clipped=false natural=1080 ovY=auto maxH=none footer={"txt":"Create Camp","bottom":748}
+   scrollers: -
+  model link /data/branches
+  row link /data/user-branch-accesses
+data-admin-delete@1920x1080: ERR locator.click: Timeout 30000ms exceeded.
+org-vacant@1920x1080: ERR locator.click: Timeout 30000ms exceeded.
+time-override@1920x1080: box 512x570 top255 bot825 clipped=false natural=568 ovY=visible maxH=none footer={"txt":"Add Override","bottom":800}
+   scrollers: -
+create-user@1920x1080: box 448x806 top137 bot943 clipped=false natural=804 ovY=visible maxH=none footer={"txt":"Create User","bottom":918}
+   scrollers: V[212/158] border rounded-md p-3 max-h-40 overflow-y-auto spa
+casual-worker@1920x1080: box 448x704 top188 bot892 clipped=false natural=702 ovY=visible maxH=none footer={"txt":"Add Worker","bottom":867}
+   scrollers: -
+studio-task@1920x1080: box 512x732 top174 bot906 clipped=false natural=730 ovY=visible maxH=none footer={"txt":"Create","bottom":1250}
+   scrollers: V[1033/648 +footer] space-y-4 py-4 max-h-[60vh] overflow-y-auto || V[268/158] border rounded-md p-3 space-y-2 max-h-40 overflow-
+studio-checklist-create@1920x1080: box 448x972 top54 bot1026 clipped=false natural=1080 ovY=auto maxH=972px footer={"txt":"Create","bottom":1111}
+   scrollers: V[1080/970 +title +footer] fixed left-[50%] top-[50%] z-50 grid w-full transl || V[313/158] border rounded-md p-3 space-y-2 max-h-40 overflow-
+leave-policy@1920x1080: NO DIALOG
+   scrollers: -
+add-advisor@1280x800: box 448x680 top60 bot740 clipped=false natural=1111 ovY=auto maxH=680px footer={"txt":"Create Advisor","bottom":1148}
+   scrollers: VH[1111/678 w512/446 +title +footer] fixed left-[50%] top-[50%] z-50 grid w-full transl
+   OVERFLOW by 43px w464 <div>  "Add New Advisor Create a new advisor account" cls=flex flex-col space-y-1.5 text-center sm:text-left
+   OVERFLOW by 43px w464 <div>  "Full Name * Preferred Name Email * Phone Number Used for pas" cls=space-y-4 py-4
+   OVERFLOW by 43px w464 <div>  "Cancel Create Advisor" cls=flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2
+advisor-access@1280x800: box 512x488 top156 bot644 clipped=false natural=486 ovY=visible maxH=none footer={"txt":"Save Access Policy","bottom":619}
+   scrollers: -
+add-shift@1280x800: box 512x906 top-53 bot853 clipped=true natural=904 ovY=visible maxH=none footer={"txt":"Create","bottom":828}
+   scrollers: -
+edit-shift@1280x800: box 512x680 top60 bot740 clipped=false natural=678 ovY=hidden maxH=680px footer={"txt":"Save","bottom":715}
+   scrollers: V[826/516] space-y-4 overflow-y-auto pr-2 min-h-0
+checklist-quick-create@1280x800: box 448x720 top40 bot760 clipped=false natural=1080 ovY=auto maxH=720px footer={"txt":"Create","bottom":1097}
+   scrollers: V[1080/718 +title +footer] fixed left-[50%] top-[50%] z-50 grid w-full transl || V[313/158] border rounded-md p-3 space-y-2 max-h-40 overflow-
+ops-quick-task@1280x800: box 448x486 top157 bot643 clipped=false natural=484 ovY=visible maxH=none footer={"txt":"Create","bottom":618}
+   scrollers: -
+ops-announcement@1280x800: box 448x604 top98 bot702 clipped=false natural=602 ovY=auto maxH=720px footer={"txt":"Create","bottom":677}
+   scrollers: -
+  emp(no login) a0b9a4de-f343-4fc1-b3ba-e4cf6cb487c9
+enable-login@1280x800: ERR locator.click: Timeout 30000ms exceeded.
+  emp(login) 05ed6faf-7ca4-4033-9704-a17b6e41b89b
+edit-access@1280x800: ERR locator.click: Timeout 30000ms exceeded.
+offboarding@1280x800: box 512x812 top-6 bot806 clipped=true natural=810 ovY=visible maxH=none footer={"txt":"Continue","bottom":781}
+   scrollers: -
+update-terms@1280x800: box 448x558 top121 bot679 clipped=false natural=556 ovY=visible maxH=none footer={"txt":"Save Changes","bottom":654}
+   scrollers: -
+issue-warning@1280x800: box 512x732 top34 bot766 clipped=false natural=730 ovY=visible maxH=none footer={"txt":"Continue","bottom":741}
+   scrollers: -
+payroll-period@1280x800: box 512x284 top258 bot542 clipped=false natural=282 ovY=visible maxH=none footer={"txt":"Create Period","bottom":517}
+   scrollers: -
+payroll-statutory@1280x800: NO DIALOG
+   scrollers: -
+event-birthday@1280x800: box 448x720 top40 bot760 clipped=false natural=734 ovY=auto maxH=720px footer={"txt":"Create","bottom":751}
+   scrollers: V[734/718 +title +footer] fixed left-[50%] top-[50%] z-50 grid w-full transl
+event-camp@1280x800: box 448x800 top0 bot800 clipped=false natural=800 ovY=auto maxH=none footer={"txt":"Create Camp","bottom":748}
+   scrollers: -
+  model link /data/branches
+  row link /data/user-branch-accesses
+data-admin-delete@1280x800: ERR locator.click: Timeout 30000ms exceeded.
+org-vacant@1280x800: ERR locator.click: Timeout 30000ms exceeded.
+time-override@1280x800: box 512x570 top115 bot685 clipped=false natural=568 ovY=visible maxH=none footer={"txt":"Add Override","bottom":660}
+   scrollers: -
+create-user@1280x800: box 448x806 top-3 bot803 clipped=true natural=804 ovY=visible maxH=none footer={"txt":"Create User","bottom":778}
+   scrollers: V[212/158] border rounded-md p-3 max-h-40 overflow-y-auto spa
+casual-worker@1280x800: box 448x704 top48 bot752 clipped=false natural=702 ovY=visible maxH=none footer={"txt":"Add Worker","bottom":727}
+   scrollers: -
+studio-task@1280x800: box 512x564 top118 bot682 clipped=false natural=562 ovY=visible maxH=none footer={"txt":"Create","bottom":1194}
+   scrollers: V[1033/480 +footer] space-y-4 py-4 max-h-[60vh] overflow-y-auto || V[268/158] border rounded-md p-3 space-y-2 max-h-40 overflow-
+studio-checklist-create@1280x800: box 448x720 top40 bot760 clipped=false natural=1080 ovY=auto maxH=720px footer={"txt":"Create","bottom":1097}
+   scrollers: V[1080/718 +title +footer] fixed left-[50%] top-[50%] z-50 grid w-full transl || V[313/158] border rounded-md p-3 space-y-2 max-h-40 overflow-
+leave-policy@1280x800: NO DIALOG
+   scrollers: -
