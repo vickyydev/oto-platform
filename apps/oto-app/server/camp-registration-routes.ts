@@ -216,11 +216,14 @@ export function registerCampRegistrationRoutes(app: Express, dependencies: Depen
 
       // Verify the event exists and is a camp
       const event = await db
-        .select({ id: coreEventsTable.id, tenantId: coreEventsTable.tenantId, branchId: coreEventsTable.branchId, eventType: coreEventsTable.eventType })
+        .select({ id: coreEventsTable.id, tenantId: coreEventsTable.tenantId, branchId: coreEventsTable.branchId, eventType: coreEventsTable.eventType, status: coreEventsTable.status })
         .from(coreEventsTable)
         .where(and(eq(coreEventsTable.id, eventId), eq(coreEventsTable.eventType, "camp")))
         .limit(1);
       if (!event.length) return { status: 404, data: { message: "Camp event not found" } };
+      // A cancelled camp takes no public sign-ups or changes; staff still see
+      // its existing registrations (the cancel dialog says so).
+      if (event[0].status === "cancelled") return { status: 409, data: { message: "This camp has been cancelled, so registration is closed. Please contact the park for details." } };
 
       const tenantId = event[0].tenantId;
       const normalizedPhone = emergencyContactNumber.trim();

@@ -761,7 +761,7 @@ export default function CampDetailPage() {
             <Ban className="h-5 w-5 flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="font-medium text-sm">This camp has been cancelled</p>
-              <p className="text-xs opacity-80 mt-0.5">The registration link is still accessible but parents will see the cancelled status.</p>
+              <p className="text-xs opacity-80 mt-0.5">The registration link now shows the camp as cancelled and accepts no new registrations or changes.</p>
             </div>
             <Button
               size="sm"
@@ -1717,7 +1717,7 @@ export default function CampDetailPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Cancel Entire Camp?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will mark <strong>{event?.title}</strong> as cancelled. Existing registrations are preserved and can be viewed, but new registrations will see the cancelled status.
+              This will mark <strong>{event?.title}</strong> as cancelled. Existing registrations are kept and you can still see them here. The public registration link will show the camp as cancelled and accept no new registrations or changes.
               <br /><br />
               You can reactivate the camp at any time.
             </AlertDialogDescription>

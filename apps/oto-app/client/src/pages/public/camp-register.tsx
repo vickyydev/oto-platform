@@ -732,6 +732,20 @@ export default function CampRegisterPage() {
     );
   }
 
+  if (campEvent.status === "cancelled") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
+        <div className="text-center space-y-3 max-w-xs">
+          <AlertCircle className="h-12 w-12 text-red-400 mx-auto" />
+          <h2 className="text-lg font-semibold text-gray-800">Camp cancelled</h2>
+          <p className="text-sm text-gray-500">
+            <strong className="text-gray-700">{campEvent.title}</strong> has been cancelled, so registration is closed. Please contact the park for details.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (isRegistrationClosed) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
