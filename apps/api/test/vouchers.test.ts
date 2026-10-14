@@ -39,6 +39,7 @@ import {
   BRANCH_MANAGER,
   CHALONG_MANAGER,
   RECEPTION,
+  ADMIN,
   SECOND_OPERATOR_ADMIN,
   createTestContext,
   signInAs,
@@ -1738,6 +1739,39 @@ describe('any branch, with the branch recorded', () => {
       code: 'VOUCHER_ITEM_UNAVAILABLE',
       message: "This voucher's item is not sold at this branch — ask a manager",
     });
+  });
+
+  it('a free item is honoured at another park through the product linked for that park (SCRUM-405)', async () => {
+    const admin = await signInAs(ctx.app, ADMIN.phone, ADMIN.password);
+    const link = (productId: string | null) =>
+      ctx.app.inject({
+        method: 'PUT',
+        url: `/voucher-definitions/${defs.pizza!}/park-products/${chalongId}`,
+        headers: { cookie: admin },
+        payload: { productId },
+      });
+    // Central's own pizza is not on sale at Chalong, so it cannot be Chalong's link.
+    expect((await link(pizzaId)).json().error.code).toBe('VOUCHER_PARK_PRODUCT_NOT_ON_SALE');
+
+    const [central] = await ctx.db.select().from(product).where(eq(product.id, pizzaId));
+    const chalongPizza = newId();
+    const { id: _id, code: _code, sku: _sku, createdAt: _c, updatedAt: _u, ...rest } = central!;
+    await ctx.db.insert(product).values({ ...rest, id: chalongPizza, branchId: chalongId, name: 'Chalong Pizza', stockItemId: null });
+    const linked = await link(chalongPizza);
+    expect(linked.statusCode, linked.body).toBe(200);
+    expect(linked.json().definition.parkProducts).toEqual([
+      expect.objectContaining({ branchId: chalongId, productId: chalongPizza, live: true }),
+    ]);
+
+    const v = await issue(defs.pizza!);
+    const held = await hold(chalongTill, newId(), v.code);
+    expect(held.statusCode, held.body).toBe(200);
+    expect(JSON.stringify(held.json())).toContain(chalongPizza);
+
+    // Cleared, the park refuses it again with the same safe words.
+    expect((await link(null)).statusCode).toBe(200);
+    const again = await hold(chalongTill, newId(), (await issue(defs.pizza!)).code);
+    expect(again.json().error.code).toBe('VOUCHER_ITEM_UNAVAILABLE');
   });
 });
 

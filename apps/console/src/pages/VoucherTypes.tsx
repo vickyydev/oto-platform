@@ -139,6 +139,25 @@ export function VoucherTypes() {
         : boothApi.saveDefinition(open.id, input),
     );
 
+  /**
+   * SCRUM-405 — a park's own product for a free-product voucher. Saved at once
+   * on its own (it is not part of the form's Save), and the drawer stays open
+   * on the answer so the next park can be set.
+   */
+  const setParkProduct = async (row: VoucherDefinitionRow, branchId: string, productId: string | null) => {
+    setBusy(true);
+    setWriteError(null);
+    try {
+      const answer = await boothApi.setParkProduct(row.id, branchId, productId);
+      setOpen(answer.definition);
+      await load(showArchived);
+    } catch (reason) {
+      setWriteError(readFailureMessage(reason));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const newButton = canManage ? (
     <Button
       size="sm"
@@ -366,7 +385,8 @@ export function VoucherTypes() {
               <li>One voucher per sale, and never beside a promo code.</li>
               <li>
                 Any branch of the park redeems it — but a free product only where its product is on
-                sale, and a 1+1 only where a ticket package of the same name is sold.
+                sale or a product is linked for that park, and a 1+1 only where a ticket package of the
+                same name is sold.
               </li>
             </ul>
             <CardFoot>A voucher’s worth is read from its type when the slip is scanned.</CardFoot>
@@ -387,6 +407,7 @@ export function VoucherTypes() {
           onSave={save}
           onArchive={(row) => void write(() => boothApi.archiveDefinition(row.id))}
           onRestore={(row) => void write(() => boothApi.restoreDefinition(row.id))}
+          onSetParkProduct={(row, branchId, productId) => void setParkProduct(row, branchId, productId)}
           onClose={() => setOpen(null)}
         />
       )}

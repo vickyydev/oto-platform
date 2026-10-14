@@ -8,6 +8,7 @@ import {
   listVoucherDefinitions,
   loadVoucherDefinition,
   restoreVoucherDefinition,
+  setVoucherParkProduct,
   updateVoucherDefinition,
   voucherDefinitionLinkOptions,
 } from '../services/voucher-definitions';
@@ -160,6 +161,16 @@ const DefinitionSchema = z.object({
       active: z.boolean(),
     }),
   ),
+  /** SCRUM-405 — a free product's own product at each park that has one linked. */
+  parkProducts: z.array(
+    z.object({
+      branchId: z.string().uuid(),
+      branchName: z.string(),
+      productId: z.string().uuid(),
+      productName: z.string(),
+      live: z.boolean(),
+    }),
+  ),
   /** Its vouchers still unredeemed — issued, not used, not void, not past their date — when it was read. */
   unredeemedVouchers: z.number().int().min(0),
   /** S2-14a round 5 — the promotional rules as stored (null target: the ticket rows). */
@@ -199,7 +210,7 @@ export async function voucherDefinitionRoutes(app: App): Promise<void> {
       config: { permission: 'admin:booth:read' },
       schema: {
         description:
-          'What a voucher type can point at: the operator’s products on sale and its live ticket packages, each with its branch. A 1+1’s package is honoured at any park with a live ticket package of the same name, so its branch is only where the link was made. A free product is honoured only where it is on sale — its own park, or every park when it belongs to no branch — and, once it is archived, at a park with a live product of its own with the same code.',
+          'What a voucher type can point at: the operator’s products on sale and its live ticket packages, each with its branch. A 1+1’s package is honoured at any park with a live ticket package of the same name, so its branch is only where the link was made. A free product is honoured where it is on sale — its own park, or every park when it belongs to no branch — at a park with its own product linked to it (PUT /voucher-definitions/:id/park-products/:branchId), and, once it is archived, at a park with a live product of its own with the same code.',
         response: {
           200: z.object({
             products: z.array(
@@ -302,6 +313,32 @@ export async function voucherDefinitionRoutes(app: App): Promise<void> {
         opCtx(req),
         { accountId: auth.accountId, operatorId: auth.operatorId },
         before,
+      );
+    },
+  );
+
+  app.put(
+    '/voucher-definitions/:id/park-products/:branchId',
+    {
+      config: { permission: 'admin:booth:manage' },
+      schema: {
+        description:
+          'SCRUM-405 — the product a free-product voucher hands over at one park. At that park the voucher gives this product, when it is on sale there; at a park with none linked it gives the definition’s own product where that is on sale, and is refused elsewhere. `productId` null clears the park’s link. The product must be this operator’s and on sale at that park (400 VOUCHER_PARK_PRODUCT_NOT_ON_SALE otherwise); only a free-product voucher takes one (400 VOUCHER_PARK_PRODUCT_KIND). Audited when it changes anything.',
+        params: z.object({ id: z.string().uuid(), branchId: z.string().uuid() }),
+        body: z.object({ productId: z.string().uuid().nullable() }),
+        response: { 200: OneDefinition },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const before = await loadVoucherDefinition(app.db, auth.operatorId, req.params.id);
+      return setVoucherParkProduct(
+        app.db,
+        opCtx(req),
+        { accountId: auth.accountId, operatorId: auth.operatorId },
+        before,
+        req.params.branchId,
+        req.body.productId,
       );
     },
   );

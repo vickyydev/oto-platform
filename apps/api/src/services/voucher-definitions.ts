@@ -7,6 +7,7 @@ import {
   ticketPackage,
   voucher,
   voucherDefinition,
+  voucherProductLink,
   type Db,
   type VoucherCodeMode,
   type VoucherKind,
@@ -79,7 +80,8 @@ import {
  * another voucher or a promo code, which branch may redeem it and whether a
  * till may take it offline are platform rules for every booth voucher (owner,
  * 24 September; spec §8): one voucher per sale and no promo code beside it,
- * any branch of the operator (but a free product only at a park selling its
+ * any branch of the operator (but a free product only at a park with its own
+ * product linked to it (`setVoucherParkProduct`, SCRUM-405), a park selling its
  * linked product, or one of its own with the same code once the linked one is
  * archived; a 1+1 only at a park with a live ticket package of the same name
  * — see `voucherDefinitionLinkOptions`), online only. `vouchers.ts` enforces all three whatever a definition says,
@@ -177,6 +179,16 @@ export interface VoucherLinkView {
   live: boolean;
 }
 
+/** One park's own product for a free-product voucher (SCRUM-405). */
+export interface VoucherParkProduct {
+  branchId: string;
+  branchName: string;
+  productId: string;
+  productName: string;
+  /** On sale at that park (active, not archived, that park's or every park's). */
+  live: boolean;
+}
+
 /**
  * A definition as the Console reads it: the row, JSON-safe, with the product
  * or package it points at named and the booth prizes that point at it.
@@ -212,6 +224,11 @@ export interface VoucherDefinitionView {
   product: VoucherLinkView | null;
   ticketPackage: VoucherLinkView | null;
   usedBy: VoucherDefinitionUse[];
+  /**
+   * SCRUM-405 — for a free product, the product it hands over at each park an
+   * administrator linked one for. Empty for every other kind.
+   */
+  parkProducts: VoucherParkProduct[];
   /**
    * Vouchers of this type still in families' hands — issued, not yet used,
    * not voided and not past their date — counted when the type was read. It
@@ -477,6 +494,24 @@ async function viewsOf(
     )
     .groupBy(voucher.voucherDefinitionId);
 
+  // SCRUM-405 — the product each park hands over, where one was linked.
+  const parkLinks = await exec
+    .select({
+      definitionId: voucherProductLink.voucherDefinitionId,
+      branchId: voucherProductLink.branchId,
+      branchName: branch.name,
+      productId: product.id,
+      productName: product.name,
+      productBranchId: product.branchId,
+      active: product.active,
+      archivedAt: product.archivedAt,
+    })
+    .from(voucherProductLink)
+    .innerJoin(product, eq(product.id, voucherProductLink.productId))
+    .innerJoin(branch, eq(branch.id, voucherProductLink.branchId))
+    .where(and(eq(voucherProductLink.operatorId, operatorId), inArray(voucherProductLink.voucherDefinitionId, ids)))
+    .orderBy(asc(branch.name));
+
   const productById = new Map(products.map((p) => [p.id, p]));
   const packageById = new Map(packages.map((p) => [p.id, p]));
   const unredeemedById = new Map(unredeemed.map((u) => [u.definitionId, u.vouchers]));
@@ -543,6 +578,16 @@ async function viewsOf(
           prizeName: u.prizeName,
           prizeNameTh: u.prizeNameTh,
           active: u.active,
+        })),
+      parkProducts: parkLinks
+        .filter((l) => row.kind === 'free_item' && l.definitionId === row.id)
+        .map((l) => ({
+          branchId: l.branchId,
+          branchName: l.branchName,
+          productId: l.productId,
+          productName: l.productName,
+          // On sale at that park: the till honours it only then.
+          live: l.active && l.archivedAt === null && (l.productBranchId === null || l.productBranchId === l.branchId),
         })),
       unredeemedVouchers: unredeemedById.get(row.id) ?? 0,
       target: storedTarget(row.target),
@@ -953,6 +998,85 @@ export async function archiveVoucherDefinition(
       requestId: ctx.requestId,
     });
     return { definition: await viewOne(tx, actor.operatorId, row!) };
+  });
+}
+
+/**
+ * SCRUM-405 (owner's ruling, 14 October) — SET OR CLEAR THE PRODUCT A
+ * FREE-PRODUCT VOUCHER HANDS OVER AT ONE PARK. `productId` null clears the
+ * park's link, and the park then honours the voucher as before (the linked
+ * product where it is on sale there, else refused). The product must be one of
+ * this operator's, on sale at that park — that park's own or every park's — or
+ * the till would refuse it anyway. One transaction, audited.
+ */
+export async function setVoucherParkProduct(
+  db: Db,
+  ctx: OpContext,
+  actor: Actor,
+  before: DefinitionRow,
+  branchId: string,
+  productId: string | null,
+): Promise<{ definition: VoucherDefinitionView }> {
+  if (before.kind !== 'free_item') {
+    throw new AppError(400, 'VOUCHER_PARK_PRODUCT_KIND', 'Only a free-product voucher hands over a product at a park.');
+  }
+  const [park] = await db
+    .select({ id: branch.id })
+    .from(branch)
+    .where(and(eq(branch.id, branchId), eq(branch.operatorId, actor.operatorId)))
+    .limit(1);
+  if (!park) throw new AppError(404, 'BRANCH_NOT_FOUND', 'No park with that id at this operator.');
+  if (productId !== null) {
+    const [item] = await db
+      .select({ id: product.id, branchId: product.branchId, active: product.active, archivedAt: product.archivedAt })
+      .from(product)
+      .where(and(eq(product.id, productId), eq(product.operatorId, actor.operatorId)))
+      .limit(1);
+    if (!item) throw new AppError(400, 'VOUCHER_PRODUCT_NOT_FOUND', 'No product with that id at this operator.');
+    if (!item.active || item.archivedAt || (item.branchId !== null && item.branchId !== branchId)) {
+      throw new AppError(
+        400,
+        'VOUCHER_PARK_PRODUCT_NOT_ON_SALE',
+        'That product is not on sale at this park — pick one of the park’s own products, or one sold at every park.',
+      );
+    }
+  }
+  return withTx(db, ctx, 'voucher_definition.park_product', async (tx) => {
+    const [existing] = await tx
+      .select()
+      .from(voucherProductLink)
+      .where(and(eq(voucherProductLink.voucherDefinitionId, before.id), eq(voucherProductLink.branchId, branchId)))
+      .limit(1);
+    const now = new Date();
+    if (productId === null) {
+      if (existing) await tx.delete(voucherProductLink).where(eq(voucherProductLink.id, existing.id));
+    } else if (existing) {
+      await tx.update(voucherProductLink).set({ productId, updatedAt: now }).where(eq(voucherProductLink.id, existing.id));
+    } else {
+      await tx.insert(voucherProductLink).values({
+        id: newId(),
+        operatorId: actor.operatorId,
+        voucherDefinitionId: before.id,
+        branchId,
+        productId,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+    if ((existing?.productId ?? null) !== productId) {
+      await audit.record(tx, {
+        actorAccountId: actor.accountId,
+        operatorId: actor.operatorId,
+        branchId,
+        action: 'voucher_definition.park_product',
+        entityType: 'voucher_definition',
+        entityId: before.id,
+        before: { branchId, productId: existing?.productId ?? null },
+        after: { branchId, productId },
+        requestId: ctx.requestId,
+      });
+    }
+    return { definition: await viewOne(tx, actor.operatorId, before) };
   });
 }
 

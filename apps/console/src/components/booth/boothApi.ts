@@ -327,6 +327,18 @@ export interface VoucherDefinitionRow {
    * it yet still reads.
    */
   unredeemedVouchers?: number;
+  /** SCRUM-405 — a free product's own product at each park that has one linked. */
+  parkProducts?: VoucherParkProduct[];
+}
+
+/** One park's own product for a free-product voucher (SCRUM-405). */
+export interface VoucherParkProduct {
+  branchId: string;
+  branchName: string;
+  productId: string;
+  productName: string;
+  /** On sale at that park; the till honours it only then. */
+  live: boolean;
 }
 
 /** What a voucher type create or edit sends. The API checks the whole row. */
@@ -505,6 +517,14 @@ export const boothApi = {
   archiveDefinition: (id: string) =>
     api.delete<{ definition: VoucherDefinitionRow }>(
       `/voucher-definitions/${encodeURIComponent(id)}`,
+      { idempotencyKey: idemKey() },
+    ),
+
+  /** SCRUM-405 — the product a free-product voucher gives at one park; null clears it. */
+  setParkProduct: (id: string, branchId: string, productId: string | null) =>
+    api.put<{ definition: VoucherDefinitionRow }>(
+      `/voucher-definitions/${encodeURIComponent(id)}/park-products/${encodeURIComponent(branchId)}`,
+      { productId },
       { idempotencyKey: idemKey() },
     ),
 

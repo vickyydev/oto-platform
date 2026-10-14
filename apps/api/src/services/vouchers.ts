@@ -15,6 +15,7 @@ import {
   ticketPackage,
   voucher,
   voucherDefinition,
+  voucherProductLink,
   voucherMiss,
   voucherRedemption,
   type Db,
@@ -80,9 +81,10 @@ import { loadWalletFromVoucher } from './wallet';
  *   - The value comes from the voucher's definition, on this side, never from
  *     the till (`resolveCartVoucher` and `voucherPricing`).
  *   - A voucher may be redeemed at any branch, and the branch is recorded —
- *     except where its item is not sold. A free product is honoured only at a
- *     park selling the linked product (every park, for a product that belongs
- *     to no branch), or selling a product of its own with the same code, which
+ *     except where its item is not sold. A free product is honoured at a park
+ *     whose own product an administrator linked to it (SCRUM-405), at a park
+ *     selling the linked product (every park, for a product that belongs to
+ *     no branch), or at one selling a product of its own with the same code, which
  *     can exist only once the linked one is archived (`freeItemAtBranch`). A
  *     1+1 is honoured only at a park with a live ticket package of the same
  *     name (`packageAtBranch`). Anywhere else the answer is
@@ -955,6 +957,13 @@ async function resolveVoucherScope(
 /**
  * A free item from its product link, at the branch doing the redeeming.
  *
+ * SCRUM-405 (ruled 14 October): A PARK LINK COMES FIRST. A free-product
+ * definition may name, per park, the product it hands over there
+ * (`promo.voucher_product_link`, set in the Console). Where this park has one
+ * and it is on sale here, that is the item. Everything below still holds for
+ * a park with no link, so a product that belongs to no branch is still
+ * honoured at every park.
+ *
  * HONOURED AT THE PARK THAT SELLS THE LINKED PRODUCT, not at every park. The
  * owner's "any branch" (24 Sept) meets a catalogue that is partly per branch,
  * and for a free item the catalogue decides. The linked row is used when it is
@@ -964,24 +973,44 @@ async function resolveVoucherScope(
  * to one live row in the whole operator, so while the linked row is live no
  * other park can hold its code, and this finds a row only once the linked one
  * has been archived. A product with no code, or one this park does not stock,
- * is refused by name (VOUCHER_ITEM_UNAVAILABLE) rather than guessed at. How
- * the other parks should honour it is the owner's open choice
- * (`docs/progress/plans/booth/AUDIT-CLOSING-2026-09-25.md`, M7 and Q7).
+ * is refused by name (VOUCHER_ITEM_UNAVAILABLE) rather than guessed at. The
+ * owner's answer to how the other parks honour it (Q7 of
+ * `docs/progress/plans/booth/AUDIT-CLOSING-2026-09-25.md`) is the park link
+ * above.
  */
 async function freeItemAtBranch(
   db: Exec,
   operatorId: string,
   productId: string,
   branchId: string,
+  /** SCRUM-405 — a free-product definition, whose park links are asked first. */
+  definitionId?: string,
 ): Promise<typeof product.$inferSelect | null> {
+  const onSaleHere = (row: typeof product.$inferSelect) =>
+    row.operatorId === operatorId && row.active && !row.archivedAt && (row.branchId === null || row.branchId === branchId);
+  // SCRUM-405 (ruled 14 October): the product an administrator linked for
+  // THIS park is what the voucher hands over here, when it is on sale here.
+  if (definitionId) {
+    const [parkLink] = await db
+      .select({ row: product })
+      .from(voucherProductLink)
+      .innerJoin(product, eq(product.id, voucherProductLink.productId))
+      .where(
+        and(
+          eq(voucherProductLink.operatorId, operatorId),
+          eq(voucherProductLink.voucherDefinitionId, definitionId),
+          eq(voucherProductLink.branchId, branchId),
+        ),
+      )
+      .limit(1);
+    if (parkLink && onSaleHere(parkLink.row)) return parkLink.row;
+  }
   const [linked] = await db
     .select()
     .from(product)
     .where(and(eq(product.id, productId), eq(product.operatorId, operatorId)))
     .limit(1);
   if (!linked) return null;
-  const onSaleHere = (row: typeof product.$inferSelect) =>
-    row.active && !row.archivedAt && (row.branchId === null || row.branchId === branchId);
   if (onSaleHere(linked)) return linked;
   if (!linked.code) return null;
   const [twin] = await db
@@ -1063,7 +1092,7 @@ export async function resolveVoucherEffect(
     }
     case 'free_item': {
       if (!def.productId) throw voucherErrors.notSetUp(def.code, 'no product is linked');
-      const row = await freeItemAtBranch(db, operatorId, def.productId, branchId);
+      const row = await freeItemAtBranch(db, operatorId, def.productId, branchId, def.id);
       if (!row) throw voucherErrors.itemUnavailable(def.code);
       return {
         type: 'free_item',

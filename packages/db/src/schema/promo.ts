@@ -3,6 +3,7 @@ import {
   boolean,
   check,
   date,
+  foreignKey,
   index,
   integer,
   jsonb,
@@ -273,6 +274,46 @@ export const voucherDefinition = promo.table(
  * unique by `voucher_code_unique`; this row is who minted how many, when and
  * why, so a batch is auditable as a batch.
  */
+/**
+ * SCRUM-405 (owner's ruling, 14 October) — WHICH PRODUCT A FREE-PRODUCT
+ * VOUCHER HANDS OVER AT EACH PARK. A definition's `product_id` is honoured
+ * where that product is on sale; at any other park the voucher is honoured
+ * through the product an administrator linked for that park here, and refused
+ * where nothing is linked (`freeItemAtBranch` in `apps/api/src/services/
+ * vouchers.ts`). One link per definition and park; the product must be on
+ * sale at that park, which the service checks on save and the till again at
+ * redemption.
+ */
+export const voucherProductLink = promo.table(
+  'voucher_product_link',
+  {
+    id: idPk(),
+    operatorId: uuid('operator_id')
+      .notNull()
+      .references(() => operator.id, { onDelete: 'restrict' }),
+    /** Its foreign key is declared below under a short name (63-character identifiers). */
+    voucherDefinitionId: uuid('voucher_definition_id').notNull(),
+    branchId: uuid('branch_id')
+      .notNull()
+      .references(() => branch.id, { onDelete: 'restrict' }),
+    productId: uuid('product_id')
+      .notNull()
+      .references(() => product.id, { onDelete: 'restrict' }),
+    ...timestamps,
+  },
+  (t) => [
+    foreignKey({
+      columns: [t.voucherDefinitionId],
+      foreignColumns: [voucherDefinition.id],
+      name: 'voucher_product_link_definition_fk',
+    }).onDelete('restrict'),
+    uniqueIndex('voucher_product_link_unique').on(t.voucherDefinitionId, t.branchId),
+    index('voucher_product_link_operator_idx').on(t.operatorId),
+    index('voucher_product_link_branch_idx').on(t.branchId),
+    index('voucher_product_link_product_idx').on(t.productId),
+  ],
+);
+
 export const voucherCampaign = promo.table(
   'voucher_campaign',
   {

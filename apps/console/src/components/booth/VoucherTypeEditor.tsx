@@ -67,7 +67,8 @@ import {
  * whatever a definition says (`vouchers.ts`), so a toggle here would promise
  * something it does not do. "Can honour it" is the one fact that depends on
  * the type (`freeItemAtBranch` and `packageAtBranch` in
- * `apps/api/src/services/vouchers.ts`): a free product only at a park where
+ * `apps/api/src/services/vouchers.ts`): a free product at a park whose own
+ * product is chosen for it (SCRUM-405, `ParkProducts` below), or where
  * its linked product is on sale — which is every park for a product under no
  * branch — or, once that product is archived, where one with the same code
  * is; a 1+1 at its package's own park, or where a live package of the same
@@ -83,6 +84,7 @@ export function VoucherTypeEditor({
   onSave,
   onArchive,
   onRestore,
+  onSetParkProduct,
   onClose,
 }: {
   /** Null for a new voucher type. */
@@ -97,6 +99,8 @@ export function VoucherTypeEditor({
   onSave: (input: VoucherDefinitionInput) => void;
   onArchive: (definition: VoucherDefinitionRow) => void;
   onRestore: (definition: VoucherDefinitionRow) => void;
+  /** SCRUM-405 — set (or, with null, clear) the product a free product gives at one park. Saved at once. */
+  onSetParkProduct: (definition: VoucherDefinitionRow, branchId: string, productId: string | null) => void;
   onClose: () => void;
 }) {
   const isNew = definition === null;
@@ -341,7 +345,7 @@ export function VoucherTypeEditor({
               label="Product"
               hint={warn(
                 problems.productId,
-                'Honoured at the park that sells this product, or at every park for a product under “Every branch”. A till at another park refuses it.',
+                'Honoured at the park that sells this product, or at every park for a product under “Every branch”. A till at another park refuses it, unless a product is chosen for that park below.',
               )}
             >
               <GroupedSelect
@@ -371,6 +375,14 @@ export function VoucherTypeEditor({
                 current={definition?.ticketPackage ?? null}
               />
             </Field>
+          )}
+          {form.choice === 'product' && definition && definition.kind === 'free_item' && linkOptions && (
+            <ParkProducts
+              definition={definition}
+              linkOptions={linkOptions}
+              disabled={locked || saving}
+              onChange={(branchId, productId) => onSetParkProduct(definition, branchId, productId)}
+            />
           )}
           {linkOptionsFailed && (form.choice === 'product' || form.choice === 'ticket') && (
             <ErrorNote message={`The products and packages could not be read: ${linkOptionsFailed}`} />
@@ -662,6 +674,58 @@ interface BranchGroup {
  * menu is on sale at every park, and a screen reader that does not announce
  * the group would otherwise read two identical "Margherita Pizza" lines.
  */
+/**
+ * SCRUM-405 — WHAT A FREE PRODUCT GIVES AT EACH PARK. One picker per park,
+ * offering that park's own products and the ones sold at every park. A park
+ * with a product chosen here hands that product over; a park left on "the
+ * product above" honours the voucher only where the product above is on sale,
+ * and refuses it elsewhere. Each change is saved at once, on its own.
+ */
+function ParkProducts({
+  definition,
+  linkOptions,
+  disabled,
+  onChange,
+}: {
+  definition: VoucherDefinitionRow;
+  linkOptions: VoucherLinkOptions;
+  disabled: boolean;
+  onChange: (branchId: string, productId: string | null) => void;
+}) {
+  const parks = new Map<string, string>();
+  for (const row of [...linkOptions.packages, ...linkOptions.products]) {
+    if (row.branchId && row.branchName) parks.set(row.branchId, row.branchName);
+  }
+  const linked = new Map((definition.parkProducts ?? []).map((p) => [p.branchId, p]));
+  if (parks.size === 0) return null;
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-xs text-muted-foreground">
+        At each park: the product this voucher gives there. Left on “the product above”, a park honours it
+        only if it sells that product. Saved as soon as it is chosen.
+      </p>
+      {[...parks.entries()]
+        .sort((a, b) => a[1].localeCompare(b[1]))
+        .map(([branchId, branchName]) => {
+          const current = linked.get(branchId) ?? null;
+          const options = linkOptions.products.filter((p) => p.branchId === null || p.branchId === branchId);
+          return (
+            <Field key={branchId} label={branchName} hint={current && !current.live ? 'Not on sale there — the till refuses it.' : undefined}>
+              <GroupedSelect
+                value={current?.productId ?? ''}
+                onChange={(productId) => onChange(branchId, productId === '' ? null : productId)}
+                groups={groupByBranch(options)}
+                placeholder="— the product above —"
+                disabled={disabled}
+                current={current ? { id: current.productId, name: current.productName, branchName } : null}
+              />
+            </Field>
+          );
+        })}
+    </div>
+  );
+}
+
 function groupByBranch(
   rows: ReadonlyArray<{ id: string; name: string; code?: string | null; branchName: string | null }>,
 ): BranchGroup[] {

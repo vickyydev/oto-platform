@@ -18,7 +18,7 @@ A free-product voucher hands over one product, so the product has to exist first
 
 **If the POS admin says "This branch is not on the platform"** ("“HKT Central” has no record in the database…"), it is not showing your park's own products, and anything added under that notice stays in that browser tab: it never reaches the platform or the Console's lists. Only the **F&B Menu** page shows this notice. In the same state **Add-ons** and **Merch / Retail** show the prototype's lists with no notice (your park's own Bracelet Workshop, for one, is not in them), so open F&B Menu first, before you check or add anything. It happens when the admin page is opened or reloaded while the POS is locked (it locks itself after two minutes untouched): the page still opens, but it cannot read the park's records. Press **Back to POS**, unlock the POS with your password, open the admin page again and reload it (F5): the notice is gone. Add nothing, on any of these pages, while it shows.
 
-**At another park.** A money-off voucher is honoured at every park. A 1+1 is honoured at its package's park and at any park with a ticket package of the same name. A free product is honoured only at the park that sells the product it is linked to; at any other park the till answers "This voucher's item is not sold at this branch — ask a manager".
+**At another park.** A money-off voucher is honoured at every park. A 1+1 is honoured at its package's park and at any park with a ticket package of the same name. A free product is honoured at the park that sells the product it is linked to, and at any other park where a product has been chosen for it: open the type, and under the product pick, for each park, the product it gives there (saved as soon as it is chosen). At a park with neither, the till answers "This voucher's item is not sold at this branch — ask a manager".
 
 ## 2. Voucher types — Console → Voucher types
 
@@ -53,7 +53,7 @@ A free product or a 1+1 cannot be saved without its product or package — the S
 
 **Archive** takes a type off the list; vouchers already printed under it are still honoured. A booth prize that still points at it cannot be published until it points at another type. **Show archived voucher types**, at the foot of the list, brings it back into view, and **Restore** brings it back.
 
-What is the same for every booth voucher, and is therefore not a setting: it is redeemed **online only** (a till working offline refuses it), **once**, **one per sale and never with a promo code**, at the till section 1 names, and at **any park**, except a free product, honoured only where its product is on sale, and a 1+1, honoured only at a park with a ticket package of the same name (section 1).
+What is the same for every booth voucher, and is therefore not a setting: it is redeemed **online only** (a till working offline refuses it), **once**, **one per sale and never with a promo code**, at the till section 1 names, and at **any park**, except a free product, honoured only where its product is on sale or a product is chosen for that park, and a 1+1, honoured only at a park with a ticket package of the same name (section 1).
 
 ## 3. Booth staff and PINs — Console → Booths → the booth → Booth staff
 
