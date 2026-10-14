@@ -70,11 +70,18 @@ interface OffboardingModalProps {
   onOpenChange: (open: boolean) => void;
   employee: Employee;
   onSuccess?: () => void;
+  /**
+   * The offboarding is already recorded: open straight at the letter step for
+   * that departure (the profile's "Generate Letter"), never at the details
+   * step, whose submit would try to record a second offboarding.
+   */
+  letterFor?: "resignation" | "termination";
 }
 
-export function OffboardingModal({ open, onOpenChange, employee, onSuccess }: OffboardingModalProps) {
+export function OffboardingModal({ open, onOpenChange, employee, onSuccess, letterFor }: OffboardingModalProps) {
   const { toast } = useToast();
-  const [step, setStep] = useState<"details" | "letter" | "complete">("details");
+  const firstStep = letterFor ? "letter" : "details";
+  const [step, setStep] = useState<"details" | "letter" | "complete">(firstStep);
   const [signingLink, setSigningLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -96,7 +103,7 @@ export function OffboardingModal({ open, onOpenChange, employee, onSuccess }: Of
   const form = useForm<OffboardingFormData>({
     resolver: zodResolver(offboardingSchema),
     defaultValues: {
-      offboardingType: "resignation",
+      offboardingType: letterFor ?? "resignation",
       reasonCode: "",
       reasonText: "",
       noticeDate: new Date().toISOString().split('T')[0],
@@ -189,7 +196,7 @@ export function OffboardingModal({ open, onOpenChange, employee, onSuccess }: Of
 
   const handleClose = () => {
     form.reset();
-    setStep("details");
+    setStep(firstStep);
     setSigningLink(null);
     setCopied(false);
     onOpenChange(false);
@@ -499,7 +506,7 @@ export function OffboardingModal({ open, onOpenChange, employee, onSuccess }: Of
                     <div>Name: <span className="text-foreground">{employee.fullName}</span></div>
                     <div>Branch: <span className="text-foreground">{branch?.name || "N/A"}</span></div>
                     <div>Type: <span className="text-foreground capitalize">{offboardingType}</span></div>
-                    <div>Last Day: <span className="text-foreground">{formatDate(form.getValues("lastWorkingDay"))}</span></div>
+                    <div>Last Day: <span className="text-foreground">{formatDate(form.getValues("lastWorkingDay") || employee.lastWorkingDay)}</span></div>
                   </div>
                 </div>
               </CardContent>
@@ -508,21 +515,24 @@ export function OffboardingModal({ open, onOpenChange, employee, onSuccess }: Of
             </DialogBody>
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setStep("details")}>
-                Back
-              </Button>
+              {/* No Back: the offboarding is already recorded by now, and the
+                  details step would try to record it a second time. */}
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => {
+                  if (letterFor) {
+                    handleClose();
+                    return;
+                  }
                   setStep("complete");
                   toast({
                     title: "Offboarding saved",
-                    description: "You can generate a letter later from the employee profile.",
+                    description: "No letter was made. Use Generate Letter in the Offboarding section of the employee profile when you need one.",
                   });
                 }}
               >
-                Skip Letter
+                {letterFor ? "Cancel" : "Skip Letter"}
               </Button>
               <Button
                 onClick={() => createLetterMutation.mutate()}

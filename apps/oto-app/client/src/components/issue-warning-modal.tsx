@@ -443,9 +443,8 @@ export function IssueWarningModal({ open, onOpenChange, employee, onSuccess }: I
             </DialogBody>
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setStep("details")}>
-                Back
-              </Button>
+              {/* No Back: the warning is already recorded by now, and the
+                  details step would record a second one. */}
               <Button
                 type="button"
                 variant="outline"
@@ -453,7 +452,7 @@ export function IssueWarningModal({ open, onOpenChange, employee, onSuccess }: I
                   setStep("complete");
                   toast({
                     title: "Warning recorded",
-                    description: "You can generate a letter later from the employee profile.",
+                    description: "No letter was made. A letter can't be added to this warning later; issuing the warning again would record a second warning.",
                   });
                 }}
               >

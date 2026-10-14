@@ -2472,6 +2472,8 @@ export default function EmployeeEditorPage() {
   const canEdit = user?.role !== "staff";
   const [updateTermsOpen, setUpdateTermsOpen] = useState(false);
   const [offboardingOpen, setOffboardingOpen] = useState(false);
+  // The profile's "Generate Letter" for a departure already recorded.
+  const [offboardingLetterOpen, setOffboardingLetterOpen] = useState(false);
   const [editingLastDay, setEditingLastDay] = useState(false);
   const [editLastDayValue, setEditLastDayValue] = useState("");
   const [warningOpen, setWarningOpen] = useState(false);
@@ -4436,6 +4438,18 @@ export default function EmployeeEditorPage() {
             }}
           />
           
+          {isOffboarding && (
+            <OffboardingModal
+              open={offboardingLetterOpen}
+              onOpenChange={setOffboardingLetterOpen}
+              employee={employee}
+              letterFor={isResigning ? "resignation" : "termination"}
+              onSuccess={() => {
+                queryClient.invalidateQueries({ queryKey: ["/api/employees", id] });
+              }}
+            />
+          )}
+
           <IssueWarningModal
             open={warningOpen}
             onOpenChange={setWarningOpen}
@@ -4539,7 +4553,7 @@ export default function EmployeeEditorPage() {
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => setOffboardingOpen(true)}
+                    onClick={() => setOffboardingLetterOpen(true)}
                     data-testid="button-generate-letter"
                   >
                     <FileSignature className="mr-2 h-4 w-4" />
