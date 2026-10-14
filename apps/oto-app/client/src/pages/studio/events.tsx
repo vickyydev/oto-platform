@@ -591,10 +591,10 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
         Array.isArray(query.queryKey) && (query.queryKey[0] === "/api/admin/events" || query.queryKey[0] === "/api/events")
       });
       setDeleteEventId(null);
-      toast({ title: "Event cancelled successfully" });
+      toast({ title: "Event deleted" });
     },
     onError: (error: Error) => {
-      toast({ title: "Failed to cancel event", description: error.message, variant: "destructive" });
+      toast({ title: "Event not deleted", description: error.message, variant: "destructive" });
     },
   });
 
@@ -2683,15 +2683,15 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
       <AlertDialog open={!!deleteEventId} onOpenChange={() => setDeleteEventId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Cancel Event?</AlertDialogTitle>
+            <AlertDialogTitle>Delete Event?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will mark the event as cancelled. This action cannot be undone.
+              This permanently deletes the event with its bookings, details and guest records. An event that still has tasks cannot be deleted; archive it instead to keep it out of the list. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Keep Event</AlertDialogCancel>
             <AlertDialogAction onClick={() => deleteEventId && deleteMutation.mutate(deleteEventId)} className="bg-destructive text-destructive-foreground">
-              Cancel Event
+              Delete Event
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

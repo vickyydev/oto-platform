@@ -17215,7 +17215,21 @@ OTO Company Limited`,
       if (!existingEvent) {
         return res.status(404).json({ message: "Event not found" });
       }
-      
+
+      // Tasks keep their event (tasks.event_id ON DELETE no action): an event
+      // with tasks is refused in words, naming them, before anything is
+      // deleted. Everything else on the event goes with it by cascade.
+      const linkedTasks = await db.select({ title: tasks.title }).from(tasks)
+        .where(eq(tasks.eventId, id)).orderBy(tasks.title);
+      if (linkedTasks.length > 0) {
+        const named = linkedTasks.slice(0, 3).map((t) => `"${t.title}"`).join(", ");
+        const more = linkedTasks.length > 3 ? ` and ${linkedTasks.length - 3} more` : "";
+        return res.status(409).json({
+          message: `This event still has ${linkedTasks.length} task${linkedTasks.length === 1 ? "" : "s"} linked to it (${named}${more}). Delete those tasks first, or archive the event instead.`,
+          reason: "event_has_tasks",
+        });
+      }
+
       await storage.deleteStudioEvent(id);
       res.status(204).send();
     } catch (error) {
