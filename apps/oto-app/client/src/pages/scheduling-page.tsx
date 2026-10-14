@@ -2165,6 +2165,22 @@ function SchedulingPageInner() {
     return result;
   }, [weekPlanQuery.data]);
 
+  // Why no shift matched (SCRUM-537): the job roles the shifts the matcher looked at
+  // require, by name, in the same department guard as getShiftsForEmployee.
+  const getRequiredJobRoleNames = useCallback((employee: Employee | EmployeeOrCasual) => {
+    const roleNames = new Map((rolesQuery.data || []).map((r) => [r.id, r.name]));
+    const names = new Set<string>();
+    for (const row of weekPlanQuery.data?.shiftRows || []) {
+      if (row.departmentId && employee.primaryDepartmentId &&
+          row.departmentId !== employee.primaryDepartmentId) continue;
+      for (const r of row.roles) {
+        const name = r.role?.name || roleNames.get(r.roleId);
+        if (name) names.add(name);
+      }
+    }
+    return Array.from(names).sort((a, b) => a.localeCompare(b));
+  }, [weekPlanQuery.data, rolesQuery.data]);
+
   const activeEmployees = useMemo(() => {
     return (employeesQuery.data || []).filter(
       (e) => e.employmentState === "ACTIVE" || e.employmentState === "LEAVING" ||
@@ -3871,11 +3887,26 @@ function SchedulingPageInner() {
                                                   <div className="border-t my-1" />
                                                   {(() => {
                                                     const employeeShiftGroups = getShiftsForEmployee(employee);
-                                                    if (employeeShiftGroups.length === 0) return (
-                                                      <div className="text-[10px] text-muted-foreground px-2 py-2 italic">
-                                                        No matching shifts for this employee's roles
-                                                      </div>
-                                                    );
+                                                    if (employeeShiftGroups.length === 0) {
+                                                      const shortName = employee.nickname || employee.fullName.split(" ")[0];
+                                                      const hasJobRoles = (employee.roles || []).length > 0;
+                                                      const required = getRequiredJobRoleNames(employee);
+                                                      return (
+                                                        <div className="text-[10px] text-muted-foreground px-2 py-2 italic" data-testid={`text-no-matching-shifts-${employee.id}`}>
+                                                          {!hasJobRoles ? (
+                                                            <>
+                                                              <div>{shortName} has no job roles yet.</div>
+                                                              <div>Assign job roles on their employee record.</div>
+                                                            </>
+                                                          ) : (
+                                                            <>
+                                                              <div>No shifts need {shortName}'s job roles.</div>
+                                                              <div>{required.length > 0 ? `Shifts need: ${required.join(", ")}` : "No shift has a job role set."}</div>
+                                                            </>
+                                                          )}
+                                                        </div>
+                                                      );
+                                                    }
                                                     return (
                                                       <>
                                                         {employeeShiftGroups.map((group) => (
