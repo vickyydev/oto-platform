@@ -4411,7 +4411,16 @@ export async function registerRoutes(
           needsReprovisioning: true
         });
       }
-      
+      // The users door's rule (POST /api/users/:id/reset-password): these
+      // accounts are managed outside User Management, and an administrator's
+      // password is reset only by an administrator.
+      if (["global_admin", "operator_admin", "advisor"].includes(targetUser.role)) {
+        return res.status(403).json({ message: "This account is managed outside User Management" });
+      }
+      if (targetUser.role === "admin" && !["admin", "global_admin", "operator_admin"].includes(req.user?.role ?? "")) {
+        return res.status(403).json({ message: "Only an administrator can reset an administrator's password" });
+      }
+
       // Check branch access
       const userWithAccess = req.userWithAccess;
       if (userWithAccess && !userWithAccess.hasAllBranchesAccess) {
@@ -19764,9 +19773,9 @@ OTO Company Limited`,
       const { id } = req.params;
       const tenantId = await resolveTenantId(req.user?.tenantId);
       
-      // Delete questions first
-      await db.delete(taskQuestions).where(eq(taskQuestions.taskId, id));
-      
+      // Only this park group's task, and its questions only with it: they go
+      // by the task's own cascade (task_questions.task_id ON DELETE cascade),
+      // so another park group's id deletes nothing at all.
       const [deleted] = await db
         .delete(tasks)
         .where(and(
@@ -26045,7 +26054,8 @@ ${context}`;
   // Get all locations with branch access info
   app.get("/api/locations", requireAuth, async (req, res, next) => {
     try {
-      const tenantId = await getDefaultTenantId();
+      // The caller's own park group, as PATCH and DELETE below place it.
+      const tenantId = req.userWithAccess?.tenantId ?? await getDefaultTenantId();
       const user = req.user as UserWithBranchAccess;
       const { branchId, tag } = req.query;
 
@@ -26099,10 +26109,20 @@ ${context}`;
     }
   });
 
+  /** A location of the caller's own park group, or undefined. */
+  const locationOfCallersParkGroup = async (req: Request, id: string) => {
+    const tenantId = req.userWithAccess?.tenantId;
+    if (!tenantId) return undefined;
+    const [location] = await db.select().from(locations)
+      .where(and(eq(locations.id, id), eq(locations.tenantId, tenantId))).limit(1);
+    return location;
+  };
+
   // Create a new location
   app.post("/api/locations", requireAuth, requireRole("admin", "global_admin", "operator_admin", "manager"), async (req, res, next) => {
     try {
-      const tenantId = await getDefaultTenantId();
+      // The caller's own park group, so PATCH and DELETE below can reach it.
+      const tenantId = req.userWithAccess?.tenantId ?? await getDefaultTenantId();
       const { name, description, parentId, branchIds, tags } = req.body;
 
       if (!name) {
@@ -26148,6 +26168,13 @@ ${context}`;
       const { id } = req.params;
       const { name, description, parentId, isActive, sortOrder, branchIds, tags } = req.body;
 
+      // Only the caller's own park group's location: another's is not found
+      // and nothing is written.
+      const location = await locationOfCallersParkGroup(req, id);
+      if (!location) {
+        return res.status(404).json({ message: "Location not found" });
+      }
+
       const updates: Record<string, any> = { updatedAt: new Date() };
       if (name !== undefined) updates.name = name;
       if (description !== undefined) updates.description = description;
@@ -26156,7 +26183,7 @@ ${context}`;
       if (sortOrder !== undefined) updates.sortOrder = sortOrder;
       if (tags !== undefined) updates.tags = tags;
 
-      await db.update(locations).set(updates).where(eq(locations.id, id));
+      await db.update(locations).set(updates).where(and(eq(locations.id, id), eq(locations.tenantId, location.tenantId)));
 
       // Update branch access if specified
       if (branchIds !== undefined) {
@@ -26186,19 +26213,42 @@ ${context}`;
   app.delete("/api/locations/:id", requireAuth, requireRole("admin", "global_admin", "operator_admin", "manager"), async (req, res, next) => {
     try {
       const { id } = req.params;
-      
+
+      // Only the caller's own park group's location: another's is not found
+      // and nothing is written.
+      const location = await locationOfCallersParkGroup(req, id);
+      if (!location) {
+        return res.status(404).json({ message: "Location not found" });
+      }
+
       // Check for sublocations
       const [sublocation] = await db
         .select()
         .from(locations)
         .where(eq(locations.parentId, id))
         .limit(1);
-      
+
       if (sublocation) {
         return res.status(400).json({ message: "Cannot delete location with sublocations. Delete sublocations first." });
       }
 
-      await db.delete(locations).where(eq(locations.id, id));
+      // Fix reports and checklist templates keep their location (both
+      // ON DELETE no action), so a location still in use is refused in words,
+      // naming what uses it, before anything is deleted.
+      const [{ n: reportCount }] = await db.select({ n: sql<number>`count(*)::int` }).from(fixReports).where(eq(fixReports.locationId, id));
+      const [{ n: templateCount }] = await db.select({ n: sql<number>`count(*)::int` }).from(checklistTemplates).where(eq(checklistTemplates.locationId, id));
+      if (reportCount > 0 || templateCount > 0) {
+        const using = [
+          reportCount > 0 ? `${reportCount} fix report${reportCount === 1 ? "" : "s"}` : null,
+          templateCount > 0 ? `${templateCount} checklist template${templateCount === 1 ? "" : "s"}` : null,
+        ].filter(Boolean).join(" and ");
+        return res.status(409).json({
+          message: `${location.name} cannot be deleted: it is still used by ${using}, which keep the location they were recorded with.`,
+          reason: "location_in_use",
+        });
+      }
+
+      await db.delete(locations).where(and(eq(locations.id, id), eq(locations.tenantId, location.tenantId)));
       res.json({ success: true });
     } catch (error) {
       next(error);

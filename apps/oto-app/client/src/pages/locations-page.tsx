@@ -106,7 +106,7 @@ export default function LocationsPage() {
       toast({ title: "Location deleted successfully" });
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Location not deleted", description: error.message, variant: "destructive" });
     },
   });
 
@@ -305,7 +305,7 @@ export default function LocationsPage() {
                     variant="ghost"
                     size="icon"
                     onClick={() => {
-                      if (confirm("Are you sure you want to delete this location?")) {
+                      if (confirm("Delete this location? A location still used by fix reports or checklist templates cannot be deleted.")) {
                         deleteMutation.mutate(location.id);
                       }
                     }}
