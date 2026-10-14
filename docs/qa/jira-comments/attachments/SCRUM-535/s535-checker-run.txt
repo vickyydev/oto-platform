@@ -1,0 +1,72 @@
+  BLOCKED POST https://oto-app-staging.onrender.com/api/avatar-status/batch
+  BLOCKED POST https://oto-app-staging.onrender.com/api/avatar-status/batch
+  employee 05ed6faf-7ca4-4033-9704-a17b6e41b89b
+edit-access2@1920x1080: box 448x772 top154 bot926 clipped=false natural=770 ovY=auto maxH=1048px footer={"txt":"Save Changes","bottom":901}
+   scrollers: V[212/190] max-h-48 overflow-y-auto space-y-2 border rounded-
+add-advisor@1920x1080: box 768x632 top224 bot856 clipped=false natural=630 ovY=auto maxH=1048px footer={"txt":"Create Advisor","bottom":831}
+   scrollers: -
+  BLOCKED POST https://oto-app-staging.onrender.com/api/avatar-status/batch
+add-shift@1920x1080: box 512x906 top87 bot993 clipped=false natural=904 ovY=auto maxH=972px footer={"txt":"Create","bottom":968}
+   scrollers: -
+  BLOCKED POST https://oto-app-staging.onrender.com/api/avatar-status/batch
+edit-shift@1920x1080: box 512x972 top54 bot1026 clipped=false natural=970 ovY=auto maxH=972px footer={"txt":"Save","bottom":1001}
+   scrollers: V[834/816] -mx-6 -my-1 min-h-0 flex-1 overflow-y-auto overflo
+  BLOCKED POST https://oto-app-staging.onrender.com/api/avatar-status/batch
+checklist-quick-create@1920x1080: box 896x772 top154 bot926 clipped=false natural=770 ovY=auto maxH=1048px footer={"txt":"Create","bottom":901}
+   scrollers: V[313/158] border rounded-md p-3 space-y-2 max-h-40 overflow-
+  BLOCKED POST https://oto-app-staging.onrender.com/api/avatar-status/batch
+  BLOCKED POST https://oto-app-staging.onrender.com/api/avatar-status/batch
+offboarding@1920x1080: box 512x812 top134 bot946 clipped=false natural=810 ovY=auto maxH=1048px footer={"txt":"Continue","bottom":921}
+   scrollers: -
+  BLOCKED POST https://oto-app-staging.onrender.com/api/avatar-status/batch
+  BLOCKED POST https://oto-app-staging.onrender.com/api/avatar-status/batch
+issue-warning@1920x1080: box 512x732 top174 bot906 clipped=false natural=730 ovY=auto maxH=1048px footer={"txt":"Continue","bottom":881}
+   scrollers: -
+payroll-statutory@1920x1080: box 1024x679 top201 bot880 clipped=false natural=677 ovY=auto maxH=1048px footer={"txt":"Create Rule Set","bottom":855}
+   scrollers: V[856/176] flex min-h-[80px] w-full rounded-md border border-
+create-user@1920x1080: box 672x498 top291 bot789 clipped=false natural=496 ovY=auto maxH=1048px footer={"txt":"Create User","bottom":764}
+   scrollers: V[212/158] border rounded-md p-3 max-h-40 overflow-y-auto spa
+casual-worker@1920x1080: box 448x672 top204 bot876 clipped=false natural=670 ovY=auto maxH=1048px footer={"txt":"Add Worker","bottom":851}
+   scrollers: -
+  BLOCKED POST https://oto-app-staging.onrender.com/api/avatar-status/batch
+studio-task@1920x1080: box 896x687 top197 bot884 clipped=false natural=685 ovY=auto maxH=1048px footer={"txt":"Create","bottom":859}
+   scrollers: V[268/158] border rounded-md p-3 space-y-2 max-h-40 overflow-
+  BLOCKED POST https://oto-app-staging.onrender.com/api/avatar-status/batch
+studio-checklist-create@1920x1080: box 896x772 top154 bot926 clipped=false natural=770 ovY=auto maxH=1048px footer={"txt":"Create","bottom":901}
+   scrollers: V[313/158] border rounded-md p-3 space-y-2 max-h-40 overflow-
+  BLOCKED POST https://oto-app-staging.onrender.com/api/avatar-status/batch
+  BLOCKED POST https://oto-app-staging.onrender.com/api/avatar-status/batch
+  employee 05ed6faf-7ca4-4033-9704-a17b6e41b89b
+edit-access2@1280x800: box 448x768 top16 bot784 clipped=false natural=766 ovY=auto maxH=768px footer={"txt":"Save Changes","bottom":759}
+   scrollers: V[608/604] -mx-6 -my-1 min-h-0 flex-1 overflow-y-auto overflo || V[212/190] max-h-48 overflow-y-auto space-y-2 border rounded-
+add-advisor@1280x800: box 768x632 top84 bot716 clipped=false natural=630 ovY=auto maxH=768px footer={"txt":"Create Advisor","bottom":691}
+   scrollers: -
+  BLOCKED POST https://oto-app-staging.onrender.com/api/avatar-status/batch
+add-shift@1280x800: box 512x720 top40 bot760 clipped=false natural=718 ovY=auto maxH=720px footer={"txt":"Create","bottom":735}
+   scrollers: V[750/564] -mx-6 -my-1 min-h-0 flex-1 overflow-y-auto overflo
+  BLOCKED POST https://oto-app-staging.onrender.com/api/avatar-status/batch
+edit-shift@1280x800: box 512x720 top40 bot760 clipped=false natural=718 ovY=auto maxH=720px footer={"txt":"Save","bottom":735}
+   scrollers: V[834/564] -mx-6 -my-1 min-h-0 flex-1 overflow-y-auto overflo
+  BLOCKED POST https://oto-app-staging.onrender.com/api/avatar-status/batch
+checklist-quick-create@1280x800: box 896x768 top16 bot784 clipped=false natural=766 ovY=auto maxH=768px footer={"txt":"Create","bottom":759}
+   scrollers: V[642/638] -mx-6 -my-1 min-h-0 flex-1 overflow-y-auto overflo || V[313/158] border rounded-md p-3 space-y-2 max-h-40 overflow-
+  BLOCKED POST https://oto-app-staging.onrender.com/api/avatar-status/batch
+  BLOCKED POST https://oto-app-staging.onrender.com/api/avatar-status/batch
+offboarding@1280x800: box 512x768 top16 bot784 clipped=false natural=766 ovY=auto maxH=768px footer={"txt":"Continue","bottom":759}
+   scrollers: V[654/610] -mx-6 -my-1 min-h-0 flex-1 overflow-y-auto overflo
+  BLOCKED POST https://oto-app-staging.onrender.com/api/avatar-status/batch
+  BLOCKED POST https://oto-app-staging.onrender.com/api/avatar-status/batch
+issue-warning@1280x800: box 512x732 top34 bot766 clipped=false natural=730 ovY=auto maxH=768px footer={"txt":"Continue","bottom":741}
+   scrollers: -
+payroll-statutory@1280x800: box 1024x679 top61 bot740 clipped=false natural=677 ovY=auto maxH=768px footer={"txt":"Create Rule Set","bottom":715}
+   scrollers: V[856/176] flex min-h-[80px] w-full rounded-md border border-
+create-user@1280x800: box 672x498 top151 bot649 clipped=false natural=496 ovY=auto maxH=768px footer={"txt":"Create User","bottom":624}
+   scrollers: V[212/158] border rounded-md p-3 max-h-40 overflow-y-auto spa
+casual-worker@1280x800: box 448x672 top64 bot736 clipped=false natural=670 ovY=auto maxH=768px footer={"txt":"Add Worker","bottom":711}
+   scrollers: -
+  BLOCKED POST https://oto-app-staging.onrender.com/api/avatar-status/batch
+studio-task@1280x800: box 896x687 top57 bot744 clipped=false natural=685 ovY=auto maxH=768px footer={"txt":"Create","bottom":719}
+   scrollers: V[268/158] border rounded-md p-3 space-y-2 max-h-40 overflow-
+  BLOCKED POST https://oto-app-staging.onrender.com/api/avatar-status/batch
+studio-checklist-create@1280x800: box 896x768 top16 bot784 clipped=false natural=766 ovY=auto maxH=768px footer={"txt":"Create","bottom":759}
+   scrollers: V[642/638] -mx-6 -my-1 min-h-0 flex-1 overflow-y-auto overflo || V[313/158] border rounded-md p-3 space-y-2 max-h-40 overflow-
