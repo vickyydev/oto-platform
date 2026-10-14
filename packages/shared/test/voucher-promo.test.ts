@@ -8,6 +8,7 @@ import {
   voucherWindowOf,
 } from '../src/voucher-promo';
 import { WALLET_ENTRY_SOURCES } from '../src/wallet';
+import { formatDayInTz, formatDayTimeInTz, formatIsoDay } from '../src/display-date';
 
 /**
  * S2-14a round 5 — the words a promotional voucher's rules may use, and the
@@ -61,5 +62,23 @@ describe('the scopes and the bodies', () => {
 
   it('a wallet entry may come from a promotional voucher', () => {
     expect(WALLET_ENTRY_SOURCES).toContain('promo_voucher');
+  });
+});
+
+describe('one way to write a day in words (SCRUM-421)', () => {
+  it('is the same for a day and for an instant on the branch calendar', () => {
+    expect(formatIsoDay('2026-10-08')).toBe('8 Oct 2026');
+    expect(formatIsoDay('2026-09-25')).toBe('25 Sep 2026');
+    expect(formatVoucherDay).toBe(formatIsoDay);
+    // 23:30 UTC on 7 Oct is already 8 Oct in Bangkok.
+    const instant = new Date('2026-10-07T23:30:00.000Z');
+    expect(formatDayInTz(instant, 'Asia/Bangkok')).toBe('8 Oct 2026');
+    expect(formatDayInTz(instant, 'UTC')).toBe('7 Oct 2026');
+    expect(formatDayTimeInTz(instant, 'Asia/Bangkok')).toBe('8 Oct 2026 06:30');
+  });
+
+  it('leaves a value that is not a day as it is', () => {
+    expect(formatIsoDay('not a date')).toBe('not a date');
+    expect(formatIsoDay('2026-13-01')).toBe('2026-13-01');
   });
 });

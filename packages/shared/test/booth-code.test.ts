@@ -7,6 +7,8 @@ import {
   BOOTH_CODE_RANDOM_LENGTH,
   LEGACY_BOOTH_CODE_LENGTH,
   boothCodeCheckCharacter,
+  hasBoothCodeShape,
+  isBoothCodePrefix,
   isLegacyBoothCode,
   mintBoothCode,
   normaliseBoothCode,
@@ -326,5 +328,24 @@ describe('parseBoothCode', () => {
     for (const bad of ['B1RT7KMQ4', 'B1RT7KMQ4XWW', 'B1RT7KMQ4O', 'B1RT7KMQ4I', 'B1RT7KMQ40']) {
       expect(parseBoothCode(bad)).toBeNull();
     }
+  });
+});
+
+describe('the shape the api reads a voucher claim by (SCRUM-421)', () => {
+  it('is the eleven-character shape whatever the check says, and the prefix rule is the minting one', () => {
+    const code = mintBoothCode('B1', () => 0);
+    expect(hasBoothCodeShape(code)).toBe(true);
+    // A wrong check character keeps the shape — that is what makes it a claim.
+    const wrongCheck = code.slice(0, -1) + (code.endsWith('2') ? '3' : '2');
+    expect(verifyBoothCode(wrongCheck).ok).toBe(false);
+    expect(hasBoothCodeShape(wrongCheck)).toBe(true);
+    // The lengths are the module's, not written out: ten and twelve are not the shape.
+    expect(hasBoothCodeShape(code.slice(0, LEGACY_BOOTH_CODE_LENGTH))).toBe(false);
+    expect(hasBoothCodeShape(code + '2')).toBe(false);
+    expect(hasBoothCodeShape(code.slice(0, 2) + 'O' + code.slice(3))).toBe(false);
+    expect(isBoothCodePrefix('B1')).toBe(true);
+    expect(isBoothCodePrefix('b1')).toBe(false);
+    expect(isBoothCodePrefix('B')).toBe(false);
+    expect(isBoothCodePrefix('B1X')).toBe(false);
   });
 });

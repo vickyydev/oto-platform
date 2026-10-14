@@ -1,11 +1,11 @@
 import { useCallback, useRef, useState } from 'react';
 import {
+  formatDayInTz,
+  formatDayTimeInTz,
   isLegacyBoothCode,
-  isoDateInTz,
   newId,
   normaliseBoothCode,
   verifyBoothCode,
-  wallClockMinutesInTz,
 } from '@oto/shared';
 import { ApiError, NetworkError, isMissingRoute } from '@/api/client';
 import { salesApi, type CartQuote } from '@/api/sales';
@@ -292,25 +292,17 @@ async function withRungUpSale(
   }
 }
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
 /**
  * "8 Oct 2026" — and with `time`, "8 Oct 2026 15:02" — on the branch's clock,
- * assembled from the same pinned parts the platform's refusals use
- * (`formatVoucherDate` in apps/api/src/services/vouchers.ts), so the card and
- * the platform's own sentences print a date the same way.
+ * by the same shared formatter the platform's refusals use (`formatDayInTz` in
+ * `@oto/shared`, SCRUM-421), so the card and the platform's own sentences print
+ * a date the same way.
  */
 export function formatVoucherStamp(iso: string, opts: { time?: boolean } = {}): string {
   const instant = new Date(iso);
   if (Number.isNaN(instant.getTime())) return iso;
   const timeZone = getBranchTimezone();
-  const [year, month, day] = isoDateInTz(instant, timeZone).split('-');
-  const date = `${Number(day)} ${MONTHS[Number(month) - 1] ?? month} ${year}`;
-  if (!opts.time) return date;
-  const minutes = wallClockMinutesInTz(instant, timeZone);
-  const hh = String(Math.floor(minutes / 60)).padStart(2, '0');
-  const mm = String(minutes % 60).padStart(2, '0');
-  return `${date} ${hh}:${mm}`;
+  return opts.time ? formatDayTimeInTz(instant, timeZone) : formatDayInTz(instant, timeZone);
 }
 
 export interface TillVoucher {

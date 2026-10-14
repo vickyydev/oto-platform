@@ -3,6 +3,7 @@ import type { PricingContext, TicketCartLine } from './pricing';
 import type { DiscountTarget } from './discount';
 import { discountTargetBase } from './discount';
 import { businessDate, DEFAULT_BUSINESS_DAY_START_MINUTES } from './business-date';
+import { formatIsoDay } from './display-date';
 
 /**
  * Promo codes — a faithful port of the prototype's `lib/promoVoucher.ts`
@@ -71,22 +72,14 @@ export interface ValidatePromoOptions {
   freeItem?: { name: string; price: Satang } | null;
 }
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
 /**
  * "31 Dec 2026" from a yyyy-mm-dd. The prototype uses
  * `toLocaleDateString(undefined, …)`, which renders differently depending on
  * the host locale — a box and the cloud would print different refusal
- * messages. Formatted from the parts instead so the text is the same
- * everywhere; translation belongs to the i18n layer, not here.
+ * messages. The shared `formatIsoDay` assembles it from fixed parts instead
+ * (SCRUM-421), so the text is the same everywhere.
  */
-function formatIsoDate(iso: string): string {
-  const [year, month, day] = iso.split('-');
-  if (year === undefined || month === undefined || day === undefined) return iso;
-  const name = MONTHS[Number(month) - 1];
-  if (name === undefined) return iso;
-  return `${Number(day)} ${name} ${year}`;
-}
+const formatIsoDate = formatIsoDay;
 
 /**
  * The one sentence this engine uses for "that code has nothing to discount".

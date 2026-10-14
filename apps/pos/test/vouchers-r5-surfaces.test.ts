@@ -43,7 +43,14 @@ describe('a wallet-credit voucher is a sale on its own, like a hand-over prize',
   it('rings up with nothing else on the cart; a discount voucher does not', () => {
     expect(voucherIsGift(held({ type: 'wallet_credit', valueSatang: 10_000 }))).toBe(true);
     expect(voucherIsGift(held({ type: 'hand_over' }))).toBe(true);
-    expect(voucherIsGift(held({ type: 'amount_off', appliesTo: 'category', valueSatang: 5_000, label: 'Drinks' }))).toBe(false);
+    const drinks = {
+      type: 'amount_off',
+      appliesTo: 'category',
+      target: { kind: 'fnbCategory', category: 'Drinks' },
+      valueSatang: 5_000,
+      label: 'Drinks',
+    } as const;
+    expect(voucherIsGift(held(drinks))).toBe(false);
     expect(voucherIsGift(null)).toBe(false);
   });
 

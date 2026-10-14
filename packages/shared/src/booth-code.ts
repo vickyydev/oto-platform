@@ -227,6 +227,23 @@ const LEGACY_CODE_PATTERN = new RegExp(
   `^[0-9A-Z]{${BOOTH_CODE_PREFIX_LENGTH}}[${BOOTH_CODE_ALPHABET}]{${BOOTH_CODE_RANDOM_LENGTH}}$`,
 );
 
+/**
+ * Whether a string has the eleven-character SHAPE of a current booth code — a
+ * prefix and nine characters of the alphabet — whatever its check character
+ * says. Tested as given: callers pass a code already through
+ * `normaliseBoothCode`. The api uses it to tell a voucher claim from a park
+ * promo code before the check is read (SCRUM-421: it kept its own copy of this
+ * pattern with the lengths written out).
+ */
+export function hasBoothCodeShape(code: string): boolean {
+  return CODE_PATTERN.test(code);
+}
+
+/** Whether a string is a valid booth or till code prefix: two upper-case letters or digits. */
+export function isBoothCodePrefix(prefix: string): boolean {
+  return PREFIX_PATTERN.test(prefix);
+}
+
 export interface BoothCodeParts {
   /** The whole code, upper case, no separator — what goes in `promo.voucher.code`. */
   code: string;

@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import type { DiscountTarget } from './discount';
+import { formatIsoDay } from './display-date';
 
 /**
  * S2-14a round 5 — PROMOTIONAL VOUCHERS (plan docs/progress/plans/wallet/PLAN.md
@@ -92,14 +94,8 @@ export function voucherWindowOf(
   return 'inside';
 }
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-/** "1 Nov 2026" from `YYYY-MM-DD` — the voucher refusals' own date form. */
-export function formatVoucherDay(iso: string): string {
-  const [year, month, day] = iso.split('-');
-  const name = MONTHS[Number(month) - 1];
-  return name && day && year ? `${Number(day)} ${name} ${year}` : iso;
-}
+/** "1 Nov 2026" from `YYYY-MM-DD` — the shared day form (SCRUM-421), under the name the voucher refusals use. */
+export const formatVoucherDay = formatIsoDay;
 
 /**
  * THE COUNTER'S WORDS for a promotional rule saying no. One place, so the
@@ -194,3 +190,55 @@ export const PromoVoucherReportQuerySchema = z.object({
   from: IsoDay,
   to: IsoDay,
 });
+
+// --- What a voucher is worth: the contract the api answers and the tills read
+
+/**
+ * SCRUM-421 — WHAT A DISCOUNT VOUCHER COMES OFF, resolved at the redeeming
+ * branch from the definition's `target` (`resolveVoucherTarget` in the api).
+ * One declaration for the api that answers it and the tills that read it.
+ *
+ *   appliesTo  the scope's kind in the counter's terms — `tickets` for the
+ *              landed default, which every booth voucher keeps
+ *   target     the pricing engine's own scope, handed to it unchanged, so the
+ *              engine decides what it takes and the tax seam where the tax falls
+ *   label      what the card and the refusal call it: "the ticket order",
+ *              "Drinks", "Iced Latte"
+ */
+export interface VoucherScope {
+  appliesTo: 'tickets' | 'ticket_package' | 'fnb' | 'category' | 'items' | 'merch';
+  target: DiscountTarget;
+  label: string;
+}
+
+/**
+ * What a voucher is worth, resolved from its definition at the branch it is
+ * being redeemed at — never from the till.
+ */
+export type VoucherEffect =
+  | ({ type: 'amount_off'; valueSatang: number } & VoucherScope)
+  | ({ type: 'percent_off'; valueBp: number } & VoucherScope)
+  | {
+      type: 'free_item';
+      product: {
+        id: string;
+        name: string;
+        /**
+         * Which counter sells it: `menu` is the kitchen's and the bar's (the F&B
+         * tills), `merch` the shop's, `addon` a ticket extra. The ticket till
+         * reads it to send a menu item to the restaurant till.
+         */
+        kind: 'menu' | 'merch' | 'addon';
+        priceSatang: number;
+        weekendPriceSatang: number;
+      };
+    }
+  | { type: 'free_kids_ticket'; package: { id: string; name: string } }
+  | { type: 'hand_over' }
+  /**
+   * Credit LOADED onto a new wallet when the sale carrying the voucher closes.
+   * Nothing comes off the bill: like a hand-over prize it is rung up as a ฿0
+   * sale of its own, because a sale closing is the only thing that uses a
+   * voucher up.
+   */
+  | { type: 'wallet_credit'; valueSatang: number };

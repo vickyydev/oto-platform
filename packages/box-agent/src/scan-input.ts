@@ -1,3 +1,9 @@
+import {
+  SCANNER_BURST_GAP_MS,
+  SCANNER_BURST_MAX_LENGTH_BOX,
+  SCANNER_BURST_MIN_LENGTH,
+  SCANNER_BURST_QUIET_GAP_MS,
+} from '@oto/shared';
 import type { ScanInput, ScanSource } from './scan';
 
 /**
@@ -137,10 +143,11 @@ export class HidBurstReader {
   private lastAt = 0;
 
   constructor(options: HidBurstOptions = {}) {
-    this.gapMs = options.burstGapMs ?? 50;
-    this.timeoutMs = options.burstTimeoutMs ?? 500;
-    this.minLength = options.minLength ?? 6;
-    this.maxLength = options.maxLength ?? 128;
+    // The scanner's numbers are shared with the till's reader (SCRUM-421).
+    this.gapMs = options.burstGapMs ?? SCANNER_BURST_GAP_MS;
+    this.timeoutMs = options.burstTimeoutMs ?? SCANNER_BURST_QUIET_GAP_MS;
+    this.minLength = options.minLength ?? SCANNER_BURST_MIN_LENGTH;
+    this.maxLength = options.maxLength ?? SCANNER_BURST_MAX_LENGTH_BOX;
     this.terminator = options.terminatorKey ?? 'Enter';
     const button = options.buttonKey ?? null;
     if (button) {

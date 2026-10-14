@@ -25,6 +25,7 @@ import {
   boothStaffLabel,
   businessDate,
   formatVoucherDay,
+  isBoothCodePrefix,
   mintBoothCode,
   newId,
   parseDayStart,
@@ -464,7 +465,7 @@ async function prefixOf(db: Exec, stationId: string): Promise<string> {
     .where(eq(station.id, stationId))
     .limit(1);
   const prefix = (row?.codePrefix ?? '').toUpperCase();
-  return /^[0-9A-Z]{2}$/.test(prefix) ? prefix : 'TV';
+  return isBoothCodePrefix(prefix) ? prefix : 'TV';
 }
 
 /** The prefix a campaign's codes carry. A campaign has no till; the owner may rename it. */

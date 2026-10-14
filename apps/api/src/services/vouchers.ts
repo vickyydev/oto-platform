@@ -23,28 +23,29 @@ import {
   type VoucherReleaseReason,
 } from '@oto/db';
 import {
-  BOOTH_CODE_ALPHABET,
   BOOTH_CODE_LENGTH,
   boothStaffCode,
   boothStaffLabel,
   computeTicketCartTotals,
+  formatDayInTz,
+  formatDayTimeInTz,
+  hasBoothCodeShape,
   isLegacyBoothCode,
-  isoDateInTz,
   mintBoothCode,
   newId,
   normaliseBoothCode,
   priceForTier,
   resolveRate,
   verifyBoothCode,
-  wallClockMinutesInTz,
   VoucherTargetSchema,
   type CartPromo,
-  type DiscountTarget,
   type ManualDiscount,
   type PricingContext,
   type PromoDiscount,
   type TaxConfigShape,
   type TicketCartLine,
+  type VoucherEffect,
+  type VoucherScope,
 } from '@oto/shared';
 import { AppError } from '../lib/errors';
 import { audit } from './audit';
@@ -185,25 +186,15 @@ export const VOUCHER_MESSAGES = {
   void: 'This voucher has been cancelled',
 } as const;
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
 /**
- * "8 Oct 2026" in a branch's timezone. Assembled from the pinned parts
- * `@oto/shared` reads, never from a locale's own date pattern, so a box and the
- * cloud print the same words (the reason `promo.ts` gives for its own).
+ * "8 Oct 2026" in a branch's timezone — the shared day form (SCRUM-421), never
+ * a locale's own date pattern, so a box, the till and the cloud print the same
+ * words.
  */
-export function formatVoucherDate(instant: Date, timeZone: string): string {
-  const [year, month, day] = isoDateInTz(instant, timeZone).split('-');
-  return `${Number(day)} ${MONTHS[Number(month) - 1] ?? month} ${year}`;
-}
+export const formatVoucherDate = formatDayInTz;
 
 /** "8 Oct 2026 15:02" in a branch's timezone. */
-export function formatVoucherDateTime(instant: Date, timeZone: string): string {
-  const minutes = wallClockMinutesInTz(instant, timeZone);
-  const hh = String(Math.floor(minutes / 60)).padStart(2, '0');
-  const mm = String(minutes % 60).padStart(2, '0');
-  return `${formatVoucherDate(instant, timeZone)} ${hh}:${mm}`;
-}
+export const formatVoucherDateTime = formatDayTimeInTz;
 
 /** Whole baht without decimals, satang when there are any: 15000 → "150". */
 function baht(satang: number): string {
@@ -236,8 +227,6 @@ export type VoucherCodeClass =
   | { kind: 'legacy_short'; code: string };
 
 const LEGACY_SHORT = /^(?:\d{4}|[A-Z][0-9A-Z]{3})$/;
-/** The eleven-character shape, whatever the check says — used to spot a voucher claim. */
-const CURRENT_SHAPE = new RegExp(`^[0-9A-Z]{2}[${BOOTH_CODE_ALPHABET}]{9}$`);
 
 export function classifyVoucherCode(raw: string): VoucherCodeClass {
   const code = normaliseBoothCode(raw);
@@ -256,7 +245,7 @@ export function classifyVoucherCode(raw: string): VoucherCodeClass {
  * proves.
  */
 function hasBoothShape(code: string): boolean {
-  return CURRENT_SHAPE.test(code) || isLegacyBoothCode(code);
+  return hasBoothCodeShape(code) || isLegacyBoothCode(code);
 }
 
 /**
@@ -828,50 +817,10 @@ type VoucherRow = typeof voucher.$inferSelect;
 type DefinitionRow = typeof voucherDefinition.$inferSelect;
 
 /**
- * What a voucher is worth, resolved from its definition at the branch it is
- * being redeemed at. Never from the till.
+ * What a voucher is worth and what it comes off — declared once in
+ * `@oto/shared` (SCRUM-421), so the api and the tills read one contract.
  */
-export type VoucherEffect =
-  | ({ type: 'amount_off'; valueSatang: number } & VoucherScope)
-  | ({ type: 'percent_off'; valueBp: number } & VoucherScope)
-  | {
-      type: 'free_item';
-      product: {
-        id: string;
-        name: string;
-        kind: 'menu' | 'merch' | 'addon';
-        priceSatang: number;
-        weekendPriceSatang: number;
-      };
-    }
-  | { type: 'free_kids_ticket'; package: { id: string; name: string } }
-  | { type: 'hand_over' }
-  /**
-   * S2-14a round 5 — credit LOADED onto a new wallet when the sale carrying
-   * the voucher closes (`consumeSaleVouchers` → `loadWalletFromVoucher`).
-   * Nothing comes off the bill: like a hand-over prize it is rung up as a ฿0
-   * sale of its own (`voucherStandsAlone`), because a sale closing is the only
-   * thing that uses a voucher up.
-   */
-  | { type: 'wallet_credit'; valueSatang: number };
-
-/**
- * S2-14a round 5 — WHAT A DISCOUNT VOUCHER COMES OFF, resolved at the
- * redeeming branch from the definition's `target` (`resolveVoucherTarget`).
- *
- *   appliesTo  the scope's kind in the counter's terms — `tickets` for the
- *              landed default, which every booth voucher keeps
- *   target     the pricing engine's own scope, handed to it unchanged, so the
- *              engine decides what it takes and the S2-09a tax seam where the
- *              tax falls (`voucherPricing`)
- *   label      what the card and the refusal call it: "the ticket order",
- *              "Drinks", "Iced Latte"
- */
-export interface VoucherScope {
-  appliesTo: 'tickets' | 'ticket_package' | 'fnb' | 'category' | 'items' | 'merch';
-  target: DiscountTarget;
-  label: string;
-}
+export type { VoucherEffect, VoucherScope };
 
 /**
  * A voucher that is a sale on its own: it puts nothing on the bill to take

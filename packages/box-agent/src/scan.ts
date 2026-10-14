@@ -13,6 +13,7 @@ import {
   verifyBandCode,
   verifyBookingQr,
   verifyBoothCode,
+  VOUCHER_CODE_HANDLER,
 } from '@oto/shared';
 
 import { benefitCredentialHandler, type BenefitBoxContext } from './benefit-credential';
@@ -363,10 +364,9 @@ export function productBarcodeHandler(lookup: ProductBarcodeLookup): ScanHandler
 
 /**
  * The name the voucher handler goes by on the tape, in the Box log drawer and
- * on the station channel. The tills read it to know a scan is a voucher
- * (`apps/pos/src/lib/scanChannel.ts`).
+ * on the station channel — `@oto/shared`'s, which the tills read too (SCRUM-421).
  */
-export const VOUCHER_CODE_HANDLER = 'voucher';
+export { VOUCHER_CODE_HANDLER };
 
 /**
  * Is this string a Lucky Wheel voucher code, by its shape?

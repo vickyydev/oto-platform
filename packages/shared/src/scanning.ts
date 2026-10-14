@@ -64,6 +64,14 @@ export const SCAN_OUTCOMES = ['handled', 'unhandled', 'refused', 'error'] as con
 export type ScanOutcome = (typeof SCAN_OUTCOMES)[number];
 
 /**
+ * The name the box's Lucky Wheel voucher handler goes by on the tape, in the
+ * Box log drawer and on the station channel. The box registers its handler
+ * under it and the tills read it to know a scan is a voucher — one constant
+ * for both sides (SCRUM-421).
+ */
+export const VOUCHER_CODE_HANDLER = 'voucher';
+
+/**
  * How much of a scanned code may be written down.
  *
  * **A band code is a credential.** It opens the gate, it is signed so that a

@@ -60,3 +60,5 @@ export * from './event-checkin';
 export * from './booking-event-passes';
 export * from './benefit-credential';
 export * from './benefit-checkout';
+export * from './display-date';
+export * from './scanner-burst';

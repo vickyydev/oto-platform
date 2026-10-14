@@ -1,3 +1,4 @@
+import type { VoucherEffect, VoucherScope } from '@oto/shared';
 import { api, idemKey } from './client';
 
 /**
@@ -42,39 +43,11 @@ export interface HeldElsewhereDetails {
 }
 
 /**
- * S2-14a round 5 — what a discount voucher comes off, as the platform resolved
- * it at this branch: `tickets` (every booth voucher), or a category or an item
- * a promotion was aimed at. `label` is the platform's name for it.
+ * What a voucher is worth and what it comes off, as the platform resolved it at
+ * this branch — the api's own contract, declared once in `@oto/shared`
+ * (SCRUM-421) rather than restated here.
  */
-export interface VoucherScope {
-  appliesTo: 'tickets' | 'ticket_package' | 'fnb' | 'category' | 'items' | 'merch';
-  target?: unknown;
-  label?: string;
-}
-
-/** What a voucher is worth, as the platform resolved it at this branch. */
-export type VoucherEffect =
-  | ({ type: 'amount_off'; valueSatang: number } & VoucherScope)
-  | ({ type: 'percent_off'; valueBp: number } & VoucherScope)
-  | {
-      type: 'free_item';
-      product: {
-        id: string;
-        name: string;
-        /**
-         * Which counter sells it: `menu` is the kitchen's and the bar's (the F&B
-         * tills), `merch` the shop's, `addon` a ticket extra. The ticket till
-         * reads it to send a menu item to the restaurant till.
-         */
-        kind: 'menu' | 'merch' | 'addon';
-        priceSatang: number;
-        weekendPriceSatang: number;
-      };
-    }
-  | { type: 'free_kids_ticket'; package: { id: string; name: string } }
-  | { type: 'hand_over' }
-  /** S2-14a round 5 — loads this much credit onto a new wallet when its ฿0 sale closes. */
-  | { type: 'wallet_credit'; valueSatang: number };
+export type { VoucherEffect, VoucherScope };
 
 /** A voucher as every answer about one shows it (`VoucherView` in the api). */
 export interface VoucherView {

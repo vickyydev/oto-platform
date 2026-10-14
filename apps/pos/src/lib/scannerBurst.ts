@@ -1,4 +1,9 @@
 import { useEffect, useRef } from 'react';
+import {
+  SCANNER_BURST_GAP_MS,
+  SCANNER_BURST_MAX_LENGTH_TILL,
+  SCANNER_BURST_MIN_LENGTH,
+} from '@oto/shared';
 
 /**
  * S2-10b (SCRUM-207) — A USB SCANNER PLUGGED INTO THE COMPUTER RUNNING THE TILL.
@@ -12,7 +17,11 @@ import { useEffect, useRef } from 'react';
  * those keystrokes from a person typing and hands the till the code.
  *
  * THE RULE is the box's own (`HidBurstReader`, packages/box-agent/src/
- * scan-input.ts), with the same numbers, because it is the same scanner:
+ * scan-input.ts), with the same pace and shortest length, taken from
+ * `@oto/shared` (SCRUM-421) because it is the same scanner. Two things differ
+ * on purpose, as the shared module says: the till closes a burst at 64
+ * characters where the box allows 128, and it has no 500 ms quiet-gap timer —
+ * an unfinished burst is dropped when the next late key starts a new one:
  *
  *  1. PACE. The characters of one scan arrive less than `gapMs` (50 ms) apart —
  *     the scanner's keystroke delay is 0, 20 or 40 ms. A longer gap ends the
@@ -52,11 +61,10 @@ export interface ScannerBurstOptions {
   maxLength?: number;
 }
 
-/** 0, 20 or 40 ms per character on the scanner, and room above the slowest. */
-export const SCANNER_BURST_GAP_MS = 50;
-/** A booth code is ten or eleven characters; nothing shorter is worth reading. */
-export const SCANNER_BURST_MIN_LENGTH = 6;
-export const SCANNER_BURST_MAX_LENGTH = 64;
+/** The scanner's numbers, shared with the box's reader (SCRUM-421). */
+export { SCANNER_BURST_GAP_MS, SCANNER_BURST_MIN_LENGTH };
+/** The longest burst the till takes off the page's keyboard. */
+export const SCANNER_BURST_MAX_LENGTH = SCANNER_BURST_MAX_LENGTH_TILL;
 
 const PRINTABLE = /^[\x20-\x7e]$/;
 

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { VOUCHER_CODE_HANDLER } from '@oto/shared';
 
 // THE STATION CHANNEL, FOR SCANS (S2-09b).
 //
@@ -106,8 +107,8 @@ export function readProductScan(event: StationScanEvent): ProductScan {
   };
 }
 
-/** The name the box's voucher handler goes by (`VOUCHER_CODE_HANDLER` in `@oto/box-agent`). */
-export const VOUCHER_CODE_HANDLER = 'voucher';
+/** The name the box's voucher handler goes by, shared with the box (SCRUM-421). */
+export { VOUCHER_CODE_HANDLER };
 
 /**
  * Read a scan as the tills read it (S2-10b, SCRUM-207): the code of a Lucky

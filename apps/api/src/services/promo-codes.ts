@@ -1,6 +1,6 @@
 import { and, asc, eq, gte, inArray, isNull, ne, sql } from 'drizzle-orm';
 import { branch, discountDefinition, product, sale, saleDiscount, type Db } from '@oto/db';
-import type { CartPromo, DiscountTarget } from '@oto/shared';
+import { formatIsoDay, type CartPromo, type DiscountTarget } from '@oto/shared';
 import { z } from 'zod';
 import { errors } from '../lib/errors';
 import { raiseAlert } from './ops';
@@ -226,14 +226,8 @@ function sameScope(
   return key(recorded) === key(now);
 }
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-/** "1 Oct 2026" from a yyyy-mm-dd — the engine's own format for these refusals (`promo.ts`). */
-function formatIsoDate(iso: string): string {
-  const [year, month, day] = iso.split('-');
-  const name = MONTHS[Number(month) - 1];
-  return name && day && year ? `${Number(day)} ${name} ${year}` : iso;
-}
+/** "1 Oct 2026" from a yyyy-mm-dd — the engine's own format for these refusals (SCRUM-421). */
+const formatIsoDate = formatIsoDay;
 
 /** Whole baht without decimals, satang when there are any: 15000 → "150". */
 function baht(satang: number): string {
