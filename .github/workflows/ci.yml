@@ -574,6 +574,14 @@ jobs:
       - name: The app's salary visibility checks
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/salary-visibility.check.ts
+      # SCRUM-562: checklist evidence may be a video — MP4/MOV/WebM accepted by
+      # file signature, 20 MB for evidence and 5 MB for checker photos with
+      # honest 413s, byte ranges (206) on the private serving, the upload claim
+      # still enforced; history filters by period, employee and department,
+      # fenced to the caller's park group.
+      - name: The app's checklist media and history checks
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/checklist-media.check.ts
       # These five feature suites drive the app's handlers through its own
       # dependency tree. Run them here, where npm ci has installed that tree,
       # and keep the API workspace's ordinary full battery unchanged.
