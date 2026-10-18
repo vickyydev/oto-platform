@@ -10,8 +10,6 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { startScheduledJobs } from "./scheduled-jobs";
-import { storage } from "./storage";
-import { hashPassword } from "./auth";
 import { assertSearchPath } from "./db";
 import { bindConsole, logger } from "./lib/logger";
 import { registerRequestLogging } from "./middleware/requestLog";
@@ -108,34 +106,13 @@ export function log(message: string, source = "express") {
     },
     () => {
       log(`serving on port ${port}`);
-      
-      // Auto-seed admin user on startup if none exists
-      setTimeout(async () => {
-        try {
-          const seedEmail = process.env.SEED_ADMIN_EMAIL;
-          const seedPassword = process.env.SEED_ADMIN_PASSWORD;
-          
-          if (seedEmail && seedPassword) {
-            const existingAdmin = await storage.getUserByEmail(seedEmail);
-            if (!existingAdmin) {
-              const allUsers = await storage.getUsers();
-              if (allUsers.length === 0) {
-                await storage.createUser({
-                  email: seedEmail,
-                  password: await hashPassword(seedPassword),
-                  fullName: "Admin User",
-                  role: "admin",
-                  mustChangePassword: true,
-                });
-                log(`Created admin user: ${seedEmail}`, "seed");
-              }
-            }
-          }
-        } catch (error) {
-          log(`Auto-seed error: ${error}`, "seed");
-        }
-      }, 2000);
-      
+
+      // No account is created at boot. The admin auto-seed that stood here
+      // (SEED_ADMIN_EMAIL/SEED_ADMIN_PASSWORD) was a password-era door the
+      // upstream app itself deleted (SCRUM-558). Deployments get people from
+      // the platform; a local database is filled by the seed scripts in
+      // script/ or the dev-only POST /api/seed.
+
       // The Attention engine's start-up and six-hourly runs, which the app
       // started here, are started with the other timers by startScheduledJobs
       // (S2-17b round 4b), so OTOAPP_JOBS decides them too: under platform the

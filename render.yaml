@@ -1169,11 +1169,10 @@ services:
       # TWILIO_TEST_RECIPIENT is local test-runner input, not a service setting.
 
       # -- NOT SET, and deliberately ------------------------------------------
-      # SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD — the app creates an admin at
-      # boot when both are set. Against the shared platform database that is a
-      # credential pair in an environment panel creating an account the
-      # platform never provisioned, so the boot guard refuses them on any
-      # deployment. Accounts come from the platform.
+      # SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD — the boot-time admin seed
+      # they fed is deleted (SCRUM-558); only the dev-only POST /api/seed
+      # reads them. The boot guard still refuses them on any deployment.
+      # Accounts come from the platform.
       #
       # LOG_RESPONSE_BODY — gone. It decided whether every JSON response body
       # was written into the log, and it was "true" on the old stack, which is

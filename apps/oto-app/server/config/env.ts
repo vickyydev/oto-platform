@@ -235,9 +235,10 @@ export function assertProductionSafe(): void {
     }
 
     /**
-     * The seed exists so a brand-new empty database has someone to sign in
-     * as. Against the shared platform database it is a credential pair in an
-     * environment panel that creates an admin the platform never provisioned.
+     * Nothing creates an account from these at boot any more (SCRUM-558);
+     * only the dev-only POST /api/seed still reads them. They stay refused
+     * here so a credential pair never sits in a deployment's environment
+     * panel waiting for a door to be reopened.
      */
     if (process.env.SEED_ADMIN_EMAIL || process.env.SEED_ADMIN_PASSWORD) {
       problems.push("SEED_ADMIN_EMAIL/SEED_ADMIN_PASSWORD are set — accounts on a deployment come from the platform, not from a boot-time seed");

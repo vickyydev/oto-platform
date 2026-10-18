@@ -91,7 +91,8 @@ supersede its proposed implementation details.
 | SMS codes | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SERVICE_SID` |
 | AI features | `AI_INTEGRATIONS_OPENAI_API_KEY` (leave `_BASE_URL` unset off Replit) |
 | Email | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM` |
-| Optional | `HR_DIRECTORY_API_KEY`, `SENTRY_DSN`, `VITE_SENTRY_DSN`, `XERO_CLIENT_ID`, `XERO_CLIENT_SECRET`, `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD` |
+| Optional | `HR_DIRECTORY_API_KEY`, `SENTRY_DSN`, `VITE_SENTRY_DSN`, `XERO_CLIENT_ID`, `XERO_CLIENT_SECRET` |
+| Local only (refused on every deployment; read only by the dev-only `POST /api/seed`, nothing seeds at boot) | `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD` |
 | Legacy face-clock settings (module off on staging) | `USE_AWS_REKOGNITION`, `AWS_REKOGNITION_COLLECTION_ID` |
 
 New values for the session and token secrets mean: reprint the branch check-in
