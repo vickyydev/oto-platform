@@ -159,37 +159,48 @@ async function validateResetTokenInternal(token: string): Promise<{ valid: boole
   };
 }
 
+/**
+ * Counts one request against `key`, holding a transaction-scoped advisory lock
+ * on the key while it reads and writes the count, so parallel requests queue
+ * behind each other instead of all reading the same count and slipping past
+ * the limit together.
+ */
 async function checkRateLimit(key: string, maxRequests: number): Promise<{ allowed: boolean; remaining: number }> {
-  const now = new Date();
-  
-  const existing = await db.select()
-    .from(authRateLimits)
-    .where(and(
-      eq(authRateLimits.key, key),
-      gt(authRateLimits.expiresAt, now)
-    ))
-    .limit(1);
-  
-  if (existing.length === 0) {
-    await db.insert(authRateLimits).values({
-      key,
-      windowStart: now,
-      count: 1,
-      expiresAt: new Date(now.getTime() + RATE_LIMIT_WINDOW_MS),
-    });
-    return { allowed: true, remaining: maxRequests - 1 };
-  }
-  
-  const record = existing[0];
-  if (record.count >= maxRequests) {
-    return { allowed: false, remaining: 0 };
-  }
-  
-  await db.update(authRateLimits)
-    .set({ count: record.count + 1 })
-    .where(eq(authRateLimits.id, record.id));
-  
-  return { allowed: true, remaining: maxRequests - record.count - 1 };
+  return db.transaction(async (tx) => {
+    const now = new Date();
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${key})::bigint)`);
+
+    const existing = await tx.select()
+      .from(authRateLimits)
+      .where(and(
+        eq(authRateLimits.key, key),
+        gt(authRateLimits.expiresAt, now)
+      ));
+
+    if (existing.length === 0) {
+      await tx.insert(authRateLimits).values({
+        key,
+        windowStart: now,
+        count: 1,
+        expiresAt: new Date(now.getTime() + RATE_LIMIT_WINDOW_MS),
+      });
+      return { allowed: true, remaining: maxRequests - 1 };
+    }
+
+    const currentCount = Math.max(...existing.map((record) => record.count));
+    if (currentCount >= maxRequests) {
+      return { allowed: false, remaining: 0 };
+    }
+
+    await tx.update(authRateLimits)
+      .set({ count: currentCount + 1 })
+      .where(and(
+        eq(authRateLimits.key, key),
+        gt(authRateLimits.expiresAt, now)
+      ));
+
+    return { allowed: true, remaining: maxRequests - currentCount - 1 };
+  });
 }
 
 async function logOtpEvent(event: InsertAuthOtpEvent): Promise<void> {
@@ -432,6 +443,29 @@ export async function verifyPhoneOtp(
     });
     return { success: false, error: "Too many verification attempts. Please request a new code." };
   }
+
+  // The code was sent to the phone the account had then. Only mark it verified
+  // if the account is still active and still carries that same phone.
+  const [currentUser] = await db.select({ id: users.id })
+    .from(users)
+    .where(and(
+      eq(users.id, userId),
+      eq(users.phoneE164, phoneE164),
+      eq(users.isActive, true)
+    ))
+    .limit(1);
+  if (!currentUser) {
+    await logOtpEvent({
+      userId,
+      phoneE164,
+      eventType: "verify_fail",
+      ipAddress,
+      userAgent,
+      success: false,
+      failReason: "phone_changed_or_user_inactive",
+    });
+    return { success: false, error: "Verification failed. Please request a new code." };
+  }
   
   try {
     const client = getTwilioClient();
@@ -440,13 +474,30 @@ export async function verifyPhoneOtp(
       .create({ to: phoneE164, code });
     
     if (verification.status === "approved") {
-      await db.update(users)
+      const [updatedUser] = await db.update(users)
         .set({
           phoneVerified: true,
           phoneVerifiedAt: new Date(),
           updatedAt: new Date(),
         })
-        .where(eq(users.id, userId));
+        .where(and(
+          eq(users.id, userId),
+          eq(users.phoneE164, phoneE164),
+          eq(users.isActive, true)
+        ))
+        .returning({ id: users.id });
+      if (!updatedUser) {
+        await logOtpEvent({
+          userId,
+          phoneE164,
+          eventType: "verify_fail",
+          ipAddress,
+          userAgent,
+          success: false,
+          failReason: "phone_changed_or_user_inactive",
+        });
+        return { success: false, error: "Verification failed. Please request a new code." };
+      }
       
       await logOtpEvent({
         userId,
