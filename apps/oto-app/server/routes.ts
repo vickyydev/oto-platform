@@ -31,6 +31,9 @@ import { format, addDays as _addDays } from "date-fns";
 import { insertTemplateSchema, insertEmployeeSchema, insertBranchSchema, mergeDataSchema as _mergeDataSchema, MergeData as _MergeData, activityTypes, type ActivityType, attentionTypes, type AttentionType, insertEmployeeDocumentSchema as _insertEmployeeDocumentSchema, documentTypes, insertTemplateAssignmentSchema, insertUserSchema as _insertUserSchema, insertDepartmentSchema, insertRoleSchema, insertPersonSchema, insertOperatorSchema, insertStatutoryRuleSetSchema, insertKbArticleSchema, type ContractInstance, type EnrollmentSession, type FixReport, type UserWithBranchAccess, DEFAULT_TENANT_SLUG } from "@shared/schema";
 import { getEffectivePermissions, resolveAdvisorRole, type PermissionUserContext } from "../shared/permissions";
 import { canViewHrSalary, containsHrPayFields, hrPayResponse, isHrPayKey, preserveHrMergePay } from "../shared/hr-salary-permission";
+import { birthdaySchema } from "../shared/birthday";
+import { findBirthdayEmployee, getPersonBirthdays } from "./person-birthdays";
+import { computeSidebarBadges } from "./sidebar-badges";
 import { isHexCalendarColor, isOtherEventColor } from "@shared/event-colors";
 
 // Format date as dd-mm-yyyy
@@ -156,7 +159,7 @@ import {
 } from "./leave-types";
 import { directoryEventRouter } from "./directory/eventRoutes";
 import { directoryJobRouter } from "./directory/jobRoutes";
-import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, employeeAssets, employeeOffboarding, offboardingChecklist, eventStatuses, insertEventStatusSchema, branches, departments, operators, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, timekeepingIssues, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, leavePolicies, sickLeavePolicies, type LeaveType, scheduleAuditLog, activityLog, roles, roleBranchAssignments, employeeRoles, payrollEmployeeSummaries, payrollLineItems, payrollDayReconciliations, payrollExceptions, statutoryCalculationResults, employeePayrollProfiles, payslips, accessPolicies, accessItems, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections, kioskAuthAttempts } from "@shared/schema";
+import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, employeeAssets, employeeOffboarding, offboardingChecklist, eventStatuses, insertEventStatusSchema, branches, departments, operators, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, timekeepingIssues, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, leavePolicies, sickLeavePolicies, type LeaveType, scheduleAuditLog, activityLog, roles, roleBranchAssignments, employeeRoles, payrollEmployeeSummaries, payrollLineItems, payrollDayReconciliations, payrollExceptions, statutoryCalculationResults, employeePayrollProfiles, payslips, accessPolicies, accessItems, userPreferences, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections, kioskAuthAttempts } from "@shared/schema";
 import { hashSessionToken, validateKioskSession } from "./kiosk-auth";
 import { DEACTIVATE_INSTEAD, deleteManagedUser } from "./lib/userDeletion";
 import { deleteBranchWhole, deleteEmployeeWhole, deletePersonWhole } from "./lib/recordDeletion";
@@ -1352,6 +1355,70 @@ export async function registerRoutes(
     } catch (error) {
       next(error);
     }
+  });
+
+  // Employee records are authoritative; the account columns are used only for
+  // advisors and account holders without an employee record (SCRUM-561).
+  app.get("/api/my-account/birthday", requireAuth, async (req, res, next) => {
+    try {
+      const account = await db.query.users.findFirst({ where: eq(users.id, req.user!.id) });
+      if (!account) return res.status(404).json({ message: "Account not found" });
+      const employee = await findBirthdayEmployee(account.id, account.email, req.userWithAccess?.tenantId);
+      res.json({
+        month: employee?.birthdayMonth ?? (employee ? null : account.birthdayMonth),
+        day: employee?.birthdayDay ?? (employee ? null : account.birthdayDay),
+        year: employee?.birthdayYear ?? (employee ? null : account.birthdayYear),
+      });
+    } catch (error) { next(error); }
+  });
+
+  app.patch("/api/my-account/birthday", requireAuth, async (req, res, next) => {
+    try {
+      const parsed = birthdaySchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ message: parsed.error.issues[0].message });
+      const account = await db.query.users.findFirst({ where: eq(users.id, req.user!.id) });
+      if (!account) return res.status(404).json({ message: "Account not found" });
+      const employee = await findBirthdayEmployee(account.id, account.email, req.userWithAccess?.tenantId);
+      const fields = { birthdayMonth: parsed.data.month, birthdayDay: parsed.data.day, birthdayYear: parsed.data.year };
+      if (employee) {
+        await db.update(employees).set(fields).where(eq(employees.id, employee.id));
+      }
+      // Keep legacy account copies synchronized, but never use them for a linked employee's public entry.
+      await db.update(users).set(fields).where(eq(users.id, account.id));
+      res.json(parsed.data);
+    } catch (error) { next(error); }
+  });
+
+  // A signed-in person sees the birthdays of their own park group's branches
+  // they may access, and nobody else's (SCRUM-561).
+  app.get("/api/birthdays", requireAuth, async (req, res, next) => {
+    try {
+      const dates = z.object({
+        start: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+        end: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+        branchId: z.string().optional(),
+      }).safeParse(req.query);
+      if (!dates.success) return res.status(400).json({ message: "Valid start and end dates are required" });
+      const { start, end, branchId } = dates.data;
+      const startDate = new Date(`${start}T00:00:00Z`);
+      const endDate = new Date(`${end}T00:00:00Z`);
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) ||
+          startDate.toISOString().slice(0, 10) !== start || endDate.toISOString().slice(0, 10) !== end ||
+          endDate < startDate || endDate.getTime() - startDate.getTime() > 370 * 86400000) {
+        return res.status(400).json({ message: "Date range must be valid and at most 370 days" });
+      }
+      const scope = req.userWithAccess;
+      if (!scope?.tenantId || !scope.isActive) return res.status(403).json({ message: "No active tenant access" });
+      if (branchId && !(await db.select({ id: branches.id }).from(branches)
+        .where(and(eq(branches.id, branchId), eq(branches.tenantId, scope.tenantId))).limit(1)).length) {
+        return res.status(404).json({ message: "Branch not found" });
+      }
+      const allowed = await getAllowedOperatorAndBranchIds(scope);
+      if (branchId && allowed.branchIds !== null && !allowed.branchIds.includes(branchId)) {
+        return res.status(403).json({ message: "Branch access denied" });
+      }
+      res.json(await getPersonBirthdays({ tenantId: scope.tenantId, allowedBranchIds: allowed.branchIds, branchId, start, end }));
+    } catch (error) { next(error); }
   });
 
   // My Account - Sync Profile Photo (save captured photo from camera)
@@ -3849,6 +3916,8 @@ export async function registerRoutes(
       if (!parsed.success) {
         return res.status(400).json({ message: parsed.error.message });
       }
+      const birthday = birthdaySchema.safeParse({ month: parsed.data.birthdayMonth ?? null, day: parsed.data.birthdayDay ?? null, year: parsed.data.birthdayYear ?? null });
+      if (!birthday.success) return res.status(400).json({ message: birthday.error.issues[0].message });
       if (parsed.data.branchId) {
         const selected = await managedBranchIds([parsed.data.branchId], actorTenantId);
         if (!selected || (!req.userWithAccess?.hasAllBranchesAccess &&
@@ -3996,6 +4065,14 @@ export async function registerRoutes(
       }
       const outside = await employeeEditOutsideParkGroup(updateData, oldEmployee);
       if (outside) return res.status(404).json(outside);
+      if (["birthdayMonth", "birthdayDay", "birthdayYear"].some(field => field in updateData)) {
+        const birthday = birthdaySchema.safeParse({
+          month: updateData.birthdayMonth !== undefined ? updateData.birthdayMonth : oldEmployee.birthdayMonth,
+          day: updateData.birthdayDay !== undefined ? updateData.birthdayDay : oldEmployee.birthdayDay,
+          year: updateData.birthdayYear !== undefined ? updateData.birthdayYear : oldEmployee.birthdayYear,
+        });
+        if (!birthday.success) return res.status(400).json({ message: birthday.error.issues[0].message });
+      }
       const dateFields = ["startDate", "visaExpiryDate", "workPermitExpiryDate", "probationEndDate", "probationReviewCompletedAt", "lastWorkingDay"];
       for (const field of dateFields) {
         if (updateData[field] === "" || updateData[field] === null) {
@@ -7315,6 +7392,68 @@ OTO Company Limited`,
     };
     return scope;
   };
+
+  // Sidebar section state is user-owned and stored centrally so it follows the
+  // account across devices. PATCH merges keys atomically rather than replacing
+  // the whole preference document (SCRUM-561).
+  app.get("/api/me/sidebar-sections", requireAuth, async (req, res, next) => {
+    try {
+      const userId = (req.user as any)?.id;
+      const [row] = await db.select({ preferences: userPreferences.preferences })
+        .from(userPreferences).where(eq(userPreferences.userId, userId)).limit(1);
+      const preferences = row?.preferences || {};
+      const sections = preferences.sidebarSections;
+      res.json({ sections: sections && typeof sections === "object" && !Array.isArray(sections) ? sections : {} });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.patch("/api/me/sidebar-sections", requireAuth, async (req, res, next) => {
+    try {
+      const userId = (req.user as any)?.id;
+      const parsed = z.object({
+        sections: z.record(z.string().min(1).max(120), z.boolean()).refine((value) => Object.keys(value).length > 0, "At least one section is required"),
+      }).safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ message: "sections must be a non-empty map of section keys to booleans" });
+
+      const patch = { sidebarSections: parsed.data.sections };
+      await db.insert(userPreferences).values({
+        userId,
+        preferences: patch,
+        updatedAt: new Date(),
+      }).onConflictDoUpdate({
+        target: userPreferences.userId,
+        set: {
+          preferences: sql`${userPreferences.preferences} || jsonb_build_object(
+            'sidebarSections',
+            COALESCE(${userPreferences.preferences}->'sidebarSections', '{}'::jsonb) || ${JSON.stringify(parsed.data.sections)}::jsonb
+          )`,
+          updatedAt: new Date(),
+        },
+      });
+      const [row] = await db.select({ preferences: userPreferences.preferences })
+        .from(userPreferences).where(eq(userPreferences.userId, userId)).limit(1);
+      const stored = row?.preferences || {};
+      res.json({ sections: stored.sidebarSections || {} });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Counts for the sidebar, fenced to the caller's park group and the branches
+  // they may access; the requested branchIds only narrow that (SCRUM-561).
+  app.get("/api/sidebar/badges", requireAuth, async (req, res, next) => {
+    try {
+      const user = req.userWithAccess || await storage.getUserWithBranchAccess((req.user as any)?.id);
+      if (!user) return res.status(403).json({ message: "User access data unavailable" });
+      const badges = await computeSidebarBadges(user, req.query.branchIds);
+      if (!badges) return res.status(403).json({ message: "Tenant access unavailable" });
+      res.json(badges);
+    } catch (error) {
+      next(error);
+    }
+  });
 
   app.get("/api/attention-items", requireAuth, requireManager, async (req, res, next) => {
     try {

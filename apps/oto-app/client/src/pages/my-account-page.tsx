@@ -6,11 +6,12 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, User, Camera, Upload, Loader2, CheckCircle, Building2, Briefcase } from "lucide-react";
 import { Link } from "wouter";
 import { useState, useRef, useCallback, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useLegacyLoginOff } from "@/lib/sign-in-options";
 import { LauncherPasswordNote } from "@/components/suite-sign-in";
+import { birthdaySchema } from "@shared/birthday";
 
 function ProfilePhotoCapture() {
   const { user } = useAuth();
@@ -282,6 +283,38 @@ export default function MyAccountPage() {
   // SCRUM-539: the password and its SMS recovery here belong to this app's own
   // sign-in; while that is closed both live at the launcher.
   const { off: legacyOff, launcherUrl } = useLegacyLoginOff();
+  const { toast } = useToast();
+  const [birthday, setBirthday] = useState<{ month: number | null; day: number | null; year: number | null }>({ month: null, day: null, year: null });
+  const [birthdayError, setBirthdayError] = useState("");
+  const { data: birthdayData } = useQuery<{ month: number | null; day: number | null; year: number | null }>({
+    queryKey: ["/api/my-account/birthday"],
+    enabled: !!user,
+  });
+  useEffect(() => {
+    if (birthdayData) setBirthday(birthdayData);
+  }, [birthdayData]);
+  const birthdayMutation = useMutation({
+    mutationFn: async (value: typeof birthday) => {
+      const res = await apiRequest("PATCH", "/api/my-account/birthday", value);
+      return res.json();
+    },
+    onSuccess: (value) => {
+      setBirthday(value);
+      setBirthdayError("");
+      queryClient.invalidateQueries({ queryKey: ["/api/my-account/birthday"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/birthdays"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      toast({ title: "Birthday saved", description: "Your birthday has been updated." });
+    },
+    onError: (error: Error) => toast({ title: "Could not save birthday", description: error.message, variant: "destructive" }),
+  });
+
+  const saveBirthday = () => {
+    const validated = birthdaySchema.safeParse(birthday);
+    if (!validated.success) return setBirthdayError(validated.error.issues[0].message);
+    setBirthdayError("");
+    birthdayMutation.mutate(validated.data);
+  };
 
   type EmployeeInfo = {
     linked: boolean;
@@ -342,6 +375,41 @@ export default function MyAccountPage() {
             <div className="grid gap-1">
               <span className="text-sm text-muted-foreground">Role</span>
               <span className="font-medium capitalize">{user.role?.replace("_", " ")}</span>
+            </div>
+            <div className="border-t pt-3 mt-3 space-y-3">
+              <div>
+                <span className="text-sm text-muted-foreground">Birthday</span>
+                <p className="text-xs text-muted-foreground">Year is private and optional. February 29 is celebrated on February 28 in non-leap years.</p>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <label className="grid gap-1 text-xs text-muted-foreground">
+                  Month
+                  <input type="number" min={1} max={12} placeholder="MM" value={birthday.month ?? ""}
+                    onChange={e => setBirthday(v => ({ ...v, month: e.target.value === "" ? null : Number(e.target.value) }))}
+                    className="h-9 rounded-md border bg-background px-3 text-sm text-foreground" data-testid="input-my-account-birthday-month" />
+                </label>
+                <label className="grid gap-1 text-xs text-muted-foreground">
+                  Day
+                  <input type="number" min={1} max={31} placeholder="DD" value={birthday.day ?? ""}
+                    onChange={e => setBirthday(v => ({ ...v, day: e.target.value === "" ? null : Number(e.target.value) }))}
+                    className="h-9 rounded-md border bg-background px-3 text-sm text-foreground" data-testid="input-my-account-birthday-day" />
+                </label>
+                <label className="grid gap-1 text-xs text-muted-foreground">
+                  Year (optional)
+                  <input type="number" min={1} max={9999} placeholder="YYYY" value={birthday.year ?? ""}
+                    onChange={e => setBirthday(v => ({ ...v, year: e.target.value === "" ? null : Number(e.target.value) }))}
+                    className="h-9 rounded-md border bg-background px-3 text-sm text-foreground" data-testid="input-my-account-birthday-year" />
+                </label>
+              </div>
+              {birthdayError && <p className="text-sm text-destructive">{birthdayError}</p>}
+              <div className="flex gap-2">
+                <Button type="button" onClick={saveBirthday} disabled={birthdayMutation.isPending} data-testid="button-save-birthday">
+                  {birthdayMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save Birthday
+                </Button>
+                <Button type="button" variant="outline" onClick={() => { const empty = { month: null, day: null, year: null }; setBirthday(empty); setBirthdayError(""); birthdayMutation.mutate(empty); }} disabled={birthdayMutation.isPending} data-testid="button-clear-birthday">
+                  Clear
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

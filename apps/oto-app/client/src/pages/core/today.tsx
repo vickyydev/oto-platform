@@ -22,6 +22,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { TaskDetailSheet } from "@/components/ops/TaskDetailSheet";
 import type { Task, TaskCompletion, TaskQuestion, CoreEvent } from "@shared/schema";
+import { fetchPersonBirthdays, type PersonBirthday } from "@/lib/person-birthdays";
 
 interface StudioEventTaskForToday {
   id: string;
@@ -97,6 +98,8 @@ export default function TodayPage() {
   const { t } = useI18n();
   const [, setLocation] = useLocation();
   const today = format(new Date(), "yyyy-MM-dd");
+  // The park's own calendar day decides whose birthday it is.
+  const birthdayToday = new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Bangkok" }).format(new Date());
   
   const [taskSheetOpen, setTaskSheetOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -128,6 +131,13 @@ export default function TodayPage() {
       return res.json();
     },
     enabled: !!user,
+  });
+
+  const { data: todayBirthdays = [] } = useQuery<PersonBirthday[]>({
+    queryKey: ["/api/birthdays", birthdayToday, activeBranchId],
+    queryFn: () => fetchPersonBirthdays(birthdayToday, birthdayToday, activeBranchId),
+    enabled: !!user,
+    refetchInterval: 60_000,
   });
 
   const branchParam = activeBranchId ? `&branchId=${activeBranchId}` : "";
@@ -476,8 +486,23 @@ export default function TodayPage() {
           </div>
         </div>
 
-        {activeAnnouncements.length > 0 && (
+        {(activeAnnouncements.length > 0 || todayBirthdays.length > 0) && (
           <div className="space-y-2 mb-6" data-testid="announcements-banner-area">
+            {todayBirthdays.map((birthday) => (
+              <div
+                key={birthday.id}
+                className="rounded-md border border-pink-300 bg-pink-50 dark:border-pink-800 dark:bg-pink-950/30 p-3"
+                data-testid={`birthday-announcement-${birthday.id}`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Cake className="h-4 w-4 shrink-0 text-pink-600 dark:text-pink-400" />
+                  <div className="min-w-0">
+                    <span className="font-semibold text-sm text-pink-900 dark:text-pink-100">Birthday today</span>
+                    <p className="text-sm text-pink-900/80 dark:text-pink-100/80">🎉 Today is {birthday.name}’s birthday!</p>
+                  </div>
+                </div>
+              </div>
+            ))}
             {activeAnnouncements.map((ann) => {
               const isExpanded = expandedAnnouncement === ann.id;
               const colorMap: Record<string, { bg: string; border: string; icon: string; text: string }> = {

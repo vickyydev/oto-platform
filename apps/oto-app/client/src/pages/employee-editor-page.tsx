@@ -11,6 +11,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { birthdaySchema } from "@shared/birthday";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -2402,6 +2403,9 @@ const employeeFormBaseSchema = insertEmployeeSchema
     email: z.string().email("Please enter a valid email address"),
     phone: z.string().min(1, "Phone number is required"),
     address: z.string().optional(),
+    birthdayMonth: z.number().int().min(1).max(12).nullable().optional(),
+    birthdayDay: z.number().int().min(1).max(31).nullable().optional(),
+    birthdayYear: z.number().int().min(1).max(9999).nullable().optional(),
     branchId: z.string().min(1, "Please select a branch"),
     primaryDepartmentId: z.string().optional().nullable(),
     nationality: z.string().optional().nullable(),
@@ -2444,6 +2448,12 @@ const employeeFormBaseSchema = insertEmployeeSchema
   });
 
 const employeeFormSchema = employeeFormBaseSchema.superRefine((data, ctx) => {
+    const birthday = birthdaySchema.safeParse({
+      month: data.birthdayMonth ?? null, day: data.birthdayDay ?? null, year: data.birthdayYear ?? null,
+    });
+    if (!birthday.success) ctx.addIssue({
+      code: z.ZodIssueCode.custom, message: birthday.error.issues[0].message, path: ["birthdayDay"],
+    });
     // Conditional validation: require salary for full-time, daily rate for part-time
     if (data.employmentBasis === "FULL_TIME") {
       if (!data.defaultMergeData?.salaryThb || data.defaultMergeData.salaryThb <= 0) {
@@ -2633,6 +2643,9 @@ export default function EmployeeEditorPage() {
       email: "",
       phone: "",
       address: "",
+      birthdayMonth: null,
+      birthdayDay: null,
+      birthdayYear: null,
       branchId: "",
       primaryDepartmentId: "",
       nationality: null,
@@ -2749,6 +2762,9 @@ export default function EmployeeEditorPage() {
         email: employee.email,
         phone: employee.phone || "",
         address: employee.address || "",
+        birthdayMonth: (employee as any).birthdayMonth ?? null,
+        birthdayDay: (employee as any).birthdayDay ?? null,
+        birthdayYear: (employee as any).birthdayYear ?? null,
         branchId: employee.branchId || "",
         primaryDepartmentId: employee.primaryDepartmentId || "",
         nationality: employee.nationality || null,
@@ -2849,6 +2865,8 @@ export default function EmployeeEditorPage() {
     onSuccess: (updatedEmployee: Employee) => {
       queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
       queryClient.invalidateQueries({ queryKey: ["/api/employees", id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/my-account/birthday"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/birthdays"] });
       queryClient.invalidateQueries({ queryKey: ["/api/employees", id, "roles"] });
       queryClient.invalidateQueries({ queryKey: ["/api/departments"] });
       queryClient.invalidateQueries({ queryKey: ["/api/roles"] });
@@ -3369,6 +3387,48 @@ export default function EmployeeEditorPage() {
                   </FormItem>
                 )}
               />
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <FormLabel>Birthday</FormLabel>
+                  {canEdit && (
+                    <Button type="button" variant="ghost" size="sm" className="h-7 text-xs"
+                      onClick={() => {
+                        form.setValue("birthdayMonth", null, { shouldDirty: true });
+                        form.setValue("birthdayDay", null, { shouldDirty: true });
+                        form.setValue("birthdayYear", null, { shouldDirty: true });
+                      }} data-testid="button-clear-employee-birthday">
+                      Clear
+                    </Button>
+                  )}
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <FormField control={form.control} name="birthdayMonth" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs text-muted-foreground">Month</FormLabel>
+                      <FormControl><Input type="number" min={1} max={12} placeholder="MM" data-testid="input-employee-birthday-month"
+                        value={field.value ?? ""} onChange={e => field.onChange(e.target.value === "" ? null : Number(e.target.value))} disabled={!canEdit} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="birthdayDay" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs text-muted-foreground">Day</FormLabel>
+                      <FormControl><Input type="number" min={1} max={31} placeholder="DD" data-testid="input-employee-birthday-day"
+                        value={field.value ?? ""} onChange={e => field.onChange(e.target.value === "" ? null : Number(e.target.value))} disabled={!canEdit} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="birthdayYear" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs text-muted-foreground">Year (optional)</FormLabel>
+                      <FormControl><Input type="number" min={1} max={9999} placeholder="YYYY" data-testid="input-employee-birthday-year"
+                        value={field.value ?? ""} onChange={e => field.onChange(e.target.value === "" ? null : Number(e.target.value))} disabled={!canEdit} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                </div>
+                <FormDescription>Year is private and optional. February 29 is celebrated on February 28 in non-leap years.</FormDescription>
+              </div>
           </CollapsibleSection>
 
           <CollapsibleSection 

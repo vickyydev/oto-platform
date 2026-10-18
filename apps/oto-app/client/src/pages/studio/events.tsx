@@ -75,6 +75,7 @@ import type { Event, InsertEvent, Department, Branch, EventStatus, BeoLocation }
 import { AIEventAssistant } from "@/components/ai-event-assistant";
 import { BeoEventEditor, BeoTimelineEditor, BeoDayOfView } from "@/components/beo";
 import { getCountries, getCountryCallingCode } from "libphonenumber-js";
+import { fetchPersonBirthdays, type PersonBirthday } from "@/lib/person-birthdays";
 
 // Color options for status columns
 const STATUS_COLORS = [
@@ -407,6 +408,8 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
   // Otherwise, use the selected branchFilter value
   const queryBranchId = branchFilter === "all" ? null : branchFilter;
   const branchParam = queryBranchId ? `&branchId=${queryBranchId}` : "";
+  const birthdayRangeStart = format(startOfWeek(startOfMonth(calendarMonth), { weekStartsOn: 1 }), "yyyy-MM-dd");
+  const birthdayRangeEnd = format(endOfWeek(endOfMonth(calendarMonth), { weekStartsOn: 1 }), "yyyy-MM-dd");
 
   const [showArchived, setShowArchived] = useState(false);
 
@@ -419,6 +422,13 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
       return res.json();
     },
     enabled: !!user,
+  });
+
+  const { data: personBirthdays = [] } = useQuery<PersonBirthday[]>({
+    queryKey: ["/api/birthdays", birthdayRangeStart, birthdayRangeEnd, queryBranchId],
+    queryFn: () => fetchPersonBirthdays(birthdayRangeStart, birthdayRangeEnd, queryBranchId),
+    enabled: !!user && viewMode === "calendar",
+    refetchInterval: 60_000,
   });
 
   const { data: departments } = useQuery<Department[]>({
@@ -1199,6 +1209,7 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
     return { total: monthEvents.length, totalRevenue, depositsCollected, confirmedCount };
   }, [filteredEvents, calendarMonth]);
 
+  const hasUnassignedPersonBirthdays = personBirthdays.some((birthday) => birthday.branchId === null);
   const birthdayLegendBranches = useMemo(() => {
     const birthdayBranchIds = new Set(
       filteredEvents
@@ -1263,6 +1274,15 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
     }
     return acc;
   }, {} as Record<string, Event[]>);
+
+  const birthdaysByDate = personBirthdays.reduce((acc, birthday) => {
+    if (eventTypeFilter !== "all" && eventTypeFilter !== "person_birthday") return acc;
+    if (branchFilter !== "all" && birthday.branchId !== branchFilter) return acc;
+    if (searchQuery && !birthday.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
+        !birthday.name.toLowerCase().includes(searchQuery.toLowerCase())) return acc;
+    (acc[birthday.date] ||= []).push(birthday);
+    return acc;
+  }, {} as Record<string, PersonBirthday[]>);
 
   // Track deposit payment dates for calendar indicators
   const depositPaymentsByDate = filteredEvents.reduce((acc, event) => {
@@ -1520,6 +1540,7 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
             <SelectContent>
               <SelectItem value="all">All Events</SelectItem>
               <SelectItem value="birthday">{EVENT_TYPE_LABELS.birthday}</SelectItem>
+              {viewMode === "calendar" && <SelectItem value="person_birthday">Team Birthday</SelectItem>}
               <SelectItem value="studio_event">{EVENT_TYPE_LABELS.studio_event}</SelectItem>
               <SelectItem value="workshop">{EVENT_TYPE_LABELS.workshop}</SelectItem>
               <SelectItem value="camp">{EVENT_TYPE_LABELS.camp}</SelectItem>
@@ -2044,6 +2065,18 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
 
             {/* Calendar legend */}
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-3 text-xs text-muted-foreground">
+              {hasUnassignedPersonBirthdays && (
+                <div className="flex items-center gap-1.5" data-testid="calendar-legend-birthday-unassigned">
+                  <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 bg-violet-500" />
+                  <span>Team birthday</span>
+                </div>
+              )}
+              {personBirthdays.length > 0 && !hasUnassignedPersonBirthdays && (
+                <div className="flex items-center gap-1.5" data-testid="calendar-legend-person-birthday">
+                  <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 bg-violet-500" />
+                  <span>Team birthday</span>
+                </div>
+              )}
               {birthdayLegendBranches.map((branch) => (
                 <div key={branch.id} className="flex items-center gap-1.5" data-testid={`calendar-legend-birthday-${branch.id}`}>
                   <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: branch.color }} />
@@ -2077,6 +2110,7 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
               {calendarDays.map((day) => {
                 const dateKey = format(day, "yyyy-MM-dd");
                 const dayEvents = eventsByDate[dateKey] || [];
+                const dayBirthdays = birthdaysByDate[dateKey] || [];
                 const depositPayments = depositPaymentsByDate[dateKey] || [];
                 const isCurrentMonth = isSameMonth(day, calendarMonth);
                 const isToday = isSameDay(day, new Date());
@@ -2113,6 +2147,23 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
                       )}
                     </div>
                     <div className="space-y-0.5">
+                      {dayBirthdays.map((birthday) => (
+                        <div
+                          key={birthday.id}
+                          className="text-xs p-1 rounded text-white cursor-default select-none"
+                          style={{ backgroundColor: "#7c3aed" }}
+                          data-testid={`calendar-birthday-${birthday.id}`}
+                          title="Person birthday"
+                        >
+                          <div className="flex items-center gap-1 truncate">
+                            <PartyPopper className="h-2.5 w-2.5 flex-shrink-0" />
+                            <span className="truncate">{birthday.title}</span>
+                          </div>
+                          {showingMultipleBranches && birthday.branchId && (
+                            <div className="text-[9px] opacity-80 truncate">{getBranchName(birthday.branchId)}</div>
+                          )}
+                        </div>
+                      ))}
                       {dayEvents.slice(0, 4).map((event) => {
                         const billing = (event as any).billing;
                         const hasDeposit = billing?.depositPaid;

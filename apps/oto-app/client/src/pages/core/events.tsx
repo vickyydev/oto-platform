@@ -19,10 +19,12 @@ import {
   ChevronRight 
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
+import { useBranchContext } from "@/hooks/use-branch-context";
 import { useI18n } from "@/lib/i18n";
 import { Link } from "wouter";
-import { format, isToday, parseISO } from "date-fns";
+import { format, isToday, parseISO, startOfMonth, endOfMonth } from "date-fns";
 import type { Event } from "@shared/schema";
+import { fetchPersonBirthdays, type PersonBirthday } from "@/lib/person-birthdays";
 
 type ViewMode = "list" | "calendar";
 type TabType = "today" | "upcoming" | "completed";
@@ -133,17 +135,31 @@ function EventCard({ event, compact = false }: { event: Event; compact?: boolean
   );
 }
 
-function CalendarView({ events }: { events: Event[] }) {
+function CalendarView({ events, searchQuery, branchId }: { events: Event[]; searchQuery: string; branchId?: string | null }) {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const { t } = useI18n();
-  
+  const { data: birthdays = [] } = useQuery<PersonBirthday[]>({
+    queryKey: ["/api/birthdays", format(startOfMonth(selectedDate), "yyyy-MM-dd"), format(endOfMonth(selectedDate), "yyyy-MM-dd"), branchId],
+    queryFn: () => fetchPersonBirthdays(
+      format(startOfMonth(selectedDate), "yyyy-MM-dd"),
+      format(endOfMonth(selectedDate), "yyyy-MM-dd"),
+      branchId,
+    ),
+    refetchInterval: 60_000,
+  });
+
   const selectedDateStr = format(selectedDate, "yyyy-MM-dd");
+  const matchingBirthdays = birthdays.filter(birthday =>
+    !searchQuery || birthday.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    birthday.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
   const eventsOnDate = events.filter(e => e.eventDate === selectedDateStr);
+  const birthdaysOnDate = matchingBirthdays.filter(birthday => birthday.date === selectedDateStr);
 
   const daysInMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0).getDate();
   const firstDayOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1).getDay();
   
-  const eventDates = new Set(events.map(e => e.eventDate));
+  const eventDates = new Set([...events.map(e => e.eventDate), ...matchingBirthdays.map(birthday => birthday.date)]);
 
   return (
     <div className="space-y-4">
@@ -211,12 +227,23 @@ function CalendarView({ events }: { events: Event[] }) {
         <h3 className="font-semibold text-sm">
           {format(selectedDate, "EEEE, MMMM d")}
         </h3>
-        {eventsOnDate.length === 0 ? (
+        {eventsOnDate.length === 0 && birthdaysOnDate.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t.events.noEvents}</p>
         ) : (
           <div className="space-y-2">
             {eventsOnDate.map(event => (
               <EventCard key={event.id} event={event} />
+            ))}
+            {birthdaysOnDate.map((birthday) => (
+              <Card key={birthday.id} data-testid={`calendar-birthday-${birthday.id}`} className="border-violet-200 dark:border-violet-900">
+                <CardContent className="p-3 flex items-center gap-3">
+                  <PartyPopper className="h-5 w-5 text-violet-600" />
+                  <div>
+                    <p className="font-semibold">{birthday.title}</p>
+                    <p className="text-xs text-muted-foreground">Team birthday · all day</p>
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         )}
@@ -228,6 +255,7 @@ function CalendarView({ events }: { events: Event[] }) {
 export default function EventsPage() {
   const { user } = useAuth();
   const { t } = useI18n();
+  const { activeBranchId } = useBranchContext();
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [activeTab, setActiveTab] = useState<TabType>("today");
   const [searchQuery, setSearchQuery] = useState("");
@@ -399,7 +427,7 @@ export default function EventsPage() {
             )}
           </>
         ) : (
-          <CalendarView events={allFilteredEvents} />
+          <CalendarView events={allFilteredEvents} searchQuery={searchQuery} branchId={activeBranchId} />
         )}
       </div>
     </AppLayout>

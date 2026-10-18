@@ -117,6 +117,29 @@ export type UserRole = typeof userRoles[number];
 export const branchAccessScopes = ["all_branches", "selected_branches"] as const;
 export type BranchAccessScope = typeof branchAccessScopes[number];
 
+const validBirthdayCheck = sql`
+  (birthday_month IS NULL AND birthday_day IS NULL AND birthday_year IS NULL) OR
+  (
+    COALESCE(birthday_month BETWEEN 1 AND 12, false)
+    AND COALESCE(
+      birthday_day BETWEEN 1 AND CASE
+        WHEN birthday_month IN (4, 6, 9, 11) THEN 30
+        WHEN birthday_month = 2 THEN CASE
+          WHEN COALESCE(birthday_year, 2000) % 400 = 0
+            OR (
+              COALESCE(birthday_year, 2000) % 4 = 0
+              AND COALESCE(birthday_year, 2000) % 100 <> 0
+            ) THEN 29
+          ELSE 28
+        END
+        ELSE 31
+      END,
+      false
+    )
+    AND (birthday_year IS NULL OR birthday_year BETWEEN 1 AND 9999)
+  )
+`;
+
 // Users table with roles
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -125,6 +148,9 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   fullName: text("full_name").notNull(),
   preferredName: text("preferred_name"),
+  birthdayMonth: integer("birthday_month"),
+  birthdayDay: integer("birthday_day"),
+  birthdayYear: integer("birthday_year"),
   role: text("role", { enum: userRoles }).notNull().default("staff"),
   operatorId: uuid("operator_id").references(() => operators.id), // required for operator_admin, null for global_admin
   isActive: boolean("is_active").notNull().default(true),
@@ -148,6 +174,7 @@ export const users = pgTable("users", {
 }, (table) => [
   index("idx_users_operator").on(table.operatorId),
   index("idx_users_username").on(table.username),
+  check("users_birthday_valid", validBirthdayCheck),
 ]);
 export const session = pgTable("session", {
   sid: text("sid").primaryKey(),
@@ -419,6 +446,13 @@ export const insertUserModuleOverrideSchema = createInsertSchema(userModuleOverr
   id: true,
   createdAt: true,
   updatedAt: true,
+});
+
+// Cross-device, per-user UI preferences (not tenant or branch scoped).
+export const userPreferences = pgTable("user_preferences", {
+  userId: varchar("user_id").primaryKey().references(() => users.id, { onDelete: "cascade" }),
+  preferences: jsonb("preferences").$type<Record<string, unknown>>().notNull().default(sql`'{}'::jsonb`),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export type InsertUserModuleOverride = z.infer<typeof insertUserModuleOverrideSchema>;
@@ -705,6 +739,9 @@ export const employees = pgTable("employees", {
   fullName: text("full_name").notNull(),
   thaiName: text("thai_name"), // Thai language name (optional)
   nickname: text("nickname").notNull(), // Nickname/preferred name (required)
+  birthdayMonth: integer("birthday_month"),
+  birthdayDay: integer("birthday_day"),
+  birthdayYear: integer("birthday_year"),
   email: text("email").notNull(),
   phone: text("phone"),
   address: text("address"),
@@ -780,6 +817,7 @@ export const employees = pgTable("employees", {
   index("idx_employees_tenant").on(table.tenantId),
   index("idx_employees_user").on(table.userId),
   index("idx_employees_phone_e164").on(table.phoneE164),
+  check("employees_birthday_valid", validBirthdayCheck),
 ]);
 
 export const employeesRelations = relations(employees, ({ one, many }) => ({

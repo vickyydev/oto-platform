@@ -1,7 +1,9 @@
-import { useState, useEffect } from "react";
+import { useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { useBranchContext } from "@/hooks/use-branch-context";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
   Sidebar,
   SidebarContent,
@@ -280,34 +282,89 @@ type SectionState = {
   payroll: boolean;
 };
 
-function getStoredSectionState(): SectionState {
-  try {
-    const stored = localStorage.getItem(SIDEBAR_SECTIONS_KEY);
-    if (stored) {
-      return JSON.parse(stored);
-    }
-  } catch {}
-  return { hrOperations: false, configuration: false, platformAdmin: false, finance: false, payroll: false };
+const DEFAULT_SECTIONS: SectionState = {
+  hrOperations: false,
+  configuration: false,
+  platformAdmin: false,
+  finance: false,
+  payroll: false,
+};
+
+function normalizeSections(value: Partial<SectionState> | undefined): SectionState {
+  const result = { ...DEFAULT_SECTIONS };
+  for (const key of Object.keys(result) as (keyof SectionState)[]) {
+    if (typeof value?.[key] === "boolean") result[key] = value[key];
+  }
+  return result;
 }
 
-function storeSectionState(state: SectionState) {
+// The browser copy is per account, so one person's open sections never
+// become the next person's on a shared device; the server copy follows the
+// account across devices.
+function getStoredSectionState(userId: string): SectionState {
   try {
-    localStorage.setItem(SIDEBAR_SECTIONS_KEY, JSON.stringify(state));
+    const stored = localStorage.getItem(`${SIDEBAR_SECTIONS_KEY}:${userId}`);
+    if (stored) {
+      return normalizeSections(JSON.parse(stored));
+    }
+  } catch {}
+  return { ...DEFAULT_SECTIONS };
+}
+
+function storeSectionState(userId: string, state: SectionState) {
+  try {
+    localStorage.setItem(`${SIDEBAR_SECTIONS_KEY}:${userId}`, JSON.stringify(state));
   } catch {}
 }
 
 export function AppSidebar() {
   const [location] = useLocation();
   const { user } = useAuth();
-  const { isAllBranches } = useBranchContext();
-  const [sectionState, setSectionState] = useState<SectionState>(getStoredSectionState);
+  const { isAllBranches, activeBranchIds, isLoading: branchesLoading } = useBranchContext();
+  const [localSections, setLocalSections] = useState<{ userId: string; sections: SectionState } | null>(null);
+  const saveQueue = useRef<Promise<unknown>>(Promise.resolve());
 
-  useEffect(() => {
-    storeSectionState(sectionState);
-  }, [sectionState]);
+  const { data: savedSections } = useQuery<{ sections: Partial<SectionState> }>({
+    queryKey: ["/api/me/sidebar-sections", user?.id],
+    queryFn: async () => {
+      const response = await fetch("/api/me/sidebar-sections", { credentials: "include" });
+      if (!response.ok) throw new Error("Could not load saved menu preferences");
+      return response.json();
+    },
+    enabled: !!user?.id,
+    refetchOnMount: "always",
+  });
+  const sectionState = localSections && localSections.userId === user?.id ? localSections.sections
+    : savedSections ? normalizeSections(savedSections.sections)
+    : user?.id ? getStoredSectionState(user.id) : { ...DEFAULT_SECTIONS };
+
+  const scopeKey = activeBranchIds.slice().sort().join(",");
+  const { data: badges } = useQuery<{ needsAction: number; todaysAttendance: number }>({
+    queryKey: ["/api/sidebar/badges", user?.id, scopeKey],
+    queryFn: async () => {
+      const response = await fetch(`/api/sidebar/badges?branchIds=${encodeURIComponent(scopeKey)}`, { credentials: "include" });
+      if (!response.ok) throw new Error("Could not load navigation counts");
+      return response.json();
+    },
+    enabled: !!user?.id && !branchesLoading && activeBranchIds.length > 0,
+    staleTime: 0,
+    refetchInterval: 15000,
+    refetchOnWindowFocus: true,
+  });
 
   const toggleSection = (section: keyof SectionState) => {
-    setSectionState(prev => ({ ...prev, [section]: !prev[section] }));
+    if (!user?.id) return;
+    const next = { ...sectionState, [section]: !sectionState[section] };
+    setLocalSections({ userId: user.id, sections: next });
+    storeSectionState(user.id, next);
+    const userId = user.id;
+    saveQueue.current = saveQueue.current.catch(() => undefined).then(async () => {
+      const response = await apiRequest("PATCH", "/api/me/sidebar-sections", { sections: { [section]: next[section] } });
+      const saved = await response.json() as { sections: Partial<SectionState> };
+      queryClient.setQueryData(["/api/me/sidebar-sections", userId], saved);
+    }).catch(() => {
+      // The browser copy above still holds the choice; the next change retries the save.
+    });
   };
 
   const filteredGlobalAdminItems = filterItems(globalAdminItems, user?.role, isAllBranches);
@@ -324,6 +381,7 @@ export function AppSidebar() {
     return items.map((item) => {
       const isActive = location === item.url || 
         (item.url !== "/" && location.startsWith(item.url));
+      const count = item.url === "/attention" ? badges?.needsAction : item.url === "/timekeeping-review" ? badges?.todaysAttendance : undefined;
       return (
         <SidebarMenuItem key={item.title}>
           <SidebarMenuButton
@@ -331,9 +389,10 @@ export function AppSidebar() {
             isActive={isActive}
             data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
           >
-            <Link href={item.url}>
+            <Link href={item.url} aria-label={count ? `${item.title}, ${count} open items` : undefined}>
               <item.icon className="h-4 w-4" />
               <span>{item.title}</span>
+              {!!count && count > 0 && <span aria-hidden="true" className="ml-auto rounded-full bg-amber-700 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-white dark:bg-amber-300 dark:text-amber-950">{count > 99 ? "99+" : count}</span>}
             </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>

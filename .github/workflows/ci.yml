@@ -591,6 +591,13 @@ jobs:
       - name: The app's leave type checks
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/leave-types.check.ts
+      # SCRUM-561: staff birthdays (migration 0019) and the sidebar's saved
+      # sections (0020) — birthday validation and the February 29 rule, My
+      # Account both ways, the birthday list fenced to the park group and
+      # branches, the sections merging, and the badges fenced the same way.
+      - name: The app's birthdays and sidebar checks
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/birthdays-sidebar.check.ts
       # These five feature suites drive the app's handlers through its own
       # dependency tree. Run them here, where npm ci has installed that tree,
       # and keep the API workspace's ordinary full battery unchanged.
