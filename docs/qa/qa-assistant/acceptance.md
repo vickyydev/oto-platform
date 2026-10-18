@@ -7,6 +7,12 @@ inspected evidence.** This records the completed checks and limits against the
 [implementation plan](../../progress/plans/qa-assistant/PLAN.md). It does not
 establish final owner acceptance or reproduction of a reported product issue.
 
+The synthetic report references below describe the completed acceptance run.
+At the owner's subsequent request, all four examples and their app
+conversations/media were removed so Maria can start with a clear intake.
+The delivery evidence remains attached to the implementation tickets.
+See the [cleanup receipt](cleanup.md).
+
 ## Source and release gate
 
 | Record | Observed state |
@@ -113,8 +119,9 @@ reports belong to **OTO App - QA and Bug Triage**, sprint **36**, under
 
 Jira read-back confirms all four destinations, source SHA and visible source
 references. Exact report-identity searches found one issue for each report.
-Follow-up publication stays on the original issue. These reports remain
-records for later review; this acceptance does not move them into development.
+Follow-up publication stayed on the original issue during acceptance. These
+synthetic examples were subsequently removed at the owner's request; their
+removal does not change the recorded checks or implementation status.
 
 Inspected staging evidence is attached to SCRUM-549 as attachment **11574**,
 `private-reports-staging-20261018.png`, and SCRUM-550 as attachment **11575**,
@@ -147,9 +154,10 @@ Each file is under `docs/qa/jira-comments/attachments/<ticket>/`.
 - Provider/Jira outages and ambiguous Jira-create recovery have hosted proof
   only. They were not injected on staging; the observed deduplication checks
   do not establish recovery from a lost create response.
-- The four ZZ TEST reports and their synthetic media are intentionally
-  retained as acceptance examples. No business fixtures were created or
-  modified, and no report/media deletion is claimed.
+- The four ZZ TEST reports, their messages and processing records, and both
+  synthetic media files were removed at the owner's request after acceptance.
+  Exact deletion and absence checks are recorded in the [cleanup receipt](cleanup.md).
+  No business fixtures were created or modified.
 
 
 Final attachment receipts: SCRUM-548: 11576-11579; SCRUM-549: 11574; SCRUM-550: 11575/11580; SCRUM-551: 11581; SCRUM-552: 11582. The SCRUM-551 card is shared parent SCRUM-548 acceptance evidence, stored under the worker ticket. The entry image establishes launcher placement; it is not evidence for Today data loading. The conversation images show SCRUM-557 and the saved confirmation. Final status read-back confirms Deployed for all five delivery tickets; none was moved to Done.

@@ -56,7 +56,7 @@ Staging records created for acceptance use ZZ TEST. Preserve the seeded cast, FW
 
 ## Current progress
 
-18 October final checkpoint: SCRUM-548 and549-552 are Deployed with inspected staging evidence. Live app and worker source0e2e87eb passed its complete app gate39121598434; the prior full platform gate is39120053840/c0422d18. Four ZZ TEST examples554-557 remain To Do under553/sprint36. R1-R13 delivery controls are completed. The [acceptance record](../../../qa/qa-assistant/acceptance.md) names exact releases, checks, live journeys, images and limits. Done remains owner acceptance.
+18 October final checkpoint: SCRUM-548 and549-552 are Deployed with inspected staging evidence. Live app and worker source0e2e87eb passed its complete app gate39121598434; the prior full platform gate is39120053840/c0422d18. At the owner's subsequent request, the four ZZ TEST examples554-557 and their saved app conversations/media were removed. Intake553 remains In Progress in sprint36, with no child reports at the cleanup read-back. The [cleanup receipt](../../../qa/qa-assistant/cleanup.md) records exact targets and absence checks. R1-R13 delivery controls are completed. The [acceptance record](../../../qa/qa-assistant/acceptance.md) names exact releases, checks, live journeys, images and limits. Done remains owner acceptance.
 
 ### Earlier delivery checkpoints
 
