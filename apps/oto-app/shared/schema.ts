@@ -1,6 +1,6 @@
 import type { AttendanceEvidence } from "./attendance-evidence";
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, timestamp, jsonb, boolean, index, uniqueIndex, time, date, real, uuid, numeric, primaryKey } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, timestamp, jsonb, boolean, index, uniqueIndex, time, date, real, uuid, numeric, primaryKey, check } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
@@ -2708,7 +2708,10 @@ export const employeeTimeOff = pgTable("employee_time_off", {
   tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
   employeeId: varchar("employee_id").references(() => employees.id).notNull(),
   branchId: varchar("branch_id").references(() => branches.id).notNull(),
-  type: text("type", { enum: timeOffTypes }).notNull(),
+  // The historic codes (`timeOffTypes`) and any the park group defines in
+  // `leave_types` (migration 0018): the routes check a code against the park
+  // group's active types. The column was always plain text.
+  type: text("type").notNull(),
   startDate: timestamp("start_date").notNull(),
   endDate: timestamp("end_date").notNull(),
   isHalfDay: boolean("is_half_day").notNull().default(false),
@@ -2949,6 +2952,90 @@ export type SickLeaveBalance = {
   startDate: Date | null; // Employee start date
   monthsInYear: number; // Months employee will work in this calendar year
 };
+
+// ============================================
+// FLEXIBLE LEAVE TYPES (migration 0018)
+// ============================================
+
+// Each park group's catalogue of leave types (tenant-configurable), the
+// per-employee overrides of a type's yearly rules, and the opening balances
+// frozen for the people who already existed when the catalogue arrived. All
+// three belong to a park group and go with it, with the employee or with the
+// type (ON DELETE CASCADE).
+export const leaveAccrualMethods = ["YEARLY", "WORKDAYS", "NONE"] as const;
+export type LeaveAccrualMethod = typeof leaveAccrualMethods[number];
+
+export const leaveTypes = pgTable("leave_types", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  code: text("code").notNull(),
+  name: text("name").notNull(),
+  isActive: boolean("is_active").notNull().default(true),
+  accrualMethod: text("accrual_method", { enum: leaveAccrualMethods }).notNull().default("YEARLY"),
+  annualDays: real("annual_days").notNull().default(0),
+  waitingMonths: integer("waiting_months").notNull().default(0),
+  prorateByStartDate: boolean("prorate_by_start_date").notNull().default(false),
+  daysWorkedRequired: integer("days_worked_required").notNull().default(0),
+  daysOffEarned: real("days_off_earned").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("leave_types_tenant_code_unique").on(table.tenantId, sql`upper(${table.code})`),
+  index("idx_leave_types_tenant_active").on(table.tenantId, table.isActive),
+  check("leave_types_accrual_method_check", sql`${table.accrualMethod} IN ('YEARLY', 'WORKDAYS', 'NONE')`),
+  check("leave_types_annual_days_check", sql`${table.annualDays} >= 0`),
+  check("leave_types_waiting_months_check", sql`${table.waitingMonths} >= 0`),
+  check("leave_types_days_worked_required_check", sql`${table.daysWorkedRequired} >= 0`),
+  check("leave_types_days_off_earned_check", sql`${table.daysOffEarned} >= 0`),
+]);
+
+export type LeaveType = typeof leaveTypes.$inferSelect;
+export const insertLeaveTypeSchema = createInsertSchema(leaveTypes).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertLeaveType = z.infer<typeof insertLeaveTypeSchema>;
+
+export const employeeLeaveOverrides = pgTable("employee_leave_overrides", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  employeeId: varchar("employee_id").references(() => employees.id, { onDelete: "cascade" }).notNull(),
+  leaveTypeId: uuid("leave_type_id").references(() => leaveTypes.id, { onDelete: "cascade" }).notNull(),
+  annualDays: real("annual_days"),
+  accrualStartDate: date("accrual_start_date"),
+  waitingMonths: integer("waiting_months"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("employee_leave_overrides_employee_type_unique").on(table.employeeId, table.leaveTypeId),
+  index("idx_employee_leave_overrides_tenant").on(table.tenantId),
+  index("idx_employee_leave_overrides_leave_type").on(table.leaveTypeId),
+  check("employee_leave_overrides_annual_days_check", sql`${table.annualDays} IS NULL OR ${table.annualDays} >= 0`),
+  check("employee_leave_overrides_waiting_months_check", sql`${table.waitingMonths} IS NULL OR ${table.waitingMonths} >= 0`),
+]);
+
+export type EmployeeLeaveOverride = typeof employeeLeaveOverrides.$inferSelect;
+
+// Immutable cutover balances for staff who already existed when the flexible
+// model was introduced. Their legacy balance becomes the opening balance;
+// later accrual and usage use the canonical leave type rules.
+export const employeeLeaveBalanceOpenings = pgTable("employee_leave_balance_openings", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  employeeId: varchar("employee_id").references(() => employees.id, { onDelete: "cascade" }).notNull(),
+  leaveTypeId: uuid("leave_type_id").references(() => leaveTypes.id, { onDelete: "cascade" }).notNull(),
+  snapshotAt: timestamp("snapshot_at").notNull(),
+  openingBalance: real("opening_balance").notNull(),
+  workedDaysAtSnapshot: integer("worked_days_at_snapshot").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("employee_leave_balance_openings_employee_type_unique").on(table.employeeId, table.leaveTypeId),
+  index("idx_employee_leave_balance_openings_tenant").on(table.tenantId),
+  index("idx_employee_leave_balance_openings_leave_type").on(table.leaveTypeId),
+]);
+
+export type EmployeeLeaveBalanceOpening = typeof employeeLeaveBalanceOpenings.$inferSelect;
 
 // ============================================
 // EMPLOYEE PRESENCE (Directory API - Clock in/out state)

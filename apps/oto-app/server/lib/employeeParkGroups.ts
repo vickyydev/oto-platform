@@ -77,9 +77,11 @@ export type ForeignEmployeeAnswer =
  *  - `re-review`: round 6's re-review (findings 6 and 8) — the doors without an id;
  *  - `lift`: an earlier round of the lift, unchanged;
  *  - `app`: the app's own park-group check, kept as it is;
+ *  - `port`: fenced as it was ported (the October Replit port: SCRUM-560's
+ *    leave doors look the employee up in the caller's park group first);
  *  - `none`: nothing to fence — the handler never runs.
  */
-export type EmployeeDoorFence = "review" | "re-review" | "lift" | "app" | "none";
+export type EmployeeDoorFence = "review" | "re-review" | "lift" | "app" | "port" | "none";
 
 export interface EmployeeDoor {
   method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
@@ -88,7 +90,7 @@ export interface EmployeeDoor {
   foreign: ForeignEmployeeAnswer;
 }
 
-/** Every `/api/employees/:id*` door the app registers, in the order `server/routes.ts` registers them (45). */
+/** Every `/api/employees/:id*` door the app registers, in the order `server/routes.ts` registers them (49). */
 export const EMPLOYEE_DOORS: readonly EmployeeDoor[] = [
   { method: "GET", path: "/api/employees/:id/roles", fence: "review", foreign: "employee-not-found" },
   { method: "PATCH", path: "/api/employees/:id/roles", fence: "review", foreign: "employee-not-found" },
@@ -133,6 +135,10 @@ export const EMPLOYEE_DOORS: readonly EmployeeDoor[] = [
   { method: "GET", path: "/api/employees/:employeeId/timekeeping-status", fence: "review", foreign: "employee-not-found" },
   { method: "GET", path: "/api/employees/:employeeId/time-off", fence: "lift", foreign: "employee-not-found" },
   { method: "GET", path: "/api/employees/:employeeId/leave-balance", fence: "lift", foreign: "employee-not-found" },
+  { method: "GET", path: "/api/employees/:id/leave-overrides", fence: "port", foreign: "employee-not-found" },
+  { method: "PUT", path: "/api/employees/:id/leave-overrides/:leaveTypeId", fence: "port", foreign: "employee-not-found" },
+  { method: "DELETE", path: "/api/employees/:id/leave-overrides/:leaveTypeId", fence: "port", foreign: "employee-not-found" },
+  { method: "GET", path: "/api/employees/:id/leave-balances-dynamic", fence: "port", foreign: "employee-not-found" },
   { method: "GET", path: "/api/employees/:employeeId/sick-leave-balance", fence: "lift", foreign: "employee-not-found" },
   { method: "GET", path: "/api/employees/:employeeId/all-leave-balances", fence: "app", foreign: "access-denied" },
 ];
@@ -180,7 +186,7 @@ export interface EmployeeListDoor {
   rule: EmployeeListRule;
 }
 
-/** Every `/api/employees*` route without an id, in the order `server/routes.ts` registers them (9; with the 45 above, all 54). */
+/** Every `/api/employees*` route without an id, in the order `server/routes.ts` registers them (9; with the 49 above, all 58). */
 export const EMPLOYEE_LIST_DOORS: readonly EmployeeListDoor[] = [
   { method: "GET", path: "/api/employees", fence: "re-review", rule: "list" },
   { method: "GET", path: "/api/employees/bulk-template", fence: "re-review", rule: "sample" },

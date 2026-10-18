@@ -175,9 +175,6 @@ import {
         type LeavePolicy,
         type InsertLeavePolicy,
         type LeaveBalance,
-        sickLeavePolicies,
-        type SickLeavePolicy,
-        type InsertSickLeavePolicy,
         type SickLeaveBalance,
         publicHolidays,
         type PublicHoliday,
@@ -321,6 +318,7 @@ import {
         DEFAULT_TENANT_SLUG,
 } from "@shared/schema";
 import { db } from "./db";
+import { employeeDynamicLeaveBalances, listTenantLeaveTypes } from "./leave-types";
 import {
         eq,
         desc,
@@ -1075,7 +1073,6 @@ export interface IStorage {
         // default park group's company-wide one (S2-17b round 6, migration 0008)
         getLeavePolicies(tenantId: string, branchId?: string): Promise<LeavePolicy[]>;
         getLeavePolicyInParkGroup(id: string, tenantId: string): Promise<LeavePolicy | undefined>;
-        getActiveLeavePolicy(tenantId: string, branchId?: string): Promise<LeavePolicy | undefined>;
         createLeavePolicy(policy: InsertLeavePolicy): Promise<LeavePolicy>;
         updateLeavePolicy(
                 id: string,
@@ -1087,16 +1084,8 @@ export interface IStorage {
         getEmployeeLeaveBalance(employeeId: string): Promise<LeaveBalance>;
         getBranchEmployeeLeaveBalances(branchId: string): Promise<LeaveBalance[]>;
 
-        // Sick leave policy and balance
-        getSickLeavePolicy(tenantId: string, branchId?: string): Promise<SickLeavePolicy | undefined>;
-        getOrCreateSickLeavePolicy(
-                tenantId: string,
-                branchId?: string,
-        ): Promise<SickLeavePolicy>;
-        updateSickLeavePolicy(
-                id: string,
-                data: Partial<InsertSickLeavePolicy>,
-        ): Promise<SickLeavePolicy>;
+        // Sick leave balance (the policy reads and writes are the routes' own
+        // since SCRUM-560: a branch's row, else the Sick Leave type)
         getEmployeeSickLeaveBalance(
                 employeeId: string,
                 year?: number,
@@ -6354,47 +6343,6 @@ export class DatabaseStorage implements IStorage {
                 return policy;
         }
 
-        /**
-         * The policy a branch's balances are worked out by: the app's rule,
-         * ported per park group (round 6's review, F4; Q49). The app took the
-         * latest effective of the active policies of the branch's own and the
-         * company-wide ones (with no branch, of every active policy). Per park
-         * group the candidates are the branch's own policies (with no branch,
-         * every branch's of the park group) and the company-wide slot: the
-         * park group's own active company-wide policies, or, where it has
-         * none, the default park group's — Q28's rule on the slot, since a
-         * policy's numbers are read and never kept by id. Then the app's pick,
-         * newest effective first, in one query as the app made it. So a park
-         * group that has saved no company-wide policy of its own balances
-         * exactly as it did before 0008.
-         */
-        async getActiveLeavePolicy(
-                tenantId: string,
-                branchId?: string,
-        ): Promise<LeavePolicy | undefined> {
-                const own = documentOwnedBy(leavePolicies.tenantId, tenantId, leavePolicies.branchId);
-                const companyWide = sql`${leavePolicies.branchId} IS NULL`;
-                const [ownCompanyWide] = await db
-                        .select({ id: leavePolicies.id })
-                        .from(leavePolicies)
-                        .where(and(eq(leavePolicies.isActive, true), companyWide, own))
-                        .limit(1);
-                const defaultParkGroup = ownCompanyWide ? null : await this.getDefaultParkGroupId();
-                const slot = defaultParkGroup && defaultParkGroup !== tenantId
-                        ? and(companyWide, documentOwnedBy(leavePolicies.tenantId, defaultParkGroup, leavePolicies.branchId))
-                        : and(companyWide, own);
-                const branchOwn = branchId
-                        ? and(eq(leavePolicies.branchId, branchId), own)
-                        : and(sql`${leavePolicies.branchId} IS NOT NULL`, own);
-                const [policy] = await db
-                        .select()
-                        .from(leavePolicies)
-                        .where(and(eq(leavePolicies.isActive, true), or(branchOwn, slot)))
-                        .orderBy(desc(leavePolicies.effectiveFrom))
-                        .limit(1);
-                return policy;
-        }
-
         async createLeavePolicy(policy: InsertLeavePolicy): Promise<LeavePolicy> {
                 const [record] = await db
                         .insert(leavePolicies)
@@ -6432,14 +6380,12 @@ export class DatabaseStorage implements IStorage {
                         };
                 }
 
-                // The employee's own park group's policy (round 6), as the app's
-                // rule picks it within that park group.
-                const policy = await this.getActiveLeavePolicy(
-                        employee.tenantId,
-                        employee.branchId || undefined,
-                );
-                const daysWorkedRequired = policy?.daysWorkedRequired || 5;
-                const daysOffEarned = policy?.daysOffEarned || 2;
+                // The employee's own park group's Days Off type and the one
+                // balance engine (SCRUM-560, migration 0018): the branch's own
+                // policy, else the company-wide rule (the CHANGE_DAY_OFF type),
+                // the balance frozen at the cutover carried forward.
+                const dynamic = await employeeDynamicLeaveBalances(employeeId, employee.tenantId, new Date().getFullYear());
+                const daysOffBalance = dynamic?.balances.find((balance) => balance.code === "CHANGE_DAY_OFF");
 
                 const daysWorkedResult = await db
                         .select({
@@ -6449,20 +6395,26 @@ export class DatabaseStorage implements IStorage {
                         .where(eq(scheduleAssignments.employeeId, employeeId));
                 const daysWorked = Number(daysWorkedResult[0]?.count || 0);
 
-                const daysUsedResult = await db
-                        .select({ count: sql<number>`COUNT(*)` })
-                        .from(employeeTimeOff)
-                        .where(
-                                and(
-                                        eq(employeeTimeOff.employeeId, employeeId),
-                                        eq(employeeTimeOff.type, "CHANGE_DAY_OFF"),
-                                ),
-                        );
-                const daysUsed = Number(daysUsedResult[0]?.count || 0);
-
-                const daysEarned =
-                        Math.floor(daysWorked / daysWorkedRequired) * daysOffEarned;
-                const balance = daysEarned - daysUsed;
+                const daysEarned = daysOffBalance?.earned ?? 0;
+                const daysUsed = daysOffBalance?.used ?? 0;
+                const balance = daysOffBalance?.balance ?? (daysEarned - daysUsed);
+                // The rule the balance was worked out by, as the name said before:
+                // the branch's own newest active policy (the engine's pick), else
+                // the park group's Days Off type.
+                const [branchPolicy] = employee.branchId
+                        ? await db
+                                .select({ name: leavePolicies.name })
+                                .from(leavePolicies)
+                                .where(
+                                        and(
+                                                eq(leavePolicies.tenantId, employee.tenantId),
+                                                eq(leavePolicies.branchId, employee.branchId),
+                                                eq(leavePolicies.isActive, true),
+                                        ),
+                                )
+                                .orderBy(desc(leavePolicies.effectiveFrom), desc(leavePolicies.createdAt))
+                                .limit(1)
+                        : [];
 
                 return {
                         employeeId,
@@ -6470,7 +6422,7 @@ export class DatabaseStorage implements IStorage {
                         daysEarned,
                         daysUsed,
                         balance,
-                        policyName: policy?.name || null,
+                        policyName: branchPolicy?.name || daysOffBalance?.name || null,
                 };
         }
 
@@ -6495,77 +6447,6 @@ export class DatabaseStorage implements IStorage {
                 return balances;
         }
 
-        // Sick leave policy and balance methods
-        // Both steps keep to the park group (S2-17b round 5 review, F2): the
-        // company-wide fallback ignored `tenant_id`, so one park group's
-        // company-wide save rewrote another's row and every park group read it.
-        async getSickLeavePolicy(
-                tenantId: string,
-                branchId?: string,
-        ): Promise<SickLeavePolicy | undefined> {
-                // First try to get branch-specific policy
-                if (branchId) {
-                        const [branchPolicy] = await db
-                                .select()
-                                .from(sickLeavePolicies)
-                                .where(
-                                        and(
-                                                eq(sickLeavePolicies.tenantId, tenantId),
-                                                eq(sickLeavePolicies.branchId, branchId),
-                                                eq(sickLeavePolicies.isActive, true),
-                                        ),
-                                );
-                        if (branchPolicy) return branchPolicy;
-                }
-
-                // Fall back to tenant-wide policy (branchId is null)
-                const [tenantPolicy] = await db
-                        .select()
-                        .from(sickLeavePolicies)
-                        .where(
-                                and(
-                                        eq(sickLeavePolicies.tenantId, tenantId),
-                                        sql`${sickLeavePolicies.branchId} IS NULL`,
-                                        eq(sickLeavePolicies.isActive, true),
-                                ),
-                        );
-                return tenantPolicy;
-        }
-
-        async getOrCreateSickLeavePolicy(
-                tenantId: string,
-                branchId?: string,
-        ): Promise<SickLeavePolicy> {
-                const existing = await this.getSickLeavePolicy(tenantId, branchId);
-                if (existing) return existing;
-
-                // Create default policy
-                const [policy] = await db
-                        .insert(sickLeavePolicies)
-                        .values({
-                                tenantId,
-                                branchId: branchId || null,
-                                annualSickLeaveDays: 30,
-                                proRateByStartDate: true,
-                                yearStartMonth: 1,
-                                isActive: true,
-                        })
-                        .returning();
-                return policy;
-        }
-
-        async updateSickLeavePolicy(
-                id: string,
-                data: Partial<InsertSickLeavePolicy>,
-        ): Promise<SickLeavePolicy> {
-                const [policy] = await db
-                        .update(sickLeavePolicies)
-                        .set({ ...data, updatedAt: new Date() })
-                        .where(eq(sickLeavePolicies.id, id))
-                        .returning();
-                return policy;
-        }
-
         async getEmployeeSickLeaveBalance(
                 employeeId: string,
                 year?: number,
@@ -6587,57 +6468,26 @@ export class DatabaseStorage implements IStorage {
                         };
                 }
 
-                // Get sick leave policy for the employee's branch, in the employee's park group
-                const policy = await this.getSickLeavePolicy(
-                        employee.tenantId,
-                        employee.branchId || undefined,
-                );
-                const annualDays = policy?.annualSickLeaveDays || 30;
-                const proRate = policy?.proRateByStartDate !== false;
-
-                // Calculate pro-rated entitlement based on start date
-                let monthsInYear = 12;
-                let proRatedEntitlement = annualDays;
+                // The employee's park group's Sick Leave type (the branch's own
+                // policy where it has one) and the one balance engine
+                // (SCRUM-560, migration 0018).
                 const startDate = employee.startDate;
-
-                if (proRate && startDate) {
-                        const startYear = new Date(startDate).getFullYear();
-                        const startMonth = new Date(startDate).getMonth() + 1; // 1-based month
-
-                        if (startYear === currentYear) {
-                                // Employee started this year - pro-rate from start month
-                                monthsInYear = 12 - startMonth + 1;
-                                proRatedEntitlement = Math.round(
-                                        (monthsInYear / 12) * annualDays,
-                                );
-                        } else if (startYear > currentYear) {
-                                // Employee hasn't started yet
+                const sickType = (await listTenantLeaveTypes(employee.tenantId)).find((type) => type.code === "SICK");
+                const dynamic = await employeeDynamicLeaveBalances(employeeId, employee.tenantId, currentYear);
+                const sickBalance = dynamic?.balances.find((balance) => balance.code === "SICK");
+                const annualDays = sickType?.annualDays ?? 30;
+                let monthsInYear = 12;
+                if (sickType?.prorateByStartDate && startDate) {
+                        const employeeStart = new Date(startDate);
+                        if (employeeStart.getFullYear() === currentYear) {
+                                monthsInYear = 12 - employeeStart.getMonth();
+                        } else if (employeeStart.getFullYear() > currentYear) {
                                 monthsInYear = 0;
-                                proRatedEntitlement = 0;
                         }
-                        // If startYear < currentYear, employee gets full entitlement
                 }
-
-                // Count sick days used in this calendar year
-                const yearStart = new Date(currentYear, 0, 1);
-                const yearEnd = new Date(currentYear, 11, 31, 23, 59, 59);
-
-                const sickDaysResult = await db
-                        .select({
-                                count: sql<number>`COUNT(*)`,
-                        })
-                        .from(employeeTimeOff)
-                        .where(
-                                and(
-                                        eq(employeeTimeOff.employeeId, employeeId),
-                                        eq(employeeTimeOff.type, "SICK"),
-                                        sql`${employeeTimeOff.startDate} >= ${yearStart}`,
-                                        sql`${employeeTimeOff.startDate} <= ${yearEnd}`,
-                                ),
-                        );
-
-                const daysUsed = Number(sickDaysResult[0]?.count || 0);
-                const daysRemaining = Math.max(0, proRatedEntitlement - daysUsed);
+                const proRatedEntitlement = sickBalance?.earned ?? 0;
+                const daysUsed = sickBalance?.used ?? 0;
+                const daysRemaining = Math.max(0, sickBalance?.balance ?? 0);
 
                 return {
                         employeeId,

@@ -593,7 +593,7 @@ interface DocumentRules {
 
 /** server/lib/employeeParkGroups.ts, round 6's review (findings 1 and 2) and its re-review (findings 6 to 8). */
 interface EmployeeRules {
-  EMPLOYEE_DOORS: readonly { method: string; path: string; fence: 'review' | 'lift' | 'app'; foreign: string }[];
+  EMPLOYEE_DOORS: readonly { method: string; path: string; fence: 'review' | 'lift' | 'app' | 'port'; foreign: string }[];
   EMPLOYEE_LIST_DOORS: readonly { method: string; path: string; fence: 're-review' | 'lift' | 'none'; rule: string }[];
   EMPLOYEE_LOOKUPS: readonly { route: string; reads: string; disposition: 'fenced' | 'held' | 'record' | 'token' | 'own' | 'app'; note: string }[];
   EMPLOYEE_ROLE_WRITERS: readonly { writer: string; via: string; disposition: string; note: string }[];
@@ -650,12 +650,12 @@ describe('D. read off the code', () => {
     ]) {
       expect(storage, signature).toContain(signature);
     }
-    const active = storage.slice(storage.indexOf('async getActiveLeavePolicy('), storage.indexOf('async createLeavePolicy('));
-    // The app's candidate set per park group (round 6's review, F4): the branch's own and the company-wide slot,
-    // the slot the park group's own company-wide policies or, where it has none, the default park group's.
-    expect(active).toMatch(/const defaultParkGroup = ownCompanyWide \? null : await this\.getDefaultParkGroupId\(\);/);
-    expect(active).toMatch(/and\(companyWide, documentOwnedBy\(leavePolicies\.tenantId, defaultParkGroup, leavePolicies\.branchId\)\)/);
-    expect(active).toMatch(/\.where\(and\(eq\(leavePolicies\.isActive, true\), or\(branchOwn, slot\)\)\)\s*\.orderBy\(desc\(leavePolicies\.effectiveFrom\)\)\s*\.limit\(1\);/);
+    // SCRUM-560: the company-wide slot is each park group's Days Off leave type now. The default park
+    // group's company-wide policy is read once, into the type, by migration 0018's seed (the same slot rule:
+    // the park group's own company-wide policy, else the default's); no storage read weighs it any more.
+    expect(storage).not.toMatch(/async getActiveLeavePolicy\(/);
+    const seed = readFileSync(join(APP_DIR, 'migrations', '0018_flexible_leave_types.sql'), 'utf8');
+    expect(seed).toMatch(/\) THEN p_tenant ELSE COALESCE\(v_default, p_tenant\) END;/);
     for (const own of ['getTemplates', 'getPolicyDocuments', 'getAssetCatalog']) {
       const body = storage.slice(storage.indexOf(`async ${own}(tenantId: string)`), storage.indexOf('}', storage.indexOf(`async ${own}(tenantId: string)`) + 400));
       expect(body, own).not.toMatch(/getDefaultParkGroupId/);
@@ -757,13 +757,14 @@ describe('D. read off the code', () => {
 
   // ── Round 6's review fixes (findings 1 to 4), read off the code ──────────────
 
-  it('F1, the census: all 45 employee doors remain registered across the route modules and resolve their park group before writes', () => {
+  // SCRUM-560 added the four leave doors (fence 'port'): 45 -> 49, and 54 -> 58 routes below.
+  it('F1, the census: all 49 employee doors remain registered across the route modules and resolve their park group before writes', () => {
     const actions = employeeActionsText();
     const routes = `${routesText()}\n${actions}`;
     const registered = [...routes.matchAll(/\n {2}app\.(get|post|put|patch|delete)\("(\/api\/employees\/:[^"]+)"/g)].map((m) => `${m[1]!.toUpperCase()} ${m[2]}`);
-    expect(registered).toHaveLength(45);
+    expect(registered).toHaveLength(49);
     expect([...registered].sort()).toEqual(hr.EMPLOYEE_DOORS.map((d) => `${d.method} ${d.path}`).sort());
-    const counts = { review: 0, lift: 0, app: 0 };
+    const counts = { review: 0, lift: 0, app: 0, port: 0 };
     for (const door of hr.EMPLOYEE_DOORS) {
       counts[door.fence] += 1;
       const handler = route(routes, door.method.toLowerCase(), door.path);
@@ -786,12 +787,12 @@ describe('D. read off the code', () => {
       expect(fence, `${door.method} ${door.path} looks the employee up in a park group`).toBeGreaterThan(-1);
       const write = handler.search(/storage\.(update|create|set|delete|logActivity|archive)\w*\(|db\.(insert|update|delete)\(|db\.transaction\(|uploadToObjectStorage\(/);
       if (write > -1) expect(fence, `${door.method} ${door.path}: the lookup comes before the first write`).toBeLessThan(write);
-      if (door.fence === 'review') {
+      if (door.fence === 'review' || door.fence === 'port') {
         expect(handler, `${door.method} ${door.path}`).toMatch(/employeeOfParkGroup\(req, /);
         expect(handler, `${door.method} ${door.path}`).not.toMatch(/storage\.getEmployee\(/);
       }
     }
-    expect(counts).toEqual({ review: 18, lift: 26, app: 1 });
+    expect(counts).toEqual({ review: 18, lift: 26, app: 1, port: 4 });
   });
 
   it('F1, the edit: PATCH /api/employees/:id drops `tenantId` and weighs every id it changes before it writes; the roles, department, transfer, change and allocation doors weigh theirs', () => {
@@ -841,10 +842,10 @@ describe('D. read off the code', () => {
 
   // ── The re-review's fixes (findings 6 to 8), read off the code ──────────────
 
-  it('F6, all 54 employee routes remain across the modules, with the nine list doors in their original order', () => {
+  it('F6, all 58 employee routes remain across the modules, with the nine list doors in their original order', () => {
     const routes = `${routesText()}\n${employeeActionsText()}`;
     const all = [...routes.matchAll(/\n {2}app\.(get|post|put|patch|delete)\("(\/api\/employees(?:\/[^"]*)?)"/g)].map((m) => `${m[1]!.toUpperCase()} ${m[2]}`);
-    expect(all).toHaveLength(54);
+    expect(all).toHaveLength(58);
     const withoutId = all.filter((r) => !r.includes('/:'));
     expect(withoutId).toEqual(hr.EMPLOYEE_LIST_DOORS.map((d) => `${d.method} ${d.path}`));
     expect(all.filter((r) => r.includes('/:')).sort()).toEqual(hr.EMPLOYEE_DOORS.map((d) => `${d.method} ${d.path}`).sort());
@@ -1057,8 +1058,9 @@ describe.skipIf(!HAS_APP_RUNTIME || !CHROMIUM)('F. the real app: the document ch
       ]) {
         expect(output, named).toContain(named);
       }
-      expect(output).toMatch(/the census: 45 doors — 18 fenced by round 6's review, 26 before it, 1 by the app itself/);
-      expect(output).toMatch(/the census: 54 routes — the 45 with an id and 9 without: 6 fenced by round 6's re-review, 2 before it, 1 dead/);
+      // SCRUM-560 added the four leave doors, fenced as ported: 45 -> 49 doors, 54 -> 58 routes.
+      expect(output).toMatch(/the census: 49 doors — 18 fenced by round 6's review, 26 before it, 1 by the app itself, 4 as ported/);
+      expect(output).toMatch(/the census: 58 routes — the 49 with an id and 9 without: 6 fenced by round 6's re-review, 2 before it, 1 dead/);
       expect(output).toMatch(/the lookups: 32 call sites — 8 fenced by round 6's re-review, 9 held after the lookup, 6 read off a held record, 6 behind a token, 2 the caller's own, 1 by the app itself/);
       expect(output).toMatch(/FINDING Q52: two GETs at once wrote 6 node\(s\) for 3 missing employee\(s\); 3 of them are now on the chart twice/);
       const back = script(READBACK, url);

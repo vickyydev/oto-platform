@@ -120,6 +120,13 @@
       "when": 1792313768721,
       "tag": "0016_qa_reports",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1792363082631,
+      "tag": "0018_flexible_leave_types",
+      "breakpoints": true
     }
   ]
 }

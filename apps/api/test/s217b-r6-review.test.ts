@@ -1719,7 +1719,12 @@ describe.skipIf(!HAS_APP_RUNTIME)('C to F. over HTTP against the app’s routes'
   // The leave-policy fallback, weighed against the app's own rule.
   const policyFor = async (cookie: string, employeeId: string) => (await call('GET', `/api/employees/${employeeId}/leave-balance`, { cookie })).body.policyName as string;
 
-  it('E. the default park group’s company-wide policy is read where a park group has none — the app’s rule while there was one set (the builder’s Q49 default)', async () => {
+  // SCRUM-560 (migration 0018): the company-wide slot is each park group's Days Off leave type; the
+  // default park group's company-wide policy is read into it once, when the park group's catalogue is made.
+  const daysOffOf = async (tenant: string) =>
+    (await q<{ w: number; e: number }>("select days_worked_required as w, days_off_earned as e from leave_types where tenant_id = $1 and code = 'CHANGE_DAY_OFF'", [tenant]))[0];
+
+  it('E. the default park group’s company-wide policy is read where a park group has none — the app’s rule while there was one set (the builder’s Q49 default), read once into its Days Off type (SCRUM-560)', async () => {
     const C = await parkGroup('c');
     C.admin.cookie = await signIn(C.admin.email);
     const eC = await employee(C, C.x, 'leave-c');
@@ -1728,7 +1733,8 @@ describe.skipIf(!HAS_APP_RUNTIME)('C to F. over HTTP against the app’s routes'
       DEFAULT,
       inherited,
     ]);
-    expect(await policyFor(C.admin.cookie, eC)).toBe(inherited);
+    expect(await policyFor(C.admin.cookie, eC)).toBe('Days Off');
+    expect(await daysOffOf(C.tenant)).toEqual({ w: 4, e: 1 });
   });
 
   it('E. a park group with a company-wide policy of its own weighs its own and never the default park group’s newer one; its branch’s own, the newest of its own, wins (the arrangement of finding 4, as fixed: Q28’s rule on the company-wide slot)', async () => {
@@ -1752,7 +1758,7 @@ describe.skipIf(!HAS_APP_RUNTIME)('C to F. over HTTP against the app’s routes'
     expect(await policyFor(D.admin.cookie, eD)).toBe(own);
   });
 
-  it('E. FINDING 4 (low, fixed): with a branch policy of its own and no company-wide one, a park group still weighs the default park group’s company-wide policy by the app’s latest-effective rule', async () => {
+  it('E. FINDING 4 (low), as SCRUM-560 has it: with a branch policy of its own and no company-wide one, the branch’s own policy is the rule, however new the default park group’s company-wide one — whose numbers the park group’s Days Off type took', async () => {
     const E = await parkGroup('e');
     E.admin.cookie = await signIn(E.admin.email);
     const eE = await employee(E, E.x, 'leave-e');
@@ -1765,7 +1771,8 @@ describe.skipIf(!HAS_APP_RUNTIME)('C to F. over HTTP against the app’s routes'
       DEFAULT,
       newer,
     ]);
-    expect(await policyFor(E.admin.cookie, eE)).toBe(newer);
+    expect(await policyFor(E.admin.cookie, eE)).toBe(`ZZ R6RV E branch ${run}`);
+    expect(await daysOffOf(E.tenant)).toEqual({ w: 3, e: 1 });
   });
 
   // ── F. The org chart ────────────────────────────────────────────────────────
@@ -1830,7 +1837,8 @@ describe.skipIf(!HAS_APP_RUNTIME)('C to F. over HTTP against the app’s routes'
     const registered = [...registrations.matchAll(/app\.(get|post|put|patch|delete)\(\s*"(\/api\/employees\/:[^"]+)"/g)].map(
       (m) => `${m[1]!.toUpperCase()} ${m[2]}`,
     );
-    expect(census).toHaveLength(45);
+    // SCRUM-560 added the four leave doors (45 -> 49); as B's manager they are 404 or 403 like the rest.
+    expect(census).toHaveLength(49);
     expect([...census].sort()).toEqual([...registered].sort());
     const mgrEmail = `zz-r6rr-b-allmgr-${run}@example.com`;
     await user(B.tenant, 'manager', mgrEmail, null);
@@ -1933,7 +1941,10 @@ describe.skipIf(!HAS_APP_RUNTIME)('C to F. over HTTP against the app’s routes'
     expect((await q('select nickname from employees where id = $1', [eB]))[0]).toEqual({ nickname: 'ZZ RR' });
   });
 
-  it('G. F4 held, against the app’s pre-lift code: on three fixtures (the branch policy newer; the company-wide newer; no policy of its own, falling to the default’s) the lifted balance is the pre-lift query’s pick and arithmetic, with and without a branch', async () => {
+  // SCRUM-560 (migration 0018, balances freeze-then-recalc): the pre-lift pick and arithmetic now set
+  // the OPENING frozen when the park group's leave catalogue is made; afterwards the balance carries it
+  // and the rule is the branch's own newest policy, else the park group's Days Off type.
+  it('G. F4 held, against the app’s pre-lift code, as SCRUM-560 freezes it: on the first fixture the opening is the pre-lift query’s pick and arithmetic, with and without a branch; on the next two (the company-wide newer; no policy of its own) the balance carries that opening and names the branch’s own policy, else the Days Off type', async () => {
     const P = await parkGroup('p');
     P.admin.cookie = await signIn(P.admin.email);
     const withBranch = await employee(P, P.x, 'rr-leave-x');
@@ -1983,6 +1994,7 @@ describe.skipIf(!HAS_APP_RUNTIME)('C to F. over HTTP against the app’s routes'
       return { policyName: b.policyName, daysEarned: b.daysEarned };
     };
     const results: Record<string, unknown> = {};
+    const names: Record<string, string> = {};
     try {
       const fixtures: Array<[string, () => Promise<void>]> = [
         ['branch policy newer', async () => {
@@ -1998,12 +2010,17 @@ describe.skipIf(!HAS_APP_RUNTIME)('C to F. over HTTP against the app’s routes'
           await policy(DEFAULT, null, 'ZZ R6RR F3 default newest', 5, 3, -24);
         }],
       ];
+      const opening: Record<string, number> = {};
       for (const [label, arrange] of fixtures) {
         await arrange();
         for (const [where, e, branch] of [['branch', withBranch, P.x], ['no branch', noBranch, null]] as const) {
           const expected = await preLift(branch);
           expect(expected.policyName, `${label}, ${where}: the fixture is live`).not.toBeNull();
-          results[`${label}, ${where}`] = { expected, got: await lifted(e) };
+          const got = await lifted(e);
+          // The first read makes P's catalogue and freezes the pre-lift balance as the opening.
+          if (label === 'branch policy newer') opening[where] = expected.daysEarned;
+          results[`${label}, ${where}`] = { expected: opening[where], got: got.daysEarned };
+          names[`${label}, ${where}`] = got.policyName ?? '';
         }
         await q('update leave_policies set is_active = false where id = any($1)', [made]);
       }
@@ -2016,6 +2033,23 @@ describe.skipIf(!HAS_APP_RUNTIME)('C to F. over HTTP against the app’s routes'
       expect(got, k).toEqual(expected);
     }
     expect(Object.keys(results)).toHaveLength(6);
+    const frozen = await q<{ employee_id: string; opening_balance: number }>(
+      `select o.employee_id, o.opening_balance from employee_leave_balance_openings o join leave_types lt on lt.id = o.leave_type_id
+        where lt.code = 'CHANGE_DAY_OFF' and o.employee_id = any($1)`,
+      [[withBranch, noBranch]],
+    );
+    expect(Object.fromEntries(frozen.map((r) => [r.employee_id, r.opening_balance]))).toEqual({
+      [withBranch]: (results['branch policy newer, branch'] as { expected: number }).expected,
+      [noBranch]: (results['branch policy newer, no branch'] as { expected: number }).expected,
+    });
+    expect(names).toEqual({
+      'branch policy newer, branch': `ZZ R6RR F1 P branch ${run}`,
+      'branch policy newer, no branch': 'Days Off',
+      'company-wide newer, branch': `ZZ R6RR F2 P branch ${run}`,
+      'company-wide newer, no branch': 'Days Off',
+      'none of its own: the default’s, branch': 'Days Off',
+      'none of its own: the default’s, no branch': 'Days Off',
+    });
   });
 
   // ── The doors the census did not count ──────────────────────────────────────

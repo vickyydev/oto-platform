@@ -57,12 +57,17 @@ const TABLE_WORDS: Record<string, string> = {
   employees: "employees",
   employee_assets: "assets",
   employee_documents: "documents",
+  // The leave catalogue's rows cascade with the employee, the type and the park
+  // group (migration 0018), so they never block a delete; named for completeness.
+  employee_leave_balance_openings: "opening leave balances",
+  employee_leave_overrides: "leave overrides",
   employee_letters: "letters",
   employee_offboarding: "offboarding records",
   employee_time_off: "leave records",
   fix_reports: "fix reports",
   kiosk_auth_attempts: "clock-in records",
   kiosk_devices: "kiosk devices",
+  leave_types: "leave types",
   nanny_reservations: "nanny reservations",
   org_nodes: "the org chart",
   service_checkins: "check-ins",

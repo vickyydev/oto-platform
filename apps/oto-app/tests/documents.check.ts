@@ -544,14 +544,20 @@ try {
     [inherited, DEFAULT, inheritedName],
   );
 
-  await check("a park group with no policy of its own is worked out by the default park group's company-wide one (Q28's rule)", async () => {
+  await check("a park group with no policy of its own takes the default park group's company-wide one into its Days Off type when its leave catalogue is made (Q28's rule, read once since SCRUM-560)", async () => {
     const eBLeave = await employee(B.tenant, B.x, "b-leave");
     const balance = await call("GET", `/api/employees/${eBLeave}/leave-balance`, { cookie: cookie.b });
     assert.equal(balance.status, 200, show(balance));
-    assert.equal(balance.body.policyName, inheritedName);
-    // Its list holds only what it can change: its own, none yet.
-    assert.deepEqual((await call("GET", "/api/leave-policies", { cookie: cookie.b })).body, []);
-    // Its own company-wide policy takes over, and the default park group's stays as it was.
+    // SCRUM-560: the company-wide rule is the park group's Days Off type, its numbers the default's.
+    assert.equal(balance.body.policyName, "Days Off");
+    assert.deepEqual(
+      await q("select days_worked_required, days_off_earned from leave_types where tenant_id = $1 and code = 'CHANGE_DAY_OFF'", [B.tenant]),
+      [{ days_worked_required: 3, days_off_earned: 1 }],
+    );
+    // Its list holds only what it can change: its own company-wide rule (the type), no branch policy yet.
+    const listB = (await call("GET", "/api/leave-policies", { cookie: cookie.b })).body as { branchId: string | null; daysWorkedRequired: number }[];
+    assert.deepEqual(listB.map((p) => [p.branchId, p.daysWorkedRequired]), [[null, 3]]);
+    // Its own company-wide save changes its own type, and the default park group's stays as it was.
     const own = await call("POST", "/api/leave-policies", { cookie: cookie.b, body: { name: `ZZ r6 B leave ${run}`, daysWorkedRequired: 6, daysOffEarned: 1 } });
     assert.equal(own.status, 201, show(own));
     assert.equal(own.body.tenantId, B.tenant);
@@ -622,15 +628,19 @@ try {
     );
   });
 
-  await check("round 6's review, F4: a balance weighs the branch's own policies and the company-wide slot — the default park group's while the park group has none of its own — newest effective first", async () => {
-    // A has a policy on branch X (made above, effective now) and no company-wide policy of its
-    // own: the default park group's (effective tomorrow) is weighed beside it, and is the newer.
+  await check("round 6's review, F4, as the leave types have it (SCRUM-560): a balance takes the branch's own newest policy, else the park group's Days Off type — seeded from the default park group's company-wide policy where it had none of its own", async () => {
+    // A has a policy on branch X (made above) and no company-wide policy of its own: its Days Off
+    // type took the default park group's numbers when its catalogue was made.
     const onX = await employee(A.tenant, A.x, "a-leave-x");
     const onY = await employee(A.tenant, A.y, "a-leave-y");
     const policyOf = async (id: string) => (await call("GET", `/api/employees/${id}/leave-balance`, { cookie: cookie.a })).body.policyName as string;
-    assert.equal(await policyOf(onX), inheritedName, "before 0008 the newer company-wide policy won over the branch's own");
-    assert.equal(await policyOf(onY), inheritedName);
-    // A branch policy newer than the default's wins, as before 0008.
+    assert.equal(await policyOf(onX), `ZZ r6 A leave ${run}`, "the branch's own policy, whatever is newer company-wide");
+    assert.equal(await policyOf(onY), "Days Off");
+    assert.deepEqual(
+      await q("select days_worked_required, days_off_earned from leave_types where tenant_id = $1 and code = 'CHANGE_DAY_OFF'", [A.tenant]),
+      [{ days_worked_required: 3, days_off_earned: 1 }],
+    );
+    // A newer branch policy on X takes over there; Y keeps the type.
     const newest = `ZZ r6 A newest ${run}`;
     await q(
       `insert into leave_policies (tenant_id, branch_id, name, days_worked_required, days_off_earned, effective_from, is_active)
@@ -638,15 +648,14 @@ try {
       [A.tenant, A.x, newest],
     );
     assert.equal(await policyOf(onX), newest);
-    assert.equal(await policyOf(onY), inheritedName);
-    // A company-wide policy of its own takes the default's place in the weighing, though it is older.
-    const ownWide = `ZZ r6 A company-wide ${run}`;
+    assert.equal(await policyOf(onY), "Days Off");
+    // A company-wide row written after the catalogue is not the rule: the type is.
     await q(
       `insert into leave_policies (tenant_id, branch_id, name, days_worked_required, days_off_earned, effective_from, is_active)
        values ($1, null, $2, 5, 2, now() - interval '10 days', true)`,
-      [A.tenant, ownWide],
+      [A.tenant, `ZZ r6 A company-wide ${run}`],
     );
-    assert.equal(await policyOf(onY), ownWide);
+    assert.equal(await policyOf(onY), "Days Off");
     assert.equal(await policyOf(onX), newest);
   });
 
@@ -1208,12 +1217,13 @@ try {
     "POST /api/employees/:employeeId/enrollment-session": {},
     "POST /api/employees/:employeeId/reset-face-enrollment": {},
     "POST /api/employees/:employeeId/pin": { pin: "1234" },
+    "PUT /api/employees/:id/leave-overrides/:leaveTypeId": { annualDays: 1 },
   };
   const doorPath = (path: string) =>
     path.replace(/:id\b|:employeeId\b/, eHR).replace(":changeId", changeHR).replace(":docId", docHR).replace(":letterId", letterHR);
 
-  await check("the census: all 45 doors, as another park group's admin against this park group's employee, answer as the census says, and nothing is written", async () => {
-    assert.equal(EMPLOYEE_DOORS.length, 45);
+  await check("the census: all 49 doors (SCRUM-560 added the four leave doors), as another park group's admin against this park group's employee, answer as the census says, and nothing is written", async () => {
+    assert.equal(EMPLOYEE_DOORS.length, 49);
     const before = await hrSnapshot();
     const wrong: string[] = [];
     for (const door of EMPLOYEE_DOORS) {
@@ -1230,7 +1240,7 @@ try {
     }
     assert.deepEqual(wrong, []);
     assert.deepEqual(await hrSnapshot(), before, "nothing of the employee, their login or their records changed");
-    console.log(`      the census: ${EMPLOYEE_DOORS.length} doors — ${EMPLOYEE_DOORS.filter((d) => d.fence === "review").length} fenced by round 6's review, ${EMPLOYEE_DOORS.filter((d) => d.fence === "lift").length} before it, ${EMPLOYEE_DOORS.filter((d) => d.fence === "app").length} by the app itself`);
+    console.log(`      the census: ${EMPLOYEE_DOORS.length} doors — ${EMPLOYEE_DOORS.filter((d) => d.fence === "review").length} fenced by round 6's review, ${EMPLOYEE_DOORS.filter((d) => d.fence === "lift").length} before it, ${EMPLOYEE_DOORS.filter((d) => d.fence === "app").length} by the app itself, ${EMPLOYEE_DOORS.filter((d) => d.fence === "port").length} as ported`);
   });
 
   await check("within the park group the doors are the app's: the employee read, edited and moved, roles, department, allocations, history, PIN, probation and the login", async () => {
@@ -1329,9 +1339,9 @@ try {
     currentData: Record<string, unknown>;
   }
 
-  await check("the census covers all 54 `/api/employees*` routes: as another park group's admin the nine without an id each keep to their rule — the list, the template, the create, the bulk delete, the reorder, the dead review list, the recalculation and the Excel import's preview and apply — and nothing of this park group's changes (round 6's re-review, F6)", async () => {
+  await check("the census covers all 58 `/api/employees*` routes: as another park group's admin the nine without an id each keep to their rule — the list, the template, the create, the bulk delete, the reorder, the dead review list, the recalculation and the Excel import's preview and apply — and nothing of this park group's changes (round 6's re-review, F6)", async () => {
     assert.equal(EMPLOYEE_LIST_DOORS.length, 9);
-    assert.equal(EMPLOYEE_DOORS.length + EMPLOYEE_LIST_DOORS.length, 54);
+    assert.equal(EMPLOYEE_DOORS.length + EMPLOYEE_LIST_DOORS.length, 58);
     const hr = (await q<{ email: string; full_name: string; display_order: number | null }>("select email, full_name, display_order from employees where id = $1", [eHR]))[0]!;
     const before = await hrSnapshot();
     const wrong: string[] = [];
@@ -1423,7 +1433,7 @@ try {
     assert.deepEqual(await hrSnapshot(), before, "nothing of the employee, their login or their records changed");
     assert.equal(await count("select count(*) as n from employees where branch_id = any($1) and tenant_id <> $2", [[A.x, A.y], A.tenant]), 0, "nobody of another park group on this park group's branches");
     const fences = (f: string) => EMPLOYEE_LIST_DOORS.filter((d) => d.fence === f).length;
-    console.log(`      the census: 54 routes — the 45 with an id and 9 without: ${fences("re-review")} fenced by round 6's re-review, ${fences("lift")} before it, ${fences("none")} dead`);
+    console.log(`      the census: 58 routes — the 49 with an id and 9 without: ${fences("re-review")} fenced by round 6's re-review, ${fences("lift")} before it, ${fences("none")} dead`);
   });
 
   await check("the doors without an id as the app has them within the park group: the list, the Excel import's match by email with the current pay and tax id, its placing by branch name and its apply, the reorder and the template (round 6's re-review, F6)", async () => {

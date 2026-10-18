@@ -46,6 +46,11 @@
  *                    where it has none (Q28's rule on that slot; Q49 offers
  *                    own-only, as the sick-leave policy has it since round 5).
  *                    Writing is always the park group's own.
+ *                    Since SCRUM-560 (migration 0018) the company-wide slot
+ *                    is the park group's Days Off leave type: the fallback
+ *                    is read ONCE, into that type, when the park group's
+ *                    leave catalogue is made; a branch's own policy is the
+ *                    rule where it has one.
  *
  * Another park group's template, policy, catalogue item, leave policy or
  * branch is the same answer as one that does not exist, in the app's own words

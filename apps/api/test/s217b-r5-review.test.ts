@@ -918,8 +918,9 @@ describe.skipIf(!HAS_APP_RUNTIME)('B to E. over HTTP against the app’s routes'
     if (policies) return policies;
     const aSaved = await call('POST', '/api/sick-leave-policy', { cookie: A.admin.cookie, body: { annualSickLeaveDays: 12 } });
     const bSaved = await call('POST', '/api/sick-leave-policy', { cookie: B.admin.cookie, body: { annualSickLeaveDays: 3 } });
+    // SCRUM-560: the company-wide sick-leave rule is each park group's SICK leave type (migration 0018).
     const rows = await q<{ tenant_id: string; annual_sick_leave_days: number }>(
-      'select tenant_id, annual_sick_leave_days from sick_leave_policies where branch_id is null and tenant_id = any($1) order by tenant_id',
+      "select tenant_id, annual_days as annual_sick_leave_days from leave_types where code = 'SICK' and tenant_id = any($1) order by tenant_id",
       [[A.tenant, B.tenant]],
     );
     const bRead = await call('GET', '/api/sick-leave-policy', { cookie: B.admin.cookie });

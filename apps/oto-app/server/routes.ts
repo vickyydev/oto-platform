@@ -143,9 +143,20 @@ import { registerBirthdayPackageRoutes } from "./birthday-package-routes";
 import { registerAuthOtpRoutes } from "./auth-otp-routes";
 
 import { db, pool } from "./db";
+import {
+  createTenantLeaveType,
+  deleteEmployeeLeaveOverride,
+  employeeDynamicLeaveBalances,
+  getTenantLeaveType,
+  getTenantLeaveTypeByCode,
+  listEmployeeLeaveOverrides,
+  listTenantLeaveTypes,
+  updateTenantLeaveType,
+  upsertEmployeeLeaveOverride,
+} from "./leave-types";
 import { directoryEventRouter } from "./directory/eventRoutes";
 import { directoryJobRouter } from "./directory/jobRoutes";
-import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, employeeAssets, employeeOffboarding, offboardingChecklist, eventStatuses, insertEventStatusSchema, branches, departments, operators, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, timekeepingIssues, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, scheduleAuditLog, activityLog, roles, roleBranchAssignments, employeeRoles, payrollEmployeeSummaries, payrollLineItems, payrollDayReconciliations, payrollExceptions, statutoryCalculationResults, employeePayrollProfiles, payslips, accessPolicies, accessItems, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections, kioskAuthAttempts } from "@shared/schema";
+import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, employeeAssets, employeeOffboarding, offboardingChecklist, eventStatuses, insertEventStatusSchema, branches, departments, operators, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, timekeepingIssues, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, leavePolicies, sickLeavePolicies, type LeaveType, scheduleAuditLog, activityLog, roles, roleBranchAssignments, employeeRoles, payrollEmployeeSummaries, payrollLineItems, payrollDayReconciliations, payrollExceptions, statutoryCalculationResults, employeePayrollProfiles, payslips, accessPolicies, accessItems, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections, kioskAuthAttempts } from "@shared/schema";
 import { hashSessionToken, validateKioskSession } from "./kiosk-auth";
 import { DEACTIVATE_INSTEAD, deleteManagedUser } from "./lib/userDeletion";
 import { deleteBranchWhole, deleteEmployeeWhole, deletePersonWhole } from "./lib/recordDeletion";
@@ -6399,10 +6410,42 @@ export async function registerRoutes(
   // group read before. Each park group saves its own rows (4b); a caller the
   // app cannot place in a park group is answered in words, and nothing is
   // written.
+  // The yearly leave numbers moved onto the park group's leave types
+  // (SCRUM-560, migration 0018): these keys read and save its Annual Leave and
+  // Business Days types, as upstream maps them, so the old settings rows for
+  // them are read nowhere once the catalogue exists.
+  const LEAVE_SETTING_KEYS = {
+    annual_leave_total_days: { code: "ANNUAL", field: "annualDays", integer: false, max: 3650 },
+    annual_leave_waiting_months: { code: "ANNUAL", field: "waitingMonths", integer: true, max: 600 },
+    business_days_total: { code: "BUSINESS", field: "annualDays", integer: false, max: 3650 },
+  } as const;
+  type LeaveSettingKey = keyof typeof LEAVE_SETTING_KEYS;
+  const isLeaveSettingKey = (key: unknown): key is LeaveSettingKey =>
+    typeof key === "string" && Object.prototype.hasOwnProperty.call(LEAVE_SETTING_KEYS, key);
+
   app.get("/api/settings", requireAuth, async (req, res, next) => {
     try {
-      const settings = await storage.getSettings(req.userWithAccess?.tenantId ?? null);
-      res.json(settings);
+      const tenantId = req.userWithAccess?.tenantId ?? null;
+      const settings = await storage.getSettings(tenantId);
+      if (!tenantId) return res.json(settings);
+      const types = await listTenantLeaveTypes(tenantId);
+      const valueOf = (key: LeaveSettingKey) => {
+        const rule = LEAVE_SETTING_KEYS[key];
+        const type = types.find((item) => item.code === rule.code);
+        return type ? { type, value: String(type[rule.field]) } : undefined;
+      };
+      const answered = settings.map((setting) => {
+        const canonical = isLeaveSettingKey(setting.key) ? valueOf(setting.key) : undefined;
+        return canonical ? { ...setting, value: canonical.value } : setting;
+      });
+      const present = new Set(answered.map((setting) => setting.key));
+      for (const key of Object.keys(LEAVE_SETTING_KEYS) as LeaveSettingKey[]) {
+        const canonical = valueOf(key);
+        if (canonical && !present.has(key)) {
+          answered.push({ id: canonical.type.id, key, value: canonical.value, updatedAt: canonical.type.updatedAt, tenantId });
+        }
+      }
+      res.json(answered);
     } catch (error) {
       next(error);
     }
@@ -6439,11 +6482,44 @@ export async function registerRoutes(
       const writer = await settingsWriter(req, res);
       if (!writer) return;
 
-      // One transaction for the whole form: every key saved, or none.
-      const results = await storage.upsertSettings(
-        settingsArray.map((setting) => ({ key: setting?.key, value: setting?.value })),
-        writer.tenantId,
-      );
+      // The leave keys save the park group's leave types (SCRUM-560). Every
+      // one is checked before anything is written, so a refused value saves
+      // nothing at all.
+      const leaveChanges: Array<{ key: LeaveSettingKey; value: number }> = [];
+      const plainSettings: Array<{ key: unknown; value: unknown }> = [];
+      // Partitioned only: the plain keys still save in ONE transaction below.
+      for (const entry of settingsArray) {
+        const key: unknown = entry?.key;
+        if (!isLeaveSettingKey(key)) {
+          plainSettings.push({ key, value: entry?.value });
+          continue;
+        }
+        const rule = LEAVE_SETTING_KEYS[key];
+        const value = Number(entry.value);
+        if (!Number.isFinite(value) || value < 0 || value > rule.max || (rule.integer && !Number.isInteger(value))) {
+          return res.status(400).json({
+            message: rule.integer
+              ? `${key} must be a whole number between 0 and ${rule.max}`
+              : `${key} must be between 0 and ${rule.max}`,
+          });
+        }
+        leaveChanges.push({ key, value });
+      }
+
+      // One transaction for the rest of the form: every key saved, or none.
+      const results: Array<Record<string, unknown>> = plainSettings.length
+        ? await storage.upsertSettings(plainSettings as Parameters<typeof storage.upsertSettings>[0], writer.tenantId)
+        : [];
+      if (leaveChanges.length) {
+        const types = await listTenantLeaveTypes(writer.tenantId);
+        for (const change of leaveChanges) {
+          const rule = LEAVE_SETTING_KEYS[change.key];
+          const type = types.find((item) => item.code === rule.code);
+          const updated = type ? await updateTenantLeaveType(writer.tenantId, type.id, { [rule.field]: change.value }) : undefined;
+          if (!updated) return res.status(404).json({ message: `The ${rule.code === "ANNUAL" ? "Annual Leave" : "Business Days"} leave type was not found` });
+          results.push({ id: updated.id, key: change.key, value: String(change.value), updatedAt: updated.updatedAt, tenantId: writer.tenantId });
+        }
+      }
 
       res.json(results);
     } catch (error) {
@@ -12880,7 +12956,8 @@ OTO Company Limited`,
       const timeOffSchema = z.object({
         employeeId: z.string().uuid(),
         branchId: z.string().uuid(),
-        timeOffType: z.enum(["SICK", "ANNUAL", "BUSINESS", "UNPAID", "TRAINING", "OTHER", "CHANGE_DAY_OFF"]),
+        // Any of the park group's active leave codes (SCRUM-560), checked below.
+        timeOffType: z.string().trim().min(1).max(80),
         startDate: z.string().transform(s => new Date(s)),
         endDate: z.string().transform(s => new Date(s)),
         isHalfDay: z.boolean().default(false),
@@ -12894,7 +12971,7 @@ OTO Company Limited`,
         return res.status(400).json({ message: "Validation failed", errors: validationResult.error.errors });
       }
 
-      const { branchId, employeeId, timeOffType, startDate, endDate, notes, approved } = validationResult.data;
+      const { branchId, employeeId, timeOffType: requestedTimeOffType, startDate, endDate, notes, approved } = validationResult.data;
 
       // Check branch access - global_admin and admin have all access
       const isGlobalAdmin = user.role === "global_admin" || user.role === "admin";
@@ -12925,6 +13002,12 @@ OTO Company Limited`,
       if (!branch || branch.tenantId !== user.tenantId) {
         return res.status(404).json({ message: "Branch not found" });
       }
+      // The type is one of the park group's active leave types, stored by its code.
+      const requestedLeaveType = await getTenantLeaveTypeByCode(branch.tenantId, requestedTimeOffType);
+      if (!requestedLeaveType || !requestedLeaveType.isActive) {
+        return res.status(400).json({ message: "Unknown or inactive leave type" });
+      }
+      const timeOffType = requestedLeaveType.code;
 
       // Check if employee has any shifts or existing time-off on the requested dates
       // For date range, check each day
@@ -13059,7 +13142,7 @@ OTO Company Limited`,
       }
 
       const timeOffSchema = z.object({
-        timeOffType: z.enum(["SICK", "ANNUAL", "UNPAID", "TRAINING", "OTHER", "CHANGE_DAY_OFF"]).optional(),
+        timeOffType: z.string().trim().min(1).max(80).optional(),
         startDate: z.string().transform(s => new Date(s)).optional(),
         endDate: z.string().transform(s => new Date(s)).optional(),
         notes: z.string().nullable().optional(),
@@ -13071,8 +13154,15 @@ OTO Company Limited`,
         return res.status(400).json({ message: "Validation failed", errors: validationResult.error.errors });
       }
 
-      const updateData: { type?: typeof validationResult.data.timeOffType; note?: string | null; startDate?: Date; endDate?: Date } = {};
-      if (validationResult.data.timeOffType !== undefined) updateData.type = validationResult.data.timeOffType;
+      const updateData: { type?: string; note?: string | null; startDate?: Date; endDate?: Date } = {};
+      if (validationResult.data.timeOffType !== undefined) {
+        // One of the record's park group's active leave types (SCRUM-560).
+        const requestedLeaveType = await getTenantLeaveTypeByCode(existing.tenantId, validationResult.data.timeOffType);
+        if (!requestedLeaveType || !requestedLeaveType.isActive) {
+          return res.status(400).json({ message: "Unknown or inactive leave type" });
+        }
+        updateData.type = requestedLeaveType.code;
+      }
       if (validationResult.data.notes !== undefined) updateData.note = validationResult.data.notes;
 
       // If dates are changing, check for shift conflicts on new dates
@@ -13270,96 +13360,168 @@ OTO Company Limited`,
   // ============================================
   // LEAVE POLICIES - Days Off Accrual Rules
   // ============================================
-
-  // GET /api/leave-policies - Get all leave policies
   //
-  // Each park group's own (S2-17b round 6, migration 0008; plan Q31): the
-  // lists answered every park group's policies, and a company-wide policy one
-  // park group wrote set every park group's accrual. The branch rule below is
-  // the app's (plan Q40); it reads the branches the user may reach,
-  // `allowedBranchIds` (it read a `branchIds` field that does not exist, so
-  // every branch-limited caller was refused; SCRUM-544).
+  // Since the flexible leave types (SCRUM-560, migration 0018) the
+  // company-wide Days Off rule IS the park group's CHANGE_DAY_OFF leave type,
+  // as upstream maps it; a branch's own rule stays a `leave_policies` row of
+  // that branch. So these doors answer both: a branch policy by its id, and the
+  // company-wide rule by its type's id — or by the id of a company-wide policy
+  // row saved before 0018, which now names the same rule (the combined lookup,
+  // `daysOffRule`). Everything stays the caller's park group's (round 6, Q31);
+  // the branch rule is the app's (Q40), reading the branches the user may
+  // reach, `allowedBranchIds` (SCRUM-544).
+
+  /** The app's branch rule for the leave doors (Q40; SCRUM-544 reads `allowedBranchIds`). */
+  const leaveBranchAllowed = (user: UserWithBranchAccess, branchId: string): boolean =>
+    user.role === "global_admin" || user.role === "admin" || user.hasAllBranchesAccess || (user.allowedBranchIds || []).includes(branchId);
+
+  /** The Days Off type answered in a leave policy's shape. */
+  const daysOffTypeAsPolicy = (type: LeaveType, tenantId: string, branchId: string | null) => ({
+    id: type.id,
+    tenantId,
+    branchId,
+    name: type.name,
+    description: null,
+    daysWorkedRequired: type.daysWorkedRequired,
+    daysOffEarned: type.daysOffEarned,
+    isActive: type.isActive,
+  });
+
+  const daysOffType = async (tenantId: string): Promise<LeaveType | undefined> =>
+    (await listTenantLeaveTypes(tenantId)).find((type) => type.code === "CHANGE_DAY_OFF");
+
+  /**
+   * The rule an id names in the park group: a branch policy, or the park
+   * group's Days Off type (its own id, or a pre-0018 company-wide policy's).
+   * Another park group's id, or none at all, is `null` — the 404.
+   */
+  const daysOffRule = async (id: string, tenantId: string) => {
+    const policy = await storage.getLeavePolicyInParkGroup(id, tenantId);
+    if (policy?.branchId) return { kind: "branch" as const, policy, branchId: policy.branchId };
+    const type = await daysOffType(tenantId);
+    if (type && (policy || type.id === id)) return { kind: "type" as const, type };
+    return null;
+  };
+
+  const daysOffNumbers = (body: Record<string, unknown>, required: boolean): { message: string } | null => {
+    const { daysWorkedRequired, daysOffEarned } = body;
+    if ((required || daysWorkedRequired !== undefined) && (typeof daysWorkedRequired !== "number" || daysWorkedRequired < 1)) {
+      return { message: "Days worked required must be 1 or more" };
+    }
+    if ((required || daysOffEarned !== undefined) && (typeof daysOffEarned !== "number" || daysOffEarned < 1)) {
+      return { message: "Days off earned must be 1 or more" };
+    }
+    return null;
+  };
+
+  // GET /api/leave-policies - the park group's Days Off rules. With a branch:
+  // the branch's own policies, newest effective first, or else the company-wide
+  // rule answered for the branch. Without: the company-wide rule, then every
+  // branch's own.
   app.get("/api/leave-policies", requireAuth, async (req, res, next) => {
     try {
       const tenantId = documentParkGroup(req, res);
       if (!tenantId) return;
       const user = req.user as UserWithBranchAccess;
       const { branchId } = req.query;
+      if (branchId !== undefined && typeof branchId !== "string") {
+        return res.status(400).json({ message: "branchId must be a single branch ID" });
+      }
 
       // Check if global admin or admin
       const isGlobalAdmin = user.role === "global_admin" || user.role === "admin";
 
-      if (branchId && typeof branchId === "string") {
+      if (branchId) {
         if (!await branchInParkGroup(branchId, tenantId)) {
           return res.status(404).json(BRANCH_NOT_FOUND);
         }
-        // Check branch access
-        if (!isGlobalAdmin && !user.hasAllBranchesAccess) {
-          const userBranchIds = user.allowedBranchIds || [];
-          if (!userBranchIds.includes(branchId)) {
-            return res.status(403).json({ message: "Access denied" });
-          }
+        if (!leaveBranchAllowed(user, branchId)) {
+          return res.status(403).json({ message: "Access denied" });
         }
-        const policies = await storage.getLeavePolicies(tenantId, branchId);
-        return res.json(policies);
-      }
-
-      // Return all policies (for admin or all branches access)
-      if (!isGlobalAdmin && !user.hasAllBranchesAccess) {
+      } else if (!isGlobalAdmin && !user.hasAllBranchesAccess) {
         return res.status(403).json({ message: "Access denied - select a branch" });
       }
-      const policies = await storage.getLeavePolicies(tenantId);
-      res.json(policies);
+
+      const type = await daysOffType(tenantId);
+      const own = await storage.getLeavePolicies(tenantId, branchId || undefined);
+      if (branchId) {
+        const branchPolicies = own
+          .filter((policy) => policy.branchId === branchId)
+          .sort((a, b) => b.effectiveFrom.getTime() - a.effectiveFrom.getTime());
+        if (branchPolicies.length) return res.json(branchPolicies);
+        return res.json(type ? [daysOffTypeAsPolicy(type, tenantId, branchId)] : []);
+      }
+      res.json([
+        ...(type ? [daysOffTypeAsPolicy(type, tenantId, null)] : []),
+        ...own.filter((policy) => !!policy.branchId),
+      ]);
     } catch (error) {
       next(error);
     }
   });
 
-  // POST /api/leave-policies - Create a leave policy (admin only), for the
-  // caller's park group, on one of its own branches or company-wide.
+  // POST /api/leave-policies - admin only, for the caller's park group: on one
+  // of its branches a new branch policy; company-wide, the Days Off type.
   app.post("/api/leave-policies", requireAuth, requireAdmin, async (req, res, next) => {
     try {
       const tenantId = documentParkGroup(req, res);
       if (!tenantId) return;
+      const user = req.user as UserWithBranchAccess;
       const { name, description, daysWorkedRequired, daysOffEarned, branchId, isActive } = req.body;
 
       if (!name || typeof name !== "string") {
         return res.status(400).json({ message: "name is required" });
       }
-      if (daysWorkedRequired === undefined || typeof daysWorkedRequired !== "number" || daysWorkedRequired < 1) {
-        return res.status(400).json({ message: "Days worked required must be 1 or more" });
-      }
-      if (daysOffEarned === undefined || typeof daysOffEarned !== "number" || daysOffEarned < 1) {
-        return res.status(400).json({ message: "Days off earned must be 1 or more" });
-      }
+      const refused = daysOffNumbers(req.body, true);
+      if (refused) return res.status(400).json(refused);
       if (branchId && (typeof branchId !== "string" || !await branchInParkGroup(branchId, tenantId))) {
         return res.status(404).json(BRANCH_NOT_FOUND);
       }
 
-      const policy = await storage.createLeavePolicy({
-        tenantId,
+      if (branchId) {
+        if (!leaveBranchAllowed(user, branchId)) return res.status(403).json({ message: "Access denied" });
+        const effectiveFrom = req.body.effectiveFrom === undefined ? new Date() : new Date(req.body.effectiveFrom);
+        if (Number.isNaN(effectiveFrom.getTime())) return res.status(400).json({ message: "effectiveFrom must be a valid date" });
+        const policy = await storage.createLeavePolicy({
+          tenantId,
+          name,
+          description: description || null,
+          daysWorkedRequired,
+          daysOffEarned,
+          branchId,
+          effectiveFrom,
+          isActive: isActive ?? true,
+        });
+        return res.status(201).json(policy);
+      }
+
+      const type = await daysOffType(tenantId);
+      if (!type) return res.status(404).json(LEAVE_POLICY_NOT_FOUND);
+      const updated = await updateTenantLeaveType(tenantId, type.id, {
         name,
-        description: description || null,
         daysWorkedRequired,
         daysOffEarned,
-        branchId: branchId || null,
         isActive: isActive ?? true,
       });
-      res.status(201).json(policy);
+      if (!updated) return res.status(404).json(LEAVE_POLICY_NOT_FOUND);
+      res.status(201).json(daysOffTypeAsPolicy(updated, tenantId, null));
     } catch (error) {
       next(error);
     }
   });
 
-  // PATCH /api/leave-policies/:id - Update a leave policy (admin only): the
-  // park group's own, kept on its own branches.
+  // PATCH /api/leave-policies/:id - admin only: a branch policy is changed in
+  // place (it stays on its branch); the company-wide rule changes the Days Off
+  // type, or — naming a branch — that branch's newest policy, made if it has none.
   app.patch("/api/leave-policies/:id", requireAuth, requireAdmin, async (req, res, next) => {
     try {
       const tenantId = documentParkGroup(req, res);
       if (!tenantId) return;
+      const user = req.user as UserWithBranchAccess;
       const { id } = req.params;
-      const { name, description, daysWorkedRequired, daysOffEarned, branchId, isActive } = req.body;
-      if (!await storage.getLeavePolicyInParkGroup(id, tenantId)) {
+      const { name, description, daysWorkedRequired, daysOffEarned, branchId, isActive, effectiveFrom } = req.body;
+      const rule = await daysOffRule(id, tenantId);
+      if (!rule) {
         return res.status(404).json(LEAVE_POLICY_NOT_FOUND);
       }
       if (branchId && (typeof branchId !== "string" || !await branchInParkGroup(branchId, tenantId))) {
@@ -13369,39 +13531,245 @@ OTO Company Limited`,
       const updates: Record<string, any> = {};
       if (name !== undefined) updates.name = name;
       if (description !== undefined) updates.description = description;
-      if (daysWorkedRequired !== undefined) {
-        if (typeof daysWorkedRequired !== "number" || daysWorkedRequired < 1) {
-          return res.status(400).json({ message: "Days worked required must be 1 or more" });
-        }
-        updates.daysWorkedRequired = daysWorkedRequired;
-      }
-      if (daysOffEarned !== undefined) {
-        if (typeof daysOffEarned !== "number" || daysOffEarned < 1) {
-          return res.status(400).json({ message: "Days off earned must be 1 or more" });
-        }
-        updates.daysOffEarned = daysOffEarned;
-      }
-      if (branchId !== undefined) updates.branchId = branchId;
+      const refused = daysOffNumbers(req.body, false);
+      if (refused) return res.status(400).json(refused);
+      if (daysWorkedRequired !== undefined) updates.daysWorkedRequired = daysWorkedRequired;
+      if (daysOffEarned !== undefined) updates.daysOffEarned = daysOffEarned;
       if (isActive !== undefined) updates.isActive = isActive;
-      
-      const policy = await storage.updateLeavePolicy(id, updates);
-      res.json(policy);
+      if (effectiveFrom !== undefined) {
+        const parsed = new Date(effectiveFrom);
+        if (Number.isNaN(parsed.getTime())) return res.status(400).json({ message: "effectiveFrom must be a valid date" });
+        updates.effectiveFrom = parsed;
+      }
+
+      if (rule.kind === "branch") {
+        if (branchId && branchId !== rule.branchId) {
+          return res.status(400).json({ message: "branchId does not match this branch's Days Off policy" });
+        }
+        if (!leaveBranchAllowed(user, rule.branchId)) return res.status(403).json({ message: "Access denied" });
+        const policy = await storage.updateLeavePolicy(id, updates);
+        return res.json(policy);
+      }
+
+      if (branchId) {
+        if (!leaveBranchAllowed(user, branchId)) return res.status(403).json({ message: "Access denied" });
+        const [newest] = (await storage.getLeavePolicies(tenantId, branchId))
+          .filter((policy) => policy.branchId === branchId)
+          .sort((a, b) => b.effectiveFrom.getTime() - a.effectiveFrom.getTime());
+        if (newest) return res.json(await storage.updateLeavePolicy(newest.id, updates));
+        const created = await storage.createLeavePolicy({
+          tenantId,
+          branchId,
+          name: name ?? rule.type.name,
+          description: description ?? null,
+          daysWorkedRequired: daysWorkedRequired ?? rule.type.daysWorkedRequired,
+          daysOffEarned: daysOffEarned ?? rule.type.daysOffEarned,
+          effectiveFrom: updates.effectiveFrom ?? new Date(),
+          isActive: isActive ?? true,
+        });
+        return res.json(created);
+      }
+
+      const updated = await updateTenantLeaveType(tenantId, rule.type.id, {
+        name: updates.name,
+        daysWorkedRequired: updates.daysWorkedRequired,
+        daysOffEarned: updates.daysOffEarned,
+        isActive: updates.isActive,
+      });
+      if (!updated) return res.status(404).json(LEAVE_POLICY_NOT_FOUND);
+      res.json(daysOffTypeAsPolicy(updated, tenantId, null));
     } catch (error) {
       next(error);
     }
   });
 
-  // DELETE /api/leave-policies/:id - Delete a leave policy (admin only): the park group's own.
+  // DELETE /api/leave-policies/:id - admin only: a branch policy is removed;
+  // the company-wide rule switches the Days Off type off (types are never
+  // deleted: time-off rows keep their code).
   app.delete("/api/leave-policies/:id", requireAuth, requireAdmin, async (req, res, next) => {
     try {
       const tenantId = documentParkGroup(req, res);
       if (!tenantId) return;
+      const user = req.user as UserWithBranchAccess;
       const { id } = req.params;
-      if (!await storage.getLeavePolicyInParkGroup(id, tenantId)) {
+      const rule = await daysOffRule(id, tenantId);
+      if (!rule) {
         return res.status(404).json(LEAVE_POLICY_NOT_FOUND);
       }
-      await storage.deleteLeavePolicy(id);
+      if (rule.kind === "branch") {
+        if (!leaveBranchAllowed(user, rule.branchId)) return res.status(403).json({ message: "Access denied" });
+        await storage.deleteLeavePolicy(id);
+        return res.status(204).send();
+      }
+      await updateTenantLeaveType(tenantId, rule.type.id, { isActive: false });
       res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // ============================================
+  // FLEXIBLE LEAVE TYPES (SCRUM-560)
+  // ============================================
+  // The caller's park group's catalogue; another park group's type is the
+  // same 404 as one that does not exist.
+  const leaveTypeInputBaseSchema = z.object({
+    code: z.string().trim().min(1).max(80).regex(/^[A-Za-z0-9_-]+$/).optional(),
+    name: z.string().trim().min(1).max(120),
+    isActive: z.boolean().optional().default(true),
+    accrualMethod: z.enum(["YEARLY", "WORKDAYS", "NONE"]).default("YEARLY"),
+    annualDays: z.number().min(0).max(3650).default(0),
+    waitingMonths: z.number().int().min(0).max(600).default(0),
+    prorateByStartDate: z.boolean().default(false),
+    daysWorkedRequired: z.number().int().min(0).max(10000).default(0),
+    daysOffEarned: z.number().min(0).max(3650).default(0),
+  });
+  const leaveTypeInputSchema = leaveTypeInputBaseSchema.superRefine((type, context) => {
+    if (type.accrualMethod === "WORKDAYS" && type.daysWorkedRequired < 1) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ["daysWorkedRequired"], message: "Workday accrual requires at least one worked day" });
+    }
+    if (type.accrualMethod === "WORKDAYS" && type.daysOffEarned <= 0) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ["daysOffEarned"], message: "Workday accrual must earn a positive amount" });
+    }
+  });
+  const leaveTypePatchSchema = leaveTypeInputBaseSchema.partial().omit({ code: true }).superRefine((type, context) => {
+    if (type.accrualMethod === "WORKDAYS") {
+      if (type.daysWorkedRequired === undefined || type.daysWorkedRequired < 1) {
+        context.addIssue({ code: z.ZodIssueCode.custom, path: ["daysWorkedRequired"], message: "Include a positive days-worked threshold for workday accrual" });
+      }
+      if (type.daysOffEarned === undefined || type.daysOffEarned <= 0) {
+        context.addIssue({ code: z.ZodIssueCode.custom, path: ["daysOffEarned"], message: "Include a positive earned amount for workday accrual" });
+      }
+    }
+  });
+  const isUniqueViolation = (error: unknown): boolean => {
+    const e = error as { code?: string; cause?: { code?: string } } | null;
+    return e?.code === "23505" || e?.cause?.code === "23505";
+  };
+  const LEAVE_TYPE_DUPLICATE = { message: "A leave type with this code already exists" } as const;
+  const LEAVE_TYPE_NOT_FOUND = { message: "Leave type not found" } as const;
+
+  app.get("/api/leave-types", requireAuth, async (req, res, next) => {
+    try {
+      const tenantId = documentParkGroup(req, res);
+      if (!tenantId) return;
+      const user = req.userWithAccess!;
+      if (!user.hasAllBranchesAccess && user.allowedBranchIds.length === 0 && user.role !== "global_admin" && user.role !== "admin") {
+        return res.status(403).json({ message: "Leave type access requires branch access" });
+      }
+      const types = await listTenantLeaveTypes(tenantId);
+      res.json(types.map(({ id, code, name, isActive, accrualMethod, annualDays, waitingMonths, prorateByStartDate, daysWorkedRequired, daysOffEarned }) => ({
+        id, code, name, isActive, accrualMethod, annualDays, waitingMonths, prorateByStartDate, daysWorkedRequired, daysOffEarned,
+      })));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/leave-types", requireAuth, requireAdmin, async (req, res, next) => {
+    try {
+      const tenantId = documentParkGroup(req, res);
+      if (!tenantId) return;
+      const parsed = leaveTypeInputSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ message: "Invalid leave type", errors: parsed.error.flatten() });
+      const code = (parsed.data.code || parsed.data.name.trim().replace(/[^A-Za-z0-9]+/g, "_").replace(/^_+|_+$/g, "")).toUpperCase().slice(0, 80);
+      if (!code) return res.status(400).json({ message: "A leave type code could not be generated from the name" });
+      const created = await createTenantLeaveType(tenantId, { ...parsed.data, code });
+      res.status(201).json(created);
+    } catch (error) {
+      if (isUniqueViolation(error)) return res.status(409).json(LEAVE_TYPE_DUPLICATE);
+      next(error);
+    }
+  });
+
+  app.patch("/api/leave-types/:id", requireAuth, requireAdmin, async (req, res, next) => {
+    try {
+      const tenantId = documentParkGroup(req, res);
+      if (!tenantId) return;
+      if (!z.string().uuid().safeParse(req.params.id).success) return res.status(400).json({ message: "Invalid leave type id" });
+      const parsed = leaveTypePatchSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ message: "Invalid leave type update", errors: parsed.error.flatten() });
+      if (Object.keys(parsed.data).length === 0) return res.status(400).json({ message: "At least one field is required" });
+      const updated = await updateTenantLeaveType(tenantId, req.params.id, parsed.data);
+      if (!updated) return res.status(404).json(LEAVE_TYPE_NOT_FOUND);
+      res.json(updated);
+    } catch (error) {
+      if (isUniqueViolation(error)) return res.status(409).json(LEAVE_TYPE_DUPLICATE);
+      next(error);
+    }
+  });
+
+  /**
+   * The leave doors' branch rule for one of the park group's employees (looked
+   * up by `employeeOfParkGroup` in each door, another park group's being the
+   * 404): the caller must reach the employee's branch, else the 403 is answered.
+   */
+  const leaveEmployeeReachable = (req: Request, res: Response, employee: { branchId: string | null }): boolean => {
+    if (canUserAccessBranch(req.userWithAccess!, employee.branchId)) return true;
+    res.status(403).json({ message: "Access denied to this employee's branch" });
+    return false;
+  };
+
+  app.get("/api/employees/:id/leave-overrides", requireAuth, async (req, res, next) => {
+    try {
+      const employee = await employeeOfParkGroup(req, req.params.id);
+      if (!employee) return res.status(404).json(EMPLOYEE_NOT_FOUND);
+      if (!leaveEmployeeReachable(req, res, employee)) return;
+      res.json(await listEmployeeLeaveOverrides(employee.tenantId, employee.id));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  const leaveOverrideSchema = z.object({
+    annualDays: z.number().min(0).max(3650).nullable().optional(),
+    accrualStartDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => {
+      const parsed = new Date(`${value}T00:00:00.000Z`);
+      return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+    }).nullable().optional(),
+    waitingMonths: z.number().int().min(0).max(600).nullable().optional(),
+  });
+
+  app.put("/api/employees/:id/leave-overrides/:leaveTypeId", requireAuth, requireAdmin, async (req, res, next) => {
+    try {
+      const parsed = leaveOverrideSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ message: "Invalid leave override", errors: parsed.error.flatten() });
+      if (Object.keys(parsed.data).length === 0) return res.status(400).json({ message: "At least one override field is required" });
+      const employee = await employeeOfParkGroup(req, req.params.id);
+      if (!employee) return res.status(404).json(EMPLOYEE_NOT_FOUND);
+      if (!leaveEmployeeReachable(req, res, employee)) return;
+      const override = await upsertEmployeeLeaveOverride(employee.tenantId, employee.id, req.params.leaveTypeId, parsed.data);
+      if (!override) return res.status(404).json(LEAVE_TYPE_NOT_FOUND);
+      res.json(override);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.delete("/api/employees/:id/leave-overrides/:leaveTypeId", requireAuth, requireAdmin, async (req, res, next) => {
+    try {
+      const employee = await employeeOfParkGroup(req, req.params.id);
+      if (!employee) return res.status(404).json(EMPLOYEE_NOT_FOUND);
+      if (!leaveEmployeeReachable(req, res, employee)) return;
+      const type = await getTenantLeaveType(employee.tenantId, req.params.leaveTypeId);
+      if (!type) return res.status(404).json(LEAVE_TYPE_NOT_FOUND);
+      await deleteEmployeeLeaveOverride(employee.tenantId, employee.id, type.id);
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/employees/:id/leave-balances-dynamic", requireAuth, async (req, res, next) => {
+    try {
+      const year = req.query.year === undefined ? new Date().getFullYear() : Number(req.query.year);
+      if (!Number.isInteger(year) || year < 1900 || year > 9999) return res.status(400).json({ message: "year must be a valid calendar year" });
+      const employee = await employeeOfParkGroup(req, req.params.id);
+      if (!employee) return res.status(404).json(EMPLOYEE_NOT_FOUND);
+      if (!leaveEmployeeReachable(req, res, employee)) return;
+      const result = await employeeDynamicLeaveBalances(employee.id, employee.tenantId, year);
+      if (!result) return res.status(404).json(EMPLOYEE_NOT_FOUND);
+      res.json(result);
     } catch (error) {
       next(error);
     }
@@ -13410,26 +13778,46 @@ OTO Company Limited`,
   // ============================================
   // SICK LEAVE POLICY & BALANCE
   // ============================================
+  //
+  // The company-wide sick-leave rule is the park group's SICK leave type since
+  // 0018 (upstream's mapping); a branch's own rule stays a
+  // `sick_leave_policies` row of that branch, the park group's own (round 5).
 
-  // GET /api/sick-leave-policy - Get sick leave policy for a branch
+  // GET /api/sick-leave-policy - the branch's own rule, else the company-wide one
   app.get("/api/sick-leave-policy", requireAuth, async (req, res, next) => {
     try {
-      const branchId = req.query.branchId as string | undefined;
-      // The caller's park group's policy (S2-17b round 5 review, F2), resolved
-      // as the save below resolves it.
-      const tenantId = await resolveTenantId((req.user as UserWithBranchAccess | undefined)?.tenantId);
-      const policy = await storage.getSickLeavePolicy(tenantId, branchId);
-      if (!policy) {
-        // Return default values if no policy exists
-        return res.json({
-          id: null,
-          annualSickLeaveDays: 30,
-          proRateByStartDate: true,
-          yearStartMonth: 1,
-          isActive: true,
-        });
+      const user = req.user as UserWithBranchAccess;
+      const requestedBranchId = req.query.branchId;
+      if (requestedBranchId !== undefined && typeof requestedBranchId !== "string") {
+        return res.status(400).json({ message: "branchId must be a single branch ID" });
       }
-      res.json(policy);
+      const branchId = requestedBranchId || undefined;
+      // The caller's park group's rule (S2-17b round 5 review, F2), resolved
+      // as the save below resolves it.
+      const tenantId = await resolveTenantId(user?.tenantId);
+      if (branchId) {
+        const branch = await storage.getBranch(branchId);
+        if (!branch || branch.tenantId !== tenantId) return res.status(404).json(BRANCH_NOT_FOUND);
+        if (!leaveBranchAllowed(user, branchId)) return res.status(403).json({ message: "Access denied" });
+        const [branchPolicy] = await db.select().from(sickLeavePolicies)
+          .where(and(
+            eq(sickLeavePolicies.tenantId, tenantId),
+            eq(sickLeavePolicies.branchId, branchId),
+            eq(sickLeavePolicies.isActive, true),
+          ))
+          .orderBy(desc(sickLeavePolicies.updatedAt), desc(sickLeavePolicies.createdAt)).limit(1);
+        if (branchPolicy) return res.json(branchPolicy);
+      }
+      const type = (await listTenantLeaveTypes(tenantId)).find((item) => item.code === "SICK");
+      res.json({
+        id: type?.id ?? null,
+        tenantId,
+        branchId: branchId ?? null,
+        annualSickLeaveDays: type?.annualDays ?? 30,
+        proRateByStartDate: type?.prorateByStartDate ?? true,
+        yearStartMonth: 1,
+        isActive: type?.isActive ?? true,
+      });
     } catch (error) {
       next(error);
     }
@@ -13449,41 +13837,52 @@ OTO Company Limited`,
       if (!parsed.success) {
         return res.status(400).json({ message: "Invalid input", errors: parsed.error.flatten() });
       }
-      
+
       const { branchId, annualSickLeaveDays, proRateByStartDate, yearStartMonth } = parsed.data;
-      const tenantId = await resolveTenantId(req.user?.tenantId);
+      const user = req.user as UserWithBranchAccess;
+      const tenantId = await resolveTenantId(user?.tenantId);
 
       // Held to the caller's park group (S2-17b round 5 review, F2): another
-      // park group's branch is the app's 404, and the policy read below keeps
-      // to the park group, so a company-wide save no longer rewrites another's.
+      // park group's branch is the app's 404 and nothing is written.
       if (branchId) {
         const branch = await storage.getBranch(branchId);
         if (!branch || branch.tenantId !== tenantId) {
-          return res.status(404).json({ message: "Branch not found" });
+          return res.status(404).json(BRANCH_NOT_FOUND);
         }
+        if (!leaveBranchAllowed(user, branchId)) return res.status(403).json({ message: "Access denied" });
+        const [existing] = await db.select().from(sickLeavePolicies)
+          .where(and(
+            eq(sickLeavePolicies.tenantId, tenantId),
+            eq(sickLeavePolicies.branchId, branchId),
+            eq(sickLeavePolicies.isActive, true),
+          ))
+          .orderBy(desc(sickLeavePolicies.updatedAt), desc(sickLeavePolicies.createdAt)).limit(1);
+        const values = { annualSickLeaveDays, proRateByStartDate, yearStartMonth, isActive: true, updatedAt: new Date() };
+        const [policy] = existing
+          ? await db.update(sickLeavePolicies).set(values)
+            .where(and(eq(sickLeavePolicies.id, existing.id), eq(sickLeavePolicies.tenantId, tenantId)))
+            .returning()
+          : await db.insert(sickLeavePolicies).values({ tenantId, branchId, annualSickLeaveDays, proRateByStartDate, yearStartMonth, isActive: true })
+            .returning();
+        return res.json(policy);
       }
 
-      // Get or create the policy (tenant-wide if no branchId, or branch-specific)
-      let policy = await storage.getSickLeavePolicy(tenantId, branchId ?? undefined);
-      
-      if (policy) {
-        // Update existing policy
-        policy = await storage.updateSickLeavePolicy(policy.id, {
-          annualSickLeaveDays,
-          proRateByStartDate,
-          yearStartMonth,
-        });
-      } else {
-        // Create new policy
-        policy = await storage.getOrCreateSickLeavePolicy(tenantId, branchId ?? undefined);
-        policy = await storage.updateSickLeavePolicy(policy.id, {
-          annualSickLeaveDays,
-          proRateByStartDate,
-          yearStartMonth,
-        });
-      }
-      
-      res.json(policy);
+      // Company-wide: the park group's Sick Leave type.
+      const type = (await listTenantLeaveTypes(tenantId)).find((item) => item.code === "SICK");
+      if (!type) return res.status(404).json({ message: "Sick Leave leave type not found" });
+      const updated = await updateTenantLeaveType(tenantId, type.id, {
+        annualDays: annualSickLeaveDays,
+        prorateByStartDate: proRateByStartDate,
+      });
+      res.json({
+        id: updated?.id ?? type.id,
+        tenantId,
+        branchId: null,
+        annualSickLeaveDays: updated?.annualDays ?? annualSickLeaveDays,
+        proRateByStartDate: updated?.prorateByStartDate ?? proRateByStartDate,
+        yearStartMonth,
+        isActive: updated?.isActive ?? type.isActive,
+      });
     } catch (error) {
       next(error);
     }
@@ -13560,102 +13959,62 @@ OTO Company Limited`,
         return res.status(403).json({ message: "Access denied - branch not allowed" });
       }
       
-      // Get settings for annual leave and business days: the park group's own
-      // (S2-17b round 4a), the default park group's where it has none.
-      const settings = await storage.getSettings(tenantId);
-      const annualLeaveTotalSetting = settings.find(s => s.key === "annual_leave_total_days");
-      const annualLeaveWaitingSetting = settings.find(s => s.key === "annual_leave_waiting_months");
-      const businessDaysTotalSetting = settings.find(s => s.key === "business_days_total");
-      
-      const annualLeaveTotal = annualLeaveTotalSetting?.value ? parseInt(annualLeaveTotalSetting.value, 10) : 8;
-      const annualLeaveWaitingMonths = annualLeaveWaitingSetting?.value ? parseInt(annualLeaveWaitingSetting.value, 10) : 6;
-      const businessDaysTotal = businessDaysTotalSetting?.value ? parseInt(businessDaysTotalSetting.value, 10) : 3;
-      
-      // Calculate months worked this year (exclusive - not counting partial current month)
+      // Every number from the park group's leave types and the one balance
+      // engine (SCRUM-560): the settings keys and the fixed formulas this read
+      // used are now the ANNUAL, BUSINESS and SICK types.
       const startDate = employee.startDate ? new Date(employee.startDate) : new Date();
       const yearStart = new Date(currentYear, 0, 1);
       const effectiveStart = startDate > yearStart ? startDate : yearStart;
       const now = new Date();
-      
+
       // Full completed months worked this year
-      const monthsWorkedThisYear = Math.max(0, Math.min(12, 
-        (now.getFullYear() - effectiveStart.getFullYear()) * 12 + 
+      const monthsWorkedThisYear = Math.max(0, Math.min(12,
+        (now.getFullYear() - effectiveStart.getFullYear()) * 12 +
         now.getMonth() - effectiveStart.getMonth()
       ));
-      
+
       // Total full months employed (consistent with monthsWorkedThisYear)
       const totalMonthsEmployed = Math.max(0,
         (now.getFullYear() - startDate.getFullYear()) * 12 +
         now.getMonth() - startDate.getMonth()
       );
-      
-      // Calculate earned annual leave (pro-rata, but only claimable after waiting period)
-      const canClaimAnnualLeave = totalMonthsEmployed >= annualLeaveWaitingMonths;
-      // Use Math.floor for conservative pro-rata (don't grant leave before it's fully earned)
-      const annualLeaveEarned = canClaimAnnualLeave 
-        ? Math.floor((monthsWorkedThisYear / 12) * annualLeaveTotal)
-        : 0;
-      
-      // Calculate earned business days (pro-rata using floor)
-      const businessDaysEarned = Math.floor((monthsWorkedThisYear / 12) * businessDaysTotal);
-      
-      // Get time off used by type for current year
-      const timeOffRecords = await storage.getEmployeeTimeOff({ employeeId, branchId: employee.branchId });
-      
-      let annualUsed = 0;
-      let businessUsed = 0;
-      let sickUsed = 0;
-      
-      for (const record of timeOffRecords) {
-        // All time-off records are implicitly approved when created (no status field)
-        const recordDate = new Date(record.startDate);
-        if (recordDate.getFullYear() !== currentYear) continue;
-        
-        // Calculate days using date-only comparison (avoid timezone issues)
-        let days = 1;
-        if (record.startDate && record.endDate) {
-          const startDateOnly = new Date(record.startDate).toISOString().split('T')[0];
-          const endDateOnly = new Date(record.endDate).toISOString().split('T')[0];
-          const startMs = new Date(startDateOnly).getTime();
-          const endMs = new Date(endDateOnly).getTime();
-          days = Math.max(1, Math.floor((endMs - startMs) / (1000 * 60 * 60 * 24)) + 1);
-        }
-        
-        if (record.type === 'ANNUAL') annualUsed += days;
-        else if (record.type === 'BUSINESS') businessUsed += days;
-        else if (record.type === 'SICK') sickUsed += days;
-    void sickUsed;
-      }
-      
-      // Get sick leave balance from existing method
-      const sickLeaveBalance = await storage.getEmployeeSickLeaveBalance(employeeId, currentYear);
-      
+
+      const dynamic = await employeeDynamicLeaveBalances(employeeId, tenantId, currentYear);
+      const balanceFor = (code: string) => dynamic?.balances.find((balance) => balance.code === code);
+      const annual = balanceFor("ANNUAL");
+      const business = balanceFor("BUSINESS");
+      const sick = balanceFor("SICK");
+      const leaveTypesForTenant = await listTenantLeaveTypes(tenantId);
+      const annualType = leaveTypesForTenant.find((type) => type.code === "ANNUAL");
+      const businessType = leaveTypesForTenant.find((type) => type.code === "BUSINESS");
+      const sickType = leaveTypesForTenant.find((type) => type.code === "SICK");
+
       // Get public holidays count
-      const publicHolidays = tenantId ? await storage.getPublicHolidays(tenantId, currentYear) : [];
-      
+      const publicHolidays = await storage.getPublicHolidays(tenantId, currentYear);
+
       res.json({
         employeeId,
         year: currentYear,
         monthsWorkedThisYear,
         totalMonthsEmployed,
         annual: {
-          total: annualLeaveTotal,
-          earned: annualLeaveEarned,
-          used: annualUsed,
-          balance: annualLeaveEarned - annualUsed,
-          canClaim: canClaimAnnualLeave,
-          waitingMonths: annualLeaveWaitingMonths,
+          total: annualType?.annualDays ?? 0,
+          earned: annual?.earned ?? 0,
+          used: annual?.used ?? 0,
+          balance: annual?.balance ?? 0,
+          canClaim: annual?.canClaim ?? false,
+          waitingMonths: annualType?.waitingMonths ?? 0,
         },
         business: {
-          total: businessDaysTotal,
-          earned: businessDaysEarned,
-          used: businessUsed,
-          balance: businessDaysEarned - businessUsed,
+          total: businessType?.annualDays ?? 0,
+          earned: business?.earned ?? 0,
+          used: business?.used ?? 0,
+          balance: business?.balance ?? 0,
         },
         sick: {
-          used: sickLeaveBalance.daysUsed,
-          paidDaysRemaining: sickLeaveBalance.paidDaysRemaining,
-          maxPaidDays: sickLeaveBalance.maxPaidDays,
+          used: sick?.used ?? 0,
+          paidDaysRemaining: Math.max(0, sick?.balance ?? 0),
+          maxPaidDays: sickType?.annualDays ?? 0,
         },
         publicHolidays: {
           total: publicHolidays.length,
@@ -13701,93 +14060,46 @@ OTO Company Limited`,
       // park group (round 6's review, F3).
       const employees = (await storage.getEmployees(branchId)).filter((e) => e.tenantId === parkGroup);
 
-      // Get settings for annual leave and business days: the park group's own
-      // (S2-17b round 4a), the default park group's where it has none.
-      const settings = await storage.getSettings(tenantId);
-      const annualLeaveTotalSetting = settings.find(s => s.key === "annual_leave_total_days");
-      const annualLeaveWaitingSetting = settings.find(s => s.key === "annual_leave_waiting_months");
-      const businessDaysTotalSetting = settings.find(s => s.key === "business_days_total");
-
-      const annualLeaveTotal = annualLeaveTotalSetting?.value ? parseInt(annualLeaveTotalSetting.value, 10) : 8;
-      const annualLeaveWaitingMonths = annualLeaveWaitingSetting?.value ? parseInt(annualLeaveWaitingSetting.value, 10) : 6;
-      const businessDaysTotal = businessDaysTotalSetting?.value ? parseInt(businessDaysTotalSetting.value, 10) : 3;
-
       // Get public holidays count
       const publicHolidays = await storage.getPublicHolidays(tenantId, currentYear);
       const now = new Date();
       const publicHolidaysRemaining = publicHolidays.filter(h => new Date(h.date) > now).length;
-      
+      // The park group's types and the one balance engine (SCRUM-560).
+      const annualType = (await listTenantLeaveTypes(parkGroup)).find((type) => type.code === "ANNUAL");
+
       const balances = await Promise.all(employees.map(async (employee) => {
-        const startDate = employee.startDate ? new Date(employee.startDate) : new Date();
-        const yearStart = new Date(currentYear, 0, 1);
-        const effectiveStart = startDate > yearStart ? startDate : yearStart;
-        
-        // Full completed months worked this year
-        const monthsWorkedThisYear = Math.max(0, Math.min(12, 
-          (now.getFullYear() - effectiveStart.getFullYear()) * 12 + 
-          now.getMonth() - effectiveStart.getMonth()
-        ));
-        
+        const dynamic = await employeeDynamicLeaveBalances(employee.id, parkGroup, currentYear);
+        const balanceFor = (code: string) => dynamic?.balances.find((balance) => balance.code === code);
+        const annual = balanceFor("ANNUAL");
+        const business = balanceFor("BUSINESS");
+        const startDate = employee.startDate ? new Date(employee.startDate) : now;
+
         // Total full months employed
         const totalMonthsEmployed = Math.max(0,
           (now.getFullYear() - startDate.getFullYear()) * 12 +
           now.getMonth() - startDate.getMonth()
         );
-        
-        // Calculate earned annual leave (pro-rata, but only claimable after waiting period)
-        const canClaimAnnualLeave = totalMonthsEmployed >= annualLeaveWaitingMonths;
-        const annualLeaveEarned = canClaimAnnualLeave 
-          ? Math.floor((monthsWorkedThisYear / 12) * annualLeaveTotal)
-          : 0;
-        
-        // Calculate earned business days (pro-rata using floor)
-        const businessDaysEarned = Math.floor((monthsWorkedThisYear / 12) * businessDaysTotal);
-        
-        // Get time off used by type for current year
-        const timeOffRecords = await storage.getEmployeeTimeOff({ employeeId: employee.id, branchId });
-        
-        let annualUsed = 0;
-        let businessUsed = 0;
-        
-        for (const record of timeOffRecords) {
-          // All time-off records are implicitly approved when created (no status field)
-          const recordDate = new Date(record.startDate);
-          if (recordDate.getFullYear() !== currentYear) continue;
-          
-          // Calculate days using date-only comparison
-          let days = 1;
-          if (record.startDate && record.endDate) {
-            const startDateOnly = new Date(record.startDate).toISOString().split('T')[0];
-            const endDateOnly = new Date(record.endDate).toISOString().split('T')[0];
-            const startMs = new Date(startDateOnly).getTime();
-            const endMs = new Date(endDateOnly).getTime();
-            days = Math.max(1, Math.floor((endMs - startMs) / (1000 * 60 * 60 * 24)) + 1);
-          }
-          
-          if (record.type === 'ANNUAL') annualUsed += days;
-          else if (record.type === 'BUSINESS') businessUsed += days;
-        }
-        
+
         return {
           employeeId: employee.id,
           year: currentYear,
           annual: {
-            earned: annualLeaveEarned,
-            used: annualUsed,
-            balance: annualLeaveEarned - annualUsed,
-            canClaim: canClaimAnnualLeave,
-            waitingMonths: annualLeaveWaitingMonths,
+            earned: annual?.earned ?? 0,
+            used: annual?.used ?? 0,
+            balance: annual?.balance ?? 0,
+            canClaim: annual?.canClaim ?? false,
+            waitingMonths: annualType?.waitingMonths ?? 0,
             totalMonthsEmployed,
           },
           business: {
-            earned: businessDaysEarned,
-            used: businessUsed,
-            balance: businessDaysEarned - businessUsed,
+            earned: business?.earned ?? 0,
+            used: business?.used ?? 0,
+            balance: business?.balance ?? 0,
           },
           publicHolidays: {
             remaining: publicHolidaysRemaining,
           },
-          holidayBalance: (annualLeaveEarned - annualUsed) + publicHolidaysRemaining,
+          holidayBalance: (annual?.balance ?? 0) + publicHolidaysRemaining,
         };
       }));
       
