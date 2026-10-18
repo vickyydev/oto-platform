@@ -1,8 +1,9 @@
 # Reporting assistant acceptance - SCRUM-548
 
-18 October 2026. **Reporting and desktop/mobile entry are observed live, with
-real conversation, model and Jira proof. The final guidance follow-up awaits
-its release gate and staging reply.** This records the completed checks and limits against the
+18 October 2026. **The final reporting release is observed live, with desktop
+and mobile entry, real model replies, private evidence and Jira delivery
+checked. SCRUM-548 and all four delivery subtasks are Deployed with attached,
+inspected evidence.** This records the completed checks and limits against the
 [implementation plan](../../progress/plans/qa-assistant/PLAN.md). It does not
 establish final owner acceptance or reproduction of a reported product issue.
 
@@ -15,23 +16,27 @@ establish final owner acceptance or reproduction of a reported product issue.
 | Candidate CI | [Run 39115175218](https://github.com/vickyydev/oto-platform/actions/runs/39115175218), complete; all six jobs green |
 | Initial main release SHA | `b358aaf7986745c309a211fde923bdfc5c7c1135` |
 | Main CI | [Run 39116331856](https://github.com/vickyydev/oto-platform/actions/runs/39116331856), complete; all six jobs green |
-| Current live app and worker source | `c0422d18fb9297f882de3d9c1b5c07f1b9e27f38`; both source probes succeeded, with the same private-index digest across 520 files |
+| Current live app | `0e2e87eb45807194b952ecaa12a4f4d6581988ed`, deployment `dep-dbaah8142hec73ddabdg` |
+| Current live worker | `0e2e87eb45807194b952ecaa12a4f4d6581988ed`, deployment `dep-dbaah8142hec73ddac10` |
+| Source snapshot probes | Both jobs succeeded: app `job-dbaaj8brjlhs739hohe0`, worker `job-dbaaj8jrjlhs739hoil0`; 520 files, identical private-index digest and both matching the private stored snapshot |
 | Applied app migration `0016` | Confirmed before restricted-role setup, with the migration hash guard |
-| Worker source snapshot/version | SCRUM-554 and SCRUM-555 retain source `b358aaf7986745c309a211fde923bdfc5c7c1135`; SCRUM-556 records `c0422d18fb9297f882de3d9c1b5c07f1b9e27f38` |
+| Report source/version | SCRUM-554 and SCRUM-555 retain source `b358aaf7986745c309a211fde923bdfc5c7c1135`; SCRUM-556 retains `c0422d18fb9297f882de3d9c1b5c07f1b9e27f38`, including its final-worker follow-up; SCRUM-557 records `0e2e87eb45807194b952ecaa12a4f4d6581988ed` |
 | Desktop/mobile entry release | Source `c0422d18fb9297f882de3d9c1b5c07f1b9e27f38`; [run 39120053840](https://github.com/vickyydev/oto-platform/actions/runs/39120053840) complete, all six jobs green; deployed and normal-click entry observed on desktop and mobile |
-| Guidance follow-up pending | Source `0e2e87eb45807194b952ecaa12a4f4d6581988ed`; [run 39121598434](https://github.com/vickyydev/oto-platform/actions/runs/39121598434) running at this checkpoint. Eleven worker controls, build and lint passed locally; final deployment and staging reply remain pending |
+| Final guidance release gate | Source `0e2e87eb45807194b952ecaa12a4f4d6581988ed`; [run 39121598434](https://github.com/vickyydev/oto-platform/actions/runs/39121598434) completed its app-scoped gate: 36 QA, 89 feature and 32 scheduling controls, with the unchanged 430/57/114 compiler baseline. Eleven worker controls, build and lint also passed locally |
 
 The initial app and worker deployment read-back was recorded at 17:39 Bangkok on
 18 October. Restricted worker setup job `job-dba9hjbrjlhs739e5bq0` succeeded:
 four QA tables, one sequence, connection limit two, zero business-table write
 grants and zero unexpected readable relations. Worker configuration was
 verified and the temporary setup secret was removed. No credential value is
-recorded here.
+recorded here. Final app and worker deployments were read back live at
+18:12 Bangkok; the source probes subsequently confirmed their private snapshots.
 
 ## Recorded release checks
 
-The local source checkpoint and completed main job summary record these
-results. Mocked controls do not establish a live model response, Jira
+The local source checkpoint and the completed full main gate at `c0422d18`
+record these results. The final `0e2e87eb` gate is app-scoped; it does not
+establish a fresh API suite run. Mocked controls do not establish a live model response, Jira
 publication or staging access result. Skipped and todo cases are excluded
 from passed counts.
 
@@ -54,20 +59,20 @@ from passed counts.
 
 The complete candidate and exact-SHA main gates passed. The hosted database
 checks establish the backend controls separately from the local mocks.
-The live results below include the initial `b358aaf7` release and observed
-`c0422d18` entry follow-up. The final guidance follow-up remains pending.
+The live results below include the initial `b358aaf7` release, `c0422d18`
+entry follow-up and final `0e2e87eb` guidance release.
 
 ## Actual staging journeys
 
 | Journey | Result/evidence |
 | --- | --- |
 | Launcher entry and report source context | Observed; saved path and server version match. At 1440-pixel desktop width the saved context excludes the query string |
-| Desktop/mobile entry | Normal clicks opened the assistant above navigation on both layouts |
-| Text report, saved conversation and history reload | Observed; the final entry release saved SCRUM-556 and the original conversation reloads |
+| Desktop/mobile entry | Normal clicks opened the final release above navigation on both layouts; the mobile panel fits the viewport |
+| Text report, saved conversation and history reload | Observed; SCRUM-556 and the final-release SCRUM-557 were saved, and the original conversation reloads |
 | Screenshot paste and short-video upload | Both synthetic files saved privately; owned downloaded bytes match their fixture hashes |
 | Follow-up and real analysis | Follow-up saved and an actual Claude response retained on the same report; recorded source SHA matches `b358aaf7` |
 | Incomplete report | Saved and published as SCRUM-555; the response asks for missing details |
-| Assessment wording | SCRUM-554 and SCRUM-555 completed with `needs_investigation`; SCRUM-556 completed with `guidance`. Source references are visible. These responses do not establish semantic certainty or runtime reproduction |
+| Assessment wording | SCRUM-554 and SCRUM-555 completed with `needs_investigation`; SCRUM-556 and SCRUM-557 completed with `guidance`. Source references are visible. These responses do not establish semantic certainty or runtime reproduction |
 | Queue and worker startup | A saved report waited before worker startup and was subsequently processed; app/worker version and report source match |
 | Submission and message replay | The saved report/message identity is retained; altered replay text returns 409. Jira search finds one issue per report |
 | Cross-release replay | Repeating the initial create after deployment retained its original report and `b358aaf7` source context |
@@ -76,10 +81,9 @@ The live results below include the initial `b358aaf7` release and observed
 | Reporting-only request boundary | The actual response explains the reporting-only boundary; no business fixtures were created or modified for acceptance |
 | Provider/Jira outage and ambiguous-create recovery | Covered by hosted controls only; no such outage was injected on staging |
 
-SCRUM-556 was saved and published by the host. Its initial model guidance
-described the model's lack of tools and declined recording, without
-acknowledging the host's saved report. The pending guidance follow-up clarifies
-that distinction; its actual staging reply has not yet been observed.
+The final worker's actual Claude replies acknowledge that the host has saved
+the report, both for fresh SCRUM-557 and a follow-up to SCRUM-556. The latter
+retains its original `c0422d18` source context after the worker release.
 
 ## Private access
 
@@ -104,19 +108,32 @@ reports belong to **OTO App - QA and Bug Triage**, sprint **36**, under
 | --- | --- | --- | --- |
 | SCRUM-554 | SCRUM-553 / 36 | To Do | Synthetic PNG and MP4 attached; five comments |
 | SCRUM-555 | SCRUM-553 / 36 | To Do | Incomplete report, no media; one comment |
-| SCRUM-556 | SCRUM-553 / 36 | To Do | Guidance report, no media; one comment |
+| SCRUM-556 | SCRUM-553 / 36 | To Do | Guidance report, no media; three comments |
+| SCRUM-557 | SCRUM-553 / 36 | To Do | Final-release guidance report, no media; one comment |
 
-Jira read-back confirms all three destinations, source SHA and visible source
+Jira read-back confirms all four destinations, source SHA and visible source
 references. Exact report-identity searches found one issue for each report.
 Follow-up publication stays on the original issue. These reports remain
 records for later review; this acceptance does not move them into development.
 
 Inspected staging evidence is attached to SCRUM-549 as attachment **11574**,
 `private-reports-staging-20261018.png`, and SCRUM-550 as attachment **11575**,
-`report-entry-staging-20261018.png`. Both tickets are **Deployed**. SCRUM-548
-and SCRUM-551 are **Testing**; SCRUM-552 is **In Progress** while the guidance
-follow-up awaits its final release gate and staging reply. The owner reserves
-Done for final acceptance.
+`report-entry-staging-20261018.png`. All five delivery tickets, SCRUM-548 and
+SCRUM-549 through SCRUM-552, are **Deployed** after final attachment/status
+read-back. The owner reserves Done for final acceptance.
+
+All final PNGs were visually inspected before attachment. Final Jira read-back
+confirms the named files:
+
+- SCRUM-548: `qa-entry-staging-20261018.png`,
+  `qa-conversation-staging-20261018.png`, `qa-mobile-staging-20261018.png` and
+  `qa-delivery-staging-20261018.png`.
+- SCRUM-550: `qa-conversation-staging-20261018.png`, alongside its earlier
+  attached `report-entry-staging-20261018.png`.
+- SCRUM-551: `qa-analysis-jira-staging-20261018.png`.
+- SCRUM-552: `release-staging-20261018.png`.
+
+Each file is under `docs/qa/jira-comments/attachments/<ticket>/`.
 
 ## Limits and cleanup
 
@@ -130,6 +147,9 @@ Done for final acceptance.
 - Provider/Jira outages and ambiguous Jira-create recovery have hosted proof
   only. They were not injected on staging; the observed deduplication checks
   do not establish recovery from a lost create response.
-- The three ZZ TEST reports and their synthetic media are intentionally
+- The four ZZ TEST reports and their synthetic media are intentionally
   retained as acceptance examples. No business fixtures were created or
   modified, and no report/media deletion is claimed.
+
+
+Final attachment receipts: SCRUM-548: 11576-11579; SCRUM-549: 11574; SCRUM-550: 11575/11580; SCRUM-551: 11581; SCRUM-552: 11582. The SCRUM-551 card is shared parent SCRUM-548 acceptance evidence, stored under the worker ticket. The entry image establishes launcher placement; it is not evidence for Today data loading. The conversation images show SCRUM-557 and the saved confirmation. Final status read-back confirms Deployed for all five delivery tickets; none was moved to Done.

@@ -12,11 +12,11 @@ The owner reserves Done for final acceptance. The implementation and its childre
 
 | Work | Ticket | Current state |
 | --- | --- | --- |
-| Complete feature | SCRUM-548 | Testing |
+| Complete feature | SCRUM-548 | Deployed |
 | Scoped saved reports and private evidence | SCRUM-549 | Deployed |
 | In-app reporting conversation and history | SCRUM-550 | Deployed |
-| Bounded analysis, source inspection and Jira publishing | SCRUM-551 | Testing |
-| Release and staging acceptance | SCRUM-552 | In Progress |
+| Bounded analysis, source inspection and Jira publishing | SCRUM-551 | Deployed |
+| Release and staging acceptance | SCRUM-552 | Deployed |
 
 New reports belong to **OTO App - QA and Bug Triage**, sprint36, under intake **SCRUM-553**. The intake is separate from this implementation task and the earlier Maria group SCRUM-524. Existing reports and their statuses are retained. New report subtasks inherit the configured QA parent's sprint; the publisher refuses the Sprint2 destination.
 
@@ -28,7 +28,7 @@ New reports belong to **OTO App - QA and Bug Triage**, sprint36, under intake **
 4. A durable report queue and leased worker recover interrupted processing. New messages invalidate older results. Repeated submissions and processing retries retain one report and Jira issue.
 5. Create the Jira record regardless of AI availability, then add an analysis and follow-up evidence to that same record. Publishing failures remain visible and retryable.
 6. Claude receives bounded text, approved source excerpts and screenshots or timestamped video frames. Source is pinned to the app release at report time. A private versioned source snapshot avoids copying workstation GitHub credentials into the worker.
-7. Assessments are Reported, Supported by code, Guidance provided, Needs investigation or Related report found. The assistant never invents a Reproduced claim. It names missing evidence and explains a documented rule politely.
+7. Assessments produced in this release are Reported, Supported by code, Guidance provided or Needs investigation. The assistant never invents a Reproduced claim. It names missing evidence and explains a documented rule politely.
 8. Model output is structured report content, never an executable command or unrestricted tool call. Only bounded QA storage, analysis and configured Jira publishing capabilities exist.
 9. Conversations and evidence require both the current reporter and park. Another reporter, another park and a signed-out request cannot read them.
 10. Video analysis is visual. Audio is not transcribed in this release; the upload screen asks for the explanation in chat and the analysis names this limit.
@@ -55,6 +55,10 @@ The first new app migration is provisional0016; current app SQL0000-0015 stays i
 Staging records created for acceptance use ZZ TEST. Preserve the seeded cast, FWBooth1 and protected payment0d008153. Use only synthetic screenshots/recordings. No SMS or production-data action is required.
 
 ## Current progress
+
+18 October final checkpoint: SCRUM-548 and549-552 are Deployed with inspected staging evidence. Live app and worker source0e2e87eb passed its complete app gate39121598434; the prior full platform gate is39120053840/c0422d18. Four ZZ TEST examples554-557 remain To Do under553/sprint36. R1-R13 delivery controls are completed. The [acceptance record](../../../qa/qa-assistant/acceptance.md) names exact releases, checks, live journeys, images and limits. Done remains owner acceptance.
+
+### Earlier delivery checkpoints
 
 18October: implementation task and four children created; QA sprint36 and parent553 created. Backend, UI and worker development are running in parallel under one publisher. Main's last source gate is green. No new implementation is deployed yet.
 
@@ -93,3 +97,6 @@ R12 (medium), entry clearance: Report issue retains bottom clearance above Core 
 18 October staging checkpoint: R12 is confirmed by ordinary desktop and mobile clicks on live c0422d18, whose full six-job gate passed. SCRUM-549/550 are Deployed with inspected evidence. Reports554-556 each have one issue under553/sprint36 and remain To Do. Private reads, original bytes, report/message/upload replay and cross-release source preservation passed. Both source-index probes succeeded at520 files with matching private stored snapshots.
 
 R13 (medium), saved-report confirmation: guidance reflects the host already saving the conversation and linking its Jira issue before model review. Source0e2e87eb adds a trusted confirmation and normalizes a model self-denial about recording this QA request, without altering business-screen guidance. Existing worker controls remain11/11; production build and touched-file lint pass. The app release gate39121598434 and final live reply remain pending. No new suite or business action is introduced.
+
+
+Final R13 proof: both fresh557 and older556 follow-up replies confirmed the report and conversation are saved; the older report retained sourcec0422d18 while running through the final worker. Final source0e2e87eb app/worker/private stored indexes match at520 files. App gate36/89/32 and compiler430/57/114 passed; platform suites were not rerun in this app-only gate. Actual final-release privacy, file bytes, normal desktop/mobile entry, cross-origin and replay controls passed. All feature tickets are Deployed with image attachment read-back; there is no remaining implementation finding under this plan. Video audio, unavailable owner-decision documents and hosted-only outage/cross-park coverage retain the stated limits.
