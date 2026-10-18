@@ -39,7 +39,8 @@ export function validateAnalysis(raw: unknown, chunks: SourceChunk[], sha: strin
   const assessment = inventedRuntime || (!supported && ["code_supported", "guidance"].includes(parsed.assessment)) || (parsed.assessment === "code_supported" && !codeCitation) ? "needs_investigation" : parsed.assessment;
   const explanation = inventedRuntime ? "The report is saved for investigation. Automated code review does not establish runtime reproduction." : safeReportText(parsed.explanation, 5000);
   const sourceLine = supported ? `Source inspected at ${sha}. Runtime reproduction was not performed.` : "The matching deployed source could not support a conclusion. Further investigation is needed.";
-  return { content: `${explanation}\n\n${sourceLine}${notes.length ? "\n\n" + notes.join("\n") : ""}`, assessment, availability: "complete", sourceEvidence: { sha: fullSha(sha) ? sha : null, citations: supported ? citations : [], notes } };
+  const references = supported ? "\n\nSource references:\n" + [...new Set(citations.map((citation) => `${citation.file}:${citation.startLine}-${citation.endLine}`))].map((reference) => `- ${reference}`).join("\n") : "";
+  return { content: `${explanation}\n\n${sourceLine}${references}${notes.length ? "\n\n" + notes.join("\n") : ""}`, assessment, availability: "complete", sourceEvidence: { sha: fullSha(sha) ? sha : null, citations: supported ? citations : [], notes } };
 }
 
 export function boundedConversation(detail: WorkerDetail): { text: string; omitted: boolean } {

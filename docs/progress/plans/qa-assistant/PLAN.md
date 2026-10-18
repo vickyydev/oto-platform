@@ -79,3 +79,6 @@ All recorded findings below have prescribed corrections in the candidate and pas
 
 
 18October hosted gate: candidate e099fcdb stopped at the report runtime review after20 independent/worker pins passed. R10 (medium): normal one-file multipart upload must fit the parser boundary. Correction applied: parts2, files1 and fields0, with a real HTTP single-file acceptance/second-file and field refusal control. The local three-key media/parser check passes. Review failure messages now expose only control names and setup tags. Backend proof now contains17 controls; full candidate rerun is pending.
+
+
+R11 (medium), source-reference visibility: validated citations are appended to the response and Jira analysis, alongside the inspectedSHA, rather than retained only in private processing metadata. The existing worker check now passes11 controls, including visible references and refusal of unsupported ranges or missingSHA. Raw source is not published.

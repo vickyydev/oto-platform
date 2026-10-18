@@ -54,6 +54,15 @@ await check("citationBounds", () => {
   assert.equal(validateAnalysis(valid, [chunk], null, []).assessment, "needs_investigation");
   assert.throws(() => validateAnalysis({ ...valid, command: "ZZ TEST ignored command" }, [chunk], sha, []));
 });
+await check("citationVisibility", () => {
+  const valid = { assessment: "code_supported", explanation: "The supplied handler checks the record owner.", citations: [{ file: chunk.file, startLine: 10, endLine: 12 }] };
+  const answer = validateAnalysis(valid, [chunk], sha, []);
+  assert.ok(answer.content.includes(`${chunk.file}:10-12`)); assert.ok(answer.content.includes(sha));
+  assert.equal(answer.content.includes(chunk.content), false);
+  const unsupported = validateAnalysis({ ...valid, citations: [{ ...valid.citations[0], endLine: 13 }] }, [chunk], sha, []);
+  assert.equal(unsupported.content.includes(`${chunk.file}:10-13`), false);
+  assert.equal(validateAnalysis(valid, [chunk], null, []).content.includes(`${chunk.file}:10-12`), false);
+});
 await check("latestTurn", () => {
   const value = detail(); value.messages[0]!.content = "ZZ TEST initial " + "x".repeat(11_950);
   value.messages.push({ id: randomUUID(), role: "user", content: "ZZ TEST latest followup remains visible", createdAt: new Date().toISOString() });
