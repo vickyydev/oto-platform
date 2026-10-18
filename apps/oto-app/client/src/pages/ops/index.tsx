@@ -70,6 +70,7 @@ import { CreateChecklistDialog } from "@/components/create-checklist-dialog";
 import TaskFiltersPanel, { type TaskFilters } from "@/components/core/TaskFiltersPanel";
 import { TaskDetailSheet } from "@/components/ops/TaskDetailSheet";
 import { ChecklistRunSheet } from "@/components/ops/ChecklistRunSheet";
+import { ChecklistFiltersControl, emptyChecklistFilters, type ChecklistFilters } from "@/components/ops/ChecklistFilters";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
@@ -160,6 +161,7 @@ interface ChecklistRunInstance {
   checklistType: string;
   branchId: string;
   branchName: string | null;
+  branchTimezone?: string | null;
   departmentId: string | null;
   departmentName: string | null;
   assignedTo: string | null;
@@ -211,6 +213,7 @@ interface Employee {
   fullName: string;
   nickname?: string | null;
   branchId?: string | null;
+  userId?: string | null;
 }
 
 const WEEKDAYS = [
@@ -232,6 +235,7 @@ export default function OpsPage() {
   const [tasksViewMode, setTasksViewMode] = useState<"list" | "kanban" | "calendar">("kanban");
   const [checklistsViewMode, setChecklistsViewMode] = useState<"dashboard" | "templates" | "history">("dashboard");
   const [showMyOnly, setShowMyOnly] = useState(false);
+  const [checklistFilters, setChecklistFilters] = useState<ChecklistFilters>(emptyChecklistFilters);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [showCreateTaskDialog, setShowCreateTaskDialog] = useState(false);
   const [showCreateChecklistDialog, setShowCreateChecklistDialog] = useState(false);
@@ -355,16 +359,23 @@ export default function OpsPage() {
     completed: ChecklistRunInstance[];
   }
 
-  const { data: checklistHistory, isLoading: checklistHistoryLoading } = useQuery<ChecklistHistoryData>({
-    queryKey: ["/api/checklist-runs/history", { branchId: selectedBranchId }],
+  const { data: checklistHistory, isLoading: checklistHistoryLoading, isError: checklistHistoryError } = useQuery<ChecklistHistoryData>({
+    queryKey: ["/api/checklist-runs/history", { branchId: selectedBranchId, ...checklistFilters }],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (selectedBranchId) params.set("branchId", selectedBranchId);
+      if (checklistFilters.employeeId !== "all") params.set("employeeId", checklistFilters.employeeId);
+      if (checklistFilters.departmentId !== "all") params.set("departmentId", checklistFilters.departmentId);
+      if (checklistFilters.period !== "none" && checklistFilters.from && checklistFilters.to) {
+        params.set("period", checklistFilters.period);
+        params.set("from", checklistFilters.from);
+        params.set("to", checklistFilters.to);
+      }
       const res = await fetch(`/api/checklist-runs/history?${params}`, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to load checklist history");
       return res.json();
     },
-    enabled: !!user?.role && ["admin", "global_admin", "operator_admin", "manager"].includes(user.role) && checklistsViewMode === "history",
+    enabled: !!user?.role && ["admin", "global_admin", "operator_admin", "manager"].includes(user.role) && checklistsViewMode === "history" && activeTab === "checklists" && (checklistFilters.period === "none" || (!!checklistFilters.from && !!checklistFilters.to)),
   });
 
   const { data: branches = [] } = useQuery<Branch[]>({
@@ -858,6 +869,21 @@ export default function OpsPage() {
     return filtered;
   };
 
+  // The Checklists tab shows its own filter control (ChecklistFiltersControl);
+  // every other tab shows the task filter panel. Each list is narrowed only by
+  // the control on screen beside it, so a filter left set on one tab never
+  // hides checklists invisibly on another.
+  const applyChecklistTabFilters = (items: ChecklistTemplate[]): ChecklistTemplate[] => {
+    let filtered = items;
+    if (checklistFilters.employeeId !== "all") {
+      filtered = filtered.filter(t => t.assignedEmployeeId === checklistFilters.employeeId);
+    }
+    if (checklistFilters.departmentId !== "all") {
+      filtered = filtered.filter(t => t.assignedDepartmentId === checklistFilters.departmentId || t.departmentId === checklistFilters.departmentId);
+    }
+    return filtered;
+  };
+
   const applyChecklistFilters = (items: ChecklistTemplate[]): ChecklistTemplate[] => {
     let filtered = items;
     if (taskFilters.taskLevels.length > 0) {
@@ -892,7 +918,31 @@ export default function OpsPage() {
   const recurringTasks = applyTaskFilters(filterBySearch(myFilteredScheduledTasks.filter(t => t.recurrence !== "once")));
   const myFilteredTemplates = showMyOnly ? checklistTemplates.filter(isChecklistTemplateMine) : checklistTemplates;
   const recurringChecklists = applyChecklistFilters(filterBySearch(myFilteredTemplates.filter(t => t.recurrence && t.recurrence !== "none")));
-  const allChecklists = applyChecklistFilters(filterBySearch(myFilteredTemplates));
+  const allChecklists = activeTab === "checklists"
+    ? applyChecklistTabFilters(myFilteredTemplates)
+    : applyChecklistFilters(filterBySearch(myFilteredTemplates));
+
+  const matchesChecklistRun = (run: ChecklistRunInstance) => {
+    const selectedEmployeeUserId = employees.find(e => e.id === checklistFilters.employeeId)?.userId;
+    if (checklistFilters.employeeId !== "all" &&
+      run.assignedEmployeeId !== checklistFilters.employeeId &&
+      !run.responsibleStaff?.some(staff => staff.employeeId === checklistFilters.employeeId || (!!selectedEmployeeUserId && staff.userId === selectedEmployeeUserId)) &&
+      (!selectedEmployeeUserId || run.assignedTo !== selectedEmployeeUserId)) return false;
+    if (checklistFilters.departmentId !== "all" &&
+      run.assignedDepartmentId !== checklistFilters.departmentId &&
+      run.departmentId !== checklistFilters.departmentId) return false;
+    if (checklistFilters.period !== "none" && checklistFilters.from && checklistFilters.to) {
+      const timestamp = run.status === "completed" ? run.completedAt : run.dueAt;
+      if (!timestamp) return false;
+      const parts = new Intl.DateTimeFormat("en-US", {
+        timeZone: run.branchTimezone || "Asia/Bangkok", year: "numeric", month: "2-digit", day: "2-digit",
+      }).formatToParts(new Date(timestamp));
+      const part = (type: string) => parts.find(p => p.type === type)?.value || "";
+      const date = `${part("year")}-${part("month")}-${part("day")}`;
+      if (date < checklistFilters.from || date > checklistFilters.to) return false;
+    }
+    return true;
+  };
 
   const isLoading = coreTasksLoading || checklistsLoading;
 
@@ -1009,7 +1059,10 @@ export default function OpsPage() {
                 <Button
                   variant={checklistsViewMode === "templates" ? "default" : "ghost"}
                   size="sm"
-                  onClick={() => setChecklistsViewMode("templates")}
+                  onClick={() => {
+                    setChecklistsViewMode("templates");
+                    setChecklistFilters(previous => ({ ...previous, period: "none", from: "", to: "" }));
+                  }}
                   data-testid="button-checklists-view-templates"
                 >
                   <ListTodo className="h-4 w-4 mr-1" />
@@ -1030,7 +1083,13 @@ export default function OpsPage() {
             </div>
           )}
 
-          <TaskFiltersPanel
+          {activeTab === "checklists" ? <ChecklistFiltersControl
+            filters={checklistFilters}
+            onChange={setChecklistFilters}
+            employees={employees}
+            departments={departments}
+            allowDate={checklistsViewMode !== "templates"}
+          /> : <TaskFiltersPanel
             filters={taskFilters}
             onFiltersChange={setTaskFilters}
             branches={branches}
@@ -1058,7 +1117,7 @@ export default function OpsPage() {
             // The chip that reaches finished work. Tasks only — the other tabs
             // have their own archive control.
             showArchivedFilter={activeTab === "tasks"}
-          />
+          />}
 
           <div className="flex items-center gap-2 shrink-0">
             <div className="flex items-center gap-2">
@@ -1212,33 +1271,14 @@ export default function OpsPage() {
               <div className="space-y-3 flex-1 flex flex-col min-h-0">
                 {checklistRunsLoading ? (
                   <LoadingScreen />
+                ) : checklistsViewMode === "dashboard" && checklistFilters.period !== "none" && (!checklistFilters.from || !checklistFilters.to) ? (
+                  <EmptyState icon={CalendarDays} title="Choose a date range" description="Select both the first and last day to filter checklist work." />
                 ) : checklistsViewMode === "dashboard" ? (
                   <div className="flex min-w-0 flex-1 gap-4">
                     <div className="min-w-0 flex-1">
                       <ChecklistManagerDashboard
                         runs={(() => {
-                          let runs = showMyOnly ? checklistRuns.filter(isChecklistRunMine) : checklistRuns;
-                          if (taskFilters.taskLevels.length > 0) {
-                            runs = runs.filter(r => r.assignedUserRole ? taskFilters.taskLevels.includes(r.assignedUserRole as any) : false);
-                          }
-                          if (taskFilters.departmentId !== "all") {
-                            runs = runs.filter(r => 
-                              r.assignedDepartmentId === taskFilters.departmentId || 
-                              r.departmentId === taskFilters.departmentId ||
-                              r.assignedEmployeeDepartmentId === taskFilters.departmentId
-                            );
-                          }
-                          if (taskFilters.roleId !== "all") {
-                            runs = runs.filter(r => {
-                              if (r.assignedRoleId === taskFilters.roleId) return true;
-                              if (r.assignedEmployeeRoleIds) {
-                                const roleIds = r.assignedEmployeeRoleIds.split(',');
-                                if (roleIds.includes(taskFilters.roleId)) return true;
-                              }
-                              return false;
-                            });
-                          }
-                          return runs;
+                          return (showMyOnly ? checklistRuns.filter(isChecklistRunMine) : checklistRuns).filter(matchesChecklistRun);
                         })()}
                         onCardClick={(run) => setSelectedChecklistRunId(run.id)}
                       />
@@ -1308,9 +1348,15 @@ export default function OpsPage() {
                   </div>
                 ) : checklistHistoryLoading ? (
                   <LoadingScreen />
+                ) : checklistFilters.period !== "none" && (!checklistFilters.from || !checklistFilters.to) ? (
+                  <EmptyState icon={CalendarDays} title="Choose a date range" description="Select both the first and last day to view checklist history." />
+                ) : checklistHistoryError ? (
+                  <EmptyState icon={Clock} title="Could not load checklist history" description="Please try again or clear the filters." />
                 ) : (
                   <ChecklistHistory
                     data={checklistHistory}
+                    periodLabel={checklistFilters.period !== "none" && checklistFilters.from && checklistFilters.to
+                      ? `${checklistFilters.from}${checklistFilters.to !== checklistFilters.from ? ` – ${checklistFilters.to}` : ""}` : undefined}
                     onRunClick={(run) => setSelectedChecklistRunId(run.id)}
                   />
                 )}
@@ -2689,6 +2735,7 @@ function ChecklistManagerDashboard({
 function ChecklistHistory({
   data,
   onRunClick,
+  periodLabel,
 }: {
   data?: {
     missedGroups: Array<{
@@ -2703,20 +2750,22 @@ function ChecklistHistory({
     completed: ChecklistRunInstance[];
   };
   onRunClick: (run: ChecklistRunInstance) => void;
+  periodLabel?: string;
 }) {
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   const missedGroups = data?.missedGroups || [];
   const completed = data?.completed || [];
 
   if (missedGroups.length === 0 && completed.length === 0) {
-    return <EmptyState icon={Clock} title="No checklist history yet" description="Completed and missed runs will appear here." />;
+    return <EmptyState icon={Clock} title="No checklist history matches" description={periodLabel ? `No missed or completed runs found for ${periodLabel}. Try a different period or clear filters.` : "No missed runs this week or completed runs in the current history. Try a time filter to find older missed runs."} />;
   }
 
   return (
     <div className="space-y-6" data-testid="checklist-history">
       <section>
-        <h3 className="font-semibold mb-2">Missed</h3>
+        <h3 className="font-semibold mb-2">{periodLabel ? `Missed · ${periodLabel}` : "Missed this week"}</h3>
         <div className="space-y-2">
+          {missedGroups.length === 0 && <p className="text-sm text-muted-foreground">No missed checklists {periodLabel ? `for ${periodLabel}` : "this week"}. Choose a time period to see older misses.</p>}
           {missedGroups.map((group) => (
             <Card key={group.key} className="overflow-visible">
               <CardContent className="p-4">
@@ -2758,6 +2807,7 @@ function ChecklistHistory({
       <section>
         <h3 className="font-semibold mb-2">Completed</h3>
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {completed.length === 0 && <p className="text-sm text-muted-foreground">No completed checklists match these filters.</p>}
           {completed.map((run) => (
             <button key={run.id} className="text-left rounded-lg border bg-card p-3 hover-elevate" onClick={() => onRunClick(run)}>
               <p className="font-medium text-sm">{run.templateName}</p>

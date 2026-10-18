@@ -239,7 +239,7 @@ test.describe('Checklist Creation', () => {
     });
     expect(blockedCompletionResponse.status()).toBe(400);
     expect(await blockedCompletionResponse.json()).toMatchObject({
-      message: 'Cannot complete checklist: 1 item(s) need photo evidence',
+      message: 'Cannot complete checklist: 1 item(s) need photo or video evidence',
     });
 
     const runResponse = await page.request.post('/api/checklist-runs/start', {

@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Paperclip, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { uploadQueue } from "@/lib/uploadQueue";
+import { prepareImageForUpload } from "@/lib/image-upload";
 
 interface MediaUploadButtonProps {
   target: "checklist" | "item";
@@ -44,8 +45,6 @@ const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/hei
 const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/webm"];
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
 const MAX_VIDEO_SIZE = 200 * 1024 * 1024; // 200MB
-const COMPRESS_TARGET_SIZE = 1 * 1024 * 1024; // Target 1MB for images
-const MAX_IMAGE_DIMENSION = 1920; // Max width/height
 
 export function MediaUploadButton({
   target,
@@ -90,63 +89,6 @@ export function MediaUploadButton({
     return { valid: true };
   };
 
-  const compressImage = async (file: File): Promise<File> => {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => {
-        let { width, height } = img;
-
-        if (width <= MAX_IMAGE_DIMENSION && height <= MAX_IMAGE_DIMENSION && file.size <= COMPRESS_TARGET_SIZE) {
-          URL.revokeObjectURL(img.src);
-          resolve(file);
-          return;
-        }
-
-        if (width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION) {
-          const ratio = Math.min(MAX_IMAGE_DIMENSION / width, MAX_IMAGE_DIMENSION / height);
-          width = Math.round(width * ratio);
-          height = Math.round(height * ratio);
-        }
-
-        const canvas = document.createElement("canvas");
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext("2d");
-
-        if (!ctx) {
-          URL.revokeObjectURL(img.src);
-          resolve(file);
-          return;
-        }
-
-        ctx.drawImage(img, 0, 0, width, height);
-
-        const quality = 0.85;
-        const targetType = file.type === "image/png" ? "image/png" : "image/jpeg";
-
-        canvas.toBlob(
-          (blob) => {
-            URL.revokeObjectURL(img.src);
-            if (blob && blob.size < file.size) {
-              const compressedFile = new File([blob], file.name, { type: targetType });
-              console.log(`[Compress] ${file.name}: ${(file.size / 1024).toFixed(0)}KB -> ${(compressedFile.size / 1024).toFixed(0)}KB`);
-              resolve(compressedFile);
-            } else {
-              resolve(file);
-            }
-          },
-          targetType,
-          quality
-        );
-      };
-      img.onerror = () => {
-        URL.revokeObjectURL(img.src);
-        resolve(file);
-      };
-      img.src = URL.createObjectURL(file);
-    });
-  };
-
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -169,7 +111,7 @@ export function MediaUploadButton({
         let fileToUpload = file;
 
         if (isImage) {
-          fileToUpload = await compressImage(file);
+          fileToUpload = await prepareImageForUpload(file);
         }
 
         if (useDirectUpload) {
@@ -190,6 +132,12 @@ export function MediaUploadButton({
           await uploadViaBackend(fileToUpload);
         }
       }
+    } catch (error) {
+      toast({
+        title: "Photo could not be prepared",
+        description: error instanceof Error ? error.message : "Try choosing a different image.",
+        variant: "destructive",
+      });
     } finally {
       setIsProcessing(false);
       if (fileInputRef.current) {

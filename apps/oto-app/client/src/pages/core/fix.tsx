@@ -33,7 +33,6 @@ import {
   Lightbulb,
   Armchair,
   Settings,
-  Video,
   Building2,
   Inbox,
   ChevronRight,
@@ -54,6 +53,14 @@ const QUICK_TAGS = [
   { id: "equipment", label: "Equipment", icon: Settings },
   { id: "urgent", label: "Urgent", icon: AlertTriangle },
 ];
+
+// The types and size the server's /api/fix-reports/upload accepts, checked
+// before anything is sent so a refusal names the file instead of failing late.
+const FIX_MEDIA_ACCEPT = "image/jpeg,image/png,image/webp,video/mp4,video/quicktime";
+const FIX_MEDIA_TYPES = new Set(FIX_MEDIA_ACCEPT.split(","));
+const MAX_FIX_MEDIA = 10;
+const MAX_FIX_MEDIA_SIZE = 20 * 1024 * 1024;
+type SelectedMedia = { file: File; url: string };
 
 type Step = "capture" | "details" | "success";
 
@@ -285,11 +292,15 @@ export default function FixPage() {
   const isManagerOrAdmin = user?.role && ['admin', 'global_admin', 'operator_admin', 'manager'].includes(user.role);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
-  const videoInputRef = useRef<HTMLInputElement>(null);
-  
+
   const [step, setStep] = useState<Step>("capture");
-  const [mediaFiles, setMediaFiles] = useState<File[]>([]);
-  const [mediaPreviews, setMediaPreviews] = useState<string[]>([]);
+  // Previews are object URLs (not data URLs) so a video never has to be read
+  // into memory as base64; they are revoked on removal, reset and unmount.
+  const [selectedMedia, setSelectedMedia] = useState<SelectedMedia[]>([]);
+  const selectedMediaRef = useRef<SelectedMedia[]>([]);
+  useEffect(() => () => {
+    selectedMediaRef.current.forEach(({ url }) => URL.revokeObjectURL(url));
+  }, []);
   const [title, setTitle] = useState("");
   const [note, setNote] = useState("");
   const [locationId, setLocationId] = useState<string>("");
@@ -361,20 +372,27 @@ export default function FixPage() {
     },
   });
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, isVideo = false) => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
+    e.target.value = "";
     if (files.length === 0) return;
-
-    const newFiles = [...mediaFiles, ...files];
-    setMediaFiles(newFiles);
-
-    files.forEach(file => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setMediaPreviews(prev => [...prev, e.target?.result as string]);
-      };
-      reader.readAsDataURL(file);
-    });
+    const unsupported = files.find(file => !FIX_MEDIA_TYPES.has(file.type));
+    const oversized = files.find(file => file.size > MAX_FIX_MEDIA_SIZE);
+    if (unsupported || oversized || selectedMediaRef.current.length + files.length > MAX_FIX_MEDIA) {
+      toast({
+        title: "Can't add media",
+        description: unsupported
+          ? `${unsupported.name}: choose a JPEG, PNG, WebP, MP4 or MOV file.`
+          : oversized
+            ? `${oversized.name} is over 20 MB. Choose a smaller file.`
+            : `You can add up to ${MAX_FIX_MEDIA} photos and videos. Remove some or choose fewer files.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    const added = files.map(file => ({ file, url: URL.createObjectURL(file) }));
+    selectedMediaRef.current = [...selectedMediaRef.current, ...added];
+    setSelectedMedia(selectedMediaRef.current);
 
     if (step === "capture") {
       setStep("details");
@@ -382,10 +400,10 @@ export default function FixPage() {
   };
 
   const removeMedia = (index: number) => {
-    setMediaFiles(prev => prev.filter((_, i) => i !== index));
-    setMediaPreviews(prev => prev.filter((_, i) => i !== index));
-    
-    if (mediaFiles.length <= 1) {
+    URL.revokeObjectURL(selectedMediaRef.current[index].url);
+    selectedMediaRef.current = selectedMediaRef.current.filter((_, i) => i !== index);
+    setSelectedMedia(selectedMediaRef.current);
+    if (selectedMediaRef.current.length === 0) {
       setStep("capture");
     }
   };
@@ -403,7 +421,7 @@ export default function FixPage() {
       setIsUploading(true);
       
       const formData = new FormData();
-      mediaFiles.forEach(file => {
+      selectedMedia.forEach(({ file }) => {
         formData.append("media", file);
       });
 
@@ -414,7 +432,8 @@ export default function FixPage() {
       });
 
       if (!uploadRes.ok) {
-        throw new Error("Failed to upload media");
+        const body = await uploadRes.json().catch(() => null);
+        throw new Error(body?.message || `Media upload failed (${uploadRes.status}). Check file types and the 20 MB limit, then try again.`);
       }
 
       const { urls } = await uploadRes.json();
@@ -455,8 +474,8 @@ export default function FixPage() {
   });
 
   const handleSubmit = () => {
-    if (mediaFiles.length === 0) {
-      toast({ title: "Please add at least one photo", variant: "destructive" });
+    if (selectedMedia.length === 0) {
+      toast({ title: "Please add at least one photo or video", variant: "destructive" });
       return;
     }
     if (!title.trim()) {
@@ -485,8 +504,9 @@ export default function FixPage() {
 
   const resetForm = () => {
     setStep("capture");
-    setMediaFiles([]);
-    setMediaPreviews([]);
+    selectedMediaRef.current.forEach(({ url }) => URL.revokeObjectURL(url));
+    selectedMediaRef.current = [];
+    setSelectedMedia([]);
     setTitle("");
     setNote("");
     setLocationId("");
@@ -545,30 +565,20 @@ export default function FixPage() {
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*"
+          accept="image/*,video/*"
           capture="environment"
-          multiple
-          onChange={(e) => handleFileSelect(e)}
+          onChange={handleFileSelect}
           className="hidden"
           data-testid="input-camera"
         />
         <input
           ref={galleryInputRef}
           type="file"
-          accept="image/*"
+          accept={FIX_MEDIA_ACCEPT}
           multiple
-          onChange={(e) => handleFileSelect(e)}
+          onChange={handleFileSelect}
           className="hidden"
           data-testid="input-gallery"
-        />
-        <input
-          ref={videoInputRef}
-          type="file"
-          accept="video/*"
-          capture="environment"
-          onChange={(e) => handleFileSelect(e, true)}
-          className="hidden"
-          data-testid="input-video"
         />
 
         <div className="h-24 w-24 rounded-full bg-primary/10 flex items-center justify-center mb-6">
@@ -577,7 +587,7 @@ export default function FixPage() {
         
         <h1 className="text-2xl font-bold mb-2" data-testid="text-fix-title">Fix something?</h1>
         <p className="text-muted-foreground mb-4 text-center">
-          Take a photo of what needs fixing
+          Add a photo or video of what needs fixing
         </p>
         {checklistContext && (
           <Card className="w-full max-w-sm mb-5 border-primary/30 bg-primary/5" data-testid="card-checklist-fix-context">
@@ -610,7 +620,7 @@ export default function FixPage() {
             data-testid="button-take-photo"
           >
             <Camera className="mr-2 h-5 w-5" />
-            Take Photo
+            Camera
           </Button>
           <Button 
             size="lg" 
@@ -621,16 +631,6 @@ export default function FixPage() {
           >
             <Image className="mr-2 h-5 w-5" />
             Choose from Gallery
-          </Button>
-          <Button 
-            size="lg" 
-            variant="outline"
-            onClick={() => videoInputRef.current?.click()}
-            className="h-14 text-lg"
-            data-testid="button-take-video"
-          >
-            <Video className="mr-2 h-5 w-5" />
-            Record Video
           </Button>
         </div>
 
@@ -699,36 +699,27 @@ export default function FixPage() {
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept="image/*,video/*"
         capture="environment"
-        multiple
-        onChange={(e) => handleFileSelect(e)}
+        onChange={handleFileSelect}
         className="hidden"
       />
       <input
         ref={galleryInputRef}
         type="file"
-        accept="image/*"
+        accept={FIX_MEDIA_ACCEPT}
         multiple
-        onChange={(e) => handleFileSelect(e)}
-        className="hidden"
-      />
-      <input
-        ref={videoInputRef}
-        type="file"
-        accept="video/*"
-        capture="environment"
-        onChange={(e) => handleFileSelect(e, true)}
+        onChange={handleFileSelect}
         className="hidden"
       />
 
       <div className="grid grid-cols-3 gap-2 mb-6">
-        {mediaPreviews.map((preview, index) => (
-          <div key={index} className="relative aspect-square rounded-lg overflow-hidden bg-muted">
-            {mediaFiles[index]?.type.startsWith("video") ? (
-              <video src={preview} className="w-full h-full object-cover" />
+        {selectedMedia.map(({ file, url }, index) => (
+          <div key={url} className="relative aspect-square rounded-lg overflow-hidden bg-muted">
+            {file.type.startsWith("video/") ? (
+              <video src={url} controls playsInline preload="metadata" aria-label={`Preview video ${index + 1}`} className="w-full h-full object-cover" />
             ) : (
-              <img src={preview} alt="" className="w-full h-full object-contain" />
+              <img src={url} alt={`Preview photo ${index + 1}`} className="w-full h-full object-contain" />
             )}
             <Button
               size="icon"
@@ -742,7 +733,7 @@ export default function FixPage() {
           </div>
         ))}
         
-        {mediaPreviews.length < 10 && (
+        {selectedMedia.length < MAX_FIX_MEDIA && (
           <button
             onClick={() => fileInputRef.current?.click()}
             className="aspect-square rounded-lg border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center gap-1 hover-elevate active-elevate-2 overflow-visible"
@@ -855,7 +846,7 @@ export default function FixPage() {
           size="lg"
           className="w-full h-14 text-lg"
           onClick={handleSubmit}
-          disabled={isUploading || submitMutation.isPending || !title.trim() || mediaFiles.length === 0}
+          disabled={isUploading || submitMutation.isPending || !title.trim() || selectedMedia.length === 0}
           data-testid="button-submit-fix"
         >
           {isUploading || submitMutation.isPending ? (

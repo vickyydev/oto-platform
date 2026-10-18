@@ -34,6 +34,27 @@ import { cn } from "@/lib/utils";
 import type { ChecklistRun, ChecklistRunItem, ChecklistTemplate, ChecklistTemplateItem } from "@shared/schema";
 import { Link } from "wouter";
 import { MediaCount, MediaPreviewStrip, MediaViewerModal, type ChecklistAttachment } from "@/components/media";
+import { ImagePreparationError, prepareImageForUpload } from "@/lib/image-upload";
+import { isVideoUrl } from "@/lib/media";
+
+// Item evidence may be a photo or a short video (the server checks the file's
+// signature and holds video to 20 MB); checker fail photos stay photos.
+const CHECKLIST_EVIDENCE_ACCEPT = "image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm";
+const CHECKLIST_VIDEO_TYPES = new Set(["video/mp4", "video/quicktime", "video/webm"]);
+const MAX_CHECKLIST_VIDEO_SIZE = 20 * 1024 * 1024;
+
+async function prepareEvidenceForUpload(file: File): Promise<File> {
+  if (file.type.startsWith("image/")) {
+    return prepareImageForUpload(file);
+  }
+  if (!CHECKLIST_VIDEO_TYPES.has(file.type)) {
+    throw new Error(`${file.name}: choose an MP4, MOV, or WebM video.`);
+  }
+  if (file.size > MAX_CHECKLIST_VIDEO_SIZE) {
+    throw new Error(`${file.name} is over the 20 MB video limit.`);
+  }
+  return file;
+}
 
 interface ChecklistRunWithDetails extends ChecklistRun {
   completedByName?: string | null;
@@ -428,17 +449,21 @@ export default function ChecklistRunPage() {
   const handleFailPhotoCapture = async (itemId: string, file: File) => {
     setUploadingFailPhoto(itemId);
     try {
+      const preparedFile = await prepareImageForUpload(file);
       const formData = new FormData();
-      formData.append("photo", file);
+      formData.append("photo", preparedFile);
       formData.append("itemId", itemId);
-      
+
       const response = await fetch("/api/checker-photos/upload", {
         method: "POST",
         credentials: "include",
         body: formData,
       });
-      
-      if (!response.ok) throw new Error("Failed to upload photo");
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "The server rejected the photo. Please try again.");
+      }
       const { url, canonicalUrl } = await response.json();
       
       setFailPhotos(prev => ({
@@ -457,7 +482,7 @@ export default function ChecklistRunPage() {
       toast({ title: "Issue photo uploaded" });
     } catch (error) {
       toast({
-        title: "Failed to upload photo",
+        title: error instanceof ImagePreparationError ? "Photo could not be prepared" : "Failed to upload photo",
         description: error instanceof Error ? error.message : "Unknown error",
         variant: "destructive",
       });
@@ -470,7 +495,11 @@ export default function ChecklistRunPage() {
     if (files.length === 0) return;
     setUploadingPhoto(itemId);
     try {
-      const uploadedUrls = await Promise.all(files.map(async (file) => {
+      // Prepare one file at a time (photos are resized and re-encoded in the
+      // browser) to limit memory pressure on phones and tablets.
+      const preparedFiles: File[] = [];
+      for (const original of files) preparedFiles.push(await prepareEvidenceForUpload(original));
+      const uploadedUrls = await Promise.all(preparedFiles.map(async (file) => {
         const formData = new FormData();
         formData.append("photo", file);
         formData.append("itemId", itemId);
@@ -481,7 +510,7 @@ export default function ChecklistRunPage() {
         });
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.message || "Failed to upload photo");
+          throw new Error(errorData.message || "The server rejected this evidence. Please try again.");
         }
         const { url, canonicalUrl } = await response.json();
         return { url: url as string, canonicalUrl: canonicalUrl as string };
@@ -498,11 +527,11 @@ export default function ChecklistRunPage() {
       const savedPhotos = [...currentPhotos, ...uploadedUrls.map(photo => photo.canonicalUrl)];
       itemPhotosRef.current = { ...itemPhotosRef.current, [itemId]: savedPhotos };
       setItemPhotos((previous) => ({ ...previous, [itemId]: savedPhotos }));
-      toast({ title: uploadedUrls.length === 1 ? "Photo added" : `${uploadedUrls.length} photos added` });
+      toast({ title: uploadedUrls.length === 1 ? "Evidence added" : `${uploadedUrls.length} evidence items added` });
     } catch (error) {
       toast({
-        title: "Upload failed",
-        description: error instanceof Error ? error.message : "Could not upload photo",
+        title: error instanceof ImagePreparationError ? "Photo could not be prepared" : "Upload failed",
+        description: error instanceof Error ? error.message : "Could not upload evidence",
         variant: "destructive",
       });
     } finally {
@@ -781,7 +810,7 @@ export default function ChecklistRunPage() {
                                     photos.length > 0 ? "text-green-600" : "text-amber-600"
                                   )}>
                                     <Camera className="h-3 w-3" />
-                                    {photos.length > 0 ? `${photos.length} photo${photos.length > 1 ? 's' : ''}` : 'Photo required'}
+                                    {photos.length > 0 ? `${photos.length} evidence item${photos.length > 1 ? 's' : ''}` : 'Photo or video required'}
                                   </span>
                                 )}
                                 {itemAttachments.length > 0 && (
@@ -961,20 +990,32 @@ export default function ChecklistRunPage() {
                               {!item.templateItem.linkedToFix && <div className="space-y-2">
                                 <label className="text-sm font-medium flex items-center gap-1">
                                   <Camera className="h-3.5 w-3.5" />
-                                  Photo {requiresPhoto ? <span className="text-destructive">*</span> : <span className="text-muted-foreground text-xs">(optional)</span>}
+                                  Photo or video {requiresPhoto ? <span className="text-destructive">*</span> : <span className="text-muted-foreground text-xs">(optional)</span>}
                                 </label>
                                   
                                   {photos.length > 0 && (
                                     <div className="flex gap-2 flex-wrap">
                                       {photos.map((photoUrl, index) => (
                                         <div key={index} className="relative group">
-                                          <a href={photoUrl} target="_blank" rel="noopener noreferrer">
-                                            <img 
-                                              src={photoUrl} 
-                                              alt={`Evidence ${index + 1}`}
-                                              className="h-16 w-16 object-cover rounded-md border"
+                                          {isVideoUrl(photoUrl) ? (
+                                            <video
+                                              src={photoUrl}
+                                              controls
+                                              playsInline
+                                              preload="metadata"
+                                              aria-label={`Evidence video ${index + 1}`}
+                                              className="h-32 w-full max-w-xs object-contain rounded-md border bg-black"
+                                              data-testid={`evidence-video-${item.id}-${index}`}
                                             />
-                                          </a>
+                                          ) : (
+                                            <a href={photoUrl} target="_blank" rel="noopener noreferrer">
+                                              <img
+                                                src={photoUrl}
+                                                alt={`Evidence ${index + 1}`}
+                                                className="h-16 w-16 object-cover rounded-md border"
+                                              />
+                                            </a>
+                                          )}
                                           {!isCompleted && (
                                             <button
                                               onClick={() => removePhoto(item.id, index)}
@@ -993,7 +1034,7 @@ export default function ChecklistRunPage() {
                                     <div className="flex gap-2">
                                       {cameraEnabled && <input
                                         type="file"
-                                        accept="image/*"
+                                        accept="image/*,video/*"
                                         capture="environment"
                                         className="hidden"
                                         ref={(el) => { fileInputRefs.current[item.id] = el; }}
@@ -1008,7 +1049,7 @@ export default function ChecklistRunPage() {
                                       />}
                                       {galleryEnabled && <input
                                         type="file"
-                                        accept="image/*"
+                                        accept={CHECKLIST_EVIDENCE_ACCEPT}
                                         multiple
                                         className="hidden"
                                         ref={(el) => { libraryInputRefs.current[item.id] = el; }}
@@ -1045,7 +1086,7 @@ export default function ChecklistRunPage() {
                                         data-testid={`button-add-photo-library-${item.id}`}
                                       >
                                         <ImageIcon className="mr-1 h-3 w-3" />
-                                        Photo Library
+                                        Photo / Video Library
                                       </Button>}
                                     </div>
                                   )}
