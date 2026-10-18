@@ -12,9 +12,11 @@ import { useAuth } from "@/hooks/use-auth";
 import { Users, User, AlertCircle, CalendarDays, UserCircle, MapPin, Plus, Minus, Palmtree, Moon, Sun, Coffee, ListChecks } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TimelineControls, type TimelineMode } from "@/components/scheduling";
-import { getShiftColorByIndex } from "@/components/scheduling/utils";
+import { getFullScheduleShiftColor, getShiftColorByIndex } from "@/components/scheduling/utils";
+import { DutyShiftMark, DutyShiftTime } from "@/components/scheduling/DutyShiftMark";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { timeOffTypeLabels, type TimeOffType } from "@shared/schema";
+import type { LeaveType } from "@/components/leave/leave-types-manager";
 
 function isCurrentlyOnShift(date: string, startTime: string, endTime: string): boolean {
   const now = new Date();
@@ -82,7 +84,7 @@ type BranchEvent = {
 
 type MyTimeOffRecord = {
   id: string;
-  type: TimeOffType;
+  type: string;
   startDate: string;
   endDate: string;
   note: string | null;
@@ -97,7 +99,7 @@ type MyTimeOffResponse = {
 // Time off record with employee info for "everyone" scope
 type AllTimeOffRecord = {
   id: string;
-  type: TimeOffType;
+  type: string;
   startDate: string;
   endDate: string;
   note: string | null;
@@ -118,7 +120,7 @@ type EmployeeWithOffDays = {
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
-const TIME_OFF_COLORS: Record<TimeOffType, string> = {
+const TIME_OFF_COLORS: Record<string, string> = {
   SICK: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300",
   ANNUAL: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
   UNPAID: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
@@ -126,19 +128,6 @@ const TIME_OFF_COLORS: Record<TimeOffType, string> = {
   OTHER: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300",
   CHANGE_DAY_OFF: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
 };
-
-const SHIFT_COLORS = [
-  "bg-emerald-600",
-  "bg-indigo-600",
-  "bg-amber-600",
-  "bg-rose-600",
-  "bg-cyan-600",
-  "bg-purple-600",
-  "bg-orange-600",
-  "bg-teal-600",
-  "bg-pink-600",
-  "bg-lime-600",
-];
 
 export default function RotaPage() {
   const { user } = useAuth();
@@ -159,6 +148,15 @@ export default function RotaPage() {
     queryKey: ["/api/departments"],
     enabled: !!user,
   });
+
+  const { data: leaveTypes = [] } = useQuery<LeaveType[]>({
+    queryKey: ["/api/leave-types"],
+    enabled: !!user,
+  });
+  const getTimeOffLabel = (type: string) =>
+    leaveTypes.find((leaveType) => leaveType.code === type)?.name
+    || timeOffTypeLabels[type as TimeOffType]
+    || type.replace(/_/g, " ");
 
   const dateRange = useMemo(() => {
     switch (timelineMode) {
@@ -419,7 +417,7 @@ export default function RotaPage() {
         startDate.setHours(0, 0, 0, 0);
         endDate.setHours(23, 59, 59, 999);
         return startDate <= dayEnd && endDate >= dayStart;
-      });
+      }).map((record) => ({ ...record, employeeId }));
     }
     
     // For other employees, use allTimeOffRecords
@@ -493,7 +491,13 @@ export default function RotaPage() {
     }
     const key = `${shift.start}-${shift.end}-${shift.label || ""}`;
     const index = uniqueShiftTypes.get(key) ?? 0;
-    return SHIFT_COLORS[index % SHIFT_COLORS.length];
+    return getFullScheduleShiftColor(null, index);
+  };
+
+  const getFullScheduleColor = (shift: RotaShift): string => {
+    const key = `${shift.start}-${shift.end}-${shift.label || ""}`;
+    const fallbackIndex = uniqueShiftTypes.get(key) ?? 0;
+    return getFullScheduleShiftColor(shift.colorIndex, fallbackIndex);
   };
 
   const shiftsGroupedByEmployee = useMemo(() => {
@@ -984,14 +988,6 @@ export default function RotaPage() {
                       return Math.max(0, Math.min(pct, 100));
                     };
 
-                    const DUTY_COLORS = [
-                      "rgba(59, 130, 246, 0.6)",
-                      "rgba(168, 85, 247, 0.6)",
-                      "rgba(236, 72, 153, 0.6)",
-                      "rgba(34, 197, 94, 0.6)",
-                      "rgba(249, 115, 22, 0.6)",
-                    ];
-                    
                     return (
                       <div className="p-3 space-y-3">
                         <div className="text-sm font-medium text-muted-foreground">
@@ -1021,7 +1017,7 @@ export default function RotaPage() {
                                   <Palmtree className="h-5 w-5" />
                                 </div>
                                 <div>
-                                  <div className="font-medium">{timeOffTypeLabels[to.type]}</div>
+                                  <div className="font-medium">{getTimeOffLabel(to.type)}</div>
                                   <div className="text-sm text-muted-foreground">
                                     {format(new Date(to.startDate), "d MMM")} - {format(new Date(to.endDate), "d MMM yyyy")}
                                   </div>
@@ -1078,26 +1074,6 @@ export default function RotaPage() {
                                   );
                                 }
 
-                                const dutyBlockIndicators = (shift.dutyBlocks || []).map((db, idx) => {
-                                  const dbLeftPct = timeToPercent(db.startTime) - shiftLeftPct;
-                                  const dbRightPct = timeToPercent(db.endTime) - shiftLeftPct;
-                                  const dbWidthPct = Math.max(dbRightPct - dbLeftPct, 0.5);
-                                  const dbLeftRel = (dbLeftPct / shiftWidthPct) * 100;
-                                  const dbWidthRel = (dbWidthPct / shiftWidthPct) * 100;
-                                  return (
-                                    <div
-                                      key={db.id}
-                                      className="absolute top-0 bottom-0"
-                                      style={{
-                                        left: `${dbLeftRel}%`,
-                                        width: `${dbWidthRel}%`,
-                                        backgroundColor: DUTY_COLORS[idx % DUTY_COLORS.length],
-                                        backgroundImage: "repeating-linear-gradient(-45deg, transparent, transparent 3px, rgba(255,255,255,0.15) 3px, rgba(255,255,255,0.15) 5px)",
-                                      }}
-                                    />
-                                  );
-                                });
-                                
                                 return (
                                   <div key={`${shift.shiftRowId}-${shiftIdx}`} className="space-y-1.5">
                                     <div className="relative" style={{ height: 40 }}>
@@ -1118,10 +1094,9 @@ export default function RotaPage() {
                                         data-testid={`my-timeline-shift-${shiftIdx}`}
                                       >
                                         <span className="truncate px-1 relative z-10">
-                                          {shift.start.slice(0,5)} – {shift.end.slice(0,5)}
+                                          <DutyShiftTime hasDuty={!!shift.dutyBlocks?.length}>{shift.start.slice(0,5)} – {shift.end.slice(0,5)}</DutyShiftTime>
                                           {shift.shiftGroupName && ` · ${shift.shiftGroupName}`}
                                         </span>
-                                        {dutyBlockIndicators}
                                         {breakIndicator}
                                       </div>
                                     </div>
@@ -1129,7 +1104,7 @@ export default function RotaPage() {
                                     <div className="rounded-md border bg-muted/30 px-4 py-3 space-y-2.5" data-testid={`my-shift-info-${shiftIdx}`}>
                                       <div className="flex items-center gap-2.5 flex-wrap">
                                         <div className={cn("inline-block px-3 py-1 rounded text-sm font-semibold text-white", shiftColor)}>
-                                          {shift.start.slice(0,5)} – {shift.end.slice(0,5)}
+                                          <DutyShiftTime hasDuty={!!shift.dutyBlocks?.length}>{shift.start.slice(0,5)} – {shift.end.slice(0,5)}</DutyShiftTime>
                                         </div>
                                         {onShiftNow && (
                                           <Badge className="bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 text-xs font-semibold">Currently on shift</Badge>
@@ -1182,9 +1157,8 @@ export default function RotaPage() {
                                             <ListChecks className="h-4 w-4" />
                                             <span>Duty Blocks</span>
                                           </div>
-                                          {shift.dutyBlocks.map((db, idx) => (
+                                          {shift.dutyBlocks.map((db) => (
                                             <div key={db.id} className="flex items-center gap-2 pl-1">
-                                              <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: DUTY_COLORS[idx % DUTY_COLORS.length] }} />
                                               <span className="font-semibold">{db.dutyName || "Duty"}</span>
                                               <span className="text-muted-foreground">{db.startTime.slice(0,5)} – {db.endTime.slice(0,5)}</span>
                                             </div>
@@ -1232,7 +1206,7 @@ export default function RotaPage() {
                                       <div key={`${shift.assignmentId || shift.shiftRowId}-${idx}`} className="rounded-md border bg-muted/30 px-4 py-3 space-y-2.5" data-testid={`my-shift-info-${dateStr}-${idx}`}>
                                         <div className="flex items-center gap-2.5 flex-wrap">
                                           <div className={cn("inline-block px-3 py-1 rounded text-sm font-semibold text-white", shiftColor)}>
-                                            {shift.start.slice(0,5)} – {shift.end.slice(0,5)}
+                                            <DutyShiftTime hasDuty={!!shift.dutyBlocks?.length}>{shift.start.slice(0,5)} – {shift.end.slice(0,5)}</DutyShiftTime>
                                           </div>
                                           {onShiftNow && (
                                             <Badge className="bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 text-xs font-semibold">Currently on shift</Badge>
@@ -1280,7 +1254,7 @@ export default function RotaPage() {
                                   })}
                                 </div>
                               ) : timeOffs.length > 0 ? (
-                                <div className="text-sm text-muted-foreground">{timeOffs.map((to) => timeOffTypeLabels[to.type]).join(", ")}</div>
+                                <div className="text-sm text-muted-foreground">{timeOffs.map((to) => getTimeOffLabel(to.type)).join(", ")}</div>
                               ) : dayOff ? (
                                 <div className="text-sm text-muted-foreground">Day Off</div>
                               ) : (
@@ -1403,6 +1377,7 @@ export default function RotaPage() {
                                                         data-testid={`multi-shift-${emp.id}-${dateStr}`}
                                                       >
                                                         <div>{dayShifts.length} shifts</div>
+                                                         {dayShifts.some((s: RotaShift) => s.dutyBlocks?.length) && <DutyShiftMark />}
                                                         {hasCrossBranchShift && timelineMode !== "month" && (
                                                           <div className="absolute -top-1.5 -right-1.5 bg-yellow-500 text-yellow-950 text-[7px] px-1 py-0.5 rounded font-bold shadow-sm z-10">
                                                             B
@@ -1425,12 +1400,12 @@ export default function RotaPage() {
                                                           {dayShifts.map((shift, idx) => {
                                                             const isCrossBranch = shift.branchId && shift.branchId !== selectedBranchId;
                                                             const isBorrowed = shift.departmentId !== dept.id || isCrossBranch;
-                                                            const shiftColor = getShiftColor(shift);
+                                                            const shiftColor = getFullScheduleColor(shift);
                                                             return (
                                                               <div key={idx} className="space-y-0.5">
                                                                 <div className="flex items-center gap-2 flex-wrap">
                                                                   <div className={cn("px-2 py-1 rounded text-xs font-medium text-white", shiftColor)}>
-                                                                    {shift.start.slice(0,5)} – {shift.end.slice(0,5)}
+                                                                    <DutyShiftTime hasDuty={!!shift.dutyBlocks?.length}>{shift.start.slice(0,5)} – {shift.end.slice(0,5)}</DutyShiftTime>
                                                                   </div>
                                                                   <div className="text-xs">
                                                                     {shift.shiftGroupName && (
@@ -1494,7 +1469,7 @@ export default function RotaPage() {
                                                   const startStr = startM === '00' ? String(sH) : `${sH}:${startM}`;
                                                   const endStr = endM === '00' ? String(eH) : `${eH}:${endM}`;
                                                   const timeLabel = timelineMode === "month" ? startStr : `${startStr}–${endStr}`;
-                                                  const shiftColor = getShiftColor(shift);
+                                                  const shiftColor = getFullScheduleColor(shift);
                                                   const onShiftNow = isCurrentlyOnShift(dateStr, shift.start, shift.end);
                                                   const isCrossBranch = shift.branchId && shift.branchId !== selectedBranchId;
                                                   const isBorrowed = shift.departmentId !== dept.id || isCrossBranch;
@@ -1511,7 +1486,7 @@ export default function RotaPage() {
                                                           )}
                                                           data-testid={`shift-${emp.id}-${dateStr}-${idx}`}
                                                         >
-                                                          <div>{timeLabel}</div>
+                                                          <div><DutyShiftTime hasDuty={!!shift.dutyBlocks?.length} compact={timelineMode === "month"}>{timeLabel}</DutyShiftTime></div>
                                                           {shift.resolvedRoleName && timelineMode !== "month" && (
                                                             <div className="text-[9px] opacity-80 truncate max-w-full">{shift.resolvedRoleName}</div>
                                                           )}
@@ -1553,7 +1528,7 @@ export default function RotaPage() {
                                                             {format(day, "EEEE, MMMM d, yyyy")}
                                                           </div>
                                                           <div className={cn("inline-block px-2 py-1 rounded text-xs font-medium text-white", shiftColor)}>
-                                                            {shift.start.slice(0,5)} – {shift.end.slice(0,5)}
+                                                            <DutyShiftTime hasDuty={!!shift.dutyBlocks?.length}>{shift.start.slice(0,5)} – {shift.end.slice(0,5)}</DutyShiftTime>
                                                           </div>
                                                           {shift.shiftGroupName && (
                                                             <div className="text-xs">
@@ -1673,7 +1648,7 @@ export default function RotaPage() {
                                                     <PopoverContent className="w-56 p-3" align="start">
                                                       <div className="space-y-2">
                                                         <div className="font-medium text-sm">{emp.name}</div>
-                                                        <div className="text-xs font-medium">{timeOffTypeLabels[timeOff.type]}</div>
+                                                        <div className="text-xs font-medium">{getTimeOffLabel(timeOff.type)}</div>
                                                         <div className="text-xs text-muted-foreground">
                                                           {format(new Date(timeOff.startDate), "d MMM")} - {format(new Date(timeOff.endDate), "d MMM yyyy")}
                                                         </div>

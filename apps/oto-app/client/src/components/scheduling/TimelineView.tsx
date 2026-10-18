@@ -7,6 +7,7 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CheckCircle2, AlertCircle, Coffee, ListChecks } from "lucide-react";
 import { getDepartmentColor, getShiftColorByIndex, getEmployeeColor, formatEmployeeName, getInitials, type NameDisplayMode } from "./utils";
+import { DutyShiftTime } from "./DutyShiftMark";
 import { EmployeeInfoPopup } from "./EmployeeInfoPopup";
 import type { AvatarStatusMap } from "@/hooks/use-avatar-work-status";
 
@@ -179,15 +180,6 @@ type HourlyStaffing = {
   shortage: number;
   shifts: { label: string; required: number; assigned: number }[];
 };
-
-const DUTY_BLOCK_COLORS = [
-  "rgba(59, 130, 246, 0.6)",
-  "rgba(168, 85, 247, 0.6)",
-  "rgba(236, 72, 153, 0.6)",
-  "rgba(34, 197, 94, 0.6)",
-  "rgba(249, 115, 22, 0.6)",
-  "rgba(14, 165, 233, 0.6)",
-];
 
 export function TimelineView({
   date,
@@ -622,26 +614,6 @@ export function TimelineView({
                             );
                           }
 
-                          const dutyBlockIndicators = assignmentDutyBlocks.map((db, idx) => {
-                            const dbLeft = clampPosition(timeToPosition(db.startTime, hourWidth), hourWidth) - left;
-                            const dbRight = clampPosition(timeToPosition(db.endTime, hourWidth), hourWidth) - left;
-                            const dbWidth = Math.max(dbRight - dbLeft, 2);
-                            const bgColor = DUTY_BLOCK_COLORS[idx % DUTY_BLOCK_COLORS.length];
-                            return (
-                              <div
-                                key={db.id}
-                                className="absolute top-0 bottom-0"
-                                style={{
-                                  left: dbLeft,
-                                  width: dbWidth,
-                                  backgroundColor: bgColor,
-                                  backgroundImage: "repeating-linear-gradient(-45deg, transparent, transparent 3px, rgba(255,255,255,0.15) 3px, rgba(255,255,255,0.15) 5px)",
-                                }}
-                                data-testid={`timeline-duty-${db.id}`}
-                              />
-                            );
-                          });
-
                           return (
                             <Popover key={assignmentId}>
                               <PopoverTrigger asChild>
@@ -654,12 +626,18 @@ export function TimelineView({
                                   data-testid={`timeline-shift-${assignmentId}`}
                                   data-timeline-interactive
                                 >
-                                  {shiftWidth > 60 && (() => {
+                                  {assignmentDutyBlocks.length > 0 && (
+                                    <span className="relative z-10">
+                                      <DutyShiftTime hasDuty compact>
+                                        {shiftWidth > 95 ? `${shiftRow.startTime.slice(0, 5)}–${shiftRow.endTime.slice(0, 5)}` : shiftRow.startTime.slice(0, 5)}
+                                      </DutyShiftTime>
+                                    </span>
+                                  )}
+                                  {assignmentDutyBlocks.length === 0 && shiftWidth > 60 && (() => {
                                     const groupName = shiftRow.shiftGroupId ? shiftGroups.find(g => g.id === shiftRow.shiftGroupId)?.name : null;
                                     const displayLabel = groupName || (shiftRow.roles.length > 0 ? shiftRow.roles[0]?.role?.name : null);
                                     return displayLabel ? <span className="truncate px-0.5 relative z-10 opacity-90">{displayLabel}</span> : null;
                                   })()}
-                                  {dutyBlockIndicators}
                                   {breakIndicator}
                                 </button>
                               </PopoverTrigger>
@@ -667,7 +645,9 @@ export function TimelineView({
                                 <div className="space-y-1.5">
                                   <p className="font-medium text-sm">{employee.nickname || employee.fullName}</p>
                                   <div className={cn("inline-block px-2 py-1 rounded text-xs font-medium text-white", shiftColorClass)}>
-                                    {shiftRow.startTime.slice(0, 5)} – {shiftRow.endTime.slice(0, 5)}
+                                    <DutyShiftTime hasDuty={assignmentDutyBlocks.length > 0}>
+                                      {shiftRow.startTime.slice(0, 5)} – {shiftRow.endTime.slice(0, 5)}
+                                    </DutyShiftTime>
                                   </div>
                                   {(() => {
                                     const groupName = shiftRow.shiftGroupId ? shiftGroups.find(g => g.id === shiftRow.shiftGroupId)?.name : null;
@@ -713,9 +693,8 @@ export function TimelineView({
                                         <ListChecks className="h-3.5 w-3.5" />
                                         <span>Duty Blocks</span>
                                       </div>
-                                      {assignmentDutyBlocks.map((db, idx) => (
+                                      {assignmentDutyBlocks.map((db) => (
                                         <div key={db.id} className="flex items-center gap-1.5 pl-1">
-                                          <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: DUTY_BLOCK_COLORS[idx % DUTY_BLOCK_COLORS.length] }} />
                                           <span className="font-medium">{db.dutyName || "Duty"}</span>
                                           <span className="text-muted-foreground">{db.startTime.slice(0, 5)} – {db.endTime.slice(0, 5)}</span>
                                         </div>

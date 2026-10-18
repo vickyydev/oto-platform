@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useRef, useEffect, type ReactNode } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useQueries, useMutation } from "@tanstack/react-query";
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, useDraggable, useDroppable, PointerSensor, TouchSensor, useSensor, useSensors, closestCenter, type PointerSensorOptions } from "@dnd-kit/core";
 
 // Custom PointerSensor that ignores right-clicks so they reach the
@@ -39,6 +39,7 @@ import { Plus, Clock, Users, X, Save, FileDown, Trash2, Filter, LayoutGrid, User
 import { format, startOfWeek, addDays, addWeeks, subWeeks, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, eachWeekOfInterval, getWeek, isWeekend, getDay } from "date-fns";
 import { TimelineControls, type TimelineMode } from "@/components/scheduling";
 import { ShiftCard, EmployeeShiftCard, MinimalShiftBlock, LeaveCard, OffDayCard, DeptShiftCell } from "@/components/scheduling";
+import { DutyShiftMark, DutyShiftTime } from "@/components/scheduling/DutyShiftMark";
 import { EmployeeRowHeader, DaysOffRowHeader } from "@/components/scheduling";
 import { TimelineView, getEmployeeColor, getShiftColorByIndex, BorrowStaffModal, DutyBlocksSheet } from "@/components/scheduling";
 import type { DutyBlock } from "@shared/schema";
@@ -48,6 +49,7 @@ import { CopyModeProvider, useCopyMode, type ClipboardShiftData } from "@/hooks/
 import { useAvatarWorkStatus, type AvatarWorkStatus, type AvatarStatusMap } from "@/hooks/use-avatar-work-status";
 import { getWorkStatusColor } from "@/hooks/use-avatar-work-status";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import type { LeaveType } from "@/components/leave/leave-types-manager";
 
 type Department = {
   id: string;
@@ -227,6 +229,11 @@ type AllLeaveBalance = {
     remaining: number;
   };
   holidayBalance: number;
+};
+
+type DynamicEmployeeLeaveBalances = {
+  year: number;
+  balances: Array<{ leaveTypeId: string; code: string; name: string; earned: number; used: number; balance: number; canClaim: boolean; isActive: boolean }>;
 };
 
 type BranchEvent = {
@@ -686,6 +693,30 @@ function SchedulingPageInner() {
     enabled: !!selectedBranchId,
   });
 
+  const leaveTypesQuery = useQuery<LeaveType[]>({
+    queryKey: ["/api/leave-types"],
+    enabled: !!selectedBranchId,
+  });
+  const leaveTypeListUnavailable = leaveTypesQuery.isLoading || leaveTypesQuery.isFetching || leaveTypesQuery.isError;
+  const leaveTypes = leaveTypesQuery.data ?? [];
+
+  const employeeDynamicLeaveQueries = useQueries({
+    queries: (employeesQuery.data || []).map((employee) => ({
+      queryKey: [`/api/employees/${employee.id}/leave-balances-dynamic`],
+      enabled: !!selectedBranchId,
+      staleTime: 60_000,
+    })),
+  });
+  const dynamicLeaveBalanceMap = useMemo(() => {
+    const balances: Record<string, DynamicEmployeeLeaveBalances["balances"]> = {};
+    (employeesQuery.data || []).forEach((employee, index) => {
+      const result = employeeDynamicLeaveQueries[index]?.data as DynamicEmployeeLeaveBalances | undefined;
+      if (result) balances[employee.id] = result.balances;
+    });
+    return balances;
+  }, [employeesQuery.data, employeeDynamicLeaveQueries]);
+  const getDynamicLeaveBalance = (employeeId: string, code: string) =>
+    dynamicLeaveBalanceMap[employeeId]?.find((balance) => balance.code === code);
   const employeeIdsForStatus = useMemo(() => {
     return (employeesQuery.data || []).map(e => e.id);
   }, [employeesQuery.data]);
@@ -874,19 +905,28 @@ function SchedulingPageInner() {
     return allLeaveBalanceMap[employeeId];
   };
 
+  const getLegacyLeaveBalance = (employeeId: string, code: string): number | undefined => {
+    if (code === "CHANGE_DAY_OFF") return getLeaveBalance(employeeId)?.balance;
+    if (code === "ANNUAL") return getAllLeaveBalance(employeeId)?.holidayBalance;
+    if (code === "SICK") return getSickLeaveBalance(employeeId)?.daysRemaining;
+    if (code === "BUSINESS") return getAllLeaveBalance(employeeId)?.business.balance;
+    return undefined;
+  };
+
   // Events query with proper caching by (branchId, start, end)
   const eventsQueryStart = format(currentWeekStart, "yyyy-MM-dd'T'00:00:00");
   const eventsQueryEnd = format(addDays(currentWeekStart, 7), "yyyy-MM-dd'T'00:00:00");
-  const timelineDateStr = format(currentWeekStart, "yyyy-MM-dd");
+  const dutyStartDate = format(visibleDays[0], "yyyy-MM-dd");
+  const dutyEndDate = format(visibleDays[visibleDays.length - 1], "yyyy-MM-dd");
   const timelineDutyBlocksQuery = useQuery<DutyBlock[]>({
-    queryKey: ["/api/duty-blocks", { branchId: selectedBranchId, date: timelineDateStr }],
+    queryKey: ["/api/duty-blocks", { branchId: selectedBranchId, startDate: dutyStartDate, endDate: dutyEndDate }],
     queryFn: async () => {
-      const params = new URLSearchParams({ branchId: selectedBranchId!, date: timelineDateStr });
+      const params = new URLSearchParams({ branchId: selectedBranchId!, startDate: dutyStartDate, endDate: dutyEndDate });
       const res = await fetch(`/api/duty-blocks?${params}`, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch duty blocks");
       return res.json();
     },
-    enabled: !!selectedBranchId && viewMode === "timeline",
+    enabled: !!selectedBranchId && viewMode !== "shifts",
   });
 
   const branchEventsQuery = useQuery<BranchEvent[]>({
@@ -1475,6 +1515,12 @@ function SchedulingPageInner() {
     });
   };
 
+  const invalidateDynamicLeaveBalances = () => queryClient.invalidateQueries({
+    predicate: (query) =>
+      typeof query.queryKey[0] === "string"
+      && query.queryKey[0].endsWith("/leave-balances-dynamic"),
+  });
+
   const createTimeOffMutation = useMutation({
     mutationFn: async ({ employeeId, branchId, timeOffType, date }: { 
       employeeId: string; 
@@ -1490,7 +1536,9 @@ function SchedulingPageInner() {
       approved: true,
     }),
     onSuccess: () => {
+      invalidateDynamicLeaveBalances();
       queryClient.invalidateQueries({ queryKey: ["/api/time-off"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
       queryClient.invalidateQueries({ queryKey: ["/api/schedule/week", selectedBranchId, weekStartFormatted] });
       queryClient.invalidateQueries({ queryKey: ["/api/sick-leave-balances", selectedBranchId] });
       toast({ title: "Time off added" });
@@ -1503,6 +1551,7 @@ function SchedulingPageInner() {
   const deleteTimeOffMutation = useMutation({
     mutationFn: async (timeOffId: string) => apiRequest("DELETE", `/api/time-off/${timeOffId}`),
     onSuccess: () => {
+      invalidateDynamicLeaveBalances();
       queryClient.invalidateQueries({ queryKey: ["/api/time-off"] });
       queryClient.invalidateQueries({ queryKey: ["/api/leave-balances"] });
       queryClient.invalidateQueries({ queryKey: ["/api/sick-leave-balances", selectedBranchId] });
@@ -1513,8 +1562,16 @@ function SchedulingPageInner() {
     },
   });
 
-  const handleSetTimeOff = (employee: Employee, dateStr: string, type: "CHANGE_DAY_OFF" | "ANNUAL" | "SICK" | "BUSINESS") => {
-    if (!selectedBranchId) return;
+  const handleSetTimeOff = (employee: Employee, dateStr: string, type: string) => {
+    if (!selectedBranchId || leaveTypeListUnavailable
+      || !leaveTypesQuery.data?.some((leaveType) => leaveType.isActive && leaveType.code === type)) {
+      toast({
+        title: "Leave types unavailable",
+        description: "Refresh the leave type list before assigning time off.",
+        variant: "destructive",
+      });
+      return;
+    }
     createTimeOffMutation.mutate({
       employeeId: employee.id,
       branchId: employee.branchId || selectedBranchId,
@@ -1678,6 +1735,7 @@ function SchedulingPageInner() {
       queryClient.invalidateQueries({ queryKey: ["/api/leave-balances"] });
     },
     onSuccess: () => {
+      invalidateDynamicLeaveBalances();
       toast({ title: "Time off moved" });
     },
   });
@@ -3733,6 +3791,7 @@ function SchedulingPageInner() {
                                                   >
                                                     <AlertTriangle className="h-3 w-3 mb-0.5" />
                                                     <div>{assignments.length} conflicts</div>
+                                                     {assignments.some(({ assignment }) => timelineDutyBlocksQuery.data?.some(db => db.assignmentId === assignment.id)) && <DutyShiftMark />}
                                                     {hasCrossBranchShift && !isMonthView && (
                                                       <div className="absolute -top-1.5 -right-1.5 bg-yellow-500 text-yellow-950 text-[7px] px-1 py-0.5 rounded font-bold shadow-sm z-10">
                                                         B
@@ -3750,7 +3809,9 @@ function SchedulingPageInner() {
                                                       {assignments.map(({ assignment, shiftRow }) => (
                                                         <div key={assignment.id} className="flex items-center gap-2 flex-wrap">
                                                           <div className={cn("px-2 py-1 rounded text-xs font-medium text-white", shiftRow.colorIndex != null ? getShiftColorByIndex(shiftRow.colorIndex) : "bg-blue-600")}>
-                                                            {shiftRow.startTime.slice(0,5)} – {shiftRow.endTime.slice(0,5)}
+                                                            <DutyShiftTime hasDuty={!!timelineDutyBlocksQuery.data?.some(db => db.assignmentId === assignment.id)}>
+                                                              {shiftRow.startTime.slice(0,5)} – {shiftRow.endTime.slice(0,5)}
+                                                            </DutyShiftTime>
                                                           </div>
                                                           <div className="text-xs">
                                                             {shiftRow.label && <span>{shiftRow.label}</span>}
@@ -3840,6 +3901,7 @@ function SchedulingPageInner() {
                                                   return shiftRow.roles?.map((r: any) => r.role?.name || "").filter(Boolean) || [];
                                                 })()}
                                                 colorIndex={shiftRow.colorIndex}
+                                                 dutyBlockCount={timelineDutyBlocksQuery.data?.filter(db => db.assignmentId === assignment.id).length}
                                                 onRemove={isManager && !isPastDate(dateStr) ? () => deleteAssignmentMutation.mutate(assignment.id) : undefined}
                                                 onDutyBlocks={isManager ? () => setDutyBlocksSheetData({
                                                   assignmentId: assignment.id,
@@ -3963,97 +4025,46 @@ function SchedulingPageInner() {
                                                   <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide px-2 py-1">
                                                     Set Time Off
                                                   </div>
-                                                  {(() => {
-                                                    const leaveBalance = getLeaveBalance(employee.id);
+                                                  {leaveTypeListUnavailable && !leaveTypesQuery.isError ? (
+                                                    <p className="px-2 py-1 text-[10px] text-muted-foreground" role="status">Loading leave types…</p>
+                                                  ) : leaveTypesQuery.isError ? (
+                                                    <p className="px-2 py-1 text-[10px] text-destructive" role="alert">
+                                                      Unable to load leave types. Time off cannot be assigned until the list is available.
+                                                    </p>
+                                                  ) : !leaveTypes.some((type) => type.isActive) ? (
+                                                    <p className="px-2 py-1 text-[10px] text-muted-foreground" role="status">No active leave types are available.</p>
+                                                  ) : leaveTypes.filter((type) => type.isActive).map((type) => {
+                                                    const balance = getDynamicLeaveBalance(employee.id, type.code);
+                                                    const balanceValue = balance?.balance ?? getLegacyLeaveBalance(employee.id, type.code);
+                                                    const label = type.code === "CHANGE_DAY_OFF" ? "Off"
+                                                      : type.code === "ANNUAL" ? "Leave / Holiday"
+                                                        : type.code === "SICK" ? "Sick Leave"
+                                                          : type.code === "BUSINESS" ? "Business Leave"
+                                                            : type.name;
+                                                    const icon = type.code === "CHANGE_DAY_OFF" ? <X className="h-3 w-3 mr-1.5 text-gray-500" />
+                                                      : type.code === "SICK" ? <Thermometer className="h-3 w-3 mr-1.5 text-red-500" />
+                                                        : type.code === "BUSINESS" ? <Briefcase className="h-3 w-3 mr-1.5 text-blue-500" />
+                                                          : <Users className="h-3 w-3 mr-1.5 text-amber-500" />;
                                                     return (
                                                       <Button
+                                                        key={type.id}
                                                         variant="ghost"
                                                         size="sm"
                                                         className="w-full justify-start text-xs h-7 px-2"
-                                                        onClick={() => handleSetTimeOff(employee, dateStr, "CHANGE_DAY_OFF")}
-                                                        disabled={createTimeOffMutation.isPending}
-                                                        data-testid={`button-set-dayoff-${employee.id}-${dateStr}`}
+                                                        onClick={() => handleSetTimeOff(employee, dateStr, type.code)}
+                                                        disabled={createTimeOffMutation.isPending || !type.code}
+                                                        data-testid={`button-set-leave-${type.code.toLowerCase()}-${employee.id}-${dateStr}`}
                                                       >
-                                                        <X className="h-3 w-3 mr-1.5 text-gray-500" />
-                                                        <span className="flex-1 text-left">Off</span>
-                                                        {leaveBalance && (
-                                                          <span className={`text-[10px] ${leaveBalance.balance >= 0 ? 'text-muted-foreground' : 'text-red-500'}`}>
-                                                            {leaveBalance.balance} left
+                                                        {icon}
+                                                        <span className="flex-1 text-left">{label}</span>
+                                                        {balanceValue !== undefined && (
+                                                          <span className={`text-[10px] ${balanceValue >= 0 ? "text-muted-foreground" : "text-red-500"}`}>
+                                                            {balanceValue} left
                                                           </span>
                                                         )}
                                                       </Button>
                                                     );
-                                                  })()}
-                                                  {(() => {
-                                                    const allBalance = getAllLeaveBalance(employee.id);
-                                                    return (
-                                                      <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="w-full justify-start text-xs h-7 px-2"
-                                                        onClick={() => handleSetTimeOff(employee, dateStr, "ANNUAL")}
-                                                        disabled={createTimeOffMutation.isPending}
-                                                        data-testid={`button-set-leave-${employee.id}-${dateStr}`}
-                                                      >
-                                                        <Users className="h-3 w-3 mr-1.5 text-amber-500" />
-                                                        <span className="flex-1 text-left">Leave / Holiday</span>
-                                                        {allBalance && allBalance.annual.canClaim && (
-                                                          <span className={`text-[10px] ${allBalance.holidayBalance >= 0 ? 'text-muted-foreground' : 'text-red-500'}`}>
-                                                            {allBalance.holidayBalance} left
-                                                          </span>
-                                                        )}
-                                                      </Button>
-                                                    );
-                                                  })()}
-                                                  {(() => {
-                                                    const sickBalance = getSickLeaveBalance(employee.id);
-                                                    return (
-                                                      <>
-                                                        <Button
-                                                          variant="ghost"
-                                                          size="sm"
-                                                          className="w-full justify-start text-xs h-7 px-2"
-                                                          onClick={() => handleSetTimeOff(employee, dateStr, "SICK")}
-                                                          disabled={createTimeOffMutation.isPending}
-                                                          data-testid={`button-set-sick-${employee.id}-${dateStr}`}
-                                                        >
-                                                          <Thermometer className="h-3 w-3 mr-1.5 text-red-500" />
-                                                          <span className="flex-1 text-left">Sick Leave</span>
-                                                          {sickBalance && (
-                                                            <span className={`text-[10px] ${sickBalance.daysRemaining > 0 ? 'text-muted-foreground' : 'text-red-500'}`}>
-                                                              {sickBalance.daysRemaining} left
-                                                            </span>
-                                                          )}
-                                                        </Button>
-                                                        {sickBalance && sickBalance.daysRemaining <= 0 && (
-                                                          <div className="text-[10px] text-red-500 px-2 pb-1">
-                                                            No sick leave remaining this year
-                                                          </div>
-                                                        )}
-                                                      </>
-                                                    );
-                                                  })()}
-                                                  {(() => {
-                                                    const allBalance = getAllLeaveBalance(employee.id);
-                                                    return (
-                                                      <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="w-full justify-start text-xs h-7 px-2"
-                                                        onClick={() => handleSetTimeOff(employee, dateStr, "BUSINESS")}
-                                                        disabled={createTimeOffMutation.isPending}
-                                                        data-testid={`button-set-business-${employee.id}-${dateStr}`}
-                                                      >
-                                                        <Briefcase className="h-3 w-3 mr-1.5 text-blue-500" />
-                                                        <span className="flex-1 text-left">Business Leave</span>
-                                                        {allBalance && (
-                                                          <span className={`text-[10px] ${allBalance.business.balance >= 0 ? 'text-muted-foreground' : 'text-red-500'}`}>
-                                                            {allBalance.business.balance} left
-                                                          </span>
-                                                        )}
-                                                      </Button>
-                                                    );
-                                                  })()}
+                                                  })}
                                                   </>
                                                   )}
                                                 </PopoverContent>

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useState } from "react";
 import { getDepartmentColor, getShiftColor, getShiftColorByIndex, getEmployeeColor, formatCompactStartTime, formatTimeRange } from "./utils";
+import { DutyShiftTime } from "./DutyShiftMark";
 
 export type ShiftStatus = "approved" | "pending" | "leave" | "open";
 
@@ -203,13 +204,16 @@ export function EmployeeShiftCard({
         isBorrowed && "ring-1 ring-offset-1 ring-yellow-400",
         className
       )}
+      style={isMonthView && dutyBlockCount ? { width: 44, minWidth: 44 } : undefined}
       data-testid="employee-shift-card"
     >
       <span className={cn(
         "shiftBadge__text font-mono font-semibold tabular-nums",
         isMonthView ? "text-[11px]" : "text-xs"
       )}>
-        {isMonthView ? startHour : (is3DayView ? hourRange : compactRange)}
+        <DutyShiftTime hasDuty={!!dutyBlockCount} compact={isMonthView}>
+          {isMonthView ? startHour : (is3DayView ? hourRange : compactRange)}
+        </DutyShiftTime>
       </span>
       {!isMonthView && roles && roles.length > 0 && (
         <span className="opacity-80 text-center truncate max-w-full leading-none text-[9px]">

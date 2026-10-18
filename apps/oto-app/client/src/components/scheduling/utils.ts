@@ -20,6 +20,19 @@ const shiftColorClasses = [
   "bg-pink-600 dark:bg-pink-700",
 ];
 
+const rotaFallbackColorClasses = [
+  "bg-emerald-600",
+  "bg-indigo-600",
+  "bg-amber-600",
+  "bg-rose-600",
+  "bg-cyan-600",
+  "bg-purple-600",
+  "bg-orange-600",
+  "bg-teal-600",
+  "bg-pink-600",
+  "bg-lime-600",
+];
+
 export function getDepartmentColor(deptId?: string): string {
   if (!deptId) return departmentColorClasses[0];
   const hash = deptId.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
@@ -35,6 +48,17 @@ export function getShiftColor(shiftRowId?: string): string {
 export function getShiftColorByIndex(colorIndex?: number | null): string {
   if (colorIndex == null) return shiftColorClasses[0];
   return shiftColorClasses[colorIndex % shiftColorClasses.length];
+}
+
+export function getFullScheduleShiftColor(
+  colorIndex: number | null | undefined,
+  fallbackIndex: number,
+): string {
+  if (colorIndex != null) {
+    return shiftColorClasses[colorIndex % shiftColorClasses.length];
+  }
+
+  return rotaFallbackColorClasses[fallbackIndex % rotaFallbackColorClasses.length];
 }
 
 const employeeColorClasses = [
