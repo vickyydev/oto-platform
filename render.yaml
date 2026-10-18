@@ -104,10 +104,11 @@ databases:
     #   pre-deploy migration (overlaps the running instances)    1
     #   jobs worker, once it splits out of the api              10
     #   lifted OTO App (S2-17b) and Radar (S2-18), 10 each      20
+    #   QA reports in the app + separate reporting worker, 2 each 4
     #   a person on psql, or a one-off seed                      2
-    #                                                     total 68  of 97
+    #                                                     total 72  of 97
     #
-    # A fourth api instance takes that to 78 and a fifth to 88, which is too
+    # A fourth api instance takes that to 82 and a fifth to 92, which is too
     # close to the ceiling to spend on a guess.
     #
     # Storage is deliberately not declared. Render sizes the disk with the
@@ -911,6 +912,8 @@ services:
     preDeployCommand: npm run db:migrate
     autoDeployTrigger: checksPass
     envVars:
+      - key: QA_REPORTS_ENABLED
+        value: 'true'
       # -- runtime ----------------------------------------------------------
       # NODE_ENV, TZ and PUPPETEER_EXECUTABLE_PATH are set in the image
       # (apps/oto-app/Dockerfile) and are deliberately not repeated here —
@@ -1269,6 +1272,65 @@ services:
 #      # 2026-10-14) — and STAFF_PASSWORD, which gates nothing.
 
 # -----------------------------------------------------------------------------
+  # Reporting only: no public port, business jobs, SSO keys or fixing actions.
+  - type: worker
+    name: oto-qa-worker-staging
+    runtime: docker
+    region: singapore
+    plan: starter
+    branch: main
+    rootDir: apps/oto-app
+    dockerfilePath: ./Dockerfile.qa-worker
+    numInstances: 1
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: QA_REPORTS_ENABLED
+        value: 'true'
+      - key: DATABASE_URL
+        sync: false
+      - key: DB_SCHEMA
+        value: otoapp
+      - key: QA_JIRA_BASE_URL
+        sync: false
+      - key: QA_JIRA_EMAIL
+        sync: false
+      - key: QA_JIRA_API_TOKEN
+        sync: false
+      - key: QA_JIRA_PARENT_KEY
+        value: SCRUM-553
+      - key: QA_JIRA_SPRINT_ID
+        value: '36'
+      - key: QA_JIRA_ISSUE_TYPE_ID
+        value: '10002'
+      - key: QA_JIRA_SPRINT_FIELD
+        value: customfield_10020
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: QA_ANTHROPIC_MODEL
+        value: claude-sonnet-4-6
+      - key: QA_MAX_DAILY_ANALYSES
+        value: '100'
+      - key: QA_MAX_REPORT_ANALYSES
+        value: '12'
+      - key: QA_WORKER_POLL_MS
+        value: '5000'
+      - key: S3_ENDPOINT
+        sync: false
+      - key: S3_PORT
+        value: '443'
+      - key: S3_USE_SSL
+        value: 'true'
+      - key: S3_BUCKET
+        sync: false
+      - key: AWS_REGION
+        value: auto
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: STORAGE_ENV_PREFIX
+        value: staging
+
 # worker — the future home of PROCESS_ROLES=jobs. Not enabled yet.
 #
 # Today the api process runs the jobs role itself: pg-boss under advisory

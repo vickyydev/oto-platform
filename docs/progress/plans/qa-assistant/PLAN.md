@@ -57,3 +57,22 @@ Staging records created for acceptance use ZZ TEST. Preserve the seeded cast, FW
 ## Current progress
 
 18October: implementation task and four children created; QA sprint36 and parent553 created. Backend, UI and worker development are running in parallel under one publisher. Main's last source gate is green. No new implementation is deployed yet.
+
+
+18October source checkpoint: backend and UI slices are complete; worker orchestration is integrated. The production build passes and emits dist/qa-worker.cjs and a520-file private source index. The current app compiler ratchet passes; whole-output review and hosted runtime acceptance are being completed. No staging deployment is claimed.
+
+### Review records
+
+All recorded findings below have prescribed corrections in the candidate and passing focused pins, with database pins awaiting the hosted gate. Nothing is silently omitted.
+
+| Record | Severity | Delivery control |
+| --- | --- | --- |
+| R1 | Medium | A replay after a release change keeps its original report and source context. |
+| R2 | Medium | Stable upload IDs retain one evidence row/object; altered reuse is refused. |
+| R3 | Medium | Bounded analysis always retains the newest user turn and labels omitted history. |
+| R4 | Medium | Unsupported runtime-success claims and forged source references become Needs investigation. |
+| R5 | Medium | A stale processing failure queues the newer report revision. |
+| R6 | Medium | All ten accepted files reach Jira; the separate model frame limit stays eight. |
+| R7 | Medium | Private evidence reads have both a byte limit and a total stream deadline. |
+| R8 | Medium | Long Jira paragraphs retain their full permitted report/follow-up text. |
+| R9 | Medium | Private UI state and caches are scoped to both reporter and current park. |

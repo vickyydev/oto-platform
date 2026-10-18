@@ -408,6 +408,7 @@ jobs:
           --health-retries 20
     env:
       DATABASE_URL: postgres://oto:oto@localhost:5433/otoapp_ci
+      QA_FFMPEG_PATH: /usr/bin/ffmpeg
     defaults:
       run:
         working-directory: apps/oto-app
@@ -451,11 +452,11 @@ jobs:
       # It dumps the baseline sample from public, restores and renames it,
       # imports after every platform migration, then runs the app migrator
       # twice with 0000 already recorded. Its output contains counts only.
-      - name: Install PostgreSQL 16 client tools
+      - name: Install PostgreSQL 16 and video evidence tools
         if: steps.changes.outputs.app == 'true'
         run: |
           sudo apt-get update
-          sudo apt-get install --yes postgresql-client-16
+          sudo apt-get install --yes postgresql-client-16 ffmpeg
       - name: Rehearse the app restore and replay
         if: steps.changes.outputs.app == 'true'
         env:
@@ -584,6 +585,14 @@ jobs:
           mkdir -p test-results
           pnpm --filter @oto/api exec vitest run --pool=forks test/s217c-fix-preview-review.test.ts test/s217c-sop-history-review.test.ts test/s217c-presence-delivery-review.test.ts test/s217c-camp-sms-review.test.ts test/s217c-employee-history-review.test.ts --reporter=default --reporter=json --outputFile.json=../../test-results/feature-runtime.json
           node -e "const r=JSON.parse(require('node:fs').readFileSync('test-results/feature-runtime.json','utf8'));if(r.numPendingTests!==0||r.numTotalTests===0||r.testResults.length!==5)throw new Error('All five feature runtime suites must run without skipped tests')"
+      - name: The app's issue reporting review
+        if: steps.changes.outputs.app == 'true'
+        working-directory: .
+        env:
+          TEST_DATABASE_URL: postgres://oto:oto@localhost:5433/postgres
+        run: |
+          pnpm --filter @oto/api exec vitest run --pool=forks test/s548-qa-reports-review.test.ts --reporter=default --reporter=json --outputFile.json=../../test-results/qa-runtime.json
+          node -e "const r=JSON.parse(require('node:fs').readFileSync('test-results/qa-runtime.json','utf8'));if(r.numPendingTests!==0||r.numTotalTests===0||r.testResults.length!==1)throw new Error('The QA reporting review must run without skipped tests')"
       - name: The app's scheduling park-group review
         if: steps.changes.outputs.app == 'true'
         working-directory: .

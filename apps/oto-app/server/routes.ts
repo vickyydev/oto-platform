@@ -3,6 +3,7 @@ import { attendanceEvidenceUpload, attendanceConfirmationBody } from "./attendan
 import { persistAttendanceEvidence, canReadAttendanceEvidence, ATTENDANCE_EVIDENCE_FOLDER } from "./attendance-evidence";
 import { registerTimekeepingReviewRoutes } from "./timekeeping-review-routes";
 import { registerEmployeeActionRoutes } from "./employee-action-routes";
+import { registerQaRoutes } from "./qa/routes";
 import { registerSuiteSignInRoutes, unusablePassword } from "./suite-sign-in-routes";
 import { readPhone } from "./lib/suiteSignIn";
 import { legacyLoginEnabled, legacyPasswordsOnly } from "./middleware/platformSignOn";
@@ -806,6 +807,7 @@ export async function registerRoutes(
 
   // Load user with branch access for all authenticated requests
   app.use(loadUserWithAccess);
+  registerQaRoutes(app, requireAuth);
 
   // Advisors have no employee record, so employee-only features (contracts,
   // scheduling, payroll) must stay off-limits regardless of their resolved

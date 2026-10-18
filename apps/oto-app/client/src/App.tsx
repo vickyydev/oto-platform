@@ -8,6 +8,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
+import { QaReportLauncher } from "@/components/qa-report-launcher";
 import { ThemeProvider } from "@/components/theme-provider";
 import { BranchProvider } from "@/hooks/use-branch-context";
 import { ModeProvider, useMode } from "@/hooks/use-mode";
@@ -37,6 +38,7 @@ import DashboardPage from "@/pages/dashboard-page";
 import NotFound from "@/pages/not-found";
 
 const TemplatesPage = lazy(() => import("@/pages/templates-page"));
+const QaReportsPage = lazy(() => import("@/pages/qa-reports-page"));
 const TemplateEditorPage = lazy(() => import("@/pages/template-editor-page"));
 const TemplatePreviewPage = lazy(() => import("@/pages/template-preview-page"));
 const EmployeesPage = lazy(() => import("@/pages/employees-page"));
@@ -470,6 +472,7 @@ function HRProtectedLayout({ component: Component }: { component: React.Componen
 function Router() {
   return (
     <Switch>
+      <ProtectedRoute path="/qa-reports" component={() => <Suspense fallback={<PageLoader />}><QaReportsPage /></Suspense>} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/forgot-password">
         {() => (
@@ -719,6 +722,7 @@ function App() {
                   <Toaster />
                   <GlobalUploadProgress />
                   <Router />
+                  <QaReportLauncher />
                 </TooltipProvider>
               </ModeProvider>
             </BranchProvider>
