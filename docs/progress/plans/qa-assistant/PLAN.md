@@ -1,6 +1,6 @@
 # OTO App issue reporting assistant
 
-18 October 2026. Implementation task **SCRUM-548** in **Sprint 2 - Complete build** (sprint3).
+18 October 2026. Implementation task **SCRUM-548** in **Sprint 2 - Complete build** (Jira sprint ID3).
 
 ## Purpose and boundary
 
@@ -82,3 +82,6 @@ All recorded findings below have prescribed corrections in the candidate and pas
 
 
 R11 (medium), source-reference visibility: validated citations are appended to the response and Jira analysis, alongside the inspectedSHA, rather than retained only in private processing metadata. The existing worker check now passes11 controls, including visible references and refusal of unsupported ranges or missingSHA. Raw source is not published.
+
+
+Landing checkpoint: candidate315a6fd2 passed the complete hosted release gate before landing. Its app gate passed 36 review pins with zero skipped, 17 backend controls, 11 worker controls and 11 independent controls, plus 89 existing feature and 32 scheduling tests. Compiler output is unchanged at430 diagnostics / 57 files / 114 buckets. Restore/replay preserved 1,108 rows and stable migration ledgers across two runs at 195 tables. The PR merge checkout and candidate have identical Git trees. Main and staging verification remain the next steps; the release checkpoint changes documentation only.
