@@ -26,8 +26,15 @@ function childProof(script: string, marker: string, env: NodeJS.ProcessEnv, resu
   // Never print child logs: provider errors, synthetic session data and SQL
   // connection options are not evidence. Only the allowlisted boolean map is.
   expect(run.error?.name, `${script}: child starts without an execution error`).toBeUndefined();
-  expect(run.status, `${script}: child completes`).toBe(0);
   const payload = (run.stdout ?? '').split(/\r?\n/).find(line => line.startsWith(`${marker}=`))?.slice(marker.length + 1);
+  let failedControls: string[] = [];
+  try {
+    const parsed = JSON.parse(payload ?? '{}');
+    const controls = resultField ? parsed[resultField] : parsed;
+    failedControls = Object.entries(controls ?? {}).filter(([key, value]) => /^[a-zA-Z][a-zA-Z0-9]{0,80}$/.test(key) && value === false).map(([key]) => key);
+  } catch { /* Only allowlisted control names become diagnostics. */ }
+  const setup = (run.stdout ?? '').split(/\r?\n/).find(line => /^QA_REPORT_SETUP_ERROR=[a-zA-Z0-9_-]{1,50}$/.test(line)) ?? 'no setup failure tag';
+  expect(run.status, `${script}: child completes; failed controls: ${failedControls.join(', ') || 'none reported'}; ${setup}`).toBe(0);
   expect(payload, `${script}: result marker exists`).toBeTruthy();
   if (!payload) throw new Error('QA child did not publish its result marker');
   const decoded: unknown = JSON.parse(payload);

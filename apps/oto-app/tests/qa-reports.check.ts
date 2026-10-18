@@ -29,6 +29,27 @@ await check("mediaMismatchAndLimit", async () => {
   assert.equal(stalled.destroyed, true);
   await assert.rejects(readBoundedQaBody(Readable.from([Buffer.alloc(QA_MAX_ATTACHMENT_BYTES + 1)]), 1));
 });
+await check("multipartSingleFile", async () => {
+  const { qaEvidenceUpload } = await import("../server/qa/routes");
+  const app = express();
+  app.post("/evidence", (req, res) => qaEvidenceUpload(req, res, error => {
+    res.json({ accepted: !error && !!req.file, refused: !!error });
+  }));
+  const server = app.listen(0, "127.0.0.1");
+  await new Promise<void>(resolve => server.once("listening", resolve));
+  const address = server.address(); assert(address && typeof address !== "string");
+  try {
+    for (const variant of ["single", "second-file", "text-field"]) {
+      const body = new FormData();
+      body.append("file", new Blob([new Uint8Array(png)], { type: "image/png" }), "ZZ TEST screenshot.png");
+      if (variant === "second-file") body.append("file", new Blob([new Uint8Array(png)], { type: "image/png" }), "ZZ TEST second.png");
+      if (variant === "text-field") body.append("description", "ZZ TEST excluded form field");
+      const response = await fetch(`http://127.0.0.1:${address.port}/evidence`, { method: "POST", body, signal: AbortSignal.timeout(15000) });
+      const proof = await response.json();
+      assert.equal(proof.accepted, variant === "single"); assert.equal(proof.refused, variant !== "single");
+    }
+  } finally { await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve())); }
+});
 
 if (!process.argv.includes("--media-only")) {
   if (!process.env.DATABASE_URL) throw new Error("A migrated scratch database is required");

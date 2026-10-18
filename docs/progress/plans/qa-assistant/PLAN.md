@@ -76,3 +76,6 @@ All recorded findings below have prescribed corrections in the candidate and pas
 | R7 | Medium | Private evidence reads have both a byte limit and a total stream deadline. |
 | R8 | Medium | Long Jira paragraphs retain their full permitted report/follow-up text. |
 | R9 | Medium | Private UI state and caches are scoped to both reporter and current park. |
+
+
+18October hosted gate: candidate e099fcdb stopped at the report runtime review after20 independent/worker pins passed. R10 (medium): normal one-file multipart upload must fit the parser boundary. Correction applied: parts2, files1 and fields0, with a real HTTP single-file acceptance/second-file and field refusal control. The local three-key media/parser check passes. Review failure messages now expose only control names and setup tags. Backend proof now contains17 controls; full candidate rerun is pending.

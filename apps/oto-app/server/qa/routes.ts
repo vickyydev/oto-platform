@@ -13,7 +13,9 @@ const contextSchema = z.object({
   viewport: z.object({ width: z.number().int().min(1).max(10000), height: z.number().int().min(1).max(10000) }).optional(),
 });
 const createSchema = messageSchema.extend({ context: contextSchema });
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: QA_MAX_ATTACHMENT_BYTES, files: 1, fields: 0, parts: 1 },
+// Busboy counts the final boundary toward its parts threshold. The file and
+// field limits still permit exactly one file and no form text fields.
+export const qaEvidenceUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: QA_MAX_ATTACHMENT_BYTES, files: 1, fields: 0, parts: 2 },
   fileFilter: (_req, file, cb) => {
     if (!(QA_CONTENT_TYPES as readonly string[]).includes(file.mimetype)) return cb(new QaStoreError(415, "Choose a PNG, JPEG, WebP screenshot or an MP4/WebM video"));
     cb(null, true);
@@ -94,7 +96,7 @@ export function registerQaRoutes(app: Express, requireAuth: RequestHandler): voi
     const caller = owner(req);
     const id = uuid(req.params.id);
     await getReportDetail(caller, id);
-    await new Promise<void>((resolve, reject) => upload(req, res, error => {
+    await new Promise<void>((resolve, reject) => qaEvidenceUpload(req, res, error => {
       if (error instanceof multer.MulterError) reject(new QaStoreError(error.code === "LIMIT_FILE_SIZE" ? 413 : 400, "Upload one evidence file of up to 25 MiB"));
       else if (error) reject(error); else resolve();
     }));
