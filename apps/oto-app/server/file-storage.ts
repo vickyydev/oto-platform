@@ -28,6 +28,7 @@
  */
 
 import { OBJECT_STORAGE } from "./config/env";
+import { parseRangeHeader } from "./storage/range";
 import { s3Upload, s3Get, s3Exists, s3Delete, s3GetRange, type RangeFileResult } from "./storage/s3Storage";
 import fs from "fs";
 import path from "path";
@@ -48,17 +49,6 @@ const CONTENT_TYPE_MAP: Record<string, string> = {
   ".mov": "video/quicktime",
   ".webm": "video/webm",
 };
-
-function parseRangeHeader(rangeHeader: string | undefined, totalSize: number): { start: number; end: number; isPartial: boolean } {
-  if (!rangeHeader) return { start: 0, end: totalSize - 1, isPartial: false };
-  const match = /bytes=(\d*)-(\d*)/.exec(rangeHeader);
-  if (!match || (!match[1] && !match[2])) return { start: 0, end: totalSize - 1, isPartial: false };
-  let start = match[1] ? parseInt(match[1], 10) : 0;
-  let end = match[2] ? parseInt(match[2], 10) : totalSize - 1;
-  if (end >= totalSize) end = totalSize - 1;
-  if (start > end) start = 0;
-  return { start, end, isPartial: true };
-}
 
 function localPath(folder: string, filename: string): string {
   return path.join(process.cwd(), "uploads", folder, filename);

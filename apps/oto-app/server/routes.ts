@@ -21213,6 +21213,7 @@ OTO Company Limited`,
           checklistType: template?.checklistType || "operational",
           branchId: run.branchId,
           branchName: branchMap.get(run.branchId) || null,
+          branchTimezone: branchTimezoneMap.get(run.branchId) || "Asia/Bangkok",
           departmentId: effectiveDeptId,
           departmentName: effectiveDeptId ? deptMap.get(effectiveDeptId) || null : null,
           assignedTo: run.assignedTo,
@@ -21252,7 +21253,33 @@ OTO Company Limited`,
     try {
       const user = req.user as UserWithBranchAccess;
       const tenantId = await resolveTenantId(user.tenantId);
-      const requestedBranchId = req.query.branchId as string | undefined;
+      // Filters: a period (day / Monday-start week / whole calendar month /
+      // custom) with both ends, plus employee and department narrowing.
+      const historyDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => {
+        const parsed = new Date(`${value}T00:00:00Z`);
+        return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+      });
+      const historyFilters = z.object({
+        branchId: z.string().optional(),
+        period: z.enum(["day", "week", "month", "custom"]).optional(),
+        from: historyDate.optional(),
+        to: historyDate.optional(),
+        employeeId: z.string().min(1).max(255).optional(),
+        departmentId: z.string().min(1).max(255).optional(),
+      }).safeParse(req.query);
+      if (!historyFilters.success) return res.status(400).json({ message: "Invalid checklist history filters" });
+      const { period, from, to, employeeId, departmentId } = historyFilters.data;
+      const nextMonth = from ? new Date(Date.UTC(Number(from.slice(0, 4)), Number(from.slice(5, 7)), 1)).toISOString().slice(0, 10) : "";
+      const invalidRange = !!(from && to && (
+        from > to ||
+        (period === "day" && from !== to) ||
+        (period === "week" && (to !== addLocalDays(from, 6) || new Date(`${from}T12:00:00Z`).getUTCDay() !== 1)) ||
+        (period === "month" && (from.slice(8) !== "01" || to !== addLocalDays(nextMonth, -1)))
+      ));
+      if ((period && (!from || !to)) || (!period && (from || to)) || invalidRange) {
+        return res.status(400).json({ message: "Invalid checklist history date range" });
+      }
+      const requestedBranchId = historyFilters.data.branchId;
       let effectiveBranchId: string | null = null;
 
       if (user.hasAllBranchesAccess) {
@@ -21278,6 +21305,42 @@ OTO Company Limited`,
       } else if (!user.hasAllBranchesAccess) {
         conditions.push(inArray(checklistRuns.branchId, user.allowedBranchIds));
       }
+      // Dates are read in each run's branch timezone, never the server's:
+      // a miss counts on the day it was due, a completion on the day it was done.
+      const branchTimezone = sql`COALESCE(NULLIF(${branches.timezone}, ''), 'Asia/Bangkok')`;
+      const missedDate = sql`(${checklistRuns.dueAt} AT TIME ZONE 'UTC' AT TIME ZONE ${branchTimezone})::date`;
+      const completedDate = sql`(${checklistRuns.completedAt} AT TIME ZONE 'UTC' AT TIME ZONE ${branchTimezone})::date`;
+      if (period && from && to) {
+        conditions.push(sql`((${checklistRuns.status} = 'missed' AND ${missedDate} BETWEEN ${from}::date AND ${to}::date)
+          OR (${checklistRuns.status} = 'completed' AND ${completedDate} BETWEEN ${from}::date AND ${to}::date))`);
+      } else {
+        // No period: every completed run, plus this week's misses (Monday to
+        // Sunday in the branch's own timezone).
+        const localToday = sql`(now() AT TIME ZONE ${branchTimezone})::date`;
+        conditions.push(sql`(${checklistRuns.status} = 'completed' OR
+          (${checklistRuns.status} = 'missed' AND ${missedDate} BETWEEN
+          (${localToday} - (EXTRACT(ISODOW FROM ${localToday})::int - 1)) AND
+          (${localToday} + (7 - EXTRACT(ISODOW FROM ${localToday})::int))))`);
+      }
+      if (departmentId) {
+        conditions.push(or(eq(checklistTemplates.assignedDepartmentId, departmentId), eq(checklistTemplates.departmentId, departmentId))!);
+      }
+      if (employeeId) {
+        // The employee is looked up inside the caller's park group only, so an
+        // id from another group narrows to nothing rather than reaching across.
+        conditions.push(sql`(
+          ${checklistTemplates.assignedEmployeeId} = ${employeeId}
+          OR ${checklistRuns.responsibleStaff} @> jsonb_build_array(jsonb_build_object('employeeId', ${employeeId}::text))
+          OR EXISTS (
+            SELECT 1 FROM employees e WHERE e.id = ${employeeId} AND e.tenant_id = ${tenantId}::uuid
+            AND e.user_id IS NOT NULL
+            AND ${checklistRuns.responsibleStaff} @> jsonb_build_array(jsonb_build_object('userId', e.user_id))
+          )
+          OR ${checklistRuns.assignedTo} IN (
+            SELECT e.user_id FROM employees e WHERE e.id = ${employeeId} AND e.tenant_id = ${tenantId}::uuid AND e.user_id IS NOT NULL
+          )
+        )`);
+      }
 
       const rows = await db.select({
         id: checklistRuns.id,
@@ -21286,6 +21349,7 @@ OTO Company Limited`,
         recurrence: checklistTemplates.recurrence,
         scheduledTime: checklistTemplates.scheduledTime,
         assignedEmployeeId: checklistTemplates.assignedEmployeeId,
+        assignedTo: checklistRuns.assignedTo,
         assignedRoleId: checklistTemplates.assignedRoleId,
         assignedDepartmentId: checklistTemplates.assignedDepartmentId,
         departmentId: checklistTemplates.departmentId,
@@ -21847,7 +21911,7 @@ OTO Company Limited`,
             });
             if (itemsMissingRequiredPhotos.length > 0) {
               return res.status(400).json({
-                message: `Cannot complete checklist: ${itemsMissingRequiredPhotos.length} item(s) need photo evidence`,
+                message: `Cannot complete checklist: ${itemsMissingRequiredPhotos.length} item(s) need photo or video evidence`,
               });
             }
             
@@ -23801,22 +23865,69 @@ ${context}`;
   app.get("/fix-media/:filename", requireAuth, serveFixMedia);
 
   // ============================================================================
-  // Checker Fail Photos Upload (for checklist checker mode)
+  // Checklist evidence (photo or video) and checker fail photos
   // ============================================================================
-  const checkerPhotoUpload = multer({
-    storage: multer.memoryStorage(),
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-  });
+  // Checker fail photos stay photos at 5 MB; item evidence may also be a short
+  // video, so it gets 20 MB. Both answer an oversized file with an honest 413.
+  const CHECKER_PHOTO_MAX_BYTES = 5 * 1024 * 1024;
+  const CHECKLIST_EVIDENCE_MAX_BYTES = 20 * 1024 * 1024;
+  const checklistUpload = (maxBytes: number, tooLarge: string) => {
+    const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: maxBytes, files: 1 } });
+    return (req: Request, res: Response, next: NextFunction) => {
+      upload.single("photo")(req, res, (error: unknown) => {
+        if (!error) return next();
+        if (error instanceof multer.MulterError && error.code === "LIMIT_FILE_SIZE") {
+          return res.status(413).json({ message: tooLarge });
+        }
+        return res.status(400).json({ message: "The file could not be uploaded." });
+      });
+    };
+  };
+  const uploadCheckerPhotoFile = checklistUpload(
+    CHECKER_PHOTO_MAX_BYTES,
+    "This photo is still larger than the 5 MB upload limit. Try cropping it or choosing a smaller photo.",
+  );
+  const uploadChecklistEvidenceFile = checklistUpload(
+    CHECKLIST_EVIDENCE_MAX_BYTES,
+    "This file is larger than the 20 MB checklist evidence limit.",
+  );
   const checklistPhotoTypes: Record<string, string> = {
     "image/jpeg": ".jpg",
     "image/png": ".png",
     "image/webp": ".webp",
   };
+  const checklistVideoTypes: Record<string, string> = {
+    "video/mp4": ".mp4",
+    "video/quicktime": ".mov",
+    "video/webm": ".webm",
+  };
+  // ISO base-media major brands seen from phones, cameras and browsers: MP4
+  // (isom/iso2-6/mp41/mp42/avc1/M4V/dash/mmp4/MSNV) and QuickTime (qt).
+  const ISO_MEDIA_BRANDS = new Set([
+    "isom", "iso2", "iso3", "iso4", "iso5", "iso6", "mp41", "mp42", "avc1", "M4V ", "M4VH", "M4VP", "dash", "mmp4", "MSNV", "qt  ",
+  ]);
   const validChecklistPhoto = (file: Express.Multer.File) => {
     const bytes = file.buffer;
     if (file.mimetype === "image/jpeg") return bytes.length >= 3 && bytes.subarray(0, 3).equals(Buffer.from([0xff, 0xd8, 0xff]));
     if (file.mimetype === "image/png") return bytes.length >= 8 && bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
     if (file.mimetype === "image/webp") return bytes.length >= 12 && bytes.toString("ascii", 0, 4) === "RIFF" && bytes.toString("ascii", 8, 12) === "WEBP";
+    return false;
+  };
+  const validChecklistVideo = (file: Express.Multer.File) => {
+    const bytes = file.buffer;
+    if (file.mimetype === "video/mp4" || file.mimetype === "video/quicktime") {
+      // An ISO base-media file opens with an `ftyp` box: 4-byte size, "ftyp",
+      // then the 4-character major brand.
+      if (bytes.length < 12 || bytes.toString("latin1", 4, 8) !== "ftyp") return false;
+      const boxSize = bytes.readUInt32BE(0);
+      if (boxSize < 12 || boxSize > bytes.length) return false;
+      return ISO_MEDIA_BRANDS.has(bytes.toString("latin1", 8, 12));
+    }
+    if (file.mimetype === "video/webm") {
+      // EBML header, and a DocType of "webm" inside it (Matroska proper is refused).
+      if (bytes.length < 16 || !bytes.subarray(0, 4).equals(Buffer.from([0x1a, 0x45, 0xdf, 0xa3]))) return false;
+      return bytes.subarray(4, 64).includes(Buffer.from([0x42, 0x82, 0x84, 0x77, 0x65, 0x62, 0x6d]));
+    }
     return false;
   };
   const uploadChecklistPhoto = (folder: "checkin-photos" | "checker-photos") =>
@@ -23831,10 +23942,17 @@ ${context}`;
           return res.status(409).json({ message: "This checklist run is read-only" });
         }
         const file = req.file;
-        if (!file || !checklistPhotoTypes[file.mimetype] || !validChecklistPhoto(file)) {
-          return res.status(400).json({ message: "A JPEG, PNG or WebP photo is required" });
+        // Item evidence may be a photo or a video; checker fail photos stay photos.
+        const allowVideo = folder === "checkin-photos";
+        const extension = file ? checklistPhotoTypes[file.mimetype] || (allowVideo ? checklistVideoTypes[file.mimetype] : undefined) : undefined;
+        if (!file || !extension || !(checklistPhotoTypes[file.mimetype] ? validChecklistPhoto(file) : validChecklistVideo(file))) {
+          return res.status(400).json({
+            message: allowVideo
+              ? "A JPEG, PNG or WebP photo, or an MP4, MOV or WebM video, is required"
+              : "A JPEG, PNG or WebP photo is required",
+          });
         }
-        const filename = `${folder === "checkin-photos" ? "evidence" : "checker"}_${crypto.randomUUID()}${checklistPhotoTypes[file.mimetype]}`;
+        const filename = `${folder === "checkin-photos" ? "evidence" : "checker"}_${crypto.randomUUID()}${extension}`;
         const url = await uploadToObjectStorage(file.buffer, folder, filename, file.mimetype);
         const expiresAt = Date.now() + CHECKLIST_PHOTO_CLAIM_MS;
         res.json({ url: `${url}?claim=${expiresAt}.${checklistPhotoClaim(url, itemId, access.tenantId, user.id, expiresAt)}`, canonicalUrl: url });
@@ -23843,10 +23961,10 @@ ${context}`;
       }
     };
 
-  // Checklist evidence photo upload (for regular checklist items requiring photo evidence)
-  app.post("/api/checklist-evidence/upload", requireAuth, checkerPhotoUpload.single("photo"), uploadChecklistPhoto("checkin-photos"));
+  // Checklist item evidence: a photo or a video, tied to the item by a signed claim.
+  app.post("/api/checklist-evidence/upload", requireAuth, uploadChecklistEvidenceFile, uploadChecklistPhoto("checkin-photos"));
 
-  app.post("/api/checker-photos/upload", requireAuth, checkerPhotoUpload.single("photo"), uploadChecklistPhoto("checker-photos"));
+  app.post("/api/checker-photos/upload", requireAuth, uploadCheckerPhotoFile, uploadChecklistPhoto("checker-photos"));
 
   const serveChecklistPhoto = (folder: "checkin-photos" | "checker-photos") => async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -23877,9 +23995,19 @@ ${context}`;
       if (!owner || !canUserAccessBranch(user, owner.branchId)) return res.status(404).json({ message: "Photo not found" });
       res.setHeader("Cache-Control", "private, no-store");
       res.setHeader("X-Content-Type-Options", "nosniff");
-      const file = await getFileFromObjectStorage(folder, filename);
+      // Byte ranges: iPad/iPhone Safari will not play a <video> whose source
+      // answers a Range request with the whole file (it needs 206 replies).
+      const file = await getFileRangeFromObjectStorage(folder, filename, req.headers.range);
       if (file) {
         res.setHeader("Content-Type", file.contentType);
+        res.setHeader("Accept-Ranges", "bytes");
+        if (file.isPartial) {
+          res.status(206);
+          res.setHeader("Content-Range", `bytes ${file.start}-${file.end}/${file.totalSize}`);
+          res.setHeader("Content-Length", String(file.end - file.start + 1));
+        } else {
+          res.setHeader("Content-Length", String(file.totalSize));
+        }
         file.stream.pipe(res);
         return;
       }

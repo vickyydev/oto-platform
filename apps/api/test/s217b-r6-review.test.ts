@@ -492,7 +492,8 @@ describe('A. fences and seams', () => {
   it('the gate did not move WHERE documents are kept: the PDF, file and bucket modules and the BEO and org chart routes are byte for byte main’s', () => {
     const main = {
       'pdf-storage.ts': 'c23daf4541026ebff0bb49cce05161b76d59ad1ba2040ba913eaebe568dd43e3',
-      'file-storage.ts': '109e0c07f2ea063732b9cae0d935d8803902a12aefde1d730257e4fb1fdf8ab9',
+      // SCRUM-562: only the byte-range parser moved out to storage/range.ts (suffix ranges, 206 for video); where files live is unchanged.
+      'file-storage.ts': 'faa0c5c7e17f949aeb1f74e91391e019220f29cfd97bf6eefae47c46fbdd850e',
       'storage/s3Client.ts': '9d51fea745ad10e3944543ec6b9e17a36d5af128c923703b010e4be7c1c8ddcb',
       'pdf.ts': 'e56ab0b8d875508edf5829c8ab8519f356360deff91182dafcbf161679105997',
       'beo-routes.ts': '4174a50d53dd91077acb8cbcae291982c1ab60136c0cbac66151ab2034175c14',
