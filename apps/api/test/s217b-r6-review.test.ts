@@ -2267,7 +2267,9 @@ describe.skipIf(!HAS_APP_RUNTIME)('C to F. over HTTP against the app’s routes'
       const sample = await templateBranch(cookie);
       if (sample.status !== 200 || ![bX, bY].includes(sample.branch)) wrong.push(`${who} template: ${sample.status} samples "${sample.branch}"`);
       // The import preview: A's employee by email, by full name alone, and a new row naming A's branch.
-      const preview = await importPreview(cookie, [HEADERS, [victim.full_name, victim.email, bX, 1], [victim.full_name, '', '', 2], [`ZZ R6FR new ${run}`, `zz-r6fr-new-${run}@example.com`, aY, 3]]);
+      // SCRUM-559: a manager's upload may carry no pay (refused 403), so the manager's sheet has no pay column.
+      const cols = admin ? 4 : 3;
+      const preview = await importPreview(cookie, [HEADERS.slice(0, cols), [victim.full_name, victim.email, bX, 1].slice(0, cols), [victim.full_name, '', '', 2].slice(0, cols), [`ZZ R6FR new ${run}`, `zz-r6fr-new-${run}@example.com`, aY, 3].slice(0, cols)]);
       // The sheet's own cells come back as sent (A's name and email were typed into it); nothing of A's record may.
       answered(`${who} import preview`, preview, 200, undefined, A_MARKS.filter((m) => m !== victim.email && m !== victim.full_name && m !== aY));
       const got = preview.rows.map((r) => [r.matchedEmployeeId, r.branchId, r.error]);
@@ -2282,7 +2284,7 @@ describe.skipIf(!HAS_APP_RUNTIME)('C to F. over HTTP against the app’s routes'
         cookie,
         body: {
           rows: [
-            { rowNumber: 2, matchedEmployeeId: eA, branchId: B.x, data: { fullName: 'ZZ hijack', salary: 1, taxIdNumber: 'ZZ-HIJACK' } },
+            { rowNumber: 2, matchedEmployeeId: eA, branchId: B.x, data: { fullName: 'ZZ hijack', ...(admin ? { salary: 1 } : {}), taxIdNumber: 'ZZ-HIJACK' } },
             { rowNumber: 3, matchedEmployeeId: eA, branchId: null, data: { fullName: 'ZZ hijack', email: 'zz-hijack@example.com' } },
             { rowNumber: 4, matchedEmployeeId: eA, branchId: A.x, data: { fullName: 'ZZ hijack' } },
             { rowNumber: 5, isNew: true, branchId: A.y, data: { fullName: `ZZ R6FR B on A ${run}`, email: `zz-r6fr-b-on-a-${run}@example.com` } },
@@ -2378,19 +2380,23 @@ describe.skipIf(!HAS_APP_RUNTIME)('C to F. over HTTP against the app’s routes'
       const own = (await q<{ email: string; full_name: string }>('select email, full_name from employees where id = $1', [eB]))[0]!;
       expect(((await call('GET', `/api/employees?branchId=${B.x}`, { cookie })).body as { id: string }[]).map((e) => e.id)).toEqual(expect.arrayContaining([eB, eB2]));
       const newEmail = `zz-r6fr-own-new-${who}-${run}@example.com`;
-      const preview = await importPreview(cookie, [HEADERS, [own.full_name, own.email, await branchName(B.y), 31000], [`ZZ R6FR own new ${who} ${run}`, newEmail, await branchName(B.x), 25000]]);
+      // SCRUM-559: pay in the sheet is a payroll role's; the manager's sheet has no pay column.
+      const cols = admin ? 4 : 3;
+      const preview = await importPreview(cookie, [HEADERS.slice(0, cols), [own.full_name, own.email, await branchName(B.y), 31000].slice(0, cols), [`ZZ R6FR own new ${who} ${run}`, newEmail, await branchName(B.x), 25000].slice(0, cols)]);
       expect(preview.status, preview.text).toBe(200);
       expect(preview.rows.map((r) => [r.matchedEmployeeId, r.branchId, r.error])).toEqual([
         [eB, B.y, null],
         [null, B.x, null],
       ]);
-      expect(preview.rows[0]!.currentData).toMatchObject({ salary: 30000, taxIdNumber: `ZZ-FR-B-${who}` });
+      // SCRUM-559: the current pay is withheld from the manager.
+      expect(preview.rows[0]!.currentData).toMatchObject(admin ? { salary: 30000, taxIdNumber: `ZZ-FR-B-${who}` } : { taxIdNumber: `ZZ-FR-B-${who}` });
+      if (!admin) expect(preview.rows[0]!.currentData).not.toHaveProperty('salary');
       const applied = await call('POST', '/api/employees/bulk-update', { cookie, body: { rows: preview.rows } });
       expect((applied.body.results as { status: string }[]).map((r) => r.status), show(applied)).toEqual(['updated', 'created']);
       expect((await q('select tenant_id, branch_id, default_merge_data from employees where id = $1', [eB]))[0]).toEqual({
         tenant_id: B.tenant,
         branch_id: B.y,
-        default_merge_data: { positionTitle: 'ZZ', salaryThb: 31000 },
+        default_merge_data: { positionTitle: 'ZZ', salaryThb: admin ? 31000 : 30000 }, // SCRUM-559: the manager's upload leaves pay alone
       });
       expect((await q('select tenant_id, branch_id from employees where email = $1', [newEmail]))[0]).toEqual({ tenant_id: B.tenant, branch_id: B.x });
       expect((await call('POST', '/api/employees/reorder', { cookie, body: { orderedIds: [eB2, eB] } })).status).toBe(200);

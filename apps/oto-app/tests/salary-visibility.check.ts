@@ -13,7 +13,10 @@
 //     leaves the stored pay as it was;
 //   - salary and incentive changes are refused below a payroll role, on
 //     record and on contract-status update, and a pay value riding on another
-//     kind of change is not recorded.
+//     kind of change is not recorded;
+//   - the bulk upload: its template has no pay columns below a payroll
+//     role, its preview withholds current pay, and an upload carrying a pay
+//     value is refused (preview and apply) and writes nothing.
 //
 // Usage, from apps/oto-app, with DATABASE_URL set:
 //   npx tsx tests/salary-visibility.check.ts
@@ -23,6 +26,7 @@ import { randomBytes, randomUUID, scryptSync } from "node:crypto";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
+import * as XLSX from "xlsx";
 
 const APP_DIR = join(dirname(fileURLToPath(import.meta.url)), "..");
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -141,7 +145,7 @@ async function serve(env: Record<string, string>): Promise<string> {
 }
 
 /** Every key the redaction withholds that these rows carry, wherever it sits. */
-const PAY_KEYS = ["salaryThb", "incentiveClause", "incentiveClauseText", "foodAllowancePerDay", "dailyRate", "oldSalary", "newSalary", "oldIncentiveClause", "newIncentiveClause"];
+const PAY_KEYS = ["salary", "salaryThb", "incentiveClause", "incentiveClauseText", "foodAllowancePerDay", "dailyRate", "oldSalary", "newSalary", "oldIncentiveClause", "newIncentiveClause"];
 function payKeysIn(value: unknown, path = "$"): string[] {
   if (Array.isArray(value)) return value.flatMap((item, i) => payKeysIn(item, `${path}[${i}]`));
   if (!value || typeof value !== "object") return [];
@@ -282,6 +286,61 @@ try {
   assert.equal(adminNew.status, 201, JSON.stringify(adminNew.body));
   assert.equal(adminNew.body.defaultMergeData.salaryThb, 20_000);
   passed += 3;
+
+  // ── The bulk upload ──
+  const workerEmail = (await q<{ email: string }>("select email from employees where id = $1", [worker]))[0]!.email;
+  const BULK_PAY_REFUSAL = "This upload contains pay fields. Only payroll roles can change pay.";
+  const sheet = (rows: unknown[][]) => {
+    const book = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(book, XLSX.utils.aoa_to_sheet(rows), "ZZ");
+    return XLSX.write(book, { type: "buffer", bookType: "xlsx" }) as Buffer;
+  };
+  const preview = async (role: Role, rows: unknown[][]) => {
+    const form = new FormData();
+    form.append("file", new Blob([sheet(rows)]), "zz-559.xlsx");
+    const res = await fetch(`${origin}/api/employees/bulk-upload-preview`, { method: "POST", headers: { cookie: cookies[role] }, body: form });
+    return { status: res.status, body: await res.json() };
+  };
+  const withPay = [["Full Name", "Email Address", "Position Title", "Monthly Salary (THB)"], ["ZZ TEST 559 worker", workerEmail, "ZZ TEST Receptionist", 99_999]];
+  const withoutPay = [["Full Name", "Email Address", "Position Title"], ["ZZ TEST 559 worker", workerEmail, "ZZ TEST Head Receptionist"]];
+
+  const template = async (role: Role) => {
+    const res = await fetch(`${origin}/api/employees/bulk-template`, { headers: { cookie: cookies[role] } });
+    assert.equal(res.status, 200);
+    const book = XLSX.read(Buffer.from(await res.arrayBuffer()), { type: "buffer" });
+    return (XLSX.utils.sheet_to_json(book.Sheets[book.SheetNames[0]], { header: 1 }) as unknown[][])[0] as string[];
+  };
+  assert.ok(!(await template("manager")).some(h => /salary|incentive|food/i.test(h)), "the manager's template has no pay columns");
+  assert.ok((await template("admin")).includes("Monthly Salary (THB)"), "the admin's template keeps them");
+  passed++;
+
+  const refusedPreview = await preview("manager", withPay);
+  assert.deepEqual([refusedPreview.status, refusedPreview.body.message], [403, BULK_PAY_REFUSAL], JSON.stringify(refusedPreview.body));
+  const managerPreview = await preview("manager", withoutPay);
+  assert.equal(managerPreview.status, 200, JSON.stringify(managerPreview.body));
+  assert.equal(managerPreview.body.previewRows[0].matchedEmployeeId, worker);
+  assert.deepEqual(payKeysIn(managerPreview.body), [], "the preview's current values are withheld");
+  assert.ok(!mentionsSalary(managerPreview.body));
+  const adminPreview = await preview("admin", withPay);
+  assert.equal(adminPreview.status, 200);
+  assert.equal(adminPreview.body.previewRows[0].currentData.salary, SALARY, "an admin sees current pay");
+  assert.equal(adminPreview.body.previewRows[0].data.salary, 99_999);
+  passed += 3;
+
+  const beforeBulk = await stored();
+  const refusedApply = await call("manager", "POST", "/api/employees/bulk-update", { rows: [
+    { rowNumber: 2, data: { fullName: "ZZ TEST 559 worker", position: "ZZ TEST Receptionist" }, branchId: null, matchedEmployeeId: worker, isNew: false },
+    { rowNumber: 3, data: { fullName: `ZZ TEST 559 bulk ${run}`, email: `zz-559-bulk-${run}@example.com`, foodAllowancePerDay: 80 }, branchId: branch, matchedEmployeeId: null, isNew: true },
+  ] });
+  assert.deepEqual([refusedApply.status, refusedApply.body.message], [403, BULK_PAY_REFUSAL], JSON.stringify(refusedApply.body));
+  assert.deepEqual(await stored(), beforeBulk, "a refused upload changes nobody");
+  assert.equal((await q("select 1 from employees where email = $1", [`zz-559-bulk-${run}@example.com`])).length, 0, "and creates nobody");
+  const managerApply = await call("manager", "POST", "/api/employees/bulk-update", { rows: managerPreview.body.previewRows });
+  assert.equal(managerApply.status, 200, JSON.stringify(managerApply.body));
+  const afterBulk = await stored();
+  assert.equal(afterBulk.default_merge_data.positionTitle, "ZZ TEST Head Receptionist", "an upload without pay applies");
+  assert.equal(afterBulk.default_merge_data.salaryThb, SALARY, "and leaves pay alone");
+  passed += 2;
 
   // ── Employment-term changes (server/employee-action-routes.ts) ──
   const countChanges = async () => Number((await q<{ n: string }>("select count(*) n from employee_changes where employee_id = $1", [worker]))[0]!.n);

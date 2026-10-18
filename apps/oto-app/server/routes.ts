@@ -30,7 +30,7 @@ import { z } from "zod";
 import { format, addDays as _addDays } from "date-fns";
 import { insertTemplateSchema, insertEmployeeSchema, insertBranchSchema, mergeDataSchema as _mergeDataSchema, MergeData as _MergeData, activityTypes, type ActivityType, attentionTypes, type AttentionType, insertEmployeeDocumentSchema as _insertEmployeeDocumentSchema, documentTypes, insertTemplateAssignmentSchema, insertUserSchema as _insertUserSchema, insertDepartmentSchema, insertRoleSchema, insertPersonSchema, insertOperatorSchema, insertStatutoryRuleSetSchema, insertKbArticleSchema, type ContractInstance, type EnrollmentSession, type FixReport, type UserWithBranchAccess, DEFAULT_TENANT_SLUG } from "@shared/schema";
 import { getEffectivePermissions, resolveAdvisorRole, type PermissionUserContext } from "../shared/permissions";
-import { canViewHrSalary, containsHrPayFields, hrPayResponse, preserveHrMergePay } from "../shared/hr-salary-permission";
+import { canViewHrSalary, containsHrPayFields, hrPayResponse, isHrPayKey, preserveHrMergePay } from "../shared/hr-salary-permission";
 import { isHexCalendarColor, isOtherEventColor } from "@shared/event-colors";
 
 // Format date as dd-mm-yyyy
@@ -512,6 +512,14 @@ const knowledgeFileUpload = multer({
 });
 
 // Excel column mapping for bulk employee upload - with multiple aliases for flexibility
+/** SCRUM-559: the bulk upload's refusal, and whether a row sets any pay value. */
+const BULK_PAY_REFUSAL = "This upload contains pay fields. Only payroll roles can change pay.";
+function bulkRowCarriesPay(data: unknown): boolean {
+  if (!data || typeof data !== "object") return false;
+  return Object.entries(data).some(([key, value]) =>
+    isHrPayKey(key) && value !== undefined && value !== null && value !== "");
+}
+
 const EXCEL_COLUMN_MAP: Record<string, string> = {
   // Full Name variations
   "Full Name": "fullName",
@@ -3447,8 +3455,12 @@ export async function registerRoutes(
         "",
       ];
       
+      // Below a payroll role the template has no pay columns (SCRUM-559): an
+      // upload carrying pay is refused, so the template must not invite one.
+      const payColumns = new Set(["Monthly Salary (THB)", "Incentive Clause", "Food Allowance (Daily)"]);
+      const keep = headers.map(h => canViewHrSalary(req.userWithAccess?.role ?? req.user?.role) || !payColumns.has(h));
       const workbook = XLSX.utils.book_new();
-      const worksheet = XLSX.utils.aoa_to_sheet([headers, sampleRow]);
+      const worksheet = XLSX.utils.aoa_to_sheet([headers.filter((_, i) => keep[i]), sampleRow.filter((_, i) => keep[i])]);
       
       // Set column widths
       worksheet["!cols"] = headers.map(() => ({ wch: 20 }));
@@ -4969,6 +4981,7 @@ export async function registerRoutes(
       
       // Get all existing employees for matching
       const allEmployees = (await storage.getEmployees()).filter(e => ofParkGroup(e.tenantId));
+      const seesPay = canViewHrSalary(req.userWithAccess?.role ?? req.user?.role);
       
       const previewRows: any[] = [];
       
@@ -5002,6 +5015,12 @@ export async function registerRoutes(
           rowData[fieldName] = value;
         });
         
+        // Pay in an upload is a payroll role's (SCRUM-559): refused, as the
+        // edit refuses it, rather than silently dropped.
+        if (!seesPay && bulkRowCarriesPay(rowData)) {
+          return res.status(403).json({ message: BULK_PAY_REFUSAL });
+        }
+
         // Try to match with existing employee by email or full name
         let matchedEmployee = null;
         if (rowData.email) {
@@ -5092,7 +5111,8 @@ export async function registerRoutes(
         errors: previewRows.filter(r => r.status === "error").length,
       };
       
-      res.json({ previewRows, stats, mappedColumns: Object.values(headerMapping) });
+      // The current values shown beside each row are withheld below payroll roles (SCRUM-559).
+      res.json(hrPayResponse({ previewRows, stats, mappedColumns: Object.values(headerMapping) }, req.userWithAccess?.role ?? req.user?.role));
     } catch (error) {
       next(error);
     }
@@ -5112,6 +5132,11 @@ export async function registerRoutes(
       
       if (!tenantId) {
         return res.status(400).json({ message: "Tenant ID not found" });
+      }
+
+      // The whole upload is refused before any row is written (SCRUM-559).
+      if (!canViewHrSalary(req.userWithAccess?.role ?? req.user?.role) && rows.some((row: { data?: unknown }) => bulkRowCarriesPay(row?.data))) {
+        return res.status(403).json({ message: BULK_PAY_REFUSAL });
       }
       
       // Get user's accessible branches for RBAC
