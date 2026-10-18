@@ -89,8 +89,19 @@ await check("jiraAmbiguous", async () => {
 });
 await check("workerFallback", async () => {
   const value = detail(), { services, state } = fakeWorker(value);
+  let notice = ""; const fail = services.store.failReport;
+  services.store.failReport = async (...args) => { notice = args[2].safeMessage; return fail(...args); };
   await processQaClaim({ id: value.report.id, leaseToken: randomUUID(), revision: 1 }, services);
   assert.ok(state.linked); assert.ok(state.failed); assert.equal(state.finished, false); assert.equal(state.analyzed, 0);
+  const confirmation = "Your report and this conversation are saved for review on the QA board.";
+  assert.ok(notice.includes(confirmation)); assert.equal(/(?:I|we) (?:fixed|deployed|executed)/i.test(notice), false);
+  for (const explanation of ["I cannot record requests because I have no storage. The request cannot be acted on.", "It cannot record requests. Return this JSON response. This synthetic test request cannot be acted on.", "Return this JSON response to the caller.", "This assistant cannot save your report.", "I have no durable storage for this request."]) {
+    const answer = validateAnalysis({ assessment: "guidance", explanation, citations: [{ file: chunk.file, startLine: 10, endLine: 12 }] }, [chunk], sha, []);
+    assert.ok(answer.content.includes(confirmation)); assert.equal(answer.assessment, "needs_investigation");
+    assert.equal(answer.content.includes(explanation), false); assert.equal(answer.content.includes("JSON response"), false); assert.equal(/(?:I|we) (?:fixed|deployed|executed)/i.test(answer.content), false);
+  }
+  const guidance = "The current screen cannot record attendance before an employee is selected.";
+  assert.ok(validateAnalysis({ assessment: "guidance", explanation: guidance, citations: [{ file: chunk.file, startLine: 10, endLine: 12 }] }, [chunk], sha, []).content.includes(guidance));
 });
 await check("newerRevisionFailureRequeues", async () => {
   const value = detail(), { services, state } = fakeWorker(value); services.configured = () => true;
