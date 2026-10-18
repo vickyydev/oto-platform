@@ -53,7 +53,7 @@ export function QaReportLauncher() {
   }
 
   return (
-    <div className="fixed bottom-20 right-4 z-40 md:bottom-6 md:right-6">
+    <div className="fixed bottom-20 right-4 z-40 md:right-6">
       <Button onClick={open} data-testid="qa-report-launcher" className="gap-2 rounded-full shadow-lg" aria-label="Report an issue">
         <MessageSquarePlus className="h-4 w-4" />
         <span>Report issue</span>

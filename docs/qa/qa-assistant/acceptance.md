@@ -1,7 +1,8 @@
 # Reporting assistant acceptance - SCRUM-548
 
-18 October 2026. **Not deployed. All staging acceptance remains pending.**
-This records the reported local release checks and the live evidence still
+18 October 2026. **Main release gate passed. Deployment verification and all
+staging acceptance remain pending.**
+This records the completed release checks and the live evidence still
 required by the [implementation plan](../../progress/plans/qa-assistant/PLAN.md).
 It establishes no new staging result or final acceptance.
 
@@ -11,30 +12,41 @@ It establishes no new staging result or final acceptance.
 | --- | --- |
 | Candidate source | `315a6fd2c86e1d1717a37035306b55ae3d1d3e4a` |
 | Candidate review | [PR 11](https://github.com/vickyydev/oto-platform/pull/11) |
-| Hosted CI | [Run 39115175218](https://github.com/vickyydev/oto-platform/actions/runs/39115175218), in progress at preparation; complete candidate gate passed, all six jobs green |
-| Final main release SHA and its CI | Pending landing and exact-SHA gate |
+| Candidate CI | [Run 39115175218](https://github.com/vickyydev/oto-platform/actions/runs/39115175218), complete; all six jobs green |
+| Final main release SHA | `b358aaf7986745c309a211fde923bdfc5c7c1135` |
+| Main CI | [Run 39116331856](https://github.com/vickyydev/oto-platform/actions/runs/39116331856), complete; all six jobs green |
 | Observed Render app SHA/deployment | Pending live read-back |
 | Observed Render worker SHA/deployment | Pending live read-back |
 | Applied app migration `0016` | Pending staging read-back |
 | Worker source snapshot/version | Pending deployed app/worker version match |
 
-## Recorded local checks
+## Recorded release checks
 
-The source checkpoint reports these completed results; this document did not
-rerun them. Mocked controls do not establish a live model response, Jira
-publication or staging access result.
+The local source checkpoint and completed main job summary record these
+results. Mocked controls do not establish a live model response, Jira
+publication or staging access result. Skipped and todo cases are excluded
+from passed counts.
 
 | Check | Recorded result |
 | --- | --- |
 | Browser controls | 9 passed with mocked services |
 | Independent source/analysis boundaries | 11 passed locally |
 | Worker controls | 11 passed with mocked services |
-| House review wrapper | 36 pins passed in the hosted app gate; exact log review is being recorded |
-| Whole app compiler | 430 diagnostics across 57 files and 114 file/code buckets; unchanged from the current baseline |
+| House review wrapper | 36 pins passed in the hosted main app gate; 0 skipped |
+| Whole app compiler | 430 diagnostics across 57 files and 114 file/code buckets; exact baseline match and whole output identical to the reviewed candidate |
 | API compiler | 0 output bytes |
 | Production builds | App and worker builds passed; worker bundle and private source index produced |
+| Main API suites | 4,078 passed; 400 skipped and 5 todo; 285 passing files and 8 skipped files |
+| Main POS suites | 1,413 passed across 97 files |
+| Main Console suites | 125 unit checks passed across 11 files, with 3 todo; 30 browser checks passed |
+| Main print suites | 271 passed across 11 files |
+| Other main workspace suites | Telemetry 36, payments2c2p 81, API types 8, shared 671 and database 240 passed |
+| Existing app journeys | 89 feature controls and 32 scheduling controls passed in main CI |
+| Restore/replay | Main artifact identical to the green candidate's artifact |
 
-The complete candidate gate passed in run39115175218. The main release gate and live staging acceptance remain pending. The hosted database checks, rather than the local mocks, establish the17 backend controls.
+The complete candidate and exact-SHA main gates passed. The hosted database
+checks establish the backend controls separately from the local mocks.
+Render version read-backs and every staging journey below remain pending.
 
 ## Actual staging journeys
 

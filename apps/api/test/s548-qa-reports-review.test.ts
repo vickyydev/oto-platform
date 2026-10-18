@@ -13,6 +13,11 @@ import { createTestDatabase, stopTestServer } from '@oto/db/testing';
  * launcher/Passport entry remains a separate staged acceptance requirement.
  * App CI must install the app dependencies and run this whole file. API shards
  * without that dependency tree retain the established conditional boundary.
+ * FINDING R12 medium — prescribed fix applied: keep the reporting entry above
+ * Core bottom navigation at every viewport width. The existing browser harness
+ * passes ordinary launcher clicks at 1440x1000 and 390x844 with real app CSS and
+ * a realistic navigation overlay; authentication and HTTP responses are mocked.
+ * Final staging confirmation remains required for this source change.
  */
 const APP = fileURLToPath(new URL('../../oto-app/', import.meta.url));
 const TSX = join(APP, 'node_modules/tsx/dist/cli.mjs');

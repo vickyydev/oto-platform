@@ -85,3 +85,6 @@ R11 (medium), source-reference visibility: validated citations are appended to t
 
 
 Landing checkpoint: candidate315a6fd2 passed the complete hosted release gate before landing. Its app gate passed 36 review pins with zero skipped, 17 backend controls, 11 worker controls and 11 independent controls, plus 89 existing feature and 32 scheduling tests. Compiler output is unchanged at430 diagnostics / 57 files / 114 buckets. Restore/replay preserved 1,108 rows and stable migration ledgers across two runs at 195 tables. The PR merge checkout and candidate have identical Git trees. Main and staging verification remain the next steps; the release checkpoint changes documentation only.
+
+
+R12 (medium), entry clearance: Report issue retains bottom clearance above Core navigation on desktop and mobile, with its existing stacking level below dialogs. The normal-click browser controls pass at1440x1000 and390x844 using real CSS and a representative navigation overlay; authentication/HTTP are mocked. The source follow-up repeats the main release gate before final staging confirmation. The prior live release b358aaf7 already saved private screenshot/video evidence, passed owned-byte and reporter/anonymous refusals, retained history, and obtained a real Claude answer and Jira recordSCRUM-554.
