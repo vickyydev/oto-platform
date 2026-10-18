@@ -7,11 +7,15 @@ import { db } from "./db";
 import { storage, type DbExecutor } from "./storage";
 import { requireAuth } from "./auth";
 import { canUserAccessBranch, requireManager } from "./auth-middleware";
+import { canViewHrSalary, hrPayResponse } from "../shared/hr-salary-permission";
 
 type Result = { status: number; body: unknown };
 type Action = (req: Request, employee: Employee, tx: DbExecutor) => Promise<Result>;
 const answer = (status: number, body: unknown): Result => ({ status, body });
 const failure = (status: number, message: string) => answer(status, { message });
+/** The signed-in effective role the pay rule reads (SCRUM-559). */
+const payRole = (req: Request) => req.userWithAccess?.role ?? req.user?.role;
+const PAY_CHANGE_TYPES = ["salary_adjustment", "incentive_change"];
 const canonical = (value: unknown): unknown => Array.isArray(value) ? value.map(canonical)
   : value !== null && typeof value === "object"
     ? Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => [k, canonical(v)])) : value;
@@ -57,7 +61,9 @@ function managerAction(name: string, fields: string[], action: Action, afterComm
         return outcome;
       });
       if (committed) afterCommit?.(employeeId);
-      res.status(result.status).json(result.body);
+      // The receipt keeps the whole answer; what goes out is withheld below
+      // payroll roles (SCRUM-559), a replay included.
+      res.status(result.status).json(hrPayResponse(result.body, payRole(req)));
     } catch (error) { next(error); }
   };
 }
@@ -83,8 +89,14 @@ export function registerEmployeeActionRoutes(app: Express, options: {
 
   app.post("/api/employees/:employeeId/changes", requireAuth, requireManager,
     managerAction("change-terms", ["changeType", "effectiveDate", "newTitle", "newSalary", "newIncentiveClause", "newBranchId", "note"], async (req, employee, tx) => {
-      const { changeType, effectiveDate, newTitle, newSalary, newIncentiveClause, newBranchId, note } = req.body;
+      const { changeType, effectiveDate, newTitle, newBranchId, note } = req.body;
       if (!["salary_adjustment", "title_change", "incentive_change", "branch_transfer"].includes(changeType)) return failure(400, "Invalid change type");
+      // Pay changes are a payroll role's (SCRUM-559); below one, a pay value
+      // riding on another kind of change is not recorded either.
+      const seesPay = canViewHrSalary(payRole(req));
+      if (!seesPay && PAY_CHANGE_TYPES.includes(changeType)) return failure(403, "Pay changes require hr.view_salary.");
+      const newSalary = seesPay ? req.body.newSalary : undefined;
+      const newIncentiveClause = seesPay ? req.body.newIncentiveClause : undefined;
       if (!effectiveDate) return failure(400, "Effective date is required");
       if (!Number.isFinite(new Date(effectiveDate).getTime())) return failure(400, "Invalid effective date");
       if (changeType === "salary_adjustment" && (newSalary === undefined || newSalary === null || typeof newSalary !== "number")) return failure(400, "New salary is required for salary adjustments");
@@ -137,6 +149,7 @@ export function registerEmployeeActionRoutes(app: Express, options: {
         if (!employee) return failure(404, "Employee not found");
         const [change] = await tx.select().from(employeeChanges).where(and(eq(employeeChanges.id, req.params.changeId), eq(employeeChanges.employeeId, employee.id))).for("update");
         if (!change) return failure(404, "Change not found");
+        if (PAY_CHANGE_TYPES.includes(change.changeType) && !canViewHrSalary(payRole(req))) return failure(403, "Pay changes require hr.view_salary.");
         if (parsed.data.contractInstanceId) {
           const [contract] = await tx.select().from(contractInstances).where(and(eq(contractInstances.id, parsed.data.contractInstanceId), eq(contractInstances.employeeId, employee.id)));
           if (!contract) return failure(404, "Contract not found");
@@ -144,7 +157,7 @@ export function registerEmployeeActionRoutes(app: Express, options: {
         const [updated] = await tx.update(employeeChanges).set(parsed.data).where(eq(employeeChanges.id, change.id)).returning();
         return answer(200, updated);
       });
-      res.status(result.status).json(result.body);
+      res.status(result.status).json(hrPayResponse(result.body, payRole(req)));
     } catch (error) { next(error); }
   });
 

@@ -30,6 +30,7 @@ import { z } from "zod";
 import { format, addDays as _addDays } from "date-fns";
 import { insertTemplateSchema, insertEmployeeSchema, insertBranchSchema, mergeDataSchema as _mergeDataSchema, MergeData as _MergeData, activityTypes, type ActivityType, attentionTypes, type AttentionType, insertEmployeeDocumentSchema as _insertEmployeeDocumentSchema, documentTypes, insertTemplateAssignmentSchema, insertUserSchema as _insertUserSchema, insertDepartmentSchema, insertRoleSchema, insertPersonSchema, insertOperatorSchema, insertStatutoryRuleSetSchema, insertKbArticleSchema, type ContractInstance, type EnrollmentSession, type FixReport, type UserWithBranchAccess, DEFAULT_TENANT_SLUG } from "@shared/schema";
 import { getEffectivePermissions, resolveAdvisorRole, type PermissionUserContext } from "../shared/permissions";
+import { canViewHrSalary, containsHrPayFields, hrPayResponse, preserveHrMergePay } from "../shared/hr-salary-permission";
 import { isHexCalendarColor, isOtherEventColor } from "@shared/event-colors";
 
 // Format date as dd-mm-yyyy
@@ -3365,7 +3366,8 @@ export async function registerRoutes(
             ...e,
             roles: rolesByEmployee.get(e.id) || [],
           }));
-          return res.json(withRoles);
+          // Pay withheld below payroll roles (SCRUM-559).
+          return res.json(hrPayResponse(withRoles, req.userWithAccess?.role ?? req.user?.role));
         } else {
           filteredEmployees = filteredEmployees.filter(e => e.branchId === branchIdFilter);
         }
@@ -3383,13 +3385,13 @@ export async function registerRoutes(
           existing.push({ roleId: r.roleId, roleName: r.roleName, isPrimary: r.isPrimary });
           rolesByEmployee.set(r.employeeId, existing);
         }
-        return res.json(filteredEmployees.map(e => ({
+        return res.json(hrPayResponse(filteredEmployees.map(e => ({
           ...e,
           roles: rolesByEmployee.get(e.id) || [],
-        })));
+        })), req.userWithAccess?.role ?? req.user?.role));
       }
       
-      res.json(filteredEmployees);
+      res.json(hrPayResponse(filteredEmployees, req.userWithAccess?.role ?? req.user?.role));
     } catch (error) {
       next(error);
     }
@@ -3500,7 +3502,7 @@ export async function registerRoutes(
           loginActive = linkedUser.isActive;
         }
       }
-      res.json({ ...employee, phoneVerificationInfo, loginActive });
+      res.json(hrPayResponse({ ...employee, phoneVerificationInfo, loginActive }, req.userWithAccess?.role ?? req.user?.role));
     } catch (error) {
       next(error);
     }
@@ -3797,6 +3799,11 @@ export async function registerRoutes(
   // Staff can only read, managers can create/edit employees
   app.post("/api/employees", requireAuth, requireManager, async (req, res, next) => {
     try {
+      // Pay is set by a payroll role (SCRUM-559), on a new employee as on an
+      // existing one; the form below one sends none.
+      if (!canViewHrSalary(req.userWithAccess?.role ?? req.user?.role) && containsHrPayFields(req.body)) {
+        return res.status(403).json({ message: "Pay fields require hr.view_salary. Ask an admin to set pay." });
+      }
       // Convert date strings to Date objects or undefined for optional date fields
       const body = { ...req.body };
       const dateFields = ["startDate", "visaExpiryDate", "workPermitExpiryDate", "probationEndDate", "probationReviewCompletedAt", "lastWorkingDay"];
@@ -3927,7 +3934,7 @@ export async function registerRoutes(
       // Trigger attention engine for new employee
       evaluateForEmployee(employee.id).catch(err => console.error("[AttentionEngine] Employee create trigger failed:", err));
       
-      res.status(201).json(employee);
+      res.status(201).json(hrPayResponse(employee, req.userWithAccess?.role ?? req.user?.role));
     } catch (error) {
       next(error);
     }
@@ -3935,6 +3942,11 @@ export async function registerRoutes(
 
   app.patch("/api/employees/:id", requireAuth, requireManager, async (req, res, next) => {
     try {
+      // Pay is a payroll role's to change (SCRUM-559). The body alone decides
+      // this, so it answers before any record is looked up.
+      if (!canViewHrSalary(req.userWithAccess?.role ?? req.user?.role) && containsHrPayFields(req.body)) {
+        return res.status(403).json({ message: "Pay fields require hr.view_salary. Ask an admin to change pay." });
+      }
       const oldEmployee = await employeeOfParkGroup(req, req.params.id);
       if (!oldEmployee) {
         return res.status(404).json({ message: "Employee not found" });
@@ -3954,6 +3966,11 @@ export async function registerRoutes(
       // edit never names a park group (the app's form sends none), and an id
       // it changes is refused when it is another park group's record.
       delete updateData.tenantId;
+      // A form that was shown without pay sends defaultMergeData without the
+      // pay keys; the stored values stay rather than being wiped by the save.
+      if (updateData.defaultMergeData && typeof updateData.defaultMergeData === "object" && !Array.isArray(updateData.defaultMergeData)) {
+        updateData.defaultMergeData = preserveHrMergePay(oldEmployee.defaultMergeData as Record<string, unknown> | null, updateData.defaultMergeData);
+      }
       const outside = await employeeEditOutsideParkGroup(updateData, oldEmployee);
       if (outside) return res.status(404).json(outside);
       const dateFields = ["startDate", "visaExpiryDate", "workPermitExpiryDate", "probationEndDate", "probationReviewCompletedAt", "lastWorkingDay"];
@@ -4110,7 +4127,7 @@ export async function registerRoutes(
       // Trigger attention engine for updated employee
       evaluateForEmployee(employee.id).catch(err => console.error("[AttentionEngine] Employee update trigger failed:", err));
       
-      res.json(employee);
+      res.json(hrPayResponse(employee, req.userWithAccess?.role ?? req.user?.role));
     } catch (error) {
       next(error);
     }
@@ -5267,7 +5284,8 @@ export async function registerRoutes(
     try {
       if (!await employeeOfParkGroup(req, req.params.employeeId)) return res.json([]);
       const changes = await storage.getEmployeeChanges(req.params.employeeId);
-      res.json(changes);
+      // Pay values and the notes on pay changes are withheld below payroll roles (SCRUM-559).
+      res.json(hrPayResponse(changes, req.userWithAccess?.role ?? req.user?.role));
     } catch (error) {
       next(error);
     }

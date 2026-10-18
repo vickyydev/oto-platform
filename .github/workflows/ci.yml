@@ -566,6 +566,14 @@ jobs:
       - name: The app's record deletion checks
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/record-deletion.check.ts
+      # SCRUM-559: an employee's pay is a payroll role's — withheld from
+      # manager and staff on the list, the employee, the change history and the
+      # probation review; a pay field in their edit or new employee refused;
+      # a save without pay leaving stored pay alone; salary and incentive
+      # changes refused below a payroll role.
+      - name: The app's salary visibility checks
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/salary-visibility.check.ts
       # These five feature suites drive the app's handlers through its own
       # dependency tree. Run them here, where npm ci has installed that tree,
       # and keep the API workspace's ordinary full battery unchanged.

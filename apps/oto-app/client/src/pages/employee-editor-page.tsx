@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/form";
 import { ArrowLeft, Save, Loader2, User, Mail, Phone, MapPin, Building2, Briefcase, Globe, CreditCard, FileText, Trash2, Upload, RefreshCw, Eye, History, DollarSign, Plus, CheckCircle, Clock, AlertTriangle, FileSignature, UserX, ChevronDown, Package, RotateCcw, Fingerprint, QrCode, XCircle, Shield, Calendar, Download, Percent, X, PieChart, Settings, Lock, Pencil } from "lucide-react";
 import { MODULES, MODULE_KEYS, BRANCH_SCOPE_TYPES, type ModuleKey, type BranchScopeType, type EffectivePermissions } from "@shared/permissions";
+import { canViewHrSalary, redactHrPay, HR_PAY_HIDDEN_NOTE } from "@shared/hr-salary-permission";
 import { DatePicker } from "@/components/ui/date-picker";
 import { ClickableEmployeeAvatar } from "@/components/clickable-employee-avatar";
 import { useAvatarWorkStatus } from "@/hooks/use-avatar-work-status";
@@ -2387,7 +2388,9 @@ function CostAllocationSection({ employeeId, primaryBranchId, canEdit }: { emplo
   );
 }
 
-const employeeFormSchema = insertEmployeeSchema
+// Without the pay requirement: the form a non-payroll role sees has no pay
+// fields to fill (SCRUM-559), so it must not demand them.
+const employeeFormBaseSchema = insertEmployeeSchema
   .omit({
     tenantId: true,
     personId: true,
@@ -2438,7 +2441,9 @@ const employeeFormSchema = insertEmployeeSchema
       extraClause2Title: z.string().optional(),
       extraClause2Body: z.string().optional(),
     }),
-  }).superRefine((data, ctx) => {
+  });
+
+const employeeFormSchema = employeeFormBaseSchema.superRefine((data, ctx) => {
     // Conditional validation: require salary for full-time, daily rate for part-time
     if (data.employmentBasis === "FULL_TIME") {
       if (!data.defaultMergeData?.salaryThb || data.defaultMergeData.salaryThb <= 0) {
@@ -2459,7 +2464,7 @@ const employeeFormSchema = insertEmployeeSchema
     }
   });
 
-type EmployeeFormData = z.infer<typeof employeeFormSchema>;
+type EmployeeFormData = z.infer<typeof employeeFormBaseSchema>;
 
 export default function EmployeeEditorPage() {
   const { id } = useParams<{ id: string }>();
@@ -2470,6 +2475,10 @@ export default function EmployeeEditorPage() {
   
   // Staff role has read-only access
   const canEdit = user?.role !== "staff";
+  // Pay is shown and sent only for payroll roles (SCRUM-559); the server
+  // withholds it from everyone else and refuses a pay field they send.
+  const canViewSalary = canViewHrSalary(user?.role);
+  const withoutPayUnlessPayroll = <T,>(body: T): T => (canViewSalary ? body : redactHrPay(body));
   const [updateTermsOpen, setUpdateTermsOpen] = useState(false);
   const [offboardingOpen, setOffboardingOpen] = useState(false);
   // The profile's "Generate Letter" for a departure already recorded.
@@ -2616,7 +2625,7 @@ export default function EmployeeEditorPage() {
   const contractHistory = contracts?.filter(c => c.status !== "active") || [];
 
   const form = useForm<EmployeeFormData>({
-    resolver: zodResolver(employeeFormSchema),
+    resolver: zodResolver(canViewSalary ? employeeFormSchema : employeeFormBaseSchema),
     defaultValues: {
       fullName: "",
       thaiName: "",
@@ -2789,7 +2798,7 @@ export default function EmployeeEditorPage() {
           ? data.defaultMergeData
           : null,
       };
-      const res = await apiRequest("POST", "/api/employees", cleanedData);
+      const res = await apiRequest("POST", "/api/employees", withoutPayUnlessPayroll(cleanedData));
       const newEmployee = await res.json();
       
       if (selectedRoleIds.length > 0) {
@@ -2830,7 +2839,7 @@ export default function EmployeeEditorPage() {
           ? data.defaultMergeData
           : null,
       };
-      const res = await apiRequest("PATCH", `/api/employees/${id}`, cleanedData);
+      const res = await apiRequest("PATCH", `/api/employees/${id}`, withoutPayUnlessPayroll(cleanedData));
       const updatedEmployee = await res.json();
       
       await apiRequest("PATCH", `/api/employees/${id}/roles`, { roleIds: selectedRoleIds });
@@ -3563,105 +3572,114 @@ export default function EmployeeEditorPage() {
                 )}
               />
 
-              {employmentBasis === "FULL_TIME" ? (
+              {canViewSalary ? (
+                <>
+                {employmentBasis === "FULL_TIME" ? (
+                  <FormField
+                    control={form.control}
+                    name="defaultMergeData.salaryThb"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Monthly Salary (THB) <span className="text-red-500">*</span></FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">฿</span>
+                            <CurrencyInput
+                              className="pl-10"
+                              placeholder="e.g., 50,000"
+                              data-testid="input-salary"
+                              value={field.value ?? undefined}
+                              onChange={field.onChange}
+                            />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                ) : (
+                  <FormField
+                    control={form.control}
+                    name="dailyRate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Daily Rate (THB) <span className="text-red-500">*</span></FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">฿</span>
+                            <CurrencyInput
+                              className="pl-10"
+                              placeholder="e.g., 500"
+                              data-testid="input-daily-rate"
+                              value={field.value ?? undefined}
+                              onChange={field.onChange}
+                            />
+                          </div>
+                        </FormControl>
+                        <FormDescription>
+                          Amount paid per day worked. Part-time employees do not receive leave benefits.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
                 <FormField
                   control={form.control}
-                  name="defaultMergeData.salaryThb"
+                  name="incentiveClauseText"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Monthly Salary (THB) <span className="text-red-500">*</span></FormLabel>
+                      <FormLabel>Incentive / Commission Clause (Optional)</FormLabel>
                       <FormControl>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">฿</span>
-                          <CurrencyInput
-                            className="pl-10"
-                            placeholder="e.g., 50,000"
-                            data-testid="input-salary"
-                            value={field.value ?? undefined}
-                            onChange={field.onChange}
-                          />
-                        </div>
+                        <Textarea
+                          className="min-h-[100px]"
+                          placeholder="e.g., Monthly commission of 2% on sales exceeding THB 100,000. Performance bonus up to 2 months salary based on annual review."
+                          data-testid="input-incentive-clause"
+                          value={field.value || ""}
+                          onChange={(e) => field.onChange(e.target.value || null)}
+                        />
                       </FormControl>
+                      <FormDescription>
+                        Standard incentive, commission, or bonus terms for this employee. Will appear under salary in contracts.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-              ) : (
+
                 <FormField
                   control={form.control}
-                  name="dailyRate"
+                  name="foodAllowancePerDay"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Daily Rate (THB) <span className="text-red-500">*</span></FormLabel>
+                      <FormLabel>Food Allowance Per Day (THB)</FormLabel>
                       <FormControl>
                         <div className="relative">
                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">฿</span>
                           <CurrencyInput
                             className="pl-10"
-                            placeholder="e.g., 500"
-                            data-testid="input-daily-rate"
+                            placeholder="e.g., 60"
+                            data-testid="input-food-allowance"
                             value={field.value ?? undefined}
                             onChange={field.onChange}
                           />
                         </div>
                       </FormControl>
                       <FormDescription>
-                        Amount paid per day worked. Part-time employees do not receive leave benefits.
+                        Daily food allowance amount. Available as a contract variable.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+                </>
+              ) : (
+                <div className="rounded-lg border border-dashed border-border bg-muted/30 p-3 text-sm text-muted-foreground flex items-center gap-2" data-testid="notice-pay-hidden">
+                  <Lock className="h-4 w-4 shrink-0" />
+                  <span>Pay (salary or daily rate, incentive clause, food allowance): {HR_PAY_HIDDEN_NOTE}.</span>
+                </div>
               )}
-
-              <FormField
-                control={form.control}
-                name="incentiveClauseText"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Incentive / Commission Clause (Optional)</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        className="min-h-[100px]"
-                        placeholder="e.g., Monthly commission of 2% on sales exceeding THB 100,000. Performance bonus up to 2 months salary based on annual review."
-                        data-testid="input-incentive-clause"
-                        value={field.value || ""}
-                        onChange={(e) => field.onChange(e.target.value || null)}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Standard incentive, commission, or bonus terms for this employee. Will appear under salary in contracts.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="foodAllowancePerDay"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Food Allowance Per Day (THB)</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">฿</span>
-                        <CurrencyInput
-                          className="pl-10"
-                          placeholder="e.g., 60"
-                          data-testid="input-food-allowance"
-                          value={field.value ?? undefined}
-                          onChange={field.onChange}
-                        />
-                      </div>
-                    </FormControl>
-                    <FormDescription>
-                      Daily food allowance amount. Available as a contract variable.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
 
               <FormField
                 control={form.control}
@@ -4248,7 +4266,9 @@ export default function EmployeeEditorPage() {
                   {employee.employmentBasis === "PART_TIME" ? "Daily Rate" : "Monthly Salary"}
                 </p>
                 <p className="font-medium" data-testid="text-current-salary">
-                  {employee.employmentBasis === "PART_TIME"
+                  {!canViewSalary ? (
+                    <span className="inline-flex items-center gap-1 text-sm font-normal text-muted-foreground"><Lock className="h-3.5 w-3.5" />{HR_PAY_HIDDEN_NOTE}</span>
+                  ) : employee.employmentBasis === "PART_TIME"
                     ? employee.dailyRate
                       ? `฿${employee.dailyRate.toLocaleString()}/day`
                       : "Not set"
@@ -4266,7 +4286,9 @@ export default function EmployeeEditorPage() {
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">Incentive Clause</p>
                 <p className="font-medium text-sm" data-testid="text-current-incentive">
-                  {employee.incentiveClauseText || "None"}
+                  {!canViewSalary ? (
+                    <span className="inline-flex items-center gap-1 font-normal text-muted-foreground"><Lock className="h-3.5 w-3.5" />{HR_PAY_HIDDEN_NOTE}</span>
+                  ) : employee.incentiveClauseText || "None"}
                 </p>
               </div>
             </div>
@@ -4401,7 +4423,10 @@ export default function EmployeeEditorPage() {
                         </span>
                       </div>
                       <div className="mt-2 text-sm text-muted-foreground">
-                        {change.changeType === "salary_adjustment" && (
+                        {change.changeType === "salary_adjustment" && !canViewSalary && (
+                          <>Amounts {HR_PAY_HIDDEN_NOTE.charAt(0).toLowerCase() + HR_PAY_HIDDEN_NOTE.slice(1)}</>
+                        )}
+                        {change.changeType === "salary_adjustment" && canViewSalary && (
                           <>฿{change.oldSalary?.toLocaleString() || 0} → ฿{change.newSalary?.toLocaleString() || 0}</>
                         )}
                         {change.changeType === "title_change" && (

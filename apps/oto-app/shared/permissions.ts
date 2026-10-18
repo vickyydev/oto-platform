@@ -46,6 +46,8 @@ export const MODULES: Record<ModuleKey, ModuleDefinition> = {
 
 export const ADMIN_ONLY_ACTIONS = [
   "hr.manage_payroll",
+  // Seeing pay at all (SCRUM-559): shared/hr-salary-permission.ts.
+  "hr.view_salary",
   "hr.edit_salary",
   "hr.edit_contract_templates",
   "hr.terminate_employee",
