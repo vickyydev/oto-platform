@@ -10,13 +10,13 @@ The owner reserves Done for final acceptance. The implementation and its childre
 
 ## Tracking
 
-| Work | Ticket | Initial state |
+| Work | Ticket | Current state |
 | --- | --- | --- |
-| Complete feature | SCRUM-548 | In Progress |
-| Scoped saved reports and private evidence | SCRUM-549 | In Progress |
-| In-app reporting conversation and history | SCRUM-550 | In Progress |
-| Bounded analysis, source inspection and Jira publishing | SCRUM-551 | In Progress |
-| Release and staging acceptance | SCRUM-552 | To Do |
+| Complete feature | SCRUM-548 | Testing |
+| Scoped saved reports and private evidence | SCRUM-549 | Deployed |
+| In-app reporting conversation and history | SCRUM-550 | Deployed |
+| Bounded analysis, source inspection and Jira publishing | SCRUM-551 | Testing |
+| Release and staging acceptance | SCRUM-552 | In Progress |
 
 New reports belong to **OTO App - QA and Bug Triage**, sprint36, under intake **SCRUM-553**. The intake is separate from this implementation task and the earlier Maria group SCRUM-524. Existing reports and their statuses are retained. New report subtasks inherit the configured QA parent's sprint; the publisher refuses the Sprint2 destination.
 
@@ -88,3 +88,8 @@ Landing checkpoint: candidate315a6fd2 passed the complete hosted release gate be
 
 
 R12 (medium), entry clearance: Report issue retains bottom clearance above Core navigation on desktop and mobile, with its existing stacking level below dialogs. The normal-click browser controls pass at1440x1000 and390x844 using real CSS and a representative navigation overlay; authentication/HTTP are mocked. The source follow-up repeats the main release gate before final staging confirmation. The prior live release b358aaf7 already saved private screenshot/video evidence, passed owned-byte and reporter/anonymous refusals, retained history, and obtained a real Claude answer and Jira recordSCRUM-554.
+
+
+18 October staging checkpoint: R12 is confirmed by ordinary desktop and mobile clicks on live c0422d18, whose full six-job gate passed. SCRUM-549/550 are Deployed with inspected evidence. Reports554-556 each have one issue under553/sprint36 and remain To Do. Private reads, original bytes, report/message/upload replay and cross-release source preservation passed. Both source-index probes succeeded at520 files with matching private stored snapshots.
+
+R13 (medium), saved-report confirmation: guidance reflects the host already saving the conversation and linking its Jira issue before model review. Source0e2e87eb adds a trusted confirmation and normalizes a model self-denial about recording this QA request, without altering business-screen guidance. Existing worker controls remain11/11; production build and touched-file lint pass. The app release gate39121598434 and final live reply remain pending. No new suite or business action is introduced.
