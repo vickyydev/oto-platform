@@ -10,9 +10,18 @@ write to the live database or call the pre-existing database payroll engine.
 These are the rules the park's side is reviewing for the REAL payroll build.
 Nothing here is shipped behaviour of our platform yet.
 
-> Owner ruling 2026-10-19: the prototype is adopted as **rules-as-spec
-> only** — no demo pages are ported. The four concerns in §9 go to the
-> park's side before these rules are built for real.
+> Owner ruling 2026-10-20 (supersedes 2026-10-19): the payroll system IS
+> built for real in our app from this rulebook, after the R6 screen wave.
+> The prototype's logic is the owner's own design and is built as written.
+> The four concerns in §9 are RECORDED for the next meeting with the
+> park's side (or the next park testing), and the build proceeds around
+> them: where a concern creates ambiguity, the prototype's behaviour is
+> built as-is and the spot is marked on the story ticket. Further rulings:
+> Thailand-only rules go live (the engine keeps its multi-country shape;
+> the fictional Malaysian branch's rules stay dormant configuration), and
+> the app's old dormant payroll engine is retired at cutover once the new
+> month-end runs end to end. The September golden example becomes the
+> acceptance test: the real engine must reproduce its numbers exactly.
 
 ## 1. Company model
 
