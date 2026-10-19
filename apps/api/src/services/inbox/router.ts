@@ -58,6 +58,12 @@ export interface RouteInput {
   branchId: string | null;
   /** When the routing happened: the message that opened the thread. */
   at: Date;
+  /**
+   * A re-route (I2e, move-team): only this team's rules, and this team when
+   * none matches; the rows carry `reason` and who asked. Absent on a new
+   * conversation, which is routed by the system with reason `auto`.
+   */
+  reroute?: { teamId: string; reason: 'move'; actorAccountId: string };
 }
 
 export interface RoutedAssignment {
@@ -122,6 +128,7 @@ export async function routeConversation(tx: Exec, input: RouteInput): Promise<Ro
         eq(routingRule.category, input.category),
         eq(routingRule.active, true),
         isNull(routingRule.archivedAt),
+        ...(input.reroute ? [eq(routingRule.teamId, input.reroute.teamId)] : []),
       ),
     );
   const rule = pickRule(rules, input);
@@ -130,6 +137,9 @@ export async function routeConversation(tx: Exec, input: RouteInput): Promise<Ro
   let fallback = false;
   if (rule) {
     teamId = rule.teamId;
+  } else if (input.reroute) {
+    teamId = input.reroute.teamId;
+    fallback = true;
   } else {
     const candidates = await tx
       .select({ id: team.id, branchId: team.branchId })
@@ -195,8 +205,9 @@ export async function routeConversation(tx: Exec, input: RouteInput): Promise<Ro
       assigneeKind: a.assigneeKind,
       accountId: a.accountId,
       teamId: a.teamId,
-      assignedByKind: 'system' as const,
-      reason: 'auto' as const,
+      assignedByKind: input.reroute ? ('account' as const) : ('system' as const),
+      assignedByAccountId: input.reroute?.actorAccountId ?? null,
+      reason: input.reroute?.reason ?? ('auto' as const),
       assignedAt: input.at,
     })),
   );
@@ -235,7 +246,7 @@ export async function routeConversation(tx: Exec, input: RouteInput): Promise<Ro
         assigneeKind: a.assigneeKind,
         accountId: a.accountId,
         teamId: a.teamId,
-        reason: 'auto',
+        reason: input.reroute?.reason ?? 'auto',
       },
       createdAt: input.at,
     })),

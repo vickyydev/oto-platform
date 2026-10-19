@@ -64,6 +64,7 @@ import { scanningRoutes } from './routes/scanning';
 import { staffTokenRoutes } from './routes/staff-token';
 import { boothRoutes } from './routes/booth';
 import { inboxReadRoutes } from './routes/inbox-read';
+import { inboxActionRoutes } from './routes/inbox-actions';
 import { PermissionDeniedError, sessionPlugin } from './plugins/session';
 import { idempotencyPlugin } from './plugins/idempotency';
 import { rateLimitPlugin } from './plugins/rate-limit';
@@ -497,6 +498,8 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   await app.register(opsRoutes, { prefix: '/ops' });
   // S2-19 I2b — the Inbox's reads: list, thread, dashboard, the viewer, templates.
   await app.register(inboxReadRoutes, { prefix: '/inbox' });
+  // S2-19 I2e — assignment, Divert, move, branch, Handled and reopen.
+  await app.register(inboxActionRoutes, { prefix: '/inbox' });
   // Versioned separately from everything else: a box in a mall is updated on
   // its own schedule, so the one surface that has to stay compatible with a
   // machine nobody can reach says so in its path (S2-04).

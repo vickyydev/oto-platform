@@ -25387,6 +25387,643 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/inbox/conversations/{id}/primary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Assign or replace the primary owner — a person, or a team (the reception phone). CATEGORY FOLLOWS THE PRIMARY: when the new primary's team is not the conversation's, the conversation moves to that team (its category, and for a reception desk its branch), and the server answers 409 CATEGORY_MOVE_UNCONFIRMED, with the destination in `details`, until the request carries `confirmMove: true`. A person in no team keeps the category; the support places stay. One place per person: 409 ALREADY_ON_CONVERSATION. Needs inbox:conversation:assign at the conversation, or the caller is its current primary. Refusals: 404 when the conversation is not the caller’s to see (or not in their operator); 403 when the permission is not held at this conversation. */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        assignee: {
+                            /** @enum {string} */
+                            kind: "account" | "team";
+                            /** Format: uuid */
+                            id: string;
+                        };
+                        confirmMove?: boolean;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            conversation: {
+                                /** Format: uuid */
+                                id: string;
+                                /** @enum {string} */
+                                status: "active" | "handled";
+                                /** @enum {string} */
+                                category: "birthdays" | "general" | "marketing";
+                                /** Format: uuid */
+                                teamId: string | null;
+                                /** Format: uuid */
+                                branchId: string | null;
+                                handledAt: string | null;
+                                /** @enum {string|null} */
+                                handledByKind: "account" | "ai" | null;
+                                /** Format: uuid */
+                                handledByAccountId: string | null;
+                                reopenedAt: string | null;
+                            };
+                            assignments: {
+                                /** Format: uuid */
+                                assignmentId: string;
+                                /** @enum {string} */
+                                slot: "primary" | "support";
+                                slotIndex: number;
+                                /** @enum {string} */
+                                assigneeKind: "account" | "team" | "ai";
+                                /** Format: uuid */
+                                accountId: string | null;
+                                /** Format: uuid */
+                                teamId: string | null;
+                                /** @enum {string} */
+                                reason: "auto" | "manual" | "divert" | "move" | "reopen";
+                                assignedAt: string;
+                            }[];
+                            moved: boolean;
+                        };
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inbox/conversations/{id}/support": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Add a person to the next free support place (two at most: a third answers 409 SUPPORT_FULL; one place per person: 409 ALREADY_ON_CONVERSATION). Support never changes ownership. Needs inbox:conversation:assign at the conversation. Refusals: 404 when the conversation is not the caller’s to see (or not in their operator); 403 when the permission is not held at this conversation. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        accountId: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            conversation: {
+                                /** Format: uuid */
+                                id: string;
+                                /** @enum {string} */
+                                status: "active" | "handled";
+                                /** @enum {string} */
+                                category: "birthdays" | "general" | "marketing";
+                                /** Format: uuid */
+                                teamId: string | null;
+                                /** Format: uuid */
+                                branchId: string | null;
+                                handledAt: string | null;
+                                /** @enum {string|null} */
+                                handledByKind: "account" | "ai" | null;
+                                /** Format: uuid */
+                                handledByAccountId: string | null;
+                                reopenedAt: string | null;
+                            };
+                            assignments: {
+                                /** Format: uuid */
+                                assignmentId: string;
+                                /** @enum {string} */
+                                slot: "primary" | "support";
+                                slotIndex: number;
+                                /** @enum {string} */
+                                assigneeKind: "account" | "team" | "ai";
+                                /** Format: uuid */
+                                accountId: string | null;
+                                /** Format: uuid */
+                                teamId: string | null;
+                                /** @enum {string} */
+                                reason: "auto" | "manual" | "divert" | "move" | "reopen";
+                                assignedAt: string;
+                            }[];
+                            moved: boolean;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inbox/conversations/{id}/support/{assignmentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** @description Remove a support person: the slot is released (`released_at`), never deleted, so the history stays. 404 when the id is not an active support place on this conversation. Needs inbox:conversation:assign at the conversation. Refusals: 404 when the conversation is not the caller’s to see (or not in their operator); 403 when the permission is not held at this conversation. */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    assignmentId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            conversation: {
+                                /** Format: uuid */
+                                id: string;
+                                /** @enum {string} */
+                                status: "active" | "handled";
+                                /** @enum {string} */
+                                category: "birthdays" | "general" | "marketing";
+                                /** Format: uuid */
+                                teamId: string | null;
+                                /** Format: uuid */
+                                branchId: string | null;
+                                handledAt: string | null;
+                                /** @enum {string|null} */
+                                handledByKind: "account" | "ai" | null;
+                                /** Format: uuid */
+                                handledByAccountId: string | null;
+                                reopenedAt: string | null;
+                            };
+                            assignments: {
+                                /** Format: uuid */
+                                assignmentId: string;
+                                /** @enum {string} */
+                                slot: "primary" | "support";
+                                slotIndex: number;
+                                /** @enum {string} */
+                                assigneeKind: "account" | "team" | "ai";
+                                /** Format: uuid */
+                                accountId: string | null;
+                                /** Format: uuid */
+                                teamId: string | null;
+                                /** @enum {string} */
+                                reason: "auto" | "manual" | "divert" | "move" | "reopen";
+                                assignedAt: string;
+                            }[];
+                            moved: boolean;
+                        };
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inbox/conversations/{id}/divert": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Divert: the routing rule's fixed pair swaps — the backup becomes primary (reason divert) and the old primary takes the backup’s support place; a second Divert swaps back. 409 DIVERT_NO_BACKUP when the rule has no backup (reception). The current primary may press it; anyone else needs inbox:conversation:assign at the conversation. Refusals: 404 when the conversation is not the caller’s to see (or not in their operator); 403 when the permission is not held at this conversation. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            conversation: {
+                                /** Format: uuid */
+                                id: string;
+                                /** @enum {string} */
+                                status: "active" | "handled";
+                                /** @enum {string} */
+                                category: "birthdays" | "general" | "marketing";
+                                /** Format: uuid */
+                                teamId: string | null;
+                                /** Format: uuid */
+                                branchId: string | null;
+                                handledAt: string | null;
+                                /** @enum {string|null} */
+                                handledByKind: "account" | "ai" | null;
+                                /** Format: uuid */
+                                handledByAccountId: string | null;
+                                reopenedAt: string | null;
+                            };
+                            assignments: {
+                                /** Format: uuid */
+                                assignmentId: string;
+                                /** @enum {string} */
+                                slot: "primary" | "support";
+                                slotIndex: number;
+                                /** @enum {string} */
+                                assigneeKind: "account" | "team" | "ai";
+                                /** Format: uuid */
+                                accountId: string | null;
+                                /** Format: uuid */
+                                teamId: string | null;
+                                /** @enum {string} */
+                                reason: "auto" | "manual" | "divert" | "move" | "reopen";
+                                assignedAt: string;
+                            }[];
+                            moved: boolean;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inbox/conversations/{id}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Move to another team: Birthdays & Events, Marketing, or a reception desk (which sets the branch too). Clears every slot, re-routes to the new team's default primary and adds its backup as support (the IT Brief), and logs a `moved_team` event. 409 ALREADY_IN_TEAM when it is already there. Needs inbox:conversation:move at the conversation. Refusals: 404 when the conversation is not the caller’s to see (or not in their operator); 403 when the permission is not held at this conversation. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        dest: {
+                            /** @enum {string} */
+                            kind: "birthdays";
+                        } | {
+                            /** @enum {string} */
+                            kind: "marketing";
+                        } | {
+                            /** @enum {string} */
+                            kind: "reception";
+                            /** Format: uuid */
+                            branchId: string;
+                        };
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            conversation: {
+                                /** Format: uuid */
+                                id: string;
+                                /** @enum {string} */
+                                status: "active" | "handled";
+                                /** @enum {string} */
+                                category: "birthdays" | "general" | "marketing";
+                                /** Format: uuid */
+                                teamId: string | null;
+                                /** Format: uuid */
+                                branchId: string | null;
+                                handledAt: string | null;
+                                /** @enum {string|null} */
+                                handledByKind: "account" | "ai" | null;
+                                /** Format: uuid */
+                                handledByAccountId: string | null;
+                                reopenedAt: string | null;
+                            };
+                            assignments: {
+                                /** Format: uuid */
+                                assignmentId: string;
+                                /** @enum {string} */
+                                slot: "primary" | "support";
+                                slotIndex: number;
+                                /** @enum {string} */
+                                assigneeKind: "account" | "team" | "ai";
+                                /** Format: uuid */
+                                accountId: string | null;
+                                /** Format: uuid */
+                                teamId: string | null;
+                                /** @enum {string} */
+                                reason: "auto" | "manual" | "divert" | "move" | "reopen";
+                                assignedAt: string;
+                            }[];
+                            moved: boolean;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inbox/conversations/{id}/branch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description The branch select: sets (and so confirms) the conversation’s branch. On a birthday conversation, the birthday manager who hosts at that branch (the branch’s hosting rule) then joins as support when a place is free — `hostAdded` says whether. Needs inbox:conversation:assign at the conversation. Refusals: 404 when the conversation is not the caller’s to see (or not in their operator); 403 when the permission is not held at this conversation. */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        branchId: string | null;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            conversation: {
+                                /** Format: uuid */
+                                id: string;
+                                /** @enum {string} */
+                                status: "active" | "handled";
+                                /** @enum {string} */
+                                category: "birthdays" | "general" | "marketing";
+                                /** Format: uuid */
+                                teamId: string | null;
+                                /** Format: uuid */
+                                branchId: string | null;
+                                handledAt: string | null;
+                                /** @enum {string|null} */
+                                handledByKind: "account" | "ai" | null;
+                                /** Format: uuid */
+                                handledByAccountId: string | null;
+                                reopenedAt: string | null;
+                            };
+                            assignments: {
+                                /** Format: uuid */
+                                assignmentId: string;
+                                /** @enum {string} */
+                                slot: "primary" | "support";
+                                slotIndex: number;
+                                /** @enum {string} */
+                                assigneeKind: "account" | "team" | "ai";
+                                /** Format: uuid */
+                                accountId: string | null;
+                                /** Format: uuid */
+                                teamId: string | null;
+                                /** @enum {string} */
+                                reason: "auto" | "manual" | "divert" | "move" | "reopen";
+                                assignedAt: string;
+                            }[];
+                            moved: boolean;
+                            hostAdded: boolean;
+                        };
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/inbox/conversations/{id}/handle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Mark as Handled for everyone (the shell asks first: "Mark as handled for everyone?"). Sets handled_at and handled_by. 409 ALREADY_HANDLED. Needs inbox:conversation:handle, and the caller holds a place on the conversation or the permission at it (its team). Refusals: 404 when the conversation is not the caller’s to see (or not in their operator); 403 when the permission is not held at this conversation. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            conversation: {
+                                /** Format: uuid */
+                                id: string;
+                                /** @enum {string} */
+                                status: "active" | "handled";
+                                /** @enum {string} */
+                                category: "birthdays" | "general" | "marketing";
+                                /** Format: uuid */
+                                teamId: string | null;
+                                /** Format: uuid */
+                                branchId: string | null;
+                                handledAt: string | null;
+                                /** @enum {string|null} */
+                                handledByKind: "account" | "ai" | null;
+                                /** Format: uuid */
+                                handledByAccountId: string | null;
+                                reopenedAt: string | null;
+                            };
+                            assignments: {
+                                /** Format: uuid */
+                                assignmentId: string;
+                                /** @enum {string} */
+                                slot: "primary" | "support";
+                                slotIndex: number;
+                                /** @enum {string} */
+                                assigneeKind: "account" | "team" | "ai";
+                                /** Format: uuid */
+                                accountId: string | null;
+                                /** Format: uuid */
+                                teamId: string | null;
+                                /** @enum {string} */
+                                reason: "auto" | "manual" | "divert" | "move" | "reopen";
+                                assignedAt: string;
+                            }[];
+                            moved: boolean;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inbox/conversations/{id}/reopen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Reopen a handled conversation by hand (the status picker). Writes exactly what the customer’s automatic reopen writes: handled_at and handled_by cleared, reopened_at set, the assignments kept, the previous values on the `reopened` event and the audit row. 409 NOT_HANDLED. Needs inbox:conversation:reopen at the conversation. Refusals: 404 when the conversation is not the caller’s to see (or not in their operator); 403 when the permission is not held at this conversation. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            conversation: {
+                                /** Format: uuid */
+                                id: string;
+                                /** @enum {string} */
+                                status: "active" | "handled";
+                                /** @enum {string} */
+                                category: "birthdays" | "general" | "marketing";
+                                /** Format: uuid */
+                                teamId: string | null;
+                                /** Format: uuid */
+                                branchId: string | null;
+                                handledAt: string | null;
+                                /** @enum {string|null} */
+                                handledByKind: "account" | "ai" | null;
+                                /** Format: uuid */
+                                handledByAccountId: string | null;
+                                reopenedAt: string | null;
+                            };
+                            assignments: {
+                                /** Format: uuid */
+                                assignmentId: string;
+                                /** @enum {string} */
+                                slot: "primary" | "support";
+                                slotIndex: number;
+                                /** @enum {string} */
+                                assigneeKind: "account" | "team" | "ai";
+                                /** Format: uuid */
+                                accountId: string | null;
+                                /** Format: uuid */
+                                teamId: string | null;
+                                /** @enum {string} */
+                                reason: "auto" | "manual" | "divert" | "move" | "reopen";
+                                assignedAt: string;
+                            }[];
+                            moved: boolean;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/box/v1/register": {
         parameters: {
             query?: never;

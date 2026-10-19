@@ -63,3 +63,4 @@ export * from './benefit-checkout';
 export * from './display-date';
 export * from './scanner-burst';
 export * from './inbox';
+export * from './inbox-actions';

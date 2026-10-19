@@ -31,6 +31,7 @@ import { withTx, type Exec, type Tx } from '../tx';
 import type { ChannelAccountRow, InboxChannels } from './channels';
 import { closedSince, isOpenAt, readOpeningHours } from './hours';
 import { routeConversation } from './router';
+import { reopenAuditBefore, reopenPatch, reopenedPayload } from './status';
 
 /**
  * THE INBOX INGEST (S2-19 I2d, SCRUM-583; plan
@@ -615,10 +616,9 @@ async function receiveMessage(
       lastMessageAt: sql`greatest(${conversation.lastMessageAt}, ${at.toISOString()}::timestamptz)`,
       ...(latest ? { lastMessagePreview: previewOf(event.text) } : {}),
       ...(thread.memberId ? {} : { memberId }),
-      ...(reopen
-        ? { status: 'active' as const, reopenedAt: at, handledAt: null, handledByKind: null, handledByAccountId: null }
-        : {}),
       updatedAt: c.now,
+      // The same columns a manager's reopen writes (`status.ts`).
+      ...(reopen ? reopenPatch(at, c.now) : {}),
     })
     .where(and(eq(conversation.operatorId, operatorId), eq(conversation.id, thread.id)));
 
@@ -630,13 +630,7 @@ async function receiveMessage(
       conversationId: thread.id,
       kind: 'reopened',
       actorKind: 'customer',
-      payload: {
-        messageId,
-        automatic: true,
-        previousHandledAt: thread.handledAt?.toISOString() ?? null,
-        previousHandledByKind: thread.handledByKind,
-        previousHandledByAccountId: thread.handledByAccountId,
-      },
+      payload: { messageId, ...reopenedPayload(thread, true) },
       createdAt: at,
     });
     await audit.record(tx, {
@@ -647,7 +641,7 @@ async function receiveMessage(
       operatorId,
       branchId: thread.branchId,
       requestId: c.input.requestId ?? null,
-      before: { status: 'handled', handledAt: thread.handledAt?.toISOString() ?? null, handledByAccountId: thread.handledByAccountId },
+      before: reopenAuditBefore(thread),
       after: { status: 'active', reopenedAt: at.toISOString(), by: 'customer', messageId },
     });
   }

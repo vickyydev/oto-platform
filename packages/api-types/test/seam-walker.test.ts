@@ -160,6 +160,16 @@ const NOT_YET_CALLED = new Map<string, string>([
   ['POST /inbox/simulator/inbound', 'the Inbox shell lands in I3 (the simulator panel, I3b)'],
   ['POST /inbox/simulator/status', 'the Inbox shell lands in I3 (the simulator panel, I3b)'],
   ['POST /inbox/simulator/scenario', 'the Inbox shell lands in I3 (the simulator panel, I3b)'],
+  // 2026-10-20, S2-19 I2e (SCRUM-584): the ownership and status actions land
+  // before the shell's pickers, confirmations and status picker (I3b).
+  ['PUT /inbox/conversations/{id}/primary', 'the Inbox shell lands in I3 (the slot pickers, I3b)'],
+  ['POST /inbox/conversations/{id}/support', 'the Inbox shell lands in I3 (the slot pickers, I3b)'],
+  ['DELETE /inbox/conversations/{id}/support/{assignmentId}', 'the Inbox shell lands in I3 (the slot pickers, I3b)'],
+  ['POST /inbox/conversations/{id}/divert', 'the Inbox shell lands in I3 (Divert, I3b)'],
+  ['POST /inbox/conversations/{id}/move', 'the Inbox shell lands in I3 (the move-team badge, I3b)'],
+  ['PATCH /inbox/conversations/{id}/branch', 'the Inbox shell lands in I3 (the branch select, I3b)'],
+  ['POST /inbox/conversations/{id}/handle', 'the Inbox shell lands in I3 (Mark as Handled, I3b)'],
+  ['POST /inbox/conversations/{id}/reopen', 'the Inbox shell lands in I3 (the status picker, I3b)'],
 ]);
 
 function machineCaller(path: string): string | null {
