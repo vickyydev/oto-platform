@@ -24619,6 +24619,531 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/inbox/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The signed-in viewer of the Inbox: who they are, the prototype views they stand in (owner, a team, or `staff` for a reader in no team), their tabs (the ported code: the owner and reception get Team and Handled, every other view all three), every team of the operator with theirs marked, the people who can hold a slot, and what they may do (`writes` is off until the write routes land). Needs app:inbox:access. */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            accountId: string;
+                            name: string | null;
+                            roles: ("owner" | "events" | "reception" | "marketing" | "staff")[];
+                            tabs: ("mine" | "team" | "handled")[];
+                            teams: {
+                                /** Format: uuid */
+                                id: string;
+                                /** @enum {string} */
+                                kind: "birthdays" | "reception" | "marketing";
+                                name: string;
+                                colour: string;
+                                /** Format: uuid */
+                                branchId: string | null;
+                                member: boolean;
+                            }[];
+                            people: {
+                                /** Format: uuid */
+                                accountId: string;
+                                name: string | null;
+                                teamIds: string[];
+                                operatorWide: boolean;
+                            }[];
+                            /** Format: uuid */
+                            defaultReceptionBranchId: string | null;
+                            capabilities: {
+                                writes: boolean;
+                                dashboard: boolean;
+                                assign: boolean;
+                                move: boolean;
+                                reopen: boolean;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inbox/conversations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The conversations the caller can see — operator-wide reading sees all; a branch grant that branch; a team member (a department-scoped grant) the team's; anyone the conversations they hold a slot on — newest activity first, keyset-paged by `cursor`. `tab` applies the ported rule: mine = active and on it; team = every active one visible (the viewer’s own included); handled = handled. Filters: category, branch (that branch's and the operator-wide ones), status, language, `q` (customer, intent, last message), `unanswered=true` (a customer message or a routing after the last staff reply; AI lines do not count), the handled date range, and `resolvedBy` (on the handled tab only). `tabCounts` counts the viewer’s tabs over everything visible, before filters. Needs inbox:conversation:read somewhere in the operator. */
+        get: {
+            parameters: {
+                query?: {
+                    tab?: "mine" | "team" | "handled";
+                    category?: "birthdays" | "general" | "marketing";
+                    branchId?: string;
+                    status?: "active" | "handled";
+                    language?: string;
+                    q?: string;
+                    unanswered?: "true" | "false";
+                    handledFrom?: string;
+                    handledTo?: string;
+                    resolvedBy?: "ai" | "human";
+                    cursor?: string;
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            conversations: {
+                                /** Format: uuid */
+                                id: string;
+                                /** @enum {string} */
+                                channel: "whatsapp" | "instagram" | "facebook" | "line" | "telegram" | "webform";
+                                /** Format: uuid */
+                                channelAccountId: string;
+                                canReply: boolean;
+                                contact: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    /** @enum {string} */
+                                    channel: "whatsapp" | "instagram" | "facebook" | "line" | "telegram" | "webform";
+                                    handle: string;
+                                    displayName: string | null;
+                                    phone: string | null;
+                                    language: string | null;
+                                    erased: boolean;
+                                };
+                                /** @enum {string} */
+                                category: "birthdays" | "general" | "marketing";
+                                intent: string | null;
+                                language: string | null;
+                                /** Format: uuid */
+                                branchId: string | null;
+                                /** Format: uuid */
+                                teamId: string | null;
+                                /** @enum {string} */
+                                status: "active" | "handled";
+                                handledAt: string | null;
+                                /** @enum {string|null} */
+                                handledByKind: "account" | "ai" | null;
+                                lastMessageAt: string | null;
+                                lastMessagePreview: string | null;
+                                unanswered: boolean;
+                                unread: number;
+                                mine: boolean;
+                                assignments: {
+                                    /** Format: uuid */
+                                    assignmentId: string;
+                                    /** @enum {string} */
+                                    slot: "primary" | "support";
+                                    slotIndex: number;
+                                    /** @enum {string} */
+                                    assigneeKind: "account" | "team" | "ai";
+                                    /** Format: uuid */
+                                    accountId: string | null;
+                                    /** Format: uuid */
+                                    teamId: string | null;
+                                    name: string | null;
+                                    /** @enum {string} */
+                                    reason: "auto" | "manual" | "divert" | "move" | "reopen";
+                                    assignedAt: string;
+                                }[];
+                                createdAt: string;
+                            }[];
+                            nextCursor: string | null;
+                            tabCounts: {
+                                mine?: number;
+                                team?: number;
+                                handled?: number;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inbox/conversations/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description One conversation: its header (contact, channel, category, intent, branch, team, language, status), the assignment strip (primary and support), the linked member’s name and child count (no allergy text — the POS owns that), and the timeline’s system events (never a message body). Loaded inside the caller’s operator, then checked for visibility: 404 when the caller cannot see it. Needs inbox:conversation:read. */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            /** @enum {string} */
+                            channel: "whatsapp" | "instagram" | "facebook" | "line" | "telegram" | "webform";
+                            /** Format: uuid */
+                            channelAccountId: string;
+                            canReply: boolean;
+                            contact: {
+                                /** Format: uuid */
+                                id: string;
+                                /** @enum {string} */
+                                channel: "whatsapp" | "instagram" | "facebook" | "line" | "telegram" | "webform";
+                                handle: string;
+                                displayName: string | null;
+                                phone: string | null;
+                                language: string | null;
+                                erased: boolean;
+                            };
+                            /** @enum {string} */
+                            category: "birthdays" | "general" | "marketing";
+                            intent: string | null;
+                            language: string | null;
+                            /** Format: uuid */
+                            branchId: string | null;
+                            /** Format: uuid */
+                            teamId: string | null;
+                            /** @enum {string} */
+                            status: "active" | "handled";
+                            handledAt: string | null;
+                            /** @enum {string|null} */
+                            handledByKind: "account" | "ai" | null;
+                            lastMessageAt: string | null;
+                            lastMessagePreview: string | null;
+                            unanswered: boolean;
+                            unread: number;
+                            mine: boolean;
+                            assignments: {
+                                /** Format: uuid */
+                                assignmentId: string;
+                                /** @enum {string} */
+                                slot: "primary" | "support";
+                                slotIndex: number;
+                                /** @enum {string} */
+                                assigneeKind: "account" | "team" | "ai";
+                                /** Format: uuid */
+                                accountId: string | null;
+                                /** Format: uuid */
+                                teamId: string | null;
+                                name: string | null;
+                                /** @enum {string} */
+                                reason: "auto" | "manual" | "divert" | "move" | "reopen";
+                                assignedAt: string;
+                            }[];
+                            createdAt: string;
+                            teamName: string | null;
+                            firstResponseAt: string | null;
+                            reopenedAt: string | null;
+                            member: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                                childCount: number;
+                            } | null;
+                            events: {
+                                /** Format: uuid */
+                                id: string;
+                                kind: string;
+                                /** @enum {string} */
+                                actorKind: "customer" | "account" | "ai" | "system";
+                                /** Format: uuid */
+                                actorAccountId: string | null;
+                                actorName: string | null;
+                                payload: {
+                                    [key: string]: unknown;
+                                };
+                                createdAt: string;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inbox/conversations/{id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description A page of one conversation’s messages, oldest first; `before` (a message id) reads the page older than it. Media are file ids — a signed URL comes from the files api after the conversation check. A redacted message (PDPA erasure) has no body. 404 when the caller cannot see the conversation. Needs inbox:conversation:read. */
+        get: {
+            parameters: {
+                query?: {
+                    before?: string;
+                    limit?: number;
+                };
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            messages: {
+                                /** Format: uuid */
+                                id: string;
+                                /** @enum {string} */
+                                direction: "inbound" | "outbound";
+                                /** @enum {string} */
+                                authorKind: "customer" | "staff" | "ai" | "system";
+                                /** Format: uuid */
+                                authorAccountId: string | null;
+                                authorName: string | null;
+                                body: string | null;
+                                bodyLanguage: string | null;
+                                translatedBody: string | null;
+                                translatedTo: string | null;
+                                mediaFileIds: string[];
+                                /** Format: uuid */
+                                audioFileId: string | null;
+                                transcript: string | null;
+                                /** Format: uuid */
+                                templateId: string | null;
+                                /** @enum {string|null} */
+                                providerStatus: "queued" | "sent" | "delivered" | "read" | "failed" | null;
+                                /** @enum {string} */
+                                source: "channel" | "checkin.contact" | "booking.confirmation";
+                                sentAt: string | null;
+                                deliveredAt: string | null;
+                                readAt: string | null;
+                                redacted: boolean;
+                                createdAt: string;
+                            }[];
+                            /** Format: uuid */
+                            olderCursor: string | null;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inbox/conversations/{id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Mark the conversation read up to a message (default: the newest) for the caller — the unread counts. The marker only moves forward. Writes the sampled read audit: one `inbox.conversation.read` row per account, conversation and Bangkok day, naming the category, team and branch, never a message body. 404 when the caller cannot see the conversation. Needs inbox:conversation:read. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        messageId?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            conversationId: string;
+                            /** Format: uuid */
+                            lastReadMessageId: string | null;
+                            lastReadAt: string | null;
+                            audited: boolean;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inbox/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The metric cards, over the conversations the caller can see: new today and handled today (the Bangkok day), unanswered, active, the average first response (first staff reply less the start; opening hours ignored) and every conversation by category. Needs inbox:dashboard:read somewhere in the operator. */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            newToday: number;
+                            unanswered: number;
+                            handledToday: number;
+                            active: number;
+                            averageFirstResponseSeconds: number | null;
+                            byCategory: {
+                                birthdays: number;
+                                general: number;
+                                marketing: number;
+                            };
+                            day: string;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inbox/templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The active templates for the composer — the welcome line, the handover lines and the out-of-hours reply — optionally in one `language`. A RU or TH row still carrying the English source says `needsTranslation`. Needs inbox:conversation:read somewhere in the operator. */
+        get: {
+            parameters: {
+                query?: {
+                    language?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            templates: {
+                                /** Format: uuid */
+                                id: string;
+                                key: string;
+                                language: string;
+                                /** @enum {string|null} */
+                                channel: "whatsapp" | "instagram" | "facebook" | "line" | "telegram" | "webform" | null;
+                                /** Format: uuid */
+                                branchId: string | null;
+                                body: string;
+                                attachmentFileIds: string[];
+                                /** @enum {string} */
+                                approvalStatus: "not_required" | "pending" | "approved" | "rejected";
+                                needsTranslation: boolean;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/box/v1/register": {
         parameters: {
             query?: never;

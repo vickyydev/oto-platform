@@ -60,6 +60,7 @@ import { printRoutes } from './routes/print';
 import { scanningRoutes } from './routes/scanning';
 import { staffTokenRoutes } from './routes/staff-token';
 import { boothRoutes } from './routes/booth';
+import { inboxReadRoutes } from './routes/inbox-read';
 import { PermissionDeniedError, sessionPlugin } from './plugins/session';
 import { idempotencyPlugin } from './plugins/idempotency';
 import { rateLimitPlugin } from './plugins/rate-limit';
@@ -481,6 +482,8 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   // S2-15b round 3 — the stored trading days Today > Performance and Radar read.
   await app.register(analyticsRoutes, { prefix: '/analytics' });
   await app.register(opsRoutes, { prefix: '/ops' });
+  // S2-19 I2b — the Inbox's reads: list, thread, dashboard, the viewer, templates.
+  await app.register(inboxReadRoutes, { prefix: '/inbox' });
   // Versioned separately from everything else: a box in a mall is updated on
   // its own schedule, so the one surface that has to stay compatible with a
   // machine nobody can reach says so in its path (S2-04).

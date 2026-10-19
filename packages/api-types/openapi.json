@@ -58212,6 +58212,1383 @@
         }
       }
     },
+    "/inbox/me": {
+      "get": {
+        "description": "The signed-in viewer of the Inbox: who they are, the prototype views they stand in (owner, a team, or `staff` for a reader in no team), their tabs (the ported code: the owner and reception get Team and Handled, every other view all three), every team of the operator with theirs marked, the people who can hold a slot, and what they may do (`writes` is off until the write routes land). Needs app:inbox:access.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accountId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "name": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "roles": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "owner",
+                          "events",
+                          "reception",
+                          "marketing",
+                          "staff"
+                        ]
+                      }
+                    },
+                    "tabs": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "mine",
+                          "team",
+                          "handled"
+                        ]
+                      }
+                    },
+                    "teams": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "birthdays",
+                              "reception",
+                              "marketing"
+                            ]
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "colour": {
+                            "type": "string"
+                          },
+                          "branchId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "member": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "kind",
+                          "name",
+                          "colour",
+                          "branchId",
+                          "member"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "people": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "accountId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "teamIds": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "format": "uuid"
+                            }
+                          },
+                          "operatorWide": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "accountId",
+                          "name",
+                          "teamIds",
+                          "operatorWide"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "defaultReceptionBranchId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "capabilities": {
+                      "type": "object",
+                      "properties": {
+                        "writes": {
+                          "type": "boolean"
+                        },
+                        "dashboard": {
+                          "type": "boolean"
+                        },
+                        "assign": {
+                          "type": "boolean"
+                        },
+                        "move": {
+                          "type": "boolean"
+                        },
+                        "reopen": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "writes",
+                        "dashboard",
+                        "assign",
+                        "move",
+                        "reopen"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "accountId",
+                    "name",
+                    "roles",
+                    "tabs",
+                    "teams",
+                    "people",
+                    "defaultReceptionBranchId",
+                    "capabilities"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inbox/conversations": {
+      "get": {
+        "description": "The conversations the caller can see — operator-wide reading sees all; a branch grant that branch; a team member (a department-scoped grant) the team's; anyone the conversations they hold a slot on — newest activity first, keyset-paged by `cursor`. `tab` applies the ported rule: mine = active and on it; team = every active one visible (the viewer’s own included); handled = handled. Filters: category, branch (that branch's and the operator-wide ones), status, language, `q` (customer, intent, last message), `unanswered=true` (a customer message or a routing after the last staff reply; AI lines do not count), the handled date range, and `resolvedBy` (on the handled tab only). `tabCounts` counts the viewer’s tabs over everything visible, before filters. Needs inbox:conversation:read somewhere in the operator.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "mine",
+                "team",
+                "handled"
+              ]
+            },
+            "in": "query",
+            "name": "tab",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "birthdays",
+                "general",
+                "marketing"
+              ]
+            },
+            "in": "query",
+            "name": "category",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "query",
+            "name": "branchId",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "active",
+                "handled"
+              ]
+            },
+            "in": "query",
+            "name": "status",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 16
+            },
+            "in": "query",
+            "name": "language",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "in": "query",
+            "name": "q",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "in": "query",
+            "name": "unanswered",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "in": "query",
+            "name": "handledFrom",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "in": "query",
+            "name": "handledTo",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ai",
+                "human"
+              ]
+            },
+            "in": "query",
+            "name": "resolvedBy",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "conversations": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "channel": {
+                            "type": "string",
+                            "enum": [
+                              "whatsapp",
+                              "instagram",
+                              "facebook",
+                              "line",
+                              "telegram",
+                              "webform"
+                            ]
+                          },
+                          "channelAccountId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "canReply": {
+                            "type": "boolean"
+                          },
+                          "contact": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "channel": {
+                                "type": "string",
+                                "enum": [
+                                  "whatsapp",
+                                  "instagram",
+                                  "facebook",
+                                  "line",
+                                  "telegram",
+                                  "webform"
+                                ]
+                              },
+                              "handle": {
+                                "type": "string"
+                              },
+                              "displayName": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "phone": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "language": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "erased": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "channel",
+                              "handle",
+                              "displayName",
+                              "phone",
+                              "language",
+                              "erased"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "category": {
+                            "type": "string",
+                            "enum": [
+                              "birthdays",
+                              "general",
+                              "marketing"
+                            ]
+                          },
+                          "intent": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "language": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "branchId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "teamId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "active",
+                              "handled"
+                            ]
+                          },
+                          "handledAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "handledByKind": {
+                            "type": "string",
+                            "enum": [
+                              "account",
+                              "ai"
+                            ],
+                            "nullable": true
+                          },
+                          "lastMessageAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "lastMessagePreview": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "unanswered": {
+                            "type": "boolean"
+                          },
+                          "unread": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "mine": {
+                            "type": "boolean"
+                          },
+                          "assignments": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "assignmentId": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "slot": {
+                                  "type": "string",
+                                  "enum": [
+                                    "primary",
+                                    "support"
+                                  ]
+                                },
+                                "slotIndex": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 2
+                                },
+                                "assigneeKind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "account",
+                                    "team",
+                                    "ai"
+                                  ]
+                                },
+                                "accountId": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "nullable": true
+                                },
+                                "teamId": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "nullable": true
+                                },
+                                "name": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "reason": {
+                                  "type": "string",
+                                  "enum": [
+                                    "auto",
+                                    "manual",
+                                    "divert",
+                                    "move",
+                                    "reopen"
+                                  ]
+                                },
+                                "assignedAt": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "assignmentId",
+                                "slot",
+                                "slotIndex",
+                                "assigneeKind",
+                                "accountId",
+                                "teamId",
+                                "name",
+                                "reason",
+                                "assignedAt"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "createdAt": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "channel",
+                          "channelAccountId",
+                          "canReply",
+                          "contact",
+                          "category",
+                          "intent",
+                          "language",
+                          "branchId",
+                          "teamId",
+                          "status",
+                          "handledAt",
+                          "handledByKind",
+                          "lastMessageAt",
+                          "lastMessagePreview",
+                          "unanswered",
+                          "unread",
+                          "mine",
+                          "assignments",
+                          "createdAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "nextCursor": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "tabCounts": {
+                      "type": "object",
+                      "properties": {
+                        "mine": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "team": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "handled": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "conversations",
+                    "nextCursor",
+                    "tabCounts"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inbox/conversations/{id}": {
+      "get": {
+        "description": "One conversation: its header (contact, channel, category, intent, branch, team, language, status), the assignment strip (primary and support), the linked member’s name and child count (no allergy text — the POS owns that), and the timeline’s system events (never a message body). Loaded inside the caller’s operator, then checked for visibility: 404 when the caller cannot see it. Needs inbox:conversation:read.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "channel": {
+                      "type": "string",
+                      "enum": [
+                        "whatsapp",
+                        "instagram",
+                        "facebook",
+                        "line",
+                        "telegram",
+                        "webform"
+                      ]
+                    },
+                    "channelAccountId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "canReply": {
+                      "type": "boolean"
+                    },
+                    "contact": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "channel": {
+                          "type": "string",
+                          "enum": [
+                            "whatsapp",
+                            "instagram",
+                            "facebook",
+                            "line",
+                            "telegram",
+                            "webform"
+                          ]
+                        },
+                        "handle": {
+                          "type": "string"
+                        },
+                        "displayName": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "phone": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "language": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "erased": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "channel",
+                        "handle",
+                        "displayName",
+                        "phone",
+                        "language",
+                        "erased"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "category": {
+                      "type": "string",
+                      "enum": [
+                        "birthdays",
+                        "general",
+                        "marketing"
+                      ]
+                    },
+                    "intent": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "language": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "branchId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "teamId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "active",
+                        "handled"
+                      ]
+                    },
+                    "handledAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "handledByKind": {
+                      "type": "string",
+                      "enum": [
+                        "account",
+                        "ai"
+                      ],
+                      "nullable": true
+                    },
+                    "lastMessageAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "lastMessagePreview": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "unanswered": {
+                      "type": "boolean"
+                    },
+                    "unread": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "mine": {
+                      "type": "boolean"
+                    },
+                    "assignments": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "assignmentId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "slot": {
+                            "type": "string",
+                            "enum": [
+                              "primary",
+                              "support"
+                            ]
+                          },
+                          "slotIndex": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 2
+                          },
+                          "assigneeKind": {
+                            "type": "string",
+                            "enum": [
+                              "account",
+                              "team",
+                              "ai"
+                            ]
+                          },
+                          "accountId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "teamId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "name": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "reason": {
+                            "type": "string",
+                            "enum": [
+                              "auto",
+                              "manual",
+                              "divert",
+                              "move",
+                              "reopen"
+                            ]
+                          },
+                          "assignedAt": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "assignmentId",
+                          "slot",
+                          "slotIndex",
+                          "assigneeKind",
+                          "accountId",
+                          "teamId",
+                          "name",
+                          "reason",
+                          "assignedAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "teamName": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "firstResponseAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "reopenedAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "member": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "childCount": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "childCount"
+                      ],
+                      "additionalProperties": false,
+                      "nullable": true
+                    },
+                    "events": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "kind": {
+                            "type": "string"
+                          },
+                          "actorKind": {
+                            "type": "string",
+                            "enum": [
+                              "customer",
+                              "account",
+                              "ai",
+                              "system"
+                            ]
+                          },
+                          "actorAccountId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "actorName": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "payload": {
+                            "type": "object",
+                            "additionalProperties": {}
+                          },
+                          "createdAt": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "kind",
+                          "actorKind",
+                          "actorAccountId",
+                          "actorName",
+                          "payload",
+                          "createdAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "channel",
+                    "channelAccountId",
+                    "canReply",
+                    "contact",
+                    "category",
+                    "intent",
+                    "language",
+                    "branchId",
+                    "teamId",
+                    "status",
+                    "handledAt",
+                    "handledByKind",
+                    "lastMessageAt",
+                    "lastMessagePreview",
+                    "unanswered",
+                    "unread",
+                    "mine",
+                    "assignments",
+                    "createdAt",
+                    "teamName",
+                    "firstResponseAt",
+                    "reopenedAt",
+                    "member",
+                    "events"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inbox/conversations/{id}/messages": {
+      "get": {
+        "description": "A page of one conversation’s messages, oldest first; `before` (a message id) reads the page older than it. Media are file ids — a signed URL comes from the files api after the conversation check. A redacted message (PDPA erasure) has no body. 404 when the caller cannot see the conversation. Needs inbox:conversation:read.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "query",
+            "name": "before",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "messages": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "direction": {
+                            "type": "string",
+                            "enum": [
+                              "inbound",
+                              "outbound"
+                            ]
+                          },
+                          "authorKind": {
+                            "type": "string",
+                            "enum": [
+                              "customer",
+                              "staff",
+                              "ai",
+                              "system"
+                            ]
+                          },
+                          "authorAccountId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "authorName": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "body": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "bodyLanguage": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "translatedBody": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "translatedTo": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "mediaFileIds": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "format": "uuid"
+                            }
+                          },
+                          "audioFileId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "transcript": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "templateId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "providerStatus": {
+                            "type": "string",
+                            "enum": [
+                              "queued",
+                              "sent",
+                              "delivered",
+                              "read",
+                              "failed"
+                            ],
+                            "nullable": true
+                          },
+                          "source": {
+                            "type": "string",
+                            "enum": [
+                              "channel",
+                              "checkin.contact",
+                              "booking.confirmation"
+                            ]
+                          },
+                          "sentAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "deliveredAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "readAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "redacted": {
+                            "type": "boolean"
+                          },
+                          "createdAt": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "direction",
+                          "authorKind",
+                          "authorAccountId",
+                          "authorName",
+                          "body",
+                          "bodyLanguage",
+                          "translatedBody",
+                          "translatedTo",
+                          "mediaFileIds",
+                          "audioFileId",
+                          "transcript",
+                          "templateId",
+                          "providerStatus",
+                          "source",
+                          "sentAt",
+                          "deliveredAt",
+                          "readAt",
+                          "redacted",
+                          "createdAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "olderCursor": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "messages",
+                    "olderCursor"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inbox/conversations/{id}/read": {
+      "post": {
+        "description": "Mark the conversation read up to a message (default: the newest) for the caller — the unread counts. The marker only moves forward. Writes the sampled read audit: one `inbox.conversation.read` row per account, conversation and Bangkok day, naming the category, team and branch, never a message body. 404 when the caller cannot see the conversation. Needs inbox:conversation:read.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "messageId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "conversationId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "lastReadMessageId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "lastReadAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "audited": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "conversationId",
+                    "lastReadMessageId",
+                    "lastReadAt",
+                    "audited"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inbox/dashboard": {
+      "get": {
+        "description": "The metric cards, over the conversations the caller can see: new today and handled today (the Bangkok day), unanswered, active, the average first response (first staff reply less the start; opening hours ignored) and every conversation by category. Needs inbox:dashboard:read somewhere in the operator.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "newToday": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "unanswered": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "handledToday": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "active": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "averageFirstResponseSeconds": {
+                      "type": "number",
+                      "minimum": 0,
+                      "nullable": true
+                    },
+                    "byCategory": {
+                      "type": "object",
+                      "properties": {
+                        "birthdays": {
+                          "type": "integer"
+                        },
+                        "general": {
+                          "type": "integer"
+                        },
+                        "marketing": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "birthdays",
+                        "general",
+                        "marketing"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "day": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "newToday",
+                    "unanswered",
+                    "handledToday",
+                    "active",
+                    "averageFirstResponseSeconds",
+                    "byCategory",
+                    "day"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inbox/templates": {
+      "get": {
+        "description": "The active templates for the composer — the welcome line, the handover lines and the out-of-hours reply — optionally in one `language`. A RU or TH row still carrying the English source says `needsTranslation`. Needs inbox:conversation:read somewhere in the operator.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 16
+            },
+            "in": "query",
+            "name": "language",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "templates": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "key": {
+                            "type": "string"
+                          },
+                          "language": {
+                            "type": "string"
+                          },
+                          "channel": {
+                            "type": "string",
+                            "enum": [
+                              "whatsapp",
+                              "instagram",
+                              "facebook",
+                              "line",
+                              "telegram",
+                              "webform"
+                            ],
+                            "nullable": true
+                          },
+                          "branchId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "body": {
+                            "type": "string"
+                          },
+                          "attachmentFileIds": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "format": "uuid"
+                            }
+                          },
+                          "approvalStatus": {
+                            "type": "string",
+                            "enum": [
+                              "not_required",
+                              "pending",
+                              "approved",
+                              "rejected"
+                            ]
+                          },
+                          "needsTranslation": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "key",
+                          "language",
+                          "channel",
+                          "branchId",
+                          "body",
+                          "attachmentFileIds",
+                          "approvalStatus",
+                          "needsTranslation"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "templates"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/box/v1/register": {
       "post": {
         "description": "Redeem a single-use claim code for this box’s own secret. The secret is returned once and never again.",
