@@ -69,6 +69,19 @@ import { differenceInDays } from "date-fns";
 import { formatDate, formatCurrency as _formatCurrency } from "@/lib/format-utils";
 import { QRCodeSVG } from "qrcode.react";
 
+// The editor's tabs (SCRUM-563); `?tab=` opens one directly.
+const EDITOR_TABS = [
+  { id: "overview", label: "Overview" },
+  { id: "personal", label: "Personal & documents" },
+  { id: "job", label: "Job & contract" },
+  { id: "payroll", label: "Payroll" },
+  { id: "time", label: "Time & leave" },
+  { id: "access", label: "Access" },
+  { id: "leaving", label: "Leaving & property" },
+] as const;
+type EditorTab = typeof EDITOR_TABS[number]["id"];
+const isEditorTab = (v: string | null): v is EditorTab => !!v && EDITOR_TABS.some((t) => t.id === v);
+
 // Access Status Section for showing employee's system access
 function AccessStatusSection({ employeeId, personId, employee, forceOpen }: { employeeId: string; personId: string | null; employee: Employee; forceOpen?: boolean }) {
   const { user } = useAuth();
@@ -251,17 +264,13 @@ function AccessStatusSection({ employeeId, personId, employee, forceOpen }: { em
   });
   
   // Generate random password
-  const generatePassword = (forRetry = false) => {
+  const generatePassword = () => {
     const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%";
     let password = "";
     for (let i = 0; i < 12; i++) {
       password += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-    if (forRetry) {
-      setRetryTempPassword(password);
-    } else {
-      setTempPassword(password);
-    }
+    setTempPassword(password);
     return password;
   };
   
@@ -1471,79 +1480,79 @@ function ProbationStatusSection({ employee }: { employee: Employee }) {
   );
 }
 
-// Days Off Section for showing comprehensive employee leave balances
-interface AllLeaveBalances {
-  employeeId: string;
-  year: number;
-  monthsWorkedThisYear: number;
-  totalMonthsEmployed: number;
-  annual: {
-    total: number;
-    earned: number;
-    used: number;
-    balance: number;
-    canClaim: boolean;
-    waitingMonths: number;
-  };
-  business: {
-    total: number;
-    earned: number;
-    used: number;
-    balance: number;
-  };
-  sick: {
-    used: number;
-    paidDaysRemaining: number;
-    maxPaidDays: number;
-  };
-  publicHolidays: {
-    total: number;
-    remaining: number;
-  };
-}
+// Leave balances from the live leave-type engine (SCRUM-563 R3 consumer).
+type DynamicLeaveBalance = {
+  leaveTypeId: string;
+  code: string;
+  name: string;
+  earned: number;
+  used: number;
+  balance: number;
+  canClaim: boolean;
+  isActive: boolean;
+};
+type DynamicLeaveBalances = { year: number; balances: DynamicLeaveBalance[] };
+type LeaveOverride = { leaveTypeId: string; annualDays?: number | null; accrualStartDate?: string | null; waitingMonths?: number | null };
+type LeaveOverrideDraft = { annualDays: string; accrualStartDate: string; waitingMonths: string };
 
 function DaysOffSection({ employee }: { employee: Employee }) {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const isAdmin = user?.role === "admin" || user?.role === "global_admin" || user?.role === "operator_admin";
   const [isOpen, setIsOpen] = useState(false);
-
-  const { data: balances, isLoading } = useQuery<AllLeaveBalances>({
-    queryKey: [`/api/employees/${employee.id}/all-leave-balances`],
+  const [drafts, setDrafts] = useState<Record<string, LeaveOverrideDraft>>({});
+  const { data, isLoading, isError, error } = useQuery<DynamicLeaveBalances>({
+    queryKey: [`/api/employees/${employee.id}/leave-balances-dynamic`],
     enabled: !!employee.id,
   });
+  const { data: overrides = [], isLoading: overridesLoading, isError: overridesError, error: overridesErrorDetails } = useQuery<LeaveOverride[]>({
+    queryKey: [`/api/employees/${employee.id}/leave-overrides`],
+    enabled: !!employee.id && isAdmin,
+  });
 
-  const getTotalBalance = () => {
-    if (!balances) return 0;
-    return balances.annual.balance + balances.business.balance;
+  const invalidateLeave = () => {
+    queryClient.invalidateQueries({ queryKey: [`/api/employees/${employee.id}/leave-balances-dynamic`] });
+    queryClient.invalidateQueries({ queryKey: [`/api/employees/${employee.id}/leave-overrides`] });
   };
+  const saveOverrideMutation = useMutation({
+    mutationFn: async ({ leaveTypeId, draft }: { leaveTypeId: string; draft: LeaveOverrideDraft }) => {
+      const response = await apiRequest("PUT", `/api/employees/${employee.id}/leave-overrides/${leaveTypeId}`, {
+        annualDays: draft.annualDays === "" ? null : Number(draft.annualDays),
+        accrualStartDate: draft.accrualStartDate || null,
+        waitingMonths: draft.waitingMonths === "" ? null : Number(draft.waitingMonths),
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      invalidateLeave();
+      toast({ title: "Leave override saved", description: "This employee will use the adjusted leave settings." });
+    },
+    onError: (error: Error) => toast({ title: "Unable to save leave override", description: error.message, variant: "destructive" }),
+  });
+  const deleteOverrideMutation = useMutation({
+    mutationFn: async (leaveTypeId: string) => apiRequest("DELETE", `/api/employees/${employee.id}/leave-overrides/${leaveTypeId}`),
+    onSuccess: (_data, leaveTypeId) => {
+      invalidateLeave();
+      setDrafts((current) => {
+        const next = { ...current };
+        delete next[leaveTypeId];
+        return next;
+      });
+      toast({ title: "Leave override removed" });
+    },
+    onError: (error: Error) => toast({ title: "Unable to remove leave override", description: error.message, variant: "destructive" }),
+  });
 
-  const getBalanceBadge = () => {
-    if (isLoading) {
-      return <Badge variant="secondary">Loading...</Badge>;
-    }
-    if (!balances) {
-      return <Badge variant="secondary">N/A</Badge>;
-    }
-    const total = getTotalBalance();
-    if (total <= 0) {
-      return (
-        <Badge variant="destructive" className="gap-1">
-          <AlertTriangle className="h-3 w-3" />
-          {total} days
-        </Badge>
-      );
-    }
-    if (total <= 2) {
-      return (
-        <Badge variant="outline" className="border-amber-500 text-amber-600 dark:text-amber-400 gap-1">
-          {total} days left
-        </Badge>
-      );
-    }
-    return (
-      <Badge variant="secondary" className="gap-1">
-        {total} days left
-      </Badge>
-    );
+  const getDraft = (leaveTypeId: string, override?: LeaveOverride): LeaveOverrideDraft =>
+    drafts[leaveTypeId] || {
+      annualDays: override?.annualDays == null ? "" : String(override.annualDays),
+      accrualStartDate: override?.accrualStartDate?.slice(0, 10) || "",
+      waitingMonths: override?.waitingMonths == null ? "" : String(override.waitingMonths),
+    };
+  const updateDraft = (leaveTypeId: string, override: LeaveOverride | undefined, key: keyof LeaveOverrideDraft, value: string) => {
+    setDrafts((current) => ({ ...current, [leaveTypeId]: { ...getDraft(leaveTypeId, override), [key]: value } }));
   };
+  const totalBalance = data?.balances.reduce((sum, item) => sum + (item.isActive ? item.balance : 0), 0) ?? 0;
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -1553,129 +1562,68 @@ function DaysOffSection({ employee }: { employee: Employee }) {
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-2">
                 <Calendar className="h-5 w-5 text-muted-foreground" />
-                <div>
-                  <CardTitle>Leave Balance</CardTitle>
-                  <CardDescription>All leave types for {balances?.year || new Date().getFullYear()}</CardDescription>
-                </div>
+                <div><CardTitle>Leave Balance</CardTitle><CardDescription>Leave types and accrual for {data?.year || new Date().getFullYear()}</CardDescription></div>
               </div>
               <div className="flex items-center gap-2">
-                {getBalanceBadge()}
+                <Badge variant={totalBalance > 0 ? "secondary" : "outline"}>{totalBalance} days left</Badge>
                 <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
               </div>
             </div>
           </CardHeader>
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <CardContent className="space-y-6">
-            {isLoading ? (
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
-              </div>
-            ) : balances ? (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-4 rounded-md border bg-green-50 dark:bg-green-950/30">
-                    <div className="flex items-center justify-between gap-2 mb-3">
-                      <h4 className="font-medium text-green-800 dark:text-green-200">Annual Leave</h4>
-                      <Badge variant="secondary" className="text-xs">
-                        {balances.annual.total} days/year
-                      </Badge>
-                    </div>
-                    {!balances.annual.canClaim ? (
-                      <div className="text-sm text-muted-foreground">
-                        <Clock className="h-4 w-4 inline mr-1" />
-                        Available after {balances.annual.waitingMonths} months ({Math.max(0, balances.annual.waitingMonths - balances.totalMonthsEmployed)} months remaining)
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-3 gap-2 text-center">
-                        <div>
-                          <p className="text-xs text-muted-foreground">Earned</p>
-                          <p className="font-semibold text-green-700 dark:text-green-300" data-testid="text-annual-earned">{balances.annual.earned}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Used</p>
-                          <p className="font-semibold text-amber-600 dark:text-amber-400" data-testid="text-annual-used">{balances.annual.used}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Balance</p>
-                          <p className={`font-semibold ${balances.annual.balance <= 0 ? "text-red-600 dark:text-red-400" : ""}`} data-testid="text-annual-balance">{balances.annual.balance}</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="p-4 rounded-md border bg-blue-50 dark:bg-blue-950/30">
-                    <div className="flex items-center justify-between gap-2 mb-3">
-                      <h4 className="font-medium text-blue-800 dark:text-blue-200">Business Days</h4>
-                      <Badge variant="secondary" className="text-xs">
-                        {balances.business.total} days/year
-                      </Badge>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2 text-center">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Earned</p>
-                        <p className="font-semibold text-blue-700 dark:text-blue-300" data-testid="text-business-earned">{balances.business.earned}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Used</p>
-                        <p className="font-semibold text-amber-600 dark:text-amber-400" data-testid="text-business-used">{balances.business.used}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Balance</p>
-                        <p className={`font-semibold ${balances.business.balance <= 0 ? "text-red-600 dark:text-red-400" : ""}`} data-testid="text-business-balance">{balances.business.balance}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-4 rounded-md border bg-red-50 dark:bg-red-950/30">
-                    <div className="flex items-center justify-between gap-2 mb-3">
-                      <h4 className="font-medium text-red-800 dark:text-red-200">Sick Leave</h4>
-                      <Badge variant="secondary" className="text-xs">
-                        {balances.sick.maxPaidDays} paid days/year
-                      </Badge>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 text-center">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Used</p>
-                        <p className="font-semibold text-red-700 dark:text-red-300" data-testid="text-sick-used">{balances.sick.used}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Paid Remaining</p>
-                        <p className={`font-semibold ${balances.sick.paidDaysRemaining <= 0 ? "text-red-600 dark:text-red-400" : ""}`} data-testid="text-sick-remaining">{balances.sick.paidDaysRemaining}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-4 rounded-md border bg-purple-50 dark:bg-purple-950/30">
-                    <div className="flex items-center justify-between gap-2 mb-3">
-                      <h4 className="font-medium text-purple-800 dark:text-purple-200">Public Holidays</h4>
-                      <Badge variant="secondary" className="text-xs">
-                        {balances.publicHolidays.total} total
-                      </Badge>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 text-center">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Total</p>
-                        <p className="font-semibold text-purple-700 dark:text-purple-300" data-testid="text-ph-total">{balances.publicHolidays.total}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Remaining</p>
-                        <p className="font-semibold" data-testid="text-ph-remaining">{balances.publicHolidays.remaining}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="text-xs text-muted-foreground pt-2 border-t">
-                  <p>Employed for {balances.totalMonthsEmployed} month{balances.totalMonthsEmployed !== 1 ? 's' : ''} ({balances.monthsWorkedThisYear} month{balances.monthsWorkedThisYear !== 1 ? 's' : ''} this year). Leave earned pro-rata based on months worked.</p>
-                </div>
-              </>
+          <CardContent className="space-y-4">
+            {isLoading ? <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-3/4" /></div> : isError ? (
+              <p className="text-sm text-destructive">Unable to load leave balances: {error instanceof Error ? error.message : "Please try again."}</p>
+            ) : !data?.balances.length ? (
+              <p className="py-5 text-center text-sm text-muted-foreground">No leave types are configured for this employee yet.</p>
             ) : (
-              <div className="text-center py-6">
-                <Calendar className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
-                <p className="text-muted-foreground">Unable to load leave balances</p>
+              <div className="space-y-3">
+                {data.balances.map((balance) => {
+                  const override = overrides.find((item) => item.leaveTypeId === balance.leaveTypeId);
+                  const draft = getDraft(balance.leaveTypeId, override);
+                  return (
+                    <div key={balance.leaveTypeId} className="rounded-md border bg-background p-4" data-testid={`leave-balance-${balance.code}`}>
+                      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-2"><h4 className="font-medium">{balance.name}</h4>{!balance.isActive && <Badge variant="secondary">Disabled</Badge>}</div>
+                        {!balance.canClaim && balance.isActive && <Badge variant="outline">Accrual waiting</Badge>}
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-center">
+                        <div><p className="text-xs text-muted-foreground">Earned</p><p className="font-semibold">{balance.earned}</p></div>
+                        <div><p className="text-xs text-muted-foreground">Used</p><p className="font-semibold">{balance.used}</p></div>
+                        <div><p className="text-xs text-muted-foreground">Balance</p><p className={`font-semibold ${balance.balance < 0 ? "text-red-600" : ""}`}>{balance.balance}</p></div>
+                      </div>
+                      {isAdmin && (
+                        <div className="mt-4 border-t pt-3">
+                          <p className="mb-2 text-xs font-medium">Admin override</p>
+                          {overridesLoading ? <Skeleton className="h-8 w-full" /> : overridesError ? (
+                            <p className="text-xs text-destructive">Unable to load employee overrides: {overridesErrorDetails instanceof Error ? overridesErrorDetails.message : "Please try again."}</p>
+                          ) : (
+                            <>
+                              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                                <label className="grid gap-1 text-xs text-muted-foreground">Yearly entitlement (days)
+                                  <Input aria-label={`${balance.name} entitlement override`} type="number" min={0} step="0.25" value={draft.annualDays} onChange={(event) => updateDraft(balance.leaveTypeId, override, "annualDays", event.target.value)} placeholder="Use policy" />
+                                </label>
+                                <label className="grid gap-1 text-xs text-muted-foreground">Start accruing on
+                                  <Input aria-label={`${balance.name} accrual start override`} type="date" value={draft.accrualStartDate} onChange={(event) => updateDraft(balance.leaveTypeId, override, "accrualStartDate", event.target.value)} />
+                                </label>
+                                <label className="grid gap-1 text-xs text-muted-foreground">Waiting period (months)
+                                  <Input aria-label={`${balance.name} waiting period override`} type="number" min={0} max={120} value={draft.waitingMonths} onChange={(event) => updateDraft(balance.leaveTypeId, override, "waitingMonths", event.target.value)} placeholder="Use policy" />
+                                </label>
+                              </div>
+                              <div className="mt-2 flex flex-wrap gap-2">
+                                <Button size="sm" disabled={saveOverrideMutation.isPending} onClick={() => saveOverrideMutation.mutate({ leaveTypeId: balance.leaveTypeId, draft })}>
+                                  {saveOverrideMutation.isPending && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}Save override
+                                </Button>
+                                {override && <Button size="sm" variant="outline" disabled={deleteOverrideMutation.isPending} onClick={() => deleteOverrideMutation.mutate(balance.leaveTypeId)}>Use policy defaults</Button>}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </CardContent>
@@ -1699,6 +1647,7 @@ function CollapsibleSection({
   isPending = false,
   isNew = false,
   onCancel,
+  onSave,
   colorClass = "",
 }: { 
   title: string; 
@@ -1713,6 +1662,7 @@ function CollapsibleSection({
   isPending?: boolean;
   isNew?: boolean;
   onCancel?: () => void;
+  onSave?: () => void;
   colorClass?: string;
 }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
@@ -1757,7 +1707,7 @@ function CollapsibleSection({
                   </Link>
                 )}
                 {canEdit && (
-                  <Button type="submit" disabled={isPending} data-testid="button-section-save">
+                  <Button type={onSave ? "button" : "submit"} onClick={onSave} disabled={isPending} data-testid="button-section-save">
                     {isPending ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -2476,6 +2426,15 @@ const employeeFormSchema = employeeFormBaseSchema.superRefine((data, ctx) => {
 
 type EmployeeFormData = z.infer<typeof employeeFormBaseSchema>;
 
+const personalInformationSchema = z.object({
+  fullName: z.string().min(2, "Full name must be at least 2 characters"),
+  thaiName: z.string().nullable().optional(),
+  nickname: z.string().min(1, "Nickname is required"),
+  email: z.string().email("Please enter a valid email address"),
+  phone: z.string().min(1, "Phone number is required"),
+  address: z.string().optional(),
+}).partial();
+
 export default function EmployeeEditorPage() {
   const { id } = useParams<{ id: string }>();
   const [, setLocation] = useLocation();
@@ -2489,6 +2448,19 @@ export default function EmployeeEditorPage() {
   // withholds it from everyone else and refuses a pay field they send.
   const canViewSalary = canViewHrSalary(user?.role);
   const withoutPayUnlessPayroll = <T,>(body: T): T => (canViewSalary ? body : redactHrPay(body));
+  const [tab, setTabState] = useState<EditorTab>(() => {
+    const q = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("tab") : null;
+    return isEditorTab(q) ? q : isNew ? "personal" : "overview";
+  });
+  const setTab = (next: EditorTab) => {
+    setTabState(next);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.set("tab", next);
+      window.history.replaceState(window.history.state, "", url.toString());
+    }
+  };
+  const show = (t: EditorTab) => tab === t;
   const [updateTermsOpen, setUpdateTermsOpen] = useState(false);
   const [offboardingOpen, setOffboardingOpen] = useState(false);
   // The profile's "Generate Letter" for a departure already recorded.
@@ -2521,12 +2493,14 @@ export default function EmployeeEditorPage() {
     
     switch (stepNum) {
       case 1:
+        setTab("personal");
         setForceOpenPersonalSection(true);
         scrollToSection('personal-info');
         break;
       case 2:
       case 3:
       case 4:
+        setTab("job");
         setContractSectionOpen(true);
         setTimeout(() => {
           const contractSection = document.querySelector('[data-section-id="contracts"]');
@@ -2536,6 +2510,7 @@ export default function EmployeeEditorPage() {
         }, 100);
         break;
       case 5:
+        setTab("access");
         setForceOpenAccessSection(true);
         setTimeout(() => {
           const accessSection = document.querySelector('[data-testid="collapsible-access-login"]');
@@ -2545,6 +2520,7 @@ export default function EmployeeEditorPage() {
         }, 100);
         break;
       case 6:
+        setTab("time");
         setForceOpenTimekeepingSection(true);
         setTimeout(() => {
           const timekeepingSection = document.querySelector('[data-testid="section-timekeeping"]');
@@ -2554,6 +2530,7 @@ export default function EmployeeEditorPage() {
         }, 100);
         break;
       case 7:
+        setTab("leaving");
         setForceOpenPropertySection(true);
         scrollToSection('company-property');
         break;
@@ -2885,6 +2862,59 @@ export default function EmployeeEditorPage() {
     },
   });
 
+  const updatePersonalMutation = useMutation({
+    mutationFn: async (changes: Record<string, unknown>) => {
+      const res = await apiRequest("PATCH", `/api/employees/${id}`, changes);
+      return res.json() as Promise<Employee>;
+    },
+    onSuccess: (updatedEmployee) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/employees", id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/my-account/birthday"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/birthdays"] });
+      toast({ title: "Employee updated", description: `${updatedEmployee.fullName}'s personal information has been updated.` });
+      setLocation("/employees");
+    },
+    onError: (error: Error) => toast({ title: "Error", description: error.message, variant: "destructive" }),
+  });
+
+  const savePersonalInformation = () => {
+    const values = form.getValues();
+    const keys = ["fullName", "thaiName", "nickname", "email", "phone", "address"] as const;
+    const changes: Record<string, unknown> = {};
+    for (const key of keys) {
+      if (form.getFieldState(key).isDirty) changes[key] = values[key];
+    }
+    const parsed = personalInformationSchema.safeParse(changes);
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0];
+      form.setError(issue.path[0] as keyof EmployeeFormData, { message: issue.message });
+      toast({ title: "Validation Error", description: issue.message, variant: "destructive" });
+      return;
+    }
+    if (["birthdayMonth", "birthdayDay", "birthdayYear"].some(key => form.getFieldState(key as keyof EmployeeFormData).isDirty)) {
+      const birthday = birthdaySchema.safeParse({
+        month: values.birthdayMonth ?? null,
+        day: values.birthdayDay ?? null,
+        year: values.birthdayYear ?? null,
+      });
+      if (!birthday.success) {
+        const message = birthday.error.issues[0].message;
+        form.setError("birthdayDay", { message });
+        toast({ title: "Validation Error", description: message, variant: "destructive" });
+        return;
+      }
+      changes.birthdayMonth = birthday.data.month;
+      changes.birthdayDay = birthday.data.day;
+      changes.birthdayYear = birthday.data.year;
+    }
+    if (Object.keys(changes).length === 0) {
+      toast({ title: "No changes to save" });
+      return;
+    }
+    updatePersonalMutation.mutate(changes);
+  };
+
   const updateOffboardingMutation = useMutation({
     mutationFn: async (data: { lastWorkingDay?: string; reasonCode?: string; reasonText?: string; noticeDate?: string | null; notes?: string }) => {
       const res = await apiRequest("PATCH", `/api/employees/${id}/offboarding`, data);
@@ -2920,6 +2950,11 @@ export default function EmployeeEditorPage() {
   // Debug: Log form errors when they occur
   const handleFormSubmit = form.handleSubmit(onSubmit, (errors) => {
     console.log("Form validation failed with errors:", errors);
+    const keys = Object.keys(errors);
+    const personalKeys = /^(fullName|thaiName|nickname|email|phone|address|birthday|nationality|isForeignStaff|visa|workPermit|ssoNumber|taxIdNumber)/;
+    // Pay lives on the Payroll tab here (our gated fields), so its errors open that tab.
+    const payError = !!(errors.dailyRate || errors.incentiveClauseText || errors.foodAllowancePerDay || errors.defaultMergeData?.salaryThb);
+    setTab(keys.some((k) => personalKeys.test(k)) ? "personal" : payError ? "payroll" : "job");
     toast({
       title: "Validation Error",
       description: "Please check required fields and fix any errors.",
@@ -2927,7 +2962,7 @@ export default function EmployeeEditorPage() {
     });
   });
 
-  const isPending = createMutation.isPending || updateMutation.isPending;
+  const isPending = createMutation.isPending || updateMutation.isPending || updatePersonalMutation.isPending;
 
   const { data: documents, refetch: refetchDocuments } = useQuery<EmployeeDocument[]>({
     queryKey: ["/api/employees", id, "documents"],
@@ -3062,7 +3097,7 @@ export default function EmployeeEditorPage() {
   }
 
   return (
-    <div className="p-6 pb-40 max-w-2xl mx-auto space-y-6 bg-background">
+    <div className="p-4 sm:p-6 pb-40 max-w-6xl mx-auto space-y-6 bg-background">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-4">
           <Link href="/employees">
@@ -3198,6 +3233,7 @@ export default function EmployeeEditorPage() {
           showActions={canEdit}
           onGenerateContract={() => setLocation(`/contracts/new?employeeId=${id}`)}
           onCreateLogin={() => {
+            setTab("access");
             setForceOpenAccessSection(true);
             setTimeout(() => {
               const accessSection = document.querySelector('[data-testid="collapsible-access-login"]');
@@ -3210,8 +3246,39 @@ export default function EmployeeEditorPage() {
         />
       )}
 
+      {(
+        <nav aria-label="Employee sections" className="sticky top-0 z-20 -mx-4 overflow-x-auto border-b border-border bg-background/95 px-4 backdrop-blur sm:-mx-6 sm:px-6" data-testid="employee-editor-tabs">
+          <div role="tablist" className="flex w-full min-w-max items-center gap-1">
+            {EDITOR_TABS.map((t) => (
+              <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} data-testid={`tab-${t.id}`} onClick={() => setTab(t.id)}
+                className={`relative px-3 py-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-t-md ${tab === t.id ? "text-foreground after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:rounded-full after:bg-primary" : "text-muted-foreground hover:text-foreground"}`}>
+                {t.label}
+              </button>
+            ))}
+            {isNew && canEdit && (
+              <Button type="button" size="sm" className="my-2 ml-auto" onClick={() => handleFormSubmit()} disabled={isPending} data-testid="button-create-employee-global">
+                {isPending ? "Saving..." : "Add Employee"}
+              </Button>
+            )}
+          </div>
+        </nav>
+      )}
+
+      {isNew && !show("personal") && !show("job") && !show("payroll") && (
+        <div className="rounded-xl border border-dashed border-border bg-muted/30 p-6 text-sm" data-testid={`save-first-${tab}`}>
+          <p className="font-semibold text-foreground">Save the employee first</p>
+          <p className="mt-1 text-muted-foreground">
+            {tab === "overview"
+              ? "The overview fills in once the employee exists. Start with Personal & documents and Job & contract."
+              : "This section needs an employee record. Use Add Employee, then come back to this tab."}
+          </p>
+          <Button type="button" variant="outline" size="sm" className="mt-3" onClick={() => setTab("personal")}>Go to Personal & documents</Button>
+        </div>
+      )}
+
       <Form {...form}>
         <form onSubmit={handleFormSubmit} className="space-y-6">
+          <div hidden={!show("personal")} className="space-y-6">
           <CollapsibleSection 
             title="Personal Information" 
             description="Basic details about the employee"
@@ -3223,6 +3290,7 @@ export default function EmployeeEditorPage() {
             canEdit={canEdit}
             isPending={isPending}
             isNew={isNew}
+            onSave={isNew ? undefined : savePersonalInformation}
             colorClass="border-l-4 border-l-blue-500 bg-blue-500/5"
           >
               <FormField
@@ -3431,6 +3499,8 @@ export default function EmployeeEditorPage() {
               </div>
           </CollapsibleSection>
 
+          </div><div hidden={!show("job")} className="space-y-6">
+
           <CollapsibleSection 
             title="Employment Details" 
             description="Position, department, roles, and salary"
@@ -3632,114 +3702,10 @@ export default function EmployeeEditorPage() {
                 )}
               />
 
-              {canViewSalary ? (
-                <>
-                {employmentBasis === "FULL_TIME" ? (
-                  <FormField
-                    control={form.control}
-                    name="defaultMergeData.salaryThb"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Monthly Salary (THB) <span className="text-red-500">*</span></FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">฿</span>
-                            <CurrencyInput
-                              className="pl-10"
-                              placeholder="e.g., 50,000"
-                              data-testid="input-salary"
-                              value={field.value ?? undefined}
-                              onChange={field.onChange}
-                            />
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                ) : (
-                  <FormField
-                    control={form.control}
-                    name="dailyRate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Daily Rate (THB) <span className="text-red-500">*</span></FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">฿</span>
-                            <CurrencyInput
-                              className="pl-10"
-                              placeholder="e.g., 500"
-                              data-testid="input-daily-rate"
-                              value={field.value ?? undefined}
-                              onChange={field.onChange}
-                            />
-                          </div>
-                        </FormControl>
-                        <FormDescription>
-                          Amount paid per day worked. Part-time employees do not receive leave benefits.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
-
-                <FormField
-                  control={form.control}
-                  name="incentiveClauseText"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Incentive / Commission Clause (Optional)</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          className="min-h-[100px]"
-                          placeholder="e.g., Monthly commission of 2% on sales exceeding THB 100,000. Performance bonus up to 2 months salary based on annual review."
-                          data-testid="input-incentive-clause"
-                          value={field.value || ""}
-                          onChange={(e) => field.onChange(e.target.value || null)}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Standard incentive, commission, or bonus terms for this employee. Will appear under salary in contracts.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="foodAllowancePerDay"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Food Allowance Per Day (THB)</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">฿</span>
-                          <CurrencyInput
-                            className="pl-10"
-                            placeholder="e.g., 60"
-                            data-testid="input-food-allowance"
-                            value={field.value ?? undefined}
-                            onChange={field.onChange}
-                          />
-                        </div>
-                      </FormControl>
-                      <FormDescription>
-                        Daily food allowance amount. Available as a contract variable.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                </>
-              ) : (
-                <div className="rounded-lg border border-dashed border-border bg-muted/30 p-3 text-sm text-muted-foreground flex items-center gap-2" data-testid="notice-pay-hidden">
-                  <Lock className="h-4 w-4 shrink-0" />
-                  <span>Pay (salary or daily rate, incentive clause, food allowance): {HR_PAY_HIDDEN_NOTE}.</span>
-                </div>
-              )}
+              <div className="rounded-lg border border-dashed border-border bg-muted/30 p-3 text-sm text-muted-foreground flex flex-wrap items-center justify-between gap-2" data-testid="notice-pay-on-payroll-tab">
+                <span>Salary or daily rate, incentive clause and food allowance are on the Payroll tab.</span>
+                <Button type="button" size="sm" variant="outline" onClick={() => setTab("payroll")} data-testid="button-open-payroll-tab"><Pencil className="mr-1.5 h-3.5 w-3.5" />Open Payroll</Button>
+              </div>
 
               <FormField
                 control={form.control}
@@ -3849,6 +3815,8 @@ export default function EmployeeEditorPage() {
               </CardContent>
             </Card>
           )}
+
+          </div><div hidden={!show("personal")} className="space-y-6">
 
           <CollapsibleSection 
             title="Documents & Records" 
@@ -4288,11 +4256,138 @@ export default function EmployeeEditorPage() {
                 </>
               )}
           </CollapsibleSection>
+          </div>
+
+          <div hidden={!show("payroll")} className="space-y-6" data-testid="pane-payroll">
+          <CollapsibleSection
+            title="Pay"
+            description="Salary or daily rate, incentive clause and food allowance"
+            icon={DollarSign}
+            defaultOpen={true}
+            sectionId="pay"
+            showFormActions={canViewSalary}
+            canEdit={canEdit}
+            isPending={isPending}
+            isNew={isNew}
+            colorClass="border-l-4 border-l-emerald-500 bg-emerald-500/5"
+          >
+              {canViewSalary ? (
+                <>
+                {employmentBasis === "FULL_TIME" ? (
+                  <FormField
+                    control={form.control}
+                    name="defaultMergeData.salaryThb"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Monthly Salary (THB) <span className="text-red-500">*</span></FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">฿</span>
+                            <CurrencyInput
+                              className="pl-10"
+                              placeholder="e.g., 50,000"
+                              data-testid="input-salary"
+                              value={field.value ?? undefined}
+                              onChange={field.onChange}
+                            />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                ) : (
+                  <FormField
+                    control={form.control}
+                    name="dailyRate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Daily Rate (THB) <span className="text-red-500">*</span></FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">฿</span>
+                            <CurrencyInput
+                              className="pl-10"
+                              placeholder="e.g., 500"
+                              data-testid="input-daily-rate"
+                              value={field.value ?? undefined}
+                              onChange={field.onChange}
+                            />
+                          </div>
+                        </FormControl>
+                        <FormDescription>
+                          Amount paid per day worked. Part-time employees do not receive leave benefits.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                <FormField
+                  control={form.control}
+                  name="incentiveClauseText"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Incentive / Commission Clause (Optional)</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          className="min-h-[100px]"
+                          placeholder="e.g., Monthly commission of 2% on sales exceeding THB 100,000. Performance bonus up to 2 months salary based on annual review."
+                          data-testid="input-incentive-clause"
+                          value={field.value || ""}
+                          onChange={(e) => field.onChange(e.target.value || null)}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Standard incentive, commission, or bonus terms for this employee. Will appear under salary in contracts.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="foodAllowancePerDay"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Food Allowance Per Day (THB)</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">฿</span>
+                          <CurrencyInput
+                            className="pl-10"
+                            placeholder="e.g., 60"
+                            data-testid="input-food-allowance"
+                            value={field.value ?? undefined}
+                            onChange={field.onChange}
+                          />
+                        </div>
+                      </FormControl>
+                      <FormDescription>
+                        Daily food allowance amount. Available as a contract variable.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                </>
+              ) : (
+                <div className="rounded-lg border border-dashed border-border bg-muted/30 p-3 text-sm text-muted-foreground flex items-center gap-2" data-testid="notice-pay-hidden">
+                  <Lock className="h-4 w-4 shrink-0" />
+                  <span>Pay (salary or daily rate, incentive clause, food allowance): {HR_PAY_HIDDEN_NOTE}.</span>
+                </div>
+              )}
+
+          </CollapsibleSection>
+          </div>
         </form>
       </Form>
 
       {!isNew && employee && (
         <>
+          <div hidden={!show("overview")} className="space-y-6">
           <CollapsibleSection
             title="Current Employment Terms"
             description="Current salary, position, and incentive terms"
@@ -4336,6 +4431,9 @@ export default function EmployeeEditorPage() {
                       ? `฿${(employee.defaultMergeData as any).salaryThb.toLocaleString()}/month`
                       : "Not set"}
                 </p>
+                {canViewSalary && canEdit && (
+                  <Button type="button" variant="ghost" size="sm" className="h-auto p-0 text-primary underline underline-offset-4" onClick={() => setTab("payroll")} data-testid="link-salary-edit-in-payroll">Edit in Payroll</Button>
+                )}
               </div>
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">Branch</p>
@@ -4353,18 +4451,26 @@ export default function EmployeeEditorPage() {
               </div>
             </div>
           </CollapsibleSection>
+          </div>
 
-          <ProbationStatusSection employee={employee} />
+          <div hidden={!show("payroll")} className="space-y-6" data-testid="pane-payroll-records">
+            <CostAllocationSection employeeId={employee.id} primaryBranchId={employee.branchId} canEdit={canEdit} />
+          </div>
 
-          <CostAllocationSection employeeId={employee.id} primaryBranchId={employee.branchId} canEdit={canEdit} />
-
+          <div hidden={!show("time")} className="space-y-6">
           <DaysOffSection employee={employee} />
-
-          <AccessStatusSection employeeId={employee.id} personId={employee.personId} employee={employee} forceOpen={forceOpenAccessSection} />
 
           <div data-testid="section-timekeeping">
             <TimekeepingSection employeeId={employee.id} canEdit={canEdit} forceOpen={forceOpenTimekeepingSection} />
           </div>
+          </div>
+
+          <div hidden={!show("access")} className="space-y-6">
+          <AccessStatusSection employeeId={employee.id} personId={employee.personId} employee={employee} forceOpen={forceOpenAccessSection} />
+          </div>
+
+          <div hidden={!show("job")} className="space-y-6">
+          <ProbationStatusSection employee={employee} />
 
           <Collapsible open={contractSectionOpen} onOpenChange={setContractSectionOpen} data-section-id="contracts">
             <Card className="mt-6 border-l-4 border-l-purple-500 bg-purple-500/5">
@@ -4508,6 +4614,8 @@ export default function EmployeeEditorPage() {
             </CollapsibleSection>
           )}
 
+          </div>
+
           <UpdateTermsModal
             open={updateTermsOpen}
             onOpenChange={setUpdateTermsOpen}
@@ -4548,6 +4656,7 @@ export default function EmployeeEditorPage() {
       )}
 
       {!isNew && isOffboarding && employee && (
+        <div hidden={!show("leaving")}>
         <CollapsibleSection
           title="Offboarding"
           description={`${isResigning ? "Resignation" : "Termination"} details and letters`}
@@ -4841,9 +4950,17 @@ export default function EmployeeEditorPage() {
             </div>
           </div>
         </CollapsibleSection>
+        </div>
+      )}
+
+      {!isNew && !isOffboarding && show("leaving") && (
+        <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground" data-testid="leaving-not-started">
+          No offboarding in progress. Start it from the actions at the top of the page.
+        </div>
       )}
 
       {!isNew && (
+        <div hidden={!show("leaving")}>
         <CollapsibleSection
           title="Company Property"
           description="Track assets assigned to this employee"
@@ -4964,6 +5081,7 @@ export default function EmployeeEditorPage() {
             )}
           </div>
         </CollapsibleSection>
+        </div>
       )}
 
     </div>
