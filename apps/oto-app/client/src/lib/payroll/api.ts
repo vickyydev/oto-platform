@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import type { PayrollProfileView, PayrollRosterView, PayrollSetupChange, PayrollSetupView } from "@shared/payroll-config";
+import type { FeedsView, MonthEndView, MonthInputsView, PreviewView, RewardsView } from "@shared/payroll-month";
 
 /** A refused payroll call: the server's words plus the prototype's list of problems, when it gave one. */
 export class PayrollApiError extends Error {
@@ -44,3 +45,26 @@ export const errorList = (error: unknown) => error instanceof PayrollApiError ? 
 
 export const money = (value: number | null | undefined, currency = "THB") =>
   value == null ? "—" : `${currency === "THB" ? "฿" : `${currency} `}${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+// ─── Month-end (R3, SCRUM-568) ───────────────────────────────────────────────
+
+export const useMonthInputs = (month: string) => useQuery<MonthInputsView>({
+  queryKey: ["/api/payroll/inputs", month], queryFn: () => payrollCall("GET", `/api/payroll/inputs/${month}`), staleTime: 0, enabled: !!month,
+});
+export const useRewards = () => useQuery<RewardsView>({
+  queryKey: ["/api/payroll/setup/rewards"], queryFn: () => payrollCall("GET", "/api/payroll/setup/rewards"), staleTime: 0,
+});
+export const useFeeds = (month: string) => useQuery<FeedsView>({
+  queryKey: ["/api/payroll/feeds", month], queryFn: () => payrollCall("GET", `/api/payroll/feeds/${month}`), staleTime: 0, enabled: !!month,
+});
+export const useMonthEnd = (entityId: string, month: string) => useQuery<MonthEndView>({
+  queryKey: ["/api/payroll/month-end", entityId, month], queryFn: () => payrollCall("GET", `/api/payroll/month-end/${entityId}/${month}`), staleTime: 0, enabled: !!entityId && !!month,
+});
+export const usePreview = (entityId: string, month: string, enabled: boolean) => useQuery<PreviewView>({
+  queryKey: ["/api/payroll/month-end", entityId, month, "preview"], queryFn: () => payrollCall("GET", `/api/payroll/month-end/${entityId}/${month}/preview`),
+  staleTime: 0, enabled: enabled && !!entityId && !!month, retry: false,
+});
+
+/** The month before (YYYY-MM). */
+export const monthBefore = (month: string) => new Date(Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5, 7)) - 2, 1)).toISOString().slice(0, 7);
+export const monthLabel = (month: string) => new Date(`${month}-01T00:00:00Z`).toLocaleString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" });

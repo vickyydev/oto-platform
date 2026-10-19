@@ -60,6 +60,10 @@ export default function PayrollSetupPage() {
       <p className="text-xs font-semibold uppercase tracking-wider text-primary">Setup</p>
       <h1 className="text-2xl font-semibold">Payroll setup</h1>
       <p className="mt-1 max-w-3xl text-sm text-muted-foreground">Company accounts, pay rules and country rates, one tab at a time. Each change starts from a date you choose and keeps a history of who changed what and why.</p>
+      <div className="mt-2 flex flex-wrap gap-3 text-sm font-semibold">
+        <Link href="/payroll/setup/rewards" className="text-primary underline underline-offset-2">Service charge &amp; incentives</Link>
+        <Link href="/payroll/month-end" className="text-primary underline underline-offset-2">Month-end</Link>
+      </div>
     </div>
     {setup.isLoading && <Skeleton className="h-64 w-full" />}
     {setup.error && <Empty>{errorText(setup.error)}</Empty>}
