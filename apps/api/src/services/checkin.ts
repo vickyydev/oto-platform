@@ -51,6 +51,7 @@ import { AppError, errors } from '../lib/errors';
 import { audit } from './audit';
 import { BandKeyMissingError, mintSaleBands } from './bands';
 import { idInUse } from './client-id';
+import { mirrorNotice } from './inbox/mirror';
 import { queueCheckinBandPrints, type SalePrintJobView } from './sale-printing';
 import type { SmsSender } from './sms';
 import type { Exec, Tx } from './tx';
@@ -2023,6 +2024,23 @@ export async function sendContactTest(
   }
   const next: ContactConnection = { status: 'pending', sentAt: now.toISOString(), confirmedAt: null };
   await recordContact(tx, actor, reg, next, prev);
+  // The same text into the guardian's Inbox thread (SCRUM-582). In a
+  // savepoint, and it never throws: a mirror failure never blocks the check.
+  await mirrorNotice(tx, {
+    operatorId: actor.operatorId,
+    branchId: reg.branchId,
+    channel: reg.contactChannel,
+    phone: reg.guardianPhone,
+    displayName: reg.guardianName,
+    body,
+    source: 'checkin.contact',
+    sourceId: reg.id,
+    sentAt: now,
+    sender: sms,
+    actorAccountId: actor.accountId,
+    requestId: actor.requestId ?? null,
+    actionId: actor.actionId ?? null,
+  });
   return next;
 }
 

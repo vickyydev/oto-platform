@@ -15,6 +15,7 @@ import { registerPaidBookingChildren } from './booking-supervision';
 import { registerPaidBookingEventPasses, writeBackBookingPasses } from './booking-event-passes';
 import { autoSendRegistrationContact } from './checkin';
 import { audit } from './audit';
+import { mirrorNotice } from './inbox/mirror';
 import { raiseAlert } from './ops';
 import { buildSmsSender } from './sms';
 import { bookingChange, recordChange } from './sync';
@@ -264,7 +265,7 @@ export async function afterBookingPaid(
   } catch (err) {
     log.warn({ err, bookingId: row.id }, 'the booked event passes could not be written back');
   }
-  await sendBookingConfirmation(log, row);
+  await sendBookingConfirmation(db, log, row);
 }
 
 /**
@@ -273,18 +274,38 @@ export async function afterBookingPaid(
  * customer messaging stands until its own ticket gives it a channel. Best
  * effort — a message that could not be written is logged, never thrown.
  */
-async function sendBookingConfirmation(log: FastifyBaseLogger, row: BookingRow): Promise<void> {
-  const payload = (row.payload ?? {}) as { phone?: unknown };
+async function sendBookingConfirmation(db: Db, log: FastifyBaseLogger, row: BookingRow): Promise<void> {
+  const payload = (row.payload ?? {}) as { phone?: unknown; parentName?: unknown; contactChannel?: unknown };
   const phone = typeof payload.phone === 'string' ? payload.phone : null;
   if (!phone) return;
+  const sender = buildSmsSender({ adapter: 'console' }, log as unknown as Logger);
+  const body = `OTO Park: booking ${row.reference} for ${row.bookingDate} is paid. Show the QR on your confirmation page at reception.`;
+  const sentAt = new Date();
   try {
-    const sender = buildSmsSender({ adapter: 'console' }, log as unknown as Logger);
-    await sender.send(
-      phone,
-      `OTO Park: booking ${row.reference} for ${row.bookingDate} is paid. Show the QR on your confirmation page at reception.`,
-    );
+    await sender.send(phone, body);
   } catch (err) {
     log.warn({ err, bookingId: row.id }, 'the booking confirmation could not be sent');
+    return;
+  }
+  // The same text into the family's Inbox thread (SCRUM-582), as the
+  // check-in's connection check is: in a savepoint, never thrown.
+  try {
+    await withTx(db, { actorAccountId: null, operatorId: row.operatorId, branchId: row.branchId }, 'booking.confirmation_mirror', (tx) =>
+      mirrorNotice(tx, {
+        operatorId: row.operatorId,
+        branchId: row.branchId,
+        channel: typeof payload.contactChannel === 'string' ? payload.contactChannel : 'whatsapp',
+        phone,
+        displayName: typeof payload.parentName === 'string' ? payload.parentName : null,
+        body,
+        source: 'booking.confirmation',
+        sourceId: row.id,
+        sentAt,
+        sender,
+      }),
+    );
+  } catch (err) {
+    log.warn({ err, bookingId: row.id }, 'the booking confirmation could not be mirrored to the inbox');
   }
 }
 

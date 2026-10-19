@@ -107,6 +107,9 @@ importers:
       '@oto/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@oto/messaging':
+        specifier: workspace:*
+        version: link:../../packages/messaging
       '@oto/payments-2c2p':
         specifier: workspace:*
         version: link:../../packages/payments-2c2p
