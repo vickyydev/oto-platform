@@ -127,11 +127,14 @@ export const ACTIVE_SPRINT = 3;
 export const DEFECT_EPIC = 'SCRUM-324';
 
 /** Create an issue in the active sprint (description in wiki markup). */
-export const createInSprint = async ({ type = 'Bug', summary, description, priority = 'Medium', area = 'pos', extra = [], parent }) => {
+// Every new ticket is assigned to Waqar Aziz (owner's standing rule, 2026-10-21).
+export const DEFAULT_ASSIGNEE = '62948e77658d58006887827d';
+
+export const createInSprint = async ({ type = 'Bug', summary, description, priority = 'Medium', area = 'pos', extra = [], parent, assignee = DEFAULT_ASSIGNEE }) => {
   const labels = [...new Set([type === 'Bug' ? 'defect' : 'gap', 'sprint-2', area, ...extra])];
   const parentKey = parent ?? (type === 'Bug' ? DEFECT_EPIC : 'SCRUM-181');
   const r = await jpost('/rest/api/2/issue', {
-    fields: { project: { key: 'SCRUM' }, issuetype: { name: type }, parent: { key: parentKey }, summary, description, priority: { name: priority }, labels, customfield_10020: ACTIVE_SPRINT },
+    fields: { project: { key: 'SCRUM' }, issuetype: { name: type }, parent: { key: parentKey }, summary, description, priority: { name: priority }, labels, customfield_10020: ACTIVE_SPRINT, assignee: { id: assignee } },
   });
   let key = null;
   try {
@@ -143,9 +146,9 @@ export const createInSprint = async ({ type = 'Bug', summary, description, prior
 };
 
 /** Create a subtask under a story (subtasks follow the parent's sprint). */
-export const createSubtask = async ({ parent, summary, description, priority = 'Medium', labels = ['gap', 'sprint-2', 'pos'] }) => {
+export const createSubtask = async ({ parent, summary, description, priority = 'Medium', labels = ['gap', 'sprint-2', 'pos'], assignee = DEFAULT_ASSIGNEE }) => {
   const r = await jpost('/rest/api/2/issue', {
-    fields: { project: { key: 'SCRUM' }, issuetype: { name: 'Subtask' }, parent: { key: parent }, summary, description, priority: { name: priority }, labels },
+    fields: { project: { key: 'SCRUM' }, issuetype: { name: 'Subtask' }, parent: { key: parent }, summary, description, priority: { name: priority }, labels, assignee: { id: assignee } },
   });
   let key = null;
   try {
