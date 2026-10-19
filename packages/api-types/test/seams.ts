@@ -6,7 +6,7 @@
  * Kept apart from the test so the reading can be inspected on its own
  * (`collectCalls`, `resolveCall`) and the assertions stay short.
  *
- * WHAT COUNTS AS A CALL. apps/pos, apps/console and apps/launcher reach the
+ * WHAT COUNTS AS A CALL. apps/pos, apps/console, apps/launcher and apps/inbox reach the
  * platform through one wrapper each, `api.get / post / put / patch / delete`
  * (and the till's `getBlob` / `postBlob`) in their `src/api/client.ts`, which
  * prefixes `/api`. A call is any of those with the path as its first
@@ -40,6 +40,9 @@ export const FRONT_ENDS = [
   'apps/console/src',
   'apps/launcher/src',
   'apps/booth/src',
+  // The Inbox shell (S2-19 I3a, SCRUM-587): its reads go through its own
+  // `api` wrapper in src/api/client.ts, read like the Console's.
+  'apps/inbox/src',
 ];
 
 /** Generated or vendored: never authored call sites. */

@@ -147,15 +147,6 @@ const NOT_YET_CALLED = new Map<string, string>([
   ['PUT /analytics/sources/{branchId}', 'no analytics source screen yet'],
   ['GET /analytics/reports/benefits', 'no benefits report screen yet'],
   ['GET /analytics/reports/benefits/transactions', 'no benefits report screen yet'],
-  // 2026-10-20, S2-19 I2b (SCRUM-581): the Inbox's reads land before their
-  // shell. The Inbox shell lands in I3 (apps/inbox), which deletes these.
-  ['GET /inbox/me', 'the Inbox shell lands in I3'],
-  ['GET /inbox/conversations', 'the Inbox shell lands in I3'],
-  ['GET /inbox/conversations/{id}', 'the Inbox shell lands in I3'],
-  ['GET /inbox/conversations/{id}/messages', 'the Inbox shell lands in I3'],
-  ['POST /inbox/conversations/{id}/read', 'the Inbox shell lands in I3'],
-  ['GET /inbox/dashboard', 'the Inbox shell lands in I3'],
-  ['GET /inbox/templates', 'the Inbox shell lands in I3'],
   // 2026-10-20, S2-19 I2d (SCRUM-583): the Inbox shell's simulator panel lands in I3b.
   ['POST /inbox/simulator/inbound', 'the Inbox shell lands in I3 (the simulator panel, I3b)'],
   ['POST /inbox/simulator/status', 'the Inbox shell lands in I3 (the simulator panel, I3b)'],

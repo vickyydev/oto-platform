@@ -31,7 +31,7 @@
         "$TURBO_ROOT$/packages/**/*.tsx"
       ]
     },
-    // The seam walker (SCRUM-293) reads every .ts and .tsx under the four
+    // The seam walker (SCRUM-293) reads every .ts and .tsx under the five
     // front ends' src/ at runtime and resolves each api call against this
     // package's openapi.json. Hashed on its own package alone, a broken call
     // added in apps/pos would replay a stored pass — the failure `@oto/print`
@@ -46,6 +46,7 @@
         "$TURBO_ROOT$/apps/console/src/**",
         "$TURBO_ROOT$/apps/launcher/src/**",
         "$TURBO_ROOT$/apps/booth/src/**",
+        "$TURBO_ROOT$/apps/inbox/src/**",
         "$TURBO_ROOT$/packages/shared/src/**"
       ]
     },

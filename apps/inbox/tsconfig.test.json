@@ -1,0 +1,12 @@
+{
+  // The unit tests and their runner config, as the Console has them
+  // (apps/console/tsconfig.test.json): vitest strips types without checking
+  // them, so without this a test could assert on a shape the view helpers no
+  // longer have and still pass. `pnpm typecheck` runs both.
+  "extends": "./tsconfig.json",
+  "include": ["test/**/*.ts", "vitest.config.ts"],
+  "exclude": ["node_modules", "dist"],
+  "compilerOptions": {
+    "tsBuildInfoFile": ".test.tsbuildinfo"
+  }
+}

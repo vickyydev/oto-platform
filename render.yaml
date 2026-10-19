@@ -880,6 +880,47 @@ services:
         value: https://oto-launcher-staging.onrender.com
 
   # ---------------------------------------------------------------------------
+  # inbox — static site. The Unified Inbox shell (S2-19 I3a, SCRUM-587; plan
+  # docs/progress/plans/inbox-build/PLAN.md §4.4).
+  #
+  # A static site like the console: no server of its own, no paid service.
+  # /api/* is rewritten to the api (ABOVE the SPA rule), so the session cookie
+  # the launcher hand-off sets is same-origin here. Sign-on is the console's
+  # pattern (apps/inbox/src/auth/handoff.ts); the `inbox` audience is already
+  # in HANDOFF_AUDIENCES (packages/db/src/schema/tenancy.ts).
+  #
+  # Three settings move together when the site exists, or the launcher's tile
+  # opens onto a refusal — set in the Render DASHBOARD (no blueprint is
+  # linked), recorded here:
+  #   1. inbox=https://oto-inbox-staging.onrender.com appended to
+  #      HANDOFF_APP_ORIGINS on oto-api-staging;
+  #   2. the same origin appended to ALLOWED_ORIGINS there (the exchange is a
+  #      POST, and the origin check refuses an unlisted one before the route);
+  #   3. VITE_INBOX_URL=https://oto-inbox-staging.onrender.com on
+  #      oto-launcher-staging (build time — a rebuild).
+  - type: web
+    name: oto-inbox-staging
+    runtime: static
+    branch: main
+    rootDir: .
+    buildCommand: corepack enable && pnpm install --frozen-lockfile --prod=false && pnpm --filter @oto/inbox build
+    staticPublishPath: apps/inbox/dist/public
+    autoDeployTrigger: checksPass
+    routes:
+      - type: rewrite
+        source: /api/*
+        destination: https://oto-api-staging.onrender.com/*
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_VERSION
+        value: '22'
+      # Where signing out lands, and "Back to the suite".
+      - key: VITE_LAUNCHER_URL
+        value: https://oto-launcher-staging.onrender.com
+
+  # ---------------------------------------------------------------------------
   # OTO App — the park's HR and daily-operations system, lifted (S2-17a).
   #
   # The one Docker service here, and the only one not built from the pnpm

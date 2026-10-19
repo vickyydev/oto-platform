@@ -86,8 +86,9 @@ export default tseslint.config(
     // hand - fixed where the new dependency is provably stable or the effect
     // should re-run on it, otherwise kept with a disable comment saying why.
     // Only these two: the plugin's recommended set also turns on its React
-    // Compiler checks, which this code was never written against.
-    files: ['apps/pos/**/*.{ts,tsx}'],
+    // Compiler checks, which this code was never written against. The Inbox
+    // shell (S2-19 I3a) is held to the same two from its first commit.
+    files: ['apps/pos/**/*.{ts,tsx}', 'apps/inbox/**/*.{ts,tsx}'],
     plugins: { 'react-hooks': reactHooks },
     rules: {
       'react-hooks/rules-of-hooks': 'error',
