@@ -620,6 +620,16 @@ jobs:
       - name: The app's payroll configuration checks
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/payroll-config.check.ts
+      # SCRUM-567: the profile editor's "Proposed from HR data" panel on the
+      # real page under jsdom — every Use lands in the form and shows as in
+      # the form, a proposal already held is marked rather than offered, a
+      # changed refetch never discards an applied value, and every field the
+      # server can propose has a landing.
+      - name: The app's payroll profile editor check
+        if: steps.changes.outputs.app == 'true'
+        env:
+          TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
+        run: npx tsx tests/payroll-profile-editor.check.tsx
       # These five feature suites drive the app's handlers through its own
       # dependency tree. Run them here, where npm ci has installed that tree,
       # and keep the API workspace's ordinary full battery unchanged.

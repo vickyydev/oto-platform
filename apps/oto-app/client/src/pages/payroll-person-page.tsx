@@ -5,7 +5,7 @@
  * Proposals from HR data are shown beside the form and reach it only through
  * "Use" and a save. Payroll roles only.
  */
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Link, useRoute } from "wouter";
 import { AlertTriangle, ArrowLeft, CheckCircle2, History, Lightbulb, Plus, RotateCcw, Save, Trash2, Wand2, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -53,14 +53,48 @@ export function checkContext(setup: PayrollSetupView): ProfileCheckContext {
   return ctx;
 }
 
-/** A form for someone with no profile yet: identity left blank, no pay; the branch's food default (plan §8). */
-function newProfile(view: PayrollProfileView, setup: PayrollSetupView): EmployeePayrollProfile {
+/** Every field a proposal can name, and how it lands in the form. Unknown fields are refused loudly, never ignored. */
+export const PROPOSAL_FIELDS = ["workerType", "jobTitle", "department", "joinedOn", "monthlySalary", "dayRate", "foodAllowancePerDay", "taxId", "ssoNumber", "nationality",
+  "bankDetails.bank", "bankDetails.accountNumber", "bankDetails.accountName", "advance"] as const;
+const NUMBER_FIELDS = new Set(["monthlySalary", "dayRate", "foodAllowancePerDay"]);
+
+export function applyProposal(d: EmployeePayrollProfile, field: string, value: string | number): EmployeePayrollProfile {
+  if (!(PROPOSAL_FIELDS as readonly string[]).includes(field)) throw new Error(`Unknown proposal field: ${field}`);
+  if (field.startsWith("bankDetails.")) return { ...d, bankDetails: { ...d.bankDetails, [field.slice(12)]: String(value) } };
+  if (field === "advance") {
+    return { ...d, advances: [...d.advances, { id: tempId("adv"), principal: Number(value), outstandingBalance: Number(value), repaymentMode: "one-off", instalments: 1, monthlyRepayment: 0, startsOn: todayIso() }] };
+  }
+  if (field === "workerType") return { ...d, workerType: value as WorkerType, ...WORKER_DEFAULTS[value as WorkerType] };
+  return { ...d, [field]: NUMBER_FIELDS.has(field) ? Number(value) : String(value) };
+}
+
+/** Whether the form already holds what a proposal offers (then there is nothing to use). */
+export function proposalInForm(d: EmployeePayrollProfile, field: string, value: string | number | null): boolean {
+  if (value == null) return true;
+  if (field.startsWith("bankDetails.")) return (d.bankDetails as unknown as Record<string, unknown>)[field.slice(12)] === String(value);
+  if (field === "advance") return d.advances.some((a) => a.outstandingBalance === Number(value));
+  const current = (d as unknown as Record<string, unknown>)[field];
+  return NUMBER_FIELDS.has(field) ? current === Number(value) : (current ?? "") === String(value);
+}
+
+/**
+ * HR proposals that are identity, not pay. A form for someone with no profile
+ * starts from them, as the draft action does on the server; pay (salary, day
+ * rate, food, bank, advances) stays a proposal until it is used and saved.
+ */
+const IDENTITY_FIELDS = new Set(["workerType", "jobTitle", "department", "joinedOn", "taxId", "ssoNumber", "nationality"]);
+
+/** A form for someone with no profile yet: HR identity, no pay; the branch's food default (plan §8). */
+export function newProfile(view: PayrollProfileView, setup: PayrollSetupView): EmployeePayrollProfile {
   const branch = setup.branches.find((b) => b.id === view.employee.branchId);
   const details = branch ? [...branch.detailsHistory].sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom))[0] : undefined;
-  const joinedOn = view.employee.startDate ?? "";
+  const hr = Object.fromEntries(view.suggestions.filter((s) => IDENTITY_FIELDS.has(s.field) && s.value != null).map((s) => [s.field, String(s.value)]));
+  const workerType = (hr.workerType && hr.workerType in WORKER_DEFAULTS ? hr.workerType : "monthly") as WorkerType;
+  const joinedOn = hr.joinedOn ?? view.employee.startDate ?? "";
   return {
-    linkedEmployeeId: view.employee.id, workerType: "monthly", jobTitle: "", ...WORKER_DEFAULTS.monthly,
-    monthlySalary: 0, dayRate: 0, fixedFee: 0, joinedOn, lastWorkingDay: null, taxId: "", ssoNumber: "",
+    linkedEmployeeId: view.employee.id, workerType, jobTitle: hr.jobTitle ?? "", ...WORKER_DEFAULTS[workerType],
+    ...(hr.department ? { department: hr.department } : {}), ...(hr.nationality ? { nationality: hr.nationality } : {}),
+    monthlySalary: 0, dayRate: 0, fixedFee: 0, joinedOn, lastWorkingDay: null, taxId: hr.taxId ?? "", ssoNumber: hr.ssoNumber ?? "",
     foodAllowancePerDay: details?.foodAllowanceDefault ?? 0,
     paymentMethod: "bank-transfer", bankDetails: { bank: "", accountNumber: "", accountName: view.employee.name }, thirdPartyReason: "",
     allocations: branch && details?.details.payingEntityId ? [{ effectiveFrom: joinedOn || todayIso(), homeBranchId: branch.id,
@@ -80,16 +114,19 @@ export default function PayrollPersonPage() {
     <Link href="/payroll/people" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" />Staff roster</Link>
     {(view.isLoading || setup.isLoading) && <Skeleton className="h-96 w-full" />}
     {(view.error || setup.error) && <p className="rounded-lg border border-dashed p-4 text-sm">{errorText(view.error ?? setup.error)}</p>}
-    {view.data && setup.data && <ProfileEditor key={`${view.data.employee.id}:${view.data.revision}`} view={view.data} setup={setup.data} />}
+    {/* One editor per profile state: a save (revision), a proposed draft (review state) or none. A refetch of the same
+        state never resets the form, so a value taken from a proposal or typed in stays until it is saved or discarded. */}
+    {view.data && setup.data && <ProfileEditor key={`${view.data.employee.id}:${view.data.revision}:${view.data.reviewState ?? "none"}`} view={view.data} setup={setup.data} />}
   </div>;
 }
 
 function ProfileEditor({ view, setup }: { view: PayrollProfileView; setup: PayrollSetupView }) {
-  const initial = useMemo(() => structuredClone(view.profile ?? newProfile(view, setup)), [view, setup]);
+  // Read once, when this editor mounts (it is keyed on the profile state above). Re-deriving it
+  // from every new query object, as an effect did, threw away anything taken from a proposal.
+  const [initial] = useState(() => structuredClone(view.profile ?? newProfile(view, setup)));
   const [draft, setDraft] = useState<EmployeePayrollProfile>(initial);
   const [asOf, setAsOf] = useState(todayIso);
   const [saving, setSaving] = useState(false);
-  useEffect(() => setDraft(initial), [initial]);
   const ctx = useMemo(() => checkContext(setup), [setup]);
   const errors = validatePayrollProfile(draft, ctx);
   const active = allocationAt(draft, asOf);
@@ -119,13 +156,7 @@ function ProfileEditor({ view, setup }: { view: PayrollProfileView; setup: Payro
   }
   function applySuggestion(field: string, value: string | number | null) {
     if (value == null) return;
-    if (field.startsWith("bankDetails.")) { set({ bankDetails: { ...draft.bankDetails, [field.slice(12)]: String(value) } }); return; }
-    if (field === "advance") {
-      set({ advances: [...draft.advances, { id: tempId("adv"), principal: Number(value), outstandingBalance: Number(value), repaymentMode: "one-off", instalments: 1, monthlyRepayment: 0, startsOn: todayIso() }] });
-      return;
-    }
-    if (field === "workerType") { set({ workerType: value as WorkerType, ...WORKER_DEFAULTS[value as WorkerType] }); return; }
-    set({ [field]: typeof (draft as unknown as Record<string, unknown>)[field] === "number" ? Number(value) : value } as Partial<EmployeePayrollProfile>);
+    setDraft((d) => applyProposal(d, field, value));
   }
   const ready = view.readiness;
 
@@ -146,10 +177,12 @@ function ProfileEditor({ view, setup }: { view: PayrollProfileView; setup: Payro
     {view.warnings.filter((w) => w !== "No payroll profile yet.").length > 0 && <div className="flex flex-wrap gap-1.5" aria-label="Profile review warnings">
       {view.warnings.filter((w) => w !== "No payroll profile yet.").map((w) => <span key={w} className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs ${w.startsWith("Third-party") ? "bg-red-100 text-red-800" : "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200"}`}><AlertTriangle className="h-3 w-3" />{w}</span>)}</div>}
 
-    {view.suggestions.length > 0 && <Section title="Proposed from HR data" description="Read from the HR record and the old payroll tables. Nothing here applies until you use it and save the profile.">
-      <ul className="divide-y rounded-md border">{view.suggestions.map((s, i) => <li key={i} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm">
+    {view.suggestions.length > 0 && <Section title="Proposed from HR data" description="Read from the HR record and the old payroll tables. Use puts a value into the form below; nothing takes effect until the profile is saved.">
+      <ul className="divide-y rounded-md border">{view.suggestions.map((s, i) => <li key={i} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm" data-testid={`proposal-${s.field}`}>
         <span><Lightbulb className="mr-1 inline h-3.5 w-3.5 text-amber-600" /><span className="font-medium">{s.label}</span>: {typeof s.value === "number" && /salary|rate|food|advance/i.test(s.field) ? money(s.value) : String(s.value)} <span className="text-xs text-muted-foreground">({s.source})</span></span>
-        {canEdit && <Button type="button" size="sm" variant="ghost" onClick={() => applySuggestion(s.field, s.value)}>Use</Button>}
+        {canEdit && (proposalInForm(draft, s.field, s.value)
+          ? <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 dark:text-emerald-300" data-testid={`proposal-in-form-${s.field}`}><CheckCircle2 className="h-3.5 w-3.5" />In the form</span>
+          : <Button type="button" size="sm" variant="ghost" onClick={() => applySuggestion(s.field, s.value)} data-testid={`button-use-${s.field}`}>Use</Button>)}
       </li>)}</ul>
     </Section>}
 
@@ -159,7 +192,7 @@ function ProfileEditor({ view, setup }: { view: PayrollProfileView; setup: Payro
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Field label="Worker type"><select className={selectClass} value={draft.workerType} onChange={(e) => set({ workerType: e.target.value as WorkerType })}>
             {(Object.keys(WORKER_DEFAULTS) as WorkerType[]).map((t) => <option key={t} value={t}>{WORKER_LABELS[t]}</option>)}</select></Field>
-          <Field label="Department"><Input value={draft.department ?? ""} onChange={(e) => set({ department: e.target.value || undefined })} /></Field>
+          <Field label="Department"><Input value={draft.department ?? ""} onChange={(e) => set({ department: e.target.value || undefined })} data-testid="input-department" /></Field>
           <Field label="Job title" hint="Deduction rules match on this."><Input value={draft.jobTitle} onChange={(e) => set({ jobTitle: e.target.value })} data-testid="input-job-title" /></Field>
           <Field label="Monthly salary (THB)"><NumberInput label="Monthly salary" value={draft.monthlySalary} onChange={(monthlySalary) => set({ monthlySalary })} /></Field>
           <Field label="Day rate (THB)"><NumberInput label="Day rate" value={draft.dayRate} onChange={(dayRate) => set({ dayRate })} /></Field>

@@ -177,6 +177,12 @@ async function tenantEmployee(tenantId: string, employeeId: string): Promise<Emp
 }
 
 /** Read-only proposals from HR data and the old payroll tables. Never written to a profile by the server. */
+/** An HR amount as a number, whether the record holds it as a number or as numeric text. */
+function hrAmount(value: unknown): number | null {
+  const amount = typeof value === "number" ? value : typeof value === "string" && value.trim() !== "" ? Number(value.replace(/,/g, "")) : Number.NaN;
+  return Number.isFinite(amount) && amount > 0 ? amount : null;
+}
+
 export async function suggestionsFor(tenantId: string, employee: Employee): Promise<ProfileSuggestion[]> {
   const out: ProfileSuggestion[] = [];
   const add = (field: string, label: string, value: string | number | null | undefined, source: string) => {
@@ -185,9 +191,15 @@ export async function suggestionsFor(tenantId: string, employee: Employee): Prom
   };
   const merge = employee.defaultMergeData ?? {};
   add("workerType", "Worker type", employee.employmentBasis === "PART_TIME" ? "day-rate" : "monthly", "HR employment basis");
-  add("jobTitle", "Job title", merge.positionTitle, "HR position title");
+  add("jobTitle", "Job title", merge.positionTitle?.trim(), "HR position title");
+  // The HR record's department (employees.primary_department_id), the one the draft action copies.
+  if (employee.primaryDepartmentId) {
+    const [department] = await db.select({ name: departments.name }).from(departments)
+      .where(and(eq(departments.tenantId, tenantId), eq(departments.id, employee.primaryDepartmentId))).limit(1);
+    add("department", "Department", department?.name, "HR department");
+  }
   add("joinedOn", "Joining date", employee.startDate ? dateText(employee.startDate) : null, "HR start date");
-  add("monthlySalary", "Monthly salary", typeof merge.salaryThb === "number" ? merge.salaryThb : null, "HR contract salary");
+  add("monthlySalary", "Monthly salary", hrAmount(merge.salaryThb), "HR contract salary");
   add("dayRate", "Day rate", employee.dailyRate, "HR daily rate");
   add("foodAllowancePerDay", "Food per day", employee.foodAllowancePerDay, "HR food allowance");
   add("taxId", "Tax ID", employee.taxIdNumber, "HR tax ID");

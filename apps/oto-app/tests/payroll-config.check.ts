@@ -312,6 +312,20 @@ try {
   assert.ok(opened.body.validationErrors.includes("Transfer bank, account number and account name are required."), "the prototype's checks show what is missing");
   passed += 4;
 
+  // A person with no profile (hired after the drafts): HR's department is offered (the staging
+  // proof run's blank Department), and a salary the HR form stored as text still is.
+  const management = (await q<{ id: string }>("insert into departments (tenant_id, name) values ($1, 'ZZ TEST Management') returning id", [A.tenant]))[0]!.id;
+  const newcomer = randomUUID();
+  await q(`insert into employees (id, tenant_id, branch_id, full_name, nickname, email, status, primary_department_id, default_merge_data, start_date)
+           values ($1, $2, $3, 'ZZ TEST 567 newcomer', 'ZZ', $4, 'active', $5, $6, '2026-10-08')`,
+  [newcomer, A.tenant, A.branch, `zz-567-newcomer-${run}@example.com`, management, JSON.stringify({ positionTitle: " ZZ TEST Manager ", salaryThb: "12,500", startDate: "2026-10-08" })]);
+  const fresh = (await call(A, "admin", "GET", `/api/payroll/profiles/${newcomer}`)).body;
+  const offered = (field: string) => fresh.suggestions.find((s: { field: string }) => s.field === field)?.value;
+  assert.equal(fresh.profile, null);
+  assert.deepEqual([offered("department"), offered("jobTitle"), offered("monthlySalary"), offered("joinedOn")], ["ZZ TEST Management", "ZZ TEST Manager", 12500, "2026-10-08"],
+    "department, trimmed job title, text salary and start date are all offered");
+  passed += 2;
+
   const profile = {
     ...opened.body.profile, monthlySalary: SALARY,
     bankDetails: { bank: "ZZ Bank", accountNumber: "111-2-33333-4", accountName: "ZZ TEST worker" },
