@@ -4259,6 +4259,13 @@ export default function EmployeeEditorPage() {
           </div>
 
           <div hidden={!show("payroll")} className="space-y-6" data-testid="pane-payroll">
+          {/* SCRUM-572 (R7): pay is edited here; the rest of the person's payroll (split, pay method, extras, deductions) is their payroll profile. */}
+          {canViewSalary && !isNew && id && (
+            <div className="rounded-lg border border-border bg-muted/30 p-3 text-sm flex flex-wrap items-center justify-between gap-2" data-testid="notice-payroll-profile">
+              <span className="text-muted-foreground">Branch split, pay method, extras and deductions are on this person's payroll profile.</span>
+              <Link href={`/payroll/people/${encodeURIComponent(id)}`} className="inline-flex items-center gap-1.5 font-semibold text-primary underline underline-offset-2" data-testid="link-payroll-profile"><DollarSign className="h-3.5 w-3.5" />Open payroll profile</Link>
+            </div>
+          )}
           <CollapsibleSection
             title="Pay"
             description="Salary or daily rate, incentive clause and food allowance"

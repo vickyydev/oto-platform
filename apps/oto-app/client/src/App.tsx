@@ -1,4 +1,4 @@
-import { Switch, Route, Redirect, useLocation } from "wouter";
+import { Switch, Route, Redirect, useLocation, useParams } from "wouter";
 import { Suspense, lazy, useState } from "react";
 import * as _Sentry from "@sentry/react";
 import { queryClient } from "./lib/queryClient";
@@ -36,6 +36,8 @@ import { SessionReplayDialog } from "@/components/session-replay-dialog";
 import AuthPage from "@/pages/auth-page";
 import DashboardPage from "@/pages/dashboard-page";
 import NotFound from "@/pages/not-found";
+import { canViewHrSalary } from "@shared/hr-salary-permission";
+import { OLD_PAYROLL_REDIRECTS, PAYROLL_PATHS, redirectTarget, type PayrollRedirect } from "@/lib/payroll/nav";
 
 const TemplatesPage = lazy(() => import("@/pages/templates-page"));
 const QaReportsPage = lazy(() => import("@/pages/qa-reports-page"));
@@ -75,18 +77,10 @@ const RolesPage = lazy(() => import("@/pages/roles-page"));
 const SchedulingPage = lazy(() => import("@/pages/scheduling-page"));
 const AdvisorsPage = lazy(() => import("@/pages/advisors-page"));
 const OperatorsPage = lazy(() => import("@/pages/operators-page"));
-const _PayrollPage = lazy(() => import("@/pages/payroll-page"));
-const PayrollOverviewPage = lazy(() => import("@/pages/payroll-overview-page"));
-const PayrollPeriodsPage = lazy(() => import("@/pages/payroll-periods-page"));
-const PayrollPeriodDetailPage = lazy(() => import("@/pages/payroll-period-detail-page"));
-const PayrollRunDetailPage = lazy(() => import("@/pages/payroll-run-detail-page"));
-const PayrollExceptionsPage = lazy(() => import("@/pages/payroll-exceptions-page"));
-const PayrollExceptionDetailPage = lazy(() => import("@/pages/payroll-exception-detail-page"));
-const PayrollEmployeesPage = lazy(() => import("@/pages/payroll-employees-page"));
-const PayrollEmployeeDetailPage = lazy(() => import("@/pages/payroll-employee-detail-page"));
-const PayrollExportsPage = lazy(() => import("@/pages/payroll-exports-page"));
-const PayrollStatutoryRulesPage = lazy(() => import("@/pages/payroll-statutory-rules-page"));
-// The company payroll (SCRUM-567, R2): beside the old pages until R7 cuts over.
+// The company payroll. R7 (SCRUM-572) made the hub its front door and removed
+// the old engine's screens; their addresses redirect (OLD_PAYROLL_REDIRECTS).
+const PayrollHubPage = lazy(() => import("@/pages/payroll-hub-page"));
+// SCRUM-567, R2.
 const PayrollSetupPage = lazy(() => import("@/pages/payroll-setup-page"));
 const PayrollPeoplePage = lazy(() => import("@/pages/payroll-people-page"));
 const PayrollPersonPage = lazy(() => import("@/pages/payroll-person-page"));
@@ -100,7 +94,6 @@ const PayrollMyPayslipsPage = lazy(() => import("@/pages/payroll-my-payslips-pag
 const PayrollStatutoryDocumentsPage = lazy(() => import("@/pages/payroll-statutory-documents-page"));
 // The downloads of a locked month (SCRUM-570, R5).
 const PayrollDownloadsPage = lazy(() => import("@/pages/payroll-downloads-page"));
-const MyPayslipsPage = lazy(() => import("@/pages/my-payslips-page"));
 const OrgChartPage = lazy(() => import("@/pages/org-chart-page"));
 const AccessPage = lazy(() => import("@/pages/access-page"));
 const AccessConfigPage = lazy(() => import("@/pages/access-config-page"));
@@ -481,6 +474,20 @@ function HRProtectedLayout({ component: Component }: { component: React.Componen
   );
 }
 
+/** /payroll: the hub for payroll roles; everyone else's payroll is their own payslips (SCRUM-572). */
+function PayrollHome() {
+  const { user } = useAuth();
+  if (!canViewHrSalary(user?.role)) return <Redirect to={PAYROLL_PATHS.myPayslips} replace />;
+  return <HRProtectedLayout component={PayrollHubPage} />;
+}
+
+/** An old payroll screen's address, sent to its new home (lib/payroll/nav.ts) so it is never dead. */
+function OldPayrollRedirect({ redirect }: { redirect: PayrollRedirect }) {
+  const { user } = useAuth();
+  const params = useParams<Record<string, string | undefined>>();
+  return <Redirect to={redirectTarget(redirect, params, user?.role)} replace />;
+}
+
 function Router() {
   return (
     <Switch>
@@ -683,16 +690,8 @@ function Router() {
       <ProtectedRoute path="/settings" component={() => <HRProtectedLayout component={SettingsPage} />} requiredRole="admin" />
       <ProtectedRoute path="/settings/supplier-tokens" component={() => <HRProtectedLayout component={SupplierTokensPage} />} requiredRole="admin" />
       <ProtectedRoute path="/operators" component={() => <HRProtectedLayout component={OperatorsPage} />} requiredRole={["global_admin", "admin"]} />
-      <ProtectedRoute path="/payroll" component={() => <HRProtectedLayout component={PayrollOverviewPage} />} requiredRole={["global_admin", "operator_admin", "admin", "manager"]} />
-      <ProtectedRoute path="/payroll/periods" component={() => <HRProtectedLayout component={PayrollPeriodsPage} />} requiredRole={["global_admin", "operator_admin", "admin"]} />
-      <ProtectedRoute path="/payroll/periods/:periodId" component={() => <HRProtectedLayout component={PayrollPeriodDetailPage} />} requiredRole={["global_admin", "operator_admin", "admin"]} />
-      <ProtectedRoute path="/payroll/runs/:runId" component={() => <HRProtectedLayout component={PayrollRunDetailPage} />} requiredRole={["global_admin", "operator_admin", "admin"]} />
-      <ProtectedRoute path="/payroll/runs/:runId/exceptions" component={() => <HRProtectedLayout component={PayrollExceptionsPage} />} requiredRole={["global_admin", "operator_admin", "admin", "manager"]} />
-      <ProtectedRoute path="/payroll/runs/:runId/exceptions/:exceptionId" component={() => <HRProtectedLayout component={PayrollExceptionDetailPage} />} requiredRole={["global_admin", "operator_admin", "admin", "manager"]} />
-      <ProtectedRoute path="/payroll/runs/:runId/employees" component={() => <HRProtectedLayout component={PayrollEmployeesPage} />} requiredRole={["global_admin", "operator_admin", "admin"]} />
-      <ProtectedRoute path="/payroll/runs/:runId/employees/:employeeId" component={() => <HRProtectedLayout component={PayrollEmployeeDetailPage} />} requiredRole={["global_admin", "operator_admin", "admin"]} />
-      <ProtectedRoute path="/payroll/runs/:runId/exports" component={() => <HRProtectedLayout component={PayrollExportsPage} />} requiredRole={["global_admin", "operator_admin", "admin"]} />
-      <ProtectedRoute path="/payroll/statutory-rules" component={() => <HRProtectedLayout component={PayrollStatutoryRulesPage} />} requiredRole={["global_admin", "operator_admin", "admin"]} />
+      <ProtectedRoute path="/payroll" component={PayrollHome} requiredRole={["staff", "manager", "operator_admin", "global_admin", "admin"]} />
+      {OLD_PAYROLL_REDIRECTS.map((r) => <ProtectedRoute key={r.from} path={r.from} component={() => <OldPayrollRedirect redirect={r} />} requiredRole={["staff", "manager", "operator_admin", "global_admin", "admin"]} />)}
       <ProtectedRoute path="/payroll/setup" component={() => <HRProtectedLayout component={PayrollSetupPage} />} requiredRole={["global_admin", "operator_admin", "admin"]} />
       <ProtectedRoute path="/payroll/people" component={() => <HRProtectedLayout component={PayrollPeoplePage} />} requiredRole={["global_admin", "operator_admin", "admin"]} />
       <ProtectedRoute path="/payroll/people/:employeeId" component={() => <HRProtectedLayout component={PayrollPersonPage} />} requiredRole={["global_admin", "operator_admin", "admin"]} />
@@ -702,7 +701,6 @@ function Router() {
       <ProtectedRoute path="/payroll/statutory" component={() => <HRProtectedLayout component={PayrollStatutoryDocumentsPage} />} requiredRole={["global_admin", "operator_admin", "admin"]} />
       <ProtectedRoute path="/payroll/downloads/:entityId/:month/:version" component={() => <HRProtectedLayout component={PayrollDownloadsPage} />} requiredRole={["global_admin", "operator_admin", "admin"]} />
       <ProtectedRoute path="/payroll/me/payslips" component={() => <HRProtectedLayout component={PayrollMyPayslipsPage} />} requiredRole={["staff", "manager", "operator_admin", "global_admin", "admin"]} />
-      <ProtectedRoute path="/my-payslips" component={() => <HRProtectedLayout component={MyPayslipsPage} />} requiredRole={["staff", "manager", "operator_admin", "global_admin", "admin"]} />
       <ProtectedRoute path="/attention" component={() => <HRProtectedLayout component={AttentionPage} />} requiredRole={["manager", "admin"]} />
       <ProtectedRoute path="/reviews" component={() => <Redirect to="/attention?tab=probation" />} requiredRole={["manager", "admin"]} />
       <ProtectedRoute path="/staff-movements" component={() => <HRProtectedLayout component={StaffMovementsPage} />} requiredRole={["manager", "admin"]} />

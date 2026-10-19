@@ -71,12 +71,15 @@ export default function PayrollMonthEndPage() {
     </div>
     {setup.isLoading && <Skeleton className="h-64 w-full" />}
     {setup.data && !entities.length && <Empty>Add the paying company in <Link href="/payroll/setup" className="underline">Payroll setup</Link> first.</Empty>}
-    {entity && <MonthTabs entityId={entity} month={month} />}
+    {entity && <MonthTabs entityId={entity} month={month} initialTab={search.get("tab")} />}
   </div>;
 }
 
-function MonthTabs({ entityId, month }: { entityId: string; month: string }) {
-  const [tab, setTab] = useState("attendance");
+/** The tabs an address may open with (?tab=), so the hub and the old run addresses land on the right step. */
+const MONTH_TABS = ["attendance", "inputs", "adjustments", "feeds", "preview", "approvals"] as const;
+
+function MonthTabs({ entityId, month, initialTab }: { entityId: string; month: string; initialTab: string | null }) {
+  const [tab, setTab] = useState<string>(() => MONTH_TABS.find((t) => t === initialTab) ?? "attendance");
   const view = useMonthEnd(entityId, month);
   return <Tabs value={tab} onValueChange={setTab} className="space-y-4">
     <TabsList className="flex h-auto flex-wrap justify-start">

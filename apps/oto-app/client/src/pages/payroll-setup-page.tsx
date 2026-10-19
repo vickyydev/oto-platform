@@ -6,7 +6,7 @@
  * components, incentives and service charge arrive with month inputs (R3).
  */
 import { useMemo, useState, type ReactNode } from "react";
-import { Link } from "wouter";
+import { Link, useSearch } from "wouter";
 import { AlertTriangle, Archive, Building2, History, Landmark, Pencil, Plus, Scale, ShieldCheck, Users, Wallet } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -74,8 +74,12 @@ export default function PayrollSetupPage() {
   </div>;
 }
 
+/** The tabs an address may open with (?tab=): the old statutory-rules address lands on its rates. */
+const SETUP_TABS = ["company", "branches", "staff", "statutory", "deductions", "ewf", "streams", "history"] as const;
+
 function SetupTabs({ view }: { view: PayrollSetupView }) {
-  return <Tabs defaultValue="company" className="space-y-4">
+  const asked = new URLSearchParams(useSearch()).get("tab");
+  return <Tabs defaultValue={SETUP_TABS.find((t) => t === asked) ?? "company"} className="space-y-4">
     <TabsList className="flex h-auto flex-wrap justify-start">
       <TabsTrigger value="company">Company &amp; bank accounts</TabsTrigger>
       <TabsTrigger value="branches">Branch payroll details</TabsTrigger>

@@ -37,16 +37,17 @@ import {
   Shield,
   UserCog,
   Banknote,
-  Calendar,
   Play,
   Download,
-  Scale,
   MapPin,
   GitBranch,
   Lock,
   KeyRound,
   BarChart3,
+  History,
+  Landmark,
 } from "lucide-react";
+import { payrollMenuFor, type PayrollEntryId } from "@/lib/payroll/nav";
 
 const SIDEBAR_SECTIONS_KEY = "oto_sidebar_sections";
 
@@ -70,6 +71,8 @@ type MenuItem = {
   adminOnly?: boolean;
   managerOnly?: boolean;
   requireAllBranches?: boolean;
+  /** Active only on its own address, not under every path that starts with it. */
+  exact?: boolean;
 };
 
 const globalAdminItems: MenuItem[] = [
@@ -218,50 +221,16 @@ const financeItems: MenuItem[] = [
   },
 ];
 
-const payrollItems: MenuItem[] = [
-  {
-    title: "Payroll Overview",
-    url: "/payroll",
-    icon: LayoutDashboard,
-    managerOnly: true,
-    requireAllBranches: true,
-  },
-  {
-    title: "Periods",
-    url: "/payroll/periods",
-    icon: Calendar,
-    adminOnly: true,
-    requireAllBranches: true,
-  },
-  {
-    title: "Statutory Rules",
-    url: "/payroll/statutory-rules",
-    icon: Scale,
-    adminOnly: true,
-    requireAllBranches: true,
-  },
-  // The company payroll (SCRUM-567, R2): payroll roles only (hr.view_salary is
-  // every admin role). R7 regroups this section when the new hub replaces the old.
-  {
-    title: "Payroll Setup",
-    url: "/payroll/setup",
-    icon: Settings,
-    adminOnly: true,
-  },
-  {
-    title: "Payroll Profiles",
-    url: "/payroll/people",
-    icon: Users,
-    adminOnly: true,
-  },
-  // SCRUM-569 (R4): payslips from locked company payroll months. The old
-  // /my-payslips page stays reachable by its address until R7 removes it.
-  {
-    title: "My Payslips",
-    url: "/payroll/me/payslips",
-    icon: FileText,
-  },
-];
+// The Payroll section (SCRUM-572, R7) comes from the company payroll's own
+// navigation table, the one the hub reads: payroll roles (hr.view_salary) see
+// every payroll page; everyone else, managers included, sees My Payslips only.
+const PAYROLL_ICONS: Record<PayrollEntryId, MenuItem["icon"]> = {
+  hub: LayoutDashboard, run: Play, people: Users, history: History, downloads: Download,
+  documents: Landmark, setup: Settings, myPayslips: FileText,
+};
+function payrollItemsFor(role: string | undefined): MenuItem[] {
+  return payrollMenuFor(role).map((entry) => ({ title: entry.title, url: entry.url, icon: PAYROLL_ICONS[entry.id], exact: entry.exact }));
+}
 
 function filterItems(items: MenuItem[], role: string | undefined, isAllBranches: boolean): MenuItem[] {
   return items.filter((item) => {
@@ -387,16 +356,15 @@ export function AppSidebar() {
   const filteredDailyOperationsItems = filterItems(dailyOperationsItems, user?.role, isAllBranches);
   const filteredPeopleAndHrItems = filterItems(peopleAndHrItems, user?.role, isAllBranches);
   const filteredFinanceItems = filterItems(financeItems, user?.role, isAllBranches);
-  const filteredPayrollItems = filterItems(payrollItems, user?.role, isAllBranches);
+  const filteredPayrollItems = payrollItemsFor(user?.role);
 
   const wouldHaveConfigAccess = hasRoleAccess(adminItems, user?.role);
-  const wouldHavePayrollAccess = hasRoleAccess(payrollItems, user?.role);
   const configHiddenByBranch = !isAllBranches && wouldHaveConfigAccess && filteredAdminItems.length === 0;
 
   const renderMenuItems = (items: MenuItem[]) => {
     return items.map((item) => {
-      const isActive = location === item.url || 
-        (item.url !== "/" && location.startsWith(item.url));
+      const isActive = location === item.url ||
+        (!item.exact && item.url !== "/" && location.startsWith(item.url));
       const count = item.url === "/attention" ? badges?.needsAction : item.url === "/timekeeping-review" ? badges?.todaysAttendance : undefined;
       return (
         <SidebarMenuItem key={item.title}>
@@ -511,7 +479,7 @@ export function AppSidebar() {
           />
         )}
 
-        {(filteredPayrollItems.length > 0 || wouldHavePayrollAccess) && (
+        {filteredPayrollItems.length > 0 && (
           <CollapsibleSection
             id="payroll"
             label="Payroll"
@@ -519,7 +487,6 @@ export function AppSidebar() {
             items={filteredPayrollItems}
             isOpen={sectionState.payroll}
             onToggle={() => toggleSection('payroll')}
-            branchHint={!isAllBranches && filteredPayrollItems.length === 0 ? "Select 'All Branches' to access payroll" : undefined}
           />
         )}
 
