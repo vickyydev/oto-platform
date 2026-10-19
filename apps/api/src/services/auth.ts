@@ -15,7 +15,7 @@ import {
 import { newId, normalizePhone } from '@oto/shared';
 import { AppError, errors } from '../lib/errors';
 import { phoneHash } from '../lib/scrub';
-import { anyBranchReach, reachCovers } from './access-control';
+import { reachCovers, seatReach } from './access-control';
 import { resolveEffectivePermissions } from './permissions';
 import { audit } from './audit';
 import { withTx, type Exec } from './tx';
@@ -672,6 +672,9 @@ async function operatorOfAccount(db: Db, accountId: string): Promise<string | nu
  *   - anyone else is seated at their employee record's branch when they hold
  *     something there, because that is where they turn up for work, and
  *     otherwise at the first live branch their grants do cover.
+ *   - a department grant seats too (SCRUM-592, `seatReach`): at its branch, or
+ *     — for a branchless department — as an operator-wide grant would, when
+ *     nothing names a live branch.
  *   - an account whose grants reach no live branch is refused, with the reason.
  *     Seating it anyway would be a session that cannot act at the branch it is
  *     sitting at — the lockout above, wearing a 200.
@@ -692,7 +695,9 @@ export async function seatBranch(
     .where(and(eq(branch.operatorId, acc.operatorId), isNull(branch.archivedAt)))
     .orderBy(asc(branch.createdAt), asc(branch.id));
 
-  const reach = anyBranchReach(await resolveEffectivePermissions(db, acc.id), acc.operatorId);
+  // SCRUM-592: the seat counts department grants (`seatReach`); what the
+  // session may then do is still `grantCovers`, untouched.
+  const reach = await seatReach(db, await resolveEffectivePermissions(db, acc.id), acc.operatorId);
   if (reach.kind === 'operator') return { kind: 'seat', branchId: live[0]?.id ?? null };
 
   const mine = live.filter((b) => reachCovers(reach, b.id));

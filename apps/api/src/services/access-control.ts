@@ -1,4 +1,4 @@
-import { and, eq, isNull, or } from 'drizzle-orm';
+import { and, eq, inArray, isNull, or } from 'drizzle-orm';
 import {
   account,
   branch,
@@ -430,6 +430,87 @@ export function anyBranchReach(
   operatorId: string,
 ): BranchReach {
   return reachOf(effective, operatorId);
+}
+
+/**
+ * SCRUM-592 — WHERE A SESSION MAY BE SEATED, which is one question wider than
+ * `anyBranchReach`.
+ *
+ * A department-scoped grant reaches no branch (above), so somebody whose ONLY
+ * grant sits at a department — every `inbox_agent`: a team's members and the
+ * coordinator — was refused at sign-in with NO_BRANCH_ACCESS, holding a
+ * perfectly good role. The seat is not a permission, it is where the session
+ * starts, so for this one question a department grant counts:
+ *
+ *   - a department AT a branch seats there, as a branch grant would;
+ *   - a BRANCHLESS department (Birthdays & Events, Marketing) belongs to the
+ *     whole operator, so it seats the way an operator-wide grant does — but
+ *     only when nothing names a concrete live branch, so a person who also
+ *     holds a grant at one park is seated where that grant works.
+ *
+ * Only `seatBranch` asks this. `anyBranchReach` / `holdsGrantAt` — the
+ * session-branch move, the station picker, a station's holder, the end-of-day
+ * people — keep reading department grants as reaching no branch, and nothing
+ * here changes what a grant permits: `grantCovers` is untouched, so a seat at
+ * a branch is not a permission there.
+ *
+ * Pure over what it is handed, for the unit cases: `departments` are the
+ * operator's departments named by the grants (id → branch, null = branchless),
+ * `liveBranchIds` the operator's live branches.
+ */
+export function seatReachOf(
+  effective: EffectivePermission[],
+  operatorId: string,
+  departments: ReadonlyArray<{ id: string; branchId: string | null }>,
+  liveBranchIds: ReadonlyArray<string>,
+): BranchReach {
+  const base = reachOf(effective, operatorId);
+  if (base.kind === 'operator') return base;
+  const named = new Set(
+    effective.flatMap((g) => (g.scopeType === 'department' && g.scopeId !== null ? [g.scopeId] : [])),
+  );
+  const held = departments.filter((d) => named.has(d.id));
+  const live = new Set(liveBranchIds);
+  const concrete = [
+    ...new Set([
+      ...base.branchIds,
+      ...held.flatMap((d) => (d.branchId !== null ? [d.branchId] : [])),
+    ]),
+  ];
+  if (concrete.some((b) => live.has(b))) return { kind: 'branches', branchIds: concrete };
+  if (held.some((d) => d.branchId === null)) return { kind: 'operator' };
+  return { kind: 'branches', branchIds: concrete };
+}
+
+/** `seatReachOf`, reading the departments and live branches it needs. */
+export async function seatReach(
+  db: Db,
+  effective: EffectivePermission[],
+  operatorId: string,
+): Promise<BranchReach> {
+  const deptIds = [
+    ...new Set(
+      effective.flatMap((g) => (g.scopeType === 'department' && g.scopeId !== null ? [g.scopeId] : [])),
+    ),
+  ];
+  // Nothing department-scoped: exactly the reach every other question reads.
+  if (deptIds.length === 0) return reachOf(effective, operatorId);
+  // Scoped to the caller's operator: a department id from anywhere else names
+  // nothing here, the same answer `grantInOperator` gives it.
+  const departments = await db
+    .select({ id: department.id, branchId: department.branchId })
+    .from(department)
+    .where(and(eq(department.operatorId, operatorId), inArray(department.id, deptIds)));
+  const live = await db
+    .select({ id: branch.id })
+    .from(branch)
+    .where(and(eq(branch.operatorId, operatorId), isNull(branch.archivedAt)));
+  return seatReachOf(
+    effective,
+    operatorId,
+    departments,
+    live.map((b) => b.id),
+  );
 }
 
 /** Does a reach cover this branch? An empty branch list covers nothing. */

@@ -23,7 +23,6 @@ import {
 } from '@oto/shared';
 import { mirrorNotice } from '../src/services/inbox/mirror';
 import { simulatorDemoDelivery } from '../src/services/inbox/simulator';
-import { SESSION_COOKIE, hashToken, newSessionToken } from '../src/plugins/session';
 import {
   ADMIN,
   CENTRAL_BRANCH_CODE,
@@ -235,34 +234,13 @@ beforeAll(async () => {
   const sign = async (who: string, phone: string, password: string) => {
     cookies[who] = await signInAs(ctx.app, phone, password);
   };
-  /**
-   * A session minted straight into the table, for the people sign-in cannot
-   * seat today. A DEPARTMENT-scoped grant reaches no branch at all
-   * (`reachOf`, `services/access-control.ts`, reads operator and branch
-   * grants only), so `seatBranch` answers NO_BRANCH_ACCESS and every
-   * `inbox_agent` — each team member, reception included, and the
-   * coordinator — cannot sign in at all. That is a concern raised on SCRUM-581 for the auth lane,
-   * not something the reads can fix; it does not change what they may read,
-   * which is what this file tests.
-   */
-  const session = async (who: string, phone: string) => {
-    const token = newSessionToken();
-    await ctx.db.insert(s.session).values({
-      id: newId(),
-      accountId: await accountIdOf(phone),
-      tokenHash: hashToken(token),
-      branchId: null,
-      expiresAt: new Date(Date.now() + 3_600_000),
-    });
-    cookies[who] = `${SESSION_COOKIE}=${token}`;
-  };
   await sign('gm', DEMO_STAFF.gm.phone, DEMO_STAFF_PASSWORD);
-  await session('bdayTh', DEMO_STAFF.bday_th.phone);
-  await session('bdayEnru', DEMO_STAFF.bday_enru.phone);
-  await session('marketing', DEMO_STAFF.marketing.phone);
-  await session('receptionCentral', '+66810000981');
+  await sign('bdayTh', DEMO_STAFF.bday_th.phone, DEMO_STAFF_PASSWORD);
+  await sign('bdayEnru', DEMO_STAFF.bday_enru.phone, DEMO_STAFF_PASSWORD);
+  await sign('marketing', DEMO_STAFF.marketing.phone, DEMO_STAFF_PASSWORD);
+  await sign('receptionCentral', '+66810000981', PASSWORD);
   await sign('chalongManager', '+66810000982', PASSWORD);
-  await session('coordinator', '+66810000983');
+  await sign('coordinator', '+66810000983', PASSWORD);
   await sign('admin', ADMIN.phone, ADMIN.password);
   await sign('counter', RECEPTION.phone, RECEPTION.password);
   await sign('secondAdmin', SECOND_OPERATOR_ADMIN.phone, SECOND_OPERATOR_ADMIN.password);
@@ -302,16 +280,53 @@ async function factsOf() {
 const accountIdOf = async (phone: string) =>
   (await ctx.db.select({ id: s.account.id }).from(s.account).where(eq(s.account.phone, phone)).limit(1))[0]!.id;
 
-describe('sign-in, as it stands', () => {
-  it('cannot seat an inbox_agent, whose grant is department-scoped (the concern raised on SCRUM-581)', async () => {
-    const res = await ctx.app.inject({
-      method: 'POST',
-      url: '/auth/sign-in',
-      payload: { phone: DEMO_STAFF.bday_th.phone, password: DEMO_STAFF_PASSWORD },
-    });
-    // Pinned so the day the auth lane seats them, this fails and the minted
-    // sessions above can go.
-    expect(res.json().error.code).toBe('NO_BRANCH_ACCESS');
+describe('sign-in seats a department-scoped agent (SCRUM-592)', () => {
+  /** The operator's first live branch: where an operator-wide seat sits. */
+  async function firstLiveBranchId(): Promise<string> {
+    const [b] = await ctx.db
+      .select({ id: s.branch.id })
+      .from(s.branch)
+      .where(and(eq(s.branch.operatorId, oto), isNull(s.branch.archivedAt)))
+      .orderBy(s.branch.createdAt, s.branch.id)
+      .limit(1);
+    return b!.id;
+  }
+  const seatOf = async (who: string) => {
+    const sid = await ctx.db
+      .select({ branchId: s.session.branchId })
+      .from(s.session)
+      .innerJoin(s.account, eq(s.account.id, s.session.accountId))
+      .where(eq(s.account.phone, who));
+    return [...new Set(sid.map((r) => r.branchId))];
+  };
+
+  it('a branchless team department (Birthdays & Events, Marketing, the coordinator) seats as operator-wide does', async () => {
+    const first = await firstLiveBranchId();
+    for (const phone of [DEMO_STAFF.bday_th.phone, DEMO_STAFF.bday_enru.phone, DEMO_STAFF.marketing.phone, '+66810000983']) {
+      const res = await ctx.app.inject({
+        method: 'POST',
+        url: '/auth/sign-in',
+        payload: { phone, password: phone === '+66810000983' ? PASSWORD : DEMO_STAFF_PASSWORD },
+      });
+      expect(res.statusCode, res.body).toBe(200);
+    }
+    for (const phone of [DEMO_STAFF.bday_th.phone, DEMO_STAFF.marketing.phone, '+66810000983']) {
+      expect(await seatOf(phone)).toEqual([first]);
+    }
+  });
+
+  it('a department at a branch seats at that branch', async () => {
+    expect(await seatOf('+66810000981')).toEqual([central]);
+  });
+
+  it('the seat widens nothing: every grant is still department-scoped, and nothing branch-guarded opens', async () => {
+    for (const who of ['bdayTh', 'receptionCentral', 'coordinator']) {
+      const perms = await get<{ permissions: Array<{ scopeType: string }> }>(who, '/me/permissions');
+      expect(perms.status).toBe(200);
+      expect(new Set(perms.body.permissions.map((p) => p.scopeType))).toEqual(new Set(['department']));
+    }
+    // A branch-targeted read the counter account holds at its seat is refused.
+    expect((await get('receptionCentral', '/members/lookup?phone=0810000981')).status).toBe(403);
   });
 });
 
