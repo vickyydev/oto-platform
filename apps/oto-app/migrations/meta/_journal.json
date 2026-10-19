@@ -169,6 +169,13 @@
       "when": 1792409437843,
       "tag": "0024_payroll_run_inputs_ot_bank_and_leave_valuation",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1792416726951,
+      "tag": "0025_payroll_run_lifecycle_and_snapshots",
+      "breakpoints": true
     }
   ]
 }

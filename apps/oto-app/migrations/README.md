@@ -83,6 +83,8 @@ The payroll build (`docs/progress/plans/payroll-real-build/PLAN.md` §9,
 `payroll_month_inputs_and_rewards` and **0024**
 `payroll_run_inputs_ot_bank_and_leave_valuation` (which also holds the run
 and run-version tables and the draft's inputs the plan had placed in 0025);
-R4 takes 0025 and R6 0026. One lane writes migrations at a time. If another lane
+R4 took **0025** `payroll_run_lifecycle_and_snapshots` (overtime decisions,
+third-party approvals, the run audit, the frozen snapshots, lines and output
+files, and the triggers that keep the last four unchangeable); R6 takes 0026. One lane writes migrations at a time. If another lane
 lands a migration first, the payroll lane rebases and regenerates, so
 drizzle-kit's `when` keeps increasing and every later number shifts up.
