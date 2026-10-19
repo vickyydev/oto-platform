@@ -1,5 +1,7 @@
 /**
- * The company payroll's routes (SCRUM-567 onward; plan §7 and §9).
+ * The company payroll's routes (SCRUM-567 onward; plan §7 and §9). R3 (SCRUM-568)
+ * adds month inputs, rewards setup, the payroll feeds and the month-end draft
+ * with its read-only preview.
  *
  * Every route here is behind `hr.view_salary` (managers and staff get 403 on
  * all of them), writes need `hr.manage_payroll`, and the HR-data draft action
@@ -36,6 +38,10 @@ import {
   type PayrollActor,
 } from "./setup";
 import { draftProfiles, loadProfileView, loadRoster, saveProfile } from "./profiles";
+import { loadMonthInputsView, overrideMonthInput, saveBranchRevenue, saveStaffMonthInput } from "./inputs";
+import { loadRewardsView, saveIncentive, saveServicePolicy } from "./rewards";
+import { bookOtTimeOff, loadFeedsView, recordLeaveValuation, reverseLeaveValuation, saveOffboarding } from "./feeds";
+import { addManualLine, addOverride, loadMonthEnd, previewMonth, recordReview, removeManualLine, removeOverride, startRun } from "./month-end";
 
 export type PayrollPermission = "hr.view_salary" | "hr.manage_payroll" | "payroll.draft_profiles";
 
@@ -140,4 +146,52 @@ export function registerPayrollRoutes(app: Express, { requireAuth, callerParkGro
     ({ ...(await loadProfileView(parkGroupOf(res), req.params.employeeId, asOfOf(req))), canManage: canManagePayroll(role(req)) })));
   app.put("/api/payroll/profiles/:employeeId", requireAuth, payroll("hr.manage_payroll"), fence, answer(200, (req, res) =>
     saveProfile(parkGroupOf(res), actorOf(req), req.params.employeeId, body(req))));
+
+  // ── Month inputs (R3) ──
+  app.get("/api/payroll/inputs/:month", requireAuth, payroll("hr.view_salary"), fence, answer(200, async (req, res) =>
+    ({ ...(await loadMonthInputsView(parkGroupOf(res), req.params.month)), canManage: canManagePayroll(role(req)) })));
+  app.put("/api/payroll/inputs/:month/revenue/:branchId", requireAuth, payroll("hr.manage_payroll"), fence, answer(200, (req, res) =>
+    saveBranchRevenue(parkGroupOf(res), actorOf(req), req.params.month, req.params.branchId, body(req))));
+  app.post("/api/payroll/inputs/:month/override", requireAuth, payroll("hr.manage_payroll"), fence, answer(200, (req, res) =>
+    overrideMonthInput(parkGroupOf(res), actorOf(req), req.params.month, body(req))));
+  app.put("/api/payroll/inputs/:month/people/:employeeId", requireAuth, payroll("hr.manage_payroll"), fence, answer(200, (req, res) =>
+    saveStaffMonthInput(parkGroupOf(res), actorOf(req), req.params.month, req.params.employeeId, body(req))));
+
+  // ── Rewards setup (R3) ──
+  app.get("/api/payroll/setup/rewards", requireAuth, payroll("hr.view_salary"), fence, answer(200, async (req, res) =>
+    ({ ...(await loadRewardsView(parkGroupOf(res))), canManage: canManagePayroll(role(req)) })));
+  app.post("/api/payroll/setup/rewards/service-policies/:branchId", requireAuth, payroll("hr.manage_payroll"), fence, answer(200, (req, res) =>
+    saveServicePolicy(parkGroupOf(res), actorOf(req), req.params.branchId, body(req))));
+  app.post("/api/payroll/setup/rewards/incentives", requireAuth, payroll("hr.manage_payroll"), fence, answer(200, (req, res) =>
+    saveIncentive(parkGroupOf(res), actorOf(req), body(req))));
+
+  // ── Feeds: OT bank, leave valuations, offboarding (R3) ──
+  app.get("/api/payroll/feeds/:month", requireAuth, payroll("hr.view_salary"), fence, answer(200, async (req, res) =>
+    ({ ...(await loadFeedsView(parkGroupOf(res), req.params.month)), canManage: canManagePayroll(role(req)) })));
+  app.post("/api/payroll/feeds/ot-bookings", requireAuth, payroll("hr.manage_payroll"), fence, answer(201, (req, res) =>
+    bookOtTimeOff(parkGroupOf(res), actorOf(req), body(req))));
+  app.post("/api/payroll/feeds/leave-valuations", requireAuth, payroll("hr.manage_payroll"), fence, answer(201, (req, res) =>
+    recordLeaveValuation(parkGroupOf(res), actorOf(req), body(req))));
+  app.post("/api/payroll/feeds/leave-valuations/:id/reverse", requireAuth, payroll("hr.manage_payroll"), fence, answer(200, (req, res) =>
+    reverseLeaveValuation(parkGroupOf(res), actorOf(req), req.params.id, body(req))));
+  app.put("/api/payroll/feeds/offboarding/:employeeId", requireAuth, payroll("hr.manage_payroll"), fence, answer(200, (req, res) =>
+    saveOffboarding(parkGroupOf(res), actorOf(req), req.params.employeeId, body(req))));
+
+  // ── Month-end draft and preview (R3; the lifecycle is R4's) ──
+  app.get("/api/payroll/month-end/:entityId/:month", requireAuth, payroll("hr.view_salary"), fence, answer(200, async (req, res) =>
+    ({ ...(await loadMonthEnd(parkGroupOf(res), req.params.entityId, req.params.month)), canManage: canManagePayroll(role(req)) })));
+  app.post("/api/payroll/month-end/:entityId/:month/run", requireAuth, payroll("hr.manage_payroll"), fence, answer(200, (req, res) =>
+    startRun(parkGroupOf(res), actorOf(req), req.params.entityId, req.params.month, body(req))));
+  app.put("/api/payroll/month-end/:entityId/:month/attendance/:dayKey", requireAuth, payroll("hr.manage_payroll"), fence, answer(200, (req, res) =>
+    recordReview(parkGroupOf(res), actorOf(req), req.params.entityId, req.params.month, req.params.dayKey, body(req))));
+  app.post("/api/payroll/month-end/:entityId/:month/manual", requireAuth, payroll("hr.manage_payroll"), fence, answer(201, (req, res) =>
+    addManualLine(parkGroupOf(res), actorOf(req), req.params.entityId, req.params.month, body(req))));
+  app.post("/api/payroll/month-end/:entityId/:month/manual/:id/remove", requireAuth, payroll("hr.manage_payroll"), fence, answer(200, (req, res) =>
+    removeManualLine(parkGroupOf(res), actorOf(req), req.params.entityId, req.params.month, req.params.id, body(req))));
+  app.post("/api/payroll/month-end/:entityId/:month/overrides", requireAuth, payroll("hr.manage_payroll"), fence, answer(201, (req, res) =>
+    addOverride(parkGroupOf(res), actorOf(req), req.params.entityId, req.params.month, body(req))));
+  app.post("/api/payroll/month-end/:entityId/:month/overrides/:id/remove", requireAuth, payroll("hr.manage_payroll"), fence, answer(200, (req, res) =>
+    removeOverride(parkGroupOf(res), actorOf(req), req.params.entityId, req.params.month, req.params.id, body(req))));
+  app.get("/api/payroll/month-end/:entityId/:month/preview", requireAuth, payroll("hr.view_salary"), fence, answer(200, (req, res) =>
+    previewMonth(parkGroupOf(res), req.params.entityId, req.params.month)));
 }

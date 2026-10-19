@@ -230,6 +230,27 @@ describe.skipIf(!HAS_APP)('round 7 independent payroll ownership review', () => 
       'post /api/payroll/profiles/drafts payroll.draft_profiles',
       'get /api/payroll/profiles/:employeeId hr.view_salary',
       'put /api/payroll/profiles/:employeeId hr.manage_payroll',
+      // SCRUM-568 (R3): month inputs, rewards setup, the payroll feeds and the month-end draft with its preview.
+      'get /api/payroll/inputs/:month hr.view_salary',
+      'put /api/payroll/inputs/:month/revenue/:branchId hr.manage_payroll',
+      'post /api/payroll/inputs/:month/override hr.manage_payroll',
+      'put /api/payroll/inputs/:month/people/:employeeId hr.manage_payroll',
+      'get /api/payroll/setup/rewards hr.view_salary',
+      'post /api/payroll/setup/rewards/service-policies/:branchId hr.manage_payroll',
+      'post /api/payroll/setup/rewards/incentives hr.manage_payroll',
+      'get /api/payroll/feeds/:month hr.view_salary',
+      'post /api/payroll/feeds/ot-bookings hr.manage_payroll',
+      'post /api/payroll/feeds/leave-valuations hr.manage_payroll',
+      'post /api/payroll/feeds/leave-valuations/:id/reverse hr.manage_payroll',
+      'put /api/payroll/feeds/offboarding/:employeeId hr.manage_payroll',
+      'get /api/payroll/month-end/:entityId/:month hr.view_salary',
+      'post /api/payroll/month-end/:entityId/:month/run hr.manage_payroll',
+      'put /api/payroll/month-end/:entityId/:month/attendance/:dayKey hr.manage_payroll',
+      'post /api/payroll/month-end/:entityId/:month/manual hr.manage_payroll',
+      'post /api/payroll/month-end/:entityId/:month/manual/:id/remove hr.manage_payroll',
+      'post /api/payroll/month-end/:entityId/:month/overrides hr.manage_payroll',
+      'post /api/payroll/month-end/:entityId/:month/overrides/:id/remove hr.manage_payroll',
+      'get /api/payroll/month-end/:entityId/:month/preview hr.view_salary',
     ]);
     // Every registration in the file is one of those: none without its guard and fence.
     expect([...source.matchAll(/app\.(get|post|put|patch|delete)\(/g)]).toHaveLength(declared.length);
