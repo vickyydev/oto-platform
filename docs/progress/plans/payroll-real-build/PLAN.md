@@ -951,6 +951,25 @@ R6. Sonnet does Jira, notes and the rulebook corrections.
   (the hand-entered profiles), plus the diagnostics page showing the HTTP
   leg green.
 
+**R3 as landed (SCRUM-568, 2026-10-19).**
+
+- **The run moved forward.** `payroll_month_runs`, `payroll_run_versions`
+  (with every lifecycle column, status `draft` only so far) and the draft's
+  inputs `payroll_run_attendance_reviews`, `payroll_run_overrides` and
+  `payroll_run_manual_lines` are in **0024**, because the preview and the
+  golden HTTP leg enter run inputs. R4's 0025 keeps the rest: OT decisions,
+  third-party approvals, the run audit, snapshots, lines, output files, the
+  OT-bank ledger and the immutability triggers. Until the run audit exists,
+  run-input changes are written to `payroll_profile_changes` (kind
+  `setup`, subject `run-…`).
+- **The attendance feed reads `time_events`.** Normal punches live there,
+  not in `time_entries`, which only the exception flows write. The rules as
+  built are in `server/payroll/attendance.ts`'s header.
+- **The golden fixture has 55 profiles** (17 people and 38 leavers), not 53.
+- **A finding for the park:** the company engine pays valued unpaid leave as
+  a positive amount (`PAYROLL-FINDING-R3` in company-calculations.ts): it
+  negates the older calculation's already-negative line. Ported verbatim.
+
 ### R4: month-end lifecycle, freeze and payslips
 
 - **What lands.**
