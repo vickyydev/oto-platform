@@ -1002,6 +1002,32 @@ R6. Sonnet does Jira, notes and the rulebook corrections.
 - **Owner note.** The OT bank connection is the prototype's rule from its
   older flow, now connected (§ "What reading the code changed").
 
+**R4 as landed (SCRUM-569, 2026-10-19).**
+
+- **0025** holds what 0024 did not: overtime decisions, third-party
+  approvals, `payroll_run_audit`, `payroll_run_snapshots`,
+  `payroll_run_lines`, `payroll_output_files`, and one trigger function
+  refusing UPDATE/DELETE on the last three and on the run audit. No
+  `payroll_ot_bank_ledger`: owner decision 3 supersedes the "OT bank is
+  wired" bullet above. Company runs credit nothing; a Bank decision is
+  stored and takes the hours out of pay, exactly as the prototype computes
+  it, and the screens say so.
+- **The lifecycle** is `server/payroll/lifecycle.ts`: the prototype's
+  `approveCompanyRun` / `lockCompanyRun` / `markCompanyPaid` /
+  `reopenCompanyRun` run unchanged in their guards and words, with the
+  server's sha256 signature injected (`CompanyWorkflowOptions`). Inputs
+  stay editable while GM-confirmed (the confirmation goes stale, as in the
+  prototype); a locked or paid version refuses with "This run is locked.
+  The Owner must reopen it before changes."
+- **Run-input audit** moved to `payroll_run_audit`. The R3-era rows stay in
+  `payroll_profile_changes` (nothing is copied).
+- **Payslips** are the frozen `companyPayslipHtml` bytes stored inline in
+  `payroll_output_files` with their sha256 and served as private sandboxed
+  HTML (print to PDF in the browser). Puppeteer PDFs and object storage
+  move with R5's files.
+- **Advances and YTD** read earlier months' locked snapshots (result only)
+  through the loader's `doc.snapshots`.
+
 ### R5: outputs and downloads
 
 - **What lands.**

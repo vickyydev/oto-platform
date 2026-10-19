@@ -142,7 +142,8 @@ attendance ฿500.
 
 draft (pay date defaults to the 28th) → attendance → check & fix (blocking
 exceptions must clear) → **GM confirm** (records a source signature — an
-FNV hash over every input plus the engine revision, so any later change
+FNV hash in the prototype, sha256 on the server — over every input plus the
+engine revision, so any later change
 invalidates the confirmation) → **Owner lock** (signature unchanged, no
 blocking items, bank files + cash exactly equal to net) → mark paid →
 reopen creates version N+1 with a reason. Locked snapshots freeze result,
@@ -184,7 +185,8 @@ code wins over the prose above:
    bank.** Both read the OLDER per-branch snapshots; a company lock writes
    only its own. As the prototype stands, banked overtime is never
    credited and PND.1ก / 50 ทวิ / the EWF documents never see a company
-   run. The real build connects them (owner decision 3 in the plan).
+   run. Owner decision 3 in the plan: the build keeps it as the prototype
+   has it until the park rules, and the screens say why those are empty.
 2. **PIT prior withholding is always estimated** — the company engine
    passes no year-to-date figure even when locked months exist (part of
    concern §9.2).
