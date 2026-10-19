@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import type { PayrollProfileView, PayrollRosterView, PayrollSetupChange, PayrollSetupView } from "@shared/payroll-config";
-import type { FeedsView, MonthEndView, MonthInputsView, PreviewView, RewardsView } from "@shared/payroll-month";
+import type { FeedsView, MonthEndView, MonthInputsView, MyPayslipsView, PayrollHistoryRow, PayrollHistoryVersionView, PreviewView, RewardsView } from "@shared/payroll-month";
 
 /** A refused payroll call: the server's words plus the prototype's list of problems, when it gave one. */
 export class PayrollApiError extends Error {
@@ -64,6 +64,28 @@ export const usePreview = (entityId: string, month: string, enabled: boolean) =>
   queryKey: ["/api/payroll/month-end", entityId, month, "preview"], queryFn: () => payrollCall("GET", `/api/payroll/month-end/${entityId}/${month}/preview`),
   staleTime: 0, enabled: enabled && !!entityId && !!month, retry: false,
 });
+
+// ─── History and payslips (R4, SCRUM-569) ────────────────────────────────────
+
+export const usePayrollHistory = () => useQuery<PayrollHistoryRow[]>({
+  queryKey: ["/api/payroll/history"], queryFn: () => payrollCall("GET", "/api/payroll/history"), staleTime: 0,
+});
+export const useHistoryVersion = (entityId: string, month: string, version: number | null) => useQuery<PayrollHistoryVersionView>({
+  queryKey: ["/api/payroll/history", entityId, month, version], queryFn: () => payrollCall("GET", `/api/payroll/history/${entityId}/${month}/${version}`),
+  staleTime: 0, enabled: !!entityId && !!month && !!version,
+});
+export const useMyPayslips = () => useQuery<MyPayslipsView>({
+  queryKey: ["/api/payroll/me/payslips"], queryFn: () => payrollCall("GET", "/api/payroll/me/payslips"), staleTime: 0,
+});
+/** A frozen file opened in a new tab (payslips print to PDF from there). */
+export const historyFileUrl = (fileId: string, download = false) => `/api/payroll/history/files/${fileId}${download ? "?download=1" : ""}`;
+export const myPayslipUrl = (fileId: string, download = false) => `/api/payroll/me/payslips/${fileId}${download ? "?download=1" : ""}`;
+
+/** Every branch id in an engine text replaced by the branch name (the engine writes ids into its messages and formulas). */
+export function withBranchNames(text: string, names: Record<string, string> | undefined): string {
+  if (!names) return text;
+  return Object.entries(names).sort((a, b) => b[0].length - a[0].length).reduce((t, [id, name]) => id ? t.split(id).join(name) : t, text);
+}
 
 /** The month before (YYYY-MM). */
 export const monthBefore = (month: string) => new Date(Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5, 7)) - 2, 1)).toISOString().slice(0, 7);

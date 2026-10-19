@@ -254,9 +254,11 @@ const payrollItems: MenuItem[] = [
     icon: Users,
     adminOnly: true,
   },
+  // SCRUM-569 (R4): payslips from locked company payroll months. The old
+  // /my-payslips page stays reachable by its address until R7 removes it.
   {
     title: "My Payslips",
-    url: "/my-payslips",
+    url: "/payroll/me/payslips",
     icon: FileText,
   },
 ];

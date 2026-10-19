@@ -27,6 +27,9 @@ import { ReasonDialog } from "@/components/payroll/reason-dialog";
 import { errorText, money, payrollCall, refreshPayroll, usePayrollSetup, useSetupChanges } from "@/lib/payroll/api";
 
 const selectClass = "h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+/** The first of this month in the park timezone: branch details count from the month they start in. */
+const monthStart = () => `${new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok", year: "numeric", month: "2-digit" }).format(new Date()).slice(0, 7)}-01`;
+const monthName = (date: string) => new Date(`${date.slice(0, 7)}-01T00:00:00Z`).toLocaleString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
 const latest = <T extends { effectiveFrom: string }>(items: T[]) => [...items].sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom))[0];
 
 export function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: string }) {
@@ -213,7 +216,7 @@ function BranchesTab({ view }: { view: PayrollSetupView }) {
           </div>
           {view.canManage && <Button size="sm" variant="outline" disabled={!liveEntities.length} onClick={() => setDialog({
             branch, draft: {
-              effectiveFrom: new Date().toISOString().slice(0, 10), foodAllowanceDefault: current?.foodAllowanceDefault ?? null,
+              effectiveFrom: monthStart(), foodAllowanceDefault: current?.foodAllowanceDefault ?? null,
               details: current ? { ...current.details } : { country: "TH", payDate: 28, name: branch.name, timezone: branch.timezone, payingEntityId: liveEntities[0]?.id },
             },
           })}><Plus className="mr-1.5 h-4 w-4" />New version</Button>}
@@ -237,8 +240,12 @@ function BranchDetailsFields({ view, draft, onChange }: { view: PayrollSetupView
   const d = draft.details;
   const setD = (patch: Partial<BranchDetails>) => onChange({ ...draft, details: { ...d, ...patch } });
   const accounts = view.accounts.filter((a) => !a.archivedAt && a.entityId === d.payingEntityId);
+  const midMonth = /^d{4}-d{2}-d{2}$/.test(draft.effectiveFrom) && !draft.effectiveFrom.endsWith("-01");
   return <div className="grid gap-3 sm:grid-cols-2">
-    <Field label="Effective from"><Input type="date" value={draft.effectiveFrom} onChange={(e) => onChange({ ...draft, effectiveFrom: e.target.value })} /></Field>
+    {midMonth && <p role="alert" className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-2 text-xs sm:col-span-2" data-testid="warning-mid-month">
+      <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />Dated mid-month, these details do not count for {monthName(draft.effectiveFrom)}: a branch with no earlier details is left out of the whole {monthName(draft.effectiveFrom)} payroll, and its people with it. Choose {draft.effectiveFrom.slice(0, 8)}01 to include {monthName(draft.effectiveFrom)}.</p>}
+    <Field label="Effective from" hint="Payroll reads branch details by month: use the 1st of the month they start in.">
+      <Input type="date" value={draft.effectiveFrom} onChange={(e) => onChange({ ...draft, effectiveFrom: e.target.value })} data-testid="input-branch-effective-from" /></Field>
     <Field label="Country"><div className="flex h-10 items-center rounded-md border bg-muted/40 px-3 text-sm">Thailand · THB</div></Field>
     <Field label="Paying entity"><select className={selectClass} value={d.payingEntityId ?? ""} onChange={(e) => setD({ payingEntityId: e.target.value || undefined, defaultPayingAccountId: undefined })}>
       <option value="">Choose…</option>{view.entities.filter((e) => !e.archivedAt).map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}</select></Field>

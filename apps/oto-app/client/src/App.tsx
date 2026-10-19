@@ -93,6 +93,9 @@ const PayrollPersonPage = lazy(() => import("@/pages/payroll-person-page"));
 // The company payroll's month-end and rewards (SCRUM-568, R3).
 const PayrollMonthEndPage = lazy(() => import("@/pages/payroll-month-end-page"));
 const PayrollRewardsPage = lazy(() => import("@/pages/payroll-rewards-page"));
+// The company payroll history and every employee's own payslips (SCRUM-569, R4).
+const PayrollHistoryPage = lazy(() => import("@/pages/payroll-history-page"));
+const PayrollMyPayslipsPage = lazy(() => import("@/pages/payroll-my-payslips-page"));
 const MyPayslipsPage = lazy(() => import("@/pages/my-payslips-page"));
 const OrgChartPage = lazy(() => import("@/pages/org-chart-page"));
 const AccessPage = lazy(() => import("@/pages/access-page"));
@@ -691,6 +694,8 @@ function Router() {
       <ProtectedRoute path="/payroll/people/:employeeId" component={() => <HRProtectedLayout component={PayrollPersonPage} />} requiredRole={["global_admin", "operator_admin", "admin"]} />
       <ProtectedRoute path="/payroll/setup/rewards" component={() => <HRProtectedLayout component={PayrollRewardsPage} />} requiredRole={["global_admin", "operator_admin", "admin"]} />
       <ProtectedRoute path="/payroll/month-end" component={() => <HRProtectedLayout component={PayrollMonthEndPage} />} requiredRole={["global_admin", "operator_admin", "admin"]} />
+      <ProtectedRoute path="/payroll/history" component={() => <HRProtectedLayout component={PayrollHistoryPage} />} requiredRole={["global_admin", "operator_admin", "admin"]} />
+      <ProtectedRoute path="/payroll/me/payslips" component={() => <HRProtectedLayout component={PayrollMyPayslipsPage} />} requiredRole={["staff", "manager", "operator_admin", "global_admin", "admin"]} />
       <ProtectedRoute path="/my-payslips" component={() => <HRProtectedLayout component={MyPayslipsPage} />} requiredRole={["staff", "manager", "operator_admin", "global_admin", "admin"]} />
       <ProtectedRoute path="/attention" component={() => <HRProtectedLayout component={AttentionPage} />} requiredRole={["manager", "admin"]} />
       <ProtectedRoute path="/reviews" component={() => <Redirect to="/attention?tab=probation" />} requiredRole={["manager", "admin"]} />

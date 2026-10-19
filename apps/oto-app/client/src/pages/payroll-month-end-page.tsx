@@ -1,16 +1,18 @@
 /**
- * Payroll month-end (SCRUM-568, R3): the prototype's company month-end page
- * (payroll-company-month-end-demo-page with company-attendance,
- * company-inputs, company-input-boxes, company-input-sources, company-overview
- * and company-matrix), on real data and read-only where R3 stops: attendance
- * reviews, month inputs with their sources, one-off adjustments, the payroll
- * feeds (leave valuations, OT bank, exits) and the preview of the whole month.
- * GM confirm, Owner lock, payslips and files arrive with R4/R5. Payroll roles
- * only; every change asks why; dialogs keep the DialogBody recipe.
+ * Payroll month-end (SCRUM-568, R3; SCRUM-569, R4): the prototype's company
+ * month-end page (payroll-company-month-end-demo-page with company-attendance,
+ * company-inputs, company-input-boxes, company-input-sources, company-overview,
+ * company-matrix and company-approvals) on real data: attendance reviews and
+ * overtime decisions, month inputs with their sources, one-off adjustments,
+ * the payroll feeds (leave valuations, OT bank, exits), the whole month
+ * calculated with every person's lines, and the approvals — GM confirm, Owner
+ * lock (which freezes the month and its payslips), mark paid and reopen.
+ * Output files and downloads are R5's. Payroll roles only; every change asks
+ * why; dialogs keep the DialogBody recipe.
  */
-import { useMemo, useState, type ReactNode } from "react";
+import { Fragment, useMemo, useState, type ReactNode } from "react";
 import { Link, useSearch } from "wouter";
-import { AlertTriangle, CalendarCheck, CheckCircle2, CircleDashed, Clock, Info, PenLine, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { AlertTriangle, CalendarCheck, CheckCircle2, ChevronDown, ChevronRight, CircleDashed, Clock, Info, LockKeyhole, PenLine, Plus, RotateCcw, ShieldCheck, Trash2, Wallet } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,10 +21,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
 import { canViewHrSalary, HR_PAY_HIDDEN_NOTE } from "@shared/hr-salary-permission";
-import { PAYROLL_DISCOUNTS, PAYROLL_DISCOUNT_LABELS, type CompanyMonthInputs, type MonthEndView, type MonthInputsView, type FeedsView } from "@shared/payroll-month";
+import { PAYROLL_DISCOUNTS, PAYROLL_DISCOUNT_LABELS, type CompanyMonthInputs, type CompanyPerson, type MonthEndView, type MonthInputsView, type FeedsView, type PreviewView } from "@shared/payroll-month";
 import { ReasonDialog } from "@/components/payroll/reason-dialog";
 import {
-  errorText, money, monthBefore, monthLabel, payrollCall, refreshPayroll, useFeeds, useMonthEnd, useMonthInputs, usePayrollSetup, usePreview,
+  errorText, money, monthBefore, monthLabel, payrollCall, refreshPayroll, useFeeds, useMonthEnd, useMonthInputs, usePayrollSetup, usePreview, withBranchNames,
 } from "@/lib/payroll/api";
 import { Field, NumberInput } from "@/pages/payroll-setup-page";
 
@@ -38,6 +40,10 @@ function Section({ title, description, action, children }: { title: string; desc
   </Card>;
 }
 const net = (cell: { amount: number; vat: number; serviceCharge: number }) => Math.round((cell.amount - cell.vat - cell.serviceCharge) * 100) / 100;
+const STATUS_LABEL: Record<string, string> = { draft: "Draft", "gm-confirmed": "GM confirmed", locked: "Locked", paid: "Paid", superseded: "Replaced by a newer version" };
+/** A run's inputs change while it is a draft or GM confirmed; a locked or paid version takes none until the Owner reopens it. */
+const editable = (view: MonthEndView) => !!view.run && (view.run.status === "draft" || view.run.status === "gm-confirmed");
+const when = (iso: string) => new Date(iso).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" });
 
 export default function PayrollMonthEndPage() {
   const { user } = useAuth();
@@ -53,13 +59,14 @@ export default function PayrollMonthEndPage() {
       <div>
         <p className="text-xs font-semibold uppercase tracking-wider text-primary">Month-end</p>
         <h1 className="text-2xl font-semibold">Payroll for {monthLabel(month)}</h1>
-        <p className="mt-1 max-w-3xl text-sm text-muted-foreground">Review attendance, enter the month's numbers and see the whole month calculated. Confirming, locking and payslips come next; nothing here pays anyone.</p>
+        <p className="mt-1 max-w-3xl text-sm text-muted-foreground">Review attendance, enter the month's numbers and check the whole month. Then the GM confirms and the Owner locks it, which freezes the month and its payslips. Nothing here moves money.</p>
       </div>
       <div className="flex flex-wrap items-end gap-2">
         <Field label="Month"><Input type="month" value={month} onChange={(e) => e.target.value && setMonth(e.target.value)} data-testid="input-month" /></Field>
         <Field label="Paying company"><select className={selectClass} value={entity} onChange={(e) => setEntityId(e.target.value)} data-testid="select-entity">
           {entities.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}</select></Field>
         <Link href="/payroll/setup/rewards" className="inline-flex h-10 items-center rounded-md border px-3 text-sm font-semibold hover:bg-muted">Service charge &amp; incentives</Link>
+        <Link href="/payroll/history" className="inline-flex h-10 items-center rounded-md border px-3 text-sm font-semibold hover:bg-muted">Locked months &amp; payslips</Link>
       </div>
     </div>
     {setup.isLoading && <Skeleton className="h-64 w-full" />}
@@ -77,7 +84,8 @@ function MonthTabs({ entityId, month }: { entityId: string; month: string }) {
       <TabsTrigger value="inputs">2. Inputs</TabsTrigger>
       <TabsTrigger value="adjustments">3. One-off adjustments</TabsTrigger>
       <TabsTrigger value="feeds">Leave, OT bank &amp; exits</TabsTrigger>
-      <TabsTrigger value="preview">Preview</TabsTrigger>
+      <TabsTrigger value="preview">Check the month</TabsTrigger>
+      <TabsTrigger value="approvals" data-testid="tab-approvals">Confirm &amp; lock</TabsTrigger>
     </TabsList>
     {view.isLoading && <Skeleton className="h-48 w-full" />}
     {view.error && <Empty>{errorText(view.error)}</Empty>}
@@ -87,7 +95,8 @@ function MonthTabs({ entityId, month }: { entityId: string; month: string }) {
       <TabsContent value="inputs"><InputsTab month={month} /></TabsContent>
       <TabsContent value="adjustments"><AdjustmentsTab view={view.data} /></TabsContent>
       <TabsContent value="feeds"><FeedsTab month={month} /></TabsContent>
-      <TabsContent value="preview"><PreviewTab entityId={entityId} month={month} active={tab === "preview"} /></TabsContent>
+      <TabsContent value="preview"><PreviewTab view={view.data} entityId={entityId} month={month} active={tab === "preview"} /></TabsContent>
+      <TabsContent value="approvals"><ApprovalsTab view={view.data} active={tab === "approvals"} /></TabsContent>
     </>}
   </Tabs>;
 }
@@ -95,8 +104,12 @@ function MonthTabs({ entityId, month }: { entityId: string; month: string }) {
 function RunBanner({ view }: { view: MonthEndView }) {
   const [open, setOpen] = useState(false);
   return <div className="space-y-2">
-    {view.run ? <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/30 px-3 py-2 text-sm"><CalendarCheck className="h-4 w-4 text-emerald-600" />
-      Run version {view.run.version} · <Badge variant="outline">{view.run.status}</Badge> · pay date {view.run.payDate}</div>
+    {view.run ? <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/30 px-3 py-2 text-sm" data-testid="run-banner"><CalendarCheck className="h-4 w-4 text-emerald-600" />
+      Run version {view.run.version} · <Badge variant="outline">{STATUS_LABEL[view.run.status] ?? view.run.status}</Badge> · pay date {view.run.payDate}
+      {view.run.gm && <span className="text-xs text-muted-foreground">· GM {view.run.gm.name}</span>}
+      {view.run.owner && <span className="text-xs text-muted-foreground">· locked by {view.run.owner.name} {when(view.run.owner.at)}</span>}
+      {view.run.paid && <span className="text-xs text-muted-foreground">· paid {when(view.run.paid.at)}</span>}
+      {view.run.reopenReason && <span className="text-xs text-muted-foreground">· reopened: {view.run.reopenReason}</span>}</div>
       : <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm">
         <span>This month's run has not started. Attendance decisions and one-off adjustments are saved against the run.</span>
         {view.canManage && <Button size="sm" onClick={() => setOpen(true)} data-testid="button-start-run">Start the {monthLabel(view.month)} run</Button>}
@@ -105,6 +118,8 @@ function RunBanner({ view }: { view: MonthEndView }) {
       <p className="flex items-center gap-2 font-semibold text-destructive"><AlertTriangle className="h-4 w-4" />{view.excluded.length} {view.excluded.length === 1 ? "person is" : "people are"} not in this month's payroll yet</p>
       <ul className="mt-1 list-disc pl-6 text-xs">{view.excluded.map((x) => <li key={x.employeeId}><Link href={`/payroll/people/${x.employeeId}`} className="underline">{x.name}</Link>: {x.reason}</li>)}</ul>
     </div>}
+    {view.run && !editable(view) && <p className="flex items-center gap-2 rounded-lg border border-sky-500/40 bg-sky-500/10 px-3 py-2 text-sm"><LockKeyhole className="h-4 w-4" />
+      Version {view.run.version} is {view.run.status === "paid" ? "locked and paid" : "locked"}. These amounts will not change; the Owner reopens the month into a new version to correct anything.</p>}
     {view.notes.map((note) => <p key={note} className="flex items-center gap-2 text-xs text-muted-foreground"><Info className="h-3.5 w-3.5" />{note}</p>)}
     {open && <ReasonDialog open onOpenChange={setOpen} title={`Start the ${monthLabel(view.month)} run`} confirmLabel="Start run"
       description={`Version 1, in draft, paid on day ${view.entity.defaultPayDay} (the company's default pay day).`}
@@ -118,8 +133,12 @@ type Day = MonthEndView["attendance"][number];
 function AttendanceTab({ view }: { view: MonthEndView }) {
   const [all, setAll] = useState(false);
   const [review, setReview] = useState<{ day: Day; action: "confirm" | "override" | "excuse"; clockIn: string; clockOut: string } | null>(null);
+  const [ot, setOt] = useState<{ day: Day; outcome: "Pay" | "Bank" | "Reject"; choice: boolean } | null>(null);
+  const [undo, setUndo] = useState<MonthEndView["overtime"][number] | null>(null);
+  const canEdit = view.canManage && editable(view);
+  const decisionOf = (d: Day) => view.overtime.find((o) => o.dayKey === d.id);
   const open = (d: Day) => d.exceptions.some((e) => e.resolution === null);
-  const days = view.attendance.filter((d) => all || open(d) || d.review).sort((a, b) => a.date.localeCompare(b.date) || a.name.localeCompare(b.name));
+  const days = view.attendance.filter((d) => all || open(d) || d.review || d.overtimeHours > 0).sort((a, b) => a.date.localeCompare(b.date) || a.name.localeCompare(b.name));
   const waiting = view.attendance.filter((d) => open(d) && !d.review).length;
   return <Section title="Attendance review" description="From the punch clock, the rota and the timekeeping reviews managers already made. A decision here is saved against this run only — the attendance record itself never changes."
     action={<Button size="sm" variant="outline" onClick={() => setAll(!all)}>{all ? "Only days to review" : "Show every day"}</Button>}>
@@ -127,7 +146,7 @@ function AttendanceTab({ view }: { view: MonthEndView }) {
       {waiting ? `${waiting} day${waiting === 1 ? "" : "s"} still to confirm` : "No unconfirmed attendance"}</p>
     {!days.length ? <Empty>{all ? "No attendance recorded this month." : "Nothing to review."}</Empty> :
       <div className="overflow-x-auto"><table className="w-full min-w-[820px] text-sm">
-        <thead className="text-left text-[11px] uppercase tracking-wider text-muted-foreground"><tr><th className="py-1">Person</th><th>Date</th><th>Rota</th><th>Clocked</th><th>Approved</th><th>Issues</th><th>This run</th><th /></tr></thead>
+        <thead className="text-left text-[11px] uppercase tracking-wider text-muted-foreground"><tr><th className="py-1">Person</th><th>Date</th><th>Rota</th><th>Clocked</th><th>Approved</th><th>Issues</th><th>This run</th><th>Overtime</th><th /></tr></thead>
         <tbody className="divide-y">{days.map((d) => <tr key={d.id} data-testid={`attendance-${d.id}`}>
           <td className="py-2 font-medium">{d.name}</td>
           <td className="tabular-nums">{d.date}{d.holiday && <Badge variant="outline" className="ml-1">Holiday</Badge>}{d.dayOff && <Badge variant="outline" className="ml-1">Day off</Badge>}</td>
@@ -136,7 +155,12 @@ function AttendanceTab({ view }: { view: MonthEndView }) {
           <td className="tabular-nums">{d.effectiveClockIn ?? "—"}–{d.effectiveClockOut ?? "—"}{d.overtimeHours > 0 && <span className="ml-1 text-xs text-muted-foreground">+{d.overtimeHours}h</span>}</td>
           <td className="space-x-1">{d.exceptions.map((e, i) => <Badge key={i} variant={e.resolution ? "secondary" : "destructive"} title={e.reason}>{e.kind}{e.resolution ? ` · ${e.resolution}` : ""}</Badge>)}</td>
           <td>{d.review ? <span title={d.review.reason}>{d.review.action}{d.review.clockIn ? ` ${d.review.clockIn}–${d.review.clockOut}` : ""}</span> : "—"}</td>
-          <td className="text-right">{view.canManage && view.run && <Button size="sm" variant="ghost" onClick={() => setReview({ day: d, action: "confirm", clockIn: d.effectiveClockIn ?? d.actualClockIn ?? "", clockOut: d.effectiveClockOut ?? d.actualClockOut ?? "" })}><PenLine className="mr-1 h-4 w-4" />Decide</Button>}</td>
+          <td>{d.overtimeHours > 0 ? (decisionOf(d) ? <span className="inline-flex items-center gap-1" title={decisionOf(d)!.reason}>
+            <Badge variant={decisionOf(d)!.outcome === "Reject" ? "secondary" : "outline"}>{decisionOf(d)!.outcome} {d.overtimeHours}h</Badge>
+            {canEdit && <Button size="sm" variant="ghost" aria-label="Remove the overtime decision" onClick={() => setUndo(decisionOf(d)!)}><Trash2 className="h-3.5 w-3.5" /></Button>}</span>
+            : canEdit ? <Button size="sm" variant="outline" onClick={() => setOt({ day: d, outcome: "Pay", choice: false })} data-testid={`button-overtime-${d.id}`}>{d.overtimeHours}h: decide</Button>
+            : <span className="text-xs text-muted-foreground">{d.overtimeHours}h undecided</span>) : "—"}</td>
+          <td className="text-right">{canEdit && <Button size="sm" variant="ghost" onClick={() => setReview({ day: d, action: "confirm", clockIn: d.effectiveClockIn ?? d.actualClockIn ?? "", clockOut: d.effectiveClockOut ?? d.actualClockOut ?? "" })}><PenLine className="mr-1 h-4 w-4" />Decide</Button>}</td>
         </tr>)}</tbody>
       </table></div>}
     {review && <ReasonDialog open onOpenChange={(o) => !o && setReview(null)} title={`${review.day.name} · ${review.day.date}`} confirmLabel="Save decision"
@@ -155,6 +179,21 @@ function AttendanceTab({ view }: { view: MonthEndView }) {
         </>}
       </div>
     </ReasonDialog>}
+    {ot && <ReasonDialog open onOpenChange={(o) => !o && setOt(null)} title={`Overtime · ${ot.day.name} · ${ot.day.date} · ${ot.day.overtimeHours}h`} confirmLabel="Save decision"
+      description="Pay adds the hours to this month's pay. Reject pays nothing for them. Bank takes them out of this month's pay to be taken as time off."
+      onConfirm={async (reason) => {
+        await payrollCall("PUT", `/api/payroll/month-end/${view.entity.id}/${view.month}/overtime/${encodeURIComponent(ot.day.id)}`, { outcome: ot.outcome, reason, employeeChoiceConfirmed: ot.choice });
+        await refreshPayroll();
+      }}>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Field label="Decision"><select className={selectClass} value={ot.outcome} onChange={(e) => setOt({ ...ot, outcome: e.target.value as "Pay" })}>
+          <option value="Pay">Pay</option><option value="Bank">Bank as time off</option><option value="Reject">Reject</option></select></Field>
+        <label className="flex items-center gap-2 pt-6 text-sm"><input type="checkbox" checked={ot.choice} onChange={(e) => setOt({ ...ot, choice: e.target.checked })} />The employee chose this</label>
+      </div>
+      {ot.outcome === "Bank" && <p role="note" className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-2 text-xs">Banked hours are taken out of this month's pay. Company payroll runs do not credit the OT bank yet (a decision still open with the park), so these hours will not show in anyone's bank balance either.</p>}
+    </ReasonDialog>}
+    {undo && <ReasonDialog open onOpenChange={(o) => !o && setUndo(null)} title={`Remove the ${undo.outcome} decision for ${undo.name}?`} confirmLabel="Remove"
+      onConfirm={async (reason) => { await payrollCall("POST", `/api/payroll/month-end/${view.entity.id}/${view.month}/overtime/${encodeURIComponent(undo.dayKey)}/remove`, { reason, exceptionIndex: undo.exceptionIndex }); await refreshPayroll(); }} />}
   </Section>;
 }
 
@@ -302,7 +341,7 @@ function AdjustmentsTab({ view }: { view: MonthEndView }) {
   const [override, setOverride] = useState<{ employeeId: string; component: string; amount: number } | null>(null);
   const [remove, setRemove] = useState<{ path: string; label: string } | null>(null);
   const base = `/api/payroll/month-end/${view.entity.id}/${view.month}`;
-  const can = view.canManage && !!view.run && view.run.status === "draft";
+  const can = view.canManage && editable(view);
   return <div className="space-y-4">
     {!view.run && <Empty>Start the month's run to add one-off bonuses, deductions or overrides.</Empty>}
     <Section title="One-off bonuses and deductions" description="Only for things no system provides. The reason is shown on the payslip."
@@ -417,45 +456,159 @@ function FeedsTab({ month }: { month: string }) {
   </div>;
 }
 
-// ─── Preview ─────────────────────────────────────────────────────────────────
+// ─── Check the month (preview) ───────────────────────────────────────────────
 
-function PreviewTab({ entityId, month, active }: { entityId: string; month: string; active: boolean }) {
+const THIRD_PARTY = /third|someone else/i;
+
+function PreviewTab({ view, entityId, month, active }: { view: MonthEndView; entityId: string; month: string; active: boolean }) {
   const preview = usePreview(entityId, month, active);
-  const setup = usePayrollSetup();
-  const branchName = (id: string) => setup.data?.branches.find((b) => b.id === id)?.name ?? id;
   const [show, setShow] = useState<"people" | "problems">("people");
+  const [open, setOpen] = useState<string | null>(null);
+  const [approve, setApprove] = useState<{ employeeId: string; name: string } | null>(null);
   const result = preview.data?.result;
+  // Engine messages and formulas carry branch and person ids: both are shown as names.
+  const names = useMemo(() => ({ ...Object.fromEntries(view.people.map((p) => [p.id, p.name])), ...(preview.data?.branchNames ?? {}) }), [view.people, preview.data]);
   const problems = useMemo(() => (result?.exceptions ?? []).filter((e) => e.severity !== "info"), [result]);
   if (preview.isLoading) return <Skeleton className="h-64 w-full" />;
   if (preview.error) return <div role="alert" className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm"><p className="font-semibold">The month cannot be calculated yet</p><p>{errorText(preview.error)}</p></div>;
   if (!preview.data) return null;
-  const { calculation, signature, timing } = preview.data;
+  const { calculation, signature, timing, frozen } = preview.data;
   const blocking = problems.filter((e) => e.severity === "blocking").length;
+  const approved = (id?: string) => !!id && view.thirdParty.some((a) => a.employeeId === id && a.current);
   return <div className="space-y-4">
-    <p className="text-xs text-muted-foreground">Read-only preview of {monthLabel(month)} from what is saved now · calculated in {timing.loadMs + timing.calculateMs} ms · source {signature.slice(0, 19)}…</p>
+    <p className="text-xs text-muted-foreground">{frozen
+      ? `The frozen ${monthLabel(month)} of version ${preview.data.run?.version} · source ${signature.slice(0, 19)}…`
+      : `${monthLabel(month)} from what is saved now · calculated in ${timing.loadMs + timing.calculateMs} ms · source ${signature.slice(0, 19)}…`}</p>
+    {frozen && <p className="flex items-center gap-2 rounded-lg border border-sky-500/40 bg-sky-500/10 px-3 py-2 text-sm"><LockKeyhole className="h-4 w-4" />Locked: these are the amounts frozen at lock, not a new calculation.</p>}
+    {preview.data.stale && <p role="alert" className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm">Source data changed since GM confirmation (signature mismatch). GM must confirm again.</p>}
     {!result ? <Empty>No one is paid by this company in {monthLabel(month)}.</Empty> : <>
       <div className="grid gap-3 sm:grid-cols-5">{([["Gross", result.totals.gross], ["Deductions", result.totals.deductions], ["Net pay", result.totals.net], ["Employer cost", result.totals.employer], ["Total cost", result.totals.totalCost]] as const).map(([label, value]) =>
         <Card key={label}><CardContent className="p-3"><p className="text-xs text-muted-foreground">{label}</p><p className="text-lg font-semibold tabular-nums">{money(value)}</p></CardContent></Card>)}</div>
       <div className="flex flex-wrap gap-2 text-sm">
         <Button size="sm" variant={show === "people" ? "default" : "outline"} onClick={() => setShow("people")}>{result.people.length} people</Button>
-        <Button size="sm" variant={show === "problems" ? "default" : "outline"} onClick={() => setShow("problems")}>{blocking} blocking · {problems.length - blocking} warnings</Button>
+        <Button size="sm" variant={show === "problems" ? "default" : "outline"} onClick={() => setShow("problems")} data-testid="button-problems">{blocking} blocking · {problems.length - blocking} warnings</Button>
       </div>
       {show === "people" ? <div className="overflow-x-auto"><table className="w-full min-w-[820px] text-sm" data-testid="preview-matrix">
         <thead className="text-left text-[11px] uppercase tracking-wider text-muted-foreground"><tr><th className="py-1">Person</th><th>Job</th><th>Split</th><th className="text-right">Days</th><th className="text-right">Gross</th><th className="text-right">Deductions</th><th className="text-right">Net</th><th className="text-right">Employer</th></tr></thead>
-        <tbody className="divide-y">{result.people.map((p) => <tr key={p.id}>
-          <td className="py-2 font-medium">{p.name}</td><td className="text-muted-foreground">{p.jobTitle}</td><td className="text-xs">{p.allocationBadge}</td>
-          <td className="text-right tabular-nums">{p.daysWorked}/{p.employedDays}</td><td className="text-right tabular-nums">{money(p.gross)}</td>
-          <td className="text-right tabular-nums">{money(p.deductions)}</td><td className="text-right font-semibold tabular-nums">{money(p.net)}</td><td className="text-right tabular-nums">{money(p.employer)}</td>
-        </tr>)}</tbody>
+        <tbody className="divide-y">{result.people.map((p) => <Fragment key={p.id}>
+          <tr>
+            <td className="py-2 font-medium"><button type="button" className="inline-flex items-center gap-1 text-left hover:underline" aria-expanded={open === p.id}
+              onClick={() => setOpen(open === p.id ? null : p.id)} data-testid={`person-${p.id}`}>
+              {open === p.id ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}{p.name}</button></td>
+            <td className="text-muted-foreground">{p.jobTitle}</td><td className="text-xs">{withBranchNames(p.allocationBadge, names)}</td>
+            <td className="text-right tabular-nums">{p.daysWorked}/{p.employedDays}</td><td className="text-right tabular-nums">{money(p.gross)}</td>
+            <td className="text-right tabular-nums">{money(p.deductions)}</td><td className="text-right font-semibold tabular-nums">{money(p.net)}</td><td className="text-right tabular-nums">{money(p.employer)}</td>
+          </tr>
+          {open === p.id && <tr><td colSpan={8} className="bg-muted/30 px-3 py-3"><PersonLines person={p} names={names} /></td></tr>}
+        </Fragment>)}</tbody>
       </table></div> :
-        <ul className="divide-y rounded-lg border text-sm">{problems.map((e) => <li key={e.id} className="flex items-start gap-2 px-3 py-2">
-          <Badge variant={e.severity === "blocking" ? "destructive" : "outline"}>{e.severity}</Badge><span>{e.message}</span></li>)}
+        <ul className="divide-y rounded-lg border text-sm" data-testid="problems-list">{problems.map((e) => <li key={e.id} className="flex flex-wrap items-start gap-2 px-3 py-2">
+          <Badge variant={e.severity === "blocking" ? "destructive" : "outline"}>{e.severity}</Badge><span className="flex-1">{withBranchNames(e.message, names)}</span>
+          {THIRD_PARTY.test(`${e.kind} ${e.message}`) && e.staffId && (approved(e.staffId)
+            ? <Badge variant="secondary">Approved</Badge>
+            : view.canManage && editable(view) && !frozen && <Button size="sm" variant="outline" onClick={() => setApprove({ employeeId: e.staffId!, name: result.people.find((p) => p.id === e.staffId)?.name ?? "" })}>Approve this payment</Button>)}
+        </li>)}
           {!problems.length && <li className="px-3 py-4 text-center text-muted-foreground">No problems.</li>}</ul>}
       <Section title="Service charge" description="Each branch's pool from last month's sales, shared by the saved policy.">
         <ul className="divide-y text-sm">{calculation.service.map((s) => <li key={s.branchId} className="flex flex-wrap gap-3 py-1.5">
-          <span className="flex-1 font-medium">{branchName(s.branchId)}</span><span>{s.earningMonth} sales base {money(s.revenueBase)} × {s.percent}%</span>
+          <span className="flex-1 font-medium">{names?.[s.branchId] ?? s.branchId}</span><span>{s.earningMonth} sales base {money(s.revenueBase)} × {s.percent}%</span>
           <span>pool {money(s.pool)}</span><span>paid {money(s.paid)}</span><span>kept {money(s.retained)}</span></li>)}</ul>
       </Section>
     </>}
+    {approve && <ReasonDialog open onOpenChange={(o) => !o && setApprove(null)} title={`Approve ${approve.name}'s payment to someone else`} confirmLabel="Approve"
+      description="Approved for these payment details only: a later change of payee, bank, amount or reason needs approving again."
+      onConfirm={async (reason) => { await payrollCall("PUT", `/api/payroll/month-end/${view.entity.id}/${view.month}/third-party/${approve.employeeId}`, { reason }); await refreshPayroll(); }} />}
   </div>;
+}
+
+/** One person's pay, line by line, as the payslip will show it. */
+function PersonLines({ person, names }: { person: CompanyPerson; names?: Record<string, string> }) {
+  const group = (category: "earning" | "deduction" | "employer", title: string) => {
+    const lines = person.lines.filter((l) => l.category === category && l.amount !== 0);
+    if (!lines.length) return null;
+    return <div><p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{title}</p>
+      <ul className="divide-y rounded-md border bg-background">{lines.map((l) => <li key={l.id} className="flex flex-wrap items-start gap-2 px-2 py-1.5 text-xs">
+        <span className="min-w-[10rem] flex-1"><span className="font-medium">{withBranchNames(l.label, names)}</span>{l.overridden && <Badge variant="outline" className="ml-1">Overridden</Badge>}
+          <span className="block text-muted-foreground">{withBranchNames(l.formula, names)}</span></span>
+        <span className="text-muted-foreground">{l.allocations.map((a) => `${names?.[a.costCentre] ?? (a.costCentre === "owner-non-operational" ? "Owner – non-operational" : a.costCentre)} ${money(a.amount)}`).join(" · ")}</span>
+        <span className="w-28 text-right font-semibold tabular-nums">{category === "deduction" ? `−${money(l.amount)}` : money(l.amount)}</span></li>)}</ul></div>;
+  };
+  return <div className="grid gap-3 lg:grid-cols-3" data-testid={`lines-${person.id}`}>
+    {group("earning", "Earnings")}{group("deduction", "Deductions")}{group("employer", "Paid by the company")}
+    {person.warnings.length > 0 && <ul className="list-disc pl-5 text-xs text-amber-700 dark:text-amber-300 lg:col-span-3">{person.warnings.map((w) => <li key={w}>{withBranchNames(w, names)}</li>)}</ul>}
+  </div>;
+}
+
+// ─── Confirm & lock (approvals) ──────────────────────────────────────────────
+
+function ApprovalsTab({ view, active }: { view: MonthEndView; active: boolean }) {
+  const preview = usePreview(view.entity.id, view.month, active && !!view.run);
+  const [action, setAction] = useState<"confirm" | "confirm-anyway" | "lock" | "paid" | "reopen" | null>(null);
+  const base = `/api/payroll/month-end/${view.entity.id}/${view.month}`;
+  if (!view.run) return <Empty>Start the month's run first.</Empty>;
+  const status = view.run.status;
+  const data: PreviewView | undefined = preview.data;
+  const blockers = (data?.result?.exceptions ?? []).filter((e) => e.severity === "blocking");
+  const steps = [["draft", "Payroll draft"], ["gm-confirmed", "GM confirmed"], ["locked", "Owner locked"], ["paid", "Paid"]] as const;
+  const idx = steps.findIndex(([s]) => s === status);
+  const stale = !!data?.stale;
+  const calls: Record<NonNullable<typeof action>, { title: string; label: string; description: string; run: (reason: string) => Promise<unknown> }> = {
+    confirm: { title: "Confirm as GM", label: "Confirm as GM", description: "Records that attendance, inputs, flags and company totals were reviewed, and the exact sources reviewed. Any later change makes the confirmation stale.",
+      run: (reason) => payrollCall("POST", `${base}/confirm`, { reason }) },
+    "confirm-anyway": { title: `${data?.openProblems ?? 0} problem${data?.openProblems === 1 ? " is" : "s are"} still open. Confirm anyway?`, label: "Confirm anyway",
+      description: "This records GM review only. The Owner still cannot lock while blocking problems remain.", run: (reason) => payrollCall("POST", `${base}/confirm`, { reason, confirmAnyway: true }) },
+    lock: { title: "Lock and freeze", label: "Lock and freeze", description: "Locking freezes the result, the calculation, the payslips and the bank and cash files into this version. They never change afterwards.",
+      run: (reason) => payrollCall("POST", `${base}/lock`, { reason }) },
+    paid: { title: "Mark this month paid", label: "Mark paid", description: "Records that the bank transfers and cash payments were made. It checks the frozen bank files plus cash still equal net pay; it does not move money.",
+      run: (reason) => payrollCall("POST", `${base}/paid`, { reason }) },
+    reopen: { title: "Reopen into a new version", label: "Reopen", description: `Version ${view.run.version} and its payslips stay in history unchanged. Version ${view.run.version + 1} starts as a draft with every decision and adjustment copied.`,
+      run: (reason) => payrollCall("POST", `${base}/reopen`, { reason, fromVersion: view.run!.version }) },
+  };
+  const current = action ? calls[action] : null;
+  return <Section title="Confirm & lock" description="The GM confirms, then the Owner locks. Locking freezes the month: payslips are issued from the frozen version only.">
+    <ol className="grid grid-cols-2 gap-2 sm:grid-cols-4">{steps.map(([s, l], i) => <li key={s} className={`rounded-lg border p-3 text-sm ${i <= idx ? "border-primary bg-primary/10 font-semibold" : "text-muted-foreground"}`}>{i + 1}. {l}</li>)}</ol>
+    <div className="space-y-1 text-sm">
+      <p>Version {view.run.version}{view.run.gm ? ` · GM: ${view.run.gm.name}` : ""}{view.run.owner ? ` · Owner: ${view.run.owner.name}` : ""}</p>
+      {blockers.length > 0 && status !== "locked" && status !== "paid" && <p className="text-destructive"><Badge variant="destructive">{blockers.length} blockers</Badge> Lock is refused until every blocking exception is resolved.</p>}
+      {stale && <p className="text-destructive"><Badge variant="destructive">Stale</Badge> Source data changed since GM confirmation (signature mismatch). GM must confirm again.</p>}
+      {preview.isLoading && <p className="text-xs text-muted-foreground">Checking the month…</p>}
+      {preview.error != null && <p className="text-xs text-destructive">{errorText(preview.error)}</p>}
+    </div>
+    <div className="grid gap-3 md:grid-cols-2">
+      {(status === "draft" || stale) && <div className="rounded-lg border p-3">
+        <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold"><ShieldCheck className="h-4 w-4" />GM confirm</h3>
+        {view.canConfirm ? <Button onClick={() => setAction((data?.openProblems ?? 0) > 0 ? "confirm-anyway" : "confirm")} data-testid="button-gm-confirm">Confirm as GM</Button>
+          : <p className="text-xs text-muted-foreground">Only a payroll manager (admin, operator admin or global admin) confirms as GM.</p>}
+      </div>}
+      {status === "gm-confirmed" && <div className="rounded-lg border p-3">
+        <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold"><LockKeyhole className="h-4 w-4" />Owner lock</h3>
+        {view.canLock ? <Button disabled={blockers.length > 0 || stale} onClick={() => setAction("lock")} data-testid="button-owner-lock">Lock and freeze</Button>
+          : <p className="text-xs text-muted-foreground">Only the Owner (operator admin or global admin) locks a payroll month.</p>}
+        <p className="mt-1 text-xs text-muted-foreground">Locking freezes result, calculation and outputs into an approved version.</p>
+      </div>}
+      {status === "locked" && <div className="rounded-lg border p-3">
+        <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold"><Wallet className="h-4 w-4" />Paid</h3>
+        {view.canLock ? <Button variant="outline" onClick={() => setAction("paid")} data-testid="button-mark-paid">Mark paid</Button>
+          : <p className="text-xs text-muted-foreground">The Owner records the month as paid.</p>}
+      </div>}
+      {(status === "locked" || status === "paid") && <div className="rounded-lg border p-3">
+        <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold"><RotateCcw className="h-4 w-4" />Owner reopen</h3>
+        {view.canLock ? <Button variant="outline" onClick={() => setAction("reopen")} data-testid="button-reopen">Reopen into version {view.run.version + 1}</Button>
+          : <p className="text-xs text-muted-foreground">Only the Owner reopens a locked month.</p>}
+        <p className="mt-1 text-xs text-muted-foreground">The approved version stays in history unchanged.</p>
+      </div>}
+    </div>
+    {view.run.snapshotId && <p className="text-sm"><Link href={`/payroll/history?entity=${view.entity.id}&month=${view.month}&version=${view.run.version}`} className="underline">Open the frozen version and its payslips</Link></p>}
+    {view.versions.length > 1 && <div><h3 className="text-sm font-semibold">Versions</h3>
+      <ul className="mt-1 divide-y text-xs">{view.versions.map((v) => <li key={v.versionId} className="flex flex-wrap gap-2 py-1">
+        <strong>v{v.version}</strong><Badge variant="outline">{STATUS_LABEL[v.status] ?? v.status}</Badge>
+        {v.owner && <span>locked by {v.owner.name} {when(v.owner.at)}</span>}{v.reopenReason && <span className="text-muted-foreground">reopened: {v.reopenReason}</span>}
+        {v.snapshotId && <Link href={`/payroll/history?entity=${view.entity.id}&month=${view.month}&version=${v.version}`} className="underline">frozen version</Link>}</li>)}</ul></div>}
+    <div><h3 className="text-sm font-semibold">Run audit</h3>
+      <ul className="mt-1 max-h-72 divide-y overflow-auto text-xs" data-testid="run-audit">{[...view.audit].reverse().map((a) => <li key={a.id} className="py-1">
+        <strong>v{a.version} · {a.action}</strong> · {a.reason} · {a.who} · {when(a.at)}</li>)}
+        {!view.audit.length && <li className="py-2 text-muted-foreground">No actions yet.</li>}</ul></div>
+    {current && <ReasonDialog open onOpenChange={(o) => !o && setAction(null)} title={current.title} description={current.description} confirmLabel={current.label}
+      onConfirm={async (reason) => { await current.run(reason); await refreshPayroll(); }} />}
+  </Section>;
 }
