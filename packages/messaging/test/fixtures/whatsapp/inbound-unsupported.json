@@ -1,0 +1,34 @@
+{
+  "object": "whatsapp_business_account",
+  "entry": [
+    {
+      "id": "200000000000001",
+      "changes": [
+        {
+          "value": {
+            "messaging_product": "whatsapp",
+            "metadata": { "display_phone_number": "15550100001", "phone_number_id": "100000000000001" },
+            "contacts": [{ "profile": { "name": "Fictional Parent A" }, "wa_id": "66800000001" }],
+            "messages": [
+              {
+                "from": "66800000001",
+                "id": "wamid.FIXTURE.UNSUPPORTED.0001",
+                "timestamp": "1760925960",
+                "type": "unsupported",
+                "errors": [
+                  {
+                    "code": 131051,
+                    "title": "Message type unknown",
+                    "message": "Message type unknown",
+                    "error_data": { "details": "Message type is currently not supported." }
+                  }
+                ]
+              }
+            ]
+          },
+          "field": "messages"
+        }
+      ]
+    }
+  ]
+}

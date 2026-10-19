@@ -1,0 +1,35 @@
+{
+  "object": "whatsapp_business_account",
+  "entry": [
+    {
+      "id": "200000000000001",
+      "changes": [
+        {
+          "value": {
+            "messaging_product": "whatsapp",
+            "metadata": {
+              "display_phone_number": "15550100001",
+              "phone_number_id": "100000000000001"
+            },
+            "contacts": [
+              {
+                "profile": { "name": "Fictional Parent A" },
+                "wa_id": "66800000001"
+              }
+            ],
+            "messages": [
+              {
+                "from": "66800000001",
+                "id": "wamid.FIXTURE.TEXT.0001",
+                "timestamp": "1760925600",
+                "text": { "body": "Hello, what time do you open on Saturday?" },
+                "type": "text"
+              }
+            ]
+          },
+          "field": "messages"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "object": "whatsapp_business_account",
+  "entry": [
+    {
+      "id": "200000000000001",
+      "changes": [
+        {
+          "value": {
+            "messaging_product": "whatsapp",
+            "metadata": { "display_phone_number": "15550100001", "phone_number_id": "100000000000001" },
+            "contacts": [{ "profile": { "name": "Fictional Parent A" }, "wa_id": "66800000001" }],
+            "messages": [
+              {
+                "context": { "from": "15550100001", "id": "wamid.FIXTURE.OUT.0001" },
+                "from": "66800000001",
+                "id": "wamid.FIXTURE.BUTTON.0001",
+                "timestamp": "1760925840",
+                "type": "interactive",
+                "interactive": {
+                  "type": "button_reply",
+                  "button_reply": { "id": "branch-central", "title": "Central" }
+                }
+              }
+            ]
+          },
+          "field": "messages"
+        }
+      ]
+    }
+  ]
+}

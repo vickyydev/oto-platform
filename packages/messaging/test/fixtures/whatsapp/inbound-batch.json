@@ -1,0 +1,37 @@
+{
+  "object": "whatsapp_business_account",
+  "entry": [
+    {
+      "id": "200000000000001",
+      "changes": [
+        {
+          "value": {
+            "messaging_product": "whatsapp",
+            "metadata": { "display_phone_number": "15550100001", "phone_number_id": "100000000000001" },
+            "contacts": [
+              { "profile": { "name": "Fictional Parent E" }, "wa_id": "66800000005" },
+              { "profile": { "name": "Fictional Parent F" }, "wa_id": "79000000006" }
+            ],
+            "messages": [
+              {
+                "from": "66800000005",
+                "id": "wamid.FIXTURE.BATCH.0001",
+                "timestamp": "1760925900",
+                "text": { "body": "First message" },
+                "type": "text"
+              },
+              {
+                "from": "79000000006",
+                "id": "wamid.FIXTURE.BATCH.0002",
+                "timestamp": "1760925901",
+                "text": { "body": "Second message" },
+                "type": "text"
+              }
+            ]
+          },
+          "field": "messages"
+        }
+      ]
+    }
+  ]
+}

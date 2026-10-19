@@ -1,0 +1,5 @@
+{
+  "messaging_product": "whatsapp",
+  "contacts": [{ "input": "66800000001", "wa_id": "66800000001" }],
+  "messages": [{ "id": "wamid.FIXTURE.OUT.0003", "message_status": "accepted" }]
+}

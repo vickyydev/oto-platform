@@ -1,0 +1,46 @@
+{
+  "object": "whatsapp_business_account",
+  "entry": [
+    {
+      "id": "200000000000001",
+      "changes": [
+        {
+          "value": {
+            "messaging_product": "whatsapp",
+            "metadata": { "display_phone_number": "15550100001", "phone_number_id": "100000000000001" },
+            "statuses": [
+              {
+                "id": "wamid.FIXTURE.OUT.0001",
+                "status": "sent",
+                "timestamp": "1760926000",
+                "recipient_id": "66800000001",
+                "biz_opaque_callback_data": "0199f000-0000-7000-8000-000000000001",
+                "conversation": {
+                  "id": "fixture-conversation-0001",
+                  "expiration_timestamp": "1761012400",
+                  "origin": { "type": "service" }
+                },
+                "pricing": { "billable": false, "pricing_model": "PMP", "category": "service" }
+              },
+              {
+                "id": "wamid.FIXTURE.OUT.0001",
+                "status": "delivered",
+                "timestamp": "1760926002",
+                "recipient_id": "66800000001",
+                "biz_opaque_callback_data": "0199f000-0000-7000-8000-000000000001"
+              },
+              {
+                "id": "wamid.FIXTURE.OUT.0001",
+                "status": "read",
+                "timestamp": "1760926030",
+                "recipient_id": "66800000001",
+                "biz_opaque_callback_data": "0199f000-0000-7000-8000-000000000001"
+              }
+            ]
+          },
+          "field": "messages"
+        }
+      ]
+    }
+  ]
+}

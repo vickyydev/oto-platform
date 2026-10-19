@@ -1,0 +1,32 @@
+{
+  "object": "whatsapp_business_account",
+  "entry": [
+    {
+      "id": "200000000000001",
+      "changes": [
+        {
+          "value": {
+            "messaging_product": "whatsapp",
+            "metadata": { "display_phone_number": "15550100001", "phone_number_id": "100000000000001" },
+            "contacts": [{ "profile": { "name": "Fictional Parent B" }, "wa_id": "66800000002" }],
+            "messages": [
+              {
+                "from": "66800000002",
+                "id": "wamid.FIXTURE.IMAGE.0001",
+                "timestamp": "1760925660",
+                "type": "image",
+                "image": {
+                  "caption": "Is this the birthday room?",
+                  "mime_type": "image/jpeg",
+                  "sha256": "Zml4dHVyZS1kaWdlc3Qtbm90LWEtcmVhbC1maWxl",
+                  "id": "300000000000001"
+                }
+              }
+            ]
+          },
+          "field": "messages"
+        }
+      ]
+    }
+  ]
+}
