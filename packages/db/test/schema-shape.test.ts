@@ -218,7 +218,8 @@ describe('tenancy columns (SCRUM-292)', () => {
     expect(TABLES.length).toBeGreaterThan(80);
     expect(new Set(TABLES.map((t) => t.cfg.schema))).toEqual(
       // `analytics` since S2-12 round 4: `fact_occupancy_15min`, the first fact table.
-      new Set(['core', 'crm', 'pos', 'promo', 'booth', 'edge', 'analytics']),
+      // `inbox` since S2-19 I1 (SCRUM-578): the Unified Inbox's fifteen tables.
+      new Set(['core', 'crm', 'pos', 'promo', 'booth', 'edge', 'analytics', 'inbox']),
     );
   });
 
@@ -373,6 +374,15 @@ describe('timestamps (SCRUM-292)', () => {
 const PARTIAL_UNIQUE_EXEMPT: Record<string, string> = {
   'core.box.box_claim_code_unique':
     'A claim code is a single-use credential with a life of minutes, not a business key somebody re-uses. Its predicate is that the code exists at all, which is the narrower window.',
+  // S2-19 I1 (SCRUM-578): the inbox's tenant fence. `(operator_id, id)` is not
+  // a business key — `id` is the primary key, so the pair is unique whether or
+  // not the row is archived — it is the target of the composite foreign keys
+  // that stop an inbox row pointing into another operator's data, and a
+  // foreign key can only land on a NON-partial unique.
+  'inbox.channel_account.channel_account_tenant_key':
+    'The tenant fence: (operator_id, id) is the target of the composite foreign keys from conversation, message and webhook_receipt. id is the primary key, so archiving frees nothing; a foreign key needs a non-partial unique.',
+  'inbox.template.template_tenant_key':
+    "The tenant fence: (operator_id, id) is the target of message's composite template foreign key. id is the primary key, so archiving frees nothing; a foreign key needs a non-partial unique.",
 };
 
 /**

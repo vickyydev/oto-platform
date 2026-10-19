@@ -45,3 +45,6 @@ export * from './events';
 // The party tab (S2-20 E4): after the sales ledger, whose payment attempt a
 // party payment names.
 export * from './parties';
+// The Unified Inbox (S2-19 I1): its own schema, keyed on the tenancy and the
+// files it names and on nothing else of ours.
+export * from './inbox';

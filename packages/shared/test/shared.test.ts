@@ -204,4 +204,37 @@ describe('permission bundles (S2-01b)', () => {
     expect(within(ROLE_BUNDLES.reception, ROLE_BUNDLES.branch_manager)).toEqual([]);
     expect(within(ROLE_BUNDLES.branch_manager, ROLE_BUNDLES.operator_admin)).toEqual([]);
   });
+
+  /**
+   * S2-19 I1 (SCRUM-578) — the inbox roles. They nest as the system bundles
+   * do, so an `inbox_admin` could grant the two below it; every one of their
+   * permissions is in the vocabulary; and the erasure is in none of them.
+   */
+  it('the inbox roles nest, stay in the vocabulary, and leave erasure to the operator administrator', async () => {
+    const { PERMISSIONS, ROLE_BUNDLES, INBOX_ROLES, INBOX_ROLE_BUNDLES } = await import('../src/permissions');
+    const known = new Set<string>(PERMISSIONS);
+    const within = (inner: string[], outer: string[]) => inner.filter((p) => !new Set(outer).has(p));
+    for (const roleName of INBOX_ROLES) {
+      const bundle = INBOX_ROLE_BUNDLES[roleName];
+      expect(bundle.filter((p) => !known.has(p))).toEqual([]);
+      expect(new Set(bundle).size).toBe(bundle.length);
+      expect(bundle).not.toContain('inbox:contact:erase');
+      expect(bundle).toContain('app:inbox:access');
+      expect(within(bundle, ROLE_BUNDLES.operator_admin)).toEqual([]);
+    }
+    expect(within(INBOX_ROLE_BUNDLES.inbox_agent, INBOX_ROLE_BUNDLES.inbox_manager)).toEqual([]);
+    expect(within(INBOX_ROLE_BUNDLES.inbox_manager, INBOX_ROLE_BUNDLES.inbox_admin)).toEqual([]);
+    expect(INBOX_ROLE_BUNDLES.inbox_agent).not.toContain('inbox:conversation:assign');
+    expect(INBOX_ROLE_BUNDLES.inbox_manager).not.toContain('inbox:routing:manage');
+    expect(INBOX_ROLE_BUNDLES.inbox_admin).toEqual(
+      expect.arrayContaining(['inbox:channel:manage', 'inbox:routing:manage']),
+    );
+    // The eleven inbox strings are declared, and only the operator-wide
+    // bundles carry them among the system roles.
+    const inboxStrings = PERMISSIONS.filter((p) => p.startsWith('inbox:'));
+    expect(inboxStrings).toHaveLength(11);
+    for (const roleName of ['branch_manager', 'reception', 'staff'] as const) {
+      expect(ROLE_BUNDLES[roleName].filter((p) => p.startsWith('inbox:'))).toEqual([]);
+    }
+  });
 });

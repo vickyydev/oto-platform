@@ -40,6 +40,7 @@ import { seedSupervision } from './supervision';
 import { seedWalletPolicies } from './wallet';
 import { seedBenefitCredentials, seedBenefits } from './benefits';
 import { DEFAULT_TENDERS, syncDefaultTenders, upsertDefaultTenders } from './tenders';
+import { describeInboxSync, syncInboxSetup } from './inbox';
 import { stableJson } from './stable-id';
 import * as s from '../schema/index';
 
@@ -96,6 +97,16 @@ export {
 } from './benefits';
 /** Demo Branch 2's own booth, whose day the demo day files beside its sales. */
 export { DEMO_BOOTH_NAME, DEMO_BOOTH_PREFIX } from './demo-booth';
+/** The Inbox's configuration (S2-19 I1). */
+export {
+  CONSOLE_NOTICE_CHANNELS,
+  INBOX_DEPARTMENTS,
+  INBOX_TEMPLATE_BODIES,
+  consoleExternalId,
+  describeInboxSync,
+  syncInboxSetup,
+  type InboxSyncCounts,
+} from './inbox';
 /** The demo day's events, camp and party in the OTO App, and its walk-up prices (S2-20 E5). */
 export { describeDemoEvents, seedDemoEvents, type DemoEventsCounts } from './demo-events';
 /** What the demo day refuses with before it writes, in words a person can act on (SCRUM-503). */
@@ -184,6 +195,12 @@ export async function platformSync(db: Db = getDb()): Promise<Record<SystemRole,
       `Stock: laid places at ${stock.branchesWithPlaces} branch(es) and ${stock.items} stocked size(s) at ${stock.branchesWithItems} branch(es) that had none — opening counts are done in the app.`,
     );
   }
+
+  // The Unified Inbox (S2-19 I1): its roles, teams, blank routing rules,
+  // templates and console channel accounts, for every operator that lacks
+  // them — insert-if-absent, so an edit made in the Inbox is never undone.
+  const inboxLine = describeInboxSync(await syncInboxSetup(db));
+  if (inboxLine) console.log(inboxLine);
 
   return roleIds;
 }
@@ -1730,6 +1747,12 @@ export async function seed(db: Db = getDb(), opts: SeedOptions = {}): Promise<vo
   // S2-14a: every branch's wallet policy (expiry, the offline cap, unused prepaid).
   await seedWalletPolicies(db);
 
+  // S2-19 I1: the Inbox's configuration. `platformSync` at the top of this
+  // function ran before either operator or their departments existed on a
+  // fresh database, so the demo tenants get theirs here; on every later run
+  // both calls find it laid and write nothing.
+  await syncInboxSetup(db);
+
   console.log(
     'Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park\'s printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.',
   );
@@ -1987,7 +2010,7 @@ if (isMain) {
   const platformOnly = forcedPlatform || (!forcedDemo && profile === 'production');
   console.log(
     platformOnly
-      ? `Platform sync only (SEED_PROFILE=${profile}): system roles, permissions, tenders and stock setup.`
+      ? `Platform sync only (SEED_PROFILE=${profile}): system roles, permissions, tenders, stock setup and the inbox configuration.`
       : `Full seed (SEED_PROFILE=${profile}): platform rows plus the demo tenant.`,
   );
   (platformOnly ? platformSync() : seed(getDb(), { benefitQrPrivateKey: process.env.BENEFIT_QR_PRIVATE_KEY }))

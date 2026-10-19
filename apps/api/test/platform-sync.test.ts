@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { newId } from '@oto/shared';
-import { and, eq } from 'drizzle-orm';
+import { INBOX_ROLES, newId, SYSTEM_ROLES } from '@oto/shared';
+import { and, eq, inArray } from 'drizzle-orm';
 import {
   account,
   branch,
@@ -99,9 +99,20 @@ describe('platform sync (S2-01b)', () => {
   });
 
   it('marks the seeded roles as system roles the platform owns', async () => {
-    const rows = await ctx.db.select().from(role);
-    expect(rows.length).toBeGreaterThan(0);
+    const rows = await ctx.db.select().from(role).where(inArray(role.name, [...SYSTEM_ROLES]));
+    expect(rows).toHaveLength(SYSTEM_ROLES.length);
     expect(rows.every((r) => r.isSystem && r.operatorId === null)).toBe(true);
+  });
+
+  // S2-19 I1 (SCRUM-578): the inbox roles are the one exception, and a
+  // deliberate one — each operator's OWN roles, laid once and then theirs.
+  it('lays the inbox roles as each operator’s own, never as system roles', async () => {
+    const rows = await ctx.db.select().from(role).where(eq(role.isSystem, false));
+    expect(rows.every((r) => r.operatorId !== null)).toBe(true);
+    const operators = await ctx.db.select().from(operator);
+    expect(rows.filter((r) => (INBOX_ROLES as readonly string[]).includes(r.name))).toHaveLength(
+      operators.length * INBOX_ROLES.length,
+    );
   });
 
   it('leaves the dev accounts and demo families alone', async () => {

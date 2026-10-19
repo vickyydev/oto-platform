@@ -111,7 +111,7 @@ New code uses **operator = tenant** and **account / employee = staff**. When por
 
 ### 8.1 The schema map
 
-One database holds the whole suite. The boundary between its parts is a Postgres **schema** rather than a naming convention, so that a grant, a dump or a `search_path` can address one area on its own, and so that a lifted application brought onto the same database later — the OTO App, Radar, the Inbox — can keep its own tables beside ours without a single name collision. `packages/db` owns seven schemas, declared in `packages/db/src/schema/helpers.ts` and listed there as `OWNED_SCHEMAS`. Drizzle table objects are still imported by name from `@oto/db`; only the SQL is qualified.
+One database holds the whole suite. The boundary between its parts is a Postgres **schema** rather than a naming convention, so that a grant, a dump or a `search_path` can address one area on its own, and so that a lifted application brought onto the same database later — the OTO App, Radar — can keep its own tables beside ours without a single name collision. `packages/db` owns eight schemas (`inbox`, the Unified Inbox, joined with S2-19 I1), declared in `packages/db/src/schema/helpers.ts` and listed there as `OWNED_SCHEMAS`. Drizzle table objects are still imported by name from `@oto/db`; only the SQL is qualified.
 
 | Schema | What lives there |
 |---|---|
@@ -122,13 +122,14 @@ One database holds the whole suite. The boundary between its parts is a Postgres
 | `booth` | The Lucky Wheel. Empty. |
 | `analytics` | Summaries and facts the reporting app reads. Empty. |
 | `edge` | Box-owned state and the sync ledger for the on-site boxes. Empty. |
+| `inbox` | The Unified Inbox (S2-19, migration `0078`): `channel_account`, `contact`, `team`, `routing_rule`, `template`, `conversation`, `message`, `participant`, `assignment`, `event`, `webhook_receipt`, and the unused `tag`, `conversation_tag`, `sla_policy`, `note`. Every inbox → inbox reference is a composite `(operator_id, id)` foreign key. |
 
 Placement is by **owner**, not by lifecycle: a table lives with the part of the business that is responsible for its rows, not with the tables that happen to be written at the same moment. Two placements the plan left open were settled here:
 
 - **The catalogue sits in `pos`.** A ticket package, the holiday calendar that switches its pricing and the tax rules applied to it are only ever read together, and only by the till and by the admin screens that configure the till. A separate configuration schema would put one read across two boundaries and buy nothing back.
 - **`tier` sits in `crm`, not with the catalogue that prices by it.** A tier is what a person *is* — the thing a member is verified as, and a verification that holds at every branch (D6). The catalogue only refers to `tier.code` when it works out a price.
 
-Nothing of ours is left in `public`. Schemas other tools own — `pgboss`, created by the job runner's own migrator, and `otoapp`, `radar`, `inbox` for the lifted applications — are deliberately excluded by `schemaFilter` in `packages/db/drizzle.config.ts`, so a Drizzle diff never offers to drop them.
+Nothing of ours is left in `public`. Schemas other tools own — `pgboss`, created by the job runner's own migrator, and `otoapp`, `radar` for the lifted applications — are deliberately excluded by `schemaFilter` in `packages/db/drizzle.config.ts`, so a Drizzle diff never offers to drop them.
 
 ### 8.2 Names and types settled in the same move
 

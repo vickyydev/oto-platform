@@ -17,6 +17,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { generateDrizzleJson } from 'drizzle-kit/api';
 import * as schema from '../src/schema/index';
+import { OWNED_SCHEMAS } from '../src/schema/helpers';
 
 const PKG = join(dirname(fileURLToPath(import.meta.url)), '..');
 const META = join(PKG, 'migrations', 'meta');
@@ -44,7 +45,7 @@ const prev = JSON.parse(readFileSync(join(META, previous), 'utf8')) as { id: str
 const snapshot = generateDrizzleJson(
   schema as Record<string, unknown>,
   prev.id,
-  ['core', 'crm', 'pos', 'promo', 'booth', 'analytics', 'edge'],
+  [...OWNED_SCHEMAS],
 );
 
 writeFileSync(join(META, `${tag.slice(0, 4)}_snapshot.json`), JSON.stringify(snapshot, null, 2));

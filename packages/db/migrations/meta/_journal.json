@@ -547,6 +547,13 @@
       "when": 1791949007045,
       "tag": "0077_voucher_product_link",
       "breakpoints": true
+    },
+    {
+      "idx": 78,
+      "version": "7",
+      "when": 1792441417065,
+      "tag": "0078_inbox_schema",
+      "breakpoints": true
     }
   ]
 }

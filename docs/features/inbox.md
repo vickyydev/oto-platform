@@ -352,6 +352,38 @@ sign-on.
 All tables carry `operator_id`, `created_at` and `updated_at`; ids are
 UUIDv7; enumerations are text with CHECK constraints.
 
+**As built (I1, SCRUM-578, migration `0078_inbox_schema`;
+`packages/db/src/schema/inbox.ts`).** The list below is the original design;
+the build plan (`docs/progress/plans/inbox-build/PLAN.md`, "What reading the
+repo changed" and §1) corrected it, and the schema follows the plan:
+- `inbox` is a platform-owned schema (`OWNED_SCHEMAS`, drizzle
+  `schemaFilter`), migrated with the platform, not a lifted app's.
+- Every inbox → inbox reference is a composite tenant fence
+  `(operator_id, x_id) → x(operator_id, id)`.
+- Channels add `telegram` (a contact value, no adapter); providers add
+  `console` (the check-in notices' sender, `can_reply = false`).
+- `channel_account` gains `default_category` and `can_reply`, and names its
+  out-of-hours template by key; `routing_rule.primary_kind` is
+  `account | team`.
+- `conversation` gains `last_routed_at`, `last_message_preview` (≤ 140
+  characters) and `retain_until`, and is unique per contact and channel
+  account (one continuous thread).
+- `message` carries `channel_account_id`, `source` and `source_id` (a
+  mirrored notice) and `redacted_at`; its provider id is unique per channel
+  account.
+- `assignment` places its slot by `slot_index` (0 primary, 1–2 support), so
+  one primary, two support places and one slot per person are partial
+  unique indexes rather than a count.
+- `template` is per branch as well, and marks untranslated RU/TH rows with
+  `needs_translation`.
+- `event` is append-only by trigger (the PDPA erasure may rewrite its
+  payload, the retention purge may delete); `webhook_receipt` is unique per
+  (channel account, provider event id) and has `signature_ok` and
+  `payload_purged_at`; `contact` has `erased_at` / `erased_by_account_id`.
+- There is no worker process: inbox jobs run in the api's pg-boss runner, and
+  the channel contract lives in `packages/messaging`, not a contracts
+  package.
+
 - **`channel_account`** — `branch_id` (null = operator-wide), `channel`
   (whatsapp, instagram, facebook, line, webform), `provider` (meta_cloud,
   meta_graph, line, respond_io, webform, simulator), `external_id`
@@ -437,7 +469,7 @@ Integrations page.
 | Area | State | Notes |
 |---|---|---|
 | Review of the export and the briefs | done | 2026-09-20 |
-| `inbox` schema in the central database | not started | milestone 4 pillars; after the named-schema migration |
+| `inbox` schema in the central database | built (I1) | `0078_inbox_schema`; permissions, the three inbox roles, teams, blank routing rules, templates and console channel accounts through platform-sync; demo conversations via `pnpm --filter @oto/db seed:inbox-demo` (SCRUM-578, SCRUM-579) |
 | Launcher tile and mockup shell (`apps/inbox`) | not started | sample data, styled per the screenshots |
 | Channel adapters and simulator | not started | WhatsApp first; LINE per `PROJECT_CONTEXT.md` |
 | AI first responder, transcription, translation | not started | provider choice open |

@@ -17,6 +17,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
 import { createTestDatabase, stopTestServer } from '../src/testing';
+import { OWNED_SCHEMAS } from '../src/schema/helpers';
 
 const PKG = join(dirname(fileURLToPath(import.meta.url)), '..');
 const META = join(PKG, 'migrations', 'meta');
@@ -47,6 +48,9 @@ const snapshot = JSON.parse(readFileSync(join(META, latest), 'utf8')) as {
   tables: Record<string, SnapshotTable>;
 };
 
+/** Every schema this package owns, as a SQL list — `inbox` included since I1 (SCRUM-578). */
+const OWNED = OWNED_SCHEMAS.map((name) => `'${name}'`).join(',');
+
 const problems: string[] = [];
 const note = (m: string) => problems.push(m);
 
@@ -75,7 +79,7 @@ try {
 
   const dbTables = await client.query<{ table_schema: string; table_name: string }>(
     `select table_schema, table_name from information_schema.tables
-     where table_schema in ('core','crm','pos','promo','booth','analytics','edge')
+     where table_schema in (${OWNED})
        and table_type = 'BASE TABLE'`,
   );
   const present = new Set(dbTables.rows.map((r) => `${r.table_schema}.${r.table_name}`));
@@ -89,7 +93,7 @@ try {
   }>(
     `select table_schema, table_name, column_name, data_type, is_nullable
      from information_schema.columns
-     where table_schema in ('core','crm','pos','promo','booth','analytics','edge')`,
+     where table_schema in (${OWNED})`,
   );
   const colKey = (s: string, t: string, c: string) => `${s}.${t}.${c}`;
   const dbColumns = new Map(
@@ -107,7 +111,7 @@ try {
      from pg_constraint con
      join pg_class c on c.oid = con.conrelid
      join pg_namespace n on n.oid = c.relnamespace
-     where n.nspname in ('core','crm','pos','promo','booth','analytics','edge')`,
+     where n.nspname in (${OWNED})`,
   );
   const dbConstraints = new Map(
     constraints.rows.map((r) => [`${r.nspname}.${r.relname}.${r.conname}`, r]),
@@ -115,7 +119,7 @@ try {
 
   const indexes = await client.query<{ schemaname: string; tablename: string; indexname: string; indexdef: string }>(
     `select schemaname, tablename, indexname, indexdef from pg_indexes
-     where schemaname in ('core','crm','pos','promo','booth','analytics','edge')`,
+     where schemaname in (${OWNED})`,
   );
   const dbIndexes = new Map(
     indexes.rows.map((r) => [`${r.schemaname}.${r.tablename}.${r.indexname}`, r]),

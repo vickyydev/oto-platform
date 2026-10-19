@@ -280,6 +280,40 @@ export const PERMISSIONS = [
   'admin:benefit:credential_issue',
   // Analytics — the rollups Radar and Today read (S2-18)
   'analytics:read',
+  // Inbox (S2-19; plan docs/progress/plans/inbox-build/PLAN.md §1). Declared
+  // in I1, before any route enforces them, so the inbox roles below can carry
+  // them from the first sync. What the account may SEE is scoped by the
+  // assignment: operator-wide, a branch, or a team's department.
+  /** Lists, threads and the dashboard of the teams in scope. */
+  'inbox:conversation:read',
+  /** Send in a thread the account can read. */
+  'inbox:conversation:reply',
+  /** Add or remove support, change the primary, Divert on someone else's behalf. */
+  'inbox:conversation:assign',
+  /** Move a conversation to another team (and branch). */
+  'inbox:conversation:move',
+  /** Mark as Handled. */
+  'inbox:conversation:handle',
+  /** Reopen by hand; the automatic reopen when the customer writes again needs none. */
+  'inbox:conversation:reopen',
+  'inbox:template:manage',
+  /** Channel accounts, and the simulator panel. */
+  'inbox:channel:manage',
+  /** The metric cards. */
+  'inbox:dashboard:read',
+  /**
+   * The routing rules: who is default primary and backup per category and
+   * language (owner Q20). Its own permission, proposed on SCRUM-220, because
+   * changing who receives every Thai birthday enquiry is not channel
+   * configuration. Declined, it folds into `inbox:channel:manage`.
+   */
+  'inbox:routing:manage',
+  /**
+   * The PDPA erasure of a contact: irreversible, so in no inbox role — only
+   * `operator_admin` (and `platform_admin`) hold it, through `ALL`. Proposed on
+   * SCRUM-220; declined, it folds into `admin:operator:all`.
+   */
+  'inbox:contact:erase',
   // Which of the suite's apps a person may open (S2-02). Access is separate
   // from what they may do once inside: a nanny with POS permissions still has
   // no business on the console.
@@ -532,4 +566,51 @@ export const ROLE_BUNDLES: Record<SystemRole, Permission[]> = {
     'app:booth:access',
     'booth:staff:sign_in',
   ],
+};
+
+/**
+ * THE INBOX ROLES (S2-19 I1; plan §1 "Roles"). Not system roles: the five
+ * bundles above are untouched, and `platform_admin` / `operator_admin` take
+ * every inbox permission through `ALL`. These three are OPERATOR roles that
+ * `platformSync` lays for every operator, insert-if-absent — once laid they
+ * are the operator's own, and an edit to one is never pushed back.
+ *
+ * How each is assigned is what gives it its reach:
+ *   inbox_agent    scoped to a team's DEPARTMENT — that assignment is what
+ *                  makes a person "in the team"
+ *   inbox_manager  operator-wide for the owner and the GM; a BRANCH for a
+ *                  branch manager
+ *   inbox_admin    operator-wide
+ *
+ * `inbox:contact:erase` is in none of them.
+ */
+export const INBOX_ROLES = ['inbox_agent', 'inbox_manager', 'inbox_admin'] as const;
+export type InboxRole = (typeof INBOX_ROLES)[number];
+
+const INBOX_AGENT: Permission[] = [
+  'app:inbox:access',
+  'inbox:conversation:read',
+  'inbox:conversation:reply',
+  'inbox:conversation:handle',
+  'inbox:dashboard:read',
+];
+const INBOX_MANAGER: Permission[] = [
+  ...INBOX_AGENT,
+  'inbox:conversation:assign',
+  'inbox:conversation:move',
+  'inbox:conversation:reopen',
+  'inbox:template:manage',
+];
+
+export const INBOX_ROLE_BUNDLES: Record<InboxRole, Permission[]> = {
+  inbox_agent: INBOX_AGENT,
+  inbox_manager: INBOX_MANAGER,
+  inbox_admin: [...INBOX_MANAGER, 'inbox:channel:manage', 'inbox:routing:manage'],
+};
+
+/** What each inbox role says it is, on the role row the sync lays. */
+export const INBOX_ROLE_DESCRIPTIONS: Record<InboxRole, string> = {
+  inbox_agent: 'Inbox: a member of a team (assign scoped to the team department)',
+  inbox_manager: 'Inbox: assigns, moves and reopens (operator-wide, or one branch)',
+  inbox_admin: 'Inbox: also channel accounts and routing rules (operator-wide)',
 };

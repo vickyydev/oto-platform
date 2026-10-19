@@ -4,8 +4,8 @@ import { pgSchema, timestamp, uuid } from 'drizzle-orm/pg-core';
  * Named schemas (S2-01b). One database holds the whole suite, and the
  * boundary between its parts is a Postgres schema rather than a naming
  * convention — so a grant, a dump or a search_path can address one area, and
- * a lifted foreign app (otoapp, radar, inbox) can keep its own tables beside
- * ours without a single name collision.
+ * a lifted foreign app (otoapp, radar) can keep its own tables beside ours
+ * without a single name collision.
  *
  * Placement is by OWNER, not by lifecycle:
  *   core      tenancy and fleet — operator, branch, department, employee,
@@ -18,6 +18,10 @@ import { pgSchema, timestamp, uuid } from 'drizzle-orm/pg-core';
  *   booth     the Lucky Wheel (S2-07)
  *   analytics summaries and facts Radar reads (S2-15, S2-18)
  *   edge      box-owned state and the sync ledger (S2-05)
+ *   inbox     the Unified Inbox: channel accounts, contacts, conversations,
+ *             their messages, owners and timeline (S2-19). Anticipated as a
+ *             foreign app's schema until I1 (SCRUM-578) built it here, on
+ *             the platform's own migrations.
  *
  * `pgboss` is the job runner's own managed schema: outside Drizzle, created
  * by its own migrator in the deploy step, and deliberately excluded from
@@ -30,9 +34,10 @@ export const promo = pgSchema('promo');
 export const booth = pgSchema('booth');
 export const analytics = pgSchema('analytics');
 export const edge = pgSchema('edge');
+export const inbox = pgSchema('inbox');
 
 /** Every schema this package owns — the list `schemaFilter` is built from. */
-export const OWNED_SCHEMAS = ['core', 'crm', 'pos', 'promo', 'booth', 'analytics', 'edge'] as const;
+export const OWNED_SCHEMAS = ['core', 'crm', 'pos', 'promo', 'booth', 'analytics', 'edge', 'inbox'] as const;
 
 /** Every table: created_at / updated_at (CLAUDE.md §8). */
 export const timestamps = {
