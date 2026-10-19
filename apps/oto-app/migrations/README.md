@@ -79,7 +79,10 @@ it did.
 
 The payroll build (`docs/progress/plans/payroll-real-build/PLAN.md` §9,
 "Migration numbering") reserves 0021-0026: R2 took **0021**
-`payroll_config` and **0022** `payroll_profiles`; R3 takes 0023-0024, R4
-0025 and R6 0026. One lane writes migrations at a time. If another lane
+`payroll_config` and **0022** `payroll_profiles`; R3 took **0023**
+`payroll_month_inputs_and_rewards` and **0024**
+`payroll_run_inputs_ot_bank_and_leave_valuation` (which also holds the run
+and run-version tables and the draft's inputs the plan had placed in 0025);
+R4 takes 0025 and R6 0026. One lane writes migrations at a time. If another lane
 lands a migration first, the payroll lane rebases and regenerates, so
 drizzle-kit's `when` keeps increasing and every later number shifts up.
