@@ -60548,473 +60548,6 @@
         }
       }
     },
-    "/inbox/templates/manage": {
-      "get": {
-        "description": "Every template of the operator for the settings page — inactive ones too, archived ones with `archived=true` — with the placeholders each body names. Filters: key, language. Needs inbox:template:manage somewhere in the operator.",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "enum": [
-                "welcome",
-                "handover_birthday",
-                "handover_events",
-                "handover_complaint_online",
-                "handover_complaint_onsite",
-                "handover_lost_found",
-                "handover_marketing",
-                "out_of_hours"
-              ]
-            },
-            "in": "query",
-            "name": "key",
-            "required": false
-          },
-          {
-            "schema": {
-              "type": "string",
-              "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$"
-            },
-            "in": "query",
-            "name": "language",
-            "required": false
-          },
-          {
-            "schema": {
-              "type": "string",
-              "enum": [
-                "true",
-                "false"
-              ]
-            },
-            "in": "query",
-            "name": "archived",
-            "required": false
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "templates": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string",
-                            "format": "uuid"
-                          },
-                          "key": {
-                            "type": "string"
-                          },
-                          "language": {
-                            "type": "string"
-                          },
-                          "channel": {
-                            "type": "string",
-                            "enum": [
-                              "whatsapp",
-                              "instagram",
-                              "facebook",
-                              "line",
-                              "telegram",
-                              "webform"
-                            ],
-                            "nullable": true
-                          },
-                          "branchId": {
-                            "type": "string",
-                            "format": "uuid",
-                            "nullable": true
-                          },
-                          "body": {
-                            "type": "string"
-                          },
-                          "attachmentFileIds": {
-                            "type": "array",
-                            "items": {
-                              "type": "string",
-                              "format": "uuid"
-                            }
-                          },
-                          "approvalStatus": {
-                            "type": "string",
-                            "enum": [
-                              "not_required",
-                              "pending",
-                              "approved",
-                              "rejected"
-                            ]
-                          },
-                          "needsTranslation": {
-                            "type": "boolean"
-                          },
-                          "providerTemplateName": {
-                            "type": "string",
-                            "nullable": true
-                          },
-                          "active": {
-                            "type": "boolean"
-                          },
-                          "variables": {
-                            "type": "array",
-                            "items": {
-                              "type": "string"
-                            }
-                          },
-                          "updatedByAccountId": {
-                            "type": "string",
-                            "format": "uuid",
-                            "nullable": true
-                          },
-                          "updatedAt": {
-                            "type": "string"
-                          },
-                          "archivedAt": {
-                            "type": "string",
-                            "nullable": true
-                          }
-                        },
-                        "required": [
-                          "id",
-                          "key",
-                          "language",
-                          "channel",
-                          "branchId",
-                          "body",
-                          "attachmentFileIds",
-                          "approvalStatus",
-                          "needsTranslation",
-                          "providerTemplateName",
-                          "active",
-                          "variables",
-                          "updatedByAccountId",
-                          "updatedAt",
-                          "archivedAt"
-                        ],
-                        "additionalProperties": false
-                      }
-                    }
-                  },
-                  "required": [
-                    "templates"
-                  ],
-                  "additionalProperties": false
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/inbox/templates/{id}": {
-      "patch": {
-        "description": "Edit a template: its words, language, channel or branch, the provider’s template name, the approval status Meta gave it, or `active` (false deactivates it — the composer stops offering it). Not an archived one. Needs inbox:template:manage over the template as it stands and as it will be.",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "language": {
-                    "type": "string",
-                    "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$"
-                  },
-                  "channel": {
-                    "type": "string",
-                    "enum": [
-                      "whatsapp",
-                      "instagram",
-                      "facebook",
-                      "line",
-                      "telegram",
-                      "webform"
-                    ],
-                    "nullable": true
-                  },
-                  "branchId": {
-                    "type": "string",
-                    "format": "uuid",
-                    "nullable": true
-                  },
-                  "body": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 4096
-                  },
-                  "providerTemplateName": {
-                    "type": "string",
-                    "pattern": "^[a-z0-9_]{1,512}$",
-                    "nullable": true
-                  },
-                  "approvalStatus": {
-                    "type": "string",
-                    "enum": [
-                      "not_required",
-                      "pending",
-                      "approved",
-                      "rejected"
-                    ]
-                  },
-                  "active": {
-                    "type": "boolean"
-                  },
-                  "needsTranslation": {
-                    "type": "boolean"
-                  }
-                },
-                "additionalProperties": false
-              }
-            }
-          }
-        },
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "in": "path",
-            "name": "id",
-            "required": true
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "format": "uuid"
-                    },
-                    "key": {
-                      "type": "string"
-                    },
-                    "language": {
-                      "type": "string"
-                    },
-                    "channel": {
-                      "type": "string",
-                      "enum": [
-                        "whatsapp",
-                        "instagram",
-                        "facebook",
-                        "line",
-                        "telegram",
-                        "webform"
-                      ],
-                      "nullable": true
-                    },
-                    "branchId": {
-                      "type": "string",
-                      "format": "uuid",
-                      "nullable": true
-                    },
-                    "body": {
-                      "type": "string"
-                    },
-                    "attachmentFileIds": {
-                      "type": "array",
-                      "items": {
-                        "type": "string",
-                        "format": "uuid"
-                      }
-                    },
-                    "approvalStatus": {
-                      "type": "string",
-                      "enum": [
-                        "not_required",
-                        "pending",
-                        "approved",
-                        "rejected"
-                      ]
-                    },
-                    "needsTranslation": {
-                      "type": "boolean"
-                    },
-                    "providerTemplateName": {
-                      "type": "string",
-                      "nullable": true
-                    },
-                    "active": {
-                      "type": "boolean"
-                    },
-                    "variables": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    },
-                    "updatedByAccountId": {
-                      "type": "string",
-                      "format": "uuid",
-                      "nullable": true
-                    },
-                    "updatedAt": {
-                      "type": "string"
-                    },
-                    "archivedAt": {
-                      "type": "string",
-                      "nullable": true
-                    }
-                  },
-                  "required": [
-                    "id",
-                    "key",
-                    "language",
-                    "channel",
-                    "branchId",
-                    "body",
-                    "attachmentFileIds",
-                    "approvalStatus",
-                    "needsTranslation",
-                    "providerTemplateName",
-                    "active",
-                    "variables",
-                    "updatedByAccountId",
-                    "updatedAt",
-                    "archivedAt"
-                  ],
-                  "additionalProperties": false
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/inbox/templates/{id}/archive": {
-      "post": {
-        "description": "Archive a template: it leaves the composer and the settings list for good, and its variant is free for a new row. Never deleted — the messages sent from it still name it. Needs inbox:template:manage over it.",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "in": "path",
-            "name": "id",
-            "required": true
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "format": "uuid"
-                    },
-                    "key": {
-                      "type": "string"
-                    },
-                    "language": {
-                      "type": "string"
-                    },
-                    "channel": {
-                      "type": "string",
-                      "enum": [
-                        "whatsapp",
-                        "instagram",
-                        "facebook",
-                        "line",
-                        "telegram",
-                        "webform"
-                      ],
-                      "nullable": true
-                    },
-                    "branchId": {
-                      "type": "string",
-                      "format": "uuid",
-                      "nullable": true
-                    },
-                    "body": {
-                      "type": "string"
-                    },
-                    "attachmentFileIds": {
-                      "type": "array",
-                      "items": {
-                        "type": "string",
-                        "format": "uuid"
-                      }
-                    },
-                    "approvalStatus": {
-                      "type": "string",
-                      "enum": [
-                        "not_required",
-                        "pending",
-                        "approved",
-                        "rejected"
-                      ]
-                    },
-                    "needsTranslation": {
-                      "type": "boolean"
-                    },
-                    "providerTemplateName": {
-                      "type": "string",
-                      "nullable": true
-                    },
-                    "active": {
-                      "type": "boolean"
-                    },
-                    "variables": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    },
-                    "updatedByAccountId": {
-                      "type": "string",
-                      "format": "uuid",
-                      "nullable": true
-                    },
-                    "updatedAt": {
-                      "type": "string"
-                    },
-                    "archivedAt": {
-                      "type": "string",
-                      "nullable": true
-                    }
-                  },
-                  "required": [
-                    "id",
-                    "key",
-                    "language",
-                    "channel",
-                    "branchId",
-                    "body",
-                    "attachmentFileIds",
-                    "approvalStatus",
-                    "needsTranslation",
-                    "providerTemplateName",
-                    "active",
-                    "variables",
-                    "updatedByAccountId",
-                    "updatedAt",
-                    "archivedAt"
-                  ],
-                  "additionalProperties": false
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/inbox/conversations/{id}/primary": {
       "put": {
         "description": "Assign or replace the primary owner — a person, or a team (the reception phone). CATEGORY FOLLOWS THE PRIMARY: when the new primary's team is not the conversation's, the conversation moves to that team (its category, and for a reception desk its branch), and the server answers 409 CATEGORY_MOVE_UNCONFIRMED, with the destination in `details`, until the request carries `confirmMove: true`. A person in no team keeps the category; the support places stay. One place per person: 409 ALREADY_ON_CONVERSATION. Needs inbox:conversation:assign at the conversation, or the caller is its current primary. Refusals: 404 when the conversation is not the caller’s to see (or not in their operator); 403 when the permission is not held at this conversation.",
@@ -62649,6 +62182,473 @@
                     "contactId",
                     "alreadyErased",
                     "erasedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inbox/templates/manage": {
+      "get": {
+        "description": "Every template of the operator for the settings page — inactive ones too, archived ones with `archived=true` — with the placeholders each body names. Filters: key, language. Needs inbox:template:manage somewhere in the operator.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "welcome",
+                "handover_birthday",
+                "handover_events",
+                "handover_complaint_online",
+                "handover_complaint_onsite",
+                "handover_lost_found",
+                "handover_marketing",
+                "out_of_hours"
+              ]
+            },
+            "in": "query",
+            "name": "key",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$"
+            },
+            "in": "query",
+            "name": "language",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "in": "query",
+            "name": "archived",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "templates": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "key": {
+                            "type": "string"
+                          },
+                          "language": {
+                            "type": "string"
+                          },
+                          "channel": {
+                            "type": "string",
+                            "enum": [
+                              "whatsapp",
+                              "instagram",
+                              "facebook",
+                              "line",
+                              "telegram",
+                              "webform"
+                            ],
+                            "nullable": true
+                          },
+                          "branchId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "body": {
+                            "type": "string"
+                          },
+                          "attachmentFileIds": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "format": "uuid"
+                            }
+                          },
+                          "approvalStatus": {
+                            "type": "string",
+                            "enum": [
+                              "not_required",
+                              "pending",
+                              "approved",
+                              "rejected"
+                            ]
+                          },
+                          "needsTranslation": {
+                            "type": "boolean"
+                          },
+                          "providerTemplateName": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "active": {
+                            "type": "boolean"
+                          },
+                          "variables": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "updatedByAccountId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "updatedAt": {
+                            "type": "string"
+                          },
+                          "archivedAt": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "key",
+                          "language",
+                          "channel",
+                          "branchId",
+                          "body",
+                          "attachmentFileIds",
+                          "approvalStatus",
+                          "needsTranslation",
+                          "providerTemplateName",
+                          "active",
+                          "variables",
+                          "updatedByAccountId",
+                          "updatedAt",
+                          "archivedAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "templates"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inbox/templates/{id}": {
+      "patch": {
+        "description": "Edit a template: its words, language, channel or branch, the provider’s template name, the approval status Meta gave it, or `active` (false deactivates it — the composer stops offering it). Not an archived one. Needs inbox:template:manage over the template as it stands and as it will be.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "language": {
+                    "type": "string",
+                    "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$"
+                  },
+                  "channel": {
+                    "type": "string",
+                    "enum": [
+                      "whatsapp",
+                      "instagram",
+                      "facebook",
+                      "line",
+                      "telegram",
+                      "webform"
+                    ],
+                    "nullable": true
+                  },
+                  "branchId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  },
+                  "body": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4096
+                  },
+                  "providerTemplateName": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9_]{1,512}$",
+                    "nullable": true
+                  },
+                  "approvalStatus": {
+                    "type": "string",
+                    "enum": [
+                      "not_required",
+                      "pending",
+                      "approved",
+                      "rejected"
+                    ]
+                  },
+                  "active": {
+                    "type": "boolean"
+                  },
+                  "needsTranslation": {
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "key": {
+                      "type": "string"
+                    },
+                    "language": {
+                      "type": "string"
+                    },
+                    "channel": {
+                      "type": "string",
+                      "enum": [
+                        "whatsapp",
+                        "instagram",
+                        "facebook",
+                        "line",
+                        "telegram",
+                        "webform"
+                      ],
+                      "nullable": true
+                    },
+                    "branchId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "body": {
+                      "type": "string"
+                    },
+                    "attachmentFileIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "format": "uuid"
+                      }
+                    },
+                    "approvalStatus": {
+                      "type": "string",
+                      "enum": [
+                        "not_required",
+                        "pending",
+                        "approved",
+                        "rejected"
+                      ]
+                    },
+                    "needsTranslation": {
+                      "type": "boolean"
+                    },
+                    "providerTemplateName": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "active": {
+                      "type": "boolean"
+                    },
+                    "variables": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "updatedByAccountId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    },
+                    "archivedAt": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "key",
+                    "language",
+                    "channel",
+                    "branchId",
+                    "body",
+                    "attachmentFileIds",
+                    "approvalStatus",
+                    "needsTranslation",
+                    "providerTemplateName",
+                    "active",
+                    "variables",
+                    "updatedByAccountId",
+                    "updatedAt",
+                    "archivedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inbox/templates/{id}/archive": {
+      "post": {
+        "description": "Archive a template: it leaves the composer and the settings list for good, and its variant is free for a new row. Never deleted — the messages sent from it still name it. Needs inbox:template:manage over it.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "key": {
+                      "type": "string"
+                    },
+                    "language": {
+                      "type": "string"
+                    },
+                    "channel": {
+                      "type": "string",
+                      "enum": [
+                        "whatsapp",
+                        "instagram",
+                        "facebook",
+                        "line",
+                        "telegram",
+                        "webform"
+                      ],
+                      "nullable": true
+                    },
+                    "branchId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "body": {
+                      "type": "string"
+                    },
+                    "attachmentFileIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "format": "uuid"
+                      }
+                    },
+                    "approvalStatus": {
+                      "type": "string",
+                      "enum": [
+                        "not_required",
+                        "pending",
+                        "approved",
+                        "rejected"
+                      ]
+                    },
+                    "needsTranslation": {
+                      "type": "boolean"
+                    },
+                    "providerTemplateName": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "active": {
+                      "type": "boolean"
+                    },
+                    "variables": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "updatedByAccountId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    },
+                    "archivedAt": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "key",
+                    "language",
+                    "channel",
+                    "branchId",
+                    "body",
+                    "attachmentFileIds",
+                    "approvalStatus",
+                    "needsTranslation",
+                    "providerTemplateName",
+                    "active",
+                    "variables",
+                    "updatedByAccountId",
+                    "updatedAt",
+                    "archivedAt"
                   ],
                   "additionalProperties": false
                 }
