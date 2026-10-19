@@ -513,6 +513,43 @@ export async function seatReach(
   );
 }
 
+/**
+ * SCRUM-592 — AN APP HELD AT A DEPARTMENT.
+ *
+ * Opening an app (`app:<key>:access`) is checked against the session's branch,
+ * and a department grant covers no branch, so a department-scoped person — an
+ * `inbox_agent` — saw the Inbox tile on the launcher and was refused when they
+ * clicked it. This answers the one extra question those checks need: does the
+ * caller hold `permission` through a DEPARTMENT grant at a department of their
+ * own operator?
+ *
+ * It is asked only AFTER the existing branch/operator check has said no, so
+ * operator- and branch-granted callers are answered exactly as before. The
+ * department is loaded inside `operatorId`: a grant naming another operator's
+ * department (which assignment refuses, rule 2) counts for nothing here.
+ */
+export async function holdsAtOwnDepartment(
+  db: Db,
+  effective: EffectivePermission[],
+  permission: Permission,
+  operatorId: string,
+): Promise<boolean> {
+  const deptIds = [
+    ...new Set(
+      effective.flatMap((g) =>
+        g.permission === permission && g.scopeType === 'department' && g.scopeId !== null ? [g.scopeId] : [],
+      ),
+    ),
+  ];
+  if (deptIds.length === 0) return false;
+  const [own] = await db
+    .select({ id: department.id })
+    .from(department)
+    .where(and(eq(department.operatorId, operatorId), inArray(department.id, deptIds)))
+    .limit(1);
+  return own !== undefined;
+}
+
 /** Does a reach cover this branch? An empty branch list covers nothing. */
 export function reachCovers(reach: BranchReach, branchId: string): boolean {
   return reach.kind === 'operator' || reach.branchIds.includes(branchId);

@@ -19,6 +19,7 @@ import {
 import { boothStaffCode, newId, type Permission } from '@oto/shared';
 import { AppError } from '../lib/errors';
 import { audit } from './audit';
+import { holdsAtOwnDepartment } from './access-control';
 import { hasPermission, resolveEffectivePermissions } from './permissions';
 import { withTx, type Exec } from './tx';
 
@@ -551,7 +552,11 @@ export async function handoffIdentity(db: Db, exchanged: ExchangedHandoff): Prom
     !hasPermission(effective, permission, {
       operatorId: exchanged.operatorId,
       branchId: exchanged.branchId ?? undefined,
-    })
+    }) &&
+    // SCRUM-592: the same department grant `POST /handoff` honours, so a token
+    // it mints is not refused here. Booth access is a counter role's, and any
+    // role may be assigned at a department.
+    !(await holdsAtOwnDepartment(db, effective, permission, exchanged.operatorId))
   ) {
     throw new AppError(403, 'FORBIDDEN', `Missing permission ${permission}`);
   }

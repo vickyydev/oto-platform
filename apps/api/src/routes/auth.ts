@@ -30,6 +30,7 @@ import {
   issueHandoff,
   type HandoffConfig,
 } from '../services/handoff';
+import { holdsAtOwnDepartment } from '../services/access-control';
 import { audit } from '../services/audit';
 import { opCtx, withTx } from '../services/tx';
 import { limitPrincipal } from '../services/throttle';
@@ -205,7 +206,16 @@ export async function authRoutes(app: App): Promise<void> {
       const audience = req.body.app;
       // Before the configuration is read: what this deployment can and cannot
       // do is not something to tell a caller who may not ask in the first place.
-      await req.requirePermission(appAccessPermission(audience));
+      //
+      // SCRUM-592: an app held through a DEPARTMENT grant opens too — the
+      // guard checks the session's branch, which a department grant never
+      // covers. Asked first and only adds: anyone without such a grant goes
+      // through `requirePermission` exactly as before, same answer and same
+      // refusal.
+      const permission = appAccessPermission(audience);
+      if (!(await holdsAtOwnDepartment(app.db, await req.effectivePermissions(), permission, auth.operatorId))) {
+        await req.requirePermission(permission);
+      }
       const config = handoff();
 
       // Present by definition — `requireAuth` resolved the session from it.
