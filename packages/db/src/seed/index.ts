@@ -97,7 +97,7 @@ export {
 } from './benefits';
 /** Demo Branch 2's own booth, whose day the demo day files beside its sales. */
 export { DEMO_BOOTH_NAME, DEMO_BOOTH_PREFIX } from './demo-booth';
-/** The Inbox's configuration (S2-19 I1). */
+/** The Inbox's configuration and its demo conversations (S2-19 I1, I1b). */
 export {
   CONSOLE_NOTICE_CHANNELS,
   INBOX_DEPARTMENTS,
@@ -107,6 +107,22 @@ export {
   syncInboxSetup,
   type InboxSyncCounts,
 } from './inbox';
+export {
+  assertInboxDemoAllowed,
+  describeInboxDemo,
+  directInsertDelivery,
+  InboxDemoRefusedError,
+  seedInboxDemo,
+  type DemoDelivery,
+  type InboxDemoCounts,
+} from './inbox-demo';
+export {
+  DEMO_CHANNEL_ACCOUNTS,
+  DEMO_CONVERSATIONS,
+  DEMO_RULE_PEOPLE,
+  DEMO_STAFF,
+  DEMO_STAFF_PASSWORD,
+} from './inbox-demo-fixtures';
 /** The demo day's events, camp and party in the OTO App, and its walk-up prices (S2-20 E5). */
 export { describeDemoEvents, seedDemoEvents, type DemoEventsCounts } from './demo-events';
 /** What the demo day refuses with before it writes, in words a person can act on (SCRUM-503). */
