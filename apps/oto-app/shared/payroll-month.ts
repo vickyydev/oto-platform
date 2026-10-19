@@ -132,10 +132,46 @@ export interface OutputsManifest {
   cashAmount: number; net: number; bankAmount: number; difference: number; note: string;
   uploadIssues: string[]; uploadBankAmount: number; uploadDifference: number;
   reports: string[]; payslips: string[];
+  /** R5 (SCRUM-570): every stored file's name, group, sha256 and size, as written at lock (absent on versions locked before R5). */
+  files?: { filename: string; group: string; sha256: string; bytes: number; note?: string }[];
+  /** R5: whether the welfare fund workbook was made, and why not. */
+  ewf?: EwfOutputState;
+  /** R5: the lock's reconciliation, read from the stored files' own bytes. */
+  reconciliation?: { bank: number; cash: number; net: number; difference: number };
 }
+
+/** The welfare fund upload at lock: made only for a Thai entity with settings in force for the month (plan §8: none are seeded). */
+export type EwfOutputState =
+  | { status: "in-force"; from: string }
+  | { status: "not-yet-in-force"; from: string }
+  | { status: "not-configured" }
+  | { status: "not-applicable" };
+
 export interface OutputFileView {
   id: string; group: string; filename: string; mime: string; employeeId: string | null; name: string | null;
   bytes: number; rows: number; total: number; sha256: string;
+}
+
+/** One bank file as read back from its stored bytes. */
+export interface StoredBankFileView { filename: string; format: "SCB TXT" | "CSV"; transfers: number; amount: number; references: string[]; problems: string[] }
+
+/** Bank files plus cash against net, every figure read from the stored files' bytes. */
+export interface StoredReconciliationView {
+  bank: number; cash: number; net: number; difference: number; reconciled: boolean;
+  bankFiles: StoredBankFileView[]; cashFile: string | null; problems: string[];
+}
+
+/** The downloads of one locked version (the prototype's downloads-list, from stored files). */
+export interface PayrollDownloadsView {
+  snapshotId: string; entityId: string; entityName: string; month: string; version: number; status: string;
+  lockedAt: string; lockedBy: string; currency: string;
+  groups: { group: string; files: (OutputFileView & { note: string | null })[] }[];
+  allFiles: OutputFileView | null;
+  reconciliation: StoredReconciliationView;
+  ewf: EwfOutputState | null;
+  uploadIssues: string[]; note: string;
+  /** Locked before R5: the files R4 stored, without the bundle, notes or EWF state. */
+  lockedBeforeR5: boolean;
 }
 export interface PayrollHistoryRow {
   snapshotId: string; entityId: string; entityName: string; month: string; version: number; status: string;

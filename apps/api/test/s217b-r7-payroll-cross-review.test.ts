@@ -273,6 +273,9 @@ describe.skipIf(!HAS_APP)('round 7 independent payroll ownership review', () => 
       'post /api/payroll/statutory/documents hr.manage_payroll',
       'get /api/payroll/statutory/documents/:id/files/:index hr.view_salary',
       'post /api/payroll/statutory/filings hr.manage_payroll',
+      // SCRUM-570 (R5): the downloads of a locked version (files by group, the all-files ZIP,
+      // bank + cash against net read from the stored bytes); downloads go through history/files.
+      'get /api/payroll/history/:entityId/:month/:version/downloads hr.view_salary',
     ]);
     // Every registration in the file is one of those: none without its guard and fence.
     expect([...source.matchAll(/app\.(get|post|put|patch|delete)\(/g)]).toHaveLength(declared.length);

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import type { PayrollProfileView, PayrollRosterView, PayrollSetupChange, PayrollSetupView } from "@shared/payroll-config";
-import type { FeedsView, MonthEndView, MonthInputsView, MyPayslipsView, PayrollHistoryRow, PayrollHistoryVersionView, PreviewView, RewardsView } from "@shared/payroll-month";
+import type { FeedsView, MonthEndView, MonthInputsView, MyPayslipsView, PayrollDownloadsView, PayrollHistoryRow, PayrollHistoryVersionView, PreviewView, RewardsView } from "@shared/payroll-month";
 
 /** A refused payroll call: the server's words plus the prototype's list of problems, when it gave one. */
 export class PayrollApiError extends Error {
@@ -74,6 +74,12 @@ export const useHistoryVersion = (entityId: string, month: string, version: numb
   queryKey: ["/api/payroll/history", entityId, month, version], queryFn: () => payrollCall("GET", `/api/payroll/history/${entityId}/${month}/${version}`),
   staleTime: 0, enabled: !!entityId && !!month && !!version,
 });
+/** The downloads of one locked version (R5, SCRUM-570): stored files by group and the reconciliation read from their bytes. */
+export const useDownloads = (entityId: string, month: string, version: number) => useQuery<PayrollDownloadsView>({
+  queryKey: ["/api/payroll/history", entityId, month, version, "downloads"], queryFn: () => payrollCall("GET", `/api/payroll/history/${entityId}/${month}/${version}/downloads`),
+  staleTime: 0, enabled: !!entityId && !!month && version > 0, retry: false,
+});
+export const downloadsPath = (entityId: string, month: string, version: number) => `/payroll/downloads/${entityId}/${month}/${version}`;
 export const useMyPayslips = () => useQuery<MyPayslipsView>({
   queryKey: ["/api/payroll/me/payslips"], queryFn: () => payrollCall("GET", "/api/payroll/me/payslips"), staleTime: 0,
 });

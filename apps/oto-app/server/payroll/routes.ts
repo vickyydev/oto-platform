@@ -3,7 +3,9 @@
  * adds month inputs, rewards setup, the payroll feeds and the month-end draft
  * with its read-only preview. R4 (SCRUM-569) adds the lifecycle (GM confirm,
  * Owner lock, paid, reopen), overtime decisions, third-party approvals, the
- * locked history with its files, and every employee's own payslips.
+ * locked history with its files, and every employee's own payslips. R5
+ * (SCRUM-570) adds the downloads of a locked version; every file download
+ * stays the one history-files route, permission-checked and audited.
  *
  * R6 (SCRUM-571) adds the statutory documents: the offers and coverage per
  * branch and period, rendering, the frozen files, filing records and the EWF
@@ -55,6 +57,7 @@ import { addManualLine, addOverride, loadMonthEnd, previewMonth, recordReview, r
 import { approveThirdParty, confirmRun, lockRun, markPaid, recordOvertimeDecision, removeOvertimeDecision, reopenRun } from "./lifecycle";
 import { listHistory, loadHistoryVersion, myPayslips, openHistoryFile, openMyPayslip, type ServedFile } from "./payslips";
 import { ewfSurcharge, loadStatutoryView, openDocumentFile, recordFiling, renderDocument } from "./statutory";
+import { loadDownloads } from "./outputs";
 
 export type PayrollPermission = "hr.view_salary" | "hr.manage_payroll" | "payroll.draft_profiles" | "payroll.confirm" | "payroll.lock" | "payroll.own_payslips";
 
@@ -279,4 +282,8 @@ export function registerPayrollRoutes(app: Express, { requireAuth, callerParkGro
     openDocumentFile(parkGroupOf(res), actorOf(req), req.params.id, req.params.index, req.query.download === "1")));
   app.post("/api/payroll/statutory/filings", requireAuth, payroll("hr.manage_payroll"), fence, answer(201, (req, res) =>
     recordFiling(parkGroupOf(res), actorOf(req), body(req))));
+
+  // ── Downloads of a locked version (R5): the stored files by group, the bundle and the reconciliation read from the stored bytes ──
+  app.get("/api/payroll/history/:entityId/:month/:version/downloads", requireAuth, payroll("hr.view_salary"), fence, answer(200, (req, res) =>
+    loadDownloads(parkGroupOf(res), req.params.entityId, req.params.month, req.params.version)));
 }

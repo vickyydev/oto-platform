@@ -17,10 +17,11 @@
  *     group, is a 404: its existence is not confirmed.
  *
  * Payslips are served as private HTML (sandboxed, never cached) and print to
- * PDF from the browser; the server's Puppeteer PDF and the object-storage move
- * are R5's (outputs and downloads), so no lock waits on a browser render.
+ * PDF from the browser. R5 (SCRUM-570) kept it so: a server Puppeteer PDF per
+ * person would put a Chromium render of every payslip inside the lock's
+ * transaction, and its bytes (creation dates) could never be re-checked
+ * against a frozen sha256; the files stay inline bytes (outputs.ts says why).
  */
-import { createHash } from "node:crypto";
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { employees, payrollMonthRuns, payrollOutputFiles, payrollPayingEntities, payrollRunSnapshots, payrollRunVersions, type PayrollOutputFileRow } from "@shared/schema";
 import type { MyPayslipsView, OutputFileView, OutputsManifest, PayrollHistoryRow, PayrollHistoryVersionView, RunAuditEntryView } from "@shared/payroll-month";
@@ -30,6 +31,7 @@ import { getEmployeeDisplayName } from "../lib/employeeDisplayName";
 import { PayrollRefusal, type PayrollActor } from "./setup";
 import { requireMonth } from "./inputs";
 import { recordRunAudit } from "./run-audit";
+import { ALL_FILES_GROUP, storedBody } from "./outputs";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const num = (v: unknown) => Number(v ?? 0);
@@ -89,13 +91,7 @@ export async function loadHistoryVersion(tenantId: string, entityId: string, mon
 
 export interface ServedFile { filename: string; mime: string; body: Buffer }
 
-function bodyOf(file: Pick<PayrollOutputFileRow, "content" | "encoding" | "sha256" | "filename">): Buffer {
-  if (file.content == null) throw new PayrollRefusal(409, "This file is kept in storage that is not connected yet.");
-  const body = file.encoding === "base64" ? Buffer.from(file.content, "base64") : Buffer.from(file.content, "utf8");
-  // The bytes are the ones frozen at lock: anything else is refused, never served.
-  if (createHash("sha256").update(body).digest("hex") !== file.sha256) throw new PayrollRefusal(409, `${file.filename} does not match the copy frozen at lock.`);
-  return body;
-}
+const bodyOf = storedBody;
 
 /** A payroll role opens any locked file; the opening is written to the run audit (another person's payslip included). */
 export async function openHistoryFile(tenantId: string, actor: PayrollActor, fileId: string): Promise<ServedFile> {
@@ -107,7 +103,7 @@ export async function openHistoryFile(tenantId: string, actor: PayrollActor, fil
   if (!row) throw new PayrollRefusal(404, "File not found");
   const body = bodyOf(row.file);
   await recordRunAudit(db, tenantId, actor, { runId: row.runId, versionId: row.file.runVersionId, version: row.version,
-    action: row.file.fileGroup === "Payslips" ? "Opened a payslip" : "Downloaded a file", subject: "file", subjectId: row.file.id,
+    action: row.file.fileGroup === "Payslips" && row.file.employeeId ? "Opened a payslip" : row.file.fileGroup === ALL_FILES_GROUP ? "Downloaded all files (ZIP)" : "Downloaded a file", subject: "file", subjectId: row.file.id,
     reason: `${row.file.filename} (${row.file.fileGroup})`, newValue: { employeeId: row.file.employeeId, sha256: row.file.sha256 } });
   return { filename: row.file.filename, mime: row.file.mime, body };
 }

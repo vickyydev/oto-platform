@@ -17,7 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { canViewHrSalary, HR_PAY_HIDDEN_NOTE } from "@shared/hr-salary-permission";
 import type { PayrollHistoryRow } from "@shared/payroll-month";
-import { errorText, historyFileUrl, money, monthLabel, useHistoryVersion, usePayrollHistory } from "@/lib/payroll/api";
+import { downloadsPath, errorText, historyFileUrl, money, monthLabel, useHistoryVersion, usePayrollHistory } from "@/lib/payroll/api";
 
 const STATUS: Record<string, string> = { locked: "Locked", paid: "Paid", superseded: "Replaced by a newer version" };
 const Empty = ({ children }: { children: ReactNode }) => <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">{children}</p>;
@@ -57,12 +57,12 @@ export default function PayrollHistoryPage() {
 function VersionDetail({ entityId, month, version }: { entityId: string; month: string; version: number }) {
   const detail = useHistoryVersion(entityId, month, version);
   const [find, setFind] = useState("");
-  const payslips = useMemo(() => (detail.data?.files ?? []).filter((f) => f.group === "Payslips")
+  const payslips = useMemo(() => (detail.data?.files ?? []).filter((f) => f.group === "Payslips" && f.employeeId)
     .filter((f) => !find.trim() || (f.name ?? "").toLowerCase().includes(find.trim().toLowerCase())).sort((a, b) => (a.name ?? "").localeCompare(b.name ?? "")), [detail.data, find]);
   if (detail.isLoading) return <Skeleton className="h-64 w-full" />;
   if (detail.error || !detail.data) return <Empty>{errorText(detail.error)}</Empty>;
   const d = detail.data;
-  const others = d.files.filter((f) => f.group !== "Payslips");
+  const others = d.files.filter((f) => !(f.group === "Payslips" && f.employeeId));
   return <Card data-testid="history-version">
     <CardHeader className="border-b pb-3">
       <CardTitle className="flex flex-wrap items-center gap-2 text-base"><LockKeyhole className="h-4 w-4" />{d.entityName} · {monthLabel(d.month)} · version {d.version}
@@ -84,7 +84,8 @@ function VersionDetail({ entityId, month, version }: { entityId: string; month: 
         <p className="mt-1 text-xs text-muted-foreground">Opening someone's payslip is recorded in the run audit.</p>
       </section>
       <section>
-        <h3 className="mb-2 text-sm font-semibold">Bank, cash and report files</h3>
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2"><h3 className="text-sm font-semibold">Bank, cash and report files</h3>
+          <Link href={downloadsPath(d.entityId, d.month, d.version)} className="inline-flex items-center gap-1 text-sm underline" data-testid="history-downloads-link"><Download className="h-3.5 w-3.5" />Downloads and reconciliation</Link></div>
         <ul className="divide-y rounded-lg border text-sm">{others.map((f) => <li key={f.id} className="flex flex-wrap items-center gap-2 px-3 py-1.5">
           <Badge variant="outline">{f.group}</Badge><span className="flex-1 break-all text-xs">{f.filename}</span>
           {f.total ? <span className="tabular-nums">{money(f.total)}</span> : null}

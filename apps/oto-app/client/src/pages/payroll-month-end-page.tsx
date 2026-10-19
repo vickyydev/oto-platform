@@ -598,7 +598,8 @@ function ApprovalsTab({ view, active }: { view: MonthEndView; active: boolean })
         <p className="mt-1 text-xs text-muted-foreground">The approved version stays in history unchanged.</p>
       </div>}
     </div>
-    {view.run.snapshotId && <p className="text-sm"><Link href={`/payroll/history?entity=${view.entity.id}&month=${view.month}&version=${view.run.version}`} className="underline">Open the frozen version and its payslips</Link></p>}
+    {view.run.snapshotId && <p className="text-sm"><Link href={`/payroll/history?entity=${view.entity.id}&month=${view.month}&version=${view.run.version}`} className="underline">Open the frozen version and its payslips</Link>
+      {" · "}<Link href={`/payroll/downloads/${view.entity.id}/${view.month}/${view.run.version}`} className="underline" data-testid="month-end-downloads-link">Downloads: bank, SSO and EWF files</Link></p>}
     {view.versions.length > 1 && <div><h3 className="text-sm font-semibold">Versions</h3>
       <ul className="mt-1 divide-y text-xs">{view.versions.map((v) => <li key={v.versionId} className="flex flex-wrap gap-2 py-1">
         <strong>v{v.version}</strong><Badge variant="outline">{STATUS_LABEL[v.status] ?? v.status}</Badge>

@@ -21,10 +21,14 @@
  *     since the confirmation refuses with the prototype's words — then no
  *     blocking item, clean upload details and bank files plus cash equal to
  *     net. It writes the frozen snapshot (everything the engine read and its
- *     result), the pay lines and the output files (payslips, bank files, the
- *     cash list, reports), all unchangeable by trigger. Earlier locked
- *     versions of the month become `superseded` only now.
- *   - Mark paid (payroll.lock) checks the frozen files reconcile to net.
+ *     result), the pay lines and the output files (outputs.ts, R5: payslips,
+ *     the SCB and other bank files, SSO and EWF uploads, the cash list,
+ *     reports and the all-downloads ZIP), all unchangeable by trigger — and
+ *     refuses unless the STORED bank files plus cash, read back from their
+ *     bytes, equal net to the satang. Earlier locked versions of the month
+ *     become `superseded` only now.
+ *   - Mark paid (payroll.lock) re-reads the stored files and checks they
+ *     reconcile to net.
  *   - Reopen (payroll.lock) needs a reason and makes version N+1 a draft with
  *     the run's inputs copied ({...prior}, company-workflow.ts:64); version N
  *     and its snapshot stay exactly as they were.
@@ -38,7 +42,6 @@
  * the prototype does; the bank itself reads only the older per-branch
  * snapshots, which company runs never write, so it earns nothing from them.
  */
-import { createHash } from "node:crypto";
 import { and, asc, desc, eq, inArray, lt, sql } from "drizzle-orm";
 import {
   payrollMonthRuns,
@@ -66,11 +69,11 @@ import { thirdPartyApprovalSignature } from "./engine/company-issue-review";
 import { effectiveRulesForMonth } from "./engine/calculations";
 import { assertOtBankAwardsWithinMaximum, overtimeBankLotId, overtimePolicyForRole, roundedOvertimeHours } from "./engine/ot-bank";
 import { previousMonth } from "./engine/company-math";
-import { uploadFileBytes } from "./engine/company-upload-files";
+import { assertStoredFilesReconcile, lockOutputFiles, storedPaymentFiles } from "./outputs";
 import { validateCompanyDocument } from "./engine/company-validation";
 import { ENGINE_REVISION } from "./engine/revision";
 import { systemClock, type PayrollClock } from "./engine/clock";
-import type { CompanyOutputs, CompanyPayrollDocument, CompanyResult, CompanySnapshot } from "./engine/company-model";
+import type { CompanyOutputs, CompanyPayrollDocument, CompanySnapshot } from "./engine/company-model";
 import type { OvertimeDecision, PayrollWorld } from "./engine/model";
 
 /** Options the checks use: a fixed clock, and an engine revision other than the deployed one (an engine deploy between confirm and lock). */
@@ -85,7 +88,6 @@ function transitionRefusal(error: unknown): never {
 
 const signer = (revision: string) => (data: PayrollWorld, doc: CompanyPayrollDocument, month: string) => sourceSignature({ world: data, doc, month }, revision);
 const key = (entityId: string, month: string) => `${entityId}:${month}`;
-const sha256 = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex");
 
 async function userName(tx: Tx, userId: string | null): Promise<string> {
   if (!userId) return "";
@@ -130,35 +132,14 @@ export async function confirmRun(tenantId: string, actor: PayrollActor, entityId
 // ─── Owner lock ──────────────────────────────────────────────────────────────
 
 /** The prototype's CompanyOutputs without the file bodies: what the snapshot row keeps. */
-export function outputsManifest(outputs: CompanyOutputs): OutputsManifest {
+export function outputsManifest(outputs: CompanyOutputs, stored?: Pick<OutputsManifest, "files" | "ewf" | "reconciliation">): OutputsManifest {
   return {
+    ...(stored ?? {}),
     banks: outputs.banks.map((b) => ({ account: { id: b.account.id, label: b.account.label, bank: b.account.bank, fileFormat: b.account.fileFormat }, filename: b.filename, amount: b.amount, transfers: b.transfers })),
     cashAmount: outputs.cashAmount, net: outputs.net, bankAmount: outputs.bankAmount, difference: outputs.difference, note: outputs.note,
     uploadIssues: outputs.uploadIssues ?? [], uploadBankAmount: outputs.uploadBankAmount ?? 0, uploadDifference: outputs.uploadDifference ?? 0,
     reports: Object.keys(outputs.reports), payslips: Object.keys(outputs.payslips),
   };
-}
-
-interface FileToWrite { employeeId: string | null; group: string; filename: string; mime: string; encoding: "utf8" | "base64"; content: string; rows: number; total: number }
-
-/** Every file of the lock: one payslip per person, each bank file, the cash list, reports and the upload files (not the payslips zip: the payslips are each stored). */
-export function outputFiles(outputs: CompanyOutputs, result: CompanyResult, entityId: string, month: string): FileToWrite[] {
-  const base = `${entityId}-${month}`;
-  const files: FileToWrite[] = [];
-  const seen = new Set<string>();
-  const add = (f: FileToWrite) => { if (seen.has(f.filename)) return; seen.add(f.filename); files.push(f); };
-  for (const [employeeId, html] of Object.entries(outputs.payslips)) {
-    add({ employeeId, group: "Payslips", filename: `${base}-${employeeId}-payslip.html`, mime: "text/html", encoding: "utf8", content: html, rows: 1,
-      total: result.people.find((p) => p.id === employeeId)?.net ?? 0 });
-  }
-  for (const b of outputs.banks) add({ employeeId: null, group: "Bank files", filename: b.filename, mime: "text/csv", encoding: "utf8", content: b.csv, rows: b.transfers.length, total: b.amount });
-  add({ employeeId: null, group: "Reports", filename: `${base}-cash-signature-list.html`, mime: "text/html", encoding: "utf8", content: outputs.cashHtml, rows: 0, total: outputs.cashAmount });
-  for (const [name, content] of Object.entries(outputs.reports)) add({ employeeId: null, group: "Reports", filename: `${base}-${name}`, mime: "text/csv", encoding: "utf8", content, rows: 0, total: 0 });
-  for (const f of outputs.downloadFiles ?? []) {
-    if (f.group === "Payslips") continue;
-    add({ employeeId: null, group: f.group, filename: f.filename, mime: f.mime, encoding: f.encoding, content: f.content, rows: f.rows, total: f.total });
-  }
-  return files;
 }
 
 export async function lockRun(tenantId: string, actor: PayrollActor, entityId: string, monthValue: string, body: Record<string, unknown>, options: LifecycleOptions = {}) {
@@ -187,6 +168,13 @@ export async function lockRun(tenantId: string, actor: PayrollActor, entityId: s
     const entry = doc.runs[k].audit.at(-1)!;
     const lockedAt = new Date(snapshot.lockedAt);
     const signature = sourceSignature(loaded, revision);
+    // R5: every output file as the builders made it, and the reconciliation read back from those exact bytes.
+    const { files: stored, ewf } = lockOutputFiles(snapshot.outputs, snapshot.result, loaded.world, entity.id, month);
+    const reconciled = assertStoredFilesReconcile(stored, snapshot.result.totals.net, "Nothing was locked: the stored files do not reconcile.");
+    const manifest = outputsManifest(snapshot.outputs, {
+      files: stored.map((f) => ({ filename: f.filename, group: f.group, sha256: f.sha256, bytes: f.body.length, ...(f.note ? { note: f.note } : {}) })),
+      ewf, reconciliation: { bank: reconciled.bank, cash: reconciled.cash, net: reconciled.net, difference: reconciled.difference },
+    });
     await recordRunAudit(tx, tenantId, actor, { runId: run.id, versionId: version.id, version: version.version, action: entry.action,
       reason: `${entry.reason} Note: ${note}`, subject: "lifecycle", oldValue: { status: version.status }, newValue: { status: "locked", sourceSignature: signature } });
     const audit = (await listRunAudit(tx, tenantId, run.id)).filter((a) => a.runVersionId === version.id).map(runAuditOut);
@@ -194,7 +182,7 @@ export async function lockRun(tenantId: string, actor: PayrollActor, entityId: s
     const prev = previousMonth(month);
     const [row] = await tx.insert(payrollRunSnapshots).values({
       tenantId, runId: run.id, runVersionId: version.id, entityId: entity.id, month, version: version.version,
-      result: snapshot.result, calculation: snapshot.calculation, outputsManifest: outputsManifest(snapshot.outputs), audit,
+      result: snapshot.result, calculation: snapshot.calculation, outputsManifest: manifest, audit,
       rewardConfig: snapshot.rewardConfig ?? {}, inputSnapshot: { [prev]: before.months[prev] ?? null, [month]: before.months[month] ?? null },
       world: { world: worldOnly, doc: before, excluded: loaded.excluded, notes: loaded.notes },
       engineRevision: revision, sourceSignature: signature, lockedAt, lockedBy: actor.userId, lockedByName: actor.name,
@@ -205,11 +193,8 @@ export async function lockRun(tenantId: string, actor: PayrollActor, entityId: s
       label: l.label, category: l.category, amount: String(l.amount), allocations: l.allocations, taxable: l.taxable, ssoWage: l.ssoWage,
     })));
     for (let i = 0; i < lines.length; i += 1000) await tx.insert(payrollRunLines).values(lines.slice(i, i + 1000));
-    const files = outputFiles(snapshot.outputs, snapshot.result, entity.id, month).map((f) => {
-      const bytes = uploadFileBytes({ ...f, group: "Reports", preview: { headers: [], rows: [] } });
-      return { tenantId, snapshotId: row.id, runVersionId: version.id, employeeId: f.employeeId, fileGroup: f.group, filename: f.filename, mime: f.mime,
-        encoding: f.encoding, content: f.content, objectKey: null, sha256: sha256(bytes), bytes: bytes.length, rows: f.rows, total: String(Math.round(f.total * 100) / 100) };
-    });
+    const files = stored.map((f) => ({ tenantId, snapshotId: row.id, runVersionId: version.id, employeeId: f.employeeId, fileGroup: f.group, filename: f.filename, mime: f.mime,
+      encoding: f.encoding, content: f.content, objectKey: null, sha256: f.sha256, bytes: f.body.length, rows: f.rows, total: String(Math.round(f.total * 100) / 100) }));
     for (let i = 0; i < files.length; i += 200) await tx.insert(payrollOutputFiles).values(files.slice(i, i + 200));
     // Only now does an earlier locked version of the month stop being the one in force.
     await tx.update(payrollRunVersions).set({ status: "superseded" }).where(and(eq(payrollRunVersions.tenantId, tenantId), eq(payrollRunVersions.runId, run.id),
@@ -229,8 +214,13 @@ export async function markPaid(tenantId: string, actor: PayrollActor, entityId: 
   return db.transaction(async (tx) => {
     const { run, version } = await currentVersion(tx, tenantId, entity.id, month);
     if (version.status === "paid") return { status: "paid", version: version.version, unchanged: true };
-    const [frozen] = await tx.select({ result: payrollRunSnapshots.result, manifest: payrollRunSnapshots.outputsManifest }).from(payrollRunSnapshots)
+    const [frozen] = await tx.select({ id: payrollRunSnapshots.id, result: payrollRunSnapshots.result, manifest: payrollRunSnapshots.outputsManifest }).from(payrollRunSnapshots)
       .where(and(eq(payrollRunSnapshots.tenantId, tenantId), eq(payrollRunSnapshots.runVersionId, version.id))).limit(1);
+    // R5: the stored bank files and cash list themselves, read back byte for byte, must reconcile to net.
+    if (frozen && version.status === "locked") {
+      assertStoredFilesReconcile(await storedPaymentFiles(tx, tenantId, frozen.id), (frozen.result as { totals: { net: number } }).totals.net,
+        "Frozen bank files plus cash do not reconcile to total net.");
+    }
     const doc = {
       version: 1, servicePolicies: {}, incentives: [], months: {}, audit: [],
       runs: { [key(entity.id, month)]: { entityId: entity.id, month, version: version.version, status: version.status, stage: version.stage, attendance: {}, overrides: [], manual: [], audit: [] } },
