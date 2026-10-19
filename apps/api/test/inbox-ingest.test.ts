@@ -4,6 +4,7 @@ import { schema as s } from '@oto/db';
 import { signMetaPayload, type RawWebhook, type SimulatorChannel } from '@oto/messaging';
 import { newId } from '@oto/shared';
 import { assertProductionSafe, loadEnv } from '../src/env';
+import { mirrorNotice } from '../src/services/inbox/mirror';
 import { pickRule } from '../src/services/inbox/router';
 import { closedSince, isOpenAt, readOpeningHours } from '../src/services/inbox/hours';
 import {
@@ -677,3 +678,50 @@ describe('the boot refusals (I2d)', () => {
     expect(() => assertProductionSafe({ ...env, DEPLOY_ENV: 'production' })).toThrow(/INBOX_SIMULATOR is on/);
   });
 });
+
+describe('coexistence with the check-in mirror (I2c)', () => {
+  it('a customer writing on WhatsApp after a check-in notice shares the notice’s contact, gets a routed thread of its own, and leaves the notice thread as it was', async () => {
+    const phone = '+66810007001';
+    await ctx.db.transaction((tx) =>
+      mirrorNotice(tx, {
+        operatorId: oto,
+        branchId: central,
+        channel: 'whatsapp',
+        phone,
+        displayName: 'Mirror Guest',
+        body: 'Your check-in is confirmed (ingest test)',
+        source: 'checkin.contact',
+        sourceId: newId(),
+        sentAt: new Date(),
+        sender: { send: () => Promise.resolve() },
+      }),
+    );
+    const notice = (await threadOf(await consoleWhatsApp(), phone))!;
+    const noticeBefore = { ...notice };
+
+    await play(ids.caCentral, { from: phone.slice(1), name: 'Mirror Guest', text: 'Thanks — one question' });
+    const thread = (await threadOf(ids.caCentral, phone))!;
+    expect(thread.contactId).toBe(notice.contactId);
+    expect(thread.id).not.toBe(notice.id);
+    expect(thread.lastRoutedAt).not.toBeNull();
+    expect((await ownersOf(thread.id)).filter((o) => o.slot === 'primary')).toHaveLength(1);
+
+    const [after] = await ctx.db.select().from(s.conversation).where(eq(s.conversation.id, notice.id));
+    expect(after).toEqual(noticeBefore);
+  });
+});
+
+async function consoleWhatsApp(): Promise<string> {
+  const [row] = await ctx.db
+    .select({ id: s.channelAccount.id })
+    .from(s.channelAccount)
+    .where(
+      and(
+        eq(s.channelAccount.operatorId, oto),
+        eq(s.channelAccount.provider, 'console'),
+        eq(s.channelAccount.channel, 'whatsapp'),
+      ),
+    )
+    .limit(1);
+  return row!.id;
+}

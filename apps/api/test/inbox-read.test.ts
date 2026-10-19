@@ -3,7 +3,7 @@ import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import * as db from '@oto/db';
 import { schema as s } from '@oto/db';
-import { DEMO_STAFF, DEMO_STAFF_PASSWORD, seedInboxDemo } from '@oto/db/seed';
+import { DEMO_CONVERSATIONS, DEMO_STAFF, DEMO_STAFF_PASSWORD, seedInboxDemo } from '@oto/db/seed';
 import {
   INBOX_CATEGORY_KEYS,
   INBOX_CHANNEL_KEYS,
@@ -22,6 +22,7 @@ import {
   type InboxTab,
 } from '@oto/shared';
 import { mirrorNotice } from '../src/services/inbox/mirror';
+import { simulatorDemoDelivery } from '../src/services/inbox/simulator';
 import { SESSION_COOKIE, hashToken, newSessionToken } from '../src/plugins/session';
 import {
   ADMIN,
@@ -141,21 +142,24 @@ async function teamOf(operatorId: string, key: 'birthdays' | 'reception' | 'mark
 }
 
 beforeAll(async () => {
-  ctx = await createTestContext();
+  // I2d: the demo is played through the simulator and the ingest.
+  ctx = await createTestContext({ env: { INBOX_SIMULATOR: 'on', INBOX_SIMULATOR_SECRET: 'inbox-read-test' } });
   oto = await operatorIdByName(ctx.db, OTO_OPERATOR_NAME);
   second = await operatorIdByName(ctx.db, SECOND_OPERATOR_NAME);
   central = await branchIdByCode(ctx.db, CENTRAL_BRANCH_CODE);
   chalong = await branchIdByCode(ctx.db, CHALONG_BRANCH_CODE);
 
-  await seedInboxDemo(ctx.db, { env: {} });
+  await seedInboxDemo(ctx.db, { env: {}, deliver: simulatorDemoDelivery(ctx.app.inboxChannels) });
+  // The customer lines now carry the simulator's provider ids, so a demo
+  // thread is found by its contact's (fixture-unique) display name.
   const threads = await ctx.db
-    .select({ id: s.conversation.id, ext: s.message.externalMessageId })
+    .select({ id: s.conversation.id, name: s.contact.displayName })
     .from(s.conversation)
-    .innerJoin(s.message, eq(s.message.conversationId, s.conversation.id))
+    .innerJoin(s.contact, eq(s.contact.id, s.conversation.contactId))
     .where(eq(s.conversation.operatorId, oto));
   for (const t of threads) {
-    const key = t.ext?.split(':')[0];
-    if (key?.startsWith('demo-')) conv[key] = t.id;
+    const fixture = DEMO_CONVERSATIONS.find((d) => d.contact.displayName === t.name);
+    if (fixture) conv[fixture.key] = t.id;
   }
   expect(Object.keys(conv)).toHaveLength(10);
 
@@ -493,8 +497,10 @@ describe('the filters', () => {
 
   it('branch: that park’s and the operator-wide ones (the prototype’s "all")', async () => {
     const list = await listAll('gm', `branchId=${chalong}&limit=100`);
-    // Chalong's own (04, 06) and those with no branch (01, 03, 09, 10).
-    expect(keysOf(list.conversations.map((c) => c.id))).toEqual(['demo-01', 'demo-03', 'demo-04', 'demo-06', 'demo-09', 'demo-10']);
+    // Chalong's own (04, 06) and those with no branch (03, 09, 10). demo-01
+    // came in on the Central number, and since I2d a thread takes its channel
+    // account's branch first, so it is Central's, not branchless.
+    expect(keysOf(list.conversations.map((c) => c.id))).toEqual(['demo-03', 'demo-04', 'demo-06', 'demo-09', 'demo-10']);
   });
 
   it('search: customer, intent and last message; wildcards are literal', async () => {
