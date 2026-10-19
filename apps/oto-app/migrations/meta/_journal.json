@@ -141,6 +141,20 @@
       "when": 1792366259024,
       "tag": "0020_user_preferences",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1792389954627,
+      "tag": "0021_payroll_config",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1792390074707,
+      "tag": "0022_payroll_profiles",
+      "breakpoints": true
     }
   ]
 }

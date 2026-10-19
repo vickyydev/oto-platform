@@ -2046,6 +2046,9 @@ function attentionReadScope(scope: AttentionReadScope) {
         )!;
 }
 
+/** The old payroll engine's rule rows only (SCRUM-567, migration 0021's rule_format). */
+const LEGACY_RULE_FORMAT = eq(statutoryRuleSets.ruleFormat, "legacy-v1");
+
 /** The default park group in SQL: slug `default`, else the only park group (0006's rule). */
 const DEFAULT_PARK_GROUP_SQL = sql`coalesce(
         (select dpg.id from tenants dpg where dpg.slug = ${DEFAULT_TENANT_SLUG}),
@@ -12376,12 +12379,14 @@ export class DatabaseStorage implements IStorage {
                 return created;
         }
 
-        // Statutory Rule Sets
+        // Statutory Rule Sets. Every read here is the OLD engine's and its
+        // doors' (SCRUM-567): it sees legacy-v1 rows only, never the company
+        // payroll's company-v1 rows, which server/payroll/setup.ts reads.
         async getStatutoryRuleSets(
                 countryCode: string,
                 tenantId?: string,
         ): Promise<StatutoryRuleSet[]> {
-                const conditions = [eq(statutoryRuleSets.countryCode, countryCode)];
+                const conditions = [eq(statutoryRuleSets.countryCode, countryCode), LEGACY_RULE_FORMAT];
                 if (tenantId) {
                         conditions.push(eq(statutoryRuleSets.tenantId, tenantId));
                 }
@@ -12396,7 +12401,7 @@ export class DatabaseStorage implements IStorage {
                 tenantId: string,
                 operatorId?: string,
         ): Promise<StatutoryRuleSet[]> {
-                const conditions = [eq(statutoryRuleSets.tenantId, tenantId)];
+                const conditions = [eq(statutoryRuleSets.tenantId, tenantId), LEGACY_RULE_FORMAT];
                 if (operatorId) {
                         conditions.push(
                                 or(
@@ -12421,6 +12426,7 @@ export class DatabaseStorage implements IStorage {
         ): Promise<StatutoryRuleSet | undefined> {
                 const conditions = [
                         eq(statutoryRuleSets.countryCode, countryCode),
+                        LEGACY_RULE_FORMAT,
                         eq(statutoryRuleSets.status, "active"),
                         lte(statutoryRuleSets.effectiveFrom, asOfDate),
                         or(
@@ -12481,7 +12487,7 @@ export class DatabaseStorage implements IStorage {
                 const [ruleSet] = await db
                         .select()
                         .from(statutoryRuleSets)
-                        .where(eq(statutoryRuleSets.id, id));
+                        .where(and(eq(statutoryRuleSets.id, id), LEGACY_RULE_FORMAT));
                 return ruleSet;
         }
 
@@ -12502,13 +12508,13 @@ export class DatabaseStorage implements IStorage {
                 const [updated] = await db
                         .update(statutoryRuleSets)
                         .set({ ...updates, updatedAt: new Date() })
-                        .where(eq(statutoryRuleSets.id, id))
+                        .where(and(eq(statutoryRuleSets.id, id), LEGACY_RULE_FORMAT))
                         .returning();
                 return updated;
         }
 
         async deleteStatutoryRuleSet(id: string): Promise<void> {
-                await db.delete(statutoryRuleSets).where(eq(statutoryRuleSets.id, id));
+                await db.delete(statutoryRuleSets).where(and(eq(statutoryRuleSets.id, id), LEGACY_RULE_FORMAT));
         }
 
         // Statutory Calculation Results

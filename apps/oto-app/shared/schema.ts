@@ -1,6 +1,6 @@
 import type { AttendanceEvidence } from "./attendance-evidence";
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, timestamp, jsonb, boolean, index, uniqueIndex, time, date, real, uuid, numeric, primaryKey, check } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, timestamp, jsonb, boolean, index, uniqueIndex, time, date, real, uuid, numeric, primaryKey, check, foreignKey } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
@@ -46,6 +46,8 @@ export const operators = pgTable("operators", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
   index("idx_operators_tenant").on(table.tenantId),
+  // The composite key payroll config rows point at (SCRUM-567), so a row can never name another park group's operator.
+  uniqueIndex("operators_tenant_id_id_unique").on(table.tenantId, table.id),
   index("idx_operators_status").on(table.status),
 ]);
 
@@ -481,6 +483,8 @@ export const branches = pgTable("branches", {
 }, (table) => [
   index("idx_branches_tenant").on(table.tenantId),
   index("idx_branches_operator").on(table.operatorId),
+  // The composite key payroll config rows point at (SCRUM-567), so a row can never name another park group's branch.
+  uniqueIndex("branches_tenant_id_id_unique").on(table.tenantId, table.id),
   uniqueIndex("branches_tenant_calendar_color_unique")
     .on(table.tenantId, sql`lower(${table.calendarColor})`)
     .where(sql`${table.calendarColor} IS NOT NULL`),
@@ -817,6 +821,8 @@ export const employees = pgTable("employees", {
   index("idx_employees_tenant").on(table.tenantId),
   index("idx_employees_user").on(table.userId),
   index("idx_employees_phone_e164").on(table.phoneE164),
+  // The composite key payroll profiles point at (SCRUM-567), so a profile can never name another park group's employee.
+  uniqueIndex("employees_tenant_id_id_unique").on(table.tenantId, table.id),
   check("employees_birthday_valid", validBirthdayCheck),
 ]);
 
@@ -4240,6 +4246,7 @@ export type SalaryAdvanceRepayment = typeof salaryAdvanceRepayments.$inferSelect
 // ============================================
 
 export const statutoryRuleSetStatuses = ["active", "archived"] as const;
+export const statutoryRuleFormats = ["legacy-v1", "company-v1"] as const;
 
 export const statutoryRuleSets = pgTable("statutory_rule_sets", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -4252,6 +4259,9 @@ export const statutoryRuleSets = pgTable("statutory_rule_sets", {
   effectiveFrom: date("effective_from").notNull(),
   effectiveTo: date("effective_to"),
   rules: jsonb("rules").notNull(),
+  // SCRUM-567: 'legacy-v1' rows are the old engine's; 'company-v1' rows hold the company
+  // engine's StatutoryRules as is. Each engine reads only its own format.
+  ruleFormat: text("rule_format", { enum: statutoryRuleFormats }).notNull().default("legacy-v1"),
   status: text("status", { enum: statutoryRuleSetStatuses }).notNull().default("active"),
   createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -4263,6 +4273,11 @@ export const statutoryRuleSets = pgTable("statutory_rule_sets", {
   index("idx_statutory_rule_sets_country").on(table.countryCode),
   index("idx_statutory_rule_sets_effective").on(table.effectiveFrom),
   index("idx_statutory_rule_sets_status").on(table.status),
+  // One company-v1 version per park group, country, scope (company or one branch) and date.
+  uniqueIndex("statutory_rule_sets_company_v1_unique")
+    .on(table.tenantId, table.countryCode, sql`coalesce(${table.branchId}, '')`, table.effectiveFrom)
+    .where(sql`${table.ruleFormat} = 'company-v1'`),
+  check("statutory_rule_sets_rule_format_check", sql`${table.ruleFormat} IN ('legacy-v1', 'company-v1')`),
 ]);
 
 export const statutoryRuleSetsRelations = relations(statutoryRuleSets, ({ one }) => ({
@@ -4276,6 +4291,9 @@ export const insertStatutoryRuleSetSchema = createInsertSchema(statutoryRuleSets
   id: true,
   createdAt: true,
   updatedAt: true,
+  // The old engine's doors write legacy-v1 only (SCRUM-567); company-v1 rows
+  // are written by the payroll setup service alone.
+  ruleFormat: true,
 });
 
 export type InsertStatutoryRuleSet = z.infer<typeof insertStatutoryRuleSetSchema>;
@@ -4651,6 +4669,333 @@ export const cashDaily = pgTable("cash_daily", {
 ]);
 
 export type CashDailyRow = typeof cashDaily.$inferSelect;
+
+// ============================================
+// PAYROLL CONFIGURATION (SCRUM-567, the company payroll's R2; migration 0021)
+// ============================================
+// docs/progress/plans/payroll-real-build/PLAN.md §1. Every row carries its park
+// group (tenant_id); a child names its parent through (tenant_id, parent_id),
+// so a row can never point across park groups. Nothing here is seeded with a
+// park value: entities, accounts, branch details, deduction lists and welfare
+// fund settings are entered by an administrator.
+
+export const payrollCountries = ["TH", "MY"] as const;
+export const payrollBankFileFormats = ["SCB", "KBANK", "BBL", "GENERIC"] as const;
+
+/** The legal company that pays (the prototype's PayingEntity). */
+export const payrollPayingEntities = pgTable("payroll_paying_entities", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").notNull().references(() => tenants.id),
+  name: text("name").notNull(),
+  country: text("country", { enum: payrollCountries }).notNull(),
+  taxId: text("tax_id"),
+  ssoEmployerNumber: text("sso_employer_number"),
+  operatorId: uuid("operator_id"),
+  defaultPayDay: integer("default_pay_day").notNull().default(28),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
+}, (table) => [
+  uniqueIndex("payroll_paying_entities_tenant_id_id_unique").on(table.tenantId, table.id),
+  index("idx_payroll_paying_entities_operator").on(table.tenantId, table.operatorId),
+  foreignKey({ name: "payroll_paying_entities_operator_fk", columns: [table.tenantId, table.operatorId], foreignColumns: [operators.tenantId, operators.id] }),
+  check("payroll_paying_entities_country_check", sql`${table.country} IN ('TH', 'MY')`),
+  check("payroll_paying_entities_pay_day_check", sql`${table.defaultPayDay} BETWEEN 1 AND 31`),
+]);
+export type PayrollPayingEntityRow = typeof payrollPayingEntities.$inferSelect;
+
+/** The company's own bank accounts (the prototype's PayingAccount). */
+export const payrollPayingAccounts = pgTable("payroll_paying_accounts", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").notNull().references(() => tenants.id),
+  entityId: uuid("entity_id").notNull(),
+  label: text("label").notNull(),
+  bank: text("bank").notNull(),
+  bankCode: text("bank_code"),
+  accountNumber: text("account_number").notNull(),
+  accountName: text("account_name").notNull(),
+  fileFormat: text("file_format", { enum: payrollBankFileFormats }).notNull(),
+  scbProduct: text("scb_product", { enum: ["PAY", "SPN"] }),
+  debitAccount: text("debit_account"),
+  feeAccount: text("fee_account"),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
+}, (table) => [
+  uniqueIndex("payroll_paying_accounts_tenant_id_id_unique").on(table.tenantId, table.id),
+  index("idx_payroll_paying_accounts_entity").on(table.tenantId, table.entityId),
+  foreignKey({ name: "payroll_paying_accounts_entity_fk", columns: [table.tenantId, table.entityId], foreignColumns: [payrollPayingEntities.tenantId, payrollPayingEntities.id] }).onDelete("restrict"),
+  check("payroll_paying_accounts_file_format_check", sql`${table.fileFormat} IN ('SCB', 'KBANK', 'BBL', 'GENERIC')`),
+  check("payroll_paying_accounts_scb_product_check", sql`${table.scbProduct} IS NULL OR ${table.scbProduct} IN ('PAY', 'SPN')`),
+]);
+export type PayrollPayingAccountRow = typeof payrollPayingAccounts.$inferSelect;
+
+/**
+ * One dated row per branch: the prototype's BranchDetails. The paying entity
+ * and the default paying account are columns with their own keys (so they can
+ * only name this park group's rows); the rest of BranchDetails is `details`.
+ */
+export const payrollBranchDetailsVersions = pgTable("payroll_branch_details_versions", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").notNull().references(() => tenants.id),
+  branchId: varchar("branch_id").notNull(),
+  effectiveFrom: date("effective_from").notNull(),
+  payingEntityId: uuid("paying_entity_id"),
+  defaultPayingAccountId: uuid("default_paying_account_id"),
+  details: jsonb("details").notNull(),
+  foodAllowanceDefault: numeric("food_allowance_default", { precision: 14, scale: 2 }),
+  reason: text("reason").notNull(),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("payroll_branch_details_versions_tenant_id_id_unique").on(table.tenantId, table.id),
+  uniqueIndex("payroll_branch_details_versions_branch_date_unique").on(table.tenantId, table.branchId, table.effectiveFrom),
+  index("idx_payroll_branch_details_entity").on(table.tenantId, table.payingEntityId),
+  index("idx_payroll_branch_details_account").on(table.tenantId, table.defaultPayingAccountId),
+  foreignKey({ name: "payroll_branch_details_versions_branch_fk", columns: [table.tenantId, table.branchId], foreignColumns: [branches.tenantId, branches.id] }).onDelete("restrict"),
+  foreignKey({ name: "payroll_branch_details_versions_entity_fk", columns: [table.tenantId, table.payingEntityId], foreignColumns: [payrollPayingEntities.tenantId, payrollPayingEntities.id] }).onDelete("restrict"),
+  foreignKey({ name: "payroll_branch_details_versions_account_fk", columns: [table.tenantId, table.defaultPayingAccountId], foreignColumns: [payrollPayingAccounts.tenantId, payrollPayingAccounts.id] }).onDelete("restrict"),
+  check("payroll_branch_details_food_default_check", sql`${table.foodAllowanceDefault} IS NULL OR ${table.foodAllowanceDefault} >= 0`),
+]);
+export type PayrollBranchDetailsVersionRow = typeof payrollBranchDetailsVersions.$inferSelect;
+
+/** The revenue stream catalogue per park group (replaces COMPANY_STREAMS). */
+export const payrollRevenueStreams = pgTable("payroll_revenue_streams", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").notNull().references(() => tenants.id),
+  key: text("key").notNull(),
+  label: text("label").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
+}, (table) => [
+  uniqueIndex("payroll_revenue_streams_tenant_id_id_unique").on(table.tenantId, table.id),
+  uniqueIndex("payroll_revenue_streams_tenant_key_unique").on(table.tenantId, table.key),
+  check("payroll_revenue_streams_key_check", sql`${table.key} ~ '^[a-z][a-z0-9-]{0,39}$'`),
+]);
+export type PayrollRevenueStreamRow = typeof payrollRevenueStreams.$inferSelect;
+
+/**
+ * Dated rule lists: the company deduction defaults (scope company, no branch)
+ * and branch exceptions (scope branch). `rules` is the prototype's
+ * DeductionRule[] stored as is.
+ */
+export const payrollRuleLists = pgTable("payroll_rule_lists", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").notNull().references(() => tenants.id),
+  kind: text("kind", { enum: ["deduction"] }).notNull(),
+  scope: text("scope", { enum: ["company", "branch"] }).notNull(),
+  branchId: varchar("branch_id"),
+  effectiveFrom: date("effective_from").notNull(),
+  rules: jsonb("rules").notNull(),
+  reason: text("reason").notNull(),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("payroll_rule_lists_tenant_id_id_unique").on(table.tenantId, table.id),
+  uniqueIndex("payroll_rule_lists_scope_date_unique").on(table.tenantId, table.kind, sql`coalesce(${table.branchId}, '')`, table.effectiveFrom),
+  index("idx_payroll_rule_lists_branch").on(table.tenantId, table.branchId),
+  foreignKey({ name: "payroll_rule_lists_branch_fk", columns: [table.tenantId, table.branchId], foreignColumns: [branches.tenantId, branches.id] }).onDelete("restrict"),
+  check("payroll_rule_lists_kind_check", sql`${table.kind} IN ('deduction')`),
+  check("payroll_rule_lists_scope_check", sql`(${table.scope} = 'company' AND ${table.branchId} IS NULL) OR (${table.scope} = 'branch' AND ${table.branchId} IS NOT NULL)`),
+]);
+export type PayrollRuleListRow = typeof payrollRuleLists.$inferSelect;
+
+/** Dated welfare fund (EWF) settings per paying entity. None are seeded. */
+export const payrollEwfSettingsVersions = pgTable("payroll_ewf_settings_versions", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").notNull().references(() => tenants.id),
+  entityId: uuid("entity_id").notNull(),
+  effectiveFrom: date("effective_from").notNull(),
+  settings: jsonb("settings").notNull(),
+  reason: text("reason").notNull(),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("payroll_ewf_settings_versions_tenant_id_id_unique").on(table.tenantId, table.id),
+  uniqueIndex("payroll_ewf_settings_versions_entity_date_unique").on(table.tenantId, table.entityId, table.effectiveFrom),
+  foreignKey({ name: "payroll_ewf_settings_versions_entity_fk", columns: [table.tenantId, table.entityId], foreignColumns: [payrollPayingEntities.tenantId, payrollPayingEntities.id] }).onDelete("restrict"),
+]);
+export type PayrollEwfSettingsVersionRow = typeof payrollEwfSettingsVersions.$inferSelect;
+
+/** What was actually paid to the welfare fund, per entity and month (surcharge estimates). */
+export const payrollEwfRemittances = pgTable("payroll_ewf_remittances", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").notNull().references(() => tenants.id),
+  entityId: uuid("entity_id").notNull(),
+  month: text("month").notNull(),
+  amountPaid: numeric("amount_paid", { precision: 14, scale: 2 }).notNull(),
+  paidOn: date("paid_on"),
+  reason: text("reason").notNull(),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("payroll_ewf_remittances_tenant_id_id_unique").on(table.tenantId, table.id),
+  uniqueIndex("payroll_ewf_remittances_entity_month_unique").on(table.tenantId, table.entityId, table.month),
+  foreignKey({ name: "payroll_ewf_remittances_entity_fk", columns: [table.tenantId, table.entityId], foreignColumns: [payrollPayingEntities.tenantId, payrollPayingEntities.id] }).onDelete("restrict"),
+  check("payroll_ewf_remittances_month_check", sql`${table.month} ~ '^[0-9]{4}-(0[1-9]|1[0-2])$'`),
+  check("payroll_ewf_remittances_amount_check", sql`${table.amountPaid} >= 0`),
+]);
+export type PayrollEwfRemittanceRow = typeof payrollEwfRemittances.$inferSelect;
+
+// ============================================
+// PAYROLL PROFILES (SCRUM-567, the company payroll's R2; migration 0022)
+// ============================================
+// The prototype's EmployeePayrollProfile, one per employee. Casual workers
+// (casual_workers) are outside this payroll (owner, 2026-10-20): a profile
+// belongs to an employee only. A profile proposed from HR data stays
+// `needs-review` until a payroll role saves it, and no pay amount is copied
+// into one without that save.
+
+export const payrollWorkerTypes = ["monthly", "day-rate", "contractor", "owner-household"] as const;
+export const payrollPaymentMethods = ["bank-transfer", "cash", "third-party"] as const;
+export const payrollProfileReviewStates = ["needs-review", "reviewed"] as const;
+
+export const payrollProfiles = pgTable("payroll_profiles", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").notNull().references(() => tenants.id),
+  employeeId: varchar("employee_id").notNull(),
+  workerType: text("worker_type", { enum: payrollWorkerTypes }).notNull(),
+  jobTitle: text("job_title").notNull().default(""),
+  department: text("department"),
+  monthlySalary: numeric("monthly_salary", { precision: 14, scale: 2 }).notNull().default("0"),
+  dayRate: numeric("day_rate", { precision: 14, scale: 2 }).notNull().default("0"),
+  fixedFee: numeric("fixed_fee", { precision: 14, scale: 2 }).notNull().default("0"),
+  joinedOn: date("joined_on"),
+  lastWorkingDay: date("last_working_day"),
+  taxId: text("tax_id").notNull().default(""),
+  ssoNumber: text("sso_number").notNull().default(""),
+  ssoTitle: text("sso_title"),
+  givenName: text("given_name"),
+  surname: text("surname"),
+  dateOfBirth: date("date_of_birth"),
+  nationality: text("nationality"),
+  passportNumber: text("passport_number"),
+  leavingReason: text("leaving_reason"),
+  foodAllowanceEligible: boolean("food_allowance_eligible").notNull(),
+  foodAllowancePerDay: numeric("food_allowance_per_day", { precision: 14, scale: 2 }).notNull().default("0"),
+  ssoEligible: boolean("sso_eligible").notNull(),
+  pnd1Eligible: boolean("pnd1_eligible").notNull(),
+  serviceChargeEligible: boolean("service_charge_eligible").notNull(),
+  otEligible: boolean("ot_eligible").notNull(),
+  pnd3WithholdingPercent: numeric("pnd3_withholding_percent", { precision: 7, scale: 4 }).notNull().default("0"),
+  cashHandlingFeePercent: numeric("cash_handling_fee_percent", { precision: 7, scale: 4 }).notNull().default("0"),
+  paymentMethod: text("payment_method", { enum: payrollPaymentMethods }).notNull().default("bank-transfer"),
+  bankName: text("bank_name").notNull().default(""),
+  bankAccountNumber: text("bank_account_number").notNull().default(""),
+  bankAccountName: text("bank_account_name").notNull().default(""),
+  bankCode: text("bank_code"),
+  bankMobile: text("bank_mobile"),
+  bankEmail: text("bank_email"),
+  thirdPartyReason: text("third_party_reason").notNull().default(""),
+  studentLoanMonthly: numeric("student_loan_monthly", { precision: 14, scale: 2 }).notNull().default("0"),
+  notes: text("notes").notNull().default(""),
+  reviewState: text("review_state", { enum: payrollProfileReviewStates }).notNull().default("needs-review"),
+  revision: integer("revision").notNull().default(0),
+  createdBy: varchar("created_by").references(() => users.id),
+  updatedBy: varchar("updated_by").references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("payroll_profiles_tenant_id_id_unique").on(table.tenantId, table.id),
+  uniqueIndex("payroll_profiles_tenant_employee_unique").on(table.tenantId, table.employeeId),
+  foreignKey({ name: "payroll_profiles_employee_fk", columns: [table.tenantId, table.employeeId], foreignColumns: [employees.tenantId, employees.id] }).onDelete("restrict"),
+  check("payroll_profiles_worker_type_check", sql`${table.workerType} IN ('monthly', 'day-rate', 'contractor', 'owner-household')`),
+  check("payroll_profiles_payment_method_check", sql`${table.paymentMethod} IN ('bank-transfer', 'cash', 'third-party')`),
+  check("payroll_profiles_review_state_check", sql`${table.reviewState} IN ('needs-review', 'reviewed')`),
+  check("payroll_profiles_amounts_check", sql`${table.monthlySalary} >= 0 AND ${table.dayRate} >= 0 AND ${table.fixedFee} >= 0 AND ${table.foodAllowancePerDay} >= 0 AND ${table.studentLoanMonthly} >= 0`),
+  check("payroll_profiles_percents_check", sql`${table.pnd3WithholdingPercent} BETWEEN 0 AND 100 AND ${table.cashHandlingFeePercent} BETWEEN 0 AND 100`),
+]);
+export type PayrollProfileRow = typeof payrollProfiles.$inferSelect;
+
+/**
+ * Dated allocation versions. `lines` is the prototype's AllocationLine[]: a
+ * cost centre (a branch id or `owner-non-operational`), a percent, a paying
+ * entity and an optional paying account — each checked against this park
+ * group's rows by the service on every save.
+ */
+export const payrollProfileAllocations = pgTable("payroll_profile_allocations", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").notNull().references(() => tenants.id),
+  profileId: uuid("profile_id").notNull(),
+  effectiveFrom: date("effective_from").notNull(),
+  homeBranchId: varchar("home_branch_id").notNull(),
+  lines: jsonb("lines").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("payroll_profile_allocations_profile_date_unique").on(table.tenantId, table.profileId, table.effectiveFrom),
+  index("idx_payroll_profile_allocations_home_branch").on(table.tenantId, table.homeBranchId),
+  foreignKey({ name: "payroll_profile_allocations_profile_fk", columns: [table.tenantId, table.profileId], foreignColumns: [payrollProfiles.tenantId, payrollProfiles.id] }).onDelete("cascade"),
+  foreignKey({ name: "payroll_profile_allocations_branch_fk", columns: [table.tenantId, table.homeBranchId], foreignColumns: [branches.tenantId, branches.id] }).onDelete("restrict"),
+]);
+export type PayrollProfileAllocationRow = typeof payrollProfileAllocations.$inferSelect;
+
+/** The prototype's SalaryAdvanceProfile. Supersedes salary_advances (plan §5, concern 3). */
+export const payrollProfileAdvances = pgTable("payroll_profile_advances", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").notNull().references(() => tenants.id),
+  profileId: uuid("profile_id").notNull(),
+  principal: numeric("principal", { precision: 14, scale: 2 }).notNull(),
+  outstandingBalance: numeric("outstanding_balance", { precision: 14, scale: 2 }).notNull(),
+  repaymentMode: text("repayment_mode", { enum: ["one-off", "instalments"] }).notNull(),
+  instalments: integer("instalments").notNull().default(1),
+  monthlyRepayment: numeric("monthly_repayment", { precision: 14, scale: 2 }).notNull().default("0"),
+  startsOn: date("starts_on").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("payroll_profile_advances_tenant_id_id_unique").on(table.tenantId, table.id),
+  index("idx_payroll_profile_advances_profile").on(table.tenantId, table.profileId),
+  foreignKey({ name: "payroll_profile_advances_profile_fk", columns: [table.tenantId, table.profileId], foreignColumns: [payrollProfiles.tenantId, payrollProfiles.id] }).onDelete("cascade"),
+  check("payroll_profile_advances_mode_check", sql`${table.repaymentMode} IN ('one-off', 'instalments')`),
+  check("payroll_profile_advances_amounts_check", sql`${table.principal} >= 0 AND ${table.outstandingBalance} >= 0 AND ${table.outstandingBalance} <= ${table.principal} AND ${table.monthlyRepayment} >= 0 AND ${table.instalments} >= 1`),
+]);
+export type PayrollProfileAdvanceRow = typeof payrollProfileAdvances.$inferSelect;
+
+/** Recurring payments outside salary (e.g. house rental), each with its own withholding. */
+export const payrollProfileSeparatePayments = pgTable("payroll_profile_separate_payments", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").notNull().references(() => tenants.id),
+  profileId: uuid("profile_id").notNull(),
+  description: text("description").notNull(),
+  amount: numeric("amount", { precision: 14, scale: 2 }).notNull(),
+  withholdingPercent: numeric("withholding_percent", { precision: 7, scale: 4 }).notNull().default("0"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("payroll_profile_separate_payments_tenant_id_id_unique").on(table.tenantId, table.id),
+  index("idx_payroll_profile_separate_payments_profile").on(table.tenantId, table.profileId),
+  foreignKey({ name: "payroll_profile_separate_payments_profile_fk", columns: [table.tenantId, table.profileId], foreignColumns: [payrollProfiles.tenantId, payrollProfiles.id] }).onDelete("cascade"),
+  check("payroll_profile_separate_payments_amounts_check", sql`${table.amount} >= 0 AND ${table.withholdingPercent} BETWEEN 0 AND 100`),
+]);
+export type PayrollProfileSeparatePaymentRow = typeof payrollProfileSeparatePayments.$inferSelect;
+
+/**
+ * The setup audit, append-only (the prototype's ProfileSetupAudit): every
+ * profile save, every proposed draft, and every paying-configuration, rule
+ * or welfare fund change, with who, when, why and the old and new values.
+ */
+export const payrollProfileChanges = pgTable("payroll_profile_changes", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").notNull().references(() => tenants.id),
+  profileId: uuid("profile_id"),
+  kind: text("kind", { enum: ["profile", "profile-draft", "setup"] }).notNull(),
+  subject: text("subject").notNull(),
+  subjectId: text("subject_id"),
+  reason: text("reason").notNull(),
+  oldValue: jsonb("old_value"),
+  newValue: jsonb("new_value"),
+  actorUserId: varchar("actor_user_id").references(() => users.id),
+  actorName: text("actor_name").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("idx_payroll_profile_changes_profile").on(table.tenantId, table.profileId, table.createdAt),
+  index("idx_payroll_profile_changes_tenant_created").on(table.tenantId, table.createdAt),
+  foreignKey({ name: "payroll_profile_changes_profile_fk", columns: [table.tenantId, table.profileId], foreignColumns: [payrollProfiles.tenantId, payrollProfiles.id] }).onDelete("restrict"),
+  check("payroll_profile_changes_kind_check", sql`${table.kind} IN ('profile', 'profile-draft', 'setup')`),
+]);
+export type PayrollProfileChangeRow = typeof payrollProfileChanges.$inferSelect;
 
 // ============================================
 // CORE MODULE SCHEMA (Re-export)
