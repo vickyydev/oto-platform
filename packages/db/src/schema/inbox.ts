@@ -125,7 +125,11 @@ export type InboxTemplateKey = (typeof INBOX_TEMPLATE_KEYS)[number];
 export const TEMPLATE_APPROVAL_STATUSES = ['not_required', 'pending', 'approved', 'rejected'] as const;
 export type TemplateApprovalStatus = (typeof TEMPLATE_APPROVAL_STATUSES)[number];
 
-/** The timeline's grey pills and the Console feed. `notice_mirrored` is the check-in feed (plan §2.4). */
+/**
+ * The timeline's grey pills and the Console feed. `notice_mirrored` is the
+ * check-in feed (plan §2.4); `send_failed` is a reply the channel refused for
+ * good, named by its refusal word (I2f, `0079_inbox_send`).
+ */
 export const INBOX_EVENT_KINDS = [
   'received',
   'ai_replied',
@@ -144,6 +148,7 @@ export const INBOX_EVENT_KINDS = [
   'pos_update',
   'sla_breached',
   'notice_mirrored',
+  'send_failed',
 ] as const;
 export type InboxEventKind = (typeof INBOX_EVENT_KINDS)[number];
 
@@ -557,6 +562,17 @@ export const message = inbox.table(
     /** The id of what a mirrored notice stands for (a registration, a booking). */
     sourceId: text('source_id'),
     redactedAt: timestamp('redacted_at', { withTimezone: true, mode: 'date' }),
+    /**
+     * The send job's ledger for an outbound message (I2f, `0079_inbox_send`):
+     * how many times the channel has been asked, and when the job may ask
+     * again. A claim sets `next_attempt_at` a lease ahead before the provider
+     * is called, so two senders never ask for the same row at once, and a
+     * sender that died mid-call leaves a row the sweeper retries once the
+     * lease has run out. Only a `queued` row is ever claimed: a `sent` one is
+     * never resent (Meta's callback field is not an idempotency key).
+     */
+    sendAttempts: integer('send_attempts').notNull().default(0),
+    nextAttemptAt: timestamp('next_attempt_at', { withTimezone: true, mode: 'date' }),
     ...timestamps,
   },
   (t) => [
@@ -586,6 +602,10 @@ export const message = inbox.table(
     index('message_template_idx').on(t.operatorId, t.templateId),
     index('message_author_account_idx').on(t.authorAccountId),
     index('message_audio_file_idx').on(t.audioFileId),
+    /** The send job's sweep: queued rows, by when they are next due. */
+    index('message_send_queue_idx')
+      .on(t.nextAttemptAt)
+      .where(sql`provider_status = 'queued'`),
     /** What a mirror looks for before it writes the same notice twice. */
     index('message_source_idx')
       .on(t.operatorId, t.source, t.sourceId)

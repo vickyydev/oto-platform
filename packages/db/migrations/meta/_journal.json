@@ -554,6 +554,13 @@
       "when": 1792441417065,
       "tag": "0078_inbox_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 79,
+      "version": "7",
+      "when": 1792448370071,
+      "tag": "0079_inbox_send",
+      "breakpoints": true
     }
   ]
 }
