@@ -251,6 +251,21 @@ describe.skipIf(!HAS_APP)('round 7 independent payroll ownership review', () => 
       'post /api/payroll/month-end/:entityId/:month/overrides hr.manage_payroll',
       'post /api/payroll/month-end/:entityId/:month/overrides/:id/remove hr.manage_payroll',
       'get /api/payroll/month-end/:entityId/:month/preview hr.view_salary',
+      // SCRUM-569 (R4): overtime decisions, third-party approvals, GM confirm (payroll.confirm),
+      // Owner lock / paid / reopen (payroll.lock), the locked history with its files, and
+      // every employee's own payslips (payroll.own_payslips: their own employee only).
+      'put /api/payroll/month-end/:entityId/:month/overtime/:dayKey hr.manage_payroll',
+      'post /api/payroll/month-end/:entityId/:month/overtime/:dayKey/remove hr.manage_payroll',
+      'put /api/payroll/month-end/:entityId/:month/third-party/:employeeId hr.manage_payroll',
+      'post /api/payroll/month-end/:entityId/:month/confirm payroll.confirm',
+      'post /api/payroll/month-end/:entityId/:month/lock payroll.lock',
+      'post /api/payroll/month-end/:entityId/:month/paid payroll.lock',
+      'post /api/payroll/month-end/:entityId/:month/reopen payroll.lock',
+      'get /api/payroll/history hr.view_salary',
+      'get /api/payroll/history/files/:fileId hr.view_salary',
+      'get /api/payroll/history/:entityId/:month/:version hr.view_salary',
+      'get /api/payroll/me/payslips payroll.own_payslips',
+      'get /api/payroll/me/payslips/:fileId payroll.own_payslips',
     ]);
     // Every registration in the file is one of those: none without its guard and fence.
     expect([...source.matchAll(/app\.(get|post|put|patch|delete)\(/g)]).toHaveLength(declared.length);

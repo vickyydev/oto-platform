@@ -36,6 +36,24 @@ export function canManagePayroll(role: string | null | undefined): boolean {
   ).allowed;
 }
 
+export const PAYROLL_CONFIRM_ACTION = "payroll.confirm";
+export const PAYROLL_LOCK_ACTION = "payroll.lock";
+
+const payrollAction = (role: string | null | undefined, action: string) => {
+  if (!role || !canViewHrSalary(role)) return false;
+  return canPerformAction({ userId: "", role: role as PermissionRole, homeBranchId: null, overrides: [] }, action, "hr").allowed;
+};
+
+/** GM confirmation (SCRUM-569; owner ruling 2026-10-20): admin, operator_admin, global_admin. */
+export function canConfirmPayroll(role: string | null | undefined): boolean {
+  return payrollAction(role, PAYROLL_CONFIRM_ACTION);
+}
+
+/** Owner lock, reopen and mark paid (SCRUM-569; owner ruling 2026-10-20): operator_admin and global_admin only. */
+export function canLockPayroll(role: string | null | undefined): boolean {
+  return payrollAction(role, PAYROLL_LOCK_ACTION);
+}
+
 /** Proposing draft profiles from HR data reads every employee's pay once: global_admin (plan §9 R2). */
 export function canDraftPayrollProfiles(role: string | null | undefined): boolean {
   return role === "global_admin" && canManagePayroll(role);

@@ -40,7 +40,7 @@
  * `excluded`, so nobody silently goes unpaid.
  */
 import { createHash } from "node:crypto";
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, lt } from "drizzle-orm";
 import {
   branches,
   employeeTimeOff,
@@ -67,6 +67,9 @@ import {
   payrollRunAttendanceReviews,
   payrollRunManualLines,
   payrollRunOverrides,
+  payrollRunOvertimeDecisions,
+  payrollRunSnapshots,
+  payrollRunThirdPartyApprovals,
   payrollRunVersions,
   payrollServicePolicies,
   publicHolidays,
@@ -83,10 +86,10 @@ import { allocationAt } from "./engine/payroll-profile";
 import { monthDays, previousMonth } from "./engine/company-math";
 import type {
   BranchDetails, BranchRecord, DeductionRule, EwfRemittance, EwfSettings, EwfSettingsVersion, LeaveLedgerEntry, LeaveOffboardingRecord,
-  LeavePolicy, LeavePolicyVersion, OtBankBooking, PayrollWorld, StaffMember, StatutoryRules,
+  LeavePolicy, LeavePolicyVersion, OtBankBooking, OvertimeDecision, PayrollWorld, RunDraft, StaffMember, StatutoryRules,
 } from "./engine/model";
 import type {
-  AttendanceReview, CompanyDraft, CompanyIncentive, CompanyMonthInputs, CompanyPayrollDocument, IncentiveAssignment, IncentiveRuleVersion, ServicePolicy,
+  AttendanceReview, CompanyDraft, CompanyIncentive, CompanyMonthInputs, CompanyPayrollDocument, CompanyResult, CompanySnapshot, IncentiveAssignment, IncentiveRuleVersion, ServicePolicy,
 } from "./engine/company-model";
 import type { EmployeePayrollProfile, PayingAccount, PayingEntity } from "./engine/payroll-profile";
 
@@ -109,7 +112,7 @@ const num = (value: string | number | null | undefined) => value == null ? 0 : N
 export const engineFrom = (date: string) => date.endsWith("-01") ? date.slice(0, 7) : date;
 
 export interface ExcludedPerson { employeeId: string; name: string; reason: string }
-export interface RunRef { runId: string; versionId: string; version: number; status: string; payDate: string }
+export interface RunRef { runId: string; versionId: string; version: number; status: string; payDate: string; stage?: string; approvedSignature?: string | null; reopenReason?: string | null }
 export interface LoadedWorld {
   tenantId: string;
   month: string;
@@ -186,7 +189,7 @@ export async function loadPayrollWorld(tenantId: string, month: string, options:
   queries++;
 
   const [branchRows, detailRows, entityRows, accountRows, ruleRows, listRows, ewfRows, remitRows, profileRows,
-    holidayRows, inputRows, policyRows, ruleDefRows, versionRows, assignmentRows, runRows, bookingRows, valuationRows, offboardingRows, leaveTypes, dayOffRows] = await Promise.all([
+    holidayRows, inputRows, policyRows, ruleDefRows, versionRows, assignmentRows, runRows, bookingRows, valuationRows, offboardingRows, leaveTypes, dayOffRows, snapshotRows] = await Promise.all([
     q(db.select({ id: branches.id, name: branches.name, timezone: branches.timezone }).from(branches).where(eq(branches.tenantId, tenantId)).orderBy(asc(branches.id))),
     q(db.select().from(payrollBranchDetailsVersions).where(eq(payrollBranchDetailsVersions.tenantId, tenantId)).orderBy(asc(payrollBranchDetailsVersions.effectiveFrom))),
     q(db.select().from(payrollPayingEntities).where(eq(payrollPayingEntities.tenantId, tenantId)).orderBy(asc(payrollPayingEntities.id))),
@@ -215,14 +218,22 @@ export async function loadPayrollWorld(tenantId: string, month: string, options:
     (queries++, listTenantLeaveTypes(tenantId)),
     q(db.select({ branchId: leavePolicies.branchId, daysWorkedRequired: leavePolicies.daysWorkedRequired, daysOffEarned: leavePolicies.daysOffEarned, effectiveFrom: leavePolicies.effectiveFrom })
       .from(leavePolicies).where(and(eq(leavePolicies.tenantId, tenantId), eq(leavePolicies.isActive, true)))),
+    // R4: every locked version of an EARLIER month (advances repaid, YTD, the
+    // signature's history). The result only: the rest of a snapshot stays frozen in its row.
+    q(db.select({ entityId: payrollRunSnapshots.entityId, month: payrollRunSnapshots.month, version: payrollRunSnapshots.version, result: payrollRunSnapshots.result,
+      lockedAt: payrollRunSnapshots.lockedAt, lockedByName: payrollRunSnapshots.lockedByName, gmActor: payrollRunSnapshots.gmActor })
+      .from(payrollRunSnapshots).where(and(eq(payrollRunSnapshots.tenantId, tenantId), lt(payrollRunSnapshots.month, month)))
+      .orderBy(asc(payrollRunSnapshots.month), asc(payrollRunSnapshots.entityId), asc(payrollRunSnapshots.version))),
   ]);
 
   const versionIds = runRows.map((r) => r.version.id);
-  const [reviewRows, overrideRows, manualRows] = versionIds.length ? await Promise.all([
+  const [reviewRows, overrideRows, manualRows, overtimeRows, approvalRows] = versionIds.length ? await Promise.all([
     q(db.select().from(payrollRunAttendanceReviews).where(and(eq(payrollRunAttendanceReviews.tenantId, tenantId), inArray(payrollRunAttendanceReviews.runVersionId, versionIds))).orderBy(asc(payrollRunAttendanceReviews.attendanceDayKey))),
     q(db.select().from(payrollRunOverrides).where(and(eq(payrollRunOverrides.tenantId, tenantId), inArray(payrollRunOverrides.runVersionId, versionIds))).orderBy(asc(payrollRunOverrides.createdAt), asc(payrollRunOverrides.id))),
     q(db.select().from(payrollRunManualLines).where(and(eq(payrollRunManualLines.tenantId, tenantId), inArray(payrollRunManualLines.runVersionId, versionIds))).orderBy(asc(payrollRunManualLines.createdAt), asc(payrollRunManualLines.id))),
-  ]) : [[], [], []];
+    q(db.select().from(payrollRunOvertimeDecisions).where(and(eq(payrollRunOvertimeDecisions.tenantId, tenantId), inArray(payrollRunOvertimeDecisions.runVersionId, versionIds))).orderBy(asc(payrollRunOvertimeDecisions.attendanceDayKey), asc(payrollRunOvertimeDecisions.exceptionIndex))),
+    q(db.select().from(payrollRunThirdPartyApprovals).where(and(eq(payrollRunThirdPartyApprovals.tenantId, tenantId), inArray(payrollRunThirdPartyApprovals.runVersionId, versionIds))).orderBy(asc(payrollRunThirdPartyApprovals.employeeId))),
+  ]) : [[], [], [], [], []];
 
   const profileIds = profileRows.map((r) => r.profile.id);
   const [allocRows, advanceRows, paymentRows] = profileIds.length ? await Promise.all([
@@ -377,19 +388,36 @@ export async function loadPayrollWorld(tenantId: string, month: string, options:
       attendance,
       overrides: overrideRows.filter((o) => o.runVersionId === version.id).map((o) => ({ staffId: o.employeeId, entityId: o.entityId, component: o.component, amount: num(o.amount), reason: o.reason })),
       manual: manualRows.filter((m) => m.runVersionId === version.id).map((m) => ({ id: m.id, staffId: m.employeeId, amount: num(m.amount), kind: m.kind, reason: m.reason })),
-      thirdPartyApprovals: {}, audit: [],
+      thirdPartyApprovals: Object.fromEntries(approvalRows.filter((a) => a.runVersionId === version.id).map((a) => [a.employeeId,
+        { signature: a.signature, reason: a.reason, who: a.actorName, at: a.updatedAt.toISOString() }])),
+      audit: [],
       ...(version.approvedSignature ? { approvedSignature: version.approvedSignature } : {}),
     };
     runs[`${run.entityId}:${month}`] = draft;
-    runRefs.set(run.entityId, { runId: run.id, versionId: version.id, version: version.version, status: version.status, payDate: iso(run.payDate) });
+    // The older per-branch draft is where the engine reads overtime decisions
+    // (company-calculations.ts:72, run-calculations.ts:772): one per roster
+    // branch and month, as the prototype kept them (data.runDrafts).
+    for (const o of overtimeRows.filter((x) => x.runVersionId === version.id)) {
+      const branchId = roster.get(o.employeeId);
+      if (!branchId) continue;
+      const legacy = (world.runDrafts[`${branchId}:${month}`] ??= { overtimeDecisions: [] } as unknown as RunDraft);
+      (legacy.overtimeDecisions ??= []).push({ attendanceId: o.attendanceDayKey, exceptionIndex: o.exceptionIndex, outcome: o.outcome, reason: o.reason,
+        resolvedBy: o.actorName, resolvedAt: o.createdAt.toISOString(), ...(o.employeeChoiceConfirmed ? { employeeChoiceConfirmed: true } : {}) } satisfies OvertimeDecision);
+    }
+    runRefs.set(run.entityId, { runId: run.id, versionId: version.id, version: version.version, status: version.status, payDate: iso(run.payDate),
+      stage: version.stage, approvedSignature: version.approvedSignature, reopenReason: version.reopenReason });
   }
   const doc: CompanyPayrollDocument = {
     version: 1, rewardsVersion: 1, servicePolicies,
     incentives: ruleDefRows.map((r) => ({ ...(r.terms as CompanyIncentive), staffIds: (r.terms as Partial<CompanyIncentive>).staffIds ?? [], id: r.id, enabled: r.enabled })),
     incentiveVersions, incentiveAssignments, months, runs,
-    // Prior snapshot summaries arrive with R4's frozen snapshots; until then
-    // no month is locked, so advances read nothing as repaid and YTD is this month.
-    snapshots: [], audit: [],
+    // R4: earlier months' locked versions, as the prototype's doc.snapshots.
+    // The engine reads their results only (advances repaid, YTD; it keeps the
+    // latest version of each entity and month itself); the rest stays frozen
+    // in payroll_run_snapshots and is never needed to calculate a later month.
+    snapshots: snapshotRows.map((s) => ({ entityId: s.entityId, month: s.month, version: s.version, lockedAt: s.lockedAt.toISOString(), lockedBy: s.lockedByName,
+      gmActor: s.gmActor, result: s.result as CompanyResult } as CompanySnapshot)),
+    audit: [],
   };
   world.companyPayroll = doc;
   return { tenantId, month, world, doc, excluded, notes, runs: runRefs, attendance: feed.days, queries };
@@ -418,11 +446,11 @@ export function canonicalJson(value: unknown): string {
  * everything the engine saw for this month, plus ENGINE_REVISION. No number
  * depends on it; R4's GM confirm stores it and Owner lock recomputes it.
  */
-export function sourceSignature(loaded: Pick<LoadedWorld, "world" | "doc" | "month">): string {
+export function sourceSignature(loaded: Pick<LoadedWorld, "world" | "doc" | "month">, engineRevision: string = ENGINE_REVISION): string {
   const { world, doc, month } = loaded;
   const prev = previousMonth(month);
   const source = {
-    engine: ENGINE_REVISION,
+    engine: engineRevision,
     branches: Object.values(world.branches).map((b) => ({ id: b.id, staff: b.staff, details: b.detailsHistory, rules: b.rulesHistory, deductions: b.deductionRules, leave: b.leavePolicyHistory })),
     entities: world.payingEntities, accounts: world.payingAccounts, ewf: world.ewfSettings, remittances: world.ewfRemittances,
     leaveLedger: world.leaveLedger, otBankBookings: world.otBankBookings, offboarding: world.leaveOffboarding,
@@ -430,7 +458,10 @@ export function sourceSignature(loaded: Pick<LoadedWorld, "world" | "doc" | "mon
     policies: doc.servicePolicies, incentives: doc.incentives, versions: doc.incentiveVersions, assignments: doc.incentiveAssignments,
     months: [doc.months[month] ?? null, doc.months[prev] ?? null],
     runs: Object.values(doc.runs).map((r) => ({ id: `${r.entityId}:${r.month}`, payDate: r.payDate, attendance: r.attendance, overrides: r.overrides, manual: r.manual, thirdPartyApprovals: r.thirdPartyApprovals })),
-    history: doc.snapshots.map((s) => ({ id: `${s.entityId}:${s.month}:${s.version}` })),
+    overtimeDecisions: Object.entries(world.runDrafts).filter(([key]) => key.endsWith(`:${month}`))
+      .map(([key, r]) => ({ id: key, decisions: (r.overtimeDecisions ?? []).map((d) => ({ ...d, id: `${d.attendanceId}:${d.exceptionIndex}` })) })),
+    history: doc.snapshots.filter((s) => s.month < month).map((s) => ({ id: `${s.entityId}:${s.month}:${s.version}`,
+      people: s.result.people.map((p) => ({ id: p.id, gross: p.gross, deductions: p.deductions, net: p.net })) })),
   };
   return `sha256:${createHash("sha256").update(canonicalJson(source)).digest("hex")}`;
 }

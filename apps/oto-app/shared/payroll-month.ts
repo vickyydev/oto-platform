@@ -63,17 +63,50 @@ export interface FeedsView {
   canManage: boolean;
 }
 
-export interface RunView { runId: string; versionId: string; version: number; status: string; payDate: string }
+/** Who did a lifecycle step and when. */
+export interface RunStepView { name: string; at: string }
+export interface RunView {
+  runId: string; versionId: string; version: number; status: string; payDate: string;
+  /** R4 (SCRUM-569): the lifecycle of the current version. */
+  stage?: string; approvedSignature?: string | null; reopenReason?: string | null;
+  gm?: RunStepView | null; owner?: RunStepView | null; paid?: RunStepView | null;
+  snapshotId?: string | null;
+}
 export interface ExcludedPersonView { employeeId: string; name: string; reason: string }
+
+/** One row of the run audit (append-only). */
+export interface RunAuditEntryView {
+  id: string; version: number; action: string; subject: string | null; subjectId: string | null; reason: string;
+  oldValue: unknown; newValue: unknown; who: string; at: string;
+}
+/** An overtime decision (Pay / Bank / Reject) on one occurrence of a fed attendance day. */
+export interface OvertimeDecisionView {
+  dayKey: string; employeeId: string; name: string; exceptionIndex: number; outcome: "Pay" | "Bank" | "Reject";
+  employeeChoiceConfirmed: boolean; reason: string; who: string; at: string;
+}
+/** A payment to someone else, approved for the payment details it was approved with. */
+export interface ThirdPartyApprovalView { employeeId: string; name: string; reason: string; who: string; at: string; current: boolean }
+export interface RunVersionView {
+  versionId: string; version: number; status: string; reopenReason: string | null; createdAt: string;
+  gm: RunStepView | null; owner: RunStepView | null; paid: RunStepView | null; snapshotId: string | null;
+}
+
 export interface MonthEndView {
   entity: { id: string; name: string; defaultPayDay: number };
   month: string; run: RunView | null;
   attendance: (AttendanceDay & { workedAtBranchId: string | null; name: string; review: { action: string; reason: string; who: string; at: string; clockIn?: string; clockOut?: string } | null })[];
   manual: { id: string; employeeId: string; name: string; kind: "bonus" | "deduction"; amount: number; reason: string; who: string; at: string }[];
   overrides: { id: string; employeeId: string; name: string; component: string; amount: number; reason: string; who: string; at: string }[];
+  /** R4: the current version's overtime decisions and third-party approvals, every version, and the run audit. */
+  overtime: OvertimeDecisionView[];
+  thirdParty: ThirdPartyApprovalView[];
+  versions: RunVersionView[];
+  audit: RunAuditEntryView[];
   people: PayrollPersonRef[];
   excluded: ExcludedPersonView[]; notes: string[];
   canManage: boolean;
+  /** GM confirmation (payroll.confirm) and the Owner's lock, reopen and paid (payroll.lock). */
+  canConfirm: boolean; canLock: boolean;
 }
 
 export interface PreviewView {
@@ -83,4 +116,40 @@ export interface PreviewView {
   signature: string;
   excluded: ExcludedPersonView[]; notes: string[]; run: RunView | null;
   timing: { loadMs: number; calculateMs: number; queries: number };
+  /** R4: branch ids to names, for every text the engine wrote with a branch id in it. */
+  branchNames: Record<string, string>;
+  /** True when the current version is locked or paid: this is the frozen snapshot, not a live calculation. */
+  frozen: boolean;
+  /** GM confirmed, but the sources changed since (signature mismatch): the GM must confirm again. */
+  stale: boolean;
+  /** The prototype's "problems still open" count of the check & fix step. */
+  openProblems: number;
+}
+
+/** What a lock froze of the outputs: the prototype's CompanyOutputs without file bodies (those are payroll_output_files rows). */
+export interface OutputsManifest {
+  banks: { account: { id: string; label: string; bank: string; fileFormat: string }; filename: string; amount: number; transfers: CompanyResult["payments"] }[];
+  cashAmount: number; net: number; bankAmount: number; difference: number; note: string;
+  uploadIssues: string[]; uploadBankAmount: number; uploadDifference: number;
+  reports: string[]; payslips: string[];
+}
+export interface OutputFileView {
+  id: string; group: string; filename: string; mime: string; employeeId: string | null; name: string | null;
+  bytes: number; rows: number; total: number; sha256: string;
+}
+export interface PayrollHistoryRow {
+  snapshotId: string; entityId: string; entityName: string; month: string; version: number; status: string;
+  lockedAt: string; lockedBy: string; gmActor: string; people: number;
+  totals: { gross: number; deductions: number; net: number; employer: number; totalCost: number };
+}
+export interface PayrollHistoryVersionView extends PayrollHistoryRow {
+  result: CompanyResult; manifest: OutputsManifest; audit: RunAuditEntryView[]; files: OutputFileView[];
+  sourceSignature: string; engineRevision: string;
+}
+export interface MyPayslipRow {
+  fileId: string; entityName: string; month: string; version: number; status: string; net: number; lockedAt: string;
+}
+export interface MyPayslipsView {
+  employee: { id: string; name: string } | null;
+  payslips: MyPayslipRow[];
 }

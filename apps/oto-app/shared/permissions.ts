@@ -54,9 +54,21 @@ export const ADMIN_ONLY_ACTIONS = [
   "settings.manage_access",
   "settings.manage_roles",
   "settings.delete_data",
+  // The company payroll's GM confirmation (SCRUM-569): admin, operator_admin, global_admin.
+  "payroll.confirm",
 ] as const;
 
 export type AdminOnlyAction = typeof ADMIN_ONLY_ACTIONS[number];
+
+/**
+ * Actions narrower than admin-only: the admin bypass does NOT reach them.
+ * The company payroll's Owner lock, reopen and mark paid (SCRUM-569, owner
+ * ruling 2026-10-20) belong to operator_admin and global_admin only.
+ */
+export const OWNER_ONLY_ACTIONS = [
+  "payroll.lock",
+] as const;
+export const OWNER_ONLY_ROLES = ["global_admin", "operator_admin"] as const;
 
 // Map legacy module access booleans to new module keys
 export const LEGACY_MODULE_MAP: Record<string, ModuleKey[]> = {
@@ -387,6 +399,17 @@ export function canPerformAction(
   const moduleResult = canAccessModule(normCtx, moduleKey, branchId);
   if (!moduleResult.allowed) {
     return moduleResult;
+  }
+
+  // Owner-only actions, decided before the admin bypass so admin never gets them.
+  if ((OWNER_ONLY_ACTIONS as readonly string[]).includes(actionKey)) {
+    const allowed = (OWNER_ONLY_ROLES as readonly string[]).includes(normCtx.role as string);
+    return {
+      ...moduleResult,
+      allowed,
+      reason: allowed ? `Owner role: allowed ${actionKey}` : `Denied: ${actionKey} is for operator_admin and global_admin only`,
+      source: "role_default",
+    };
   }
 
   // Admin bypass

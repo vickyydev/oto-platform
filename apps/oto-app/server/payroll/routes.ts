@@ -1,11 +1,17 @@
 /**
  * The company payroll's routes (SCRUM-567 onward; plan §7 and §9). R3 (SCRUM-568)
  * adds month inputs, rewards setup, the payroll feeds and the month-end draft
- * with its read-only preview.
+ * with its read-only preview. R4 (SCRUM-569) adds the lifecycle (GM confirm,
+ * Owner lock, paid, reopen), overtime decisions, third-party approvals, the
+ * locked history with its files, and every employee's own payslips.
  *
  * Every route here is behind `hr.view_salary` (managers and staff get 403 on
  * all of them), writes need `hr.manage_payroll`, and the HR-data draft action
- * is global_admin's. Each is fenced by its own `parkGroupOnly` and every query
+ * is global_admin's. GM confirm needs `payroll.confirm` (admin,
+ * operator_admin, global_admin); Owner lock, reopen and mark paid need
+ * `payroll.lock` (operator_admin, global_admin; owner ruling 2026-10-20).
+ * The one exception to the salary floor is `payroll.own_payslips`: anyone
+ * signed in, for the payslips of the employee linked to their own account. Each is fenced by its own `parkGroupOnly` and every query
  * filters by `parkGroupOf(res)`: a row of another park group is a 404. This
  * module does not rely on the old `app.use('/api/payroll', …)` middleware in
  * server/routes.ts and is registered before it.
@@ -16,7 +22,7 @@
  */
 import type { Express, NextFunction, Request, RequestHandler, Response } from "express";
 import { canViewHrSalary } from "@shared/hr-salary-permission";
-import { canDraftPayrollProfiles, canManagePayroll } from "@shared/payroll-config";
+import { canConfirmPayroll, canDraftPayrollProfiles, canLockPayroll, canManagePayroll } from "@shared/payroll-config";
 import { parkGroupOf, parkGroupOnly, type CallerParkGroup } from "../lib/routeFences";
 import {
   PayrollRefusal,
@@ -42,8 +48,10 @@ import { loadMonthInputsView, overrideMonthInput, saveBranchRevenue, saveStaffMo
 import { loadRewardsView, saveIncentive, saveServicePolicy } from "./rewards";
 import { bookOtTimeOff, loadFeedsView, recordLeaveValuation, reverseLeaveValuation, saveOffboarding } from "./feeds";
 import { addManualLine, addOverride, loadMonthEnd, previewMonth, recordReview, removeManualLine, removeOverride, startRun } from "./month-end";
+import { approveThirdParty, confirmRun, lockRun, markPaid, recordOvertimeDecision, removeOvertimeDecision, reopenRun } from "./lifecycle";
+import { listHistory, loadHistoryVersion, myPayslips, openHistoryFile, openMyPayslip, type ServedFile } from "./payslips";
 
-export type PayrollPermission = "hr.view_salary" | "hr.manage_payroll" | "payroll.draft_profiles";
+export type PayrollPermission = "hr.view_salary" | "hr.manage_payroll" | "payroll.draft_profiles" | "payroll.confirm" | "payroll.lock" | "payroll.own_payslips";
 
 interface PayrollRouteDependencies {
   requireAuth: RequestHandler;
@@ -55,16 +63,26 @@ const roleOf = (req: Request) => req.userWithAccess?.role ?? req.user?.role;
 
 /** The permission a route needs, decided by the permission engine on the effective role. */
 export function payrollAllows(permission: PayrollPermission, role: string | null | undefined): boolean {
+  // Everyone signed in reaches their OWN payslips; the service shows nobody else's.
+  if (permission === "payroll.own_payslips") return !!role;
   if (!canViewHrSalary(role)) return false;
   if (permission === "hr.view_salary") return true;
   if (permission === "hr.manage_payroll") return canManagePayroll(role);
+  if (permission === "payroll.confirm") return canConfirmPayroll(role);
+  if (permission === "payroll.lock") return canLockPayroll(role);
   return canDraftPayrollProfiles(role);
 }
+
+/** The refusal in plain words, naming the key. */
+const REFUSALS: Partial<Record<PayrollPermission, string>> = {
+  "payroll.confirm": "GM confirmation is for payroll managers only",
+  "payroll.lock": "Only the Owner can lock, reopen or mark a payroll month paid",
+};
 
 function payroll(permission: PayrollPermission): RequestHandler {
   return (req, res, next) => {
     if (!payrollAllows(permission, roleOf(req))) {
-      res.status(403).json({ message: `Payroll is for payroll roles only (${permission} required).` });
+      res.status(403).json({ message: `${REFUSALS[permission] ?? "Payroll is for payroll roles only"} (${permission} required).` });
       return;
     }
     res.setHeader("Cache-Control", "private, no-store");
@@ -100,6 +118,25 @@ const answer = (status: number, work: Handler): RequestHandler => async (req, re
   }
 };
 const body = (req: Request) => (req.body && typeof req.body === "object" ? req.body : {}) as Record<string, unknown>;
+
+/**
+ * A frozen payroll file, sent as is: private, never cached, and HTML
+ * sandboxed (no script, no network) so a payslip cannot act as a page of
+ * the app. `?download=1` saves it instead of showing it.
+ */
+const sendFrozen = (work: (req: Request, res: Response) => Promise<ServedFile>): RequestHandler => async (req, res, next) => {
+  try {
+    const file = await work(req, res);
+    res.setHeader("Content-Type", `${file.mime}${/^text\//.test(file.mime) ? "; charset=utf-8" : ""}`);
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("Content-Security-Policy", "sandbox; default-src 'none'; style-src 'unsafe-inline'; img-src data:");
+    res.setHeader("Content-Disposition", `${req.query.download === "1" ? "attachment" : "inline"}; filename="${file.filename.replace(/[^\w.-]/g, "_")}"`);
+    res.status(200).send(file.body);
+  } catch (error) {
+    if (error instanceof PayrollRefusal) { res.status(error.status).json({ message: error.message }); return; }
+    next(error);
+  }
+};
 
 export function registerPayrollRoutes(app: Express, { requireAuth, callerParkGroup }: PayrollRouteDependencies): void {
   const fence = parkGroupOnly(callerParkGroup);
@@ -179,7 +216,8 @@ export function registerPayrollRoutes(app: Express, { requireAuth, callerParkGro
 
   // ── Month-end draft and preview (R3; the lifecycle is R4's) ──
   app.get("/api/payroll/month-end/:entityId/:month", requireAuth, payroll("hr.view_salary"), fence, answer(200, async (req, res) =>
-    ({ ...(await loadMonthEnd(parkGroupOf(res), req.params.entityId, req.params.month)), canManage: canManagePayroll(role(req)) })));
+    ({ ...(await loadMonthEnd(parkGroupOf(res), req.params.entityId, req.params.month)), canManage: canManagePayroll(role(req)),
+      canConfirm: canConfirmPayroll(role(req)), canLock: canLockPayroll(role(req)) })));
   app.post("/api/payroll/month-end/:entityId/:month/run", requireAuth, payroll("hr.manage_payroll"), fence, answer(200, (req, res) =>
     startRun(parkGroupOf(res), actorOf(req), req.params.entityId, req.params.month, body(req))));
   app.put("/api/payroll/month-end/:entityId/:month/attendance/:dayKey", requireAuth, payroll("hr.manage_payroll"), fence, answer(200, (req, res) =>
@@ -194,4 +232,34 @@ export function registerPayrollRoutes(app: Express, { requireAuth, callerParkGro
     removeOverride(parkGroupOf(res), actorOf(req), req.params.entityId, req.params.month, req.params.id, body(req))));
   app.get("/api/payroll/month-end/:entityId/:month/preview", requireAuth, payroll("hr.view_salary"), fence, answer(200, (req, res) =>
     previewMonth(parkGroupOf(res), req.params.entityId, req.params.month)));
+
+  // ── Month-end lifecycle (R4): overtime decisions, third-party approvals, GM confirm, Owner lock, paid, reopen ──
+  app.put("/api/payroll/month-end/:entityId/:month/overtime/:dayKey", requireAuth, payroll("hr.manage_payroll"), fence, answer(200, (req, res) =>
+    recordOvertimeDecision(parkGroupOf(res), actorOf(req), req.params.entityId, req.params.month, req.params.dayKey, body(req))));
+  app.post("/api/payroll/month-end/:entityId/:month/overtime/:dayKey/remove", requireAuth, payroll("hr.manage_payroll"), fence, answer(200, (req, res) =>
+    removeOvertimeDecision(parkGroupOf(res), actorOf(req), req.params.entityId, req.params.month, req.params.dayKey, body(req))));
+  app.put("/api/payroll/month-end/:entityId/:month/third-party/:employeeId", requireAuth, payroll("hr.manage_payroll"), fence, answer(200, (req, res) =>
+    approveThirdParty(parkGroupOf(res), actorOf(req), req.params.entityId, req.params.month, req.params.employeeId, body(req))));
+  app.post("/api/payroll/month-end/:entityId/:month/confirm", requireAuth, payroll("payroll.confirm"), fence, answer(200, (req, res) =>
+    confirmRun(parkGroupOf(res), actorOf(req), req.params.entityId, req.params.month, body(req))));
+  app.post("/api/payroll/month-end/:entityId/:month/lock", requireAuth, payroll("payroll.lock"), fence, answer(200, (req, res) =>
+    lockRun(parkGroupOf(res), actorOf(req), req.params.entityId, req.params.month, body(req))));
+  app.post("/api/payroll/month-end/:entityId/:month/paid", requireAuth, payroll("payroll.lock"), fence, answer(200, (req, res) =>
+    markPaid(parkGroupOf(res), actorOf(req), req.params.entityId, req.params.month, body(req))));
+  app.post("/api/payroll/month-end/:entityId/:month/reopen", requireAuth, payroll("payroll.lock"), fence, answer(200, (req, res) =>
+    reopenRun(parkGroupOf(res), actorOf(req), req.params.entityId, req.params.month, body(req))));
+
+  // ── Locked history and its files (R4): payroll roles; every file opened is audited ──
+  app.get("/api/payroll/history", requireAuth, payroll("hr.view_salary"), fence, answer(200, (_req, res) =>
+    listHistory(parkGroupOf(res))));
+  app.get("/api/payroll/history/files/:fileId", requireAuth, payroll("hr.view_salary"), fence, sendFrozen((req, res) =>
+    openHistoryFile(parkGroupOf(res), actorOf(req), req.params.fileId)));
+  app.get("/api/payroll/history/:entityId/:month/:version", requireAuth, payroll("hr.view_salary"), fence, answer(200, (req, res) =>
+    loadHistoryVersion(parkGroupOf(res), req.params.entityId, req.params.month, req.params.version)));
+
+  // ── My payslips (R4): anyone signed in, their own locked payslips only ──
+  app.get("/api/payroll/me/payslips", requireAuth, payroll("payroll.own_payslips"), fence, answer(200, (req, res) =>
+    myPayslips(parkGroupOf(res), actorOf(req).userId)));
+  app.get("/api/payroll/me/payslips/:fileId", requireAuth, payroll("payroll.own_payslips"), fence, sendFrozen((req, res) =>
+    openMyPayslip(parkGroupOf(res), actorOf(req).userId, req.params.fileId)));
 }
