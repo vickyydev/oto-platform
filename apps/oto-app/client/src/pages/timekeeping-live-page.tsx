@@ -106,7 +106,9 @@ export default function TimekeepingLivePage({ embedded = false }: { embedded?: b
   const [location, setLocation] = useLocation();
   const { selectedBranchId, isAllBranches } = useBranchContext();
 
-  const urlParams = new URLSearchParams(location.split("?")[1] || "");
+  // wouter's location is the path only — the query string never reaches it,
+  // so ?tab=missing must be read from the window (SCRUM-563 capture finding).
+  const urlParams = new URLSearchParams(typeof window === "undefined" ? "" : window.location.search);
   const defaultTab = embedded ? "working" : urlParams.get("tab") === "missing" ? "missing" : "working";
 
   const [activeTab, setActiveTab] = useState(defaultTab);
