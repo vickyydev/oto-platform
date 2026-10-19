@@ -84,6 +84,8 @@ export default function ChecklistRunPage() {
   const { id } = useParams<{ id: string }>();
   const [, setLocation] = useLocation();
   const embedded = new URLSearchParams(window.location.search).get("embedded") === "1";
+  const fromOps = new URLSearchParams(window.location.search).get("fromOps") === "1";
+  const backPath = fromOps ? "/ops?tab=checklists" : "/core/today";
   const returnedSourceItemId = new URLSearchParams(window.location.search).get("sourceItem");
   const reportSubmitted = new URLSearchParams(window.location.search).get("reported") === "1";
   const { toast } = useToast();
@@ -92,12 +94,17 @@ export default function ChecklistRunPage() {
   const [itemPhotos, setItemPhotos] = useState<Record<string, string[]>>({});
   const itemPhotosRef = useRef<Record<string, string[]>>({});
   const photoSaveQueues = useRef<Record<string, Promise<unknown>>>({});
+  const canonicalByClaim = useRef<Record<string, string>>({});
+  const [unsavedPhotos, setUnsavedPhotos] = useState<Set<string>>(new Set());
+  const unsavedPhotosRef = useRef<Set<string>>(new Set());
   const [uploadingPhoto, setUploadingPhoto] = useState<string | null>(null);
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const libraryInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const [failNotes, setFailNotes] = useState<Record<string, string>>({});
   const failPhotoInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const failLibraryInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const [failPhotos, setFailPhotos] = useState<Record<string, string>>({});
+  const [unsavedFailPhotos, setUnsavedFailPhotos] = useState<Set<string>>(new Set());
   const [uploadingFailPhoto, setUploadingFailPhoto] = useState<string | null>(null);
 
   useEffect(() => {
@@ -179,10 +186,10 @@ export default function ChecklistRunPage() {
     }, 100);
     if (reportSubmitted) {
       toast({ title: "Fix report submitted", description: "The report is now linked to this checklist item." });
-      const cleanUrl = `${window.location.pathname}?sourceItem=${encodeURIComponent(returnedSourceItemId)}${embedded ? "&embedded=1" : ""}`;
+      const cleanUrl = `${window.location.pathname}?sourceItem=${encodeURIComponent(returnedSourceItemId)}${embedded ? "&embedded=1" : ""}${fromOps ? "&fromOps=1" : ""}`;
       window.history.replaceState({}, "", cleanUrl);
     }
-  }, [run, returnedSourceItemId, reportSubmitted, embedded, toast]);
+  }, [run, returnedSourceItemId, reportSubmitted, embedded, fromOps, toast]);
 
   useEffect(() => {
     itemPhotosRef.current = itemPhotos;
@@ -276,7 +283,7 @@ export default function ChecklistRunPage() {
         title: "Checklist completed!",
         description: "Great job completing this checklist.",
       });
-      setLocation("/core/today");
+      setLocation(backPath);
     },
     onError: (error: Error) => {
       toast({
@@ -305,6 +312,10 @@ export default function ChecklistRunPage() {
     }
 
     const photos = itemPhotos[itemId] || [];
+    if (unsavedPhotosRef.current.has(itemId)) {
+      toast({ title: "Save the pending photo first", variant: "destructive" });
+      return;
+    }
     const requiresPhoto = templateItem.linkedToFix !== true
       && templateItem.requiresPhoto === true;
     const cameraEnabled = (templateItem.cameraEnabled ?? true)
@@ -352,13 +363,40 @@ export default function ChecklistRunPage() {
     setExpandedItems(newExpanded);
   };
 
+  const getEvidenceCompletionUpdates = (
+    itemId: string,
+    evidence: { note?: string; photos?: string[] },
+  ): { completed?: boolean; completedAt?: Date | null } => {
+    const item = run?.items.find((candidate) => candidate.id === itemId);
+    if (!item || (item as any).completed || run?.status === "completed") return {};
+
+    const effectiveNote = evidence.note ?? itemNotes[itemId] ?? item.note ?? "";
+    const effectivePhotos = evidence.photos ?? itemPhotosRef.current[itemId] ?? [];
+    const requiresPhoto = item.templateItem.linkedToFix !== true
+      && item.templateItem.requiresPhoto === true;
+    const requiresNote = item.templateItem.requiresNote === true;
+
+    if (!effectiveNote.trim() && effectivePhotos.length === 0) return {};
+    if (requiresPhoto && effectivePhotos.length === 0) return {};
+    if (requiresNote && !effectiveNote.trim()) return {};
+
+    return { completed: true, completedAt: new Date() };
+  };
+
   const saveNote = (itemId: string) => {
-    const note = itemNotes[itemId];
+    const note = itemNotes[itemId] ?? "";
+    const completionUpdates = getEvidenceCompletionUpdates(itemId, { note });
     updateItemMutation.mutate({
       itemId,
-      updates: { note },
+      updates: { note, ...completionUpdates },
+      checkAutoComplete: completionUpdates.completed === true,
+    }, {
+      onSuccess: () => {
+        toast({
+          title: completionUpdates.completed === true ? "Note saved and item completed" : "Note saved",
+        });
+      },
     });
-    toast({ title: "Note saved" });
   };
 
   const setResultStatus = (itemId: string, status: 'pass' | 'fail', currentStatus?: string) => {
@@ -419,6 +457,9 @@ export default function ChecklistRunPage() {
       },
     }, {
       onSuccess: () => {
+        const canonicalUrl = photoUrl ? canonicalByClaim.current[photoUrl] : undefined;
+        if (canonicalUrl) setFailPhotos(prev => ({ ...prev, [itemId]: canonicalUrl }));
+        setUnsavedFailPhotos(previous => { const next = new Set(previous); next.delete(itemId); return next; });
         // Close this item
         const newExpanded = new Set(expandedItems);
         newExpanded.delete(itemId);
@@ -446,6 +487,12 @@ export default function ChecklistRunPage() {
     });
   };
 
+  // An upload returns a short-lived claim URL (only it may be saved onto this
+  // item) and the canonical URL the item keeps. A save that fails keeps the
+  // claim URL on screen for a retry; once saved, the canonical URL replaces it
+  // so a later edit of the list can safely keep the photo.
+  const toCanonical = (urls: string[]) => urls.map((url) => canonicalByClaim.current[url] ?? url);
+
   const handleFailPhotoCapture = async (itemId: string, file: File) => {
     setUploadingFailPhoto(itemId);
     try {
@@ -465,25 +512,27 @@ export default function ChecklistRunPage() {
         throw new Error(errorData.message || "The server rejected the photo. Please try again.");
       }
       const { url, canonicalUrl } = await response.json();
-      
+      canonicalByClaim.current[url] = canonicalUrl;
+
       setFailPhotos(prev => ({
         ...prev,
         [itemId]: url,
       }));
-      
-      // The short-lived upload claim is only for this save; display the
-      // persisted URL afterwards so another edit can safely keep the photo.
+      setUnsavedFailPhotos(previous => new Set(previous).add(itemId));
+
+      // Keep the uploaded URL visible if saving fails, so it can be retried without re-upload.
       await updateItemMutation.mutateAsync({
         itemId,
         updates: { failPhotoUrl: url },
       });
       setFailPhotos(prev => ({ ...prev, [itemId]: canonicalUrl }));
-      
+      setUnsavedFailPhotos(previous => { const next = new Set(previous); next.delete(itemId); return next; });
+
       toast({ title: "Issue photo uploaded" });
     } catch (error) {
       toast({
-        title: error instanceof ImagePreparationError ? "Photo could not be prepared" : "Failed to upload photo",
-        description: error instanceof Error ? error.message : "Unknown error",
+        title: error instanceof ImagePreparationError ? "Photo could not be prepared" : "Photo upload failed",
+        description: `${error instanceof Error ? error.message : "Unknown error"} Try Photo Library if the camera or photo cannot be used.`,
         variant: "destructive",
       });
     } finally {
@@ -492,14 +541,15 @@ export default function ChecklistRunPage() {
   };
 
   const handlePhotoCapture = async (itemId: string, files: File[]) => {
-    if (files.length === 0) return;
+    if (files.length === 0 || unsavedPhotosRef.current.has(itemId)) return;
     setUploadingPhoto(itemId);
-    try {
-      // Prepare one file at a time (photos are resized and re-encoded in the
-      // browser) to limit memory pressure on phones and tablets.
-      const preparedFiles: File[] = [];
-      for (const original of files) preparedFiles.push(await prepareEvidenceForUpload(original));
-      const uploadedUrls = await Promise.all(preparedFiles.map(async (file) => {
+    let saved = 0;
+    let failed = false;
+    for (const original of files) {
+      try {
+        // Prepare and upload one file at a time (photos are resized and
+        // re-encoded in the browser) to limit memory pressure on phones and tablets.
+        const file = await prepareEvidenceForUpload(original);
         const formData = new FormData();
         formData.append("photo", file);
         formData.append("itemId", itemId);
@@ -513,42 +563,111 @@ export default function ChecklistRunPage() {
           throw new Error(errorData.message || "The server rejected this evidence. Please try again.");
         }
         const { url, canonicalUrl } = await response.json();
-        return { url: url as string, canonicalUrl: canonicalUrl as string };
-      }));
-      const currentPhotos = itemPhotosRef.current[itemId] || [];
-      const nextPhotos = [...currentPhotos, ...uploadedUrls.map(photo => photo.url)];
-      itemPhotosRef.current = { ...itemPhotosRef.current, [itemId]: nextPhotos };
-      setItemPhotos((previous) => ({ ...previous, [itemId]: nextPhotos }));
-      const save = (photoSaveQueues.current[itemId] || Promise.resolve())
-        .catch(() => undefined)
-        .then(() => updateItemMutation.mutateAsync({ itemId, updates: { photoEvidenceUrls: nextPhotos } }));
-      photoSaveQueues.current[itemId] = save;
-      await save;
-      const savedPhotos = [...currentPhotos, ...uploadedUrls.map(photo => photo.canonicalUrl)];
+        canonicalByClaim.current[url] = canonicalUrl;
+        const nextPhotos = [...(itemPhotosRef.current[itemId] || []), url as string];
+        itemPhotosRef.current = { ...itemPhotosRef.current, [itemId]: nextPhotos };
+        setItemPhotos((previous) => ({ ...previous, [itemId]: nextPhotos }));
+        unsavedPhotosRef.current.add(itemId);
+        setUnsavedPhotos(previous => new Set(previous).add(itemId));
+        const save = (photoSaveQueues.current[itemId] || Promise.resolve()).catch(() => undefined)
+          .then(() => updateItemMutation.mutateAsync({
+            itemId,
+            updates: { photoEvidenceUrls: nextPhotos },
+          }));
+        photoSaveQueues.current[itemId] = save;
+        await save;
+        const savedPhotos = toCanonical(itemPhotosRef.current[itemId] || []);
+        itemPhotosRef.current = { ...itemPhotosRef.current, [itemId]: savedPhotos };
+        setItemPhotos((previous) => ({ ...previous, [itemId]: savedPhotos }));
+        unsavedPhotosRef.current.delete(itemId);
+        setUnsavedPhotos(previous => { const next = new Set(previous); next.delete(itemId); return next; });
+        saved++;
+      } catch (error) {
+        failed = true;
+        toast({
+          title: saved ? `${saved} evidence item${saved === 1 ? "" : "s"} saved; another failed` :
+            error instanceof ImagePreparationError ? "Photo could not be prepared" : "Evidence upload failed",
+          description: `${error instanceof Error ? error.message : "Could not upload evidence"}. ${unsavedPhotosRef.current.has(itemId) ? "Retry saving below." : "Try the library if the camera or media cannot be used."}`,
+          variant: "destructive",
+        });
+        break;
+      }
+    }
+    setUploadingPhoto(null);
+    if (!failed && saved) {
+      const photos = itemPhotosRef.current[itemId];
+      const completionUpdates = getEvidenceCompletionUpdates(itemId, { photos });
+      if (completionUpdates.completed) {
+        updateItemMutation.mutate({
+          itemId,
+          updates: { photoEvidenceUrls: photos, ...completionUpdates },
+          checkAutoComplete: true,
+        });
+      }
+    }
+    if (saved && !failed) toast({ title: `${saved} evidence item${saved === 1 ? "" : "s"} saved` });
+  };
+
+  const retryPhotoSave = async (itemId: string) => {
+    const photos = itemPhotosRef.current[itemId] || [];
+    try {
+      const completionUpdates = getEvidenceCompletionUpdates(itemId, { photos });
+      await updateItemMutation.mutateAsync({
+        itemId,
+        updates: { photoEvidenceUrls: photos, ...completionUpdates },
+        checkAutoComplete: completionUpdates.completed === true,
+      });
+      const savedPhotos = toCanonical(itemPhotosRef.current[itemId] || []);
       itemPhotosRef.current = { ...itemPhotosRef.current, [itemId]: savedPhotos };
       setItemPhotos((previous) => ({ ...previous, [itemId]: savedPhotos }));
-      toast({ title: uploadedUrls.length === 1 ? "Evidence added" : `${uploadedUrls.length} evidence items added` });
-    } catch (error) {
-      toast({
-        title: error instanceof ImagePreparationError ? "Photo could not be prepared" : "Upload failed",
-        description: error instanceof Error ? error.message : "Could not upload evidence",
-        variant: "destructive",
-      });
-    } finally {
-      setUploadingPhoto(null);
+      unsavedPhotosRef.current.delete(itemId);
+      setUnsavedPhotos(previous => { const next = new Set(previous); next.delete(itemId); return next; });
+      toast({ title: "Evidence saved" });
+    } catch {
+      // The mutation displays the server error; keep the local URL for another retry.
+    }
+  };
+
+  const retryFailPhotoSave = async (itemId: string) => {
+    const url = failPhotos[itemId];
+    try {
+      await updateItemMutation.mutateAsync({ itemId, updates: { failPhotoUrl: url } });
+      const canonicalUrl = canonicalByClaim.current[url];
+      if (canonicalUrl) setFailPhotos(prev => ({ ...prev, [itemId]: canonicalUrl }));
+      setUnsavedFailPhotos(previous => { const next = new Set(previous); next.delete(itemId); return next; });
+      toast({ title: "Issue photo saved" });
+    } catch {
+      // Keep the uploaded URL for another attempt.
     }
   };
 
   const removePhoto = async (itemId: string, photoIndex: number) => {
+    if (unsavedPhotosRef.current.has(itemId)) {
+      toast({ title: "Retry saving the pending evidence before deleting it", variant: "destructive" });
+      return;
+    }
     const currentPhotos = itemPhotosRef.current[itemId] || [];
+    if (!window.confirm("Delete this evidence from the checklist item?")) return;
+
     const newPhotos = currentPhotos.filter((_, i) => i !== photoIndex);
     itemPhotosRef.current = { ...itemPhotosRef.current, [itemId]: newPhotos };
     setItemPhotos((previous) => ({ ...previous, [itemId]: newPhotos }));
-    const save = (photoSaveQueues.current[itemId] || Promise.resolve())
-      .catch(() => undefined)
-      .then(() => updateItemMutation.mutateAsync({ itemId, updates: { photoEvidenceUrls: newPhotos } }));
-    photoSaveQueues.current[itemId] = save;
-    await save;
+    try {
+      const save = (photoSaveQueues.current[itemId] || Promise.resolve())
+        .catch(() => undefined)
+        .then(() => updateItemMutation.mutateAsync({ itemId, updates: { photoEvidenceUrls: newPhotos } }));
+      photoSaveQueues.current[itemId] = save;
+      await save;
+      toast({ title: "Evidence deleted" });
+    } catch (error) {
+      itemPhotosRef.current = { ...itemPhotosRef.current, [itemId]: currentPhotos };
+      setItemPhotos((previous) => ({ ...previous, [itemId]: currentPhotos }));
+      toast({
+        title: "Could not delete evidence",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const triggerFileInput = (itemId: string) => {
@@ -577,10 +696,10 @@ export default function ChecklistRunPage() {
               Close details
             </Button>
           ) : (
-            <Link href="/core/today">
+            <Link href={backPath}>
               <Button variant="outline" data-testid="button-back-to-today">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Today
+                {fromOps ? "Back to Ops" : "Back to Today"}
               </Button>
             </Link>
           )}
@@ -614,7 +733,7 @@ export default function ChecklistRunPage() {
       && item.templateItem.requiresPhoto === true;
     if (!requiresPhoto) return true;
     const photos = itemPhotos[item.id] || [];
-    return photos.length > 0;
+    return photos.length > 0 && !unsavedPhotos.has(item.id);
   });
 
   return (
@@ -627,8 +746,8 @@ export default function ChecklistRunPage() {
                 <ArrowLeft className="h-5 w-5" />
               </Button>
             ) : (
-              <Link href="/core/today">
-                <Button size="icon" variant="ghost" data-testid="button-back">
+              <Link href={backPath}>
+                <Button size="icon" variant="ghost" aria-label={fromOps ? "Back to Ops" : "Back to Today"} data-testid="button-back">
                   <ArrowLeft className="h-5 w-5" />
                 </Button>
               </Link>
@@ -717,7 +836,8 @@ export default function ChecklistRunPage() {
                   && item.templateItem.requiresPhoto === true;
                 const cameraEnabled = (item.templateItem.cameraEnabled ?? true)
                   || (requiresPhoto && item.templateItem.cameraEnabled === false && item.templateItem.galleryEnabled === false);
-                const galleryEnabled = item.templateItem.galleryEnabled ?? false;
+                // A camera-enabled item always has a library fallback if native capture fails.
+                const galleryEnabled = (item.templateItem.galleryEnabled ?? false) || cameraEnabled;
                 const itemRefMedia = item.templateItem.referenceMediaUrls as string[] || [];
                 const itemAttachments = itemAttachmentsByItem[item.templateItem.id] || [];
 
@@ -827,7 +947,7 @@ export default function ChecklistRunPage() {
                                     <Button
                                       className="w-full"
                                       onClick={() => setLocation(
-                                        `/core/fix?report=1&checklistSource=${encodeURIComponent(item.id)}${embedded ? "&returnEmbedded=1" : ""}`
+                                        `/core/fix?report=1&checklistSource=${encodeURIComponent(item.id)}${embedded ? "&returnEmbedded=1" : ""}${fromOps ? "&returnOps=1" : ""}`
                                       )}
                                       data-testid={`button-report-fix-${item.id}`}
                                     >
@@ -845,7 +965,7 @@ export default function ChecklistRunPage() {
                                           key={report.id}
                                           type="button"
                                           onClick={() => setLocation(
-                                            `/core/fix?report=1&openReport=${encodeURIComponent(report.id)}&returnRun=${encodeURIComponent(run.id)}&sourceItem=${encodeURIComponent(item.id)}${embedded ? "&returnEmbedded=1" : ""}`
+                                            `/core/fix?report=1&openReport=${encodeURIComponent(report.id)}&returnRun=${encodeURIComponent(run.id)}&sourceItem=${encodeURIComponent(item.id)}${embedded ? "&returnEmbedded=1" : ""}${fromOps ? "&returnOps=1" : ""}`
                                           )}
                                           className="w-full flex items-center justify-between gap-2 rounded border bg-background px-2.5 py-2 text-left hover:bg-muted"
                                           data-testid={`button-linked-fix-report-${report.id}`}
@@ -920,7 +1040,7 @@ export default function ChecklistRunPage() {
                                         rel="noopener noreferrer"
                                       >
                                         <img 
-                                          src={(item as any).failPhotoUrl || failPhotos[item.id]} 
+                                          src={failPhotos[item.id] || (item as any).failPhotoUrl}
                                           alt="Issue photo"
                                           className="h-16 w-16 object-cover rounded-md border"
                                         />
@@ -945,6 +1065,21 @@ export default function ChecklistRunPage() {
                                             </>
                                           )}
                                         </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => failLibraryInputRefs.current[item.id]?.click()}
+                                          disabled={uploadingFailPhoto === item.id}
+                                          data-testid={`button-add-fail-photo-library-${item.id}`}
+                                        >
+                                          <ImageIcon className="mr-1 h-3 w-3" />
+                                          Photo Library
+                                        </Button>
+                                        {unsavedFailPhotos.has(item.id) && (
+                                          <Button size="sm" variant="outline" onClick={() => void retryFailPhotoSave(item.id)}>
+                                            Retry saving photo
+                                          </Button>
+                                        )}
                                         <Button
                                           size="sm"
                                           onClick={() => saveFailNote(item.id)}
@@ -994,44 +1129,60 @@ export default function ChecklistRunPage() {
                                 </label>
                                   
                                   {photos.length > 0 && (
-                                    <div className="flex gap-2 flex-wrap">
-                                      {photos.map((photoUrl, index) => (
-                                        <div key={index} className="relative group">
-                                          {isVideoUrl(photoUrl) ? (
-                                            <video
-                                              src={photoUrl}
-                                              controls
-                                              playsInline
-                                              preload="metadata"
-                                              aria-label={`Evidence video ${index + 1}`}
-                                              className="h-32 w-full max-w-xs object-contain rounded-md border bg-black"
-                                              data-testid={`evidence-video-${item.id}-${index}`}
-                                            />
-                                          ) : (
-                                            <a href={photoUrl} target="_blank" rel="noopener noreferrer">
-                                              <img
-                                                src={photoUrl}
-                                                alt={`Evidence ${index + 1}`}
-                                                className="h-16 w-16 object-cover rounded-md border"
+                                    <div className="w-full space-y-3" data-testid={`evidence-list-${item.id}`}>
+                                      {photos.map((evidenceUrl, index) => {
+                                        const isVideo = isVideoUrl(evidenceUrl);
+                                        return (
+                                          <div
+                                            key={index}
+                                            className="relative group w-full"
+                                            data-testid={`evidence-item-${item.id}-${index}`}
+                                          >
+                                            {isVideo ? (
+                                              <video
+                                                src={evidenceUrl}
+                                                controls
+                                                playsInline
+                                                preload="metadata"
+                                                aria-label={`Evidence video ${index + 1}`}
+                                                className="block w-full aspect-video max-h-[70vh] object-contain rounded-md border bg-black"
+                                                data-testid={`evidence-video-${item.id}-${index}`}
                                               />
-                                            </a>
-                                          )}
-                                          {!isCompleted && (
-                                            <button
-                                              onClick={() => removePhoto(item.id, index)}
-                                              className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                                              data-testid={`button-remove-photo-${item.id}-${index}`}
-                                            >
-                                              <X className="h-3 w-3" />
-                                            </button>
-                                          )}
-                                        </div>
-                                      ))}
+                                            ) : (
+                                              <a href={evidenceUrl} target="_blank" rel="noopener noreferrer" className="block w-full">
+                                                <img 
+                                                  src={evidenceUrl} 
+                                                  alt={`Evidence ${index + 1}`}
+                                                  className="block h-auto max-h-[70vh] w-full object-contain rounded-md border bg-muted"
+                                                  data-testid={`evidence-image-${item.id}-${index}`}
+                                                />
+                                              </a>
+                                            )}
+                                            {!isCompleted && (
+                                              <button
+                                                type="button"
+                                                onPointerDown={(event) => event.stopPropagation()}
+                                                onClick={(event) => {
+                                                  event.preventDefault();
+                                                  event.stopPropagation();
+                                                  void removePhoto(item.id, index);
+                                                }}
+                                                aria-label={`Delete ${isVideo ? "video" : "photo"} evidence ${index + 1}`}
+                                                title="Delete evidence"
+                                                className="absolute z-20 -top-2 -right-2 h-8 w-8 touch-manipulation rounded-full bg-destructive text-destructive-foreground shadow-md flex items-center justify-center opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100 transition-opacity"
+                                                data-testid={`button-remove-photo-${item.id}-${index}`}
+                                              >
+                                                <X className="h-4 w-4" />
+                                              </button>
+                                            )}
+                                          </div>
+                                        );
+                                      })}
                                     </div>
                                   )}
                                   
                                   {!isCompleted && (
-                                    <div className="flex gap-2">
+                                    <div className="flex flex-wrap gap-2">
                                       {cameraEnabled && <input
                                         type="file"
                                         accept="image/*,video/*"
@@ -1090,6 +1241,17 @@ export default function ChecklistRunPage() {
                                       </Button>}
                                     </div>
                                   )}
+                                  {unsavedPhotos.has(item.id) && (
+                                    <Button size="sm" variant="outline" onClick={() => void retryPhotoSave(item.id)}
+                                      data-testid={`button-retry-photo-save-${item.id}`}>
+                                      Retry saving evidence
+                                    </Button>
+                                  )}
+                                  {!isCompleted && requiresPhoto && (
+                                    <p className="text-xs text-muted-foreground">
+                                      If the camera cannot open or runs out of memory, choose Photo / Video Library to use existing media.
+                                    </p>
+                                  )}
                                 </div>}
                               
                               {!isChecker && (
@@ -1133,6 +1295,7 @@ export default function ChecklistRunPage() {
                           
                           {/* Hidden file input for fail photo - must be outside isExpanded for auto-camera to work */}
                           {isChecker && !isCompleted && (
+                            <>
                             <input
                               type="file"
                               accept="image/*"
@@ -1148,6 +1311,21 @@ export default function ChecklistRunPage() {
                               }}
                               data-testid={`input-fail-photo-${item.id}`}
                             />
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              ref={(el) => { failLibraryInputRefs.current[item.id] = el; }}
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  void handleFailPhotoCapture(item.id, file);
+                                  e.target.value = "";
+                                }
+                              }}
+                              data-testid={`input-fail-photo-library-${item.id}`}
+                            />
+                            </>
                           )}
                         </div>
                       </div>

@@ -65,6 +65,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useLocation } from "wouter";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { CreateTaskDialog } from "@/components/create-task-dialog";
 import { CreateChecklistDialog } from "@/components/create-checklist-dialog";
 import TaskFiltersPanel, { type TaskFilters } from "@/components/core/TaskFiltersPanel";
@@ -231,7 +232,9 @@ export default function OpsPage() {
   const { user } = useAuth();
   const { selectedBranchId } = useBranchContext();
   const [, navigate] = useLocation();
-  const [activeTab, setActiveTab] = useState<OpsTab>("tasks");
+  const isMobile = useIsMobile();
+  const [activeTab, setActiveTab] = useState<OpsTab>(() =>
+    new URLSearchParams(window.location.search).get("tab") === "checklists" ? "checklists" : "tasks");
   const [tasksViewMode, setTasksViewMode] = useState<"list" | "kanban" | "calendar">("kanban");
   const [checklistsViewMode, setChecklistsViewMode] = useState<"dashboard" | "templates" | "history">("dashboard");
   const [showMyOnly, setShowMyOnly] = useState(false);
@@ -262,6 +265,14 @@ export default function OpsPage() {
     return params.get("taskId") || null;
   });
   const [selectedChecklistRunId, setSelectedChecklistRunId] = useState<string | null>(null);
+  // On a phone an open run opens full-screen; the run page returns here (?fromOps=1).
+  const openChecklistRun = (runId: string, status?: string | null) => {
+    if (isMobile && status !== "completed" && status !== "missed") {
+      navigate(`/core/checklist/${encodeURIComponent(runId)}?fromOps=1`);
+    } else {
+      setSelectedChecklistRunId(runId);
+    }
+  };
 
   useEffect(() => {
     const handleEmbeddedDetailClose = (event: MessageEvent) => {
@@ -1280,7 +1291,7 @@ export default function OpsPage() {
                         runs={(() => {
                           return (showMyOnly ? checklistRuns.filter(isChecklistRunMine) : checklistRuns).filter(matchesChecklistRun);
                         })()}
-                        onCardClick={(run) => setSelectedChecklistRunId(run.id)}
+                        onCardClick={(run) => openChecklistRun(run.id, run.status)}
                       />
                     </div>
                     {isManagerOrAbove && (
@@ -1300,7 +1311,7 @@ export default function OpsPage() {
                                     <button
                                       key={activity.id}
                                       className="w-full text-left py-2 border-b last:border-b-0 border-border/50 hover-elevate rounded-sm px-1 -mx-1 cursor-pointer"
-                                      onClick={() => setSelectedChecklistRunId(activity.id)}
+                                      onClick={() => openChecklistRun(activity.id, activity.status)}
                                       data-testid={`ops-cl-activity-${activity.id}`}
                                     >
                                       <p className="text-xs leading-snug">{activity.description}</p>
@@ -1357,7 +1368,7 @@ export default function OpsPage() {
                     data={checklistHistory}
                     periodLabel={checklistFilters.period !== "none" && checklistFilters.from && checklistFilters.to
                       ? `${checklistFilters.from}${checklistFilters.to !== checklistFilters.from ? ` – ${checklistFilters.to}` : ""}` : undefined}
-                    onRunClick={(run) => setSelectedChecklistRunId(run.id)}
+                    onRunClick={(run) => openChecklistRun(run.id, run.status)}
                   />
                 )}
 
@@ -1681,7 +1692,7 @@ export default function OpsPage() {
                       key={activity.id}
                       className="w-full text-left px-5 py-3 hover-elevate"
                       onClick={() => {
-                        setSelectedChecklistRunId(activity.id);
+                        openChecklistRun(activity.id, activity.status);
                         setMobileUpdatesOpen(false);
                       }}
                       data-testid={`mobile-cl-activity-${activity.id}`}

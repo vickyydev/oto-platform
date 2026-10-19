@@ -12,6 +12,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Dialog,
   DialogContent,
+  DialogHeader,
+  DialogBody,
+  DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useBranchContext } from "@/hooks/use-branch-context";
@@ -127,6 +131,7 @@ function ReportDetailSheet({ reportId, open, onClose }: ReportDetailSheetProps) 
   const { user } = useAuth();
   const { toast } = useToast();
   const [comment, setComment] = useState("");
+  const [viewingMedia, setViewingMedia] = useState<string | null>(null);
 
   const { data: detail, isLoading } = useQuery<ReportDetail>({
     queryKey: ['/api/fix-reports', reportId, 'details'],
@@ -161,10 +166,15 @@ function ReportDetailSheet({ reportId, open, onClose }: ReportDetailSheetProps) 
   const departmentMembers = detail?.departmentMembers || [];
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+    <Dialog open={open} onOpenChange={(o) => {
+      if (!o) {
+        setViewingMedia(null);
+        onClose();
+      }
+    }}>
       <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0" data-testid="dialog-fix-report-staff-detail">
         <div className="flex items-center gap-3 p-4 border-b">
-          <button type="button" onClick={onClose} className="p-1 rounded hover:bg-muted">
+          <button type="button" onClick={() => { setViewingMedia(null); onClose(); }} className="p-1 rounded hover:bg-muted">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex-1 min-w-0">
@@ -186,14 +196,14 @@ function ReportDetailSheet({ reportId, open, onClose }: ReportDetailSheetProps) 
               <div className="p-4 border-b">
                 <div className={`grid gap-2 ${report.media.length === 1 ? '' : 'grid-cols-3'}`}>
                   {report.media.map((url, idx) => (
-                    <div key={idx} className={`relative rounded-lg overflow-hidden bg-muted ${report.media.length === 1 ? 'aspect-video' : 'aspect-square'}`}>
-                      <img src={getMediaThumbUrl(url)} alt={`Photo ${idx + 1}`} loading="lazy" className="w-full h-full object-cover" />
+                    <button type="button" key={idx} onClick={() => setViewingMedia(url)} aria-label={`View media ${idx + 1}`} className={`relative rounded-lg overflow-hidden bg-muted ${report.media.length === 1 ? 'aspect-video' : 'aspect-square'}`} data-testid={`button-view-report-media-${idx}`}>
+                      <img src={getMediaThumbUrl(url)} alt={`Report media ${idx + 1}`} loading="lazy" className="w-full h-full object-cover" />
                       {isVideoUrl(url) && (
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                           <PlayCircle className="w-8 h-8 text-white drop-shadow" />
                         </div>
                       )}
-                    </div>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -271,6 +281,22 @@ function ReportDetailSheet({ reportId, open, onClose }: ReportDetailSheetProps) 
             </Button>
           </div>
         </div>
+        {viewingMedia && (
+          <Dialog open onOpenChange={() => setViewingMedia(null)}>
+            <DialogContent className="max-w-3xl" data-testid="dialog-fix-report-media">
+              <DialogHeader>
+                <DialogTitle>{isVideoUrl(viewingMedia) ? "Report video" : "Report photo"}</DialogTitle>
+              </DialogHeader>
+              <DialogBody>
+                {isVideoUrl(viewingMedia) ? (
+                  <video src={viewingMedia} controls playsInline preload="metadata" className="max-h-[75vh] w-full object-contain" />
+                ) : (
+                  <img src={viewingMedia} alt="Report media" className="max-h-[75vh] w-full object-contain" />
+                )}
+              </DialogBody>
+            </DialogContent>
+          </Dialog>
+        )}
       </DialogContent>
     </Dialog>
   );
@@ -286,6 +312,7 @@ export default function FixPage() {
   const returnRunId = searchParams.get("returnRun");
   const returnSourceItemId = searchParams.get("sourceItem");
   const returnEmbedded = searchParams.get("returnEmbedded") === "1";
+  const returnOps = searchParams.get("returnOps") === "1";
   const { toast } = useToast();
   const { user } = useAuth();
   const { activeBranchId, branches, setActiveBranchId, isLoading: branchLoading } = useBranchContext();
@@ -298,6 +325,7 @@ export default function FixPage() {
   // into memory as base64; they are revoked on removal, reset and unmount.
   const [selectedMedia, setSelectedMedia] = useState<SelectedMedia[]>([]);
   const selectedMediaRef = useRef<SelectedMedia[]>([]);
+  const [addMediaOpen, setAddMediaOpen] = useState(false);
   useEffect(() => () => {
     selectedMediaRef.current.forEach(({ url }) => URL.revokeObjectURL(url));
   }, []);
@@ -393,6 +421,7 @@ export default function FixPage() {
     const added = files.map(file => ({ file, url: URL.createObjectURL(file) }));
     selectedMediaRef.current = [...selectedMediaRef.current, ...added];
     setSelectedMedia(selectedMediaRef.current);
+    setAddMediaOpen(false);
 
     if (step === "capture") {
       setStep("details");
@@ -457,7 +486,7 @@ export default function FixPage() {
       if (checklistContext) {
         queryClient.invalidateQueries({ queryKey: ["/api/checklist-runs", checklistContext.runId] });
         setLocation(
-          `/core/checklist/${checklistContext.runId}?sourceItem=${encodeURIComponent(checklistContext.sourceChecklistRunItemId)}&reported=1${returnEmbedded ? "&embedded=1" : ""}`
+          `/core/checklist/${checklistContext.runId}?sourceItem=${encodeURIComponent(checklistContext.sourceChecklistRunItemId)}&reported=1${returnEmbedded ? "&embedded=1" : ""}${returnOps ? "&fromOps=1" : ""}`
         );
         return;
       }
@@ -507,12 +536,37 @@ export default function FixPage() {
     selectedMediaRef.current.forEach(({ url }) => URL.revokeObjectURL(url));
     selectedMediaRef.current = [];
     setSelectedMedia([]);
+    setAddMediaOpen(false);
     setTitle("");
     setNote("");
     setLocationId("");
     setSelectedTags([]);
     setPriority("normal");
   };
+
+  const mediaInputs = (
+    <>
+      <input ref={fileInputRef} type="file" accept="image/*,video/*" capture="environment"
+        onChange={handleFileSelect} className="hidden" data-testid="input-camera" />
+      <input ref={galleryInputRef} type="file" accept={FIX_MEDIA_ACCEPT} multiple
+        onChange={handleFileSelect} className="hidden" data-testid="input-gallery" />
+    </>
+  );
+  // "Add" on the details step asks where the next photo or video comes from.
+  const pickerDialog = (
+    <Dialog open={addMediaOpen} onOpenChange={setAddMediaOpen}>
+      <DialogContent className="max-w-sm" data-testid="dialog-media-source">
+        <DialogHeader>
+          <DialogTitle>Add photo or video</DialogTitle>
+          <DialogDescription>Use the camera, or choose existing photos and videos.</DialogDescription>
+        </DialogHeader>
+        <DialogBody className="flex flex-col gap-3">
+          <Button onClick={() => { setAddMediaOpen(false); fileInputRef.current?.click(); }} data-testid="button-add-camera"><Camera className="mr-2 h-4 w-4" />Camera</Button>
+          <Button variant="outline" onClick={() => { setAddMediaOpen(false); galleryInputRef.current?.click(); }} data-testid="button-add-gallery"><Image className="mr-2 h-4 w-4" />Choose from Gallery</Button>
+        </DialogBody>
+      </DialogContent>
+    </Dialog>
+  );
 
   if (step === "success") {
     return (
@@ -522,7 +576,7 @@ export default function FixPage() {
         </div>
         <h1 className="text-2xl font-bold mb-2" data-testid="text-success-title">Fix reported</h1>
         <p className="text-muted-foreground mb-6">Thank you for keeping things in order.</p>
-        <p className="text-sm text-muted-foreground mb-8">You can add more photos later if needed.</p>
+        <p className="text-sm text-muted-foreground mb-8">Your photos and videos have been submitted.</p>
         <Button onClick={resetForm} size="lg" data-testid="button-report-another">
           Report another
         </Button>
@@ -562,24 +616,8 @@ export default function FixPage() {
   if (step === "capture") {
     return (
       <div className="flex flex-col items-center p-6 pb-24">
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*,video/*"
-          capture="environment"
-          onChange={handleFileSelect}
-          className="hidden"
-          data-testid="input-camera"
-        />
-        <input
-          ref={galleryInputRef}
-          type="file"
-          accept={FIX_MEDIA_ACCEPT}
-          multiple
-          onChange={handleFileSelect}
-          className="hidden"
-          data-testid="input-gallery"
-        />
+        {mediaInputs}
+        {pickerDialog}
 
         <div className="h-24 w-24 rounded-full bg-primary/10 flex items-center justify-center mb-6">
           <Wrench className="h-12 w-12 text-primary" />
@@ -617,7 +655,7 @@ export default function FixPage() {
             size="lg" 
             onClick={() => fileInputRef.current?.click()}
             className="h-14 text-lg"
-            data-testid="button-take-photo"
+            data-testid="button-camera"
           >
             <Camera className="mr-2 h-5 w-5" />
             Camera
@@ -686,7 +724,7 @@ export default function FixPage() {
           onClose={() => {
             setSelectedReportId(null);
             if (returnRunId) {
-              setLocation(`/core/checklist/${returnRunId}?sourceItem=${encodeURIComponent(returnSourceItemId || "")}${returnEmbedded ? "&embedded=1" : ""}`);
+              setLocation(`/core/checklist/${returnRunId}?sourceItem=${encodeURIComponent(returnSourceItemId || "")}${returnEmbedded ? "&embedded=1" : ""}${returnOps ? "&fromOps=1" : ""}`);
             }
           }}
         />
@@ -696,22 +734,8 @@ export default function FixPage() {
 
   return (
     <div className="p-4 max-w-lg mx-auto pb-24">
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*,video/*"
-        capture="environment"
-        onChange={handleFileSelect}
-        className="hidden"
-      />
-      <input
-        ref={galleryInputRef}
-        type="file"
-        accept={FIX_MEDIA_ACCEPT}
-        multiple
-        onChange={handleFileSelect}
-        className="hidden"
-      />
+      {mediaInputs}
+      {pickerDialog}
 
       <div className="grid grid-cols-3 gap-2 mb-6">
         {selectedMedia.map(({ file, url }, index) => (
@@ -735,9 +759,9 @@ export default function FixPage() {
         
         {selectedMedia.length < MAX_FIX_MEDIA && (
           <button
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => setAddMediaOpen(true)}
             className="aspect-square rounded-lg border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center gap-1 hover-elevate active-elevate-2 overflow-visible"
-            data-testid="button-add-more-photos"
+            data-testid="button-add-more-media"
           >
             <Plus className="h-6 w-6 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">Add</span>
