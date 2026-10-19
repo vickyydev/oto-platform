@@ -20,7 +20,7 @@ import type { Db } from '@oto/db';
 import { resolveBandKey, type Env } from './env';
 import { configureBandKey } from './services/bands';
 import { buildErrorReporter, type ErrorReporter } from './lib/error-reporting';
-import { buildLogger } from './lib/logger';
+import { buildLogger, type LogCapture } from './lib/logger';
 import { AppError } from './lib/errors';
 import { healthRoutes } from './routes/health';
 import { authRoutes } from './routes/auth';
@@ -65,6 +65,7 @@ import { staffTokenRoutes } from './routes/staff-token';
 import { boothRoutes } from './routes/booth';
 import { inboxReadRoutes } from './routes/inbox-read';
 import { inboxActionRoutes } from './routes/inbox-actions';
+import { inboxPrivacyRoutes } from './routes/inbox-privacy';
 import { PermissionDeniedError, sessionPlugin } from './plugins/session';
 import { idempotencyPlugin } from './plugins/idempotency';
 import { rateLimitPlugin } from './plugins/rate-limit';
@@ -110,6 +111,8 @@ export interface BuildAppOptions {
   db: Db;
   /** Injected in tests; built from env when omitted (see services/files). */
   fileStorage?: FileStorage | null;
+  /** Tests only: where the log lines go, and at what level (the PDPA sentinel suite reads them). */
+  logCapture?: LogCapture;
 }
 
 /**
@@ -120,7 +123,7 @@ export interface BuildAppOptions {
 const REQUEST_ID = /^[A-Za-z0-9._-]{8,64}$/;
 
 export async function buildApp(opts: BuildAppOptions): Promise<App> {
-  const log = buildLogger(opts.env.NODE_ENV);
+  const log = buildLogger(opts.env.NODE_ENV, opts.logCapture);
   // Cast: the concrete pino logger generic differs from FastifyBaseLogger in
   // the instance type parameters; behaviour is identical.
   const app = Fastify({
@@ -500,6 +503,8 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   await app.register(inboxReadRoutes, { prefix: '/inbox' });
   // S2-19 I2e — assignment, Divert, move, branch, Handled and reopen.
   await app.register(inboxActionRoutes, { prefix: '/inbox' });
+  // S2-19 I2g — the PDPA erasure of a contact (the retention purges are a job).
+  await app.register(inboxPrivacyRoutes, { prefix: '/inbox' });
   // Versioned separately from everything else: a box in a mall is updated on
   // its own schedule, so the one surface that has to stay compatible with a
   // machine nobody can reach says so in its path (S2-04).

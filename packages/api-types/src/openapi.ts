@@ -26024,6 +26024,65 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/inbox/contacts/{id}/erase": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description PDPA erasure of an Inbox contact — IRREVERSIBLE. Anonymises in place, in one transaction: the contact and every other live contact of the operator with the same phone become "Erased contact" with a hashed handle and no phone, member link or avatar; every message in their threads (customer lines, staff replies and the mirrored check-in and booking notices) loses its text, translation, transcript and media and is marked redacted; previews and AI summaries are cleared; inbox-owned files are deleted from storage; name- or text-bearing keys in timeline payloads are nulled; and the raw webhook payloads that carried them are purged. Threads keep their status, owners and timeline shape. Needs two confirmations in the body — `confirmContactId` equal to the path id and `confirm: "ERASE"` — or answers 409 ERASURE_UNCONFIRMED with the counts it would erase. Re-erasing answers `alreadyErased: true`. One `inbox.contact.erase` audit row (ids and counts only). Needs inbox:contact:erase at operator scope. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        confirmContactId?: string;
+                        confirm?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            contactIds: string[];
+                            conversations: number;
+                            messages: number;
+                            noticeMessages: number;
+                            filesDeleted: number;
+                            filesUnlinked: number;
+                            eventsRedacted: number;
+                            webhookPayloadsPurged: number;
+                            /** Format: uuid */
+                            contactId: string;
+                            alreadyErased: boolean;
+                            erasedAt: string;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/box/v1/register": {
         parameters: {
             query?: never;

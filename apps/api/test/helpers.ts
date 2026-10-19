@@ -9,6 +9,7 @@ import { loadEnv, type Env } from '../src/env';
 import type { SmsSender } from '../src/services/sms';
 import { _resetThrottle } from '../src/services/auth';
 import { buildFileStorage } from '../src/services/files';
+import type { LogCapture } from '../src/lib/logger';
 
 export interface TestContext {
   app: App;
@@ -33,6 +34,8 @@ export async function createTestContext(
      */
     otoapp?: boolean;
     env?: Partial<Record<keyof Env, string>>;
+    /** Every log line the api writes, at this level (the PDPA sentinel suite reads them). */
+    logCapture?: LogCapture;
   } = {},
 ): Promise<TestContext> {
   // Every boot step runs through `setupStep` (SCRUM-510): a failure under CI
@@ -83,6 +86,7 @@ export async function createTestContext(
         env,
         db,
         fileStorage: opts.files ? buildFileStorage(env) : null,
+        ...(opts.logCapture ? { logCapture: opts.logCapture } : {}),
       }),
     );
     // Replace the console SMS adapter with the capturing one.

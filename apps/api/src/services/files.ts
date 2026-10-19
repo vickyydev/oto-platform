@@ -38,6 +38,12 @@ export interface FileStorage {
   presignedPut(objectKey: string, expirySeconds?: number): Promise<string>;
   presignedGet(objectKey: string, expirySeconds?: number): Promise<string>;
   put(objectKey: string, bytes: Buffer, contentType: string): Promise<void>;
+  /**
+   * Remove an object. Removing one that is already gone succeeds (S3's own
+   * answer), so a retried PDPA erasure or retention purge can repeat it
+   * (S2-19 I2g, `services/inbox/privacy.ts`).
+   */
+  remove(objectKey: string): Promise<void>;
   /** Boot and test probe — deliberately never on the request path. */
   probe(): Promise<StorageProbe>;
 }
@@ -125,6 +131,7 @@ export function buildFileStorage(env: Env): FileStorage {
       bounded(async () => {
         await client.putObject(bucket, objectKey, bytes, bytes.length, { 'Content-Type': contentType });
       }),
+    remove: (objectKey) => bounded(() => client.removeObject(bucket, objectKey)),
     async probe() {
       try {
         return (await bounded(() => client.bucketExists(bucket)))

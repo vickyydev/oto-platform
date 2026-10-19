@@ -32,6 +32,7 @@ import {
   teardownAll,
   type TestContext,
 } from './helpers';
+import { NO_LEAKS, sentinelLeaks } from './inbox-sentinel';
 
 /**
  * SCRUM-582 — Inbox round I2c: THE CHECK-IN FEED (plan
@@ -406,6 +407,8 @@ describe('the check-in feed', () => {
     }
     expect(events).not.toContain(CHECK_TEXT);
     expect(audits).not.toContain(CHECK_TEXT);
+    // The shared sentinel (I2g): ops rows as well.
+    expect(await sentinelLeaks(ctx.db, CHECK_TEXT)).toEqual(NO_LEAKS);
     // The mirror's own audit rows carry ids, never the phone.
     const mirrorAudits = await ctx.db.select().from(auditLog).where(eq(auditLog.action, 'inbox.notice_mirror'));
     expect(mirrorAudits.length).toBeGreaterThanOrEqual(6);

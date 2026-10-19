@@ -161,6 +161,10 @@ const NOT_YET_CALLED = new Map<string, string>([
   ['PATCH /inbox/conversations/{id}/branch', 'the Inbox shell lands in I3 (the branch select, I3b)'],
   ['POST /inbox/conversations/{id}/handle', 'the Inbox shell lands in I3 (Mark as Handled, I3b)'],
   ['POST /inbox/conversations/{id}/reopen', 'the Inbox shell lands in I3 (the status picker, I3b)'],
+  // 2026-10-20, S2-19 I2g (SCRUM-586): the PDPA erasure lands before its
+  // screen. The erasure console (an Inbox or Console settings page, with the
+  // 409 preview as its second confirmation) comes later and deletes this.
+  ['POST /inbox/contacts/{id}/erase', 'the erasure console lands after I3 (the api ships first, plan §3.6)'],
 ]);
 
 function machineCaller(path: string): string | null {

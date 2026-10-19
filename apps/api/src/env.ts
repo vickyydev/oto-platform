@@ -57,6 +57,14 @@ function parseTrustedProxies(value: string): string[] {
   return entries;
 }
 
+/** A retention period in days; empty or absent is UNSET (the purge stays off). */
+function retentionDays() {
+  return z.preprocess(
+    (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+    z.coerce.number().int().min(1).max(3650).optional(),
+  );
+}
+
 const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   /**
@@ -680,6 +688,27 @@ const EnvSchema = z.object({
   INBOX_WHATSAPP_ENABLED: z.enum(['true', 'false']).default('false'),
   INBOX_META_APP_SECRET: z.string().default(''),
   INBOX_META_VERIFY_TOKEN: z.string().default(''),
+
+  /**
+   * THE INBOX'S RETENTION PERIODS (S2-19 I2g, SCRUM-586; plan §3.6, owner
+   * Q19). Each is a number of days, and EACH IS UNSET BY DEFAULT: unset, its
+   * purge refuses to run (`job:inbox.retention` records it as `refused` with
+   * the variable's name) and nothing is removed. Owner Q19 is "no general
+   * purge this sprint"; setting a period is the switch, and no code changes.
+   *
+   *  - `INBOX_CONVERSATION_RETENTION_DAYS` — a HANDLED thread is due this many
+   *    days after its last message (`conversation.retain_until`); when due its
+   *    message text, transcripts, translations and media are removed in place
+   *    and its timeline events deleted. The thread row, its owners and its
+   *    contact stay. An active thread is never purged.
+   *  - `INBOX_MEDIA_RETENTION_DAYS` — media and voice notes older than this are
+   *    deleted from storage and unlinked; the text stays.
+   *  - `INBOX_WEBHOOK_PAYLOAD_RETENTION_DAYS` — a webhook receipt's raw payload
+   *    is nulled after this many days; the receipt row stays.
+   */
+  INBOX_CONVERSATION_RETENTION_DAYS: retentionDays(),
+  INBOX_MEDIA_RETENTION_DAYS: retentionDays(),
+  INBOX_WEBHOOK_PAYLOAD_RETENTION_DAYS: retentionDays(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

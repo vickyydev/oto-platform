@@ -61534,6 +61534,109 @@
         }
       }
     },
+    "/inbox/contacts/{id}/erase": {
+      "post": {
+        "description": "PDPA erasure of an Inbox contact — IRREVERSIBLE. Anonymises in place, in one transaction: the contact and every other live contact of the operator with the same phone become \"Erased contact\" with a hashed handle and no phone, member link or avatar; every message in their threads (customer lines, staff replies and the mirrored check-in and booking notices) loses its text, translation, transcript and media and is marked redacted; previews and AI summaries are cleared; inbox-owned files are deleted from storage; name- or text-bearing keys in timeline payloads are nulled; and the raw webhook payloads that carried them are purged. Threads keep their status, owners and timeline shape. Needs two confirmations in the body — `confirmContactId` equal to the path id and `confirm: \"ERASE\"` — or answers 409 ERASURE_UNCONFIRMED with the counts it would erase. Re-erasing answers `alreadyErased: true`. One `inbox.contact.erase` audit row (ids and counts only). Needs inbox:contact:erase at operator scope.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "confirmContactId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "confirm": {
+                    "type": "string",
+                    "maxLength": 16
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "contactIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "format": "uuid"
+                      }
+                    },
+                    "conversations": {
+                      "type": "integer"
+                    },
+                    "messages": {
+                      "type": "integer"
+                    },
+                    "noticeMessages": {
+                      "type": "integer"
+                    },
+                    "filesDeleted": {
+                      "type": "integer"
+                    },
+                    "filesUnlinked": {
+                      "type": "integer"
+                    },
+                    "eventsRedacted": {
+                      "type": "integer"
+                    },
+                    "webhookPayloadsPurged": {
+                      "type": "integer"
+                    },
+                    "contactId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "alreadyErased": {
+                      "type": "boolean"
+                    },
+                    "erasedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "contactIds",
+                    "conversations",
+                    "messages",
+                    "noticeMessages",
+                    "filesDeleted",
+                    "filesUnlinked",
+                    "eventsRedacted",
+                    "webhookPayloadsPurged",
+                    "contactId",
+                    "alreadyErased",
+                    "erasedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/box/v1/register": {
       "post": {
         "description": "Redeem a single-use claim code for this box’s own secret. The secret is returned once and never again.",

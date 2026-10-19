@@ -50,6 +50,8 @@ import {
   syncSettings,
 } from './sync';
 import { runStockDailyJob, STOCK_DAILY_JOB } from './stock';
+import type { FileStorage } from './files';
+import { INBOX_RETENTION_JOB, retentionConfigOf, runInboxRetention } from './inbox/privacy';
 import { runWalletExpiryJob, runWalletLiabilityJob } from './wallet';
 
 /** S2-14a round 3 — the wallet day-end jobs, named once (the runner, the tests, the Health page). */
@@ -213,6 +215,8 @@ export interface JobDeps {
   env: Env;
   log: FastifyBaseLogger;
   channels: AlertChannel[];
+  /** Object storage, for the jobs that delete files (the inbox retention); null where none is configured. */
+  fileStorage?: FileStorage | null;
 }
 
 // --- The watchdog -----------------------------------------------------------
@@ -781,6 +785,32 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
       intervalSeconds: 900,
       run: async ({ db, now }) => ({ detail: await runOtoAppEmployeeSync(db, now) }),
     },
+    /**
+     * `job:inbox.retention` — THE INBOX'S RETENTION PURGES, BUILT AND OFF
+     * (S2-19 I2g, SCRUM-586; plan §3.6, owner Q19).
+     *
+     * Daily: handled threads past their period lose their words, media and
+     * timeline in place; old media go; old webhook payloads are nulled
+     * (`runInboxRetention` in `services/inbox/privacy.ts`). EACH PURGE REFUSES
+     * while its period is unset — `INBOX_CONVERSATION_RETENTION_DAYS`,
+     * `INBOX_MEDIA_RETENTION_DAYS`, `INBOX_WEBHOOK_PAYLOAD_RETENTION_DAYS` — and
+     * the run's detail says `refused` with the variable's name, so the Health
+     * page shows a purge that is off as off rather than as quiet.
+     */
+    {
+      name: INBOX_RETENTION_JOB,
+      description:
+        'Applies the Inbox retention periods: handled threads past their period lose their text, media and timeline in place, old media are deleted, old webhook payloads are nulled; each purge refuses while its period is unset',
+      intervalSeconds: 86_400,
+      exclusive: true,
+      run: async ({ db, env, log, now }) => ({
+        detail: await runInboxRetention(db, retentionConfigOf(env), {
+          log,
+          now,
+          storage: deps.fileStorage ?? null,
+        }),
+      }),
+    },
     ...buildOtoAppNightJobs(deps),
   ];
 }
@@ -920,6 +950,8 @@ export interface JobRunnerOptions {
   jobs?: JobDefinition[];
   /** Defaults to what `ALERT_CHANNELS` asks for. */
   channels?: AlertChannel[];
+  /** Object storage for the jobs that delete files; null or absent where none is configured. */
+  fileStorage?: FileStorage | null;
 }
 
 export function processRoles(env: Env): string[] {
@@ -934,7 +966,7 @@ export function createJobRunner(opts: JobRunnerOptions): JobRunner {
   // Built here rather than on first use: a channel name with no implementation
   // must stop the process at boot, not on the night it is first needed.
   const channels = opts.channels ?? buildAlertChannels(env.ALERT_CHANNELS, log);
-  const jobs = opts.jobs ?? buildDefaultJobs({ db, env, log, channels });
+  const jobs = opts.jobs ?? buildDefaultJobs({ db, env, log, channels, fileStorage: opts.fileStorage ?? null });
   const enabled = processRoles(env).includes('jobs');
 
   const timers = new Map<string, NodeJS.Timeout>();

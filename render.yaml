@@ -674,6 +674,10 @@ services:
         sync: false
       - key: INBOX_META_VERIFY_TOKEN
         sync: false
+      # INBOX_CONVERSATION_RETENTION_DAYS, INBOX_MEDIA_RETENTION_DAYS and
+      # INBOX_WEBHOOK_PAYLOAD_RETENTION_DAYS are deliberately NOT set (owner
+      # Q19: no purge yet). Unset, job:inbox.retention records each purge as
+      # refused and removes nothing; setting a number of days is the switch.
 
       # -- error reporting -----------------------------------------------------
       - key: SENTRY_DSN

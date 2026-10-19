@@ -11,13 +11,24 @@ import { pino, type Logger } from 'pino';
  * keyboard; this catches the ones that arrive inside an object nobody looked
  * at, which is how a phone number reached a log stream in Sprint 1.
  */
-export function buildLogger(nodeEnv: string): Logger {
-  const dev = nodeEnv === 'development';
-  const base = pino({
-    level: process.env.LOG_LEVEL ?? (nodeEnv === 'test' ? 'silent' : 'info'),
+export function buildLogger(nodeEnv: string, capture?: LogCapture): Logger {
+  const dev = nodeEnv === 'development' && !capture;
+  const options = {
+    level: capture?.level ?? process.env.LOG_LEVEL ?? (nodeEnv === 'test' ? 'silent' : 'info'),
     ...(dev
       ? { transport: { target: 'pino-pretty', options: { colorize: true, translateTime: 'HH:MM:ss' } } }
       : {}),
-  });
+  };
+  const base = capture ? pino(options, capture.stream) : pino(options);
   return safeLogger(base) as Logger;
+}
+
+/**
+ * A test's window onto every line the api writes (S2-19 I2g): the PDPA
+ * sentinel suite reads the lines back and asserts no message body is in any
+ * of them. Never set outside a test.
+ */
+export interface LogCapture {
+  stream: { write(line: string): void };
+  level?: string;
 }

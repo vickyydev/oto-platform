@@ -62,7 +62,7 @@ app.log.info(
     : 'no benefit QR signing key — Staff Benefits cannot issue or show a QR at this deployment',
 );
 
-const jobs = createJobRunner({ db, env, log: app.log });
+const jobs = createJobRunner({ db, env, log: app.log, fileStorage: app.fileStorage });
 if (jobs.enabled) {
   await jobs.start();
   app.log.info({ jobs: jobs.jobs.map((j) => j.name) }, 'job runner started');

@@ -89,6 +89,7 @@ describe('SCRUM-16 / SCRUM-25 — permission-bound files', () => {
       presignedPut: async () => 'memory://unused',
       presignedGet: async () => 'memory://unused',
       put: async (key, bytes) => { saved.set(key, Buffer.from(bytes)); },
+      remove: async (key) => { saved.delete(key); },
       probe: async () => ({ state: 'ready' }),
     };
     try {

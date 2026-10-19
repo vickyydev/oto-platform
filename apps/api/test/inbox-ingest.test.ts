@@ -25,6 +25,7 @@ import {
   teardownAll,
   type TestContext,
 } from './helpers';
+import { NO_LEAKS, sentinelLeaks } from './inbox-sentinel';
 
 /**
  * S2-19 I2d (SCRUM-583) — the Inbox's routing and ingest, through the real
@@ -659,13 +660,8 @@ describe('PDPA: no body outside the message table (I2d)', () => {
       sql`select count(*)::int as n from inbox.message where body like ${'%' + SENTINEL + '%'}`,
     );
     expect(inMessages.rows[0]!.n).toBeGreaterThan(0);
-    for (const q of [
-      sql`select count(*)::int as n from core.audit_log where coalesce(before::text,'') || coalesce(after::text,'') like ${'%' + SENTINEL + '%'}`,
-      sql`select count(*)::int as n from inbox.event where payload::text like ${'%' + SENTINEL + '%'}`,
-      sql`select count(*)::int as n from core.ops_run where coalesce(detail::text,'') || coalesce(error_message,'') like ${'%' + SENTINEL + '%'}`,
-    ]) {
-      expect((await ctx.db.execute<{ n: number }>(q)).rows[0]!.n).toBe(0);
-    }
+    // The shared sentinel (I2g, `inbox-sentinel.ts`); the log lines are `inbox-privacy.test.ts`'s.
+    expect(await sentinelLeaks(ctx.db, SENTINEL)).toEqual(NO_LEAKS);
   });
 });
 

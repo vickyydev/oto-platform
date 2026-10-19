@@ -488,3 +488,45 @@ export const InboxTemplateSchema = z.object({
 });
 
 export const InboxTemplateListSchema = z.object({ templates: z.array(InboxTemplateSchema) });
+
+// --- PDPA: the erasure (S2-19 I2g, SCRUM-586; plan §3.6) ---------------------------
+
+/** What an erased contact is called everywhere it is read. */
+export const INBOX_ERASED_CONTACT_NAME = 'Erased contact';
+
+/**
+ * The word the erasure's second confirmation types. The first is the contact
+ * id repeated in the body; both must be present, or the api answers
+ * `409 ERASURE_UNCONFIRMED` with what WOULD be erased, and erases nothing.
+ */
+export const INBOX_ERASE_CONFIRM_WORD = 'ERASE';
+
+export const InboxEraseContactBodySchema = z.object({
+  /** Confirmation one: the contact id of the path, repeated. */
+  confirmContactId: Uuid.optional(),
+  /** Confirmation two: the word `ERASE`. */
+  confirm: z.string().max(16).optional(),
+});
+
+/** Counts and ids only: the erasure answers nothing it has just removed. */
+export const InboxErasureCountsSchema = z.object({
+  /** The named contact and every other live contact of the operator with the same phone. */
+  contactIds: z.array(Uuid),
+  conversations: z.number().int(),
+  messages: z.number().int(),
+  /** Mirrored check-in and booking notices among the messages. */
+  noticeMessages: z.number().int(),
+  filesDeleted: z.number().int(),
+  filesUnlinked: z.number().int(),
+  eventsRedacted: z.number().int(),
+  webhookPayloadsPurged: z.number().int(),
+});
+
+export const InboxEraseContactSchema = InboxErasureCountsSchema.extend({
+  contactId: Uuid,
+  /** True when every contact named was already erased: nothing of theirs was left to remove. */
+  alreadyErased: z.boolean(),
+  erasedAt: Iso,
+});
+export type InboxEraseContact = z.infer<typeof InboxEraseContactSchema>;
+export type InboxErasureCounts = z.infer<typeof InboxErasureCountsSchema>;
