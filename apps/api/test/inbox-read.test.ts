@@ -21,6 +21,7 @@ import {
   type InboxMe,
   type InboxTab,
 } from '@oto/shared';
+import { mirrorNotice } from '../src/services/inbox/mirror';
 import { SESSION_COOKIE, hashToken, newSessionToken } from '../src/plugins/session';
 import {
   ADMIN,
@@ -688,5 +689,50 @@ describe('the viewer and the templates', () => {
       .where(and(eq(s.template.operatorId, oto), eq(s.template.key, 'welcome'), eq(s.template.language, 'ru')));
     await ctx.db.update(s.template).set({ archivedAt: new Date() }).where(inArray(s.template.id, [one!.id]));
     expect((await get<{ templates: unknown[] }>('bdayTh', '/inbox/templates')).body.templates).toHaveLength(23);
+  });
+});
+
+describe('a mirrored check-in notice (I2c) reads like any thread', () => {
+  it('is the reception team’s and its park’s, read-only, never unanswered, and its read is audited', async () => {
+    const out = await ctx.db.transaction((tx) =>
+      mirrorNotice(tx, {
+        operatorId: oto,
+        branchId: central,
+        channel: 'whatsapp',
+        phone: '+66810000995',
+        displayName: 'Notice Guest',
+        body: 'Your check-in is confirmed (read test)',
+        source: 'checkin.contact',
+        sourceId: newId(),
+        sentAt: new Date(),
+        sender: { send: () => Promise.resolve() },
+      }),
+    );
+    expect(out.mirrored).toBe(true);
+    const id = (out as { conversationId: string }).conversationId;
+
+    // Reception · Central (its team) and the GM see it; the birthday team and
+    // Chalong's manager do not.
+    const row = (await listAll('receptionCentral', 'limit=100')).conversations.find((c) => c.id === id);
+    expect(row).toMatchObject({ category: 'general', canReply: false, unanswered: false, status: 'active' });
+    expect((await listAll('gm', 'limit=100')).conversations.some((c) => c.id === id)).toBe(true);
+    expect((await listAll('bdayTh', 'limit=100')).conversations.some((c) => c.id === id)).toBe(false);
+    expect((await listAll('chalongManager', 'limit=100')).conversations.some((c) => c.id === id)).toBe(false);
+    expect((await get('bdayTh', `/inbox/conversations/${id}`)).status).toBe(404);
+
+    const msgs = await get<{ messages: Array<{ authorKind: string; source: string; direction: string }> }>(
+      'receptionCentral',
+      `/inbox/conversations/${id}/messages`,
+    );
+    expect(msgs.body.messages).toEqual([expect.objectContaining({ authorKind: 'system', source: 'checkin.contact', direction: 'outbound' })]);
+
+    const read = await post<{ audited: boolean }>('receptionCentral', `/inbox/conversations/${id}/read`);
+    expect(read.body.audited).toBe(true);
+    const rows = await ctx.db
+      .select()
+      .from(s.auditLog)
+      .where(and(eq(s.auditLog.action, 'inbox.conversation.read'), eq(s.auditLog.entityId, id)));
+    expect(rows).toHaveLength(1);
+    expect(JSON.stringify(rows[0])).not.toContain('read test');
   });
 });
