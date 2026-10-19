@@ -10,8 +10,9 @@
 //   2. Every old payroll screen (PLAN §7 "Old pages") is gone from disk and
 //      from App.tsx, and every one of its addresses redirects: to its new
 //      home for a payroll role, to the person's own payslips for anyone else,
-//      and every redirect target is a registered route (or one of the two
-//      R5/R6 pages that join when their lanes land).
+//      and every redirect target is a registered route. Downloads are per
+//      locked version (R5's /payroll/downloads/:entityId/:month/:version), so
+//      the hub's Downloads card opens History and is not a sidebar entry.
 //   3. Every /payroll route in App.tsx is held to payroll roles, except the
 //      hub address (which sends everyone else to their payslips) and the
 //      self-payslip page (every signed-in employee); the sidebar carries no
@@ -95,13 +96,16 @@ console.log("payroll-cutover.check (SCRUM-572, R7)");
 
 await check("1. the Payroll menu by role: payroll roles every page, managers and staff their own payslips only", () => {
   const every = PAYROLL_ENTRIES.map((e) => e.id);
-  for (const role of PAYROLL_ROLES) assert.deepEqual(payrollMenuFor(role).map((e) => e.id), every, role);
+  for (const role of PAYROLL_ROLES) assert.deepEqual(payrollMenuFor(role).map((e) => e.id), ["hub", "run", "people", "history", "documents", "setup", "myPayslips"], role);
   for (const role of OTHER_ROLES) assert.deepEqual(payrollMenuFor(role).map((e) => e.id), ["myPayslips"], role);
   assert.deepEqual(payrollMenuFor(undefined), []);
   assert.deepEqual(payrollMenuFor("advisor").map((e) => e.id), ["myPayslips"], "an unknown role falls to staff");
   assert.deepEqual(every, ["hub", "run", "people", "history", "downloads", "documents", "setup", "myPayslips"]);
   assert.deepEqual(PAYROLL_HUB_CARDS.map((e) => e.id), ["run", "people", "history", "downloads", "documents", "setup"]);
   assert.ok(PAYROLL_ENTRIES.find((e) => e.id === "hub")?.exact, "the hub is active on its own address only");
+  const downloads = PAYROLL_ENTRIES.find((e) => e.id === "downloads");
+  assert.equal(downloads?.url, PAYROLL_PATHS.history, "the Downloads card opens History, where each locked version links its downloads");
+  assert.ok(downloads?.hubOnly, "Downloads is a hub card, not a second sidebar entry for History");
 });
 
 await check("1b. the sidebar and the hub read that table and carry no payroll address of their own", () => {
@@ -135,12 +139,13 @@ await check("2b. every old address redirects: its new home for a payroll role, o
   }
 });
 
-await check("2c. every redirect target and every menu address is a registered route (R5/R6 pages may still be landing)", () => {
-  const pending = new Set(PAYROLL_ENTRIES.filter((e) => e.landsWith).map((e) => e.url));
+await check("2c. every redirect target and every hub/menu address is a registered route, R5's per-version downloads included", () => {
+  assert.ok(routePaths.has("/payroll/downloads/:entityId/:month/:version"), "R5's downloads page is registered");
+  assert.ok(routePaths.has(PAYROLL_PATHS.documents), "R6's statutory documents page is registered");
+  assert.match(read("pages/payroll-hub-page.tsx"), /downloadsPath\(entityId, month, run\.version\)/, "a locked current month links its downloads from the hub");
   const targets = new Set([...OLD_PAYROLL_REDIRECTS.flatMap((r) => ALL_ROLES.map((role) => redirectTarget(r, SAMPLE_PARAMS, role))), ...PAYROLL_ENTRIES.map((e) => e.url)]);
   for (const target of targets) {
     const path = target.split("?")[0].replace(/^\/payroll\/people\/[^/]+$/, "/payroll/people/:employeeId");
-    if (pending.has(path) && !routePaths.has(path)) { console.log(`       note: ${path} joins when its lane lands`); continue; }
     assert.ok(routePaths.has(path), `${target} is not a registered route`);
   }
 });

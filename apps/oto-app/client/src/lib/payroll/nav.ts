@@ -19,9 +19,7 @@ export const PAYROLL_PATHS = {
   rewards: "/payroll/setup/rewards",
   people: "/payroll/people",
   history: "/payroll/history",
-  /** R5 (outputs and downloads) registers this page; until it lands the link 404s. */
-  downloads: "/payroll/downloads",
-  /** R6 (statutory documents) registers this page; until it lands the link 404s. */
+  /** R6's statutory documents. */
   documents: "/payroll/statutory",
   myPayslips: "/payroll/me/payslips",
 } as const;
@@ -38,8 +36,13 @@ export interface PayrollEntry {
   payrollRole: boolean;
   /** Active only on its own address (the hub would otherwise light up under every payroll page). */
   exact?: boolean;
-  /** The round whose lane registers the page, while it is still to land. */
-  landsWith?: "R5" | "R6";
+  /**
+   * On the hub only, not in the sidebar: its address is another entry's page.
+   * Downloads are per locked version (R5: /payroll/downloads/:entityId/:month/:version),
+   * so the hub card opens History, where every locked month links its downloads;
+   * the hub's month card links a locked current month's downloads directly.
+   */
+  hubOnly?: boolean;
 }
 
 /** In the prototype hub's order: run the month, look back, then the set-up behind it. */
@@ -48,8 +51,8 @@ export const PAYROLL_ENTRIES: readonly PayrollEntry[] = [
   { id: "run", title: "Run Payroll", description: "Attendance, the month's numbers, check the month, then GM confirm and Owner lock.", url: PAYROLL_PATHS.run, payrollRole: true },
   { id: "people", title: "Payroll Profiles", description: "One profile per person: job, branch split, pay method, extras and deductions.", url: PAYROLL_PATHS.people, payrollRole: true },
   { id: "history", title: "History & Payslips", description: "Every locked month as it was frozen, with each person's payslip.", url: PAYROLL_PATHS.history, payrollRole: true },
-  { id: "downloads", title: "Downloads", description: "Bank, SSO, welfare-fund and report files of a locked month.", url: PAYROLL_PATHS.downloads, payrollRole: true, landsWith: "R5" },
-  { id: "documents", title: "Statutory Documents", description: "PND.1, PND.1ก, 50 ทวิ, SSO and welfare-fund documents with their deadlines.", url: PAYROLL_PATHS.documents, payrollRole: true, landsWith: "R6" },
+  { id: "downloads", title: "Downloads", description: "Bank, SSO, welfare-fund and report files: open a locked month in History.", url: PAYROLL_PATHS.history, payrollRole: true, hubOnly: true },
+  { id: "documents", title: "Statutory Documents", description: "PND.1, PND.1ก, 50 ทวิ, SSO and welfare-fund documents with their deadlines.", url: PAYROLL_PATHS.documents, payrollRole: true },
   { id: "setup", title: "Payroll Setup", description: "Companies, bank accounts, branch details, rates, deductions, service charge and incentives.", url: PAYROLL_PATHS.setup, payrollRole: true },
   { id: "myPayslips", title: "My Payslips", description: "Your own payslip for every locked month.", url: PAYROLL_PATHS.myPayslips, payrollRole: false },
 ];
@@ -58,7 +61,7 @@ export const PAYROLL_ENTRIES: readonly PayrollEntry[] = [
 export function payrollMenuFor(role: string | null | undefined): PayrollEntry[] {
   if (!role) return [];
   const payroll = canViewHrSalary(role);
-  return PAYROLL_ENTRIES.filter((entry) => payroll || !entry.payrollRole);
+  return PAYROLL_ENTRIES.filter((entry) => !entry.hubOnly && (payroll || !entry.payrollRole));
 }
 
 /** The hub's cards: every payroll-role entry but the hub itself. */

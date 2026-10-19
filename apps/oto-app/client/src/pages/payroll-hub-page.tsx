@@ -16,7 +16,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { canViewHrSalary, HR_PAY_HIDDEN_NOTE } from "@shared/hr-salary-permission";
-import { errorText, monthLabel, useMonthEnd, usePayrollSetup, usePreview } from "@/lib/payroll/api";
+import { downloadsPath, errorText, monthLabel, useMonthEnd, usePayrollSetup, usePreview } from "@/lib/payroll/api";
 import { PAYROLL_HUB_CARDS, PAYROLL_PATHS, type PayrollEntryId } from "@/lib/payroll/nav";
 
 const thisMonth = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok", year: "numeric", month: "2-digit" }).format(new Date()).slice(0, 7);
@@ -90,6 +90,8 @@ function MonthAtAGlance({ entityId, entityName, month }: { entityId: string; ent
             {open} to check · {blocking} blocking · {problems.length - blocking} warnings</p>)}
       <Link href={`${PAYROLL_PATHS.run}?entity=${encodeURIComponent(entityId)}&month=${month}${preview.data && !preview.data.frozen && (open || blocking) ? "&tab=preview" : ""}`}
         className="inline-flex items-center gap-1 font-semibold text-primary underline underline-offset-2">Open month-end<ArrowRight aria-hidden="true" className="h-4 w-4" /></Link>
+      {run && (run.status === "locked" || run.status === "paid") && <Link href={downloadsPath(entityId, month, run.version)} data-testid={`hub-downloads-${entityId}`}
+        className="ml-4 inline-flex items-center gap-1 font-semibold text-primary underline underline-offset-2"><Download aria-hidden="true" className="h-4 w-4" />Downloads</Link>}
     </CardContent>
   </Card>;
 }
