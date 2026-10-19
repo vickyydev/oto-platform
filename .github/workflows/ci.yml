@@ -656,6 +656,18 @@ jobs:
       - name: The app's payroll lifecycle checks
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/payroll-lifecycle.check.ts
+      # SCRUM-571: the company payroll's R6 (migration 0026) — the statutory
+      # documents built exactly as the prototype has them (owner decision 3):
+      # they read locked per-branch runs, which a company month-end never
+      # writes. The EWF surcharge rule (5% per full month, +1 at 15 days, not
+      # compounded), the document engine on an in-memory per-branch run, the
+      # no-source explanation and the engine's provisional words pinned, a
+      # locked company month named as giving the documents nothing, filing
+      # records with reasons and audit, the append-only tables, and the
+      # fences (manager/staff 403, another park group 404).
+      - name: The app's payroll statutory documents checks
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/payroll-documents.check.ts
       # These five feature suites drive the app's handlers through its own
       # dependency tree. Run them here, where npm ci has installed that tree,
       # and keep the API workspace's ordinary full battery unchanged.
