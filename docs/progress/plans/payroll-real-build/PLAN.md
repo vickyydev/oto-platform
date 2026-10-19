@@ -1160,14 +1160,27 @@ The owner signs off on it.
 - **Dormant MY rotting.** Covered by the in-memory MY world in the engine
   check.
 
-## Open decisions for the owner
+## Open decisions — ANSWERED by the owner, 2026-10-20
 
-1. **The role mapping for GM and Owner** (§7).
-2. **Casual workers.** Are `casual_workers` paid through this payroll?
-3. **Connecting the OT bank and statutory documents to company runs.**
-   The prototype never connected them. This plan connects them.
-4. **Concern 1.** The port charges once. The park is to confirm.
-5. **Retention of locked payroll and payslips** (PDPA and tax).
+1. **Role mapping: CONFIRMED** as §7 has it (GM confirm = admin /
+   operator_admin / global_admin; lock, reopen, paid = operator_admin /
+   global_admin; managers none; staff their own locked payslips). Which
+   real people hold which account is park configuration.
+2. **Casual workers: OUTSIDE this payroll for now** — they join later as
+   their own piece once the park defines their rules; recorded on the
+   story.
+3. **OT bank and statutory documents: BUILD EXACTLY AS THE PROTOTYPE** —
+   the connection to company runs is NOT built. The gap joins the Anthony
+   list as the FIFTH recorded matter: until the park rules, banked
+   overtime earns no credits from company runs and the PND.1ก / 50 ทวิ /
+   EWF documents show their honest provisional/no-source state. R4 and
+   R6 scope accordingly: the document and OT-bank screens must say
+   plainly why they are empty, never pretend. (This supersedes the
+   "connects them" line in §4/§9 above.)
+4. **Concern 1: the port charges each rule once** (no golden number
+   moves); the park confirms at the next meeting with the rest.
+5. **Retention of locked payroll and payslips: joins the Anthony/park
+   list** with the concerns.
 
 ## Proposed subtasks for SCRUM-564
 
