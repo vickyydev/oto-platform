@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Link } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
 import {
   AlertTriangle,
   CheckCircle,
@@ -47,6 +47,7 @@ import { formatDate, formatDateTime } from "@/lib/format-utils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
+import { ProbationReviewsPanel } from "@/pages/reviews-page";
 
 interface AttentionResponse {
   items: AttentionItem[];
@@ -156,13 +157,14 @@ const typeConfigs: Record<string, AttentionTypeConfig> = {
 function SeverityBadge({ severity }: { severity: string }) {
   const variants = {
     high: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-red-200 dark:border-red-800",
+    urgent: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-red-200 dark:border-red-800",
     medium: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800",
     low: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400 border-gray-200 dark:border-gray-700",
   };
 
   return (
     <Badge variant="outline" className={variants[severity as keyof typeof variants] || variants.low}>
-      {severity}
+      {severity === "urgent" ? "Urgent" : severity}
     </Badge>
   );
 }
@@ -384,6 +386,10 @@ function AttentionItemCard({
 export default function AttentionPage() {
   const { selectedBranchId, isAllBranches } = useBranchContext();
   const { toast } = useToast();
+  const search = useSearch();
+  const [, navigate] = useLocation();
+  const requestedTab = new URLSearchParams(search).get("tab");
+  const activeTab = requestedTab === "probation" || requestedTab === "all" ? requestedTab : "priority";
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [severityFilter, setSeverityFilter] = useState<string>("all");
   const [resolvingId, setResolvingId] = useState<string | null>(null);
@@ -394,14 +400,14 @@ export default function AttentionPage() {
     if (!isAllBranches && selectedBranchId) {
       params.set("branchId", selectedBranchId);
     }
-    if (typeFilter !== "all") {
+    if (activeTab === "all" && typeFilter !== "all") {
       params.set("types", typeFilter);
     }
     params.set("limit", "100");
     return `/api/attention-items?${params.toString()}`;
   };
 
-  const { data: attentionResponse, isLoading, isError } = useQuery<AttentionResponse>({
+  const { data: attentionResponse, isLoading, isError, refetch } = useQuery<AttentionResponse>({
     queryKey: [buildUrl()],
   });
 
@@ -420,6 +426,7 @@ export default function AttentionPage() {
         return typeof key === "string" && key.startsWith("/api/attention-items");
       },
     });
+    queryClient.invalidateQueries({ queryKey: ["/api/sidebar/badges"] });
   };
 
   const refreshMutation = useMutation({
@@ -494,36 +501,36 @@ export default function AttentionPage() {
     },
   });
 
-  const filteredItems = attentionItems.filter(item => {
-    if (severityFilter !== "all" && item.severity !== severityFilter) {
-      return false;
-    }
-    return true;
-  });
+  const filteredItems = activeTab === "priority"
+    ? attentionItems.filter(item => item.severity === "high" || (item.severity as string) === "urgent")
+    : attentionItems.filter(item =>
+        (typeFilter === "all" || item.type === typeFilter) &&
+        (severityFilter === "all" || item.severity === severityFilter)
+      );
 
-  const highCount = filteredItems.filter(i => i.severity === "high").length;
+  const highCount = filteredItems.filter(i => i.severity === "high" || (i.severity as string) === "urgent").length;
   const mediumCount = filteredItems.filter(i => i.severity === "medium").length;
   const lowCount = filteredItems.filter(i => i.severity === "low").length;
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div className="px-4 py-6 sm:p-6 max-w-5xl mx-auto space-y-6 min-h-[100dvh]">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-3xl font-medium flex items-center gap-2" data-testid="text-attention-title">
-            <AlertTriangle className="h-8 w-8" />
-            Attention Required
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground mb-2">Manager workspace</p>
+          <h1 className="text-3xl font-semibold tracking-tight flex items-center gap-2" data-testid="text-attention-title">
+            Needs action
           </h1>
           <p className="text-muted-foreground mt-1">
-            {isAllBranches ? "Items across all branches" : "Items for selected branch"}
+            {`${isAllBranches ? "Across all branches" : "For the selected branch"} · Review what needs your attention.`}
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          {lastCalculatedAt && (
+        <div className="flex items-center gap-3 flex-wrap">
+          {activeTab !== "probation" && lastCalculatedAt && (
             <span className="text-xs text-muted-foreground" data-testid="text-last-calculated">
               Last updated: {formatDateTime(lastCalculatedAt)}
             </span>
           )}
-          <Button
+          {activeTab !== "probation" && <Button
             variant="outline"
             onClick={() => refreshMutation.mutate()}
             disabled={isPaused || refreshMutation.isPending}
@@ -531,10 +538,35 @@ export default function AttentionPage() {
           >
             <RefreshCw className={`mr-2 h-4 w-4 ${refreshMutation.isPending ? "animate-spin" : ""}`} />
             Refresh
-          </Button>
+          </Button>}
         </div>
       </div>
 
+      <nav aria-label="Needs action sections" className="flex gap-1 border-b border-border overflow-x-auto">
+        {([
+          ["priority", "Priority"],
+          ["probation", "Probation"],
+          ["all", "All"],
+        ] as const).map(([tab, label]) => (
+          <Link
+            key={tab}
+            href={`/attention?tab=${tab}`}
+            aria-current={activeTab === tab ? "page" : undefined}
+            onClick={(event) => {
+              // Wouter's search hook observes query changes when navigation goes through the router.
+              event.preventDefault();
+              navigate(`/attention?tab=${tab}`);
+            }}
+            className={`inline-flex min-h-11 items-center px-4 border-b-2 text-sm font-medium whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+              activeTab === tab ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
+            }`}
+          >
+            {label}
+          </Link>
+        ))}
+      </nav>
+
+      {activeTab === "probation" ? <ProbationReviewsPanel /> : <>
       {isPaused && (
         <Card className="border-amber-300" role="status">
           <CardContent className="py-4 text-sm">
@@ -543,7 +575,9 @@ export default function AttentionPage() {
         </Card>
       )}
 
-      <div className="flex flex-wrap gap-4">
+      {activeTab === "priority" && <p className="text-sm text-muted-foreground">High and urgent items first. For every open item, use All.</p>}
+      {activeTab === "all" && <div className="flex flex-wrap gap-4">
+
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">Type:</span>
           <Select value={typeFilter} onValueChange={setTypeFilter}>
@@ -556,6 +590,8 @@ export default function AttentionPage() {
               <SelectItem value="CONTRACT_NOT_SIGNED">Awaiting Signature</SelectItem>
               <SelectItem value="CHANGE_NO_CONTRACT">Missing Contract</SelectItem>
               <SelectItem value="UNSIGNED_EMPLOYMENT_CONTRACT">Unsigned Employment</SelectItem>
+              <SelectItem value="TERMS_CHANGED_REQUIRES_NEW_CONTRACT">Terms Changed</SelectItem>
+              <SelectItem value="EMPLOYEE_UNSIGNED">Employee Unsigned</SelectItem>
               <SelectItem value="PROBATION_REVIEW_DUE_SOON">Probation Review Due</SelectItem>
               <SelectItem value="PROBATION_REVIEW_OVERDUE">Probation Overdue</SelectItem>
               <SelectItem value="MISSING_OFFBOARD_DOC">Missing Document</SelectItem>
@@ -585,13 +621,14 @@ export default function AttentionPage() {
             </SelectContent>
           </Select>
         </div>
-      </div>
+      </div>}
 
-      <div className="flex flex-wrap gap-4 text-sm">
+      <div className="flex flex-wrap gap-4 text-sm" aria-live="polite">
         <span className="flex items-center gap-1">
           <span className="h-2 w-2 rounded-full bg-red-500" />
-          {highCount} High
+          {highCount} High / urgent
         </span>
+        {activeTab === "all" && <>
         <span className="flex items-center gap-1">
           <span className="h-2 w-2 rounded-full bg-amber-500" />
           {mediumCount} Medium
@@ -600,17 +637,19 @@ export default function AttentionPage() {
           <span className="h-2 w-2 rounded-full bg-gray-500" />
           {lowCount} Low
         </span>
+        </>}
         <span className="text-muted-foreground">
           Total: {filteredItems.length} items
         </span>
       </div>
 
       {isError ? (
-        <Card>
-          <CardContent className="py-12 text-center text-muted-foreground">
-            Could not load attention alerts. Please try again.
-          </CardContent>
-        </Card>
+        <Card><CardContent className="py-10 text-center space-y-3" role="alert">
+          <AlertCircle className="h-8 w-8 mx-auto text-destructive" />
+          <p className="font-medium">Could not load attention alerts</p>
+          <p className="text-sm text-muted-foreground">Check your connection and try again.</p>
+          <Button variant="outline" onClick={() => refetch()} data-testid="button-retry-attention">Try again</Button>
+        </CardContent></Card>
       ) : isLoading ? (
         <div className="space-y-4">
           {[1, 2, 3, 4].map((i) => (
@@ -632,8 +671,16 @@ export default function AttentionPage() {
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
             <CheckCircle className="h-12 w-12 mx-auto mb-3 text-green-500" />
-            <p className="text-lg font-medium">{isPaused ? "No saved alerts in this view" : "All clear!"}</p>
-            <p className="text-sm">{isPaused ? "Automatic alerts are paused." : "No attention items require your action."}</p>
+            <p className="text-lg font-medium">
+              {isPaused ? "No saved alerts in this view" : activeTab === "priority" ? "No priority items" : "All clear"}
+            </p>
+            <p className="text-sm">
+              {isPaused
+                ? "Automatic alerts are paused."
+                : activeTab === "priority"
+                  ? "No high or urgent attention items for this branch. Check All for the full list."
+                  : "No attention items match these filters."}
+            </p>
           </CardContent>
         </Card>
       ) : (
@@ -652,6 +699,7 @@ export default function AttentionPage() {
           ))}
         </div>
       )}
+      </>}
     </div>
   );
 }

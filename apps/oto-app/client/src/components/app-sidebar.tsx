@@ -30,7 +30,6 @@ import {
   Activity,
   Clock,
   AlertTriangle,
-  ClipboardCheck,
   Briefcase,
   CalendarDays,
   Contact,
@@ -158,21 +157,23 @@ const adminItems: MenuItem[] = [
   },
 ];
 
-const operationsItems: MenuItem[] = [
+// Daily work first; the people records after. Role fences are unchanged from
+// the old single "HR Operations" list: each link keeps the flag it had there.
+const dailyOperationsItems: MenuItem[] = [
   {
     title: "Dashboard",
     url: "/",
     icon: LayoutDashboard,
   },
   {
-    title: "Attention",
+    title: "Needs action",
     url: "/attention",
     icon: AlertTriangle,
   },
   {
-    title: "Reviews",
-    url: "/reviews",
-    icon: ClipboardCheck,
+    title: "Today's attendance",
+    url: "/timekeeping-review",
+    icon: Clock,
     managerOnly: true,
   },
   {
@@ -182,23 +183,14 @@ const operationsItems: MenuItem[] = [
     managerOnly: true,
   },
   {
-    title: "Org Chart",
-    url: "/org-chart",
-    icon: GitBranch,
-    managerOnly: true,
-  },
-  {
-    title: "Timekeeping Review",
-    url: "/timekeeping-review",
-    icon: Clock,
-    managerOnly: true,
-  },
-  {
     title: "Time & Attendance",
     url: "/time-attendance",
     icon: Clock,
     adminOnly: true,
   },
+];
+
+const peopleAndHrItems: MenuItem[] = [
   {
     title: "Employees",
     url: "/employees",
@@ -208,6 +200,12 @@ const operationsItems: MenuItem[] = [
     title: "Contracts",
     url: "/contracts",
     icon: FileSignature,
+  },
+  {
+    title: "Org Chart",
+    url: "/org-chart",
+    icon: GitBranch,
+    managerOnly: true,
   },
   {
     title: "Activity Logbook",
@@ -275,15 +273,19 @@ function hasRoleAccess(items: MenuItem[], role: string | undefined): boolean {
 }
 
 type SectionState = {
-  hrOperations: boolean;
+  dailyOperations: boolean;
+  peopleAndHr: boolean;
   configuration: boolean;
   platformAdmin: boolean;
   finance: boolean;
   payroll: boolean;
 };
 
+// Keys the regroup retired (the old "hrOperations") are simply ignored when
+// read back; the two sections it became start open until someone closes them.
 const DEFAULT_SECTIONS: SectionState = {
-  hrOperations: false,
+  dailyOperations: true,
+  peopleAndHr: true,
   configuration: false,
   platformAdmin: false,
   finance: false,
@@ -322,6 +324,7 @@ export function AppSidebar() {
   const { user } = useAuth();
   const { isAllBranches, activeBranchIds, isLoading: branchesLoading } = useBranchContext();
   const [localSections, setLocalSections] = useState<{ userId: string; sections: SectionState } | null>(null);
+  const [saveError, setSaveError] = useState(false);
   const saveQueue = useRef<Promise<unknown>>(Promise.resolve());
 
   const { data: savedSections } = useQuery<{ sections: Partial<SectionState> }>({
@@ -357,6 +360,7 @@ export function AppSidebar() {
     const next = { ...sectionState, [section]: !sectionState[section] };
     setLocalSections({ userId: user.id, sections: next });
     storeSectionState(user.id, next);
+    setSaveError(false);
     const userId = user.id;
     saveQueue.current = saveQueue.current.catch(() => undefined).then(async () => {
       const response = await apiRequest("PATCH", "/api/me/sidebar-sections", { sections: { [section]: next[section] } });
@@ -364,12 +368,14 @@ export function AppSidebar() {
       queryClient.setQueryData(["/api/me/sidebar-sections", userId], saved);
     }).catch(() => {
       // The browser copy above still holds the choice; the next change retries the save.
+      if (userId === user.id) setSaveError(true);
     });
   };
 
   const filteredGlobalAdminItems = filterItems(globalAdminItems, user?.role, isAllBranches);
   const filteredAdminItems = filterItems(adminItems, user?.role, isAllBranches);
-  const filteredOperationsItems = filterItems(operationsItems, user?.role, isAllBranches);
+  const filteredDailyOperationsItems = filterItems(dailyOperationsItems, user?.role, isAllBranches);
+  const filteredPeopleAndHrItems = filterItems(peopleAndHrItems, user?.role, isAllBranches);
   const filteredFinanceItems = filterItems(financeItems, user?.role, isAllBranches);
   const filteredPayrollItems = filterItems(payrollItems, user?.role, isAllBranches);
 
@@ -408,6 +414,7 @@ export function AppSidebar() {
     isOpen, 
     onToggle,
     branchHint,
+    hasBadge,
   }: { 
     id: string;
     label: string; 
@@ -416,14 +423,16 @@ export function AppSidebar() {
     isOpen: boolean; 
     onToggle: () => void;
     branchHint?: string;
+    hasBadge?: boolean;
   }) => {
     if (items.length === 0 && !branchHint) return null;
     
     return (
       <SidebarGroup>
         <Collapsible.Root open={isOpen} onOpenChange={onToggle}>
-          <Collapsible.Trigger asChild>
-            <SidebarGroupLabel 
+          <SidebarGroupLabel asChild>
+            <Collapsible.Trigger
+              type="button"
               className="flex items-center gap-2 cursor-pointer hover-elevate rounded-md px-2 py-1 w-full justify-between"
               data-testid={`section-toggle-${id}`}
             >
@@ -431,13 +440,12 @@ export function AppSidebar() {
                 {Icon && <Icon className="h-3 w-3" />}
                 {label}
               </span>
-              {isOpen ? (
-                <ChevronDown className="h-3 w-3" />
-              ) : (
-                <ChevronRight className="h-3 w-3" />
-              )}
-            </SidebarGroupLabel>
-          </Collapsible.Trigger>
+              <span className="flex items-center gap-2">
+                {!isOpen && hasBadge && <span aria-label="Items need attention" className="h-2 w-2 rounded-full bg-amber-700 dark:bg-amber-300" />}
+                {isOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+              </span>
+            </Collapsible.Trigger>
+          </SidebarGroupLabel>
           <Collapsible.Content>
             <SidebarGroupContent>
               {branchHint && items.length === 0 ? (
@@ -464,12 +472,22 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
       <SidebarContent>
+        {saveError && <p role="alert" className="px-3 py-1 text-xs text-destructive group-data-[collapsible=icon]:hidden">Menu preference could not sync. It is saved on this device.</p>}
         <CollapsibleSection
-          id="hr-operations"
-          label="HR Operations"
-          items={filteredOperationsItems}
-          isOpen={sectionState.hrOperations}
-          onToggle={() => toggleSection('hrOperations')}
+          id="daily-operations"
+          label="Daily Operations"
+          items={filteredDailyOperationsItems}
+          isOpen={sectionState.dailyOperations}
+          onToggle={() => toggleSection('dailyOperations')}
+          hasBadge={!!badges && (badges.needsAction > 0 || (filteredDailyOperationsItems.some((i) => i.url === "/timekeeping-review") && badges.todaysAttendance > 0))}
+        />
+
+        <CollapsibleSection
+          id="people-and-hr"
+          label="People & HR"
+          items={filteredPeopleAndHrItems}
+          isOpen={sectionState.peopleAndHr}
+          onToggle={() => toggleSection('peopleAndHr')}
         />
 
         {filteredFinanceItems.length > 0 && (

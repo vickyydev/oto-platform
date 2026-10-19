@@ -1,6 +1,6 @@
 import { useManagerActionRequest } from "@/hooks/use-manager-action-request";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link, Redirect } from "wouter";
 import { Employee, Branch } from "@shared/schema";
 import { useBranchContext } from "@/hooks/use-branch-context";
 import { useToast } from "@/hooks/use-toast";
@@ -17,7 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Calendar, ArrowRight, CheckCircle, Clock, AlertTriangle, Loader2, Check } from "lucide-react";
+import { ArrowRight, CheckCircle, Clock, AlertTriangle, Check } from "lucide-react";
 import { addDays, differenceInDays } from "date-fns";
 import { formatDate } from "@/lib/format-utils";
 
@@ -85,16 +85,16 @@ function DueBadge({ dueDate }: { dueDate: Date }) {
   }
 }
 
-export default function ReviewsPage() {
+export function ProbationReviewsPanel() {
   const { selectedBranchId, isAllBranches } = useBranchContext();
   const { toast } = useToast();
   const actionRequest = useManagerActionRequest();
 
-  const { data: employees, isLoading: employeesLoading } = useQuery<Employee[]>({
+  const { data: employees, isLoading: employeesLoading, isError: employeesError, refetch: refetchEmployees } = useQuery<Employee[]>({
     queryKey: ["/api/employees"],
   });
 
-  const { data: branches } = useQuery<Branch[]>({
+  const { data: branches, isLoading: branchesLoading, isError: branchesError, refetch: refetchBranches } = useQuery<Branch[]>({
     queryKey: ["/api/branches"],
   });
 
@@ -107,7 +107,10 @@ export default function ReviewsPage() {
       actionRequest.completed(employeeId);
       queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
       queryClient.invalidateQueries({ queryKey: ["/api/employees", employeeId] });
-      queryClient.invalidateQueries({ queryKey: ["/api/attention-items"] });
+      queryClient.invalidateQueries({
+        predicate: (query) => typeof query.queryKey[0] === "string" && query.queryKey[0].startsWith("/api/attention-items"),
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/sidebar/badges"] });
       toast({
         title: "Review completed",
         description: "Probation review has been marked as completed.",
@@ -145,27 +148,72 @@ export default function ReviewsPage() {
       return dateA.getTime() - dateB.getTime();
     });
 
-  return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-3xl font-medium flex items-center gap-2" data-testid="text-reviews-title">
-            <Calendar className="h-8 w-8 text-foreground" />
-            Upcoming Reviews
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            {isAllBranches ? "Reviews due across all branches" : "Reviews due for selected branch"}
-          </p>
-        </div>
-      </div>
+  const reviewActions = (employee: Employee, mobile = false) => (
+    <div className="flex items-center gap-2 flex-wrap sm:justify-end">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => completeProbationMutation.mutate(employee.id)}
+        disabled={completeProbationMutation.isPending}
+        data-testid={`button-complete-review-${employee.id}${mobile ? "-mobile" : ""}`}
+      >
+        <Check className="h-3 w-3 mr-1" />
+        {completeProbationMutation.isPending && completeProbationMutation.variables === employee.id ? "Completing..." : "Complete"}
+      </Button>
+      <Link
+        href={`/employees/${employee.id}`}
+        className="inline-flex min-h-9 items-center px-3 text-sm font-medium rounded-md hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        data-testid={`button-view-employee-${employee.id}${mobile ? "-mobile" : ""}`}
+      >
+        View <ArrowRight className="ml-1 h-3 w-3" />
+      </Link>
+    </div>
+  );
 
+  return (
+    <section aria-label="Probation reviews" className="space-y-4">
+      <div>
+        <h2 className="text-lg font-semibold tracking-tight">Probation reviews</h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          Overdue and due in the next 30 days {isAllBranches ? "across all branches" : "for the selected branch"}.
+        </p>
+      </div>
       <Card>
         <CardContent className="p-0">
-          {employeesLoading ? (
+          {employeesError || (isAllBranches && branchesError) ? (
+            <div className="py-12 px-4 text-center space-y-3" role="alert">
+              <AlertTriangle className="h-8 w-8 text-destructive mx-auto" />
+              <p className="font-medium">Couldn't load probation reviews</p>
+              <p className="text-sm text-muted-foreground">Check your connection and try again.</p>
+              <Button variant="outline" onClick={() => { refetchEmployees(); if (branchesError) refetchBranches(); }}>Try again</Button>
+            </div>
+          ) : employeesLoading || (isAllBranches && branchesLoading) ? (
             <ReviewsTableSkeleton />
           ) : upcomingReviews.length === 0 ? (
             <EmptyState />
           ) : (
+            <>
+            <div className="divide-y sm:hidden">
+              {upcomingReviews.map(employee => {
+                const dueDate = new Date(employee.probationEndDate!);
+                const branch = branchMap.get(employee.branchId || "");
+                return (
+                  <div key={employee.id} className="p-4 space-y-3" data-testid={`review-row-${employee.id}-mobile`}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-medium break-words">{employee.fullName}</p>
+                        <p className="text-sm text-muted-foreground break-all">{employee.email}</p>
+                        {isAllBranches && <p className="text-xs text-muted-foreground mt-1">{branch?.name || "Unknown branch"}</p>}
+                      </div>
+                      <DueBadge dueDate={dueDate} />
+                    </div>
+                    <p className="text-sm text-muted-foreground">Probation · Due {formatDate(dueDate)}</p>
+                    {reviewActions(employee, true)}
+                  </div>
+                );
+              })}
+            </div>
+            <div className="hidden sm:block overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -206,28 +254,7 @@ export default function ReviewsPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => completeProbationMutation.mutate(employee.id)}
-                            disabled={completeProbationMutation.isPending}
-                            data-testid={`button-complete-review-${employee.id}`}
-                          >
-                            {completeProbationMutation.isPending ? (
-                              <Loader2 className="h-3 w-3 animate-spin" />
-                            ) : (
-                              <>
-                                <Check className="h-3 w-3 mr-1" />
-                                Complete
-                              </>
-                            )}
-                          </Button>
-                          <Link href={`/employees/${employee.id}`}>
-                            <Button variant="ghost" size="sm" data-testid={`button-view-employee-${employee.id}`}>
-                              View
-                              <ArrowRight className="ml-1 h-3 w-3" />
-                            </Button>
-                          </Link>
+                          {reviewActions(employee)}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -235,9 +262,15 @@ export default function ReviewsPage() {
                 })}
               </TableBody>
             </Table>
+            </div>
+            </>
           )}
         </CardContent>
       </Card>
-    </div>
+    </section>
   );
+}
+
+export default function ReviewsPage() {
+  return <Redirect to="/attention?tab=probation" replace />;
 }

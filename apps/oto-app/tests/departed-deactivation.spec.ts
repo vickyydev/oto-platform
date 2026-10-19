@@ -21,7 +21,7 @@ async function goToEmployeeProfile(page: Page, fullName: string) {
 
   const empNav = page.getByTestId("nav-employees");
   if (!(await empNav.isVisible())) {
-    await page.getByTestId("section-toggle-hr-operations").click();
+    await page.getByTestId("section-toggle-people-and-hr").click();
   }
   await empNav.click();
   await expect(page.getByTestId("text-employees-title")).toBeVisible({ timeout: 10000 });

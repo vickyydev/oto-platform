@@ -14,7 +14,9 @@ test("finalize + signing link does not fire twice causing version conflict", asy
   // Navigate to HR → Bangkok → Employees
   await page.getByRole("button", { name: "HR" }).click();
   await expect(page.getByTestId("text-dashboard-title")).toBeVisible({ timeout: 10000 });
-  await page.getByTestId("section-toggle-hr-operations").click();
+  if (!(await page.getByTestId("nav-employees").isVisible())) {
+    await page.getByTestId("section-toggle-people-and-hr").click();
+  }
   await page.getByTestId("nav-employees").click();
   await expect(page.getByTestId("text-employees-title")).toBeVisible({ timeout: 10000 });
 

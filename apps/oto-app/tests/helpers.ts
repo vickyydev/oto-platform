@@ -60,7 +60,7 @@ export async function createStaffWithLogin(adminPage: Page) {
 
   const empNav = adminPage.getByTestId("nav-employees");
   if (!(await empNav.isVisible())) {
-    await adminPage.getByTestId("section-toggle-hr-operations").click();
+    await adminPage.getByTestId("section-toggle-people-and-hr").click();
   }
   await empNav.click();
   await expect(adminPage.getByTestId("text-employees-title")).toBeVisible({ timeout: 10000 });

@@ -43,7 +43,9 @@ test("can create a contract, send signing link, and sign it", async ({ page }) =
   await page.locator("[data-testid^='branch-option-branch-']", { hasText: "Bangkok" }).click();
   await page.waitForTimeout(500);
 
-  await page.getByTestId("section-toggle-hr-operations").click();
+  if (!(await page.getByTestId("nav-employees").isVisible())) {
+    await page.getByTestId("section-toggle-people-and-hr").click();
+  }
   await page.getByTestId("nav-employees").click();
   await expect(page.getByTestId("text-employees-title")).toBeVisible({ timeout: 10000 });
 
@@ -147,10 +149,10 @@ test("can create a contract, send signing link, and sign it", async ({ page }) =
   await page.getByTestId("branch-selector-trigger").click();
   await page.locator("[data-testid^='branch-option-branch-']", { hasText: "Bangkok" }).click();
   await page.waitForTimeout(500);
-  // Expand HR Operations if collapsed
+  // Expand People & HR if collapsed
   const empNav = page.getByTestId("nav-employees");
   if (!(await empNav.isVisible())) {
-    await page.getByTestId("section-toggle-hr-operations").click();
+    await page.getByTestId("section-toggle-people-and-hr").click();
   }
   await empNav.click();
   await expect(page.getByTestId("text-employees-title")).toBeVisible({ timeout: 10000 });

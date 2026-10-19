@@ -54,7 +54,6 @@ const LetterSigningPage = lazy(() => import("@/pages/letter-signing-page"));
 const ForgotPasswordPage = lazy(() => import("@/pages/forgot-password-page"));
 const MyAccountPage = lazy(() => import("@/pages/my-account-page"));
 const AttentionPage = lazy(() => import("@/pages/attention-page"));
-const ReviewsPage = lazy(() => import("@/pages/reviews-page"));
 const StaffMovementsPage = lazy(() => import("@/pages/staff-movements-page"));
 const UsersPage = lazy(() => import("@/pages/users-page"));
 const PoliciesPage = lazy(() => import("@/pages/policies-page"));
@@ -682,7 +681,7 @@ function Router() {
       <ProtectedRoute path="/payroll/statutory-rules" component={() => <HRProtectedLayout component={PayrollStatutoryRulesPage} />} requiredRole={["global_admin", "operator_admin", "admin"]} />
       <ProtectedRoute path="/my-payslips" component={() => <HRProtectedLayout component={MyPayslipsPage} />} requiredRole={["staff", "manager", "operator_admin", "global_admin", "admin"]} />
       <ProtectedRoute path="/attention" component={() => <HRProtectedLayout component={AttentionPage} />} requiredRole={["manager", "admin"]} />
-      <ProtectedRoute path="/reviews" component={() => <HRProtectedLayout component={ReviewsPage} />} requiredRole={["manager", "admin"]} />
+      <ProtectedRoute path="/reviews" component={() => <Redirect to="/attention?tab=probation" />} requiredRole={["manager", "admin"]} />
       <ProtectedRoute path="/staff-movements" component={() => <HRProtectedLayout component={StaffMovementsPage} />} requiredRole={["manager", "admin"]} />
       <ProtectedRoute path="/users" component={() => <HRProtectedLayout component={UsersPage} />} requiredRole="admin" />
       <ProtectedRoute path="/policies" component={() => <HRProtectedLayout component={PoliciesPage} />} requiredRole="admin" />

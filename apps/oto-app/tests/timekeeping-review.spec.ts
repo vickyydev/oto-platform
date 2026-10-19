@@ -284,9 +284,12 @@ test("scheduled employee with no clock-in shows as absent in timekeeping review"
   await page.locator("[data-testid^='branch-option-branch-']", { hasText: "Bangkok" }).click();
   await page.waitForTimeout(500);
 
-  // Expand the HR Operations section in the sidebar, then click Timekeeping Review
-  await page.getByText("HR Operations").click();
-  await page.getByRole("link", { name: "Timekeeping Review" }).click();
+  // Daily Operations is open by default; open it if a saved choice closed it
+  const attendanceNav = page.getByRole("link", { name: "Today's attendance" });
+  if (!(await attendanceNav.isVisible())) {
+    await page.getByTestId("section-toggle-daily-operations").click();
+  }
+  await attendanceNav.click();
   await expect(page.getByText("Timekeeping Review").first()).toBeVisible({ timeout: 10000 });
 
   // Wait for the page to load fully
@@ -313,8 +316,10 @@ test("employee detail page shows SCHEDULED_NO_SHOW anomaly for absent day", asyn
   await page.locator("[data-testid^='branch-option-branch-']", { hasText: "Bangkok" }).click();
   await page.waitForTimeout(500);
 
-  await page.getByText("HR Operations").click();
-  await page.getByRole("link", { name: "Timekeeping Review" }).click();
+  if (!(await page.getByRole("link", { name: "Today's attendance" }).isVisible())) {
+    await page.getByTestId("section-toggle-daily-operations").click();
+  }
+  await page.getByRole("link", { name: "Today's attendance" }).click();
   await expect(page.getByText("Timekeeping Review").first()).toBeVisible({ timeout: 10000 });
   await page.waitForTimeout(1000);
 
