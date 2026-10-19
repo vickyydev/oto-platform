@@ -448,6 +448,18 @@ jobs:
       - name: The OTO App's inherited typecheck ceiling
         if: steps.changes.outputs.app == 'true'
         run: npm run check:ratchet
+      # SCRUM-566 (Payroll R1): the payroll engine, ported from the prototype,
+      # pure and with no database — the September golden example's engine leg
+      # (11 checks, the prototype's tolerance, exact reconciliation), and the
+      # prototype's own unit tests, one case per PAYROLL-CONCERN marker, a
+      # dormant MY world and the parity fixture (line for line with the
+      # prototype engine except the declared concern-1 lines).
+      - name: The payroll golden example (engine leg)
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/payroll-golden.check.ts
+      - name: The payroll engine checks
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/payroll-engine.check.ts
       # The rehearsal uses disposable databases on this job's scratch server.
       # It dumps the baseline sample from public, restores and renames it,
       # imports after every platform migration, then runs the app migrator
