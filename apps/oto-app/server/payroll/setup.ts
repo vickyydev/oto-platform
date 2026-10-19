@@ -97,7 +97,7 @@ export async function recordChange(tx: Tx | Db, tenantId: string, actor: Payroll
   });
 }
 
-/** The park group's Thai rule set, made by migration 0021's function when it has none (a park group made later). */
+/** The park group's Thai rule set, made by migration 0021's function when it has none - the ONLY runner of that function: the migration defines it but never calls it, so the restore rehearsal's row counts hold. */
 export async function ensureTenantPayrollRuleSets(tenantId: string): Promise<number> {
   const result = await db.execute(sql`select seed_tenant_payroll_rule_sets(${tenantId}::uuid) as made`);
   return Number((result.rows[0] as { made?: number } | undefined)?.made ?? 0);

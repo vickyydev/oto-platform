@@ -16,8 +16,10 @@
 -- StatutoryRules stored as is. The old engine's reads filter to legacy-v1
 -- (server/storage.ts), so neither engine sees the other's rows.
 --
--- The one thing seeded is the Thai company-v1 rule set, per park group, from
--- seed_tenant_payroll_rule_sets: the migration runs it for every park group
+-- The Thai company-v1 rule set is seeded by seed_tenant_payroll_rule_sets,
+-- defined here but RUN ONLY LAZILY by the app per park group on first use --
+-- never by this migration: the restore rehearsal holds that migrations add
+-- no rows to tables the old world already carries, and this one targets
 -- and the app runs the same function for a park group made later. Nothing
 -- else is seeded: no entity, account, branch detail, deduction list, revenue
 -- stream or welfare fund setting (the welfare fund start date is entered by
@@ -464,6 +466,3 @@ BEGIN
 	GET DIAGNOSTICS v_made = ROW_COUNT;
 	RETURN v_made;
 END $fn$;
---> statement-breakpoint
--- Every park group's Thai rule set.
-SELECT seed_tenant_payroll_rule_sets(t.id) FROM tenants t;
