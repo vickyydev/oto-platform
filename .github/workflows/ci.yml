@@ -630,6 +630,15 @@ jobs:
         env:
           TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
         run: npx tsx tests/payroll-profile-editor.check.tsx
+      # SCRUM-572 (R7, the payroll UI cutover): the access check over the
+      # client route table, from the source — the Payroll menu by role
+      # (payroll roles every page, managers and staff their own payslips),
+      # every old payroll screen gone and its address redirected, every
+      # /payroll route held to payroll roles but the hub and self-payslips,
+      # the DialogBody sweep, and the HR editor's payroll profile link.
+      - name: The app's payroll cutover check
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/payroll-cutover.check.ts
       # SCRUM-568: the company payroll's R3 (migrations 0023-0024) — the
       # September golden's service-and-HTTP leg (the fixture entered through
       # the real routes, the preview route's month asserted by the same checks
