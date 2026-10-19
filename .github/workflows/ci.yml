@@ -630,6 +630,20 @@ jobs:
         env:
           TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
         run: npx tsx tests/payroll-profile-editor.check.tsx
+      # SCRUM-568: the company payroll's R3 (migrations 0023-0024) — the
+      # September golden's service-and-HTTP leg (the fixture entered through
+      # the real routes, the preview route's month asserted by the same checks
+      # 1-9 as the engine leg), and the feeds check: every new route fenced
+      # (403 below payroll roles, 404 across park groups), the attendance
+      # adapter's cases, run corrections stored against the run version and
+      # never in the attendance tables, the world loader's seams, and the
+      # preview of a 60-person park timed against the ~2 s budget.
+      - name: The payroll golden example (service and HTTP leg)
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/payroll-golden.check.ts --http
+      - name: The app's payroll feeds checks
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/payroll-feeds.check.ts
       # These five feature suites drive the app's handlers through its own
       # dependency tree. Run them here, where npm ci has installed that tree,
       # and keep the API workspace's ordinary full battery unchanged.

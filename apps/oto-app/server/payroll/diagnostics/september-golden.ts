@@ -9,6 +9,7 @@ import { calculateCompanyEngine } from "../engine/company-calculations";
 import { generateCompanyOutputs } from "../engine/company-outputs";
 import { money } from "../engine/company-math";
 import { validateCompanyDocument } from "../engine/company-validation";
+import type { CompanyCalculation, CompanyOutputs, CompanyResult, ServiceDistribution } from "../engine/company-model";
 import { buildSeptemberGoldenFixture, GOLDEN_ENTITY, GOLDEN_MONTH } from "./september-golden-fixture";
 
 export interface GoldenAssertion { label: string; expected: number | string; actual: number | string; pass: boolean; unit?: string }
@@ -19,34 +20,40 @@ export interface GoldenTestReport {
     removeDays: number; removeRate: number; removePaid: number; increase: number;
     people: { name: string; keep: number; remove: number; increase: number }[] };
 }
-export function evaluateSeptemberGoldenFixture(fixture: ReturnType<typeof buildSeptemberGoldenFixture>): GoldenTestReport {
-  const { data, doc } = fixture;
-  validateCompanyDocument(doc);
-  const calc = calculateCompanyEngine(data, doc, GOLDEN_MONTH);
-  const result = calc.entities.find(e => e.entityId === GOLDEN_ENTITY)!;
-  const outputs = generateCompanyOutputs(data, calc, GOLDEN_ENTITY);
+const assertion = (label: string, expected: number | string, actual: number | string, unit = "THB"): GoldenAssertion => ({
+  label, expected, actual, unit,
+  // Compare integer cents, not binary floating-point <= .01 comparisons.
+  pass: typeof expected === "number" && typeof actual === "number" && Number.isFinite(actual)
+    ? unit === "THB" ? Math.abs(Math.round(actual * 100) - Math.round(expected * 100)) <= 1 : Math.abs(actual - expected) <= 1e-7
+    : actual === expected,
+});
+const exact = (label: string, expected: number, actual: number) => assertion(label, expected.toFixed(2), actual.toFixed(2), "exact");
+
+/** How the fixture's ids are named where the checks run: as is in memory, as stored rows over HTTP. */
+export interface GoldenIds { entity: string; staff(id: string): string; branch(id: string): string; account(id: string): string; rule(id: string): string }
+export const FIXTURE_IDS: GoldenIds = { entity: GOLDEN_ENTITY, staff: (id) => id, branch: (id) => id, account: (id) => id, rule: (id) => id };
+
+/** The eleven checks (their base assertions), on any calculation and outputs of the September fixture. */
+export function goldenChecks(calc: CompanyCalculation, outputs: CompanyOutputs, ids: GoldenIds = FIXTURE_IDS): { checks: GoldenCheck[]; result: CompanyResult; central: ServiceDistribution } {
+
+  const result = calc.entities.find(e => e.entityId === ids.entity)!;
+  if (!result) throw new Error("Golden fixture is missing its paying entity.");
   const checks: GoldenCheck[] = [];
-  const person = (id: string) => {
+  const person = (fixtureId: string) => {
+    const id = ids.staff(fixtureId);
     const p = result.people.find(p => p.id === id);
-    if (!p) throw new Error(`Golden fixture is missing ${id}.`);
+    if (!p) throw new Error(`Golden fixture is missing ${fixtureId}.`);
     return p;
   };
-  const component = (id: string, key: string) => person(id).components[key] ?? 0;
-  const branchAmount = (id: string, key: string, branch: string) => money(person(id).lines.filter(l => l.component === key)
-    .flatMap(l => l.allocations).filter(a => a.costCentre === branch).reduce((n, a) => n + a.amount, 0));
-  const assertion = (label: string, expected: number | string, actual: number | string, unit = "THB"): GoldenAssertion => ({
-    label, expected, actual, unit,
-    // Compare integer cents, not binary floating-point <= .01 comparisons.
-    pass: typeof expected === "number" && typeof actual === "number" && Number.isFinite(actual)
-      ? unit === "THB" ? Math.abs(Math.round(actual * 100) - Math.round(expected * 100)) <= 1 : Math.abs(actual - expected) <= 1e-7
-      : actual === expected,
-  });
-  const exact = (label: string, expected: number, actual: number) => assertion(label, expected.toFixed(2), actual.toFixed(2), "exact");
+  const key = (k: string) => k.startsWith("incentive:") ? `incentive:${ids.rule(k.slice(10))}` : k;
+  const component = (id: string, k: string) => person(id).components[key(k)] ?? 0;
+  const branchAmount = (id: string, k: string, branch: string) => money(person(id).lines.filter(l => l.component === key(k))
+    .flatMap(l => l.allocations).filter(a => a.costCentre === ids.branch(branch)).reduce((n, a) => n + a.amount, 0));
   const add = (id: number, title: string, assertions: GoldenAssertion[]) =>
     checks.push({ id, title, assertions, pass: assertions.every(a => a.pass) });
   const C = "hkt-central", H = "hkt-chalong";
-  const central = calc.service.find(s => s.branchId === C)!;
-  const chalong = calc.service.find(s => s.branchId === H)!;
+  const central = calc.service.find(s => s.branchId === ids.branch(C))!;
+  const chalong = calc.service.find(s => s.branchId === ids.branch(H))!;
   const gm = person("gold-gm");
   add(1, "GM: 70/30, statutory once, advance, transfers and one payslip", [
     assertion("Salary Central", 49000, branchAmount(gm.id, "salary", C)),
@@ -62,7 +69,7 @@ export function evaluateSeptemberGoldenFixture(fixture: ReturnType<typeof buildS
     assertion("GM Central SC", 1656.79, branchAmount(gm.id, "sc", C)),
     assertion("GM Chalong SC", 935.75, branchAmount(gm.id, "sc", H)),
     assertion("GM combined SC", 2592.53, component(gm.id, "sc")),
-    assertion("Combined revenue", 4717595.50, calc.incentives.find(a => a.ruleId === "gold-gm-share")!.base),
+    assertion("Combined revenue", 4717595.50, calc.incentives.find(a => a.ruleId === ids.rule("gold-gm-share"))!.base),
     assertion("GM incentive", 18870.38, component(gm.id, "incentive:gold-gm-share")),
     assertion("GM incentive Central", 13209.27, branchAmount(gm.id, "incentive:gold-gm-share", C)),
     assertion("GM incentive Chalong", 5661.11, branchAmount(gm.id, "incentive:gold-gm-share", H)),
@@ -77,18 +84,18 @@ export function evaluateSeptemberGoldenFixture(fixture: ReturnType<typeof buildS
     assertion("GM deductions", 9075, gm.deductions),
     assertion("GM net", 82387.91, gm.net),
     exact("Transfer count", 2, gm.payments.length),
-    assertion("Central-account payment", 54791.05, money(gm.payments.filter(p => p.payingAccountId === "tt-central-scb").reduce((n, p) => n + p.amount, 0))),
-    assertion("Chalong-account payment", 27596.86, money(gm.payments.filter(p => p.payingAccountId === "tt-chalong-scb").reduce((n, p) => n + p.amount, 0))),
+    assertion("Central-account payment", 54791.05, money(gm.payments.filter(p => p.payingAccountId === ids.account("tt-central-scb")).reduce((n, p) => n + p.amount, 0))),
+    assertion("Chalong-account payment", 27596.86, money(gm.payments.filter(p => p.payingAccountId === ids.account("tt-chalong-scb")).reduce((n, p) => n + p.amount, 0))),
     exact("Combined GM payslip count", 1, Object.keys(outputs.payslips).filter(id => id === gm.id).length),
   ]);
-  const chBonus = calc.incentives.find(a => a.ruleId === "gold-ops-h-share")!;
+  const chBonus = calc.incentives.find(a => a.ruleId === ids.rule("gold-ops-h-share"))!;
   add(2, "Operations bonuses and strict branch targets", [
     assertion("Central operations incentive", 7448.07, component("gold-ops-c", "incentive:gold-ops-c-share")),
     exact("Chalong operations incentive", 0, component("gold-ops-h", "incentive:gold-ops-h-share")),
     assertion("Chalong gate explanation", "target not met", !chBonus.targetMet && chBonus.formula.includes("Target not met") ? "target not met" : chBonus.formula, "text"),
   ]);
   add(3, "Event manager birthday incentive", [
-    assertion("Birthday base", 441918.62, calc.incentives.find(a => a.ruleId === "gold-birthdays")!.base),
+    assertion("Birthday base", 441918.62, calc.incentives.find(a => a.ruleId === ids.rule("gold-birthdays"))!.base),
     assertion("Birthday incentive", 8838.37, component("gold-event", "incentive:gold-birthdays")),
     assertion("Central 70%", 6186.86, branchAmount("gold-event", "incentive:gold-birthdays", C)),
     assertion("Chalong 30%", 2651.51, branchAmount("gold-event", "incentive:gold-birthdays", H)),
@@ -97,7 +104,7 @@ export function evaluateSeptemberGoldenFixture(fixture: ReturnType<typeof buildS
   add(4, "Nanny pool: 124 days, conserved cents, no service charge", [
     ...nannyExpected.flatMap((amount, i) => [assertion(`Nanny ${i + 1} pool share`, amount, component(`gold-nanny-${i + 1}`, "incentive:gold-nanny-pool")),
       exact(`Nanny ${i + 1} SC off`, 0, component(`gold-nanny-${i + 1}`, "sc"))]),
-    assertion("Team days", 124, calc.incentives.filter(a => a.ruleId === "gold-nanny-pool").reduce((n, a) => n + a.units, 0), "days"),
+    assertion("Team days", 124, calc.incentives.filter(a => a.ruleId === ids.rule("gold-nanny-pool")).reduce((n, a) => n + a.units, 0), "days"),
     exact("Whole nanny pool allocated", 19690.82, money(nannyExpected.reduce((n, _, i) => n + component(`gold-nanny-${i + 1}`, "incentive:gold-nanny-pool"), 0))),
   ]);
   add(5, "Central regular employee", [
@@ -120,13 +127,13 @@ export function evaluateSeptemberGoldenFixture(fixture: ReturnType<typeof buildS
   add(9, "Student Loan Fund remittance deduction", [
     assertion("Salary", 22000, component("gold-loan", "salary")), assertion("SSO", 875, component("gold-loan", "sso")),
     assertion("Student loan", 886, component("gold-loan", "student-loan")), assertion("Deductions", 1761, person("gold-loan").deductions),
-    assertion("Remittance list contains person", "yes", outputs.reports["student-loan-remittance.csv"]?.includes("gold-loan") ? "yes" : "no", "text"),
+    assertion("Remittance list contains person", "yes", outputs.reports["student-loan-remittance.csv"]?.includes(ids.staff("gold-loan")) ? "yes" : "no", "text"),
   ]);
   add(10, "Cash agency: 7% fee, no bank transfer", [
     assertion("Fee Central", 42000, branchAmount("gold-ads", "salary", C)), assertion("Fee Chalong", 18000, branchAmount("gold-ads", "salary", H)),
     assertion("Cash handling fee", 4200, component("gold-ads", "cash-fee")), assertion("Net", 55800, person("gold-ads").net),
     assertion("Cash list includes agency", "yes", outputs.cashHtml.includes(person("gold-ads").name) ? "yes" : "no", "text"),
-    exact("Bank-file transfers for agency", 0, outputs.banks.flatMap(b => b.transfers).filter(p => p.staffId === "gold-ads").length),
+    exact("Bank-file transfers for agency", 0, outputs.banks.flatMap(b => b.transfers).filter(p => p.staffId === ids.staff("gold-ads")).length),
   ]);
   add(11, "Bank files plus cash reconcile exactly", [
     exact("Files + cash = run net", result.totals.net, money(outputs.bankAmount + outputs.cashAmount)),
@@ -135,6 +142,16 @@ export function evaluateSeptemberGoldenFixture(fixture: ReturnType<typeof buildS
     exact("Bank file count / paying accounts", 2, outputs.banks.length),
     exact("No blocking fixture inputs", 0, result.exceptions.filter(e => e.severity === "blocking").length),
   ]);
+  return { checks, result, central };
+}
+
+export function evaluateSeptemberGoldenFixture(fixture: ReturnType<typeof buildSeptemberGoldenFixture>): GoldenTestReport {
+  const { data, doc } = fixture;
+  validateCompanyDocument(doc);
+  const calc = calculateCompanyEngine(data, doc, GOLDEN_MONTH);
+  const outputs = generateCompanyOutputs(data, calc, GOLDEN_ENTITY);
+  const { checks, result, central } = goldenChecks(calc, outputs);
+  const C = "hkt-central";
   // Check generated file bytes too, not only the engine's payment metadata.
   let fileTotal = 0, correctReferences = true;
   for (const bank of outputs.banks) {
