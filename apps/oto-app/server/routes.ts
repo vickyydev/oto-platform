@@ -2,6 +2,7 @@ import { requireSchedulePark, ScheduleScopeError, scheduleParkPredicate } from "
 import { attendanceEvidenceUpload, attendanceConfirmationBody } from "./attendance-evidence-upload";
 import { persistAttendanceEvidence, canReadAttendanceEvidence, ATTENDANCE_EVIDENCE_FOLDER } from "./attendance-evidence";
 import { registerTimekeepingReviewRoutes } from "./timekeeping-review-routes";
+import { registerPayrollRoutes } from "./payroll/routes";
 import { registerEmployeeActionRoutes } from "./employee-action-routes";
 import { registerQaRoutes } from "./qa/routes";
 import { registerSuiteSignInRoutes, unusablePassword } from "./suite-sign-in-routes";
@@ -25466,6 +25467,10 @@ ${context}`;
       next(error);
     }
   });
+
+  // The company payroll (SCRUM-567 onward): its own module, fenced route by
+  // route, registered ahead of the old engine's park-group middleware below.
+  registerPayrollRoutes(app, { requireAuth, callerParkGroup: userManagementTenant });
 
   // ============================================
   // PAYROLL MODULE API ENDPOINTS

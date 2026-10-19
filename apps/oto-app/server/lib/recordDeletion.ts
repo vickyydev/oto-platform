@@ -182,6 +182,8 @@ const EMPLOYEE_KEEPS = [
       "salary_advances",
       "salary_advance_repayments",
       "statutory_calculation_results",
+      // SCRUM-567: the company payroll's profile (ON DELETE RESTRICT) is kept for the record too.
+      "payroll_profiles",
     ],
     column: "employee_id",
   },

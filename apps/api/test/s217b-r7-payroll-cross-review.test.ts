@@ -203,6 +203,41 @@ describe.skipIf(!HAS_APP)('round 7 independent payroll ownership review', () => 
     expect(routes.indexOf('app.post("/api/payroll/runs/:id/payslips/:employeeId"')).toBeLessThan(routes.indexOf('app.post("/api/payroll/runs/:id/payslips/bulk"'));
   });
 
+  it('censuses the company payroll module: every route, in order, with its permission key (SCRUM-567 R2)', () => {
+    // The new module registers in server/payroll/routes.ts, never in routes.ts,
+    // so the 45-list above stays the old engine's alone. R3-R6 extend this list
+    // in the commit that adds each route; R8 replaces the 45-list.
+    const source = readFileSync(join(APP, 'server/payroll/routes.ts'), 'utf8');
+    const declared = [...source.matchAll(/app\.(get|post|put|patch|delete)\(\s*"(\/api\/payroll[^"]*)",\s*requireAuth,\s*payroll\("([a-z_.]+)"\),\s*fence,/g)]
+      .map((match) => `${match[1]} ${match[2]} ${match[3]}`);
+    expect(declared).toEqual([
+      'get /api/payroll/setup hr.view_salary',
+      'get /api/payroll/setup/changes hr.view_salary',
+      'post /api/payroll/setup/entities hr.manage_payroll',
+      'patch /api/payroll/setup/entities/:id hr.manage_payroll',
+      'post /api/payroll/setup/entities/:id/archive hr.manage_payroll',
+      'post /api/payroll/setup/accounts hr.manage_payroll',
+      'patch /api/payroll/setup/accounts/:id hr.manage_payroll',
+      'post /api/payroll/setup/accounts/:id/archive hr.manage_payroll',
+      'post /api/payroll/setup/branches/:branchId/details hr.manage_payroll',
+      'post /api/payroll/setup/rule-sets hr.manage_payroll',
+      'post /api/payroll/setup/deduction-lists hr.manage_payroll',
+      'post /api/payroll/setup/ewf-settings hr.manage_payroll',
+      'put /api/payroll/setup/ewf-remittances hr.manage_payroll',
+      'post /api/payroll/setup/revenue-streams hr.manage_payroll',
+      'patch /api/payroll/setup/revenue-streams/:id hr.manage_payroll',
+      'get /api/payroll/profiles hr.view_salary',
+      'post /api/payroll/profiles/drafts payroll.draft_profiles',
+      'get /api/payroll/profiles/:employeeId hr.view_salary',
+      'put /api/payroll/profiles/:employeeId hr.manage_payroll',
+    ]);
+    // Every registration in the file is one of those: none without its guard and fence.
+    expect([...source.matchAll(/app\.(get|post|put|patch|delete)\(/g)]).toHaveLength(declared.length);
+    // Registered once, from routes.ts, ahead of the old engine's park-group middleware.
+    expect([...routes.matchAll(/registerPayrollRoutes\(app,/g)]).toHaveLength(1);
+    expect(routes.indexOf('registerPayrollRoutes(app,')).toBeLessThan(routes.indexOf("app.use('/api/payroll', requireAuth"));
+  });
+
   it('own/foreign/anonymous parents and operator lists reach their intended guards', async () => {
     expect((await call('GET', '/api/payroll/periods?operatorId=' + a.operator, a.cookie)).status).toBe(200);
     expect((await call('GET', '/api/payroll/periods?operatorId=' + a.operator, b.cookie)).status).toBe(403);
