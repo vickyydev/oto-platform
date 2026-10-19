@@ -8,11 +8,11 @@
  * paying entity or account id is our row id. The checks keep the prototype's
  * words.
  *
- * THE R1 SEAM. The engine port (server/payroll/engine, a parallel lane) ports
- * payroll-profile.ts and model.ts whole. Nothing here imports from it, and it
- * imports nothing from here. When both have landed, the world loader (R3) maps
- * these stored shapes onto the engine's `PayrollWorld`, and the duplicated
- * checks below are pointed at the engine's copy in that commit.
+ * The profile types and checks are the engine's own (server/payroll/engine/
+ * payroll-profile.ts): R3 (SCRUM-568) pointed them there, so one copy of the
+ * prototype's rules judges a profile everywhere. The configuration types stay
+ * here: they are this app's API shapes (ids, archive dates, pay day), which
+ * the world loader (server/payroll/world.ts) maps onto the engine's world.
  */
 import { canPerformAction, type PermissionRole } from "./permissions";
 import { canViewHrSalary } from "./hr-salary-permission";
@@ -175,37 +175,29 @@ export const RULEBOOK_EWF_SETTINGS: EwfSettings = {
 
 // ─── Profiles ────────────────────────────────────────────────────────────────
 
-/** Casual workers are outside this payroll (owner, 2026-10-20); there is no casual worker type. */
-export type WorkerType = "monthly" | "day-rate" | "contractor" | "owner-household";
-export type PaymentMethod = "bank-transfer" | "cash" | "third-party";
-export interface AllocationLine { costCentre: string; percent: number; entityId: string; payingAccountId: string | null }
-export interface AllocationVersion { effectiveFrom: string; homeBranchId: string; lines: AllocationLine[] }
-export interface SalaryAdvanceProfile {
-  id: string; principal: number; outstandingBalance: number; repaymentMode: "one-off" | "instalments";
-  instalments: number; monthlyRepayment: number; startsOn: string;
-}
-export interface SeparatePayment { id: string; description: string; amount: number; withholdingPercent: number }
-export interface EmployeePayrollProfile {
-  linkedEmployeeId?: string | null;
-  department?: string;
-  workerType: WorkerType; jobTitle: string; monthlySalary: number; dayRate: number; fixedFee: number;
-  joinedOn: string; lastWorkingDay: string | null; taxId: string; ssoNumber: string;
-  ssoTitle?: string; givenName?: string; surname?: string;
-  dateOfBirth?: string; nationality?: string; passportNumber?: string; leavingReason?: string;
-  foodAllowanceEligible: boolean; foodAllowancePerDay: number; ssoEligible: boolean;
-  pnd1Eligible: boolean; serviceChargeEligible: boolean; otEligible: boolean;
-  pnd3WithholdingPercent: number; cashHandlingFeePercent: number;
-  paymentMethod: PaymentMethod; bankDetails: BankDetails; thirdPartyReason: string;
-  allocations: AllocationVersion[]; studentLoanMonthly: number; advances: SalaryAdvanceProfile[];
-  separatePayments: SeparatePayment[]; notes: string;
-}
+/**
+ * THE R2 SEAM, CLOSED IN R3 (SCRUM-568). The profile types and checks below
+ * ARE the engine's (server/payroll/engine/payroll-profile.ts, ported from the
+ * prototype): the types are re-exported and the checks call the engine's
+ * functions on a world built from this park group's setup, so the screens,
+ * the profile save and the month-end engine judge a profile with one copy of
+ * the prototype's words. Casual workers are outside this payroll (owner,
+ * 2026-10-20); there is no casual worker type.
+ */
+export type {
+  AllocationLine, AllocationVersion, EmployeePayrollProfile, PaymentMethod, SalaryAdvanceProfile, SeparatePayment, WorkerType,
+} from "../server/payroll/engine/payroll-profile";
+import {
+  WORKER_DEFAULTS as ENGINE_WORKER_DEFAULTS,
+  allocationAt as engineAllocationAt,
+  profileReviewWarnings as engineProfileReviewWarnings,
+  resolvePayingAccount as engineResolvePayingAccount,
+  validatePayrollProfile as engineValidatePayrollProfile,
+  type AllocationLine, type AllocationVersion, type EmployeePayrollProfile, type WorkerType,
+} from "../server/payroll/engine/payroll-profile";
+import type { PayrollWorld } from "../server/payroll/engine/model";
 
-export const WORKER_DEFAULTS = {
-  monthly: { ssoEligible: true, pnd1Eligible: true, foodAllowanceEligible: true, serviceChargeEligible: true, otEligible: true, pnd3WithholdingPercent: 0, cashHandlingFeePercent: 0 },
-  "day-rate": { ssoEligible: false, pnd1Eligible: true, foodAllowanceEligible: true, serviceChargeEligible: false, otEligible: true, pnd3WithholdingPercent: 0, cashHandlingFeePercent: 0 },
-  contractor: { ssoEligible: false, pnd1Eligible: false, foodAllowanceEligible: false, serviceChargeEligible: false, otEligible: false, pnd3WithholdingPercent: 3, cashHandlingFeePercent: 0 },
-  "owner-household": { ssoEligible: true, pnd1Eligible: true, foodAllowanceEligible: false, serviceChargeEligible: false, otEligible: false, pnd3WithholdingPercent: 0, cashHandlingFeePercent: 0 },
-} satisfies Record<WorkerType, object>;
+export const WORKER_DEFAULTS = ENGINE_WORKER_DEFAULTS;
 
 export const WORKER_LABELS: Record<WorkerType, string> = {
   monthly: "Monthly", "day-rate": "Day rate", contractor: "Contractor", "owner-household": "Owner household",
@@ -219,105 +211,41 @@ export interface ProfileCheckContext {
   accounts: PayingAccount[];
 }
 
+/** The engine's view of a check context: the branches' first-version country and dated defaults, the entities and accounts. */
+function checkWorld(ctx: ProfileCheckContext, staff: { id: string; name: string; profile: EmployeePayrollProfile }[] = []): PayrollWorld {
+  const branches = Object.fromEntries(Object.entries(ctx.branches).map(([id, branch]) => [id, {
+    id, staff: [],
+    detailsHistory: branch.detailsHistory.map((v) => ({ effectiveFrom: v.effectiveFrom, details: { country: branch.country, defaultPayingAccountId: v.defaultPayingAccountId } })),
+  }]));
+  const world = { schemaVersion: 14, branches, payingEntities: ctx.entities, payingAccounts: ctx.accounts } as unknown as PayrollWorld;
+  if (staff.length) {
+    const holder = { id: "", staff: staff.map((s) => ({ id: s.id, name: s.name, payrollProfile: s.profile })) };
+    (world.branches as Record<string, unknown>)[""] = holder;
+  }
+  return world;
+}
+
 export function allocationAt(profile: Pick<EmployeePayrollProfile, "allocations">, date: string): AllocationVersion | null {
-  return [...profile.allocations].filter((item) => item.effectiveFrom <= date)
-    .sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom))[0] ?? null;
+  return engineAllocationAt(profile as EmployeePayrollProfile, date);
 }
 
 export function resolvePayingAccount(ctx: ProfileCheckContext, line: AllocationLine, date: string): PayingAccount | undefined {
-  const defaultId = line.costCentre === OWNER_NON_OPERATIONAL ? undefined
-    : [...(ctx.branches[line.costCentre]?.detailsHistory ?? [])].filter((item) => item.effectiveFrom <= date)
-      .sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom))[0]?.defaultPayingAccountId;
-  return ctx.accounts.find((account) => account.id === (line.payingAccountId ?? defaultId) && account.entityId === line.entityId);
+  const found = engineResolvePayingAccount(checkWorld(ctx), line, date);
+  return found ? ctx.accounts.find((account) => account.id === found.id) : undefined;
 }
 
-const validDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value) &&
-  !Number.isNaN(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
-const nonNegative = (value: number) => Number.isFinite(value) && value >= 0;
-
-/** The prototype's validatePayrollProfile, word for word, against this park group's setup. */
+/** The prototype's validatePayrollProfile — the engine's own — against this park group's setup. */
 export function validatePayrollProfile(profile: EmployeePayrollProfile, ctx: ProfileCheckContext): string[] {
-  const errors: string[] = [];
-  const branchCountry = (id: string) => ctx.branches[id]?.country;
-  if (profile.linkedEmployeeId != null && (typeof profile.linkedEmployeeId !== "string" || !profile.linkedEmployeeId.trim())) {
-    errors.push("The HR employee link must be a non-empty employee ID.");
-  }
-  if (!(profile.workerType in WORKER_DEFAULTS)) errors.push("Choose a valid worker type.");
-  if (!profile.jobTitle.trim()) errors.push("Job title is required.");
-  if (!validDate(profile.joinedOn) || (profile.lastWorkingDay !== null &&
-    (!validDate(profile.lastWorkingDay) || profile.lastWorkingDay < profile.joinedOn))) errors.push("Employment dates are invalid.");
-  if (profile.dateOfBirth && (!validDate(profile.dateOfBirth) || profile.dateOfBirth > profile.joinedOn)) errors.push("Enter a valid date of birth before employment started.");
-  for (const key of ["monthlySalary", "dayRate", "fixedFee", "foodAllowancePerDay", "studentLoanMonthly"] as const) {
-    if (!nonNegative(profile[key])) errors.push(`${key} must be a non-negative amount.`);
-  }
-  for (const key of ["pnd3WithholdingPercent", "cashHandlingFeePercent"] as const) {
-    if (!nonNegative(profile[key]) || profile[key] > 100) errors.push(`${key} must be between 0 and 100%.`);
-  }
-  for (const key of ["foodAllowanceEligible", "ssoEligible", "pnd1Eligible", "serviceChargeEligible", "otEligible"] as const) {
-    if (typeof profile[key] !== "boolean") errors.push(`${key} must be a yes/no flag.`);
-  }
-  if (!["bank-transfer", "cash", "third-party"].includes(profile.paymentMethod)) errors.push("Invalid payment method.");
-  if (profile.paymentMethod !== "cash" && (!profile.bankDetails.bank.trim() ||
-    !profile.bankDetails.accountNumber.trim() || !profile.bankDetails.accountName.trim())) errors.push("Transfer bank, account number and account name are required.");
-  if (profile.paymentMethod === "third-party" && !profile.thirdPartyReason.trim()) errors.push("A third-party transfer reason is mandatory.");
-  if (!profile.allocations.length) errors.push("At least one allocation version is required.");
-  if (new Set(profile.allocations.map((item) => item.effectiveFrom)).size !== profile.allocations.length) errors.push("Allocation effective dates must be unique.");
-  for (const version of profile.allocations) {
-    if (!validDate(version.effectiveFrom) || !(version.homeBranchId in ctx.branches)) errors.push("Allocation date/home branch is invalid.");
-    if (!version.lines.length || Math.abs(version.lines.reduce((sum, item) => sum + item.percent, 0) - 100) > 0.001) errors.push(`Allocation on ${version.effectiveFrom} must total 100%.`);
-    const seen = new Set<string>();
-    for (const line of version.lines) {
-      if ((line.costCentre !== OWNER_NON_OPERATIONAL && !(line.costCentre in ctx.branches)) ||
-        !Number.isFinite(line.percent) || line.percent <= 0 || line.percent > 100) errors.push("Allocation cost centre/percentage is invalid.");
-      const entity = ctx.entities.find((item) => item.id === line.entityId);
-      if (!entity) errors.push("Choose an entity for every allocation line.");
-      if (entity && ctx.branches[version.homeBranchId] &&
-        entity.country !== branchCountry(version.homeBranchId)) errors.push("Allocation entity must use the registered branch's country.");
-      if (line.costCentre !== OWNER_NON_OPERATIONAL && ctx.branches[line.costCentre] &&
-        branchCountry(line.costCentre) !== entity?.country) errors.push("Cross-country cost allocation is not supported.");
-      const key = `${line.costCentre}:${line.entityId}`;
-      if (seen.has(key)) errors.push("Duplicate allocation cost centre/entity.");
-      seen.add(key);
-      if ((line.payingAccountId || ctx.accounts.length) &&
-        (line.costCentre === OWNER_NON_OPERATIONAL
-          ? !ctx.accounts.some((account) => account.id === line.payingAccountId && account.entityId === line.entityId)
-          : !resolvePayingAccount(ctx, line, version.effectiveFrom))) errors.push("Allocation paying account must belong to its entity; choose an override if the branch default does not.");
-    }
-  }
-  if (new Set(profile.advances.map((item) => item.id)).size !== profile.advances.length ||
-    new Set(profile.separatePayments.map((item) => item.id)).size !== profile.separatePayments.length) errors.push("Recurring item IDs must be unique.");
-  for (const advance of profile.advances) {
-    if (!advance.id || !nonNegative(advance.principal) || !nonNegative(advance.outstandingBalance) ||
-      advance.outstandingBalance > advance.principal || !["one-off", "instalments"].includes(advance.repaymentMode) ||
-      !Number.isInteger(advance.instalments) || advance.instalments < 1 ||
-      !nonNegative(advance.monthlyRepayment) || !validDate(advance.startsOn)) errors.push("Salary advance amounts, repayment schedule or start date are invalid.");
-  }
-  for (const payment of profile.separatePayments) {
-    if (!payment.id || !payment.description.trim() || !nonNegative(payment.amount) ||
-      !nonNegative(payment.withholdingPercent) || payment.withholdingPercent > 100) errors.push("Separate payment description, amount or withholding is invalid.");
-  }
-  return Array.from(new Set(errors));
+  return engineValidatePayrollProfile(profile, checkWorld(ctx));
 }
 
-/** The prototype's profileReviewWarnings; `others` are the park group's other profiles. */
+/** The prototype's profileReviewWarnings (the engine's); `others` are the park group's other profiles. */
 export function profileReviewWarnings(profile: EmployeePayrollProfile | null, employeeId: string,
   others: { employeeId: string; name: string; profile: EmployeePayrollProfile }[]): string[] {
   if (!profile) return ["No payroll profile yet."];
-  const warnings: string[] = [];
-  if (profile.paymentMethod === "third-party") warnings.push(`Third-party transfer: ${profile.thirdPartyReason || "REASON MISSING"}`);
-  if (!profile.taxId.trim()) warnings.push("Missing tax ID");
-  if (profile.paymentMethod !== "cash") {
-    if (!profile.bankDetails.accountNumber.trim()) warnings.push("Missing bank account");
-    else {
-      const number = profile.bankDetails.accountNumber.replace(/[\s-]/g, "");
-      const duplicates = others.filter((other) =>
-        other.employeeId !== employeeId && other.profile.paymentMethod !== "cash" &&
-        other.profile.bankDetails.bank.toLowerCase() === profile.bankDetails.bank.toLowerCase() &&
-        other.profile.bankDetails.accountNumber.replace(/[\s-]/g, "") === number);
-      if (duplicates.length) warnings.push(`Duplicate bank account with ${duplicates.map((item) => item.name).join(", ")}`);
-    }
-  }
-  return warnings;
+  const ctx: ProfileCheckContext = { branches: {}, entities: [], accounts: [] };
+  const world = checkWorld(ctx, others.filter((o) => o.employeeId !== employeeId).map((o) => ({ id: o.employeeId, name: o.name, profile: o.profile })));
+  return engineProfileReviewWarnings(world, { id: employeeId, name: "", payrollProfile: profile } as Parameters<typeof engineProfileReviewWarnings>[1]);
 }
 
 export interface PayrollReadiness { ready: boolean; checks: { key: string; label: string; ok: boolean }[]; status: string }

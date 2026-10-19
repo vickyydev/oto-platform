@@ -103,6 +103,10 @@ export function calculateCompanyEngine(data: PayrollWorld, doc: CompanyPayrollDo
     const old = legacy.get(sourceBranch.id)?.rows.find(r => r.staffId === s.id);
     const ot = old?.lines.filter(l => l.kind === "overtime").reduce((n, l) => n + l.amount, 0) ?? 0;
     if (ot && p.otEligible) add("overtime", "Approved overtime / holiday premium", ot, old?.lines.find(l => l.kind === "overtime")?.formula ?? "Dated approved OT policy");
+    // PAYROLL-FINDING-R3 (SCRUM-568): the older calculation already books unpaid leave NEGATIVE
+    // (run-calculations.ts:1094, amount: -roundMoney(unpaid.amount)); negating it again here makes a
+    // valued unpaid day a POSITIVE earning and raises the salary budget below. Prototype behaviour,
+    // ported verbatim (prototype :104-107); raised for the park with the other matters, not changed.
     for (const item of old?.lines.filter(l => l.kind === "leave-payout" || l.kind === "ot-bank-payout" || l.kind === "unpaid-leave") ?? []) {
       if (!item.amount || !dayWeights.length) continue;
       add(`${item.kind}:${item.id}`, item.name, item.kind === "unpaid-leave" ? -item.amount : item.amount, item.formula, dayWeights, item.taxable, item.socialSecurity);
