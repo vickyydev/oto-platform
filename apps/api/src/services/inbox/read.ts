@@ -762,10 +762,10 @@ export async function inboxMe(db: Db, viewer: InboxViewer, effective: EffectiveP
       .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? '') || a.accountId.localeCompare(b.accountId)),
     defaultReceptionBranchId: reception?.branchId ?? null,
     capabilities: {
-      // The write switch (plan "How Cut A is marked"): off until the write
-      // routes exist. The write lane turns it on, for every channel but the
-      // check-in notices (`canReply` on each conversation says which).
-      writes: false,
+      // The write switch (plan "How Cut A is marked"): on since I2f (SCRUM-585)
+      // landed the reply, the templates and the send job — for every channel
+      // but the check-in notices (`canReply` on each conversation says which).
+      writes: true,
       dashboard: holdsAnywhere(effective, 'inbox:dashboard:read', viewer.operatorId),
       assign: holdsAnywhere(effective, 'inbox:conversation:assign', viewer.operatorId),
       move: holdsAnywhere(effective, 'inbox:conversation:move', viewer.operatorId),

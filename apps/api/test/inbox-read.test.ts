@@ -684,7 +684,7 @@ describe('the viewer and the templates', () => {
       ['reception', false],
       ['marketing', false],
     ]);
-    expect(me.capabilities).toEqual({ writes: false, dashboard: true, assign: false, move: false, reopen: false });
+    expect(me.capabilities).toEqual({ writes: true, dashboard: true, assign: false, move: false, reopen: false });
     expect(me.defaultReceptionBranchId).toBe(central);
     const people = new Map(me.people.map((p) => [p.name, p]));
     expect(people.get(DEMO_STAFF.gm.name)).toMatchObject({ operatorWide: true, teamIds: [] });

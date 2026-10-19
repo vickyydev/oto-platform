@@ -66,6 +66,7 @@ import { boothRoutes } from './routes/booth';
 import { inboxReadRoutes } from './routes/inbox-read';
 import { inboxActionRoutes } from './routes/inbox-actions';
 import { inboxPrivacyRoutes } from './routes/inbox-privacy';
+import { inboxReplyRoutes } from './routes/inbox-reply';
 import { PermissionDeniedError, sessionPlugin } from './plugins/session';
 import { idempotencyPlugin } from './plugins/idempotency';
 import { rateLimitPlugin } from './plugins/rate-limit';
@@ -505,6 +506,8 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   await app.register(inboxActionRoutes, { prefix: '/inbox' });
   // S2-19 I2g — the PDPA erasure of a contact (the retention purges are a job).
   await app.register(inboxPrivacyRoutes, { prefix: '/inbox' });
+  // S2-19 I2f — the reply, the templates and the send path.
+  await app.register(inboxReplyRoutes, { prefix: '/inbox' });
   // Versioned separately from everything else: a box in a mall is updated on
   // its own schedule, so the one surface that has to stay compatible with a
   // machine nobody can reach says so in its path (S2-04).

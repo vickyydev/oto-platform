@@ -6,6 +6,7 @@ import { AppError, errors } from '../lib/errors';
 import { audit } from '../services/audit';
 import { ClientIdSchema, REPLAY_HEADER, claimClientId } from '../services/client-id';
 import { storageFailureReason } from '../services/files';
+import { inboxMediaAccess } from '../services/inbox/media';
 import { opCtx, withTx } from '../services/tx';
 import type { AuthContext } from '../plugins/session';
 import type { FastifyRequest } from 'fastify';
@@ -80,6 +81,14 @@ async function checkOwnerAccess(
       // The park the photo belongs to: its access-log row is filed there (R-94).
       return branchId;
     }
+    /**
+     * S2-19 I2f — a customer's image, voice note or document in an Inbox
+     * thread (plan §3.6 "Files"): readable by whoever can see the thread
+     * under the Inbox's visibility rule, 404 for anyone who cannot; never
+     * written through here.
+     */
+    case 'inbox.message':
+      return inboxMediaAccess(db, auth, await req.effectivePermissions(), ownerEntityId, mode);
     default:
       throw errors.forbidden(`Unsupported file owner ${ownerEntityType}`);
   }
@@ -405,9 +414,10 @@ export async function fileRoutes(app: App): Promise<void> {
        * and who looked at it, when, is part of the record. The row is filed
        * at the park the photo belongs to, with the till it was looked at
        * from, and committed BEFORE the signed URL leaves: a read that could
-       * not be logged is not answered.
+       * not be logged is not answered. A customer's media in an Inbox thread
+       * (S2-19 I2f) are personal data under PDPA and are logged the same way.
        */
-      if (CHECKIN_OWNERS.has(row.ownerEntityType)) {
+      if (CHECKIN_OWNERS.has(row.ownerEntityType) || row.ownerEntityType === 'inbox.message') {
         await withTx(app.db, opCtx(req), 'file.read', async (tx) => {
           await audit.record(tx, {
             actorAccountId: auth.accountId,

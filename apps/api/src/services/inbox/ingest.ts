@@ -20,7 +20,6 @@ import {
   type InboundMessageEvent,
   type InboundStatusEvent,
   type MessagingChannel,
-  type OutboundContent,
   type RawWebhook,
 } from '@oto/messaging';
 import { newId, normalizePhone } from '@oto/shared';
@@ -29,9 +28,12 @@ import { audit } from '../audit';
 import { recordRun } from '../ops';
 import { withTx, type Exec, type Tx } from '../tx';
 import type { ChannelAccountRow, InboxChannels } from './channels';
+import type { FileStorage } from '../files';
 import { closedSince, isOpenAt, readOpeningHours } from './hours';
+import { storeInboundMedia, type PendingMedia } from './media';
 import { routeConversation } from './router';
 import { reopenAuditBefore, reopenPatch, reopenedPayload } from './status';
+import { sendAfterCommit } from './send';
 
 /**
  * THE INBOX INGEST (S2-19 I2d, SCRUM-583; plan
@@ -119,6 +121,8 @@ export interface IngestDeps {
    * cannot run yet; the reply then stays `queued` for the send job.
    */
   dispatch?: boolean;
+  /** Where inbound media are stored (`app.fileStorage`); null keeps none and says so in `ops_run`. */
+  storage?: FileStorage | null;
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -286,13 +290,14 @@ export async function ingestDelivery(db: Exec, deps: IngestDeps, input: IngestIn
       return await record({ ...empty('bad_signature', receiptId) }, new Error(`inbox webhook ${reason}`));
     }
 
+    const media: PendingMedia[] = [];
     let result: IngestResult;
     try {
       result = await withTx(
         db,
         { requestId: input.requestId ?? undefined, operatorId, branchId, actorAccountId: input.actorAccountId ?? null, log: deps.log },
         'inbox.webhook.receive',
-        (tx) => receive(tx, { account, channel, deliveryId, input, now: now() }),
+        (tx) => receive(tx, { account, channel, deliveryId, input, now: now(), media }),
       );
     } catch (err) {
       // The work rolled back. The delivery is kept, with its error, so it is
@@ -322,7 +327,17 @@ export async function ingestDelivery(db: Exec, deps: IngestDeps, input: IngestIn
     }
 
     if (deps.dispatch !== false && result.outOfHours.length > 0) {
-      await dispatchQueued(db, deps, account, channel, result.outOfHours, input);
+      await dispatchQueued(db, deps, result.outOfHours, input);
+    }
+    // THE MEDIA SEAM (I2f): the customer's images, voice notes and files,
+    // fetched through the channel and stored as `core.file_object` rows once
+    // the delivery has committed — never inside its transaction, which holds
+    // no network call. A replayed delivery queues none (its messages are
+    // duplicates).
+    if (deps.dispatch !== false && media.length > 0) {
+      await storeInboundMedia(db as Db, { storage: deps.storage ?? null, ...(deps.log ? { log: deps.log } : {}) }, channel, media, {
+        requestId: input.requestId ?? null,
+      });
     }
     return await record(result);
   } catch (err) {
@@ -337,6 +352,8 @@ interface ReceiveCtx {
   deliveryId: string;
   input: IngestInput;
   now: Date;
+  /** The media of the new messages, fetched after the commit (`media.ts`). */
+  media: PendingMedia[];
 }
 
 /** Steps 2 to 9, inside the delivery's one transaction. */
@@ -604,6 +621,9 @@ async function receiveMessage(
   }
   result.messages += 1;
   if (!result.conversationIds.includes(thread.id)) result.conversationIds.push(thread.id);
+  for (const ref of event.media) {
+    c.media.push({ messageId, operatorId, conversationId: thread.id, branchId: thread.branchId, ref });
+  }
 
   // The thread's clock and preview move only forward: a late-arriving older
   // message does not become "the last message".
@@ -842,102 +862,23 @@ async function receiveStatus(tx: Tx, c: ReceiveCtx, event: InboundStatusEvent): 
 
 /**
  * Send the queued out-of-hours replies through the channel, after the
- * delivery's transaction committed. Each send is its own transaction and
- * audit row; a refusal is recorded on the message (`failed` and the refusal
- * word), never thrown. The id travels as the provider's client reference, so
- * a status callback names our row.
+ * delivery's transaction committed — through the one send path
+ * (`send.ts`, I2f): claimed, sent, recorded and audited there, a refusal kept
+ * queued for the send job when it is retryable and marked failed with a
+ * `send_failed` event when it is not.
  */
 export async function dispatchQueued(
   db: Exec,
-  deps: Pick<IngestDeps, 'log' | 'now'>,
-  account: AccountRow,
-  channel: MessagingChannel,
+  deps: Pick<IngestDeps, 'channels' | 'log' | 'now'>,
   messageIds: readonly string[],
   input: Pick<IngestInput, 'requestId' | 'actorAccountId'> = {},
 ): Promise<void> {
-  const now = deps.now ?? (() => new Date());
-  for (const id of messageIds) {
-    const startedAt = new Date();
-    try {
-      const [row] = await db
-        .select({
-          message,
-          handle: contact.externalHandle,
-          phone: contact.phone,
-          lastCustomerMessageAt: conversation.lastCustomerMessageAt,
-          templateKey: template.key,
-          providerTemplateName: template.providerTemplateName,
-          approvalStatus: template.approvalStatus,
-        })
-        .from(message)
-        .innerJoin(conversation, and(eq(conversation.operatorId, message.operatorId), eq(conversation.id, message.conversationId)))
-        .innerJoin(contact, and(eq(contact.operatorId, conversation.operatorId), eq(contact.id, conversation.contactId)))
-        .leftJoin(template, and(eq(template.operatorId, message.operatorId), eq(template.id, message.templateId)))
-        .where(and(eq(message.id, id), eq(message.operatorId, account.operatorId)))
-        .limit(1);
-      if (!row || row.message.providerStatus !== 'queued') continue;
-      const body = row.message.body ?? '';
-      // A provider-approved template goes as one; until Meta approves it (or
-      // on a channel with no approvals), the reply is plain text, which the
-      // customer's message just opened the window for.
-      const content: OutboundContent =
-        row.providerTemplateName && row.approvalStatus === 'approved'
-          ? { kind: 'template', name: row.providerTemplateName, language: row.message.bodyLanguage ?? 'en', renderedText: body }
-          : { kind: 'text', text: body };
-      const sent = await channel.send({
-        clientRef: id,
-        to: { handle: row.handle, phone: row.phone },
-        content,
-        lastCustomerMessageAt: row.lastCustomerMessageAt,
-      });
-      await withTx(
-        db,
-        { requestId: input.requestId ?? undefined, operatorId: account.operatorId, branchId: account.branchId, log: deps.log },
-        'inbox.message.send',
-        async (tx) => {
-          await tx
-            .update(message)
-            .set(
-              sent.ok
-                ? { providerStatus: 'sent', externalMessageId: sent.externalMessageId, sentAt: sent.acceptedAt, updatedAt: now() }
-                : { providerStatus: 'failed', error: sent.refusal, updatedAt: now() },
-            )
-            .where(and(eq(message.id, id), eq(message.providerStatus, 'queued')));
-          await audit.record(tx, {
-            actorAccountId: input.actorAccountId ?? null,
-            action: 'inbox.message.send',
-            entityType: 'inbox.message',
-            entityId: id,
-            operatorId: account.operatorId,
-            branchId: account.branchId,
-            requestId: input.requestId ?? null,
-            after: {
-              messageId: id,
-              conversationId: row.message.conversationId,
-              templateKey: row.templateKey,
-              length: [...body].length,
-              outcome: sent.ok ? 'sent' : sent.refusal,
-            },
-          });
-        },
-      );
-      await recordRun(db, {
-        kind: 'adapter',
-        name: 'adapter:inbox.send',
-        outcome: sent.ok ? 'ok' : 'failed',
-        startedAt,
-        requestId: input.requestId ?? null,
-        operatorId: account.operatorId,
-        branchId: account.branchId,
-        detail: { messageId: id, outcome: sent.ok ? 'sent' : sent.refusal, providerCode: sent.ok ? null : sent.providerCode },
-        ...(sent.ok ? {} : { error: new Error(`inbox send ${sent.refusal}`) }),
-      });
-    } catch (err) {
-      // The message stays `queued`; the send job's sweeper (plan §3.5) is
-      // what retries it.
-      deps.log?.error({ err, messageId: id }, 'an inbox reply could not be sent');
-    }
-  }
+  await sendAfterCommit(
+    db as Db,
+    { channels: deps.channels, ...(deps.log ? { log: deps.log } : {}), ...(deps.now ? { now: deps.now } : {}) },
+    messageIds,
+    { requestId: input.requestId ?? null, actorAccountId: input.actorAccountId ?? null },
+  );
 }
 
 /** The delivery as JSON for the receipt, or null when it is not JSON. */

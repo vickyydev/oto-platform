@@ -62,7 +62,8 @@ app.log.info(
     : 'no benefit QR signing key — Staff Benefits cannot issue or show a QR at this deployment',
 );
 
-const jobs = createJobRunner({ db, env, log: app.log, fileStorage: app.fileStorage });
+// The inbox's send job reaches the channels the api's routes use (one simulator per account, per process).
+const jobs = createJobRunner({ db, env, log: app.log, fileStorage: app.fileStorage, inboxChannels: app.inboxChannels });
 if (jobs.enabled) {
   await jobs.start();
   app.log.info({ jobs: jobs.jobs.map((j) => j.name) }, 'job runner started');

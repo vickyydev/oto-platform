@@ -165,6 +165,12 @@ const NOT_YET_CALLED = new Map<string, string>([
   // screen. The erasure console (an Inbox or Console settings page, with the
   // 409 preview as its second confirmation) comes later and deletes this.
   ['POST /inbox/contacts/{id}/erase', 'the erasure console lands after I3 (the api ships first, plan §3.6)'],
+  // 2026-10-20, S2-19 I2f (SCRUM-585): the composer and the template settings land in I3b.
+  ['POST /inbox/conversations/{id}/messages', 'the Inbox shell lands in I3 (the composer, I3b)'],
+  ['GET /inbox/templates/manage', 'the Inbox shell lands in I3 (the template settings, I3b)'],
+  ['POST /inbox/templates', 'the Inbox shell lands in I3 (the template settings, I3b)'],
+  ['PATCH /inbox/templates/{id}', 'the Inbox shell lands in I3 (the template settings, I3b)'],
+  ['POST /inbox/templates/{id}/archive', 'the Inbox shell lands in I3 (the template settings, I3b)'],
 ]);
 
 function machineCaller(path: string): string | null {

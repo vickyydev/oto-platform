@@ -25226,7 +25226,120 @@ export interface paths {
             };
         };
         put?: never;
-        post?: never;
+        /** @description Reply in a conversation the caller can see and may reply in. Free text inside the channel’s free-text window (24 hours from the customer’s last message on WhatsApp); outside it only a template — an approved one, or one whose channel needs no approval — and the 409 TEMPLATE_REQUIRED carries the window and the templates that qualify. Refused on a handled thread (CONVERSATION_HANDLED: reopen it to reply) and on a check-in notice thread (CHANNEL_CANNOT_REPLY). The body id is caller-named: the same id again is the same message, never a second send. The message is written queued, sent at once after the commit, and answered as the first attempt left it — a retryable refusal stays queued for the send job. Needs inbox:conversation:reply. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id?: string;
+                        text?: string;
+                        /** Format: uuid */
+                        templateId?: string;
+                        variables?: {
+                            [key: string]: string;
+                        };
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            conversationId: string;
+                            message: {
+                                /** Format: uuid */
+                                id: string;
+                                /** @enum {string} */
+                                direction: "inbound" | "outbound";
+                                /** @enum {string} */
+                                authorKind: "customer" | "staff" | "ai" | "system";
+                                /** Format: uuid */
+                                authorAccountId: string | null;
+                                authorName: string | null;
+                                body: string | null;
+                                bodyLanguage: string | null;
+                                translatedBody: string | null;
+                                translatedTo: string | null;
+                                mediaFileIds: string[];
+                                /** Format: uuid */
+                                audioFileId: string | null;
+                                transcript: string | null;
+                                /** Format: uuid */
+                                templateId: string | null;
+                                /** @enum {string|null} */
+                                providerStatus: "queued" | "sent" | "delivered" | "read" | "failed" | null;
+                                /** @enum {string} */
+                                source: "channel" | "checkin.contact" | "booking.confirmation";
+                                sentAt: string | null;
+                                deliveredAt: string | null;
+                                readAt: string | null;
+                                redacted: boolean;
+                                createdAt: string;
+                            };
+                            refusal: string | null;
+                            window: {
+                                open: boolean;
+                                hours: number | null;
+                                lastCustomerMessageAt: string | null;
+                                closesAt: string | null;
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                details?: {
+                                    window?: {
+                                        open: boolean;
+                                        hours: number | null;
+                                        lastCustomerMessageAt: string | null;
+                                        closesAt: string | null;
+                                    };
+                                    qualifyingTemplates?: {
+                                        /** Format: uuid */
+                                        id: string;
+                                        key: string;
+                                        language: string;
+                                        /** @enum {string|null} */
+                                        channel: "whatsapp" | "instagram" | "facebook" | "line" | "telegram" | "webform" | null;
+                                        /** Format: uuid */
+                                        branchId: string | null;
+                                        body: string;
+                                        /** @enum {string} */
+                                        approvalStatus: "not_required" | "pending" | "approved" | "rejected";
+                                        variables: string[];
+                                    }[];
+                                } & {
+                                    [key: string]: unknown;
+                                };
+                            };
+                        };
+                    };
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -25380,123 +25493,32 @@ export interface paths {
             };
         };
         put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inbox/conversations/{id}/primary": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** @description Assign or replace the primary owner — a person, or a team (the reception phone). CATEGORY FOLLOWS THE PRIMARY: when the new primary's team is not the conversation's, the conversation moves to that team (its category, and for a reception desk its branch), and the server answers 409 CATEGORY_MOVE_UNCONFIRMED, with the destination in `details`, until the request carries `confirmMove: true`. A person in no team keeps the category; the support places stay. One place per person: 409 ALREADY_ON_CONVERSATION. Needs inbox:conversation:assign at the conversation, or the caller is its current primary. Refusals: 404 when the conversation is not the caller’s to see (or not in their operator); 403 when the permission is not held at this conversation. */
-        put: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": {
-                        assignee: {
-                            /** @enum {string} */
-                            kind: "account" | "team";
-                            /** Format: uuid */
-                            id: string;
-                        };
-                        confirmMove?: boolean;
-                    };
-                };
-            };
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            conversation: {
-                                /** Format: uuid */
-                                id: string;
-                                /** @enum {string} */
-                                status: "active" | "handled";
-                                /** @enum {string} */
-                                category: "birthdays" | "general" | "marketing";
-                                /** Format: uuid */
-                                teamId: string | null;
-                                /** Format: uuid */
-                                branchId: string | null;
-                                handledAt: string | null;
-                                /** @enum {string|null} */
-                                handledByKind: "account" | "ai" | null;
-                                /** Format: uuid */
-                                handledByAccountId: string | null;
-                                reopenedAt: string | null;
-                            };
-                            assignments: {
-                                /** Format: uuid */
-                                assignmentId: string;
-                                /** @enum {string} */
-                                slot: "primary" | "support";
-                                slotIndex: number;
-                                /** @enum {string} */
-                                assigneeKind: "account" | "team" | "ai";
-                                /** Format: uuid */
-                                accountId: string | null;
-                                /** Format: uuid */
-                                teamId: string | null;
-                                /** @enum {string} */
-                                reason: "auto" | "manual" | "divert" | "move" | "reopen";
-                                assignedAt: string;
-                            }[];
-                            moved: boolean;
-                        };
-                    };
-                };
-            };
-        };
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inbox/conversations/{id}/support": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** @description Add a person to the next free support place (two at most: a third answers 409 SUPPORT_FULL; one place per person: 409 ALREADY_ON_CONVERSATION). Support never changes ownership. Needs inbox:conversation:assign at the conversation. Refusals: 404 when the conversation is not the caller’s to see (or not in their operator); 403 when the permission is not held at this conversation. */
+        /** @description Create a template variant: a key in a language, optionally for one channel and one branch, with its `{{name}}` placeholders, the provider’s template name and its approval status (not_required on a channel with no approvals). One live row per key, language, channel and branch (409 TEMPLATE_EXISTS). The body id is caller-named. Needs inbox:template:manage at the branch, or operator-wide for an every-branch variant. */
         post: {
             parameters: {
                 query?: never;
                 header?: never;
-                path: {
-                    id: string;
-                };
+                path?: never;
                 cookie?: never;
             };
             requestBody: {
                 content: {
                     "application/json": {
                         /** Format: uuid */
-                        accountId: string;
+                        id?: string;
+                        /** @enum {string} */
+                        key: "welcome" | "handover_birthday" | "handover_events" | "handover_complaint_online" | "handover_complaint_onsite" | "handover_lost_found" | "handover_marketing" | "out_of_hours";
+                        language: string;
+                        /** @enum {string|null} */
+                        channel?: "whatsapp" | "instagram" | "facebook" | "line" | "telegram" | "webform" | null;
+                        /** Format: uuid */
+                        branchId?: string | null;
+                        body: string;
+                        providerTemplateName?: string | null;
+                        /** @enum {string} */
+                        approvalStatus?: "not_required" | "pending" | "approved" | "rejected";
+                        active?: boolean;
+                        needsTranslation?: boolean;
                     };
                 };
             };
@@ -25508,281 +25530,26 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            conversation: {
-                                /** Format: uuid */
-                                id: string;
-                                /** @enum {string} */
-                                status: "active" | "handled";
-                                /** @enum {string} */
-                                category: "birthdays" | "general" | "marketing";
-                                /** Format: uuid */
-                                teamId: string | null;
-                                /** Format: uuid */
-                                branchId: string | null;
-                                handledAt: string | null;
-                                /** @enum {string|null} */
-                                handledByKind: "account" | "ai" | null;
-                                /** Format: uuid */
-                                handledByAccountId: string | null;
-                                reopenedAt: string | null;
-                            };
-                            assignments: {
-                                /** Format: uuid */
-                                assignmentId: string;
-                                /** @enum {string} */
-                                slot: "primary" | "support";
-                                slotIndex: number;
-                                /** @enum {string} */
-                                assigneeKind: "account" | "team" | "ai";
-                                /** Format: uuid */
-                                accountId: string | null;
-                                /** Format: uuid */
-                                teamId: string | null;
-                                /** @enum {string} */
-                                reason: "auto" | "manual" | "divert" | "move" | "reopen";
-                                assignedAt: string;
-                            }[];
-                            moved: boolean;
-                        };
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inbox/conversations/{id}/support/{assignmentId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** @description Remove a support person: the slot is released (`released_at`), never deleted, so the history stays. 404 when the id is not an active support place on this conversation. Needs inbox:conversation:assign at the conversation. Refusals: 404 when the conversation is not the caller’s to see (or not in their operator); 403 when the permission is not held at this conversation. */
-        delete: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: string;
-                    assignmentId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            conversation: {
-                                /** Format: uuid */
-                                id: string;
-                                /** @enum {string} */
-                                status: "active" | "handled";
-                                /** @enum {string} */
-                                category: "birthdays" | "general" | "marketing";
-                                /** Format: uuid */
-                                teamId: string | null;
-                                /** Format: uuid */
-                                branchId: string | null;
-                                handledAt: string | null;
-                                /** @enum {string|null} */
-                                handledByKind: "account" | "ai" | null;
-                                /** Format: uuid */
-                                handledByAccountId: string | null;
-                                reopenedAt: string | null;
-                            };
-                            assignments: {
-                                /** Format: uuid */
-                                assignmentId: string;
-                                /** @enum {string} */
-                                slot: "primary" | "support";
-                                slotIndex: number;
-                                /** @enum {string} */
-                                assigneeKind: "account" | "team" | "ai";
-                                /** Format: uuid */
-                                accountId: string | null;
-                                /** Format: uuid */
-                                teamId: string | null;
-                                /** @enum {string} */
-                                reason: "auto" | "manual" | "divert" | "move" | "reopen";
-                                assignedAt: string;
-                            }[];
-                            moved: boolean;
-                        };
-                    };
-                };
-            };
-        };
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inbox/conversations/{id}/divert": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** @description Divert: the routing rule's fixed pair swaps — the backup becomes primary (reason divert) and the old primary takes the backup’s support place; a second Divert swaps back. 409 DIVERT_NO_BACKUP when the rule has no backup (reception). The current primary may press it; anyone else needs inbox:conversation:assign at the conversation. Refusals: 404 when the conversation is not the caller’s to see (or not in their operator); 403 when the permission is not held at this conversation. */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            conversation: {
-                                /** Format: uuid */
-                                id: string;
-                                /** @enum {string} */
-                                status: "active" | "handled";
-                                /** @enum {string} */
-                                category: "birthdays" | "general" | "marketing";
-                                /** Format: uuid */
-                                teamId: string | null;
-                                /** Format: uuid */
-                                branchId: string | null;
-                                handledAt: string | null;
-                                /** @enum {string|null} */
-                                handledByKind: "account" | "ai" | null;
-                                /** Format: uuid */
-                                handledByAccountId: string | null;
-                                reopenedAt: string | null;
-                            };
-                            assignments: {
-                                /** Format: uuid */
-                                assignmentId: string;
-                                /** @enum {string} */
-                                slot: "primary" | "support";
-                                slotIndex: number;
-                                /** @enum {string} */
-                                assigneeKind: "account" | "team" | "ai";
-                                /** Format: uuid */
-                                accountId: string | null;
-                                /** Format: uuid */
-                                teamId: string | null;
-                                /** @enum {string} */
-                                reason: "auto" | "manual" | "divert" | "move" | "reopen";
-                                assignedAt: string;
-                            }[];
-                            moved: boolean;
-                        };
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inbox/conversations/{id}/move": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** @description Move to another team: Birthdays & Events, Marketing, or a reception desk (which sets the branch too). Clears every slot, re-routes to the new team's default primary and adds its backup as support (the IT Brief), and logs a `moved_team` event. 409 ALREADY_IN_TEAM when it is already there. Needs inbox:conversation:move at the conversation. Refusals: 404 when the conversation is not the caller’s to see (or not in their operator); 403 when the permission is not held at this conversation. */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": {
-                        dest: {
-                            /** @enum {string} */
-                            kind: "birthdays";
-                        } | {
-                            /** @enum {string} */
-                            kind: "marketing";
-                        } | {
-                            /** @enum {string} */
-                            kind: "reception";
                             /** Format: uuid */
-                            branchId: string;
-                        };
-                    };
-                };
-            };
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            conversation: {
-                                /** Format: uuid */
-                                id: string;
-                                /** @enum {string} */
-                                status: "active" | "handled";
-                                /** @enum {string} */
-                                category: "birthdays" | "general" | "marketing";
-                                /** Format: uuid */
-                                teamId: string | null;
-                                /** Format: uuid */
-                                branchId: string | null;
-                                handledAt: string | null;
-                                /** @enum {string|null} */
-                                handledByKind: "account" | "ai" | null;
-                                /** Format: uuid */
-                                handledByAccountId: string | null;
-                                reopenedAt: string | null;
-                            };
-                            assignments: {
-                                /** Format: uuid */
-                                assignmentId: string;
-                                /** @enum {string} */
-                                slot: "primary" | "support";
-                                slotIndex: number;
-                                /** @enum {string} */
-                                assigneeKind: "account" | "team" | "ai";
-                                /** Format: uuid */
-                                accountId: string | null;
-                                /** Format: uuid */
-                                teamId: string | null;
-                                /** @enum {string} */
-                                reason: "auto" | "manual" | "divert" | "move" | "reopen";
-                                assignedAt: string;
-                            }[];
-                            moved: boolean;
+                            id: string;
+                            key: string;
+                            language: string;
+                            /** @enum {string|null} */
+                            channel: "whatsapp" | "instagram" | "facebook" | "line" | "telegram" | "webform" | null;
+                            /** Format: uuid */
+                            branchId: string | null;
+                            body: string;
+                            attachmentFileIds: string[];
+                            /** @enum {string} */
+                            approvalStatus: "not_required" | "pending" | "approved" | "rejected";
+                            needsTranslation: boolean;
+                            providerTemplateName: string | null;
+                            active: boolean;
+                            variables: string[];
+                            /** Format: uuid */
+                            updatedByAccountId: string | null;
+                            updatedAt: string;
+                            archivedAt: string | null;
                         };
                     };
                 };
@@ -25794,7 +25561,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/inbox/conversations/{id}/branch": {
+    "/inbox/templates/manage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Every template of the operator for the settings page — inactive ones too, archived ones with `archived=true` — with the placeholders each body names. Filters: key, language. Needs inbox:template:manage somewhere in the operator. */
+        get: {
+            parameters: {
+                query?: {
+                    key?: "welcome" | "handover_birthday" | "handover_events" | "handover_complaint_online" | "handover_complaint_onsite" | "handover_lost_found" | "handover_marketing" | "out_of_hours";
+                    language?: string;
+                    archived?: "true" | "false";
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            templates: {
+                                /** Format: uuid */
+                                id: string;
+                                key: string;
+                                language: string;
+                                /** @enum {string|null} */
+                                channel: "whatsapp" | "instagram" | "facebook" | "line" | "telegram" | "webform" | null;
+                                /** Format: uuid */
+                                branchId: string | null;
+                                body: string;
+                                attachmentFileIds: string[];
+                                /** @enum {string} */
+                                approvalStatus: "not_required" | "pending" | "approved" | "rejected";
+                                needsTranslation: boolean;
+                                providerTemplateName: string | null;
+                                active: boolean;
+                                variables: string[];
+                                /** Format: uuid */
+                                updatedByAccountId: string | null;
+                                updatedAt: string;
+                                archivedAt: string | null;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inbox/templates/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -25807,7 +25637,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** @description The branch select: sets (and so confirms) the conversation’s branch. On a birthday conversation, the birthday manager who hosts at that branch (the branch’s hosting rule) then joins as support when a place is free — `hostAdded` says whether. Needs inbox:conversation:assign at the conversation. Refusals: 404 when the conversation is not the caller’s to see (or not in their operator); 403 when the permission is not held at this conversation. */
+        /** @description Edit a template: its words, language, channel or branch, the provider’s template name, the approval status Meta gave it, or `active` (false deactivates it — the composer stops offering it). Not an archived one. Needs inbox:template:manage over the template as it stands and as it will be. */
         patch: {
             parameters: {
                 query?: never;
@@ -25820,8 +25650,17 @@ export interface paths {
             requestBody: {
                 content: {
                     "application/json": {
+                        language?: string;
+                        /** @enum {string|null} */
+                        channel?: "whatsapp" | "instagram" | "facebook" | "line" | "telegram" | "webform" | null;
                         /** Format: uuid */
-                        branchId: string | null;
+                        branchId?: string | null;
+                        body?: string;
+                        providerTemplateName?: string | null;
+                        /** @enum {string} */
+                        approvalStatus?: "not_required" | "pending" | "approved" | "rejected";
+                        active?: boolean;
+                        needsTranslation?: boolean;
                     };
                 };
             };
@@ -25833,245 +25672,81 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            conversation: {
-                                /** Format: uuid */
-                                id: string;
-                                /** @enum {string} */
-                                status: "active" | "handled";
-                                /** @enum {string} */
-                                category: "birthdays" | "general" | "marketing";
-                                /** Format: uuid */
-                                teamId: string | null;
-                                /** Format: uuid */
-                                branchId: string | null;
-                                handledAt: string | null;
-                                /** @enum {string|null} */
-                                handledByKind: "account" | "ai" | null;
-                                /** Format: uuid */
-                                handledByAccountId: string | null;
-                                reopenedAt: string | null;
-                            };
-                            assignments: {
-                                /** Format: uuid */
-                                assignmentId: string;
-                                /** @enum {string} */
-                                slot: "primary" | "support";
-                                slotIndex: number;
-                                /** @enum {string} */
-                                assigneeKind: "account" | "team" | "ai";
-                                /** Format: uuid */
-                                accountId: string | null;
-                                /** Format: uuid */
-                                teamId: string | null;
-                                /** @enum {string} */
-                                reason: "auto" | "manual" | "divert" | "move" | "reopen";
-                                assignedAt: string;
-                            }[];
-                            moved: boolean;
-                            hostAdded: boolean;
-                        };
-                    };
-                };
-            };
-        };
-        trace?: never;
-    };
-    "/inbox/conversations/{id}/handle": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** @description Mark as Handled for everyone (the shell asks first: "Mark as handled for everyone?"). Sets handled_at and handled_by. 409 ALREADY_HANDLED. Needs inbox:conversation:handle, and the caller holds a place on the conversation or the permission at it (its team). Refusals: 404 when the conversation is not the caller’s to see (or not in their operator); 403 when the permission is not held at this conversation. */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            conversation: {
-                                /** Format: uuid */
-                                id: string;
-                                /** @enum {string} */
-                                status: "active" | "handled";
-                                /** @enum {string} */
-                                category: "birthdays" | "general" | "marketing";
-                                /** Format: uuid */
-                                teamId: string | null;
-                                /** Format: uuid */
-                                branchId: string | null;
-                                handledAt: string | null;
-                                /** @enum {string|null} */
-                                handledByKind: "account" | "ai" | null;
-                                /** Format: uuid */
-                                handledByAccountId: string | null;
-                                reopenedAt: string | null;
-                            };
-                            assignments: {
-                                /** Format: uuid */
-                                assignmentId: string;
-                                /** @enum {string} */
-                                slot: "primary" | "support";
-                                slotIndex: number;
-                                /** @enum {string} */
-                                assigneeKind: "account" | "team" | "ai";
-                                /** Format: uuid */
-                                accountId: string | null;
-                                /** Format: uuid */
-                                teamId: string | null;
-                                /** @enum {string} */
-                                reason: "auto" | "manual" | "divert" | "move" | "reopen";
-                                assignedAt: string;
-                            }[];
-                            moved: boolean;
-                        };
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inbox/conversations/{id}/reopen": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** @description Reopen a handled conversation by hand (the status picker). Writes exactly what the customer’s automatic reopen writes: handled_at and handled_by cleared, reopened_at set, the assignments kept, the previous values on the `reopened` event and the audit row. 409 NOT_HANDLED. Needs inbox:conversation:reopen at the conversation. Refusals: 404 when the conversation is not the caller’s to see (or not in their operator); 403 when the permission is not held at this conversation. */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            conversation: {
-                                /** Format: uuid */
-                                id: string;
-                                /** @enum {string} */
-                                status: "active" | "handled";
-                                /** @enum {string} */
-                                category: "birthdays" | "general" | "marketing";
-                                /** Format: uuid */
-                                teamId: string | null;
-                                /** Format: uuid */
-                                branchId: string | null;
-                                handledAt: string | null;
-                                /** @enum {string|null} */
-                                handledByKind: "account" | "ai" | null;
-                                /** Format: uuid */
-                                handledByAccountId: string | null;
-                                reopenedAt: string | null;
-                            };
-                            assignments: {
-                                /** Format: uuid */
-                                assignmentId: string;
-                                /** @enum {string} */
-                                slot: "primary" | "support";
-                                slotIndex: number;
-                                /** @enum {string} */
-                                assigneeKind: "account" | "team" | "ai";
-                                /** Format: uuid */
-                                accountId: string | null;
-                                /** Format: uuid */
-                                teamId: string | null;
-                                /** @enum {string} */
-                                reason: "auto" | "manual" | "divert" | "move" | "reopen";
-                                assignedAt: string;
-                            }[];
-                            moved: boolean;
-                        };
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/inbox/contacts/{id}/erase": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** @description PDPA erasure of an Inbox contact — IRREVERSIBLE. Anonymises in place, in one transaction: the contact and every other live contact of the operator with the same phone become "Erased contact" with a hashed handle and no phone, member link or avatar; every message in their threads (customer lines, staff replies and the mirrored check-in and booking notices) loses its text, translation, transcript and media and is marked redacted; previews and AI summaries are cleared; inbox-owned files are deleted from storage; name- or text-bearing keys in timeline payloads are nulled; and the raw webhook payloads that carried them are purged. Threads keep their status, owners and timeline shape. Needs two confirmations in the body — `confirmContactId` equal to the path id and `confirm: "ERASE"` — or answers 409 ERASURE_UNCONFIRMED with the counts it would erase. Re-erasing answers `alreadyErased: true`. One `inbox.contact.erase` audit row (ids and counts only). Needs inbox:contact:erase at operator scope. */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": {
-                        /** Format: uuid */
-                        confirmContactId?: string;
-                        confirm?: string;
-                    };
-                };
-            };
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            contactIds: string[];
-                            conversations: number;
-                            messages: number;
-                            noticeMessages: number;
-                            filesDeleted: number;
-                            filesUnlinked: number;
-                            eventsRedacted: number;
-                            webhookPayloadsPurged: number;
                             /** Format: uuid */
-                            contactId: string;
-                            alreadyErased: boolean;
-                            erasedAt: string;
+                            id: string;
+                            key: string;
+                            language: string;
+                            /** @enum {string|null} */
+                            channel: "whatsapp" | "instagram" | "facebook" | "line" | "telegram" | "webform" | null;
+                            /** Format: uuid */
+                            branchId: string | null;
+                            body: string;
+                            attachmentFileIds: string[];
+                            /** @enum {string} */
+                            approvalStatus: "not_required" | "pending" | "approved" | "rejected";
+                            needsTranslation: boolean;
+                            providerTemplateName: string | null;
+                            active: boolean;
+                            variables: string[];
+                            /** Format: uuid */
+                            updatedByAccountId: string | null;
+                            updatedAt: string;
+                            archivedAt: string | null;
+                        };
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/inbox/templates/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Archive a template: it leaves the composer and the settings list for good, and its variant is free for a new row. Never deleted — the messages sent from it still name it. Needs inbox:template:manage over it. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            key: string;
+                            language: string;
+                            /** @enum {string|null} */
+                            channel: "whatsapp" | "instagram" | "facebook" | "line" | "telegram" | "webform" | null;
+                            /** Format: uuid */
+                            branchId: string | null;
+                            body: string;
+                            attachmentFileIds: string[];
+                            /** @enum {string} */
+                            approvalStatus: "not_required" | "pending" | "approved" | "rejected";
+                            needsTranslation: boolean;
+                            providerTemplateName: string | null;
+                            active: boolean;
+                            variables: string[];
+                            /** Format: uuid */
+                            updatedByAccountId: string | null;
+                            updatedAt: string;
+                            archivedAt: string | null;
                         };
                     };
                 };

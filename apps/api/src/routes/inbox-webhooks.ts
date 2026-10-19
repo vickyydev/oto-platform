@@ -91,7 +91,7 @@ export function inboxWebhookRoutes(app: App): Promise<void> {
       const raw = Buffer.isBuffer(req.body) ? req.body : Buffer.from(req.body === undefined ? '' : JSON.stringify(req.body));
       const result = await ingestDelivery(
         app.db,
-        { channels: app.inboxChannels, log: req.log },
+        { channels: app.inboxChannels, log: req.log, storage: app.fileStorage },
         {
           channelAccountId: req.params.channelAccountId,
           webhook: {

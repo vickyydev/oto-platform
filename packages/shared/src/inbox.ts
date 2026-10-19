@@ -460,7 +460,11 @@ export const InboxMeSchema = z.object({
   /** The reception team of the operator's first park: where `teamDestOf` sends a general conversation with no branch. */
   defaultReceptionBranchId: Uuid.nullable(),
   capabilities: z.object({
-    /** The write actions are live. False until the write routes land (plan "Write switch"). */
+    /**
+     * The write switch (plan "Write switch"): the write actions are live. On
+     * since I2f (reply, templates, sending); a check-in notice thread still
+     * cannot carry a reply, which its row's `canReply` says.
+     */
     writes: z.boolean(),
     dashboard: z.boolean(),
     assign: z.boolean(),

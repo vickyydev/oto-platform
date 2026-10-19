@@ -29,6 +29,8 @@ import {
   OTOAPP_RECONCILE_JOB,
   runOtoAppNightJob,
 } from './otoapp-jobs';
+import { buildInboxChannels, type InboxChannels } from './inbox/channels';
+import { INBOX_SEND_INTERVAL_S, INBOX_SEND_JOB, runInboxSendJob } from './inbox/send';
 import { flagPendingPayments, gatewayFor, pollPendingAttempts } from './payments/gateway';
 import { PRINT_RETENTION_DAYS, purgeOldPrintJobs } from './print';
 import {
@@ -217,6 +219,13 @@ export interface JobDeps {
   channels: AlertChannel[];
   /** Object storage, for the jobs that delete files (the inbox retention); null where none is configured. */
   fileStorage?: FileStorage | null;
+  /**
+   * The api's inbox channel map (`app.inboxChannels`), so the send job speaks
+   * through the same adapters the routes do — the simulator keeps what it
+   * accepted in memory. Absent (a test, a runner built alone), a map of its
+   * own is built from the env.
+   */
+  inboxChannels?: InboxChannels;
 }
 
 // --- The watchdog -----------------------------------------------------------
@@ -811,8 +820,48 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
         }),
       }),
     },
+    /**
+     * `job:inbox.send` — THE INBOX'S SEND SWEEPER (S2-19 I2f, SCRUM-585; plan
+     * §3.5; `services/inbox/send.ts`).
+     *
+     * Every thirty seconds: each queued outbound message that is due — never
+     * tried, its back-off over, or its claim's five-minute lease run out —
+     * sent through its channel, oldest first. A reply is normally sent the
+     * moment it commits; this is what sends the ones that could not be (a
+     * retryable refusal, a crash between the commit and the send, the demo
+     * seed's out-of-hours lines). Only QUEUED rows are ever sent: a sent
+     * message is never sent again. Counts only in the run's detail.
+     */
+    {
+      name: INBOX_SEND_JOB,
+      description:
+        'Sends every queued inbox message that is due — a retry after a rate limit or an unreachable channel, or one whose send was interrupted — and marks failed the ones the channel refused for good',
+      intervalSeconds: INBOX_SEND_INTERVAL_S,
+      graceSeconds: 300,
+      run: async ({ db, log, now }) => ({
+        detail: await runInboxSendJob(db, { channels: inboxChannelsOf(deps), log }, now),
+      }),
+    },
     ...buildOtoAppNightJobs(deps),
   ];
+}
+
+/** The routes' channel map when the runner was given it; otherwise one built from the env, once. */
+const ownInboxChannels = new WeakMap<JobDeps, InboxChannels>();
+function inboxChannelsOf(deps: JobDeps): InboxChannels {
+  if (deps.inboxChannels) return deps.inboxChannels;
+  let built = ownInboxChannels.get(deps);
+  if (!built) {
+    built = buildInboxChannels({
+      env: deps.env,
+      // A console account never carries a reply, so the send job never sends through it.
+      consoleSender: () => ({
+        send: () => Promise.reject(new Error('the send job has no console sender: a console account cannot reply')),
+      }),
+    });
+    ownInboxChannels.set(deps, built);
+  }
+  return built;
 }
 
 /**
@@ -952,6 +1001,8 @@ export interface JobRunnerOptions {
   channels?: AlertChannel[];
   /** Object storage for the jobs that delete files; null or absent where none is configured. */
   fileStorage?: FileStorage | null;
+  /** The api's inbox channel map, for the send job (`JobDeps.inboxChannels`). */
+  inboxChannels?: InboxChannels;
 }
 
 export function processRoles(env: Env): string[] {
@@ -966,7 +1017,16 @@ export function createJobRunner(opts: JobRunnerOptions): JobRunner {
   // Built here rather than on first use: a channel name with no implementation
   // must stop the process at boot, not on the night it is first needed.
   const channels = opts.channels ?? buildAlertChannels(env.ALERT_CHANNELS, log);
-  const jobs = opts.jobs ?? buildDefaultJobs({ db, env, log, channels, fileStorage: opts.fileStorage ?? null });
+  const jobs =
+    opts.jobs ??
+    buildDefaultJobs({
+      db,
+      env,
+      log,
+      channels,
+      fileStorage: opts.fileStorage ?? null,
+      ...(opts.inboxChannels ? { inboxChannels: opts.inboxChannels } : {}),
+    });
   const enabled = processRoles(env).includes('jobs');
 
   const timers = new Map<string, NodeJS.Timeout>();

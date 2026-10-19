@@ -223,6 +223,10 @@ const CALLER_NAMED = [
   'POST /branches/:branchId/tax-overrides',
   'POST /branches/:branchId/ticket-packages',
   'POST /files',
+  // S2-19 I2f: a reply is the same message under the same id (never a second
+  // send), and a template variant is named by the Console that makes it.
+  'POST /inbox/conversations/:id/messages',
+  'POST /inbox/templates',
   'POST /members',
   'POST /members/:id/children',
   'POST /operators',
