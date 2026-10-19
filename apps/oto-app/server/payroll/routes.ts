@@ -5,6 +5,10 @@
  * Owner lock, paid, reopen), overtime decisions, third-party approvals, the
  * locked history with its files, and every employee's own payslips.
  *
+ * R6 (SCRUM-571) adds the statutory documents: the offers and coverage per
+ * branch and period, rendering, the frozen files, filing records and the EWF
+ * surcharge estimate.
+ *
  * Every route here is behind `hr.view_salary` (managers and staff get 403 on
  * all of them), writes need `hr.manage_payroll`, and the HR-data draft action
  * is global_admin's. GM confirm needs `payroll.confirm` (admin,
@@ -50,6 +54,7 @@ import { bookOtTimeOff, loadFeedsView, recordLeaveValuation, reverseLeaveValuati
 import { addManualLine, addOverride, loadMonthEnd, previewMonth, recordReview, removeManualLine, removeOverride, startRun } from "./month-end";
 import { approveThirdParty, confirmRun, lockRun, markPaid, recordOvertimeDecision, removeOvertimeDecision, reopenRun } from "./lifecycle";
 import { listHistory, loadHistoryVersion, myPayslips, openHistoryFile, openMyPayslip, type ServedFile } from "./payslips";
+import { ewfSurcharge, loadStatutoryView, openDocumentFile, recordFiling, renderDocument } from "./statutory";
 
 export type PayrollPermission = "hr.view_salary" | "hr.manage_payroll" | "payroll.draft_profiles" | "payroll.confirm" | "payroll.lock" | "payroll.own_payslips";
 
@@ -262,4 +267,16 @@ export function registerPayrollRoutes(app: Express, { requireAuth, callerParkGro
     myPayslips(parkGroupOf(res), actorOf(req).userId)));
   app.get("/api/payroll/me/payslips/:fileId", requireAuth, payroll("payroll.own_payslips"), fence, sendFrozen((req, res) =>
     openMyPayslip(parkGroupOf(res), actorOf(req).userId, req.params.fileId)));
+
+  // ── Statutory documents (R6): the prototype's document engine on the per-branch locked runs (none: owner decision 3) ──
+  app.get("/api/payroll/statutory", requireAuth, payroll("hr.view_salary"), fence, answer(200, (req, res) =>
+    loadStatutoryView(parkGroupOf(res), { branchId: req.query.branchId, period: req.query.period }, canManagePayroll(role(req)))));
+  app.get("/api/payroll/statutory/ewf-surcharge", requireAuth, payroll("hr.view_salary"), fence, answer(200, async (req) =>
+    ewfSurcharge({ dueDate: req.query.dueDate, asOfDate: req.query.asOfDate, principal: req.query.principal })));
+  app.post("/api/payroll/statutory/documents", requireAuth, payroll("hr.manage_payroll"), fence, answer(201, (req, res) =>
+    renderDocument(parkGroupOf(res), actorOf(req), body(req))));
+  app.get("/api/payroll/statutory/documents/:id/files/:index", requireAuth, payroll("hr.view_salary"), fence, sendFrozen((req, res) =>
+    openDocumentFile(parkGroupOf(res), actorOf(req), req.params.id, req.params.index, req.query.download === "1")));
+  app.post("/api/payroll/statutory/filings", requireAuth, payroll("hr.manage_payroll"), fence, answer(201, (req, res) =>
+    recordFiling(parkGroupOf(res), actorOf(req), body(req))));
 }

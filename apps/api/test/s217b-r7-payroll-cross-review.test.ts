@@ -266,6 +266,13 @@ describe.skipIf(!HAS_APP)('round 7 independent payroll ownership review', () => 
       'get /api/payroll/history/:entityId/:month/:version hr.view_salary',
       'get /api/payroll/me/payslips payroll.own_payslips',
       'get /api/payroll/me/payslips/:fileId payroll.own_payslips',
+      // SCRUM-571 (R6): the statutory documents — offers and coverage per branch and period, the EWF
+      // surcharge estimate, rendering from locked per-branch runs, the frozen files, and filing records.
+      'get /api/payroll/statutory hr.view_salary',
+      'get /api/payroll/statutory/ewf-surcharge hr.view_salary',
+      'post /api/payroll/statutory/documents hr.manage_payroll',
+      'get /api/payroll/statutory/documents/:id/files/:index hr.view_salary',
+      'post /api/payroll/statutory/filings hr.manage_payroll',
     ]);
     // Every registration in the file is one of those: none without its guard and fence.
     expect([...source.matchAll(/app\.(get|post|put|patch|delete)\(/g)]).toHaveLength(declared.length);

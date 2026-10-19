@@ -154,7 +154,15 @@ function pnd1DocumentHtml(title: string, body: string) {
   </style></head><body><main>${body}</main></body></html>`;
 }
 
-const isTh = (offer: StatutoryOffer) => offer.branchId.startsWith("hkt-");
+/**
+ * Thai by configuration, not by branch id (plan §8, "Malaysia detected by
+ * branch id"). The prototype tested the demo "hkt-" id prefix, which no real
+ * branch id carries, so every real Thai document would have been refused here
+ * (found by R6, SCRUM-571). The router (statutory-engine countryFor) already
+ * sends only Thai branches; the frozen sources must say TH as well. Neither
+ * the engine's numbers nor its inputs change (ENGINE_REVISION stays).
+ */
+const isTh = (_offer: StatutoryOffer, months: FrozenMonth[]) => months.every((month) => month.snapshot.details.country === "TH");
 
 function ssoRecord(fields: unknown[], label: string) {
   const record = fields.map((value) => String(value ?? "").replace(/[\r\n\t|]/g, " ")).join("|");
@@ -223,7 +231,7 @@ function annualAggregate(months: FrozenMonth[]) {
 export function renderThaiDocument(
   offer: StatutoryOffer, months: FrozenMonth[], provisional: boolean, coverageText: string,
 ): StatutoryRender {
-  if (!isTh(offer)) throw new Error(`Thai adapter cannot render branch ${offer.branchId}.`);
+  if (!isTh(offer, months)) throw new Error(`Thai adapter cannot render branch ${offer.branchId}.`);
   const people = records(months);
   const warnings = [...offer.warnings];
   const currency = months[0]?.snapshot.details.currency ?? "THB";

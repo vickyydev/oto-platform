@@ -5525,6 +5525,111 @@ export const payrollOutputFiles = pgTable("payroll_output_files", {
 ]);
 export type PayrollOutputFileRow = typeof payrollOutputFiles.$inferSelect;
 
+// ─── Statutory documents (SCRUM-571, the company payroll's R6; migration 0026) ───
+//
+// The prototype's statutory engine reads the OLDER per-branch locked runs, and
+// a company month-end lock writes none (owner decision 3, 2026-10-20: built
+// exactly as the prototype has it). A document is therefore rendered only
+// from such a run; a filing can be recorded either against a rendered document
+// (the prototype's rules) or for a form filed outside the app, saved with the
+// coverage the page showed at the time. All three tables are append-only.
+
+/** A rendered document: the engine's printable HTML and its placeholder upload, frozen. */
+export const payrollStatutoryDocuments = pgTable("payroll_statutory_documents", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").notNull().references(() => tenants.id),
+  branchId: varchar("branch_id").notNull(),
+  period: text("period").notNull(),
+  documentCode: text("document_code").notNull(),
+  /** The engine's own document id (source versions plus a payload hash). */
+  documentKey: text("document_key").notNull(),
+  staffId: varchar("staff_id"),
+  title: text("title").notNull(),
+  sourceRuns: jsonb("source_runs").notNull(),
+  provisional: boolean("provisional").notNull(),
+  coverage: jsonb("coverage").notNull(),
+  warnings: jsonb("warnings").notNull(),
+  dueDate: date("due_date").notNull(),
+  html: text("html").notNull(),
+  files: jsonb("files").notNull(),
+  sha256: text("sha256").notNull(),
+  renderedAt: timestamp("rendered_at", { withTimezone: true }).defaultNow().notNull(),
+  renderedBy: varchar("rendered_by").references(() => users.id),
+  renderedByName: text("rendered_by_name").notNull(),
+}, (table) => [
+  uniqueIndex("payroll_statutory_documents_tenant_id_id_unique").on(table.tenantId, table.id),
+  uniqueIndex("payroll_statutory_documents_key_unique").on(table.tenantId, table.documentKey),
+  index("idx_payroll_statutory_documents_period").on(table.tenantId, table.branchId, table.period, table.documentCode),
+  index("idx_payroll_statutory_documents_staff").on(table.tenantId, table.staffId),
+  foreignKey({ name: "payroll_statutory_documents_branch_fk", columns: [table.tenantId, table.branchId], foreignColumns: [branches.tenantId, branches.id] }).onDelete("restrict"),
+  foreignKey({ name: "payroll_statutory_documents_staff_fk", columns: [table.tenantId, table.staffId], foreignColumns: [employees.tenantId, employees.id] }).onDelete("restrict"),
+  check("payroll_statutory_documents_period_check", sql`${table.period} ~ '^[0-9]{4}(-(0[1-9]|1[0-2]))?$'`),
+]);
+export type PayrollStatutoryDocumentRow = typeof payrollStatutoryDocuments.$inferSelect;
+
+/**
+ * A filing record: the form, the period, when and by whom it was filed, the
+ * reference and the reason, and the coverage the page showed when it was
+ * saved (complete, provisional, or no source at all). Against a rendered
+ * document at most once; an amendment is a new document and a new record.
+ */
+export const payrollStatutoryFilings = pgTable("payroll_statutory_filings", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").notNull().references(() => tenants.id),
+  branchId: varchar("branch_id").notNull(),
+  period: text("period").notNull(),
+  documentCode: text("document_code").notNull(),
+  staffId: varchar("staff_id"),
+  documentId: uuid("document_id"),
+  coverageState: text("coverage_state", { enum: ["complete", "provisional", "no-source"] }).notNull(),
+  coverage: jsonb("coverage").notNull(),
+  sourceRuns: jsonb("source_runs").notNull(),
+  renderedAt: timestamp("rendered_at", { withTimezone: true }),
+  filedOn: date("filed_on").notNull(),
+  reference: text("reference").notNull(),
+  reason: text("reason").notNull(),
+  filedBy: varchar("filed_by").references(() => users.id),
+  filedByName: text("filed_by_name").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("payroll_statutory_filings_tenant_id_id_unique").on(table.tenantId, table.id),
+  uniqueIndex("payroll_statutory_filings_document_unique").on(table.tenantId, table.documentId).where(sql`${table.documentId} IS NOT NULL`),
+  index("idx_payroll_statutory_filings_period").on(table.tenantId, table.branchId, table.period, table.documentCode),
+  index("idx_payroll_statutory_filings_staff").on(table.tenantId, table.staffId),
+  foreignKey({ name: "payroll_statutory_filings_branch_fk", columns: [table.tenantId, table.branchId], foreignColumns: [branches.tenantId, branches.id] }).onDelete("restrict"),
+  foreignKey({ name: "payroll_statutory_filings_staff_fk", columns: [table.tenantId, table.staffId], foreignColumns: [employees.tenantId, employees.id] }).onDelete("restrict"),
+  foreignKey({ name: "payroll_statutory_filings_document_fk", columns: [table.tenantId, table.documentId], foreignColumns: [payrollStatutoryDocuments.tenantId, payrollStatutoryDocuments.id] }).onDelete("restrict"),
+  check("payroll_statutory_filings_period_check", sql`${table.period} ~ '^[0-9]{4}(-(0[1-9]|1[0-2]))?$'`),
+  check("payroll_statutory_filings_state_check", sql`${table.coverageState} IN ('complete', 'provisional', 'no-source')`),
+]);
+export type PayrollStatutoryFilingRow = typeof payrollStatutoryFilings.$inferSelect;
+
+/** Every document and filing event (rendered, opened, saved, filed). Append-only. */
+export const payrollStatutoryAudit = pgTable("payroll_statutory_audit", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").notNull().references(() => tenants.id),
+  branchId: varchar("branch_id").notNull(),
+  period: text("period").notNull(),
+  documentCode: text("document_code").notNull(),
+  staffId: varchar("staff_id"),
+  documentId: uuid("document_id"),
+  filingId: uuid("filing_id"),
+  action: text("action").notNull(),
+  reason: text("reason"),
+  detail: jsonb("detail"),
+  actorUserId: varchar("actor_user_id").references(() => users.id),
+  actorName: text("actor_name").notNull(),
+  at: timestamp("at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("idx_payroll_statutory_audit_period").on(table.tenantId, table.branchId, table.period, table.at),
+  index("idx_payroll_statutory_audit_document").on(table.tenantId, table.documentId),
+  index("idx_payroll_statutory_audit_filing").on(table.tenantId, table.filingId),
+  foreignKey({ name: "payroll_statutory_audit_branch_fk", columns: [table.tenantId, table.branchId], foreignColumns: [branches.tenantId, branches.id] }).onDelete("restrict"),
+  foreignKey({ name: "payroll_statutory_audit_document_fk", columns: [table.tenantId, table.documentId], foreignColumns: [payrollStatutoryDocuments.tenantId, payrollStatutoryDocuments.id] }).onDelete("restrict"),
+  foreignKey({ name: "payroll_statutory_audit_filing_fk", columns: [table.tenantId, table.filingId], foreignColumns: [payrollStatutoryFilings.tenantId, payrollStatutoryFilings.id] }).onDelete("restrict"),
+]);
+export type PayrollStatutoryAuditRow = typeof payrollStatutoryAudit.$inferSelect;
+
 // ============================================
 // CORE MODULE SCHEMA (Re-export)
 // ============================================
