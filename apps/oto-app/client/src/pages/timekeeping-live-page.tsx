@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EmployeeAvatar } from "@/components/employee-avatar";
 import {
   Clock,
@@ -100,14 +100,14 @@ function formatElapsed(minutes: number): string {
 }
 
 
-export default function TimekeepingLivePage() {
+export default function TimekeepingLivePage({ embedded = false }: { embedded?: boolean }) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [location, setLocation] = useLocation();
   const { selectedBranchId, isAllBranches } = useBranchContext();
 
   const urlParams = new URLSearchParams(location.split("?")[1] || "");
-  const defaultTab = urlParams.get("tab") || "working";
+  const defaultTab = embedded ? "working" : urlParams.get("tab") === "missing" ? "missing" : "working";
 
   const [activeTab, setActiveTab] = useState(defaultTab);
   const [selectedBranch, setSelectedBranch] = useState<string>(
@@ -144,9 +144,10 @@ export default function TimekeepingLivePage() {
     ? "/api/timekeeping/live"
     : `/api/timekeeping/live?branchId=${selectedBranch}`;
 
-  const { data: liveData, isLoading, refetch, isRefetching } = useQuery<LiveData>({
+  const { data: liveData, isLoading, isError, refetch, isRefetching } = useQuery<LiveData>({
     queryKey: ["/api/timekeeping/live", selectedBranch],
     queryFn: async () => (await apiRequest("GET", liveUrl)).json(),
+    enabled: isManager,
     refetchInterval: 30000,
   });
 
@@ -223,21 +224,32 @@ export default function TimekeepingLivePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-10 bg-background border-b">
-        <div className="flex items-center justify-between gap-2 p-4">
+    <div className={embedded ? "overflow-hidden rounded-2xl border border-[#d9e1d7] bg-[#fcfcf7] dark:border-border dark:bg-card" : "min-h-[100dvh] bg-background"}>
+      <header className={embedded ? "border-b border-[#e6eae1] dark:border-border" : "sticky top-0 z-10 bg-background border-b"}>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 sm:p-5">
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={() => setLocation("/")}>
+            {!embedded && <Button variant="ghost" size="icon" aria-label="Back to Today's attendance" onClick={() => setLocation("/timekeeping-review?tab=live")}>
               <ArrowLeft className="h-5 w-5" />
-            </Button>
+            </Button>}
             <div>
-              <h1 className="text-lg font-semibold">Live Timekeeping</h1>
+              {embedded ? <h2 className="text-xl font-semibold tracking-[-0.035em]">Working now <span className="ml-1 tabular-nums text-[#718b7b]">{liveData?.currentlyWorkingCount ?? "—"}</span></h2> : <h1 className="text-lg font-semibold">Live Timekeeping</h1>}
               <p className="text-xs text-muted-foreground">
-                {liveData ? `Updated ${formatTime(liveData.timestamp)}` : "Loading..."}
+                {liveData ? `Updated ${formatTime(liveData.timestamp)}` : "Live attendance · refreshes every 30 seconds"}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Embedded there is no Missing tab, but the not-clocked-in list
+                and its inbox reminders still need a door: the full live page
+                keeps them, so the embedded view links to it. */}
+            {embedded && (
+              <Button variant="outline" size="sm" onClick={() => setLocation("/timekeeping/live?tab=missing")} data-testid="link-missing-clock-ins">
+                Not clocked in
+                {liveData && liveData.missingClockInsCount > 0 && (
+                  <Badge variant="destructive" className="ml-2 h-5 min-w-5 px-1.5">{liveData.missingClockInsCount}</Badge>
+                )}
+              </Button>
+            )}
             <Select value={selectedBranch} onValueChange={setSelectedBranch}>
               <SelectTrigger className="w-[140px]" data-testid="select-branch">
                 <SelectValue placeholder="All Branches" />
@@ -254,6 +266,7 @@ export default function TimekeepingLivePage() {
             <Button
               variant="ghost"
               size="icon"
+              aria-label="Refresh live attendance"
               onClick={() => refetch()}
               disabled={isRefetching}
               data-testid="button-refresh"
@@ -287,7 +300,7 @@ export default function TimekeepingLivePage() {
       </section>}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <div className="border-b bg-muted/30">
+        {!embedded && <div className="border-b bg-muted/30">
           <TabsList className="w-full justify-start rounded-none h-auto p-0 bg-transparent">
             <TabsTrigger
               value="working"
@@ -316,7 +329,7 @@ export default function TimekeepingLivePage() {
               )}
             </TabsTrigger>
           </TabsList>
-        </div>
+        </div>}
 
         <TabsContent value="working" className="m-0">
           <div className="divide-y">
@@ -330,6 +343,8 @@ export default function TimekeepingLivePage() {
                   </div>
                 </div>
               ))
+            ) : isError ? (
+              <div className="p-8 text-center"><AlertTriangle className="mx-auto mb-3 h-9 w-9 text-[#a7713f]" /><p className="font-medium">Live attendance could not be loaded.</p><Button variant="outline" className="mt-4" onClick={() => refetch()}>Try again</Button></div>
             ) : !liveData?.workingNow?.length ? (
               /**
                * This screen only ever shows now — that is what makes it live,
@@ -340,6 +355,15 @@ export default function TimekeepingLivePage() {
               <div className="p-8 text-center text-muted-foreground">
                 <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
                 <p>No one is currently clocked in</p>
+                {/* Embedded, this list is already a tab of Today's attendance,
+                    so a link back to that page would go nowhere; the sibling
+                    tabs carry the date picker and the punch log instead. */}
+                {embedded ? (
+                  <p className="text-sm mt-2" data-testid="text-attendance-history-hint">
+                    This tab shows the present moment only. The Issues and Clock tabs
+                    show earlier days and clock-ins.
+                  </p>
+                ) : (
                 <p className="text-sm mt-2">
                   This screen shows the present moment only.{" "}
                   <button
@@ -352,6 +376,7 @@ export default function TimekeepingLivePage() {
                   </button>{" "}
                   to pick a day and see earlier clock-ins.
                 </p>
+                )}
               </div>
             ) : (
               liveData.workingNow.map((emp) => (
@@ -409,7 +434,7 @@ export default function TimekeepingLivePage() {
                       <span>{formatElapsed(emp.elapsedMinutes)}</span>
                     </div>
                   </div>
-                  <Button variant="ghost" size="icon" data-testid={`button-view-${emp.employeeId}`}>
+                   <Button variant="ghost" size="icon" aria-label={`View ${emp.displayName}`} onClick={(event) => { event.stopPropagation(); setDetailEmployee(emp); }} data-testid={`button-view-${emp.employeeId}`}>
                     <Eye className="h-4 w-4" />
                   </Button>
                 </div>
@@ -418,7 +443,7 @@ export default function TimekeepingLivePage() {
           </div>
         </TabsContent>
 
-        <TabsContent value="missing" className="m-0">
+        {!embedded && <TabsContent value="missing" className="m-0">
           <div className="divide-y">
             {isLoading ? (
               Array.from({ length: 5 }).map((_, i) => (
@@ -487,7 +512,7 @@ export default function TimekeepingLivePage() {
               ))
             )}
           </div>
-        </TabsContent>
+        </TabsContent>}
       </Tabs>
 
       <Dialog
@@ -501,6 +526,7 @@ export default function TimekeepingLivePage() {
           <DialogHeader>
             <DialogTitle>{photoModalEmployee?.name}</DialogTitle>
           </DialogHeader>
+          <DialogBody>
           {photoModalEmployee?.photo && !photoModalFailed && (
             <img
               src={photoModalEmployee.photo}
@@ -514,6 +540,7 @@ export default function TimekeepingLivePage() {
               This photograph is not stored on this deployment.
             </p>
           )}
+          </DialogBody>
         </DialogContent>
       </Dialog>
 
@@ -523,7 +550,7 @@ export default function TimekeepingLivePage() {
             <DialogTitle>Staff Details</DialogTitle>
           </DialogHeader>
           {detailEmployee && (
-            <div className="space-y-4">
+            <DialogBody className="space-y-4">
               <div className="flex items-center gap-3">
                 <EmployeeAvatar
                   employeeId={detailEmployee.employeeId}
@@ -559,7 +586,7 @@ export default function TimekeepingLivePage() {
                   </div>
                 )}
               </div>
-            </div>
+            </DialogBody>
           )}
         </DialogContent>
       </Dialog>

@@ -67,7 +67,6 @@ const BulkEmployeeUploadPage = lazy(() => import("@/pages/bulk-employee-upload-p
 const CasualWorkersPage = lazy(() => import("@/pages/casual-workers-page"));
 const KioskPage = lazy(() => import("@/pages/kiosk-page"));
 const ReceptionKioskPage = lazy(() => import("@/pages/kiosk/reception"));
-const TimeEventsPage = lazy(() => import("@/pages/time-events-page"));
 const TimekeepingReviewPage = lazy(() => import("@/pages/timekeeping-review-page"));
 const TimekeepingEmployeeDetailPage = lazy(() => import("@/pages/timekeeping-employee-detail-page"));
 const TimekeepingLivePage = lazy(() => import("@/pages/timekeeping-live-page"));
@@ -690,10 +689,12 @@ function Router() {
       <ProtectedRoute path="/policies/:id/preview" component={() => <HRProtectedLayout component={PolicyPreviewPage} />} requiredRole="admin" />
       <ProtectedRoute path="/policies/:id" component={() => <HRProtectedLayout component={PolicyEditorPage} />} requiredRole="admin" />
       <ProtectedRoute path="/activity-logbook" component={() => <HRProtectedLayout component={ActivityLogbookPage} />} requiredRole={["manager", "admin"]} />
-      <ProtectedRoute path="/time-attendance" component={() => <HRProtectedLayout component={TimeEventsPage} />} requiredRole="admin" />
+      <ProtectedRoute path="/time-attendance" component={() => <Redirect to="/timekeeping-review?tab=clock" />} requiredRole="admin" />
       <ProtectedRoute path="/timekeeping-review" component={() => <HRProtectedLayout component={TimekeepingReviewPage} />} requiredRole={["manager", "admin"]} />
       <ProtectedRoute path="/timekeeping-review/employee/:employeeId" component={() => <HRProtectedLayout component={TimekeepingEmployeeDetailPage} />} requiredRole={["manager", "admin"]} />
-      <ProtectedRoute path="/timekeeping/live" component={() => <HRProtectedLayout component={TimekeepingLivePage} />} requiredRole={["manager", "admin"]} />
+      {/* The live list is a tab of Today's attendance now; only its
+          not-clocked-in list (no tab there) keeps the full page. */}
+      <ProtectedRoute path="/timekeeping/live" component={() => new URLSearchParams(window.location.search).get("tab") === "missing" ? <HRProtectedLayout component={TimekeepingLivePage} /> : <Redirect to="/timekeeping-review?tab=live" />} requiredRole={["manager", "admin"]} />
       <ProtectedRoute path="/advisors" component={() => <HRProtectedLayout component={AdvisorsPage} />} requiredRole="admin" />
       <ProtectedRoute path="/analytics" component={() => <HRProtectedLayout component={AnalyticsPage} />} requiredRole="admin" />
 

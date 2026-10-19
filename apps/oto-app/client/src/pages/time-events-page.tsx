@@ -24,8 +24,10 @@ import {
 } from "@/components/ui/command";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -88,12 +90,12 @@ interface TimeEvent {
   advisorSessionId?: string;
 }
 
-export default function TimeEventsPage() {
+export default function TimeEventsPage({ embedded = false }: { embedded?: boolean }) {
   const { toast } = useToast();
   const { selectedBranchId: selectedBranch } = useBranchContext();
   const { user } = useAuth();
-  const canEdit = user?.role === "admin" || user?.role === "manager";
   const isAdmin = user?.role === "admin";
+  const canViewEvents = !!user;
 
   const [filterAuthMethod, setFilterAuthMethod] = useState<string>("all");
   const [filterEventType, setFilterEventType] = useState<string>("all");
@@ -120,7 +122,7 @@ export default function TimeEventsPage() {
     return `/api/time-events?${params.toString()}`;
   };
 
-  const { data: eventsData, isLoading: eventsLoading } = useQuery<{
+  const { data: eventsData, isLoading: eventsLoading, isError: eventsError, refetch: refetchEvents } = useQuery<{
     events: TimeEvent[];
     total: number;
     limit: number;
@@ -132,16 +134,18 @@ export default function TimeEventsPage() {
       if (!res.ok) throw new Error("Failed to fetch events");
       return res.json();
     },
+    enabled: canViewEvents,
   });
 
   const { data: employees } = useQuery<Employee[]>({
     queryKey: ["/api/employees", selectedBranch],
     queryFn: async () => {
-      const url = selectedBranch ? `/api/employees?branchId=${selectedBranch}` : "/api/employees";
+      const url = selectedBranch && selectedBranch !== "all" ? `/api/employees?branchId=${selectedBranch}` : "/api/employees";
       const res = await fetch(url, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch employees");
       return res.json();
     },
+    enabled: canViewEvents,
   });
 
   const { data: advisors } = useQuery<OverrideAdvisor[]>({
@@ -151,10 +155,12 @@ export default function TimeEventsPage() {
       if (!res.ok) throw new Error("Failed to fetch advisors");
       return res.json();
     },
+    enabled: isAdmin,
   });
 
   const { data: branches } = useQuery<Branch[]>({
     queryKey: ["/api/branches"],
+    enabled: canViewEvents,
   });
 
   const overrideMutation = useMutation({
@@ -254,12 +260,13 @@ export default function TimeEventsPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className={embedded ? "space-y-5" : "p-6 space-y-6"}>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
+        {!embedded && <div>
           <h1 className="text-2xl font-bold" data-testid="page-title">Time & Attendance</h1>
           <p className="text-muted-foreground">View and manage employee clock in/out records</p>
-        </div>
+        </div>}
+        {embedded && <div><p className="text-[11px] font-bold uppercase tracking-[0.19em] text-[#749083]">Event log</p><h2 className="mt-1 text-2xl font-semibold tracking-[-0.035em]">Clock records</h2><p className="mt-1 text-sm text-muted-foreground">{isAdmin ? "Filter punches, inspect PIN photos, or add a manual override." : "Filter punches and inspect PIN photo evidence."}</p></div>}
         {isAdmin && (
           <Button onClick={() => setOverrideDialogOpen(true)} data-testid="button-add-override">
             <Plus className="mr-2 h-4 w-4" />
@@ -341,15 +348,17 @@ export default function TimeEventsPage() {
                 <Skeleton key={i} className="h-16 w-full" />
               ))}
             </div>
+          ) : eventsError ? (
+            <div className="py-12 text-center"><p className="font-medium">Clock records could not be loaded.</p><p className="mt-1 text-sm text-muted-foreground">Please try again.</p><Button variant="outline" className="mt-4" onClick={() => refetchEvents()}>Try again</Button></div>
           ) : eventsData?.events && eventsData.events.length > 0 ? (
             <div className="space-y-2">
               {eventsData.events.map(event => (
                 <div
                   key={event.id}
-                  className="flex items-center justify-between gap-4 p-4 border rounded-lg hover-elevate"
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 border rounded-lg hover-elevate"
                   data-testid={`time-event-row-${event.id}`}
                 >
-                  <div className="flex items-center gap-4">
+                  <div className="flex min-w-0 items-center gap-3 sm:gap-4">
                     {(() => {
                       const emp = event.identityType === "EMPLOYEE" ? getEmployee(event.employeeId) : undefined;
                       return emp ? (
@@ -372,8 +381,8 @@ export default function TimeEventsPage() {
                         <ArrowUpRight className="h-4 w-4 text-red-600" />
                       )}
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2">
+                      <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
                         <span className="font-medium" data-testid={`text-employee-name-${event.id}`}>
                           {event.displayName || getEmployeeName(event.employeeId)}
                         </span>
@@ -395,7 +404,7 @@ export default function TimeEventsPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2 pl-0 sm:pl-2">
                     {event.confidenceScore && (
                       <span className="text-xs text-muted-foreground">
                         {Math.round(event.confidenceScore * 100)}% match
@@ -452,6 +461,7 @@ export default function TimeEventsPage() {
               Manually add a clock event for staff or an Advisor who missed a punch
             </DialogDescription>
           </DialogHeader>
+          <DialogBody>
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="override-person-picker">Staff or Advisor</Label>
@@ -610,7 +620,9 @@ export default function TimeEventsPage() {
                 data-testid="input-override-notes"
               />
             </div>
-            <div className="flex justify-end gap-2">
+          </div>
+          </DialogBody>
+            <DialogFooter className="gap-2">
               <Button variant="outline" onClick={() => setOverrideDialogOpen(false)}>
                 Cancel
               </Button>
@@ -622,8 +634,7 @@ export default function TimeEventsPage() {
                 {overrideMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Add Override
               </Button>
-            </div>
-          </div>
+            </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -640,13 +651,13 @@ export default function TimeEventsPage() {
             </DialogDescription>
           </DialogHeader>
           {photoPreviewUrl && (
-            <div className="flex justify-center">
+            <DialogBody className="flex justify-center">
               <img
                 src={photoPreviewUrl}
                 alt="PIN authentication evidence"
                 className="max-w-full max-h-96 rounded-lg border"
               />
-            </div>
+            </DialogBody>
           )}
         </DialogContent>
       </Dialog>
