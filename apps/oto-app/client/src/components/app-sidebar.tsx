@@ -240,6 +240,20 @@ const payrollItems: MenuItem[] = [
     adminOnly: true,
     requireAllBranches: true,
   },
+  // The company payroll (SCRUM-567, R2): payroll roles only (hr.view_salary is
+  // every admin role). R7 regroups this section when the new hub replaces the old.
+  {
+    title: "Payroll Setup",
+    url: "/payroll/setup",
+    icon: Settings,
+    adminOnly: true,
+  },
+  {
+    title: "Payroll Profiles",
+    url: "/payroll/people",
+    icon: Users,
+    adminOnly: true,
+  },
   {
     title: "My Payslips",
     url: "/my-payslips",
