@@ -11,7 +11,11 @@
 // checks 10-11 over HTTP and the LIFECYCLE leg: GM confirm, Owner lock, mark
 // paid, reopen and a second park group's 404s, with all eleven checks run
 // again on what the lock froze — the frozen calculation and the bank files,
-// cash list and reports read back as stored bytes.
+// cash list and reports read back as stored bytes. R5 (SCRUM-570) makes
+// checks 10-11 assertions on the STORED files: the money is what the stored
+// SCB payment TXT files and cash list hold, read byte for byte, and their
+// byte rules (no BOM, CRLF, 28-field TXNDET, reference SALARY SEP26) are
+// checked on those bytes; the downloads view reconciles at 0.00.
 //
 // Usage, from apps/oto-app:
 //   npx tsx tests/payroll-golden.check.ts          the engine leg (no database)
@@ -27,8 +31,9 @@ import { evaluateSeptemberGoldenFixture, goldenChecks } from "../server/payroll/
 const LEGS = [
   { leg: "engine (pure, in memory)", round: "R1", on: true },
   { leg: "service and HTTP, checks 1-9", round: "R3", on: true },
-  { leg: "service and HTTP, checks 10-11", round: "R4", on: true },
+  { leg: "service and HTTP, checks 10-11 on the STORED files (SCB TXT bytes, cash list)", round: "R5", on: true },
   { leg: "lifecycle (confirm, lock, paid, reopen, cross-tenant 404)", round: "R4", on: true },
+  { leg: "outputs (stored-file byte rules, downloads reconciliation, EWF not configured)", round: "R5", on: true },
 ] as const;
 
 const started = performance.now();
@@ -112,10 +117,34 @@ try {
       check(`frozen golden ${c.id}: ${c.title} (${c.assertions.length} assertions, stored bytes)`, () =>
         assert.equal(c.pass, true, JSON.stringify(c.assertions.filter(a => !a.pass), null, 2)));
     }
-    check("lifecycle: the frozen bank-file CSV bytes plus cash equal net to the satang; every reference SALARY SEP26", () => {
+    check("outputs: the stored SCB payment files plus the stored cash list equal net to the satang; every reference SALARY SEP26", () => {
       const result = life.frozenCalc.entities.find((e) => e.entityId === leg.ids.entity)!;
       assert.equal(Math.round((life.bankCsvTotal + life.frozenOutputs.cashAmount) * 100), Math.round(result.totals.net * 100));
+      assert.equal(life.frozenOutputs.cashAmount, 55800, "the stored cash list holds the agency's ฿55,800");
       assert.ok(life.bankReferences.length > 0 && life.bankReferences.every((r) => r === "SALARY SEP26"));
+      const transfers = life.frozenOutputs.banks.reduce((n, b) => n + b.transfers.length, 0);
+      assert.equal(life.bankReferences.length, transfers, "one TXNDET per transfer of the frozen result");
+    });
+    check("outputs: the stored SCB files keep the bank's byte rules — no BOM, CRLF, 28-field TXNDET, trailer = transfers", () => {
+      assert.ok(life.bankFiles.length >= 2, `${life.bankFiles.length} uploadable bank files`);
+      for (const f of life.bankFiles) {
+        assert.match(f.filename, /^SCB_file_reference_\d{12}\.txt$/);
+        assert.equal(f.bom, false, `${f.filename} has a BOM`); assert.equal(f.crlf, true, `${f.filename} is not CRLF`);
+        assert.ok(f.txndetFields.length > 0 && f.txndetFields.every((n) => n === 28), `${f.filename}: ${f.txndetFields.join(",")}`);
+      }
+      assert.equal(new Set(life.bankFiles.map((f) => f.debitAccount)).size, 2, "two paying accounts, two debit accounts");
+      assert.equal(Math.round(life.bankFiles.reduce((n, f) => n + f.trailerTotal, 0) * 100), Math.round(life.bankCsvTotal * 100));
+    });
+    check("outputs: the downloads page reconciles from the stored bytes at 0.00; EWF says Not configured; the bundle is there", () => {
+      const d = life.downloads;
+      assert.equal(d.reconciliation.reconciled, true, JSON.stringify(d.reconciliation.problems));
+      assert.equal(d.reconciliation.difference, 0);
+      assert.equal(d.reconciliation.bank, life.bankCsvTotal);
+      assert.deepEqual(d.ewf, { status: "not-configured" });
+      assert.equal(d.groups.some((g) => g.group === "Welfare fund (EWF)"), false, "no empty EWF workbook");
+      assert.ok(d.groups.some((g) => g.group === "Social security (SSO)" && g.files.every((f) => f.filename.endsWith(".xls"))), "an SSO .xls per SSO branch");
+      assert.ok(d.allFiles && d.allFiles.filename.endsWith("-all-downloads.zip"));
+      assert.equal(d.lockedBeforeR5, false);
     });
     check("lifecycle: exactly one payslip for the GM, served as frozen; opening it is written to the run audit", () => {
       assert.equal(life.gmPayslips, 1);

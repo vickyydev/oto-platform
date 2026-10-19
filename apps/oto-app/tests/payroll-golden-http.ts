@@ -20,12 +20,18 @@
 // second park group is answered 404 on every URL of the fixture's run. What
 // the lock froze is read back over HTTP — the frozen calculation, the bank
 // files and the cash list as stored — so checks 10-11 run on stored bytes.
+//
+// SCRUM-570 (Payroll R5): the bank files read back are the STORED SCB payment
+// TXT files (the SCB accounts' draft CSV is no longer stored), checked byte
+// for byte (no BOM, CRLF, 28-field TXNDET, reference SALARY SEP26), and the
+// money of checks 10-11 is what those files and the stored cash list hold.
 import { buildSeptemberGoldenFixture, GOLDEN_ENTITY, GOLDEN_MONTH } from "../server/payroll/diagnostics/september-golden-fixture";
 import type { GoldenIds } from "../server/payroll/diagnostics/september-golden";
 import type { CompanyCalculation } from "../server/payroll/engine/company-model";
 import { caller, database, makeEmployee, makeGroup, serve, signIn, stopServers, APP_ENV } from "./payroll-harness";
 import { fictionalThaiId } from "../server/payroll/engine/upload-common";
 import type { CompanyOutputs, CompanyResult } from "../server/payroll/engine/company-model";
+import type { PayrollDownloadsView } from "../shared/payroll-month";
 
 const C = "hkt-central", H = "hkt-chalong";
 const reason = "ZZ TEST SCRUM-568 September golden over HTTP";
@@ -40,7 +46,9 @@ export interface GoldenLifecycle {
   lock: { status: number; body: { status: string; version: number; snapshotId: string; lines: number; files: number } };
   lockAgain: { status: number; body: { unchanged: boolean } };
   frozenCalc: CompanyCalculation; frozenResult: CompanyResult; frozenOutputs: CompanyOutputs;
-  bankCsvTotal: number; bankReferences: string[]; gmPayslips: number; payslipOpens: number; gmPayslipHtml: string; gmName: string;
+  bankCsvTotal: number; bankReferences: string[];
+  bankFiles: { filename: string; bom: boolean; crlf: boolean; txndetFields: number[]; debitAccount: string; trailerTotal: number }[];
+  downloads: PayrollDownloadsView; gmPayslips: number; payslipOpens: number; gmPayslipHtml: string; gmName: string;
   paid: { status: number; body: { status: string } };
   reopen: { status: number; body: { status: string; version: number } };
   reopenAgain: { status: number; body: { unchanged: boolean; version: number } };
@@ -180,16 +188,27 @@ export async function runGoldenHttpLeg(options: { lifecycle?: boolean } = {}): P
         return res.text();
       };
       const fileOf = (name: string) => version.files.find((f: { filename: string }) => f.filename === name);
-      const banks = [];
+      const fileBytes = async (id: string) => {
+        const res = await fetch(`${origin}/api/payroll/history/files/${id}?download=1`, { headers: { cookie: g.cookies.admin } });
+        if (res.status !== 200) throw new Error(`file ${id}: ${res.status}`);
+        return Buffer.from(await res.arrayBuffer());
+      };
+      // ── R5: the SCB payment files as STORED, read byte for byte (checks 10-11 on stored files) ──
+      const downloads = await ok("GET", `/api/payroll/history/${entity.id}/${GOLDEN_MONTH}/1/downloads`);
+      const bankFiles: GoldenLifecycle["bankFiles"] = [];
       let bankCsvTotal = 0;
       const bankReferences: string[] = [];
-      for (const b of version.manifest.banks) {
-        const csv = await fileText(fileOf(b.filename).id);
-        const rows = csv.replace(/^\uFEFF/, "").trim().split(/\r?\n/).map((row: string) => (row.match(/"(?:[^"]|"")*"|[^,]+|(?<=,)(?=,|$)/g) ?? []).map((f) => f.replace(/^"|"$/g, "").replace(/""/g, '"')));
-        const amount = rows[0].indexOf("Amount"), ref = rows[0].indexOf("Reference");
-        for (const row of rows.slice(1)) { bankCsvTotal += Number(row[amount]); bankReferences.push(row[ref]); }
-        banks.push({ ...b, csv });
+      const uploadable = version.files.filter((f: { group: string; filename: string }) => f.group === "Bank files" && !f.filename.endsWith(".xlsx"));
+      for (const f of uploadable as { id: string; filename: string }[]) {
+        const bytes = await fileBytes(f.id);
+        const text = bytes.toString("utf8");
+        const lines = text.split("\r\n").filter((l) => l).map((l) => l.split("|"));
+        const txn = lines.filter((l) => l[0] === "TXNDET");
+        for (const l of txn) { bankCsvTotal += Number(l[6]); bankReferences.push(l[27]); }
+        bankFiles.push({ filename: f.filename, bom: bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf, crlf: text.endsWith("\r\n") && !/(^|[^\r])\n/.test(text),
+          txndetFields: txn.map((l) => l.length), debitAccount: lines.find((l) => l[0] === "BCHDET")?.[4] ?? "", trailerTotal: Number(lines.find((l) => l[0] === "TRAILR")?.[3]) });
       }
+      const banks = version.manifest.banks;
       const cashHtml = await fileText(fileOf(`${entity.id}-${GOLDEN_MONTH}-cash-signature-list.html`).id);
       const reports: Record<string, string> = {};
       for (const name of version.manifest.reports) reports[name] = await fileText(fileOf(`${entity.id}-${GOLDEN_MONTH}-${name}`).id);
@@ -200,7 +219,12 @@ export async function runGoldenHttpLeg(options: { lifecycle?: boolean } = {}): P
       const payslipOpens = await count("select count(*) n from payroll_run_audit where tenant_id = $1 and action = 'Opened a payslip'", [g.tenant]) - opensBefore;
       // Every payslip is a frozen file; the GM's is read back whole, the rest are named by their file.
       const payslips = Object.fromEntries(slips.map((f) => [f.employeeId, f.employeeId === staff["gold-gm"] ? gmPayslipHtml : `frozen file ${f.id}`]));
-      const frozenOutputs = { ...version.manifest, banks, cashHtml, reports, payslips } as unknown as CompanyOutputs;
+      // The money of checks 10-11 is the STORED files' own: the TXT transfers and the cash list's rows.
+      const storedCash = Math.round([...cashHtml.matchAll(/<td class="number">฿([\d,]+(?:\.\d+)?)<\/td>/g)].reduce((n, m) => n + Number(m[1].replace(/,/g, "")) * 100, 0)) / 100;
+      const bankTotal = Math.round(bankCsvTotal * 100) / 100;
+      const net = (frozen.result as CompanyResult).totals.net;
+      const frozenOutputs = { ...version.manifest, banks, cashHtml, reports, payslips, bankAmount: bankTotal, cashAmount: storedCash,
+        difference: Math.round((net - bankTotal - storedCash) * 100) / 100 } as unknown as CompanyOutputs;
       const gmPayslips = gmSlips.length;
       const snapshotFingerprint = () => q<{ h: string; status: string }>(`select md5(s.result::text || s.calculation::text || s.world::text || s.outputs_manifest::text) h, v.status from payroll_run_snapshots s
         join payroll_run_versions v on v.id = s.run_version_id where s.tenant_id = $1 and s.version = 1`, [g.tenant]);
@@ -216,14 +240,14 @@ export async function runGoldenHttpLeg(options: { lifecycle?: boolean } = {}): P
       const slip = version.files.find((f: { group: string }) => f.group === "Payslips");
       const urls: [string, string][] = [
         ["GET", base], ["GET", `${base}/preview`], ["POST", `${base}/confirm`], ["POST", `${base}/lock`], ["POST", `${base}/paid`], ["POST", `${base}/reopen`],
-        ["GET", `/api/payroll/history/${entity.id}/${GOLDEN_MONTH}/1`], ["GET", `/api/payroll/history/files/${slip.id}`], ["GET", `/api/payroll/me/payslips/${slip.id}`],
+        ["GET", `/api/payroll/history/${entity.id}/${GOLDEN_MONTH}/1`], ["GET", `/api/payroll/history/${entity.id}/${GOLDEN_MONTH}/1/downloads`], ["GET", `/api/payroll/history/files/${slip.id}`], ["GET", `/api/payroll/me/payslips/${slip.id}`],
       ];
       const crossTenant = [];
       for (const [method, url] of urls) crossTenant.push({ url: `${method} ${url}`, status: (await call(other, "operator_admin", method, url, { reason })).status });
       lifecycle = {
         previewBefore, previewUnchanged: nets(previewBefore) === nets(preview.result), refusals,
         confirm, lock, lockAgain, frozenCalc: frozen.calculation, frozenResult: frozen.result, frozenOutputs,
-        bankCsvTotal: Math.round(bankCsvTotal * 100) / 100, bankReferences, gmPayslips, payslipOpens, gmPayslipHtml,
+        bankCsvTotal: bankTotal, bankReferences, bankFiles, downloads, gmPayslips, payslipOpens, gmPayslipHtml,
         gmName: (frozen.result as CompanyResult).people.find((p) => p.id === staff["gold-gm"])?.name ?? "",
         paid, reopen, reopenAgain, v1Unchanged: v1Before.h === v1After.h, v1Status: v1After.status,
         currentVersion: view.run.version, currentStatus: view.run.status, crossTenant,

@@ -257,7 +257,8 @@ try {
     assert.equal(locked.status, "locked"); assert.equal(locked.version, 1);
     assert.equal(await count("select count(*) n from payroll_run_snapshots where tenant_id = $1", [A.tenant]), 1);
     assert.ok(await count("select count(*) n from payroll_run_lines where tenant_id = $1", [A.tenant]) > 4);
-    assert.equal(await count("select count(*) n from payroll_output_files where tenant_id = $1 and file_group = 'Payslips'", [A.tenant]), 2);
+    // One payslip per person (R5, SCRUM-570, adds the prototype's payslips ZIP to the group: no employee).
+    assert.equal(await count("select count(*) n from payroll_output_files where tenant_id = $1 and file_group = 'Payslips' and employee_id is not null", [A.tenant]), 2);
     const again = await must(A, "operator_admin", "POST", `${base}/lock`, { reason });
     assert.equal(again.unchanged, true);
     const [audit] = await q<{ reason: string }>("select reason from payroll_run_audit where tenant_id = $1 and action = 'Owner lock'", [A.tenant]);
