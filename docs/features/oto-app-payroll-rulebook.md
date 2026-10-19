@@ -173,3 +173,30 @@ Plus the hardcoded demo values that must become configuration: rule
 assignments by staff id/array index, the ฿60/branch food default keyed on a
 branch id, branch names in output layout, the "Casual" role by string, the
 EWF start date and the 28th pay date.
+
+## 10. Corrections from the build planning (2026-10-20)
+
+The deep read for the real build (docs/progress/plans/payroll-real-build/
+PLAN.md) found the prototype's code saying otherwise in five places; the
+code wins over the prose above:
+
+1. **The company month-end never reaches the tax documents or the OT
+   bank.** Both read the OLDER per-branch snapshots; a company lock writes
+   only its own. As the prototype stands, banked overtime is never
+   credited and PND.1ก / 50 ทวิ / the EWF documents never see a company
+   run. The real build connects them (owner decision 3 in the plan).
+2. **PIT prior withholding is always estimated** — the company engine
+   passes no year-to-date figure even when locked months exist (part of
+   concern §9.2).
+3. **§5's "eligible days ÷ employed days" only holds for rules not set to
+   prorate** — and the prototype migrates every seeded rule to prorate,
+   which divides by calendar days instead.
+4. **Fixed allowances go to owner-household workers too**, not only
+   monthly ones.
+5. **GM confirm blocks only attendance items** (the confirm screen allows
+   other open problems through); Owner lock still blocks on everything.
+
+Also for the record: the old dormant engine's advances handling is broken
+in ways that dissolve with its retirement (two repayment types deduct 0 by
+a type-name mismatch, the percent rule reads gross not net, and the create
+route answers 500) — so concern §9.3 conflicts with no live behaviour.
