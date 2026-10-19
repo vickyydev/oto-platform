@@ -182,12 +182,6 @@ const dailyOperationsItems: MenuItem[] = [
     icon: CalendarDays,
     managerOnly: true,
   },
-  {
-    title: "Time & Attendance",
-    url: "/time-attendance",
-    icon: Clock,
-    adminOnly: true,
-  },
 ];
 
 const peopleAndHrItems: MenuItem[] = [
