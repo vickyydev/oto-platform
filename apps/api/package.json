@@ -8,7 +8,8 @@
     "start": "tsx src/index.ts",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run --pool=forks",
-    "api-types": "tsx scripts/api-types.ts"
+    "api-types": "tsx scripts/api-types.ts",
+    "inbox:demo": "tsx scripts/inbox-demo.ts"
   },
   "dependencies": {
     "@fastify/cookie": "^11.0.2",

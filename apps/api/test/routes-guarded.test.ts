@@ -170,6 +170,12 @@ describe('route guards (S2-01b)', () => {
        * which is every live park (`assertProductionSafe`).
        */
       'GET /webhooks/2c2p/hosted/:attemptId',
+      /**
+       * S2-19 I2d — Meta's webhook subscription challenge for one inbox
+       * channel account. It echoes `hub.challenge` only when the verify token
+       * is this deployment's, answers 403 otherwise, and writes nothing.
+       */
+      'GET /webhooks/inbox/:channelAccountId',
       // S2-02: the app's origin has no session yet — that is the point. The
       // token is the credential, fenced by its signature, its one-minute life
       // and its single-use jti.
@@ -231,6 +237,15 @@ describe('route guards (S2-01b)', () => {
        * being believed.
        */
       'POST /webhooks/2c2p/payment',
+      /**
+       * S2-19 I2d — what a messaging provider (Meta's WhatsApp Cloud API, or
+       * the inbox simulator in-process) posts to us. The same contract as the
+       * 2C2P webhook above: no session will ever exist for the caller, the
+       * `X-Hub-Signature-256` HMAC over the raw bytes IS the authentication
+       * and is checked before a field is read, and it answers 200 even when it
+       * refuses — a refused delivery is a receipt with `signature_ok=false`.
+       */
+      'POST /webhooks/inbox/:channelAccountId',
     ]);
   });
 

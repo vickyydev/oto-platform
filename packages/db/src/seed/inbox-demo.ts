@@ -27,7 +27,7 @@
 import { hash } from '@node-rs/argon2';
 import { newId, normalizePhone, type InboxRole } from '@oto/shared';
 import { and, eq, isNull } from 'drizzle-orm';
-import { closeDb, getDb, type Db } from '../index';
+import type { Db } from '../index';
 import * as s from '../schema/index';
 import type { InboxTeamKey } from '../schema/inbox';
 import { DemoDayRefusedError } from './demo-refusal';
@@ -67,8 +67,12 @@ export function assertInboxDemoAllowed(env: Record<string, string | undefined> =
   }
 }
 
-/** A database handle or a transaction: everything the demo writes through. */
-export type Writer = Pick<Db, 'insert' | 'select' | 'update'>;
+/**
+ * The transaction one conversation is delivered in: everything the demo writes
+ * through. A whole transaction handle, not a few of its methods, because the
+ * ingest opens its own savepoints inside it.
+ */
+export type Writer = Parameters<Parameters<Db['transaction']>[0]>[0];
 
 /** Everything the delivery of one conversation needs, resolved once. */
 export interface DemoContext {
@@ -86,7 +90,7 @@ export interface DemoDelivered {
   events: number;
 }
 
-/** How one conversation reaches the database. */
+/** How one conversation reaches the database — the api's ingest, played by its simulator. */
 export type DemoDelivery = (
   db: Writer,
   ctx: DemoContext,
@@ -105,271 +109,21 @@ export interface InboxDemoCounts {
   events: number;
 }
 
-const minutesBefore = (now: Date, minutes: number) => new Date(now.getTime() - minutes * 60_000);
-
-/** The team a conversation sits with: its category's, and for general the park's reception. */
-function teamFor(ctx: DemoContext, conv: DemoConversation): string | null {
-  switch (conv.hint.category) {
-    case 'birthdays':
-      return ctx.teams.birthdays;
-    case 'marketing':
-      return ctx.teams.marketing;
-    case 'general':
-      return ctx.teams.reception[conv.hint.branch ?? 'central'];
-  }
-}
-
 // =============================================================================
-// SIMULATOR SEAM (I2d) — where the ingest replaces these direct inserts.
+// THE DELIVERY — played through the ingest (S2-19 I2d, SCRUM-583).
 // =============================================================================
 //
-// `directInsertDelivery` writes a conversation straight into the tables, in
-// the shape I2's ingest and router will produce: one contact per handle, one
-// thread per contact and channel account, the inbound messages with their
-// provider ids, the primary and the backup as support, and the `routed`,
-// `assigned` and `handled` pills.
-//
-// In Cut B the inbound half is PLAYED instead: each customer message becomes
-// a signed simulator webhook (`POST /inbox/simulator/scenario`, plan §2.1),
-// so the demo itself proves verification, receipt dedupe, contact and thread
-// upsert, routing and the backup rule. When I2's ingest lands, pass a
-// `deliver` that does that to `seedInboxDemo` — the fixtures, the staff, the
-// channel accounts and the guard above stay exactly as they are, and this
-// function is deleted. Until then it is the only writer of inbox rows outside
-// platform-sync, and it writes none of the audit rows a real route would.
-export const directInsertDelivery: DemoDelivery = async (db, ctx, conv, now) => {
-  const account = ctx.channelAccounts[conv.account];
-  const nothing: DemoDelivered = { created: false, messages: 0, assignments: 0, events: 0 };
-
-  // The contact, by (operator, channel, handle).
-  const [madeContact] = await db
-    .insert(s.contact)
-    .values({
-      id: newId(),
-      operatorId: ctx.operatorId,
-      channel: account.channel as typeof s.contact.$inferInsert.channel,
-      externalHandle: conv.contact.handle,
-      displayName: conv.contact.displayName,
-      phone: conv.contact.phone,
-      language: conv.hint.language,
-      firstSeenAt: minutesBefore(now, conv.messages[0]!.minutesAgo),
-      lastSeenAt: minutesBefore(
-        now,
-        Math.min(...conv.messages.filter((m) => m.from === 'customer').map((m) => m.minutesAgo)),
-      ),
-    })
-    .onConflictDoNothing({ target: [s.contact.operatorId, s.contact.channel, s.contact.externalHandle] })
-    .returning({ id: s.contact.id });
-  const contactId =
-    madeContact?.id ??
-    (
-      await db
-        .select({ id: s.contact.id })
-        .from(s.contact)
-        .where(
-          and(
-            eq(s.contact.operatorId, ctx.operatorId),
-            eq(s.contact.channel, account.channel as typeof s.contact.$inferSelect.channel),
-            eq(s.contact.externalHandle, conv.contact.handle),
-          ),
-        )
-        .limit(1)
-    )[0]!.id;
-
-  // One thread per contact per channel account: present means delivered.
-  const [existing] = await db
-    .select({ id: s.conversation.id })
-    .from(s.conversation)
-    .where(
-      and(
-        eq(s.conversation.operatorId, ctx.operatorId),
-        eq(s.conversation.contactId, contactId),
-        eq(s.conversation.channelAccountId, account.id),
-      ),
-    )
-    .limit(1);
-  if (existing) return nothing;
-
-  // A WhatsApp contact joins the member register by phone (soft link).
-  let memberId: string | null = null;
-  if (conv.contact.phone) {
-    const [m] = await db
-      .select({ id: s.member.id })
-      .from(s.member)
-      .where(
-        and(eq(s.member.operatorId, ctx.operatorId), eq(s.member.phone, conv.contact.phone), isNull(s.member.archivedAt)),
-      )
-      .limit(1);
-    memberId = m?.id ?? null;
-  }
-
-  const at = conv.messages.map((m) => minutesBefore(now, m.minutesAgo));
-  const startedAt = at[0]!;
-  const lastAt = at[at.length - 1]!;
-  const customerTimes = conv.messages.flatMap((m, i) => (m.from === 'customer' ? [at[i]!] : []));
-  // AI lines are not an answer (`WhatsAppDemo.tsx` isUnanswered): only staff count.
-  const staffTimes = conv.messages.flatMap((m, i) => (m.from === 'staff' ? [at[i]!] : []));
-  const last = conv.messages[conv.messages.length - 1]!;
-  const handled = conv.handledBy !== undefined;
-  const handledAt = handled ? new Date(lastAt.getTime() + 5 * 60_000) : null;
-  const conversationId = newId();
-
-  await db.insert(s.conversation).values({
-    id: conversationId,
-    operatorId: ctx.operatorId,
-    contactId,
-    channelAccountId: account.id,
-    teamId: teamFor(ctx, conv),
-    branchId: conv.hint.branch ? ctx.branches[conv.hint.branch] : null,
-    category: conv.hint.category,
-    intent: conv.hint.intent,
-    language: conv.hint.language,
-    status: handled ? 'handled' : 'active',
-    handledAt,
-    handledByKind: handled ? 'account' : null,
-    handledByAccountId: handled ? ctx.staff[conv.handledBy!] : null,
-    firstResponseAt: staffTimes[0] ?? null,
-    lastCustomerMessageAt: customerTimes.at(-1) ?? null,
-    lastStaffMessageAt: staffTimes.at(-1) ?? null,
-    lastRoutedAt: startedAt,
-    lastMessageAt: lastAt,
-    lastMessagePreview: last.text.slice(0, 140),
-    memberId,
-    createdAt: startedAt,
-  });
-
-  const messageIds: string[] = [];
-  const rows = conv.messages.map((m, i) => {
-    const id = newId();
-    messageIds.push(id);
-    const inbound = m.from === 'customer';
-    return {
-      id,
-      operatorId: ctx.operatorId,
-      conversationId,
-      channelAccountId: account.id,
-      direction: inbound ? ('inbound' as const) : ('outbound' as const),
-      authorKind: inbound ? ('customer' as const) : m.from === 'ai' ? ('ai' as const) : ('staff' as const),
-      authorAccountId: m.from === 'staff' ? ctx.staff[m.staff!] : null,
-      body: m.text,
-      bodyLanguage: conv.hint.language,
-      // The provider's id for it, as the simulator would mint one.
-      externalMessageId: `${conv.key}:${inbound ? 'in' : 'out'}:${i}`,
-      providerStatus: inbound ? null : ('read' as const),
-      sentAt: inbound ? null : at[i]!,
-      deliveredAt: inbound ? null : at[i]!,
-      readAt: inbound ? null : new Date(at[i]!.getTime() + 60_000),
-      source: 'channel' as const,
-      createdAt: at[i]!,
-    };
-  });
-  await db.insert(s.message).values(rows);
-
-  // Owners: the primary, then the support places in order.
-  const assignments: Array<typeof s.assignment.$inferInsert> = [];
-  if ('staff' in conv.primary) {
-    assignments.push({
-      id: newId(),
-      operatorId: ctx.operatorId,
-      conversationId,
-      slot: 'primary',
-      slotIndex: 0,
-      assigneeKind: 'account',
-      accountId: ctx.staff[conv.primary.staff],
-      assignedByKind: 'system',
-      reason: 'auto',
-      assignedAt: startedAt,
-    });
-  } else {
-    assignments.push({
-      id: newId(),
-      operatorId: ctx.operatorId,
-      conversationId,
-      slot: 'primary',
-      slotIndex: 0,
-      assigneeKind: 'team',
-      teamId: ctx.teams.reception[conv.primary.reception]!,
-      assignedByKind: 'system',
-      reason: 'auto',
-      assignedAt: startedAt,
-    });
-  }
-  conv.support.forEach((key, i) => {
-    // The rule's backup arrives with the first message; anyone else was added by the GM.
-    const isBackup = DEMO_RULE_PEOPLE.some((r) => r.backup === key && r.category === conv.hint.category);
-    assignments.push({
-      id: newId(),
-      operatorId: ctx.operatorId,
-      conversationId,
-      slot: 'support',
-      slotIndex: i + 1,
-      assigneeKind: 'account',
-      accountId: ctx.staff[key],
-      assignedByKind: isBackup ? 'system' : 'account',
-      assignedByAccountId: isBackup ? null : ctx.staff.gm,
-      reason: isBackup ? 'auto' : 'manual',
-      assignedAt: isBackup ? startedAt : new Date(startedAt.getTime() + 10 * 60_000),
-    });
-  });
-  await db.insert(s.assignment).values(assignments);
-
-  // The pills. Ids, slots and the team only — never a body.
-  const events: Array<typeof s.inboxEvent.$inferInsert> = [
-    {
-      id: newId(),
-      operatorId: ctx.operatorId,
-      conversationId,
-      kind: 'routed',
-      actorKind: 'system',
-      payload: { teamId: teamFor(ctx, conv), category: conv.hint.category, language: conv.hint.language },
-      createdAt: startedAt,
-    },
-    ...assignments.map((a) => ({
-      id: newId(),
-      operatorId: ctx.operatorId,
-      conversationId,
-      kind: 'assigned' as const,
-      actorKind: a.assignedByKind === 'account' ? ('account' as const) : ('system' as const),
-      actorAccountId: a.assignedByAccountId ?? null,
-      payload: { assignmentId: a.id, slot: a.slot, assigneeKind: a.assigneeKind },
-      createdAt: a.assignedAt ?? startedAt,
-    })),
-  ];
-  if (handled) {
-    events.push({
-      id: newId(),
-      operatorId: ctx.operatorId,
-      conversationId,
-      kind: 'handled',
-      actorKind: 'account',
-      actorAccountId: ctx.staff[conv.handledBy!],
-      payload: {},
-      createdAt: handledAt!,
-    });
-  }
-  await db.insert(s.inboxEvent).values(events);
-
-  // The staff who wrote have read the thread up to their own last line.
-  const readers = new Map<string, { messageId: string; at: Date }>();
-  conv.messages.forEach((m, i) => {
-    if (m.from === 'staff') readers.set(ctx.staff[m.staff!], { messageId: messageIds[i]!, at: at[i]! });
-  });
-  if (readers.size > 0) {
-    await db.insert(s.participant).values(
-      [...readers].map(([accountId, r]) => ({
-        id: newId(),
-        operatorId: ctx.operatorId,
-        conversationId,
-        accountId,
-        firstSeenAt: startedAt,
-        lastReadMessageId: r.messageId,
-        lastReadAt: r.at,
-      })),
-    );
-  }
-
-  return { created: true, messages: rows.length, assignments: assignments.length, events: events.length };
-};
+// I1b wrote the conversations straight into the tables here, behind a marked
+// simulator seam. The ingest has landed and that writer is gone: every demo
+// conversation's customer side is PLAYED — each customer line becomes a
+// signed simulator webhook through the api's real handler (verify, receipt,
+// dedupe, contact and thread upsert, routing with the backup added) — and the
+// staff side is laid around it. The delivery lives in the api
+// (`apps/api/src/services/inbox/simulator.ts`, `simulatorDemoDelivery`)
+// because the ingest does, and this package cannot reach the api: `deliver`
+// is therefore required, and the api passes it — from
+// `POST /inbox/simulator/scenario` and from `pnpm --filter @oto/api inbox:demo`
+// (which `pnpm --filter @oto/db seed:inbox-demo` forwards to).
 
 /** Find-or-create one demo staff member: employee, account, and the inbox grant. */
 async function demoStaff(
@@ -447,14 +201,16 @@ export interface SeedInboxDemoOptions {
   now?: Date;
   /** The environment the guard reads. Default: `process.env`. */
   env?: Record<string, string | undefined>;
-  /** How each conversation is delivered. Default: `directInsertDelivery` (see the seam above). */
-  deliver?: DemoDelivery;
+  /** How each conversation is delivered: the api's simulator through its ingest (see above). */
+  deliver: DemoDelivery;
+  /** The operator the demo goes into. Default: the one named OTO. */
+  operatorId?: string;
 }
 
-export async function seedInboxDemo(db: Db, opts: SeedInboxDemoOptions = {}): Promise<InboxDemoCounts> {
+export async function seedInboxDemo(db: Db, opts: SeedInboxDemoOptions): Promise<InboxDemoCounts> {
   assertInboxDemoAllowed(opts.env);
   const now = opts.now ?? new Date();
-  const deliver = opts.deliver ?? directInsertDelivery;
+  const deliver = opts.deliver;
   const counts: InboxDemoCounts = {
     staffCreated: 0,
     rulesNamed: 0,
@@ -469,7 +225,7 @@ export async function seedInboxDemo(db: Db, opts: SeedInboxDemoOptions = {}): Pr
   const [operator] = await db
     .select({ id: s.operator.id })
     .from(s.operator)
-    .where(eq(s.operator.name, 'OTO'))
+    .where(opts.operatorId ? eq(s.operator.id, opts.operatorId) : eq(s.operator.name, 'OTO'))
     .limit(1);
   if (!operator) {
     throw new InboxDemoRefusedError('No OTO operator to put the demo conversations in. Run `pnpm db:seed` first — this seeds on top of it.');
@@ -605,18 +361,4 @@ export async function seedInboxDemo(db: Db, opts: SeedInboxDemoOptions = {}): Pr
 
 export function describeInboxDemo(c: InboxDemoCounts): string {
   return `Inbox demo: ${c.conversationsCreated} conversation(s) written (${c.messages} messages, ${c.assignments} owners, ${c.events} timeline events), ${c.conversationsAlreadyThere} already there; ${c.staffCreated} demo staff created, ${c.rulesNamed} blank routing rule(s) named, ${c.channelAccountsCreated} simulator channel account(s) created. Demo staff sign in with password "${DEMO_STAFF_PASSWORD}".`;
-}
-
-const isMain = process.argv[1]?.replace(/\\/g, '/').endsWith('seed/inbox-demo.ts');
-if (isMain) {
-  seedInboxDemo(getDb())
-    .then((counts) => {
-      console.log(describeInboxDemo(counts));
-      return closeDb();
-    })
-    .catch((err) => {
-      console.error(err instanceof DemoDayRefusedError ? err.message : err);
-      process.exitCode = 1;
-      return closeDb();
-    });
 }

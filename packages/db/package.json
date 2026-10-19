@@ -16,7 +16,7 @@
     "migrate": "drizzle-kit migrate",
     "seed": "tsx src/seed/index.ts",
     "seed:demo-day": "tsx src/seed/demo-day.ts",
-    "seed:inbox-demo": "tsx src/seed/inbox-demo.ts",
+    "seed:inbox-demo": "pnpm --filter @oto/api inbox:demo",
     "platform:sync": "tsx src/seed/index.ts --platform-only",
     "snapshot": "tsx scripts/snapshot.ts",
     "verify-schema": "tsx scripts/verify-schema.ts",

@@ -77,6 +77,12 @@ const MACHINE_CALLERS: Array<{ prefix: string; except?: string; caller: string }
     except: '/box/v1/station/',
     caller: 'the box agent (packages/box-agent), with its own credential',
   },
+  // ABOVE the generic /webhooks/ entry: `find` takes the first match, and below
+  // it this route would be filed under 2C2P (S2-19 I2d, plan §6).
+  {
+    prefix: '/webhooks/inbox/',
+    caller: 'Meta (WhatsApp Cloud), or the inbox simulator in-process — signed by either',
+  },
   { prefix: '/webhooks/', caller: 'the payment gateway (2C2P), signed by it' },
   {
     prefix: '/public/bookings/return',
@@ -150,6 +156,10 @@ const NOT_YET_CALLED = new Map<string, string>([
   ['POST /inbox/conversations/{id}/read', 'the Inbox shell lands in I3'],
   ['GET /inbox/dashboard', 'the Inbox shell lands in I3'],
   ['GET /inbox/templates', 'the Inbox shell lands in I3'],
+  // 2026-10-20, S2-19 I2d (SCRUM-583): the Inbox shell's simulator panel lands in I3b.
+  ['POST /inbox/simulator/inbound', 'the Inbox shell lands in I3 (the simulator panel, I3b)'],
+  ['POST /inbox/simulator/status', 'the Inbox shell lands in I3 (the simulator panel, I3b)'],
+  ['POST /inbox/simulator/scenario', 'the Inbox shell lands in I3 (the simulator panel, I3b)'],
 ]);
 
 function machineCaller(path: string): string | null {

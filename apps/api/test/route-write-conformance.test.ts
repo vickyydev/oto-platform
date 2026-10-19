@@ -650,6 +650,17 @@ const OPEN_WITHOUT_A_KEY = [
    *     exceptional: 2C2P publishes no retry schedule.
    */
   'POST /webhooks/2c2p/payment',
+  /**
+   *   - **the provider event id is its own key** — `POST /webhooks/inbox/:channelAccountId`
+   *     (S2-19 I2d). Meta's server has no account either. The delivery is
+   *     recorded as `inbox.webhook_receipt`, unique on `(channel_account_id,
+   *     provider_event_id)` with the delivery's SHA-256 as that id, so a
+   *     byte-for-byte redelivery stops at the receipt; and each message is
+   *     unique on `(channel_account_id, external_message_id)`, so one that
+   *     arrives again inside a different delivery is skipped before it
+   *     touches a contact or a thread (`inbox-ingest.test.ts`).
+   */
+  'POST /webhooks/inbox/:channelAccountId',
 ];
 
 describe('the idempotency key (SCRUM-291)', () => {

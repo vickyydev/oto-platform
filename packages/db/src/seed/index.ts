@@ -110,9 +110,10 @@ export {
 export {
   assertInboxDemoAllowed,
   describeInboxDemo,
-  directInsertDelivery,
   InboxDemoRefusedError,
   seedInboxDemo,
+  type DemoContext,
+  type DemoDelivered,
   type DemoDelivery,
   type InboxDemoCounts,
 } from './inbox-demo';
@@ -122,6 +123,8 @@ export {
   DEMO_RULE_PEOPLE,
   DEMO_STAFF,
   DEMO_STAFF_PASSWORD,
+  type DemoConversation,
+  type DemoStaffKey,
 } from './inbox-demo-fixtures';
 /** The demo day's events, camp and party in the OTO App, and its walk-up prices (S2-20 E5). */
 export { describeDemoEvents, seedDemoEvents, type DemoEventsCounts } from './demo-events';

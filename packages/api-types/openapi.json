@@ -41177,6 +41177,411 @@
         }
       }
     },
+    "/webhooks/inbox/{channelAccountId}": {
+      "get": {
+        "description": "Meta's webhook subscription challenge for one inbox channel account: echoes hub.challenge as plain text when hub.mode is subscribe and hub.verify_token is this deployment's; 403 otherwise. Public — the verify token is the check.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "hub.mode",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "hub.verify_token",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "hub.challenge",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "channelAccountId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      },
+      "post": {
+        "description": "A messaging provider's delivery for one inbox channel account (WhatsApp Cloud API shape; the simulator signs the same). Verified on its raw bytes (X-Hub-Signature-256), recorded as a webhook receipt keyed on the delivery, its messages deduplicated on their provider ids, filed, routed and, out of hours, answered. It ALWAYS answers 200, refusals included — a non-200 makes the provider redeliver.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "channelAccountId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "outcome": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "outcome"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inbox/simulator/inbound": {
+      "post": {
+        "description": "Play one pretend customer message into a simulator channel account: signed with this deployment's simulator secret and sent through the real inbox webhook handler (verify, receipt, dedupe, contact, thread, routing, out-of-hours). Simulator only (INBOX_SIMULATOR=on).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "channelAccountId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "from": {
+                    "type": "string",
+                    "pattern": "^\\d{6,15}$"
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "text": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4096
+                  },
+                  "hint": {
+                    "type": "object",
+                    "properties": {
+                      "category": {
+                        "type": "string",
+                        "enum": [
+                          "birthdays",
+                          "general",
+                          "marketing"
+                        ]
+                      },
+                      "intent": {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      "language": {
+                        "type": "string",
+                        "minLength": 2,
+                        "maxLength": 8
+                      },
+                      "branchId": {
+                        "type": "string",
+                        "format": "uuid"
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "channelAccountId",
+                  "from",
+                  "text"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "outcome": {
+                      "type": "string"
+                    },
+                    "receiptId": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "messages": {
+                      "type": "integer"
+                    },
+                    "duplicates": {
+                      "type": "integer"
+                    },
+                    "statuses": {
+                      "type": "integer"
+                    },
+                    "conversationsCreated": {
+                      "type": "integer"
+                    },
+                    "reopened": {
+                      "type": "integer"
+                    },
+                    "outOfHours": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "conversationIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "externalMessageId": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "outcome",
+                    "receiptId",
+                    "messages",
+                    "duplicates",
+                    "statuses",
+                    "conversationsCreated",
+                    "reopened",
+                    "outOfHours",
+                    "conversationIds",
+                    "externalMessageId"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inbox/simulator/status": {
+      "post": {
+        "description": "Push delivery receipts through the real inbox webhook for a simulator channel account: one named status for one outbound message, or, with none named, every delivered and read receipt the simulator scheduled for the replies it accepted. Simulator only.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "channelAccountId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "externalMessageId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "sent",
+                      "delivered",
+                      "read",
+                      "failed"
+                    ]
+                  }
+                },
+                "required": [
+                  "channelAccountId"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "deliveries": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "outcome": {
+                            "type": "string"
+                          },
+                          "receiptId": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "messages": {
+                            "type": "integer"
+                          },
+                          "duplicates": {
+                            "type": "integer"
+                          },
+                          "statuses": {
+                            "type": "integer"
+                          },
+                          "conversationsCreated": {
+                            "type": "integer"
+                          },
+                          "reopened": {
+                            "type": "integer"
+                          },
+                          "outOfHours": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "conversationIds": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "required": [
+                          "outcome",
+                          "receiptId",
+                          "messages",
+                          "duplicates",
+                          "statuses",
+                          "conversationsCreated",
+                          "reopened",
+                          "outOfHours",
+                          "conversationIds"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "deliveries"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inbox/simulator/scenario": {
+      "post": {
+        "description": "Play the inbox demo conversations into the caller's operator: ten fictional threads whose customer lines go through the simulator and the real webhook handler (so routing assigns them), the staff side laid around them, six demo staff and the four simulator channel accounts. Idempotent: a second play writes nothing. Simulator only, and refused on production.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "scenario": {
+                    "type": "string",
+                    "enum": [
+                      "demo"
+                    ]
+                  }
+                },
+                "required": [
+                  "scenario"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "staffCreated": {
+                      "type": "integer"
+                    },
+                    "rulesNamed": {
+                      "type": "integer"
+                    },
+                    "channelAccountsCreated": {
+                      "type": "integer"
+                    },
+                    "conversationsCreated": {
+                      "type": "integer"
+                    },
+                    "conversationsAlreadyThere": {
+                      "type": "integer"
+                    },
+                    "messages": {
+                      "type": "integer"
+                    },
+                    "assignments": {
+                      "type": "integer"
+                    },
+                    "events": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "staffCreated",
+                    "rulesNamed",
+                    "channelAccountsCreated",
+                    "conversationsCreated",
+                    "conversationsAlreadyThere",
+                    "messages",
+                    "assignments",
+                    "events"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/audit/": {
       "get": {
         "description": "Query the audit log (keyset paginated, masked without admin:audit:read_sensitive)",

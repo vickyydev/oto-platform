@@ -655,6 +655,26 @@ services:
         # obtained comes from 2C2P onboarding and is not on the public docs.
         sync: false
 
+      # -- the Inbox's channels (S2-19) -----------------------------------------
+      # The simulator plays pretend customers through the real inbox webhook
+      # (POST /webhooks/inbox/<channel account id>). Staging runs it; a
+      # DEPLOY_ENV=production service refuses to start with it on. On without
+      # its secret refuses the boot everywhere.
+      - key: INBOX_SIMULATOR
+        value: 'on'
+      - key: INBOX_SIMULATOR_SECRET
+        # Signs and verifies the simulator's deliveries inside the api. Never
+        # reaches a browser. Any long random string.
+        sync: false
+      - key: INBOX_WHATSAPP_ENABLED
+        # Off in this story: no Meta account exists. True also needs the two
+        # below and INBOX_WHATSAPP_TOKEN_<credential_ref> per number.
+        value: 'false'
+      - key: INBOX_META_APP_SECRET
+        sync: false
+      - key: INBOX_META_VERIFY_TOKEN
+        sync: false
+
       # -- error reporting -----------------------------------------------------
       - key: SENTRY_DSN
         # Optional. The error hook is a no-op while this is empty.

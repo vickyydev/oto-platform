@@ -18088,6 +18088,249 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/webhooks/inbox/{channelAccountId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Meta's webhook subscription challenge for one inbox channel account: echoes hub.challenge as plain text when hub.mode is subscribe and hub.verify_token is this deployment's; 403 otherwise. Public — the verify token is the check. */
+        get: {
+            parameters: {
+                query?: {
+                    "hub.mode"?: string;
+                    "hub.verify_token"?: string;
+                    "hub.challenge"?: string;
+                };
+                header?: never;
+                path: {
+                    channelAccountId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        /** @description A messaging provider's delivery for one inbox channel account (WhatsApp Cloud API shape; the simulator signs the same). Verified on its raw bytes (X-Hub-Signature-256), recorded as a webhook receipt keyed on the delivery, its messages deduplicated on their provider ids, filed, routed and, out of hours, answered. It ALWAYS answers 200, refusals included — a non-200 makes the provider redeliver. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    channelAccountId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            outcome: string;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inbox/simulator/inbound": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Play one pretend customer message into a simulator channel account: signed with this deployment's simulator secret and sent through the real inbox webhook handler (verify, receipt, dedupe, contact, thread, routing, out-of-hours). Simulator only (INBOX_SIMULATOR=on). */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        channelAccountId: string;
+                        from: string;
+                        name?: string;
+                        text: string;
+                        hint?: {
+                            /** @enum {string} */
+                            category?: "birthdays" | "general" | "marketing";
+                            intent?: string;
+                            language?: string;
+                            /** Format: uuid */
+                            branchId?: string;
+                        };
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            outcome: string;
+                            receiptId: string | null;
+                            messages: number;
+                            duplicates: number;
+                            statuses: number;
+                            conversationsCreated: number;
+                            reopened: number;
+                            outOfHours: string[];
+                            conversationIds: string[];
+                            externalMessageId: string;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inbox/simulator/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Push delivery receipts through the real inbox webhook for a simulator channel account: one named status for one outbound message, or, with none named, every delivered and read receipt the simulator scheduled for the replies it accepted. Simulator only. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        channelAccountId: string;
+                        externalMessageId?: string;
+                        /** @enum {string} */
+                        status?: "sent" | "delivered" | "read" | "failed";
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            deliveries: {
+                                outcome: string;
+                                receiptId: string | null;
+                                messages: number;
+                                duplicates: number;
+                                statuses: number;
+                                conversationsCreated: number;
+                                reopened: number;
+                                outOfHours: string[];
+                                conversationIds: string[];
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inbox/simulator/scenario": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Play the inbox demo conversations into the caller's operator: ten fictional threads whose customer lines go through the simulator and the real webhook handler (so routing assigns them), the staff side laid around them, six demo staff and the four simulator channel accounts. Idempotent: a second play writes nothing. Simulator only, and refused on production. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        scenario: "demo";
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            staffCreated: number;
+                            rulesNamed: number;
+                            channelAccountsCreated: number;
+                            conversationsCreated: number;
+                            conversationsAlreadyThere: number;
+                            messages: number;
+                            assignments: number;
+                            events: number;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/audit/": {
         parameters: {
             query?: never;

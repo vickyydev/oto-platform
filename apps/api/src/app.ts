@@ -35,6 +35,9 @@ import { bookingRoutes } from './routes/bookings';
 import { saleRoutes } from './routes/sales';
 import { paymentRoutes } from './routes/payments';
 import { webhookRoutes } from './routes/webhooks';
+import { inboxWebhookRoutes } from './routes/inbox-webhooks';
+import { inboxSimulatorRoutes } from './routes/inbox-simulator';
+import { buildInboxChannels, type InboxChannels } from './services/inbox/channels';
 import { saleTierRoutes } from './routes/sale-tier';
 import { catalogRoutes } from './routes/catalog';
 import { branchCloneRoutes } from './routes/branch-clone';
@@ -96,6 +99,8 @@ declare module 'fastify' {
     sms: SmsSender;
     /** S2-20 E2 — the OTO App's directory API, where walk-ups and passes are written back. */
     otoAppDirectory: OtoAppDirectory;
+    /** S2-19 I2d — channel account to messaging adapter, one per account per process. */
+    inboxChannels: InboxChannels;
   }
 }
 
@@ -196,6 +201,9 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   );
   // S2-20 E2 — replaced in tests by a stub, as `sms` is.
   app.decorate('otoAppDirectory', buildOtoAppDirectory(opts.env, log));
+  // S2-19 I2d — the inbox's channel map. The console sender is read at send
+  // time, so a test's capturing `sms` is the one used.
+  app.decorate('inboxChannels', buildInboxChannels({ env: opts.env, consoleSender: () => app.sms }));
   // S2-20 E5 — a booked event pass is written back after the gateway's
   // settlement commits, which has no request to reach the app from: read
   // the decoration when it is needed, so a test's stub is the one used.
@@ -461,6 +469,11 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
    * beside the public routes rather than behind the session plugin.
    */
   await app.register(webhookRoutes, { prefix: '/webhooks' });
+  // S2-19 I2d — the inbox webhook keeps the raw bytes it must verify, so it
+  // is its own encapsulated plugin with full paths; and the simulator that
+  // drives it.
+  await app.register(inboxWebhookRoutes);
+  await app.register(inboxSimulatorRoutes);
   await app.register(auditRoutes, { prefix: '/audit' });
   await app.register(fileRoutes, { prefix: '/files' });
   // S2-13 — the supervision gate, the consent and the check-in choice (round 1, online).

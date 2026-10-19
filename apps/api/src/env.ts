@@ -656,6 +656,30 @@ const EnvSchema = z.object({
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: `OTOAPP_PROVISION_KEYS: ${(err as Error).message}` });
       }
     }),
+
+  /**
+   * THE INBOX'S CHANNELS (S2-19, plan `docs/progress/plans/inbox-build/PLAN.md`
+   * §2.3). Names only here; `@oto/messaging`'s `config.ts` is their one
+   * reading, and `services/inbox/channels.ts` is where a channel account
+   * becomes an adapter.
+   *
+   *  - `INBOX_SIMULATOR` — `on` lets `simulator` channel accounts receive (and
+   *    the `/inbox/simulator/*` drive routes answer). Local, CI and staging
+   *    only: production refuses to boot with it on (`assertProductionSafe`).
+   *  - `INBOX_SIMULATOR_SECRET` — what the simulator signs its deliveries
+   *    with. **Secret.** On without it refuses the boot.
+   *  - `INBOX_WHATSAPP_ENABLED` — `true` constructs the WhatsApp Cloud adapter
+   *    for `meta_cloud` accounts; default off, and off in this story.
+   *  - `INBOX_META_APP_SECRET`, `INBOX_META_VERIFY_TOKEN` — the Meta app's;
+   *    required when WhatsApp is on. The per-number token is
+   *    `INBOX_WHATSAPP_TOKEN_<credential_ref>`, read by name when the account
+   *    is first used, never declared here.
+   */
+  INBOX_SIMULATOR: z.enum(['on', 'off']).default('off'),
+  INBOX_SIMULATOR_SECRET: z.string().default(''),
+  INBOX_WHATSAPP_ENABLED: z.enum(['true', 'false']).default('false'),
+  INBOX_META_APP_SECRET: z.string().default(''),
+  INBOX_META_VERIFY_TOKEN: z.string().default(''),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
@@ -831,6 +855,14 @@ export function assertProductionSafe(env: Env): void {
     } else if (env.BAND_HMAC_KEY === DEV_DEFAULTS.bandHmacKey) {
       problems.push('BAND_HMAC_KEY is the development key');
     }
+    /**
+     * S2-19 — the inbox simulator plays pretend customers into a real
+     * inbox. Staging is a production build (`NODE_ENV=production`) and needs
+     * it, so the line is drawn on `DEPLOY_ENV`, as the gateway simulator's is.
+     */
+    if (env.INBOX_SIMULATOR === 'on') {
+      problems.push('INBOX_SIMULATOR is on — pretend customers could be played into a live park’s inbox');
+    }
     const gateway = resolveGatewayProvider(env);
     if (gateway.provider === 'simulator') {
       problems.push(
@@ -889,6 +921,24 @@ export function assertProductionSafe(env: Env): void {
       problems.push(
         'MINIO_USE_SSL is false — presigned upload and download URLs would travel in the clear',
       );
+    }
+  }
+
+  /**
+   * S2-19 — a channel switched on without what it needs is refused at boot,
+   * named, as `buildSmsSender` refuses Twilio with a variable missing. Read
+   * through `?? ''` because the boot-guard tests build partial envs.
+   */
+  if (env.INBOX_SIMULATOR === 'on' && !(env.INBOX_SIMULATOR_SECRET ?? '').trim()) {
+    problems.push('INBOX_SIMULATOR is on but INBOX_SIMULATOR_SECRET is not set — the simulator has nothing to sign with');
+  }
+  if (env.INBOX_WHATSAPP_ENABLED === 'true') {
+    const missing = [
+      (env.INBOX_META_APP_SECRET ?? '').trim() ? null : 'INBOX_META_APP_SECRET',
+      (env.INBOX_META_VERIFY_TOKEN ?? '').trim() ? null : 'INBOX_META_VERIFY_TOKEN',
+    ].filter((m): m is string => m !== null);
+    if (missing.length > 0) {
+      problems.push(`INBOX_WHATSAPP_ENABLED is true but ${missing.join(' and ')} ${missing.length > 1 ? 'are' : 'is'} not set`);
     }
   }
 
