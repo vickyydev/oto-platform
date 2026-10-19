@@ -200,3 +200,12 @@ Also for the record: the old dormant engine's advances handling is broken
 in ways that dissolve with its retirement (two repayment types deduct 0 by
 a type-name mismatch, the percent rule reads gross not net, and the create
 route answers 500) — so concern §9.3 conflicts with no live behaviour.
+
+6. **(Added 2026-10-20, R3) Valued unpaid leave is PAID, not deducted.**
+   The older calculation books the unpaid-leave line as negative and the
+   company engine negates it again (prototype company-calculations.ts:
+   104-107), so a frozen ฿1,000 unpaid day arrives as +฿1,000 and raises
+   the salary base. Built as the prototype computes it per the standing
+   ruling, marked PAYROLL-FINDING-R3 in the ported code; the seventh
+   matter for the park meeting. The checks deliberately do not pin the
+   sign, so the eventual correction will not break them.
