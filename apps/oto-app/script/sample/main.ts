@@ -79,7 +79,7 @@
 // read — on a laptop in Bangkok and on a deployment running in UTC alike.
 import './utc';
 
-import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { and, eq, getTableColumns, inArray, isNull, sql, Table } from 'drizzle-orm';
 import { db, pool } from '../../server/db';
 import {
   DEFAULT_TENANT_SLUG,
@@ -369,6 +369,25 @@ async function adoptLegacyEmail(
   return row;
 }
 
+/**
+ * The insert below writes OLD-shape rows. Drizzle lists every column of the table
+ * object in an INSERT (DEFAULT for those not given), so the full `employees`
+ * would name the birthday columns migration 0019 added, which the restore
+ * rehearsal's baseline-only schema does not have. This view of the same table
+ * leaves them out; the database fills them by default (NULL) where they exist.
+ */
+const {
+  birthdayMonth: _birthdayMonth,
+  birthdayDay: _birthdayDay,
+  birthdayYear: _birthdayYear,
+  ...oldEmployeeColumns
+} = getTableColumns(employees);
+const employeesAtBaseline = Object.create(
+  Object.getPrototypeOf(employees),
+  Object.getOwnPropertyDescriptors(employees),
+) as typeof employees;
+Object.defineProperty(employeesAtBaseline, Table.Symbol.Columns, { value: oldEmployeeColumns });
+
 async function ensureEmployees(
   tenantId: string,
   branchIds: Map<string, string>,
@@ -413,7 +432,7 @@ async function ensureEmployees(
       }
     } else {
       const [created] = await db
-        .insert(employees)
+        .insert(employeesAtBaseline)
         .values({
           tenantId,
           fullName: p.fullName,
