@@ -644,6 +644,18 @@ jobs:
       - name: The app's payroll feeds checks
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/payroll-feeds.check.ts
+      # SCRUM-569: the company payroll's R4 (migration 0025) — the golden step
+      # above now also runs the lifecycle leg (GM confirm, Owner lock, paid,
+      # reopen, another park group's 404s; checks 10-11 on the stored bytes).
+      # This check: every transition and refusal in plain words by role and
+      # state, the source signature voided by an input change and by an
+      # engine revision change, the frozen snapshot, lines, files and run
+      # audit refusing UPDATE/DELETE at the database, reopen versioning, the
+      # OT bank and advances from locked versions only, and staff payslips
+      # isolated by person and park group.
+      - name: The app's payroll lifecycle checks
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/payroll-lifecycle.check.ts
       # These five feature suites drive the app's handlers through its own
       # dependency tree. Run them here, where npm ci has installed that tree,
       # and keep the API workspace's ordinary full battery unchanged.

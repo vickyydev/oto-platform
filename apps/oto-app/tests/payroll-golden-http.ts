@@ -12,17 +12,43 @@
 // basis; then the run: started, the GM's PND.1 override and the two manual
 // bonuses. The preview route computes the month from what was stored, and
 // the same eleven checks run on its answer.
+//
+// SCRUM-569 (Payroll R4): the LIFECYCLE leg on the same park group. Each
+// person gets a valid fictional Thai ID, an SSO title and a given name (they
+// feed only warnings and upload files, never a number); then the GM confirms
+// (admin), the Owner locks (operator_admin), marks paid and reopens, and a
+// second park group is answered 404 on every URL of the fixture's run. What
+// the lock froze is read back over HTTP — the frozen calculation, the bank
+// files and the cash list as stored — so checks 10-11 run on stored bytes.
 import { buildSeptemberGoldenFixture, GOLDEN_ENTITY, GOLDEN_MONTH } from "../server/payroll/diagnostics/september-golden-fixture";
 import type { GoldenIds } from "../server/payroll/diagnostics/september-golden";
 import type { CompanyCalculation } from "../server/payroll/engine/company-model";
 import { caller, database, makeEmployee, makeGroup, serve, signIn, stopServers, APP_ENV } from "./payroll-harness";
+import { fictionalThaiId } from "../server/payroll/engine/upload-common";
+import type { CompanyOutputs, CompanyResult } from "../server/payroll/engine/company-model";
 
 const C = "hkt-central", H = "hkt-chalong";
 const reason = "ZZ TEST SCRUM-568 September golden over HTTP";
 
 let appPool: { end(): Promise<void> } | null = null;
 
-export async function runGoldenHttpLeg(): Promise<{ calc: CompanyCalculation; ids: GoldenIds; outputs: import("../server/payroll/engine/company-model").CompanyOutputs; previewMs: number; timing: { loadMs: number; calculateMs: number; queries: number }; stored: Record<string, number> }> {
+/** What the lifecycle leg saw, for the golden check to assert. */
+export interface GoldenLifecycle {
+  previewBefore: CompanyResult; previewUnchanged: boolean;
+  refusals: Record<string, { status: number; message: string }>;
+  confirm: { status: number; body: { status: string; signature: string } };
+  lock: { status: number; body: { status: string; version: number; snapshotId: string; lines: number; files: number } };
+  lockAgain: { status: number; body: { unchanged: boolean } };
+  frozenCalc: CompanyCalculation; frozenResult: CompanyResult; frozenOutputs: CompanyOutputs;
+  bankCsvTotal: number; bankReferences: string[]; gmPayslips: number; payslipOpens: number; gmPayslipHtml: string; gmName: string;
+  paid: { status: number; body: { status: string } };
+  reopen: { status: number; body: { status: string; version: number } };
+  reopenAgain: { status: number; body: { unchanged: boolean; version: number } };
+  v1Unchanged: boolean; v1Status: string; currentVersion: number; currentStatus: string;
+  crossTenant: { url: string; status: number }[];
+}
+
+export async function runGoldenHttpLeg(options: { lifecycle?: boolean } = {}): Promise<{ calc: CompanyCalculation; ids: GoldenIds; outputs: CompanyOutputs; previewMs: number; timing: { loadMs: number; calculateMs: number; queries: number }; stored: Record<string, number>; lifecycle: GoldenLifecycle | null }> {
   const { pool, q, count } = database();
   try {
     const g = await makeGroup(q, "golden", ["ZZ TEST Central", "ZZ TEST Chalong"]);
@@ -121,7 +147,89 @@ export async function runGoldenHttpLeg(): Promise<{ calc: CompanyCalculation; id
       policiesWithGroups: await count("select count(*) n from payroll_service_policies where tenant_id = $1 and policy ? 'groups'", [g.tenant]),
       partMonthDefaulted: await count("select count(*) n from payroll_incentive_rules where tenant_id = $1 and terms ? 'partMonth'", [g.tenant]),
     };
-    return { calc: preview.calculation, ids, outputs, previewMs, timing: preview.timing, stored };
+    let lifecycle: GoldenLifecycle | null = null;
+    if (options.lifecycle) {
+      // ── Upload details: a valid fictional Thai ID, an SSO title and a given name per person (no number moves) ──
+      let i = 0;
+      for (const { s } of people) {
+        const view = await ok("GET", `/api/payroll/profiles/${staff[s.id]}`);
+        const p = { ...view.profile, taxId: fictionalThaiId(++i), ssoTitle: "Mr.", givenName: s.name.split(" ")[0] || "ZZ", surname: s.name.split(" ").slice(1).join(" ") || "Test",
+          bankDetails: { ...view.profile.bankDetails, accountNumber: `990${String(i).padStart(7, "0")}` } };
+        await ok("PUT", `/api/payroll/profiles/${staff[s.id]}`, { profile: p, revision: view.revision, reason });
+      }
+      const as = (role: "admin" | "operator_admin" | "staff" | "manager") => (method: string, path: string, payload?: unknown) => call(g, role, method, path, payload);
+      const previewAgain = await ok("GET", `${base}/preview`);
+      const previewBefore = previewAgain.result as CompanyResult;
+      const nets = (r: CompanyResult) => JSON.stringify(r.people.map((p) => [p.id, p.gross, p.deductions, p.net, p.employer]).sort());
+      const refusals: GoldenLifecycle["refusals"] = {};
+      const refuse = async (label: string, res: Promise<{ status: number; body: { message?: string } }>) => { const r = await res; refusals[label] = { status: r.status, message: r.body?.message ?? "" }; };
+      await refuse("lock before confirm", as("operator_admin")("POST", `${base}/lock`, { reason }));
+      await refuse("admin locks", as("admin")("POST", `${base}/lock`, { reason }));
+      await refuse("staff confirms", as("staff")("POST", `${base}/confirm`, { reason }));
+      await refuse("manager confirms", as("manager")("POST", `${base}/confirm`, { reason }));
+      const confirm = await as("admin")("POST", `${base}/confirm`, { reason: "ZZ TEST GM review" });
+      const lock = await as("operator_admin")("POST", `${base}/lock`, { reason: "ZZ TEST Owner review" });
+      const lockAgain = await as("operator_admin")("POST", `${base}/lock`, { reason: "ZZ TEST repeated" });
+      if (lock.status !== 200) throw new Error(`the lock was refused: ${lock.status} ${JSON.stringify(lock.body)} (confirm: ${confirm.status} ${JSON.stringify(confirm.body)})`);
+      // ── What the lock froze, read back over HTTP ──
+      const frozen = await ok("GET", `${base}/preview`);
+      const version = await ok("GET", `/api/payroll/history/${entity.id}/${GOLDEN_MONTH}/1`);
+      const fileText = async (id: string) => {
+        const res = await fetch(`${origin}/api/payroll/history/files/${id}`, { headers: { cookie: g.cookies.admin } });
+        if (res.status !== 200) throw new Error(`file ${id}: ${res.status}`);
+        return res.text();
+      };
+      const fileOf = (name: string) => version.files.find((f: { filename: string }) => f.filename === name);
+      const banks = [];
+      let bankCsvTotal = 0;
+      const bankReferences: string[] = [];
+      for (const b of version.manifest.banks) {
+        const csv = await fileText(fileOf(b.filename).id);
+        const rows = csv.replace(/^\uFEFF/, "").trim().split(/\r?\n/).map((row: string) => (row.match(/"(?:[^"]|"")*"|[^,]+|(?<=,)(?=,|$)/g) ?? []).map((f) => f.replace(/^"|"$/g, "").replace(/""/g, '"')));
+        const amount = rows[0].indexOf("Amount"), ref = rows[0].indexOf("Reference");
+        for (const row of rows.slice(1)) { bankCsvTotal += Number(row[amount]); bankReferences.push(row[ref]); }
+        banks.push({ ...b, csv });
+      }
+      const cashHtml = await fileText(fileOf(`${entity.id}-${GOLDEN_MONTH}-cash-signature-list.html`).id);
+      const reports: Record<string, string> = {};
+      for (const name of version.manifest.reports) reports[name] = await fileText(fileOf(`${entity.id}-${GOLDEN_MONTH}-${name}`).id);
+      const slips = version.files.filter((f: { group: string }) => f.group === "Payslips") as { id: string; employeeId: string }[];
+      const gmSlips = slips.filter((f) => f.employeeId === staff["gold-gm"]);
+      const opensBefore = await count("select count(*) n from payroll_run_audit where tenant_id = $1 and action = 'Opened a payslip'", [g.tenant]);
+      const gmPayslipHtml = await fileText(gmSlips[0].id);
+      const payslipOpens = await count("select count(*) n from payroll_run_audit where tenant_id = $1 and action = 'Opened a payslip'", [g.tenant]) - opensBefore;
+      // Every payslip is a frozen file; the GM's is read back whole, the rest are named by their file.
+      const payslips = Object.fromEntries(slips.map((f) => [f.employeeId, f.employeeId === staff["gold-gm"] ? gmPayslipHtml : `frozen file ${f.id}`]));
+      const frozenOutputs = { ...version.manifest, banks, cashHtml, reports, payslips } as unknown as CompanyOutputs;
+      const gmPayslips = gmSlips.length;
+      const snapshotFingerprint = () => q<{ h: string; status: string }>(`select md5(s.result::text || s.calculation::text || s.world::text || s.outputs_manifest::text) h, v.status from payroll_run_snapshots s
+        join payroll_run_versions v on v.id = s.run_version_id where s.tenant_id = $1 and s.version = 1`, [g.tenant]);
+      const [v1Before] = await snapshotFingerprint();
+      const paid = await as("operator_admin")("POST", `${base}/paid`, { reason: "ZZ TEST paid at the bank" });
+      const reopen = await as("operator_admin")("POST", `${base}/reopen`, { reason: "ZZ TEST correction", fromVersion: 1 });
+      const reopenAgain = await as("operator_admin")("POST", `${base}/reopen`, { reason: "ZZ TEST correction", fromVersion: 1 });
+      const [v1After] = await snapshotFingerprint();
+      const view = await ok("GET", base);
+      // ── Another park group: every URL of this run is a 404 ──
+      const other = await makeGroup(q, "golden-other", ["ZZ TEST Elsewhere"]);
+      await signIn(origin, other);
+      const slip = version.files.find((f: { group: string }) => f.group === "Payslips");
+      const urls: [string, string][] = [
+        ["GET", base], ["GET", `${base}/preview`], ["POST", `${base}/confirm`], ["POST", `${base}/lock`], ["POST", `${base}/paid`], ["POST", `${base}/reopen`],
+        ["GET", `/api/payroll/history/${entity.id}/${GOLDEN_MONTH}/1`], ["GET", `/api/payroll/history/files/${slip.id}`], ["GET", `/api/payroll/me/payslips/${slip.id}`],
+      ];
+      const crossTenant = [];
+      for (const [method, url] of urls) crossTenant.push({ url: `${method} ${url}`, status: (await call(other, "operator_admin", method, url, { reason })).status });
+      lifecycle = {
+        previewBefore, previewUnchanged: nets(previewBefore) === nets(preview.result), refusals,
+        confirm, lock, lockAgain, frozenCalc: frozen.calculation, frozenResult: frozen.result, frozenOutputs,
+        bankCsvTotal: Math.round(bankCsvTotal * 100) / 100, bankReferences, gmPayslips, payslipOpens, gmPayslipHtml,
+        gmName: (frozen.result as CompanyResult).people.find((p) => p.id === staff["gold-gm"])?.name ?? "",
+        paid, reopen, reopenAgain, v1Unchanged: v1Before.h === v1After.h, v1Status: v1After.status,
+        currentVersion: view.run.version, currentStatus: view.run.status, crossTenant,
+      };
+    }
+    return { calc: preview.calculation, ids, outputs, previewMs, timing: preview.timing, stored, lifecycle };
   } finally {
     stopServers();
     await pool.end();

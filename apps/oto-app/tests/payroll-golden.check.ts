@@ -7,8 +7,11 @@
 // the ported engine, no database. R3 (SCRUM-568) switches on the SERVICE AND
 // HTTP leg for checks 1-9: the fixture entered through the real routes into a
 // migrated database, the month computed by the preview route, the same checks
-// on its answer (tests/payroll-golden-http.ts). Checks 10-11 over HTTP (R5) and
-// the lifecycle leg (R4/R5) join in the rounds named below.
+// on its answer (tests/payroll-golden-http.ts). R4 (SCRUM-569) switches on
+// checks 10-11 over HTTP and the LIFECYCLE leg: GM confirm, Owner lock, mark
+// paid, reopen and a second park group's 404s, with all eleven checks run
+// again on what the lock froze — the frozen calculation and the bank files,
+// cash list and reports read back as stored bytes.
 //
 // Usage, from apps/oto-app:
 //   npx tsx tests/payroll-golden.check.ts          the engine leg (no database)
@@ -24,8 +27,8 @@ import { evaluateSeptemberGoldenFixture, goldenChecks } from "../server/payroll/
 const LEGS = [
   { leg: "engine (pure, in memory)", round: "R1", on: true },
   { leg: "service and HTTP, checks 1-9", round: "R3", on: true },
-  { leg: "service and HTTP, checks 10-11", round: "R5", on: false },
-  { leg: "lifecycle (confirm, lock, paid, reopen)", round: "R4/R5", on: false },
+  { leg: "service and HTTP, checks 10-11", round: "R4", on: true },
+  { leg: "lifecycle (confirm, lock, paid, reopen, cross-tenant 404)", round: "R4", on: true },
 ] as const;
 
 const started = performance.now();
@@ -70,10 +73,10 @@ try {
   const http = process.argv.includes("--http");
   if (http) {
     const { runGoldenHttpLeg } = await import("./payroll-golden-http");
-    const leg = await runGoldenHttpLeg();
+    const leg = await runGoldenHttpLeg({ lifecycle: true });
     const { checks: httpChecks } = goldenChecks(leg.calc, leg.outputs, leg.ids);
     let httpAssertions = 0;
-    for (const c of httpChecks.filter((x) => x.id <= 9)) {
+    for (const c of httpChecks) {
       httpAssertions += c.assertions.length;
       check(`HTTP golden ${c.id}: ${c.title} (${c.assertions.length} assertions)`, () =>
         assert.equal(c.pass, true, JSON.stringify(c.assertions.filter(a => !a.pass), null, 2)));
@@ -87,10 +90,50 @@ try {
       assert.equal(leg.stored.policiesWithGroups, 0);
       assert.equal(leg.stored.partMonthDefaulted, 0);
     });
-    for (const c of httpChecks.filter((x) => x.id > 9)) console.log(`  info HTTP golden ${c.id} (switched on in R5): ${c.pass ? "passes" : "not yet"}`);
+    const life = leg.lifecycle!;
+    check("lifecycle: refusals in plain words before and around the lock", () => {
+      assert.deepEqual(life.refusals["lock before confirm"], { status: 409, message: "GM confirmation is required before Owner lock." });
+      assert.deepEqual(life.refusals["admin locks"], { status: 403, message: "Only the Owner can lock, reopen or mark a payroll month paid (payroll.lock required)." });
+      assert.deepEqual(life.refusals["staff confirms"], { status: 403, message: "GM confirmation is for payroll managers only (payroll.confirm required)." });
+      assert.deepEqual(life.refusals["manager confirms"], { status: 403, message: "GM confirmation is for payroll managers only (payroll.confirm required)." });
+    });
+    check("lifecycle: upload details (Thai ID, SSO title, given name) move no number", () => assert.equal(life.previewUnchanged, true));
+    check("lifecycle: the GM confirms (admin), the Owner locks (operator_admin); locking again changes nothing", () => {
+      assert.equal(life.confirm.status, 200, JSON.stringify(life.confirm.body)); assert.equal(life.confirm.body.status, "gm-confirmed");
+      assert.match(life.confirm.body.signature, /^sha256:[0-9a-f]{64}$/);
+      assert.equal(life.lock.status, 200, JSON.stringify(life.lock.body)); assert.equal(life.lock.body.status, "locked");
+      assert.ok(life.lock.body.lines > 0 && life.lock.body.files > 0);
+      assert.equal(life.lockAgain.status, 200); assert.equal(life.lockAgain.body.unchanged, true);
+    });
+    check("lifecycle: the snapshot's result equals the preview it was confirmed from", () =>
+      assert.deepEqual(JSON.parse(JSON.stringify(life.frozenResult)), JSON.parse(JSON.stringify(life.previewBefore))));
+    const frozenChecks = goldenChecks(life.frozenCalc, life.frozenOutputs, leg.ids).checks;
+    for (const c of frozenChecks) {
+      check(`frozen golden ${c.id}: ${c.title} (${c.assertions.length} assertions, stored bytes)`, () =>
+        assert.equal(c.pass, true, JSON.stringify(c.assertions.filter(a => !a.pass), null, 2)));
+    }
+    check("lifecycle: the frozen bank-file CSV bytes plus cash equal net to the satang; every reference SALARY SEP26", () => {
+      const result = life.frozenCalc.entities.find((e) => e.entityId === leg.ids.entity)!;
+      assert.equal(Math.round((life.bankCsvTotal + life.frozenOutputs.cashAmount) * 100), Math.round(result.totals.net * 100));
+      assert.ok(life.bankReferences.length > 0 && life.bankReferences.every((r) => r === "SALARY SEP26"));
+    });
+    check("lifecycle: exactly one payslip for the GM, served as frozen; opening it is written to the run audit", () => {
+      assert.equal(life.gmPayslips, 1);
+      assert.equal(life.payslipOpens, 1);
+      assert.ok(life.gmPayslipHtml.includes(life.gmName) && life.gmPayslipHtml.includes("82,387.91"), "the GM payslip shows the GM and the golden net");
+    });
+    check("lifecycle: mark paid passes the reconciliation", () => { assert.equal(life.paid.status, 200, JSON.stringify(life.paid.body)); assert.equal(life.paid.body.status, "paid"); });
+    check("lifecycle: reopen makes version 2 a draft; v1 stays frozen and unchanged; repeating the reopen changes nothing", () => {
+      assert.equal(life.reopen.status, 200, JSON.stringify(life.reopen.body)); assert.deepEqual([life.reopen.body.status, life.reopen.body.version], ["draft", 2]);
+      assert.equal(life.reopenAgain.body.unchanged, true); assert.equal(life.reopenAgain.body.version, 2);
+      assert.deepEqual([life.currentVersion, life.currentStatus], [2, "draft"]);
+      assert.equal(life.v1Unchanged, true); assert.equal(life.v1Status, "paid", "v1 stays paid until version 2 locks");
+    });
+    check("lifecycle: another park group gets 404 on every URL of the fixture's run", () =>
+      assert.deepEqual(life.crossTenant.filter((u) => u.status !== 404), []));
     console.log(`  HTTP leg: ${httpAssertions} assertions; preview ${leg.previewMs} ms round trip (load ${leg.timing.loadMs} ms in ${leg.timing.queries} queries, calculate ${leg.timing.calculateMs} ms)`);
   }
-  for (const leg of LEGS) console.log(`  leg ${leg.leg}: ${leg.on ? leg.round === "R3" && !http ? "on — runs with --http against the migrated database" : "on" : `off — lands in ${leg.round}`}`);
+  for (const leg of LEGS) console.log(`  leg ${leg.leg}: ${leg.on ? leg.round !== "R1" && !http ? "on — runs with --http against the migrated database" : "on" : `off — lands in ${leg.round}`}`);
   console.log(`payroll-golden.check: ${checks} checks passed (11 golden checks, ${assertions} assertions) in ${Math.round(performance.now() - started)} ms`);
 } catch (err) {
   console.error("payroll-golden.check FAILED:", err);
