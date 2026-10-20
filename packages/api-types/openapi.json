@@ -60453,7 +60453,8 @@
                       "handover_complaint_onsite",
                       "handover_lost_found",
                       "handover_marketing",
-                      "out_of_hours"
+                      "out_of_hours",
+                      "handover_general"
                     ]
                   },
                   "language": {
@@ -62279,7 +62280,8 @@
                 "handover_complaint_onsite",
                 "handover_lost_found",
                 "handover_marketing",
-                "out_of_hours"
+                "out_of_hours",
+                "handover_general"
               ]
             },
             "in": "query",

@@ -28,13 +28,17 @@ import { createTestDatabase, stopTestServer } from '../src/testing';
 
 const PKG = join(dirname(fileURLToPath(import.meta.url)), '..');
 
+/** 0078's fifteen, and the assistant's three from 0080_inbox_ai (SCRUM-590). */
 const INBOX_TABLES = [
+  'ai_example',
+  'ai_turn',
   'assignment',
   'channel_account',
   'contact',
   'conversation',
   'conversation_tag',
   'event',
+  'kb_entry',
   'message',
   'note',
   'participant',
@@ -101,7 +105,7 @@ const operatorByName = async (name: string) =>
   (await db.select({ id: s.operator.id }).from(s.operator).where(eq(s.operator.name, name)).limit(1))[0]!.id;
 
 describe('0078_inbox_schema — structure (I1)', () => {
-  it('creates the inbox schema with its fifteen tables and writes no row', async () => {
+  it('creates the inbox schema with its eighteen tables and writes no row', async () => {
     const tables = await pool.query<{ table_name: string }>(
       `select table_name from information_schema.tables where table_schema = 'inbox' and table_type = 'BASE TABLE' order by 1`,
     );
@@ -200,6 +204,7 @@ describe('platform-sync lays the inbox configuration (I1)', () => {
       await db.select({ p: s.rolePermission.permission }).from(s.rolePermission).where(eq(s.rolePermission.roleId, opAdmin!.id))
     ).map((x) => x.p);
     expect(perms.filter((p) => p.startsWith('inbox:')).sort()).toEqual([
+      'inbox:ai:manage',
       'inbox:channel:manage',
       'inbox:contact:erase',
       'inbox:conversation:assign',
@@ -209,6 +214,7 @@ describe('platform-sync lays the inbox configuration (I1)', () => {
       'inbox:conversation:reopen',
       'inbox:conversation:reply',
       'inbox:dashboard:read',
+      'inbox:kb:manage',
       'inbox:routing:manage',
       'inbox:template:manage',
     ]);
@@ -253,7 +259,7 @@ describe('platform-sync lays the inbox configuration (I1)', () => {
     ]);
   });
 
-  it('lays the eight templates in EN, with RU and TH marked for translation', async () => {
+  it('lays the nine templates in EN, with RU and TH marked for translation', async () => {
     const templates = await db.select().from(s.template).where(eq(s.template.operatorId, oto));
     expect(templates).toHaveLength(INBOX_TEMPLATE_KEYS.length * 3);
     expect(new Set(templates.map((t) => t.key))).toEqual(new Set(INBOX_TEMPLATE_KEYS));

@@ -13,8 +13,9 @@
  *   - the routing rules for the IT Brief's defaults, every person BLANK
  *     (`primary_kind = 'team'`, owner Q20), plus one catch-all per team so
  *     routing can never leave a conversation unowned;
- *   - the eight template keys in English, with RU and TH rows that carry the
- *     English body marked `needs_translation`;
+ *   - the nine template keys in English (`handover_general` joined with
+ *     SCRUM-590), with RU and TH rows that carry the English body marked
+ *     `needs_translation`;
  *   - one `console` channel account per notice channel (WhatsApp, LINE,
  *     Telegram) — the sender the check-in confirmation already goes through,
  *     which can never reply.
@@ -34,7 +35,9 @@
  *     archived included.
  *
  * Migrations own structure and this owns data: `0078_inbox_schema` writes no
- * row. Nothing here touches a conversation, a contact or a message — the demo
+ * row. Nor does `0080_inbox_ai`, and nothing here sets a channel account's
+ * `ai_mode`: every account, laid here or by a person, keeps the column's
+ * default `off` until a person with `inbox:ai:manage` switches it. Nothing here touches a conversation, a contact or a message — the demo
  * conversations are `./inbox-demo.ts`, and never laid by a deploy.
  */
 import { and, eq, isNull, sql } from 'drizzle-orm';
@@ -105,6 +108,13 @@ export const INBOX_TEMPLATE_BODIES: Record<InboxTemplateKey, string> = {
   handover_marketing: 'Thanks for the message! Our marketing team will get back to you shortly.',
   out_of_hours:
     "Thanks for your message! Our team is here every day from 10:00 to 20:00, and we'll get back to you as soon as we open.",
+  // SCRUM-590 (`0080_inbox_ai`, plan X6/R1): the assistant's holding line for
+  // the handover categories with no key of their own — discounts, custom
+  // requests, nanny booking, unclear or emotional messages, a request for a
+  // person. Laid like the others: English source, RU and TH marked for
+  // translation, insert-if-absent, so an operator synced before it gets the
+  // three rows on the next platform-sync and an edited one is never undone.
+  handover_general: 'Thank you for your message. One moment please — a colleague will be with you shortly.',
 };
 
 /**

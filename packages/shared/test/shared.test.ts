@@ -229,10 +229,10 @@ describe('permission bundles (S2-01b)', () => {
     expect(INBOX_ROLE_BUNDLES.inbox_admin).toEqual(
       expect.arrayContaining(['inbox:channel:manage', 'inbox:routing:manage']),
     );
-    // The eleven inbox strings are declared, and only the operator-wide
+    // The thirteen inbox strings are declared (two joined with SCRUM-590), and only the operator-wide
     // bundles carry them among the system roles.
     const inboxStrings = PERMISSIONS.filter((p) => p.startsWith('inbox:'));
-    expect(inboxStrings).toHaveLength(11);
+    expect(inboxStrings).toHaveLength(13);
     for (const roleName of ['branch_manager', 'reception', 'staff'] as const) {
       expect(ROLE_BUNDLES[roleName].filter((p) => p.startsWith('inbox:'))).toEqual([]);
     }

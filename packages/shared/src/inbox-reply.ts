@@ -29,7 +29,7 @@ import { InboxChannelSchema, InboxMessageSchema, InboxTemplateSchema } from './i
  * the placeholders appear.
  */
 
-/** `inbox.template.key`'s CHECK — the same eight keys as `@oto/db` `INBOX_TEMPLATE_KEYS` (pinned in the reply test). */
+/** `inbox.template.key`'s CHECK — the same nine keys as `@oto/db` `INBOX_TEMPLATE_KEYS` (pinned in the reply test). */
 export const INBOX_TEMPLATE_KEY_NAMES = [
   'welcome',
   'handover_birthday',
@@ -39,6 +39,7 @@ export const INBOX_TEMPLATE_KEY_NAMES = [
   'handover_lost_found',
   'handover_marketing',
   'out_of_hours',
+  'handover_general',
 ] as const;
 export type InboxTemplateKeyName = (typeof INBOX_TEMPLATE_KEY_NAMES)[number];
 

@@ -314,6 +314,18 @@ export const PERMISSIONS = [
    * SCRUM-220; declined, it folds into `admin:operator:all`.
    */
   'inbox:contact:erase',
+  /**
+   * The customer assistant's knowledge base and its curated examples
+   * (SCRUM-590; plan docs/progress/plans/inbox-ai-build/PLAN.md §C.2, §E):
+   * draft, approve and archive entries, approve examples. Held by
+   * `inbox_admin`, and assignable to the marketing team's department.
+   */
+  'inbox:kb:manage',
+  /**
+   * Switch a channel account's assistant off, to shadow or to live (§C.2).
+   * A decision, not an edit: held by `inbox_admin` only.
+   */
+  'inbox:ai:manage',
   // Which of the suite's apps a person may open (S2-02). Access is separate
   // from what they may do once inside: a nanny with POS permissions still has
   // no business on the console.
@@ -605,12 +617,22 @@ const INBOX_MANAGER: Permission[] = [
 export const INBOX_ROLE_BUNDLES: Record<InboxRole, Permission[]> = {
   inbox_agent: INBOX_AGENT,
   inbox_manager: INBOX_MANAGER,
-  inbox_admin: [...INBOX_MANAGER, 'inbox:channel:manage', 'inbox:routing:manage'],
+  // `inbox:kb:manage` and `inbox:ai:manage` joined with SCRUM-590 (plan R9).
+  // Role permissions are laid when the role row is created and never
+  // re-synced, so an operator whose `inbox_admin` already exists does not
+  // receive them from platform-sync; `operator_admin` holds both through `ALL`.
+  inbox_admin: [
+    ...INBOX_MANAGER,
+    'inbox:channel:manage',
+    'inbox:routing:manage',
+    'inbox:kb:manage',
+    'inbox:ai:manage',
+  ],
 };
 
 /** What each inbox role says it is, on the role row the sync lays. */
 export const INBOX_ROLE_DESCRIPTIONS: Record<InboxRole, string> = {
   inbox_agent: 'Inbox: a member of a team (assign scoped to the team department)',
   inbox_manager: 'Inbox: assigns, moves and reopens (operator-wide, or one branch)',
-  inbox_admin: 'Inbox: also channel accounts and routing rules (operator-wide)',
+  inbox_admin: 'Inbox: also channel accounts, routing rules and the assistant (operator-wide)',
 };

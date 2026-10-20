@@ -92,6 +92,20 @@ export type MessageAuthorKind = (typeof MESSAGE_AUTHOR_KINDS)[number];
 export const MESSAGE_PROVIDER_STATUSES = ['queued', 'sent', 'delivered', 'read', 'failed'] as const;
 export type MessageProviderStatus = (typeof MESSAGE_PROVIDER_STATUSES)[number];
 
+/**
+ * What `message.provider_status` may hold: the delivery states, and
+ * `withdrawn` (SCRUM-590, `0080_inbox_ai`) — a queued AI line a person
+ * overtook before it left, never sent, kept so staff see what was held back.
+ *
+ * The CHECK takes this list from 0080 on; the column's TypeScript type stays
+ * `MessageProviderStatus` until the send path that writes `withdrawn` lands
+ * (plan round A2, lane b), which widens it to `MessageStoredStatus` together
+ * with every api reader of the status (the status callback's rank, the
+ * thread read's schema), so no reader meets a value it has no answer for.
+ */
+export const MESSAGE_STORED_STATUSES = [...MESSAGE_PROVIDER_STATUSES, 'withdrawn'] as const;
+export type MessageStoredStatus = (typeof MESSAGE_STORED_STATUSES)[number];
+
 /** Where a message came from: a channel, or a platform notice mirrored into the thread (plan §2.4). */
 export const MESSAGE_SOURCES = ['channel', 'checkin.contact', 'booking.confirmation'] as const;
 export type MessageSource = (typeof MESSAGE_SOURCES)[number];
@@ -109,7 +123,13 @@ export type AssignmentReason = (typeof ASSIGNMENT_REASONS)[number];
 export const ROUTING_PRIMARY_KINDS = ['account', 'team'] as const;
 export type RoutingPrimaryKind = (typeof ROUTING_PRIMARY_KINDS)[number];
 
-/** The template keys the briefs define (`inbox.md` "Templates"). */
+/**
+ * The template keys the briefs define (`inbox.md` "Templates").
+ * `handover_general` (SCRUM-590, `0080_inbox_ai`) is the assistant's holding
+ * line for the handover categories with no key of their own: discounts,
+ * custom requests, nanny booking, unclear or emotional messages, a request
+ * for a person.
+ */
 export const INBOX_TEMPLATE_KEYS = [
   'welcome',
   'handover_birthday',
@@ -119,6 +139,7 @@ export const INBOX_TEMPLATE_KEYS = [
   'handover_lost_found',
   'handover_marketing',
   'out_of_hours',
+  'handover_general',
 ] as const;
 export type InboxTemplateKey = (typeof INBOX_TEMPLATE_KEYS)[number];
 
@@ -128,7 +149,10 @@ export type TemplateApprovalStatus = (typeof TEMPLATE_APPROVAL_STATUSES)[number]
 /**
  * The timeline's grey pills and the Console feed. `notice_mirrored` is the
  * check-in feed (plan §2.4); `send_failed` is a reply the channel refused for
- * good, named by its refusal word (I2f, `0079_inbox_send`).
+ * good, named by its refusal word (I2f, `0079_inbox_send`). The three `ai_*`
+ * kinds after it are the assistant's (SCRUM-590, `0080_inbox_ai`): it handed
+ * the thread to a person, it left a turn to a person, a person overtook one
+ * of its queued lines.
  */
 export const INBOX_EVENT_KINDS = [
   'received',
@@ -149,17 +173,105 @@ export const INBOX_EVENT_KINDS = [
   'sla_breached',
   'notice_mirrored',
   'send_failed',
+  'ai_handover',
+  'ai_silent',
+  'ai_withdrawn',
 ] as const;
 export type InboxEventKind = (typeof INBOX_EVENT_KINDS)[number];
 
 export const INBOX_ACTOR_KINDS = ['customer', 'account', 'ai', 'system'] as const;
 export type InboxActorKind = (typeof INBOX_ACTOR_KINDS)[number];
 
+// --- The customer assistant's vocabulary (SCRUM-590, `0080_inbox_ai`) --------
+//
+// Plan: docs/progress/plans/inbox-ai-build/PLAN.md, "What Phase 2 changes in
+// the rails" R1, and §A, §C.1, §D, §E.
+
+/** A channel account's assistant switch. `off` for every account until a person turns it on (§D.4). */
+export const AI_MODES = ['off', 'shadow', 'live'] as const;
+export type AiMode = (typeof AI_MODES)[number];
+
+/**
+ * Where a turn is (§A.1–A.2, §B.5). `pending` waits for its `due_at`
+ * (debounced); `deciding` is claimed under a lease while the model is asked;
+ * the rest are final. `shadowed` is a shadow-mode decision that wrote nothing
+ * to the thread.
+ */
+export const AI_TURN_STATES = [
+  'pending',
+  'deciding',
+  'answered',
+  'handed_over',
+  'silent',
+  'cancelled',
+  'superseded',
+  'shadowed',
+] as const;
+export type AiTurnState = (typeof AI_TURN_STATES)[number];
+
+/** The decision's action (§B.1). */
+export const AI_TURN_ACTIONS = ['answer', 'handover', 'silent'] as const;
+export type AiTurnAction = (typeof AI_TURN_ACTIONS)[number];
+
+/** Certainty is a label, never a score (§B.3). */
+export const AI_CERTAINTIES = ['sure', 'unsure'] as const;
+export type AiCertainty = (typeof AI_CERTAINTIES)[number];
+
+/** The language the model read the burst in (§B.1); `other` is always silence (G8). */
+export const AI_TURN_LANGUAGES = ['th', 'en', 'ru', 'other'] as const;
+export type AiTurnLanguage = (typeof AI_TURN_LANGUAGES)[number];
+
+/** The languages park content is written in: knowledge-base entries and examples. */
+export const AI_CONTENT_LANGUAGES = ['th', 'en', 'ru'] as const;
+export type AiContentLanguage = (typeof AI_CONTENT_LANGUAGES)[number];
+
+/**
+ * What a knowledge-base entry is about (§C.1). Live facts — hours, addresses,
+ * standard prices — are read from the platform; these are the notes beside
+ * them and the facts nothing else owns.
+ */
+export const KB_TOPICS = [
+  'about_oto',
+  'hours_note',
+  'address_note',
+  'directions',
+  'parking',
+  'age_rules',
+  'socks',
+  'prices_note',
+  'faq',
+] as const;
+export type KbTopic = (typeof KB_TOPICS)[number];
+
+/** Only `approved` entries reach the model. */
+export const KB_ENTRY_STATUSES = ['draft', 'approved', 'archived'] as const;
+export type KbEntryStatus = (typeof KB_ENTRY_STATUSES)[number];
+
+/** What the assistant should have done, as the person correcting it says (§E). */
+export const AI_EXAMPLE_VERDICTS = ['should_answer', 'should_handover', 'should_stay_silent'] as const;
+export type AiExampleVerdict = (typeof AI_EXAMPLE_VERDICTS)[number];
+
+export const AI_EXAMPLE_STATUSES = ['proposed', 'approved', 'rejected'] as const;
+export type AiExampleStatus = (typeof AI_EXAMPLE_STATUSES)[number];
+
 /** `'a','b'` for a CHECK, from one of the lists above, so the list is said once. */
 const inList = (values: readonly string[]) => sql.raw(values.map((v) => `'${v}'`).join(','));
 
 /** The null branch's stand-in inside a COALESCE, so a null and a null collide in a unique index. */
 const NO_BRANCH = sql.raw(`'00000000-0000-0000-0000-000000000000'::uuid`);
+
+/**
+ * The only free-standing words a turn row may hold (§D.1, §D.5): a reason
+ * code (`GUARD_NUMBER`, `PROVIDER_TIMEOUT`, `CAP_EPISODE`), an intent
+ * (`ticket_prices`), a model or version tag (`claude-opus-5-5`). Each is one
+ * word by CHECK, so no sentence, and so no customer text, can be stored.
+ */
+const REASON_WORD = sql.raw(`'^[A-Z][A-Z0-9_]{0,47}$'`);
+const INTENT_WORD = sql.raw(`'^[a-z][a-z0-9_]{0,47}$'`);
+const VERSION_WORD = sql.raw(`'^[A-Za-z0-9][A-Za-z0-9._:-]{0,79}$'`);
+
+/** A knowledge-base key: a stable dotted slug the model cites, e.g. `faq.food-outside`. */
+const KB_KEY = sql.raw(`'^[a-z0-9]+([._-][a-z0-9]+)*$'`);
 
 /** The E.164 shape every phone column in the platform is held to (SCRUM-292). */
 const E164 = sql.raw(`'^\\+[1-9][0-9]{6,14}$'`);
@@ -197,6 +309,13 @@ export const channelAccount = inbox.table(
     defaultCategory: text('default_category').$type<InboxCategory>().notNull().default('general'),
     canReply: boolean('can_reply').notNull().default(true),
     status: text('status').$type<ChannelAccountStatus>().notNull().default('active'),
+    /**
+     * The assistant on this account (SCRUM-590, `0080_inbox_ai`): `off` writes
+     * no turn, `shadow` decides and writes nothing to the thread, `live`
+     * answers. Every account starts `off`; switching one on is a person's
+     * decision (`inbox:ai:manage`), never a deploy's.
+     */
+    aiMode: text('ai_mode').$type<AiMode>().notNull().default('off'),
     ...timestamps,
     ...archivedAt,
   },
@@ -210,6 +329,7 @@ export const channelAccount = inbox.table(
     check('channel_account_channel_check', sql`${t.channel} in (${inList(INBOX_CHANNELS)})`),
     check('channel_account_provider_check', sql`${t.provider} in (${inList(INBOX_PROVIDERS)})`),
     check('channel_account_status_check', sql`${t.status} in (${inList(CHANNEL_ACCOUNT_STATUSES)})`),
+    check('channel_account_ai_mode_check', sql`${t.aiMode} in (${inList(AI_MODES)})`),
     check(
       'channel_account_default_category_check',
       sql`${t.defaultCategory} in (${inList(INBOX_CATEGORIES)})`,
@@ -468,6 +588,12 @@ export const conversation = inbox.table(
     /** Unused until the AI (owner Q24). */
     aiSummary: text('ai_summary'),
     retainUntil: timestamp('retain_until', { withTimezone: true, mode: 'date' }),
+    /**
+     * The per-thread kill switch (SCRUM-590, `0080_inbox_ai`, §D.4): set, the
+     * assistant writes no turn on this thread until a person clears it.
+     */
+    aiPausedAt: timestamp('ai_paused_at', { withTimezone: true, mode: 'date' }),
+    aiPausedByAccountId: uuid('ai_paused_by_account_id').references(() => account.id, { onDelete: 'restrict' }),
     ...timestamps,
   },
   (t) => [
@@ -498,6 +624,7 @@ export const conversation = inbox.table(
     index('conversation_handled_by_idx').on(t.handledByAccountId),
     index('conversation_member_idx').on(t.memberId),
     index('conversation_retain_until_idx').on(t.retainUntil),
+    index('conversation_ai_paused_by_idx').on(t.aiPausedByAccountId),
     check('conversation_category_check', sql`${t.category} in (${inList(INBOX_CATEGORIES)})`),
     check('conversation_status_check', sql`${t.status} in (${inList(CONVERSATION_STATUSES)})`),
     check(
@@ -514,6 +641,8 @@ export const conversation = inbox.table(
       'conversation_preview_length_check',
       sql`${t.lastMessagePreview} is null or char_length(${t.lastMessagePreview}) <= 140`,
     ),
+    /** Who paused the assistant is only ever said of a paused thread. */
+    check('conversation_ai_paused_check', sql`${t.aiPausedByAccountId} is null or ${t.aiPausedAt} is not null`),
   ],
 );
 
@@ -614,7 +743,7 @@ export const message = inbox.table(
     check('message_author_kind_check', sql`${t.authorKind} in (${inList(MESSAGE_AUTHOR_KINDS)})`),
     check(
       'message_provider_status_check',
-      sql`${t.providerStatus} is null or ${t.providerStatus} in (${inList(MESSAGE_PROVIDER_STATUSES)})`,
+      sql`${t.providerStatus} is null or ${t.providerStatus} in (${inList(MESSAGE_STORED_STATUSES)})`,
     ),
     check('message_source_check', sql`${t.source} in (${inList(MESSAGE_SOURCES)})`),
     /** The customer is the only one who writes in; everyone else writes out. */
@@ -934,5 +1063,263 @@ export const webhookReceipt = inbox.table(
     index('webhook_receipt_received_idx').on(t.receivedAt),
     /** A purged payload is gone. */
     check('webhook_receipt_purged_check', sql`${t.payloadPurgedAt} is null or ${t.payload} is null`),
+  ],
+);
+
+// --- ai_turn -----------------------------------------------------------------
+
+/**
+ * One turn of the customer assistant (SCRUM-590, `0080_inbox_ai`; plan
+ * docs/progress/plans/inbox-ai-build/PLAN.md §A, R1): a durable record that an
+ * answer may be owed on a thread, written by the ingest in the delivery's own
+ * transaction and run by `job:inbox.ai`.
+ *
+ * DEBOUNCE. `ai_turn_pending_unique` allows ONE `pending` turn per thread: a
+ * second customer bubble moves the pending turn's `trigger_message_id` to the
+ * newest message and its `due_at` later, it never adds a turn.
+ *
+ * THE LEASE, as the send path's (`message.next_attempt_at`): a claim is one
+ * UPDATE that moves `pending` (due) or an expired `deciding` to `deciding`,
+ * adds one to `attempts` and sets `lease_until` ahead; the model call runs
+ * with no transaction open; a process that dies mid-call leaves a lease the
+ * next tick retries.
+ *
+ * NO TEXT (§D.1, §D.5). A turn holds ids, enums, counts and single words —
+ * never a prompt, a response, a bubble or a customer line. `reason`,
+ * `intent`, `model`, `persona_version` and `kb_version` are each held to one
+ * word by CHECK. The assistant's words exist only as `inbox.message` rows
+ * (`message_ids`), which the PDPA erasure already reaches; a turn needs no
+ * erasure, and stays so the counts add up.
+ */
+export const aiTurn = inbox.table(
+  'ai_turn',
+  {
+    id: idPk(),
+    operatorId: uuid('operator_id')
+      .notNull()
+      .references(() => operator.id, tenantFk()),
+    conversationId: uuid('conversation_id').notNull(),
+    /** The newest inbound message of the burst this turn answers. */
+    triggerMessageId: uuid('trigger_message_id').notNull(),
+    state: text('state').$type<AiTurnState>().notNull().default('pending'),
+    /** When the turn may be claimed: the debounce's end. */
+    dueAt: timestamp('due_at', { withTimezone: true, mode: 'date' }).notNull(),
+    /** The burst's first bubble: the debounce never moves `due_at` past this plus its maximum. */
+    firstSeenAt: timestamp('first_seen_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    /** Set by a claim; a `deciding` turn past it may be claimed again. */
+    leaseUntil: timestamp('lease_until', { withTimezone: true, mode: 'date' }),
+    attempts: integer('attempts').notNull().default(0),
+    intent: text('intent'),
+    action: text('action').$type<AiTurnAction>(),
+    certainty: text('certainty').$type<AiCertainty>(),
+    language: text('language').$type<AiTurnLanguage>(),
+    /** One reason word: `UNSURE`, `GUARD_NUMBER`, `PROVIDER_TIMEOUT`, `STAFF_REPLY`, … */
+    reason: text('reason'),
+    model: text('model'),
+    personaVersion: text('persona_version'),
+    kbVersion: text('kb_version'),
+    inputTokens: integer('input_tokens'),
+    outputTokens: integer('output_tokens'),
+    cacheReadTokens: integer('cache_read_tokens'),
+    latencyMs: integer('latency_ms'),
+    /** The `inbox.message` rows the decision wrote, in order. Empty for silence and shadow. */
+    messageIds: uuid('message_ids').array().notNull().default(sql`'{}'::uuid[]`),
+    ...timestamps,
+  },
+  (t) => [
+    unique('ai_turn_tenant_key').on(t.operatorId, t.id),
+    foreignKey({
+      columns: [t.operatorId, t.conversationId],
+      foreignColumns: [conversation.operatorId, conversation.id],
+      name: 'ai_turn_conversation_fk',
+    }).onDelete('restrict'),
+    foreignKey({
+      columns: [t.operatorId, t.triggerMessageId],
+      foreignColumns: [message.operatorId, message.id],
+      name: 'ai_turn_trigger_message_fk',
+    }).onDelete('restrict'),
+    /** The debounce: one pending turn per thread. */
+    uniqueIndex('ai_turn_pending_unique')
+      .on(t.conversationId)
+      .where(sql`state = 'pending'`),
+    /** The job's sweep: what is due, and what holds an expired lease. */
+    index('ai_turn_due_idx').on(t.state, t.dueAt),
+    /** The daily caps: today's turns of an operator. */
+    index('ai_turn_operator_created_idx').on(t.operatorId, t.createdAt),
+    index('ai_turn_conversation_fk_idx').on(t.operatorId, t.conversationId),
+    index('ai_turn_trigger_message_idx').on(t.operatorId, t.triggerMessageId),
+    check('ai_turn_state_check', sql`${t.state} in (${inList(AI_TURN_STATES)})`),
+    check('ai_turn_action_check', sql`${t.action} is null or ${t.action} in (${inList(AI_TURN_ACTIONS)})`),
+    check(
+      'ai_turn_certainty_check',
+      sql`${t.certainty} is null or ${t.certainty} in (${inList(AI_CERTAINTIES)})`,
+    ),
+    check(
+      'ai_turn_language_check',
+      sql`${t.language} is null or ${t.language} in (${inList(AI_TURN_LANGUAGES)})`,
+    ),
+    /** A reason is a word, never prose (§D.1). */
+    check('ai_turn_reason_check', sql`${t.reason} is null or ${t.reason} ~ ${REASON_WORD}`),
+    check('ai_turn_intent_check', sql`${t.intent} is null or ${t.intent} ~ ${INTENT_WORD}`),
+    check(
+      'ai_turn_version_words_check',
+      sql`(${t.model} is null or ${t.model} ~ ${VERSION_WORD})
+          and (${t.personaVersion} is null or ${t.personaVersion} ~ ${VERSION_WORD})
+          and (${t.kbVersion} is null or ${t.kbVersion} ~ ${VERSION_WORD})`,
+    ),
+    check(
+      'ai_turn_counts_check',
+      sql`${t.attempts} >= 0
+          and (${t.inputTokens} is null or ${t.inputTokens} >= 0)
+          and (${t.outputTokens} is null or ${t.outputTokens} >= 0)
+          and (${t.cacheReadTokens} is null or ${t.cacheReadTokens} >= 0)
+          and (${t.latencyMs} is null or ${t.latencyMs} >= 0)`,
+    ),
+    /** A claimed turn always says until when it is held. */
+    check('ai_turn_lease_check', sql`${t.state} <> 'deciding' or ${t.leaseUntil} is not null`),
+  ],
+);
+
+// --- kb_entry ----------------------------------------------------------------
+
+/**
+ * The assistant's knowledge base (SCRUM-590, `0080_inbox_ai`; plan §C): the
+ * facts the persona speaks FROM, as marketing approves them, per language.
+ * Not the template book: a template is a fixed line sent verbatim.
+ *
+ * `key` is the grounding id the model cites (`faq.food-outside`); one live
+ * row per (operator, key, language, branch). `branch_id` null = both parks.
+ * Only `approved` rows reach the model; a RU or TH row still marked
+ * `needs_translation` is not sent, its English row is. `archived` is a
+ * status here, not an `archived_at`, because it is one of the editor's three
+ * states; an archived row frees its key.
+ *
+ * `source_example_id` is a SOFT link to the `ai_example` it was promoted from
+ * (§E): an example is curated content that may be rejected or edited later,
+ * and the entry stands on its own once approved.
+ */
+export const kbEntry = inbox.table(
+  'kb_entry',
+  {
+    id: idPk(),
+    operatorId: uuid('operator_id')
+      .notNull()
+      .references(() => operator.id, tenantFk()),
+    /** Null = both parks. */
+    branchId: uuid('branch_id').references(() => branch.id, { onDelete: 'restrict' }),
+    topic: text('topic').$type<KbTopic>().notNull(),
+    key: text('key').notNull(),
+    language: text('language').$type<AiContentLanguage>().notNull(),
+    /** The question it answers, as a customer would ask it. */
+    question: text('question').notNull(),
+    /** The approved fact. */
+    body: text('body').notNull(),
+    status: text('status').$type<KbEntryStatus>().notNull().default('draft'),
+    /** Soft link to `inbox.ai_example` — see the table note. */
+    sourceExampleId: uuid('source_example_id'),
+    updatedByAccountId: uuid('updated_by_account_id').references(() => account.id, { onDelete: 'restrict' }),
+    approvedByAccountId: uuid('approved_by_account_id').references(() => account.id, { onDelete: 'restrict' }),
+    approvedAt: timestamp('approved_at', { withTimezone: true, mode: 'date' }),
+    needsTranslation: boolean('needs_translation').notNull().default(false),
+    ...timestamps,
+  },
+  (t) => [
+    unique('kb_entry_tenant_key').on(t.operatorId, t.id),
+    uniqueIndex('kb_entry_key_unique')
+      .on(t.operatorId, t.key, t.language, sql`coalesce(${t.branchId}, ${NO_BRANCH})`)
+      .where(sql`status <> 'archived'`),
+    /** The prompt build: an operator's approved entries. */
+    index('kb_entry_lookup_idx').on(t.operatorId, t.status, t.topic),
+    index('kb_entry_branch_idx').on(t.branchId),
+    index('kb_entry_source_example_idx').on(t.sourceExampleId),
+    index('kb_entry_updated_by_idx').on(t.updatedByAccountId),
+    index('kb_entry_approved_by_idx').on(t.approvedByAccountId),
+    check('kb_entry_topic_check', sql`${t.topic} in (${inList(KB_TOPICS)})`),
+    check('kb_entry_language_check', sql`${t.language} in (${inList(AI_CONTENT_LANGUAGES)})`),
+    check('kb_entry_status_check', sql`${t.status} in (${inList(KB_ENTRY_STATUSES)})`),
+    check('kb_entry_key_check', sql`char_length(${t.key}) <= 80 and ${t.key} ~ ${KB_KEY}`),
+    check(
+      'kb_entry_length_check',
+      sql`char_length(${t.question}) between 1 and 200 and char_length(${t.body}) between 1 and 1200`,
+    ),
+    /** Approved always says by whom and when. */
+    check(
+      'kb_entry_approved_check',
+      sql`${t.status} <> 'approved' or (${t.approvedByAccountId} is not null and ${t.approvedAt} is not null)`,
+    ),
+  ],
+);
+
+// --- ai_example --------------------------------------------------------------
+
+/**
+ * The curated learning loop (SCRUM-590, `0080_inbox_ai`; plan §E, §D.5): a
+ * corrected answer a person proposes and marketing approves. Approved
+ * examples are written into the prompt; the model's weights never learn.
+ *
+ * THE DE-IDENTIFICATION RULE, held by `ai_example_approved_check`: an example
+ * can only be `approved` with the approver's "contains no personal data"
+ * confirmation (`deidentified_confirmed`), and with BOTH source links nulled
+ * — an approved example points at no thread and no message. While proposed
+ * or rejected it may keep its source links (soft: no foreign key, so the
+ * retention purge of a thread is never blocked by an example); the erasure of
+ * a contact deletes the unapproved examples sourced from their threads.
+ */
+export const aiExample = inbox.table(
+  'ai_example',
+  {
+    id: idPk(),
+    operatorId: uuid('operator_id')
+      .notNull()
+      .references(() => operator.id, tenantFk()),
+    intent: text('intent').notNull(),
+    language: text('language').$type<AiContentLanguage>().notNull(),
+    /** The customer's question, edited by staff to remove personal data. */
+    customerText: text('customer_text').notNull(),
+    /** The reply as it should have been written; may be absent when the verdict is to hand over or stay silent. */
+    goodReply: text('good_reply'),
+    verdict: text('verdict').$type<AiExampleVerdict>().notNull(),
+    /** Soft links to `inbox.message` / `inbox.conversation`; null on an approved example. */
+    sourceMessageId: uuid('source_message_id'),
+    sourceConversationId: uuid('source_conversation_id'),
+    status: text('status').$type<AiExampleStatus>().notNull().default('proposed'),
+    proposedByAccountId: uuid('proposed_by_account_id')
+      .notNull()
+      .references(() => account.id, { onDelete: 'restrict' }),
+    approvedByAccountId: uuid('approved_by_account_id').references(() => account.id, { onDelete: 'restrict' }),
+    approvedAt: timestamp('approved_at', { withTimezone: true, mode: 'date' }),
+    deidentifiedConfirmed: boolean('deidentified_confirmed').notNull().default(false),
+    ...timestamps,
+  },
+  (t) => [
+    unique('ai_example_tenant_key').on(t.operatorId, t.id),
+    /** The prompt build: approved examples, newest first per intent and language. */
+    index('ai_example_lookup_idx').on(t.operatorId, t.status, t.intent, t.language),
+    /** The erasure: the examples sourced from a subject's threads. */
+    index('ai_example_source_conversation_idx').on(t.sourceConversationId),
+    index('ai_example_source_message_idx').on(t.sourceMessageId),
+    index('ai_example_proposed_by_idx').on(t.proposedByAccountId),
+    index('ai_example_approved_by_idx').on(t.approvedByAccountId),
+    check('ai_example_intent_check', sql`${t.intent} ~ ${INTENT_WORD}`),
+    check('ai_example_language_check', sql`${t.language} in (${inList(AI_CONTENT_LANGUAGES)})`),
+    check('ai_example_verdict_check', sql`${t.verdict} in (${inList(AI_EXAMPLE_VERDICTS)})`),
+    check('ai_example_status_check', sql`${t.status} in (${inList(AI_EXAMPLE_STATUSES)})`),
+    check(
+      'ai_example_length_check',
+      sql`char_length(${t.customerText}) between 1 and 500
+          and (${t.goodReply} is null or char_length(${t.goodReply}) between 1 and 800)`,
+    ),
+    /** An answer worth learning from says what the answer was. */
+    check('ai_example_reply_check', sql`${t.verdict} <> 'should_answer' or ${t.goodReply} is not null`),
+    /** The de-identification rule: see the table note. */
+    check(
+      'ai_example_approved_check',
+      sql`${t.status} <> 'approved' or (
+            ${t.deidentifiedConfirmed}
+            and ${t.approvedByAccountId} is not null
+            and ${t.approvedAt} is not null
+            and ${t.sourceMessageId} is null
+            and ${t.sourceConversationId} is null)`,
+    ),
   ],
 );

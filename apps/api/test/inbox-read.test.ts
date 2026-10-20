@@ -710,9 +710,10 @@ describe('the viewer and the templates', () => {
   it('templates: the active rows, optionally one language', async () => {
     const all = await get<{ templates: Array<{ key: string; language: string; needsTranslation: boolean }> }>('bdayTh', '/inbox/templates');
     expect(all.status).toBe(200);
-    expect(all.body.templates).toHaveLength(24);
+    // Nine keys (handover_general joined with SCRUM-590) in three languages.
+    expect(all.body.templates).toHaveLength(27);
     const th = await get<{ templates: Array<{ language: string; needsTranslation: boolean }> }>('bdayTh', '/inbox/templates?language=th');
-    expect(th.body.templates).toHaveLength(8);
+    expect(th.body.templates).toHaveLength(9);
     expect(th.body.templates.every((t) => t.language === 'th' && t.needsTranslation)).toBe(true);
     // An archived template is gone from the composer.
     const [one] = await ctx.db
@@ -720,7 +721,7 @@ describe('the viewer and the templates', () => {
       .from(s.template)
       .where(and(eq(s.template.operatorId, oto), eq(s.template.key, 'welcome'), eq(s.template.language, 'ru')));
     await ctx.db.update(s.template).set({ archivedAt: new Date() }).where(inArray(s.template.id, [one!.id]));
-    expect((await get<{ templates: unknown[] }>('bdayTh', '/inbox/templates')).body.templates).toHaveLength(23);
+    expect((await get<{ templates: unknown[] }>('bdayTh', '/inbox/templates')).body.templates).toHaveLength(26);
   });
 });
 
