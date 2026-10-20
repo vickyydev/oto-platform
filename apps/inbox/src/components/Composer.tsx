@@ -2,9 +2,10 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { AlertTriangle, FileText, Loader2, Paperclip, Send, Smile, X, type LucideIcon } from 'lucide-react';
 import { renderTemplate, templateVariables } from '@oto/shared/inbox-reply';
 import { ApiError } from '@/api/client';
-import { inboxApi, type ConversationRow, type InboxMe, type ReplyRefusalDetails } from '@/api/inbox';
+import { inboxApi, type ConversationRow, type InboxMe, type QualifyingTemplate, type ReplyRefusalDetails } from '@/api/inbox';
+import { TranslationNote } from '@/components/atoms';
 import { PendingControl } from '@/components/writes';
-import { COMPOSER_EXTRAS_REASON, langLabel } from '@/lib/view';
+import { COMPOSER_EXTRAS_REASON, langLabel, needsTranslation, offeredTemplates } from '@/lib/view';
 
 /** A template the composer holds: from the templates dialog, or offered by a refusal. */
 export interface ComposerTemplate {
@@ -12,6 +13,8 @@ export interface ComposerTemplate {
   key: string;
   language: string;
   body: string;
+  /** A RU or TH row still carrying the English source: marked wherever it is shown (test night U1). */
+  needsTranslation?: boolean;
 }
 
 /** A template handed in from outside (the templates dialog's Insert); the nonce makes a second Insert of the same one count. */
@@ -104,7 +107,7 @@ export function Composer({
           <span className="flex items-center gap-2">
             <AlertTriangle className="h-3.5 w-3.5 shrink-0" /> Handled — composer disabled
           </span>
-          {me.capabilities.reopen && (
+          {me.capabilities.reopen ? (
             <button
               type="button"
               onClick={onReopen}
@@ -114,6 +117,9 @@ export function Composer({
               {reopening && <Loader2 className="h-3 w-3 animate-spin" />}
               Reopen
             </button>
+          ) : (
+            // Reopening is a manager's (the rails' rights); the screen said nothing (test night U7).
+            <span className="text-[12px] text-slate-500">{MANAGER_REOPENS}</span>
           )}
         </div>
       </div>
@@ -156,7 +162,27 @@ export function Composer({
     }
   };
 
-  const offered = refused?.details?.qualifyingTemplates ?? [];
+  // The templates the 409 names: the conversation's language first, `follow_up`
+  // at the top, the other languages folded away (test night U1).
+  const offered = offeredTemplates(refused?.details?.qualifyingTemplates ?? [], conv.language);
+  const offer = (t: QualifyingTemplate) => (
+    <li key={t.id} className="flex min-w-0 items-start gap-2 rounded-md bg-white/70 px-2 py-1.5 ring-1 ring-amber-100">
+      <span className="min-w-0 flex-1">
+        <span className="flex flex-wrap items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+          {t.key.replace(/[_.]/g, ' ')} · {langLabel(t.language)}
+          {needsTranslation(t) && <TranslationNote />}
+        </span>
+        <span className="block truncate text-[12px] text-slate-700">{t.body}</span>
+      </span>
+      <button
+        type="button"
+        onClick={() => pickTemplate({ id: t.id, key: t.key, language: t.language, body: t.body, needsTranslation: needsTranslation(t) })}
+        className="shrink-0 rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-700 hover:bg-slate-50"
+      >
+        Insert
+      </button>
+    </li>
+  );
 
   return (
     <div className="border-t border-slate-200 bg-white px-4 py-3">
@@ -174,26 +200,24 @@ export function Composer({
               <X className="h-3.5 w-3.5" />
             </button>
           </div>
-          {offered.length > 0 && (
-            <ul className="mt-2 max-h-48 space-y-1.5 overflow-y-auto overflow-x-hidden">
-              {offered.map((t) => (
-                <li key={t.id} className="flex min-w-0 items-start gap-2 rounded-md bg-white/70 px-2 py-1.5 ring-1 ring-amber-100">
-                  <span className="min-w-0 flex-1">
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                      {t.key.replace(/[_.]/g, ' ')} · {langLabel(t.language)}
-                    </span>
-                    <span className="block truncate text-[12px] text-slate-700">{t.body}</span>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => pickTemplate({ id: t.id, key: t.key, language: t.language, body: t.body })}
-                    className="shrink-0 rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-700 hover:bg-slate-50"
-                  >
-                    Insert
-                  </button>
-                </li>
-              ))}
-            </ul>
+          {(offered.own.length > 0 || offered.others.length > 0) && (
+            <div className="mt-2 max-h-56 overflow-y-auto overflow-x-hidden">
+              {offered.own.length > 0 ? (
+                <ul className="space-y-1.5">{offered.own.map(offer)}</ul>
+              ) : (
+                <p className="text-[12px]">
+                  No template in {langLabel(conv.language)} qualifies yet; the other languages are below.
+                </p>
+              )}
+              {offered.others.length > 0 && (
+                <details className="mt-2">
+                  <summary className="cursor-pointer text-[11px] font-medium text-amber-800">
+                    Other languages ({offered.others.length})
+                  </summary>
+                  <ul className="mt-1.5 space-y-1.5">{offered.others.map(offer)}</ul>
+                </details>
+              )}
+            </div>
           )}
         </div>
       )}
@@ -202,8 +226,11 @@ export function Composer({
         <div className="mb-2 rounded-xl border border-violet-200 bg-violet-50/60 px-3 py-2">
           <div className="flex items-center gap-2">
             <FileText className="h-3.5 w-3.5 shrink-0 text-violet-600" />
-            <span className="min-w-0 flex-1 truncate text-[10px] font-semibold uppercase tracking-[0.16em] text-violet-700">
-              Template · {template.key.replace(/[_.]/g, ' ')} · {langLabel(template.language)}
+            <span className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-violet-700">
+              <span className="truncate">
+                Template · {template.key.replace(/[_.]/g, ' ')} · {langLabel(template.language)}
+              </span>
+              {template.needsTranslation && <TranslationNote />}
             </span>
             <button
               type="button"
@@ -287,6 +314,15 @@ function ComposerExtra({ icon: Icon, label }: { icon: LucideIcon; label: string 
 }
 
 /** A template from the read list, as the composer holds it. */
-export function composerTemplate(t: { id: string; key: string; language: string; body: string }): ComposerTemplate {
-  return { id: t.id, key: t.key, language: t.language, body: t.body };
+export function composerTemplate(t: {
+  id: string;
+  key: string;
+  language: string;
+  body: string;
+  needsTranslation?: boolean;
+}): ComposerTemplate {
+  return { id: t.id, key: t.key, language: t.language, body: t.body, needsTranslation: t.needsTranslation === true };
 }
+
+/** What a handled thread says to someone without the reopen right (test night U7). */
+export const MANAGER_REOPENS = 'A manager can reopen this';

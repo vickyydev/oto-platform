@@ -22,33 +22,43 @@ import { ApiError } from '@/api/client';
 import { assistantApi } from '@/api/assistant';
 import { inboxApi, type ConversationDetail, type ConversationRow, type InboxMe, type Message } from '@/api/inbox';
 import { Avatar, CategoryBadge, ChannelDot, ChipView, StatusBadge } from '@/components/atoms';
-import { Composer, type InsertedTemplate } from '@/components/Composer';
+import { Composer, MANAGER_REOPENS, type InsertedTemplate } from '@/components/Composer';
 import { CorrectAssistant, type CorrectionTarget } from '@/components/CorrectAssistant';
-import { PrimaryMoveConfirm, type PendingPrimaryMove } from '@/components/confirms';
+import { PrimaryMoveConfirm, TeamMoveConfirm, type PendingPrimaryMove, type PendingTeamMove } from '@/components/confirms';
+import { DetailsDialog, type DetailsActions } from '@/components/dialogs';
 import { MessageBubble } from '@/components/MessageBubble';
 import { SlotPicker } from '@/components/SlotPicker';
 import { PendingControl } from '@/components/writes';
 import {
   CHANNEL_LABEL,
   EVENT_ORDERS_REASON,
+  SUPPORT_FULL_HINT,
   WRITES_PENDING_REASON,
+  aiStateLine,
   assigneeChip,
   branchLabel,
+  branchOutcome,
   branchSelectOptions,
   canHandle,
+  categoryTitle,
   contactName,
+  effectiveBranchId,
+  handleLabel,
   initialsOf,
   langLabel,
   moveOptions,
+  moveOutcome,
   moveValue,
   primaryOf,
   slotOptions,
+  supportCapLabel,
   supportsOf,
   teamDestLabel,
   timeline,
   tintFor,
   withdrawnNotes,
   writeMode,
+  type MoveOption,
   type SlotOption,
 } from '@/lib/view';
 
@@ -89,9 +99,11 @@ export function ChatPanel({
   me,
   now,
   inserted,
+  detailsOpen,
   onBack,
   onLoadOlder,
   onOpenDetails,
+  onCloseDetails,
   onOpenTemplates,
   onAskHandle,
   onChanged,
@@ -101,9 +113,12 @@ export function ChatPanel({
   me: InboxMe;
   now: Date;
   inserted: InsertedTemplate | null;
+  /** The details dialog is the panel's (it carries the phone's team and status controls, test night U10). */
+  detailsOpen: boolean;
   onBack: () => void;
   onLoadOlder: () => void;
   onOpenDetails: () => void;
+  onCloseDetails: () => void;
   onOpenTemplates: () => void;
   onAskHandle: () => void;
   /** After a write: re-read the thread, the list and the dashboard. */
@@ -128,19 +143,28 @@ export function ChatPanel({
 
   const [busy, setBusy] = useState<Busy>(null);
   const [error, setError] = useState<string | null>(null);
+  /** What an action did, in a line (test night U6, U9): the branch step's host, a move's new seats. */
+  const [note, setNote] = useState<string | null>(null);
   const [pendingPrimary, setPendingPrimary] = useState<(PendingPrimaryMove & { option: SlotOption }) | null>(null);
   const [confirmError, setConfirmError] = useState<string | null>(null);
+  const [pendingMove, setPendingMove] = useState<(PendingTeamMove & { option: MoveOption }) | null>(null);
+  const [moveError, setMoveError] = useState<string | null>(null);
   const [correcting, setCorrecting] = useState<CorrectionTarget | null>(null);
 
   // A refusal belongs to the conversation it was said about.
   useEffect(() => {
     setError(null);
+    setNote(null);
     setPendingPrimary(null);
+    setPendingMove(null);
     setCorrecting(null);
   }, [conv.id]);
 
   // SCRUM-590 A3: the assistant's pause on this thread (§A.3 kill switch 3),
   // for whoever acts on it; and "Correct the assistant" for anyone who may write.
+  // The line says the number's mode first (test night U5: "AI on · Pause"
+  // showed where the assistant was off): nothing until the detail is in.
+  const aiLine = detail ? aiStateLine(detail.aiMode, detail.aiPaused) : null;
   const aiPaused = detail?.aiPaused ?? false;
   const mayPauseAi = live && (handleable || me.capabilities.assign);
   const mayCorrect = live;
@@ -153,6 +177,40 @@ export function ChatPanel({
       await onChanged();
     } catch (err) {
       setError(refusalOf(err, fallback));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  // The branch step says what it did (test night U9): the host it added on a
+  // birthday thread, or why it did not, from the api's answer.
+  const setBranch = (next: string | null) =>
+    run(
+      'branch',
+      async () => {
+        const r = await inboxApi.setBranch(conv.id, next);
+        setNote(next === null ? null : branchOutcome(r, conv.assignments, me));
+      },
+      'The branch could not be changed.',
+    );
+
+  // The team badge asks first (test night U6): a move re-routes the thread and
+  // seats people nobody named; the answer says who, afterwards.
+  const askMove = (option: MoveOption) => {
+    setMoveError(null);
+    setPendingMove({ option, toTeamName: option.label, fromTeamName: detail?.teamName ?? teamDestLabel(conv, me) });
+  };
+  const confirmMove = async () => {
+    if (!pendingMove) return;
+    setBusy('move');
+    setMoveError(null);
+    try {
+      const r = await inboxApi.move(conv.id, pendingMove.option.dest);
+      setPendingMove(null);
+      setNote(moveOutcome(r, me));
+      await onChanged();
+    } catch (err) {
+      setMoveError(refusalOf(err, 'The conversation could not be moved.'));
     } finally {
       setBusy(null);
     }
@@ -172,7 +230,6 @@ export function ChatPanel({
         setPendingPrimary({
           option,
           name: option.label,
-          question: err.message,
           fromCategory: categoryOf(d.fromCategory),
           toCategory: categoryOf(d.toCategory),
           toTeamName: typeof d.toTeamName === 'string' ? d.toTeamName : null,
@@ -220,7 +277,35 @@ export function ChatPanel({
 
   const moves = moveOptions(me);
   const currentMove = moveValue(conv, me);
-  const branchValue = conv.branchId ?? '';
+  // The park the thread is at, which for a reception thread with no branch of
+  // its own is its desk's (test night U9: "All Branches" on a thread pinned to
+  // Central Floresta).
+  const branchValue = effectiveBranchId(conv, me.teams) ?? '';
+  const idLabel = handleLabel(conv.channel);
+  const supportCap = me.capabilities.assign ? supportCapLabel(supports.length) : null;
+
+  // The phone's team and status controls, in the details dialog (test night U10).
+  const phoneActions: DetailsActions = {
+    moves,
+    currentMove,
+    canMove: live && me.capabilities.move,
+    onMove: (o) => {
+      onCloseDetails();
+      askMove(o);
+    },
+    status: conv.status,
+    canHandle: live && handleable,
+    canReopen: live && reopenable,
+    onHandle: () => {
+      onCloseDetails();
+      onAskHandle();
+    },
+    onReopen: () => {
+      onCloseDetails();
+      void run('reopen', () => inboxApi.reopen(conv.id), 'The conversation could not be reopened.');
+    },
+    busy: busy !== null,
+  };
 
   return (
     <>
@@ -245,7 +330,7 @@ export function ChatPanel({
             <span className="shrink-0 text-[11px] text-slate-500">{CHANNEL_LABEL[conv.channel]}</span>
           </div>
           <div className="mt-0.5 flex min-w-0 items-center gap-2 text-[11px] text-slate-500">
-            <span className="truncate">{conv.contact.handle}</span>
+            <span className="truncate">{idLabel ? `${idLabel} ${conv.contact.handle}` : conv.contact.handle}</span>
             {conv.intent && (
               <>
                 <span>·</span>
@@ -260,6 +345,7 @@ export function ChatPanel({
           <CategoryBadge
             category={conv.category}
             label={me.capabilities.move ? teamDestLabel(conv, me) : undefined}
+            title={categoryTitle(conv.category, detail?.teamName ?? null)}
             live={live && me.capabilities.move}
             picker={
               !me.capabilities.move ? undefined : pending ? (
@@ -270,9 +356,7 @@ export function ChatPanel({
                   disabled={busy !== null}
                   onChange={(e) => {
                     const opt = moves.find((m) => m.value === e.target.value);
-                    if (opt && opt.value !== currentMove) {
-                      void run('move', () => inboxApi.move(conv.id, opt.dest), 'The conversation could not be moved.');
-                    }
+                    if (opt && opt.value !== currentMove) askMove(opt);
                   }}
                   aria-label="Move to team"
                   className="absolute inset-0 cursor-pointer opacity-0 disabled:cursor-wait"
@@ -347,8 +431,19 @@ export function ChatPanel({
               Unassigned
             </span>
           )}
+          {supportCap && (
+            // Both places taken (test night U4): say so where "Add support" sat,
+            // with the api's own reason, rather than let the button vanish.
+            <span
+              title={SUPPORT_FULL_HINT}
+              aria-label={`${supportCap} — ${SUPPORT_FULL_HINT}`}
+              className="inline-flex items-center gap-1 rounded-full border border-dashed border-slate-300 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-500"
+            >
+              {supportCap}
+            </span>
+          )}
           {me.capabilities.assign &&
-            supports.length < 2 &&
+            supportCap === null &&
             (live ? (
               <SlotPicker
                 slotLabel="support"
@@ -435,9 +530,19 @@ export function ChatPanel({
               )
             ))}
           <span className="ml-auto flex flex-wrap items-center gap-2">
-            {mayPauseAi && (
+            {mayPauseAi && aiLine?.kind === 'label' && (
+              <span
+                data-ai-state={detail?.aiMode}
+                className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500 ring-1 ring-slate-200"
+              >
+                <Bot className="h-3 w-3" />
+                {aiLine.text}
+              </span>
+            )}
+            {mayPauseAi && aiLine?.kind === 'control' && (
               <button
                 type="button"
+                data-ai-state={detail?.aiMode}
                 disabled={busy !== null}
                 aria-pressed={aiPaused}
                 onClick={() =>
@@ -465,7 +570,7 @@ export function ChatPanel({
                 ) : (
                   <PauseCircle className="h-3 w-3" />
                 )}
-                {aiPaused ? 'AI paused · Resume' : 'AI on · Pause'}
+                {aiLine.text}
               </button>
             )}
             {me.capabilities.assign && live ? (
@@ -477,11 +582,9 @@ export function ChatPanel({
                     disabled={busy !== null}
                     onChange={(e) => {
                       const next = e.target.value || null;
-                      if (next !== conv.branchId) {
-                        void run('branch', () => inboxApi.setBranch(conv.id, next), 'The branch could not be changed.');
-                      }
+                      if (next !== conv.branchId) void setBranch(next);
                     }}
-                    aria-label="Branch"
+                    aria-label="Conversation branch"
                     className="appearance-none rounded-md border border-slate-200 bg-white py-0.5 pl-2 pr-6 text-[11px] capitalize text-slate-700 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200"
                   >
                     {branchSelectOptions(me.teams).map((b) => (
@@ -505,7 +608,7 @@ export function ChatPanel({
             ) : (
               <span className="inline-flex items-center gap-1.5 text-[11px] text-slate-500">
                 <MapPin className="h-3 w-3" />
-                {branchLabel(conv.branchId, me.teams)}
+                {branchLabel(branchValue || null, me.teams)}
               </span>
             )}
             {conv.category === 'birthdays' && (
@@ -562,6 +665,17 @@ export function ChatPanel({
           <div role="alert" className="mt-2 flex items-start gap-2 rounded-lg bg-rose-50 px-3 py-1.5 text-[12px] text-rose-700 ring-1 ring-rose-200">
             <span className="min-w-0 flex-1 break-words">{error}</span>
             <button type="button" onClick={() => setError(null)} aria-label="Dismiss" className="shrink-0 opacity-70 hover:opacity-100">
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
+        {note && (
+          <div
+            role="status"
+            className="mt-2 flex items-start gap-2 rounded-lg bg-emerald-50 px-3 py-1.5 text-[12px] text-emerald-800 ring-1 ring-emerald-200"
+          >
+            <span className="min-w-0 flex-1 break-words">{note}</span>
+            <button type="button" onClick={() => setNote(null)} aria-label="Dismiss" className="shrink-0 opacity-70 hover:opacity-100">
               <X className="h-3.5 w-3.5" />
             </button>
           </div>
@@ -659,6 +773,7 @@ export function ChatPanel({
           target={correcting}
           messages={thread.messages}
           intent={conv.intent}
+          category={conv.category}
           language={conv.language}
           onClose={() => setCorrecting(null)}
         />
@@ -670,6 +785,22 @@ export function ChatPanel({
         error={confirmError}
         onCancel={() => setPendingPrimary(null)}
         onConfirm={() => void confirmPrimary()}
+      />
+      <TeamMoveConfirm
+        pending={pendingMove}
+        busy={busy === 'move'}
+        error={moveError}
+        onCancel={() => setPendingMove(null)}
+        onConfirm={() => void confirmMove()}
+      />
+      <DetailsDialog
+        open={detailsOpen}
+        onClose={onCloseDetails}
+        row={conv}
+        detail={detail}
+        me={me}
+        now={now}
+        actions={phoneActions}
       />
     </>
   );
@@ -694,10 +825,12 @@ function PendingComposer({
       ) : conv.status === 'handled' ? (
         <div className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2 text-[12.5px] text-slate-500">
           <span>Handled — composer disabled</span>
-          {me.capabilities.reopen && (
+          {me.capabilities.reopen ? (
             <PendingControl reason={WRITES_PENDING_REASON} label="Reopen" className="text-[12px] font-medium text-slate-700">
               Reopen
             </PendingControl>
+          ) : (
+            <span className="text-[12px]">{MANAGER_REOPENS}</span>
           )}
         </div>
       ) : (

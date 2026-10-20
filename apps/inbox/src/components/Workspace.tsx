@@ -12,13 +12,13 @@ import { composerTemplate, type InsertedTemplate } from '@/components/Composer';
 import { HandleConfirm } from '@/components/confirms';
 import { ConversationList } from '@/components/ConversationList';
 import { Dashboard } from '@/components/Dashboard';
-import { DetailsDialog, FiltersDialog, TemplatesDialog } from '@/components/dialogs';
+import { FiltersDialog, TemplatesDialog } from '@/components/dialogs';
 import { Rail, viewerRoleLabel } from '@/components/Rail';
 import { SimulatorDialog } from '@/components/Simulator';
 import { TemplateSettings } from '@/components/TemplateSettings';
 import { EMPTY_FILTERS, listQuery, type Filters } from '@/lib/query';
-import { inboxSearch, readInboxUrl, viewFromUrl } from '@/lib/url';
-import { defaultTab, writeMode } from '@/lib/view';
+import { inboxSearch, readInboxUrl, viewFromUrl, type SettingsPage } from '@/lib/url';
+import { defaultTab, landingTab, writeMode } from '@/lib/view';
 
 const LAUNCHER_URL = import.meta.env.VITE_LAUNCHER_URL?.trim();
 
@@ -71,12 +71,29 @@ export function Workspace({ me }: { me: InboxMe }) {
   const [now, setNow] = useState(() => new Date());
 
   // The URL's view (P2, `lib/url.ts`), read once as the workspace opens: a
-  // link names a tab, the unanswered queue or one conversation.
+  // link names a tab, the unanswered queue, one conversation, a settings page
+  // or the archive's filters.
   const homeTab = defaultTab(me.tabs);
-  const [arrival] = useState(() => viewFromUrl(window.location.search, me.tabs, homeTab));
+  const assistantCaps = assistantCapabilities(me);
+  const [arrival] = useState(() =>
+    viewFromUrl(window.location.search, me.tabs, homeTab, {
+      templates: me.capabilities.templates,
+      assistant: assistantCaps.kb || assistantCaps.ai,
+    }),
+  );
 
-  const [tab, setTab] = useState<InboxTab>(arrival.tab);
-  const [filters, setFilters] = useState<Filters>(() => ({ ...EMPTY_FILTERS, unanswered: arrival.unanswered }));
+  // A plain landing (test night 2026-10-21, U8): an agent opens on My Inbox
+  // when they hold a thread, else Team. The list's first page says whether
+  // they hold one (`tabCounts.mine`), so the tab starts on My Inbox and
+  // falls back to Team if that count comes back empty (`landingTab`).
+  const landing = useRef(arrival.plain && me.tabs.includes('mine'));
+  const [tab, setTab] = useState<InboxTab>(landing.current ? 'mine' : arrival.tab);
+  const [filters, setFilters] = useState<Filters>(() => ({
+    ...EMPTY_FILTERS,
+    unanswered: arrival.unanswered,
+    archiveRange: arrival.archiveRange ?? EMPTY_FILTERS.archiveRange,
+    resolvedBy: arrival.resolvedBy ?? EMPTY_FILTERS.resolvedBy,
+  }));
   const [search, setSearch] = useState('');
 
   const [page, setPage] = useState<ListPage | null>(null);
@@ -90,11 +107,9 @@ export function Workspace({ me }: { me: InboxMe }) {
   const [thread, setThread] = useState<Thread>(EMPTY_THREAD);
   /**
    * A linked conversation that is not on the list's page — another tab, an
-   * older one — read on its own so the link still opens it (P2). `pinning` is
-   * the id being read, so the list's first row is not opened in the meantime.
+   * older one — read on its own so the link still opens it (P2).
    */
   const [pinned, setPinned] = useState<ConversationRow | null>(null);
-  const [pinning, setPinning] = useState<string | null>(null);
 
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [dashboardError, setDashboardError] = useState<string | null>(null);
@@ -103,9 +118,8 @@ export function Workspace({ me }: { me: InboxMe }) {
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [simulatorOpen, setSimulatorOpen] = useState(false);
-  /** The settings page in place of the workspace card: templates (I3b) or the assistant (SCRUM-590 A3). */
-  const [settings, setSettings] = useState<'templates' | 'assistant' | null>(null);
-  const assistantCaps = assistantCapabilities(me);
+  /** The settings page in place of the workspace card: templates (I3b) or the assistant (SCRUM-590 A3); in the URL as `?settings=` (U11). */
+  const [settings, setSettings] = useState<SettingsPage | null>(arrival.settings);
   const [inserted, setInserted] = useState<InsertedTemplate | null>(null);
 
   // "Mark as handled for everyone?", from the chat or a list row.
@@ -133,13 +147,19 @@ export function Workspace({ me }: { me: InboxMe }) {
         setPage(next);
         setRows(next.conversations);
         setListError(null);
+        // The landing's one decision, off the first page's counts (U8).
+        if (landing.current) {
+          landing.current = false;
+          const home = landingTab(me.tabs, next.tabCounts.mine);
+          if (home !== tab) setTab(home);
+        }
       } catch (err) {
         if (seq === listSeq.current) setListError(message(err, 'The conversations could not be read.'));
       } finally {
         if (seq === listSeq.current) setListLoading(false);
       }
     },
-    [tab, filters],
+    [tab, filters, me.tabs],
   );
 
   useEffect(() => {
@@ -177,14 +197,12 @@ export function Workspace({ me }: { me: InboxMe }) {
   useEffect(() => void loadDashboard(), [loadDashboard]);
 
   // --- The open conversation -------------------------------------------------------
-  // Selection follows the visible list (:1099-1100): a tab or filter that drops
-  // the open conversation opens the first one instead.
+  // Only a conversation the person chose, or linked to, is open: the prototype
+  // opened the list's first row by itself (:1099-1100), which read someone
+  // else's thread and cleared its unread badge (test night 2026-10-21, U8).
+  // A tab or filter that drops the open conversation leaves the pane empty.
   const pinnedRow = pinned && thread.detail?.id === pinned.id ? thread.detail : pinned;
-  const selected =
-    rows.find((c) => c.id === selectedId) ??
-    (pinnedRow && pinnedRow.id === selectedId ? pinnedRow : null) ??
-    (pinning !== null && pinning === selectedId ? null : rows[0]) ??
-    null;
+  const selected = rows.find((c) => c.id === selectedId) ?? (pinnedRow && pinnedRow.id === selectedId ? pinnedRow : null);
   const selectedKey = selected?.id ?? null;
   const visible = selected !== null && (desktop || showChatMobile);
 
@@ -294,7 +312,6 @@ export function Workspace({ me }: { me: InboxMe }) {
   const pinSeq = useRef(0);
   const pin = useCallback(async (id: string) => {
     const seq = ++pinSeq.current;
-    setPinning(id);
     try {
       const detail = await inboxApi.conversation(id);
       if (seq === pinSeq.current) setPinned(detail);
@@ -302,41 +319,64 @@ export function Workspace({ me }: { me: InboxMe }) {
       if (seq !== pinSeq.current || latest.current.selectedId !== id) return;
       setSelectedId(null);
       setShowChatMobile(false);
-    } finally {
-      if (seq === pinSeq.current) setPinning(null);
     }
   }, []);
   useEffect(() => {
     if (arrival.selectedId) void pin(arrival.selectedId);
   }, [arrival.selectedId, pin]);
 
-  // State into the address. A chosen conversation or tab is a new history
-  // entry (so Back returns to the list); everything else replaces the current
-  // one. Only a conversation someone chose, or linked to, is written — the
-  // first row a desktop opens by itself is not.
+  // State into the address. A chosen conversation, tab or settings page is a
+  // new history entry (so Back returns to the list); everything else replaces
+  // the current one.
   const historyMode = useRef<'push' | 'replace'>('replace');
   useEffect(() => {
-    const next = window.location.pathname + inboxSearch({ tab, unanswered: filters.unanswered, selectedId }, homeTab);
+    const next =
+      window.location.pathname +
+      inboxSearch(
+        {
+          tab,
+          unanswered: filters.unanswered,
+          selectedId,
+          settings,
+          archiveRange: filters.archiveRange,
+          resolvedBy: filters.resolvedBy,
+        },
+        homeTab,
+      );
     const mode = historyMode.current;
     historyMode.current = 'replace';
     if (next === window.location.pathname + window.location.search) return;
     if (mode === 'push') window.history.pushState({ otoInbox: true }, '', next);
     else window.history.replaceState(window.history.state, '', next);
-  }, [tab, filters.unanswered, selectedId, homeTab]);
+  }, [tab, filters.unanswered, filters.archiveRange, filters.resolvedBy, selectedId, settings, homeTab]);
 
   // Back and forward: the address into state.
+  const allowTemplates = me.capabilities.templates;
+  const allowAssistant = assistantCaps.kb || assistantCaps.ai;
   useEffect(() => {
     const onPop = () => {
-      const view = viewFromUrl(window.location.search, me.tabs, homeTab);
+      const view = viewFromUrl(window.location.search, me.tabs, homeTab, { templates: allowTemplates, assistant: allowAssistant });
       setTab(view.tab);
-      setFilters((f) => (f.unanswered === view.unanswered ? f : { ...f, unanswered: view.unanswered }));
+      setFilters((f) => {
+        const archiveRange = view.archiveRange ?? f.archiveRange;
+        const resolvedBy = view.resolvedBy ?? f.resolvedBy;
+        if (f.unanswered === view.unanswered && f.archiveRange === archiveRange && f.resolvedBy === resolvedBy) return f;
+        return { ...f, unanswered: view.unanswered, archiveRange, resolvedBy };
+      });
       setSelectedId(view.selectedId);
       setShowChatMobile(view.showChat);
+      setSettings(view.settings);
       if (view.selectedId && !latest.current.rows.some((c) => c.id === view.selectedId)) void pin(view.selectedId);
     };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
-  }, [me.tabs, homeTab, pin]);
+  }, [me.tabs, homeTab, pin, allowTemplates, allowAssistant]);
+
+  // A settings page in place of the workspace, and the way back (U11).
+  const chooseSettings = (page: SettingsPage | null) => {
+    historyMode.current = 'push';
+    setSettings((v) => (v === page ? null : page));
+  };
 
   const select = (id: string) => {
     if (id !== selectedId) historyMode.current = 'push';
@@ -377,7 +417,7 @@ export function Workspace({ me }: { me: InboxMe }) {
   const chooseTab = (t: InboxTab) => {
     if (t !== tab) historyMode.current = 'push';
     setTab(t);
-    // A new tab is a new list: its first row, not a conversation from the last one.
+    // A new tab is a new list: nothing open until a row is chosen.
     setSelectedId(null);
     setShowChatMobile(false);
   };
@@ -420,7 +460,7 @@ export function Workspace({ me }: { me: InboxMe }) {
             {me.capabilities.templates && (
               <button
                 type="button"
-                onClick={() => setSettings((v) => (v === 'templates' ? null : 'templates'))}
+                onClick={() => chooseSettings('templates')}
                 aria-pressed={settings === 'templates'}
                 className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-[12px] font-medium transition ${
                   settings === 'templates'
@@ -435,7 +475,7 @@ export function Workspace({ me }: { me: InboxMe }) {
             {(assistantCaps.kb || assistantCaps.ai) && (
               <button
                 type="button"
-                onClick={() => setSettings((v) => (v === 'assistant' ? null : 'assistant'))}
+                onClick={() => chooseSettings('assistant')}
                 aria-pressed={settings === 'assistant'}
                 className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-[12px] font-medium transition ${
                   settings === 'assistant'
@@ -488,8 +528,8 @@ export function Workspace({ me }: { me: InboxMe }) {
         )}
       </header>
 
-      {settings === 'templates' && <TemplateSettings me={me} />}
-      {settings === 'assistant' && <AssistantSettings me={me} />}
+      {settings === 'templates' && <TemplateSettings me={me} onBack={() => chooseSettings(null)} />}
+      {settings === 'assistant' && <AssistantSettings me={me} onBack={() => chooseSettings(null)} />}
 
       {/* WORKSPACE */}
       <div className={`${settings !== null ? 'hidden ' : ''}overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_40px_-16px_rgba(15,23,42,0.18)]`}>
@@ -532,31 +572,23 @@ export function Workspace({ me }: { me: InboxMe }) {
                 thread={thread}
                 me={me}
                 now={now}
+                detailsOpen={detailsOpen}
                 onBack={closeChat}
                 onLoadOlder={() => void loadOlder()}
                 onOpenDetails={() => setDetailsOpen(true)}
+                onCloseDetails={() => setDetailsOpen(false)}
                 onOpenTemplates={() => setTemplatesOpen(true)}
                 onAskHandle={() => askHandle(selected.id)}
                 onChanged={refresh}
                 inserted={inserted}
               />
             ) : (
-              <EmptyState icon={MessageSquare} title="Select a conversation" subtitle="Pick one from the list to view the thread." />
+              <EmptyState icon={MessageSquare} title="Pick a conversation" subtitle="Choose one from the list to read it." />
             )}
           </section>
         </div>
       </div>
 
-      {selected && (
-        <DetailsDialog
-          open={detailsOpen}
-          onClose={() => setDetailsOpen(false)}
-          row={selected}
-          detail={thread.detail}
-          me={me}
-          now={now}
-        />
-      )}
       <TemplatesDialog
         open={templatesOpen}
         onClose={() => setTemplatesOpen(false)}

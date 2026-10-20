@@ -13,7 +13,9 @@ import {
   assigneeChip,
   branchLabel,
   canHandle,
+  categoryTitle,
   contactName,
+  effectiveBranchId,
   initialsOf,
   langLabel,
   listTime,
@@ -275,6 +277,7 @@ function Row({
   const supports = supportsOf(c);
   const pendingWrites = writeMode(me) === 'disabled';
   const handleHere = canHandle(c, me);
+  const teamName = me.teams.find((t) => t.id === c.teamId)?.name ?? null;
   return (
     <div
       role="button"
@@ -313,13 +316,13 @@ function Row({
             )}
             <span className="uppercase tracking-wide">{langLabel(c.language)}</span>
             <span>·</span>
-            <span className="truncate">{branchLabel(c.branchId, me.teams)}</span>
+            <span className="truncate">{branchLabel(effectiveBranchId(c, me.teams), me.teams)}</span>
           </div>
           <div className={`mt-1 truncate text-[12.5px] ${c.unanswered ? 'text-slate-800' : 'text-slate-600'}`}>
             {c.lastMessagePreview ?? ' '}
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
-            <CategoryBadge category={c.category} />
+            <CategoryBadge category={c.category} title={categoryTitle(c.category, teamName)} />
             <StatusBadge status={c.status} />
             {c.unanswered && (
               <span className="inline-flex items-center rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-medium text-rose-700 ring-1 ring-rose-200">

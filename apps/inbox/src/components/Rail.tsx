@@ -42,9 +42,10 @@ export function FilterFields({
           ['marketing', 'Marketing'],
         ]}
       />
+      {/* "Filter by branch", not "Branch": the strip's branch select is "Conversation branch" (test night U12). */}
       <FilterSelect
         icon={MapPin}
-        label="Branch"
+        label="Filter by branch"
         value={filters.branchId}
         onChange={(v) => onChange({ branchId: v })}
         options={[['', 'All branches'], ...branchOptions(me.teams).map((b): [string, string] => [b.id, b.label])]}

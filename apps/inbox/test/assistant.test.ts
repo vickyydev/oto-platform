@@ -9,7 +9,8 @@ import { describe, expect, it } from 'vitest';
 import { ApiError } from '@/api/client';
 import { NOT_ON_YOUR_ACCESS, assistantCapabilities, notOnAccess, type AiExample, type KbTopic } from '@/api/assistant';
 import type { InboxEvent, InboxMe, Message } from '@/api/inbox';
-import { ExampleReview } from '@/components/AssistantSettings';
+import { ExampleCard, ExampleReview, WITHDRAW_EXAMPLE_LINE, WithdrawExampleConfirm } from '@/components/AssistantSettings';
+import { CorrectAssistant } from '@/components/CorrectAssistant';
 import { MessageBubble } from '@/components/MessageBubble';
 import {
   AI_MODE_OPTIONS,
@@ -17,7 +18,9 @@ import {
   KB_QUESTION_MAX,
   canApproveExample,
   correctionSource,
+  defaultExampleIntent,
   exampleDraftProblem,
+  exampleIntentProblem,
   kbDraftProblem,
   kbGroups,
   modeChangeNeedsConfirm,
@@ -299,5 +302,92 @@ describe('"Correct the assistant", pre-filled (§E)', () => {
       customerMessageId: 'c2',
       aiText: '',
     });
+  });
+
+  describe('the topic it starts on (test night 2026-10-21, U3)', () => {
+    it('leaves the server its default when the assistant classified the thread, else starts on the category’s topic', () => {
+      expect(defaultExampleIntent('hours', 'general')).toBe('');
+      expect(defaultExampleIntent(null, 'general')).toBe('faq');
+      expect(defaultExampleIntent('online / branch', 'birthdays')).toBe('birthday_party');
+      expect(defaultExampleIntent(null, 'marketing')).toBe('influencer_marketing');
+    });
+
+    it('refuses a blank topic before Propose when the thread has no classification', () => {
+      expect(exampleIntentProblem('', null)).toMatch(/Choose the topic/);
+      expect(exampleIntentProblem('', 'lost items')).toMatch(/Choose the topic/);
+      expect(exampleIntentProblem('faq', null)).toBeNull();
+      expect(exampleIntentProblem('', 'hours')).toBeNull();
+    });
+
+    it('opens on the category’s topic, with no blank choice, on a thread the assistant never classified', () => {
+      const html = renderToStaticMarkup(
+        createElement(CorrectAssistant, {
+          target: { messageId: 'a2' },
+          messages,
+          intent: 'lost items',
+          category: 'general',
+          language: 'en',
+          onClose: () => undefined,
+        }),
+      );
+      expect(html).not.toContain('As the assistant classified it');
+      expect(html).toMatch(/<option value="faq" selected="">/);
+      expect(html).toMatch(/<button type="submit" form="correct-assistant" class="[^"]*">(?!<svg)[^<]*Propose example<\/button>/);
+    });
+
+    it('keeps the server’s default on a classified thread', () => {
+      const html = renderToStaticMarkup(
+        createElement(CorrectAssistant, {
+          target: { messageId: 'a2' },
+          messages,
+          intent: 'hours',
+          category: 'general',
+          language: 'en',
+          onClose: () => undefined,
+        }),
+      );
+      expect(html).toMatch(/<option value="" selected="">As the assistant classified it<\/option>/);
+    });
+  });
+});
+
+describe('withdrawing an approved example (test night U2)', () => {
+  const example: AiExample = {
+    id: 'x1',
+    intent: 'faq',
+    language: 'en',
+    customerText: 'Can we bring our own cake?',
+    goodReply: 'Yes, outside cakes are welcome.',
+    verdict: 'should_answer',
+    status: 'approved',
+    sourceMessageId: null,
+    sourceConversationId: null,
+    proposedByAccountId: 'a1',
+    approvedByAccountId: 'a2',
+    approvedAt: '2026-10-21T08:00:00.000Z',
+    deidentifiedConfirmed: true,
+    createdAt: '2026-10-20T08:00:00.000Z',
+    updatedAt: '2026-10-21T08:00:00.000Z',
+  };
+  const card = (x: AiExample) =>
+    renderToStaticMarkup(
+      createElement(ExampleCard, { example: x, proposer: null, onReview: () => undefined, onWithdraw: () => undefined }),
+    );
+
+  it('offers Withdraw on an approved example and Review on a proposed one', () => {
+    expect(card(example)).toContain('Withdraw');
+    expect(card(example)).not.toContain('Review');
+    expect(card({ ...example, status: 'proposed' })).toContain('Review');
+    expect(card({ ...example, status: 'proposed' })).not.toContain('Withdraw');
+    expect(card({ ...example, status: 'rejected' })).not.toContain('Withdraw');
+  });
+
+  it('says what withdrawing means before the press', () => {
+    const html = renderToStaticMarkup(
+      createElement(WithdrawExampleConfirm, { example, busy: false, error: null, onCancel: () => undefined, onConfirm: () => undefined }),
+    );
+    expect(WITHDRAW_EXAMPLE_LINE).toBe('The assistant stops using this example on every live number.');
+    expect(html).toContain(WITHDRAW_EXAMPLE_LINE);
+    expect(html).toContain('Yes, withdraw');
   });
 });

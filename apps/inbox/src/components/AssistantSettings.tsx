@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { Archive, BookOpen, Bot, CheckCircle2, Loader2, Pencil, Plus, Radio, ShieldCheck, Trash2, X } from 'lucide-react';
+import { Archive, BookOpen, Bot, CheckCircle2, Loader2, Pencil, Plus, Radio, ShieldCheck, Trash2, Undo2, X } from 'lucide-react';
 import { ApiError } from '@/api/client';
 import {
   NOT_ON_YOUR_ACCESS,
@@ -20,6 +20,7 @@ import { Eyebrow } from '@/components/atoms';
 import { Refusal } from '@/components/confirms';
 import { FIELD, Field } from '@/components/CorrectAssistant';
 import { Dialog } from '@/components/Dialog';
+import { BackToInbox } from '@/components/TemplateSettings';
 import {
   AI_MODE_OPTIONS,
   AI_MODE_TINT,
@@ -78,7 +79,7 @@ type Section = 'channels' | 'kb' | 'examples';
  * The prototype has no settings; this page is in the template page's design
  * language (the eyebrow header card, bordered cards, the house Dialog).
  */
-export function AssistantSettings({ me }: { me: InboxMe }) {
+export function AssistantSettings({ me, onBack }: { me: InboxMe; onBack: () => void }) {
   const caps = assistantCapabilities(me);
   const sections: [Section, string][] = [
     ...(caps.ai ? ([['channels', 'Channels']] as [Section, string][]) : []),
@@ -100,21 +101,24 @@ export function AssistantSettings({ me }: { me: InboxMe }) {
             A person replying always takes over.
           </p>
         </div>
-        <div role="tablist" aria-label="Assistant settings" className="flex flex-wrap gap-1 rounded-xl bg-slate-100 p-1">
-          {sections.map(([s, label]) => (
-            <button
-              key={s}
-              type="button"
-              role="tab"
-              aria-selected={section === s}
-              onClick={() => setSection(s)}
-              className={`rounded-lg px-2.5 py-1 text-[12px] font-medium transition ${
-                section === s ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-2">
+          <BackToInbox onBack={onBack} />
+          <div role="tablist" aria-label="Assistant settings" className="flex flex-wrap gap-1 rounded-xl bg-slate-100 p-1">
+            {sections.map(([s, label]) => (
+              <button
+                key={s}
+                type="button"
+                role="tab"
+                aria-selected={section === s}
+                onClick={() => setSection(s)}
+                className={`rounded-lg px-2.5 py-1 text-[12px] font-medium transition ${
+                  section === s ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -595,6 +599,9 @@ function ExamplesQueue({ me }: { me: InboxMe }) {
   const [examples, setExamples] = useState<AiExample[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState<AiExample | null>(null);
+  const [withdrawing, setWithdrawing] = useState<AiExample | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [withdrawError, setWithdrawError] = useState<string | null>(null);
   const proposer = (x: AiExample) => me.people.find((p) => p.accountId === x.proposedByAccountId)?.name ?? null;
 
   const load = useCallback(async () => {
@@ -609,6 +616,23 @@ function ExamplesQueue({ me }: { me: InboxMe }) {
     setExamples(null);
     void load();
   }, [load]);
+
+  // Withdraw an approved example (test night U2): the api's reject takes it
+  // out of the assistant; the screen had no control for it.
+  const withdraw = async () => {
+    if (!withdrawing) return;
+    setBusy(true);
+    setWithdrawError(null);
+    try {
+      await assistantApi.rejectExample(withdrawing.id);
+      setWithdrawing(null);
+      await load();
+    } catch (err) {
+      setWithdrawError(said(err, 'The example could not be withdrawn.'));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <div className="mt-4">
@@ -639,29 +663,16 @@ function ExamplesQueue({ me }: { me: InboxMe }) {
       {examples?.length === 0 && <p className="mt-4 text-[12.5px] text-slate-500">Nothing here.</p>}
       <ul className="mt-4 grid grid-cols-1 gap-2 lg:grid-cols-2">
         {examples?.map((x) => (
-          <li key={x.id} className="min-w-0 rounded-xl border border-slate-200 p-3">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span className="rounded-full bg-slate-100 px-1.5 text-[10px] font-semibold text-slate-600">{langLabel(x.language)}</span>
-              <span className="text-[11px] text-slate-500">{intentLabel(x.intent)}</span>
-              <span className="rounded-full bg-indigo-50 px-1.5 text-[10px] font-medium text-indigo-700 ring-1 ring-indigo-200">
-                {VERDICT_LABEL[x.verdict]}
-              </span>
-              {proposer(x) && <span className="text-[11px] text-slate-400">by {proposer(x)}</span>}
-            </div>
-            <p className="mt-1.5 line-clamp-3 whitespace-pre-line break-words text-[12.5px] text-slate-800">{x.customerText}</p>
-            {x.goodReply && (
-              <p className="mt-1 line-clamp-3 whitespace-pre-line break-words rounded-lg bg-indigo-50/60 px-2 py-1 text-[12.5px] text-indigo-900">
-                {x.goodReply}
-              </p>
-            )}
-            {x.status === 'proposed' && (
-              <div className="mt-2">
-                <button type="button" onClick={() => setOpen(x)} className={BUTTON}>
-                  <Pencil className="h-3 w-3" /> Review
-                </button>
-              </div>
-            )}
-          </li>
+          <ExampleCard
+            key={x.id}
+            example={x}
+            proposer={proposer(x)}
+            onReview={() => setOpen(x)}
+            onWithdraw={() => {
+              setWithdrawError(null);
+              setWithdrawing(x);
+            }}
+          />
         ))}
       </ul>
 
@@ -675,7 +686,112 @@ function ExamplesQueue({ me }: { me: InboxMe }) {
           }}
         />
       )}
+
+      <WithdrawExampleConfirm
+        example={withdrawing}
+        busy={busy}
+        error={withdrawError}
+        onCancel={() => setWithdrawing(null)}
+        onConfirm={() => void withdraw()}
+      />
     </div>
+  );
+}
+
+/**
+ * One example in the queue: Review while proposed; Withdraw once approved
+ * (test night U2 — an approved example could not be pulled back on screen).
+ */
+export function ExampleCard({
+  example: x,
+  proposer,
+  onReview,
+  onWithdraw,
+}: {
+  example: AiExample;
+  proposer: string | null;
+  onReview: () => void;
+  onWithdraw: () => void;
+}) {
+  return (
+    <li className="min-w-0 rounded-xl border border-slate-200 p-3">
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="rounded-full bg-slate-100 px-1.5 text-[10px] font-semibold text-slate-600">{langLabel(x.language)}</span>
+        <span className="text-[11px] text-slate-500">{intentLabel(x.intent)}</span>
+        <span className="rounded-full bg-indigo-50 px-1.5 text-[10px] font-medium text-indigo-700 ring-1 ring-indigo-200">
+          {VERDICT_LABEL[x.verdict]}
+        </span>
+        {proposer && <span className="text-[11px] text-slate-400">by {proposer}</span>}
+      </div>
+      <p className="mt-1.5 line-clamp-3 whitespace-pre-line break-words text-[12.5px] text-slate-800">{x.customerText}</p>
+      {x.goodReply && (
+        <p className="mt-1 line-clamp-3 whitespace-pre-line break-words rounded-lg bg-indigo-50/60 px-2 py-1 text-[12.5px] text-indigo-900">
+          {x.goodReply}
+        </p>
+      )}
+      {x.status === 'proposed' && (
+        <div className="mt-2">
+          <button type="button" onClick={onReview} className={BUTTON}>
+            <Pencil className="h-3 w-3" /> Review
+          </button>
+        </div>
+      )}
+      {x.status === 'approved' && (
+        <div className="mt-2">
+          <button type="button" onClick={onWithdraw} className={BUTTON}>
+            <Undo2 className="h-3 w-3" /> Withdraw
+          </button>
+        </div>
+      )}
+    </li>
+  );
+}
+
+/** What withdrawing means, said before the press. */
+export const WITHDRAW_EXAMPLE_LINE = 'The assistant stops using this example on every live number.';
+
+export function WithdrawExampleConfirm({
+  example,
+  busy,
+  error,
+  onCancel,
+  onConfirm,
+}: {
+  example: AiExample | null;
+  busy: boolean;
+  error: string | null;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <Dialog
+      open={example !== null}
+      onClose={onCancel}
+      icon={Undo2}
+      iconTint="bg-amber-50 text-amber-600"
+      title="Withdraw this example?"
+      subtitle={example ? `${intentLabel(example.intent)} · ${langLabel(example.language)}` : undefined}
+      footer={
+        <>
+          <button type="button" onClick={onCancel} disabled={busy} className={CANCEL}>
+            Cancel
+          </button>
+          <button type="button" onClick={onConfirm} disabled={busy} className={PRIMARY}>
+            {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            Yes, withdraw
+          </button>
+        </>
+      }
+    >
+      <p className="text-[12.5px] text-slate-700">{WITHDRAW_EXAMPLE_LINE}</p>
+      <p className="mt-2 text-[12.5px] text-slate-500">It moves to Rejected and stays there; propose a new one to replace it.</p>
+      {example && (
+        <p className="mt-2 line-clamp-4 whitespace-pre-line break-words rounded-lg bg-slate-50 px-3 py-2 text-[12.5px] text-slate-700">
+          {example.customerText}
+        </p>
+      )}
+      {error && <Refusal text={error} />}
+    </Dialog>
   );
 }
 

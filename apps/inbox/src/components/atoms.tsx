@@ -15,8 +15,22 @@ import {
   STATUS_DOT,
   STATUS_LABEL,
   STATUS_TINT,
+  TRANSLATION_PENDING,
   type Chip,
 } from '@/lib/view';
+
+/**
+ * The mark on a RU or TH template whose body is still the English source
+ * (test night 2026-10-21, U1: English went to a Russian customer unknowingly).
+ * The same words wherever a template is offered to a reply.
+ */
+export function TranslationNote() {
+  return (
+    <span className="rounded-full bg-amber-50 px-1.5 text-[10px] font-medium text-amber-700 ring-1 ring-amber-200">
+      {TRANSLATION_PENDING}
+    </span>
+  );
+}
 
 export function Avatar({ initials, tint, size = 40 }: { initials: string; tint: string; size?: number }) {
   return (
@@ -79,6 +93,7 @@ export function CategoryBadge({
   label,
   picker,
   live = false,
+  title,
 }: {
   category: InboxCategoryKey;
   /** The move picker shows the team ("Reception · Central"); the list shows the category. */
@@ -86,6 +101,8 @@ export function CategoryBadge({
   picker?: ReactNode;
   /** The picker is live: the prototype's pointer, hover ring and hint (:995-998). */
   live?: boolean;
+  /** What the badge means, for a reader (`categoryTitle`: topic, not team); the live picker's hint wins. */
+  title?: string;
 }) {
   return (
     <span className="relative inline-flex">
@@ -93,7 +110,7 @@ export function CategoryBadge({
         className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ${CATEGORY_TINT[category]}${
           live ? ' cursor-pointer hover:ring-slate-400' : ''
         }`}
-        title={live ? 'Click to move this conversation to another team' : undefined}
+        title={live ? 'Click to move this conversation to another team' : title}
       >
         {label ?? CATEGORY_LABEL[category]}
         {picker && <ChevronDown className="h-3 w-3 opacity-60" />}

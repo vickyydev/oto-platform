@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
-import { Archive, FileText, Loader2, Paperclip, Pencil, Plus, Upload } from 'lucide-react';
+import { Archive, ArrowLeft, FileText, Loader2, Paperclip, Pencil, Plus, Upload } from 'lucide-react';
 import { INBOX_TEMPLATE_APPROVALS, INBOX_TEMPLATE_KEY_NAMES, templateVariables } from '@oto/shared/inbox-reply';
 import { ApiError } from '@/api/client';
 import { BROCHURE_MAX_BYTES, BROCHURE_TYPES, assistantApi } from '@/api/assistant';
@@ -49,7 +49,7 @@ function said(err: unknown, fallback: string): string {
  * The prototype has no settings; this page is in its design language (the
  * header card's eyebrow, the bordered cards, the house Dialog).
  */
-export function TemplateSettings({ me }: { me: InboxMe }) {
+export function TemplateSettings({ me, onBack }: { me: InboxMe; onBack: () => void }) {
   const [archived, setArchived] = useState(false);
   const [templates, setTemplates] = useState<ManagedTemplate[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -106,6 +106,7 @@ export function TemplateSettings({ me }: { me: InboxMe }) {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <BackToInbox onBack={onBack} />
           <label className="inline-flex items-center gap-1.5 text-[12px] text-slate-600">
             <input type="checkbox" checked={archived} onChange={(e) => setArchived(e.target.checked)} />
             Show archived
@@ -228,6 +229,23 @@ export function TemplateSettings({ me }: { me: InboxMe }) {
         {archiveError && <Refusal text={archiveError} />}
       </Dialog>
     </div>
+  );
+}
+
+/**
+ * The way back from a settings page (test night 2026-10-21, U11): the pages
+ * had no "back to inbox", and the header's toggle was the only way out.
+ */
+export function BackToInbox({ onBack }: { onBack: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onBack}
+      className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[12px] font-medium text-slate-600 hover:border-slate-300 hover:text-slate-900"
+    >
+      <ArrowLeft className="h-3.5 w-3.5" />
+      Back to inbox
+    </button>
   );
 }
 

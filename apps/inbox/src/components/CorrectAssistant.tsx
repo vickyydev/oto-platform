@@ -1,5 +1,6 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { CheckCircle2, Loader2, PenLine } from 'lucide-react';
+import type { InboxCategoryKey } from '@oto/shared/inbox';
 import { ApiError } from '@/api/client';
 import { assistantApi, type ExampleVerdict } from '@/api/assistant';
 import type { Message } from '@/api/inbox';
@@ -12,13 +13,15 @@ import {
   KB_LANGUAGES,
   VERDICT_OPTIONS,
   correctionSource,
+  defaultExampleIntent,
   exampleDraftProblem,
+  exampleIntentProblem,
   exampleLanguage,
   intentLabel,
+  knownIntent,
 } from '@/lib/assistant';
 
-/** The thread's own words as a starting choice, only when they are the assistant's. */
-const knownIntent = (v: string | null): string => (v !== null && (INTENTS as readonly string[]).includes(v) ? v : '');
+/** The thread's own language as a starting choice, only when it is one the assistant speaks. */
 const knownLanguage = (v: string | null): string => (v !== null && KB_LANGUAGES.some(([l]) => l === v) ? v : '');
 
 export const FIELD =
@@ -42,6 +45,7 @@ export function CorrectAssistant({
   target,
   messages,
   intent,
+  category,
   language,
   onClose,
 }: {
@@ -49,6 +53,8 @@ export function CorrectAssistant({
   messages: readonly Message[];
   /** The thread's intent and language, as the classifier left them. */
   intent: string | null;
+  /** The thread's category: the topic's starting point when the assistant never classified it (test night U3). */
+  category: InboxCategoryKey;
   language: string | null;
   onClose: () => void;
 }) {
@@ -58,15 +64,19 @@ export function CorrectAssistant({
   const [goodReply, setGoodReply] = useState(source.aiText);
   const [verdict, setVerdict] = useState<ExampleVerdict>('should_answer');
   // Blank = as the assistant classified that message (its turn), else the
-  // thread: the server's default; staff pick one only to overrule it.
-  const [exIntent, setExIntent] = useState<string>(knownIntent(intent));
+  // thread: the server's default; staff pick one only to overrule it. On a
+  // thread it never classified there is no default to fall back on, so the
+  // category's nearest topic is preselected and a blank is refused here, not
+  // after Propose (`defaultExampleIntent`, `exampleIntentProblem`).
+  const classified = knownIntent(intent) !== null;
+  const [exIntent, setExIntent] = useState<string>(defaultExampleIntent(intent, category));
   const [exLanguage, setExLanguage] = useState<string>(knownLanguage(language));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
   const draft = { customerText, goodReply, verdict };
-  const problem = exampleDraftProblem(draft);
+  const problem = exampleDraftProblem(draft) ?? exampleIntentProblem(exIntent, intent);
   const sourceMessageId = 'messageId' in target ? target.messageId : source.customerMessageId;
 
   const save = async (e: FormEvent) => {
@@ -178,7 +188,7 @@ export function CorrectAssistant({
           </Field>
           <Field label="Topic of the question">
             <select value={exIntent} onChange={(e) => setExIntent(e.target.value)} className={FIELD}>
-              <option value="">As the assistant classified it</option>
+              {classified && <option value="">As the assistant classified it</option>}
               {INTENTS.map((i) => (
                 <option key={i} value={i}>
                   {intentLabel(i)}

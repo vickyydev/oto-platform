@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import { FileText, Filter, Info, Loader2 } from 'lucide-react';
+import type { InboxStatusKey } from '@oto/shared/inbox';
 import { ApiError } from '@/api/client';
 import { inboxApi, type ConversationDetail, type ConversationRow, type InboxMe, type Template } from '@/api/inbox';
+import { Eyebrow, TranslationNote } from '@/components/atoms';
+import { FIELD } from '@/components/CorrectAssistant';
 import { Dialog } from '@/components/Dialog';
 import { FilterFields } from '@/components/Rail';
 import { PendingControl } from '@/components/writes';
@@ -14,9 +17,36 @@ import {
   bubbleTime,
   branchLabel,
   contactName,
+  effectiveBranchId,
+  handleLabel,
   langLabel,
+  offeredTemplates,
+  supportsOf,
   writeMode,
+  type MoveOption,
 } from '@/lib/view';
+
+/** What a manager sees in the details (test night U7): the support places are theirs to fill. */
+export const MANAGERS_ADD_SUPPORT = 'Managers add support';
+
+/**
+ * The header's team badge and status picker, for a phone (test night U10):
+ * below `md` the header hides them, and the GM could neither move a thread
+ * nor change its status at 390 px. The dialog carries the same two controls,
+ * shown only where the header's are not (`md:hidden`).
+ */
+export interface DetailsActions {
+  moves: MoveOption[];
+  currentMove: string;
+  canMove: boolean;
+  onMove: (option: MoveOption) => void;
+  status: InboxStatusKey;
+  canHandle: boolean;
+  canReopen: boolean;
+  onHandle: () => void;
+  onReopen: () => void;
+  busy: boolean;
+}
 
 /**
  * The chat header's "more" menu (:1911), as a read: who this is and where the
@@ -30,6 +60,7 @@ export function DetailsDialog({
   detail,
   me,
   now,
+  actions,
 }: {
   open: boolean;
   onClose: () => void;
@@ -37,19 +68,25 @@ export function DetailsDialog({
   detail: ConversationDetail | null;
   me: InboxMe;
   now: Date;
+  actions?: DetailsActions;
 }) {
   const d = detail?.id === row.id ? detail : null;
   const when = (iso: string | null | undefined) => (iso ? bubbleTime(iso, now) : '—');
+  const supportNames = supportsOf(row)
+    .map((s) => s.name ?? me.people.find((p) => p.accountId === s.accountId)?.name ?? 'Someone')
+    .join(', ');
   const lines: [string, string][] = [
     ['Contact', contactName(row.contact)],
-    ['Handle', row.contact.handle],
+    // A Facebook or Instagram id reads like a phone number (test night U9).
+    [handleLabel(row.channel) ?? 'Handle', row.contact.handle],
     ['Phone', row.contact.phone ?? '—'],
     ['Channel', CHANNEL_LABEL[row.channel]],
     ['Language', langLabel(row.language)],
     ['Category', CATEGORY_LABEL[row.category]],
     ['Intent', row.intent ?? '—'],
     ['Team', d?.teamName ?? '—'],
-    ['Branch', branchLabel(row.branchId, me.teams)],
+    ['Support', `${supportNames || 'Nobody yet'}${me.capabilities.assign ? '' : ` · ${MANAGERS_ADD_SUPPORT}`}`],
+    ['Branch', branchLabel(effectiveBranchId(row, me.teams), me.teams)],
     ['Status', STATUS_LABEL[row.status]],
     ['Member', d?.member ? `${d.member.name} · ${d.member.childCount} child${d.member.childCount === 1 ? '' : 'ren'}` : 'Not linked'],
     ['Started', when(row.createdAt)],
@@ -57,6 +94,7 @@ export function DetailsDialog({
     ['Handled', row.status === 'handled' ? when(row.handledAt) : '—'],
     ['Reopened', when(d?.reopenedAt)],
   ];
+  const phoneActions = actions && (actions.canMove || actions.canHandle || actions.canReopen) ? actions : null;
   return (
     <Dialog open={open} onClose={onClose} icon={Info} title="Conversation details" subtitle={contactName(row.contact)}>
       <dl className="grid grid-cols-[minmax(0,7rem)_minmax(0,1fr)] gap-x-3 gap-y-2 text-[12.5px]">
@@ -67,6 +105,52 @@ export function DetailsDialog({
           </div>
         ))}
       </dl>
+      {phoneActions && (
+        <div className="mt-4 border-t border-slate-100 pt-3 md:hidden" data-phone-actions="true">
+          <Eyebrow className="mb-2">Actions</Eyebrow>
+          <div className="grid grid-cols-1 gap-2">
+            {phoneActions.canMove && (
+              <label className="flex min-w-0 flex-col gap-1 text-[11px] font-medium text-slate-500">
+                Team
+                <select
+                  aria-label="Move to team"
+                  value={phoneActions.currentMove}
+                  disabled={phoneActions.busy}
+                  onChange={(e) => {
+                    const opt = phoneActions.moves.find((m) => m.value === e.target.value);
+                    if (opt && opt.value !== phoneActions.currentMove) phoneActions.onMove(opt);
+                  }}
+                  className={FIELD}
+                >
+                  {phoneActions.moves.map((m) => (
+                    <option key={m.value} value={m.value}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            {(phoneActions.canHandle || phoneActions.canReopen) && (
+              <label className="flex min-w-0 flex-col gap-1 text-[11px] font-medium text-slate-500">
+                Status
+                <select
+                  aria-label="Set conversation status"
+                  value={phoneActions.status === 'handled' ? 'handled' : 'new'}
+                  disabled={phoneActions.busy}
+                  onChange={(e) => {
+                    if (e.target.value === 'handled') phoneActions.onHandle();
+                    else phoneActions.onReopen();
+                  }}
+                  className={FIELD}
+                >
+                  <option value="new">Active</option>
+                  <option value="handled">Handled</option>
+                </select>
+              </label>
+            )}
+          </div>
+        </div>
+      )}
     </Dialog>
   );
 }
@@ -128,18 +212,15 @@ export function TemplatesDialog({
       )}
       {templates?.length === 0 && <p className="text-[12.5px] text-slate-500">No templates in this language yet.</p>}
       <ul className="space-y-2">
-        {templates?.map((t) => (
+        {/* `follow_up` first, and a row still in English marked (test night U1). */}
+        {offeredTemplates(templates ?? [], null).own.map((t) => (
           <li key={t.id} className="rounded-xl border border-slate-200 p-3">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
                 {t.key.replace(/[_.]/g, ' ')}
               </span>
               <span className="rounded-full bg-slate-100 px-1.5 text-[10px] font-semibold text-slate-600">{langLabel(t.language)}</span>
-              {t.needsTranslation && (
-                <span className="rounded-full bg-amber-50 px-1.5 text-[10px] font-medium text-amber-700 ring-1 ring-amber-200">
-                  English source, to translate
-                </span>
-              )}
+              {t.needsTranslation && <TranslationNote />}
               {pending ? (
                 <span className="ml-auto">
                   <PendingControl

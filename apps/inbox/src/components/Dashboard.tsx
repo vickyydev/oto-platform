@@ -1,7 +1,7 @@
 import { Activity, CheckCircle2, Clock3, MessageSquare, MessageSquareWarning } from 'lucide-react';
 import type { Dashboard as DashboardData } from '@/api/inbox';
 import { CategoryMixCard, MetricCard } from '@/components/atoms';
-import { durationLabel } from '@/lib/view';
+import { durationLabel, responseScopeLabel } from '@/lib/view';
 
 /**
  * The manager dashboard: the 3 × 2 grid of screenshot 1, on the IT Brief's
@@ -26,6 +26,8 @@ export function Dashboard({
     return <p className="mt-5 rounded-lg bg-rose-50 px-3 py-2 text-[12.5px] text-rose-700 ring-1 ring-rose-200">{error}</p>;
   }
   const v = (n: number | undefined) => (n === undefined ? '—' : n);
+  // Whose average it is (test night U9): the api lane's `scope`, read optionally.
+  const scope = data ? responseScopeLabel((data as { scope?: unknown }).scope) : null;
   return (
     <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3" aria-busy={data === null}>
       <MetricCard icon={MessageSquare} label="New today" value={v(data?.newToday)} tint="text-blue-600 bg-blue-50" />
@@ -45,6 +47,7 @@ export function Dashboard({
         label="Avg response"
         value={data ? durationLabel(data.averageFirstResponseSeconds) : '—'}
         tint="text-slate-700 bg-slate-100"
+        hint={scope ?? undefined}
       />
       <CategoryMixCard data={data?.byCategory ?? { birthdays: 0, general: 0, marketing: 0 }} />
     </div>
