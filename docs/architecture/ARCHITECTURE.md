@@ -307,6 +307,12 @@ A route that needs something other than a plain permission says which, by name, 
 
 The registry exists so a test can enumerate it. `apps/api/test/routes-guarded.test.ts` walks every registered route and fails if one declares none of the five, which means a new route written without a `config` fails on the day it is written rather than the day it is exploited. A second case pins the open surface as an exact list, so widening it shows up in a diff and has to be argued for in review.
 
+### 14.1 The one in-process request (SCRUM-591)
+
+The internal assistant reads the platform as the person who asked, never with a credential of its own (`docs/progress/plans/internal-assistant-build/PLAN.md` §B.2). Each of its tools is an existing GET route, run in process with `app.inject` carrying the asker's own `oto_session` cookie and a request id, so the session is re-resolved from its token and the route's declared guard, its handler's own checks and its service's record fences all run, exactly as for a screen. Calling the services directly with the asker's `AuthContext` was rejected: it skips the declared guard and every check written in a handler.
+
+It is the only production use of `app.inject`, and it is kept to one file, `apps/api/src/services/assistant/call-platform.ts`: GET only, a URL built by a tool adapter from arguments validated by the tool's own schema and matched against that tool's declared route templates, and no header or cookie but the two named. `apps/api/test/assistant-engine.test.ts` fails the build if any other production file calls `app.inject`, and `apps/api/test/assistant-registry.test.ts` fails it if a tool names anything but a registered, session-guarded GET route. A write tool needs the owner's written sign-off first (plan G9).
+
 ## 15. Log redaction (S2-01a)
 
 On a hosted platform, stdout is a log stream the whole team can read. A phone number is the park's primary customer identifier and the key its members are looked up by, so in a log it is treated as a secret. Nothing below is optional tidiness; `apps/api/src/lib/scrub.ts` is where it is implemented.

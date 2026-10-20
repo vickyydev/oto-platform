@@ -151,6 +151,15 @@ const NOT_YET_CALLED = new Map<string, string>([
   // screen. The erasure console (an Inbox or Console settings page, with the
   // 409 preview as its second confirmation) comes later and deletes this.
   ['POST /inbox/contacts/{id}/erase', 'the erasure console lands after I3 (the api ships first, plan §3.6)'],
+  // 2026-10-20, SCRUM-591 round I2: the internal assistant's api lands before
+  // its screens. The launcher's ask panel, "My questions" and feedback (round
+  // I3a) call the first four and delete those lines; the reviewer's view is
+  // the Console's, after I3a.
+  ['POST /assistant/asks', "the launcher's ask panel lands in round I3a (the api ships first, plan §F.1)"],
+  ['GET /assistant/asks', "the launcher's \"My questions\" lands in round I3a"],
+  ['GET /assistant/asks/{id}', "the launcher's \"My questions\" lands in round I3a"],
+  ['PATCH /assistant/asks/{id}/feedback', "the launcher's answer feedback lands in round I3a"],
+  ['GET /assistant/review/asks', "the reviewers' view (a Console page) follows round I3a"],
 ]);
 
 function machineCaller(path: string): string | null {

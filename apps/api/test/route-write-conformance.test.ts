@@ -430,6 +430,16 @@ const OUTSIDE_THE_REPLAY_STORE = [
    * id again answers with the account and no password.
    */
   'POST /admin/apps/oto_app/suite-sign-ins [secretResponse,credential:otoapp-provision]',
+  /**
+   * SCRUM-591 (internal assistant, round I2) — an ask is named by the id the
+   * launcher mints, and its row is written before any model call; a resend of
+   * the id is answered from that row as it stands (a running ask is 409
+   * ASK_IN_FLIGHT), so the replay store has nothing to add. It is kept out on
+   * purpose: the store would keep a second copy of the answer — personal data
+   * the asker was shown — for a day, outside the ask-log and its retention
+   * (plan §E.1). `assistant-engine.test.ts` pins the resend.
+   */
+  'POST /assistant/asks [replaysByOwnId]',
   'POST /auth/handoff [secretResponse]',
   /**
    * S2-21 round 3 (from the round 2 review) — a scanned staff benefit QR

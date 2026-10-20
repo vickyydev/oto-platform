@@ -750,8 +750,15 @@ describe('D. the guards, swept', () => {
 
   it('D1. the new way out of the replay store reaches the event check-in alone, and that route still names its permission and its branch', () => {
     const out = ctx.app.routeRegistry.filter((r) => r.config.replaysByOwnId);
-    expect(out.map((r) => `${r.method} ${r.url.replace(/\/$/, '')}`)).toEqual(['POST /events/:id/attendees/:attendeeId/checkin']);
-    expect(out[0]!.config).toMatchObject({ permission: 'pos:event:checkin', target: { branchId: 'body.branchId' } });
+    // SCRUM-591 I2 took the second: an ask of the internal assistant is answered
+    // from its own row on a resend, so no second copy of the answer sits in the
+    // store (route-write-conformance's OUTSIDE_THE_REPLAY_STORE says why).
+    expect(out.map((r) => `${r.method} ${r.url.replace(/\/$/, '')}`).sort()).toEqual([
+      'POST /assistant/asks',
+      'POST /events/:id/attendees/:attendeeId/checkin',
+    ]);
+    const checkin = out.find((r) => r.url.startsWith('/events/'))!;
+    expect(checkin.config).toMatchObject({ permission: 'pos:event:checkin', target: { branchId: 'body.branchId' } });
   });
 
   it('D2. every write on the events, parties and bookings surface, pressed with no session, is turned away — never a 2xx, never a 5xx', async () => {

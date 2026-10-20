@@ -56,6 +56,8 @@ import {
 import { runStockDailyJob, STOCK_DAILY_JOB } from './stock';
 import type { FileStorage } from './files';
 import { INBOX_RETENTION_JOB, retentionConfigOf, runInboxRetention } from './inbox/privacy';
+import { closeAbandoned } from './assistant/engine';
+import { runAssistantPurge } from './assistant/views';
 import { runWalletExpiryJob, runWalletLiabilityJob } from './wallet';
 
 /** S2-14a round 3 — the wallet day-end jobs, named once (the runner, the tests, the Health page). */
@@ -97,6 +99,8 @@ const LOCK_NAMESPACE = 0x070a;
 
 /** Named once: `/ready` reports this job's age, and the watchdog is it. */
 export const WATCHDOG_JOB = 'job:watchdog';
+/** SCRUM-591 — the internal assistant's ask-log retention (plan §D.3, G4). */
+export const ASSISTANT_PURGE_JOB = 'job:assistant.purge';
 
 /**
  * Timers drift, and a tick arriving a few milliseconds early must not be
@@ -869,6 +873,25 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
       graceSeconds: 120,
       run: async ({ db, log, now }) => ({
         detail: await runInboxAiJob(db, { runtime: inboxAiOf(deps), channels: inboxChannelsOf(deps), storage: deps.fileStorage ?? null, log }, now),
+      }),
+    },
+    /**
+     * `job:assistant.purge` — THE ASK-LOG'S RETENTION (SCRUM-591; plan
+     * docs/progress/plans/internal-assistant-build/PLAN.md §D.3, owner G4).
+     *
+     * Daily: every ask past its `purge_after` (asked + 90 days, set on the row
+     * when it is written) is deleted, its tool calls with it. The audit rows,
+     * which hold no text, stay. An ask left `asking` for an hour — its
+     * process went away mid-ask — is closed as failed first. Counts only.
+     */
+    {
+      name: ASSISTANT_PURGE_JOB,
+      description:
+        "Deletes the internal assistant's asks past their retention (90 days) with their tool calls, and closes any ask left running by a restart",
+      intervalSeconds: 86_400,
+      exclusive: true,
+      run: async ({ db, now }) => ({
+        detail: await runAssistantPurge(db, now, (row) => closeAbandoned(db, row, null)),
       }),
     },
     ...buildOtoAppNightJobs(deps),

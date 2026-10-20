@@ -64787,6 +64787,1066 @@
         }
       }
     },
+    "/assistant/asks": {
+      "post": {
+        "description": "Ask the internal assistant a question (1–2,000 characters) under a caller-named id. The assistant reads the platform AS THE ASKER: every tool is an existing GET route called in process with the asker’s own session, so it sees exactly what their screens would and a refusal comes back as the route’s own sentence, verbatim, under `refusals`. Answers the ask as it ended: `answered`, `refused`, `link_only` (a link and a fixed line, e.g. a figure the guard could not trace), `failed`, `capped` (a daily cap), or `off` (switched off) — with links the asker may open. A resend of the same id is answered from the ask as it stands (`x-oto-replay`); while it is still running, 409 ASK_IN_FLIGHT. Needs assistant:ask:use anywhere in the operator. Audited as assistant.ask and assistant.tool.call (ids, tool names, counts — never the question or the answer).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "question": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  }
+                },
+                "required": [
+                  "id",
+                  "question"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "asking",
+                        "answered",
+                        "refused",
+                        "link_only",
+                        "failed",
+                        "capped",
+                        "off"
+                      ]
+                    },
+                    "reason": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "question": {
+                      "type": "string"
+                    },
+                    "answer": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "links": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "app": {
+                            "type": "string",
+                            "enum": [
+                              "oto_app",
+                              "console",
+                              "launcher"
+                            ]
+                          },
+                          "path": {
+                            "type": "string"
+                          },
+                          "shows": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "app",
+                          "path",
+                          "shows"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "refusals": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "tool": {
+                            "type": "string"
+                          },
+                          "system": {
+                            "type": "string",
+                            "enum": [
+                              "platform",
+                              "oto_app"
+                            ]
+                          },
+                          "status": {
+                            "type": "integer"
+                          },
+                          "code": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "message": {
+                            "type": "string"
+                          },
+                          "line": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "tool",
+                          "system",
+                          "status",
+                          "code",
+                          "message",
+                          "line"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "toolCalls": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "seq": {
+                            "type": "integer"
+                          },
+                          "tool": {
+                            "type": "string"
+                          },
+                          "system": {
+                            "type": "string",
+                            "enum": [
+                              "platform",
+                              "oto_app"
+                            ]
+                          },
+                          "status": {
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "code": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "rows": {
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "truncated": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "seq",
+                          "tool",
+                          "system",
+                          "status",
+                          "code",
+                          "rows",
+                          "truncated"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "feedback": {
+                      "type": "string",
+                      "enum": [
+                        "good",
+                        "wrong"
+                      ],
+                      "nullable": true
+                    },
+                    "correction": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "state",
+                    "reason",
+                    "question",
+                    "answer",
+                    "links",
+                    "refusals",
+                    "toolCalls",
+                    "feedback",
+                    "correction",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "description": "My questions: the signed-in person’s own asks, newest first, keyset-paged by `cursor` (at most 50). Each with its answer, links, refusal lines, tool calls (as numbers) and feedback. No permission beyond a session: nobody else’s asks are ever in this list.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "asks": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "state": {
+                            "type": "string",
+                            "enum": [
+                              "asking",
+                              "answered",
+                              "refused",
+                              "link_only",
+                              "failed",
+                              "capped",
+                              "off"
+                            ]
+                          },
+                          "reason": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "question": {
+                            "type": "string"
+                          },
+                          "answer": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "links": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "key": {
+                                  "type": "string"
+                                },
+                                "app": {
+                                  "type": "string",
+                                  "enum": [
+                                    "oto_app",
+                                    "console",
+                                    "launcher"
+                                  ]
+                                },
+                                "path": {
+                                  "type": "string"
+                                },
+                                "shows": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "key",
+                                "app",
+                                "path",
+                                "shows"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "refusals": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "tool": {
+                                  "type": "string"
+                                },
+                                "system": {
+                                  "type": "string",
+                                  "enum": [
+                                    "platform",
+                                    "oto_app"
+                                  ]
+                                },
+                                "status": {
+                                  "type": "integer"
+                                },
+                                "code": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "message": {
+                                  "type": "string"
+                                },
+                                "line": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "tool",
+                                "system",
+                                "status",
+                                "code",
+                                "message",
+                                "line"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "toolCalls": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "seq": {
+                                  "type": "integer"
+                                },
+                                "tool": {
+                                  "type": "string"
+                                },
+                                "system": {
+                                  "type": "string",
+                                  "enum": [
+                                    "platform",
+                                    "oto_app"
+                                  ]
+                                },
+                                "status": {
+                                  "type": "integer",
+                                  "nullable": true
+                                },
+                                "code": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "rows": {
+                                  "type": "integer",
+                                  "nullable": true
+                                },
+                                "truncated": {
+                                  "type": "boolean"
+                                }
+                              },
+                              "required": [
+                                "seq",
+                                "tool",
+                                "system",
+                                "status",
+                                "code",
+                                "rows",
+                                "truncated"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "feedback": {
+                            "type": "string",
+                            "enum": [
+                              "good",
+                              "wrong"
+                            ],
+                            "nullable": true
+                          },
+                          "correction": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "createdAt": {
+                            "type": "string"
+                          },
+                          "updatedAt": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "state",
+                          "reason",
+                          "question",
+                          "answer",
+                          "links",
+                          "refusals",
+                          "toolCalls",
+                          "feedback",
+                          "correction",
+                          "createdAt",
+                          "updatedAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "nextCursor": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "asks",
+                    "nextCursor"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/assistant/asks/{id}": {
+      "get": {
+        "description": "One ask. The asker reads their own; anybody else’s needs assistant:log:review operator-wide (403 otherwise), and that read is audited as assistant.ask.read naming the ask.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "asking",
+                        "answered",
+                        "refused",
+                        "link_only",
+                        "failed",
+                        "capped",
+                        "off"
+                      ]
+                    },
+                    "reason": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "question": {
+                      "type": "string"
+                    },
+                    "answer": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "links": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "app": {
+                            "type": "string",
+                            "enum": [
+                              "oto_app",
+                              "console",
+                              "launcher"
+                            ]
+                          },
+                          "path": {
+                            "type": "string"
+                          },
+                          "shows": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "app",
+                          "path",
+                          "shows"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "refusals": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "tool": {
+                            "type": "string"
+                          },
+                          "system": {
+                            "type": "string",
+                            "enum": [
+                              "platform",
+                              "oto_app"
+                            ]
+                          },
+                          "status": {
+                            "type": "integer"
+                          },
+                          "code": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "message": {
+                            "type": "string"
+                          },
+                          "line": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "tool",
+                          "system",
+                          "status",
+                          "code",
+                          "message",
+                          "line"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "toolCalls": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "seq": {
+                            "type": "integer"
+                          },
+                          "tool": {
+                            "type": "string"
+                          },
+                          "system": {
+                            "type": "string",
+                            "enum": [
+                              "platform",
+                              "oto_app"
+                            ]
+                          },
+                          "status": {
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "code": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "rows": {
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "truncated": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "seq",
+                          "tool",
+                          "system",
+                          "status",
+                          "code",
+                          "rows",
+                          "truncated"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "feedback": {
+                      "type": "string",
+                      "enum": [
+                        "good",
+                        "wrong"
+                      ],
+                      "nullable": true
+                    },
+                    "correction": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "state",
+                    "reason",
+                    "question",
+                    "answer",
+                    "links",
+                    "refusals",
+                    "toolCalls",
+                    "feedback",
+                    "correction",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/assistant/asks/{id}/feedback": {
+      "patch": {
+        "description": "Mark one of my answers good or wrong; `wrong` may carry a correction (1–1,000 characters), kept on the ask for the reviewers (the learning loop, never weight training). Own asks only (403); an ask still being answered is 409 ASK_IN_FLIGHT. Answers without the text. Audited as assistant.ask.feedback (the verdict and the correction’s length).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "feedback": {
+                    "type": "string",
+                    "enum": [
+                      "good",
+                      "wrong"
+                    ]
+                  },
+                  "correction": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  }
+                },
+                "required": [
+                  "feedback"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "feedback": {
+                      "type": "string",
+                      "enum": [
+                        "good",
+                        "wrong"
+                      ]
+                    },
+                    "hasCorrection": {
+                      "type": "boolean"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "feedback",
+                    "hasCorrection",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/assistant/review/asks": {
+      "get": {
+        "description": "The reviewers’ view of the ask-log (G3): every ask of the operator, newest first, filtered by feedback, state, asker or date, keyset-paged. Needs assistant:log:review operator-wide. EVERY read is audited as assistant.ask.read naming the asks read.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "good",
+                "wrong"
+              ]
+            },
+            "in": "query",
+            "name": "feedback",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "query",
+            "name": "accountId",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asking",
+                "answered",
+                "refused",
+                "link_only",
+                "failed",
+                "capped",
+                "off"
+              ]
+            },
+            "in": "query",
+            "name": "state",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "in": "query",
+            "name": "from",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "in": "query",
+            "name": "to",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "asks": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "state": {
+                            "type": "string",
+                            "enum": [
+                              "asking",
+                              "answered",
+                              "refused",
+                              "link_only",
+                              "failed",
+                              "capped",
+                              "off"
+                            ]
+                          },
+                          "reason": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "question": {
+                            "type": "string"
+                          },
+                          "answer": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "links": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "key": {
+                                  "type": "string"
+                                },
+                                "app": {
+                                  "type": "string",
+                                  "enum": [
+                                    "oto_app",
+                                    "console",
+                                    "launcher"
+                                  ]
+                                },
+                                "path": {
+                                  "type": "string"
+                                },
+                                "shows": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "key",
+                                "app",
+                                "path",
+                                "shows"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "refusals": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "tool": {
+                                  "type": "string"
+                                },
+                                "system": {
+                                  "type": "string",
+                                  "enum": [
+                                    "platform",
+                                    "oto_app"
+                                  ]
+                                },
+                                "status": {
+                                  "type": "integer"
+                                },
+                                "code": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "message": {
+                                  "type": "string"
+                                },
+                                "line": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "tool",
+                                "system",
+                                "status",
+                                "code",
+                                "message",
+                                "line"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "toolCalls": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "seq": {
+                                  "type": "integer"
+                                },
+                                "tool": {
+                                  "type": "string"
+                                },
+                                "system": {
+                                  "type": "string",
+                                  "enum": [
+                                    "platform",
+                                    "oto_app"
+                                  ]
+                                },
+                                "status": {
+                                  "type": "integer",
+                                  "nullable": true
+                                },
+                                "code": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "rows": {
+                                  "type": "integer",
+                                  "nullable": true
+                                },
+                                "truncated": {
+                                  "type": "boolean"
+                                }
+                              },
+                              "required": [
+                                "seq",
+                                "tool",
+                                "system",
+                                "status",
+                                "code",
+                                "rows",
+                                "truncated"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "feedback": {
+                            "type": "string",
+                            "enum": [
+                              "good",
+                              "wrong"
+                            ],
+                            "nullable": true
+                          },
+                          "correction": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "createdAt": {
+                            "type": "string"
+                          },
+                          "updatedAt": {
+                            "type": "string"
+                          },
+                          "accountId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "branchId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "model": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "personaVersion": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "state",
+                          "reason",
+                          "question",
+                          "answer",
+                          "links",
+                          "refusals",
+                          "toolCalls",
+                          "feedback",
+                          "correction",
+                          "createdAt",
+                          "updatedAt",
+                          "accountId",
+                          "branchId",
+                          "model",
+                          "personaVersion"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "nextCursor": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "asks",
+                    "nextCursor"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/box/v1/register": {
       "post": {
         "description": "Redeem a single-use claim code for this box’s own secret. The secret is returned once and never again.",

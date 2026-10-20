@@ -39,6 +39,7 @@ import { inboxWebhookRoutes } from './routes/inbox-webhooks';
 import { inboxSimulatorRoutes } from './routes/inbox-simulator';
 import { buildInboxChannels, type InboxChannels } from './services/inbox/channels';
 import { buildInboxAiRuntime, type InboxAiRuntime } from './services/inbox/ai-runtime';
+import { buildInternalAiRuntime, type InternalAiRuntime } from './services/assistant/runtime';
 import { saleTierRoutes } from './routes/sale-tier';
 import { catalogRoutes } from './routes/catalog';
 import { branchCloneRoutes } from './routes/branch-clone';
@@ -69,6 +70,7 @@ import { inboxActionRoutes } from './routes/inbox-actions';
 import { inboxPrivacyRoutes } from './routes/inbox-privacy';
 import { inboxReplyRoutes } from './routes/inbox-reply';
 import { inboxAiRoutes } from './routes/inbox-ai';
+import { assistantRoutes } from './routes/assistant';
 import { PermissionDeniedError, sessionPlugin } from './plugins/session';
 import { idempotencyPlugin } from './plugins/idempotency';
 import { rateLimitPlugin } from './plugins/rate-limit';
@@ -108,6 +110,8 @@ declare module 'fastify' {
     inboxChannels: InboxChannels;
     /** SCRUM-590 — the customer assistant's switch, debounce and model client (tests swap the client). */
     inboxAi: InboxAiRuntime;
+    /** SCRUM-591 — the internal assistant's switch, caps and model client (tests swap the client). */
+    internalAi: InternalAiRuntime;
   }
 }
 
@@ -217,6 +221,9 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   // debounce per delivery, `job:inbox.ai` its client. A test replaces the
   // client with a fake; under NODE_ENV=test there is never a real one.
   app.decorate('inboxAi', buildInboxAiRuntime(opts.env, app.log));
+  // SCRUM-591 — the internal assistant: `POST /assistant/asks` reads its switch,
+  // caps and client per ask. Under NODE_ENV=test there is never a real client.
+  app.decorate('internalAi', buildInternalAiRuntime(opts.env, app.log));
   // S2-20 E5 — a booked event pass is written back after the gateway's
   // settlement commits, which has no request to reach the app from: read
   // the decoration when it is needed, so a test's stub is the one used.
@@ -518,6 +525,8 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   await app.register(inboxReplyRoutes, { prefix: '/inbox' });
   // SCRUM-590 A3 — the assistant's knowledge base, examples and controls.
   await app.register(inboxAiRoutes, { prefix: '/inbox' });
+  // SCRUM-591 — the internal assistant, asking as the signed-in person.
+  await app.register(assistantRoutes, { prefix: '/assistant' });
   // Versioned separately from everything else: a box in a mall is updated on
   // its own schedule, so the one surface that has to stay compatible with a
   // machine nobody can reach says so in its path (S2-04).

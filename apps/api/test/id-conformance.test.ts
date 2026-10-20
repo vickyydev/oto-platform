@@ -231,6 +231,8 @@ const CALLER_NAMED = [
   // example are caller-named, as a template variant is.
   'POST /inbox/kb',
   'POST /inbox/ai/examples',
+  // SCRUM-591 I2: an ask is named by the launcher, so a resend is the same ask (plan §D.1).
+  'POST /assistant/asks',
   'POST /members',
   'POST /members/:id/children',
   'POST /operators',

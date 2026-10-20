@@ -1,0 +1,839 @@
+import { and, desc, eq, gte, isNotNull, sql } from 'drizzle-orm';
+import {
+  INTERNAL_LINES,
+  buildInternalSystem,
+  internalAnswerGuard,
+  linkParams,
+  type InternalAnswer,
+  type InternalLanguage,
+  type InternalLinkEntry,
+  type ToolCallRequest,
+  type ToolCallResult,
+  type ToolLoopOutcome,
+} from '@oto/assistant';
+import { account, ask, branch, employee, toolCall, type AssistantStoredLink, type Db } from '@oto/db';
+import {
+  ASSISTANT_ASK_RETENTION_DAYS,
+  ASSISTANT_ERROR_CODE,
+  SUITE_SCREENS,
+  buildSuiteScreenPath,
+  findSuiteScreen,
+  isoDateInTz,
+  newId,
+  suiteScreenOffered,
+  type AssistantAskCreate,
+  type AssistantAskState,
+  type AssistantRefusal,
+  type Permission,
+} from '@oto/shared';
+import type { FastifyBaseLogger, FastifyInstance } from 'fastify';
+import { errors } from '../../lib/errors';
+import type { AuthContext } from '../../plugins/session';
+import { audit } from '../audit';
+import { claimClientId, markReplay } from '../client-id';
+import { holdsAnywhere } from '../inbox/read-visibility';
+import { recordRun } from '../ops';
+import type { EffectivePermission } from '../permissions';
+import { withTx, type Exec, type OpContext } from '../tx';
+import { callPlatform, toolRequestId, type PlatformResponse } from './call-platform';
+import type { InternalAiRuntime } from './runtime';
+import { PLATFORM_TOOLS, fitSummary, platformToolDefinitions, summaryBytes } from './tools';
+import { loadAskView, type AskRow } from './views';
+
+/**
+ * THE INTERNAL ASSISTANT'S ENGINE (SCRUM-591, round I2; plan
+ * docs/progress/plans/internal-assistant-build/PLAN.md §D.1, §D.4, §E).
+ *
+ * One ask, synchronously, in the asker's own request:
+ *
+ *   1. A RESEND of the id is answered from the ask's own row (the route is
+ *      `replaysByOwnId`: no second copy of the answer sits in the replay
+ *      store); an id naming anybody else's ask is 409 ID_IN_USE.
+ *   2. THE OPENING TRANSACTION, under the operator's advisory lock: the kill
+ *      switch, a client to ask, the circuit breaker, the person's and the
+ *      operator's daily caps. Closed, the row is written in its final state
+ *      (`off`, `capped`) with the server's fixed line, and NO model call is
+ *      made. Open, the row is written in `asking` — before any model call, so
+ *      a retry finds it — with `purge_after` set explicitly.
+ *   3. THE LOOP, WITH NO TRANSACTION OPEN (the customer engine's pattern).
+ *      Every tool call is the screen's own GET route run as the asker
+ *      (`call-platform.ts`), and its row and audit are written as it happens,
+ *      each in its own short transaction. A 401/403/404/423 is a REFUSAL: the
+ *      route's own message, verbatim, recorded and shown by the server; the
+ *      model gets the envelope and nothing to ground a figure on. A 5xx closes
+ *      the ask as TOOL_ERROR rather than letting the model guess.
+ *   4. THE CLOSING TRANSACTION: the guards (`internalAnswerGuard`: URLs
+ *      stripped, shape, every number and date word traced to THIS ask's
+ *      summaries), the links resolved and filtered to what the asker may open,
+ *      the refusals, the counts, and one `assistant.ask` audit row.
+ *
+ * NOTHING HERE WRITES TEXT OUTSIDE THE ASK ROW (§E.1). Audit and ops rows
+ * carry ids, words, names of tools and counts; a thrown error is logged by
+ * class only. The session token is a local of the request that asked.
+ */
+
+export const ASSISTANT_OPS_ADAPTER = 'adapter:assistant.ai';
+/** §E.2 "the Phase 2 circuit breaker". */
+export const ASSISTANT_CIRCUIT_FAILURES = 5;
+export const ASSISTANT_CIRCUIT_PAUSE_MS = 10 * 60_000;
+/** An `asking` row this far past the wall time is an ask whose process went away. */
+export const ASSISTANT_ABANDON_GRACE_MS = 120_000;
+
+/** The provider being down, as opposed to the model declining: what the breaker counts. */
+const OUTAGE_REASONS = ['PROVIDER_TIMEOUT', 'PROVIDER_RATE_LIMIT', 'PROVIDER_UNAVAILABLE', 'PROVIDER_ERROR'] as const;
+const isOutage = (reason: string | null | undefined) => (OUTAGE_REASONS as readonly string[]).includes(reason ?? '');
+
+/** A tool result whose status is the route refusing the person (§D.4). */
+const REFUSAL_STATUSES = new Set([401, 403, 404, 423]);
+
+/** The lines the server shows for a closed gate. The model never writes these. */
+export const ASSISTANT_GATE_LINES = {
+  capPerson: {
+    th: 'วันนี้คุณถามผู้ช่วยครบจำนวนแล้ว ลองใหม่พรุ่งนี้',
+    en: 'You have reached today’s limit of questions to the assistant. Try again tomorrow.',
+    ru: 'Вы исчерпали сегодняшний лимит вопросов ассистенту. Попробуйте завтра.',
+  },
+  capOperator: {
+    th: 'ผู้ช่วยตอบครบจำนวนของวันนี้แล้ว ลองใหม่พรุ่งนี้',
+    en: 'The assistant has reached today’s limit for the park. Try again tomorrow.',
+    ru: 'Ассистент исчерпал сегодняшний лимит для парка. Попробуйте завтра.',
+  },
+} as const;
+
+/** The asker's language before the model has said: the script the question is written in. */
+export function questionLanguage(question: string): InternalLanguage {
+  if (/[฀-๿]/.test(question)) return 'th';
+  if (/[Ѐ-ӿ]/.test(question)) return 'ru';
+  return 'en';
+}
+
+export interface AskDeps {
+  app: FastifyInstance;
+  db: Db;
+  runtime: InternalAiRuntime;
+  log?: FastifyBaseLogger;
+}
+
+export interface AskCaller {
+  auth: AuthContext;
+  effective: EffectivePermission[];
+  /** The ask request's id: the audit rows' and every tool call's correlation. */
+  requestId: string;
+  /** The asker's own session token. Held for this request only. */
+  token: string;
+}
+
+/** A database or SDK error's class name, never its message (which can echo values). */
+function errorName(err: unknown): string {
+  return err instanceof Error ? err.constructor.name || 'Error' : 'NonError';
+}
+
+/** An ops error that is one word. */
+function opsError(word: string): Error {
+  const e = new Error(`internal assistant ${word}`);
+  e.name = word;
+  return e;
+}
+
+/** A context for the engine's own transactions: never the replay claim (the route answers resends itself). */
+function txCtx(caller: AskCaller, log?: FastifyBaseLogger): OpContext {
+  return {
+    requestId: caller.requestId,
+    actorAccountId: caller.auth.accountId,
+    operatorId: caller.auth.operatorId,
+    branchId: caller.auth.branchId,
+    ...(log ? { log } : {}),
+  };
+}
+
+function bangkokDayStart(now: Date): string {
+  return `${isoDateInTz(now, 'Asia/Bangkok')}T00:00:00+07:00`;
+}
+
+// --- The gate (§E.2) ----------------------------------------------------------------------
+
+type Gate =
+  | { open: true }
+  | { open: false; state: 'off' | 'capped'; reason: string; line: 'off' | 'capPerson' | 'capOperator'; raise: boolean };
+
+interface DayUsage {
+  personAsks: number;
+  operatorAsks: number;
+  tokens: number;
+  raised: { person: boolean; asks: boolean; tokens: boolean };
+}
+
+/** Today's (Bangkok) asks and tokens: asks that went to the model, not ones a gate closed. */
+async function todaysUsage(db: Exec, auth: AuthContext, now: Date): Promise<DayUsage> {
+  const dayStart = bangkokDayStart(now);
+  const [row] = (
+    await db.execute<{
+      person_asks: number;
+      operator_asks: number;
+      tokens: string | number;
+      raised_person: boolean | null;
+      raised_asks: boolean | null;
+      raised_tokens: boolean | null;
+    }>(sql`
+      select count(*) filter (where state not in ('off', 'capped') and account_id = ${auth.accountId})::int as person_asks,
+             count(*) filter (where state not in ('off', 'capped'))::int as operator_asks,
+             coalesce(sum(coalesce(input_tokens, 0) + coalesce(output_tokens, 0) + coalesce(cache_read_tokens, 0)), 0) as tokens,
+             bool_or(reason = 'CAP_PERSON' and account_id = ${auth.accountId}) as raised_person,
+             bool_or(reason = 'CAP_DAILY') as raised_asks,
+             bool_or(reason = 'CAP_TOKENS') as raised_tokens
+        from assistant.ask
+       where operator_id = ${auth.operatorId} and created_at >= ${dayStart}::timestamptz`)
+  ).rows;
+  return {
+    personAsks: Number(row?.person_asks ?? 0),
+    operatorAsks: Number(row?.operator_asks ?? 0),
+    tokens: Number(row?.tokens ?? 0),
+    raised: {
+      person: Boolean(row?.raised_person),
+      asks: Boolean(row?.raised_asks),
+      tokens: Boolean(row?.raised_tokens),
+    },
+  };
+}
+
+/** The operator's latest asks that reached the model, newest first: the breaker's evidence. */
+async function recentModelAsks(db: Exec, operatorId: string, now: Date, n: number) {
+  return db
+    .select({ reason: ask.reason, at: ask.updatedAt })
+    .from(ask)
+    .where(
+      and(
+        eq(ask.operatorId, operatorId),
+        isNotNull(ask.personaVersion),
+        gte(ask.createdAt, new Date(now.getTime() - 86_400_000)),
+      ),
+    )
+    .orderBy(desc(ask.updatedAt), desc(ask.id))
+    .limit(n);
+}
+
+/** Five consecutive provider failures pause the assistant for ten minutes (§E.2). */
+export async function circuitOpen(db: Exec, operatorId: string, now: Date): Promise<boolean> {
+  const asks = await recentModelAsks(db, operatorId, now, ASSISTANT_CIRCUIT_FAILURES);
+  return (
+    asks.length === ASSISTANT_CIRCUIT_FAILURES &&
+    asks.every((a) => isOutage(a.reason)) &&
+    now.getTime() - asks[0]!.at.getTime() < ASSISTANT_CIRCUIT_PAUSE_MS
+  );
+}
+
+async function gateOf(tx: Exec, runtime: InternalAiRuntime, auth: AuthContext, now: Date): Promise<Gate> {
+  const cfg = runtime.config;
+  if (!cfg.enabled) return { open: false, state: 'off', reason: 'DISABLED', line: 'off', raise: false };
+  if (!runtime.client) return { open: false, state: 'off', reason: 'NO_CLIENT', line: 'off', raise: false };
+  if (await circuitOpen(tx, auth.operatorId, now)) {
+    return { open: false, state: 'off', reason: 'CIRCUIT_OPEN', line: 'off', raise: false };
+  }
+  const usage = await todaysUsage(tx, auth, now);
+  if (usage.personAsks >= cfg.personDailyCap) {
+    return { open: false, state: 'capped', reason: 'CAP_PERSON', line: 'capPerson', raise: !usage.raised.person };
+  }
+  if (usage.operatorAsks >= cfg.dailyAskCap) {
+    return { open: false, state: 'capped', reason: 'CAP_DAILY', line: 'capOperator', raise: !usage.raised.asks };
+  }
+  if (usage.tokens >= cfg.dailyTokenCap) {
+    return { open: false, state: 'capped', reason: 'CAP_TOKENS', line: 'capOperator', raise: !usage.raised.tokens };
+  }
+  return { open: true };
+}
+
+function gateLine(line: 'off' | 'capPerson' | 'capOperator', lang: InternalLanguage): string {
+  return line === 'off' ? INTERNAL_LINES.off[lang] : ASSISTANT_GATE_LINES[line][lang];
+}
+
+/** One ops failure for a guard that just tripped (§E.2: "raised once"). */
+async function raiseGuard(db: Db, caller: AskCaller, askId: string, word: string): Promise<void> {
+  const at = new Date();
+  await recordRun(db, {
+    kind: 'adapter',
+    name: ASSISTANT_OPS_ADAPTER,
+    outcome: 'failed',
+    startedAt: at,
+    finishedAt: at,
+    operatorId: caller.auth.operatorId,
+    branchId: caller.auth.branchId,
+    requestId: caller.requestId,
+    detail: { askId, outcome: word },
+    error: opsError(word),
+  });
+}
+
+// --- Links (§C) ------------------------------------------------------------------------------
+
+/** The link map as the model reads it: every screen's key, what it shows, its parameters. */
+export function linkEntries(): InternalLinkEntry[] {
+  return SUITE_SCREENS.map((s) => ({ key: s.key, shows: s.shows, params: s.params.map((p) => p.name) }));
+}
+
+/**
+ * Keys with parameters, resolved: an unknown key, a bad parameter or a screen
+ * the asker would not be let into is dropped (§C). OTO App screens gated on an
+ * OTO App role are not offered in I2 (no OTO App session is opened yet).
+ */
+export function resolveLinks(
+  wanted: ReadonlyArray<{ key: string; params: Record<string, string> }>,
+  effective: EffectivePermission[],
+  operatorId: string,
+): AssistantStoredLink[] {
+  const viewer = { has: (p: Permission) => holdsAnywhere(effective, p, operatorId), otoApp: null };
+  const out: AssistantStoredLink[] = [];
+  const seen = new Set<string>();
+  for (const link of wanted) {
+    const screen = findSuiteScreen(link.key);
+    if (!screen) continue;
+    const path = buildSuiteScreenPath(link.key, link.params);
+    if (path === null) continue;
+    if (!suiteScreenOffered(screen, viewer)) continue;
+    const id = `${link.key}|${path}`;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    out.push({ key: link.key, params: { ...link.params } });
+    if (out.length >= 3) break;
+  }
+  return out;
+}
+
+// --- The executor (§B.2, §D.4) -------------------------------------------------------------
+
+interface AskTrace {
+  refusals: AssistantRefusal[];
+  /** The screens the tools called would show, for an ask that ends short (§C). */
+  gathered: Array<{ key: string; params: Record<string, string> }>;
+  okCalls: number;
+  recorded: number;
+}
+
+/** Thrown by the executor on a 5xx: the loop closes the ask as TOOL_ERROR. */
+class ToolServerError extends Error {
+  constructor() {
+    super('a tool route failed');
+    this.name = 'ToolServerError';
+  }
+}
+
+function envelopeOf(body: unknown): { code: string | null; message: string | null } {
+  const err = body && typeof body === 'object' ? (body as { error?: unknown }).error : undefined;
+  if (!err || typeof err !== 'object') return { code: null, message: null };
+  const e = err as { code?: unknown; message?: unknown };
+  const code = typeof e.code === 'string' && ASSISTANT_ERROR_CODE.test(e.code) ? e.code : null;
+  return { code, message: typeof e.message === 'string' ? e.message : null };
+}
+
+/** The sentence a refusal shows when the route sent none (never invented: the status's own words). */
+const STATUS_WORDS: Record<number, string> = {
+  401: 'Not signed in',
+  403: 'Not allowed',
+  404: 'Not found',
+  423: 'This session is locked — unlock to continue',
+};
+
+interface ToolRowInput {
+  askId: string;
+  seq: number;
+  tool: string;
+  route: string;
+  args: Record<string, unknown>;
+  status: number | null;
+  code: string | null;
+  rows: number | null;
+  bytes: number | null;
+  truncated: boolean;
+  latencyMs: number;
+  requestId: string;
+}
+
+/** The tool call's row and its audit, in one short transaction, as it happens. */
+async function recordToolCall(deps: AskDeps, caller: AskCaller, r: ToolRowInput): Promise<void> {
+  await withTx(deps.db, txCtx(caller, deps.log), 'assistant.tool.call', async (tx) => {
+    const id = newId();
+    await tx.insert(toolCall).values({
+      id,
+      operatorId: caller.auth.operatorId,
+      askId: r.askId,
+      seq: r.seq,
+      tool: r.tool,
+      system: 'platform',
+      route: r.route,
+      args: r.args,
+      status: r.status,
+      code: r.code,
+      rows: r.rows,
+      bytes: r.bytes,
+      truncated: r.truncated,
+      latencyMs: r.latencyMs,
+    });
+    // Ids and words: the route TEMPLATE, never the URL or its arguments (§E.1).
+    await audit.record(tx, {
+      actorAccountId: caller.auth.accountId,
+      action: 'assistant.tool.call',
+      entityType: 'assistant.tool_call',
+      entityId: id,
+      operatorId: caller.auth.operatorId,
+      branchId: caller.auth.branchId,
+      requestId: r.requestId,
+      after: {
+        askId: r.askId,
+        seq: r.seq,
+        tool: r.tool,
+        system: 'platform',
+        route: r.route,
+        status: r.status,
+        code: r.code,
+        rows: r.rows,
+        bytes: r.bytes,
+        truncated: r.truncated,
+        latencyMs: r.latencyMs,
+      },
+    });
+  });
+}
+
+function executorFor(deps: AskDeps, caller: AskCaller, askId: string, trace: AskTrace, now: () => Date) {
+  return async (call: ToolCallRequest): Promise<ToolCallResult> => {
+    const adapter = PLATFORM_TOOLS.get(call.name);
+    // The loop only calls tools it was given; anything else is a programming error.
+    if (!adapter) throw new TypeError('assistant: an executor call for a tool that is not registered');
+    const route = adapter.routes[0]!;
+    // The same id the tool's own request carried, so its log line and any denial audit row correlate.
+    const toolReqId = toolRequestId(caller.requestId, call.seq);
+    const parsed = adapter.input.safeParse(call.input ?? {});
+    if (!parsed.success) {
+      await recordToolCall(deps, caller, {
+        askId,
+        seq: call.seq,
+        tool: adapter.name,
+        route,
+        args: {},
+        status: null,
+        code: 'INVALID_ARGUMENTS',
+        rows: null,
+        bytes: null,
+        truncated: false,
+        latencyMs: 0,
+        requestId: toolReqId,
+      });
+      trace.recorded += 1;
+      return {
+        ok: false,
+        data: { error: { code: 'INVALID_ARGUMENTS', message: 'The arguments do not match the tool’s schema.' } },
+      };
+    }
+    const input = parsed.data as never;
+    const args = parsed.data as Record<string, unknown>;
+    const started = Date.now();
+    const urls = adapter.urls(input);
+    const bodies: unknown[] = [];
+    let failed: PlatformResponse | null = null;
+    for (const [part, url] of urls.entries()) {
+      const res = await callPlatform(deps.app, {
+        token: caller.token,
+        requestId: caller.requestId,
+        seq: call.seq,
+        part,
+        url,
+        routes: adapter.routes,
+      });
+      if (res.status < 200 || res.status >= 300) {
+        failed = res;
+        break;
+      }
+      bodies.push(res.body);
+    }
+    const latencyMs = Date.now() - started;
+
+    if (failed) {
+      const { code, message } = envelopeOf(failed.body);
+      await recordToolCall(deps, caller, {
+        askId,
+        seq: call.seq,
+        tool: adapter.name,
+        route,
+        args,
+        status: failed.status,
+        code,
+        rows: null,
+        bytes: failed.bytes,
+        truncated: false,
+        latencyMs,
+        requestId: toolReqId,
+      });
+      trace.recorded += 1;
+      if (failed.status >= 500) throw new ToolServerError();
+      const sentence = (message ?? STATUS_WORDS[failed.status] ?? 'Refused').slice(0, 500);
+      if (REFUSAL_STATUSES.has(failed.status)) {
+        // §D.4: the route's own sentence, verbatim. The server shows it; the model cannot reword it.
+        trace.refusals.push({ tool: adapter.name, system: 'platform', status: failed.status, code, message: sentence });
+      }
+      return { ok: false, data: { error: { status: failed.status, code, message: sentence } } };
+    }
+
+    const draft = adapter.summarise(bodies, input, now());
+    const summary = fitSummary(draft);
+    await recordToolCall(deps, caller, {
+      askId,
+      seq: call.seq,
+      tool: adapter.name,
+      route,
+      args,
+      status: 200,
+      code: null,
+      rows: draft.rows,
+      bytes: summaryBytes(summary),
+      truncated: summary.truncated === true,
+      latencyMs,
+      requestId: toolReqId,
+    });
+    trace.recorded += 1;
+    trace.okCalls += 1;
+    const link = adapter.deepLink(input);
+    if (link) trace.gathered.push(link);
+    return { ok: true, data: summary };
+  };
+}
+
+// --- The asker (§D.2 block 2) -----------------------------------------------------------------
+
+async function askerOf(db: Db, caller: AskCaller) {
+  const [row] = await db
+    .select({ name: employee.name, nickname: employee.nickname })
+    .from(account)
+    .leftJoin(employee, eq(account.employeeId, employee.id))
+    .where(eq(account.id, caller.auth.accountId))
+    .limit(1);
+  const [seat] = caller.auth.branchId
+    ? await db.select({ name: branch.name }).from(branch).where(eq(branch.id, caller.auth.branchId)).limit(1)
+    : [];
+  const tiles = [
+    ...new Set(
+      caller.effective
+        .map((g) => /^app:([a-z_]+):access$/.exec(g.permission)?.[1])
+        .filter((t): t is string => !!t),
+    ),
+  ];
+  return {
+    name: row?.nickname || row?.name || 'a colleague',
+    seatBranch: seat?.name ?? null,
+    tiles,
+  };
+}
+
+// --- The ask ---------------------------------------------------------------------------------
+
+/**
+ * `POST /assistant/asks`. Answers the ask's row as it ends (or as it stands,
+ * for a resend). Never throws for anything the model or a tool does.
+ */
+export async function askAssistant(deps: AskDeps, caller: AskCaller, input: AssistantAskCreate) {
+  const { auth } = caller;
+  const now = new Date();
+
+  // 1. A resend of the same id is answered from the row; anybody else's id is refused.
+  const claim = await claimClientId(
+    input.id,
+    async (id) => (await deps.db.select().from(ask).where(eq(ask.id, id)).limit(1))[0],
+    (row) => row.operatorId === auth.operatorId && row.accountId === auth.accountId,
+  );
+  if (claim.replay) {
+    let row = claim.row;
+    if (row.state === 'asking') {
+      const abandoned = now.getTime() - row.updatedAt.getTime() > deps.runtime.config.wallMs + ASSISTANT_ABANDON_GRACE_MS;
+      if (!abandoned) {
+        throw errors.conflict('ASK_IN_FLIGHT', 'This question is still being answered — ask for it again in a moment');
+      }
+      row = (await closeAbandoned(deps.db, row, caller.requestId)) ?? row;
+    }
+    return markReplay(await loadAskView(deps.db, row));
+  }
+
+  // 2. The opening transaction: the gate, and the row before any model call.
+  const lang = questionLanguage(input.question);
+  const opened = await withTx(deps.db, txCtx(caller, deps.log), 'assistant.ask.open', async (tx) => {
+    // One ask at a time per operator through the gate, so a cap is exact.
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`assistant.ask:${auth.operatorId}`}))`);
+    const gate = await gateOf(tx, deps.runtime, auth, now);
+    const purgeAfter = new Date(now.getTime() + ASSISTANT_ASK_RETENTION_DAYS * 86_400_000);
+    const closed = !gate.open;
+    const [row] = await tx
+      .insert(ask)
+      .values({
+        id: claim.id,
+        operatorId: auth.operatorId,
+        accountId: auth.accountId,
+        sessionId: auth.sessionId,
+        branchId: auth.branchId,
+        question: input.question,
+        state: closed ? gate.state : 'asking',
+        reason: closed ? gate.reason : null,
+        answer: closed ? gateLine(gate.line, lang) : null,
+        latencyMs: closed ? 0 : null,
+        purgeAfter,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .returning();
+    await audit.record(tx, {
+      actorAccountId: auth.accountId,
+      action: closed ? 'assistant.ask' : 'assistant.ask.open',
+      entityType: 'assistant.ask',
+      entityId: claim.id,
+      operatorId: auth.operatorId,
+      branchId: auth.branchId,
+      requestId: caller.requestId,
+      // Ids and words only: the question is in the ask row and nowhere else.
+      after: closed
+        ? { askId: claim.id, state: gate.state, reason: gate.reason, toolCalls: 0, questionLength: input.question.length }
+        : { askId: claim.id, state: 'asking', questionLength: input.question.length },
+    });
+    return { row: row!, gate };
+  });
+  if (!opened.gate.open) {
+    if (opened.gate.raise) await raiseGuard(deps.db, caller, opened.row.id, opened.gate.reason);
+    return loadAskView(deps.db, opened.row);
+  }
+
+  // 3. The loop, with no transaction open.
+  const client = deps.runtime.client!;
+  const trace: AskTrace = { refusals: [], gathered: [], okCalls: 0, recorded: 0 };
+  const asker = await askerOf(deps.db, caller);
+  const built = buildInternalSystem({ links: linkEntries(), asker, now, answerMode: client.answerMode });
+  const started = new Date();
+  let outcome: ToolLoopOutcome;
+  try {
+    outcome = await client.converse({
+      system: built.system,
+      question: input.question,
+      tools: platformToolDefinitions(),
+      execute: executorFor(deps, caller, opened.row.id, trace, () => new Date()),
+      maxToolCalls: deps.runtime.config.maxToolCalls,
+      wallMs: deps.runtime.config.wallMs,
+      answerMode: built.answerMode,
+    });
+  } catch (err) {
+    // The client never throws by contract; a throw is classified by class, never logged with values.
+    deps.log?.error({ askId: opened.row.id, error: errorName(err) }, 'the internal assistant loop threw');
+    outcome = {
+      ok: false,
+      reason: 'PROVIDER_ERROR',
+      error: { errorClass: errorName(err), status: null, requestId: null },
+      usage: null,
+      model: null,
+      calls: [],
+      groundingTexts: [],
+      turns: 0,
+      requestIds: [],
+      latencyMs: Date.now() - started.getTime(),
+    };
+  }
+  await recordModelRun(deps.db, caller, opened.row.id, outcome, started, trace.recorded);
+
+  // 4. The closing transaction.
+  const closedRow = await closeAsk(deps, caller, opened.row, outcome, trace, built.personaVersion, lang, now);
+
+  // §E.2: the provider failure that makes five in a row opens the breaker, raised once.
+  if (!outcome.ok && isOutage(outcome.reason)) {
+    const asks = await recentModelAsks(deps.db, auth.operatorId, new Date(), ASSISTANT_CIRCUIT_FAILURES + 1);
+    const run = asks.findIndex((a) => !isOutage(a.reason));
+    const consecutive = run === -1 ? asks.length : run;
+    if (consecutive === ASSISTANT_CIRCUIT_FAILURES) await raiseGuard(deps.db, caller, opened.row.id, 'CIRCUIT_OPEN');
+  }
+  return loadAskView(deps.db, closedRow);
+}
+
+/** Every model call of the ask is one adapter run (§E.1): ids, outcome, turns, tokens — never text. */
+async function recordModelRun(
+  db: Db,
+  caller: AskCaller,
+  askId: string,
+  outcome: ToolLoopOutcome,
+  startedAt: Date,
+  toolCalls: number,
+): Promise<void> {
+  const reason = outcome.ok ? null : outcome.reason;
+  // The model bounded by the tool cap is the design working, not a fault.
+  const failed = reason !== null && reason !== 'TOOL_CAP';
+  await recordRun(db, {
+    kind: 'adapter',
+    name: ASSISTANT_OPS_ADAPTER,
+    outcome: failed ? 'failed' : 'ok',
+    startedAt,
+    operatorId: caller.auth.operatorId,
+    branchId: caller.auth.branchId,
+    requestId: caller.requestId,
+    detail: {
+      askId,
+      outcome: reason ?? 'ok',
+      model: outcome.model,
+      turns: outcome.turns,
+      toolCalls,
+      latencyMs: Math.max(0, Math.round(outcome.latencyMs)),
+      inputTokens: outcome.usage?.inputTokens ?? null,
+      outputTokens: outcome.usage?.outputTokens ?? null,
+      cacheReadTokens: outcome.usage?.cacheReadTokens ?? null,
+      cacheWriteTokens: outcome.usage?.cacheWriteTokens ?? null,
+      providerRequestIds: outcome.requestIds,
+      errorClass: outcome.ok ? null : (outcome.error?.errorClass ?? null),
+      status: outcome.ok ? null : (outcome.error?.status ?? null),
+    },
+    ...(failed ? { error: opsError(reason) } : {}),
+  });
+}
+
+interface Final {
+  state: Exclude<AssistantAskState, 'asking' | 'off' | 'capped'>;
+  reason: string | null;
+  answer: string;
+  links: AssistantStoredLink[];
+  guardRule: string | null;
+  urlsStripped: number;
+}
+
+function finalOf(
+  outcome: ToolLoopOutcome,
+  trace: AskTrace,
+  caller: AskCaller,
+  questionLang: InternalLanguage,
+): Final {
+  const gathered = resolveLinks(trace.gathered, caller.effective, caller.auth.operatorId);
+  if (!outcome.ok) {
+    const digging = outcome.reason === 'TOOL_CAP' || outcome.reason === 'WALL_TIME';
+    return {
+      // "plus the best link" (§D.1 step 4); a provider failure shows no partial figure (Q11).
+      state: digging && gathered.length > 0 ? 'link_only' : 'failed',
+      reason: outcome.reason,
+      answer: digging ? INTERNAL_LINES.tooMuchDigging[questionLang] : INTERNAL_LINES.failed[questionLang],
+      links: gathered,
+      guardRule: null,
+      urlsStripped: 0,
+    };
+  }
+  const answer: InternalAnswer = outcome.answer;
+  const lang = answer.language;
+  const wanted = answer.links.map((l) => ({ key: l.key, params: linkParams(l) }));
+  const modelLinks = resolveLinks(wanted, caller.effective, caller.auth.operatorId);
+  // Grounding = the summaries THIS ask's tools returned. Never the question, never a refusal.
+  const guard = internalAnswerGuard(answer, outcome.groundingTexts);
+  if (!guard.ok) {
+    return {
+      state: 'link_only',
+      reason: guard.reason,
+      answer: INTERNAL_LINES.guardFallback[lang],
+      links: resolveLinks([...wanted, ...trace.gathered], caller.effective, caller.auth.operatorId),
+      guardRule: guard.rule,
+      urlsStripped: guard.urlsStripped,
+    };
+  }
+  const allRefused = trace.refusals.length > 0 && trace.okCalls === 0;
+  return {
+    state: allRefused ? 'refused' : 'answered',
+    reason: allRefused ? 'TOOL_REFUSED' : null,
+    answer: guard.answer.answer,
+    links: modelLinks,
+    guardRule: null,
+    urlsStripped: guard.urlsStripped,
+  };
+}
+
+async function closeAsk(
+  deps: AskDeps,
+  caller: AskCaller,
+  row: AskRow,
+  outcome: ToolLoopOutcome,
+  trace: AskTrace,
+  personaVersion: string,
+  lang: InternalLanguage,
+  askedAt: Date,
+): Promise<AskRow> {
+  const f = finalOf(outcome, trace, caller, lang);
+  const at = new Date();
+  return withTx(deps.db, txCtx(caller, deps.log), 'assistant.ask.close', async (tx) => {
+    const [closed] = await tx
+      .update(ask)
+      .set({
+        state: f.state,
+        reason: f.reason,
+        answer: f.answer,
+        links: f.links,
+        refusals: trace.refusals,
+        model: outcome.model ?? deps.runtime.client?.model ?? null,
+        personaVersion,
+        inputTokens: outcome.usage?.inputTokens ?? null,
+        outputTokens: outcome.usage?.outputTokens ?? null,
+        cacheReadTokens: outcome.usage?.cacheReadTokens ?? null,
+        latencyMs: Math.max(0, at.getTime() - askedAt.getTime()),
+        updatedAt: at,
+      })
+      .where(and(eq(ask.operatorId, row.operatorId), eq(ask.id, row.id), eq(ask.state, 'asking')))
+      .returning();
+    if (!closed) {
+      // Closed elsewhere meanwhile (the purge's abandon sweep): answer it as it stands.
+      const [now] = await tx.select().from(ask).where(eq(ask.id, row.id)).limit(1);
+      return now ?? row;
+    }
+    await audit.record(tx, {
+      actorAccountId: caller.auth.accountId,
+      action: 'assistant.ask',
+      entityType: 'assistant.ask',
+      entityId: row.id,
+      operatorId: caller.auth.operatorId,
+      branchId: caller.auth.branchId,
+      requestId: caller.requestId,
+      before: { state: 'asking' },
+      after: {
+        askId: row.id,
+        state: f.state,
+        reason: f.reason,
+        guardRule: f.guardRule,
+        tools: outcome.calls.filter((c) => c.known).map((c) => c.name),
+        toolCalls: outcome.calls.length,
+        unknownToolCalls: outcome.calls.filter((c) => !c.known).length,
+        refusals: trace.refusals.map((r) => ({ tool: r.tool, status: r.status, code: r.code })),
+        links: f.links.map((l) => l.key),
+        urlsStripped: f.urlsStripped,
+        turns: outcome.turns,
+        model: outcome.model,
+        personaVersion,
+        inputTokens: outcome.usage?.inputTokens ?? null,
+        outputTokens: outcome.usage?.outputTokens ?? null,
+        cacheReadTokens: outcome.usage?.cacheReadTokens ?? null,
+        answerLength: f.answer.length,
+      },
+    });
+    return closed;
+  });
+}
+
+/** An `asking` row whose request went away (a restart mid-ask): closed as failed, audited. */
+export async function closeAbandoned(db: Db, row: AskRow, requestId: string | null): Promise<AskRow | null> {
+  return withTx(db, { requestId: requestId ?? undefined, operatorId: row.operatorId }, 'assistant.ask.abandon', async (tx) => {
+    const at = new Date();
+    const [closed] = await tx
+      .update(ask)
+      .set({
+        state: 'failed',
+        reason: 'ABANDONED',
+        answer: INTERNAL_LINES.failed[questionLanguage(row.question)],
+        latencyMs: Math.max(0, at.getTime() - row.createdAt.getTime()),
+        updatedAt: at,
+      })
+      .where(and(eq(ask.operatorId, row.operatorId), eq(ask.id, row.id), eq(ask.state, 'asking')))
+      .returning();
+    if (!closed) return null;
+    await audit.record(tx, {
+      actorAccountId: null,
+      action: 'assistant.ask',
+      entityType: 'assistant.ask',
+      entityId: row.id,
+      operatorId: row.operatorId,
+      branchId: row.branchId,
+      requestId,
+      before: { state: 'asking' },
+      after: { askId: row.id, state: 'failed', reason: 'ABANDONED' },
+    });
+    return closed;
+  });
+}

@@ -27439,6 +27439,376 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/assistant/asks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description My questions: the signed-in person’s own asks, newest first, keyset-paged by `cursor` (at most 50). Each with its answer, links, refusal lines, tool calls (as numbers) and feedback. No permission beyond a session: nobody else’s asks are ever in this list. */
+        get: {
+            parameters: {
+                query?: {
+                    cursor?: string;
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            asks: {
+                                /** Format: uuid */
+                                id: string;
+                                /** @enum {string} */
+                                state: "asking" | "answered" | "refused" | "link_only" | "failed" | "capped" | "off";
+                                reason: string | null;
+                                question: string;
+                                answer: string | null;
+                                links: {
+                                    key: string;
+                                    /** @enum {string} */
+                                    app: "oto_app" | "console" | "launcher";
+                                    path: string;
+                                    shows: string;
+                                }[];
+                                refusals: {
+                                    tool: string;
+                                    /** @enum {string} */
+                                    system: "platform" | "oto_app";
+                                    status: number;
+                                    code: string | null;
+                                    message: string;
+                                    line: string;
+                                }[];
+                                toolCalls: {
+                                    seq: number;
+                                    tool: string;
+                                    /** @enum {string} */
+                                    system: "platform" | "oto_app";
+                                    status: number | null;
+                                    code: string | null;
+                                    rows: number | null;
+                                    truncated: boolean;
+                                }[];
+                                /** @enum {string|null} */
+                                feedback: "good" | "wrong" | null;
+                                correction: string | null;
+                                createdAt: string;
+                                updatedAt: string;
+                            }[];
+                            nextCursor: string | null;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** @description Ask the internal assistant a question (1–2,000 characters) under a caller-named id. The assistant reads the platform AS THE ASKER: every tool is an existing GET route called in process with the asker’s own session, so it sees exactly what their screens would and a refusal comes back as the route’s own sentence, verbatim, under `refusals`. Answers the ask as it ended: `answered`, `refused`, `link_only` (a link and a fixed line, e.g. a figure the guard could not trace), `failed`, `capped` (a daily cap), or `off` (switched off) — with links the asker may open. A resend of the same id is answered from the ask as it stands (`x-oto-replay`); while it is still running, 409 ASK_IN_FLIGHT. Needs assistant:ask:use anywhere in the operator. Audited as assistant.ask and assistant.tool.call (ids, tool names, counts — never the question or the answer). */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        question: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            /** @enum {string} */
+                            state: "asking" | "answered" | "refused" | "link_only" | "failed" | "capped" | "off";
+                            reason: string | null;
+                            question: string;
+                            answer: string | null;
+                            links: {
+                                key: string;
+                                /** @enum {string} */
+                                app: "oto_app" | "console" | "launcher";
+                                path: string;
+                                shows: string;
+                            }[];
+                            refusals: {
+                                tool: string;
+                                /** @enum {string} */
+                                system: "platform" | "oto_app";
+                                status: number;
+                                code: string | null;
+                                message: string;
+                                line: string;
+                            }[];
+                            toolCalls: {
+                                seq: number;
+                                tool: string;
+                                /** @enum {string} */
+                                system: "platform" | "oto_app";
+                                status: number | null;
+                                code: string | null;
+                                rows: number | null;
+                                truncated: boolean;
+                            }[];
+                            /** @enum {string|null} */
+                            feedback: "good" | "wrong" | null;
+                            correction: string | null;
+                            createdAt: string;
+                            updatedAt: string;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/assistant/asks/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description One ask. The asker reads their own; anybody else’s needs assistant:log:review operator-wide (403 otherwise), and that read is audited as assistant.ask.read naming the ask. */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            /** @enum {string} */
+                            state: "asking" | "answered" | "refused" | "link_only" | "failed" | "capped" | "off";
+                            reason: string | null;
+                            question: string;
+                            answer: string | null;
+                            links: {
+                                key: string;
+                                /** @enum {string} */
+                                app: "oto_app" | "console" | "launcher";
+                                path: string;
+                                shows: string;
+                            }[];
+                            refusals: {
+                                tool: string;
+                                /** @enum {string} */
+                                system: "platform" | "oto_app";
+                                status: number;
+                                code: string | null;
+                                message: string;
+                                line: string;
+                            }[];
+                            toolCalls: {
+                                seq: number;
+                                tool: string;
+                                /** @enum {string} */
+                                system: "platform" | "oto_app";
+                                status: number | null;
+                                code: string | null;
+                                rows: number | null;
+                                truncated: boolean;
+                            }[];
+                            /** @enum {string|null} */
+                            feedback: "good" | "wrong" | null;
+                            correction: string | null;
+                            createdAt: string;
+                            updatedAt: string;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/assistant/asks/{id}/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Mark one of my answers good or wrong; `wrong` may carry a correction (1–1,000 characters), kept on the ask for the reviewers (the learning loop, never weight training). Own asks only (403); an ask still being answered is 409 ASK_IN_FLIGHT. Answers without the text. Audited as assistant.ask.feedback (the verdict and the correction’s length). */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        feedback: "good" | "wrong";
+                        correction?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            /** @enum {string} */
+                            feedback: "good" | "wrong";
+                            hasCorrection: boolean;
+                            updatedAt: string;
+                        };
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/assistant/review/asks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The reviewers’ view of the ask-log (G3): every ask of the operator, newest first, filtered by feedback, state, asker or date, keyset-paged. Needs assistant:log:review operator-wide. EVERY read is audited as assistant.ask.read naming the asks read. */
+        get: {
+            parameters: {
+                query?: {
+                    cursor?: string;
+                    limit?: number;
+                    feedback?: "good" | "wrong";
+                    accountId?: string;
+                    state?: "asking" | "answered" | "refused" | "link_only" | "failed" | "capped" | "off";
+                    from?: string;
+                    to?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            asks: {
+                                /** Format: uuid */
+                                id: string;
+                                /** @enum {string} */
+                                state: "asking" | "answered" | "refused" | "link_only" | "failed" | "capped" | "off";
+                                reason: string | null;
+                                question: string;
+                                answer: string | null;
+                                links: {
+                                    key: string;
+                                    /** @enum {string} */
+                                    app: "oto_app" | "console" | "launcher";
+                                    path: string;
+                                    shows: string;
+                                }[];
+                                refusals: {
+                                    tool: string;
+                                    /** @enum {string} */
+                                    system: "platform" | "oto_app";
+                                    status: number;
+                                    code: string | null;
+                                    message: string;
+                                    line: string;
+                                }[];
+                                toolCalls: {
+                                    seq: number;
+                                    tool: string;
+                                    /** @enum {string} */
+                                    system: "platform" | "oto_app";
+                                    status: number | null;
+                                    code: string | null;
+                                    rows: number | null;
+                                    truncated: boolean;
+                                }[];
+                                /** @enum {string|null} */
+                                feedback: "good" | "wrong" | null;
+                                correction: string | null;
+                                createdAt: string;
+                                updatedAt: string;
+                                /** Format: uuid */
+                                accountId: string;
+                                /** Format: uuid */
+                                branchId: string | null;
+                                model: string | null;
+                                personaVersion: string | null;
+                            }[];
+                            nextCursor: string | null;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/box/v1/register": {
         parameters: {
             query?: never;
