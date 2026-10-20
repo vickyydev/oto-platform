@@ -13483,9 +13483,10 @@ OTO Company Limited`,
 
       // Check branch access - global_admin and admin have all access
       const isGlobalAdmin = user.role === "global_admin" || user.role === "admin";
-      if (!isGlobalAdmin && !user.hasAllBranchesAccess && employee.branchId) {
+      // An employee with no branch is refused too (matches the original app's rule).
+      if (!isGlobalAdmin && !user.hasAllBranchesAccess) {
         const userBranchIds = user.allowedBranchIds || [];
-        if (!userBranchIds.includes(employee.branchId)) {
+        if (!employee.branchId || !userBranchIds.includes(employee.branchId)) {
           return res.status(403).json({ message: "Access denied" });
         }
       }
@@ -14037,12 +14038,16 @@ OTO Company Limited`,
       if (!branchId) {
         return res.status(400).json({ message: "branchId is required" });
       }
-      // The caller's park group's branch only (S2-17b round 6, Q40); the app
-      // has no branch rule here, and none is added.
+      // The caller's park group's branch only (S2-17b round 6, Q40), and the
+      // caller must reach that branch (matches the original app's rule).
       const tenantId = documentParkGroup(req, res);
       if (!tenantId) return;
       if (!await branchInParkGroup(branchId, tenantId)) {
         return res.status(404).json(BRANCH_NOT_FOUND);
+      }
+      const { branchIds: allowedBranchIds, isGlobalAdmin } = await getAllowedOperatorAndBranchIds(req.user as UserWithBranchAccess);
+      if (!isGlobalAdmin && allowedBranchIds && !allowedBranchIds.includes(branchId)) {
+        return res.status(403).json({ message: "Access denied - branch not allowed" });
       }
 
       const balances = await storage.getBranchEmployeeSickLeaveBalances(branchId, year);
@@ -14057,13 +14062,15 @@ OTO Company Limited`,
     try {
       const { employeeId } = req.params;
       const year = req.query.year ? parseInt(req.query.year as string) : undefined;
-      // The caller's park group's employee only (S2-17b round 6, Q40); the app
-      // has no branch rule here, and none is added.
+      // The caller's park group's employee only (S2-17b round 6, Q40), at a
+      // branch the caller reaches (matches the original app's rule).
       const tenantId = documentParkGroup(req, res);
       if (!tenantId) return;
-      if (!await storage.getEmployeeInTenant(employeeId, tenantId)) {
+      const employee = await storage.getEmployeeInTenant(employeeId, tenantId);
+      if (!employee) {
         return res.status(404).json(EMPLOYEE_NOT_FOUND);
       }
+      if (!leaveEmployeeReachable(req, res, employee)) return;
 
       const balance = await storage.getEmployeeSickLeaveBalance(employeeId, year);
       res.json(balance);
