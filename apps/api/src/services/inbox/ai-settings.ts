@@ -1,17 +1,20 @@
 import { and, asc, desc, eq, inArray, ne, or, sql, type SQL } from 'drizzle-orm';
 import { AI_INTENTS } from '@oto/assistant';
-import { aiExample, aiTurn, branch, channelAccount, conversation, department, kbEntry, message } from '@oto/db';
-import type {
-  InboxAiChannelAccount,
-  InboxAiExample,
-  InboxAiExampleCreate,
-  InboxAiExamplePatch,
-  InboxAiMode,
-  InboxAiPause,
-  InboxKbCreate,
-  InboxKbEntry,
-  InboxKbPatch,
-  Permission,
+import { aiExample, aiTurn, branch, channelAccount, conversation, department, inboxEvent, kbEntry, message } from '@oto/db';
+import {
+  INBOX_CATEGORY_KEYS,
+  newId,
+  type InboxAiChannelAccount,
+  type InboxAiExample,
+  type InboxAiExampleCreate,
+  type InboxAiExamplePatch,
+  type InboxAiMode,
+  type InboxAiPause,
+  type InboxCategoryKey,
+  type InboxKbCreate,
+  type InboxKbEntry,
+  type InboxKbPatch,
+  type Permission,
 } from '@oto/shared';
 import { AppError, errors } from '../../lib/errors';
 import { pgErrorOf } from '../../lib/scrub';
@@ -466,8 +469,25 @@ export async function loadExample(db: Exec, operatorId: string, id: string, lock
 }
 
 function checkIntent(intent: string): void {
-  if (!INTENTS.has(intent)) throw errors.conflict('INTENT_UNKNOWN', EXAMPLE_MESSAGES.intentNotKnown);
+  if (!INTENTS.has(intent)) throw errors.conflict('INTENT_UNKNOWN', EXAMPLE_MESSAGES.intentNotKnown, { intents: [...AI_INTENTS] });
 }
+
+const CATEGORY_KEYS = new Set<string>(INBOX_CATEGORY_KEYS);
+const isCategoryKey = (v: string): v is InboxCategoryKey => CATEGORY_KEYS.has(v);
+
+/**
+ * The intent a thread's category stands for when the assistant never
+ * classified the thread (SCRUM-220 test night, R7): the assistant's own
+ * table (`@oto/assistant` INTENT_TABLE) routes `birthday_party` to the
+ * birthdays team and `influencer_marketing` to marketing; a general thread's
+ * correction is a factual one, `faq`. A default for the editor's picker, not
+ * a classification: the example queue may change it before approval.
+ */
+export const CATEGORY_DEFAULT_INTENT: Readonly<Record<InboxCategoryKey, (typeof AI_INTENTS)[number]>> = {
+  birthdays: 'birthday_party',
+  general: 'faq',
+  marketing: 'influencer_marketing',
+};
 
 function checkReply(verdict: ExampleRow['verdict'], goodReply: string | null): void {
   if (verdict === 'should_answer' && !goodReply) {
@@ -554,8 +574,19 @@ export async function createExample(
     input.language ??
     [turn?.language, conv.language?.toLowerCase()].find((l): l is ExampleRow['language'] => !!l && CONTENT_LANGUAGES.has(l));
   if (!language) throw errors.conflict('LANGUAGE_REQUIRED', EXAMPLE_MESSAGES.languageUnknown);
-  const intent = input.intent ?? [turn?.intent, conv.intent].find((i): i is string => !!i && INTENTS.has(i));
-  if (!intent) throw errors.conflict('INTENT_REQUIRED', EXAMPLE_MESSAGES.intentUnknown);
+  const classified = [turn?.intent, conv.intent].find((i): i is string => !!i && INTENTS.has(i));
+  let intent = input.intent;
+  if (intent !== undefined && isCategoryKey(intent)) {
+    // The correction dialog's default topic is the thread's CATEGORY (its
+    // header shows one even when the assistant never classified the thread;
+    // SCRUM-220 test night, R7). A category is not an intent: the assistant's
+    // own classification stands in for it when there is one, else the
+    // category's default intent (`CATEGORY_DEFAULT_INTENT`), which the editor
+    // may change before approval.
+    intent = classified ?? CATEGORY_DEFAULT_INTENT[intent];
+  }
+  intent ??= classified;
+  if (!intent) throw errors.conflict('INTENT_REQUIRED', EXAMPLE_MESSAGES.intentUnknown, { intents: [...AI_INTENTS] });
   checkIntent(intent);
   const goodReply = input.goodReply ?? null;
   checkReply(input.verdict, goodReply);
@@ -842,6 +873,19 @@ export async function setAiPaused(
   const stood = paused
     ? await cancelAiForThread(tx, ctx.operatorId, conv.id, 'PAUSED', ctx.accountId, { requestId: ctx.requestId, now: ctx.now })
     : { turnsCancelled: [], messagesWithdrawn: [] };
+  // The timeline's pill (SCRUM-220 test night, R5): the person who stood the
+  // assistant down, or let it back, in the same event table every other
+  // action's pill reads from. Counts only — never a line's words.
+  await tx.insert(inboxEvent).values({
+    id: newId(),
+    operatorId: ctx.operatorId,
+    conversationId: conv.id,
+    kind: paused ? 'ai_paused' : 'ai_resumed',
+    actorKind: 'account',
+    actorAccountId: ctx.accountId,
+    payload: paused ? { turnsCancelled: stood.turnsCancelled.length, messagesWithdrawn: stood.messagesWithdrawn.length } : {},
+    createdAt: ctx.now,
+  });
   await audit.record(tx, {
     actorAccountId: ctx.accountId,
     action: 'inbox.ai.pause',

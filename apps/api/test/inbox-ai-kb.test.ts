@@ -18,7 +18,9 @@ import {
   INBOX_KB_TOPICS,
   newId,
 } from '@oto/shared';
+import { AI_INTENTS } from '@oto/assistant';
 import { loadTurnKnowledge } from '../src/services/inbox/ai-knowledge';
+import { CATEGORY_DEFAULT_INTENT } from '../src/services/inbox/ai-settings';
 import { ADMIN, signInAs, teardownAll } from './helpers';
 import {
   SENTINEL,
@@ -112,6 +114,15 @@ async function auditOf(action: string, entityId: string) {
     .from(s.auditLog)
     .where(and(eq(s.auditLog.action, action), eq(s.auditLog.entityId, entityId)))
     .orderBy(desc(s.auditLog.createdAt));
+}
+
+/** The timeline's pills of one kind on a thread, oldest first. */
+async function eventsOf(conversationId: string, kind: (typeof s.inboxEvent.$inferSelect)['kind']) {
+  return w.ctx.db
+    .select()
+    .from(s.inboxEvent)
+    .where(and(eq(s.inboxEvent.conversationId, conversationId), eq(s.inboxEvent.kind, kind)))
+    .orderBy(s.inboxEvent.createdAt);
 }
 
 describe('the vocabulary is said once (shared ↔ db CHECK lists)', () => {
@@ -357,6 +368,65 @@ describe('"Correct the assistant" and the examples queue (§E, §D.5)', () => {
     expect(gone.body).toEqual({ id: res.body.id, deleted: true });
     expect(await auditOf('inbox.ai_example.delete', res.body.id)).toHaveLength(1);
   });
+
+  it('the dialog’s default topic is the thread’s category: accepted on a thread the assistant never classified, as the category’s default intent (SCRUM-220 test night, R7)', async () => {
+    // A number with the assistant off: the thread has no turn and no intent, only a category.
+    const offLine = await simAccount(w, { branchId: w.central, aiMode: 'off' });
+    const conv = await customer(w, offLine, nextPhone(), 'Do you do birthday parties?');
+    expect(await turnsOf(w, conv.id)).toHaveLength(0);
+    expect(conv.intent).toBeNull();
+    expect(conv.category).toBe('general');
+    const [msg] = await w.ctx.db
+      .select({ id: s.message.id })
+      .from(s.message)
+      .where(and(eq(s.message.conversationId, conv.id), eq(s.message.direction, 'inbound')))
+      .limit(1);
+
+    // Without a topic the refusal names the topics the screen may offer.
+    const bare = await call<{ error: { code: string; details?: { intents?: string[] } } }>(w, agentCookie, 'POST', '/inbox/ai/examples', {
+      messageId: msg!.id,
+      customerText: 'Do you do birthday parties?',
+      verdict: 'should_handover',
+    });
+    expect(bare.status).toBe(409);
+    expect(bare.body.error.code).toBe('INTENT_REQUIRED');
+    expect(bare.body.error.details?.intents).toEqual([...AI_INTENTS]);
+
+    // The category as the topic: accepted, and stored as the category's default intent.
+    const made = await call<{ id: string; intent: string; language: string }>(w, agentCookie, 'POST', '/inbox/ai/examples', {
+      messageId: msg!.id,
+      customerText: 'Do you do birthday parties?',
+      verdict: 'should_handover',
+      intent: 'general',
+    });
+    expect(made.status, JSON.stringify(made.body)).toBe(200);
+    expect(made.body).toMatchObject({ intent: CATEGORY_DEFAULT_INTENT.general, language: 'en' });
+    expect(AI_INTENTS).toContain(made.body.intent);
+
+    // A word that is neither an intent nor a category is still refused, with the topics.
+    const odd = await call<{ error: { code: string; details?: { intents?: string[] } } }>(w, agentCookie, 'POST', '/inbox/ai/examples', {
+      messageId: msg!.id,
+      customerText: 'x',
+      verdict: 'should_handover',
+      intent: 'parties',
+    });
+    expect(odd.status).toBe(409);
+    expect(odd.body.error.code).toBe('INTENT_UNKNOWN');
+    expect(odd.body.error.details?.intents).toEqual([...AI_INTENTS]);
+
+    // On a thread the assistant DID classify, the category gives way to the classification.
+    const classified = await call<{ intent: string }>(w, agentCookie, 'POST', '/inbox/ai/examples', {
+      messageId: customerLineId,
+      customerText: 'hello there',
+      verdict: 'should_stay_silent',
+      intent: 'general',
+    });
+    expect(classified.status, JSON.stringify(classified.body)).toBe(200);
+    expect(classified.body.intent).toBe('greeting');
+    // Every category's default is one of the assistant's intents.
+    for (const intent of Object.values(CATEGORY_DEFAULT_INTENT)) expect(AI_INTENTS).toContain(intent);
+    await call(w, marketingKbCookie, 'DELETE', `/inbox/ai/examples/${made.body.id}`);
+  });
 });
 
 describe('the controls (§D.4)', () => {
@@ -391,16 +461,38 @@ describe('the controls (§D.4)', () => {
     expect(cancel).toMatchObject({ actorAccountId: agentId });
     expect((await auditOf('inbox.ai.pause', conv.id))[0]!.after).toMatchObject({ paused: true });
 
-    const detail = await call(w, agentCookie, 'GET', `/inbox/conversations/${conv.id}`);
+    const detail = await call<{ events: Array<{ kind: string; actorKind: string; actorAccountId: string | null; payload: Record<string, unknown> }> }>(
+      w,
+      agentCookie,
+      'GET',
+      `/inbox/conversations/${conv.id}`,
+    );
     expect(detail.body).toMatchObject({ aiMode: 'live', aiPaused: true, aiPausedByAccountId: agentId });
+    // The timeline shows who stood the assistant down (SCRUM-220 test night, R5): one ai_paused pill, counts only.
+    const pausePills = detail.body.events.filter((e) => e.kind === 'ai_paused');
+    expect(pausePills).toHaveLength(1);
+    expect(pausePills[0]).toMatchObject({
+      actorKind: 'account',
+      actorAccountId: agentId,
+      payload: { turnsCancelled: 1, messagesWithdrawn: 0 },
+    });
     // Pausing again is the same act.
     expect((await call(w, agentCookie, 'POST', `/inbox/conversations/${conv.id}/ai-pause`)).body).toMatchObject({ aiPaused: true, turnsCancelled: 0 });
     expect(await auditOf('inbox.ai.pause', conv.id)).toHaveLength(1);
+    expect(await eventsOf(conv.id, 'ai_paused')).toHaveLength(1);
 
     const resumed = await call(w, agentCookie, 'POST', `/inbox/conversations/${conv.id}/ai-resume`);
     expect(resumed.body).toMatchObject({ aiPaused: false, aiPausedAt: null, aiPausedByAccountId: null });
     expect((await call(w, agentCookie, 'GET', `/inbox/conversations/${conv.id}`)).body).toMatchObject({ aiPaused: false });
     expect((await auditOf('inbox.ai.pause', conv.id))[0]!.after).toMatchObject({ paused: false });
+    // ... and who let it back: one ai_resumed pill, an empty payload.
+    const resumePills = await eventsOf(conv.id, 'ai_resumed');
+    expect(resumePills).toHaveLength(1);
+    expect(resumePills[0]).toMatchObject({ actorKind: 'account', actorAccountId: agentId, payload: {} });
+    // Resuming again writes nothing.
+    await call(w, agentCookie, 'POST', `/inbox/conversations/${conv.id}/ai-resume`);
+    expect(await eventsOf(conv.id, 'ai_resumed')).toHaveLength(1);
+    expect(await eventsOf(conv.id, 'ai_paused')).toHaveLength(1);
   });
 
   it('the viewer says what the Assistant page may show', async () => {
