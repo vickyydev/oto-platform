@@ -65457,7 +65457,7 @@
     },
     "/assistant/asks/{id}/feedback": {
       "patch": {
-        "description": "Mark one of my answers good or wrong; `wrong` may carry a correction (1–1,000 characters), kept on the ask for the reviewers (the learning loop, never weight training). Own asks only (403); an ask still being answered is 409 ASK_IN_FLIGHT. Answers without the text. Audited as assistant.ask.feedback (the verdict and the correction’s length).",
+        "description": "Mark one of my answers good or wrong, once; `wrong` may carry a correction (1–1,000 characters), kept on the ask for the reviewers (the learning loop, never weight training). Own asks only (403); an ask still being answered is 409 ASK_IN_FLIGHT; one already rated is 409 FEEDBACK_GIVEN — the first verdict stands, and a resend under the same Idempotency-Key is answered from it. Answers without the text. Audited as assistant.ask.feedback (the verdict and the correction’s length).",
         "requestBody": {
           "required": true,
           "content": {

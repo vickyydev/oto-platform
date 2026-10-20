@@ -29,7 +29,7 @@ import { opCtx, withTx } from '../services/tx';
  *   GET   /assistant/asks                 my questions                 a session
  *   GET   /assistant/asks/{id}            one of mine; anyone's for    a session; assistant:log:review
  *                                         a reviewer (audited)         operator-wide for another's
- *   PATCH /assistant/asks/{id}/feedback   good | wrong + correction    a session, own asks only
+ *   PATCH /assistant/asks/{id}/feedback   good | wrong + correction    a session, own asks only, once
  *   GET   /assistant/review/asks          the reviewer's list          assistant:log:review operator-wide (audited)
  *
  * THE ASK'S GUARD SITS ON THE PERSON, NOT ON THE SEAT. `assistant:ask:use` is
@@ -143,10 +143,11 @@ export async function assistantRoutes(app: App): Promise<void> {
       config: { auth: 'session' },
       schema: {
         description:
-          'Mark one of my answers good or wrong; `wrong` may carry a correction (1–1,000 characters), kept on the ' +
-          'ask for the reviewers (the learning loop, never weight training). Own asks only (403); an ask still ' +
-          'being answered is 409 ASK_IN_FLIGHT. Answers without the text. Audited as assistant.ask.feedback ' +
-          '(the verdict and the correction’s length).',
+          'Mark one of my answers good or wrong, once; `wrong` may carry a correction (1–1,000 characters), kept on ' +
+          'the ask for the reviewers (the learning loop, never weight training). Own asks only (403); an ask still ' +
+          'being answered is 409 ASK_IN_FLIGHT; one already rated is 409 FEEDBACK_GIVEN — the first verdict stands, ' +
+          'and a resend under the same Idempotency-Key is answered from it. Answers without the text. Audited as ' +
+          'assistant.ask.feedback (the verdict and the correction’s length).',
         params: IdParams,
         body: AssistantAskFeedbackSchema,
         response: { 200: AssistantAskFeedbackResultSchema },

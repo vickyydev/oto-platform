@@ -232,7 +232,12 @@ export async function reviewOneAsk(
   return loadAskView(tx, row);
 }
 
-/** The asker's verdict (spec §4): own asks only, once the ask has ended. */
+/**
+ * The asker's verdict (spec §4): own asks only, once the ask has ended, and
+ * once per ask — the first verdict stands. A resend under the same
+ * Idempotency-Key never reaches here (the replay store answers it); a second
+ * verdict under a fresh key is refused.
+ */
 export async function setAskFeedback(
   tx: Tx,
   who: { operatorId: string; accountId: string; branchId: string | null; requestId: string },
@@ -249,6 +254,9 @@ export async function setAskFeedback(
   if (row.accountId !== who.accountId) throw errors.forbidden('Only the person who asked can rate this answer');
   if (row.state === 'asking') {
     throw errors.conflict('ASK_IN_FLIGHT', 'This question is still being answered — rate it once it has an answer');
+  }
+  if (row.feedback !== null) {
+    throw errors.conflict('FEEDBACK_GIVEN', 'This answer has already been rated');
   }
   const correction = body.feedback === 'wrong' ? (body.correction ?? null) : null;
   const at = new Date();

@@ -142,7 +142,7 @@ describe('another person’s asks (G3)', () => {
 });
 
 describe('feedback (spec §4)', () => {
-  it('own asks only; a correction goes with "wrong"; "good" clears it; the words stay on the row', async () => {
+  it('own asks only; a correction goes with "wrong"; the words stay on the row', async () => {
     const id = await answered(manager, 'How many today?');
     const url = `/assistant/asks/${id}/feedback`;
 
@@ -155,9 +155,11 @@ describe('feedback (spec §4)', () => {
     expect(JSON.stringify(wrong.body)).not.toContain('forty');
     expect((await askRow(w.ctx.db, id))!.correction).toBe('ZZ forty, not four');
 
-    const good = await call(w, manager, 'PATCH', url, { feedback: 'good' });
+    // A verdict is once per ask (assistant-feedback.test.ts); "good" on another carries no correction.
+    const other = await answered(manager, 'And now?');
+    const good = await call(w, manager, 'PATCH', `/assistant/asks/${other}/feedback`, { feedback: 'good' });
     expect(good.body).toMatchObject({ feedback: 'good', hasCorrection: false });
-    expect((await askRow(w.ctx.db, id))!.correction).toBeNull();
+    expect((await askRow(w.ctx.db, other))!.correction).toBeNull();
 
     const audits = await w.ctx.db
       .select()
@@ -165,7 +167,6 @@ describe('feedback (spec §4)', () => {
       .where(and(eq(s.auditLog.action, 'assistant.ask.feedback'), eq(s.auditLog.entityId, id)));
     expect(audits.map((a) => a.after)).toEqual([
       { feedback: 'wrong', hasCorrection: true, correctionLength: 'ZZ forty, not four'.length },
-      { feedback: 'good', hasCorrection: false, correctionLength: 0 },
     ]);
   });
 
