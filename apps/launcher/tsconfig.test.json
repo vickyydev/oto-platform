@@ -1,0 +1,12 @@
+{
+  // The unit tests and their runner config, as the Inbox has them
+  // (apps/inbox/tsconfig.test.json): vitest strips types without checking
+  // them, so without this a test could assert on a shape the panel no longer
+  // has and still pass. `pnpm typecheck` runs both.
+  "extends": "./tsconfig.json",
+  "include": ["test/**/*.ts", "test/**/*.tsx", "vitest.config.ts"],
+  "exclude": ["node_modules", "dist"],
+  "compilerOptions": {
+    "tsBuildInfoFile": ".test.tsbuildinfo"
+  }
+}

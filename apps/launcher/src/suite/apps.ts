@@ -143,3 +143,11 @@ export const SUITE_APPS: SuiteApp[] = [
 export function findApp(key: string): SuiteApp | undefined {
   return SUITE_APPS.find((a) => a.key === key);
 }
+
+/**
+ * The apps on this person's launcher: the tiles drawn on the home page, and
+ * the only apps the assistant's "Take me there" buttons may open (SCRUM-591).
+ */
+export function tilesFor(has: (permission: Permission) => boolean): SuiteApp[] {
+  return SUITE_APPS.filter((app) => has(app.permission) && (!app.alsoRequires || has(app.alsoRequires)));
+}

@@ -15,15 +15,28 @@ export class ApiError extends Error {
 }
 
 /**
- * No `Idempotency-Key` here, unlike the till's copy. Nothing the launcher
- * writes wants replaying: a sign-in is a new session and a hand-off is a
- * credential the API deliberately keeps out of the replay store.
+ * What one call may add. Most of the launcher's writes want no replay key: a
+ * sign-in is a new session and a hand-off is a credential the API deliberately
+ * keeps out of the replay store. The assistant's answer feedback (SCRUM-591
+ * I3a) is a plain mutation and carries one; the ask itself does not need one,
+ * because the API answers a resend by the ask's own client-named id.
+ *
+ * `onResponse` sees the headers of a successful answer — the ask panel reads
+ * `x-oto-replay` from it to know an answer came from the ask's row.
  */
-async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+export interface RequestOptions {
+  idempotencyKey?: string;
+  onResponse?: (headers: Headers) => void;
+}
+
+async function request<T>(method: string, path: string, body?: unknown, opts: RequestOptions = {}): Promise<T> {
   const res = await fetch(`/api${path}`, {
     method,
     credentials: 'same-origin',
-    headers: body !== undefined ? { 'content-type': 'application/json' } : {},
+    headers: {
+      ...(body !== undefined ? { 'content-type': 'application/json' } : {}),
+      ...(opts.idempotencyKey ? { 'idempotency-key': opts.idempotencyKey } : {}),
+    },
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
   if (res.status === 204) return undefined as T;
@@ -46,11 +59,12 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
     }
     throw new ApiError(res.status, err?.code ?? 'UNKNOWN', err?.message ?? res.statusText, err?.details);
   }
+  opts.onResponse?.(res.headers);
   return data as T;
 }
 
 export const api = {
   get: <T>(path: string) => request<T>('GET', path),
-  post: <T>(path: string, body?: unknown) => request<T>('POST', path, body),
-  patch: <T>(path: string, body?: unknown) => request<T>('PATCH', path, body),
+  post: <T>(path: string, body?: unknown, opts?: RequestOptions) => request<T>('POST', path, body, opts),
+  patch: <T>(path: string, body?: unknown, opts?: RequestOptions) => request<T>('PATCH', path, body, opts),
 };

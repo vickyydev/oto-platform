@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useLocation } from 'wouter';
 import { Loader2, Moon, Radar, Settings, Store, Sun } from 'lucide-react';
 import { Backdrop } from '@/components/Backdrop';
 import { BrandMark } from '@/components/BrandMark';
@@ -9,7 +10,9 @@ import { SuiteHeader } from '@/components/SuiteHeader';
 import { AppTile } from '@/components/AppTile';
 import { SignOutNote } from '@/components/SignOutNote';
 import { Button } from '@/components/ui/button';
-import { SUITE_APPS } from '@/suite/apps';
+import { SUITE_APPS, tilesFor } from '@/suite/apps';
+import { openApp } from '@/suite/handoff';
+import { AssistantSection } from '@/components/assistant/AssistantPanel';
 import { useSession, displayName } from '@/auth/SessionContext';
 import { greeting, inWords } from '@/lib/greeting';
 import { useTheme } from '@/lib/theme';
@@ -97,10 +100,9 @@ function SignedOut() {
 
 function SignedIn() {
   const { me, has } = useSession();
+  const [, navigate] = useLocation();
 
-  const open = SUITE_APPS.filter(
-    (app) => has(app.permission) && (!app.alsoRequires || has(app.alsoRequires)),
-  );
+  const open = tilesFor(has);
   // Apps the account simply has no grant for are named in a line underneath, so
   // a person knows the suite is larger than their tiles and who to ask. Apps
   // gated by a second permission — the demonstration booth — are not named at
@@ -144,6 +146,9 @@ function SignedIn() {
             manager can grant it.
           </p>
         )}
+
+        {/* The internal assistant (SCRUM-591 I3a), under the tiles; nothing at all without assistant:ask:use. */}
+        <AssistantSection has={has} tiles={open} openers={{ openApp, navigate: (path) => navigate(path) }} />
       </main>
 
       <footer className="shrink-0 px-6 py-6 text-center text-xs text-foreground/40">
