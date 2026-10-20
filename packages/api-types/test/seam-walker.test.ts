@@ -151,27 +151,6 @@ const NOT_YET_CALLED = new Map<string, string>([
   // screen. The erasure console (an Inbox or Console settings page, with the
   // 409 preview as its second confirmation) comes later and deletes this.
   ['POST /inbox/contacts/{id}/erase', 'the erasure console lands after I3 (the api ships first, plan §3.6)'],
-  // 2026-10-20, SCRUM-590 round A3 lane a: the assistant's settings api lands
-  // beside its shell (lane A3b, built in parallel — the Assistant settings
-  // page, "Correct the assistant", the pause toggle). A3b deletes each line
-  // whose route it calls (plan §F.3 "Censuses").
-  ['GET /inbox/kb', 'the Assistant settings page lands in SCRUM-590 A3b'],
-  ['POST /inbox/kb', 'the Assistant settings page lands in SCRUM-590 A3b'],
-  ['PATCH /inbox/kb/{id}', 'the Assistant settings page lands in SCRUM-590 A3b'],
-  ['POST /inbox/kb/{id}/approve', 'the Assistant settings page lands in SCRUM-590 A3b'],
-  ['POST /inbox/kb/{id}/archive', 'the Assistant settings page lands in SCRUM-590 A3b'],
-  ['GET /inbox/ai/examples', 'the examples queue lands in SCRUM-590 A3b'],
-  ['POST /inbox/ai/examples', '"Correct the assistant" lands in SCRUM-590 A3b'],
-  ['PATCH /inbox/ai/examples/{id}', 'the examples queue lands in SCRUM-590 A3b'],
-  ['DELETE /inbox/ai/examples/{id}', 'the examples queue lands in SCRUM-590 A3b'],
-  ['POST /inbox/ai/examples/{id}/approve', 'the examples queue lands in SCRUM-590 A3b'],
-  ['POST /inbox/ai/examples/{id}/reject', 'the examples queue lands in SCRUM-590 A3b'],
-  ['GET /inbox/ai/channel-accounts', 'the per-number assistant switch lands in SCRUM-590 A3b'],
-  ['PATCH /inbox/channel-accounts/{id}/ai-mode', 'the per-number assistant switch lands in SCRUM-590 A3b'],
-  ['POST /inbox/conversations/{id}/ai-pause', 'the thread pause toggle lands in SCRUM-590 A3b'],
-  ['POST /inbox/conversations/{id}/ai-resume', 'the thread pause toggle lands in SCRUM-590 A3b'],
-  // 2026-10-20, SCRUM-590 A3a: the brochure upload, called by the A3b template settings.
-  ['PUT /inbox/templates/{id}/brochure', 'the brochure upload on the template settings lands in SCRUM-590 A3b'],
 ]);
 
 function machineCaller(path: string): string | null {

@@ -2,10 +2,10 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Archive, BookOpen, Bot, CheckCircle2, Loader2, Pencil, Plus, Radio, ShieldCheck, Trash2, X } from 'lucide-react';
 import { ApiError } from '@/api/client';
 import {
-  NOT_YET_SWITCHED_ON,
+  NOT_ON_YOUR_ACCESS,
   assistantApi,
   assistantCapabilities,
-  routeMissing,
+  notOnAccess,
   type AiChannelAccount,
   type AiExample,
   type AiMode,
@@ -13,6 +13,7 @@ import {
   type ExampleVerdict,
   type KbEntry,
   type KbLanguage,
+  type KbTopic,
 } from '@/api/assistant';
 import type { InboxMe } from '@/api/inbox';
 import { Eyebrow } from '@/components/atoms';
@@ -54,11 +55,13 @@ const PRIMARY =
 const CANCEL = 'rounded-lg border border-slate-200 px-3 py-1.5 text-[13px] font-medium text-slate-700 hover:bg-slate-50';
 
 /**
- * A route the a3a lane has not landed answers 404: say that, not "Not Found".
- * Every other refusal is the server's own sentence.
+ * A part of the page the viewer's grant does not reach (a 403: the examples
+ * queue needs inbox:kb:manage with operator reach, so a branch-scoped holder
+ * sees the tab and is refused there) says so politely. Every other refusal is
+ * the server's own sentence.
  */
 function said(err: unknown, fallback: string): string {
-  if (routeMissing(err)) return NOT_YET_SWITCHED_ON;
+  if (notOnAccess(err)) return NOT_ON_YOUR_ACCESS;
   return err instanceof ApiError ? err.message : fallback;
 }
 
@@ -182,7 +185,7 @@ function ChannelModes({ me }: { me: InboxMe }) {
         ))}
       </dl>
 
-      {error && <Refusal text={error} />}
+      {error && <Refusal text={error} tone={error === NOT_ON_YOUR_ACCESS ? 'amber' : 'rose'} />}
       {!error && accounts === null && <Spinner />}
       {accounts?.length === 0 && <p className="text-[12.5px] text-slate-500">No channel numbers yet.</p>}
       <ul className="space-y-2">
@@ -321,7 +324,7 @@ function KnowledgeBase({ me }: { me: InboxMe }) {
         </div>
       </div>
 
-      {error && <Refusal text={error} />}
+      {error && <Refusal text={error} tone={error === NOT_ON_YOUR_ACCESS ? 'amber' : 'rose'} />}
       {!error && entries === null && <Spinner />}
       {entries?.length === 0 && <p className="mt-4 text-[12.5px] text-slate-500">No entries yet.</p>}
 
@@ -443,7 +446,7 @@ function KbEditor({
   onClose: () => void;
   onSaved: () => Promise<void>;
 }) {
-  const [topic, setTopic] = useState(entry?.topic ?? 'faq');
+  const [topic, setTopic] = useState<KbTopic>(entry?.topic ?? 'faq');
   const [key, setKey] = useState(entry?.key ?? '');
   const [language, setLanguage] = useState<KbLanguage>(entry?.language ?? 'en');
   const [branchId, setBranchId] = useState(entry?.branchId ?? '');
@@ -518,7 +521,7 @@ function KbEditor({
     >
       <form id={formId} onSubmit={(e) => void save(e)} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Field label="Topic">
-          <select value={topic} onChange={(e) => setTopic(e.target.value)} className={FIELD}>
+          <select value={topic} onChange={(e) => setTopic(e.target.value as KbTopic)} className={FIELD}>
             {KB_TOPICS.map((t) => (
               <option key={t} value={t}>
                 {topicLabel(t)}
@@ -574,7 +577,7 @@ function KbEditor({
         </label>
         {problem && (key || question || body) && <p className="text-[11.5px] text-slate-500 sm:col-span-2">{problem}</p>}
       </form>
-      {error && <Refusal text={error} />}
+      {error && <Refusal text={error} tone={error === NOT_ON_YOUR_ACCESS ? 'amber' : 'rose'} />}
     </Dialog>
   );
 }
@@ -631,7 +634,7 @@ function ExamplesQueue({ me }: { me: InboxMe }) {
         </div>
       </div>
 
-      {error && <Refusal text={error} />}
+      {error && <Refusal text={error} tone={error === NOT_ON_YOUR_ACCESS ? 'amber' : 'rose'} />}
       {!error && examples === null && <Spinner />}
       {examples?.length === 0 && <p className="mt-4 text-[12.5px] text-slate-500">Nothing here.</p>}
       <ul className="mt-4 grid grid-cols-1 gap-2 lg:grid-cols-2">
@@ -847,7 +850,7 @@ export function ExampleReview({
           </span>
         </label>
       </div>
-      {error && <Refusal text={error} />}
+      {error && <Refusal text={error} tone={error === NOT_ON_YOUR_ACCESS ? 'amber' : 'rose'} />}
     </Dialog>
   );
 }

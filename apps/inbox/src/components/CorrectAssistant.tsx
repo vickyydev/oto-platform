@@ -1,7 +1,7 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { CheckCircle2, Loader2, PenLine } from 'lucide-react';
 import { ApiError } from '@/api/client';
-import { NOT_YET_SWITCHED_ON, assistantApi, routeMissing, type ExampleVerdict } from '@/api/assistant';
+import { assistantApi, type ExampleVerdict } from '@/api/assistant';
 import type { Message } from '@/api/inbox';
 import { Refusal } from '@/components/confirms';
 import { Dialog } from '@/components/Dialog';
@@ -87,9 +87,7 @@ export function CorrectAssistant({
       setSaved(true);
     } catch (err) {
       setError(
-        routeMissing(err)
-          ? NOT_YET_SWITCHED_ON
-          : err instanceof ApiError
+        err instanceof ApiError
             ? err.message
             : 'The correction could not be saved.',
       );

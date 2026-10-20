@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import type { InboxCategoryKey } from '@oto/shared/inbox';
 import { ApiError } from '@/api/client';
-import { NOT_YET_SWITCHED_ON, assistantApi, routeMissing, threadAiPaused } from '@/api/assistant';
+import { assistantApi } from '@/api/assistant';
 import { inboxApi, type ConversationDetail, type ConversationRow, type InboxMe, type Message } from '@/api/inbox';
 import { Avatar, CategoryBadge, ChannelDot, ChipView, StatusBadge } from '@/components/atoms';
 import { Composer, type InsertedTemplate } from '@/components/Composer';
@@ -68,7 +68,6 @@ const categoryOf = (v: unknown): InboxCategoryKey | null =>
   CATEGORY_KEYS.includes(v as InboxCategoryKey) ? (v as InboxCategoryKey) : null;
 
 function refusalOf(err: unknown, fallback: string): string {
-  if (routeMissing(err)) return NOT_YET_SWITCHED_ON;
   return err instanceof ApiError ? err.message : fallback;
 }
 
@@ -142,7 +141,7 @@ export function ChatPanel({
 
   // SCRUM-590 A3: the assistant's pause on this thread (§A.3 kill switch 3),
   // for whoever acts on it; and "Correct the assistant" for anyone who may write.
-  const aiPaused = threadAiPaused(detail);
+  const aiPaused = detail?.aiPaused ?? false;
   const mayPauseAi = live && (handleable || me.capabilities.assign);
   const mayCorrect = live;
 

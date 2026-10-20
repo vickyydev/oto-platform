@@ -6,8 +6,9 @@
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { assistantCapabilities, threadAiPaused, type AiExample } from '@/api/assistant';
-import type { ConversationDetail, InboxEvent, InboxMe, Message } from '@/api/inbox';
+import { ApiError } from '@/api/client';
+import { NOT_ON_YOUR_ACCESS, assistantCapabilities, notOnAccess, type AiExample, type KbTopic } from '@/api/assistant';
+import type { InboxEvent, InboxMe, Message } from '@/api/inbox';
 import { ExampleReview } from '@/components/AssistantSettings';
 import { MessageBubble } from '@/components/MessageBubble';
 import {
@@ -169,12 +170,27 @@ describe('the mode control (§D.4)', () => {
     expect(modeChangeNeedsConfirm('off', 'shadow')).toBe(false);
   });
 
-  it('opens the page only on the capabilities /inbox/me names, absent being no', () => {
-    const base = { writes: true, dashboard: true, assign: true, move: true, reopen: true, templates: true };
+  it('opens the page only on the capabilities /inbox/me names', () => {
+    const base: InboxMe['capabilities'] = {
+      writes: true,
+      dashboard: true,
+      assign: true,
+      move: true,
+      reopen: true,
+      templates: true,
+      kb: false,
+      ai: false,
+    };
     expect(assistantCapabilities({ capabilities: base })).toEqual({ kb: false, ai: false });
-    expect(assistantCapabilities({ capabilities: { ...base, kb: true } as InboxMe['capabilities'] })).toEqual({ kb: true, ai: false });
-    expect(threadAiPaused(null)).toBe(false);
-    expect(threadAiPaused({ aiPaused: true } as unknown as ConversationDetail)).toBe(true);
+    expect(assistantCapabilities({ capabilities: { ...base, kb: true } })).toEqual({ kb: true, ai: false });
+  });
+
+  it('reads a 403 (a branch-scoped kb grant on the examples queue) as "not on your access", never a fault', () => {
+    expect(notOnAccess(new ApiError(403, 'FORBIDDEN', 'Forbidden'))).toBe(true);
+    expect(notOnAccess(new ApiError(404, 'UNKNOWN', 'Not Found'))).toBe(true);
+    expect(notOnAccess(new ApiError(404, 'KB_ENTRY_NOT_FOUND', 'No such entry'))).toBe(false);
+    expect(notOnAccess(new ApiError(409, 'KB_NOT_DRAFT', 'Not a draft'))).toBe(false);
+    expect(NOT_ON_YOUR_ACCESS).toMatch(/not on your access/);
   });
 });
 
@@ -235,7 +251,7 @@ describe('the knowledge base editor (§C.1)', () => {
   });
 
   it('groups by topic in the schema’s order, then key, then language', () => {
-    const e = (topic: string, key: string, language: 'en' | 'th' | 'ru') => ({
+    const e = (topic: KbTopic, key: string, language: 'en' | 'th' | 'ru') => ({
       id: `${key}-${language}`,
       branchId: null,
       topic,

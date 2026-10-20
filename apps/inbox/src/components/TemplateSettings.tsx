@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from
 import { Archive, FileText, Loader2, Paperclip, Pencil, Plus, Upload } from 'lucide-react';
 import { INBOX_TEMPLATE_APPROVALS, INBOX_TEMPLATE_KEY_NAMES, templateVariables } from '@oto/shared/inbox-reply';
 import { ApiError } from '@/api/client';
-import { NOT_YET_SWITCHED_ON, assistantApi, routeMissing } from '@/api/assistant';
+import { BROCHURE_MAX_BYTES, BROCHURE_TYPES, assistantApi } from '@/api/assistant';
 import { inboxApi, type InboxMe, type ManagedTemplate, type TemplateCreate } from '@/api/inbox';
 import { Eyebrow } from '@/components/atoms';
 import { Refusal } from '@/components/confirms';
@@ -233,12 +233,11 @@ export function TemplateSettings({ me }: { me: InboxMe }) {
 
 /** The handover line whose row carries the park's birthday brochure (SCRUM-590 §C.5). */
 const BROCHURE_KEY = 'handover_birthday';
-const MAX_BROCHURE_BYTES = 15 * 1024 * 1024;
 
 /**
  * The birthday brochure on a `handover_birthday` row (plan §C.5): the file the
  * assistant sends before the holding line. One per park — a park's own row
- * carries that park's brochure; the every-park row is the fallback. A PDF.
+ * carries that park's brochure; the every-park row is the fallback. A PDF or a picture.
  */
 function Brochure({ template, onChanged }: { template: ManagedTemplate; onChanged: () => Promise<void> }) {
   const [busy, setBusy] = useState(false);
@@ -248,17 +247,15 @@ function Brochure({ template, onChanged }: { template: ManagedTemplate; onChange
   const upload = async (file: File | undefined) => {
     if (!file) return;
     setError(null);
-    if (file.type && file.type !== 'application/pdf') return setError('The brochure is a PDF.');
-    if (file.size > MAX_BROCHURE_BYTES) return setError('The brochure is at most 15 MB.');
+    if (!(BROCHURE_TYPES as readonly string[]).includes(file.type)) return setError('The brochure is a PDF or a JPEG, PNG or WebP picture.');
+    if (file.size > BROCHURE_MAX_BYTES) return setError('The brochure is at most 10 MB.');
     setBusy(true);
     try {
       await assistantApi.uploadBrochure(template.id, file);
       await onChanged();
     } catch (err) {
       setError(
-        routeMissing(err)
-          ? NOT_YET_SWITCHED_ON
-          : said(err, 'The brochure could not be uploaded.'),
+        said(err, 'The brochure could not be uploaded.'),
       );
     } finally {
       setBusy(false);
@@ -275,10 +272,10 @@ function Brochure({ template, onChanged }: { template: ManagedTemplate; onChange
         {!template.archivedAt && (
           <label className={`${BUTTON} cursor-pointer`}>
             {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
-            {count > 0 ? 'Replace PDF' : 'Upload PDF'}
+            {count > 0 ? 'Replace brochure' : 'Upload brochure'}
             <input
               type="file"
-              accept="application/pdf"
+              accept={BROCHURE_TYPES.join(',')}
               disabled={busy}
               className="sr-only"
               onChange={(e) => {
