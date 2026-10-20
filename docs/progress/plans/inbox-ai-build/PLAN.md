@@ -1120,10 +1120,14 @@ two ceilings are environment settings, `INBOX_AI_FIRST_BUBBLE_MS` (default
 its ceiling. The park decides. *Pins:* `pacing.test.ts` "the two knobs",
 `inbox-ai-engine.test.ts` "defaults" and "the pacing knobs reach the lines".
 
-**Goldens.** The persona and the fixture knowledge changed, so G1–G9's
-recordings are stale and G17/G18 are unrecorded; the replay suite names
-each with its command (`pnpm --filter @oto/api ai:eval --record --only …`),
-recorded by hand with the key, never in CI.
+**Goldens.** The persona and the fixture knowledge changed, so G1–G9 were
+re-recorded and G17/G18 recorded; the replay suite names a stale or missing
+recording with its command (`pnpm --filter @oto/api ai:eval --record --only
+…`), recorded by hand with the key, never in CI. The first G18 record found
+the eval reading a verdict's action alone: an answer the table follows with
+a hand-over (a mixed burst, or `birthday_brochure`) closes the turn as
+`handed_over` with `action 'answer'`, as the engine has always done and the
+engine suite pins; the eval's `stateOf` says the same now.
 
 **Open for the rails.** `ingest.ts:900` ranks a receipt's status over
 `MessageStoredStatus`; `shadow` is kept out of that type on purpose (no

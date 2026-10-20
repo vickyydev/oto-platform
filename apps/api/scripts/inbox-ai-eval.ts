@@ -112,7 +112,17 @@ function costOf(model: string, u: TurnUsage): number | null {
   );
 }
 
-const STATE_OF: Record<GateVerdict['action'], string> = { answer: 'answered', handover: 'handed_over', silent: 'silent' };
+/**
+ * The turn state the engine closes a verdict with (`ai-engine.ts` commitTurn):
+ * an answer the table follows with a hand-over — a `birthday_brochure`, or a
+ * mixed burst since the test night (2026-10-21, W2) — closes as `handed_over`
+ * with `action 'answer'`, because the thread is then the team's. G18 found
+ * the eval reading the action alone.
+ */
+function stateOf(v: GateVerdict): string {
+  if (v.action === 'answer') return v.thenHandover ? 'handed_over' : 'answered';
+  return v.action === 'handover' ? 'handed_over' : 'silent';
+}
 
 function verdictWords(v: GateVerdict): string {
   // The burst's parts beside the primary (test night 2026-10-21, D1a), when there are any.
@@ -216,8 +226,8 @@ async function main(): Promise<void> {
         );
         const verdict = gateDecision(dcs, golden, turn);
         const failures = judgeVerdict(turn.expect, verdict, dcs);
-        if (row?.state !== STATE_OF[verdict.action] || row.reason !== verdict.reason) {
-          failures.push(`the engine closed the turn ${row?.state}/${row?.reason}; the replayed gates say ${STATE_OF[verdict.action]}/${verdict.reason}`);
+        if (row?.state !== stateOf(verdict) || row.reason !== verdict.reason) {
+          failures.push(`the engine closed the turn ${row?.state}/${row?.reason}; the replayed gates say ${stateOf(verdict)}/${verdict.reason}`);
         }
         console.log(`  verdict    ${verdictWords(verdict)}`);
         console.log(`  engine     turn ${row?.state}/${row?.reason}`);
