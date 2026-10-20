@@ -515,6 +515,13 @@ jobs:
         run: |
           npx tsx tests/suite-sign-in.check.ts
           npx tsx tests/suite-sign-in-routes.check.ts
+      # SCRUM-591 (P1, this app's half): the launcher's hand-off may name a
+      # screen to land on. The receiver's copy of the shared path rule, pinned
+      # by the same vectors as packages/shared/test/handoff-target.test.ts,
+      # and the receiver landing after a successful exchange only.
+      - name: The app's hand-off target checks
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/handoff-target.check.ts
       # S2-17b round 4: tenant ownership — settings read per park group and,
       # from 4b (migration 0007), saved by each park group as its own rows in
       # one transaction (H11, with the old unique put back to prove the words

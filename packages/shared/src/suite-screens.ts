@@ -23,8 +23,11 @@ import type { Permission } from './permissions';
  * gives figures.
  *
  * Prerequisite P1 lets the launcher's hand-off carry a target path
- * (`handoff-target.ts`), and the Console and the Inbox land on it. OTO App
- * links open the app directly until its own receiver honours the path (I4).
+ * (`handoff-target.ts`), and the Console, the Inbox and the OTO App land on
+ * it. The OTO App is outside the pnpm workspace, so its receiver
+ * (`apps/oto-app/client/src/lib/platform-handoff.ts`) carries its own copy of
+ * the rule (`apps/oto-app/client/src/lib/handoff-target.ts`), pinned by the
+ * same vectors.
  *
  * The console entries copy each page's own gate (`apps/console/src/components/
  * consoleSections.ts`); `apps/console/test/suite-screens.test.ts` compares the

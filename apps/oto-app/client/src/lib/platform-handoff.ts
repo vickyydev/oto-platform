@@ -12,7 +12,15 @@
  * app's own. The exchange cannot be done from the browser: the platform
  * answers it with ITS session cookie, for its own origin, which is no use to
  * an app that signs people in with Passport.
+ *
+ * The fragment may also carry a target (`&to=<encoded path>`, SCRUM-591 P1):
+ * after a SUCCESSFUL exchange the address becomes that page, before the router
+ * reads it, so the app opens there — "Take me there" from the launcher's
+ * assistant. The target is checked again here (`readHandoffTarget`, the
+ * platform's rule copied into `handoff-target.ts`); a refused one, or a
+ * refused exchange, leaves the app at its home.
  */
+import { landingUrl, readHandoffTarget } from "./handoff-target";
 
 export interface HandoffProblem {
   /** The vocabulary the server answers with; shown to nobody, logged by us. */
@@ -42,21 +50,15 @@ function titleFor(reason: string): string {
     : "That launcher sign-in did not work";
 }
 
-/**
- * Read the token and destroy the fragment before anything else can fail: one
- * left in the address bar is copied, bookmarked and pasted into a chat window
- * long after its sixty seconds are up.
- */
-function takeToken(): string | null {
-  const match = FRAGMENT.exec(window.location.hash.slice(1));
+/** The token in a `#handoff=` fragment, or null. Pure, for the check. */
+export function readHandoffToken(hash: string): string | null {
+  const match = FRAGMENT.exec(hash.replace(/^#/, ""));
   if (!match || !match[1]) return null;
-  const raw = match[1];
-  window.history.replaceState(null, "", window.location.pathname + window.location.search);
   try {
-    return decodeURIComponent(raw);
+    return decodeURIComponent(match[1]);
   } catch {
     // A signed token needs no escaping; a malformed one is the server's to refuse.
-    return raw;
+    return match[1];
   }
 }
 
@@ -86,13 +88,59 @@ async function redeem(token: string): Promise<HandoffProblem | null> {
   };
 }
 
+/** What arriving touches, so the check can hand in its own. */
+export interface HandoffArrivalPort {
+  hash: string;
+  pathname: string;
+  search: string;
+  /** Vite's `BASE_URL`: where this app's routes start. */
+  base: string;
+  replaceUrl(url: string): void;
+  /** Null when the session is now set, else what to show instead of the app. */
+  exchange(token: string): Promise<HandoffProblem | null>;
+}
+
+/**
+ * Read the token and the target, and destroy the fragment before anything
+ * else can fail: one left in the address bar is copied, bookmarked and pasted
+ * into a chat window long after its sixty seconds are up. Then spend the
+ * token. After a successful exchange only, the address becomes the target;
+ * a refused exchange or a refused target lands at home. Null when the app was
+ * opened without a hand-off, which is every other visit.
+ */
+export function acceptHandoff(port: HandoffArrivalPort): Promise<HandoffProblem | null> | null {
+  const token = readHandoffToken(port.hash);
+  if (token === null) return null;
+  const target = readHandoffTarget(port.hash);
+  port.replaceUrl(port.pathname + port.search);
+  return port.exchange(token).then((problem) => {
+    if (problem === null && target !== null) land(port, target);
+    return problem;
+  });
+}
+
+/** The session is set either way; a landing the browser refuses leaves the app at home. */
+function land(port: HandoffArrivalPort, target: string): void {
+  try {
+    port.replaceUrl(landingUrl(port.base, target));
+  } catch {
+    // Home is where it would have opened before P1.
+  }
+}
+
 /**
  * Spent once, as this module loads, and not inside a component: an effect that
  * runs twice would spend a single-use token twice, and the second attempt is
- * refused as a replay. Null when the app was opened without a hand-off, which
- * is every other visit.
+ * refused as a replay.
  */
-export const handoffArrival: Promise<HandoffProblem | null> | null = (() => {
-  const token = takeToken();
-  return token === null ? null : redeem(token);
-})();
+export const handoffArrival: Promise<HandoffProblem | null> | null =
+  typeof window === "undefined"
+    ? null
+    : acceptHandoff({
+        hash: window.location.hash,
+        pathname: window.location.pathname,
+        search: window.location.search,
+        base: import.meta.env.BASE_URL,
+        replaceUrl: (url) => window.history.replaceState(null, "", url),
+        exchange: redeem,
+      });
