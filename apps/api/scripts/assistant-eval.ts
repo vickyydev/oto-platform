@@ -20,6 +20,9 @@
  * model golden through the REAL ask route as the golden's asker: the engine,
  * the tool executor calling each screen's own route as that person, the
  * guards, the links. Live, the model is the REAL `AnthropicToolLoopClient`.
+ * The OTO App goldens (Q1–Q3, Q6–Q8; round I4) sign the asker into a FAKE
+ * OTO App on a loopback port (`test/fake-otoapp.ts`) through the real
+ * hand-off, with INTERNAL_AI_OTOAPP_TOOLS on for those asks only.
  * Q11–Q16 are mechanical and always run on the fake.
  *
  * THE KEY. `ANTHROPIC_API_KEY` from the environment, else from `apps/api/.env`.
@@ -149,7 +152,7 @@ async function main(): Promise<void> {
   const w = await buildAskGoldenWorld();
   const cfg = w.ctx.app.internalAi.config;
   console.log(
-    `persona ${INTERNAL_PERSONA_VERSION}  ${worldVersion()}  effort ${cfg.effort}  tool cap ${cfg.maxToolCalls}  wall ${cfg.wallMs / 1000} s\n`,
+    `persona ${INTERNAL_PERSONA_VERSION}  ${worldVersion()} (OTO App goldens: ${worldVersion(true)})  effort ${cfg.effort}  tool cap ${cfg.maxToolCalls}  wall ${cfg.wallMs / 1000} s\n`,
   );
 
   const capture = capturingFetch();
@@ -170,7 +173,7 @@ async function main(): Promise<void> {
   try {
     for (const golden of LIVE_GOLDENS) {
       if (args.only && !args.only.has(golden.id)) continue;
-      console.log(`${golden.id}  ${golden.asker}  ${JSON.stringify(golden.question)}${golden.pendingI4 ? '  [OTO App: pending round I4]' : ''}`);
+      console.log(`${golden.id}  ${golden.asker}  ${JSON.stringify(golden.question)}${golden.otoApp ? '  [OTO App: the fake app, INTERNAL_AI_OTOAPP_TOOLS on]' : ''}`);
       console.log(`  plan       ${golden.plan}`);
       if (golden.note) console.log(`  encoded    ${golden.note}`);
       let fakeCalls = 0;
@@ -182,7 +185,7 @@ async function main(): Promise<void> {
       const askedAt = new Date();
       let played;
       try {
-        played = await playAsk(w, golden.asker, golden.question);
+        played = await playAsk(w, golden.asker, golden.question, { otoApp: golden.otoApp === true });
       } catch (err) {
         const why = [err instanceof Error ? err.message : 'the ask failed'];
         console.log(`  FAIL: ${why[0]}\n`);
@@ -239,7 +242,7 @@ async function main(): Promise<void> {
       results.push({ id: m.id, pass, why: run.failures });
     }
   } finally {
-    await w.ctx.close();
+    await w.close();
     await teardownAll();
   }
 

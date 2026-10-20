@@ -6,7 +6,9 @@ import { AnthropicToolLoopClient, DEFAULT_MODEL, INTERNAL_PERSONA_VERSION, type 
 import { newId } from '@oto/shared';
 import {
   LIVE_GOLDENS,
+  MANAGER_ONLY_REFUSAL,
   MECHANICAL_GOLDENS,
+  SALARY_REFUSAL,
   alignWorldTimes,
   buildAskGoldenWorld,
   capturingFetch,
@@ -63,7 +65,7 @@ beforeAll(async () => {
 }, 300_000);
 
 afterAll(async () => {
-  await w?.ctx.close();
+  await w?.close();
   await teardownAll();
 });
 
@@ -77,14 +79,28 @@ async function replay(golden: AskGolden, rec: RecordedAsk) {
   await alignWorldTimes(w, rec);
   vi.useFakeTimers({ toFake: ['Date'], now: new Date(rec.askedAt) });
   try {
+    // The OTO App's clock-relative fixtures (this month's attendance, the rota around today) follow the pinned clock.
+    w.alignOtoAppClock(new Date(rec.askedAt));
     const { client, served } = replayingClient(rec, w.ids);
     useClient(w, client);
-    const played = await playAsk(w, golden.asker, golden.question);
+    const played = await playAsk(w, golden.asker, golden.question, { otoApp: golden.otoApp === true });
     return { played, served: served() };
   } finally {
     vi.useRealTimers();
+    w.alignOtoAppClock(new Date());
   }
 }
+
+/** The world word a golden's recording must carry: the OTO App goldens hash the OTO App side too. */
+const worldOf = (golden: AskGolden) => worldVersion(golden.otoApp === true);
+
+/**
+ * A recording made before a round changed what its golden expects (`rerecord`):
+ * skipped by name with the command that re-records it, never replayed as if
+ * current. The flag is inert once the recording's world word matches.
+ */
+const stale = (golden: AskGolden, rec: RecordedAsk | null): string | null =>
+  rec && golden.rerecord && rec.worldVersion !== worldOf(golden) ? golden.rerecord.replace('<id>', golden.id) : null;
 
 const recorded = LIVE_GOLDENS.map((g) => ({ golden: g, rec: recording(g.id) }));
 const anyRecorded = recorded.some((r) => r.rec !== null);
@@ -92,21 +108,32 @@ const anyRecorded = recorded.some((r) => r.rec !== null);
 describe('the recorded goldens: real model responses through the real loop, routes and guards', () => {
   it.skipIf(!anyRecorded)('the recordings were made against this persona and this fixture world (else re-record)', () => {
     for (const { golden, rec } of recorded) {
-      if (!rec) continue;
+      if (!rec || stale(golden, rec)) continue;
       // A changed persona, world, tool list or link map does not by itself break the replay,
       // but the recording no longer shows what the model would do today:
       // pnpm --filter @oto/api assistant:eval --record --only <id>
       expect({ id: golden.id, persona: rec.personaVersion, world: rec.worldVersion }).toEqual({
         id: golden.id,
         persona: INTERNAL_PERSONA_VERSION,
-        world: worldVersion(),
+        world: worldOf(golden),
       });
     }
+  });
+
+  it('the platform goldens’ world word is unchanged by round I4 (their recordings stand)', () => {
+    // Pinned so a change to the platform tools, the world spec or the link map is seen as the re-record it asks for.
+    expect(worldVersion()).toBe('world-4e997400c81d7d03');
+    expect(worldVersion(true)).not.toBe(worldVersion());
   });
 
   for (const { golden, rec } of recorded) {
     if (!rec) {
       it.skip(`${golden.id} — not recorded yet: pnpm --filter @oto/api assistant:eval --record --only ${golden.id}`, () => {});
+      continue;
+    }
+    const why = stale(golden, rec);
+    if (why) {
+      it.skip(`${golden.id} — NEEDS RE-RECORD (recorded against ${rec.worldVersion}, now ${worldOf(golden)}): ${why}`, () => {});
       continue;
     }
     it(`${golden.id} ${golden.asker}: ${JSON.stringify(golden.question)} replays as recorded`, async () => {
@@ -127,13 +154,38 @@ describe('the recorded goldens: real model responses through the real loop, rout
 
 describe('the goldens rehearsed on the fake (what assistant:eval --fake plays)', () => {
   for (const golden of LIVE_GOLDENS) {
-    it(`${golden.id} ${golden.asker}: ${JSON.stringify(golden.question)}${golden.pendingI4 ? ' (OTO App: pending round I4)' : ''}`, async () => {
+    it(`${golden.id} ${golden.asker}: ${JSON.stringify(golden.question)}${golden.otoApp ? ' (OTO App, round I4)' : ''}`, async () => {
       const fake = rehearse(w, golden);
-      const played = await playAsk(w, golden.asker, golden.question);
+      const played = await playAsk(w, golden.asker, golden.question, { otoApp: golden.otoApp === true });
       expect(judgeAsk(golden.expect, played.observed), JSON.stringify(played.observed)).toEqual([]);
       expect(fake.remaining).toBe(0);
     });
   }
+
+  it('Q1 — the figures the manager is told are the app’s own, for this month, and the app session is gone after the ask', async () => {
+    w.otoApp.resetObservations();
+    const fake = rehearse(w, LIVE_GOLDENS.find((g) => g.id === 'Q1')!);
+    const played = await playAsk(w, 'otoManager', "Anan's attendance this month", { otoApp: true });
+    expect(played.observed.state).toBe('answered');
+    const summary = (toolResultsSeen(fake)[1]!.data as { data: { daysWorked: number; totalHours: number; lateArrivals: number } }).data;
+    expect(summary.daysWorked).toBe(w.otoAppFixtures.attendance.days);
+    expect(summary.totalHours).toBe(w.otoAppFixtures.attendance.hours);
+    expect(summary.lateArrivals).toBe(1);
+    expect(w.otoApp.sidsIssued).toHaveLength(1);
+    expect(w.otoApp.sessions.size).toBe(0);
+    expect(w.otoApp.logouts).toHaveLength(1);
+  });
+
+  it('Q2 and Q3 — the refusal shown is the app’s own sentence, and nothing of the refused read reached the model', async () => {
+    let fake = rehearse(w, LIVE_GOLDENS.find((g) => g.id === 'Q2')!);
+    let played = await playAsk(w, 'otoManager', "What is Anan's salary?", { otoApp: true });
+    expect(played.observed.refusals).toEqual([SALARY_REFUSAL]);
+    expect(JSON.stringify(toolResultsSeen(fake)[0]!.data)).not.toContain('444000');
+    fake = rehearse(w, LIVE_GOLDENS.find((g) => g.id === 'Q3')!);
+    played = await playAsk(w, 'otoStaff', "Anan's attendance this month", { otoApp: true });
+    expect(played.observed.refusals).toEqual([MANAGER_ONLY_REFUSAL]);
+    expect(JSON.stringify(toolResultsSeen(fake)[1]!.data)).not.toContain('daysWorked');
+  });
 
   it('Q4 — the branch list is itself fenced: a Central manager is not told Chalong exists', async () => {
     const fake = rehearse(w, LIVE_GOLDENS.find((g) => g.id === 'Q4')!);
