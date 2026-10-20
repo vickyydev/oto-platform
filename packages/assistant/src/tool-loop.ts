@@ -125,20 +125,71 @@ export function toolResultContent(result: ToolCallResult): string {
   return inertJson({ data: result.data });
 }
 
-/** Sorted by name (cache-stable, §D.2). A repeated name is a programming error and throws. */
-export function toolsForRequest(tools: readonly ToolDefinition[]): BetaTool[] {
-  const sorted = [...tools].sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
-  for (let i = 1; i < sorted.length; i += 1) {
-    if (sorted[i]!.name === sorted[i - 1]!.name) {
-      throw new TypeError(`tool loop: the tool name ${sorted[i]!.name} is given twice`);
+/**
+ * The Messages API's tool-name pattern. The registry's dotted names
+ * (`members.lookup`) do not match it: the live check of 2026-10-20 got
+ * "tools.0.custom.name: String should match pattern '^[a-zA-Z0-9_-]{1,128}$'".
+ */
+export const WIRE_TOOL_NAME = /^[a-zA-Z0-9_-]{1,128}$/;
+
+/**
+ * The name a tool travels under: the registry name with every dot as an
+ * underscore. Only the wire differs: the registry, the audit and the ask-log
+ * keep the dotted name, and the loop maps tool_use names back before the
+ * executor sees them (`runToolLoop`).
+ */
+export function wireToolName(registryName: string): string {
+  return registryName.replace(/\./g, '_');
+}
+
+export interface WireTools {
+  /** The request's `tools`, under their wire names, sorted by wire name (cache-stable, §D.2). */
+  tools: BetaTool[];
+  /** Wire name to registry name. */
+  fromWire: ReadonlyMap<string, string>;
+}
+
+/**
+ * Builds the request's tools. Throws a TypeError (a programming error, caught
+ * at the first request) when a name is illegal even after mapping, or when
+ * two tools share a wire name (the same name twice, or `a.b` beside `a_b`).
+ */
+export function wireTools(tools: readonly ToolDefinition[]): WireTools {
+  const fromWire = new Map<string, string>();
+  for (const t of tools) {
+    const wire = wireToolName(t.name);
+    if (!WIRE_TOOL_NAME.test(wire)) {
+      throw new TypeError(
+        `tool loop: the tool name ${JSON.stringify(t.name)} is not a legal API tool name even as ${JSON.stringify(wire)} (letters, digits, _ and -, at most 128)`,
+      );
     }
+    const prior = fromWire.get(wire);
+    if (prior !== undefined) {
+      throw new TypeError(
+        prior === t.name
+          ? `tool loop: the tool name ${t.name} is given twice`
+          : `tool loop: the tools ${prior} and ${t.name} collide on the wire as ${wire}`,
+      );
+    }
+    fromWire.set(wire, t.name);
   }
-  return sorted.map((t) => ({
-    name: t.name,
-    description: t.description,
-    input_schema: t.inputSchema,
-    ...(t.strict === undefined ? {} : { strict: t.strict }),
-  }));
+  const sorted = [...tools]
+    .map((t) => ({ t, wire: wireToolName(t.name) }))
+    .sort((a, b) => (a.wire < b.wire ? -1 : a.wire > b.wire ? 1 : 0));
+  return {
+    tools: sorted.map(({ t, wire }) => ({
+      name: wire,
+      description: t.description,
+      input_schema: t.inputSchema,
+      ...(t.strict === undefined ? {} : { strict: t.strict }),
+    })),
+    fromWire,
+  };
+}
+
+/** The request's tools under their wire names (see `wireTools`). */
+export function toolsForRequest(tools: readonly ToolDefinition[]): BetaTool[] {
+  return wireTools(tools).tools;
 }
 
 // ---------------------------------------------------------------------------
@@ -304,8 +355,7 @@ export async function runToolLoop(
       `tool loop: the system was built for ${request.answerMode}, the client reads ${options.answerMode}`,
     );
   }
-  const tools = toolsForRequest(request.tools);
-  const known = new Set(tools.map((t) => t.name));
+  const { tools, fromWire } = wireTools(request.tools);
   const maxToolCalls = request.maxToolCalls ?? INTERNAL_DEFAULT_MAX_TOOL_CALLS;
   const wallMs = request.wallMs ?? INTERNAL_DEFAULT_WALL_MS;
   const { now } = options;
@@ -373,7 +423,10 @@ export async function runToolLoop(
       const left = wallMs - elapsed();
       if (left <= 0) return fail('WALL_TIME');
       const seq = calls.length + 1;
-      const isKnown = known.has(call.name);
+      // The model speaks wire names; the executor, the record and the audit get the registry's.
+      const registryName = fromWire.get(call.name);
+      const isKnown = registryName !== undefined;
+      const name = registryName ?? call.name;
       let result: ToolCallResult;
       if (!isKnown) {
         result = UNKNOWN_TOOL_RESULT;
@@ -382,7 +435,7 @@ export async function runToolLoop(
           result = await request.execute({
             seq,
             toolUseId: call.id,
-            name: call.name,
+            name,
             input: call.input,
             remainingMs: left,
           });
@@ -394,7 +447,7 @@ export async function runToolLoop(
       calls.push({
         seq,
         toolUseId: call.id,
-        name: call.name,
+        name,
         input: call.input,
         known: isKnown,
         ok: result.ok,

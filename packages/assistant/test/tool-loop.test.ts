@@ -23,6 +23,10 @@ import {
   interpretToolLoopReply,
   INTERNAL_DEFAULT_MAX_TOOL_CALLS,
   toolsForRequest,
+  WIRE_TOOL_NAME,
+  wireToolName,
+  wireTools,
+  type ToolDefinition,
   type ToolLoopOutcome,
   type ToolLoopReply,
   type ToolLoopRequest,
@@ -131,11 +135,11 @@ describe('FakeToolLoopClient', () => {
     expect(second[1]).toEqual({
       role: 'assistant',
       content: [
-        { type: 'tool_use', id: 'toolu_a', name: 'branches.list', input: {} },
+        { type: 'tool_use', id: 'toolu_a', name: 'branches_list', input: {} },
         {
           type: 'tool_use',
           id: 'toolu_b',
-          name: 'occupancy.now',
+          name: 'occupancy_now',
           input: { branchId: 'br-chalong' },
         },
       ],
@@ -195,7 +199,7 @@ describe('FakeToolLoopClient', () => {
     expect(ex.seen).toHaveLength(0);
     expect(out).toMatchObject({ ok: true });
     expect(out.calls).toEqual([
-      expect.objectContaining({ seq: 1, name: 'members.export_all', known: false, ok: false }),
+      expect.objectContaining({ seq: 1, name: 'members_export_all', known: false, ok: false }),
     ]);
   });
 
@@ -521,14 +525,14 @@ describe.each(INTERNAL_ANSWER_MODES)(
       expect(body.max_tokens).toBe(4000);
       expect(body.fallbacks).toBe('default');
       expect(body.output_config.effort).toBe('low');
-      // The live check of 2026-10-20: tools + format in one request was a 400.
+      // combined sends the format on every turn; trailing_json never does.
       if (mode === 'combined') expect(body.output_config.format?.type).toBe('json_schema');
       else expect(body.output_config).toEqual({ effort: 'low' });
       for (const c of s.calls) {
         const b = c.body as { output_config: Record<string, unknown> };
         expect('format' in b.output_config).toBe(mode === 'combined');
       }
-      expect(body.tools.map((t) => t.name)).toEqual(['branches.list', 'occupancy.now']);
+      expect(body.tools.map((t) => t.name)).toEqual(['branches_list', 'occupancy_now']);
       expect(body.system).toHaveLength(2);
       expect(body.system[0]!.cache_control).toEqual({ type: 'ephemeral', ttl: '1h' });
       expect(body.system[1]).not.toHaveProperty('cache_control');
@@ -631,7 +635,7 @@ describe.each(INTERNAL_ANSWER_MODES)(
               }),
               content: [
                 thinking,
-                { type: 'tool_use', id: 'toolu_x', name: 'branches.list', input: {} },
+                { type: 'tool_use', id: 'toolu_x', name: 'branches_list', input: {} },
               ],
             })
           : json(
@@ -689,6 +693,116 @@ describe('trailing_json final turns through the fake', () => {
         request(executor({}).execute, { answerMode: 'combined' }),
       ),
     ).rejects.toThrow(TypeError);
+  });
+});
+
+describe('tool names on the wire', () => {
+  const tool = (name: string): ToolDefinition => ({
+    name,
+    description: `the ${name} tool`,
+    inputSchema: { type: 'object', properties: {} },
+  });
+
+  it('every wire name matches the API pattern; dots become underscores', () => {
+    expect(wireToolName('members.lookup')).toBe('members_lookup');
+    expect(wireToolName('oto.employees.find')).toBe('oto_employees_find');
+    for (const t of toolsForRequest(TOOLS)) expect(t.name).toMatch(WIRE_TOOL_NAME);
+  });
+
+  it.each(INTERNAL_ANSWER_MODES)(
+    '%s: a dotted name travels underscored and comes back dotted (real client)',
+    async (mode) => {
+      const ex = executor({ 'occupancy.now': OCCUPANCY_OK });
+      const s = stubFetch((_c, i) =>
+        json(
+          200,
+          wire(
+            i === 0
+              ? {
+                  model: 'claude-opus-5-5',
+                  stop_reason: 'tool_use',
+                  content: [
+                    {
+                      type: 'tool_use',
+                      id: 'toolu_w',
+                      name: 'occupancy_now',
+                      input: { branchId: 'b' },
+                    },
+                  ],
+                  usage: { input_tokens: 1, output_tokens: 1 },
+                }
+              : {
+                  model: 'claude-opus-5-5',
+                  stop_reason: 'end_turn',
+                  content: [{ type: 'text', text: finalText(answer(), mode) }],
+                  usage: { input_tokens: 1, output_tokens: 1 },
+                },
+          ),
+        ),
+      );
+      const out = await realClient(s.fetch, undefined, mode).converse(
+        request(ex.execute, { answerMode: mode }),
+      );
+      const sent = s.calls[0]!.body as { tools: Array<{ name: string }> };
+      expect(sent.tools.map((t) => t.name)).toEqual(['branches_list', 'occupancy_now']);
+      expect(JSON.stringify(s.calls[0]!.body)).not.toContain('occupancy.now');
+      expect(ex.seen.map((c) => c.name)).toEqual(['occupancy.now']);
+      expect(out).toMatchObject({ ok: true, calls: [{ name: 'occupancy.now', known: true }] });
+      // The echoed assistant turn keeps the wire name the API sent.
+      const second = s.calls[1]!.body as { messages: Array<{ content: Array<{ name?: string }> }> };
+      expect(second.messages[1]!.content[0]!.name).toBe('occupancy_now');
+    },
+  );
+
+  it.each(INTERNAL_ANSWER_MODES)(
+    '%s: the fake sends registry names as wire names and maps them back',
+    async (mode) => {
+      const ex = executor({ 'occupancy.now': OCCUPANCY_OK });
+      const fake = new FakeToolLoopClient(
+        [
+          { kind: 'tool_use', calls: [{ name: 'occupancy.now', input: { branchId: 'b' } }] },
+          { kind: 'final', answer: answer() },
+        ],
+        undefined,
+        mode,
+      );
+      const out = await fake.converse(request(ex.execute, { answerMode: mode }));
+      expect(fake.calls[0]!.tools.map((t) => t.name)).toEqual(['branches_list', 'occupancy_now']);
+      const echoed = fake.calls[1]!.messages[1]!.content as Array<{ name: string }>;
+      expect(echoed[0]!.name).toBe('occupancy_now');
+      expect(ex.seen.map((c) => c.name)).toEqual(['occupancy.now']);
+      expect(out.calls.map((c) => c.name)).toEqual(['occupancy.now']);
+    },
+  );
+
+  it.each([
+    ['a space', 'members lookup'],
+    ['a slash', 'members/lookup'],
+    ['Thai letters', 'สมาชิก.ค้นหา'],
+    ['an empty name', ''],
+    ['129 characters', 'a'.repeat(129)],
+  ])('a name with %s is illegal even after mapping and throws at build', (_why, name) => {
+    expect(() => wireTools([tool(name)])).toThrow(/not a legal API tool name/);
+  });
+
+  it('two names that collide after mapping throw at build', () => {
+    expect(() => wireTools([tool('members.lookup'), tool('members_lookup')])).toThrow(
+      /members\.lookup and members_lookup collide on the wire as members_lookup/,
+    );
+  });
+
+  it('the same name twice throws at build', () => {
+    expect(() => wireTools([tool('members.lookup'), tool('members.lookup')])).toThrow(
+      /given twice/,
+    );
+  });
+
+  it('a build error surfaces before any model call', async () => {
+    const fake = new FakeToolLoopClient([{ kind: 'final', answer: answer() }]);
+    await expect(
+      fake.converse(request(executor({}).execute, { tools: [tool('a.b'), tool('a_b')] })),
+    ).rejects.toThrow(TypeError);
+    expect(fake.calls).toHaveLength(0);
   });
 });
 

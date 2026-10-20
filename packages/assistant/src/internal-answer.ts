@@ -48,9 +48,10 @@ export type InternalAnswer = z.infer<typeof InternalAnswerSchema>;
  *                  format on any request. The final turn is plain text, the
  *                  answer, ending with ONE JSON object carrying the link keys
  *                  and the language, which the server parses
- *                  (`parseTrailingAnswer`). The live check of 2026-10-20 got
- *                  a 400 for tools and the format in one request on
- *                  claude-opus-5-5.
+ *                  (`parseTrailingAnswer`). The default since the first
+ *                  live check (2026-10-20): its 400 turned out to be the
+ *                  dotted tool names (see `wireToolName`), not the
+ *                  combination; which mode to keep is decided by the re-run.
  *   combined       tools and the answer format in the same request; the
  *                  final turn is the schema's JSON. Kept so one option
  *                  restores it if the API accepts the combination.

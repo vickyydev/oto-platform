@@ -4,8 +4,9 @@
  * fictional tool in both answer modes, in this order:
  *
  *   1. combined       tools AND the structured answer format in one request.
- *                     The first live run (2026-10-20, claude-opus-5-5) was a
- *                     400 on the first turn.
+ *                     The first live runs (2026-10-20, claude-opus-5-5) got
+ *                     a 400 in both modes: the dotted tool name, now mapped
+ *                     to its wire name.
  *   2. trailing_json  the plan's fallback and the package default: tools
  *                     with no format; a plain-text final turn ending in one
  *                     JSON block (links, language) that the server parses.
@@ -39,6 +40,7 @@ import {
   DEFAULT_MODEL,
   internalAnswerGuard,
   type InternalAnswerMode,
+  wireToolName,
   type ToolCallResult,
   type ToolDefinition,
 } from '../src/index';
@@ -67,7 +69,9 @@ function parseModel(argv: string[]): string {
 }
 
 const TOOL: ToolDefinition = {
-  name: 'zz.visitors_today',
+  // Dotted like every registry name (members.lookup, occupancy.now): the live check
+  // proves the wire-name mapping (visitors.today travels as visitors_today).
+  name: 'visitors.today',
   description:
     "Today's visitor counts for one branch: children and adults checked in so far. Use it for any question about how many visitors a branch has had today.",
   inputSchema: {
@@ -146,6 +150,7 @@ async function runMode(
   console.log(`\n== ${mode} ==`);
   console.log(`model served:  ${out.model ?? '-'}`);
   console.log(`turns:         ${out.turns}`);
+  console.log(`tool on wire:  ${TOOL.name} -> ${wireToolName(TOOL.name)}`);
   console.log(`tool calls:    ${toolCalls.length === 0 ? '(none)' : toolCalls.join(' | ')}`);
   console.log(`latency:       ${out.latencyMs} ms`);
   if (out.usage) {

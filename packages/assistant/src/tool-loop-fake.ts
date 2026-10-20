@@ -25,6 +25,7 @@ import {
 } from './internal-answer';
 import {
   runToolLoop,
+  wireToolName,
   type ToolLoopBlock,
   type ToolLoopClient,
   type ToolLoopOutcome,
@@ -39,7 +40,11 @@ type BetaContentBlockParam = Anthropic.Beta.BetaContentBlockParam;
 type BetaTool = Anthropic.Beta.BetaTool;
 
 export type FakeToolLoopStep =
-  /** The model calls one or more tools (several = parallel calls in one turn). */
+  /**
+   * The model calls one or more tools (several = parallel calls in one turn).
+   * Names are written as the registry's (`members.lookup`); the fake sends
+   * them as the model would, under their wire names (`members_lookup`).
+   */
   | { kind: 'tool_use'; calls: Array<{ name: string; input: unknown; id?: string }> }
   /** The model's final answer, written in the client's answer mode (JSON, or prose + trailing block). */
   | { kind: 'final'; answer: InternalAnswer }
@@ -106,7 +111,7 @@ export function materialiseToolLoopStep(
           step.calls.map((c) => ({
             type: 'tool_use',
             id: c.id ?? nextToolUseId(),
-            name: c.name,
+            name: wireToolName(c.name),
             input: c.input,
           })),
         ),
