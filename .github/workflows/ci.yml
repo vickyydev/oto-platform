@@ -610,6 +610,13 @@ jobs:
       - name: The app's leave type checks
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/leave-types.check.ts
+      # SCRUM-597: a task the Ops board assigns to several employees is in
+      # each one's Today and nobody else's, through the create route and the
+      # task sheet's edit; a single-assignee task unchanged; and the date rule
+      # (a later due date moves the start, Today lists started tasks only).
+      - name: The app's task assignees in Today checks
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/task-assignees-today.check.ts
       # SCRUM-561: staff birthdays (migration 0019) and the sidebar's saved
       # sections (0020) — birthday validation and the February 29 rule, My
       # Account both ways, the birthday list fenced to the park group and
