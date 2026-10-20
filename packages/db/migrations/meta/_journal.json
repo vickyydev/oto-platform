@@ -575,6 +575,13 @@
       "when": 1792473877323,
       "tag": "0081_assistant",
       "breakpoints": true
+    },
+    {
+      "idx": 82,
+      "version": "7",
+      "when": 1792473878323,
+      "tag": "0082_assistant_small_talk",
+      "breakpoints": true
     }
   ]
 }

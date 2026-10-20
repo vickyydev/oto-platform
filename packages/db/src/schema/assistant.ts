@@ -118,6 +118,12 @@ export const ask = assistant.table(
     feedback: text('feedback').$type<AssistantFeedback>(),
     /** The asker's correction (spec §4): the learning loop's input, never weights. */
     correction: text('correction'),
+    /**
+     * The model's own word that the message was social and no tool was
+     * needed (test night 2026-10-21, S10; migration `0082_assistant_small_talk`):
+     * the launcher hides Good/Wrong on it. False on every server-written line.
+     */
+    smallTalk: boolean('small_talk').notNull().default(false),
     /** When `job:assistant.purge` deletes the row: asked + retention (G4, 90 days). */
     purgeAfter: timestamp('purge_after', { withTimezone: true, mode: 'date' })
       .notNull()
