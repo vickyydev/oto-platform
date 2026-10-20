@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PERSONA_VERSION, PROHIBITIONS } from '../src/persona';
+import { CERTAINTY_RULE, MULTI_PART_RULE, PERSONA_VERSION, PROHIBITIONS } from '../src/persona';
 import {
   buildKnowledge,
   buildPrompt,
@@ -132,6 +132,17 @@ describe('the prohibitions are all in the compiled system prompt (PLAN §B.4)', 
     expect(STATIC_SYSTEM_TEXT).toContain("You're chatting with the OTO Play Park team");
     expect(STATIC_SYSTEM_TEXT).toContain('Вы пишете команде OTO Play Park');
     expect(STATIC_SYSTEM_TEXT).toContain('Return one JSON object');
+  });
+
+  it('several questions at once are several parts, never a reason for silence (test night 2026-10-21, D1a, D1b)', () => {
+    expect(STATIC_SYSTEM_TEXT).toContain('## Several questions at once');
+    expect(STATIC_SYSTEM_TEXT).toContain(MULTI_PART_RULE);
+    expect(STATIC_SYSTEM_TEXT).toContain(CERTAINTY_RULE);
+    expect(CERTAINTY_RULE).not.toContain('one clear intent');
+    expect(CERTAINTY_RULE).toContain('never a reason to be unsure');
+    expect(MULTI_PART_RULE).toContain('a turn where you stayed silent is not a reason to stay silent again');
+    expect(STATIC_SYSTEM_TEXT).toContain('intents: every intent the open messages hold');
+    expect(PERSONA_VERSION).toBe('persona-2026-10-21.1');
   });
 
   it('live facts and KB rows are in block 2, a needs-translation row is not', () => {

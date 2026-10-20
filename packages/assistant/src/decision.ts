@@ -7,7 +7,7 @@
  */
 
 import { z } from 'zod/v4';
-import { AI_INTENTS } from './intents';
+import { AI_INTENTS, MAX_INTENTS } from './intents';
 
 /** Languages the model may report. Anything but th/en/ru is silence (gate 3, G8). */
 export const AI_LANGUAGES = ['th', 'en', 'ru', 'other'] as const;
@@ -47,7 +47,15 @@ export const MAX_GROUNDING_KEYS = 8;
 
 export const AiDecisionSchema = z.object({
   language: z.enum(AI_LANGUAGES),
+  /** The primary intent: what the burst mainly asks. */
   intent: z.enum(AI_INTENTS),
+  /**
+   * Every intent the open messages hold, the primary first (test night
+   * 2026-10-21, D1a): "hours, and can we book a party?" is `hours` then
+   * `birthday_party`. Optional only so a decision recorded before it existed
+   * still parses; the gate reads a missing list as the one intent.
+   */
+  intents: z.array(z.enum(AI_INTENTS)).min(1).max(MAX_INTENTS).optional(),
   certainty: z.enum(['sure', 'unsure']),
   action: z.enum(['answer', 'handover', 'silent']),
   /** KB entry keys and catalog facts the answer rests on. Required for a factual answer. */

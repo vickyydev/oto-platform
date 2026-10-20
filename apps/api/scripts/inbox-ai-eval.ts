@@ -115,11 +115,16 @@ function costOf(model: string, u: TurnUsage): number | null {
 const STATE_OF: Record<GateVerdict['action'], string> = { answer: 'answered', handover: 'handed_over', silent: 'silent' };
 
 function verdictWords(v: GateVerdict): string {
+  // The burst's parts beside the primary (test night 2026-10-21, D1a), when there are any.
+  const parts = v.intents.length > 1 ? ` parts=[${v.intents.join(', ')}]` : '';
   if (v.action === 'answer') {
-    return `answer ${v.intent}/${v.language} grounding=[${v.groundingKeys.join(', ')}] askBranch=${v.askBranch} brochure=${v.sendBrochure}`;
+    const then = v.thenHandover ? ` then ${v.thenHandover.templateKey}/${v.thenHandover.route}${v.thenHandover.brochure ? ' +brochure' : ''}` : '';
+    return `answer ${v.intent}/${v.language}${parts} grounding=[${v.groundingKeys.join(', ')}] askBranch=${v.askBranch} brochure=${v.sendBrochure}${then}`;
   }
-  if (v.action === 'handover') return `handover ${v.intent}/${v.language} ${v.reason} -> ${v.plan.templateKey}/${v.plan.route}${v.plan.brochure ? ' +brochure' : ''}`;
-  return `silent ${v.reason}${v.rule ? `/${v.rule}` : ''} (intent ${v.intent ?? 'none'})`;
+  if (v.action === 'handover') {
+    return `handover ${v.intent}/${v.language}${parts} ${v.reason} -> ${v.plan.templateKey}/${v.plan.route}${v.plan.brochure ? ' +brochure' : ''}`;
+  }
+  return `silent ${v.reason}${v.rule ? `/${v.rule}` : ''} (intent ${v.intent ?? 'none'}${parts})`;
 }
 
 async function main(): Promise<void> {

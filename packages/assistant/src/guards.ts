@@ -33,11 +33,17 @@ export const PERSONA_GUARD_RULES: ReadonlyArray<{ id: string; pattern: RegExp }>
   { id: 'en:claude', pattern: latin('claude') },
   { id: 'en:anthropic', pattern: latin('anthropic') },
   { id: 'th:ai', pattern: thai('เอไอ') },
+  // Test night 2026-10-21 (W8): the Thai and Russian "assistant" and
+  // "chatbot" words, which three Thai KB entries carried ("ระบบผู้ช่วย…").
+  // Latin "AI" inside Thai text is caught by en:ai (bounded by Latin letters).
+  { id: 'th:chatbot', pattern: thai('แชทบอท') },
   { id: 'th:bot', pattern: thai('บอท') },
+  { id: 'th:assistant', pattern: thai('ผู้ช่วย') },
   { id: 'th:artificial', pattern: thai('ปัญญาประดิษฐ์') },
   { id: 'th:robot', pattern: thai('หุ่นยนต์') },
   { id: 'th:auto', pattern: thai('อัตโนมัติ') },
   { id: 'ru:ai', pattern: cyrillic('ИИ') },
+  { id: 'ru:chatbot', pattern: cyrillic('чат-?бот\\p{L}*') },
   { id: 'ru:bot', pattern: cyrillic('бот(?:а|у|ом|е|ы|ов|ам|ами|ах)?') },
   { id: 'ru:neural', pattern: cyrillic('нейросет\\p{L}*') },
   { id: 'ru:artificial', pattern: cyrillic('искусственн\\p{L}* интеллект\\p{L}*') },

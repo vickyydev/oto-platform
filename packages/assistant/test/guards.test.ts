@@ -173,6 +173,37 @@ describe('the persona guard (PLAN §B.3 gate 6)', () => {
       expect(traceabilityGuard([p.identityLine, p.branchQuestion], [])).toEqual({ ok: true });
     }
   });
+
+  describe('the Thai and Russian assistant and bot words (test night 2026-10-21, W8)', () => {
+    it.each([
+      ['th:assistant', 'ผู้ช่วย', 'ผู้ช่วยยินดีให้บริการค่ะ'],
+      ['th:assistant', 'ระบบผู้ช่วย', 'นี่คือระบบผู้ช่วยตอบอัตโนมัติของ OTO ค่ะ'],
+      ['th:bot', 'บอท', 'แอดมินเป็นบอทค่ะ'],
+      ['th:chatbot', 'แชทบอท', 'แชทบอทของ OTO ยินดีช่วยค่ะ'],
+      ['en:ai', 'AI', 'ระบบ AI ของ OTO ตอบค่ะ'],
+      ['th:artificial', 'ปัญญาประดิษฐ์', 'ตอบโดยปัญญาประดิษฐ์ค่ะ'],
+      ['ru:bot', 'бот', 'С Вами общается бот OTO.'],
+      ['ru:chatbot', 'чат-бот', 'Вам отвечает чат-бот.'],
+      ['ru:assistant', 'ассистент', 'Я виртуальный ассистент парка.'],
+      ['ru:ai', 'ИИ', 'Отвечает ИИ парка.'],
+      ['ru:artificial', 'искусственный интеллект', 'С Вами говорит искусственный интеллект.'],
+      ['ru:neural', 'нейросеть', 'Ответ подготовила нейросеть.'],
+    ])('%s refuses %s', (rule, _word, bubble) => {
+      expect(personaGuard([bubble])).toEqual({ ok: false, reason: 'GUARD_PERSONA', rule });
+    });
+
+    it('a Thai knowledge-base line that names the assistant never reaches a customer', () => {
+      // Three TH entries carried "ระบบผู้ช่วย…" on the test night; an answer quoting one is refused.
+      expect(personaGuard(['ระบบผู้ช่วยของ OTO แจ้งว่าเปิด 10:00–20:00 น. ค่ะ'])).toMatchObject({ ok: false, rule: 'th:assistant' });
+    });
+
+    it.each(['แอดมินช่วยดูให้นะคะ', 'ช่วยบอกจำนวนเด็กด้วยนะคะ', 'Мы поможем Вам с выбором.', 'Заботимся о каждом госте.'])(
+      'ordinary help words pass: %j',
+      (bubble) => {
+        expect(personaGuard([bubble])).toEqual({ ok: true });
+      },
+    );
+  });
 });
 
 describe('the bubble guard (gate 7)', () => {

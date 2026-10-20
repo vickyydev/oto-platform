@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   BUBBLE_GAP_MAX_MS,
   BUBBLE_GAP_MIN_MS,
+  DEFAULT_PACING,
   bubbleDelaysMs,
   scheduleBubbles,
   TYPING_JITTER,
@@ -18,6 +19,42 @@ function seeded(seed: number) {
     return s / 2 ** 32;
   };
 }
+
+describe('the two knobs (PLAN §B.6; test night 2026-10-21, P)', () => {
+  it('default to today’s values: a 20 s first-bubble ceiling, a 6 s gap ceiling', () => {
+    expect(DEFAULT_PACING).toEqual({ firstBubbleMaxMs: 20_000, bubbleGapMaxMs: 6_000 });
+    expect(bubbleDelaysMs(['x'.repeat(60), 'y'], () => 0.5)).toEqual(bubbleDelaysMs(['x'.repeat(60), 'y'], () => 0.5, DEFAULT_PACING));
+  });
+
+  it('a lower first-bubble ceiling caps the typing time, and pulls the 3 s floor down with it', () => {
+    expect(typingMs(400, { firstBubbleMaxMs: 5_000, bubbleGapMaxMs: 6_000 })).toBe(5_000);
+    expect(typingMs(0, { firstBubbleMaxMs: 5_000, bubbleGapMaxMs: 6_000 })).toBe(TYPING_MIN_MS);
+    expect(typingMs(0, { firstBubbleMaxMs: 1_000, bubbleGapMaxMs: 6_000 })).toBe(1_000);
+    expect(typingMs(400, { firstBubbleMaxMs: 0, bubbleGapMaxMs: 6_000 })).toBe(0);
+  });
+
+  it('a lower gap ceiling bounds every further bubble, down to no gap at all', () => {
+    const tight = { firstBubbleMaxMs: 20_000, bubbleGapMaxMs: 3_000 };
+    const d = bubbleDelaysMs(['one', 'two', 'three'], () => 0.999999, tight);
+    expect(d[1]! - d[0]!).toBeLessThanOrEqual(3_000);
+    expect(d[2]! - d[1]!).toBeLessThanOrEqual(3_000);
+    expect(d[1]! - d[0]!).toBeGreaterThanOrEqual(BUBBLE_GAP_MIN_MS);
+    const none = bubbleDelaysMs(['one', 'two'], () => 0.5, { firstBubbleMaxMs: 0, bubbleGapMaxMs: 0 });
+    expect(none).toEqual([0, 0]);
+  });
+
+  it('a knob that is not a number falls back to today’s value', () => {
+    expect(typingMs(400, { firstBubbleMaxMs: Number.NaN, bubbleGapMaxMs: 6_000 })).toBe(TYPING_MAX_MS);
+    const d = bubbleDelaysMs(['one', 'two'], () => 0.999999, { firstBubbleMaxMs: 20_000, bubbleGapMaxMs: -1 });
+    expect(d[1]! - d[0]!).toBeLessThanOrEqual(BUBBLE_GAP_MAX_MS);
+  });
+
+  it('schedules with the knobs', () => {
+    const now = new Date('2026-10-20T07:00:00.000Z');
+    const at = scheduleBubbles(now, ['one', 'two'], () => 0.5, { firstBubbleMaxMs: 1_000, bubbleGapMaxMs: 2_000 });
+    expect(at.map((d) => d.getTime() - now.getTime())).toEqual([1_000, 3_000]);
+  });
+});
 
 describe('typing time (PLAN §B.6)', () => {
   it('is chars / 6 per second, clamped to 3–20 s', () => {

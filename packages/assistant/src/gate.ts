@@ -4,6 +4,15 @@
  * `applyGates` turns the model's decision into what the server will do. The
  * model proposes; the intent table and the guards dispose. Every refusal is a
  * reason word and a rule id, never text.
+ *
+ * A burst can hold several parts (test night 2026-10-21, D1a and W2): the
+ * model labels every intent it reads (`intents`, the primary first) and the
+ * gate decides PER PART from the table. Every part answerable: one reply
+ * that answers each. Some parts hand over: the answerable parts are answered
+ * first, then the holding line for the rest (the brochure first when it is a
+ * birthday) — unless a part is person-first (a complaint, an upset message,
+ * a request for a person), whose holding line stands alone. Only `other` as
+ * the primary (spam, an injection, no question) is silence.
  */
 
 import {
@@ -18,6 +27,7 @@ import {
   CAP_HANDOVER,
   IDENTITY_SECOND_ASK,
   INTENT_TABLE,
+  intentPartsOf,
   type AiGroundingTopic,
   type AiHandoverPlan,
   type AiIntent,
@@ -43,16 +53,26 @@ export interface EpisodeState {
   threadHasBranch: boolean;
 }
 
-/** §D.4 guard 3. */
-export const EPISODE_ANSWER_CAP = 4;
-export const EPISODE_WINDOW_CAP = 3;
+/**
+ * §D.4 guard 3. Raised from 4 / 3 on the test night (2026-10-21, W3): a
+ * normal conversation — parking, the children's price, "and for adults?",
+ * "what about on Saturday?" — hit the third-answer cap. Eight answers in ten
+ * minutes still ends a ping-pong with another auto-responder; the episode
+ * total rises with it, since a window of eight behind a total of four would
+ * never be reached. The per-operator daily caps and the breaker are unchanged.
+ */
+export const EPISODE_ANSWER_CAP = 8;
+export const EPISODE_WINDOW_CAP = 8;
 export const EPISODE_WINDOW_MINUTES = 10;
 
 export type GateVerdict =
   | {
       action: 'answer';
       reason: 'OK';
+      /** The primary intent. */
       intent: AiIntent;
+      /** Every part the reply covers, the primary first (`other` parts dropped). */
+      intents: AiIntent[];
       language: AiReplyLanguage;
       bubbles: string[];
       groundingKeys: string[];
@@ -61,7 +81,11 @@ export type GateVerdict =
       /** The bubbles carry the branch question (general enquiry, no branch yet). */
       askBranch: boolean;
       branchNamed: AiBranchKey | null;
-      /** Hand over after the answer (birthday_brochure). */
+      /**
+       * Hand over after the answer: a `birthday_brochure` answer, or a burst
+       * whose other parts hand over (D1a). The holding line follows the
+       * answer; the brochure, when the plan says so, between them.
+       */
       thenHandover: AiHandoverPlan | null;
       mayAutoHandle: boolean;
     }
@@ -71,6 +95,7 @@ export type GateVerdict =
       reason:
         'OK' | 'OVERRULED_HANDOVER' | 'MODEL_HANDOVER' | 'IDENTITY_SECOND_ASK' | 'CAP_EPISODE';
       intent: AiIntent;
+      intents: AiIntent[];
       language: AiReplyLanguage;
       plan: AiHandoverPlan;
       /**
@@ -88,7 +113,7 @@ export type GateVerdict =
       droppedHoldingRule?: string;
       branchNamed: AiBranchKey | null;
     }
-  | { action: 'silent'; reason: AiOutcomeReason; rule?: string; intent: AiIntent | null };
+  | { action: 'silent'; reason: AiOutcomeReason; rule?: string; intent: AiIntent | null; intents: AiIntent[] };
 
 export interface GateInput {
   decision: AiDecision;
@@ -97,11 +122,6 @@ export interface GateInput {
   episode: EpisodeState;
 }
 
-const silent = (reason: AiOutcomeReason, intent: AiIntent | null, rule?: string): GateVerdict =>
-  rule === undefined
-    ? { action: 'silent', reason, intent }
-    : { action: 'silent', reason, intent, rule };
-
 function isReplyLanguage(lang: string): lang is AiReplyLanguage {
   return (AI_REPLY_LANGUAGES as readonly string[]).includes(lang);
 }
@@ -109,6 +129,7 @@ function isReplyLanguage(lang: string): lang is AiReplyLanguage {
 /** Gates 3, 5 (on the bubbles alone), 6 and 7 for a handover's holding words. */
 function handover(
   d: AiDecision,
+  intents: AiIntent[],
   language: AiReplyLanguage,
   plan: AiHandoverPlan,
   reason: Extract<GateVerdict, { action: 'handover' }>['reason'],
@@ -127,7 +148,8 @@ function handover(
   return {
     action: 'handover',
     reason,
-    intent: d.intent,
+    intent: intents[0]!,
+    intents,
     language,
     plan,
     holdingBubbles: failed ? [] : [...bubbles],
@@ -142,74 +164,132 @@ export function episodeCapReached(episode: EpisodeState): boolean {
   );
 }
 
-export function applyGates({ decision: d, grounding, episode }: GateInput): GateVerdict {
-  const rule = INTENT_TABLE[d.intent];
+/** One part of the burst, as the table reads it for this episode. */
+type Part =
+  | { intent: AiIntent; kind: 'answer'; rule: Extract<AiIntentRule, { action: 'answer' }> }
+  | { intent: AiIntent; kind: 'handover'; plan: AiHandoverPlan; answerAlongside: boolean; secondAsk: boolean };
+type AiIntentRule = (typeof INTENT_TABLE)[AiIntent];
 
-  // `other` is silence whatever the model says.
-  if (rule.action === 'silent') return silent('INTENT_SILENT', d.intent);
+function partOf(intent: AiIntent, episode: EpisodeState): Part | null {
+  const rule = INTENT_TABLE[intent];
+  if (rule.action === 'silent') return null;
+  if (rule.action === 'handover') {
+    return { intent, kind: 'handover', plan: rule.plan, answerAlongside: rule.answerAlongside, secondAsk: false };
+  }
+  // §B.4: the identity question is answered in persona once; a second ask is a handover.
+  if (intent === 'identity_question' && episode.identityAnswered) {
+    return { intent, kind: 'handover', plan: IDENTITY_SECOND_ASK, answerAlongside: true, secondAsk: true };
+  }
+  return { intent, kind: 'answer', rule };
+}
+
+export function applyGates({ decision: d, grounding, episode }: GateInput): GateVerdict {
+  const labelled = intentPartsOf(d);
+  const primary = labelled[0]!;
+  const silent = (reason: AiOutcomeReason, rule?: string): GateVerdict =>
+    rule === undefined
+      ? { action: 'silent', reason, intent: primary, intents: labelled }
+      : { action: 'silent', reason, intent: primary, intents: labelled, rule };
+
+  // `other` as the primary is silence whatever the model says (spam, an
+  // injection, no question). An `other` beside real parts is dropped.
+  if (INTENT_TABLE[primary].action === 'silent') return silent('INTENT_SILENT');
+  const parts = labelled.map((i) => partOf(i, episode)).filter((p): p is Part => p !== null);
+  const intents = parts.map((p) => p.intent);
 
   // Gate 3: only th, en, ru are ever answered or held (G8).
-  if (!isReplyLanguage(d.language)) return silent('LANGUAGE', d.intent);
+  if (!isReplyLanguage(d.language)) return silent('LANGUAGE');
   const language = d.language;
 
-  // A handover intent is a handover, whatever action the model chose: the
+  const answers = parts.filter((p): p is Extract<Part, { kind: 'answer' }> => p.kind === 'answer');
+  const handovers = parts.filter((p): p is Extract<Part, { kind: 'handover' }> => p.kind === 'handover');
+  const lead = handovers[0] ?? null;
+
+  // Every part hands over: a handover whatever action the model chose — the
   // server overrules an `answer`, and a model `silent` still hands over,
   // because handing over is the safe direction (§B.3).
-  if (rule.action === 'handover') {
-    return handover(d, language, rule.plan, d.action === 'answer' ? 'OVERRULED_HANDOVER' : 'OK');
+  if (answers.length === 0 && lead) {
+    const reason = lead.secondAsk ? 'IDENTITY_SECOND_ASK' : d.action === 'answer' ? 'OVERRULED_HANDOVER' : 'OK';
+    return handover(d, intents, language, lead.plan, reason);
   }
 
-  // From here the intent's action is `answer`.
-  if (d.intent === 'identity_question' && episode.identityAnswered) {
-    return handover(d, language, IDENTITY_SECOND_ASK, 'IDENTITY_SECOND_ASK');
+  // A person-first part (a complaint, an upset message, a request for a
+  // person): the holding line stands alone, and the model's bubbles — answers
+  // to the other parts — never ride it.
+  const alone = handovers.find((h) => !h.answerAlongside);
+  if (alone) {
+    return handover({ ...d, bubbles: [] }, intents, language, alone.plan, d.action === 'answer' ? 'OVERRULED_HANDOVER' : 'OK');
   }
-  if (d.action === 'silent') return silent('MODEL_SILENT', d.intent);
-  // The model wants a person on an answerable intent: honour it (safe direction).
-  if (d.action === 'handover') return handover(d, language, CAP_HANDOVER, 'MODEL_HANDOVER');
+
+  // From here at least one part is answerable, and any hand-over part is
+  // answered alongside.
+  if (d.action === 'silent') return silent('MODEL_SILENT');
+  // The model wants a person: honour it (safe direction), with the hand-over
+  // part's own plan when the burst has one.
+  if (d.action === 'handover') {
+    return lead
+      ? handover(d, intents, language, lead.plan, 'OK')
+      : handover(d, intents, language, CAP_HANDOVER, 'MODEL_HANDOVER');
+  }
 
   // Gate 2: sure.
-  if (d.certainty !== 'sure') return silent('UNSURE', d.intent);
+  if (d.certainty !== 'sure') return silent('UNSURE');
 
   // §D.4 guard 3: the episode cap turns a would-be answer into a handover.
-  if (episodeCapReached(episode))
-    return handover({ ...d, bubbles: [] }, language, CAP_HANDOVER, 'CAP_EPISODE');
+  if (episodeCapReached(episode)) {
+    return handover({ ...d, bubbles: [] }, intents, language, lead?.plan ?? CAP_HANDOVER, 'CAP_EPISODE');
+  }
 
-  // Gate 4: a factual intent cites at least one known key of its own topic.
+  // Gate 4: every cited key is one the prompt offered, and each factual part
+  // cites at least one key of its own topic.
   const cited: GroundingSource[] = [];
   for (const key of d.grounding) {
     const source = grounding.get(key);
-    if (!source) return silent('GROUNDING_UNKNOWN', d.intent);
+    if (!source) return silent('GROUNDING_UNKNOWN');
     cited.push(source);
   }
-  if (rule.groundingTopics !== null) {
-    if (cited.length === 0) return silent('GROUNDING_MISSING', d.intent);
-    const topics = rule.groundingTopics;
-    if (!cited.some((s) => topics.includes(s.topic))) return silent('GROUNDING_TOPIC', d.intent);
+  for (const part of answers) {
+    const topics = part.rule.groundingTopics;
+    if (topics === null) continue;
+    if (cited.length === 0) return silent('GROUNDING_MISSING');
+    if (!cited.some((s) => topics.includes(s.topic))) return silent('GROUNDING_TOPIC');
   }
 
-  // Gate 7, then 6, then 5.
+  // Gate 7, then 6, then 5, over the whole reply.
   const shape = bubbleGuard(d.bubbles, 1);
-  if (!shape.ok) return silent(shape.reason, d.intent, shape.rule);
+  if (!shape.ok) return silent(shape.reason, shape.rule);
   const persona = personaGuard(d.bubbles);
-  if (!persona.ok) return silent(persona.reason, d.intent, persona.rule);
+  if (!persona.ok) return silent(persona.reason, persona.rule);
   const trace = traceabilityGuard(
     d.bubbles,
     cited.map((s) => s.text),
   );
-  if (!trace.ok) return silent(trace.reason, d.intent, trace.rule);
+  if (!trace.ok) return silent(trace.reason, trace.rule);
 
+  // The hand-over after the answer: the burst's hand-over part, else the
+  // answer's own (birthday_brochure).
+  const thenHandover: AiHandoverPlan | null =
+    lead?.plan ?? answers.find((p) => p.rule.thenHandover !== null)?.rule.thenHandover ?? null;
+  const birthday = intents.some((i) => BIRTHDAY_INTENTS.has(i));
   return {
     action: 'answer',
     reason: 'OK',
-    intent: d.intent,
+    intent: primary,
+    intents,
     language,
     bubbles: [...d.bubbles],
     groundingKeys: cited.map((s) => s.key),
-    sendBrochure: rule.thenHandover?.brochure ?? false,
+    sendBrochure: thenHandover?.brochure ?? false,
+    // The park question only on a general enquiry with no branch, never
+    // beside a birthday, and never when a colleague is about to take over.
     askBranch:
-      d.askBranch && rule.general && !episode.threadHasBranch && !BIRTHDAY_INTENTS.has(d.intent),
+      d.askBranch &&
+      answers.some((p) => p.rule.general) &&
+      !episode.threadHasBranch &&
+      !birthday &&
+      thenHandover === null,
     branchNamed: d.branchNamed,
-    thenHandover: rule.thenHandover,
-    mayAutoHandle: rule.mayAutoHandle,
+    thenHandover,
+    mayAutoHandle: thenHandover === null && answers.every((p) => p.rule.mayAutoHandle),
   };
 }

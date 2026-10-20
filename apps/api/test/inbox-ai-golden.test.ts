@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -37,31 +37,46 @@ import {
 
 const FIXTURES = join(dirname(fileURLToPath(import.meta.url)), 'fixtures', 'inbox-ai');
 
+const recorded = (id: string): boolean => existsSync(join(FIXTURES, `${id}.json`));
+
 function recording(id: string): RecordedGolden {
   return JSON.parse(readFileSync(join(FIXTURES, `${id}.json`), 'utf8')) as RecordedGolden;
 }
 
+/** The command that records a golden (by hand, with the key; never in CI). */
+const recordCommand = (ids: readonly string[]) => `pnpm --filter @oto/api ai:eval --record --only ${ids.join(',')}`;
+
 describe('the recorded goldens: real model responses through the real parser and gates', () => {
   const knowledge = fixtureKnowledge();
 
+  it('every golden has a recording', () => {
+    // A golden added without its fixture is named here with the command that
+    // records it; its replay below is skipped, not failed, until then.
+    const missing = LIVE_GOLDENS.filter((g) => !recorded(g.id)).map((g) => g.id);
+    expect(missing, `not recorded yet: ${recordCommand(missing)}`).toEqual([]);
+  });
+
   it('the fixtures were recorded against this fixture knowledge and this persona', () => {
+    // A changed KB or persona does not fail the replay by itself (the gates
+    // decide that), but it means the recording no longer shows what the
+    // model would say today: re-record with `ai:eval --record`. Every stale
+    // golden is named at once, with the command.
+    const stale: string[] = [];
     for (const g of LIVE_GOLDENS) {
+      if (!recorded(g.id)) continue;
       const r = recording(g.id);
       expect(r.turns, g.id).toHaveLength(g.turns.length);
-      // A changed KB or persona does not fail the replay by itself (the gates
-      // decide that), but it means the recording no longer shows what the
-      // model would say today: re-record with `ai:eval --record`.
-      expect({ id: g.id, kb: r.kbVersion, persona: r.personaVersion }).toEqual({
-        id: g.id,
-        kb: knowledge.version,
-        persona: PERSONA_VERSION,
-      });
+      if (r.kbVersion !== knowledge.version || r.personaVersion !== PERSONA_VERSION) stale.push(g.id);
     }
+    expect(
+      stale,
+      `recorded against another knowledge or persona (now ${knowledge.version} / ${PERSONA_VERSION}): ${recordCommand(stale)}`,
+    ).toEqual([]);
   });
 
   for (const golden of LIVE_GOLDENS) {
     for (const [i, turn] of golden.turns.entries()) {
-      it(`${golden.id}.${i + 1} ${golden.setup}: ${JSON.stringify(turn.says)} -> ${turn.expect.action} ${turn.expect.intent ?? ''}`, async () => {
+      it.skipIf(!recorded(golden.id))(`${golden.id}.${i + 1} ${golden.setup}: ${JSON.stringify(turn.says)} -> ${turn.expect.action} ${turn.expect.intent ?? ''}`, async () => {
         const r = recording(golden.id);
         const rec = r.turns[i]!;
         expect(rec.says).toBe(turn.says);

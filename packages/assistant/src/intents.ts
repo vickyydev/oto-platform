@@ -106,6 +106,9 @@ export interface AiHandoverPlan {
   brochure: boolean;
 }
 
+/** The most parts one burst is read as (test night 2026-10-21, D1a). */
+export const MAX_INTENTS = 4;
+
 export type AiIntentRule =
   | {
       action: 'answer';
@@ -122,7 +125,18 @@ export type AiIntentRule =
       /** The thread may be auto-handled after this answer (G4). */
       mayAutoHandle: boolean;
     }
-  | { action: 'handover'; plan: AiHandoverPlan }
+  | {
+      action: 'handover';
+      plan: AiHandoverPlan;
+      /**
+       * In a burst with several parts (test night 2026-10-21, D1a), the
+       * answerable parts are answered first and this holding line follows.
+       * False for the person-first intents — a complaint, an upset message, a
+       * request for a person — whose holding line stands alone (§B.4: "a
+       * complaint gets the holding line only").
+       */
+      answerAlongside: boolean;
+    }
   | { action: 'silent' };
 
 const answer = (
@@ -140,10 +154,16 @@ const handover = (
   templateKey: AiHoldingTemplateKey,
   route: AiRoute,
   brochure = false,
+  answerAlongside = true,
 ): AiIntentRule => ({
   action: 'handover',
   plan: { templateKey, route, brochure },
+  answerAlongside,
 });
+
+/** A hand-over whose holding line stands alone, whatever else the burst asked. */
+const alone = (templateKey: AiHoldingTemplateKey, route: AiRoute): AiIntentRule =>
+  handover(templateKey, route, false, false);
 
 /** PLAN §B.2, row for row. */
 export const INTENT_TABLE: Readonly<Record<AiIntent, AiIntentRule>> = {
@@ -166,19 +186,34 @@ export const INTENT_TABLE: Readonly<Record<AiIntent, AiIntentRule>> = {
   events_groups: handover('handover_events', 'birthdays'),
   discount_negotiation: handover('handover_general', 'keep'),
   custom_request: handover('handover_general', 'keep'),
-  complaint_onsite: handover('handover_complaint_onsite', 'general'),
-  complaint_online: handover('handover_complaint_online', 'marketing'),
+  complaint_onsite: alone('handover_complaint_onsite', 'general'),
+  complaint_online: alone('handover_complaint_online', 'marketing'),
   influencer_marketing: handover('handover_marketing', 'marketing'),
   nanny_booking: handover('handover_general', 'general'),
   lost_item: handover('handover_lost_found', 'general'),
   special_tickets: handover('handover_events', 'birthdays'),
-  human_requested: handover('handover_general', 'keep'),
+  human_requested: alone('handover_general', 'keep'),
   // Answered in persona the first time; a second ask in the episode is a
   // handover (§B.4). The gate reads `episode.identityAnswered` for that.
   identity_question: answer(null),
-  emotional_or_unclear: handover('handover_general', 'keep'),
+  emotional_or_unclear: alone('handover_general', 'keep'),
   other: { action: 'silent' },
 };
+
+/**
+ * The parts of a decision, the primary first and no intent twice (test night
+ * 2026-10-21, D1a). `intent` is the primary; `intents` lists every part the
+ * model read in the open messages, its first entry the primary again. A
+ * decision recorded before `intents` existed reads as its one intent.
+ */
+export function intentPartsOf(d: { intent: AiIntent; intents?: readonly AiIntent[] | undefined }): AiIntent[] {
+  const out: AiIntent[] = [];
+  for (const part of [d.intent, ...(d.intents ?? [])]) {
+    if (out.length === MAX_INTENTS) break;
+    if (!out.includes(part)) out.push(part);
+  }
+  return out;
+}
 
 /** The handover an answered identity question becomes on its second ask (§B.4). */
 export const IDENTITY_SECOND_ASK: AiHandoverPlan = {
