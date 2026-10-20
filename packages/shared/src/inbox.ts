@@ -430,7 +430,22 @@ export const InboxMarkReadSchema = z.object({
   audited: z.boolean(),
 });
 
+/**
+ * Whose conversations the dashboard's numbers are over (SCRUM-220 test
+ * night, R9): the operator's whole inbox, the viewer's teams and parks, or
+ * only the threads the viewer holds. Every number on the card, the average
+ * response time included, is over this population — two viewers see two
+ * averages, and the card can say whose.
+ */
+export const INBOX_DASHBOARD_SCOPES = ['mine', 'team', 'all'] as const;
+export type InboxDashboardScope = (typeof INBOX_DASHBOARD_SCOPES)[number];
+
+/** Which conversations By category counts: the active ones (the Active card's population), or every status. */
+export const INBOX_DASHBOARD_POPULATIONS = ['active', 'all'] as const;
+
 export const InboxDashboardSchema = z.object({
+  /** Whose conversations every number below is over. */
+  scope: z.enum(INBOX_DASHBOARD_SCOPES),
   /** Conversations started today (Bangkok day), within what the viewer can see. */
   newToday: z.number().int().min(0),
   /** Active conversations a person still owes an answer. */
@@ -439,7 +454,14 @@ export const InboxDashboardSchema = z.object({
   active: z.number().int().min(0),
   /** Mean of first staff response less the conversation's start, in seconds; null when nothing was answered. Opening hours are ignored (owner Q25). */
   averageFirstResponseSeconds: z.number().min(0).nullable(),
-  /** Every visible conversation, any status, by category (:1121-1125). */
+  /**
+   * The population By category counts: `active`, the Active card's (SCRUM-220
+   * test night, R3). The prototype counted every scoped conversation whatever
+   * its status (:1121-1125), which read as 15 under the categories beside an
+   * Active of 12.
+   */
+  population: z.enum(INBOX_DASHBOARD_POPULATIONS),
+  /** Active visible conversations by category; the three add up to `active`. */
   byCategory: z.object({ birthdays: z.number().int(), general: z.number().int(), marketing: z.number().int() }),
   /** The Bangkok day "today" means, `YYYY-MM-DD`. */
   day: z.string(),

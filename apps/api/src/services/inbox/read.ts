@@ -631,15 +631,44 @@ export async function markConversationRead(
 // --- The dashboard -----------------------------------------------------------------------
 
 /**
+ * Whose conversations the dashboard's numbers are over (SCRUM-220 test
+ * night, R9): every number, the average response time included, is computed
+ * over `visibleConversationsSql`, so two viewers see two averages. The label
+ * says which population that is — the operator's whole inbox (`all`), the
+ * viewer's teams and parks (`team`), or, for a reader in no inbox team at
+ * all, only the threads they hold (`mine`).
+ */
+export async function dashboardScopeOf(db: Db, viewer: InboxViewer): Promise<InboxDashboard['scope']> {
+  if (viewer.scope.operatorWide) return 'all';
+  if (viewer.scope.branchIds.length > 0) return 'team';
+  if (viewer.scope.departmentIds.length > 0) {
+    const [inATeam] = await db
+      .select({ one: sql<number>`1` })
+      .from(s.team)
+      .where(and(eq(s.team.operatorId, viewer.operatorId), inArray(s.team.departmentId, [...viewer.scope.departmentIds])))
+      .limit(1);
+    if (inATeam) return 'team';
+  }
+  return 'mine';
+}
+
+/**
  * The metric cards (plan §3.3), all within what the viewer can see. "Needs
  * manager" and "unassigned" are gone under the IT Brief; the BEO card waits on
  * owner Q23. The average response is computed (the prototype's is a constant
  * per role, :1110-1116): first staff response less the conversation's start,
  * opening hours ignored (owner Q25).
+ *
+ * By category counts the ACTIVE conversations — the same population as the
+ * Active card — and says so (`population`). The prototype counted every
+ * scoped conversation whatever its status (:1121-1125), which put 15 under
+ * the categories beside an Active of 12 on the test night (SCRUM-220, R3).
  */
 export async function inboxDashboard(db: Db, viewer: InboxViewer, now: Date): Promise<InboxDashboard> {
   const day = inboxToday(now);
   const start = dayStartSql(day);
+  const activeIn = (category: 'birthdays' | 'general' | 'marketing'): SQL =>
+    sql`count(*) filter (where ${s.conversation.status} = 'active' and ${s.conversation.category} = ${category})::int`;
   const [row] = await db
     .select({
       newToday: sql<number>`count(*) filter (where ${s.conversation.createdAt} >= ${start})::int`,
@@ -649,19 +678,21 @@ export async function inboxDashboard(db: Db, viewer: InboxViewer, now: Date): Pr
       averageFirstResponseSeconds: sql<
         number | null
       >`avg(extract(epoch from (${s.conversation.firstResponseAt} - ${s.conversation.createdAt}))) filter (where ${s.conversation.firstResponseAt} is not null)`,
-      birthdays: sql<number>`count(*) filter (where ${s.conversation.category} = 'birthdays')::int`,
-      general: sql<number>`count(*) filter (where ${s.conversation.category} = 'general')::int`,
-      marketing: sql<number>`count(*) filter (where ${s.conversation.category} = 'marketing')::int`,
+      birthdays: activeIn('birthdays').mapWith(Number),
+      general: activeIn('general').mapWith(Number),
+      marketing: activeIn('marketing').mapWith(Number),
     })
     .from(s.conversation)
     .where(visibleConversationsSql(viewer));
   const avg = row?.averageFirstResponseSeconds;
   return {
+    scope: await dashboardScopeOf(db, viewer),
     newToday: Number(row?.newToday ?? 0),
     unanswered: Number(row?.unanswered ?? 0),
     handledToday: Number(row?.handledToday ?? 0),
     active: Number(row?.active ?? 0),
     averageFirstResponseSeconds: avg === null || avg === undefined ? null : Math.max(0, Math.round(Number(avg))),
+    population: 'active',
     byCategory: {
       birthdays: Number(row?.birthdays ?? 0),
       general: Number(row?.general ?? 0),

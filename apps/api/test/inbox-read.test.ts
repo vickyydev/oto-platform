@@ -636,20 +636,22 @@ describe('reading, and the sampled read audit (plan §3.6)', () => {
 });
 
 describe('the dashboard', () => {
-  it('counts within what the viewer sees, by the shared rules and the Bangkok day', async () => {
+  it('counts within what the viewer sees, by the shared rules and the Bangkok day; By category counts the Active population, and the card says whose numbers they are', async () => {
     const facts = await factsOf();
     const day = isoDateInTz(new Date(), INBOX_DAY_TIMEZONE);
     const dayStart = new Date(`${day}T00:00:00+07:00`).getTime();
-    const check = async (who: string, ids: string[]) => {
+    const check = async (who: string, scope: InboxDashboard['scope'], ids: string[]) => {
       const mine = facts.filter((f) => ids.includes(f.id));
       const answered = mine.filter((f) => f.firstResponseAt);
+      const active = mine.filter((f) => f.status === 'active');
       const res = await get<InboxDashboard>(who, '/inbox/dashboard');
       expect(res.status).toBe(200);
       expect(res.body).toEqual({
+        scope,
         newToday: mine.filter((f) => f.createdAt.getTime() >= dayStart).length,
         unanswered: mine.filter((f) => isUnanswered(f)).length,
         handledToday: mine.filter((f) => f.status === 'handled' && f.handledAt!.getTime() >= dayStart).length,
-        active: mine.filter((f) => f.status === 'active').length,
+        active: active.length,
         averageFirstResponseSeconds:
           answered.length === 0
             ? null
@@ -657,19 +659,33 @@ describe('the dashboard', () => {
                 answered.reduce((sum, f) => sum + (f.firstResponseAt!.getTime() - f.createdAt.getTime()) / 1000, 0) /
                   answered.length,
               ),
+        // SCRUM-220 test night, R3: the same population as Active, not every scoped thread (the prototype's :1121-1125).
+        population: 'active',
         byCategory: {
-          birthdays: mine.filter((f) => f.category === 'birthdays').length,
-          general: mine.filter((f) => f.category === 'general').length,
-          marketing: mine.filter((f) => f.category === 'marketing').length,
+          birthdays: active.filter((f) => f.category === 'birthdays').length,
+          general: active.filter((f) => f.category === 'general').length,
+          marketing: active.filter((f) => f.category === 'marketing').length,
         },
         day,
       });
+      expect(res.body.byCategory.birthdays + res.body.byCategory.general + res.body.byCategory.marketing).toBe(res.body.active);
     };
-    await check('gm', Object.values(conv));
-    await check('bdayTh', ['demo-01', 'demo-02', 'demo-03', 'demo-04'].map((k) => conv[k]!));
-    await check('coordinator', [conv['demo-01']!]);
+    // R9: the operator-wide GM's numbers are the whole inbox's; a team member's are their teams'; the
+    // manual-only coordinator, in no inbox team, sees — and averages — only what she holds.
+    await check('gm', 'all', Object.values(conv));
+    await check('bdayTh', 'team', ['demo-01', 'demo-02', 'demo-03', 'demo-04'].map((k) => conv[k]!));
+    await check('chalongManager', 'team', ['demo-04', 'demo-06'].map((k) => conv[k]!));
+    await check('coordinator', 'mine', [conv['demo-01']!]);
     const all = (await get<InboxDashboard>('gm', '/inbox/dashboard')).body;
-    expect(all.byCategory).toEqual({ birthdays: 4, general: 4, marketing: 2 });
+    const demoIds = Object.values(conv);
+    const demoActive = facts.filter((f) => demoIds.includes(f.id) && f.status === 'active');
+    expect(all.byCategory).toEqual({
+      birthdays: demoActive.filter((f) => f.category === 'birthdays').length,
+      general: demoActive.filter((f) => f.category === 'general').length,
+      marketing: demoActive.filter((f) => f.category === 'marketing').length,
+    });
+    // The demo data holds three handled threads, so the active population is smaller than every thread's.
+    expect(demoActive.length).toBe(demoIds.length - 3);
     expect(all.unanswered).toBe(5);
   });
 });
@@ -710,18 +726,20 @@ describe('the viewer and the templates', () => {
   it('templates: the active rows, optionally one language', async () => {
     const all = await get<{ templates: Array<{ key: string; language: string; needsTranslation: boolean }> }>('bdayTh', '/inbox/templates');
     expect(all.status).toBe(200);
-    // Nine keys (handover_general joined with SCRUM-590) in three languages.
-    expect(all.body.templates).toHaveLength(27);
+    // Ten keys (handover_general joined with SCRUM-590, follow_up with the SCRUM-220 test night) in three languages.
+    expect(all.body.templates).toHaveLength(30);
+    expect(all.body.templates.filter((t) => t.key === 'follow_up').map((t) => t.language).sort()).toEqual(['en', 'ru', 'th']);
     const th = await get<{ templates: Array<{ language: string; needsTranslation: boolean }> }>('bdayTh', '/inbox/templates?language=th');
-    expect(th.body.templates).toHaveLength(9);
-    expect(th.body.templates.every((t) => t.language === 'th' && t.needsTranslation)).toBe(true);
+    expect(th.body.templates).toHaveLength(10);
+    // Thai in its own words since the test night: nothing waits for a translator.
+    expect(th.body.templates.every((t) => t.language === 'th' && !t.needsTranslation)).toBe(true);
     // An archived template is gone from the composer.
     const [one] = await ctx.db
       .select({ id: s.template.id })
       .from(s.template)
       .where(and(eq(s.template.operatorId, oto), eq(s.template.key, 'welcome'), eq(s.template.language, 'ru')));
     await ctx.db.update(s.template).set({ archivedAt: new Date() }).where(inArray(s.template.id, [one!.id]));
-    expect((await get<{ templates: unknown[] }>('bdayTh', '/inbox/templates')).body.templates).toHaveLength(26);
+    expect((await get<{ templates: unknown[] }>('bdayTh', '/inbox/templates')).body.templates).toHaveLength(29);
   });
 });
 
