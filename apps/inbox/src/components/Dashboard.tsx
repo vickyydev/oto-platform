@@ -26,8 +26,8 @@ export function Dashboard({
     return <p className="mt-5 rounded-lg bg-rose-50 px-3 py-2 text-[12.5px] text-rose-700 ring-1 ring-rose-200">{error}</p>;
   }
   const v = (n: number | undefined) => (n === undefined ? '—' : n);
-  // Whose average it is (test night U9): the api lane's `scope`, read optionally.
-  const scope = data ? responseScopeLabel((data as { scope?: unknown }).scope) : null;
+  // Whose average it is (test night U9): the api's `scope`; an api without one leaves the card as before.
+  const scope = data ? responseScopeLabel(data.scope) : null;
   return (
     <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3" aria-busy={data === null}>
       <MetricCard icon={MessageSquare} label="New today" value={v(data?.newToday)} tint="text-blue-600 bg-blue-50" />

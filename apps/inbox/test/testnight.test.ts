@@ -408,12 +408,16 @@ describe('the wording (U9)', () => {
       active: 0,
       handledToday: 0,
       averageFirstResponseSeconds: 252,
+      scope: 'mine',
+      population: 'active',
       byCategory: { birthdays: 0, general: 0, marketing: 0 },
     };
     const card = (d: DashboardData) =>
       renderToStaticMarkup(createElement(Dashboard, { data: d, error: null, unansweredOnly: false, onToggleUnanswered: noop }));
-    expect(card({ ...data, scope: 'mine' } as DashboardData)).toContain('your average');
-    expect(card(data)).not.toContain('average</span>');
+    expect(card(data)).toContain('your average');
+    expect(card({ ...data, scope: 'team' })).toContain('the team’s average');
+    // An api that says no scope (an older deployment) leaves the card as it was.
+    expect(card({ ...data, scope: undefined } as unknown as DashboardData)).not.toContain('average</span>');
   });
   it('marks a template still in English in one way', () => {
     expect(renderToStaticMarkup(createElement(TranslationNote))).toContain(TRANSLATION_PENDING);
