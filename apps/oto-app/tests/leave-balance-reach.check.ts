@@ -23,6 +23,11 @@
 //      leave balances) answer only its own row, an empty list without an
 //      employee record; a manager - all-branch or branch-scoped - keeps the
 //      whole branch. The rota's own-balance read still finds its row.
+//   5. The time-events list (/api/time-events) is fenced the same way: a
+//      staff session lists only its own events (a colleague's are absent),
+//      asking for a colleague's is the 403 "Access denied to this employee",
+//      and with no employee record the list is empty; a manager lists the
+//      branch.
 //
 // Usage, from apps/oto-app, with DATABASE_URL naming a database whose otoapp
 // schema the app's migrator has built (CI's OTO App job runs exactly this):
@@ -109,6 +114,14 @@ const empNone = await employee(null, "no-branch");
 const selfX = await employee(x, "self-x", staffX);
 const staffNoRecord = await user("staff", "staff-norec", x);
 const managerX = await user("manager", "manager-x", x);
+// One clock-in each for staff X's own record and a branch-X colleague.
+for (const [emp, hour] of [[selfX, "08"], [empX, "09"]] as const) {
+  await q(
+    `insert into time_events (tenant_id, employee_id, branch_id, event_type, event_time, auth_method)
+     values ($1, $2, $3, 'IN', $4, 'PIN')`,
+    [tenant, emp, x, `2026-10-01T${hour}:00:00Z`],
+  );
+}
 
 // ─── The server ──────────────────────────────────────────────────────────────
 
@@ -309,6 +322,38 @@ try {
     for (const path of [`/api/leave-balances?branchId=${x}`, `/api/all-leave-balances?branchId=${x}`]) {
       const res = await get(path, staff);
       assert.ok(ids(res).includes(own), `${path}: ${show(res)}`);
+    }
+  });
+
+  console.log("5. the time-events list, fenced to the person (SCRUM-595):");
+  const TE = `/api/time-events?branchId=${x}&dateFrom=2026-10-01T00:00:00Z&dateTo=2026-10-02T00:00:00Z`;
+  const eventIds = (a: Answer) =>
+    [...new Set((a.body as { events: Array<{ employeeId: string }> }).events.map((e) => e.employeeId))].sort();
+  await check("staff lists only its own time events; a colleague's are absent", async () => {
+    for (const path of [TE, `${TE}&employeeId=${selfX}`]) {
+      const res = await get(path, staff);
+      assert.equal(res.status, 200, show(res));
+      assert.deepEqual(eventIds(res), [selfX], show(res));
+      assert.equal((res.body as { total: number }).total, 1, show(res));
+    }
+  });
+  await check("staff asking for a colleague's time events is the 403", async () => {
+    await refused(`${TE}&employeeId=${empX}`, staff, EMPLOYEE_DENIED);
+  });
+  await check("staff with no employee record lists none", async () => {
+    const res = await get(TE, staffNone);
+    assert.equal(res.status, 200, show(res));
+    assert.deepEqual((res.body as { events: unknown[]; total: number }).events, [], show(res));
+    assert.equal((res.body as { total: number }).total, 0, show(res));
+    await refused(`${TE}&employeeId=${empX}`, staffNone, EMPLOYEE_DENIED);
+  });
+  await check("a manager (all-branch and branch-scoped) lists the branch", async () => {
+    for (const cookie of [manager, managerAtX]) {
+      const res = await get(TE, cookie);
+      assert.equal(res.status, 200, show(res));
+      assert.deepEqual(eventIds(res), [empX, selfX].sort(), show(res));
+      const one = await get(`${TE}&employeeId=${empX}`, cookie);
+      assert.deepEqual(eventIds(one), [empX], show(one));
     }
   });
 

@@ -12031,12 +12031,18 @@ OTO Company Limited`,
         branchIdsFilter = accessibleBranchIds;
       }
 
-      // Staff can only see their own time events (if linked to employee)
-      const employeeFilter = employeeId;
-      if (user.role === 'staff') {
-        // For staff, only show their own events if we had employee-user linking
-        // For now, staff can view time events for their branches
+      // A staff session lists only its own time events (SCRUM-595): fenced to
+      // the person, its own employee record resolved as Today resolves it;
+      // another person's is refused, and with no record the list is empty.
+      // Manager and admin sessions keep the branch-scoped list.
+      const fence = await personFence(req.userWithAccess ?? user, tenantId);
+      if (fence.fenced && employeeId && !fenceAllows(fence, employeeId)) {
+        return res.status(403).json(EMPLOYEE_DENIED);
       }
+      if (fence.fenced && !fence.selfEmployeeId) {
+        return res.json({ events: [], total: 0, limit, offset });
+      }
+      const employeeFilter = fence.fenced ? (fence.selfEmployeeId ?? undefined) : employeeId;
 
       const employeeEvents = branchIdsFilter && branchIdsFilter.length === 0
         ? []
@@ -20633,8 +20639,6 @@ OTO Company Limited`,
       const user = req.user as UserWithBranchAccess;
       const tenantId = await resolveTenantId(user.tenantId);
       const requestedBranchId = req.query.branchId as string | undefined;
-      const myOnly = req.query.myOnly === 'true';
-    void myOnly;
       
       // Enforce effective branch access, including policy-derived advisor access.
       let effectiveBranchId: string | null = null;
