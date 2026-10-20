@@ -367,7 +367,9 @@ describe('as the person (§B.2, §F.3)', () => {
     );
     // Closed by the race on the remaining wall time (1 s here), not by the stall (never).
     expect(Date.now() - started).toBeLessThan(10_000);
-    expect(view).toMatchObject({ state: 'failed', reason: 'WALL_TIME', answer: INTERNAL_LINES.tooMuchDigging.en });
+    // No screen was reached, so the digging line stands alone as a sentence.
+    expect(view).toMatchObject({ state: 'failed', reason: 'WALL_TIME', answer: INTERNAL_LINES.tooMuchDiggingNoLink.en, links: [] });
+    expect(view.answer).not.toMatch(/:\s*$/);
     expect((await toolRows(w.ctx.db, view.id)).map((r) => [r.status, r.code])).toEqual([[null, 'WALL_TIME']]);
     expect(fake.remaining).toBe(1);
   }, 30_000);
@@ -580,8 +582,20 @@ describe('switches, caps and the breaker (§E.2)', () => {
   it('the wall time ends the ask with the fixed line before the next tool runs', async () => {
     const fake = script(w, tool('me.whoami', {}, { latencyMs: 50_000 }), final('never'));
     const res = await ask(w, receptionCookie, 'Who am I?');
-    expect(res.body).toMatchObject({ state: 'failed', reason: 'WALL_TIME', answer: INTERNAL_LINES.tooMuchDigging.en });
+    // No tool ran, so no screen was gathered: the line stands alone, no colon, and the ask is failed.
+    expect(res.body).toMatchObject({ state: 'failed', reason: 'WALL_TIME', answer: INTERNAL_LINES.tooMuchDiggingNoLink.en, links: [] });
+    expect(res.body.answer).not.toMatch(/:\s*$/);
     expect(await toolRows(w.ctx.db, res.body.id)).toEqual([]);
+    expect(fake.remaining).toBe(1);
+  });
+
+  it('the wall time after a tool already reached a screen: the digging line with its colon, the link under it, link_only', async () => {
+    const fake = script(w, tool('me.whoami', {}), tool('me.whoami', {}, { latencyMs: 50_000 }), final('never'));
+    const res = await ask(w, receptionCookie, 'Who am I, twice?');
+    expect(res.body).toMatchObject({ state: 'link_only', reason: 'WALL_TIME', answer: INTERNAL_LINES.tooMuchDigging.en });
+    expect(res.body.answer).toMatch(/:$/);
+    expect(res.body.links.map((l) => l.key)).toEqual(['launcher.account']);
+    expect((await toolRows(w.ctx.db, res.body.id)).map((r) => r.status)).toEqual([200]);
     expect(fake.remaining).toBe(1);
   });
 

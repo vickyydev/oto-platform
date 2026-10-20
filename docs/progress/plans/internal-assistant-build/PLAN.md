@@ -581,6 +581,10 @@ asker. So:
   the row. In Phase 3 the corrections are a review list under
   `assistant:log:review`. Promoting them into examples for the prompt is a
   later step, needing de-identification exactly as Phase 2's examples do.
+  The launcher offers feedback on `answered`, `refused` and `link_only`
+  asks only: an ask that ended `failed` with nothing to link (a guard
+  refusal or a cut-short ask with no screen reached) stays unrateable, as a
+  provider failure does.
 
 ### D.4 Refusals pass through verbatim
 

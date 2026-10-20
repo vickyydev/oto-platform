@@ -122,11 +122,17 @@ export const INTERNAL_LINES = {
     en: "I couldn't check that figure.",
     ru: 'Не удалось проверить эту цифру.',
   },
-  /** The tool-call cap or the wall time was reached. */
+  /** The tool-call cap or the wall time was reached, and a screen the tools reached follows the colon. */
   tooMuchDigging: {
     th: 'คำถามนี้ต้องค้นมากเกินกว่าที่ควรทำตรงนี้ ดูได้ที่นี่:',
     en: 'This needs more digging than I should do here:',
     ru: 'Здесь нужно копать глубже, чем мне стоит:',
+  },
+  /** The same, when no screen was reached to follow it: a sentence on its own. */
+  tooMuchDiggingNoLink: {
+    th: 'คำถามนี้ต้องค้นมากเกินกว่าที่ควรทำตรงนี้',
+    en: 'This needs more digging than I should do here.',
+    ru: 'Здесь нужно копать глубже, чем мне стоит.',
   },
   /** A provider failure. */
   failed: {

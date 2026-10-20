@@ -802,11 +802,15 @@ function finalOf(
   const gathered = resolveLinks(trace.gathered, caller.effective, caller.auth.operatorId);
   if (!outcome.ok) {
     const digging = outcome.reason === 'TOOL_CAP' || outcome.reason === 'WALL_TIME';
+    const linked = gathered.length > 0;
     return {
-      // "plus the best link" (§D.1 step 4); a provider failure shows no partial figure (Q11).
-      state: digging && gathered.length > 0 ? 'link_only' : 'failed',
+      // "plus the best link" (§D.1 step 4); a provider failure shows no partial figure (Q11). With no
+      // screen reached, the digging line stands as a sentence of its own and the ask is failed.
+      state: digging && linked ? 'link_only' : 'failed',
       reason: outcome.reason,
-      answer: digging ? INTERNAL_LINES.tooMuchDigging[questionLang] : INTERNAL_LINES.failed[questionLang],
+      answer: digging
+        ? (linked ? INTERNAL_LINES.tooMuchDigging : INTERNAL_LINES.tooMuchDiggingNoLink)[questionLang]
+        : INTERNAL_LINES.failed[questionLang],
       links: gathered,
       guardRule: null,
       urlsStripped: 0,
