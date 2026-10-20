@@ -97,11 +97,11 @@ export type MessageProviderStatus = (typeof MESSAGE_PROVIDER_STATUSES)[number];
  * `withdrawn` (SCRUM-590, `0080_inbox_ai`) — a queued AI line a person
  * overtook before it left, never sent, kept so staff see what was held back.
  *
- * The CHECK takes this list from 0080 on; the column's TypeScript type stays
- * `MessageProviderStatus` until the send path that writes `withdrawn` lands
- * (plan round A2, lane b), which widens it to `MessageStoredStatus` together
- * with every api reader of the status (the status callback's rank, the
- * thread read's schema), so no reader meets a value it has no answer for.
+ * The CHECK takes this list from 0080 on, and the column is typed with it
+ * since the send path that writes `withdrawn` landed (plan round A2, lane b),
+ * together with every api reader of the status: the status callback never
+ * moves a withdrawn row, the send claim never takes one, and the thread read
+ * shows it to staff as withdrawn. `withdrawn` is final.
  */
 export const MESSAGE_STORED_STATUSES = [...MESSAGE_PROVIDER_STATUSES, 'withdrawn'] as const;
 export type MessageStoredStatus = (typeof MESSAGE_STORED_STATUSES)[number];
@@ -682,7 +682,7 @@ export const message = inbox.table(
     templateId: uuid('template_id'),
     externalMessageId: text('external_message_id'),
     /** Delivery state of an outbound message; null on an inbound one. */
-    providerStatus: text('provider_status').$type<MessageProviderStatus>(),
+    providerStatus: text('provider_status').$type<MessageStoredStatus>(),
     error: text('error'),
     sentAt: timestamp('sent_at', { withTimezone: true, mode: 'date' }),
     deliveredAt: timestamp('delivered_at', { withTimezone: true, mode: 'date' }),

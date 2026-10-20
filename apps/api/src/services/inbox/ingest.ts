@@ -823,7 +823,12 @@ async function hasPrimary(tx: Exec, operatorId: string, conversationId: string):
 
 const STATUS_RANK = { queued: 0, sent: 1, delivered: 2, read: 3, failed: 1 } as const;
 
-/** Step 8. Moves an outbound message's state forward; never back. Answers 1 when a row moved. */
+/**
+ * Step 8. Moves an outbound message's state forward; never back. Answers 1
+ * when a row moved. A `withdrawn` row (SCRUM-590: an AI line a person
+ * overtook) is final and never moves, nor gains a delivery time: a late or
+ * forged receipt cannot make a line the send path held back look delivered.
+ */
 async function receiveStatus(tx: Tx, c: ReceiveCtx, event: InboundStatusEvent): Promise<number> {
   const [row] = await tx
     .select()
@@ -837,7 +842,7 @@ async function receiveStatus(tx: Tx, c: ReceiveCtx, event: InboundStatusEvent): 
     )
     .limit(1)
     .for('update');
-  if (!row) return 0;
+  if (!row || row.providerStatus === 'withdrawn') return 0;
   const at = capped(event.timestamp, c.now);
   const current = row.providerStatus ?? 'queued';
   const forward =
@@ -869,13 +874,18 @@ async function receiveStatus(tx: Tx, c: ReceiveCtx, event: InboundStatusEvent): 
  */
 export async function dispatchQueued(
   db: Exec,
-  deps: Pick<IngestDeps, 'channels' | 'log' | 'now'>,
+  deps: Pick<IngestDeps, 'channels' | 'storage' | 'log' | 'now'>,
   messageIds: readonly string[],
   input: Pick<IngestInput, 'requestId' | 'actorAccountId'> = {},
 ): Promise<void> {
   await sendAfterCommit(
     db as Db,
-    { channels: deps.channels, ...(deps.log ? { log: deps.log } : {}), ...(deps.now ? { now: deps.now } : {}) },
+    {
+      channels: deps.channels,
+      storage: deps.storage ?? null,
+      ...(deps.log ? { log: deps.log } : {}),
+      ...(deps.now ? { now: deps.now } : {}),
+    },
     messageIds,
     { requestId: input.requestId ?? null, actorAccountId: input.actorAccountId ?? null },
   );

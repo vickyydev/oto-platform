@@ -59746,7 +59746,8 @@
                               "sent",
                               "delivered",
                               "read",
-                              "failed"
+                              "failed",
+                              "withdrawn"
                             ],
                             "nullable": true
                           },
@@ -59954,7 +59955,8 @@
                             "sent",
                             "delivered",
                             "read",
-                            "failed"
+                            "failed",
+                            "withdrawn"
                           ],
                           "nullable": true
                         },

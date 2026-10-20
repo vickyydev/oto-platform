@@ -389,7 +389,12 @@ export const InboxMessageSchema = z.object({
   audioFileId: Uuid.nullable(),
   transcript: z.string().nullable(),
   templateId: Uuid.nullable(),
-  providerStatus: z.enum(['queued', 'sent', 'delivered', 'read', 'failed']).nullable(),
+  /**
+   * The delivery state of an outbound message; null on an inbound one.
+   * `withdrawn` (SCRUM-590): an AI line a person overtook before it left —
+   * never sent, so the customer never saw it; staff see it as held back.
+   */
+  providerStatus: z.enum(['queued', 'sent', 'delivered', 'read', 'failed', 'withdrawn']).nullable(),
   source: z.enum(['channel', 'checkin.contact', 'booking.confirmation']),
   sentAt: Iso.nullable(),
   deliveredAt: Iso.nullable(),

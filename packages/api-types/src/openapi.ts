@@ -25226,7 +25226,7 @@ export interface paths {
                                 /** Format: uuid */
                                 templateId: string | null;
                                 /** @enum {string|null} */
-                                providerStatus: "queued" | "sent" | "delivered" | "read" | "failed" | null;
+                                providerStatus: "queued" | "sent" | "delivered" | "read" | "failed" | "withdrawn" | null;
                                 /** @enum {string} */
                                 source: "channel" | "checkin.contact" | "booking.confirmation";
                                 sentAt: string | null;
@@ -25298,7 +25298,7 @@ export interface paths {
                                 /** Format: uuid */
                                 templateId: string | null;
                                 /** @enum {string|null} */
-                                providerStatus: "queued" | "sent" | "delivered" | "read" | "failed" | null;
+                                providerStatus: "queued" | "sent" | "delivered" | "read" | "failed" | "withdrawn" | null;
                                 /** @enum {string} */
                                 source: "channel" | "checkin.contact" | "booking.confirmation";
                                 sentAt: string | null;

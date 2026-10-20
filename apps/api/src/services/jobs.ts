@@ -839,7 +839,7 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
       intervalSeconds: INBOX_SEND_INTERVAL_S,
       graceSeconds: 300,
       run: async ({ db, log, now }) => ({
-        detail: await runInboxSendJob(db, { channels: inboxChannelsOf(deps), log }, now),
+        detail: await runInboxSendJob(db, { channels: inboxChannelsOf(deps), storage: deps.fileStorage ?? null, log }, now),
       }),
     },
     ...buildOtoAppNightJobs(deps),

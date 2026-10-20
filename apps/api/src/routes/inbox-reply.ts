@@ -107,7 +107,7 @@ export async function inboxReplyRoutes(app: App): Promise<void> {
       } else {
         // Never throws: a send that cannot even be recorded leaves the
         // message queued, and the send job has it.
-        await sendAfterCommit(app.db, { channels: app.inboxChannels, log: req.log }, [done.messageId], {
+        await sendAfterCommit(app.db, { channels: app.inboxChannels, storage: app.fileStorage, log: req.log }, [done.messageId], {
           requestId: req.id,
           actorAccountId: auth.accountId,
         });
