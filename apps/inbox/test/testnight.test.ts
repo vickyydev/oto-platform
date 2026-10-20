@@ -123,6 +123,8 @@ function row(over: Partial<ConversationRow> = {}): ConversationRow {
 }
 
 function detail(r: ConversationRow, over: Partial<ConversationDetail> = {}): ConversationDetail {
+  const mode = over.aiMode ?? 'off';
+  const aiState = mode === 'off' ? 'off' : mode === 'shadow' ? 'shadow' : over.aiPaused ? 'paused' : 'ready';
   return {
     ...r,
     teamName: 'Reception · Central Floresta',
@@ -135,6 +137,7 @@ function detail(r: ConversationRow, over: Partial<ConversationDetail> = {}): Con
     aiPaused: false,
     aiPausedAt: null,
     aiPausedByAccountId: null,
+    aiState,
     ...over,
   };
 }
