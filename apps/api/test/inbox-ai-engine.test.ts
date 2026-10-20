@@ -2,6 +2,7 @@ import { and, desc, eq, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { PERSONA_VERSION } from '@oto/assistant';
 import { schema as s } from '@oto/db';
+import { INBOX_TEMPLATE_BODIES } from '@oto/db/seed';
 import { newId } from '@oto/shared';
 import { AI_LEASE_MS, CIRCUIT_PAUSE_MS, INBOX_AI_JOB, claimAiTurn } from '../src/services/inbox/ai-engine';
 import { loadEnv } from '../src/env';
@@ -378,6 +379,13 @@ describe('a handover (§B.5, §C.5)', () => {
 
   it('a Thai complaint: the Thai template still needs translation, so the checked persona words go; it stays with reception', async () => {
     await drain();
+    // The premise, set here since the test night (SCRUM-220 R1) laid every
+    // template in its own words: an operator whose Thai complaint line still
+    // carries the English source, marked for translation.
+    await w.ctx.db
+      .update(s.template)
+      .set({ body: INBOX_TEMPLATE_BODIES.handover_complaint_onsite, needsTranslation: true })
+      .where(and(eq(s.template.operatorId, w.oto), eq(s.template.key, 'handover_complaint_onsite'), eq(s.template.language, 'th')));
     const conv = await customer(w, central, nextPhone(), `พนักงานไม่สุภาพเลยค่ะ ${SENTINEL}`);
     const words = `ขอบคุณที่แจ้งนะคะ ทีมแอดมินจะติดต่อกลับโดยเร็วค่ะ ${SENTINEL}`;
     w.fake.push({

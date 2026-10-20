@@ -48,7 +48,7 @@
  * default `off` until a person with `inbox:ai:manage` switches it. Nothing here touches a conversation, a contact or a message — the demo
  * conversations are `./inbox-demo.ts`, and never laid by a deploy.
  */
-import { and, eq, isNull, sql } from 'drizzle-orm';
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import {
   INBOX_ROLE_BUNDLES,
   INBOX_ROLE_DESCRIPTIONS,
@@ -113,10 +113,14 @@ export const INBOX_TEMPLATE_BODIES: Record<InboxTemplateKey, string> = {
     'Here are our birthday packages 🎂. One moment please — our birthday manager will be with you shortly to confirm the date and details.',
   handover_events:
     'Thank you for the inquiry. One of our team will get back to you shortly with a tailored proposal.',
+  // SCRUM-220 test night, W1: an upset parent read the old "Thank you for
+  // letting us know. Please hold on — … right away." as cold. One line of
+  // empathy first, and "shortly" rather than "right away" (nobody is there
+  // right away on a phone). The old lines are `INBOX_TEMPLATE_FORMER_BODIES`.
   handover_complaint_online:
-    'Thank you for letting us know. Please hold on — a member of our team will be with you right away to look into this.',
+    "I'm really sorry to hear that. Thank you for telling us — a member of our team will be with you shortly to look into this.",
   handover_complaint_onsite:
-    'Thank you for letting us know. Please hold on — our reception team will be with you right away.',
+    "I'm really sorry to hear that. Thank you for telling us — a member of our reception team will be with you shortly.",
   handover_lost_found:
     'Thanks for reaching out. One of our reception team will check and reply to you very shortly.',
   handover_marketing: 'Thanks for the message! Our marketing team will get back to you shortly.',
@@ -156,8 +160,9 @@ export const INBOX_TEMPLATE_TRANSLATIONS: Record<TranslatedLanguage, Record<Inbo
       'นี่คือแพ็กเกจวันเกิดของเราค่ะ 🎂 รอสักครู่นะคะ ผู้จัดการฝ่ายงานวันเกิดจะมาช่วยยืนยันวันที่และรายละเอียดให้ในอีกไม่นานค่ะ',
     handover_events: 'ขอบคุณที่สอบถามเข้ามานะคะ ทีมงานของเราจะติดต่อกลับพร้อมข้อเสนอที่เหมาะกับคุณในอีกไม่นานค่ะ',
     handover_complaint_online:
-      'ขอบคุณที่แจ้งให้เราทราบนะคะ รอสักครู่นะคะ ทีมงานของเราจะมาดูแลเรื่องนี้ให้ทันทีค่ะ',
-    handover_complaint_onsite: 'ขอบคุณที่แจ้งให้เราทราบนะคะ รอสักครู่นะคะ ทีมต้อนรับของเราจะมาดูแลคุณทันทีค่ะ',
+      'ต้องขออภัยอย่างยิ่งที่เกิดเรื่องแบบนี้ขึ้นนะคะ ขอบคุณที่แจ้งให้เราทราบค่ะ ทีมงานของเราจะติดต่อกลับเพื่อดูแลเรื่องนี้ในอีกไม่นานค่ะ',
+    handover_complaint_onsite:
+      'ต้องขออภัยอย่างยิ่งที่เกิดเรื่องแบบนี้ขึ้นนะคะ ขอบคุณที่แจ้งให้เราทราบค่ะ ทีมต้อนรับของเราจะมาดูแลคุณในอีกไม่นานค่ะ',
     handover_lost_found: 'ขอบคุณที่ติดต่อเข้ามานะคะ ทีมต้อนรับของเราจะตรวจสอบและตอบกลับให้โดยเร็วที่สุดค่ะ',
     handover_marketing: 'ขอบคุณสำหรับข้อความนะคะ ทีมการตลาดของเราจะติดต่อกลับในอีกไม่นานค่ะ',
     out_of_hours:
@@ -172,9 +177,9 @@ export const INBOX_TEMPLATE_TRANSLATIONS: Record<TranslatedLanguage, Record<Inbo
       'Вот наши пакеты для дня рождения 🎂. Одну минуту, пожалуйста — наш менеджер по праздникам скоро свяжется с вами, чтобы подтвердить дату и детали.',
     handover_events: 'Спасибо за ваш запрос. Кто-то из нашей команды скоро свяжется с вами с индивидуальным предложением.',
     handover_complaint_online:
-      'Спасибо, что сообщили нам. Пожалуйста, подождите — сотрудник нашей команды сейчас подключится и разберётся в ситуации.',
+      'Нам очень жаль, что так произошло. Спасибо, что рассказали нам — сотрудник нашей команды скоро свяжется с вами, чтобы разобраться в ситуации.',
     handover_complaint_onsite:
-      'Спасибо, что сообщили нам. Пожалуйста, подождите — наша команда на ресепшене сейчас свяжется с вами.',
+      'Нам очень жаль, что так произошло. Спасибо, что рассказали нам — сотрудник ресепшена скоро свяжется с вами.',
     handover_lost_found: 'Спасибо, что написали нам. Сотрудник ресепшена проверит и очень скоро вам ответит.',
     handover_marketing: 'Спасибо за сообщение! Наша команда маркетинга скоро свяжется с вами.',
     out_of_hours:
@@ -188,6 +193,21 @@ export const INBOX_TEMPLATE_TRANSLATIONS: Record<TranslatedLanguage, Record<Inbo
 /** The words a template row is laid with: the English source, or that language's own line. */
 export const templateBodyFor = (key: InboxTemplateKey, language: InboxTemplateLanguage): string =>
   language === 'en' ? INBOX_TEMPLATE_BODIES[key] : INBOX_TEMPLATE_TRANSLATIONS[language][key];
+
+/**
+ * English wordings this file laid BEFORE the current ones (SCRUM-220 test
+ * night, W1): a deployed operator's TH or RU row that still carries one of
+ * these, flagged `needs_translation`, is as untranslated as one carrying the
+ * current source, and `backfillTranslations` treats it so. The English row
+ * itself is never rewritten — a wording change on a live operator's English
+ * line is an admin's to make.
+ */
+export const INBOX_TEMPLATE_FORMER_BODIES: Readonly<Partial<Record<InboxTemplateKey, readonly string[]>>> = {
+  handover_complaint_online: [
+    'Thank you for letting us know. Please hold on — a member of our team will be with you right away to look into this.',
+  ],
+  handover_complaint_onsite: ['Thank you for letting us know. Please hold on — our reception team will be with you right away.'],
+};
 
 /**
  * The routing rules a team starts with. People are blank: every primary is
@@ -448,8 +468,10 @@ async function syncTemplates(db: Db, operatorId: string, counts: InboxSyncCounts
  * the flag clears, ONLY while both still hold: the row is still flagged AND
  * its body is still the English source, word for word. A body anybody
  * changed — flagged or not, archived or not — is that person's, and is left
- * exactly as they wrote it. A row that equals an older English wording stays
- * as it is too (it is not the source this file knows), for an admin to word.
+ * exactly as they wrote it. A flagged row that equals a FORMER wording this
+ * file laid (`INBOX_TEMPLATE_FORMER_BODIES`) is as untranslated as one with
+ * the current source, and takes its translation too; a flagged row equal to
+ * nothing this file ever laid stays as it is, for an admin to word.
  */
 async function backfillTranslations(db: Db, operatorId: string, counts: InboxSyncCounts): Promise<void> {
   for (const key of Object.keys(INBOX_TEMPLATE_BODIES) as InboxTemplateKey[]) {
@@ -466,7 +488,7 @@ async function backfillTranslations(db: Db, operatorId: string, counts: InboxSyn
             isNull(s.template.channel),
             isNull(s.template.branchId),
             eq(s.template.needsTranslation, true),
-            eq(s.template.body, INBOX_TEMPLATE_BODIES[key]),
+            inArray(s.template.body, [INBOX_TEMPLATE_BODIES[key], ...(INBOX_TEMPLATE_FORMER_BODIES[key] ?? [])]),
           ),
         )
         .returning({ id: s.template.id });

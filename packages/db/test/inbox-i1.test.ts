@@ -16,6 +16,7 @@ import {
   CONSOLE_NOTICE_CHANNELS,
   INBOX_DEPARTMENTS,
   INBOX_TEMPLATE_BODIES,
+  INBOX_TEMPLATE_FORMER_BODIES,
   INBOX_TEMPLATE_TRANSLATIONS,
   syncInboxSetup,
 } from '../src/seed/inbox';
@@ -315,15 +316,24 @@ describe('platform-sync lays the inbox configuration (I1)', () => {
         );
     await staging('handover_events');
     await staging('out_of_hours');
-    // An admin's own words: a flagged row they rewrote, and an unflagged one.
-    const adminWords = 'สวัสดีค่ะ ยินดีต้อนรับสู่ OTO Play Park สาขาที่สอง ค่ะ';
-    const edited = (key: 'welcome' | 'handover_general') =>
+    // Also as staging stands (W1): the Thai complaint row still carries the
+    // FORMER English wording this file laid, flagged — as untranslated as the rest.
+    const edited = (key: 'welcome' | 'handover_general' | 'handover_complaint_onsite' | 'handover_lost_found') =>
       and(eq(s.template.operatorId, second), eq(s.template.key, key), eq(s.template.language, 'th'), isNull(s.template.channel), isNull(s.template.branchId));
+    await db
+      .update(s.template)
+      .set({ body: INBOX_TEMPLATE_FORMER_BODIES.handover_complaint_onsite![0]!, needsTranslation: true })
+      .where(edited('handover_complaint_onsite'));
+    // An admin's own words: a flagged row they rewrote, an unflagged one, and
+    // a flagged row holding an English wording this file never laid.
+    const adminWords = 'สวัสดีค่ะ ยินดีต้อนรับสู่ OTO Play Park สาขาที่สอง ค่ะ';
     await db.update(s.template).set({ body: adminWords, needsTranslation: true }).where(edited('welcome'));
     await db.update(s.template).set({ body: `${adminWords} (ตรวจแล้ว)`, needsTranslation: false }).where(edited('handover_general'));
+    const unknownEnglish = 'Thanks! Reception will check the lost property box and write back.';
+    await db.update(s.template).set({ body: unknownEnglish, needsTranslation: true }).where(edited('handover_lost_found'));
 
     const first = await syncInboxSetup(db);
-    expect(first.translations).toBe(4);
+    expect(first.translations).toBe(5);
     expect(first.templates).toBe(0);
     expect(first.operators).toBe(1);
     const again = await syncInboxSetup(db);
@@ -343,12 +353,22 @@ describe('platform-sync lays the inbox configuration (I1)', () => {
         expect(row.needsTranslation).toBe(false);
       }
     }
+    const complaintTh = rows.find((t) => t.key === 'handover_complaint_onsite' && t.language === 'th')!;
+    expect(complaintTh.body).toBe(INBOX_TEMPLATE_TRANSLATIONS.th.handover_complaint_onsite);
+    expect(complaintTh.needsTranslation).toBe(false);
     const welcomeTh = rows.find((t) => t.key === 'welcome' && t.language === 'th')!;
     expect(welcomeTh.body).toBe(adminWords);
     expect(welcomeTh.needsTranslation).toBe(true);
     const generalTh = rows.find((t) => t.key === 'handover_general' && t.language === 'th')!;
     expect(generalTh.body).toBe(`${adminWords} (ตรวจแล้ว)`);
     expect(generalTh.needsTranslation).toBe(false);
+    const lostTh = rows.find((t) => t.key === 'handover_lost_found' && t.language === 'th')!;
+    expect(lostTh.body).toBe(unknownEnglish);
+    expect(lostTh.needsTranslation).toBe(true);
+    // The English rows are never rewritten, the complaint line's included.
+    expect(rows.find((t) => t.key === 'handover_complaint_onsite' && t.language === 'en')!.body).toBe(
+      INBOX_TEMPLATE_BODIES.handover_complaint_onsite,
+    );
 
     // Put the fixture back for the cases below.
     await db.update(s.template).set({ body: INBOX_TEMPLATE_TRANSLATIONS.th.welcome, needsTranslation: false }).where(edited('welcome'));
@@ -356,6 +376,10 @@ describe('platform-sync lays the inbox configuration (I1)', () => {
       .update(s.template)
       .set({ body: INBOX_TEMPLATE_TRANSLATIONS.th.handover_general, needsTranslation: false })
       .where(edited('handover_general'));
+    await db
+      .update(s.template)
+      .set({ body: INBOX_TEMPLATE_TRANSLATIONS.th.handover_lost_found, needsTranslation: false })
+      .where(edited('handover_lost_found'));
   });
 
   it('lays one console channel account per notice channel, none of which can reply', async () => {
