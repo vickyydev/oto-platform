@@ -30,7 +30,7 @@ import { customer, nextPhone, simAccount, teamOf } from './inbox-ai-support';
  *   Q4  a branch manager asks about the other park       the cross-branch refusal, verbatim
  *   Q5  reception finds a family by a Thai local number  the E.164 record, an allergy flag, no allergy text
  *   Q9  a member note holding an injection               the note quoted as data, no extra calls, no phone list
- *   Q10 a department-scoped Inbox agent                  the ask passes on the person; the count grounded
+ *   Q10 a department-scoped Inbox agent                  the ask passes on the person; the count grounded, the queue linked
  *   Q11 the provider times out                           failed, the fixed line, no partial figure
  *   Q12 a seventh tool call                              TOOL_CAP, the link offered
  *   Q13 the person's daily cap                           capped, no model call
@@ -166,8 +166,10 @@ describe('the golden asks of round I2 (§F.4)', () => {
     expect(data.unanswered).toBe(2);
     // A thread title, never a message: the customers' words stay in the message table.
     expect(JSON.stringify(data)).not.toContain('grip socks');
-    // The Inbox has no linkable screen until P2: the key is dropped, not guessed.
-    expect(res.body.links).toEqual([]);
+    // P2 gave the Inbox URL state: the queue link resolves, to the agent's own Inbox.
+    expect(res.body.links).toEqual([
+      { key: 'inbox.queue', app: 'inbox', path: '/?unanswered=1', shows: 'The unanswered queue' },
+    ]);
   });
 
   it('Q11 — the provider times out: failed, the fixed line, no partial figure', async () => {

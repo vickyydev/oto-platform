@@ -64864,6 +64864,7 @@
                             "enum": [
                               "oto_app",
                               "console",
+                              "inbox",
                               "launcher"
                             ]
                           },
@@ -65086,6 +65087,7 @@
                                   "enum": [
                                     "oto_app",
                                     "console",
+                                    "inbox",
                                     "launcher"
                                   ]
                                 },
@@ -65306,6 +65308,7 @@
                             "enum": [
                               "oto_app",
                               "console",
+                              "inbox",
                               "launcher"
                             ]
                           },
@@ -65668,6 +65671,7 @@
                                   "enum": [
                                     "oto_app",
                                     "console",
+                                    "inbox",
                                     "launcher"
                                   ]
                                 },

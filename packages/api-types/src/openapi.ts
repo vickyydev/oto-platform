@@ -27477,7 +27477,7 @@ export interface paths {
                                 links: {
                                     key: string;
                                     /** @enum {string} */
-                                    app: "oto_app" | "console" | "launcher";
+                                    app: "oto_app" | "console" | "inbox" | "launcher";
                                     path: string;
                                     shows: string;
                                 }[];
@@ -27548,7 +27548,7 @@ export interface paths {
                             links: {
                                 key: string;
                                 /** @enum {string} */
-                                app: "oto_app" | "console" | "launcher";
+                                app: "oto_app" | "console" | "inbox" | "launcher";
                                 path: string;
                                 shows: string;
                             }[];
@@ -27623,7 +27623,7 @@ export interface paths {
                             links: {
                                 key: string;
                                 /** @enum {string} */
-                                app: "oto_app" | "console" | "launcher";
+                                app: "oto_app" | "console" | "inbox" | "launcher";
                                 path: string;
                                 shows: string;
                             }[];
@@ -27760,7 +27760,7 @@ export interface paths {
                                 links: {
                                     key: string;
                                     /** @enum {string} */
-                                    app: "oto_app" | "console" | "launcher";
+                                    app: "oto_app" | "console" | "inbox" | "launcher";
                                     path: string;
                                     shows: string;
                                 }[];
