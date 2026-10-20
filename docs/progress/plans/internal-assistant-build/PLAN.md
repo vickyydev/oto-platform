@@ -685,9 +685,12 @@ notes, thread titles, employee names, audit entity names). The posture:
 ### E.4 The answer's guards (reused from Phase 2)
 
 - **The traceability guard** (`guards.ts:198`), with *grounding = the
-  summaries returned in this ask*. Every number and date word in the answer
-  must occur in a tool summary. The question does not count, for the same
-  reason the customer's words do not count in Phase 2. A failure keeps the
+  summaries returned in this ask, plus the asker's own question*. Every
+  number and date word in the answer must occur in a tool summary or in the
+  question: a phone number or a month the asker typed is their input, not a
+  figure the model found, so it may be echoed (proof round, SCRUM-591). The
+  customer's words still do not count in Phase 2, whose gates are untouched.
+  A failure keeps the
   links and refusals and replaces the prose with "I couldn't check that
   figure; it's here:" (state `link_only`, reason `GUARD_NUMBER`); with no
   link left to offer, "I couldn't check that figure." (state `failed`, the

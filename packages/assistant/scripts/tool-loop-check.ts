@@ -136,10 +136,11 @@ async function runMode(
     answerMode: client.answerMode,
   });
   const toolCalls: string[] = [];
+  const question = 'How many children have visited ZZ Central today?';
   const out = await client.converse({
     system: built.system,
     answerMode: built.answerMode,
-    question: 'How many children have visited ZZ Central today?',
+    question,
     tools: [TOOL],
     wallMs: 120_000,
     execute: async (call) => {
@@ -170,7 +171,7 @@ async function runMode(
     }
     return 'FAILED';
   }
-  const guard = internalAnswerGuard(out.answer, out.groundingTexts);
+  const guard = internalAnswerGuard(out.answer, out.groundingTexts, question);
   console.log(`answer (${out.answer.language}): ${out.answer.answer}`);
   console.log(`links:         ${out.answer.links.map((l) => l.key).join(', ') || '(none)'}`);
   console.log(`guard:         ${guard.ok ? 'ok' : `${guard.reason} (${guard.rule})`}`);

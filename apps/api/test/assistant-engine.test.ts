@@ -724,6 +724,22 @@ describe('the guard’s fallback line (§C, §E.4)', () => {
   });
 });
 
+describe('the asker’s own words are grounding (§E.4, the internal path)', () => {
+  it('a phone number and a month the asker typed may be echoed; a figure in neither the question nor a summary is still refused', async () => {
+    script(w, final('Nobody has the phone 081 234 5678.'));
+    const phone = await ask(w, receptionCookie, 'Who has the phone 081 234 5678?');
+    expect(phone.body).toMatchObject({ state: 'answered', reason: null, answer: 'Nobody has the phone 081 234 5678.' });
+
+    script(w, final('The September month-end is where to look.'));
+    const month = await ask(w, managerCookie, "Why does September's payroll look wrong?");
+    expect(month.body).toMatchObject({ state: 'answered', reason: null, answer: 'The September month-end is where to look.' });
+
+    script(w, final('Nobody has the phone 081 234 5678.'));
+    const other = await ask(w, receptionCookie, 'Who has the phone 089 000 1111?');
+    expect(other.body).toMatchObject({ state: 'failed', reason: 'GUARD_NUMBER', answer: INTERNAL_LINES.guardFallbackNoLink.en });
+  });
+});
+
 describe('the record: audit and ops carry ids and words, never text (§E.1)', () => {
   it('every ask and tool call is audited, and every model loop is an adapter run', async () => {
     script(w, tool('members.lookup', { phone: '081 234 0001' }), final('Found the ZZ Somchai Family.'));

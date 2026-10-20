@@ -796,6 +796,7 @@ function finalOf(
   outcome: ToolLoopOutcome,
   trace: AskTrace,
   caller: AskCaller,
+  question: string,
   questionLang: InternalLanguage,
 ): Final {
   const gathered = resolveLinks(trace.gathered, caller.effective, caller.auth.operatorId);
@@ -819,8 +820,9 @@ function finalOf(
     outcome.groundingTexts,
   );
   const modelLinks = resolveLinks(wanted, caller.effective, caller.auth.operatorId);
-  // Grounding = the summaries THIS ask's tools returned. Never the question, never a refusal.
-  const guard = internalAnswerGuard(answer, outcome.groundingTexts);
+  // Grounding = the summaries THIS ask's tools returned, and the asker's own words (a number or a
+  // month they typed may be echoed: it is their input). Never a refusal.
+  const guard = internalAnswerGuard(answer, outcome.groundingTexts, question);
   if (!guard.ok) {
     // The links survive the guard (§C): the model's, grounded, and the screens the tools called show.
     const links = resolveLinks([...wanted, ...trace.gathered], caller.effective, caller.auth.operatorId);
@@ -857,7 +859,7 @@ async function closeAsk(
   lang: InternalLanguage,
   askedAt: Date,
 ): Promise<AskRow> {
-  const f = finalOf(outcome, trace, caller, lang);
+  const f = finalOf(outcome, trace, caller, row.question, lang);
   const at = new Date();
   // The row's CHECK (`ask_version_words_check`) takes one word. A provider's model id in any other
   // shape must not fail the close and strand the ask: the id asked for stands in.

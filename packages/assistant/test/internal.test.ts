@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { personaGuard } from '../src/guards';
+import { personaGuard, traceabilityGuard } from '../src/guards';
 import {
   DEFAULT_INTERNAL_ANSWER_MODE,
   INTERNAL_ANSWER_MODES,
@@ -44,6 +44,8 @@ import {
 } from './internal-support';
 
 const GROUNDING = [JSON.stringify(OCCUPANCY_OK.data)];
+/** The asker's words for the guard checks below: no figure, no date, so only the summaries ground. */
+const QUESTION = 'How full is Central right now?';
 
 describe.each(INTERNAL_ANSWER_MODES)('the internal persona block (%s)', (mode) => {
   const text = buildInternalStaticSystem(LINKS, mode);
@@ -194,7 +196,7 @@ describe('parseTrailingAnswer (the trailing_json final turn)', () => {
 
   it('numbers in link params are not answer prose, so they are not guarded', () => {
     const a = parseTrailingAnswer(renderTrailingAnswer(answer({ links })));
-    expect(a && internalAnswerGuard(a, GROUNDING).ok).toBe(true);
+    expect(a && internalAnswerGuard(a, GROUNDING, QUESTION).ok).toBe(true);
   });
 });
 
@@ -211,13 +213,13 @@ describe('URL stripping', () => {
 
 describe('internalAnswerGuard', () => {
   it('passes a figure the tool summaries hold', () => {
-    const r = internalAnswerGuard(answer(), GROUNDING);
+    const r = internalAnswerGuard(answer(), GROUNDING, QUESTION);
     expect(r).toMatchObject({ ok: true, urlsStripped: 0, answer: answer() });
   });
 
   it('refuses a figure no tool returned, keeping the links (Q15)', () => {
     const links = [{ key: 'console.activity', params: [] }];
-    const r = internalAnswerGuard(answer({ answer: '31 children are inside.', links }), GROUNDING);
+    const r = internalAnswerGuard(answer({ answer: '31 children are inside.', links }), GROUNDING, QUESTION);
     expect(r).toEqual({
       ok: false,
       reason: 'GUARD_NUMBER',
@@ -227,17 +229,48 @@ describe('internalAnswerGuard', () => {
     });
   });
 
-  it('the question is not grounding: only the summaries are', () => {
-    // "081 234 5678" was in the question; no tool returned it.
-    const r = internalAnswerGuard(
-      answer({ answer: 'Nobody has the phone 081 234 5678.' }),
-      GROUNDING,
-    );
-    expect(r).toMatchObject({ ok: false, reason: 'GUARD_NUMBER' });
+  it("the asker's own words ground: a number or a month they typed may be echoed (the internal path only)", () => {
+    // "081 234 5678" and "September" are in the question; no tool returned either.
+    expect(
+      internalAnswerGuard(
+        answer({ answer: 'Nobody has the phone 081 234 5678.' }),
+        GROUNDING,
+        'Who has the phone 081 234 5678?',
+      ),
+    ).toMatchObject({ ok: true });
+    expect(
+      internalAnswerGuard(
+        answer({ answer: 'The September month-end is where to look.' }),
+        GROUNDING,
+        "Why does September's payroll look wrong?",
+      ),
+    ).toMatchObject({ ok: true });
+    // The customer assistant's rule is untouched: over the same grounding, without the question, both fail.
+    expect(traceabilityGuard(['Nobody has the phone 081 234 5678.'], GROUNDING)).toMatchObject({
+      ok: false,
+      reason: 'GUARD_NUMBER',
+    });
+    expect(traceabilityGuard(['The September month-end is where to look.'], GROUNDING)).toMatchObject({
+      ok: false,
+      reason: 'GUARD_DATE',
+    });
   });
 
-  it('refuses a month word no summary holds', () => {
-    const r = internalAnswerGuard(answer({ answer: 'Inside since October: 23.' }), GROUNDING);
+  it('a figure in neither the question nor a summary is still refused', () => {
+    expect(
+      internalAnswerGuard(answer({ answer: '31 children are inside.' }), GROUNDING, QUESTION),
+    ).toMatchObject({ ok: false, reason: 'GUARD_NUMBER' });
+    expect(
+      internalAnswerGuard(
+        answer({ answer: 'Nobody has the phone 081 234 5678.' }),
+        GROUNDING,
+        'Who has the phone 089 000 1111?',
+      ),
+    ).toMatchObject({ ok: false, reason: 'GUARD_NUMBER' });
+  });
+
+  it('refuses a month word neither a summary nor the question holds', () => {
+    const r = internalAnswerGuard(answer({ answer: 'Inside since October: 23.' }), GROUNDING, QUESTION);
     expect(r).toMatchObject({ ok: false, reason: 'GUARD_DATE' });
   });
 
@@ -245,6 +278,7 @@ describe('internalAnswerGuard', () => {
     const r = internalAnswerGuard(
       answer({ answer: '23 children inside. Details: https://x.example/999/report' }),
       GROUNDING,
+      QUESTION,
     );
     expect(r).toMatchObject({
       ok: true,
@@ -254,7 +288,7 @@ describe('internalAnswerGuard', () => {
   });
 
   it('an answer that was only a URL is GUARD_SHAPE', () => {
-    expect(internalAnswerGuard(answer({ answer: 'https://x.example' }), GROUNDING)).toMatchObject({
+    expect(internalAnswerGuard(answer({ answer: 'https://x.example' }), GROUNDING, QUESTION)).toMatchObject({
       ok: false,
       reason: 'GUARD_SHAPE',
       rule: 'empty',
@@ -264,25 +298,27 @@ describe('internalAnswerGuard', () => {
   it('does NOT apply the persona guard: the assistant may say it is one', () => {
     const text = `I'm the ${INTERNAL_ASSISTANT_LABEL.en}; 23 children are inside.`;
     expect(personaGuard([text]).ok).toBe(false);
-    expect(internalAnswerGuard(answer({ answer: text }), GROUNDING).ok).toBe(true);
+    expect(internalAnswerGuard(answer({ answer: text }), GROUNDING, QUESTION).ok).toBe(true);
   });
 
   it('allows a short list (an internal answer may list shifts)', () => {
     const r = internalAnswerGuard(
       answer({ answer: '- Central: 23 children\n- Central: 17 adults' }),
       GROUNDING,
+      QUESTION,
     );
     expect(r.ok).toBe(true);
   });
 
   it('works in Thai and Russian, with Thai digits read as digits', () => {
     expect(
-      internalAnswerGuard(answer({ answer: 'ตอนนี้มีเด็ก ๒๓ คน', language: 'th' }), GROUNDING).ok,
+      internalAnswerGuard(answer({ answer: 'ตอนนี้มีเด็ก ๒๓ คน', language: 'th' }), GROUNDING, QUESTION).ok,
     ).toBe(true);
     expect(
       internalAnswerGuard(
         answer({ answer: 'Сейчас внутри 24 ребёнка.', language: 'ru' }),
         GROUNDING,
+        QUESTION,
       ),
     ).toMatchObject({ ok: false, reason: 'GUARD_NUMBER' });
   });

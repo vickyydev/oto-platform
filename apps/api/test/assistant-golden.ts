@@ -363,13 +363,13 @@ const PAYROLL_LINKS = ['oto.payroll.hub', 'oto.payroll.month', 'oto.payroll.pers
  * TODAY'S expectation for an OTO App golden (round I4 not built): no `oto.*`
  * tool is offered, so the honest answer has no figure; the platform tools may
  * tell the model who is asking, nothing more. A month word repeated from the
- * question is refused by the date guard (GUARD_DATE) — the guard working, so
- * it passes; an invented number (GUARD_NUMBER) fails.
+ * question is the asker's own and passes the date guard (the question grounds
+ * the internal answer, SCRUM-591 proof round); an invented number
+ * (GUARD_NUMBER) fails.
  */
 function pendingOtoApp(extra: Partial<AskExpectation> = {}): AskExpectation {
   return {
-    states: ['answered', 'link_only'],
-    reasons: [null, 'GUARD_DATE'],
+    states: ['answered'],
     toolsRequired: [],
     toolsAllowed: ['me.whoami'],
     maxToolCalls: 1,

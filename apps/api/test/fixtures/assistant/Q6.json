@@ -73,8 +73,8 @@
     }
   ],
   "recorded": {
-    "state": "link_only",
-    "reason": "GUARD_DATE",
+    "state": "answered",
+    "reason": null,
     "tools": [],
     "pass": true,
     "failures": []
