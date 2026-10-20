@@ -513,7 +513,20 @@ export function withdrawnNotes(messages: readonly Message[], events: readonly In
 
 export type TimelineItem =
   | { kind: 'message'; at: string; message: Message }
-  | { kind: 'pill'; at: string; id: string; text: string; event: string };
+  | { kind: 'pill'; at: string; id: string; text: string; event: string }
+  /** What the assistant would have said in shadow mode — never sent (customer-AI test night, W5). */
+  | { kind: 'shadow'; at: string; id: string; text: string; turnId: string | null };
+
+/** The shadow item's kind on the thread read, and its words: on the payload, or on the item itself. */
+export const SHADOW_EVENT_KIND = 'ai.shadow';
+export const SHADOW_LABEL = 'Shadow suggestion — not sent';
+
+function shadowOf(e: InboxEvent): { text: string; turnId: string | null } | null {
+  const own = e as unknown as { text?: unknown; turnId?: unknown };
+  const text = str(e.payload.text) ?? str(own.text);
+  if (text === null) return null;
+  return { text, turnId: str(e.payload.turnId) ?? str(own.turnId) };
+}
 
 /**
  * Messages and system pills in one column, oldest first (the prototype keeps
@@ -531,6 +544,11 @@ export function timeline(
   const items: TimelineItem[] = messages.map((m) => ({ kind: 'message', at: m.createdAt, message: m }));
   for (const e of events) {
     if (!reachesStart && oldest !== undefined && e.createdAt < oldest) continue;
+    if (e.kind === SHADOW_EVENT_KIND) {
+      const shadow = shadowOf(e);
+      if (shadow !== null) items.push({ kind: 'shadow', at: e.createdAt, id: e.id, ...shadow });
+      continue;
+    }
     const text = eventText(e, ctx);
     if (text !== null) items.push({ kind: 'pill', at: e.createdAt, id: e.id, text, event: e.kind });
   }
@@ -672,7 +690,9 @@ export function supportCapLabel(supportCount: number): string | null {
 
 // --- The assistant's state on a thread (test night U5) --------------------------------------
 
-export type AiStateLine = { kind: 'label'; text: string } | { kind: 'control'; text: string; paused: boolean };
+export type AiStateLine =
+  | { kind: 'label'; text: string }
+  | { kind: 'control'; text: string; paused: boolean; action: 'pause' | 'resume' };
 
 /**
  * What the strip says about the assistant here, from the number's mode
@@ -685,8 +705,38 @@ export function aiStateLine(mode: 'off' | 'shadow' | 'live', paused: boolean): A
   if (mode === 'off') return { kind: 'label', text: 'Assistant off on this number' };
   if (mode === 'shadow' && !paused) return { kind: 'label', text: 'Assistant in shadow' };
   return paused
-    ? { kind: 'control', text: 'AI paused · Resume', paused: true }
-    : { kind: 'control', text: 'AI on · Pause', paused: false };
+    ? { kind: 'control', text: 'AI paused · Resume', paused: true, action: 'resume' }
+    : { kind: 'control', text: 'AI on · Pause', paused: false, action: 'pause' };
+}
+
+/**
+ * The thread's assistant state as the api will say it (customer-AI test
+ * night, W4a): the chip said "AI on · Pause" after a person's reply and after
+ * a hand-over, when the assistant would not answer. `aiState` is the
+ * customer-AI lane's field, read optionally; absent, the U5 derivation from
+ * the mode and the pause stands.
+ */
+export const AI_STATES = ['off', 'shadow', 'ready', 'paused', 'left_for_team', 'person_replied'] as const;
+export type AiState = (typeof AI_STATES)[number];
+
+export function aiStateLineFor(d: { aiMode: 'off' | 'shadow' | 'live'; aiPaused: boolean; aiState?: unknown }): AiStateLine {
+  const state = (AI_STATES as readonly unknown[]).includes(d.aiState) ? (d.aiState as AiState) : null;
+  switch (state) {
+    case 'off':
+      return { kind: 'label', text: 'Assistant off on this number' };
+    case 'shadow':
+      return { kind: 'label', text: 'Assistant in shadow' };
+    case 'ready':
+      return { kind: 'control', text: 'AI on · Pause', paused: false, action: 'pause' };
+    case 'paused':
+      return { kind: 'control', text: 'AI paused · Resume', paused: true, action: 'resume' };
+    case 'left_for_team':
+      return { kind: 'control', text: 'AI handed over · Resume', paused: true, action: 'resume' };
+    case 'person_replied':
+      return { kind: 'control', text: 'AI stopped: a person replied · Resume', paused: true, action: 'resume' };
+    default:
+      return aiStateLine(d.aiMode, d.aiPaused);
+  }
 }
 
 // --- The outcome of an action, in a line (test night U6, U9) -----------------------------------

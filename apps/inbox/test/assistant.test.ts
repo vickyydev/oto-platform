@@ -24,6 +24,7 @@ import {
   kbDraftProblem,
   kbGroups,
   modeChangeNeedsConfirm,
+  turnForCorrection,
 } from '@/lib/assistant';
 import { eventText, timeline, withdrawnNotes, withdrawnWhy } from '@/lib/view';
 
@@ -335,7 +336,7 @@ describe('"Correct the assistant", pre-filled (§E)', () => {
       expect(html).toMatch(/<button type="submit" form="correct-assistant" class="[^"]*">(?!<svg)[^<]*Propose example<\/button>/);
     });
 
-    it('keeps the server’s default on a classified thread', () => {
+    it('keeps the server’s default on a classified thread when no turn names the message', () => {
       const html = renderToStaticMarkup(
         createElement(CorrectAssistant, {
           target: { messageId: 'a2' },
@@ -347,6 +348,65 @@ describe('"Correct the assistant", pre-filled (§E)', () => {
         }),
       );
       expect(html).toMatch(/<option value="" selected="">As the assistant classified it<\/option>/);
+    });
+  });
+
+  describe('the corrected message’s own turn (customer-AI test night, D3)', () => {
+    // The thread's latest intent is a later price question; the line being
+    // corrected (a2) was the parking turn's.
+    const turns = [
+      ev({ id: 't-reply', kind: 'ai_replied', createdAt: '2026-10-20T08:01:00.000Z', payload: { turnId: 'turn-1', intent: 'directions_parking', messageIds: ['a1', 'a2'] } }),
+      ev({ id: 't-silent', kind: 'ai_silent', createdAt: '2026-10-20T08:00:30.000Z', payload: { turnId: 'turn-0', reason: 'MODEL_SILENT', intent: null } }),
+      ev({ id: 't-later', kind: 'ai_replied', createdAt: '2026-10-20T08:05:00.000Z', payload: { turnId: 'turn-2', intent: 'ticket_prices', messageIds: ['a9'] } }),
+    ];
+
+    it('finds the turn that wrote the line, by the event that names it, or by the row’s own turn id', () => {
+      expect(turnForCorrection(turns, { messageId: 'a2' })).toEqual({ turnId: 'turn-1', intent: 'directions_parking' });
+      expect(turnForCorrection(turns, { messageId: 'a9' })).toEqual({ turnId: 'turn-2', intent: 'ticket_prices' });
+      expect(turnForCorrection(turns, { messageId: 'unknown' }, 'turn-1')).toEqual({ turnId: 'turn-1', intent: 'directions_parking' });
+      expect(turnForCorrection(turns, { messageId: 'unknown' })).toBeNull();
+      expect(turnForCorrection([], { messageId: 'a2' })).toBeNull();
+    });
+
+    it('finds the silence an ai_silent pill marks, at its time, with no intent when it had none', () => {
+      expect(turnForCorrection(turns, { at: '2026-10-20T08:00:30.000Z' })).toEqual({ turnId: 'turn-0', intent: null });
+      expect(turnForCorrection(turns, { at: '2026-10-20T09:00:00.000Z' })).toBeNull();
+    });
+
+    it('opens on the corrected message’s topic, shown, with no blank — not the thread’s latest', () => {
+      const html = renderToStaticMarkup(
+        createElement(CorrectAssistant, {
+          target: { messageId: 'a2' },
+          messages,
+          events: turns,
+          intent: 'ticket_prices',
+          category: 'general',
+          language: 'en',
+          onClose: () => undefined,
+        }),
+      );
+      expect(html).toMatch(/<option value="directions_parking" selected="">/);
+      expect(html).not.toMatch(/<option value="ticket_prices" selected="">/);
+      expect(html).not.toContain('As the assistant classified it');
+      expect(html).toContain('data-topic-source="turn"');
+      expect(html).toContain('As the assistant classified this message.');
+    });
+
+    it('on a silence the assistant never classified, starts on the category’s topic and says so', () => {
+      const html = renderToStaticMarkup(
+        createElement(CorrectAssistant, {
+          target: { at: '2026-10-20T08:00:30.000Z' },
+          messages: messages.slice(0, 4),
+          events: turns,
+          intent: 'ticket_prices',
+          category: 'birthdays',
+          language: 'en',
+          onClose: () => undefined,
+        }),
+      );
+      expect(html).toMatch(/<option value="birthday_party" selected="">/);
+      expect(html).not.toContain('As the assistant classified it');
+      expect(html).toContain('data-topic-source="turn-unclassified"');
     });
   });
 });

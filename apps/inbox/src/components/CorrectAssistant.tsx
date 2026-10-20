@@ -3,7 +3,7 @@ import { CheckCircle2, Loader2, PenLine } from 'lucide-react';
 import type { InboxCategoryKey } from '@oto/shared/inbox';
 import { ApiError } from '@/api/client';
 import { assistantApi, type ExampleVerdict } from '@/api/assistant';
-import type { Message } from '@/api/inbox';
+import type { InboxEvent, Message } from '@/api/inbox';
 import { Refusal } from '@/components/confirms';
 import { Dialog } from '@/components/Dialog';
 import {
@@ -19,6 +19,7 @@ import {
   exampleLanguage,
   intentLabel,
   knownIntent,
+  turnForCorrection,
 } from '@/lib/assistant';
 
 /** The thread's own language as a starting choice, only when it is one the assistant speaks. */
@@ -44,6 +45,7 @@ export type CorrectionTarget = { messageId: string } | { at: string };
 export function CorrectAssistant({
   target,
   messages,
+  events = [],
   intent,
   category,
   language,
@@ -51,6 +53,8 @@ export function CorrectAssistant({
 }: {
   target: CorrectionTarget;
   messages: readonly Message[];
+  /** The thread's events: the assistant's turns name the lines they wrote (D3). */
+  events?: readonly InboxEvent[];
   /** The thread's intent and language, as the classifier left them. */
   intent: string | null;
   /** The thread's category: the topic's starting point when the assistant never classified it (test night U3). */
@@ -63,20 +67,24 @@ export function CorrectAssistant({
   const [customerText, setCustomerText] = useState(source.customerText);
   const [goodReply, setGoodReply] = useState(source.aiText);
   const [verdict, setVerdict] = useState<ExampleVerdict>('should_answer');
-  // Blank = as the assistant classified that message (its turn), else the
-  // thread: the server's default; staff pick one only to overrule it. On a
-  // thread it never classified there is no default to fall back on, so the
-  // category's nearest topic is preselected and a blank is refused here, not
-  // after Propose (`defaultExampleIntent`, `exampleIntentProblem`).
-  const classified = knownIntent(intent) !== null;
-  const [exIntent, setExIntent] = useState<string>(defaultExampleIntent(intent, category));
+  // The topic starts on the corrected MESSAGE's own turn (customer-AI test
+  // night D3: starting from the thread saved a parking correction as the
+  // thread's later price question), shown, never blank. Only when no turn
+  // names the message: blank = the server's default (its turn, else the
+  // thread) on a classified thread; on a thread the assistant never
+  // classified there is no default, so the category's nearest topic is
+  // preselected and a blank is refused here, not after Propose.
+  const corrected = 'messageId' in target ? messages.find((m) => m.id === target.messageId) : undefined;
+  const turn = turnForCorrection(events, target, (corrected as { aiTurnId?: unknown } | undefined)?.aiTurnId);
+  const classified = turn === null && knownIntent(intent) !== null;
+  const [exIntent, setExIntent] = useState<string>(turn?.intent ?? defaultExampleIntent(turn ? null : intent, category));
   const [exLanguage, setExLanguage] = useState<string>(knownLanguage(language));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
   const draft = { customerText, goodReply, verdict };
-  const problem = exampleDraftProblem(draft) ?? exampleIntentProblem(exIntent, intent);
+  const problem = exampleDraftProblem(draft) ?? exampleIntentProblem(exIntent, turn ? null : intent);
   const sourceMessageId = 'messageId' in target ? target.messageId : source.customerMessageId;
 
   const save = async (e: FormEvent) => {
@@ -195,6 +203,11 @@ export function CorrectAssistant({
                 </option>
               ))}
             </select>
+            {turn && (
+              <span className="text-[11px] font-normal text-slate-400" data-topic-source={turn.intent ? 'turn' : 'turn-unclassified'}>
+                {turn.intent ? 'As the assistant classified this message.' : 'The assistant did not classify this message: pick its topic.'}
+              </span>
+            )}
           </Field>
           <Field label="Language">
             <select value={exLanguage} onChange={(e) => setExLanguage(e.target.value)} className={FIELD}>

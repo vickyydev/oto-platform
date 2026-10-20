@@ -5,9 +5,11 @@ import { HANDOFF_FALLBACK, HANDOFF_REFUSALS, handoffRefusal, readHandoffToken } 
 import { stateForRefusal } from '@/auth/SessionContext';
 import { EMPTY_FILTERS, activeFilterCount, listQuery } from '@/lib/query';
 import {
+  SHADOW_LABEL,
   SUPPORT_FULL_HINT,
   TRANSLATION_PENDING,
   aiStateLine,
+  aiStateLineFor,
   archiveFrom,
   assigneeChip,
   branchLabel,
@@ -261,9 +263,58 @@ describe('the assistant’s state line (test night U5)', () => {
     expect(aiStateLine('off', false)).toEqual({ kind: 'label', text: 'Assistant off on this number' });
     expect(aiStateLine('off', true)).toEqual({ kind: 'label', text: 'Assistant off on this number' });
     expect(aiStateLine('shadow', false)).toEqual({ kind: 'label', text: 'Assistant in shadow' });
-    expect(aiStateLine('shadow', true)).toEqual({ kind: 'control', text: 'AI paused · Resume', paused: true });
-    expect(aiStateLine('live', false)).toEqual({ kind: 'control', text: 'AI on · Pause', paused: false });
-    expect(aiStateLine('live', true)).toEqual({ kind: 'control', text: 'AI paused · Resume', paused: true });
+    expect(aiStateLine('shadow', true)).toEqual({ kind: 'control', text: 'AI paused · Resume', paused: true, action: 'resume' });
+    expect(aiStateLine('live', false)).toEqual({ kind: 'control', text: 'AI on · Pause', paused: false, action: 'pause' });
+    expect(aiStateLine('live', true)).toEqual({ kind: 'control', text: 'AI paused · Resume', paused: true, action: 'resume' });
+  });
+
+  it('says the api’s own state when it is there (customer-AI test night, W4a), each with its word', () => {
+    const live = { aiMode: 'live' as const, aiPaused: false };
+    expect(aiStateLineFor({ ...live, aiState: 'ready' })).toEqual({ kind: 'control', text: 'AI on · Pause', paused: false, action: 'pause' });
+    expect(aiStateLineFor({ ...live, aiState: 'paused' })).toEqual({ kind: 'control', text: 'AI paused · Resume', paused: true, action: 'resume' });
+    expect(aiStateLineFor({ ...live, aiState: 'left_for_team' })).toEqual({
+      kind: 'control',
+      text: 'AI handed over · Resume',
+      paused: true,
+      action: 'resume',
+    });
+    expect(aiStateLineFor({ ...live, aiState: 'person_replied' })).toEqual({
+      kind: 'control',
+      text: 'AI stopped: a person replied · Resume',
+      paused: true,
+      action: 'resume',
+    });
+    expect(aiStateLineFor({ ...live, aiState: 'shadow' })).toEqual({ kind: 'label', text: 'Assistant in shadow' });
+    expect(aiStateLineFor({ ...live, aiState: 'off' })).toEqual({ kind: 'label', text: 'Assistant off on this number' });
+  });
+
+  it('keeps the U5 derivation when the api says no state, or one it does not know', () => {
+    expect(aiStateLineFor({ aiMode: 'off', aiPaused: false })).toEqual({ kind: 'label', text: 'Assistant off on this number' });
+    expect(aiStateLineFor({ aiMode: 'live', aiPaused: true, aiState: undefined })).toMatchObject({ text: 'AI paused · Resume' });
+    expect(aiStateLineFor({ aiMode: 'live', aiPaused: false, aiState: 'dreaming' })).toMatchObject({ text: 'AI on · Pause' });
+  });
+});
+
+describe('shadow suggestions on the thread read (customer-AI test night, W5)', () => {
+  const ctx = { me };
+  it('becomes a shadow item, not a pill, with its words from the payload or the item itself', () => {
+    const items = timeline(
+      [],
+      [
+        event({ id: 's1', kind: 'ai.shadow', actorKind: 'ai', payload: { text: 'We open at 10:00.', turnId: 't1' } }),
+        { ...event({ id: 's2', kind: 'ai.shadow', actorKind: 'ai' }), text: 'Socks are available at reception.', turnId: 't2' } as InboxEvent,
+      ],
+      true,
+      ctx,
+    );
+    expect(items).toEqual([
+      { kind: 'shadow', at: '2026-10-20T03:00:00.000Z', id: 's1', text: 'We open at 10:00.', turnId: 't1' },
+      { kind: 'shadow', at: '2026-10-20T03:00:00.000Z', id: 's2', text: 'Socks are available at reception.', turnId: 't2' },
+    ]);
+    expect(SHADOW_LABEL).toBe('Shadow suggestion — not sent');
+  });
+  it('drops a shadow item with no words rather than show an empty bubble', () => {
+    expect(timeline([], [event({ id: 's3', kind: 'ai.shadow', payload: { turnId: 't3' } })], true, ctx)).toEqual([]);
   });
 });
 

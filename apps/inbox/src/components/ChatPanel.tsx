@@ -26,7 +26,7 @@ import { Composer, MANAGER_REOPENS, type InsertedTemplate } from '@/components/C
 import { CorrectAssistant, type CorrectionTarget } from '@/components/CorrectAssistant';
 import { PrimaryMoveConfirm, TeamMoveConfirm, type PendingPrimaryMove, type PendingTeamMove } from '@/components/confirms';
 import { DetailsDialog, type DetailsActions } from '@/components/dialogs';
-import { MessageBubble } from '@/components/MessageBubble';
+import { MessageBubble, ShadowBubble } from '@/components/MessageBubble';
 import { SlotPicker } from '@/components/SlotPicker';
 import { PendingControl } from '@/components/writes';
 import {
@@ -34,7 +34,7 @@ import {
   EVENT_ORDERS_REASON,
   SUPPORT_FULL_HINT,
   WRITES_PENDING_REASON,
-  aiStateLine,
+  aiStateLineFor,
   assigneeChip,
   branchLabel,
   branchOutcome,
@@ -162,10 +162,12 @@ export function ChatPanel({
 
   // SCRUM-590 A3: the assistant's pause on this thread (§A.3 kill switch 3),
   // for whoever acts on it; and "Correct the assistant" for anyone who may write.
-  // The line says the number's mode first (test night U5: "AI on · Pause"
-  // showed where the assistant was off): nothing until the detail is in.
-  const aiLine = detail ? aiStateLine(detail.aiMode, detail.aiPaused) : null;
-  const aiPaused = detail?.aiPaused ?? false;
+  // The line says the thread's state as the api says it (customer-AI test
+  // night W4a: `aiState`, read optionally), else the number's mode first
+  // (test night U5: "AI on · Pause" showed where the assistant was off):
+  // nothing until the detail is in.
+  const aiLine = detail ? aiStateLineFor(detail) : null;
+  const aiPaused = aiLine?.kind === 'control' ? aiLine.paused : false;
   const mayPauseAi = live && (handleable || me.capabilities.assign);
   const mayCorrect = live;
 
@@ -543,17 +545,18 @@ export function ChatPanel({
               <button
                 type="button"
                 data-ai-state={detail?.aiMode}
+                data-ai-action={aiLine.action}
                 disabled={busy !== null}
                 aria-pressed={aiPaused}
                 onClick={() =>
                   void run(
                     'ai',
-                    () => (aiPaused ? assistantApi.resume(conv.id) : assistantApi.pause(conv.id)),
-                    aiPaused ? 'The assistant could not be resumed here.' : 'The assistant could not be paused here.',
+                    () => (aiLine.action === 'resume' ? assistantApi.resume(conv.id) : assistantApi.pause(conv.id)),
+                    aiLine.action === 'resume' ? 'The assistant could not be resumed here.' : 'The assistant could not be paused here.',
                   )
                 }
                 title={
-                  aiPaused
+                  aiLine.action === 'resume'
                     ? 'The assistant stays quiet on this conversation. Resume to let it answer again.'
                     : 'Stop the assistant answering on this conversation. Lines not yet sent are withdrawn.'
                 }
@@ -714,7 +717,9 @@ export function ChatPanel({
             </div>
           )}
           {items.map((it) =>
-            it.kind === 'pill' ? (
+            it.kind === 'shadow' ? (
+              <ShadowBubble key={it.id} text={it.text} at={it.at} now={now} />
+            ) : it.kind === 'pill' ? (
               <div key={it.id} className="my-1 flex flex-col items-center gap-0.5">
                 <span className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-slate-200/70 px-2.5 py-1 text-center text-[11px] font-medium text-slate-600">
                   <Bot className="h-3 w-3 shrink-0" />
@@ -772,6 +777,7 @@ export function ChatPanel({
         <CorrectAssistant
           target={correcting}
           messages={thread.messages}
+          events={thread.detail?.events ?? []}
           intent={conv.intent}
           category={conv.category}
           language={conv.language}

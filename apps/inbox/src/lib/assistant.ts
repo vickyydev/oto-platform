@@ -11,7 +11,7 @@
 import { AI_INTENTS, AI_KB_TOPICS, type AiIntent } from '@oto/assistant/intents';
 import type { InboxCategoryKey } from '@oto/shared/inbox';
 import type { AiMode, ExampleVerdict, KbEntry, KbLanguage, KbStatus } from '@/api/assistant';
-import type { Message } from '@/api/inbox';
+import type { InboxEvent, Message } from '@/api/inbox';
 
 // --- The per-number switch (§D.4, §B.5) ------------------------------------------------
 
@@ -221,6 +221,44 @@ export function defaultExampleIntent(threadIntent: string | null, category: Inbo
 export function exampleIntentProblem(chosen: string, threadIntent: string | null): string | null {
   if (chosen !== '' || knownIntent(threadIntent) !== null) return null;
   return 'Choose the topic this example teaches: the assistant has not classified this conversation.';
+}
+
+/** The assistant's turn behind the line being corrected, and what it classified. */
+export interface CorrectionTurn {
+  turnId: string | null;
+  intent: AiIntent | null;
+}
+
+const text = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v : null);
+
+/**
+ * The turn of the message being corrected (customer-AI test night, D3: a
+ * parking correction was saved as ticket_prices, the thread's LATEST intent,
+ * because the topic started from the thread rather than the message). An AI
+ * line is named in its turn's `ai_replied` or `ai_handover` event
+ * (`payload.messageIds`), and the message row's own `aiTurnId` — the
+ * customer-AI lane's field, read optionally — names the turn outright. The
+ * silence an `ai_silent` pill marks is that pill's event, at its time. Null
+ * when no turn names the message: then the topic starts as before.
+ */
+export function turnForCorrection(
+  events: readonly InboxEvent[],
+  target: { messageId: string } | { at: string },
+  aiTurnId?: unknown,
+): CorrectionTurn | null {
+  const of = (e: InboxEvent): CorrectionTurn => ({ turnId: text(e.payload.turnId), intent: knownIntent(text(e.payload.intent)) });
+  if ('messageId' in target) {
+    const byTurn = typeof aiTurnId === 'string' ? aiTurnId : null;
+    const e = events.find(
+      (x) =>
+        (x.kind === 'ai_replied' || x.kind === 'ai_handover') &&
+        ((byTurn !== null && x.payload.turnId === byTurn) ||
+          (Array.isArray(x.payload.messageIds) && x.payload.messageIds.includes(target.messageId))),
+    );
+    return e ? of(e) : null;
+  }
+  const e = events.find((x) => x.kind === 'ai_silent' && x.createdAt === target.at);
+  return e ? of(e) : null;
 }
 
 /**

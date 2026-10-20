@@ -14,7 +14,7 @@ import { Dashboard } from '@/components/Dashboard';
 import { DetailsDialog, MANAGERS_ADD_SUPPORT, type DetailsActions } from '@/components/dialogs';
 import { FilterFields } from '@/components/Rail';
 import { EMPTY_FILTERS } from '@/lib/query';
-import { SUPPORT_FULL_HINT, TRANSLATION_PENDING } from '@/lib/view';
+import { SHADOW_LABEL, SUPPORT_FULL_HINT, TRANSLATION_PENDING } from '@/lib/view';
 
 const CENTRAL = '00000000-0000-7000-8000-00000000000c';
 const CHALONG = '00000000-0000-7000-8000-0000000000c2';
@@ -189,6 +189,47 @@ describe('the assistant’s state on a thread (U5)', () => {
     const html = panel(anya, r, null);
     expect(html).not.toContain('AI on · Pause');
     expect(html).not.toContain('Assistant off');
+  });
+
+  it('says the api’s thread state when it is there (customer-AI test night, W4a), with the control it needs', () => {
+    const live = (aiState: string) => panel(anya, r, { ...detail(r, { aiMode: 'live' }), aiState } as ConversationDetail);
+    expect(live('ready')).toMatch(/data-ai-action="pause"[^>]*>.*AI on · Pause/);
+    expect(live('paused')).toMatch(/data-ai-action="resume"[^>]*>.*AI paused · Resume/);
+    expect(live('left_for_team')).toMatch(/data-ai-action="resume"[^>]*>.*AI handed over · Resume/);
+    expect(live('person_replied')).toMatch(/data-ai-action="resume"[^>]*>.*AI stopped: a person replied · Resume/);
+    expect(live('shadow')).toContain('Assistant in shadow');
+    expect(live('shadow')).not.toContain('aria-pressed');
+    expect(live('off')).toContain('Assistant off on this number');
+    expect(live('off')).not.toContain('AI on · Pause');
+  });
+});
+
+describe('shadow suggestions (customer-AI test night, W5)', () => {
+  it('renders what the assistant would have said as a muted, staff-only bubble under the AI chip', () => {
+    const r = row();
+    const d = detail(r, {
+      aiMode: 'shadow',
+      events: [
+        {
+          id: 'sh-1',
+          kind: 'ai.shadow',
+          actorKind: 'ai',
+          actorAccountId: null,
+          actorName: null,
+          payload: { text: 'Yes, there are free lockers at reception.', turnId: 'turn-9' },
+          createdAt: '2026-10-21T02:00:00.000Z',
+        },
+      ],
+    });
+    const html = panel(anya, r, d);
+    expect(html).toContain('data-shadow="true"');
+    expect(html).toContain(SHADOW_LABEL);
+    expect(html).toContain('Yes, there are free lockers at reception.');
+    expect(html).toContain('AI Assistant');
+    expect(html).toContain('border-dashed');
+    // Never a pill, never a sent bubble.
+    expect(html).not.toContain('ai.shadow');
+    expect(html).not.toContain('bg-indigo-50 text-indigo-900');
   });
 });
 

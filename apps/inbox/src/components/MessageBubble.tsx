@@ -1,7 +1,35 @@
-import { AlertTriangle, Ban, Bot, Check, CheckCheck, Clock3, Languages, Paperclip, PenLine } from 'lucide-react';
+import { AlertTriangle, Ban, Bot, Check, CheckCheck, Clock3, EyeOff, Languages, Paperclip, PenLine } from 'lucide-react';
 import type { InboxMe, Message } from '@/api/inbox';
 import { ChipView } from '@/components/atoms';
-import { bubbleTime, langLabel, personChip } from '@/lib/view';
+import { SHADOW_LABEL, bubbleTime, langLabel, personChip } from '@/lib/view';
+
+/**
+ * What the assistant WOULD have said on a number in shadow mode (customer-AI
+ * test night, W5: staff saw nothing and could not judge it). Staff-only, never
+ * sent: a muted, dashed bubble under the AI chip, labelled so.
+ */
+export function ShadowBubble({ text, at, now }: { text: string; at: string; now: Date }) {
+  return (
+    <div className="flex justify-end" data-shadow="true">
+      <div className="flex min-w-0 max-w-[80%] flex-col items-end gap-1">
+        <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+          <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-1.5 py-0.5 text-indigo-600 ring-1 ring-indigo-200">
+            <Bot className="h-2.5 w-2.5" /> AI Assistant
+          </span>
+          <span className="inline-flex items-center gap-1 normal-case tracking-normal text-slate-400">
+            <EyeOff className="h-3 w-3" /> {SHADOW_LABEL}
+          </span>
+        </div>
+        <div className="max-w-full whitespace-pre-line break-words rounded-2xl rounded-tr-sm border border-dashed border-indigo-200 bg-indigo-50/40 px-3.5 py-2 text-[13.5px] leading-relaxed text-indigo-900/70">
+          {text}
+          <div className="mt-1 flex items-center justify-end gap-1 text-[10px] text-indigo-300">
+            <span>{bubbleTime(at, now)}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /**
  * The read ticks (:2097), over the provider's delivery status: one tick sent,
