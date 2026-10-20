@@ -304,8 +304,8 @@ describe('shadow suggestions on the thread read (customer-AI test night, W5)', (
     const items = timeline(
       [],
       [
-        event({ id: 's1', kind: 'ai.shadow', actorKind: 'ai', payload: { text: 'We open at 10:00.', turnId: 't1' } }),
-        { ...event({ id: 's2', kind: 'ai.shadow', actorKind: 'ai' }), text: 'Socks are available at reception.', turnId: 't2' } as InboxEvent,
+        event({ id: 's1', kind: 'ai_shadow', actorKind: 'ai', payload: { text: 'We open at 10:00.', turnId: 't1' } }),
+        { ...event({ id: 's2', kind: 'ai_shadow', actorKind: 'ai' }), text: 'Socks are available at reception.', turnId: 't2' } as InboxEvent,
       ],
       true,
       ctx,
@@ -317,7 +317,7 @@ describe('shadow suggestions on the thread read (customer-AI test night, W5)', (
     expect(SHADOW_LABEL).toBe('Shadow suggestion — not sent');
   });
   it('drops a shadow item with no words rather than show an empty bubble', () => {
-    expect(timeline([], [event({ id: 's3', kind: 'ai.shadow', payload: { turnId: 't3' } })], true, ctx)).toEqual([]);
+    expect(timeline([], [event({ id: 's3', kind: 'ai_shadow', payload: { turnId: 't3' } })], true, ctx)).toEqual([]);
   });
 });
 
@@ -614,8 +614,17 @@ describe('the timeline', () => {
       'Branch set to all branches by Hanna',
     );
     expect(eventText(event({ ...hana, payload: {} }), ctx)).toBe('Branch set by Hanna');
-    expect(eventText(event({ kind: 'ai.paused', actorKind: 'account', actorName: 'Hanna' }), ctx)).toBe('AI paused by Hanna');
-    expect(eventText(event({ kind: 'ai.resumed', actorKind: 'account', actorAccountId: GM }), ctx)).toBe('AI resumed by Hanna');
+    // The api's kinds are the enum's underscore form; a pause says what it withdrew.
+    expect(eventText(event({ kind: 'ai_paused', actorKind: 'account', actorName: 'Hanna', payload: { turnsCancelled: 0, messagesWithdrawn: 0 } }), ctx)).toBe(
+      'AI paused by Hanna',
+    );
+    expect(eventText(event({ kind: 'ai_paused', actorKind: 'account', actorName: 'Hanna', payload: { turnsCancelled: 1, messagesWithdrawn: 2 } }), ctx)).toBe(
+      'AI paused by Hanna · 2 lines withdrawn',
+    );
+    expect(eventText(event({ kind: 'ai_paused', actorKind: 'account', actorName: 'Hanna', payload: { messagesWithdrawn: 1 } }), ctx)).toBe(
+      'AI paused by Hanna · 1 line withdrawn',
+    );
+    expect(eventText(event({ kind: 'ai_resumed', actorKind: 'account', actorAccountId: GM, payload: {} }), ctx)).toBe('AI resumed by Hanna');
   });
   it('leaves out the events a bubble already shows', () => {
     expect(eventText(event({ kind: 'received' }), ctx)).toBeNull();

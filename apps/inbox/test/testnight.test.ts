@@ -328,7 +328,7 @@ describe('shadow suggestions (customer-AI test night, W5)', () => {
       events: [
         {
           id: 'sh-1',
-          kind: 'ai.shadow',
+          kind: 'ai_shadow',
           actorKind: 'ai',
           actorAccountId: null,
           actorName: null,
@@ -343,8 +343,8 @@ describe('shadow suggestions (customer-AI test night, W5)', () => {
     expect(html).toContain('Yes, there are free lockers at reception.');
     expect(html).toContain('AI Assistant');
     expect(html).toContain('border-dashed');
-    // Never a pill, never a sent bubble.
-    expect(html).not.toContain('ai.shadow');
+    // Never a pill (the default pill would read "ai shadow"), never a sent bubble.
+    expect(html).not.toContain('ai shadow');
     expect(html).not.toContain('bg-indigo-50 text-indigo-900');
   });
 });

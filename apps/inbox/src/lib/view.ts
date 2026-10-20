@@ -427,10 +427,14 @@ export function eventText(e: InboxEvent, ctx: PillContext): string | null {
       if (to === null) return `Branch set to all branches by ${actorOf(e, ctx)}`;
       return `Branch set by ${actorOf(e, ctx)}`;
     }
-    // The per-thread pause and its undo (SCRUM-590 §A.3; test night U5).
-    case 'ai.paused':
-      return `AI paused by ${actorOf(e, ctx)}`;
-    case 'ai.resumed':
+    // The per-thread pause and its undo (SCRUM-590 §A.3; test night U5): the
+    // api's `ai_paused` says what it stopped (`turnsCancelled`,
+    // `messagesWithdrawn`), `ai_resumed` carries nothing.
+    case 'ai_paused': {
+      const withdrawn = typeof p.messagesWithdrawn === 'number' && p.messagesWithdrawn > 0 ? p.messagesWithdrawn : 0;
+      return `AI paused by ${actorOf(e, ctx)}${withdrawn > 0 ? ` · ${withdrawn} line${withdrawn === 1 ? '' : 's'} withdrawn` : ''}`;
+    }
+    case 'ai_resumed':
       return `AI resumed by ${actorOf(e, ctx)}`;
     case 'handled':
       return e.actorKind === 'ai' ? 'Marked as Handled by AI · Auto-resolved' : `Marked as Handled by ${actorOf(e, ctx)}`;
@@ -521,8 +525,8 @@ export type TimelineItem =
   /** A run of system pills from one actor and moment, said in one line, expandable (customer-AI test night, W7). */
   | { kind: 'group'; at: string; id: string; summary: string; pills: PillItem[] };
 
-/** The shadow item's kind on the thread read, and its words: on the payload, or on the item itself. */
-export const SHADOW_EVENT_KIND = 'ai.shadow';
+/** The shadow item's kind on the thread read (the api's enum spelling), and its words: on the payload, or on the item itself. */
+export const SHADOW_EVENT_KIND = 'ai_shadow';
 export const SHADOW_LABEL = 'Shadow suggestion — not sent';
 
 function shadowOf(e: InboxEvent): { text: string; turnId: string | null } | null {
