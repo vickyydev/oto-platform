@@ -971,3 +971,220 @@ These are ready to create. The cut tag shows which choice includes each one.
    channel exists.
 6. **Retention periods** for conversations and webhook payloads, under
    Q19.
+
+## Test night (2026-10-21): the api and seed side of the human-style test of the rails
+
+The owner and the park's admins test on staging on 2026-10-22. The evening
+before, a human-style walk of the rails raised nine findings; this section
+records what the api and the seed changed for each, the one they deliberately
+did not, and the names the shell depends on. SCRUM-220, lane
+`lane/inbox-testnight-api`, migration `0083_inbox_test_night` (expand-only:
+three CHECK swaps that only widen a list, no row written).
+
+### R1 — every Thai and Russian template was English text
+
+Eighteen TH and RU rows carried the English body marked `needs_translation`,
+and nobody translated them: a Russian customer outside the 24-hour window
+received English.
+
+- `packages/db/src/seed/inbox.ts` lays every key in English, Thai and Russian,
+  each language in its own words (`INBOX_TEMPLATE_TRANSLATIONS`): Thai as a
+  receptionist writes it, with the polite particles (ค่ะ / คะ / นะคะ); Russian
+  natural and polite. Each carries the same `{{placeholders}}` as its English
+  source and no number the source does not: the out-of-hours line's
+  10:00–20:00 is the English body's own literal, kept.
+- Platform-sync's inbox step **back-fills** a deployed operator
+  (`backfillTranslations`): a TH or RU row takes its translation and the flag
+  clears only while it is still flagged `needs_translation` AND its body still
+  equals the English source word for word. A body anybody changed — flagged or
+  not, archived or not — is left exactly as written. A row equal to an older
+  English wording stays as it is, for an admin to word.
+- The sync counts report `translations`; the deploy log line says how many.
+- Pin: `packages/db/test/inbox-i1.test.ts` — the ten keys in three languages
+  with their own script and placeholders; the staging shape (English-bodied,
+  flagged TH/RU rows) translated on one sync and nothing on the next; an
+  admin's flagged edit and an unflagged edit both untouched.
+  `inbox-ai-a1b.test.ts` — `handover_general` in three distinct bodies, nothing
+  flagged.
+
+### R2 — outside the window every template was a "please hold" line
+
+- Template key **`follow_up`**: en "Hello {{name}}, following up on your
+  message to OTO Play Park — reply here whenever you're ready and we'll pick
+  it up.", with th and ru equivalents, laid at every operator that lacks it
+  under the same insert-if-absent rule as the others.
+- The placeholder is the composer's `{{name}}` form (`@oto/shared`
+  `templateVariables`), so the composer asks for the customer's name before
+  sending.
+- **The template table has no purpose column; the shell picks the follow-up
+  by key `follow_up`** — the natural choice outside the window, the only key
+  whose line is not a holding line. The assistant's holding-line list
+  (`@oto/assistant` `AI_HOLDING_TEMPLATE_KEYS`) is unchanged: `follow_up` is a
+  person's line.
+- Pin: the same i1 test — `follow_up` is the only key with a placeholder, and
+  the two key lists (`@oto/db` `INBOX_TEMPLATE_KEYS`, `@oto/shared`
+  `INBOX_TEMPLATE_KEY_NAMES`) agree.
+
+### R3 — By category counted 15 while Active said 12
+
+- `GET /inbox/dashboard` `byCategory` counts the **active** conversations —
+  the Active card's population — and the response says so:
+  **`population: 'active'`** (`INBOX_DASHBOARD_POPULATIONS = ['active', 'all']`).
+- The prototype counted every scoped conversation whatever its status
+  (`WhatsAppDemo.tsx:1121-1125`), and the first port kept that rule. The
+  owner's finding on the test night replaces it; the label lets the tile say
+  which population it shows.
+- Pin: `apps/api/test/inbox-read.test.ts` "the dashboard" — by category over
+  the active threads only, the three adding up to `active`, for four viewers;
+  the demo data's three handled threads make the two populations differ.
+
+### R4 — setting a birthday thread's branch added no host and gave no reason
+
+- `PATCH /inbox/conversations/{id}/branch` answers, additively:
+  **`hostSkipped: 'no_host' | 'host_inactive' | 'already_on' | 'support_full' | null`**
+  (`INBOX_HOST_SKIP_REASONS`) and **`host: { accountId, name } | null`** (the
+  name is the employee record's; null without one). Both are null on a thread
+  that is not a birthday, and `host` is null whenever `hostSkipped` is set.
+- The `branch_set` pill's payload carries **`fromBranchName`** and
+  **`branchName`** beside `fromBranchId` / `toBranchId` (`branchName` null
+  when the branch is cleared); the audit row's `after` carries **`branchName`**.
+- Pin: `apps/api/test/inbox-actions.test.ts` "the branch" — the host named on
+  join; `already_on`, `support_full`, `no_host`; a general thread and a
+  cleared branch answer null; the pill and the audit row name the branch.
+
+### R5 — AI pause and resume left no timeline event
+
+- `POST …/ai-pause` and `…/ai-resume` write a conversation event in the table
+  every other pill reads from: kinds **`ai_paused`** and **`ai_resumed`**
+  (added to `@oto/db` `INBOX_EVENT_KINDS` and the `event_kind_check`; the
+  shared timeline schema's `kind` is a string, so nothing else widens),
+  `actorKind: 'account'` with the actor's id, payload
+  `{ turnsCancelled, messagesWithdrawn }` on a pause (counts, never words) and
+  `{}` on a resume. The same state again writes nothing, as the audit row
+  already did not.
+- The names follow the enum's own `ai_*` form (`ai_handover`, `ai_silent`,
+  `ai_withdrawn`), not a dotted one.
+- Pin: `apps/api/test/inbox-ai-kb.test.ts` "pause" — one `ai_paused` pill with
+  the actor and the counts, one `ai_resumed`, and none for a repeat of either.
+
+### R6 — "Unanswered" still showed after the assistant replied: no change
+
+Both plans exclude AI replies from "answered", deliberately, so nothing
+changed. The words:
+
+- This plan, §3.1: "Messages written by the AI do not count as answered
+  (`:651`)."
+- The AI plan (`docs/progress/plans/inbox-ai-build/PLAN.md`), "What stays":
+  "**AI messages never count as an answer.** `isUnanswered` reads
+  `last_staff_message_at` only, 'AI lines do not count as an answer'
+  (`packages/shared/src/inbox.ts:128-159`). An AI-answered thread therefore
+  stays in 'unanswered' for staff until a person replies or it is handled."
+- The AI plan, X7: "`isUnanswered` is unchanged. (G4.)" and R10: "**Shared
+  rules unchanged, deliberately:** `isUnanswered` keeps AI lines out of
+  'answered' (prototype rule, `shared/inbox.ts:132`); the AI-handled case is
+  covered by G4, not by changing the rule."
+- G4 is the only exit: the assistant marks a thread handled after a closing
+  on an AI-only episode. The prototype's `isUnanswered`
+  (`WhatsAppDemo.tsx:644-656`) walks back to the last human agent reply and
+  ignores the AI's.
+
+The shared rule and the SQL (`read.ts` `unansweredSql`) already run over the
+same rows in the read test. If the owner wants an end-to-end AI answer to
+count as answered and a holding line not to, that is a rule change to raise
+with him, not a defect of the build.
+
+### R7 — the correction dialog's default topic was refused on an unclassified thread
+
+- `POST /inbox/ai/examples` accepts a **category name** (`general`,
+  `birthdays`, `marketing`) in `intent`. When the assistant classified the
+  thread (a turn's intent, else the thread's), that classification stands in
+  for the category; when it never did, the category's default intent is
+  stored — `CATEGORY_DEFAULT_INTENT` in `services/inbox/ai-settings.ts`:
+  `birthdays → birthday_party`, `marketing → influencer_marketing`,
+  `general → faq` (the assistant's own table routes the first two to those
+  teams; a general thread's correction is a factual one). A default for the
+  editor's picker, which the examples queue may change before approval.
+- The two refusals, `INTENT_REQUIRED` and `INTENT_UNKNOWN`, now carry
+  **`details.intents`** (the assistant's intents, in table order) so the
+  screen can preselect.
+- Which option: the api accepts the category (the first), and exposes the
+  topics on the refusal (the second) as well.
+- Pin: the same ai-kb suite — an `off` line's never-classified thread: the
+  bare refusal with the topics, the category accepted as the default intent,
+  an odd word still refused, and a classified thread's classification winning
+  over the category.
+
+### R8 — the support cap
+
+The refusal was already right: `409 SUPPORT_FULL`, "Both support places are
+taken. Remove someone first." What changed: every action route now
+**declares** its 409 — **`InboxActionRefusalSchema`** in
+`@oto/shared/inbox-actions`, the platform's envelope
+`{ error: { code, message, details? } }` with `code` one of
+`INBOX_ACTION_REFUSALS` or an idempotency code — so the OpenAPI document and
+`@oto/api-types` carry it and the shell can show the sentence. No behaviour
+changed; the existing `SUPPORT_FULL` pin in the actions suite now runs through
+the declared schema.
+
+### R9 — the average response time differed by viewer with no label of whose
+
+- Every dashboard number is over `visibleConversationsSql`, so two viewers see
+  two averages. The response now says whose: **`scope: 'mine' | 'team' | 'all'`**
+  (`INBOX_DASHBOARD_SCOPES`) — `all` for an operator-wide reader, `team` for
+  a reader with a branch grant or a department grant that maps to an inbox
+  team, `mine` for a reader in no inbox team (a manual-only person sees, and
+  averages, only the threads they hold).
+- Pin: the dashboard test — `all` for the GM, `team` for the Thai birthday
+  agent and the Chalong manager, `mine` for the coordinator.
+
+### W1 — the complaint hand-over read cold
+
+An angry parent and "my daughter cried and nobody helped her" both received
+"Thank you for letting us know. Please hold on — our reception team will be
+with you right away." The two complaint hand-overs — the only hand-over lines
+that said "right away" — now open with one line of empathy and say "shortly"
+(nobody is there right away on a phone), in all three languages:
+
+| Key | en | th | ru |
+|---|---|---|---|
+| `handover_complaint_onsite` | I'm really sorry to hear that. Thank you for telling us — a member of our reception team will be with you shortly. | ต้องขออภัยอย่างยิ่งที่เกิดเรื่องแบบนี้ขึ้นนะคะ ขอบคุณที่แจ้งให้เราทราบค่ะ ทีมต้อนรับของเราจะมาดูแลคุณในอีกไม่นานค่ะ | Нам очень жаль, что так произошло. Спасибо, что рассказали нам — сотрудник ресепшена скоро свяжется с вами. |
+| `handover_complaint_online` | I'm really sorry to hear that. Thank you for telling us — a member of our team will be with you shortly to look into this. | ต้องขออภัยอย่างยิ่งที่เกิดเรื่องแบบนี้ขึ้นนะคะ ขอบคุณที่แจ้งให้เราทราบค่ะ ทีมงานของเราจะติดต่อกลับเพื่อดูแลเรื่องนี้ในอีกไม่นานค่ะ | Нам очень жаль, что так произошло. Спасибо, что рассказали нам — сотрудник нашей команды скоро свяжется с вами, чтобы разобраться в ситуации. |
+
+What a deployed operator gets, under the never-overwrite rule:
+
+- The **English** rows are never rewritten: staging's two English complaint
+  lines keep the old wording until an admin pastes the new one (the table
+  above is the paste).
+- The **Thai and Russian** rows that still carry the OLD English complaint
+  line, flagged `needs_translation`, are back-filled all the same: the old
+  lines are kept in `INBOX_TEMPLATE_FORMER_BODIES`, and a flagged row equal
+  to a former wording this file laid is as untranslated as one equal to the
+  current source. A flagged row equal to nothing the platform ever laid stays
+  for an admin to word.
+- Pin: the i1 back-fill test — a flagged TH row with the former complaint
+  wording takes its translation; a flagged TH row with an unknown English
+  wording stays; the English complaint row is untouched.
+- The demo conversations (`inbox-demo-fixtures.ts`) quote the old line as
+  message history and stay as they were: a sent message does not change
+  because its template did.
+
+### Ownership on the night
+
+Three lanes touch the inbox at once. This lane's hunks, for the rebase:
+
+- `apps/api/src/services/inbox/read.ts`: `dashboardScopeOf` and
+  `inboxDashboard` only (the dashboard block); nothing in the conversation
+  detail, where the AI lane adds `aiState`.
+- `apps/api/src/services/inbox/ai-engine.ts`, `ai-turns.ts`, `ai-runtime.ts`,
+  `ai-knowledge.ts`: **untouched** — R6 changed nothing (above).
+- `apps/api/src/services/inbox/ai-settings.ts`: `setAiPaused` (R5),
+  `createExample` and `checkIntent` (R7), the imports.
+- `apps/api/test/inbox-ai-engine.test.ts`: one fixture hunk in "a Thai
+  complaint: the Thai template still needs translation …" — the test now sets
+  that premise itself, since the seed lays Thai in its own words.
+
+### Landing note
+
+Another lane regenerates `@oto/api-types` too; the generated-file conflicts
+are resolved by regenerating at landing (`pnpm api-types:generate`), never by
+hand.
