@@ -80,6 +80,12 @@ export type GateVerdict =
        * needs translation (§C.5). May be empty.
        */
       holdingBubbles: string[];
+      /**
+       * Set when the model's own holding words failed a guard and were dropped:
+       * the hand-over still happens (the template, or silence-with-handover),
+       * but nothing unchecked rides it. Holds the failing guard's rule word.
+       */
+      droppedHoldingRule?: string;
       branchNamed: AiBranchKey | null;
     }
   | { action: 'silent'; reason: AiOutcomeReason; rule?: string; intent: AiIntent | null };
@@ -107,22 +113,25 @@ function handover(
   plan: AiHandoverPlan,
   reason: Extract<GateVerdict, { action: 'handover' }>['reason'],
 ): GateVerdict {
+  // A failing guard must never cancel the hand-over itself: a customer who
+  // needs a person still gets one, and the thread still re-routes. The model's
+  // words are simply dropped, so nothing unchecked rides the hand-over - the
+  // template (or a silent hand-over, where no template is ready) takes their
+  // place. A holding line cites nothing, so any number, date or promise word
+  // in it is ungrounded: "we'll refund you" can never ride a handover.
   const bubbles = d.bubbles;
   const shape = bubbleGuard(bubbles, 0);
-  if (!shape.ok) return silent(shape.reason, d.intent, shape.rule);
-  const persona = personaGuard(bubbles);
-  if (!persona.ok) return silent(persona.reason, d.intent, persona.rule);
-  // A holding line cites nothing, so any number, date or promise word in it
-  // is ungrounded: "we'll refund you" can never ride a handover.
-  const trace = traceabilityGuard(bubbles, []);
-  if (!trace.ok) return silent(trace.reason, d.intent, trace.rule);
+  const persona = shape.ok ? personaGuard(bubbles) : shape;
+  const trace = persona.ok ? traceabilityGuard(bubbles, []) : persona;
+  const failed = !shape.ok ? shape : !persona.ok ? persona : !trace.ok ? trace : null;
   return {
     action: 'handover',
     reason,
     intent: d.intent,
     language,
     plan,
-    holdingBubbles: [...bubbles],
+    holdingBubbles: failed ? [] : [...bubbles],
+    ...(failed ? { droppedHoldingRule: failed.rule } : {}),
     branchNamed: d.branchNamed,
   };
 }

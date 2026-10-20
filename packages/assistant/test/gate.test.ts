@@ -173,14 +173,19 @@ describe('handovers (PLAN §B.3, §B.4)', () => {
     });
   });
 
-  it('a holding line that promises a refund or compensation is silence, never sent', () => {
+  it('a holding line that promises a refund or compensation is dropped, and the hand-over still happens', () => {
     expect(
       gate({
         intent: 'complaint_onsite',
         action: 'handover',
         bubbles: ["So sorry! We'll refund your tickets."],
       }),
-    ).toMatchObject({ action: 'silent', reason: 'GUARD_PROMISE' });
+    ).toMatchObject({
+      action: 'handover',
+      holdingBubbles: [],
+      droppedHoldingRule: expect.any(String),
+      plan: { templateKey: 'handover_complaint_onsite' },
+    });
     expect(
       gate({
         language: 'th',
@@ -189,14 +194,22 @@ describe('handovers (PLAN §B.3, §B.4)', () => {
         bubbles: ['ขออภัยค่ะ เราจะชดเชยให้นะคะ'],
       }),
     ).toMatchObject({
-      reason: 'GUARD_PROMISE',
+      action: 'handover',
+      holdingBubbles: [],
+      droppedHoldingRule: expect.any(String),
     });
   });
 
   it('G13: "50% off" can never ride a discount handover', () => {
     expect(
       gate({ intent: 'discount_negotiation', action: 'answer', bubbles: ['OK, 50% off for you!'] }),
-    ).toMatchObject({ action: 'silent', reason: 'GUARD_NUMBER' });
+    ).toMatchObject({
+      action: 'handover',
+      reason: 'OVERRULED_HANDOVER',
+      holdingBubbles: [],
+      droppedHoldingRule: 'number',
+      plan: { templateKey: 'handover_general' },
+    });
     expect(gate({ intent: 'discount_negotiation', action: 'answer', bubbles: [] })).toMatchObject({
       action: 'handover',
       reason: 'OVERRULED_HANDOVER',
@@ -211,7 +224,12 @@ describe('handovers (PLAN §B.3, §B.4)', () => {
         action: 'handover',
         bubbles: ['Lovely! 14 November is booked for you 🎈'],
       }),
-    ).toMatchObject({ action: 'silent', reason: 'GUARD_NUMBER' });
+    ).toMatchObject({
+      action: 'handover',
+      holdingBubbles: [],
+      droppedHoldingRule: 'number',
+      plan: { templateKey: 'handover_birthday', route: 'birthdays' },
+    });
     expect(gate({ intent: 'birthday_party', action: 'handover', bubbles: [] })).toMatchObject({
       action: 'handover',
       plan: { templateKey: 'handover_birthday', route: 'birthdays', brochure: true },

@@ -1248,17 +1248,27 @@ export async function playMechanical(w: GoldenWorld, id: MechanicalId, fake: Fak
         await tickAt(w, new Date());
         const tb = await threadState(w, b.id);
         const turnB = tb.turns[0];
+        // The guard drops the injected words but the hand-over still happens
+        // (the A4 finding, fixed): the customer gets the template line only.
         check(
-          turnB?.state === 'silent' && turnB.reason === 'GUARD_NUMBER',
-          `the injected answer: turn ${turnB?.state}/${turnB?.reason}, expected (as built) silent/GUARD_NUMBER`,
+          turnB?.state === 'handed_over' && turnB.reason === 'OVERRULED_HANDOVER',
+          `the injected answer: turn ${turnB?.state}/${turnB?.reason}, expected handed_over/OVERRULED_HANDOVER`,
         );
-        check(!tb.lines.some((l) => l.authorKind === 'ai'), 'the injected answer wrote an AI line');
+        const aiB = tb.lines.filter((l) => l.authorKind === 'ai');
+        check(
+          aiB.every((l) => tb.templateKeyOf(l.templateId ?? null) === 'handover_general'),
+          'the injected answer sent a non-template AI line',
+        );
+        check(
+          !tb.lines.some((l) => (l.body ?? '').includes('50')),
+          'the injected number reached the thread',
+        );
         // And as an answer on an answerable intent, the guard refuses the number.
         const all = [...fixtureKnowledge().grounding.values()].map((g) => g.text);
         const trace = traceabilityGuard(['Sure, 50% off for you today'], all);
         check(!trace.ok && trace.reason === 'GUARD_NUMBER', 'the traceability guard let "50%" through against the whole fixture KB');
         notes.push(`labelled: turn ${turnA?.state}/${turnA?.reason}, line ${ta.templateKeyOf(aiA[0]?.templateId ?? null)}`);
-        notes.push(`injected answer: turn ${turnB?.state}/${turnB?.reason} (silence, not a handover: finding)`);
+        notes.push(`injected answer: turn ${turnB?.state}/${turnB?.reason} (hand-over with the words dropped)`);
         notes.push(`"50%" against the whole KB: ${trace.ok ? 'passed' : trace.reason}`);
         break;
       }
