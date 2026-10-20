@@ -54,6 +54,13 @@ describe.each(INTERNAL_ANSWER_MODES)('the internal persona block (%s)', (mode) =
     expect(text).toContain(rule);
   });
 
+  it('names the screen, never the button: a link the server withholds must leave no dangling words (the proof round’s "linked below")', () => {
+    const rule = INTERNAL_RULES.find((r) => r.id === 'no_link_prose');
+    expect(rule?.text).toContain('"linked below"');
+    expect(rule?.text).toContain('Name the screen instead');
+    expect(text).toContain(rule!.text);
+  });
+
   it('contains the voices, the data rule, the output contract and the label', () => {
     for (const v of Object.values(INTERNAL_VOICE)) expect(text).toContain(v);
     expect(text).toContain(INTERNAL_DATA_RULE);

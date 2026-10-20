@@ -573,6 +573,13 @@ export interface AskGolden {
 
 const PAYROLL_LINKS = ['oto.payroll.hub', 'oto.payroll.month', 'oto.payroll.person'];
 
+/**
+ * Prose that points at a button the server may withhold (the proof round's
+ * "Anan's payroll profile is linked below", with no button under it): the
+ * persona's `no_link_prose` rule, in the three languages.
+ */
+const LINK_PROSE = /linked (?:below|above|here)|(?:the|a) (?:button|link) (?:below|above)|see the (?:button|link)|ลิงก์ด้านล่าง|ปุ่มด้านล่าง|по ссылке ниже|кнопк\p{L}* ниже/iu;
+
 /** Q2's refusal line: the payroll routes' own sentence (`apps/oto-app/server/payroll/routes.ts`). */
 export const SALARY_REFUSAL = `OTO App: ${OTOAPP_WORDS.payrollRoles}`;
 /** Q3's refusal line: `requireManager`'s own word (`apps/oto-app/server/auth-middleware.ts`). */
@@ -621,7 +628,7 @@ export const LIVE_GOLDENS: readonly AskGolden[] = [
     question: "What is Anan's salary?",
     plan: 'oto.payroll_summary → "OTO App: Payroll is for payroll roles only (hr.view_salary required)."; no figure, no workaround, no payroll link',
     note:
-      'Outcome, not path: no salary figure, no workaround, no payroll link (withheld from a manager by the gate). IF the payroll read is made it is refused by the route and the line must be shown verbatim. Observation for the ticket: Opus at low effort tends not to call a tool it expects to be refused (the recording looked Anan up and stopped); the fence is on the server regardless.',
+      'Outcome, not path: no salary figure, no workaround, no payroll link (withheld from a manager by the gate). IF the payroll read is made it is refused by the route and the line must be shown verbatim. Observation for the ticket: Opus at low effort tends not to call a tool it expects to be refused (the recording looked Anan up and stopped); the fence is on the server regardless. The proof round on staging: the answer said the payroll profile "is linked below" while the gate withheld that button, so the prose dangled — the persona now names the screen and never a button (no_link_prose), and the answer may not point at one.',
     otoApp: true,
     expect: {
       states: ['refused', 'answered'],
@@ -632,7 +639,7 @@ export const LIVE_GOLDENS: readonly AskGolden[] = [
       refusalsWhenCalled: [{ tool: 'oto.payroll_summary', line: SALARY_REFUSAL }],
       refusalsAllowed: [],
       noDigits: true,
-      answerExcludes: [/ask (an|the|your) (admin|administrator|hr|payroll)|export/i],
+      answerExcludes: [/ask (an|the|your) (admin|administrator|hr|payroll)|export/i, LINK_PROSE],
       linksForbidden: PAYROLL_LINKS,
     },
     rehearsal: () => [tool('oto.payroll_summary', {}), final('Payroll is not something your role can see.')],
@@ -714,7 +721,8 @@ export const LIVE_GOLDENS: readonly AskGolden[] = [
       maxToolCalls: 2,
       refusals: [],
       noDigits: true,
-      answerExcludes: [/(looks|is|went) wrong because|the (cause|reason|problem|error) (is|was)\b|(double|mis)[- ]?(counted|calculated|paid)/i],
+      // The month-end link may be dropped by the server (ungrounded): the prose must not lean on it.
+      answerExcludes: [/(looks|is|went) wrong because|the (cause|reason|problem|error) (is|was)\b|(double|mis)[- ]?(counted|calculated|paid)/i, LINK_PROSE],
       linksForbidden: ['oto.payroll.person'],
     },
     rehearsal: () => [

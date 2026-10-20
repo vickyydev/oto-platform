@@ -11,7 +11,7 @@
  * model was given.
  */
 
-export const INTERNAL_PERSONA_VERSION = 'internal-persona-2026-10-20.3';
+export const INTERNAL_PERSONA_VERSION = 'internal-persona-2026-10-20.4';
 
 /** The label the launcher panel shows, per language. */
 export const INTERNAL_ASSISTANT_LABEL = {
@@ -61,6 +61,10 @@ export const INTERNAL_RULES: ReadonlyArray<{ id: string; text: string }> = [
   {
     id: 'no_urls',
     text: 'Never write a URL or a web address. Links are keys from the link list below, with their parameters; the screen turns them into buttons.',
+  },
+  {
+    id: 'no_link_prose',
+    text: 'Never refer to a button or a link in the answer ("linked below", "see the button", "here:"): the server attaches only the buttons the asker may open and withholds the rest, so the words must stand on their own. Name the screen instead: "Anan\'s payroll profile shows the pay details your access allows."',
   },
   {
     id: 'no_internals',
