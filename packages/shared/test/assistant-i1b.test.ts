@@ -62,9 +62,9 @@ describe('the tool registry, as data (§B.4)', () => {
 });
 
 describe('the deep-link map (§C)', () => {
-  it('keys each screen once, and leaves the Inbox out until P2', () => {
+  it('keys each screen once, the Inbox in since P2', () => {
     expect(new Set(SUITE_SCREEN_KEYS).size).toBe(SUITE_SCREEN_KEYS.length);
-    expect(SUITE_SCREEN_KEYS.some((k) => k.startsWith('inbox.'))).toBe(false);
+    expect(SUITE_SCREEN_KEYS.filter((k) => k.startsWith('inbox.'))).toEqual(['inbox.thread', 'inbox.queue']);
     for (const s of SUITE_SCREENS) {
       expect(s.key.split('.')[0], s.key).toBe(s.app === 'oto_app' ? 'oto' : s.app);
       expect(s.path.startsWith('/'), s.key).toBe(true);
@@ -91,6 +91,19 @@ describe('the deep-link map (§C)', () => {
     expect(buildSuiteScreenPath('oto.payroll.month', { month: '2026-09', tab: 'edit' })).toBeNull();
     expect(buildSuiteScreenPath('console.health', { next: 'https://evil.example' })).toBeNull();
     expect(buildSuiteScreenPath('oto.employee.time', { id: '../admin' })).toBeNull();
+  });
+
+  it('links an Inbox conversation by its uuid only, and the queue by its filter (P2)', () => {
+    const id = '0192f0a0-1234-7abc-8def-0123456789ab';
+    expect(buildSuiteScreenPath('inbox.thread', { c: id })).toBe(`/?c=${id}`);
+    expect(buildSuiteScreenPath('inbox.queue')).toBe('/?unanswered=1');
+    expect(buildSuiteScreenPath('inbox.thread')).toBeNull();
+    expect(buildSuiteScreenPath('inbox.thread', { c: 'e-123' })).toBeNull();
+    expect(buildSuiteScreenPath('inbox.thread', { c: `${id}&tab=handled` })).toBeNull();
+    const thread = findSuiteScreen('inbox.thread')!;
+    expect(suiteScreenOffered(thread, viewer(['inbox:conversation:read']))).toBe(false); // no Inbox tile
+    expect(suiteScreenOffered(thread, viewer(['app:inbox:access']))).toBe(false);
+    expect(suiteScreenOffered(thread, viewer(['app:inbox:access', 'inbox:conversation:read']))).toBe(true);
   });
 
   const viewer = (perms: Permission[], otoApp?: SuiteScreenViewer['otoApp']): SuiteScreenViewer => ({

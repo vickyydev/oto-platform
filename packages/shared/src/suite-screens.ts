@@ -13,13 +13,18 @@ import type { Permission } from './permissions';
  * permission, an OTO App role floor or OTO App permission, or everyone with
  * the app's tile.
  *
- * NOT IN THE MAP YET:
- *   - the Inbox (`inbox.thread`, `inbox.queue`): its shell has no URL state
- *     until prerequisite P2 lands, so no link could land on a thread;
- *   - the POS: it has no linkable member screen; a member answer gives figures.
+ * The Inbox entries (`inbox.thread`, `inbox.queue`) arrived with
+ * prerequisite P2, which gave the Inbox URL state (`apps/inbox/src/lib/url.ts`:
+ * `?c=<id>` opens a conversation, `?unanswered=1` the unanswered queue);
+ * `apps/inbox/test/url.test.ts` reads every Inbox entry back through that
+ * reader, so the two cannot drift apart.
  *
- * OTO App links open the app directly until prerequisite P1 lets the
- * launcher's hand-off carry a target path (§C).
+ * NOT IN THE MAP: the POS — it has no linkable member screen; a member answer
+ * gives figures.
+ *
+ * Prerequisite P1 lets the launcher's hand-off carry a target path
+ * (`handoff-target.ts`), and the Console and the Inbox land on it. OTO App
+ * links open the app directly until its own receiver honours the path (I4).
  *
  * The console entries copy each page's own gate (`apps/console/src/components/
  * consoleSections.ts`); `apps/console/test/suite-screens.test.ts` compares the
@@ -27,13 +32,14 @@ import type { Permission } from './permissions';
  */
 
 /** The apps a link can open. */
-export const SUITE_SCREEN_APPS = ['oto_app', 'console', 'launcher'] as const;
+export const SUITE_SCREEN_APPS = ['oto_app', 'console', 'inbox', 'launcher'] as const;
 export type SuiteScreenApp = (typeof SUITE_SCREEN_APPS)[number];
 
 /** The tile a person needs to open the app at all. The launcher is every session's. */
 export const SUITE_SCREEN_APP_ACCESS: Record<SuiteScreenApp, Permission | null> = {
   oto_app: 'app:oto_app:access',
   console: 'app:console:access',
+  inbox: 'app:inbox:access',
   launcher: null,
 };
 
@@ -54,7 +60,7 @@ export type SuiteScreenGate =
 export interface SuiteScreenParam {
   name: string;
   in: 'path' | 'query';
-  kind: 'otoapp_id' | 'date' | 'month' | 'enum';
+  kind: 'otoapp_id' | 'uuid' | 'date' | 'month' | 'enum';
   values?: readonly string[];
   required: boolean;
 }
@@ -236,6 +242,25 @@ export const SUITE_SCREENS = [
     // The page's own gate (consoleSections.ts): vouchers sit with the booths.
     worthOffering: { kind: 'permission', permission: 'admin:booth:read' },
   },
+  {
+    key: 'inbox.thread',
+    app: 'inbox',
+    path: '/',
+    params: [{ name: 'c', in: 'query', kind: 'uuid', required: true }],
+    shows: 'One conversation in the Inbox',
+    // Whether THIS conversation is one the asker may read is the Inbox api's
+    // call when the link is opened; a refused one lands on the list (P2).
+    worthOffering: { kind: 'permission', permission: 'inbox:conversation:read' },
+  },
+  {
+    key: 'inbox.queue',
+    app: 'inbox',
+    path: '/',
+    fixedQuery: { unanswered: '1' },
+    params: [],
+    shows: 'The unanswered queue',
+    worthOffering: { kind: 'permission', permission: 'inbox:conversation:read' },
+  },
   { key: 'launcher.account', app: 'launcher', path: '/account', params: [], shows: 'My account', worthOffering: EVERYONE },
 ] as const satisfies readonly SuiteScreen[];
 
@@ -249,6 +274,7 @@ export function findSuiteScreen(key: string): SuiteScreen | undefined {
 
 const PARAM_SHAPE: Record<Exclude<SuiteScreenParam['kind'], 'enum'>, RegExp> = {
   otoapp_id: /^[A-Za-z0-9-]{1,64}$/,
+  uuid: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
   date: /^\d{4}-\d{2}-\d{2}$/,
   month: /^\d{4}-(0[1-9]|1[0-2])$/,
 };

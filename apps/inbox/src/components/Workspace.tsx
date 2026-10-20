@@ -17,6 +17,7 @@ import { Rail, viewerRoleLabel } from '@/components/Rail';
 import { SimulatorDialog } from '@/components/Simulator';
 import { TemplateSettings } from '@/components/TemplateSettings';
 import { EMPTY_FILTERS, listQuery, type Filters } from '@/lib/query';
+import { inboxSearch, readInboxUrl, viewFromUrl } from '@/lib/url';
 import { defaultTab, writeMode } from '@/lib/view';
 
 const LAUNCHER_URL = import.meta.env.VITE_LAUNCHER_URL?.trim();
@@ -69,8 +70,13 @@ export function Workspace({ me }: { me: InboxMe }) {
   const desktop = useIsDesktop();
   const [now, setNow] = useState(() => new Date());
 
-  const [tab, setTab] = useState<InboxTab>(() => defaultTab(me.tabs));
-  const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
+  // The URL's view (P2, `lib/url.ts`), read once as the workspace opens: a
+  // link names a tab, the unanswered queue or one conversation.
+  const homeTab = defaultTab(me.tabs);
+  const [arrival] = useState(() => viewFromUrl(window.location.search, me.tabs, homeTab));
+
+  const [tab, setTab] = useState<InboxTab>(arrival.tab);
+  const [filters, setFilters] = useState<Filters>(() => ({ ...EMPTY_FILTERS, unanswered: arrival.unanswered }));
   const [search, setSearch] = useState('');
 
   const [page, setPage] = useState<ListPage | null>(null);
@@ -79,9 +85,16 @@ export function Workspace({ me }: { me: InboxMe }) {
   const [loadingMore, setLoadingMore] = useState(false);
   const [listError, setListError] = useState<string | null>(null);
 
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [showChatMobile, setShowChatMobile] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(arrival.selectedId);
+  const [showChatMobile, setShowChatMobile] = useState(arrival.showChat);
   const [thread, setThread] = useState<Thread>(EMPTY_THREAD);
+  /**
+   * A linked conversation that is not on the list's page — another tab, an
+   * older one — read on its own so the link still opens it (P2). `pinning` is
+   * the id being read, so the list's first row is not opened in the meantime.
+   */
+  const [pinned, setPinned] = useState<ConversationRow | null>(null);
+  const [pinning, setPinning] = useState<string | null>(null);
 
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [dashboardError, setDashboardError] = useState<string | null>(null);
@@ -166,7 +179,12 @@ export function Workspace({ me }: { me: InboxMe }) {
   // --- The open conversation -------------------------------------------------------
   // Selection follows the visible list (:1099-1100): a tab or filter that drops
   // the open conversation opens the first one instead.
-  const selected = rows.find((c) => c.id === selectedId) ?? rows[0] ?? null;
+  const pinnedRow = pinned && thread.detail?.id === pinned.id ? thread.detail : pinned;
+  const selected =
+    rows.find((c) => c.id === selectedId) ??
+    (pinnedRow && pinnedRow.id === selectedId ? pinnedRow : null) ??
+    (pinning !== null && pinning === selectedId ? null : rows[0]) ??
+    null;
   const selectedKey = selected?.id ?? null;
   const visible = selected !== null && (desktop || showChatMobile);
 
@@ -265,6 +283,78 @@ export function Workspace({ me }: { me: InboxMe }) {
     ]);
   }, [loadList, loadDashboard, loadThread, selectedKey, rowCount]);
 
+  // --- The address (P2) -------------------------------------------------------------
+  // A linked conversation is read on its own; one the viewer cannot see, or
+  // that is not there, drops back to the list — the api's refusal is the only
+  // check that matters, and it is the same one the list makes.
+  const latest = useRef({ rows, selectedId });
+  useEffect(() => {
+    latest.current = { rows, selectedId };
+  }, [rows, selectedId]);
+  const pinSeq = useRef(0);
+  const pin = useCallback(async (id: string) => {
+    const seq = ++pinSeq.current;
+    setPinning(id);
+    try {
+      const detail = await inboxApi.conversation(id);
+      if (seq === pinSeq.current) setPinned(detail);
+    } catch {
+      if (seq !== pinSeq.current || latest.current.selectedId !== id) return;
+      setSelectedId(null);
+      setShowChatMobile(false);
+    } finally {
+      if (seq === pinSeq.current) setPinning(null);
+    }
+  }, []);
+  useEffect(() => {
+    if (arrival.selectedId) void pin(arrival.selectedId);
+  }, [arrival.selectedId, pin]);
+
+  // State into the address. A chosen conversation or tab is a new history
+  // entry (so Back returns to the list); everything else replaces the current
+  // one. Only a conversation someone chose, or linked to, is written — the
+  // first row a desktop opens by itself is not.
+  const historyMode = useRef<'push' | 'replace'>('replace');
+  useEffect(() => {
+    const next = window.location.pathname + inboxSearch({ tab, unanswered: filters.unanswered, selectedId }, homeTab);
+    const mode = historyMode.current;
+    historyMode.current = 'replace';
+    if (next === window.location.pathname + window.location.search) return;
+    if (mode === 'push') window.history.pushState({ otoInbox: true }, '', next);
+    else window.history.replaceState(window.history.state, '', next);
+  }, [tab, filters.unanswered, selectedId, homeTab]);
+
+  // Back and forward: the address into state.
+  useEffect(() => {
+    const onPop = () => {
+      const view = viewFromUrl(window.location.search, me.tabs, homeTab);
+      setTab(view.tab);
+      setFilters((f) => (f.unanswered === view.unanswered ? f : { ...f, unanswered: view.unanswered }));
+      setSelectedId(view.selectedId);
+      setShowChatMobile(view.showChat);
+      if (view.selectedId && !latest.current.rows.some((c) => c.id === view.selectedId)) void pin(view.selectedId);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [me.tabs, homeTab, pin]);
+
+  const select = (id: string) => {
+    if (id !== selectedId) historyMode.current = 'push';
+    setSelectedId(id);
+    setShowChatMobile(true);
+  };
+
+  // The phone's back arrow: when the thread was opened from the list, it is
+  // the browser's Back, so the two never disagree about where "back" is.
+  const closeChat = () => {
+    if ((window.history.state as { otoInbox?: boolean } | null)?.otoInbox && readInboxUrl(window.location.search).conversationId) {
+      window.history.back();
+      return;
+    }
+    setSelectedId(null);
+    setShowChatMobile(false);
+  };
+
   const askHandle = (id: string) => {
     setHandleError(null);
     setConfirmHandleId(id);
@@ -285,7 +375,10 @@ export function Workspace({ me }: { me: InboxMe }) {
   };
 
   const chooseTab = (t: InboxTab) => {
+    if (t !== tab) historyMode.current = 'push';
     setTab(t);
+    // A new tab is a new list: its first row, not a conversation from the last one.
+    setSelectedId(null);
     setShowChatMobile(false);
   };
 
@@ -423,10 +516,7 @@ export function Workspace({ me }: { me: InboxMe }) {
               onFilters={patchFilters}
               onTab={chooseTab}
               onOpenFilters={() => setFiltersOpen(true)}
-              onSelect={(id) => {
-                setSelectedId(id);
-                setShowChatMobile(true);
-              }}
+              onSelect={select}
               onAskHandle={askHandle}
               onMore={() => void loadMore()}
             />
@@ -442,7 +532,7 @@ export function Workspace({ me }: { me: InboxMe }) {
                 thread={thread}
                 me={me}
                 now={now}
-                onBack={() => setShowChatMobile(false)}
+                onBack={closeChat}
                 onLoadOlder={() => void loadOlder()}
                 onOpenDetails={() => setDetailsOpen(true)}
                 onOpenTemplates={() => setTemplatesOpen(true)}
