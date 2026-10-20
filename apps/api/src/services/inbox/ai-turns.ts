@@ -1,6 +1,6 @@
 import { and, eq, inArray, sql } from 'drizzle-orm';
-import { aiTurn, conversation, inboxEvent, message } from '@oto/db';
-import { newId } from '@oto/shared';
+import { aiTurn, conversation, inboxEvent, message, type AiMode } from '@oto/db';
+import { newId, type InboxAiState } from '@oto/shared';
 import { audit } from '../audit';
 import type { Exec, Tx } from '../tx';
 import type { InboxAiSchedule } from './ai-runtime';
@@ -58,13 +58,16 @@ export async function aiEligibility(tx: Exec, conv: ConversationRow): Promise<El
   // thread was handled if that is later. A provider's timestamp is whole
   // seconds, so an automatic reopen can carry a time BEFORE the handled pill
   // a person wrote a moment earlier; everything up to that pill is the
-  // previous episode's.
+  // previous episode's. A person's Resume (`ai_resumed`, test night 2026-10-21
+  // W4b) is a floor too: it clears every hold the assistant had on the thread
+  // — a person's reply, a hand-over, the pause — so the next customer message
+  // gets a turn; a reply or a hand-over AFTER it holds the assistant again.
   const [floor] = (
     await tx.execute<{ since: string }>(sql`
       select greatest(${episodeStart.toISOString()}::timestamptz,
                       coalesce((select max(e.created_at) from inbox.event e
                                  where e.operator_id = ${conv.operatorId} and e.conversation_id = ${conv.id}
-                                   and e.kind = 'handled'), '-infinity'::timestamptz))::text as since`)
+                                   and e.kind in ('handled', 'ai_resumed')), '-infinity'::timestamptz))::text as since`)
   ).rows;
   const since = floor!.since;
   const [facts] = (
@@ -80,7 +83,7 @@ export async function aiEligibility(tx: Exec, conv: ConversationRow): Promise<El
                    and a.assigned_by_kind = 'account' and a.assigned_at >= ${since}::timestamptz) as assigned,
         exists (select 1 from inbox.event e
                  where e.operator_id = ${conv.operatorId} and e.conversation_id = ${conv.id}
-                   and e.actor_kind = 'account' and e.kind <> 'handled'
+                   and e.actor_kind = 'account' and e.kind not in ('handled', 'ai_paused', 'ai_resumed')
                    and e.created_at >= ${since}::timestamptz) as acted,
         exists (select 1 from inbox.event e
                  where e.operator_id = ${conv.operatorId} and e.conversation_id = ${conv.id}
@@ -91,6 +94,35 @@ export async function aiEligibility(tx: Exec, conv: ConversationRow): Promise<El
   if (facts?.staff || facts?.assigned || facts?.acted) return no('STAFF_ACTED');
   if (facts?.handed) return no('HANDED_OVER');
   return { ok: true, episodeStart };
+}
+
+/**
+ * The assistant's standing on a thread, in the six words the conversation
+ * detail carries as `aiState` (test night 2026-10-21, W4b): the number's
+ * mode first (`off`), then the holds a person can read and clear with Resume
+ * (`paused`, `person_replied`, `left_for_team`), then the mode again
+ * (`shadow`: it decides, nobody gets a line) and `ready`. A handled thread
+ * reads `ready`: the customer's next message opens a new episode. An erased
+ * contact reads `off`: the assistant never writes to them again.
+ */
+export async function aiStateOf(db: Exec, conv: ConversationRow, aiMode: AiMode): Promise<InboxAiState> {
+  if (aiMode === 'off') return 'off';
+  const eligible = await aiEligibility(db, conv);
+  if (!eligible.ok) {
+    switch (eligible.reason) {
+      case 'PAUSED':
+        return 'paused';
+      case 'STAFF_ACTED':
+        return 'person_replied';
+      case 'HANDED_OVER':
+        return 'left_for_team';
+      case 'ERASED':
+        return 'off';
+      case 'HANDLED':
+        break;
+    }
+  }
+  return aiMode === 'shadow' ? 'shadow' : 'ready';
 }
 
 export interface ScheduleInput {

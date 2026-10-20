@@ -102,9 +102,24 @@ export type MessageProviderStatus = (typeof MESSAGE_PROVIDER_STATUSES)[number];
  * together with every api reader of the status: the status callback never
  * moves a withdrawn row, the send claim never takes one, and the thread read
  * shows it to staff as withdrawn. `withdrawn` is final.
+ *
  */
 export const MESSAGE_STORED_STATUSES = [...MESSAGE_PROVIDER_STATUSES, 'withdrawn'] as const;
 export type MessageStoredStatus = (typeof MESSAGE_STORED_STATUSES)[number];
+
+/**
+ * The CHECK's list: the stored statuses and `shadow` (SCRUM-590 test night
+ * 2026-10-21, `0084_inbox_ai_shadow`) — what the assistant WOULD have said on
+ * a number in shadow mode, kept as one `author_kind 'ai'` row for staff and
+ * never sent: the send claim takes `queued` rows only, and the row carries no
+ * `next_attempt_at` and no external id, so no receipt ever matches it. It is
+ * message text, so the erasure and the retention sweep redact it like any
+ * line. `shadow` is final. The column stays typed with `MessageStoredStatus`
+ * — the statuses the rails' readers rank and move — and only the assistant's
+ * engine writes `shadow`, as SQL; the thread read passes it through.
+ */
+export const MESSAGE_CHECK_STATUSES = [...MESSAGE_STORED_STATUSES, 'shadow'] as const;
+export type MessageCheckStatus = (typeof MESSAGE_CHECK_STATUSES)[number];
 
 /** Where a message came from: a channel, or a platform notice mirrored into the thread (plan §2.4). */
 export const MESSAGE_SOURCES = ['channel', 'checkin.contact', 'booking.confirmation'] as const;
@@ -157,7 +172,10 @@ export type TemplateApprovalStatus = (typeof TEMPLATE_APPROVAL_STATUSES)[number]
  * the thread to a person, it left a turn to a person, a person overtook one
  * of its queued lines. `ai_paused` and `ai_resumed` (SCRUM-220 test night,
  * `0083_inbox_test_night`) are a person's: they stood the assistant down on
- * the thread, or let it back.
+ * the thread, or let it back. `ai_shadow` (SCRUM-590 test night,
+ * `0084_inbox_ai_shadow`) names, by `messageId`, the `shadow` message row
+ * holding what the assistant would have said on a number in shadow mode;
+ * the payload carries ids and words (the turn, the intents), never the text.
  */
 export const INBOX_EVENT_KINDS = [
   'received',
@@ -183,6 +201,7 @@ export const INBOX_EVENT_KINDS = [
   'ai_withdrawn',
   'ai_paused',
   'ai_resumed',
+  'ai_shadow',
 ] as const;
 export type InboxEventKind = (typeof INBOX_EVENT_KINDS)[number];
 
@@ -750,7 +769,7 @@ export const message = inbox.table(
     check('message_author_kind_check', sql`${t.authorKind} in (${inList(MESSAGE_AUTHOR_KINDS)})`),
     check(
       'message_provider_status_check',
-      sql`${t.providerStatus} is null or ${t.providerStatus} in (${inList(MESSAGE_STORED_STATUSES)})`,
+      sql`${t.providerStatus} is null or ${t.providerStatus} in (${inList(MESSAGE_CHECK_STATUSES)})`,
     ),
     check('message_source_check', sql`${t.source} in (${inList(MESSAGE_SOURCES)})`),
     /** The customer is the only one who writes in; everyone else writes out. */

@@ -59605,6 +59605,17 @@
                         "live"
                       ]
                     },
+                    "aiState": {
+                      "type": "string",
+                      "enum": [
+                        "off",
+                        "shadow",
+                        "ready",
+                        "paused",
+                        "left_for_team",
+                        "person_replied"
+                      ]
+                    },
                     "aiPaused": {
                       "type": "boolean"
                     },
@@ -59646,6 +59657,7 @@
                     "events",
                     "divertTo",
                     "aiMode",
+                    "aiState",
                     "aiPaused",
                     "aiPausedAt",
                     "aiPausedByAccountId"
@@ -59779,7 +59791,8 @@
                               "delivered",
                               "read",
                               "failed",
-                              "withdrawn"
+                              "withdrawn",
+                              "shadow"
                             ],
                             "nullable": true
                           },
@@ -59988,7 +60001,8 @@
                             "delivered",
                             "read",
                             "failed",
-                            "withdrawn"
+                            "withdrawn",
+                            "shadow"
                           ],
                           "nullable": true
                         },

@@ -23,7 +23,7 @@ import { audit } from '../audit';
 import { claimClientId, markReplay } from '../client-id';
 import { hasPermission, type EffectivePermission } from '../permissions';
 import type { Exec, Tx } from '../tx';
-import { cancelAiForThread } from './ai-turns';
+import { aiEligibility, cancelAiForThread } from './ai-turns';
 import { loadVisibleConversation, type InboxViewer } from './read-visibility';
 
 /**
@@ -859,7 +859,12 @@ export async function setAiPaused(
     turnsCancelled: turns,
     messagesWithdrawn: withdrawn,
   });
-  if ((conv.aiPausedAt !== null) === paused) return answer(conv);
+  // The same state again is the same act, written once — except a Resume on
+  // a thread the assistant is held off for another reason, a person's reply
+  // or its own hand-over (test night 2026-10-21, W4b): Resume clears EVERY
+  // hold, so its `ai_resumed` pill is written even when the thread was never
+  // paused; `aiEligibility` reads that pill as the episode's new floor.
+  if ((conv.aiPausedAt !== null) === paused && (paused || (await aiEligibility(tx, conv)).ok)) return answer(conv);
 
   const [after] = await tx
     .update(conversation)

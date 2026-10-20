@@ -21,6 +21,7 @@ import { audit } from '../audit';
 import type { EffectivePermission } from '../permissions';
 import type { Tx } from '../tx';
 import { divertTarget } from './actions';
+import { aiStateOf } from './ai-turns';
 import {
   INBOX_READ,
   activeAssignmentsOf,
@@ -446,6 +447,7 @@ export async function conversationDetail(
     })),
     divertTo,
     aiMode: acct?.aiMode ?? 'off',
+    aiState: await aiStateOf(db, conv, acct?.aiMode ?? 'off'),
     aiPaused: conv.aiPausedAt !== null,
     aiPausedAt: iso(conv.aiPausedAt),
     aiPausedByAccountId: conv.aiPausedByAccountId,

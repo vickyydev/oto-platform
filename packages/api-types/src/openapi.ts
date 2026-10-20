@@ -25167,6 +25167,8 @@ export interface paths {
                             } | null;
                             /** @enum {string} */
                             aiMode: "off" | "shadow" | "live";
+                            /** @enum {string} */
+                            aiState: "off" | "shadow" | "ready" | "paused" | "left_for_team" | "person_replied";
                             aiPaused: boolean;
                             aiPausedAt: string | null;
                             /** Format: uuid */
@@ -25234,7 +25236,7 @@ export interface paths {
                                 /** Format: uuid */
                                 templateId: string | null;
                                 /** @enum {string|null} */
-                                providerStatus: "queued" | "sent" | "delivered" | "read" | "failed" | "withdrawn" | null;
+                                providerStatus: "queued" | "sent" | "delivered" | "read" | "failed" | "withdrawn" | "shadow" | null;
                                 /** @enum {string} */
                                 source: "channel" | "checkin.contact" | "booking.confirmation";
                                 sentAt: string | null;
@@ -25306,7 +25308,7 @@ export interface paths {
                                 /** Format: uuid */
                                 templateId: string | null;
                                 /** @enum {string|null} */
-                                providerStatus: "queued" | "sent" | "delivered" | "read" | "failed" | "withdrawn" | null;
+                                providerStatus: "queued" | "sent" | "delivered" | "read" | "failed" | "withdrawn" | "shadow" | null;
                                 /** @enum {string} */
                                 source: "channel" | "checkin.contact" | "booking.confirmation";
                                 sentAt: string | null;

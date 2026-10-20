@@ -337,6 +337,16 @@ export const InboxConversationListSchema = z.object({
 });
 export type InboxConversationList = z.infer<typeof InboxConversationListSchema>;
 
+/**
+ * The assistant's standing on a thread (SCRUM-590 test night, W4b), computed
+ * by the api from the number's mode and the thread's holds; the inbox shell
+ * shows these exact words. Order of precedence: `off`, then a hold a person
+ * can clear with Resume (`paused`, `person_replied`, `left_for_team`), then
+ * `shadow`, then `ready`.
+ */
+export const INBOX_AI_STATES = ['off', 'shadow', 'ready', 'paused', 'left_for_team', 'person_replied'] as const;
+export type InboxAiState = (typeof INBOX_AI_STATES)[number];
+
 export const InboxEventSchema = z.object({
   id: Uuid,
   kind: z.string(),
@@ -366,6 +376,15 @@ export const InboxConversationDetailSchema = InboxConversationRowSchema.extend({
   divertTo: z.object({ accountId: Uuid, name: z.string().nullable() }).nullable(),
   /** The thread's number's assistant switch (SCRUM-590): `off`, `shadow` or `live`. */
   aiMode: z.enum(['off', 'shadow', 'live']),
+  /**
+   * The assistant's standing on this thread (SCRUM-590 test night, W4b), in
+   * the words the chip shows: the number's switch is off; it is in shadow
+   * (it decides, nobody gets a line); it is `ready` for the next customer
+   * message; or a person's act holds it — `paused` (the chip's Pause),
+   * `person_replied` (a reply or any action of a person this episode),
+   * `left_for_team` (its own hand-over). Resume clears every hold.
+   */
+  aiState: z.enum(INBOX_AI_STATES),
   /** A person paused the assistant on this thread (`POST …/ai-pause`); `…/ai-resume` clears it. */
   aiPaused: z.boolean(),
   aiPausedAt: Iso.nullable(),
@@ -399,8 +418,11 @@ export const InboxMessageSchema = z.object({
    * The delivery state of an outbound message; null on an inbound one.
    * `withdrawn` (SCRUM-590): an AI line a person overtook before it left —
    * never sent, so the customer never saw it; staff see it as held back.
+   * `shadow` (SCRUM-590 test night, W5): what the assistant WOULD have said
+   * on a number in shadow mode — kept for staff, never sent; its `ai_shadow`
+   * pill names it by `messageId` and carries the turn id.
    */
-  providerStatus: z.enum(['queued', 'sent', 'delivered', 'read', 'failed', 'withdrawn']).nullable(),
+  providerStatus: z.enum(['queued', 'sent', 'delivered', 'read', 'failed', 'withdrawn', 'shadow']).nullable(),
   source: z.enum(['channel', 'checkin.contact', 'booking.confirmation']),
   sentAt: Iso.nullable(),
   deliveredAt: Iso.nullable(),
