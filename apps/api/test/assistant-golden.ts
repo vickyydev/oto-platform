@@ -123,6 +123,13 @@ export interface GoldenAskWorld extends AskWorld {
    * maps each recorded id onto this world's (ids are minted per run).
    */
   ids: Record<string, string>;
+  /**
+   * The instant each time-bearing fixture row was written, by the same alias
+   * (`conversation:N` → its last message). A summary renders these as times of
+   * day, so a replay gives its own rows the recording world's instants
+   * (`alignWorldTimes`): the model's "at 15:02" must stay grounded.
+   */
+  times: Record<string, string>;
   members: Record<string, string>;
 }
 
@@ -132,6 +139,7 @@ const ASKER_KEYS = Object.keys(WORLD_SPEC.askers) as AskerKey[];
 export async function buildAskGoldenWorld(): Promise<GoldenAskWorld> {
   const w = await askWorld();
   const ids: Record<string, string> = { operator: w.oto };
+  const times: Record<string, string> = {};
   for (const b of await w.ctx.db
     .select({ id: s.branch.id, code: s.branch.code })
     .from(s.branch)
@@ -222,9 +230,16 @@ export async function buildAskGoldenWorld(): Promise<GoldenAskWorld> {
       .limit(1);
     if (!conv) throw new Error(`the fixture thread ${i + 1} has no conversation`);
     ids[`conversation:${i + 1}`] = conv.id;
+    const [at] = await w.ctx.db
+      .select({ last: s.conversation.lastMessageAt })
+      .from(s.conversation)
+      .where(eq(s.conversation.id, conv.id))
+      .limit(1);
+    if (!at?.last) throw new Error(`the fixture thread ${i + 1} has no last message time`);
+    times[`conversation:${i + 1}`] = at.last.toISOString();
   }
 
-  return { ...w, askers, ids, members };
+  return { ...w, askers, ids, times, members };
 }
 
 // ---------------------------------------------------------------------------
@@ -584,6 +599,12 @@ export interface RecordedAsk {
   askedAt: string;
   /** The recording world's ids by alias; the replay maps each onto its own. */
   ids: Record<string, string>;
+  /**
+   * The recording world's row instants by alias (`GoldenAskWorld.times`).
+   * Absent from recordings made before it existed: the replay then reads each
+   * thread's instant from its UUIDv7 id, minted in the same ingest.
+   */
+  times?: Record<string, string>;
   responses: unknown[];
   recorded: { state: string; reason: string | null; tools: string[]; pass: boolean; failures: string[] };
 }
@@ -611,6 +632,7 @@ export function recordingOf(
     recordedOn: askedAt.toISOString().slice(0, 10),
     askedAt: askedAt.toISOString(),
     ids: { ...w.ids },
+    times: { ...w.times },
     responses,
     recorded: {
       state: played.observed.state,
@@ -654,6 +676,42 @@ export function remapIds(responses: unknown[], recorded: Record<string, string>,
     if (now && now !== was) text = text.split(was).join(now);
   }
   return JSON.parse(text) as unknown[];
+}
+
+/** The millisecond a UUIDv7 was minted, or null for any other id. */
+export function uuidV7Time(id: string): Date | null {
+  const hex = id.replace(/-/g, '');
+  if (!/^[0-9a-f]{32}$/i.test(hex) || hex[12] !== '7') return null;
+  return new Date(parseInt(hex.slice(0, 12), 16));
+}
+
+/** The instants the recording world's threads carried, by alias. */
+export function recordedTimes(rec: Pick<RecordedAsk, 'ids' | 'times'>): Record<string, Date> {
+  const out: Record<string, Date> = {};
+  for (const [alias, id] of Object.entries(rec.ids)) {
+    if (!alias.startsWith('conversation:')) continue;
+    const kept = rec.times?.[alias];
+    const at = kept ? new Date(kept) : uuidV7Time(id);
+    if (at && !Number.isNaN(at.getTime())) out[alias] = at;
+  }
+  return out;
+}
+
+/**
+ * Before a replay: this world's threads take the recording world's instants,
+ * so every time of day a summary renders is the one the model read. The ask's
+ * own clock is pinned separately (to `askedAt`) by the replaying suite.
+ */
+export async function alignWorldTimes(w: GoldenAskWorld, rec: Pick<RecordedAsk, 'ids' | 'times'>): Promise<void> {
+  for (const [alias, at] of Object.entries(recordedTimes(rec))) {
+    const id = w.ids[alias];
+    if (!id) continue;
+    await w.ctx.db
+      .update(s.conversation)
+      .set({ lastMessageAt: at, lastCustomerMessageAt: at })
+      .where(eq(s.conversation.id, id));
+    w.times[alias] = at.toISOString();
+  }
 }
 
 /** Serves bodies in order as the Messages API would; past the end it answers 500 (the replay then fails loudly). */

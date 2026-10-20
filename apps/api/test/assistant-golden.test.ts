@@ -7,11 +7,13 @@ import { newId } from '@oto/shared';
 import {
   LIVE_GOLDENS,
   MECHANICAL_GOLDENS,
+  alignWorldTimes,
   buildAskGoldenWorld,
   capturingFetch,
   judgeAsk,
   playAsk,
   playMechanical,
+  recordedTimes,
   recordingOf,
   rehearse,
   replayingClient,
@@ -66,10 +68,13 @@ afterAll(async () => {
 });
 
 /**
- * A recording through the real client, at the clock it was made at (a time
- * the model read from a summary stays grounded). Only `Date` is pinned.
+ * A recording through the real client, in the recording's time: the world's
+ * threads take the instants the recording world's had, and the ask runs at
+ * the clock it was made at, so every time a summary renders is the one the
+ * model read and stays grounded. Only `Date` is pinned.
  */
 async function replay(golden: AskGolden, rec: RecordedAsk) {
+  await alignWorldTimes(w, rec);
   vi.useFakeTimers({ toFake: ['Date'], now: new Date(rec.askedAt) });
   try {
     const { client, served } = replayingClient(rec, w.ids);
@@ -192,6 +197,17 @@ describe('record → replay with no key: a scripted ask through the real client,
     expect(served).toBe(3);
     expect(played.observed).toEqual(live.observed);
     expect(judgeAsk(golden.expect, played.observed)).toEqual([]);
+  });
+});
+
+describe('the recording world’s times', () => {
+  it('a recording without kept times reads each thread’s instant from its UUIDv7 id', () => {
+    const id = newId();
+    const minted = recordedTimes({ ids: { 'conversation:1': id, operator: newId() } });
+    expect(Object.keys(minted)).toEqual(['conversation:1']);
+    expect(Math.abs(minted['conversation:1']!.getTime() - Date.now())).toBeLessThan(60_000);
+    const kept = recordedTimes({ ids: { 'conversation:1': id }, times: { 'conversation:1': '2026-10-20T08:02:53.900Z' } });
+    expect(kept['conversation:1']!.toISOString()).toBe('2026-10-20T08:02:53.900Z');
   });
 });
 
