@@ -3,21 +3,21 @@
   "note": "Fictional fixture dialogue and fixture KB only (SCRUM-590 A4). The model response is recorded verbatim; no request, header or key is stored.",
   "requestedModel": "claude-opus-5-5",
   "servedModel": "claude-opus-5-5",
-  "personaVersion": "persona-2026-10-20.1",
-  "kbVersion": "faf4c75cfb83492c",
+  "personaVersion": "persona-2026-10-21.1",
+  "kbVersion": "630ba0a0a51c4082",
   "recordedOn": "2026-10-20",
   "turns": [
     {
       "says": "จองวันเสาร์ที่ 14 ให้หน่อยได้ไหมคะ ลูกสาวครบ 5 ขวบ",
       "response": {
         "model": "claude-opus-5-5",
-        "id": "msg_011CgCpFiiz9iTLiuXFJ6inp",
+        "id": "msg_011CgEMV7tVrwi2pYFyFnfUb",
         "type": "message",
         "role": "assistant",
         "content": [
           {
             "type": "text",
-            "text": "{\"language\":\"th\",\"intent\":\"birthday_party\",\"certainty\":\"sure\",\"action\":\"handover\",\"grounding\":[],\"bubbles\":[\"ขอบคุณที่ทักมานะคะ แอดมินขอส่งต่อให้ทีมงานช่วยดูแลเรื่องงานวันเกิดค่ะ 🎈\"],\"sendBrochure\":true,\"branchNamed\":null,\"askBranch\":false,\"reason\":\"NEEDS_PERSON\"}"
+            "text": "{\"language\":\"th\",\"intent\":\"birthday_party\",\"intents\":[\"birthday_party\"],\"certainty\":\"sure\",\"action\":\"handover\",\"grounding\":[],\"bubbles\":[\"ขอบคุณที่ติดต่อมานะคะ แอดมินขอส่งต่อให้ทีมงานช่วยดูแลเรื่องงานวันเกิดค่ะ 🎈\"],\"sendBrochure\":true,\"branchNamed\":null,\"askBranch\":false,\"reason\":\"NEEDS_PERSON\"}"
           }
         ],
         "container": null,
@@ -27,7 +27,7 @@
         "usage": {
           "input_tokens": 225,
           "cache_creation_input_tokens": 0,
-          "cache_read_input_tokens": 5905,
+          "cache_read_input_tokens": 6941,
           "cache_creation": {
             "ephemeral_5m_input_tokens": 0,
             "ephemeral_1h_input_tokens": 0
@@ -35,8 +35,8 @@
           "iterations": [
             {
               "input_tokens": 225,
-              "output_tokens": 161,
-              "cache_read_input_tokens": 5905,
+              "output_tokens": 176,
+              "cache_read_input_tokens": 6941,
               "cache_creation_input_tokens": 0,
               "cache_creation": {
                 "ephemeral_5m_input_tokens": 0,
@@ -46,7 +46,7 @@
               "model": null
             }
           ],
-          "output_tokens": 161,
+          "output_tokens": 176,
           "output_tokens_details": {
             "thinking_tokens": 0
           },

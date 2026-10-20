@@ -3,21 +3,21 @@
   "note": "Fictional fixture dialogue and fixture KB only (SCRUM-590 A4). The model response is recorded verbatim; no request, header or key is stored.",
   "requestedModel": "claude-opus-5-5",
   "servedModel": "claude-opus-5-5",
-  "personaVersion": "persona-2026-10-20.1",
-  "kbVersion": "faf4c75cfb83492c",
+  "personaVersion": "persona-2026-10-21.1",
+  "kbVersion": "630ba0a0a51c4082",
   "recordedOn": "2026-10-20",
   "turns": [
     {
       "says": "Здравствуйте! Нужны ли носки?",
       "response": {
         "model": "claude-opus-5-5",
-        "id": "msg_011CgCpFESdfn5rcwZwW2g8s",
+        "id": "msg_011CgEMUaNfuwfh8yV1VWDxu",
         "type": "message",
         "role": "assistant",
         "content": [
           {
             "type": "text",
-            "text": "{\"language\":\"ru\",\"intent\":\"socks\",\"certainty\":\"sure\",\"action\":\"answer\",\"grounding\":[\"socks\"],\"bubbles\":[\"Здравствуйте! Да, в игровой зоне носки обязательны для детей и взрослых 😊\",\"Если забудете, нескользящие носки можно купить на ресепшене.\"],\"sendBrochure\":false,\"branchNamed\":null,\"askBranch\":false,\"reason\":\"FACT_IN_KB\"}"
+            "text": "{\"language\":\"ru\",\"intent\":\"socks\",\"intents\":[\"socks\"],\"certainty\":\"sure\",\"action\":\"answer\",\"grounding\":[\"socks\"],\"bubbles\":[\"Здравствуйте! Да, в игровой зоне носки обязательны и для детей, и для взрослых 😊\",\"Если забудете, нескользящие носки можно купить на ресепшене.\"],\"sendBrochure\":false,\"branchNamed\":null,\"askBranch\":false,\"reason\":\"FACT_IN_KB\"}"
           }
         ],
         "container": null,
@@ -27,7 +27,7 @@
         "usage": {
           "input_tokens": 191,
           "cache_creation_input_tokens": 0,
-          "cache_read_input_tokens": 5905,
+          "cache_read_input_tokens": 6941,
           "cache_creation": {
             "ephemeral_5m_input_tokens": 0,
             "ephemeral_1h_input_tokens": 0
@@ -35,8 +35,8 @@
           "iterations": [
             {
               "input_tokens": 191,
-              "output_tokens": 151,
-              "cache_read_input_tokens": 5905,
+              "output_tokens": 163,
+              "cache_read_input_tokens": 6941,
               "cache_creation_input_tokens": 0,
               "cache_creation": {
                 "ephemeral_5m_input_tokens": 0,
@@ -46,7 +46,7 @@
               "model": null
             }
           ],
-          "output_tokens": 151,
+          "output_tokens": 163,
           "output_tokens_details": {
             "thinking_tokens": 0
           },

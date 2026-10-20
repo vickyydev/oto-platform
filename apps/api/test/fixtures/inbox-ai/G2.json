@@ -3,21 +3,21 @@
   "note": "Fictional fixture dialogue and fixture KB only (SCRUM-590 A4). The model response is recorded verbatim; no request, header or key is stored.",
   "requestedModel": "claude-opus-5-5",
   "servedModel": "claude-opus-5-5",
-  "personaVersion": "persona-2026-10-20.1",
-  "kbVersion": "faf4c75cfb83492c",
+  "personaVersion": "persona-2026-10-21.1",
+  "kbVersion": "630ba0a0a51c4082",
   "recordedOn": "2026-10-20",
   "turns": [
     {
       "says": "สวัสดีค่ะ OTO เปิดกี่โมงถึงกี่โมงคะ",
       "response": {
         "model": "claude-opus-5-5",
-        "id": "msg_011CgCpE8RD7j5MKBUvRKJoD",
+        "id": "msg_011CgEMU2EePQ6A525FN8iG1",
         "type": "message",
         "role": "assistant",
         "content": [
           {
             "type": "text",
-            "text": "{\"language\":\"th\",\"intent\":\"hours\",\"certainty\":\"sure\",\"action\":\"answer\",\"grounding\":[\"fact.hours.central\",\"fact.hours.chalong\"],\"bubbles\":[\"สวัสดีค่ะ 😊 OTO Play Park เปิดทุกวัน 10:00–20:00 น. ทั้งสาขา Central Floresta และ Chalong ค่ะ\",\"สะดวกมาสาขาไหนคะ Central Floresta หรือ Chalong คะ แอดมินจะได้แจ้งข้อมูลให้ตรงสาขานะคะ\"],\"sendBrochure\":false,\"branchNamed\":null,\"askBranch\":true,\"reason\":\"FACT_IN_KB\"}"
+            "text": "{\"language\":\"th\",\"intent\":\"hours\",\"intents\":[\"hours\"],\"certainty\":\"sure\",\"action\":\"answer\",\"grounding\":[\"fact.hours.central\",\"fact.hours.chalong\"],\"bubbles\":[\"สวัสดีค่ะ 😊 ทั้งสองสาขา Central Floresta และ Chalong เปิดทุกวัน 10:00–20:00 น. ค่ะ\",\"สะดวกมาสาขาไหนคะ Central Floresta หรือ Chalong คะ แอดมินจะได้แจ้งข้อมูลให้ตรงสาขานะคะ\"],\"sendBrochure\":false,\"branchNamed\":null,\"askBranch\":true,\"reason\":\"FACT_IN_KB\"}"
           }
         ],
         "container": null,
@@ -27,7 +27,7 @@
         "usage": {
           "input_tokens": 210,
           "cache_creation_input_tokens": 0,
-          "cache_read_input_tokens": 5905,
+          "cache_read_input_tokens": 6941,
           "cache_creation": {
             "ephemeral_5m_input_tokens": 0,
             "ephemeral_1h_input_tokens": 0
@@ -35,8 +35,8 @@
           "iterations": [
             {
               "input_tokens": 210,
-              "output_tokens": 245,
-              "cache_read_input_tokens": 5905,
+              "output_tokens": 249,
+              "cache_read_input_tokens": 6941,
               "cache_creation_input_tokens": 0,
               "cache_creation": {
                 "ephemeral_5m_input_tokens": 0,
@@ -46,7 +46,7 @@
               "model": null
             }
           ],
-          "output_tokens": 245,
+          "output_tokens": 249,
           "output_tokens_details": {
             "thinking_tokens": 0
           },

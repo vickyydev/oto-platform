@@ -3,21 +3,21 @@
   "note": "Fictional fixture dialogue and fixture KB only (SCRUM-590 A4). The model response is recorded verbatim; no request, header or key is stored.",
   "requestedModel": "claude-opus-5-5",
   "servedModel": "claude-opus-5-5",
-  "personaVersion": "persona-2026-10-20.1",
-  "kbVersion": "faf4c75cfb83492c",
+  "personaVersion": "persona-2026-10-21.1",
+  "kbVersion": "630ba0a0a51c4082",
   "recordedOn": "2026-10-20",
   "turns": [
     {
       "says": "Можно скидку если придём с тремя детьми?",
       "response": {
         "model": "claude-opus-5-5",
-        "id": "msg_011CgCpGCnCGostZFyKTQywJ",
+        "id": "msg_011CgEMVbiKBBBc8qzNFH4vn",
         "type": "message",
         "role": "assistant",
         "content": [
           {
             "type": "text",
-            "text": "{\"language\":\"ru\",\"intent\":\"discount_negotiation\",\"certainty\":\"sure\",\"action\":\"handover\",\"grounding\":[],\"bubbles\":[\"Здравствуйте! Спасибо за вопрос, передаём его коллеге, он скоро Вам ответит 🙏\"],\"sendBrochure\":false,\"branchNamed\":null,\"askBranch\":false,\"reason\":\"NEEDS_PERSON\"}"
+            "text": "{\"language\":\"ru\",\"intent\":\"discount_negotiation\",\"intents\":[\"discount_negotiation\"],\"certainty\":\"sure\",\"action\":\"handover\",\"grounding\":[],\"bubbles\":[\"Здравствуйте! Спасибо за вопрос, передаём его коллеге, он скоро Вам ответит 🙏\"],\"sendBrochure\":false,\"branchNamed\":null,\"askBranch\":false,\"reason\":\"NEEDS_PERSON\"}"
           }
         ],
         "container": null,
@@ -27,7 +27,7 @@
         "usage": {
           "input_tokens": 191,
           "cache_creation_input_tokens": 0,
-          "cache_read_input_tokens": 5905,
+          "cache_read_input_tokens": 6941,
           "cache_creation": {
             "ephemeral_5m_input_tokens": 0,
             "ephemeral_1h_input_tokens": 0
@@ -35,8 +35,8 @@
           "iterations": [
             {
               "input_tokens": 191,
-              "output_tokens": 137,
-              "cache_read_input_tokens": 5905,
+              "output_tokens": 151,
+              "cache_read_input_tokens": 6941,
               "cache_creation_input_tokens": 0,
               "cache_creation": {
                 "ephemeral_5m_input_tokens": 0,
@@ -46,7 +46,7 @@
               "model": null
             }
           ],
-          "output_tokens": 137,
+          "output_tokens": 151,
           "output_tokens_details": {
             "thinking_tokens": 0
           },

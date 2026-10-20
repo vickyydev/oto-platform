@@ -3,21 +3,21 @@
   "note": "Fictional fixture dialogue and fixture KB only (SCRUM-590 A4). The model response is recorded verbatim; no request, header or key is stored.",
   "requestedModel": "claude-opus-5-5",
   "servedModel": "claude-opus-5-5",
-  "personaVersion": "persona-2026-10-20.1",
-  "kbVersion": "faf4c75cfb83492c",
+  "personaVersion": "persona-2026-10-21.1",
+  "kbVersion": "630ba0a0a51c4082",
   "recordedOn": "2026-10-20",
   "turns": [
     {
       "says": "How much is it for 2 kids and me on Saturday?",
       "response": {
         "model": "claude-opus-5-5",
-        "id": "msg_011CgCpExAbBSytyfz7KKLER",
+        "id": "msg_011CgEMUK8dhVqoLRqgnmQvt",
         "type": "message",
         "role": "assistant",
         "content": [
           {
             "type": "text",
-            "text": "{\"language\":\"en\",\"intent\":\"ticket_prices\",\"certainty\":\"sure\",\"action\":\"answer\",\"grounding\":[\"fact.prices.chalong\"],\"bubbles\":[\"Hi! At our Chalong park, a child ticket on a weekend like Saturday is ฿490.\",\"Each child ticket includes 1 adult, so you'd be covered with your kids 😊 Any further adult is ฿150.\"],\"sendBrochure\":false,\"branchNamed\":null,\"askBranch\":false,\"reason\":\"FACT_IN_KB\"}"
+            "text": "{\"language\":\"en\",\"intent\":\"ticket_prices\",\"intents\":[\"ticket_prices\"],\"certainty\":\"sure\",\"action\":\"answer\",\"grounding\":[\"fact.prices.chalong\"],\"bubbles\":[\"Hi! At our Chalong park a weekend Play Pass is ฿490 per child, and Saturday counts as a weekend day 😊\",\"Each child ticket includes 1 adult, and each further adult is ฿150.\"],\"sendBrochure\":false,\"branchNamed\":null,\"askBranch\":false,\"reason\":\"FACT_IN_KB\"}"
           }
         ],
         "container": null,
@@ -27,7 +27,7 @@
         "usage": {
           "input_tokens": 194,
           "cache_creation_input_tokens": 0,
-          "cache_read_input_tokens": 5905,
+          "cache_read_input_tokens": 6941,
           "cache_creation": {
             "ephemeral_5m_input_tokens": 0,
             "ephemeral_1h_input_tokens": 0
@@ -35,8 +35,8 @@
           "iterations": [
             {
               "input_tokens": 194,
-              "output_tokens": 175,
-              "cache_read_input_tokens": 5905,
+              "output_tokens": 185,
+              "cache_read_input_tokens": 6941,
               "cache_creation_input_tokens": 0,
               "cache_creation": {
                 "ephemeral_5m_input_tokens": 0,
@@ -46,7 +46,7 @@
               "model": null
             }
           ],
-          "output_tokens": 175,
+          "output_tokens": 185,
           "output_tokens_details": {
             "thinking_tokens": 0
           },
