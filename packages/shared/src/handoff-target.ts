@@ -28,8 +28,12 @@ export const HANDOFF_TARGET_MAX = 512;
  *   - protocol-relative `//host`, and `/\host`, which browsers read the same;
  *   - any backslash, whitespace, control character or non-ASCII character;
  *   - a fragment (`#`): the hand-off owns this URL's fragment;
+ *   - an '&' in the path (before any '?'): it is the fragment's own separator,
+ *     and no route of ours is spelled with one;
  *   - a `.` or `..` segment, raw or percent-encoded, and an encoded `/` or `\`
  *     in the path, which a server or router might decode into one;
+ *   - a percent-escape of '%' itself (`%25`, a second layer of encoding) or
+ *     of a control character (`%00`–`%1f`, `%7f`), anywhere;
  *   - a path that does not decode, or that resolves to another origin.
  */
 export function safeTargetPath(raw: unknown): string | null {
@@ -38,9 +42,11 @@ export function safeTargetPath(raw: unknown): string | null {
   if (raw[0] !== '/' || raw[1] === '/' || raw[1] === '\\') return null;
   // Printable ASCII only, and no backslash or fragment anywhere.
   if (!/^[\x21-\x7e]+$/.test(raw) || raw.includes('\\') || raw.includes('#')) return null;
+  // No escape that decodes to '%' or to a control character.
+  if (/%(25|[01][0-9a-f]|7f)/i.test(raw)) return null;
   const q = raw.indexOf('?');
   const path = q < 0 ? raw : raw.slice(0, q);
-  if (/%2f|%5c/i.test(path)) return null;
+  if (path.includes('&') || /%2f|%5c/i.test(path)) return null;
   let decoded: string;
   try {
     decoded = decodeURIComponent(path);
@@ -72,10 +78,17 @@ export function withHandoffTarget(launchUrl: string, target: string | null | und
   return `${launchUrl}&to=${encodeURIComponent(path)}`;
 }
 
-/** The target in a hand-off fragment, checked again here, or null. Pure, for the test. */
+/**
+ * The target in a hand-off fragment, checked again here, or null. Pure, for
+ * the test. The value is read as the launcher writes it, percent-encoded
+ * (`withHandoffTarget`): a hand-written one with an unencoded '?' or '&' is
+ * refused whole — the split on '&' may have cut it short — rather than
+ * landed in part.
+ */
 export function readHandoffTarget(hash: string): string | null {
   const match = /(?:^|&)to=([^&]*)/.exec(hash.replace(/^#/, ''));
   if (!match || !match[1]) return null;
+  if (/[?&]/.test(match[1])) return null;
   let value: string;
   try {
     value = decodeURIComponent(match[1]);

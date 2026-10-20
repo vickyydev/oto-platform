@@ -12,7 +12,8 @@
     "./inbox": "./src/inbox.ts",
     "./inbox-reply": "./src/inbox-reply.ts",
     "./handoff-target": "./src/handoff-target.ts",
-    "./ids": "./src/ids.ts"
+    "./ids": "./src/ids.ts",
+    "./assistant-limits": "./src/assistant-limits.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",

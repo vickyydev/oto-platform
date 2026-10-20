@@ -43,9 +43,10 @@ describe('the Inbox hand-off receiver (P1)', () => {
   });
 
   it("lands under the Inbox's base path", async () => {
-    const { p, urls } = port(`#handoff=tok&to=${encodeURIComponent('/health')}`, ok, '/inbox/');
+    const target = '/?c=0192f0a0-1234-7abc-8def-0123456789ab';
+    const { p, urls } = port(`#handoff=tok&to=${encodeURIComponent(target)}`, ok, '/inbox/');
     await acceptHandoff(p);
-    expect(urls.at(-1)).toBe('/inbox/health');
+    expect(urls.at(-1)).toBe(`/inbox${target}`);
   });
 
   it('opens at home when there is no target', async () => {

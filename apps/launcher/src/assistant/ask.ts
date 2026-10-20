@@ -20,6 +20,7 @@
  * An edited question is a new ask and gets a new id.
  */
 import { INTERNAL_LINES } from '@oto/assistant/internal-lines';
+import { ASSISTANT_CORRECTION_MAX, ASSISTANT_QUESTION_MAX } from '@oto/shared/assistant-limits';
 import type { Permission } from '@oto/shared/permissions';
 import { ApiError } from '@/api/client';
 import type { AskFeedbackBody, AskFeedbackResult, AskView } from '@/api/assistant';
@@ -155,8 +156,9 @@ export interface FeedbackDeps {
   mint: () => string;
 }
 
-export const CORRECTION_MAX = 1000;
-export const QUESTION_MAX = 2000;
+/** The ask-log's own limits (`@oto/shared/assistant-limits`), under the panel's names. */
+export const CORRECTION_MAX = ASSISTANT_CORRECTION_MAX;
+export const QUESTION_MAX = ASSISTANT_QUESTION_MAX;
 
 /**
  * Give feedback once: the ask comes back with its verdict set, so the

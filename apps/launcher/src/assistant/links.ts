@@ -9,7 +9,10 @@
  *     as its target (P1: `openApp(app, path)`);
  *   - an app on their launcher with no address on this deployment → a plain
  *     note, in the words the hand-off itself fails with;
- *   - an app NOT on their launcher → a plain note, never a button.
+ *   - an app NOT on their launcher → a plain note, never a button;
+ *   - a path that is not plainly a same-app path (`safeTargetPath`) → a plain
+ *     note, never a button — not even one to the app's home, which would say
+ *     "Take me there" and go somewhere else.
  */
 import { safeTargetPath } from '@oto/shared/handoff-target';
 import type { AskLink } from '@/api/assistant';
@@ -19,7 +22,8 @@ export type LinkTarget =
   | { kind: 'launcher'; path: string }
   | { kind: 'app'; app: SuiteApp; path: string }
   | { kind: 'not-deployed'; note: string }
-  | { kind: 'not-on-launcher'; note: string };
+  | { kind: 'not-on-launcher'; note: string }
+  | { kind: 'unsafe-path'; note: string };
 
 /** What each app is called where it is not on a person's launcher to name itself. */
 const APP_NAMES: Record<AskLink['app'], string> = {
@@ -34,7 +38,8 @@ const APP_NAMES: Record<AskLink['app'], string> = {
  *   the same list the tiles above the panel are drawn from.
  */
 export function resolveLink(link: AskLink, tiles: SuiteApp[]): LinkTarget {
-  const path = safeTargetPath(link.path) ?? '/';
+  const path = safeTargetPath(link.path);
+  if (path === null) return { kind: 'unsafe-path', note: `${link.shows}: this link cannot be opened from here.` };
   if (link.app === 'launcher') return { kind: 'launcher', path };
   const app = tiles.find((t) => t.key === link.app);
   if (!app) {

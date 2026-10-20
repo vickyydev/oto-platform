@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { landingUrl, readHandoffTarget, safeTargetPath, withHandoffTarget } from '../src/handoff-target';
+import { HANDOFF_TARGET_MAX, landingUrl, readHandoffTarget, safeTargetPath, withHandoffTarget } from '../src/handoff-target';
 
 /**
  * SCRUM-591 prerequisite P1 — the hand-off carries a target path. The rule is
@@ -17,6 +17,21 @@ describe('safeTargetPath', () => {
     expect(safeTargetPath('/payroll/month-end?month=2026-09&tab=preview')).toBe('/payroll/month-end?month=2026-09&tab=preview');
   });
 
+  it('accepts a path of exactly HANDOFF_TARGET_MAX characters', () => {
+    const atMax = `/${'a'.repeat(HANDOFF_TARGET_MAX - 1)}`;
+    expect(atMax).toHaveLength(HANDOFF_TARGET_MAX);
+    expect(safeTargetPath(atMax)).toBe(atMax);
+  });
+
+  it('accepts same-origin paths that only look odd — the hardening does not reach these', () => {
+    // An encoded '#', a ':' or an '@' after the leading '/' are paths of this
+    // app and resolve to it (the URL probe below holds); none is a route of
+    // ours, so each would land on the app's own not-found page.
+    expect(safeTargetPath('/health%23x')).toBe('/health%23x');
+    expect(safeTargetPath('/javascript:alert(1)')).toBe('/javascript:alert(1)');
+    expect(safeTargetPath('/@evil.example/x')).toBe('/@evil.example/x');
+  });
+
   it.each([
     ['empty', ''],
     ['absolute URL', 'https://evil.example/health'],
@@ -29,14 +44,20 @@ describe('safeTargetPath', () => {
     ['dot-dot segment', '/health/../admin'],
     ['trailing dot-dot', '/health/..'],
     ['encoded dot-dot', '/health/%2e%2e/admin'],
+    ['double-encoded dot-dot', '/%252e%252e/x'],
+    ['encoded percent', '/x%25y'],
     ['encoded slash', '/health%2f..%2fadmin'],
     ['single dot segment', '/./health'],
     ['fragment', '/health#handoff=x'],
+    ['ampersand in the path', '/x&handoff=z'],
     ['whitespace', '/health page'],
     ['control character', '/health\n'],
+    ['encoded NUL', '/%00'],
+    ['encoded control character', '/x%1Fy'],
+    ['encoded DEL', '/x%7fy'],
     ['non-ASCII', '/héalth'],
     ['undecodable', '/health%zz'],
-    ['too long', `/${'a'.repeat(600)}`],
+    ['one over HANDOFF_TARGET_MAX', `/${'a'.repeat(HANDOFF_TARGET_MAX)}`],
   ])('refuses %s', (_, raw) => {
     expect(safeTargetPath(raw)).toBeNull();
   });
@@ -79,8 +100,18 @@ describe('the fragment round trip', () => {
     expect(readHandoffTarget(`#handoff=t&to=${encodeURIComponent('//evil.example/x')}`)).toBeNull();
     expect(readHandoffTarget(`#handoff=t&to=${encodeURIComponent('/a/../../etc')}`)).toBeNull();
     expect(readHandoffTarget('#handoff=t&to=%E0%A4%A')).toBeNull(); // undecodable
-    // A raw (unencoded) path still reads, up to the fragment's next '&'.
+    // A raw (unencoded) path with nothing the fragment's own syntax would cut still reads.
     expect(readHandoffTarget('#handoff=t&to=/health')).toBe('/health');
+  });
+
+  it('reads the value as the launcher writes it, and refuses a raw query rather than truncating it', () => {
+    const path = '/x?c=1&tab=team';
+    // Percent-encoded, as `withHandoffTarget` writes it: the whole path, query and all.
+    expect(readHandoffTarget(`#handoff=t&to=${encodeURIComponent(path)}`)).toBe(path);
+    // Hand-written and unencoded, the '&' split would have read `/x?c=1` and
+    // dropped `tab=team` on the floor: refused whole, so the app opens at home.
+    expect(readHandoffTarget('#handoff=t&to=/x?c=1&tab=team')).toBeNull();
+    expect(readHandoffTarget('#handoff=t&to=/x?c=1')).toBeNull();
   });
 });
 

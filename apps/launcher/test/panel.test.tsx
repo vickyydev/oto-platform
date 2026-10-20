@@ -119,6 +119,34 @@ describe('an answer', () => {
     expect(given).toContain('It was 41.');
   });
 
+  it('shows the in-flight line, and nothing to rate, for an ask still asking', () => {
+    const html = renderToStaticMarkup(
+      <AskAnswer
+        ask={view({ state: 'asking', answer: null, question: 'Who is in today?' })}
+        showQuestion
+        tiles={[]}
+        openers={openers}
+        onFeedback={noFeedback}
+      />,
+    );
+    expect(html).toContain('Who is in today?');
+    expect(html).toContain('Still answering…');
+    expect(html).not.toContain('Was this right?');
+  });
+
+  it('offers no "Take me there" for a link whose path is not a same-app path', () => {
+    const html = renderToStaticMarkup(
+      <AskAnswer
+        ask={view({ links: [{ key: 'console.health', app: 'console', path: '//evil.example/x', shows: 'Platform health' }] })}
+        tiles={[consoleApp]}
+        openers={openers}
+        onFeedback={noFeedback}
+      />,
+    );
+    expect(html).not.toContain('Take me there');
+    expect(html).toContain('Platform health: this link cannot be opened from here.');
+  });
+
   it('offers no feedback on a switched-off ask', () => {
     const html = renderToStaticMarkup(
       <AskAnswer

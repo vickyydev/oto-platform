@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { ArrowRight, Check, Loader2, ThumbsDown, ThumbsUp, TriangleAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { AskLink, AskView } from '@/api/assistant';
@@ -19,7 +19,7 @@ export function AskLinkRow({ link, tiles, openers }: { link: AskLink; tiles: Sui
   const [error, setError] = useState<string | null>(null);
   const target = resolveLink(link, tiles);
 
-  if (target.kind === 'not-on-launcher' || target.kind === 'not-deployed') {
+  if ('note' in target) {
     return <p className="text-sm text-foreground/55 break-words">{target.note}</p>;
   }
 
@@ -66,6 +66,8 @@ export function AskFeedback({
   const [correction, setCorrection] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Per render, not per ask: the same ask is in the done box and in the list at once.
+  const correctionId = useId();
 
   if (ask.feedback) {
     return (
@@ -105,11 +107,11 @@ export function AskFeedback({
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          <label className="text-sm font-semibold text-foreground/60" htmlFor={`correction-${ask.id}`}>
+          <label className="text-sm font-semibold text-foreground/60" htmlFor={correctionId}>
             What was wrong? (optional)
           </label>
           <textarea
-            id={`correction-${ask.id}`}
+            id={correctionId}
             value={correction}
             onChange={(e) => setCorrection(e.target.value.slice(0, CORRECTION_MAX))}
             maxLength={CORRECTION_MAX}
@@ -138,7 +140,9 @@ export function AskFeedback({
 /**
  * One ask as the person sees it (plan §D): the answer as plain prose — the
  * api sends no markdown and none is rendered — the refusal lines exactly as
- * the api wrote them, the links, and feedback.
+ * the api wrote them, the links, and feedback. An ask still `asking` (one the
+ * list caught in flight, or abandoned) shows the in-flight line and nothing
+ * to rate.
  */
 export function AskAnswer({
   ask,
@@ -160,6 +164,12 @@ export function AskAnswer({
   return (
     <div className="flex flex-col gap-3 min-w-0">
       {showQuestion && <p className="text-sm font-bold whitespace-pre-wrap break-words">{ask.question}</p>}
+      {ask.state === 'asking' && (
+        <p className="flex items-center gap-2 text-sm text-foreground/60">
+          <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+          Still answering…
+        </p>
+      )}
       {answer && (
         <p
           className={

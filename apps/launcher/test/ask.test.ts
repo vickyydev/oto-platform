@@ -273,8 +273,33 @@ describe('links', () => {
     expect(resolveLink(link({}), [{ ...console, origin: undefined }])).toMatchObject({ kind: 'not-deployed' });
   });
 
-  it('opens a launcher page by the router, and drops a path that is not a same-app path', () => {
+  it('opens a launcher page by the router', () => {
     expect(resolveLink(link({ app: 'launcher', path: '/account' }), [])).toEqual({ kind: 'launcher', path: '/account' });
-    expect(resolveLink(link({ path: '//evil.example/x' }), [console])).toEqual({ kind: 'app', app: console, path: '/' });
+  });
+
+  it('opens the OTO App at the validated path: its receiver honours `to=`', () => {
+    const otoApp: SuiteApp = {
+      ...console,
+      key: 'oto_app',
+      name: 'OTO App',
+      permission: 'app:oto_app:access',
+      origin: 'http://localhost:5000',
+    };
+    expect(
+      resolveLink(
+        link({ key: 'oto.employee.time', app: 'oto_app', path: '/employees/e-123?tab=time', shows: 'Time & leave' }),
+        [otoApp],
+      ),
+    ).toEqual({ kind: 'app', app: otoApp, path: '/employees/e-123?tab=time' });
+  });
+
+  it('notes, without a button, a path that is not a same-app path — never a button to the app’s home', () => {
+    for (const path of ['//evil.example/x', 'https://evil.example/x', '/a/../b', '']) {
+      expect(resolveLink(link({ path }), [console])).toEqual({
+        kind: 'unsafe-path',
+        note: 'Platform health: this link cannot be opened from here.',
+      });
+    }
+    expect(resolveLink(link({ app: 'launcher', path: '//evil.example/x' }), [])).toMatchObject({ kind: 'unsafe-path' });
   });
 });

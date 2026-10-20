@@ -46,14 +46,8 @@ export type AssistantFeedback = (typeof ASSISTANT_FEEDBACK)[number];
 export const ASSISTANT_TOOL_SYSTEMS = ['platform', 'oto_app'] as const;
 export type AssistantToolSystem = (typeof ASSISTANT_TOOL_SYSTEMS)[number];
 
-/** The limits the database holds the ask-log to, said once (§D.3). */
-export const ASSISTANT_QUESTION_MAX = 2000;
-export const ASSISTANT_STORED_ANSWER_MAX = 4000;
-export const ASSISTANT_CORRECTION_MAX = 1000;
-/** Links an answer may carry (§D.1). */
-export const ASSISTANT_LINKS_MAX = 3;
-/** The ask-log's retention (owner G4 default): `purge_after` = asked + this. */
-export const ASSISTANT_ASK_RETENTION_DAYS = 90;
+/** The limits the database holds the ask-log to, said once (§D.3) — in `assistant-limits.ts`, import-free. */
+export * from './assistant-limits';
 
 /**
  * The one-word shapes the ask-log's CHECKs allow (§E.1: ids and words, never
