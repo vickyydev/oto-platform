@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { hash } from '@node-rs/argon2';
 import { and, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -31,7 +32,7 @@ import {
   teardownAll,
   type TestContext,
 } from './helpers';
-import { NO_LEAKS, inboxHolds, sentinelLeaks, smsConsoleLines } from './inbox-sentinel';
+import { NO_LEAKS, inboxHolds, noticeDeliveryLines, sentinelLeaks } from './inbox-sentinel';
 
 /**
  * S2-19 I2g (SCRUM-586) — the Inbox's PDPA paths (plan
@@ -42,7 +43,11 @@ import { NO_LEAKS, inboxHolds, sentinelLeaks, smsConsoleLines } from './inbox-se
  *     far — the webhook ingest (a verified delivery and a forged one), the
  *     simulator panel, the check-in mirror through the real registration
  *     route, the booking-confirmation mirror, and the reads and read marker —
- *     reaches no audit row, timeline event, ops row or log line.
+ *     reaches no audit row, timeline event, ops row or log line. The api is
+ *     built as a DEPLOYMENT (`DEPLOY_ENV=staging`, SCRUM-593): the check-in
+ *     connection check's own delivery line, which on a developer's machine
+ *     carries the notice, carries only its length and digest here, so the
+ *     guardian's and the child's names reach no log line at all.
  *   - ERASURE, end to end: refused without the operator-scoped permission
  *     (a branch grant of it included), 404 across operators, 409 without both
  *     confirmations; then the person's every message gone in place — the
@@ -61,6 +66,9 @@ const SECRET = 'inbox-privacy-test-secret';
 const SENTINEL = 'SENTINEL-5eed-pdpa-never-outside-the-message-table';
 /** The connection check's fixed sentence (I2c): the mirrored notice's body. */
 const CHECK_TEXT = 'has just been registered at Oto';
+/** The family the check-in notice names (SCRUM-593): neither name may reach a log line. */
+const GUARDIAN_NAME = 'Khun Mali';
+const CHILD_NAME = 'Mintra-5eed';
 const BOOKING_SENTINEL = 'SENTINEL-b00c-booking-confirmation-body';
 const RETENTION_SENTINEL = 'SENTINEL-01d0-retention-old-thread';
 const MALI_PHONE = '+66811111111';
@@ -175,7 +183,25 @@ const confirmed = (contactId: string) => ({ confirmContactId: contactId, confirm
 
 beforeAll(async () => {
   ctx = await createTestContext({
-    env: { INBOX_SIMULATOR: 'on', INBOX_SIMULATOR_SECRET: SECRET },
+    env: {
+      INBOX_SIMULATOR: 'on',
+      INBOX_SIMULATOR_SECRET: SECRET,
+      /**
+       * A deployment, not a developer's machine (SCRUM-593): the check-in
+       * notice's console line is the digest-only one here. The boot guard
+       * refuses a deployment with the console SMS adapter or local object
+       * storage, so each is named as a hosted one would be; the SMS adapter
+       * is replaced by the capturing one after boot, as in every suite.
+       */
+      DEPLOY_ENV: 'staging',
+      SMS_ADAPTER: 'twilio',
+      TWILIO_ACCOUNT_SID: `AC${'1'.repeat(32)}`,
+      TWILIO_AUTH_TOKEN: 'inbox-privacy-test-token',
+      TWILIO_FROM: '+66900000000',
+      MINIO_ENDPOINT: 'storage.example.test',
+      MINIO_PORT: '443',
+      MINIO_USE_SSL: 'true',
+    },
     logCapture: { stream: { write: (line) => void logLines.push(line) }, level: 'debug' },
   });
   ctx.app.fileStorage = memoryStorage;
@@ -242,7 +268,7 @@ describe('the no-body sentinel, across every inbox write path landed so far (I2g
         id: newId(),
         branchId: central,
         stationId: till!.id,
-        guardianName: 'Khun Mali',
+        guardianName: GUARDIAN_NAME,
         guardianPhone: '0811111111',
         contactChannel: 'whatsapp',
         consentAcknowledged: true,
@@ -250,7 +276,7 @@ describe('the no-body sentinel, across every inbox write path landed so far (I2g
         children: [
           {
             checkinId: newId(),
-            name: 'Mint',
+            name: CHILD_NAME,
             ageYears: 6,
             service: 'drop_off',
             allergies: null,
@@ -307,8 +333,32 @@ describe('the no-body sentinel, across every inbox write path landed so far (I2g
     expect((await inboxHolds(ctx.db, CHECK_TEXT)).messages).toBe(1);
     expect((await inboxHolds(ctx.db, BOOKING_SENTINEL)).messages).toBe(1);
     expect(logLines.length).toBeGreaterThan(10);
-    // The one line that does carry the notice is its delivery by the console SMS adapter (plan §7's residual).
-    expect(smsConsoleLines(logLines, CHECK_TEXT)).toBe(1);
+    /**
+     * SCRUM-593 — the notice WAS delivered through the console adapter, and
+     * on a deployment its line says only who (hashed), how long and which
+     * text (its digest): the words of the notice, the guardian's name and the
+     * child's name are in no log line, that one included. The digest is the
+     * body's — the one in the Inbox thread — so the line still ties the
+     * delivery to the mirror without quoting either.
+     */
+    const [notice] = await ctx.db
+      .select({ body: s.message.body })
+      .from(s.message)
+      .where(eq(s.message.source, 'checkin.contact'))
+      .limit(1);
+    expect(notice!.body).toContain(CHILD_NAME);
+    const deliveries = noticeDeliveryLines(logLines);
+    expect(deliveries).toHaveLength(1);
+    expect(deliveries[0]).toEqual({
+      to: expect.stringMatching(/^ph_[0-9a-f]+$/),
+      length: notice!.body!.length,
+      digest: createHash('sha256').update(notice!.body!).digest('hex'),
+    });
+    expect(deliveries[0]!.to).not.toContain('811111111');
+    for (const needle of [GUARDIAN_NAME, CHILD_NAME, MALI_PHONE, '0811111111', '66811111111']) {
+      expect(logLines.filter((l) => l.includes(needle)), `${needle} in a log line`).toEqual([]);
+    }
+    // The sentinel allows no exceptions now: no line, delivery or otherwise.
     for (const needle of [SENTINEL, CHECK_TEXT, BOOKING_SENTINEL]) {
       expect(await sentinelLeaks(ctx.db, needle, logLines), needle).toEqual(NO_LEAKS);
     }

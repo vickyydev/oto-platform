@@ -1,8 +1,9 @@
+import { createHash } from 'node:crypto';
 import { pino, type Logger } from 'pino';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AppError } from '../src/lib/errors';
 import { phoneHash } from '../src/lib/scrub';
-import { buildSmsSender } from '../src/services/sms';
+import { buildNoticeSender, buildSmsSender, noticeLogModeFor } from '../src/services/sms';
 
 /**
  * S2-01c — SMS delivery is real or it is loud.
@@ -207,6 +208,57 @@ describe('the console adapter', () => {
     // The message is here on purpose: on a developer's machine this line IS
     // the delivery. Every deployment is refused this adapter at boot.
     expect(logged).toContain('123456');
+  });
+});
+
+/**
+ * SCRUM-593 — the check-in connection check goes out through the console
+ * adapter on EVERY deployment (the boot guard refuses it only as the code
+ * adapter), and until now its line quoted the notice: "Hi <guardian>, <child>
+ * has just been registered…" into the hosted log stream. Outside local
+ * development the line now carries the body's length and digest and nothing
+ * of its words.
+ */
+describe('the notice sender (SCRUM-593)', () => {
+  const NOTICE =
+    'Hi Khun Mali, Mintra has just been registered at Oto. Please tap the button below to confirm we have the right number.';
+
+  it('draws the line on DEPLOY_ENV, as the boot guard does: words locally, a digest on staging and production', () => {
+    expect(noticeLogModeFor({ DEPLOY_ENV: 'local' })).toBe('full');
+    expect(noticeLogModeFor({ DEPLOY_ENV: 'staging' })).toBe('digest');
+    expect(noticeLogModeFor({ DEPLOY_ENV: 'production' })).toBe('digest');
+  });
+
+  it('in digest mode logs the hashed recipient, the length and the sha256 — never a name or a word of the notice', async () => {
+    const { log, lines } = captureLog();
+    await buildNoticeSender(log, 'digest').send(PHONE, NOTICE);
+
+    expect(lines).toHaveLength(1);
+    const line = JSON.parse(lines[0]!) as { msg: string; sms: Record<string, unknown> };
+    expect(line.sms).toEqual({
+      to: phoneHash(PHONE),
+      length: NOTICE.length,
+      digest: createHash('sha256').update(NOTICE).digest('hex'),
+    });
+    expect(line.msg).toBe(`SMS to ${phoneHash(PHONE)}: ${NOTICE.length} chars, sha256 ${line.sms.digest}`);
+    for (const word of ['Khun Mali', 'Mintra', 'registered', 'message', PHONE, '66811111111']) {
+      expect(lines[0], word).not.toContain(word);
+    }
+  });
+
+  it('in full mode keeps the words, which on a developer\'s machine are the delivery', async () => {
+    const { log, lines } = captureLog();
+    await buildNoticeSender(log, 'full').send(PHONE, NOTICE);
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toContain(NOTICE);
+    expect(lines[0]).not.toContain(PHONE);
+  });
+
+  it('a sender built without the app having chosen a mode writes the digest, not the words', async () => {
+    const { log, lines } = captureLog();
+    await buildNoticeSender(log).send(PHONE, NOTICE);
+    expect(lines[0]).not.toContain('Khun Mali');
+    expect(lines[0]).toContain('sha256');
   });
 });
 

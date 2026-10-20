@@ -1996,7 +1996,9 @@ export async function autoSendRegistrationContact(
  * connection-check template, naming every child on the registration, through
  * the platform's CONSOLE messaging adapter — the one the booking confirmation
  * uses until real channels are their own ticket — and the registration's
- * channel goes `pending` for every sibling at once.
+ * channel goes `pending` for every sibling at once. The sender the callers
+ * hand in is `buildNoticeSender`'s (SCRUM-593): on a deployment its log line
+ * carries the body's length and digest and never the names in it.
  */
 export async function sendContactTest(
   tx: Tx,

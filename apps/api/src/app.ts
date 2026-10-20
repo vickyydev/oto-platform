@@ -84,7 +84,7 @@ import { telemetryPlugin } from './plugins/telemetry';
 import { pgErrorOf, scrubPgError, scrubUrl, uniqueViolationToAppError } from './lib/scrub';
 import { audit } from './services/audit';
 import type { FileStorage } from './services/files';
-import { buildSmsSender, type SmsSender } from './services/sms';
+import { buildSmsSender, configureNoticeLog, noticeLogModeFor, type SmsSender } from './services/sms';
 import { buildOtoAppDirectory, type OtoAppDirectory } from './services/otoapp-directory';
 import { configureBookingPassDirectory } from './services/booking-event-passes';
 
@@ -195,6 +195,10 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   // S2-11: the key every band this deployment issues is signed with. Every
   // door a sale finalises through reads it from here (`services/bands.ts`).
   configureBandKey(resolveBandKey(opts.env));
+  // SCRUM-593: what the check-in connection check's console line may carry —
+  // the words on a developer's machine, only their length and digest on any
+  // deployment. Read by every door the check goes out through (`services/sms`).
+  configureNoticeLog(noticeLogModeFor(opts.env));
   app.decorate('reporter', buildErrorReporter(opts.env.SENTRY_DSN || undefined, log));
   app.decorate('fileStorage', opts.fileStorage ?? null);
   app.decorate(

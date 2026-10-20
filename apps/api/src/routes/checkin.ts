@@ -42,7 +42,7 @@ import {
   waiverViewOf,
   type Actor,
 } from '../services/checkin';
-import { buildSmsSender, type SmsSender } from '../services/sms';
+import { buildNoticeSender, type SmsSender } from '../services/sms';
 import { opCtx, withTx } from '../services/tx';
 
 /**
@@ -130,7 +130,7 @@ export async function checkinRoutes(app: App): Promise<void> {
       }
       const config = await supervisionConfigOf(app.db, req.body.branchId);
       return withTx(app.db, { ...opCtx(req), branchId: req.body.branchId }, 'registration.create', (tx) =>
-        createRegistration(tx, actor, { ...req.body, id: claim.id }, config, consoleMessenger(req)),
+        createRegistration(tx, actor, { ...req.body, id: claim.id }, config, noticeMessenger(req)),
       );
     },
   );
@@ -300,9 +300,14 @@ const EditCheckinSchema = z
 const WeekdayWeekend = z.object({ weekday: z.number().int().min(0), weekend: z.number().int().min(0) });
 const BranchQuery = z.object({ branchId: z.string().uuid() });
 
-/** The platform's console messaging adapter (the booking confirmation's), for the connection check. */
-function consoleMessenger(req: FastifyRequest): SmsSender {
-  return buildSmsSender({ adapter: 'console' }, req.log as unknown as Logger);
+/**
+ * The connection check's sender: the platform's console messaging adapter,
+ * writing the recipient hashed and — outside local development — only the
+ * notice's length and digest, never the guardian's or the children's names
+ * (SCRUM-593). The Inbox mirror still carries the full text.
+ */
+function noticeMessenger(req: FastifyRequest): SmsSender {
+  return buildNoticeSender(req.log as unknown as Logger);
 }
 
 async function boardRoutes(app: App): Promise<void> {
@@ -367,7 +372,7 @@ async function boardRoutes(app: App): Promise<void> {
       const actor = actorOf(req);
       const stay = await loadStay(app.db, actor.operatorId, req.params.id);
       await req.requirePermission('pos:checkin:update', { branchId: stay.branchId });
-      const sms = consoleMessenger(req);
+      const sms = noticeMessenger(req);
       return withTx(app.db, { ...opCtx(req), branchId: stay.branchId }, 'checkin.update', (tx) =>
         editCheckin(tx, actor, stay.id, req.body, { sms }),
       );
@@ -456,7 +461,7 @@ async function boardRoutes(app: App): Promise<void> {
       const actor = actorOf(req);
       const reg = await loadRegistration(app.db, actor.operatorId, req.params.id);
       await req.requirePermission('pos:checkin:update', { branchId: reg.branchId });
-      const sms = consoleMessenger(req);
+      const sms = noticeMessenger(req);
       return withTx(app.db, { ...opCtx(req), branchId: reg.branchId }, 'registration.contact', (tx) =>
         sendContactTest(tx, actor, reg, sms),
       );

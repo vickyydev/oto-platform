@@ -17,7 +17,7 @@ import { autoSendRegistrationContact } from './checkin';
 import { audit } from './audit';
 import { mirrorNotice } from './inbox/mirror';
 import { raiseAlert } from './ops';
-import { buildSmsSender } from './sms';
+import { buildNoticeSender, buildSmsSender } from './sms';
 import { bookingChange, recordChange } from './sync';
 import { withTx, type Exec, type Tx } from './tx';
 
@@ -253,8 +253,9 @@ export async function afterBookingPaid(
     try {
       await withTx(db, { actorAccountId: null, operatorId: row.operatorId, branchId: row.branchId }, 'booking.contact', async (tx) => {
         const [reg] = await tx.select().from(registration).where(eq(registration.id, payload.registrationId as string)).limit(1);
+        // The check-in notice's sender (SCRUM-593): the names never reach the log on a deployment.
         if (reg) await autoSendRegistrationContact(tx, { accountId: null, operatorId: row.operatorId }, reg,
-          buildSmsSender({ adapter: 'console' }, log as unknown as Logger));
+          buildNoticeSender(log as unknown as Logger));
       });
     } catch (err) { log.warn({ err, bookingId: row.id }, 'the registration contact could not be sent'); }
   }

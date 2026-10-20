@@ -8,8 +8,9 @@ import type { Db } from '@oto/db';
  * unique string in a message body, drives a write path, and asks where else
  * the string turned up. The places a body must never reach are the record
  * the platform keeps ABOUT the inbox — the audit log, the timeline events,
- * the operational runs — and every line the api logs. The message table (and
- * the raw webhook payload, until it is purged) are where it lives.
+ * the operational runs — and every line the api logs, with no exception
+ * (SCRUM-593). The message table (and the raw webhook payload, until it is
+ * purged) are where it lives.
  *
  * Answers a count per place, so a failure names where the leak is.
  */
@@ -21,25 +22,38 @@ export interface SentinelLeaks {
 }
 
 /**
- * The console SMS adapter's delivery line. The check-in connection check is
- * SENT through it on every deployment (`routes/checkin.ts`
- * `consoleMessenger`): that line is the notice's delivery, which predates the
- * inbox, and the plan names it as the residual (§7: "today it is only a log
- * line"). It is the inbox's mirror that must never log the body, so the
- * sentinel counts every OTHER line, and `smsConsoleLines` lets a test pin
- * that this is the only one.
+ * The console SMS adapter's delivery line, which is where the check-in
+ * connection check is SENT on every deployment (`routes/checkin.ts`
+ * `noticeMessenger`). Until SCRUM-593 that line carried the whole notice and
+ * the sentinel let it through as the plan's residual (§7: "today it is only a
+ * log line"). It no longer does: outside local development the line carries
+ * the recipient hashed, the body's length and its digest, so the sentinel
+ * counts EVERY line and allows no exceptions. `noticeDeliveryLines` lets a
+ * test pin that the delivery still happened — and that this is all it said.
  */
-export function isSmsConsoleLine(line: string): boolean {
-  try {
-    const parsed = JSON.parse(line) as { sms?: unknown };
-    return typeof parsed.sms === 'object' && parsed.sms !== null;
-  } catch {
-    return false;
-  }
+export interface NoticeDeliveryLine {
+  to: string;
+  length: number;
+  digest: string;
 }
 
-export function smsConsoleLines(logLines: readonly string[], needle: string): number {
-  return logLines.filter((l) => l.includes(needle) && isSmsConsoleLine(l)).length;
+export function noticeDeliveryLines(logLines: readonly string[]): NoticeDeliveryLine[] {
+  const out: NoticeDeliveryLine[] = [];
+  for (const line of logLines) {
+    let parsed: { sms?: unknown };
+    try {
+      parsed = JSON.parse(line) as { sms?: unknown };
+    } catch {
+      continue;
+    }
+    const sms = parsed.sms;
+    if (typeof sms !== 'object' || sms === null) continue;
+    const { to, length, digest } = sms as Partial<NoticeDeliveryLine>;
+    if (typeof to === 'string' && typeof length === 'number' && typeof digest === 'string') {
+      out.push({ to, length, digest });
+    }
+  }
+  return out;
 }
 
 export async function sentinelLeaks(db: Db, needle: string, logLines: readonly string[] = []): Promise<SentinelLeaks> {
@@ -53,7 +67,7 @@ export async function sentinelLeaks(db: Db, needle: string, logLines: readonly s
     ops: await count(
       sql`select count(*)::int as n from core.ops_run where coalesce(detail::text,'') || coalesce(error_message,'') like ${like}`,
     ),
-    logs: logLines.filter((l) => l.includes(needle) && !isSmsConsoleLine(l)).length,
+    logs: logLines.filter((l) => l.includes(needle)).length,
   };
 }
 

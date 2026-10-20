@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { setTimeout as sleep } from 'node:timers/promises';
 import type { Logger } from 'pino';
 import { AppError } from '../lib/errors';
@@ -90,19 +91,81 @@ export interface SmsConfig {
 export const SMS_ADAPTERS = ['console', 'twilio', 'twilio_verify'] as const;
 
 /**
+ * What the console adapter writes of a message's BODY (SCRUM-593).
+ *
+ *  - `full`: the words. On a developer's machine the line IS the delivery —
+ *    of a setup code, and of the check-in connection check — so it keeps them.
+ *  - `digest`: the body's length and its sha256, never a word of it. The line
+ *    still answers "did a notice go to this number, and was it the same text
+ *    as the one in the Inbox thread?" without a guardian's or a child's name
+ *    reaching a hosted log stream.
+ */
+export type NoticeLogMode = 'full' | 'digest';
+
+/**
  * The recipient is never logged in the clear (S2-01a) — only a stable hash,
  * which still answers "did this number get its code?" without putting a
  * member's or a staff member's phone in a hosted log stream.
  */
-function consoleSender(log: Logger): SmsSender {
+function consoleSender(log: Logger, mode: NoticeLogMode = 'full'): SmsSender {
   return {
-    // The dev adapter deliberately keeps the message: it IS how the setup and
-    // reset codes are delivered locally. The recipient is hashed.
     async send(phone, message) {
       const to = phoneHash(phone);
-      log.info({ sms: { to, message } }, `SMS to ${to}: ${message}`);
+      if (mode === 'full') {
+        // The dev adapter deliberately keeps the message: it IS how the setup
+        // and reset codes are delivered locally. The recipient is hashed.
+        log.info({ sms: { to, message } }, `SMS to ${to}: ${message}`);
+        return;
+      }
+      // Only the shape of the message: never the words (SCRUM-593).
+      const digest = createHash('sha256').update(message).digest('hex');
+      const length = message.length;
+      log.info({ sms: { to, length, digest } }, `SMS to ${to}: ${length} chars, sha256 ${digest}`);
     },
   };
+}
+
+// --- The notice sender (SCRUM-593) ---------------------------------------------
+
+/**
+ * The line is drawn where every other "is this a developer's machine?" rule
+ * draws it (`assertProductionSafe`, `resolveBandKey`): on `DEPLOY_ENV`, never
+ * on `NODE_ENV`. Staging is a production build and its log is hosted, so it
+ * gets the digest exactly as production does; only `local` keeps the words.
+ */
+export function noticeLogModeFor(env: { DEPLOY_ENV: string }): NoticeLogMode {
+  return env.DEPLOY_ENV === 'local' ? 'full' : 'digest';
+}
+
+/**
+ * Digest unless the app that built this process said otherwise: a sender
+ * built before (or without) `buildApp` never writes a body to a log.
+ */
+let noticeLogMode: NoticeLogMode = 'digest';
+
+/**
+ * Set once when the app is built (`buildApp`), from `noticeLogModeFor(env)`.
+ *
+ * Module state rather than a parameter, for the reason `configureBandKey`
+ * gives: the connection check goes out through three doors — the till's
+ * route, the booking webhook's registration and the box's offline replay —
+ * and the last of those carries no env in any of its context objects. The
+ * mode is the deployment's, not the request's, so it is held where every door
+ * can see it.
+ */
+export function configureNoticeLog(mode: NoticeLogMode): void {
+  noticeLogMode = mode;
+}
+
+/**
+ * The sender the check-in connection check goes through until real customer
+ * channels are their own ticket: the console adapter, writing the recipient
+ * hashed and — outside local development — only the body's length and digest.
+ * The Inbox mirror (`mirrorNotice`) still receives the full body; it is the
+ * log line that never does.
+ */
+export function buildNoticeSender(log: Logger, mode: NoticeLogMode = noticeLogMode): SmsSender {
+  return consoleSender(log, mode);
 }
 
 /** Attempts in total, the first one included. */

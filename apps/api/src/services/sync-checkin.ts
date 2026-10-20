@@ -53,7 +53,7 @@ import { currentBandKey } from './bands';
 import type { BoxAuth } from './box';
 import { boxPrepaidFiled } from './band-food';
 import { autoSendRegistrationContact, boardOf, supervisionConfigOf } from './checkin';
-import { buildSmsSender } from './sms';
+import { buildNoticeSender } from './sms';
 import type { FileStorage } from './files';
 import { raiseAlert } from './ops';
 import type { Exec, OpContext, Tx } from './tx';
@@ -311,7 +311,7 @@ async function applyCheckinCreated(
   await autoSendRegistrationContact(tx, { accountId: actorOf(event), operatorId, sourceEventId: event.envelope.eventId }, {
     id: payload.registrationId, branchId, guardianName: payload.guardianName.trim(), guardianPhone,
     contactChannel: payload.contactChannel,
-  }, scope.log ? buildSmsSender({ adapter: 'console' }, scope.log as unknown as Logger) : null);
+  }, scope.log ? buildNoticeSender(scope.log as unknown as Logger) : null);
   return { entityType: 'registration', entityId: payload.registrationId };
 }
 
