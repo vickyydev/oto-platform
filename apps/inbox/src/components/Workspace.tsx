@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Archive, FileText, FlaskConical, LogOut, MessageSquare, Sparkles } from 'lucide-react';
+import { Archive, Bot, FileText, FlaskConical, LogOut, MessageSquare, Sparkles } from 'lucide-react';
 import type { InboxTab } from '@oto/shared/inbox';
 import { ApiError } from '@/api/client';
+import { assistantCapabilities } from '@/api/assistant';
 import { inboxApi, type ConversationList as ListPage, type ConversationRow, type Dashboard as DashboardData, type InboxMe, type Message } from '@/api/inbox';
 import { useSession } from '@/auth/SessionContext';
+import { AssistantSettings } from '@/components/AssistantSettings';
 import { EmptyState } from '@/components/atoms';
 import { ChatPanel, type Thread } from '@/components/ChatPanel';
 import { composerTemplate, type InsertedTemplate } from '@/components/Composer';
@@ -88,8 +90,9 @@ export function Workspace({ me }: { me: InboxMe }) {
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [simulatorOpen, setSimulatorOpen] = useState(false);
-  /** The settings page in place of the workspace card (I3b). */
-  const [settings, setSettings] = useState(false);
+  /** The settings page in place of the workspace card: templates (I3b) or the assistant (SCRUM-590 A3). */
+  const [settings, setSettings] = useState<'templates' | 'assistant' | null>(null);
+  const assistantCaps = assistantCapabilities(me);
   const [inserted, setInserted] = useState<InsertedTemplate | null>(null);
 
   // "Mark as handled for everyone?", from the chat or a list row.
@@ -324,16 +327,31 @@ export function Workspace({ me }: { me: InboxMe }) {
             {me.capabilities.templates && (
               <button
                 type="button"
-                onClick={() => setSettings((v) => !v)}
-                aria-pressed={settings}
+                onClick={() => setSettings((v) => (v === 'templates' ? null : 'templates'))}
+                aria-pressed={settings === 'templates'}
                 className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-[12px] font-medium transition ${
-                  settings
+                  settings === 'templates'
                     ? 'border-slate-900 bg-slate-900 text-white shadow-sm'
                     : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900'
                 }`}
               >
                 <FileText className="h-3.5 w-3.5" />
                 Templates
+              </button>
+            )}
+            {(assistantCaps.kb || assistantCaps.ai) && (
+              <button
+                type="button"
+                onClick={() => setSettings((v) => (v === 'assistant' ? null : 'assistant'))}
+                aria-pressed={settings === 'assistant'}
+                className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-[12px] font-medium transition ${
+                  settings === 'assistant'
+                    ? 'border-slate-900 bg-slate-900 text-white shadow-sm'
+                    : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900'
+                }`}
+              >
+                <Bot className="h-3.5 w-3.5" />
+                Assistant
               </button>
             )}
             {me.simulator && (
@@ -377,10 +395,11 @@ export function Workspace({ me }: { me: InboxMe }) {
         )}
       </header>
 
-      {settings && <TemplateSettings me={me} />}
+      {settings === 'templates' && <TemplateSettings me={me} />}
+      {settings === 'assistant' && <AssistantSettings me={me} />}
 
       {/* WORKSPACE */}
-      <div className={`${settings ? 'hidden ' : ''}overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_40px_-16px_rgba(15,23,42,0.18)]`}>
+      <div className={`${settings !== null ? 'hidden ' : ''}overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_40px_-16px_rgba(15,23,42,0.18)]`}>
         <div className="grid h-[calc(100dvh-2rem)] min-h-[520px] grid-cols-1 lg:h-[min(82vh,860px)] lg:grid-cols-[220px_360px_minmax(0,1fr)]">
           <Rail me={me} tab={tab} counts={page?.tabCounts ?? null} filters={filters} onTab={chooseTab} onFilters={patchFilters} />
 

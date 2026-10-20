@@ -12,6 +12,7 @@
   },
   "devDependencies": {
     "@oto/api-types": "workspace:*",
+    "@oto/assistant": "workspace:*",
     "@oto/shared": "workspace:*",
     "@tailwindcss/vite": "catalog:",
     "@types/node": "catalog:",

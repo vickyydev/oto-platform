@@ -1,0 +1,229 @@
+/**
+ * The assistant's words and small rules on the shell side (SCRUM-590 A3) —
+ * pure, so the unit tests read the real thing (test/assistant.test.ts).
+ *
+ * The rules the shell must not bend live in the plan and the schema: the
+ * three modes (§D.4), the KB's field limits (`kb_entry_length_check`), the
+ * example's limits and its de-identification rule (`ai_example_length_check`,
+ * `ai_example_approved_check`, §D.5). The server enforces every one of them;
+ * the shell says them first so nobody types into a refusal.
+ */
+import { AI_INTENTS, AI_KB_TOPICS, type AiIntent } from '@oto/assistant/intents';
+import type { AiMode, ExampleVerdict, KbEntry, KbLanguage, KbStatus } from '@/api/assistant';
+import type { Message } from '@/api/inbox';
+
+// --- The per-number switch (§D.4, §B.5) ------------------------------------------------
+
+export interface AiModeOption {
+  value: AiMode;
+  label: string;
+  /** What it means, in plain words, for the person deciding. */
+  description: string;
+}
+
+/**
+ * The three states, in the order a number moves through them (G11: shadow
+ * before live). Live is the one customers hear, and its words say so.
+ */
+export const AI_MODE_OPTIONS: readonly AiModeOption[] = [
+  {
+    value: 'off',
+    label: 'Off',
+    description: 'The assistant does nothing on this number. Every message waits for a person, as today.',
+  },
+  {
+    value: 'shadow',
+    label: 'Shadow',
+    description:
+      'The assistant reads each message and records what it would have done, but sends nothing and changes nothing. Customers never see it. Use this to measure it before going live.',
+  },
+  {
+    value: 'live',
+    label: 'Live',
+    description:
+      'CUSTOMERS HEAR IT. The assistant answers simple questions on this number and hands everything else to the team with a holding line. A person replying always takes over.',
+  },
+];
+
+export function aiModeOption(mode: AiMode): AiModeOption {
+  return AI_MODE_OPTIONS.find((o) => o.value === mode) ?? AI_MODE_OPTIONS[0]!;
+}
+
+export const AI_MODE_TINT: Record<AiMode, string> = {
+  off: 'bg-slate-100 text-slate-600 ring-slate-200',
+  shadow: 'bg-amber-50 text-amber-700 ring-amber-200',
+  live: 'bg-indigo-50 text-indigo-700 ring-indigo-200',
+};
+
+/** Turning a number live is a decision (§C.2): it always asks first. Any other move does not. */
+export function modeChangeNeedsConfirm(from: AiMode, to: AiMode): boolean {
+  return to === 'live' && from !== 'live';
+}
+
+// --- The knowledge base (§C.1) -----------------------------------------------------------
+
+/** `kb_entry_length_check`. */
+export const KB_QUESTION_MAX = 200;
+export const KB_BODY_MAX = 1200;
+/** `kb_entry_key_check`: ≤ 80, lower-case words joined by `.`, `_` or `-`. */
+export const KB_KEY_MAX = 80;
+const KB_KEY = /^[a-z0-9]+([._-][a-z0-9]+)*$/;
+
+export const KB_TOPICS = AI_KB_TOPICS;
+export const KB_TOPIC_LABEL: Record<(typeof AI_KB_TOPICS)[number], string> = {
+  about_oto: 'About OTO',
+  hours_note: 'Opening hours (note)',
+  address_note: 'Address (note)',
+  directions: 'Directions',
+  parking: 'Parking',
+  age_rules: 'Age rules',
+  socks: 'Socks',
+  prices_note: 'Prices (note)',
+  faq: 'FAQ',
+};
+export function topicLabel(topic: string): string {
+  return (KB_TOPIC_LABEL as Record<string, string>)[topic] ?? topic.replace(/_/g, ' ');
+}
+
+export const KB_LANGUAGES: readonly [KbLanguage, string][] = [
+  ['en', 'English'],
+  ['th', 'Thai'],
+  ['ru', 'Russian'],
+];
+
+export const KB_STATUS_LABEL: Record<KbStatus, string> = { draft: 'Draft', approved: 'Approved', archived: 'Archived' };
+export const KB_STATUS_TINT: Record<KbStatus, string> = {
+  draft: 'bg-amber-50 text-amber-700 ring-amber-200',
+  approved: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+  archived: 'bg-slate-100 text-slate-500 ring-slate-200',
+};
+
+export interface KbDraft {
+  topic: string;
+  key: string;
+  language: KbLanguage;
+  question: string;
+  body: string;
+}
+
+/** The editor's refusals before the server's: one sentence per field, null when the draft can be saved. */
+export function kbDraftProblem(d: KbDraft): string | null {
+  if (!(KB_TOPICS as readonly string[]).includes(d.topic)) return 'Choose a topic.';
+  if (!d.key.trim()) return 'Give the entry a key, e.g. faq.food-outside.';
+  if (d.key.length > KB_KEY_MAX) return `The key is at most ${KB_KEY_MAX} characters.`;
+  if (!KB_KEY.test(d.key)) return 'The key is lower-case words and numbers joined by a dot, dash or underscore.';
+  if (!d.question.trim()) return 'Write the question as a customer would ask it.';
+  if (d.question.length > KB_QUESTION_MAX) return `The question is at most ${KB_QUESTION_MAX} characters.`;
+  if (!d.body.trim()) return 'Write the answer.';
+  if (d.body.length > KB_BODY_MAX) return `The answer is at most ${KB_BODY_MAX} characters.`;
+  return null;
+}
+
+/**
+ * The list grouped by topic (the plan's "KB list by topic and language"),
+ * topics in the schema's order, inside each the key then the language.
+ */
+export function kbGroups(entries: readonly KbEntry[]): { topic: string; entries: KbEntry[] }[] {
+  const order = (t: string) => {
+    const i = (KB_TOPICS as readonly string[]).indexOf(t);
+    return i < 0 ? KB_TOPICS.length : i;
+  };
+  const lang = (l: string) => KB_LANGUAGES.findIndex(([v]) => v === l);
+  const topics = [...new Set(entries.map((e) => e.topic))].sort((a, b) => order(a) - order(b) || a.localeCompare(b));
+  return topics.map((topic) => ({
+    topic,
+    entries: entries
+      .filter((e) => e.topic === topic)
+      .sort((a, b) => a.key.localeCompare(b.key) || lang(a.language) - lang(b.language)),
+  }));
+}
+
+// --- The examples (§E, §D.5) -------------------------------------------------------------
+
+/** `ai_example_length_check`. */
+export const EXAMPLE_CUSTOMER_MAX = 500;
+export const EXAMPLE_REPLY_MAX = 800;
+
+export const INTENTS: readonly AiIntent[] = AI_INTENTS;
+export const intentLabel = (intent: string): string => intent.replace(/_/g, ' ');
+
+export const VERDICT_OPTIONS: readonly [ExampleVerdict, string][] = [
+  ['should_answer', 'It should have answered like this'],
+  ['should_handover', 'It should have handed over to the team'],
+  ['should_stay_silent', 'It should have stayed silent'],
+];
+export const VERDICT_LABEL: Record<ExampleVerdict, string> = {
+  should_answer: 'Should answer',
+  should_handover: 'Should hand over',
+  should_stay_silent: 'Should stay silent',
+};
+
+export interface ExampleDraft {
+  customerText: string;
+  goodReply: string;
+  verdict: ExampleVerdict;
+}
+
+/** The example's refusals before the server's (`ai_example_length_check`, `ai_example_reply_check`). */
+export function exampleDraftProblem(d: ExampleDraft): string | null {
+  if (!d.customerText.trim()) return 'Write the customer’s question.';
+  if (d.customerText.length > EXAMPLE_CUSTOMER_MAX) return `The customer’s question is at most ${EXAMPLE_CUSTOMER_MAX} characters.`;
+  if (d.verdict === 'should_answer' && !d.goodReply.trim()) return 'Write the reply it should have sent.';
+  if (d.goodReply.length > EXAMPLE_REPLY_MAX) return `The reply is at most ${EXAMPLE_REPLY_MAX} characters.`;
+  return null;
+}
+
+/**
+ * THE APPROVE GATE (§D.5, `ai_example_approved_check`): an example is approved
+ * only with the approver's own "contains no personal data" tick, on a draft
+ * that would save, and not while another write is in flight. The button reads
+ * this and nothing else.
+ */
+export function canApproveExample(s: { deidentified: boolean; draft: ExampleDraft; busy: boolean }): boolean {
+  return s.deidentified && !s.busy && exampleDraftProblem(s.draft) === null;
+}
+
+/** An example's language: the KB's three; anything else is English (G8: other languages are left to people). */
+export function exampleLanguage(code: string | null | undefined): KbLanguage {
+  return code === 'th' || code === 'ru' ? code : 'en';
+}
+
+export function exampleIntent(intent: string | null | undefined): AiIntent {
+  return (INTENTS as readonly string[]).includes(intent ?? '') ? (intent as AiIntent) : 'other';
+}
+
+/**
+ * "Correct the assistant", pre-filled (§E): the customer's words the line
+ * answered — every customer message since the previous non-customer line,
+ * newest last — and the AI's own line. On an `ai_silent` pill there is no AI
+ * line: the customer's burst before the pill.
+ */
+export function correctionSource(
+  messages: readonly Message[],
+  target: { messageId: string } | { at: string },
+): { customerText: string; customerMessageId: string | null; aiText: string } {
+  // `end`: the index the backward walk starts from — the AI line itself, or
+  // the first message after the pill.
+  let end: number;
+  let aiText = '';
+  if ('messageId' in target) {
+    end = messages.findIndex((m) => m.id === target.messageId);
+    if (end >= 0) aiText = messages[end]!.body ?? '';
+  } else {
+    end = messages.filter((m) => m.createdAt <= target.at).length;
+  }
+  let start = Math.max(end, 0);
+  // Walk back past the AI's other bubbles in the same answer, then over the customer's burst.
+  while (start > 0 && messages[start - 1]!.authorKind === 'ai') start--;
+  const burst: Message[] = [];
+  while (start > 0 && messages[start - 1]!.authorKind === 'customer') {
+    burst.unshift(messages[start - 1]!);
+    start--;
+  }
+  const text = burst
+    .map((m) => m.body ?? '')
+    .filter(Boolean)
+    .join('\n')
+    .slice(0, EXAMPLE_CUSTOMER_MAX);
+  return { customerText: text, customerMessageId: burst[burst.length - 1]?.id ?? null, aiText };
+}

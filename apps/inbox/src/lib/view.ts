@@ -403,14 +403,69 @@ export function eventText(e: InboxEvent, ctx: PillContext): string | null {
     case 'send_failed':
       // The channel's own refusal word, as the send job recorded it.
       return str(p.refusal) ? `Reply not sent · ${str(p.refusal)}` : 'Reply not sent';
+    // The assistant's three (SCRUM-590 §D.3). Payloads carry ids and words only
+    // (`ai-engine.ts`, `ai-turns.ts`), never a body.
+    case 'ai_handover': {
+      const team = teamName(ctx, p.reroutedTeamId);
+      const intent = str(p.intent);
+      return `AI handed over to ${team ?? 'the team'}${intent ? ` · ${intentWords(intent)}` : ''}`;
+    }
+    case 'ai_silent':
+      // §B.3: the pill says only that the assistant left this one for a person.
+      return 'AI left this one for the team';
+    case 'ai_withdrawn':
+      return `AI reply not sent · ${withdrawnWhy(p.reason)}`;
     default:
       return e.kind.replace(/_/g, ' ');
   }
 }
 
+/** An intent word as staff read it: `birthday_party` → "birthday party". */
+function intentWords(intent: string): string {
+  return intent.replace(/_/g, ' ');
+}
+
+/**
+ * Why an AI line was withdrawn before it left (§A.3), from the cancel reason
+ * the api records (`cancelAiForThread`: STAFF_REPLY, ASSIGNED, HANDLED,
+ * ERASED, PAUSED). The plan's wording, "a person replied", is the common one.
+ */
+export function withdrawnWhy(reason: unknown): string {
+  switch (reason) {
+    case 'ASSIGNED':
+      return 'a person took the conversation';
+    case 'HANDLED':
+      return 'the conversation was handled';
+    case 'PAUSED':
+      return 'the assistant was paused';
+    case 'ERASED':
+      return 'the contact was erased';
+    default:
+      return 'a person replied';
+  }
+}
+
+/**
+ * The withdrawn bubbles of a thread, by message id, with the words under each
+ * (`Not sent: a person replied`, plan §A.3) — read from the `ai_withdrawn`
+ * events, which name the message.
+ */
+export function withdrawnNotes(messages: readonly Message[], events: readonly InboxEvent[]): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const e of events) {
+    if (e.kind !== 'ai_withdrawn' || typeof e.payload.messageId !== 'string') continue;
+    out.set(e.payload.messageId, `Not sent: ${withdrawnWhy(e.payload.reason)}`);
+  }
+  // A withdrawn row whose event is on an older page still says it was not sent.
+  for (const m of messages) {
+    if (m.providerStatus === 'withdrawn' && !out.has(m.id)) out.set(m.id, `Not sent: ${withdrawnWhy(undefined)}`);
+  }
+  return out;
+}
+
 export type TimelineItem =
   | { kind: 'message'; at: string; message: Message }
-  | { kind: 'pill'; at: string; id: string; text: string };
+  | { kind: 'pill'; at: string; id: string; text: string; event: string };
 
 /**
  * Messages and system pills in one column, oldest first (the prototype keeps
@@ -429,7 +484,7 @@ export function timeline(
   for (const e of events) {
     if (!reachesStart && oldest !== undefined && e.createdAt < oldest) continue;
     const text = eventText(e, ctx);
-    if (text !== null) items.push({ kind: 'pill', at: e.createdAt, id: e.id, text });
+    if (text !== null) items.push({ kind: 'pill', at: e.createdAt, id: e.id, text, event: e.kind });
   }
   // Stable on ties: a pill written in the same instant as its message follows it.
   return items

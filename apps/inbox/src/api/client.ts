@@ -23,14 +23,17 @@ async function request<T>(
   body?: unknown,
   opts: { idempotencyKey?: string } = {},
 ): Promise<T> {
+  // A file (the birthday brochure, SCRUM-590) goes as its own bytes under its
+  // own type; everything else is JSON.
+  const raw = typeof Blob !== 'undefined' && body instanceof Blob;
   const res = await fetch(`${API_PREFIX}${path}`, {
     method,
     credentials: 'same-origin',
     headers: {
-      ...(body !== undefined ? { 'content-type': 'application/json' } : {}),
+      ...(body !== undefined ? { 'content-type': raw ? (body as Blob).type || 'application/octet-stream' : 'application/json' } : {}),
       ...(opts.idempotencyKey ? { 'idempotency-key': opts.idempotencyKey } : {}),
     },
-    body: body !== undefined ? JSON.stringify(body) : undefined,
+    body: raw ? (body as Blob) : body !== undefined ? JSON.stringify(body) : undefined,
   });
   if (res.status === 204) return undefined as T;
   const data = (await res.json().catch(() => null)) as

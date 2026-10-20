@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
-import { Archive, FileText, Loader2, Pencil, Plus } from 'lucide-react';
+import { Archive, FileText, Loader2, Paperclip, Pencil, Plus, Upload } from 'lucide-react';
 import { INBOX_TEMPLATE_APPROVALS, INBOX_TEMPLATE_KEY_NAMES, templateVariables } from '@oto/shared/inbox-reply';
 import { ApiError } from '@/api/client';
+import { NOT_YET_SWITCHED_ON, assistantApi, routeMissing } from '@/api/assistant';
 import { inboxApi, type InboxMe, type ManagedTemplate, type TemplateCreate } from '@/api/inbox';
 import { Eyebrow } from '@/components/atoms';
 import { Refusal } from '@/components/confirms';
@@ -156,6 +157,7 @@ export function TemplateSettings({ me }: { me: InboxMe }) {
                     )}
                   </div>
                   <p className="mt-1.5 line-clamp-4 whitespace-pre-line break-words text-[12.5px] text-slate-700">{t.body}</p>
+                  {t.key === BROCHURE_KEY && <Brochure template={t} onChanged={load} />}
                   {!t.archivedAt && (
                     <div className="mt-2 flex items-center gap-1.5">
                       <button type="button" onClick={() => setEditing(t)} className={BUTTON}>
@@ -225,6 +227,69 @@ export function TemplateSettings({ me }: { me: InboxMe }) {
         </p>
         {archiveError && <Refusal text={archiveError} />}
       </Dialog>
+    </div>
+  );
+}
+
+/** The handover line whose row carries the park's birthday brochure (SCRUM-590 §C.5). */
+const BROCHURE_KEY = 'handover_birthday';
+const MAX_BROCHURE_BYTES = 15 * 1024 * 1024;
+
+/**
+ * The birthday brochure on a `handover_birthday` row (plan §C.5): the file the
+ * assistant sends before the holding line. One per park — a park's own row
+ * carries that park's brochure; the every-park row is the fallback. A PDF.
+ */
+function Brochure({ template, onChanged }: { template: ManagedTemplate; onChanged: () => Promise<void> }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const count = template.attachmentFileIds.length;
+
+  const upload = async (file: File | undefined) => {
+    if (!file) return;
+    setError(null);
+    if (file.type && file.type !== 'application/pdf') return setError('The brochure is a PDF.');
+    if (file.size > MAX_BROCHURE_BYTES) return setError('The brochure is at most 15 MB.');
+    setBusy(true);
+    try {
+      await assistantApi.uploadBrochure(template.id, file);
+      await onChanged();
+    } catch (err) {
+      setError(
+        routeMissing(err)
+          ? NOT_YET_SWITCHED_ON
+          : said(err, 'The brochure could not be uploaded.'),
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="mt-2 rounded-lg bg-violet-50/60 px-2.5 py-1.5 ring-1 ring-violet-100">
+      <div className="flex flex-wrap items-center gap-2 text-[11.5px] text-violet-800">
+        <Paperclip className="h-3 w-3" />
+        <span className="min-w-0 flex-1">
+          {count > 0 ? `Birthday brochure attached (${count} file${count === 1 ? '' : 's'})` : 'No birthday brochure yet'}
+        </span>
+        {!template.archivedAt && (
+          <label className={`${BUTTON} cursor-pointer`}>
+            {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+            {count > 0 ? 'Replace PDF' : 'Upload PDF'}
+            <input
+              type="file"
+              accept="application/pdf"
+              disabled={busy}
+              className="sr-only"
+              onChange={(e) => {
+                void upload(e.target.files?.[0]);
+                e.target.value = '';
+              }}
+            />
+          </label>
+        )}
+      </div>
+      {error && <Refusal text={error} />}
     </div>
   );
 }

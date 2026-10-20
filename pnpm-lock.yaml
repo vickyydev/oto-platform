@@ -291,6 +291,9 @@ importers:
       '@oto/api-types':
         specifier: workspace:*
         version: link:../../packages/api-types
+      '@oto/assistant':
+        specifier: workspace:*
+        version: link:../../packages/assistant
       '@oto/shared':
         specifier: workspace:*
         version: link:../../packages/shared

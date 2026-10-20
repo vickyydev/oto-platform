@@ -10,15 +10,20 @@ import {
   Loader2,
   MapPin,
   MoreHorizontal,
+  PauseCircle,
+  PenLine,
+  PlayCircle,
   Plus,
   Repeat,
   X,
 } from 'lucide-react';
 import type { InboxCategoryKey } from '@oto/shared/inbox';
 import { ApiError } from '@/api/client';
+import { NOT_YET_SWITCHED_ON, assistantApi, routeMissing, threadAiPaused } from '@/api/assistant';
 import { inboxApi, type ConversationDetail, type ConversationRow, type InboxMe, type Message } from '@/api/inbox';
 import { Avatar, CategoryBadge, ChannelDot, ChipView, StatusBadge } from '@/components/atoms';
 import { Composer, type InsertedTemplate } from '@/components/Composer';
+import { CorrectAssistant, type CorrectionTarget } from '@/components/CorrectAssistant';
 import { PrimaryMoveConfirm, type PendingPrimaryMove } from '@/components/confirms';
 import { MessageBubble } from '@/components/MessageBubble';
 import { SlotPicker } from '@/components/SlotPicker';
@@ -42,6 +47,7 @@ import {
   teamDestLabel,
   timeline,
   tintFor,
+  withdrawnNotes,
   writeMode,
   type SlotOption,
 } from '@/lib/view';
@@ -55,13 +61,14 @@ export interface Thread {
   error: string | null;
 }
 
-type Busy = 'primary' | 'support' | 'divert' | 'move' | 'branch' | 'reopen' | null;
+type Busy = 'primary' | 'support' | 'divert' | 'move' | 'branch' | 'reopen' | 'ai' | null;
 
 const CATEGORY_KEYS: readonly InboxCategoryKey[] = ['birthdays', 'general', 'marketing'];
 const categoryOf = (v: unknown): InboxCategoryKey | null =>
   CATEGORY_KEYS.includes(v as InboxCategoryKey) ? (v as InboxCategoryKey) : null;
 
 function refusalOf(err: unknown, fallback: string): string {
+  if (routeMissing(err)) return NOT_YET_SWITCHED_ON;
   return err instanceof ApiError ? err.message : fallback;
 }
 
@@ -124,12 +131,20 @@ export function ChatPanel({
   const [error, setError] = useState<string | null>(null);
   const [pendingPrimary, setPendingPrimary] = useState<(PendingPrimaryMove & { option: SlotOption }) | null>(null);
   const [confirmError, setConfirmError] = useState<string | null>(null);
+  const [correcting, setCorrecting] = useState<CorrectionTarget | null>(null);
 
   // A refusal belongs to the conversation it was said about.
   useEffect(() => {
     setError(null);
     setPendingPrimary(null);
+    setCorrecting(null);
   }, [conv.id]);
+
+  // SCRUM-590 A3: the assistant's pause on this thread (§A.3 kill switch 3),
+  // for whoever acts on it; and "Correct the assistant" for anyone who may write.
+  const aiPaused = threadAiPaused(detail);
+  const mayPauseAi = live && (handleable || me.capabilities.assign);
+  const mayCorrect = live;
 
   const run = async (what: Exclude<Busy, null>, fn: () => Promise<unknown>, fallback: string) => {
     setBusy(what);
@@ -189,6 +204,10 @@ export function ChatPanel({
   const items = useMemo(
     () => timeline(thread.messages, thread.detail?.events ?? [], thread.olderCursor === null, { me }),
     [thread.messages, thread.detail, thread.olderCursor, me],
+  );
+  const withdrawn = useMemo(
+    () => withdrawnNotes(thread.messages, thread.detail?.events ?? []),
+    [thread.messages, thread.detail],
   );
 
   // Open at the newest line, and follow new ones as they arrive — but not when
@@ -417,6 +436,39 @@ export function ChatPanel({
               )
             ))}
           <span className="ml-auto flex flex-wrap items-center gap-2">
+            {mayPauseAi && (
+              <button
+                type="button"
+                disabled={busy !== null}
+                aria-pressed={aiPaused}
+                onClick={() =>
+                  void run(
+                    'ai',
+                    () => (aiPaused ? assistantApi.resume(conv.id) : assistantApi.pause(conv.id)),
+                    aiPaused ? 'The assistant could not be resumed here.' : 'The assistant could not be paused here.',
+                  )
+                }
+                title={
+                  aiPaused
+                    ? 'The assistant stays quiet on this conversation. Resume to let it answer again.'
+                    : 'Stop the assistant answering on this conversation. Lines not yet sent are withdrawn.'
+                }
+                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 disabled:opacity-60 ${
+                  aiPaused
+                    ? 'bg-amber-50 text-amber-700 ring-amber-200 hover:bg-amber-100'
+                    : 'bg-indigo-50 text-indigo-700 ring-indigo-200 hover:bg-indigo-100'
+                }`}
+              >
+                {busy === 'ai' ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : aiPaused ? (
+                  <PlayCircle className="h-3 w-3" />
+                ) : (
+                  <PauseCircle className="h-3 w-3" />
+                )}
+                {aiPaused ? 'AI paused · Resume' : 'AI on · Pause'}
+              </button>
+            )}
             {me.capabilities.assign && live ? (
               <label className="flex items-center gap-1.5 text-[11px] text-slate-500">
                 <MapPin className="h-3 w-3" />
@@ -550,14 +602,31 @@ export function ChatPanel({
           )}
           {items.map((it) =>
             it.kind === 'pill' ? (
-              <div key={it.id} className="my-1 flex justify-center">
+              <div key={it.id} className="my-1 flex flex-col items-center gap-0.5">
                 <span className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-slate-200/70 px-2.5 py-1 text-center text-[11px] font-medium text-slate-600">
                   <Bot className="h-3 w-3 shrink-0" />
                   <span className="min-w-0">{it.text}</span>
                 </span>
+                {it.event === 'ai_silent' && mayCorrect && (
+                  <button
+                    type="button"
+                    onClick={() => setCorrecting({ at: it.at })}
+                    className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[11px] font-medium text-indigo-500 hover:bg-indigo-50 hover:text-indigo-700"
+                  >
+                    <PenLine className="h-3 w-3" />
+                    Correct the assistant
+                  </button>
+                )}
               </div>
             ) : (
-              <MessageBubble key={it.message.id} m={it.message} me={me} now={now} />
+              <MessageBubble
+                key={it.message.id}
+                m={it.message}
+                me={me}
+                now={now}
+                withdrawnNote={withdrawn.get(it.message.id)}
+                onCorrect={mayCorrect ? () => setCorrecting({ messageId: it.message.id }) : undefined}
+              />
             ),
           )}
           {conv.status === 'handled' && (
@@ -584,6 +653,16 @@ export function ChatPanel({
         />
       ) : (
         <PendingComposer conv={conv} me={me} onOpenTemplates={onOpenTemplates} />
+      )}
+
+      {correcting && (
+        <CorrectAssistant
+          target={correcting}
+          messages={thread.messages}
+          intent={conv.intent}
+          language={conv.language}
+          onClose={() => setCorrecting(null)}
+        />
       )}
 
       <PrimaryMoveConfirm
