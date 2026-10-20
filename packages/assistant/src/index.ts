@@ -37,6 +37,8 @@
  *                        and the per-asker block.
  *   internal-guards.ts   URL stripping, shape, the traceability guard over the
  *                        ask's tool summaries. No persona guard.
+ *   refusal-words.ts     a refusal in plain words for the model, and the
+ *                        server's rewrite of permission strings out of prose.
  *   tool-loop.ts         `runToolLoop` (one loop for both transports),
  *                        `interpretToolLoopReply`, `AnthropicToolLoopClient`.
  *   tool-loop-fake.ts    `FakeToolLoopClient`: scripted tool calls and answers
@@ -55,5 +57,6 @@ export * from './fake';
 export * from './internal-answer';
 export * from './internal-prompt';
 export * from './internal-guards';
+export * from './refusal-words';
 export * from './tool-loop';
 export * from './tool-loop-fake';

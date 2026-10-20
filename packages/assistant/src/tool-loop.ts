@@ -44,6 +44,7 @@ import {
   DEFAULT_INTERNAL_ANSWER_MODE,
   InternalAnswerSchema,
   parseTrailingAnswer,
+  renderTrailingAnswer,
   type InternalAnswer,
   type InternalAnswerMode,
   type ToolLoopFailure,
@@ -268,10 +269,30 @@ export function interpretToolLoopReply(
 // The loop
 // ---------------------------------------------------------------------------
 
+/**
+ * One earlier ask of the SAME person, replayed as a user/assistant pair
+ * before the question (test night 2026-10-21, D2: "and yesterday?" after
+ * "who is on shift tomorrow" ended GUARD_NUMBER because each ask was answered
+ * alone). The engine reads the asker's own recent log and nobody else's; the
+ * answer is rendered in the request's answer mode, as the model itself would
+ * have written it.
+ */
+export interface PriorTurn {
+  question: string;
+  answer: InternalAnswer;
+}
+
+/** The assistant turn a prior answer is echoed as, in the mode the model writes its own. */
+export function renderPriorAnswer(answer: InternalAnswer, mode: InternalAnswerMode): string {
+  return mode === 'combined' ? JSON.stringify(answer) : renderTrailingAnswer(answer);
+}
+
 export interface ToolLoopRequest {
   /** From `buildInternalSystem`: block 1 cached and identical for every asker, block 2 per asker. */
   system: readonly SystemBlock[];
   question: string;
+  /** The asker's own earlier asks, oldest first, BELOW the cache breakpoint: prior user/assistant turns before the question. */
+  priorTurns?: readonly PriorTurn[];
   tools: readonly ToolDefinition[];
   execute: ToolExecutor;
   maxToolCalls?: number;
@@ -368,7 +389,14 @@ export async function runToolLoop(
   let turns = 0;
   let usage: TurnUsage | null = null;
   let model: string | null = null;
-  const messages: BetaMessageParam[] = [{ role: 'user', content: request.question }];
+  // The asker's own earlier turns first (D2), then the question: all below the cached system prefix.
+  const messages: BetaMessageParam[] = [
+    ...(request.priorTurns ?? []).flatMap((t): BetaMessageParam[] => [
+      { role: 'user', content: t.question },
+      { role: 'assistant', content: renderPriorAnswer(t.answer, options.answerMode) },
+    ]),
+    { role: 'user', content: request.question },
+  ];
 
   const trace = (): LoopTrace => ({
     calls,

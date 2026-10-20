@@ -2,9 +2,12 @@
  * The internal assistant's final answer (Phase 3 PLAN §D.1 step 5) and the
  * words an ask can end with.
  *
- * `{ answer ≤ 1,200, links ≤ 3, language }`. Links are KEYS of the deep-link
- * map with parameters, never URLs: the server resolves each key, drops the
- * ones the asker may not open, and the launcher renders the rest (§C).
+ * `{ answer ≤ 1,200, links ≤ 3, language, smallTalk? }`. Links are KEYS of
+ * the deep-link map with parameters, never URLs: the server resolves each
+ * key, drops the ones the asker may not open, and the launcher renders the
+ * rest (§C). `smallTalk` (test night 2026-10-21, S10) is the model's word
+ * that the message was social and needed no tool; optional on the wire so a
+ * reply without it still parses, false when absent.
  *
  * Link parameters are name/value pairs, not a record: the SDK's structured
  * output helper compiles a zod record to an object with no properties and
@@ -38,6 +41,8 @@ export const InternalAnswerSchema = z.object({
   answer: z.string().min(1).max(INTERNAL_MAX_ANSWER_CHARS),
   links: z.array(InternalLinkSchema).max(INTERNAL_MAX_LINKS),
   language: z.enum(INTERNAL_LANGUAGES),
+  /** True for a social message that needed no tool (thanks, hello). Absent reads as false. */
+  smallTalk: z.boolean().optional(),
 });
 export type InternalAnswer = z.infer<typeof InternalAnswerSchema>;
 
@@ -66,11 +71,15 @@ function isPlainObject(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
 }
 
+/** The keys the trailing block may carry: the links, the language, and the small-talk word. */
+const TRAILING_KEYS = new Set(['links', 'language', 'smallTalk']);
+
 /**
  * The trailing-JSON final turn, parsed: the prose before the LAST JSON object
- * in the text is the answer; that object holds `links` and `language` and
- * nothing after it but whitespace (or a closing code fence). A text with no
- * such block, or whose parts fail the schema, is null (MALFORMED).
+ * in the text is the answer; that object holds `links` and `language` (and
+ * may hold `smallTalk`) and nothing after it but whitespace (or a closing
+ * code fence). A text with no such block, or whose parts fail the schema, is
+ * null (MALFORMED).
  */
 export function parseTrailingAnswer(text: string): InternalAnswer | null {
   const body = text.replace(/\s*```\s*$/, '').trimEnd();
@@ -85,7 +94,7 @@ export function parseTrailingAnswer(text: string): InternalAnswer | null {
     }
     if (!isPlainObject(block) || !('language' in block) || !('links' in block)) return null;
     const keys = Object.keys(block);
-    if (keys.some((k) => k !== 'links' && k !== 'language')) return null;
+    if (keys.some((k) => !TRAILING_KEYS.has(k))) return null;
     const prose = body
       .slice(0, i)
       .replace(/```(?:json)?\s*$/i, '')
@@ -94,6 +103,7 @@ export function parseTrailingAnswer(text: string): InternalAnswer | null {
       answer: prose,
       links: block['links'],
       language: block['language'],
+      ...('smallTalk' in block ? { smallTalk: block['smallTalk'] } : {}),
     });
     return parsed.success ? parsed.data : null;
   }
@@ -102,7 +112,9 @@ export function parseTrailingAnswer(text: string): InternalAnswer | null {
 
 /** The trailing form of an answer: what the model is asked to write (and the fake writes). */
 export function renderTrailingAnswer(answer: InternalAnswer): string {
-  return `${answer.answer}\n${JSON.stringify({ links: answer.links, language: answer.language })}`;
+  const block: Record<string, unknown> = { links: answer.links, language: answer.language };
+  if (answer.smallTalk !== undefined) block.smallTalk = answer.smallTalk;
+  return `${answer.answer}\n${JSON.stringify(block)}`;
 }
 
 /** The pairs as a record for the link resolver. A repeated name keeps its first value. */

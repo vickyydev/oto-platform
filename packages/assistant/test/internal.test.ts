@@ -18,6 +18,7 @@ import {
   buildInternalStaticSystem,
   buildInternalSystem,
 } from '../src/internal-prompt';
+import { plainRefusal, softenRefusalProse } from '../src/refusal-words';
 import { STATIC_SYSTEM_TEXT } from '../src/prompt';
 import {
   INTERNAL_ASSISTANT_LABEL,
@@ -348,5 +349,97 @@ describe('the answer schema', () => {
     expect(
       InternalAnswerSchema.safeParse(answer({ links: [link, link, link, link] })).success,
     ).toBe(false);
+  });
+});
+
+describe('the test night’s rules (SCRUM-591, 2026-10-21; plan "Test night 2026-10-21")', () => {
+  const text = buildInternalStaticSystem(LINKS);
+
+  it('W3: the persona says a refusal is explained in plain words and never as a permission string', () => {
+    const rule = INTERNAL_RULES.find((r) => r.id === 'refusal_plain')!;
+    expect(rule.text).toContain('Never repeat a permission string');
+    expect(rule.text).toContain('inbox:conversation:read');
+    expect(text).toContain(rule.text);
+    // The refusal line stays the screen's: the verbatim rule still stands beside it.
+    expect(INTERNAL_RULES.find((r) => r.id === 'refusal_verbatim')!.text).toContain('word for word');
+  });
+
+  it('W3: plainRefusal turns the platform’s and the app’s own sentences into what the person cannot see', () => {
+    const platform = (message: string, status = 403) => plainRefusal({ system: 'platform', status, code: 'FORBIDDEN', message });
+    expect(platform('Missing permission inbox:conversation:read')).toBe("You don't have access to the team inbox.");
+    expect(platform('Missing permission pos:member:list')).toBe("You don't have access to the member register.");
+    expect(platform('Missing permission admin:audit:read')).toBe("You don't have access to the audit trail.");
+    expect(platform('Missing permission zz:unknown:thing')).toBe("You don't have access to that screen.");
+    expect(platform('You hold pos:checkin:read, but not at Oto Play Park, Robinson Chalong')).toBe(
+      'That branch (Oto Play Park, Robinson Chalong) is not on your access.',
+    );
+    expect(platform('Not signed in', 401)).toBe('You are not signed in there.');
+    expect(platform('Not found', 404)).toBe('That record is not one you can see.');
+    expect(platform('This session is locked — unlock to continue', 423)).toBe('Your session is locked.');
+    const app = (message: string, code: string | null = null) => plainRefusal({ system: 'oto_app', status: 403, code, message });
+    expect(app('Payroll is for payroll roles only (hr.view_salary required).')).toBe('Salary details need the payroll role.');
+    expect(app('Insufficient permissions')).toBe("That needs a manager's access in the OTO App.");
+    expect(app('x', 'not_provisioned')).toMatch(/don't have an OTO App user/);
+    expect(app('x', 'disabled')).toMatch(/OTO App user is disabled/);
+    // No sentence carries a permission string, a role name from a fence, or a code.
+    for (const s of [
+      platform('Missing permission inbox:conversation:read'),
+      app('Payroll is for payroll roles only (hr.view_salary required).'),
+      app('x', 'not_provisioned'),
+    ]) {
+      expect(s).not.toMatch(/[a-z_]+:[a-z_]+:[a-z_]+|hr\.view_salary|not_provisioned|FORBIDDEN/);
+    }
+  });
+
+  it('W3: softenRefusalProse rewrites the night’s answer, and a bare permission token, and counts what it changed', () => {
+    const refusal = { system: 'platform' as const, status: 403, code: 'FORBIDDEN', message: 'Missing permission inbox:conversation:read' };
+    const night = softenRefusalProse("Missing permission inbox:conversation:read. That's the same answer the screen gives.", [refusal]);
+    expect(night).toEqual({ text: "You don't have access to the team inbox. That's the same answer the screen gives.", rewrites: 1 });
+    // The phrase with no refusal recorded, and a bare token in passing.
+    expect(softenRefusalProse('Missing permission admin:audit:read, so no trail.')).toEqual({
+      text: "You don't have access to the audit trail, so no trail.",
+      rewrites: 1,
+    });
+    expect(softenRefusalProse('You need pos:member:list for that.')).toEqual({ text: 'You need that access for that.', rewrites: 1 });
+    // Prose with no permission string is untouched, times included.
+    expect(softenRefusalProse('Anan: 10:00–19:00, 9 hours.')).toEqual({ text: 'Anan: 10:00–19:00, 9 hours.', rewrites: 0 });
+  });
+
+  it('D2: the persona may resolve a follow-up from the conversation, and the honest line exists in three languages', () => {
+    const rule = INTERNAL_RULES.find((r) => r.id === 'follow_ups')!;
+    expect(rule.text).toContain('"and yesterday?"');
+    expect(text).toContain(rule.text);
+    expect(INTERNAL_LINES.noContext.en).toBe('I answer each question on its own — which figure do you mean?');
+    expect(Object.keys(INTERNAL_LINES.noContext).sort()).toEqual(['en', 'ru', 'th']);
+  });
+
+  it('D1, W4, W7, S12: a zero after a filter, a named screen’s key, one park’s count and an empty period each have a rule in the block', () => {
+    for (const [id, words] of [
+      ['zero_is_filter', 'nothing matched that filter, never that nothing happened'],
+      ['name_screen_link', 'put its key in links'],
+      ['parks', 'read each park and add them up'],
+      ['empty_period', 'No clock-ins this month'],
+      ['small_talk', 'smallTalk true'],
+    ] as const) {
+      const rule = INTERNAL_RULES.find((r) => r.id === id)!;
+      expect(rule.text, id).toContain(words);
+      expect(text).toContain(rule.text);
+    }
+  });
+
+  it('S10: smallTalk travels in both answer modes and is optional on the wire', () => {
+    expect(INTERNAL_OUTPUT_CONTRACT).toContain('smallTalk: true only for a social message');
+    expect(INTERNAL_OUTPUT_CONTRACT_TRAILING).toContain('smallTalk: true only for a social message');
+    const social = answer({ answer: 'ยินดีค่ะ', language: 'th', smallTalk: true });
+    expect(InternalAnswerSchema.safeParse(social).success).toBe(true);
+    expect(InternalAnswerSchema.safeParse(answer()).success).toBe(true);
+    expect(parseTrailingAnswer(renderTrailingAnswer(social))).toEqual(social);
+    expect(parseTrailingAnswer('Thanks.\n{"links":[],"language":"en","smallTalk":true}')).toMatchObject({ smallTalk: true });
+    expect(parseTrailingAnswer('Thanks.\n{"links":[],"language":"en"}')).toMatchObject({ answer: 'Thanks.' });
+    expect(parseTrailingAnswer('Thanks.\n{"links":[],"language":"en","smallTalk":"yes"}')).toBeNull();
+  });
+
+  it('bumped the persona version for the night’s words', () => {
+    expect(INTERNAL_PERSONA_VERSION).toBe('internal-persona-2026-10-21.1');
   });
 });

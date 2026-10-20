@@ -6,11 +6,12 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { FALLBACK_BETA, PROVIDER_FAILURES, type ProviderFailure } from '../src/client';
+import { DEFAULT_MODEL, FALLBACK_BETA, PROVIDER_FAILURES, type ProviderFailure } from '../src/client';
 import { FakeAssistantClient, FAKE_REQUEST_ID, type FakeStep } from '../src/fake';
 import {
   DEFAULT_INTERNAL_ANSWER_MODE,
   INTERNAL_ANSWER_MODES,
+  parseTrailingAnswer,
   renderTrailingAnswer,
   TOOL_LOOP_FAILURES,
   linkParams,
@@ -23,10 +24,12 @@ import {
   AnthropicToolLoopClient,
   interpretToolLoopReply,
   INTERNAL_DEFAULT_MAX_TOOL_CALLS,
+  renderPriorAnswer,
   toolsForRequest,
   WIRE_TOOL_NAME,
   wireToolName,
   wireTools,
+  type PriorTurn,
   type ToolDefinition,
   type ToolLoopOutcome,
   type ToolLoopReply,
@@ -833,5 +836,42 @@ describe('tools and links', () => {
 
   it('the Phase 2 decision fixtures are untouched by the new exports', () => {
     expect(decision().intent).toBe('greeting');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The conversation (test night 2026-10-21, D2): the asker's own earlier turns
+// ---------------------------------------------------------------------------
+
+describe('prior turns (D2)', () => {
+  const prior: PriorTurn[] = [
+    {
+      question: 'Who is on shift tomorrow?',
+      answer: { answer: 'Tomorrow at Central: Anan and Krit, 10:00 to 19:00.', links: [{ key: 'oto.rota', params: [] }], language: 'en' },
+    },
+  ];
+
+  it.each(INTERNAL_ANSWER_MODES)('ride as user/assistant turns before the question, rendered as the model writes a final turn (%s)', async (mode) => {
+    const ex = executor({ 'branches.list': BRANCHES_OK, 'occupancy.now': OCCUPANCY_OK });
+    const fake = new FakeToolLoopClient([{ kind: 'final', answer: answer() }], DEFAULT_MODEL, mode);
+    const out = await fake.converse(request(ex.execute, { answerMode: mode, priorTurns: prior, question: 'and yesterday?' }));
+    expect(out.ok).toBe(true);
+    const messages = fake.calls[0]!.messages;
+    expect(messages.map((m) => m.role)).toEqual(['user', 'assistant', 'user']);
+    expect(messages[0]!.content).toBe('Who is on shift tomorrow?');
+    expect(messages[1]!.content).toBe(renderPriorAnswer(prior[0]!.answer, mode));
+    expect(messages[2]!.content).toBe('and yesterday?');
+    // The echoed answer is the mode's own final-turn shape: parseable back to the same answer.
+    const echoed = messages[1]!.content as string;
+    expect(mode === 'combined' ? JSON.parse(echoed) : parseTrailingAnswer(echoed)).toEqual(prior[0]!.answer);
+    // The system blocks are untouched: nothing of the conversation sits above the cache breakpoint.
+    expect(fake.calls[0]!.system[0]!.text).not.toContain('Who is on shift tomorrow?');
+  });
+
+  it('with none, the request is the question alone, as before', async () => {
+    const ex = executor({ 'branches.list': BRANCHES_OK, 'occupancy.now': OCCUPANCY_OK });
+    const fake = new FakeToolLoopClient([{ kind: 'final', answer: answer() }]);
+    await fake.converse(request(ex.execute));
+    expect(fake.calls[0]!.messages).toEqual([{ role: 'user', content: 'How many children are inside Central right now?' }]);
   });
 });
