@@ -143,7 +143,7 @@ describe('platform-sync for the assistant', () => {
     second = await operatorByName(SECOND_OPERATOR_NAME);
   }, 300_000);
 
-  it('lays handover_general in en, ru and th at every operator, English as the source', async () => {
+  it('lays handover_general in en, ru and th at every operator, each language in its own words', async () => {
     for (const operatorId of [oto, second]) {
       const rows = await db
         .select()
@@ -155,9 +155,11 @@ describe('platform-sync for the assistant', () => {
         expect(r.branchId).toBeNull();
         expect(r.active).toBe(true);
         expect(r.approvalStatus).toBe('not_required');
-        expect(r.needsTranslation).toBe(r.language !== 'en');
+        // The test night (SCRUM-220) translated every line: nothing waits for a translator.
+        expect(r.needsTranslation).toBe(false);
         expect(r.body.length).toBeGreaterThan(0);
       }
+      expect(new Set(rows.map((r) => r.body)).size).toBe(3);
     }
   });
 

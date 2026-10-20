@@ -12,7 +12,13 @@ import * as s from '../src/schema/index';
 import { OWNED_SCHEMAS } from '../src/schema/helpers';
 import { INBOX_TEMPLATE_KEYS } from '../src/schema/inbox';
 import { platformSync, seed, SECOND_OPERATOR_NAME } from '../src/seed/index';
-import { CONSOLE_NOTICE_CHANNELS, INBOX_DEPARTMENTS, syncInboxSetup } from '../src/seed/inbox';
+import {
+  CONSOLE_NOTICE_CHANNELS,
+  INBOX_DEPARTMENTS,
+  INBOX_TEMPLATE_BODIES,
+  INBOX_TEMPLATE_TRANSLATIONS,
+  syncInboxSetup,
+} from '../src/seed/inbox';
 import { createTestDatabase, stopTestServer } from '../src/testing';
 
 /**
@@ -259,13 +265,97 @@ describe('platform-sync lays the inbox configuration (I1)', () => {
     ]);
   });
 
-  it('lays the nine templates in EN, with RU and TH marked for translation', async () => {
+  it('lays the ten templates in EN, TH and RU, each language in its own words, nothing waiting for a translator', async () => {
     const templates = await db.select().from(s.template).where(eq(s.template.operatorId, oto));
     expect(templates).toHaveLength(INBOX_TEMPLATE_KEYS.length * 3);
     expect(new Set(templates.map((t) => t.key))).toEqual(new Set(INBOX_TEMPLATE_KEYS));
-    expect(templates.filter((t) => t.language === 'en').every((t) => !t.needsTranslation)).toBe(true);
-    expect(templates.filter((t) => t.language !== 'en').every((t) => t.needsTranslation)).toBe(true);
+    expect(templates.every((t) => !t.needsTranslation)).toBe(true);
     expect(templates.every((t) => t.approvalStatus === 'not_required' && t.active)).toBe(true);
+    for (const key of INBOX_TEMPLATE_KEYS) {
+      const en = templates.find((t) => t.key === key && t.language === 'en')!;
+      const th = templates.find((t) => t.key === key && t.language === 'th')!;
+      const ru = templates.find((t) => t.key === key && t.language === 'ru')!;
+      expect(en.body).toBe(INBOX_TEMPLATE_BODIES[key]);
+      expect(th.body).toBe(INBOX_TEMPLATE_TRANSLATIONS.th[key]);
+      expect(ru.body).toBe(INBOX_TEMPLATE_TRANSLATIONS.ru[key]);
+      expect(th.body).not.toBe(en.body);
+      expect(ru.body).not.toBe(en.body);
+      // Thai script in the Thai line, Cyrillic in the Russian one; the same
+      // placeholders as the English source, and no number it does not carry.
+      expect(th.body).toMatch(/[฀-๿]/);
+      expect(ru.body).toMatch(/[Ѐ-ӿ]/);
+      const placeholders = (body: string) => [...body.matchAll(/\{\{\s*([A-Za-z0-9_]+)\s*\}\}/g)].map((m) => m[1]).sort();
+      expect(placeholders(th.body)).toEqual(placeholders(en.body));
+      expect(placeholders(ru.body)).toEqual(placeholders(en.body));
+      const numbers = (body: string) => new Set(body.match(/\d+/g) ?? []);
+      for (const n of numbers(th.body)) expect(numbers(en.body)).toContain(n);
+      for (const n of numbers(ru.body)) expect(numbers(en.body)).toContain(n);
+    }
+    // The follow-up is the one line that is not a holding line, and the only one with a placeholder.
+    expect(INBOX_TEMPLATE_BODIES.follow_up).toContain('{{name}}');
+    expect(INBOX_TEMPLATE_KEYS.filter((k) => INBOX_TEMPLATE_BODIES[k].includes('{{'))).toEqual(['follow_up']);
+  });
+
+  it('an operator synced before the translations existed: the English-bodied TH and RU rows take theirs, once; an admin’s words are never overwritten', async () => {
+    // As staging stands before this deploy: every TH and RU row carries the
+    // English source and is flagged for translation — here, the second
+    // operator's handover_events and out_of_hours rows.
+    const staging = async (key: 'handover_events' | 'out_of_hours') =>
+      db
+        .update(s.template)
+        .set({ body: INBOX_TEMPLATE_BODIES[key], needsTranslation: true })
+        .where(
+          and(
+            eq(s.template.operatorId, second),
+            eq(s.template.key, key),
+            inArray(s.template.language, ['th', 'ru']),
+            isNull(s.template.channel),
+            isNull(s.template.branchId),
+          ),
+        );
+    await staging('handover_events');
+    await staging('out_of_hours');
+    // An admin's own words: a flagged row they rewrote, and an unflagged one.
+    const adminWords = 'สวัสดีค่ะ ยินดีต้อนรับสู่ OTO Play Park สาขาที่สอง ค่ะ';
+    const edited = (key: 'welcome' | 'handover_general') =>
+      and(eq(s.template.operatorId, second), eq(s.template.key, key), eq(s.template.language, 'th'), isNull(s.template.channel), isNull(s.template.branchId));
+    await db.update(s.template).set({ body: adminWords, needsTranslation: true }).where(edited('welcome'));
+    await db.update(s.template).set({ body: `${adminWords} (ตรวจแล้ว)`, needsTranslation: false }).where(edited('handover_general'));
+
+    const first = await syncInboxSetup(db);
+    expect(first.translations).toBe(4);
+    expect(first.templates).toBe(0);
+    expect(first.operators).toBe(1);
+    const again = await syncInboxSetup(db);
+    expect(again.translations).toBe(0);
+    expect(again.operators).toBe(0);
+
+    const rows = await db
+      .select()
+      .from(s.template)
+      .where(and(eq(s.template.operatorId, second), isNull(s.template.channel), isNull(s.template.branchId)));
+    for (const key of ['handover_events', 'out_of_hours'] as const) {
+      const en = rows.find((t) => t.key === key && t.language === 'en')!;
+      for (const language of ['th', 'ru'] as const) {
+        const row = rows.find((t) => t.key === key && t.language === language)!;
+        expect(row.body).toBe(INBOX_TEMPLATE_TRANSLATIONS[language][key]);
+        expect(row.body).not.toBe(en.body);
+        expect(row.needsTranslation).toBe(false);
+      }
+    }
+    const welcomeTh = rows.find((t) => t.key === 'welcome' && t.language === 'th')!;
+    expect(welcomeTh.body).toBe(adminWords);
+    expect(welcomeTh.needsTranslation).toBe(true);
+    const generalTh = rows.find((t) => t.key === 'handover_general' && t.language === 'th')!;
+    expect(generalTh.body).toBe(`${adminWords} (ตรวจแล้ว)`);
+    expect(generalTh.needsTranslation).toBe(false);
+
+    // Put the fixture back for the cases below.
+    await db.update(s.template).set({ body: INBOX_TEMPLATE_TRANSLATIONS.th.welcome, needsTranslation: false }).where(edited('welcome'));
+    await db
+      .update(s.template)
+      .set({ body: INBOX_TEMPLATE_TRANSLATIONS.th.handover_general, needsTranslation: false })
+      .where(edited('handover_general'));
   });
 
   it('lays one console channel account per notice channel, none of which can reply', async () => {
@@ -304,7 +394,17 @@ describe('platform-sync lays the inbox configuration (I1)', () => {
 
     const first = await syncInboxSetup(db);
     await platformSync(db);
-    expect(first).toEqual({ operators: 0, roles: 0, grants: 0, departments: 0, teams: 0, rules: 0, templates: 0, channelAccounts: 0 });
+    expect(first).toEqual({
+      operators: 0,
+      roles: 0,
+      grants: 0,
+      departments: 0,
+      teams: 0,
+      rules: 0,
+      templates: 0,
+      translations: 0,
+      channelAccounts: 0,
+    });
     expect(await inboxCounts()).toEqual(before);
     expect((await db.select().from(s.role)).length).toBe(rolesBefore);
     expect((await db.select().from(s.department)).length).toBe(deptsBefore);

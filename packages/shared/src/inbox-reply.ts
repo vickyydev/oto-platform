@@ -29,7 +29,14 @@ import { InboxChannelSchema, InboxMessageSchema, InboxTemplateSchema } from './i
  * the placeholders appear.
  */
 
-/** `inbox.template.key`'s CHECK — the same nine keys as `@oto/db` `INBOX_TEMPLATE_KEYS` (pinned in the reply test). */
+/**
+ * `inbox.template.key`'s CHECK — the same ten keys as `@oto/db`
+ * `INBOX_TEMPLATE_KEYS` (pinned in the reply test). `follow_up` is the one
+ * that is not a holding line: outside WhatsApp's 24-hour window only a
+ * template may be sent, and the composer offers this key as the natural
+ * choice for a person following a thread up (the template table has no
+ * purpose column; the shell picks by key).
+ */
 export const INBOX_TEMPLATE_KEY_NAMES = [
   'welcome',
   'handover_birthday',
@@ -40,6 +47,7 @@ export const INBOX_TEMPLATE_KEY_NAMES = [
   'handover_marketing',
   'out_of_hours',
   'handover_general',
+  'follow_up',
 ] as const;
 export type InboxTemplateKeyName = (typeof INBOX_TEMPLATE_KEY_NAMES)[number];
 

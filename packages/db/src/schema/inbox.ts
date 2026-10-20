@@ -128,7 +128,9 @@ export type RoutingPrimaryKind = (typeof ROUTING_PRIMARY_KINDS)[number];
  * `handover_general` (SCRUM-590, `0080_inbox_ai`) is the assistant's holding
  * line for the handover categories with no key of their own: discounts,
  * custom requests, nanny booking, unclear or emotional messages, a request
- * for a person.
+ * for a person. `follow_up` (SCRUM-220 test night, `0083_inbox_test_night`)
+ * is the one line that is not a holding line: a person's follow-up outside
+ * WhatsApp's 24-hour window, when only a template may be sent.
  */
 export const INBOX_TEMPLATE_KEYS = [
   'welcome',
@@ -140,6 +142,7 @@ export const INBOX_TEMPLATE_KEYS = [
   'handover_marketing',
   'out_of_hours',
   'handover_general',
+  'follow_up',
 ] as const;
 export type InboxTemplateKey = (typeof INBOX_TEMPLATE_KEYS)[number];
 
@@ -152,7 +155,9 @@ export type TemplateApprovalStatus = (typeof TEMPLATE_APPROVAL_STATUSES)[number]
  * good, named by its refusal word (I2f, `0079_inbox_send`). The three `ai_*`
  * kinds after it are the assistant's (SCRUM-590, `0080_inbox_ai`): it handed
  * the thread to a person, it left a turn to a person, a person overtook one
- * of its queued lines.
+ * of its queued lines. `ai_paused` and `ai_resumed` (SCRUM-220 test night,
+ * `0083_inbox_test_night`) are a person's: they stood the assistant down on
+ * the thread, or let it back.
  */
 export const INBOX_EVENT_KINDS = [
   'received',
@@ -176,6 +181,8 @@ export const INBOX_EVENT_KINDS = [
   'ai_handover',
   'ai_silent',
   'ai_withdrawn',
+  'ai_paused',
+  'ai_resumed',
 ] as const;
 export type InboxEventKind = (typeof INBOX_EVENT_KINDS)[number];
 

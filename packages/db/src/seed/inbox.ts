@@ -13,9 +13,12 @@
  *   - the routing rules for the IT Brief's defaults, every person BLANK
  *     (`primary_kind = 'team'`, owner Q20), plus one catch-all per team so
  *     routing can never leave a conversation unowned;
- *   - the nine template keys in English (`handover_general` joined with
- *     SCRUM-590), with RU and TH rows that carry the English body marked
- *     `needs_translation`;
+ *   - the ten template keys (`handover_general` joined with SCRUM-590,
+ *     `follow_up` with the SCRUM-220 test night) in English, Thai and
+ *     Russian, each language in its own words — and the one UPDATE this file
+ *     makes: a TH or RU row that still carries the English source marked
+ *     `needs_translation` (as every operator synced before the test night
+ *     has) takes its translation, see `backfillTranslations`;
  *   - one `console` channel account per notice channel (WhatsApp, LINE,
  *     Telegram) — the sender the check-in confirmation already goes through,
  *     which can never reply.
@@ -33,7 +36,9 @@
  *   - a team that has ANY routing rule, live or archived, is left alone — a
  *     person named on a rule, or a rule archived, is never undone;
  *   - a template exists by (operator, key, language) with no channel or
- *     branch, archived included;
+ *     branch, archived included; its body is rewritten only when it is still
+ *     flagged `needs_translation` AND still equals the English source — an
+ *     admin's own words, flagged or not, are never overwritten;
  *   - a console account exists by (operator, provider, external id),
  *     archived included.
  *
@@ -84,11 +89,13 @@ const CHANNEL_LABEL: Record<(typeof CONSOLE_NOTICE_CHANNELS)[number], string> = 
 /** The console account's external id: one per operator and channel. */
 export const consoleExternalId = (channel: InboxChannel): string => `console:${channel}`;
 
-/** The languages a template is laid in: English is the source, the others are marked for translation. */
+/** The languages a template is laid in: English is the source; Thai and Russian carry their own words. */
 export const INBOX_TEMPLATE_LANGUAGES = ['en', 'ru', 'th'] as const;
+export type InboxTemplateLanguage = (typeof INBOX_TEMPLATE_LANGUAGES)[number];
+type TranslatedLanguage = Exclude<InboxTemplateLanguage, 'en'>;
 
 /**
- * The welcome, handover and out-of-hours lines, in English.
+ * The welcome, handover, out-of-hours and follow-up lines, in English.
  *
  * Worded from the IT Brief's "Standard handover lines" and its out-of-hours
  * rule, with every person's name taken out: who the birthday manager or the
@@ -96,6 +103,9 @@ export const INBOX_TEMPLATE_LANGUAGES = ['en', 'ru', 'th'] as const;
  * them would have to be edited every time the rule was. The welcome line
  * follows the IT Brief, not the demo data: it never asks the customer to pick
  * a language. The out-of-hours hours are the reception phones' 10:00–20:00.
+ *
+ * A placeholder is `{{name}}` (`@oto/shared` `templateVariables`): the
+ * composer asks for a value before sending. Only `follow_up` carries one.
  */
 export const INBOX_TEMPLATE_BODIES: Record<InboxTemplateKey, string> = {
   welcome: 'Hi! 👋 Welcome to OTO Play Park. How can we help you today?',
@@ -115,11 +125,69 @@ export const INBOX_TEMPLATE_BODIES: Record<InboxTemplateKey, string> = {
   // SCRUM-590 (`0080_inbox_ai`, plan X6/R1): the assistant's holding line for
   // the handover categories with no key of their own — discounts, custom
   // requests, nanny booking, unclear or emotional messages, a request for a
-  // person. Laid like the others: English source, RU and TH marked for
-  // translation, insert-if-absent, so an operator synced before it gets the
-  // three rows on the next platform-sync and an edited one is never undone.
+  // person. Laid like the others, insert-if-absent, so an operator synced
+  // before it gets the three rows on the next platform-sync and an edited
+  // one is never undone.
   handover_general: 'Thank you for your message. One moment please — a colleague will be with you shortly.',
+  // SCRUM-220 test night (`0083_inbox_test_night`, rails plan "Test night"
+  // R2): the one template that is not a holding line. Outside WhatsApp's
+  // 24-hour window only a template may be sent, and until this key every
+  // template asked the customer to hold for somebody — a person could not
+  // follow a thread up after a day. `{{name}}` is the customer's name.
+  follow_up:
+    "Hello {{name}}, following up on your message to OTO Play Park — reply here whenever you're ready and we'll pick it up.",
 };
+
+/**
+ * The same lines in Thai and Russian (SCRUM-220 test night, rails plan "Test
+ * night" R1). Until the test night every TH and RU row carried the English
+ * body marked `needs_translation`, and nobody translated them: a Russian
+ * customer outside the 24-hour window received English.
+ *
+ * Thai is written as a receptionist writes it, with the polite particles
+ * (ค่ะ / คะ / นะคะ); Russian is natural and polite (вы). Each carries exactly
+ * the placeholders its English source does, and no number the English source
+ * does not: the out-of-hours line's 10:00–20:00 is the source's own.
+ */
+export const INBOX_TEMPLATE_TRANSLATIONS: Record<TranslatedLanguage, Record<InboxTemplateKey, string>> = {
+  th: {
+    welcome: 'สวัสดีค่ะ 👋 ยินดีต้อนรับสู่ OTO Play Park ค่ะ วันนี้ให้เราช่วยอะไรดีคะ',
+    handover_birthday:
+      'นี่คือแพ็กเกจวันเกิดของเราค่ะ 🎂 รอสักครู่นะคะ ผู้จัดการฝ่ายงานวันเกิดจะมาช่วยยืนยันวันที่และรายละเอียดให้ในอีกไม่นานค่ะ',
+    handover_events: 'ขอบคุณที่สอบถามเข้ามานะคะ ทีมงานของเราจะติดต่อกลับพร้อมข้อเสนอที่เหมาะกับคุณในอีกไม่นานค่ะ',
+    handover_complaint_online:
+      'ขอบคุณที่แจ้งให้เราทราบนะคะ รอสักครู่นะคะ ทีมงานของเราจะมาดูแลเรื่องนี้ให้ทันทีค่ะ',
+    handover_complaint_onsite: 'ขอบคุณที่แจ้งให้เราทราบนะคะ รอสักครู่นะคะ ทีมต้อนรับของเราจะมาดูแลคุณทันทีค่ะ',
+    handover_lost_found: 'ขอบคุณที่ติดต่อเข้ามานะคะ ทีมต้อนรับของเราจะตรวจสอบและตอบกลับให้โดยเร็วที่สุดค่ะ',
+    handover_marketing: 'ขอบคุณสำหรับข้อความนะคะ ทีมการตลาดของเราจะติดต่อกลับในอีกไม่นานค่ะ',
+    out_of_hours:
+      'ขอบคุณสำหรับข้อความนะคะ ทีมงานของเราพร้อมให้บริการทุกวันตั้งแต่ 10:00 ถึง 20:00 น. และจะตอบกลับทันทีที่เปิดทำการค่ะ',
+    handover_general: 'ขอบคุณสำหรับข้อความนะคะ รอสักครู่นะคะ เจ้าหน้าที่ของเราจะมาดูแลคุณในอีกไม่นานค่ะ',
+    follow_up:
+      'สวัสดีค่ะ คุณ{{name}} ขอติดตามเรื่องข้อความที่ส่งถึง OTO Play Park นะคะ สะดวกเมื่อไหร่ตอบกลับมาได้เลยค่ะ เราพร้อมดูแลต่อให้ค่ะ',
+  },
+  ru: {
+    welcome: 'Здравствуйте! 👋 Добро пожаловать в OTO Play Park. Чем мы можем вам помочь?',
+    handover_birthday:
+      'Вот наши пакеты для дня рождения 🎂. Одну минуту, пожалуйста — наш менеджер по праздникам скоро свяжется с вами, чтобы подтвердить дату и детали.',
+    handover_events: 'Спасибо за ваш запрос. Кто-то из нашей команды скоро свяжется с вами с индивидуальным предложением.',
+    handover_complaint_online:
+      'Спасибо, что сообщили нам. Пожалуйста, подождите — сотрудник нашей команды сейчас подключится и разберётся в ситуации.',
+    handover_complaint_onsite:
+      'Спасибо, что сообщили нам. Пожалуйста, подождите — наша команда на ресепшене сейчас свяжется с вами.',
+    handover_lost_found: 'Спасибо, что написали нам. Сотрудник ресепшена проверит и очень скоро вам ответит.',
+    handover_marketing: 'Спасибо за сообщение! Наша команда маркетинга скоро свяжется с вами.',
+    out_of_hours:
+      'Спасибо за ваше сообщение! Наша команда на связи ежедневно с 10:00 до 20:00, и мы ответим вам, как только откроемся.',
+    handover_general: 'Спасибо за ваше сообщение. Одну минуту, пожалуйста — коллега скоро подключится к разговору.',
+    follow_up:
+      'Здравствуйте, {{name}}! Пишем по поводу вашего сообщения в OTO Play Park — ответьте здесь, когда вам будет удобно, и мы продолжим.',
+  },
+};
+
+/** The words a template row is laid with: the English source, or that language's own line. */
+export const templateBodyFor = (key: InboxTemplateKey, language: InboxTemplateLanguage): string =>
+  language === 'en' ? INBOX_TEMPLATE_BODIES[key] : INBOX_TEMPLATE_TRANSLATIONS[language][key];
 
 /**
  * The routing rules a team starts with. People are blank: every primary is
@@ -172,6 +240,8 @@ export interface InboxSyncCounts {
   teams: number;
   rules: number;
   templates: number;
+  /** TH or RU template rows that still carried the English source and took their translation. */
+  translations: number;
   channelAccounts: number;
 }
 
@@ -183,6 +253,7 @@ const emptyCounts = (): InboxSyncCounts => ({
   teams: 0,
   rules: 0,
   templates: 0,
+  translations: 0,
   channelAccounts: 0,
 });
 
@@ -355,9 +426,10 @@ async function syncTemplates(db: Db, operatorId: string, counts: InboxSyncCounts
         language,
         channel: null,
         branchId: null,
-        body: INBOX_TEMPLATE_BODIES[key],
+        body: templateBodyFor(key, language),
         approvalStatus: 'not_required' as const,
-        needsTranslation: language !== 'en',
+        // Every language is laid in its own words; nothing waits for a translator.
+        needsTranslation: false,
         active: true,
       });
     }
@@ -365,6 +437,41 @@ async function syncTemplates(db: Db, operatorId: string, counts: InboxSyncCounts
   if (rows.length > 0) {
     await db.insert(s.template).values(rows);
     counts.templates += rows.length;
+  }
+  await backfillTranslations(db, operatorId, counts);
+}
+
+/**
+ * THE ONE UPDATE THIS FILE MAKES (SCRUM-220 test night, R1). An operator
+ * synced before the translations existed holds TH and RU rows that carry the
+ * English source marked `needs_translation`. Each takes its translation, and
+ * the flag clears, ONLY while both still hold: the row is still flagged AND
+ * its body is still the English source, word for word. A body anybody
+ * changed — flagged or not, archived or not — is that person's, and is left
+ * exactly as they wrote it. A row that equals an older English wording stays
+ * as it is too (it is not the source this file knows), for an admin to word.
+ */
+async function backfillTranslations(db: Db, operatorId: string, counts: InboxSyncCounts): Promise<void> {
+  for (const key of Object.keys(INBOX_TEMPLATE_BODIES) as InboxTemplateKey[]) {
+    for (const language of INBOX_TEMPLATE_LANGUAGES) {
+      if (language === 'en') continue;
+      const translated = await db
+        .update(s.template)
+        .set({ body: INBOX_TEMPLATE_TRANSLATIONS[language][key], needsTranslation: false, updatedAt: new Date() })
+        .where(
+          and(
+            eq(s.template.operatorId, operatorId),
+            eq(s.template.key, key),
+            eq(s.template.language, language),
+            isNull(s.template.channel),
+            isNull(s.template.branchId),
+            eq(s.template.needsTranslation, true),
+            eq(s.template.body, INBOX_TEMPLATE_BODIES[key]),
+          ),
+        )
+        .returning({ id: s.template.id });
+      counts.translations += translated.length;
+    }
   }
 }
 
@@ -482,5 +589,5 @@ export async function syncInboxSetup(db: Db): Promise<InboxSyncCounts> {
 /** One line for the deploy log, or null when nothing was laid. */
 export function describeInboxSync(c: InboxSyncCounts): string | null {
   if (c.operators === 0) return null;
-  return `Inbox: laid ${c.roles} role(s), ${c.grants} late permission grant(s), ${c.departments} department(s), ${c.teams} team(s), ${c.rules} routing rule(s), ${c.templates} template(s) and ${c.channelAccounts} console channel account(s) at ${c.operators} operator(s) — the rules' people are blank until somebody names them.`;
+  return `Inbox: laid ${c.roles} role(s), ${c.grants} late permission grant(s), ${c.departments} department(s), ${c.teams} team(s), ${c.rules} routing rule(s), ${c.templates} template(s), ${c.translations} template translation(s) and ${c.channelAccounts} console channel account(s) at ${c.operators} operator(s) — the rules' people are blank until somebody names them.`;
 }
