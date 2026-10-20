@@ -56,11 +56,19 @@ describe('the tool registry, as data (§B.4)', () => {
     expect(attendance.description).toContain("'this month' is the first of the current month (Asia/Bangkok) to today");
   });
 
-  it('lists no tool over the C1–C3 fence gaps (G2)', () => {
-    const routes = ASSISTANT_TOOLS.flatMap((t) => [...t.routes]);
-    expect(routes.some((r) => r.includes('/api/time-events'))).toBe(false);
-    expect(routes.some((r) => r.includes('/api/checklists'))).toBe(false);
-    expect(routes.some((r) => /leave-balance|leave_balance/.test(r))).toBe(false);
+  it('lists no tool over the C2–C3 fence gaps, and the own-balance lists on oto.my_leave only (G2)', () => {
+    // SCRUM-595 fenced the two balance lists to the person (G2 approved 2026-10-21); mirrors apps/api/test/assistant-registry.test.ts.
+    const OWN_BALANCE_LISTS = ['GET /api/leave-balances', 'GET /api/all-leave-balances'];
+    for (const tool of ASSISTANT_TOOLS) {
+      for (const route of tool.routes) {
+        expect(route, tool.name).not.toMatch(/time-events|checklists/);
+        if (/balance/.test(route)) {
+          expect(tool.name, route).toBe('oto.my_leave');
+          expect(OWN_BALANCE_LISTS, `${tool.name}: ${route}`).toContain(route);
+        }
+      }
+    }
+    expect(findAssistantTool('oto.my_leave')!.routes).toEqual(['GET /api/my-time-off', ...OWN_BALANCE_LISTS]);
   });
 });
 

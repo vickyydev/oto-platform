@@ -836,7 +836,8 @@ describe('D. read off the code', () => {
     expect(all.slice(check)).toMatch(/^!await branchInParkGroup\(branchId, parkGroup\)\) \{\s*return res\.status\(404\)\.json\(BRANCH_NOT_FOUND\);/);
     expect(check).toBeLessThan(all.indexOf('storage.getEmployees(branchId)'));
     // `getEmployees` takes no branch (the app lists every employee whatever branch is named, kept); the list keeps to the park group.
-    expect(all).toMatch(/const employees = \(await storage\.getEmployees\(branchId\)\)\.filter\(\(e\) => e\.tenantId === parkGroup\);/);
+    // SCRUM-595 (92318de6) fenced the park-group list to the person before it is read; this shard was path-skipped on that OTO-App-only push.
+    expect(all).toMatch(/const employeesInGroup = \(await storage\.getEmployees\(branchId\)\)\.filter\(\(e\) => e\.tenantId === parkGroup\);[\s\S]*?const fence = await personFence\([^;]*\);\s*const employees = fenceRows\(fence, employeesInGroup\b/);
     expect(storageText()).toMatch(/async getEmployees\(\): Promise<Employee\[\]> \{/);
   });
 
