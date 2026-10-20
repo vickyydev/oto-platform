@@ -78,6 +78,13 @@ async function call<T = InboxActionResult>(
 
 const at = (id: string, action: string) => `/inbox/conversations/${id}/${action}`;
 
+/** What the conversation detail says Divert would do (I3b): read as the divert route reads it. */
+async function divertToOf(who: string, id: string): Promise<{ accountId: string } | null> {
+  const res = await ctx.app.inject({ method: 'GET', url: `/inbox/conversations/${id}`, headers: { cookie: cookies[who]! } });
+  expect(res.statusCode).toBe(200);
+  return (res.json() as { divertTo: { accountId: string } | null }).divertTo;
+}
+
 async function teamRow(key: 'birthdays' | 'reception' | 'marketing', branchId: string | null) {
   const [t] = await ctx.db
     .select()
@@ -518,6 +525,9 @@ describe('support: two places, managers add and remove', () => {
 describe('Divert: the fixed pair swaps', () => {
   it('the primary presses it: the backup becomes primary, the old primary takes the backup’s place; again swaps back', async () => {
     const id = await bday();
+    // The detail says who the press would seat, read as the action reads it (I3b).
+    const divertTo = () => divertToOf('bdayA', id);
+    expect((await divertTo())?.accountId).toBe(people.bdayB);
     const first = await call('bdayA', 'POST', at(id, 'divert'));
     expect(first.status, JSON.stringify(first.body)).toBe(200);
     expect(await seated(id)).toEqual([
@@ -526,6 +536,7 @@ describe('Divert: the fixed pair swaps', () => {
     ]);
     const [pill] = await eventsOf(id, 'diverted');
     expect(pill!.payload).toMatchObject({ fromAccountId: people.bdayA, toAccountId: people.bdayB, oldPrimarySupportIndex: 1 });
+    expect((await divertTo())?.accountId).toBe(people.bdayA);
 
     // bdayA is support now and holds no `assign`.
     expect((await call<Refusal>('bdayA', 'POST', at(id, 'divert'))).status).toBe(403);
@@ -554,6 +565,8 @@ describe('Divert: the fixed pair swaps', () => {
 
   it('reception has no backup: 409 DIVERT_NO_BACKUP', async () => {
     const id = await general();
+    // The detail agrees: no Divert to show.
+    expect(await divertToOf('gm', id)).toBeNull();
     const res = await call<Refusal>('gm', 'POST', at(id, 'divert'));
     expect(res.status).toBe(409);
     expect(res.body.error).toEqual({ code: 'DIVERT_NO_BACKUP', message: 'This conversation has no backup to divert to.' });

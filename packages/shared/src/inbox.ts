@@ -356,6 +356,14 @@ export const InboxConversationDetailSchema = InboxConversationRowSchema.extend({
   member: z.object({ id: Uuid, name: z.string(), childCount: z.number().int().min(0) }).nullable(),
   /** The timeline's grey pills, oldest first. */
   events: z.array(InboxEventSchema),
+  /**
+   * Who "Divert" would make primary (I3b, SCRUM-588): the routing rule's fixed
+   * pair at this conversation, read exactly as `POST …/divert` reads it — so
+   * the shell shows Divert only when the press would work. Null when the rule
+   * has no backup (reception) or the backup is not an active account: the
+   * press would answer `DIVERT_NO_BACKUP`.
+   */
+  divertTo: z.object({ accountId: Uuid, name: z.string().nullable() }).nullable(),
 });
 export type InboxConversationDetail = z.infer<typeof InboxConversationDetailSchema>;
 
@@ -470,7 +478,28 @@ export const InboxMeSchema = z.object({
     assign: z.boolean(),
     move: z.boolean(),
     reopen: z.boolean(),
+    /** Holds `inbox:template:manage` somewhere: the template settings page (I3b). */
+    templates: z.boolean(),
   }),
+  /**
+   * The simulator panel (I3b): non-null only when this deployment runs the
+   * inbox simulator (`INBOX_SIMULATOR=on`, never production) AND the viewer
+   * holds `inbox:channel:manage` somewhere — the two things the
+   * `/inbox/simulator/*` routes check. Its simulator channel accounts are the
+   * ones a pretend customer can write to; none until the demo is played.
+   */
+  simulator: z
+    .object({
+      channelAccounts: z.array(
+        z.object({
+          id: Uuid,
+          channel: InboxChannelSchema,
+          displayName: z.string(),
+          branchId: Uuid.nullable(),
+        }),
+      ),
+    })
+    .nullable(),
 });
 export type InboxMe = z.infer<typeof InboxMeSchema>;
 

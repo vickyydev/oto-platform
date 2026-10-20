@@ -9,7 +9,8 @@
     ".": "./src/index.ts",
     "./permissions": "./src/permissions.ts",
     "./i18n": "./src/i18n/index.ts",
-    "./inbox": "./src/inbox.ts"
+    "./inbox": "./src/inbox.ts",
+    "./inbox-reply": "./src/inbox-reply.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",

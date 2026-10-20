@@ -20,6 +20,7 @@ import { errors } from '../../lib/errors';
 import { audit } from '../audit';
 import type { EffectivePermission } from '../permissions';
 import type { Tx } from '../tx';
+import { divertTarget } from './actions';
 import {
   INBOX_READ,
   activeAssignmentsOf,
@@ -413,6 +414,13 @@ export async function conversationDetail(
     eventRows.flatMap((e) => (e.actorAccountId ? [e.actorAccountId] : [])),
   );
 
+  // Divert's counterpart, read exactly as the action reads it (`divertTarget`).
+  const primaryAccountId = assignments.find((a) => a.slot === 'primary')?.accountId ?? null;
+  const { target: divertAccountId } = await divertTarget(db, viewer.operatorId, conv, primaryAccountId);
+  const divertTo = divertAccountId
+    ? { accountId: divertAccountId, name: (await accountNames(db, viewer.operatorId, [divertAccountId])).get(divertAccountId) ?? null }
+    : null;
+
   return {
     ...toRow(raw, assignments),
     teamName,
@@ -428,6 +436,7 @@ export async function conversationDetail(
       payload: (e.payload ?? {}) as Record<string, unknown>,
       createdAt: e.createdAt.toISOString(),
     })),
+    divertTo,
   };
 }
 
@@ -702,7 +711,12 @@ export async function viewerTabs(db: Db, viewer: InboxViewer, effective: Effecti
   return tabsForRoles(viewRolesOf(viewer, teams, holdsAnywhere(effective, INBOX_READ, viewer.operatorId)));
 }
 
-export async function inboxMe(db: Db, viewer: InboxViewer, effective: EffectivePermission[]): Promise<InboxMe> {
+export async function inboxMe(
+  db: Db,
+  viewer: InboxViewer,
+  effective: EffectivePermission[],
+  opts: { simulatorEnabled: boolean } = { simulatorEnabled: false },
+): Promise<InboxMe> {
   const teams = await operatorTeams(db, viewer.operatorId);
   const roles = viewRolesOf(viewer, teams, holdsAnywhere(effective, INBOX_READ, viewer.operatorId));
 
@@ -739,6 +753,30 @@ export async function inboxMe(db: Db, viewer: InboxViewer, effective: EffectiveP
   const names = await accountNames(db, viewer.operatorId, [viewer.accountId, ...people.keys()]);
   const reception = teams.find((t) => t.key === 'reception');
 
+  // The simulator panel: the deployment runs the simulator AND the viewer may
+  // drive it — the same two checks the `/inbox/simulator/*` routes make.
+  const simulator =
+    opts.simulatorEnabled && holdsAnywhere(effective, 'inbox:channel:manage', viewer.operatorId)
+      ? {
+          channelAccounts: await db
+            .select({
+              id: s.channelAccount.id,
+              channel: s.channelAccount.channel,
+              displayName: s.channelAccount.displayName,
+              branchId: s.channelAccount.branchId,
+            })
+            .from(s.channelAccount)
+            .where(
+              and(
+                eq(s.channelAccount.operatorId, viewer.operatorId),
+                eq(s.channelAccount.provider, 'simulator'),
+                isNull(s.channelAccount.archivedAt),
+              ),
+            )
+            .orderBy(asc(s.channelAccount.displayName), asc(s.channelAccount.id)),
+        }
+      : null;
+
   return {
     accountId: viewer.accountId,
     name: names.get(viewer.accountId) ?? null,
@@ -770,7 +808,9 @@ export async function inboxMe(db: Db, viewer: InboxViewer, effective: EffectiveP
       assign: holdsAnywhere(effective, 'inbox:conversation:assign', viewer.operatorId),
       move: holdsAnywhere(effective, 'inbox:conversation:move', viewer.operatorId),
       reopen: holdsAnywhere(effective, 'inbox:conversation:reopen', viewer.operatorId),
+      templates: holdsAnywhere(effective, 'inbox:template:manage', viewer.operatorId),
     },
+    simulator,
   };
 }
 

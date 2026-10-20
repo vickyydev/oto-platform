@@ -58619,7 +58619,7 @@
     },
     "/inbox/me": {
       "get": {
-        "description": "The signed-in viewer of the Inbox: who they are, the prototype views they stand in (owner, a team, or `staff` for a reader in no team), their tabs (the ported code: the owner and reception get Team and Handled, every other view all three), every team of the operator with theirs marked, the people who can hold a slot, and what they may do (`writes` is off until the write routes land). Needs app:inbox:access.",
+        "description": "The signed-in viewer of the Inbox: who they are, the prototype views they stand in (owner, a team, or `staff` for a reader in no team), their tabs (the ported code: the owner and reception get Team and Handled, every other view all three), every team of the operator with theirs marked, the people who can hold a slot, and what they may do (`writes`, on since the reply landed; `templates` for the template settings), and — only where this deployment runs the inbox simulator and the viewer holds inbox:channel:manage — the simulator channel accounts. Needs app:inbox:access.",
         "responses": {
           "200": {
             "description": "Default Response",
@@ -58758,6 +58758,9 @@
                         },
                         "reopen": {
                           "type": "boolean"
+                        },
+                        "templates": {
+                          "type": "boolean"
                         }
                       },
                       "required": [
@@ -58765,9 +58768,58 @@
                         "dashboard",
                         "assign",
                         "move",
-                        "reopen"
+                        "reopen",
+                        "templates"
                       ],
                       "additionalProperties": false
+                    },
+                    "simulator": {
+                      "type": "object",
+                      "properties": {
+                        "channelAccounts": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "channel": {
+                                "type": "string",
+                                "enum": [
+                                  "whatsapp",
+                                  "instagram",
+                                  "facebook",
+                                  "line",
+                                  "telegram",
+                                  "webform"
+                                ]
+                              },
+                              "displayName": {
+                                "type": "string"
+                              },
+                              "branchId": {
+                                "type": "string",
+                                "format": "uuid",
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "channel",
+                              "displayName",
+                              "branchId"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "channelAccounts"
+                      ],
+                      "additionalProperties": false,
+                      "nullable": true
                     }
                   },
                   "required": [
@@ -58778,7 +58830,8 @@
                     "teams",
                     "people",
                     "defaultReceptionBranchId",
-                    "capabilities"
+                    "capabilities",
+                    "simulator"
                   ],
                   "additionalProperties": false
                 }
@@ -59205,7 +59258,7 @@
     },
     "/inbox/conversations/{id}": {
       "get": {
-        "description": "One conversation: its header (contact, channel, category, intent, branch, team, language, status), the assignment strip (primary and support), the linked member’s name and child count (no allergy text — the POS owns that), and the timeline’s system events (never a message body). Loaded inside the caller’s operator, then checked for visibility: 404 when the caller cannot see it. Needs inbox:conversation:read.",
+        "description": "One conversation: its header (contact, channel, category, intent, branch, team, language, status), the assignment strip (primary and support), the linked member’s name and child count (no allergy text — the POS owns that), the timeline’s system events (never a message body), and `divertTo`: who Divert would make primary, read as the divert route reads it (null: it would answer DIVERT_NO_BACKUP). Loaded inside the caller’s operator, then checked for visibility: 404 when the caller cannot see it. Needs inbox:conversation:read.",
         "parameters": [
           {
             "schema": {
@@ -59516,6 +59569,25 @@
                         ],
                         "additionalProperties": false
                       }
+                    },
+                    "divertTo": {
+                      "type": "object",
+                      "properties": {
+                        "accountId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "name": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "accountId",
+                        "name"
+                      ],
+                      "additionalProperties": false,
+                      "nullable": true
                     }
                   },
                   "required": [
@@ -59543,7 +59615,8 @@
                     "firstResponseAt",
                     "reopenedAt",
                     "member",
-                    "events"
+                    "events",
+                    "divertTo"
                   ],
                   "additionalProperties": false
                 }

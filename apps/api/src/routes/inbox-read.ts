@@ -68,13 +68,15 @@ export async function inboxReadRoutes(app: App): Promise<void> {
           'The signed-in viewer of the Inbox: who they are, the prototype views they stand in (owner, a team, or ' +
           '`staff` for a reader in no team), their tabs (the ported code: the owner and reception get Team and Handled, ' +
           'every other view all three), every team of the operator with theirs marked, the people who can hold a slot, ' +
-          'and what they may do (`writes` is off until the write routes land). Needs app:inbox:access.',
+          'and what they may do (`writes`, on since the reply landed; `templates` for the template settings), and — only ' +
+          'where this deployment runs the inbox simulator and the viewer holds inbox:channel:manage — the simulator ' +
+          'channel accounts. Needs app:inbox:access.',
         response: { 200: InboxMeSchema },
       },
     },
     async (req) => {
       const { viewer, effective } = await inboxCaller(req, 'app:inbox:access');
-      return inboxMe(app.db, viewer, effective);
+      return inboxMe(app.db, viewer, effective, { simulatorEnabled: app.inboxChannels.simulatorEnabled });
     },
   );
 
@@ -111,7 +113,8 @@ export async function inboxReadRoutes(app: App): Promise<void> {
         description:
           'One conversation: its header (contact, channel, category, intent, branch, team, language, status), the ' +
           'assignment strip (primary and support), the linked member’s name and child count (no allergy text — the POS ' +
-          'owns that), and the timeline’s system events (never a message body). Loaded inside the caller’s operator, ' +
+          'owns that), the timeline’s system events (never a message body), and `divertTo`: who Divert would make ' +
+          'primary, read as the divert route reads it (null: it would answer DIVERT_NO_BACKUP). Loaded inside the caller’s operator, ' +
           'then checked for visibility: 404 when the caller cannot see it. Needs inbox:conversation:read.',
         params: ConversationParams,
         response: { 200: InboxConversationDetailSchema },

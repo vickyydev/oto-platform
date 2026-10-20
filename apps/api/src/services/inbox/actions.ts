@@ -18,7 +18,7 @@ import { hasPermission, type EffectivePermission } from '../permissions';
 import { PermissionDeniedError } from '../../plugins/session';
 import { errors } from '../../lib/errors';
 import { pgErrorOf } from '../../lib/scrub';
-import type { Tx } from '../tx';
+import type { Exec, Tx } from '../tx';
 import { INBOX_READ, loadVisibleConversation, type InboxViewer } from './read-visibility';
 import { pickRule, routeConversation } from './router';
 import { handledPatch, reopenAuditBefore, reopenPatch, reopenedPayload } from './status';
@@ -542,45 +542,60 @@ export async function removeSupport(
 
 // --- DIVERT: the fixed pair swaps -------------------------------------------------------------
 
-export async function divert(tx: Tx, ctx: ActionCtx, input: { conversationId: string }): Promise<InboxActionResult> {
-  const l = await loadForAction(tx, ctx, input.conversationId);
-  // The primary taps it; a manager can do it on their behalf (Brief §9).
-  if (!isPrimary(l.slots, ctx.viewer.accountId) && !holdsAt(ctx, 'inbox:conversation:assign', l)) {
-    throw new PermissionDeniedError('inbox:conversation:assign');
-  }
-  const { operatorId } = ctx.viewer;
-  const rules = await tx
+/**
+ * Who a Divert would make primary, or null when it would answer
+ * `DIVERT_NO_BACKUP`: the routing rule's fixed pair at this conversation —
+ * the backup when the primary is anyone else, the rule's primary when the
+ * backup already holds it (a second Divert swaps back) — and only an active
+ * account. ONE reading for the action below and for the conversation detail
+ * (`divertTo`), so the shell shows Divert exactly when the press would work.
+ */
+export async function divertTarget(
+  db: Exec,
+  operatorId: string,
+  conv: Pick<ConversationRow, 'category' | 'teamId' | 'language' | 'branchId'>,
+  primaryAccountId: string | null,
+): Promise<{ ruleId: string | null; target: string | null }> {
+  const rules = await db
     .select()
     .from(routingRule)
     .where(
       and(
         eq(routingRule.operatorId, operatorId),
-        eq(routingRule.category, l.conv.category),
+        eq(routingRule.category, conv.category),
         eq(routingRule.active, true),
         isNull(routingRule.archivedAt),
-        ...(l.conv.teamId ? [eq(routingRule.teamId, l.conv.teamId)] : []),
+        ...(conv.teamId ? [eq(routingRule.teamId, conv.teamId)] : []),
       ),
     );
   const rule = pickRule(rules, {
-    category: l.conv.category,
-    language: l.conv.language ?? 'en',
-    branchId: l.conv.branchId,
+    category: conv.category,
+    language: conv.language ?? 'en',
+    branchId: conv.branchId,
   });
-  const primary = primaryOf(l.slots);
-  // The pair: the backup when the primary is anyone else; the rule's primary
-  // when the backup already holds it (a second Divert swaps back).
   const ruleBackup = rule?.backupAccountId ?? null;
   const rulePrimary = rule?.primaryKind === 'account' ? rule.primaryAccountId : null;
-  const counterpart = primary?.accountId && primary.accountId === ruleBackup ? rulePrimary : ruleBackup;
+  const counterpart = primaryAccountId && primaryAccountId === ruleBackup ? rulePrimary : ruleBackup;
   let target: string | null = null;
-  if (counterpart && counterpart !== primary?.accountId) {
-    const [live] = await tx
+  if (counterpart && counterpart !== primaryAccountId) {
+    const [live] = await db
       .select({ id: account.id })
       .from(account)
       .where(and(eq(account.id, counterpart), eq(account.operatorId, operatorId), eq(account.status, 'active')))
       .limit(1);
     target = live?.id ?? null;
   }
+  return { ruleId: rule?.id ?? null, target };
+}
+
+export async function divert(tx: Tx, ctx: ActionCtx, input: { conversationId: string }): Promise<InboxActionResult> {
+  const l = await loadForAction(tx, ctx, input.conversationId);
+  // The primary taps it; a manager can do it on their behalf (Brief §9).
+  if (!isPrimary(l.slots, ctx.viewer.accountId) && !holdsAt(ctx, 'inbox:conversation:assign', l)) {
+    throw new PermissionDeniedError('inbox:conversation:assign');
+  }
+  const primary = primaryOf(l.slots);
+  const { ruleId, target } = await divertTarget(tx, ctx.viewer.operatorId, l.conv, primary?.accountId ?? null);
   if (!target) throw errors.conflict('DIVERT_NO_BACKUP', INBOX_ACTION_MESSAGES.divertNoBackup);
 
   const targetSupport = l.slots.find((a) => a.slot === 'support' && a.accountId === target) ?? null;
@@ -617,7 +632,7 @@ export async function divert(tx: Tx, ctx: ActionCtx, input: { conversationId: st
   await seatSlots(tx, ctx, l.conv.id, seats);
   await tx.insert(inboxEvent).values(
     actionEvent(ctx, l.conv.id, 'diverted', {
-      ruleId: rule?.id ?? null,
+      ruleId,
       fromAccountId: primary?.accountId ?? null,
       fromTeamId: primary?.teamId ?? null,
       toAccountId: target,
@@ -631,7 +646,7 @@ export async function divert(tx: Tx, ctx: ActionCtx, input: { conversationId: st
     l.conv,
     'inbox.conversation.divert',
     { slots: slotSummary(l.slots) },
-    { ruleId: rule?.id ?? null, primaryAccountId: target, oldPrimarySupportIndex: oldTo },
+    { ruleId, primaryAccountId: target, oldPrimarySupportIndex: oldTo },
   );
   return actionResult(tx, ctx, l.conv.id, false);
 }

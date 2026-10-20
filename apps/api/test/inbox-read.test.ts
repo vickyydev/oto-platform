@@ -3,7 +3,7 @@ import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import * as db from '@oto/db';
 import { schema as s } from '@oto/db';
-import { DEMO_CONVERSATIONS, DEMO_STAFF, DEMO_STAFF_PASSWORD, seedInboxDemo } from '@oto/db/seed';
+import { DEMO_CHANNEL_ACCOUNTS, DEMO_CONVERSATIONS, DEMO_STAFF, DEMO_STAFF_PASSWORD, seedInboxDemo } from '@oto/db/seed';
 import {
   INBOX_CATEGORY_KEYS,
   INBOX_CHANNEL_KEYS,
@@ -684,7 +684,9 @@ describe('the viewer and the templates', () => {
       ['reception', false],
       ['marketing', false],
     ]);
-    expect(me.capabilities).toEqual({ writes: true, dashboard: true, assign: false, move: false, reopen: false });
+    expect(me.capabilities).toEqual({ writes: true, dashboard: true, assign: false, move: false, reopen: false, templates: false });
+    // No simulator panel for an agent: the suite runs the simulator, but they hold no inbox:channel:manage.
+    expect(me.simulator).toBeNull();
     expect(me.defaultReceptionBranchId).toBe(central);
     const people = new Map(me.people.map((p) => [p.name, p]));
     expect(people.get(DEMO_STAFF.gm.name)).toMatchObject({ operatorWide: true, teamIds: [] });
@@ -693,7 +695,16 @@ describe('the viewer and the templates', () => {
     // Nobody of the other operator.
     expect(me.people.some((p) => p.name === 'Other Operator Guest')).toBe(false);
     const gm = (await get<InboxMe>('gm', '/inbox/me')).body;
-    expect(gm.capabilities).toMatchObject({ assign: true, move: true, reopen: true });
+    expect(gm.capabilities).toMatchObject({ assign: true, move: true, reopen: true, templates: true });
+    expect(gm.simulator).toBeNull();
+    // The admin holds inbox:channel:manage on a simulator deployment: the panel, with the
+    // demo's four simulator accounts of THIS operator.
+    const admin = (await get<InboxMe>('admin', '/inbox/me')).body;
+    expect(admin.simulator?.channelAccounts.map((a) => a.displayName).sort()).toEqual(
+      Object.values(DEMO_CHANNEL_ACCOUNTS)
+        .map((a) => a.displayName)
+        .sort(),
+    );
   });
 
   it('templates: the active rows, optionally one language', async () => {
