@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearch } from 'wouter';
 import { StationHeader } from '@/components/shared/StationHeader';
 import { TxnKind, MemberActivity as MemberActivityData, type Wristband } from '@/types';
 import { scanWallet } from '@/api/wallet';
@@ -105,7 +106,13 @@ export default function History() {
 
   const [view, setView] = useState<View>('list');
   const [tab, setTab] = useState<TabKey>('all');
-  const [query, setQuery] = useState('');
+  /**
+   * `/history?phone=…` opens the search box on that number (the assistant's
+   * "Take me there" to a member's sales, SCRUM-591 test night W5): the same
+   * lookup a typed number makes (`useSearchLookup`), read once on arrival.
+   */
+  const search = useSearch();
+  const [query, setQuery] = useState(() => new URLSearchParams(search).get('phone')?.trim() ?? '');
   const [selected, setSelected] = useState<HistoryTxn | null>(null);
 
   /** The trading day on screen. Empty until the branch's own day is known. */

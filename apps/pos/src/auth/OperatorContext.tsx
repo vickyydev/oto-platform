@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 import type { Permission } from '@oto/shared/permissions';
+import { landingUrl, readHandoffTarget } from '@oto/shared/handoff-target';
 import { Operator } from '@/types';
 import { getOperatorThemePref } from '@/mockApi';
 import { INACTIVITY_TIMEOUT_MS, INACTIVITY_WARNING_MS } from '@/auth/timings';
@@ -127,13 +128,22 @@ function handoffRefusal(err: unknown): string {
  * resume effect also means a provider that mounts twice cannot exchange it
  * twice — the second mount awaits this same promise and sees the same answer.
  *
+ * The fragment may also carry a target (`&to=/history?phone=…`, SCRUM-591 P1;
+ * the assistant's "Take me there" to a member's sales, test night
+ * 2026-10-21 W5): after a SUCCESSFUL exchange the address becomes that page,
+ * before the router reads it, so the till opens there. The target is checked
+ * again here (`readHandoffTarget`, the Console's and the Inbox's rule); a
+ * refused one, or a refused exchange, leaves the till at its home.
+ *
  * Resolves to null when the session cookie is now set, or to the sentence the
  * lock screen should show.
  */
 function acceptHandoffOnArrival(): Promise<string | null> | null {
-  const match = /(?:^|&)handoff=([^&]*)/.exec(window.location.hash.slice(1));
+  const hash = window.location.hash;
+  const match = /(?:^|&)handoff=([^&]*)/.exec(hash.slice(1));
   if (!match || !match[1]) return null;
   const raw = match[1];
+  const target = readHandoffTarget(hash);
   // Strip before anything else can fail: a fragment that survives a bad token
   // is still a fragment somebody can copy.
   window.history.replaceState(null, '', window.location.pathname + window.location.search);
@@ -145,7 +155,16 @@ function acceptHandoffOnArrival(): Promise<string | null> | null {
   }
   return authApi
     .handoffExchange(token)
-    .then(() => null)
+    .then(() => {
+      if (target) {
+        try {
+          window.history.replaceState(null, '', landingUrl(import.meta.env.BASE_URL, target));
+        } catch {
+          // Home is where it would have opened before P1.
+        }
+      }
+      return null;
+    })
     .catch(handoffRefusal);
 }
 
