@@ -434,7 +434,7 @@ shows the existing signed-out page with its "Open the launcher" button.
 | `console.bookings` | console | `/bookings` | bookings | `pos:booking:read` |
 | `console.vouchers` | console | `/vouchers` | vouchers | the page's own permission |
 | `inbox.thread` | inbox | `/?c=:conversationId` (needs **P2**) | one conversation | `app:inbox:access` + visibility |
-| `inbox.queue` | inbox | `/?tab=unanswered` (needs **P2**) | the unanswered queue | `app:inbox:access` |
+| `inbox.queue` | inbox | `/?unanswered=1` (P2 landed: the queue is a filter on the list, not a fourth tab; `?tab=unanswered` is read as the same queue) | the unanswered queue | `app:inbox:access` + `inbox:conversation:read` |
 | `launcher.account` | launcher | `/account` | my account | everyone |
 
 The Console paths are those in `apps/console/src/App.tsx:127-176`. The
