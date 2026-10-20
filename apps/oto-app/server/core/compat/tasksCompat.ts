@@ -16,6 +16,7 @@ import {
 } from "../../db/coreSchema";
 import { branches, users, employees, people, files } from "../../../shared/schema";
 import { STORAGE_ENV_PREFIX } from "../../config/env";
+import { resolveSelfEmployeeId } from "../selfEmployee";
 import { format, parseISO, startOfDay, endOfDay, addDays, isToday } from "date-fns";
 
 import {
@@ -56,7 +57,7 @@ async function canAccessTask(req: Request, tenantId: string, taskId: string): Pr
   if (task.branchId) return canAccessTenantBranch(req, tenantId, task.branchId);
   if (["global_admin", "operator_admin", "admin", "manager"].includes(req.userWithAccess.role)) return true;
   if (task.createdBy === req.user.id) return true;
-  const actor = await getActorContext(req.user.id);
+  const actor = await getActorContext(req.user.id, tenantId);
   const assignments = await db.select().from(taskAssignments)
     .where(and(eq(taskAssignments.taskId, taskId), eq(taskAssignments.tenantId, tenantId)));
   return isTaskMine(task, actor, assignments);
@@ -248,10 +249,15 @@ function isTaskMine(task: any, actor: ActorContext, newAssignments?: Array<{ ass
   return false;
 }
 
-async function getActorContext(userId: string): Promise<ActorContext> {
-  const empResult = await db.execute(sql`
-    SELECT id, primary_department_id, branch_id FROM employees WHERE user_id = ${userId} LIMIT 1
-  `);
+async function getActorContext(userId: string, tenantId: string): Promise<ActorContext> {
+  // The signed-in person's employee record, resolved the way My Account
+  // resolves it: by login, then email, then phone, within their park group.
+  const employeeId = await resolveSelfEmployeeId(userId, tenantId);
+  const empResult = employeeId
+    ? await db.execute(sql`
+        SELECT id, primary_department_id, branch_id FROM employees WHERE id = ${employeeId} LIMIT 1
+      `)
+    : [];
   const empRows = Array.isArray(empResult) ? empResult : (empResult as any).rows || [];
   const emp = empRows[0];
   const roleIds: string[] = [];
@@ -450,7 +456,7 @@ router.get("/tasks/today", requireAuth, async (req: Request, res: Response) => {
     }
     const isAdminOrManager = ['global_admin', 'operator_admin', 'admin', 'manager'].includes(userRole || '');
 
-    const actor = userId ? await getActorContext(userId) : null;
+    const actor = userId ? await getActorContext(userId, tenantId) : null;
 
     if (branchId && branchId !== "all" && !await canAccessTenantBranch(req, tenantId, branchId)) {
       return res.status(403).json({ message: "Branch access denied" });
@@ -1208,7 +1214,7 @@ router.get("/core/tasks", requireAuth, async (req: Request, res: Response) => {
     }
     const isAdminOrManager = ['global_admin', 'operator_admin', 'admin', 'manager'].includes(userRole || '');
 
-    const actor = user?.id ? await getActorContext(user.id) : null;
+    const actor = user?.id ? await getActorContext(user.id, tenantId) : null;
 
     if (branchId && branchId !== "all" && !await canAccessTenantBranch(req, tenantId, branchId)) {
       return res.status(403).json({ message: "Branch access denied" });

@@ -18,6 +18,16 @@
 //      start too, and Today lists only started tasks, so the task leaves every
 //      assignee's Today until that day and returns when it is due today.
 //
+// SCRUM-598 — Today resolves the signed-in person the way My Account does
+// (by login, then email, then phone), within their own park group:
+//
+//   6. An employee record with no login attached but the login's email reads
+//      the task assigned to it in Today; a record matched by phone alone
+//      likewise.
+//   7. A record of another park group with the login's email is not taken for
+//      that login, nor is a same-group record that belongs to another login.
+//   8. A login with no employee record still reads its user-assigned task.
+//
 // Usage, from apps/oto-app, with DATABASE_URL naming a database whose otoapp
 // schema the app's migrator has built (CI's OTO App job runs exactly this):
 //   npx tsx tests/task-assignees-today.check.ts
@@ -94,6 +104,36 @@ async function staff(label: string): Promise<Staff> {
   );
   return { label, userId: u.id, email: u.email, employeeId };
 }
+
+// SCRUM-598: logins whose employee record carries no login link.
+async function unlinkedEmployee(tenantId: string, branchId: string, label: string, email: string, phone: string | null) {
+  const employeeId = randomUUID();
+  await q(
+    `insert into employees (id, tenant_id, branch_id, user_id, full_name, nickname, email, phone, status)
+     values ($1, $2, $3, null, $4, $5, $6, $7, 'active')`,
+    [employeeId, tenantId, branchId, `ZZ TEST ${label} ${run}`, label, email, phone],
+  );
+  return employeeId;
+}
+/** Email match only: the record's email differs from the login's only in case. */
+const byEmail = await user("staff", "ByEmail");
+const byEmailEmployee = await unlinkedEmployee(tenant, branch, "ByEmail", byEmail.email.toUpperCase(), null);
+/** Phone match only: a different email, the login's E.164 phone written the local way. */
+const byPhone = await user("staff", "ByPhone");
+const phoneDigits = String(Date.now()).slice(-8);
+await q("update users set phone_e164 = $2, phone_number = $3 where id = $1", [byPhone.id, `+669${phoneDigits}`, `09${phoneDigits}`]);
+const byPhoneEmployee = await unlinkedEmployee(tenant, branch, "ByPhone", `zz-ta-byphone-other-${run}@example.com`, `09-${phoneDigits}`);
+/** No employee record here; one in another park group, and one linked to another login, carry its email. */
+const lone = await user("staff", "Lone");
+const otherTenant = randomUUID();
+await q("insert into tenants (id, name, slug) values ($1, $2, $3)", [otherTenant, `ZZ TEST ta2 ${run}`, `zz-ta2-${run}`]);
+const otherBranch = randomUUID();
+await q("insert into branches (id, tenant_id, name, address, timezone) values ($1, $2, $3, 'ZZ TEST', 'Asia/Bangkok')", [
+  otherBranch,
+  otherTenant,
+  `ZZ TEST ta2 ${run}`,
+]);
+const foreignEmployee = await unlinkedEmployee(otherTenant, otherBranch, "Foreign", lone.email, null);
 
 const manager = await user("manager", "manager");
 const anan = await staff("Anan");
@@ -196,6 +236,9 @@ try {
     Lek: await signIn(lek.email),
     Som: await signIn(som.email),
     Other: await signIn(other.email),
+    ByEmail: await signIn(byEmail.email),
+    ByPhone: await signIn(byPhone.email),
+    Lone: await signIn(lone.email),
   };
 
   /** What the Ops board's create dialog sends (client/src/components/create-task-dialog.tsx). */
@@ -294,6 +337,55 @@ try {
       assert.ok((await todayFor(who)).includes(multi), `${who}'s Today has no task due today`);
     }
     assert.ok(!(await todayFor("Other")).includes(multi), "Other's Today shows a task not assigned to them");
+  });
+
+  // ─── SCRUM-598: Today resolves the person the way My Account does ─────────
+
+  /** A task for one employee id, made on the board for Anan and then re-pointed in the database. */
+  const taskFor = async (title: string, employeeId: string) => {
+    const id = await create(title, [anan]);
+    await q("update task_assignments set assignment_id = $2 where task_id = $1 and assignment_type = 'employee'", [id, employeeId]);
+    await q("update tasks set assigned_employee_id = $2 where id = $1 and assigned_employee_id is not null", [id, employeeId]);
+    return id;
+  };
+
+  const emailTask = await taskFor(`ZZ TEST by email ${run}`, byEmailEmployee);
+  const phoneTask = await taskFor(`ZZ TEST by phone ${run}`, byPhoneEmployee);
+  const foreignTask = await taskFor(`ZZ TEST foreign ${run}`, foreignEmployee);
+
+  await check("an employee record with no login but the login's email reads its task in Today", async () => {
+    assert.ok((await todayFor("ByEmail")).includes(emailTask), "ByEmail's Today has no task assigned to their employee record");
+    assert.ok(!(await todayFor("ByPhone")).includes(emailTask), "ByPhone's Today shows ByEmail's task");
+  });
+
+  await check("an employee record matched by phone alone reads its task in Today", async () => {
+    assert.ok((await todayFor("ByPhone")).includes(phoneTask), "ByPhone's Today has no task assigned to their employee record");
+    assert.ok(!(await todayFor("ByEmail")).includes(phoneTask), "ByEmail's Today shows ByPhone's task");
+  });
+
+  await check("a record of another park group with the login's email is not taken for that login", async () => {
+    assert.ok(!(await todayFor("Lone")).includes(foreignTask), "Lone's Today shows a task for another park group's record");
+  });
+
+  await check("a same-group record linked to another login is not taken by email for this one", async () => {
+    // A record with Lone's email whose login is the manager's: it is the
+    // manager's record, and the email step considers records with no login only.
+    const managerEmployee = randomUUID();
+    await q(
+      `insert into employees (id, tenant_id, branch_id, user_id, full_name, nickname, email, status)
+       values ($1, $2, $3, $4, $5, 'ManagerRecord', $6, 'active')`,
+      [managerEmployee, tenant, branch, manager.id, `ZZ TEST ManagerRecord ${run}`, lone.email],
+    );
+    const id = await taskFor(`ZZ TEST linked elsewhere ${run}`, managerEmployee);
+    assert.ok(!(await todayFor("Lone")).includes(id), "Lone's Today shows a task for the manager's record");
+  });
+
+  await check("a login with no employee record still reads its user-assigned task", async () => {
+    const id = await create(`ZZ TEST for a login ${run}`, [anan]);
+    await q("delete from task_assignments where task_id = $1", [id]);
+    await q("update tasks set assigned_employee_id = null, assigned_to = $2 where id = $1", [id, lone.id]);
+    assert.ok((await todayFor("Lone")).includes(id), "Lone's Today has no task assigned to their login");
+    assert.ok(!(await todayFor("Anan")).includes(id), "Anan's Today shows Lone's task");
   });
 
   console.log(`task-assignees-today.check: ${checks} checks passed`);
