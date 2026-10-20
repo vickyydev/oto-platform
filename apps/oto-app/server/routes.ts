@@ -190,6 +190,7 @@ import {
 import { tasks, taskQuestions, taskAssignments, taskAttachments, checklistRuns, checklistRunItems, checklistTemplateItems, checklistTemplates, locations, locationBranchAccess, beoPartyHostAssignments, beoEventBilling, beoSetupPlans, beoKitchenPlans, beoTimelineItems, beoPackageSnapshots, beoEntertainmentSelections, eventLineItems, coreEvents as coreEventsTable, studioEventBookings, campRegistrations, campAttendance, fixReports, fixComments } from "./db/coreSchema";
 import { eq, desc, and, asc, or, ne, isNull, isNotNull, inArray, gte, lte, sql } from "drizzle-orm";
 import { generateInstanceForDefinition } from "./core/taskGeneration";
+import { personFence, fenceAllows, fenceRows, EMPLOYEE_DENIED } from "./core/personScope";
 
 async function requireAuthOrKiosk(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
@@ -13418,6 +13419,11 @@ OTO Company Limited`,
           return res.status(403).json({ message: "Access denied" });
         }
       }
+      // A staff session reads its own balance only (SCRUM-595): fenced to the
+      // person, matching the screens' intent; managers keep the branch rule.
+      if (!fenceAllows(await personFence(req.userWithAccess ?? (req.user as UserWithBranchAccess), user?.tenantId), employee.id)) {
+        return res.status(403).json(EMPLOYEE_DENIED);
+      }
 
       const balance = await storage.getEmployeeLeaveBalance(employeeId);
       res.json(balance);
@@ -13459,8 +13465,12 @@ OTO Company Limited`,
         }
       }
 
+      // A staff session sees only its own row (SCRUM-595): fenced to the
+      // person, matching the screens' intent (the rota shows "My Leave
+      // Balance"); none without an employee record. Managers keep the branch.
+      const fence = await personFence(req.userWithAccess ?? (req.user as UserWithBranchAccess), tenantId);
       const balances = await storage.getBranchEmployeeLeaveBalances(branchId);
-      res.json(balances);
+      res.json(fenceRows(fence, balances));
     } catch (error) {
       next(error);
     }
@@ -13489,6 +13499,11 @@ OTO Company Limited`,
         if (!employee.branchId || !userBranchIds.includes(employee.branchId)) {
           return res.status(403).json({ message: "Access denied" });
         }
+      }
+      // A staff session reads its own balance only (SCRUM-595): fenced to the
+      // person, matching the screens' intent; managers keep the branch rule.
+      if (!fenceAllows(await personFence(req.userWithAccess ?? (req.user as UserWithBranchAccess), tenantId), employee.id)) {
+        return res.status(403).json(EMPLOYEE_DENIED);
       }
 
       const balance = await storage.getEmployeeLeaveBalance(id);
@@ -13908,6 +13923,11 @@ OTO Company Limited`,
       const employee = await employeeOfParkGroup(req, req.params.id);
       if (!employee) return res.status(404).json(EMPLOYEE_NOT_FOUND);
       if (!leaveEmployeeReachable(req, res, employee)) return;
+      // A staff session reads its own balance only (SCRUM-595): fenced to the
+      // person, matching the screens' intent; managers keep the branch rule.
+      if (!fenceAllows(await personFence(req.userWithAccess ?? (req.user as UserWithBranchAccess), employee.tenantId), employee.id)) {
+        return res.status(403).json(EMPLOYEE_DENIED);
+      }
       const result = await employeeDynamicLeaveBalances(employee.id, employee.tenantId, year);
       if (!result) return res.status(404).json(EMPLOYEE_NOT_FOUND);
       res.json(result);
@@ -14050,8 +14070,10 @@ OTO Company Limited`,
         return res.status(403).json({ message: "Access denied - branch not allowed" });
       }
 
+      // A staff session sees only its own row (SCRUM-595), as /api/leave-balances.
+      const fence = await personFence(req.userWithAccess ?? (req.user as UserWithBranchAccess), tenantId);
       const balances = await storage.getBranchEmployeeSickLeaveBalances(branchId, year);
-      res.json(balances);
+      res.json(fenceRows(fence, balances));
     } catch (error) {
       next(error);
     }
@@ -14071,6 +14093,11 @@ OTO Company Limited`,
         return res.status(404).json(EMPLOYEE_NOT_FOUND);
       }
       if (!leaveEmployeeReachable(req, res, employee)) return;
+      // A staff session reads its own balance only (SCRUM-595): fenced to the
+      // person, matching the screens' intent; managers keep the branch rule.
+      if (!fenceAllows(await personFence(req.userWithAccess ?? (req.user as UserWithBranchAccess), tenantId), employee.id)) {
+        return res.status(403).json(EMPLOYEE_DENIED);
+      }
 
       const balance = await storage.getEmployeeSickLeaveBalance(employeeId, year);
       res.json(balance);
@@ -14106,7 +14133,12 @@ OTO Company Limited`,
       if (!isGlobalAdmin && allowedBranchIds && (!employee.branchId || !allowedBranchIds.includes(employee.branchId))) {
         return res.status(403).json({ message: "Access denied - branch not allowed" });
       }
-      
+      // A staff session reads its own balance only (SCRUM-595): fenced to the
+      // person, matching the screens' intent; managers keep the branch rule.
+      if (!fenceAllows(await personFence(req.userWithAccess ?? (req.user as UserWithBranchAccess), tenantId), employee.id)) {
+        return res.status(403).json(EMPLOYEE_DENIED);
+      }
+
       // Every number from the park group's leave types and the one balance
       // engine (SCRUM-560): the settings keys and the fixed formulas this read
       // used are now the ANNUAL, BUSINESS and SICK types.
@@ -14206,7 +14238,10 @@ OTO Company Limited`,
       // app lists every employee whatever branch is named (its rule, kept),
       // and listed every park group's too, so the list keeps to the caller's
       // park group (round 6's review, F3).
-      const employees = (await storage.getEmployees(branchId)).filter((e) => e.tenantId === parkGroup);
+      const employeesInGroup = (await storage.getEmployees(branchId)).filter((e) => e.tenantId === parkGroup);
+      // A staff session sees only its own row (SCRUM-595), as /api/leave-balances.
+      const fence = await personFence(req.userWithAccess ?? user, parkGroup);
+      const employees = fenceRows(fence, employeesInGroup.map((e) => ({ ...e, employeeId: e.id })));
 
       // Get public holidays count
       const publicHolidays = await storage.getPublicHolidays(tenantId, currentYear);

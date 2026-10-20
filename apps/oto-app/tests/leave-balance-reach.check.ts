@@ -16,6 +16,13 @@
 //      (/api/leave-balances/employee/:id) is the 403 for anyone without
 //      all-branch access, as are the sick-leave and all-leave balances.
 //   3. A manager with all-branch access reads all of the above (200).
+//   4. Fenced to the person (SCRUM-595, the owner's decision): a staff
+//      session reads only its own balance. A colleague's at the same branch
+//      is the 403 "Access denied to this employee" on every per-employee
+//      leave read; its own is the 200. The branch lists (leave, sick and all
+//      leave balances) answer only its own row, an empty list without an
+//      employee record; a manager - all-branch or branch-scoped - keeps the
+//      whole branch. The rota's own-balance read still finds its row.
 //
 // Usage, from apps/oto-app, with DATABASE_URL naming a database whose otoapp
 // schema the app's migrator has built (CI's OTO App job runs exactly this):
@@ -63,9 +70,11 @@ for (const [id, suffix] of [[x, "x"], [y, "y"]] as const) {
   ]);
 }
 
+const userIds = new Map<string, string>();
 async function user(role: string, label: string, branch: string | null): Promise<string> {
   const email = `zz-lbr-${label}-${run}@example.com`;
   const id = randomUUID();
+  userIds.set(email, id);
   await q(
     `insert into users (id, email, password, full_name, role, is_active, must_change_password)
      values ($1, $2, $3, $4, $5, true, false)`,
@@ -80,12 +89,12 @@ async function user(role: string, label: string, branch: string | null): Promise
   return email;
 }
 
-async function employee(branch: string | null, label: string): Promise<string> {
+async function employee(branch: string | null, label: string, login: string | null = null): Promise<string> {
   const id = randomUUID();
   await q(
-    `insert into employees (id, tenant_id, branch_id, full_name, nickname, email, status, start_date)
-     values ($1, $2, $3, $4, 'ZZ', $5, 'active', '2020-01-01')`,
-    [id, tenant, branch, `ZZ TEST ${run} ${label}`, `zz-lbr-${label}-${id.slice(0, 8)}@example.com`],
+    `insert into employees (id, tenant_id, branch_id, full_name, nickname, email, status, start_date, user_id)
+     values ($1, $2, $3, $4, 'ZZ', $5, 'active', '2020-01-01', $6)`,
+    [id, tenant, branch, `ZZ TEST ${run} ${label}`, `zz-lbr-${label}-${id.slice(0, 8)}@example.com`, login ? userIds.get(login) : null],
   );
   return id;
 }
@@ -95,6 +104,11 @@ const managerAll = await user("manager", "manager-all", null);
 const empX = await employee(x, "at-x");
 const empY = await employee(y, "at-y");
 const empNone = await employee(null, "no-branch");
+// SCRUM-595: staff X's own record (linked by login), a staff login at X with
+// no employee record, and a manager scoped to branch X alone.
+const selfX = await employee(x, "self-x", staffX);
+const staffNoRecord = await user("staff", "staff-norec", x);
+const managerX = await user("manager", "manager-x", x);
 
 // ─── The server ──────────────────────────────────────────────────────────────
 
@@ -179,6 +193,7 @@ const check = async (name: string, fn: () => void | Promise<void>) => {
 const EMPLOYEE_BRANCH_DENIED = { message: "Access denied to this employee's branch" };
 const BRANCH_DENIED = { message: "Access denied - branch not allowed" };
 const DENIED = { message: "Access denied" };
+const EMPLOYEE_DENIED = { message: "Access denied to this employee" };
 
 async function refused(path: string, cookie: string, body: unknown) {
   const res = await get(path, cookie);
@@ -199,8 +214,9 @@ try {
   await check("staff at X reading a branch-Y employee's sick balance is the 403 the other leave doors answer", async () => {
     await refused(`/api/employees/${empY}/sick-leave-balance`, staff, EMPLOYEE_BRANCH_DENIED);
   });
-  await check("staff at X reading a branch-X employee's sick balance is the 200", async () => {
-    await allowed(`/api/employees/${empX}/sick-leave-balance`, staff);
+  // SCRUM-595: a branch-X colleague's is now the person refusal (section 4); its own is the 200.
+  await check("staff at X reading its own sick balance is the 200", async () => {
+    await allowed(`/api/employees/${selfX}/sick-leave-balance`, staff);
   });
   await check("staff at X listing branch Y's sick balances is the 403; branch X's the 200", async () => {
     await refused(`/api/sick-leave-balances?branchId=${y}`, staff, BRANCH_DENIED);
@@ -213,8 +229,9 @@ try {
     await refused(`/api/employees/${empNone}/sick-leave-balance`, staff, EMPLOYEE_BRANCH_DENIED);
     await refused(`/api/employees/${empNone}/all-leave-balances`, staff, BRANCH_DENIED);
   });
-  await check("staff reading a branch-X employee's balance is still the 200", async () => {
-    await allowed(`/api/leave-balances/employee/${empX}`, staff);
+  // SCRUM-595: its own record now (a branch-X colleague's is section 4's refusal).
+  await check("staff reading its own branch-X balance is still the 200", async () => {
+    await allowed(`/api/leave-balances/employee/${selfX}`, staff);
   });
 
   console.log("3. a manager with all-branch access:");
@@ -226,6 +243,73 @@ try {
     await allowed(`/api/employees/${empNone}/all-leave-balances`, manager);
     await allowed(`/api/sick-leave-balances?branchId=${x}`, manager);
     await allowed(`/api/sick-leave-balances?branchId=${y}`, manager);
+  });
+
+  console.log("4. fenced to the person (SCRUM-595):");
+  const staffNone = await signIn(staffNoRecord);
+  const managerAtX = await signIn(managerX);
+  const ids = (a: Answer) => (a.body as Array<{ employeeId: string }>).map((row) => row.employeeId).sort();
+  const PER_EMPLOYEE = [
+    (id: string) => `/api/employees/${id}/leave-balance`,
+    (id: string) => `/api/leave-balances/employee/${id}`,
+    (id: string) => `/api/employees/${id}/leave-balances-dynamic`,
+    (id: string) => `/api/employees/${id}/sick-leave-balance`,
+    (id: string) => `/api/employees/${id}/all-leave-balances`,
+  ];
+  const BRANCH_LISTS = [
+    `/api/leave-balances?branchId=${x}`,
+    `/api/sick-leave-balances?branchId=${x}`,
+    `/api/all-leave-balances?branchId=${x}`,
+  ];
+  await check("staff reading a same-branch colleague's balance is the 403 on every per-employee read", async () => {
+    for (const path of PER_EMPLOYEE) await refused(path(empX), staff, EMPLOYEE_DENIED);
+  });
+  await check("staff reading its own balance is the 200 on every per-employee read", async () => {
+    for (const path of PER_EMPLOYEE) await allowed(path(selfX), staff);
+  });
+  await check("staff with no employee record reading a colleague's balance is the 403", async () => {
+    for (const path of PER_EMPLOYEE) await refused(path(empX), staffNone, EMPLOYEE_DENIED);
+  });
+  await check("the branch lists answer staff only its own row", async () => {
+    for (const path of BRANCH_LISTS) {
+      const res = await get(path, staff);
+      assert.equal(res.status, 200, `${path}: ${show(res)}`);
+      assert.deepEqual(ids(res), [selfX], `${path}: ${show(res)}`);
+    }
+  });
+  await check("the branch lists answer staff with no employee record an empty list", async () => {
+    for (const path of BRANCH_LISTS) {
+      const res = await get(path, staffNone);
+      assert.equal(res.status, 200, `${path}: ${show(res)}`);
+      assert.deepEqual(res.body, [], `${path}: ${show(res)}`);
+    }
+  });
+  await check("a manager (all-branch and branch-scoped) keeps the whole branch on the lists", async () => {
+    for (const cookie of [manager, managerAtX]) {
+      for (const path of [`/api/leave-balances?branchId=${x}`, `/api/sick-leave-balances?branchId=${x}`]) {
+        const res = await get(path, cookie);
+        assert.equal(res.status, 200, `${path}: ${show(res)}`);
+        assert.deepEqual(ids(res), [empX, selfX].sort(), `${path}: ${show(res)}`);
+      }
+      const all = await get(`/api/all-leave-balances?branchId=${x}`, cookie);
+      assert.equal(all.status, 200, show(all));
+      for (const id of [empX, selfX]) assert.ok(ids(all).includes(id), `all-leave-balances lacks ${id}: ${show(all)}`);
+    }
+  });
+  await check("a branch-scoped manager reads a branch-X employee's balance on every per-employee read", async () => {
+    for (const path of PER_EMPLOYEE) await allowed(path(empX), managerAtX);
+  });
+  await check("the rota's own-balance read still finds the staff member's row", async () => {
+    // rota.tsx: GET /api/leave-balances?branchId= and /api/all-leave-balances?branchId=,
+    // then a lookup by the staff member's own employee id (from /api/my-time-off).
+    const mine = await get("/api/my-time-off", staff);
+    assert.equal(mine.status, 200, show(mine));
+    const own = (mine.body as { employeeId: string }).employeeId;
+    assert.equal(own, selfX);
+    for (const path of [`/api/leave-balances?branchId=${x}`, `/api/all-leave-balances?branchId=${x}`]) {
+      const res = await get(path, staff);
+      assert.ok(ids(res).includes(own), `${path}: ${show(res)}`);
+    }
   });
 
   console.log(`leave-balance-reach.check: ${checks} checks passed`);
