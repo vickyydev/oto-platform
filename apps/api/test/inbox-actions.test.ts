@@ -3,7 +3,7 @@ import { and, asc, eq, isNull } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { schema as s } from '@oto/db';
 import type { SimulatedInbound } from '@oto/messaging';
-import { newId, type InboxActionResult } from '@oto/shared';
+import { newId, type InboxActionResult, type InboxBranchResult } from '@oto/shared';
 import { HOSTING_RULE_PRIORITY, INBOX_ACTION_MESSAGES } from '../src/services/inbox/actions';
 import { SESSION_COOKIE, hashToken, newSessionToken } from '../src/plugins/session';
 import {
@@ -624,11 +624,19 @@ describe('move: another team, re-routed', () => {
 });
 
 describe('the branch: confirming a birthday’s branch adds the hosting birthday manager', () => {
-  it('Chalong confirmed: the host joins the free support place, once', async () => {
+  /** The branch's name as the pill and the audit row carry it. */
+  const branchName = async (id: string) => (await ctx.db.select({ name: s.branch.name }).from(s.branch).where(eq(s.branch.id, id)))[0]!.name;
+
+  it('Chalong confirmed: the host joins the free support place, once — the result names them, the pill names the branch', async () => {
     const id = await bday(); // at Central (the channel account's park)
-    const res = await call<InboxActionResult & { hostAdded: boolean }>('gm', 'PATCH', at(id, 'branch'), { branchId: chalong });
+    const res = await call<InboxBranchResult>('gm', 'PATCH', at(id, 'branch'), { branchId: chalong });
     expect(res.status, JSON.stringify(res.body)).toBe(200);
-    expect(res.body).toMatchObject({ hostAdded: true, conversation: { branchId: chalong } });
+    expect(res.body).toMatchObject({
+      hostAdded: true,
+      hostSkipped: null,
+      host: { accountId: people.host, name: 'Actions Chalong Host' },
+      conversation: { branchId: chalong },
+    });
     expect(await seated(id)).toEqual([
       [0, people.bdayA, 'auto'],
       [1, people.bdayB, 'auto'],
@@ -636,27 +644,56 @@ describe('the branch: confirming a birthday’s branch adds the hosting birthday
     ]);
     const host = (await slots(id)).find((a) => a.accountId === people.host)!;
     expect(host.assignedByKind).toBe('system');
-    expect((await eventsOf(id, 'branch_set'))[0]!.payload).toEqual({ fromBranchId: central, toBranchId: chalong });
+    expect((await eventsOf(id, 'branch_set'))[0]!.payload).toEqual({
+      fromBranchId: central,
+      toBranchId: chalong,
+      fromBranchName: await branchName(central),
+      branchName: await branchName(chalong),
+    });
+    expect((await auditsOf(id, 'inbox.conversation.branch'))[0]!.after).toMatchObject({
+      branchId: chalong,
+      branchName: await branchName(chalong),
+      changed: true,
+      hostSkipped: null,
+    });
 
-    const again = await call<{ hostAdded: boolean }>('gm', 'PATCH', at(id, 'branch'), { branchId: chalong });
-    expect(again.body.hostAdded).toBe(false);
+    const again = await call<InboxBranchResult>('gm', 'PATCH', at(id, 'branch'), { branchId: chalong });
+    expect(again.body).toMatchObject({ hostAdded: false, hostSkipped: 'already_on', host: null });
     expect(await eventsOf(id, 'branch_set')).toHaveLength(1);
     expect((await auditsOf(id, 'inbox.conversation.branch'))[1]!.after).toMatchObject({ changed: false, hostSkipped: 'already_on' });
   });
 
-  it('no free place: the branch is set, the host is not added', async () => {
+  it('no free place: the branch is set, the host is not added, and the result says why', async () => {
     const id = await bday();
     await call('gm', 'POST', at(id, 'support'), { accountId: people.coord });
-    const res = await call<{ hostAdded: boolean }>('gm', 'PATCH', at(id, 'branch'), { branchId: chalong });
-    expect(res.body.hostAdded).toBe(false);
+    const res = await call<InboxBranchResult>('gm', 'PATCH', at(id, 'branch'), { branchId: chalong });
+    expect(res.body).toMatchObject({ hostAdded: false, hostSkipped: 'support_full', host: null, conversation: { branchId: chalong } });
     expect((await auditsOf(id, 'inbox.conversation.branch'))[0]!.after).toMatchObject({ hostSkipped: 'support_full' });
   });
 
-  it('a general conversation, or a branch with no host, adds nobody; an unknown branch is 404', async () => {
+  it('a general conversation, or a branch with no host, adds nobody and says so; clearing the branch names nothing; an unknown branch is 404', async () => {
     const g = await general();
-    expect((await call<{ hostAdded: boolean }>('gm', 'PATCH', at(g, 'branch'), { branchId: chalong })).body.hostAdded).toBe(false);
+    // Not a birthday: the host step does not run, so there is no reason to give.
+    expect((await call<InboxBranchResult>('gm', 'PATCH', at(g, 'branch'), { branchId: chalong })).body).toMatchObject({
+      hostAdded: false,
+      hostSkipped: null,
+      host: null,
+    });
     const b = await bday();
-    expect((await call<{ hostAdded: boolean }>('gm', 'PATCH', at(b, 'branch'), { branchId: central })).body.hostAdded).toBe(false);
+    // Central names no hosting manager.
+    expect((await call<InboxBranchResult>('gm', 'PATCH', at(b, 'branch'), { branchId: central })).body).toMatchObject({
+      hostAdded: false,
+      hostSkipped: 'no_host',
+      host: null,
+    });
+    const cleared = await call<InboxBranchResult>('gm', 'PATCH', at(b, 'branch'), { branchId: null });
+    expect(cleared.body).toMatchObject({ hostAdded: false, hostSkipped: null, host: null, conversation: { branchId: null } });
+    expect((await eventsOf(b, 'branch_set')).at(-1)!.payload).toEqual({
+      fromBranchId: central,
+      toBranchId: null,
+      fromBranchName: await branchName(central),
+      branchName: null,
+    });
     const unknown = await call<Refusal>('gm', 'PATCH', at(b, 'branch'), { branchId: newId() });
     expect(unknown.status).toBe(404);
     expect(unknown.body.error.message).toBe('Branch not found');

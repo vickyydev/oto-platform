@@ -4,6 +4,7 @@ import {
   assignment,
   branch,
   conversation,
+  employee,
   inboxEvent,
   roleAssignment,
   rolePermission,
@@ -12,7 +13,13 @@ import {
   type InboxCategory,
   type InboxTeamKey,
 } from '@oto/db';
-import { newId, type InboxActionResult, type Permission } from '@oto/shared';
+import {
+  newId,
+  type InboxActionResult,
+  type InboxBranchResult,
+  type InboxHostSkipReason,
+  type Permission,
+} from '@oto/shared';
 import { audit } from '../audit';
 import { hasPermission, type EffectivePermission } from '../permissions';
 import { PermissionDeniedError } from '../../plugins/session';
@@ -753,38 +760,63 @@ export async function moveTeam(
 
 // --- BRANCH: set and confirm; the birthday host joins ------------------------------------------
 
+/**
+ * The result says what the birthday step did and why (SCRUM-220 test night,
+ * R4): `host` is the manager who joined, `hostSkipped` the one reason they
+ * did not — no hosting rule names a person at that branch, the person named
+ * is not an active account, they are on the thread already, both support
+ * places are taken — and null on a thread that is not a birthday or when a
+ * host joined. The pill and the audit row carry the branch's name.
+ */
 export async function setBranch(
   tx: Tx,
   ctx: ActionCtx,
   input: { conversationId: string; branchId: string | null },
-): Promise<InboxActionResult & { hostAdded: boolean }> {
+): Promise<InboxBranchResult> {
   const l = await loadForAction(tx, ctx, input.conversationId);
   requireAt(ctx, 'inbox:conversation:assign', l);
   const { operatorId } = ctx.viewer;
+  let branchName: string | null = null;
   if (input.branchId !== null) {
     const [b] = await tx
-      .select({ id: branch.id })
+      .select({ id: branch.id, name: branch.name })
       .from(branch)
       .where(and(eq(branch.id, input.branchId), eq(branch.operatorId, operatorId), isNull(branch.archivedAt)))
       .limit(1);
     if (!b) throw errors.notFound(INBOX_ACTION_MESSAGES.branchNotFound);
+    branchName = b.name;
   }
 
   const changed = input.branchId !== l.conv.branchId;
   if (changed) {
+    const fromBranchName = l.conv.branchId
+      ? ((
+          await tx
+            .select({ name: branch.name })
+            .from(branch)
+            .where(and(eq(branch.id, l.conv.branchId), eq(branch.operatorId, operatorId)))
+            .limit(1)
+        )[0]?.name ?? null)
+      : null;
     await tx
       .update(conversation)
       .set({ branchId: input.branchId, updatedAt: ctx.now })
       .where(and(eq(conversation.operatorId, operatorId), eq(conversation.id, l.conv.id)));
-    await tx
-      .insert(inboxEvent)
-      .values(actionEvent(ctx, l.conv.id, 'branch_set', { fromBranchId: l.conv.branchId, toBranchId: input.branchId }));
+    await tx.insert(inboxEvent).values(
+      actionEvent(ctx, l.conv.id, 'branch_set', {
+        fromBranchId: l.conv.branchId,
+        toBranchId: input.branchId,
+        fromBranchName,
+        branchName,
+      }),
+    );
   }
 
   // The birthday step: the manager who hosts at the confirmed branch joins as
   // support, when a place is free and they are not on it already.
   let host: NewSlot | null = null;
-  let hostSkipped: string | null = null;
+  let hostName: string | null = null;
+  let hostSkipped: InboxHostSkipReason | null = null;
   if (l.conv.category === 'birthdays' && input.branchId !== null) {
     const [rule] = await tx
       .select()
@@ -806,8 +838,9 @@ export async function setBranch(
     const live = hostId
       ? (
           await tx
-            .select({ id: account.id })
+            .select({ id: account.id, name: employee.name })
             .from(account)
+            .leftJoin(employee, eq(employee.id, account.employeeId))
             .where(and(eq(account.id, hostId), eq(account.operatorId, operatorId), eq(account.status, 'active')))
             .limit(1)
         )[0]
@@ -827,6 +860,7 @@ export async function setBranch(
           teamId: null,
           reason: 'auto',
         };
+        hostName = live.name ?? null;
         await seatSlots(tx, ctx, l.conv.id, [host], 'system');
       }
     }
@@ -840,13 +874,19 @@ export async function setBranch(
     { branchId: l.conv.branchId },
     {
       branchId: input.branchId,
+      branchName,
       changed,
       host: host ? { id: host.id, slotIndex: host.slotIndex, accountId: host.accountId } : null,
       hostSkipped,
     },
   );
   await quietAssistant(tx, ctx, l.conv.id, 'ASSIGNED');
-  return { ...(await actionResult(tx, ctx, l.conv.id, false)), hostAdded: host !== null };
+  return {
+    ...(await actionResult(tx, ctx, l.conv.id, false)),
+    hostAdded: host !== null,
+    hostSkipped,
+    host: host ? { accountId: host.accountId!, name: hostName } : null,
+  };
 }
 
 // --- HANDLED and REOPEN ------------------------------------------------------------------------

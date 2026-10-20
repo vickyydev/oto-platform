@@ -1,6 +1,7 @@
 import type { FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import {
+  InboxActionRefusalSchema,
   InboxActionResultSchema,
   InboxBranchBodySchema,
   InboxBranchResultSchema,
@@ -79,7 +80,7 @@ export async function inboxActionRoutes(app: App): Promise<void> {
           REFUSALS,
         params: ConversationParams,
         body: InboxPrimaryBodySchema,
-        response: { 200: InboxActionResultSchema },
+        response: { 200: InboxActionResultSchema, 409: InboxActionRefusalSchema },
       },
     },
     async (req) => {
@@ -102,7 +103,7 @@ export async function inboxActionRoutes(app: App): Promise<void> {
           REFUSALS,
         params: ConversationParams,
         body: InboxSupportBodySchema,
-        response: { 200: InboxActionResultSchema },
+        response: { 200: InboxActionResultSchema, 409: InboxActionRefusalSchema },
       },
     },
     async (req) => {
@@ -124,7 +125,7 @@ export async function inboxActionRoutes(app: App): Promise<void> {
           'the conversation. ' +
           REFUSALS,
         params: InboxSupportParamsSchema,
-        response: { 200: InboxActionResultSchema },
+        response: { 200: InboxActionResultSchema, 409: InboxActionRefusalSchema },
       },
     },
     async (req) => {
@@ -147,7 +148,7 @@ export async function inboxActionRoutes(app: App): Promise<void> {
           'inbox:conversation:assign at the conversation. ' +
           REFUSALS,
         params: ConversationParams,
-        response: { 200: InboxActionResultSchema },
+        response: { 200: InboxActionResultSchema, 409: InboxActionRefusalSchema },
       },
     },
     async (req) => {
@@ -171,7 +172,7 @@ export async function inboxActionRoutes(app: App): Promise<void> {
           REFUSALS,
         params: ConversationParams,
         body: InboxMoveBodySchema,
-        response: { 200: InboxActionResultSchema },
+        response: { 200: InboxActionResultSchema, 409: InboxActionRefusalSchema },
       },
     },
     async (req) => {
@@ -194,7 +195,7 @@ export async function inboxActionRoutes(app: App): Promise<void> {
           REFUSALS,
         params: ConversationParams,
         body: InboxBranchBodySchema,
-        response: { 200: InboxBranchResultSchema },
+        response: { 200: InboxBranchResultSchema, 409: InboxActionRefusalSchema },
       },
     },
     async (req) => {
@@ -216,7 +217,7 @@ export async function inboxActionRoutes(app: App): Promise<void> {
           'the conversation or the permission at it (its team). ' +
           REFUSALS,
         params: ConversationParams,
-        response: { 200: InboxActionResultSchema },
+        response: { 200: InboxActionResultSchema, 409: InboxActionRefusalSchema },
       },
     },
     async (req) => {
@@ -239,7 +240,7 @@ export async function inboxActionRoutes(app: App): Promise<void> {
           'the conversation. ' +
           REFUSALS,
         params: ConversationParams,
-        response: { 200: InboxActionResultSchema },
+        response: { 200: InboxActionResultSchema, 409: InboxActionRefusalSchema },
       },
     },
     async (req) => {

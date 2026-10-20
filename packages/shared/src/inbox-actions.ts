@@ -86,5 +86,39 @@ export const InboxActionResultSchema = z.object({
 });
 export type InboxActionResult = z.infer<typeof InboxActionResultSchema>;
 
-/** `PATCH …/branch` also says whether the branch's hosting birthday manager joined as support. */
-export const InboxBranchResultSchema = InboxActionResultSchema.extend({ hostAdded: z.boolean() });
+/**
+ * Why the branch step added no host (SCRUM-220 test night, R4): no hosting
+ * rule names a person at that branch; the person named is not an active
+ * account; they are on the thread already; both support places are taken.
+ */
+export const INBOX_HOST_SKIP_REASONS = ['no_host', 'host_inactive', 'already_on', 'support_full'] as const;
+export type InboxHostSkipReason = (typeof INBOX_HOST_SKIP_REASONS)[number];
+
+/**
+ * `PATCH …/branch` also says what the birthday step did: `hostAdded`, and
+ * then either `host` (who joined) or `hostSkipped` (the one reason nobody
+ * did). Both are null on a thread that is not a birthday.
+ */
+export const InboxBranchResultSchema = InboxActionResultSchema.extend({
+  hostAdded: z.boolean(),
+  hostSkipped: z.enum(INBOX_HOST_SKIP_REASONS).nullable(),
+  /** The hosting birthday manager who joined as support: their account and their name (null when no employee record). */
+  host: z.object({ accountId: Uuid, name: z.string().nullable() }).nullable(),
+});
+export type InboxBranchResult = z.infer<typeof InboxBranchResultSchema>;
+
+/**
+ * The 409 an action answers (SCRUM-220 test night, R8): the platform's error
+ * envelope, with `code` one of `INBOX_ACTION_REFUSALS` for the action's own
+ * refusals — `SUPPORT_FULL` says "Both support places are taken. Remove
+ * someone first." — or an idempotency code. Said here so the shell can show
+ * the sentence rather than a generic failure.
+ */
+export const InboxActionRefusalSchema = z.object({
+  error: z.object({
+    code: z.string(),
+    message: z.string(),
+    details: z.record(z.string(), z.unknown()).optional(),
+  }),
+});
+export type InboxActionRefusalBody = z.infer<typeof InboxActionRefusalSchema>;
