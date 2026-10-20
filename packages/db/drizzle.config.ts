@@ -12,12 +12,13 @@ export default defineConfig({
   /**
    * Only the schemas this package owns (S2-01b): `OWNED_SCHEMAS` in
    * `src/schema/helpers.ts`, spelled out here because drizzle-kit loads this
-   * file on its own. `inbox` joined with I1 (SCRUM-578). Everything else on the
+   * file on its own. `inbox` joined with I1 (SCRUM-578),
+   * `assistant` with SCRUM-591. Everything else on the
    * same database — the lifted apps' schemas (`otoapp`, `radar`) and the job
    * runner's managed `pgboss` — is migrated by its own tool, and without this
    * filter a Drizzle diff would offer to drop every one of them.
    */
-  schemaFilter: ['core', 'crm', 'pos', 'promo', 'booth', 'analytics', 'edge', 'inbox'],
+  schemaFilter: ['core', 'crm', 'pos', 'promo', 'booth', 'analytics', 'edge', 'inbox', 'assistant'],
   strict: true,
   verbose: true,
 });

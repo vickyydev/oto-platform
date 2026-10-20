@@ -326,6 +326,22 @@ export const PERMISSIONS = [
    * A decision, not an edit: held by `inbox_admin` only.
    */
   'inbox:ai:manage',
+  // The internal assistant (SCRUM-591; plan
+  // docs/progress/plans/internal-assistant-build/PLAN.md §D.3, §E.2, R5).
+  /**
+   * Ask the assistant on the launcher. A switch, not a fence: every tool call
+   * is made as the person, so what an ask can reveal is the routes' own
+   * fences. In every staff bundle and every inbox role; taking it out of a
+   * role switches the assistant off for that role without a deploy (G3).
+   */
+  'assistant:ask:use',
+  /**
+   * Read other people's ask-log rows and the correction list (§D.3), every
+   * read audited. Operator scope; only `operator_admin` and `platform_admin`
+   * hold it, through `ALL`. Branch managers do not read their staff's
+   * questions (owner G3 default).
+   */
+  'assistant:log:review',
   // Which of the suite's apps a person may open (S2-02). Access is separate
   // from what they may do once inside: a nanny with POS permissions still has
   // no business on the console.
@@ -521,6 +537,8 @@ export const ROLE_BUNDLES: Record<SystemRole, Permission[]> = {
     'app:console:access',
     'app:booth:access',
     'booth:staff:sign_in',
+    // SCRUM-591: the internal assistant, in every staff bundle (plan §E.2).
+    'assistant:ask:use',
   ],
   reception: [
     ...READ_COUNTER,
@@ -566,6 +584,7 @@ export const ROLE_BUNDLES: Record<SystemRole, Permission[]> = {
     'app:pos:access',
     'app:booth:access',
     'booth:staff:sign_in',
+    'assistant:ask:use',
   ],
   // `pos:cash:day_close` (S2-15a): `staff` opens the Today screen too, and the
   // prototype lets anybody who can open End of Day close it.
@@ -577,6 +596,7 @@ export const ROLE_BUNDLES: Record<SystemRole, Permission[]> = {
     'app:pos:access',
     'app:booth:access',
     'booth:staff:sign_in',
+    'assistant:ask:use',
   ],
 };
 
@@ -605,6 +625,9 @@ const INBOX_AGENT: Permission[] = [
   'inbox:conversation:reply',
   'inbox:conversation:handle',
   'inbox:dashboard:read',
+  // SCRUM-591: a department-only inbox agent is staff too (plan §E.2, golden
+  // Q10). Reaches roles laid before it through `INBOX_ROLE_LATE_GRANTS`.
+  'assistant:ask:use',
 ];
 const INBOX_MANAGER: Permission[] = [
   ...INBOX_AGENT,

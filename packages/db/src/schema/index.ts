@@ -48,3 +48,6 @@ export * from './parties';
 // The Unified Inbox (S2-19 I1): its own schema, keyed on the tenancy and the
 // files it names and on nothing else of ours.
 export * from './inbox';
+// The internal assistant's ask-log (SCRUM-591): its own schema, keyed on the
+// tenancy and nothing else of ours.
+export * from './assistant';

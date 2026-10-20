@@ -22,6 +22,9 @@ import { pgSchema, timestamp, uuid } from 'drizzle-orm/pg-core';
  *             their messages, owners and timeline (S2-19). Anticipated as a
  *             foreign app's schema until I1 (SCRUM-578) built it here, on
  *             the platform's own migrations.
+ *   assistant the internal assistant's ask-log: each question a person asked,
+ *             the answer they were shown and the tool calls made for them
+ *             as them (SCRUM-591, `0081_assistant`).
  *
  * `pgboss` is the job runner's own managed schema: outside Drizzle, created
  * by its own migrator in the deploy step, and deliberately excluded from
@@ -35,9 +38,10 @@ export const booth = pgSchema('booth');
 export const analytics = pgSchema('analytics');
 export const edge = pgSchema('edge');
 export const inbox = pgSchema('inbox');
+export const assistant = pgSchema('assistant');
 
 /** Every schema this package owns — the list `schemaFilter` is built from. */
-export const OWNED_SCHEMAS = ['core', 'crm', 'pos', 'promo', 'booth', 'analytics', 'edge', 'inbox'] as const;
+export const OWNED_SCHEMAS = ['core', 'crm', 'pos', 'promo', 'booth', 'analytics', 'edge', 'inbox', 'assistant'] as const;
 
 /** Every table: created_at / updated_at (CLAUDE.md §8). */
 export const timestamps = {

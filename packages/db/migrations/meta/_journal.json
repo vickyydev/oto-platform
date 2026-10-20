@@ -568,6 +568,13 @@
       "when": 1792459383758,
       "tag": "0080_inbox_ai",
       "breakpoints": true
+    },
+    {
+      "idx": 81,
+      "version": "7",
+      "when": 1792473877323,
+      "tag": "0081_assistant",
+      "breakpoints": true
     }
   ]
 }

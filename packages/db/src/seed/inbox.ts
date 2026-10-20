@@ -201,9 +201,16 @@ const emptyCounts = (): InboxSyncCounts => ({
  * permission joins this list only together with its bundle above, so on a
  * freshly laid role every entry is already present and the step writes
  * nothing.
+ *
+ * SCRUM-591 (internal assistant, round I1): `assistant:ask:use` joined all
+ * three bundles (plan §E.2, R5), so a department-only inbox agent can ask the
+ * launcher's assistant too. The system bundles take it from `platformSync`,
+ * which re-syncs them; these operator roles take it from here, once.
  */
 export const INBOX_ROLE_LATE_GRANTS: Readonly<Partial<Record<InboxRole, readonly Permission[]>>> = {
-  inbox_admin: ['inbox:kb:manage', 'inbox:ai:manage'],
+  inbox_agent: ['assistant:ask:use'],
+  inbox_manager: ['assistant:ask:use'],
+  inbox_admin: ['inbox:kb:manage', 'inbox:ai:manage', 'assistant:ask:use'],
 };
 
 /** Find-or-create a department by (operator, branch, name). Returns its id and whether it was made. */

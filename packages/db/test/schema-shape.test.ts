@@ -219,7 +219,8 @@ describe('tenancy columns (SCRUM-292)', () => {
     expect(new Set(TABLES.map((t) => t.cfg.schema))).toEqual(
       // `analytics` since S2-12 round 4: `fact_occupancy_15min`, the first fact table.
       // `inbox` since S2-19 I1 (SCRUM-578): the Unified Inbox's fifteen tables.
-      new Set(['core', 'crm', 'pos', 'promo', 'booth', 'edge', 'analytics', 'inbox']),
+      // `assistant` since SCRUM-591: the internal assistant's ask-log.
+      new Set(['core', 'crm', 'pos', 'promo', 'booth', 'edge', 'analytics', 'inbox', 'assistant']),
     );
   });
 

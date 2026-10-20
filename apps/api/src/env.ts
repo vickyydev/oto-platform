@@ -743,6 +743,40 @@ const EnvSchema = z.object({
   INBOX_AI_DEBOUNCE_MAX_S: z.coerce.number().int().min(0).max(3600).default(60),
   INBOX_AI_DAILY_TURN_CAP: z.coerce.number().int().min(0).default(1500),
   INBOX_AI_DAILY_TOKEN_CAP: z.coerce.number().int().min(0).default(30_000_000),
+
+  /**
+   * THE INTERNAL ASSISTANT (SCRUM-591; plan
+   * `docs/progress/plans/internal-assistant-build/PLAN.md` §E.2). Staff ask on
+   * the launcher, and every tool call is made AS the asker. Off unless
+   * switched on here, and for a role by `assistant:ask:use` (in every staff
+   * bundle by default): two kill switches. It shares `ANTHROPIC_API_KEY` and
+   * `ANTHROPIC_BASE_URL` with the customer assistant (R2).
+   *
+   *  - `INTERNAL_AI_ENABLED` — the deploy-wide switch. `true` with no
+   *    `ANTHROPIC_API_KEY` refuses the boot (`assertProductionSafe`).
+   *  - `INTERNAL_AI_MODEL`, `INTERNAL_AI_EFFORT`, `INTERNAL_AI_TIMEOUT_MS` —
+   *    each model call (owner G8).
+   *  - `INTERNAL_AI_MAX_TOOL_CALLS`, `INTERNAL_AI_ASK_WALL_MS` — per ask; past
+   *    either the answer is the best link (`TOOL_CAP`).
+   *  - `INTERNAL_AI_PERSON_DAILY_CAP` — asks per account per Bangkok day.
+   *  - `INTERNAL_AI_DAILY_ASK_CAP`, `INTERNAL_AI_DAILY_TOKEN_CAP` — per
+   *    operator per Bangkok day.
+   *  - `INTERNAL_AI_OTOAPP_TOOLS` — round I4's own switch: off, the OTO App
+   *    tools are not offered at all.
+   */
+  INTERNAL_AI_ENABLED: z.enum(['true', 'false']).default('false'),
+  INTERNAL_AI_MODEL: z
+    .string()
+    .regex(/^[A-Za-z0-9][A-Za-z0-9._:-]{0,79}$/, 'a model id, one word')
+    .default('claude-opus-5-5'),
+  INTERNAL_AI_EFFORT: z.enum(['low', 'medium', 'high', 'xhigh', 'max']).default('low'),
+  INTERNAL_AI_TIMEOUT_MS: z.coerce.number().int().min(1000).max(120_000).default(20_000),
+  INTERNAL_AI_MAX_TOOL_CALLS: z.coerce.number().int().min(0).max(20).default(6),
+  INTERNAL_AI_ASK_WALL_MS: z.coerce.number().int().min(1000).max(300_000).default(45_000),
+  INTERNAL_AI_PERSON_DAILY_CAP: z.coerce.number().int().min(0).default(40),
+  INTERNAL_AI_DAILY_ASK_CAP: z.coerce.number().int().min(0).default(600),
+  INTERNAL_AI_DAILY_TOKEN_CAP: z.coerce.number().int().min(0).default(15_000_000),
+  INTERNAL_AI_OTOAPP_TOOLS: z.enum(['true', 'false']).default('false'),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
@@ -1010,6 +1044,13 @@ export function assertProductionSafe(env: Env): void {
   if (env.INBOX_AI_ENABLED === 'true' && !(env.ANTHROPIC_API_KEY ?? '').trim()) {
     problems.push('INBOX_AI_ENABLED is true but ANTHROPIC_API_KEY is not set — the assistant has no model to ask');
   }
+  // SCRUM-591 (plan §E.2, R2): the same refusal for the internal assistant,
+  // sharing the one key. Named, never its value.
+  if (env.INTERNAL_AI_ENABLED === 'true' && !(env.ANTHROPIC_API_KEY ?? '').trim()) {
+    problems.push(
+      'INTERNAL_AI_ENABLED is true but ANTHROPIC_API_KEY is not set — the internal assistant has no model to ask',
+    );
+  }
 
   if (problems.length) {
     throw new Error(
@@ -1050,6 +1091,9 @@ export function loadEnv(overrides: Partial<Record<keyof Env, string>> = {}): Env
     // suites inject a fake client and switch the assistant on themselves.
     if (overrides.ANTHROPIC_API_KEY === undefined) raw.ANTHROPIC_API_KEY = '';
     if (overrides.INBOX_AI_ENABLED === undefined) raw.INBOX_AI_ENABLED = 'false';
+    // And the internal assistant (SCRUM-591), for the same reason.
+    if (overrides.INTERNAL_AI_ENABLED === undefined) raw.INTERNAL_AI_ENABLED = 'false';
+    if (overrides.INTERNAL_AI_OTOAPP_TOOLS === undefined) raw.INTERNAL_AI_OTOAPP_TOOLS = 'false';
   }
   const env = EnvSchema.parse(raw);
   assertProductionSafe(env);

@@ -706,6 +706,34 @@ services:
       - key: INBOX_AI_DAILY_TOKEN_CAP
         sync: false
 
+      # -- the internal assistant (SCRUM-591) -----------------------------------
+      # Names only: set in the dashboard (no blueprint is linked). Off unless
+      # INTERNAL_AI_ENABLED=true; true without ANTHROPIC_API_KEY (shared with
+      # the customer assistant, above) refuses the boot. Defaults when unset:
+      # model claude-opus-5-5, effort low, timeout 20000, 6 tool calls and
+      # 45000 ms per ask, 40 asks per person, 600 asks / 15000000 tokens per
+      # operator per day, OTO App tools off.
+      - key: INTERNAL_AI_ENABLED
+        sync: false
+      - key: INTERNAL_AI_MODEL
+        sync: false
+      - key: INTERNAL_AI_EFFORT
+        sync: false
+      - key: INTERNAL_AI_TIMEOUT_MS
+        sync: false
+      - key: INTERNAL_AI_MAX_TOOL_CALLS
+        sync: false
+      - key: INTERNAL_AI_ASK_WALL_MS
+        sync: false
+      - key: INTERNAL_AI_PERSON_DAILY_CAP
+        sync: false
+      - key: INTERNAL_AI_DAILY_ASK_CAP
+        sync: false
+      - key: INTERNAL_AI_DAILY_TOKEN_CAP
+        sync: false
+      - key: INTERNAL_AI_OTOAPP_TOOLS
+        sync: false
+
       # -- error reporting -----------------------------------------------------
       - key: SENTRY_DSN
         # Optional. The error hook is a no-op while this is empty.
