@@ -1,0 +1,141 @@
+{
+  "golden": "Q4",
+  "note": "Fictional fixture world only (SCRUM-591 I5). Every Messages API response of the ask is recorded verbatim, in order; no request, header or key is stored.",
+  "requestedModel": "claude-opus-5-5",
+  "servedModel": "claude-opus-5-5",
+  "personaVersion": "internal-persona-2026-10-20.3",
+  "worldVersion": "world-e2d7de1186744fed",
+  "recordedOn": "2026-10-20",
+  "askedAt": "2026-10-20T07:43:23.453Z",
+  "ids": {
+    "operator": "01a15843-9034-7228-9849-6b1eb5b8514c",
+    "branch:hkt-central": "01a15843-9035-7fa9-b132-690455a6978b",
+    "branch:robinson-chalong": "01a15843-9036-7871-a4d2-0ab4d0b17c0a",
+    "department:reception@central": "01a15843-903e-76cb-986c-7519621a7dce",
+    "account:reception": "01a15843-9504-7527-a6ef-2a03fd258b69",
+    "account:manager": "01a15843-9518-746a-b96e-a9583efffa17",
+    "account:opsAdmin": "01a15843-952a-735e-b146-193e499a0e9d",
+    "account:inboxAgent": "01a15843-9538-703f-94df-34a37d80b7a4",
+    "account:staff": "01a15843-9545-7d02-97cc-5acc81f83860",
+    "member:mali": "01a15843-9553-77bd-bb20-c88be998bee1",
+    "member:somchai": "01a15843-9555-72ef-98c8-da2d50658ab6",
+    "employee:anan": "01a15843-9556-751e-b9cd-f282e1c494f1",
+    "conversation:1": "01a15843-958b-733b-9a7d-4e267ca1e44b",
+    "conversation:2": "01a15843-95b3-7b1a-bd87-0bdbd2cad5fd"
+  },
+  "responses": [
+    {
+      "model": "claude-opus-5-5",
+      "id": "msg_011CgD7b5NDNvce1JSTgPD37",
+      "type": "message",
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01M6dDbRxirC92pwVkCybyuD",
+          "name": "branches_list",
+          "input": {},
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "container": null,
+      "stop_reason": "tool_use",
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+        "input_tokens": 174,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 3561,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "iterations": [
+          {
+            "input_tokens": 174,
+            "output_tokens": 27,
+            "cache_read_input_tokens": 3561,
+            "cache_creation_input_tokens": 0,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "type": "message",
+            "model": null
+          }
+        ],
+        "output_tokens": 27,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "diagnostics": null
+    },
+    {
+      "model": "claude-opus-5-5",
+      "id": "msg_011CgD7bEWe8KZEerxzKrGui",
+      "type": "message",
+      "role": "assistant",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "CAQShgUKEAgTGAI4AUIIdGhpbmtpbmcSDI0/RFiD64dCBXcDzBoMqLlEHMzZca8/7lOlIjDHfq0X6RPYC7ad1ax39tjqOa/cx+6vTJda3eGNhfm2uaR0T7n42LM8Ki5Ou7SL1IsqowQLFYwZOWsOu2GOOAQetn06g/+s7//cfGAIHe+Up1nKs9zkvUXFGwZyrJRKegv2+OUMWSn8ZO+PbwZch8ISTD9OHSr3RZc96px0yUUc6KmnYAV5iWtGTAQmRI8zI26Vp43bCQTurywq1NGqZgB5N4pY01QD4vF3K2sBUE2Ak1S+yFbOPgoA5wBfNo3N0nltO6hqMhUtFxmYQTRlWvcS/eF9/EhioCQ29rlzNJrdWeCSDfgl6RwYBsJFuSsCyiM6Y5+hNBO6lVEHgmTlhr3HBUnsyNMiyqpZvCD36VngLcKtnPRvsb2AFCwalXOimB1c4tGdxrP38/f4acCeWYWcV5CH+aMf13fwY+OC8Fjax/pOIxmzDcFzCkHFP5RXQl8eEcPj7JW3FHvUDGnlCjrl8zuy1dt1t0qabRwMMbTrkbHElVz42LVjYP2Ian49PBgVWx0X0IuLqu6M78QZLVeBVTVHYmoqvBu2/dZqw9pzL1xtSypoHNeobBM0TFtV0sHtHm2ZGpRs+hzI855gJmrt6+jGcIpUHpajVt11E+kjNBnNQ9i4f1X45oUGImpZyJbFQAQdwgUD5kvvMwq4JZGRTj/5tPr48+Nz0l+gLlQkoQwyX91+FmcCHfLWLcZnWXODanP29AtJmdGz5OgMwLmqxgq3xTXTOqpyCRbCgsFOXZT8IYEvl+GBES4NJLHKq2I+VNW/DHCDUZsiuyYKulRvkWplzft7GAE="
+        },
+        {
+          "type": "text",
+          "text": "{\"answer\":\"I can't see a Chalong park from your account. The only park visible to you is Oto Play Park, Central Floresta (hkt-central), so I have no occupancy figure for Chalong.\",\"links\":[{\"key\":\"console.branches\",\"params\":[]}],\"language\":\"en\"}"
+        }
+      ],
+      "container": null,
+      "stop_reason": "end_turn",
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+        "input_tokens": 285,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 3561,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "iterations": [
+          {
+            "input_tokens": 285,
+            "output_tokens": 116,
+            "cache_read_input_tokens": 3561,
+            "cache_creation_input_tokens": 0,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "type": "message",
+            "model": null
+          }
+        ],
+        "output_tokens": 116,
+        "output_tokens_details": {
+          "thinking_tokens": 22
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "diagnostics": null
+    }
+  ],
+  "recorded": {
+    "state": "answered",
+    "reason": null,
+    "tools": [
+      "branches.list"
+    ],
+    "pass": true,
+    "failures": []
+  }
+}

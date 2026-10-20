@@ -1,0 +1,87 @@
+{
+  "golden": "Q7",
+  "note": "Fictional fixture world only (SCRUM-591 I5). Every Messages API response of the ask is recorded verbatim, in order; no request, header or key is stored.",
+  "requestedModel": "claude-opus-5-5",
+  "servedModel": "claude-opus-5-5",
+  "personaVersion": "internal-persona-2026-10-20.3",
+  "worldVersion": "world-e2d7de1186744fed",
+  "recordedOn": "2026-10-20",
+  "askedAt": "2026-10-20T07:43:35.081Z",
+  "ids": {
+    "operator": "01a15843-9034-7228-9849-6b1eb5b8514c",
+    "branch:hkt-central": "01a15843-9035-7fa9-b132-690455a6978b",
+    "branch:robinson-chalong": "01a15843-9036-7871-a4d2-0ab4d0b17c0a",
+    "department:reception@central": "01a15843-903e-76cb-986c-7519621a7dce",
+    "account:reception": "01a15843-9504-7527-a6ef-2a03fd258b69",
+    "account:manager": "01a15843-9518-746a-b96e-a9583efffa17",
+    "account:opsAdmin": "01a15843-952a-735e-b146-193e499a0e9d",
+    "account:inboxAgent": "01a15843-9538-703f-94df-34a37d80b7a4",
+    "account:staff": "01a15843-9545-7d02-97cc-5acc81f83860",
+    "member:mali": "01a15843-9553-77bd-bb20-c88be998bee1",
+    "member:somchai": "01a15843-9555-72ef-98c8-da2d50658ab6",
+    "employee:anan": "01a15843-9556-751e-b9cd-f282e1c494f1",
+    "conversation:1": "01a15843-958b-733b-9a7d-4e267ca1e44b",
+    "conversation:2": "01a15843-95b3-7b1a-bd87-0bdbd2cad5fd"
+  },
+  "responses": [
+    {
+      "model": "claude-opus-5-5",
+      "id": "msg_011CgD7bw5vdcbAFtd2RDg4Y",
+      "type": "message",
+      "role": "assistant",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "CAQStQUKEAgTGAI4AUIIdGhpbmtpbmcSDK591IgDkICe0651SxoMMz3yEVjMqjWkQSsVIjBdjagA3CtKdp9zFZ215pkyYRLneakXIPWyi2fLwDaukW6GNTGYumwMTN+ui/jYx/wq0gRRFk505lRqMyA6ngPyrL2pHiKNbxPR1xpdSwIWv3nS4JWkMwFWIsOpGC029velumu7WLBgjI8Pyw/pYzKUgyMPhA1LoMknbGnk+PlVt9OzbrfImGWtJrdsE4JxjNHyHeZl/npG6fGIPanMZJxOXScSUX3KDYCsrMlTw6OtuTm3JwKuQ+DWvQx7IAxTyX2r0R3+WTRdQDrqf1QoHZB+qhQXNZzsC+eO0yEExM+AqytUpotXD9eGmht7rTu5ai2BgH89gNc+w+aaHUc8kaAKIOF8zxN8NZTOihi9Ba4QmK93kBdxTFx8B1IC04YL0gd56Nr7jaFxliLWt8xwlX7Hc72T6EICMJzSUt4GAAfJzMy3oDtiWYWMnv9s3ms1Ncv3uDgOlIqEyNqOHr5KUyOq4VuSFUaa99rlqmEgRwoSPZ/e42rBxiczr/isueoT5dxOHvewdYTSi1+Ov1v5RsEODEhr6DbBh6cNyOGmwQU7IRJk4+TDPygQG08qSYqtvhnBddZ2b+Kc4u6i3qUKJ6z0PBRyjtwcRoXhxhMvU/LXoctQh7rBLxdZCh4zbBCBXIjT9E5SRx7ciV6jr6a/R9S21HmGbGVSBv7Wmrd8UxtnXHBDEE83tbDivYdAgWrIVy4KhAwFil56dJybwvNcBWgoJdnqjZgbBX4+t2C9SskE0aGik6yRD2ZC/erMYmCn26W47HhWa5hM12cnzBbNgUZECaC7QNE9JRVBzUystQpT209k7YkNprSqFNwcnaHm4Fen9rG9DBrqx0Tb16nTJVWovVRAxH8YAQ=="
+        },
+        {
+          "type": "text",
+          "text": "{\"answer\":\"I have no tool that reads the rota, so I can't see who is on shift with you tomorrow. Your rota shows your own shifts.\",\"links\":[{\"key\":\"oto.rota\",\"params\":[]}],\"language\":\"en\"}"
+        }
+      ],
+      "container": null,
+      "stop_reason": "end_turn",
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+        "input_tokens": 172,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 3561,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "iterations": [
+          {
+            "input_tokens": 172,
+            "output_tokens": 130,
+            "cache_read_input_tokens": 3561,
+            "cache_creation_input_tokens": 0,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "type": "message",
+            "model": null
+          }
+        ],
+        "output_tokens": 130,
+        "output_tokens_details": {
+          "thinking_tokens": 52
+        },
+        "service_tier": "standard",
+        "inference_geo": "global",
+        "speed": "standard"
+      },
+      "diagnostics": null
+    }
+  ],
+  "recorded": {
+    "state": "answered",
+    "reason": null,
+    "tools": [],
+    "pass": true,
+    "failures": []
+  }
+}
