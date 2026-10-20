@@ -1,4 +1,10 @@
-import { AnthropicAssistantClient, type AiEffort, type AssistantClient, type RandomSource } from '@oto/assistant';
+import {
+  AnthropicAssistantClient,
+  type AiEffort,
+  type AssistantClient,
+  type PacingConfig,
+  type RandomSource,
+} from '@oto/assistant';
 import type { FastifyBaseLogger } from 'fastify';
 import type { Env } from '../../env';
 
@@ -30,6 +36,8 @@ export interface InboxAiConfig {
   /** §D.4 guard 4, per operator per Bangkok day. */
   dailyTurnCap: number;
   dailyTokenCap: number;
+  /** §B.6 typing time, the two knobs (test night 2026-10-21, P). */
+  pacing: PacingConfig;
 }
 
 /** What the ingest needs to write a turn: the switch and the debounce. */
@@ -53,6 +61,7 @@ export function inboxAiConfigOf(env: Env): InboxAiConfig {
     debounceMaxMs: Math.max(env.INBOX_AI_DEBOUNCE_MAX_S, env.INBOX_AI_DEBOUNCE_S) * 1000,
     dailyTurnCap: env.INBOX_AI_DAILY_TURN_CAP,
     dailyTokenCap: env.INBOX_AI_DAILY_TOKEN_CAP,
+    pacing: { firstBubbleMaxMs: env.INBOX_AI_FIRST_BUBBLE_MS, bubbleGapMaxMs: env.INBOX_AI_BUBBLE_GAP_MS },
   };
 }
 

@@ -11,6 +11,7 @@ import {
   type EpisodeMessage,
   type EpisodeState,
   type GateVerdict,
+  type PacingConfig,
   type TurnUsage,
 } from '@oto/assistant';
 import {
@@ -237,7 +238,10 @@ async function loadEpisode(db: Exec, conv: ConversationRow, episodeStart: Date):
         eq(message.operatorId, conv.operatorId),
         eq(message.conversationId, conv.id),
         gte(message.createdAt, episodeStart),
-        sql`${message.providerStatus} is distinct from 'withdrawn'`,
+        // Never a withdrawn line, and never a shadow one (test night 2026-10-21,
+        // W5): what the assistant would have said is staff's to read, not a
+        // reply the customer saw.
+        sql`coalesce(${message.providerStatus}, '') not in ('withdrawn', 'shadow')`,
       ),
     )
     .orderBy(desc(message.id))
@@ -774,6 +778,9 @@ async function closeTurn(
       // only keys the prompt offered, never a string the model invented.
       gate: v && v.action === 'silent' ? (v.rule ?? null) : null,
       groundingKeys: v && v.action === 'answer' ? v.groundingKeys : [],
+      // Every part the burst held (test night 2026-10-21, D1a): the turn row
+      // keeps the primary in `intent`; the audit keeps them all.
+      intents: v?.intents ?? d?.intents ?? null,
       cacheWriteTokens: r.usage?.cacheWriteTokens ?? null,
     },
   });
@@ -786,9 +793,10 @@ async function writeLines(
   items: LineItem[],
   at: Date,
   random: () => number,
+  pacing: PacingConfig,
 ): Promise<string[]> {
   if (items.length === 0) return [];
-  const due = scheduleBubbles(at, items.map((i) => i.body ?? ''), random);
+  const due = scheduleBubbles(at, items.map((i) => i.body ?? ''), random, pacing);
   const rows = items.map((item, i) => ({
     id: newId(),
     operatorId: conv.operatorId,
@@ -821,6 +829,42 @@ async function writeLines(
     })
     .where(and(eq(conversation.operatorId, conv.operatorId), eq(conversation.id, conv.id)));
   return rows.map((r) => r.id);
+}
+
+/**
+ * A shadow turn's reply, kept for staff (test night 2026-10-21, W5): ONE
+ * `author_kind 'ai'` row with `provider_status 'shadow'`, the lines joined
+ * with a newline, and no `next_attempt_at` — the send claim takes `queued`
+ * rows only, so it never leaves. It lives where message text already lives,
+ * so the erasure and the retention sweep redact it with every other line;
+ * the episode loader skips it, and the thread's last-message fields do not
+ * move (nobody received anything). Null when there was nothing to say.
+ */
+async function writeShadowLine(tx: Tx, conv: ConversationRow, language: AiReplyLanguage, lines: readonly string[], at: Date): Promise<string | null> {
+  const body = lines.map((l) => l.trim()).filter((l) => l.length > 0).join('\n');
+  if (body.length === 0) return null;
+  const id = newId();
+  await tx.insert(message).values({
+    id,
+    operatorId: conv.operatorId,
+    conversationId: conv.id,
+    channelAccountId: conv.channelAccountId,
+    direction: 'outbound',
+    authorKind: 'ai',
+    body,
+    bodyLanguage: language,
+    templateId: null,
+    mediaFileIds: [],
+    // In the column's CHECK (`0084_inbox_ai_shadow`) but not in the rails'
+    // `MessageStoredStatus`, whose readers rank and move deliveries this row
+    // never joins (`MESSAGE_CHECK_STATUSES`); written as SQL for that reason.
+    providerStatus: sql`'shadow'`,
+    source: 'channel',
+    nextAttemptAt: null,
+    createdAt: at,
+    updatedAt: at,
+  });
+  return id;
 }
 
 function event(conv: ConversationRow, kind: typeof inboxEvent.$inferInsert.kind, payload: Record<string, unknown>, at: Date) {
@@ -901,9 +945,40 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
       const v = r.verdict;
       const reason = r.silence ?? (v ? v.reason : 'PROVIDER_ERROR');
 
-      // SHADOW (§B.5): the decision on the turn, nothing on the thread.
+      // SHADOW (§B.5): the decision on the turn, and nothing the customer
+      // sees. Since the test night (2026-10-21, W5) what it WOULD have said —
+      // the answer, and the holding line a hand-over would have sent — is kept
+      // as one `shadow` message row for staff, named by an `ai_shadow` pill;
+      // the thread's routing, intent, language and last-message fields stay
+      // as they are. A silent decision keeps nothing: nothing would have gone.
       if (account.aiMode === 'shadow') {
-        await closeTurn(tx, turn, conv, 'shadowed', reason, r, at);
+        let messageIds: string[] = [];
+        if (v && v.action !== 'silent') {
+          const plan: AiHandoverPlan | null = v.action === 'handover' ? v.plan : v.thenHandover;
+          const lines: string[] = v.action === 'answer' ? [...v.bubbles] : [];
+          let holdingKind: HoldingLine['kind'] = 'none';
+          if (plan) {
+            const holding = await holdingLine(tx, conv, account, plan.templateKey, v.language, v.action === 'handover' ? v.holdingBubbles : []);
+            holdingKind = holding.kind;
+            lines.push(...holding.items.flatMap((i) => (i.body ? [i.body] : [])));
+          }
+          const id = await writeShadowLine(tx, conv, v.language, lines, at);
+          messageIds = id ? [id] : [];
+          await tx.insert(inboxEvent).values(
+            event(conv, 'ai_shadow', {
+              turnId: turn.id,
+              messageId: id,
+              intent: v.intent,
+              intents: v.intents,
+              language: v.language,
+              action: v.action,
+              templateKey: plan?.templateKey ?? null,
+              holdingLine: holdingKind,
+              brochure: plan?.brochure ?? false,
+            }, at),
+          );
+        }
+        await closeTurn(tx, turn, conv, 'shadowed', reason, r, at, messageIds);
         return 'shadowed';
       }
 
@@ -914,7 +989,9 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
       }
 
       const random = deps.runtime.random;
-      await tx.insert(inboxEvent).values(event(conv, 'classified', { turnId: turn.id, intent: v.intent, language: v.language }, at));
+      await tx.insert(inboxEvent).values(
+        event(conv, 'classified', { turnId: turn.id, intent: v.intent, intents: v.intents, language: v.language }, at),
+      );
       await tx
         .update(conversation)
         .set({ intent: v.intent, language: v.language, updatedAt: at })
@@ -923,6 +1000,12 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
         .update(contact)
         .set({ language: sql`coalesce(${contact.language}, ${v.language})`, updatedAt: at })
         .where(and(eq(contact.operatorId, conv.operatorId), eq(contact.id, conv.contactId)));
+      // The thread as it now stands, for everything below (test night
+      // 2026-10-21, D2): the re-route must seat the people of the rule for
+      // the language the customer WROTE in, not the `en` the ingest fell back
+      // to when the channel sent no hint — a Thai birthday went to the EN/RU
+      // birthday pair.
+      const classified: ConversationRow = { ...conv, intent: v.intent, language: v.language };
 
       const handover: AiHandoverPlan | null = v.action === 'handover' ? v.plan : v.thenHandover;
       const items: LineItem[] = v.action === 'answer' ? v.bubbles.map((b) => ({ body: b })) : [];
@@ -940,14 +1023,15 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
         );
         items.push(...brochure.map((f) => ({ body: null, mediaFileIds: [f] })), ...holding.items);
       }
-      const messageIds = await writeLines(tx, conv, v.language, items, at, random);
-      const routing = await applyRouting(tx, conv, v.branchNamed, handover, r.knowledge, at);
+      const messageIds = await writeLines(tx, conv, v.language, items, at, random, deps.runtime.config.pacing);
+      const routing = await applyRouting(tx, classified, v.branchNamed, handover, r.knowledge, at);
 
       if (v.action === 'answer') {
         await tx.insert(inboxEvent).values(
           event(conv, 'ai_replied', {
             turnId: turn.id,
             intent: v.intent,
+            intents: v.intents,
             messageIds,
             askBranch: v.askBranch,
             brochureFileIds: brochure,
@@ -959,6 +1043,7 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
           event(conv, 'ai_handover', {
             turnId: turn.id,
             intent: v.intent,
+            intents: v.intents,
             reason: v.reason,
             templateKey: handover.templateKey,
             holdingLine: holding.kind,

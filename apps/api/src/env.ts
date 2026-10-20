@@ -729,6 +729,13 @@ const EnvSchema = z.object({
    *    (§A.1; owner G2).
    *  - `INBOX_AI_DAILY_TURN_CAP`, `INBOX_AI_DAILY_TOKEN_CAP` — per operator per
    *    Bangkok day; over either, every turn is silence (`CAP_DAILY`, §D.4).
+   *  - `INBOX_AI_FIRST_BUBBLE_MS`, `INBOX_AI_BUBBLE_GAP_MS` — the typing-time
+   *    knobs (§B.6; test night 2026-10-21, P): the longest the first bubble
+   *    waits after the decision (its typing time is chars / 6 per second,
+   *    clamped between 3 s and this, ±25 %), and the longest gap between one
+   *    bubble and the next (2 s to this). Today's values are the defaults.
+   *    The whole wait a customer sees is the debounce, the job tick (5 s),
+   *    the model call and this.
    */
   INBOX_AI_ENABLED: z.enum(['true', 'false']).default('false'),
   ANTHROPIC_API_KEY: z.string().default(''),
@@ -743,6 +750,8 @@ const EnvSchema = z.object({
   INBOX_AI_DEBOUNCE_MAX_S: z.coerce.number().int().min(0).max(3600).default(60),
   INBOX_AI_DAILY_TURN_CAP: z.coerce.number().int().min(0).default(1500),
   INBOX_AI_DAILY_TOKEN_CAP: z.coerce.number().int().min(0).default(30_000_000),
+  INBOX_AI_FIRST_BUBBLE_MS: z.coerce.number().int().min(0).max(120_000).default(20_000),
+  INBOX_AI_BUBBLE_GAP_MS: z.coerce.number().int().min(0).max(60_000).default(6_000),
 
   /**
    * THE INTERNAL ASSISTANT (SCRUM-591; plan
