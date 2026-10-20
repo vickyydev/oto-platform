@@ -69,12 +69,24 @@ describe('assistant-registry census (§F.3)', () => {
     expect(problems).toEqual([]);
   });
 
-  it('names no tool over the three OTO App fence gaps (plan "Concerns" C1–C3; owner G2 open)', () => {
-    // Leave balances, `/api/time-events`, `/api/checklists/today`: readable across colleagues at a
-    // branch today. The assistant stays off them until the owner rules; a tool added over one fails here.
+  it('names no tool over the OTO App fence gaps still open, and the own-balance lists on oto.my_leave only (plan "Concerns" C1–C3; G2 approved 2026-10-21)', () => {
+    // `/api/time-events` (C2) and `/api/checklists/today` (C3): no tool, as before (attendance covers
+    // the clock events). C1, the leave balances, closed in the OTO App at SCRUM-595 (2f8848a0: a staff
+    // session reads only its own balance, the branch lists answer only its own row; 92318de6 fenced
+    // `/api/time-events` the same way): the two branch lists the rota's own "My Leave Balance" reads
+    // may be named by oto.my_leave, which reads the asker's own row — and by no other tool. The
+    // per-employee balance routes, the sick-leave list and a colleague's balance stay off limits.
+    const OWN_BALANCE_LISTS = ['GET /api/leave-balances', 'GET /api/all-leave-balances'];
     for (const tool of ASSISTANT_TOOLS) {
-      for (const route of tool.routes) expect(route, tool.name).not.toMatch(/time-events|checklists|balance/);
+      for (const route of tool.routes) {
+        expect(route, tool.name).not.toMatch(/time-events|checklists/);
+        if (/balance/.test(route)) {
+          expect(tool.name, route).toBe('oto.my_leave');
+          expect(OWN_BALANCE_LISTS, `${tool.name}: ${route}`).toContain(route);
+        }
+      }
     }
+    expect(ASSISTANT_TOOLS.find((t) => t.name === 'oto.my_leave')!.routes).toEqual(['GET /api/my-time-off', ...OWN_BALANCE_LISTS]);
     expect(ASSISTANT_TOOLS.filter((t) => t.system === 'oto_app').map((t) => t.name)).toEqual([
       'oto.attendance',
       'oto.employee_leave',

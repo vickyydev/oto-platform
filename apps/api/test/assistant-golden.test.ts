@@ -10,7 +10,6 @@ import {
   MECHANICAL_GOLDENS,
   SALARY_REFUSAL,
   alignWorldTimes,
-  BALANCE_WORDS,
   PAYROLL_FIGURE_WORDS,
   buildAskGoldenWorld,
   capturingFetch,
@@ -299,21 +298,23 @@ describe('the judge fails what it should', () => {
     ]);
   });
 
-  it('Q8: the leave records’ grounded figures may be stated; a figure beside a balance word may not (G2)', () => {
+  it('Q8: the balance is read by oto.my_leave and stated in Thai, every figure grounded (G2 approved: the lists are person-fenced)', () => {
     const q8 = LIVE_GOLDENS.find((g) => g.id === 'Q8')!.expect;
-    const observed = (first: string) => ({
+    const observed = (answer: string, tools: Array<{ tool: string; status: number }> = [{ tool: 'oto.my_leave', status: 200 }]) => ({
       state: 'answered' as const,
       reason: null,
-      answer: `${first}\nรายการลาที่มีอยู่: ลาพักร้อน 9 พฤศจิกายน 2569 – 11 พฤศจิกายน 2569 (วันจันทร์ – วันพุธ) รวม 3 วัน`,
+      answer,
       links: ['oto.account'],
       refusals: [],
-      tools: [{ tool: 'oto.my_leave', status: 200 }],
+      tools,
     });
-    expect(judgeAsk(q8, observed('ระบบนี้ไม่แสดงยอดวันลาคงเหลือ ดูยอดได้ที่หน้าบัญชีของฉัน'))).toEqual([]);
-    expect(judgeAsk(q8, observed('วันลาคงเหลือ 5 วัน'))).toEqual([`a figure beside ${String(BALANCE_WORDS)}: "วันลาคงเหลือ 5 วัน"`]);
-    expect(judgeAsk(q8, observed('You have 5 days of leave left.'))).toEqual([
-      `a figure beside ${String(BALANCE_WORDS)}: "You have 5 days of leave left"`,
-    ]);
+    // The balance stated, in Thai, after the read: the plan's row. (A figure the summary did not carry
+    // never reaches the judge: the engine's guard closes such an ask as unanswered.)
+    expect(judgeAsk(q8, observed('วันลาพักร้อนของคุณเหลือ 6 วันจาก 10 วัน'))).toEqual([]);
+    // No figure at all is no answer to "how many days"; English is not the asker's language; no read, no balance.
+    expect(judgeAsk(q8, observed('ยอดวันลาคงเหลือดูได้ในหน้าตารางงาน'))).toEqual(['the answer holds no figure']);
+    expect(judgeAsk(q8, observed('You have 6 days of annual leave left.'))).toEqual(['the answer is not in Thai']);
+    expect(judgeAsk(q8, observed('วันลาพักร้อนของคุณเหลือ 6 วัน', []))).toEqual(['tools [] do not include [oto.my_leave] in order']);
   });
 
   it('Q6: the asker’s own month may be named; a payroll amount may not', () => {
@@ -352,9 +353,11 @@ describe('the judge fails what it should', () => {
       'none of the links [oto.timekeeping.employee, oto.employee.time] offered (links [])',
     ]);
     const q8 = LIVE_GOLDENS.find((g) => g.id === 'Q8')!.expect;
+    // The balance is the read's to state (G2 approved): no read, no figure to stand on.
     expect(judgeAsk(q8, { ...base, answer: 'คุณเหลือวันลา 7 วัน', links: ['oto.account'], tools: [] })).toEqual([
-      `a figure beside ${String(BALANCE_WORDS)}: "คุณเหลือวันลา 7 วัน"`,
+      'tools [] do not include [oto.my_leave] in order',
     ]);
+    expect(judgeAsk(q8, { ...base, answer: 'คุณเหลือวันลา 7 วัน', links: ['oto.account'], tools: [{ tool: 'oto.my_leave', status: 200 }] })).toEqual([]);
   });
 });
 

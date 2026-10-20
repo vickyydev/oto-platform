@@ -39,11 +39,15 @@ import {
  * their access names): "the rota" and "a colleague by name" mean THEIR park
  * unless the input says otherwise, exactly as the screens default.
  *
- * WHAT IS NOT HERE (plan "Concerns", G2, open): no tool over the three fence
- * gaps — leave balances, `/api/time-events`, `/api/checklists/today`. So
- * `oto.my_leave` and `oto.employee_leave` carry the leave RECORDS and say
- * plainly that the balance is not readable here; "Anan's clock events" and
- * "today's checklists" have no tool and get the link.
+ * WHAT IS NOT HERE (plan "Concerns"; G2 approved 2026-10-21): no tool over
+ * `/api/time-events` (attendance covers it) or `/api/checklists/today`, and no
+ * read of a colleague's balance — `oto.employee_leave` carries the leave
+ * RECORDS and says plainly that the balance is not readable here; "Anan's
+ * clock events" and "today's checklists" have no tool and get the link. The
+ * leave-balance routes were fenced to the person in the OTO App at SCRUM-595
+ * (2f8848a0; `/api/time-events` at 92318de6), so `oto.my_leave` reads the
+ * asker's OWN balance through the two branch lists the rota's "My Leave
+ * Balance" reads, and summarises only their row (`ownBalance`, below).
  *
  * WHAT A SUMMARY LEAVES OUT: pay (never a payslip's figure, never an
  * employee's rate — `oto.my_payslips` lists months and the payslip is the
@@ -197,6 +201,88 @@ function leaveRecord(r: Obj): Obj {
 
 const NO_BALANCE = 'The leave balance is not readable here; the leave screen shows it.';
 
+/** `1 day`, `0.5 days`, `6 days`: a figure with its unit, as an answer states it. */
+function days(n: number): string {
+  return `${n} ${n === 1 ? 'day' : 'days'}`;
+}
+
+/**
+ * Each balance kind by name in the three languages the answers are written
+ * in (the OTO App's own screens name them in English only), so a Thai or
+ * Russian answer has the word and the guard reads it as grounded.
+ */
+const BALANCE_KINDS = {
+  daysOff: { en: 'days off in lieu', th: 'วันหยุดชดเชย', ru: 'отгулы' },
+  annual: { en: 'annual leave', th: 'ลาพักร้อน', ru: 'ежегодный отпуск' },
+  business: { en: 'business leave', th: 'ลากิจ', ru: 'отпуск по личным делам' },
+  publicHolidays: { en: 'public holidays', th: 'วันหยุดนักขัตฤกษ์', ru: 'государственные праздники' },
+} as const;
+
+/**
+ * The asker's OWN leave balance, as the rota's "My Leave Balance" strip reads
+ * it (apps/oto-app/client/src/pages/core/rota.tsx:322-344 and :934-962): the
+ * row at the asker's employee id — the id `/api/my-time-off` answers, which
+ * is how the rota finds its own — in each of the two branch lists,
+ * `/api/leave-balances` (days off in lieu) and `/api/all-leave-balances`
+ * (annual, business, public holidays). The app's person fence (SCRUM-595)
+ * answers a staff session its own row only; a manager's answer is the
+ * branch, and only their own row is read here, whatever else the lists held.
+ * Every figure is stated with its kind and unit in words, so the guard
+ * grounds it ("Annual leave: 6 days remaining of 10 days earned").
+ */
+function ownBalance(employeeId: string | null, daysOffList: unknown, allList: unknown): Obj {
+  const pick = (list: unknown): Obj | null =>
+    employeeId === null ? null : (arr(list).map(obj).find((r) => str(r.employeeId) === employeeId) ?? null);
+  const off = pick(daysOffList);
+  const all = pick(allList);
+  if (!off && !all) {
+    return { available: false, note: 'The leave balance did not come back for this person; the rota shows it.' };
+  }
+  const lines: string[] = [];
+  const out: Obj = { available: true, unit: 'days' };
+  if (off) {
+    const balance = num(off.balance) ?? 0;
+    const earned = num(off.daysEarned) ?? 0;
+    const used = num(off.daysUsed) ?? 0;
+    const words = `Days off in lieu: a balance of ${days(balance)} (${days(earned)} earned, ${days(used)} used)`;
+    // The kind's name in the three languages: the Thai for a day off in lieu carries ชดเชย, a word
+    // the answer guard reads as a promise unless the summary itself says it.
+    out.daysOff = { kind: BALANCE_KINDS.daysOff, balance, earned, used, policy: str(off.policyName), words };
+    lines.push(words);
+  }
+  if (all) {
+    const annual = obj(all.annual);
+    const business = obj(all.business);
+    const holidays = obj(all.publicHolidays);
+    const year = num(all.year);
+    const a = {
+      remaining: num(annual.balance) ?? 0,
+      earned: num(annual.earned) ?? 0,
+      used: num(annual.used) ?? 0,
+      canClaim: annual.canClaim === true,
+      waitingMonths: num(annual.waitingMonths),
+      monthsEmployed: num(annual.totalMonthsEmployed),
+    };
+    const aWords = a.canClaim
+      ? `Annual leave: ${days(a.remaining)} remaining of ${days(a.earned)} earned (${days(a.used)} used)`
+      : `Annual leave: ${days(a.remaining)} accrued of ${days(a.earned)} earned (${days(a.used)} used), not yet claimable`;
+    const b = { remaining: num(business.balance) ?? 0, earned: num(business.earned) ?? 0, used: num(business.used) ?? 0 };
+    const bWords = `Business leave: ${days(b.remaining)} remaining of ${days(b.earned)} (${days(b.used)} used)`;
+    const ph = num(holidays.remaining) ?? 0;
+    const phWords = `Public holidays: ${days(ph)} remaining${year === null ? '' : ` in ${year}`}`;
+    // "Holiday" as the rota's strip sums it: claimable annual leave plus the public holidays left.
+    const holiday = (a.canClaim ? a.remaining : 0) + ph;
+    out.year = year;
+    out.annual = { kind: BALANCE_KINDS.annual, ...a, words: aWords };
+    out.business = { kind: BALANCE_KINDS.business, ...b, words: bWords };
+    out.publicHolidays = { kind: BALANCE_KINDS.publicHolidays, remaining: ph, words: phWords };
+    out.holiday = { total: holiday, words: `Holiday, as the rota shows it: ${days(holiday)} (claimable annual leave plus public holidays remaining)` };
+    lines.push(aWords, bWords, phWords);
+  }
+  out.words = lines.join('; ');
+  return out;
+}
+
 /** A period with both ends given: the attendance call's, once the default is filled. */
 type Period = { startDate: string; endDate: string };
 
@@ -305,20 +391,31 @@ export const OTOAPP_TOOL_ADAPTERS: readonly OtoAppToolAdapter[] = [
     },
   }),
   adapter('oto.my_leave', {
-    urls: (i) => [`/api/my-time-off${query({ dateFrom: i.from, dateTo: i.to })}`],
-    summarise: ([body], i) => {
+    // The records, then the balance as the rota's "My Leave Balance" strip reads it (rota.tsx:322-344):
+    // the two branch lists for the park the rota opens on — the asker's own, else the first the app
+    // lists for them (`defaultBranchId`). No park listed: no balance call, as the rota makes none
+    // (`enabled: !!selectedBranchId`), and the summary says the balance did not come back.
+    urls: (i, who) => {
+      const park = who.defaultBranchId;
+      return [
+        `/api/my-time-off${query({ dateFrom: i.from, dateTo: i.to })}`,
+        ...(park === null ? [] : [`/api/leave-balances${query({ branchId: park })}`, `/api/all-leave-balances${query({ branchId: park })}`]),
+      ];
+    },
+    summarise: ([body, daysOffList, allList], i) => {
       const b = obj(body);
+      const employeeId = str(b.employeeId);
       const records = arr(b.timeOff).map(obj);
       const shown = records.slice(0, ASSISTANT_SUMMARY_ROWS).map(leaveRecord);
       return {
         data: {
-          employeeId: str(b.employeeId),
+          employeeId,
           period: periodWords(i.from ?? null, i.to ?? null),
           records: records.length,
           leave: shown,
           weeklyOffDays: arr(b.weeklyOffDays).map(str).filter((d): d is string => d !== null),
-          balanceAvailable: false,
-          note: NO_BALANCE,
+          // The asker's own row only, picked by their employee id, whatever the lists held.
+          balance: ownBalance(employeeId, daysOffList, allList),
         },
         listKey: 'leave',
         rows: records.length,

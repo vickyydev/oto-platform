@@ -178,6 +178,23 @@ OTO App fix ticket under the lift's consistency story, in neutral wording.
 Fixing them is independent of Phase 3, and the screens have the exposure
 today whether or not an assistant exists.
 
+**2026-10-21 — G2 approved; C1 closed, the own-balance read added.**
+SCRUM-595 fenced the leave-balance reads to the person in the OTO App
+(2f8848a0: a staff session reads only its own balance, and the branch lists
+answer only its own row; managers keep the branch view) and `/api/time-events`
+the same way (92318de6). The assistant now reads the asker's OWN balance:
+`oto.my_leave` calls the two branch lists the rota's own "My Leave Balance"
+reads (`/api/leave-balances`, `/api/all-leave-balances`, at the park the rota
+opens on), as the person, and summarises only the row at the asker's employee
+id — the id `/api/my-time-off` answers, as the rota finds its own — with every
+figure's kind and unit in words. The registry census allows exactly those two
+routes, on that tool, and keeps refusing the per-employee balance routes, the
+sick-leave list, `/api/time-events` (attendance covers the clock events) and
+C3. A colleague's balance stays unread: `oto.employee_leave` is records only.
+Q8 is re-encoded to the row as first written (the balance grounded and stated
+in Thai); its recording, and the other five OTO App recordings whose world word
+the changed tool definition moves, need a re-record.
+
 ## A. Where it lives
 
 ### A.1 The candidates
@@ -359,7 +376,7 @@ are in round I4.
 | `oto.employees.find` | oto_app | `GET /api/employees?branchId=` | `requireAuth` + branch | **name match done in the adapter**: ≤ 5 candidates (id, name, nickname, branch) |
 | `oto.attendance` | oto_app | `GET /api/timekeeping/employee/:id?startDate=&endDate=` | `requireManager` + park group + branch | days worked, hours, late/early counts, anomalies, period |
 | `oto.rota` | oto_app | `GET /api/rota?scope=me\|department\|branch` | `requireAuth`; non-admins own branch | shifts in range |
-| `oto.my_leave` | oto_app | `GET /api/my-time-off` | self only | own requests and balance |
+| `oto.my_leave` | oto_app | `GET /api/my-time-off`; `GET /api/leave-balances?branchId=`; `GET /api/all-leave-balances?branchId=` (the rota's "My Leave Balance" reads) | self only; the two lists person-fenced since SCRUM-595, and only the asker's own row is summarised | own requests, weekly off days, and own balance in words: days off in lieu; annual leave earned, used, remaining; business leave; public holidays remaining |
 | `oto.employee_leave` | oto_app | `GET /api/employees/:id/time-off` | `requireManager` + branch | requests in range |
 | `oto.payroll_summary` | oto_app | a `/api/payroll/*` read (hub summary for a month) | `hr.view_salary` + `parkGroupOnly` | totals per month. **For anyone else this is the refusal sentence.** |
 | `oto.my_payslips` | oto_app | `GET /api/payroll/me/payslips` | self only | list of months, not figures (the payslip is the link) |
@@ -382,7 +399,9 @@ A manager at Central asking about someone at Chalong gets no candidate,
 because the list is branch-scoped. That is the fence working, and the answer
 says so plainly.
 
-**Not tools in Phase 3:** routes behind C1–C3 (G2), `/api/people/:id`
+**Not tools in Phase 3:** routes behind C2–C3 and C1's per-employee and
+colleague balance reads (G2; only the two own-balance lists of `oto.my_leave`
+are named, since 2026-10-21), `/api/people/:id`
 (admin-only HR file), anything that writes, anything `public`/`credential`,
 Ask OTO's `POST /api/ask-oto` (a model call inside a model call; G5), and
 every Radar, booth and POS-sale read (not in the spec's list; later).
@@ -848,7 +867,7 @@ round (I4).
 | # | Decision | Default |
 |---|---|---|
 | G1 | **Reach into the OTO App.** Approve the server-side hand-off (§B.3), under which the platform signs into the OTO App *as the asker* for the length of one ask, using the person's own session and the existing hand-off. The alternative is Phase 3 on the platform's data only, with OTO App screens as links. In that case "Anan's attendance" is answered with a link, not figures. | Build I1–I3 now; build I4 on approval. |
-| G2 | **The three fence gaps (C1–C3).** Fix them in the OTO App first, accept them, or keep the assistant off those routes permanently. | Assistant stays off them. Each gap is proposed as its own fix ticket. |
+| G2 | **The three fence gaps (C1–C3).** Fix them in the OTO App first, accept them, or keep the assistant off those routes permanently. | Assistant stays off them. Each gap is proposed as its own fix ticket. **Approved 2026-10-21:** C1 fixed at SCRUM-595; `oto.my_leave` reads the asker's own balance through the person-fenced lists (see "Concerns"). C2 and C3 stay off. |
 | G3 | **Who may read the ask-log besides the asker.** Default is operator admins, with every read audited. Branch managers reading their staff's questions is the alternative, which is more oversight and less privacy. Also: is the assistant on for every role from day one? | Operator admins only; on for every staff role. |
 | G4 | **Ask-log retention.** Answers quote member and employee data. | 90 days, then deleted. |
 | G5 | **Ask OTO.** Keep the OTO App's knowledge assistant separate (default), offer it as a link, or later make it a tool so one box answers both "how do I" and "how many". | Separate; offered as a link. |

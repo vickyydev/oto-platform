@@ -266,9 +266,11 @@ export const ASSISTANT_TOOLS = [
   spec({
     name: 'oto.my_leave',
     system: 'oto_app',
-    routes: ['GET /api/my-time-off'],
+    // The records, then the two branch lists the rota's own "My Leave Balance" reads. The OTO App
+    // fences both lists to the person for staff (SCRUM-595): the asker's own row is all that is read.
+    routes: ['GET /api/my-time-off', 'GET /api/leave-balances', 'GET /api/all-leave-balances'],
     description:
-      "The asker's own leave records (type, dates, half days), optionally between two dates, and their weekly off days. No balance figure: the screen shows it.",
+      "The asker's own leave: their records (type, dates, half days), optionally between two dates, their weekly off days, and their own leave balance as the rota shows it — days off in lieu, annual leave earned, used and remaining, business leave, public holidays remaining. Never a colleague's balance.",
     input: z.object({ from: Day.optional(), to: Day.optional() }).strict(),
   }),
   spec({

@@ -24,8 +24,10 @@ import { newId } from '@oto/shared';
  *   GET /api/branches        the asker's parks as the app lists them (the allowed
  *                            ones plus the employee record's, or every park):
  *                            the rota screen's list, whose first is its default.
- *   the tool routes          the seven GET routes the registry names, with the
- *                            app's own fences and the app's own refusal
+ *   the tool routes          the nine GET routes the registry's seven tools
+ *                            name, with the app's own fences — the person
+ *                            fence of SCRUM-595 on the two leave-balance
+ *                            lists included — and the app's own refusal
  *                            sentences (pinned against the app's source by
  *                            `assistant-otoapp.test.ts`).
  *
@@ -98,6 +100,18 @@ export interface FakeOtoAppTimeOff {
   note: string | null;
 }
 
+/**
+ * One employee's leave balance, as the two branch lists answer it: the days
+ * off in lieu (`/api/leave-balances`: the CHANGE_DAY_OFF balance, earned
+ * minus used) and the annual and business leave (`/api/all-leave-balances`).
+ * An employee without one answers zeros, as the app does.
+ */
+export interface FakeOtoAppLeaveBalance {
+  daysOff: { earned: number; used: number };
+  annual: { earned: number; used: number; canClaim: boolean };
+  business: { earned: number; used: number };
+}
+
 export interface FakeOtoAppPayslip {
   fileId: string;
   entityName: string;
@@ -161,6 +175,10 @@ export interface FakeOtoAppData {
   timeOff: FakeOtoAppTimeOff[];
   payslips: Map<string, FakeOtoAppPayslip[]>;
   payrollHistory: FakeOtoAppPayrollRun[];
+  /** Leave balances by employee id; an employee without one answers zeros. */
+  leaveBalances: Map<string, FakeOtoAppLeaveBalance>;
+  /** The park group's public holidays still ahead this year (one figure for every row). */
+  publicHolidaysRemaining: number;
   /** Employee ids whose attendance route answers 500: "a tool throws". */
   broken: Set<string>;
 }
@@ -208,6 +226,10 @@ export const OTOAPP_WORDS = {
   rotaBranchDenied: "You don't have access to this branch",
   branchesDenied: 'Access denied',
   parkGroupRequired: 'Park group context required',
+  /** The leave-balance lists (`routes.ts` "/api/leave-balances", "/api/all-leave-balances"; `lib/documentParkGroups.ts`) */
+  branchIdRequired: 'branchId is required',
+  branchNotFound: 'Branch not found',
+  branchNotAllowed: 'Access denied - branch not allowed',
   /** `payroll/routes.ts` */
   payrollRoles: 'Payroll is for payroll roles only (hr.view_salary required).',
 } as const;
@@ -261,6 +283,8 @@ export class FakeOtoApp {
     timeOff: [],
     payslips: new Map(),
     payrollHistory: [],
+    leaveBalances: new Map(),
+    publicHolidaysRemaining: 0,
     broken: new Set(),
   };
   /** The platform api under test; set once the api is built (the fake starts first, for its port). */
@@ -329,6 +353,59 @@ export class FakeOtoApp {
 
   private ownEmployee(user: FakeOtoAppUser): FakeOtoAppEmployee | undefined {
     return this.data.employees.find((e) => e.tenantId === user.tenantId && e.userId === user.id);
+  }
+
+  /**
+   * The app's person fence on the leave-balance lists (SCRUM-595, 2f8848a0;
+   * `server/core/personScope.ts` `personFence` + `fenceRows`): a manager or
+   * admin rank (the app's `requireManager` notion) reads the branch; every
+   * other session reads its own employee record's row only, and none without
+   * a record. The app resolves the own record by login, email, then phone
+   * within the park group; the fake's is the linked user (`ownEmployee`), the
+   * one notion it has.
+   */
+  private fenceRows<T extends { employeeId: string }>(user: FakeOtoAppUser, rows: T[]): T[] {
+    if (MANAGER_ROLES.has(user.role)) return rows;
+    const self = this.ownEmployee(user)?.id ?? null;
+    return rows.filter((r) => self !== null && r.employeeId === self);
+  }
+
+  /** `/api/leave-balances`' row (`storage.ts` `getEmployeeLeaveBalance`): the days off in lieu. */
+  private daysOffRow(employeeId: string) {
+    const b = this.data.leaveBalances.get(employeeId);
+    const daysEarned = b?.daysOff.earned ?? 0;
+    const daysUsed = b?.daysOff.used ?? 0;
+    return {
+      employeeId,
+      daysWorked: new Set(this.data.shifts.filter((s) => s.employeeId === employeeId).map((s) => s.date)).size,
+      daysEarned,
+      daysUsed,
+      balance: daysEarned - daysUsed,
+      policyName: b ? 'ZZ Days Off' : null,
+    };
+  }
+
+  /** `/api/all-leave-balances`' row: annual, business and public holidays for `year`. */
+  private allLeaveRow(employeeId: string, year: number) {
+    const b = this.data.leaveBalances.get(employeeId);
+    const annual = { earned: b?.annual.earned ?? 0, used: b?.annual.used ?? 0 };
+    const business = { earned: b?.business.earned ?? 0, used: b?.business.used ?? 0 };
+    const remaining = this.data.publicHolidaysRemaining;
+    return {
+      employeeId,
+      year,
+      annual: {
+        earned: annual.earned,
+        used: annual.used,
+        balance: annual.earned - annual.used,
+        canClaim: b?.annual.canClaim ?? false,
+        waitingMonths: 0,
+        totalMonthsEmployed: 12,
+      },
+      business: { earned: business.earned, used: business.used, balance: business.earned - business.used },
+      publicHolidays: { remaining },
+      holidayBalance: annual.earned - annual.used + remaining,
+    };
   }
 
   private async handle(req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -496,6 +573,44 @@ export class FakeOtoApp {
           weeklyOffDays: ['monday'],
           employeeId: mine.id,
         });
+      }
+
+      case url.pathname === '/api/leave-balances': {
+        // routes.ts "/api/leave-balances" (:13442, after 2f8848a0): branchId required; the park
+        // group's branch, else 404; the asker's access to it or their own employee record's branch,
+        // else 403 "Access denied"; then the person fence (:13470-13478) over one row per ACTIVE
+        // employee of the branch (`getBranchEmployeeLeaveBalances`).
+        const branchId = url.searchParams.get('branchId');
+        if (!branchId) return json(res, 400, { message: OTOAPP_WORDS.branchIdRequired });
+        if (!user.tenantId) return json(res, 403, { message: OTOAPP_WORDS.parkGroupRequired });
+        const branch = this.data.branches.get(branchId);
+        if (!branch || branch.tenantId !== user.tenantId) return json(res, 404, { message: OTOAPP_WORDS.branchNotFound });
+        if (!this.canAccessBranch(user, branchId) && this.ownEmployee(user)?.branchId !== branchId) {
+          return json(res, 403, { message: OTOAPP_WORDS.branchesDenied });
+        }
+        const rows = this.data.employees
+          .filter((e) => e.tenantId === user.tenantId && e.branchId === branchId && e.status === 'active')
+          .map((e) => this.daysOffRow(e.id));
+        return json(res, 200, this.fenceRows(user, rows));
+      }
+
+      case url.pathname === '/api/all-leave-balances': {
+        // routes.ts "/api/all-leave-balances" (:14216, after 2f8848a0): branchId required; the park
+        // group's branch, else 404; the caller's allowed branches (an admin every one), else 403
+        // "Access denied - branch not allowed"; the rows are the PARK GROUP's employees — the route's
+        // `getEmployees(branchId)` takes no branch, its own rule kept (:14241-14245) — fenced to the
+        // person (:14248-14250); each row's annual, business and public-holiday figures this year.
+        const branchId = url.searchParams.get('branchId');
+        if (!branchId) return json(res, 400, { message: OTOAPP_WORDS.branchIdRequired });
+        if (!user.tenantId) return json(res, 403, { message: OTOAPP_WORDS.parkGroupRequired });
+        const branch = this.data.branches.get(branchId);
+        if (!branch || branch.tenantId !== user.tenantId) return json(res, 404, { message: OTOAPP_WORDS.branchNotFound });
+        if (!ADMIN_ROLES.has(user.role) && !this.canAccessBranch(user, branchId)) {
+          return json(res, 403, { message: OTOAPP_WORDS.branchNotAllowed });
+        }
+        const year = new Date().getFullYear();
+        const rows = this.data.employees.filter((e) => e.tenantId === user.tenantId).map((e) => this.allLeaveRow(e.id, year));
+        return json(res, 200, this.fenceRows(user, rows));
       }
 
       case /^\/api\/employees\/[^/]+\/time-off$/.test(url.pathname): {

@@ -149,8 +149,21 @@ export const OTOAPP_WORLD_SPEC = {
   ],
   /** Attendance (Q1, Q3): Anan's weekdays this month, 8.5 h each, one late arrival. Rota (Q7): the three at Central. */
   rota: { branch: 'central', people: ['anan', 'otoStaff', 'otoManager'], start: '10:00', end: '19:00' },
-  /** Leave (Q8): one annual leave booked for the staff asker, no balance (G2). */
-  leave: { asker: 'otoStaff', type: 'annual', daysAhead: 20, length: 3 },
+  /**
+   * Leave (Q8): one annual leave booked for the staff asker, and their own
+   * balance as the rota's "My Leave Balance" reads it — the lists are fenced
+   * to the person since SCRUM-595 (G2 approved 2026-10-21), so the figure is
+   * read and stated: 6 annual days remaining of 10, 2 days off in lieu, 5
+   * public holidays ahead.
+   */
+  leave: {
+    asker: 'otoStaff',
+    type: 'annual',
+    daysAhead: 20,
+    length: 3,
+    balance: { daysOff: { earned: 5, used: 3 }, annual: { earned: 10, used: 4, canClaim: true }, business: { earned: 3, used: 1 } },
+    publicHolidaysRemaining: 5,
+  },
   /** Payroll (Q2, Q6): one locked run for September 2026. */
   payroll: { month: '2026-09', entity: 'ZZ Payer Co', people: 12, gross: 480000, deductions: 36000, net: 444000, employer: 24000 },
 } as const;
@@ -312,6 +325,16 @@ export async function buildAskGoldenWorld(): Promise<GoldenAskWorld> {
     people: p.people,
     totals: { gross: p.gross, deductions: p.deductions, net: p.net, employer: p.employer, totalCost: p.gross + p.employer },
   });
+
+  // The staff asker's own balance (Q8): not clock-relative, laid once. The lists answer a staff
+  // session this one row (SCRUM-595); the summary states it with its kinds and units.
+  const l0 = OTOAPP_WORLD_SPEC.leave;
+  otoApp.data.leaveBalances.set(employeeIds[l0.asker]!, {
+    daysOff: { ...l0.balance.daysOff },
+    annual: { ...l0.balance.annual },
+    business: { ...l0.balance.business },
+  });
+  otoApp.data.publicHolidaysRemaining = l0.publicHolidaysRemaining;
 
   const otoAppFixtures = { attendance: { days: 0, hours: 0 } };
   const alignOtoAppClock = (now: Date) => {
@@ -587,13 +610,6 @@ export interface AskGolden {
 const PAYROLL_LINKS = ['oto.payroll.hub', 'oto.payroll.month', 'oto.payroll.person'];
 
 /**
- * A balance word in the three languages (Q8): no figure may stand in a
- * sentence with one, since no tool reads the balance (G2). The leave
- * RECORDS' dates and lengths, grounded by oto.my_leave, may be stated.
- */
-export const BALANCE_WORDS = /เหลือ|คงเหลือ|ยอด|balance|remaining|\bleft\b|остал\p{L}*|баланс\p{L}*/iu;
-
-/**
  * A payroll amount word in the three languages (Q6): no figure may stand in a
  * sentence with one, since a diagnosis would need figures no tool gives. The
  * asker's own month ("2026-09", "September 2026") is the clock's, not a figure.
@@ -788,24 +804,33 @@ export const LIVE_GOLDENS: readonly AskGolden[] = [
     id: 'Q8',
     asker: 'otoStaff',
     question: 'วันลาของฉันเหลือกี่วัน',
-    plan: 'oto.my_leave, answered in Thai, no balance figure; the leave records may be stated',
+    plan: 'oto.my_leave, answered in Thai, the balance grounded',
     note:
-      'Outcome, not path: the leave balance is one of the three fence-gap routes (C1, owner G2 open), so no tool reads it and NO balance figure may appear: no digit in a sentence with a balance word. The leave RECORDS oto.my_leave returns (dates, length, half day, weekly off day) are grounded and may be stated, as the re-recorded model did. The answer is in Thai and points at a screen that shows the balance (the account page or the rota). Reading the records first is optional.',
+      "The plan's row as written, restored: the leave-balance lists were fenced to the person in the OTO App at SCRUM-595 (G2 approved 2026-10-21), so oto.my_leave reads the asker's OWN balance the way the rota's My Leave Balance does and the figure is stated. Outcome, not path: every figure must be the summary's (the guard refuses any other, so `answered` is the proof), the read must be made, the answer is in Thai and may open the rota or the account page. The leave records (dates, length) may be stated too.",
     otoApp: true,
+    // The balance is now read and stated; the recording on disk answered without one (the G2-pending rule).
+    rerecord: 'the balance is read and stated since SCRUM-595 landed (G2 approved 2026-10-21): pnpm --filter @oto/api assistant:eval --record --only <id>',
     expect: {
       states: ['answered'],
-      toolsRequired: [],
-      toolsAllowed: ['oto.my_leave', 'me.whoami'],
+      toolsRequired: ['oto.my_leave'],
+      toolsAllowed: ['me.whoami'],
       maxToolCalls: 2,
       refusals: [],
-      noDigitsNear: BALANCE_WORDS,
+      hasDigits: true,
       thai: true,
       linksAnyOf: ['oto.account', 'oto.rota'],
     },
-    rehearsal: () => [
-      tool('oto.my_leave', {}),
-      final('ยอดวันลาคงเหลือดูได้ในหน้าตารางงาน ตอนนี้มีวันลาพักร้อนที่บันทึกไว้หนึ่งรายการ', [{ key: 'oto.rota', params: [] }], 'th'),
-    ],
+    rehearsal: () => {
+      const b = OTOAPP_WORLD_SPEC.leave.balance;
+      return [
+        tool('oto.my_leave', {}),
+        final(
+          `วันลาพักร้อนของคุณเหลือ ${b.annual.earned - b.annual.used} วันจากทั้งหมด ${b.annual.earned} วัน วันหยุดชดเชยคงเหลือ ${b.daysOff.earned - b.daysOff.used} วัน และวันหยุดนักขัตฤกษ์เหลืออีก ${OTOAPP_WORLD_SPEC.leave.publicHolidaysRemaining} วัน`,
+          [{ key: 'oto.rota', params: [] }],
+          'th',
+        ),
+      ];
+    },
   },
   {
     id: 'Q9',

@@ -44,7 +44,9 @@ import { teardownAll } from './helpers';
 /**
  * SCRUM-591 — THE OTO APP TOOLS, round I4 (plan
  * docs/progress/plans/internal-assistant-build/PLAN.md §B.3, §F.2, owner G1;
- * G2 open: nothing over the three fence gaps).
+ * G2 approved 2026-10-21 after SCRUM-595 fenced the leave balances to the
+ * person: oto.my_leave reads the asker's OWN balance, nothing else crosses a
+ * fence gap).
  *
  * The real platform api runs in process; a FAKE OTO App (`fake-otoapp.ts`)
  * listens on a loopback port and exchanges every hand-off at the REAL api
@@ -136,6 +138,10 @@ beforeAll(async () => {
     // A note is never projected: the sentinel here must stay in the fake.
     note: `ZZ note ${ASK_SENTINEL}`,
   });
+  // Beam's own balance, and Krit's, with no figure in common: the manager's read proves which row was picked.
+  fake.data.leaveBalances.set(beam.id, { daysOff: { earned: 5, used: 3 }, annual: { earned: 10, used: 4, canClaim: true }, business: { earned: 3, used: 1 } });
+  fake.data.leaveBalances.set(krit.id, { daysOff: { earned: 8, used: 1 }, annual: { earned: 12, used: 7, canClaim: true }, business: { earned: 3, used: 0 } });
+  fake.data.publicHolidaysRemaining = 5;
   fake.data.payslips.set(beam.id, [
     { fileId: newId(), entityName: 'ZZ Payer Co', month: '2026-09', version: 1, status: 'paid', net: 28400, lockedAt: '2026-10-01T03:00:00.000Z' },
   ]);
@@ -203,7 +209,7 @@ describe('the census (§B.3, R4)', () => {
     expect(src).toContain("'/api/logout'");
   });
 
-  it('registers an adapter for exactly the seven OTO App tools, none over a fence gap (G2)', () => {
+  it('registers an adapter for exactly the seven OTO App tools; the own-balance lists on oto.my_leave only, nothing over the gaps still open (G2)', () => {
     const oto = ASSISTANT_TOOLS.filter((t) => t.system === 'oto_app').map((t) => t.name);
     expect(OTOAPP_TOOL_ADAPTERS.map((a) => a.name).sort()).toEqual([...oto].sort());
     expect(oto).toEqual([
@@ -215,10 +221,15 @@ describe('the census (§B.3, R4)', () => {
       'oto.payroll_summary',
       'oto.rota',
     ]);
-    // C1–C3: leave balances, clock events, today's checklists — no tool, by the owner's open G2.
+    // C2, C3: clock events and today's checklists — no tool. C1 closed at SCRUM-595 (the lists are
+    // person-fenced): the two the rota's "My Leave Balance" reads, on oto.my_leave, and nowhere else.
     for (const a of OTOAPP_TOOL_ADAPTERS) {
-      for (const r of a.routes) expect(r, a.name).not.toMatch(/time-events|checklists|balance/);
+      for (const r of a.routes) {
+        expect(r, a.name).not.toMatch(/time-events|checklists/);
+        if (/balance/.test(r)) expect(a.name, r).toBe('oto.my_leave');
+      }
     }
+    expect(OTOAPP_TOOLS.get('oto.my_leave')!.routes).toEqual(['GET /api/my-time-off', 'GET /api/leave-balances', 'GET /api/all-leave-balances']);
   });
 
   it('builds every adapter URL inside its own route templates, from validated input only', () => {
@@ -254,6 +265,20 @@ describe('the census (§B.3, R4)', () => {
     expect(rota.urls(day as never, { ...who, homeBranchId: null, defaultBranchId: null })).toEqual(['/api/rota?scope=me&from=2026-10-21&to=2026-10-21']);
   });
 
+  it('my leave names the park the rota opens on for the two balance lists: the asker’s own, else the first the app lists, else no balance call', () => {
+    const who = { userId: 'u1', role: 'staff' as const, permissions: [], homeBranchId: 'b-home', allBranches: false, defaultBranchId: 'b-home' };
+    const mine = OTOAPP_TOOLS.get('oto.my_leave')!;
+    // The records first (the tool row's route), then the lists at the park, as rota.tsx:322-344 reads them.
+    expect(mine.urls({} as never, who)).toEqual(['/api/my-time-off', '/api/leave-balances?branchId=b-home', '/api/all-leave-balances?branchId=b-home']);
+    expect(mine.urls({ from: '2026-10-01' } as never, { ...who, homeBranchId: null, defaultBranchId: 'b-first' })).toEqual([
+      '/api/my-time-off?dateFrom=2026-10-01',
+      '/api/leave-balances?branchId=b-first',
+      '/api/all-leave-balances?branchId=b-first',
+    ]);
+    // No park listed: the rota makes no balance call either (`enabled: !!selectedBranchId`); the records still come.
+    expect(mine.urls({} as never, { ...who, homeBranchId: null, defaultBranchId: null })).toEqual(['/api/my-time-off']);
+  });
+
   it("the fake speaks the app's own sentences: every refusal it answers is in the app's source", () => {
     const files = [
       'middleware/platformSignOn.ts',
@@ -263,6 +288,7 @@ describe('the census (§B.3, R4)', () => {
       'routes.ts',
       'payroll/routes.ts',
       'schedule-scope.ts',
+      'lib/documentParkGroups.ts',
     ].map((f) => readFileSync(join(OTOAPP_SRC, f), 'utf8').replace(/\s+/g, ' '));
     const everywhere = files.join('\n');
     const said = (fragment: string) => expect(everywhere, fragment).toContain(fragment);
@@ -289,6 +315,9 @@ describe('the census (§B.3, R4)', () => {
       OTOAPP_WORDS.rotaBranchDenied,
       OTOAPP_WORDS.branchesDenied,
       OTOAPP_WORDS.parkGroupRequired,
+      OTOAPP_WORDS.branchIdRequired,
+      OTOAPP_WORDS.branchNotFound,
+      OTOAPP_WORDS.branchNotAllowed,
       'Payroll is for payroll roles only',
       'required).',
     ]) {
@@ -553,6 +582,8 @@ describe('the hand-off, as the person (§B.3, §F.2)', () => {
       ['/api/auth/handoff', 200],
       ['/api/user', 200],
       ['/api/my-time-off', 200],
+      ['/api/leave-balances', 200],
+      ['/api/all-leave-balances', 200],
       ['/api/payroll/me/payslips', 401],
       ['/api/logout', 200],
     ]);
@@ -810,12 +841,14 @@ describe('the summaries (§B.4)', () => {
     expect(JSON.stringify(period)).not.toContain(isoDay(new Date(`${first}T00:00:00+07:00`)));
   });
 
-  it('my leave: the records and the weekly off days, never the note, and no balance (G2)', async () => {
-    const fakeClient = script(w, tool('oto.my_leave', {}), final('One annual leave booked; the balance is on the screen.'));
+  it('my leave: the records, the weekly off days and the asker’s OWN balance with its kinds and units in words, never the note; the figure is answered', async () => {
+    fake.resetObservations();
+    // The answer states the balance: grounded by the summary, so `answered` is the proof (the guard refuses any other figure).
+    const fakeClient = script(w, tool('oto.my_leave', {}), final('Annual leave: 6 days remaining of 10; days off in lieu: 2 days; 5 public holidays left; one annual leave booked.'));
     const res = await ask(w, staffer.cookie, 'วันลาของฉันเหลือกี่วัน');
     expect(res.body.state).toBe('answered');
     const data = (toolResultsSeen(fakeClient)[0]!.data as { data: Record<string, unknown> }).data;
-    expect(data).toMatchObject({ employeeId: beam.id, records: 1, weeklyOffDays: ['monday'], balanceAvailable: false });
+    expect(data).toMatchObject({ employeeId: beam.id, records: 1, weeklyOffDays: ['monday'] });
     // The length an answer states ("3 days") is a figure the summary carries, with the days by name.
     expect((data.leave as Array<{ type: string; halfDay: unknown; days: number; weekdays: string }>)[0]).toMatchObject({
       type: 'annual',
@@ -823,8 +856,109 @@ describe('the summaries (§B.4)', () => {
       days: 3,
       weekdays: `${weekdayWords(isoDay(new Date(), 20))} – ${weekdayWords(isoDay(new Date(), 22))}`,
     });
+    // Beam's own row of each list (SCRUM-595: a staff session gets only that row), as the rota's strip reads it.
+    // Each kind named in the three languages too: the Thai for a day off in lieu (วันหยุดชดเชย) carries a
+    // word the guard reads as a promise unless the summary says it, and a Thai answer will say it.
+    expect(data.balance).toEqual({
+      available: true,
+      unit: 'days',
+      year: new Date().getFullYear(),
+      daysOff: {
+        kind: { en: 'days off in lieu', th: 'วันหยุดชดเชย', ru: 'отгулы' },
+        balance: 2,
+        earned: 5,
+        used: 3,
+        policy: 'ZZ Days Off',
+        words: 'Days off in lieu: a balance of 2 days (5 days earned, 3 days used)',
+      },
+      annual: {
+        kind: { en: 'annual leave', th: 'ลาพักร้อน', ru: 'ежегодный отпуск' },
+        remaining: 6,
+        earned: 10,
+        used: 4,
+        canClaim: true,
+        waitingMonths: 0,
+        monthsEmployed: 12,
+        words: 'Annual leave: 6 days remaining of 10 days earned (4 days used)',
+      },
+      business: {
+        kind: { en: 'business leave', th: 'ลากิจ', ru: 'отпуск по личным делам' },
+        remaining: 2,
+        earned: 3,
+        used: 1,
+        words: 'Business leave: 2 days remaining of 3 days (1 day used)',
+      },
+      publicHolidays: {
+        kind: { en: 'public holidays', th: 'วันหยุดนักขัตฤกษ์', ru: 'государственные праздники' },
+        remaining: 5,
+        words: `Public holidays: 5 days remaining in ${new Date().getFullYear()}`,
+      },
+      holiday: { total: 11, words: 'Holiday, as the rota shows it: 11 days (claimable annual leave plus public holidays remaining)' },
+      words:
+        'Days off in lieu: a balance of 2 days (5 days earned, 3 days used); Annual leave: 6 days remaining of 10 days earned (4 days used); ' +
+        `Business leave: 2 days remaining of 3 days (1 day used); Public holidays: 5 days remaining in ${new Date().getFullYear()}`,
+    });
     expect(JSON.stringify(data)).not.toContain(ASK_SENTINEL);
     expect(res.body.links.map((l) => l.key)).toEqual([]);
+    // The three reads, as the person, at the asker's own park: one tool row, three parts.
+    expect(fake.requests.filter((r) => r.path.startsWith('/api/') && !['/api/auth/handoff', '/api/user', '/api/logout'].includes(r.path)).map((r) => [r.path, r.query, r.status])).toEqual([
+      ['/api/my-time-off', '', 200],
+      ['/api/leave-balances', `?branchId=${world.central}`, 200],
+      ['/api/all-leave-balances', `?branchId=${world.central}`, 200],
+    ]);
+    expect((await toolRows(w.ctx.db, res.body.id)).map((r) => [r.tool, r.route, r.status, r.rows])).toEqual([['oto.my_leave', 'GET /api/my-time-off', 200, 1]]);
+  });
+
+  it('a manager’s own leave: the lists answer the branch, and the summary holds only the asker’s own row, picked by their employee id', async () => {
+    const fakeClient = script(w, tool('oto.my_leave', {}), final('Annual leave: 5 days remaining of 12; days off in lieu: 7 days.'));
+    const res = await ask(w, manager.cookie, 'My leave balance');
+    expect(res.body.state).toBe('answered');
+    const data = (toolResultsSeen(fakeClient)[0]!.data as { data: { employeeId: string; balance: Record<string, Record<string, unknown>> } }).data;
+    expect(data.employeeId).toBe(krit.id);
+    // Krit's figures, none of Beam's (6 of 10, 2 in lieu), though the fake answered the manager every row.
+    expect(data.balance.daysOff).toMatchObject({ balance: 7, earned: 8, used: 1 });
+    expect(data.balance.annual).toMatchObject({ remaining: 5, earned: 12, used: 7 });
+    expect(data.balance.business).toMatchObject({ remaining: 3, earned: 3, used: 0 });
+    expect(JSON.stringify(data.balance)).not.toContain('6 days remaining');
+    expect(JSON.stringify(data)).not.toContain(beam.id);
+  });
+
+  it('the fake fences the two lists as the app does (SCRUM-595): a staff session its own row, none without a record, a manager the branch; the route’s own refusals', async () => {
+    const sessionFor = (account: { accountId: string; cookie: string }) => {
+      const sid = `s%3Azz.${newId()}`;
+      const user = fake.userByAccount(account.accountId)!;
+      fake.sessions.set(sid, { sid, userId: user.id, platformAccountId: account.accountId, platformToken: account.cookie.split('=')[1]! });
+      return sid;
+    };
+    const read = async (sid: string, path: string) => {
+      const r = await fetch(`${fake.origin}${path}`, { headers: { cookie: `connect.sid=${sid}` } });
+      const body = (await r.json()) as unknown;
+      return [r.status, Array.isArray(body) ? body.map((row) => (row as { employeeId: string }).employeeId).sort() : (body as { message?: string }).message] as const;
+    };
+    // A staff session with no employee record: the fence answers an empty list, not a refusal.
+    const unlinked = await staff(w, 'ZZ Oto Unlinked', 'staff', { scopeType: 'branch', scopeId: w.central }, w.central);
+    fakeUser(fake, world, { platformAccountId: unlinked.accountId, role: 'staff', branchId: world.central });
+    const asStaff = sessionFor(staffer);
+    const asManager = sessionFor(manager);
+    const asUnlinked = sessionFor(unlinked);
+    const central = [...fake.data.employees.filter((e) => e.branchId === world.central && e.status === 'active').map((e) => e.id)].sort();
+    const group = [...fake.data.employees.filter((e) => e.tenantId === world.tenantId).map((e) => e.id)].sort();
+    try {
+      for (const list of ['/api/leave-balances', '/api/all-leave-balances']) {
+        expect(await read(asStaff, `${list}?branchId=${world.central}`), list).toEqual([200, [beam.id]]);
+        expect(await read(asUnlinked, `${list}?branchId=${world.central}`), list).toEqual([200, []]);
+        expect(await read(asStaff, list), list).toEqual([400, OTOAPP_WORDS.branchIdRequired]);
+        expect(await read(asStaff, `${list}?branchId=${newId()}`), list).toEqual([404, OTOAPP_WORDS.branchNotFound]);
+      }
+      // A manager reads the branch on one list and, as the route lists them, the park group on the other.
+      expect(await read(asManager, `/api/leave-balances?branchId=${world.central}`)).toEqual([200, central]);
+      expect(await read(asManager, `/api/all-leave-balances?branchId=${world.central}`)).toEqual([200, group]);
+      // Another park the asker does not reach: each route's own sentence.
+      expect(await read(asStaff, `/api/leave-balances?branchId=${world.chalong}`)).toEqual([403, OTOAPP_WORDS.branchesDenied]);
+      expect(await read(asStaff, `/api/all-leave-balances?branchId=${world.chalong}`)).toEqual([403, OTOAPP_WORDS.branchNotAllowed]);
+    } finally {
+      for (const sid of [asStaff, asManager, asUnlinked]) fake.sessions.delete(sid);
+    }
   });
 
   it('my payslips: months, never figures', async () => {
@@ -979,7 +1113,12 @@ describe('the record (§E.1): the sentinel, the cookie and the token', () => {
     expect(w.logLines.filter((l) => /oto-handoff\+jws|eyJhbGci/.test(l))).toEqual([]);
   });
 
-  it('no tool call of any ask reached a fence-gap route (G2)', () => {
-    expect(fake.requests.filter((r) => /time-events|checklists|balance/.test(r.path))).toEqual([]);
+  it('no tool call of any ask reached a route G2 left closed: the clock events, the checklists, a per-employee or colleague balance', () => {
+    expect(fake.requests.filter((r) => /time-events|checklists|balances\/employee|leave-balance$|leave-balances-dynamic|sick-leave/.test(r.path))).toEqual([]);
+    // Any balance read still on record is one of the two person-fenced lists oto.my_leave names (SCRUM-595);
+    // the my-leave summary test above pins that both are called, as the person, at the asker's park.
+    for (const r of fake.requests.filter((r) => /balance/.test(r.path))) {
+      expect(['/api/leave-balances', '/api/all-leave-balances'], r.path).toContain(r.path);
+    }
   });
 });
