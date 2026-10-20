@@ -10,7 +10,8 @@
     "test": "vitest run --pool=forks",
     "api-types": "tsx scripts/api-types.ts",
     "inbox:demo": "tsx scripts/inbox-demo.ts",
-    "ai:eval": "tsx scripts/inbox-ai-eval.ts"
+    "ai:eval": "tsx scripts/inbox-ai-eval.ts",
+    "assistant:eval": "tsx scripts/assistant-eval.ts"
   },
   "dependencies": {
     "@fastify/cookie": "^11.0.2",

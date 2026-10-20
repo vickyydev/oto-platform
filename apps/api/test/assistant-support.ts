@@ -1,6 +1,5 @@
 import { hash } from '@node-rs/argon2';
 import { and, asc, eq, sql } from 'drizzle-orm';
-import { expect } from 'vitest';
 import {
   FakeAssistantClient,
   FakeToolLoopClient,
@@ -19,7 +18,7 @@ import {
   operatorIdByName,
   type TestContext,
 } from './helpers';
-import { AI_SIM_SECRET, type AiWorld } from './inbox-ai-support';
+import type { AiWorld } from './inbox-ai-support';
 
 /**
  * The internal assistant's engine suites (SCRUM-591, round I2; plan
@@ -37,6 +36,13 @@ import { AI_SIM_SECRET, type AiWorld } from './inbox-ai-support';
  * refuse a number) — it goes into a question, a member's notes, an answer and
  * a correction, and must surface nowhere but the ask-log's own rows.
  */
+/**
+ * The simulator's webhook secret for the ask world. This module imports
+ * nothing from Vitest (nor from a module that does), so the live eval
+ * (`scripts/assistant-eval.ts`, run by tsx) builds the same world.
+ */
+export const ASK_SIM_SECRET = 'assistant-ask-test-secret';
+
 export const ASK_SENTINEL = 'ZQXASKSENTINELWORDQZX';
 export const PASSWORD = 'assistant1234';
 
@@ -57,13 +63,13 @@ export async function askWorld(): Promise<AskWorld> {
       ANTHROPIC_API_KEY: 'unused-in-tests',
       // The Inbox simulator, so a department's agent has real threads to count (golden Q10).
       INBOX_SIMULATOR: 'on',
-      INBOX_SIMULATOR_SECRET: AI_SIM_SECRET,
+      INBOX_SIMULATOR_SECRET: ASK_SIM_SECRET,
     },
     logCapture: { stream: { write: (line) => void logLines.push(line) }, level: 'debug' },
   });
   // Off by construction until a suite injects the fake.
-  expect(ctx.app.internalAi.client).toBeNull();
-  expect(ctx.app.internalAi.config.enabled).toBe(true);
+  if (ctx.app.internalAi.client !== null) throw new Error('askWorld: the test runtime built a model client');
+  if (!ctx.app.internalAi.config.enabled) throw new Error('askWorld: the internal assistant is not enabled');
   return {
     ctx,
     oto: await operatorIdByName(ctx.db, OTO_OPERATOR_NAME),
@@ -190,6 +196,15 @@ export async function staff(
     .limit(1);
   if (!role) throw new Error(`no role ${roleName}`);
   await w.ctx.db.insert(s.roleAssignment).values({ id: newId(), accountId, roleId: role.id, ...scope });
+  return { accountId, ...(await mintSession(w, accountId, seat)) };
+}
+
+/** A fresh session for an existing account (seated at `seat`): its id and cookie. */
+export async function mintSession(
+  w: AskWorld,
+  accountId: string,
+  seat: string | null = null,
+): Promise<{ sessionId: string; cookie: string }> {
   const token = newSessionToken();
   const sessionId = newId();
   await w.ctx.db.insert(s.session).values({
@@ -199,7 +214,7 @@ export async function staff(
     branchId: seat,
     expiresAt: new Date(Date.now() + 3_600_000),
   });
-  return { accountId, sessionId, cookie: `${SESSION_COOKIE}=${token}` };
+  return { sessionId, cookie: `${SESSION_COOKIE}=${token}` };
 }
 
 /** An operator role of the test's own, holding exactly these permissions. */
