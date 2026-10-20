@@ -3,75 +3,62 @@
   "note": "Fictional fixture world only (SCRUM-591 I5). Every Messages API response of the ask is recorded verbatim, in order; no request, header or key is stored.",
   "requestedModel": "claude-opus-5-5",
   "servedModel": "claude-opus-5-5",
-  "personaVersion": "internal-persona-2026-10-20.4",
-  "worldVersion": "world-df563655fb8abacb",
+  "personaVersion": "internal-persona-2026-10-21.1",
+  "worldVersion": "world-a383df8115273785",
   "recordedOn": "2026-10-20",
-  "askedAt": "2026-10-20T18:52:52.834Z",
+  "askedAt": "2026-10-20T22:23:47.830Z",
   "ids": {
-    "operator": "01a15aa8-4684-783a-8662-899cc724c9b8",
-    "branch:hkt-central": "01a15aa8-4684-783a-8662-899d3e5357df",
-    "branch:robinson-chalong": "01a15aa8-4685-7a38-819d-4a7d4d079985",
-    "department:reception@central": "01a15aa8-468a-7f1a-be41-b1f626b89e85",
-    "account:reception": "01a15aa8-49e7-7081-8c51-f7cdd1a90584",
-    "account:manager": "01a15aa8-49f8-7cd4-b4a8-8c26d4578d0a",
-    "account:opsAdmin": "01a15aa8-4a05-7fb3-96a0-f3486ea5499e",
-    "account:inboxAgent": "01a15aa8-4a0f-724c-b239-6ec3fcf695aa",
-    "account:staff": "01a15aa8-4a18-7ce0-b515-596f9b131405",
-    "account:otoManager": "01a15aa8-4a23-73ae-bc95-744c98d56878",
-    "account:otoStaff": "01a15aa8-4a2f-77a3-919b-2800d669a33c",
-    "account:otoNobody": "01a15aa8-4a3a-711a-bbc1-25611e3a23bc",
-    "otoapp.tenant": "01a15aa8-4a45-7fb9-a8cb-84a2c7182372",
-    "otoapp.branch:central": "01a15aa8-4a45-7fb9-a8cb-84a31b457be6",
-    "otoapp.branch:chalong": "01a15aa8-4a45-7fb9-a8cb-84a41b2052be",
-    "otoapp.employee:anan": "01a15aa8-4a45-7fb9-a8cb-84a5fadd688b",
-    "otoapp.employee:chai": "01a15aa8-4a45-7fb9-a8cb-84a6fe868ef4",
-    "otoapp.employee:otoManager": "01a15aa8-4a45-7fb9-a8cb-84a74321006c",
-    "otoapp.user:otoManager": "01a15aa8-4a45-7fb9-a8cb-84a8aed31edf",
-    "otoapp.employee:otoStaff": "01a15aa8-4a45-7fb9-a8cb-84a9913bbfca",
-    "otoapp.user:otoStaff": "01a15aa8-4a45-7fb9-a8cb-84aa4e999f32",
-    "otoapp.user:opsAdmin": "01a15aa8-4a45-7fb9-a8cb-84ab6a47f665",
-    "otoapp.leave:1": "01a15aa8-4a46-768d-831f-964fcbf40388",
-    "member:mali": "01a15aa8-4a46-768d-831f-96504cf219ee",
-    "member:somchai": "01a15aa8-4a47-721f-904f-85dcffda4aca",
-    "employee:anan": "01a15aa8-4a48-7043-8678-cedb5ae0d6e8",
-    "conversation:1": "01a15aa8-4a71-76eb-8467-4522a0f46a2c",
-    "conversation:2": "01a15aa8-4a8d-7e89-8271-4806f6fa61d5"
+    "operator": "01a15b69-4856-7952-bccd-7d1ce7bdf200",
+    "branch:hkt-central": "01a15b69-4858-7fe5-9a54-be4a1468a7bc",
+    "branch:robinson-chalong": "01a15b69-485a-729f-a493-7cfe14c38f82",
+    "department:reception@central": "01a15b69-4864-765b-a972-f92de5750b01",
+    "account:reception": "01a15b69-4efe-7c2c-b96e-6a6bdd2c59ba",
+    "account:manager": "01a15b69-4f1d-7ed7-a4fa-5d8849221fd4",
+    "account:opsAdmin": "01a15b69-4f2f-77fa-8697-09cc56f17762",
+    "account:inboxAgent": "01a15b69-4f3c-70d4-95fb-16bfb65799e6",
+    "account:staff": "01a15b69-4f54-76aa-bc9a-ffd1aace106d",
+    "account:otoManager": "01a15b69-4f62-74e2-bf8c-e4d0a7361975",
+    "account:otoStaff": "01a15b69-4f72-70ee-b196-460ccb2ec778",
+    "account:otoNobody": "01a15b69-4f81-7df2-ab82-262c955a02da",
+    "otoapp.tenant": "01a15b69-4f91-7655-a754-b6f1dd97409a",
+    "otoapp.branch:central": "01a15b69-4f91-7655-a754-b6f266cc235d",
+    "otoapp.branch:chalong": "01a15b69-4f91-7655-a754-b6f369460e44",
+    "otoapp.employee:anan": "01a15b69-4f91-7655-a754-b6f4aa592d90",
+    "otoapp.employee:chai": "01a15b69-4f91-7655-a754-b6f5f570f728",
+    "otoapp.employee:otoManager": "01a15b69-4f91-7655-a754-b6f6d046d285",
+    "otoapp.user:otoManager": "01a15b69-4f91-7655-a754-b6f76063d5c9",
+    "otoapp.employee:otoStaff": "01a15b69-4f91-7655-a754-b6f857fd9e04",
+    "otoapp.user:otoStaff": "01a15b69-4f91-7655-a754-b6f9c79748f4",
+    "otoapp.user:opsAdmin": "01a15b69-4f91-7655-a754-b6fac1c37916",
+    "otoapp.leave:1": "01a15b69-4f92-7413-8ea5-7d846c45f7ef",
+    "member:mali": "01a15b69-4f92-7413-8ea5-7d8572dba49f",
+    "member:somchai": "01a15b69-4f93-7bab-9857-ee4ae408f7ed",
+    "employee:anan": "01a15b69-4f95-7771-8fe3-55550547fae4",
+    "conversation:1": "01a15b69-4fcc-797f-af74-6d76448e6d5f",
+    "conversation:2": "01a15b69-4ff6-7fb7-bf39-23a440af98a5"
   },
   "times": {
-    "conversation:1": "2026-10-20T18:52:20.000Z",
-    "conversation:2": "2026-10-20T18:52:21.000Z"
+    "conversation:1": "2026-10-20T22:23:10.000Z",
+    "conversation:2": "2026-10-20T22:23:10.000Z"
   },
   "responses": [
     {
       "model": "claude-opus-5-5",
-      "id": "msg_011CgDzeAFvrWASfDqvFu92q",
+      "id": "msg_011CgEGj6tWt2Ck6M7bUy1Rp",
       "type": "message",
       "role": "assistant",
       "content": [
         {
           "type": "thinking",
           "thinking": "",
-          "signature": "CAQSjwYKEAgTGAI4AUIIdGhpbmtpbmcSDAzYZwHKVW4ItWmI+xoM6AHsRTFKrYKheJq1IjCzRoVZxQmflxCMmD1n+22eslpZgexBuE9Mup6tWKIWsZP9dagVBzztc+lRnFlfuFEqrAV/U1TcWKXLOkkEuBXxGWGOLPkVzXgL50q6L/m/2O+bMtu1DHVk+PgX+8e0SskAiJRXwy+A57fGhOGQagPV8o24eq84VyTKOoNpS6qecgkuTrlKFGXYGC3spYOCEaZ8NCCKOHe9ZOn9jWgXhC6BPw1b8mDb5gCsBC/aYks7tafW6GccqxpOklLDmrCAdmZ/CCXEzr1+MUrlr15Jx6ec/Zfd9EKjk3FOU4HqtMh2UMd3Krv1uCjLemhbtAAXcENcJq4iB0p+Mx0EkZM0Pb0GpWpZWL6cAE4n2MUpMl/NIVK/USU7F8czuCmJi1V/3eaiNIMDTGgt7hpQADKeG01PFRi5yG3o/AQ9HkNxmuhAXNl4PSQ5NxjYt/M4Tc2tl3t7EBBfMBIkIpHSINFY0b3kHg/gG7n6uWJOQS7CDREbKNsXv8vUR6foAbUl3g3rVoTNasGaSOfzY+qxnzEJ39v9kn0vdPkXTgJEqC3mULpyUk2r/rZVfAoTooyFScALqCEUY/ApWXp0jpTHG7uR2vrxpTMzd1qe580J6tjcXaavp7OxzuT6iVZPjAag1CDVDhg4HD8MLKJiXfumjVydbv/LmHsowKB0k4niTdPUMgi3I8y3B5SlYQEYUKgcrcJLMt8vG+LnrZKeJQCZtG3XtQCiETTDZq3hhlZX+1PIDymXmmAe0Wf7OzE9QSXTAigSyC6penHHrH9VTHUnLkfO2k3xDqtbGTvUzHLdtq4k4a0/fOr/tKqfbSaaQv+EyU1lY7kG+clVUkca4GODRDhXLQfOgTvKSlD492VGEis6B45HwMVFAzoWWaeE+7MldGEqJi83NWuPkPrpI24jNigVNNDNrJAQv86Iuxiek45DWUssoL2tF+/mBGVAeOl525rzPCTg3d3teDJOVtgrVkBTqUAYAQ=="
+          "signature": "CAQS6wUKEAgTGAI4AUIIdGhpbmtpbmcSDH7whKkbfIUDYTinABoMr3pejq4hQeQUc/YCIjBUPJpufuVzMrINOazalC/Lln8VXMAGHCfQVHg4kQXEFVQ3Fw4cQsrgENNHKk+M2DQqiAXs3Q0VhOaopzghTnKNv6IdNMuvg9eg9aQ/D97f06ZcPYhUtcJQwJFpzLdIVY3vKBMZ6a1PTe/LvW1Xtu9WhI4wmvTVkxiNJbEwgAN7QLE9VJzME6dKjVIJRcySQ1hR/4C7+L2ofTn4mPxAegOgW6Y+nW9glKR1DrLJwSuMyTQ1V2B1cT/fXH8YUfgEuwvqGwP8Gei1uFqSQZ1A/LzsxOqDzhAEk0WvaFx6iZ1ZrRuZUejZIGmmHp/I1264XdtjaPFtgJoKZo3Yb776RvcxCJJIqYSZFG9iH7VDKi8h4NFIwT9wkTQpaE0d9cwK4Vsop+rLuPPvCYtV3HxeyccVHPkjovPZcC7PnvgQ3hgiLp89Tz11aZPJfNj+PpVBd8eVMld2jYKGiphX9QbsiaPaBHTN63Sg9Tl91ASIaxKBKTLyOhwbtvo5aPfZfc8YgzrCwZBI4xt0DphywBZT3dqiTbmiD0fh3AKXA48m9lkDnJ1HmRgmjcvXzxKsIKIdroZOCuwc9mnWwGGVzK8OuS6K9ygvO8pyLMNq4fPL9HhnSHpb/k6liKZuE5VnAw7T1ZN33wT8SxmnMo85LeZ0eG9a2L/hZMhmsWSzuccpMTxX3ulKswj0sfbqyMCZP/cXICN1X5u4fwzKzfYLKYr/e6fWgInwfCdnSVvhXBBmDYUreBldwwpwSLyvo0EDSfQlsiNmJAYz46J+BMZqyAgExPLByl2p7IASE0Zji+EciD1GSdDxFEJvbDywzQEB9Y5aKJ/9akxgX0W7zg6hHIcxn4FRwdDJNXlgdgfLvmp3I5zhWDLBugv9CqP9BNb5o4A5pCI3QYQR5bu3CH6FtjwD15qTSqK9Eop8te8m56oYAQ=="
         },
         {
           "type": "tool_use",
-          "id": "toolu_01KHMCrL1CMH7sYgE5HWpcVg",
+          "id": "toolu_01WhVftUHB4Gb1N48U6VL8x9",
           "name": "oto_rota",
           "input": {
-            "scope": "me",
-            "from": "2026-10-22",
-            "to": "2026-10-22"
-          },
-          "caller": {
-            "type": "direct"
-          }
-        },
-        {
-          "type": "tool_use",
-          "id": "toolu_01XzRq1nPxHu1Dr2ULNWb7Ub",
-          "name": "oto_rota",
-          "input": {
-            "scope": "branch",
+            "scope": "department",
             "from": "2026-10-22",
             "to": "2026-10-22"
           },
@@ -85,18 +72,18 @@
       "stop_sequence": null,
       "stop_details": null,
       "usage": {
-        "input_tokens": 177,
+        "input_tokens": 254,
         "cache_creation_input_tokens": 0,
-        "cache_read_input_tokens": 5133,
+        "cache_read_input_tokens": 7587,
         "cache_creation": {
           "ephemeral_5m_input_tokens": 0,
           "ephemeral_1h_input_tokens": 0
         },
         "iterations": [
           {
-            "input_tokens": 177,
-            "output_tokens": 300,
-            "cache_read_input_tokens": 5133,
+            "input_tokens": 254,
+            "output_tokens": 158,
+            "cache_read_input_tokens": 7587,
             "cache_creation_input_tokens": 0,
             "cache_creation": {
               "ephemeral_5m_input_tokens": 0,
@@ -106,9 +93,9 @@
             "model": null
           }
         ],
-        "output_tokens": 300,
+        "output_tokens": 158,
         "output_tokens_details": {
-          "thinking_tokens": 97
+          "thinking_tokens": 55
         },
         "service_tier": "standard",
         "inference_geo": "global",
@@ -118,18 +105,18 @@
     },
     {
       "model": "claude-opus-5-5",
-      "id": "msg_011CgDzeXMvU2vWqxcW5LsFv",
+      "id": "msg_011CgEGjJDuiGv1XkpJAnYPn",
       "type": "message",
       "role": "assistant",
       "content": [
         {
           "type": "thinking",
           "thinking": "",
-          "signature": "CAQS7wUKEAgTGAI4AUIIdGhpbmtpbmcSDE4SecAX1Huho9bmmxoMmH3oMLiGaX2kMfUwIjCfYoHYtBYKzyMOrpkZq2yQ8nc6lYFR15zy6LcBGiYRrrIhoWjORaDC+CA19vtUgVAqjAXjGyZxb9HUYOcMAZ8rgMU+TkOlkel86cmhoNTFrvKRKW0ChCFdW50+tVt+yXoShMn9tBFf6SITDRG27gXw11h5RukTFfcL9j//1M0KF+HLafVtodCKtPBFPIn6jZJcFZ+7iQ1kF+//9pOB/UBtniKrxzmSrkbdbo2+n5bsQBERwN3VtGmqgBYQbwpLli98Q+GAHgOG6FEv+8Qrdi7upWqU/yB1M9Xc+4Kdve1Kdc8uYjZXlE7udDOuvxNL6ZW85j2yaVgdxtSUMa5QLxhRsGfbiYzU7/6ch/I3jhLAAnRU8VsBt+oZE62JSvdRgat2k42oFK2GIpNrjVFsiD+cf/Mdb9mRB3yRZxnHlGARUfDfB8ugExOWLlpA8MG0deSCwuqtC/hHHezinzEsRfTMo4lNtx85+tLw7wLuAGp2HcMno3EA8W1LsWt3iyQbcyykbA6LvrCY/5pifbcmE0Jf3FIP2p9jSwtIaJYbUuEft/eBcgibewoMFLMJHHnxAarlAgQBFdoWD7GOx5j+zHmfPYNGkhK6onT993IX9bviNXJjvV6MkjbbyIL3l+ouO97U2iTMwThGoHkEGBKBogAWHYY/AyCWJTNFpZV4L47vSx3KOe14QdfDSyeH3Pjhp2pdLWCveY3i+hprapsY/pFW2oj9flMl3lbPJ8e4ztPZs9sNwlAdBzxg3p2iTV4PczmAfy4JWGIetJ2lbH4CRQTSVungk4DZlBO0zjfUc171NorhcRertlmgSCBleMXK0gglhTt2wH1FsU1DvXbSbPmD7X/a8BXdlfMBPHNF/xQhbEk17c4v5vXloKAegRiuPAodDQdXIYd74jw6TZVAdzkrrpFRakoqh4CfYY7QVsgJGAE="
+          "signature": "CAQSgwYKEAgTGAI4AUIIdGhpbmtpbmcSDBc6FupYBhSf0sOjcBoMQnpHaqIXWGQdfZScIjBtRNfpIuFep3mArXnVlWa2P5Aa+A5mUfyX4+NuKBcqmGABm9KjGurfrCzVSosB65AqoAX+d6gCVxe0okfoE+EK1rB4TY3/f/YRbWtx0vSNE3DUTGXRpwerDz5sUSgcc7vQnhw3EIGM7jm4xGOKUL0FZlueYy+Y/UjTXDtgrAu9oo0xzHG6R8dBTAUw2pOxaSdcrsTFnYv8ZKwZsYi0V46RvOlvNCnZ6Rv7SPwJK4aENn1MW9t9/EneE0qnDwTOtu/BKfCtzK1KKIbVRvIt/isj+MLlgzlRMus9BFosRBMr+I9qTWrWODlMAjvL/vdqMyH3jjtOJokihzrwZjeCpX4HRt6SgpADYLKYLiPbEjcb2/CdqIsnW3WqU7rFeNTDC3e9PEOho7qKYFthfp2rwIVqWrJwWAxssk6rLZWRwAv381HBtEFRd8RiPNrjPqmFQH85M7sUaqSLYbkIxzqF/jyF+Mra42bpFmwR40WANmBQxVdbvlcgpZn0ck2/ZZ/Ha7E06JJlga7tuC/U0iwy16KyTWSLfvgyl5UdeXqgRna0oWGsiJHpfDfj4UK7OUijN+5a2JvfCjU54+P1F308WpkOCGMiVy8MbplDL+6WXIJD2BwvkQMCKMOLCcRwekEonIvWbK3t5ETEIDMH7YzRa7aEXV3yTcIkx+kQ4AU+oe+oMFzzlHNHl4FneydvV/EXIcB2VFms36wvBzevDGLNWMKV2mrim6LzxRzSZOMyN7R8OQcVxaUlzawfQnzTbcO/uXzRc+KVgDqtRLLFsHVfWs7KhW3l9fWQailQwEEBPYB+Gfg+cLRBM9KebEbmM98yFqCH89BVxvO7KR4PQj92sjI16TuogokwNXLZ0yt66N0+s8/Qva9tg0jjKTVCaAiCh1OPQzvIpZerJch2dURL4r2TiQDH9X2aJr5m9qHlp1YSWW+Ws/kpsmHwRzQ39oxfVlmeMa8YAQ=="
         },
         {
           "type": "text",
-          "text": "{\"answer\":\"Thursday 22 October 2026 at ZZ Central. Your shift is 10:00–19:00 on Floor. Two other people are on Floor for the same hours:\\n- Anan, 10:00–19:00\\n- Krit, 10:00–19:00\\nNobody else is on the rota that day. I read \\\"tomorrow\\\" as 22 October because it is already past midnight. If you meant later today, 21 October, ask again.\",\"links\":[{\"key\":\"oto.rota\",\"params\":[]}],\"language\":\"en\"}"
+          "text": "{\"answer\":\"Tomorrow, Thursday 22 October 2026, 3 people from your department (Floor, ZZ Central) are on shift:\\n- Anan, 10:00–19:00\\n- Beam, 10:00–19:00\\n- Krit, 10:00–19:00\\nYou aren't on the department rota for that day. Shifts in other departments aren't included here.\",\"links\":[{\"key\":\"oto.rota\",\"params\":[]}],\"language\":\"en\",\"smallTalk\":false}"
         }
       ],
       "container": null,
@@ -137,18 +124,18 @@
       "stop_sequence": null,
       "stop_details": null,
       "usage": {
-        "input_tokens": 1688,
+        "input_tokens": 1145,
         "cache_creation_input_tokens": 0,
-        "cache_read_input_tokens": 5133,
+        "cache_read_input_tokens": 7587,
         "cache_creation": {
           "ephemeral_5m_input_tokens": 0,
           "ephemeral_1h_input_tokens": 0
         },
         "iterations": [
           {
-            "input_tokens": 1688,
-            "output_tokens": 217,
-            "cache_read_input_tokens": 5133,
+            "input_tokens": 1145,
+            "output_tokens": 203,
+            "cache_read_input_tokens": 7587,
             "cache_creation_input_tokens": 0,
             "cache_creation": {
               "ephemeral_5m_input_tokens": 0,
@@ -158,7 +145,7 @@
             "model": null
           }
         ],
-        "output_tokens": 217,
+        "output_tokens": 203,
         "output_tokens_details": {
           "thinking_tokens": 42
         },
@@ -173,7 +160,6 @@
     "state": "answered",
     "reason": null,
     "tools": [
-      "oto.rota",
       "oto.rota"
     ],
     "pass": true,

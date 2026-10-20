@@ -3,113 +3,59 @@
   "note": "Fictional fixture world only (SCRUM-591 I5). Every Messages API response of the ask is recorded verbatim, in order; no request, header or key is stored.",
   "requestedModel": "claude-opus-5-5",
   "servedModel": "claude-opus-5-5",
-  "personaVersion": "internal-persona-2026-10-20.4",
-  "worldVersion": "world-df563655fb8abacb",
+  "personaVersion": "internal-persona-2026-10-21.1",
+  "worldVersion": "world-a383df8115273785",
   "recordedOn": "2026-10-20",
-  "askedAt": "2026-10-20T18:52:29.350Z",
+  "askedAt": "2026-10-20T22:23:21.491Z",
   "ids": {
-    "operator": "01a15aa8-4684-783a-8662-899cc724c9b8",
-    "branch:hkt-central": "01a15aa8-4684-783a-8662-899d3e5357df",
-    "branch:robinson-chalong": "01a15aa8-4685-7a38-819d-4a7d4d079985",
-    "department:reception@central": "01a15aa8-468a-7f1a-be41-b1f626b89e85",
-    "account:reception": "01a15aa8-49e7-7081-8c51-f7cdd1a90584",
-    "account:manager": "01a15aa8-49f8-7cd4-b4a8-8c26d4578d0a",
-    "account:opsAdmin": "01a15aa8-4a05-7fb3-96a0-f3486ea5499e",
-    "account:inboxAgent": "01a15aa8-4a0f-724c-b239-6ec3fcf695aa",
-    "account:staff": "01a15aa8-4a18-7ce0-b515-596f9b131405",
-    "account:otoManager": "01a15aa8-4a23-73ae-bc95-744c98d56878",
-    "account:otoStaff": "01a15aa8-4a2f-77a3-919b-2800d669a33c",
-    "account:otoNobody": "01a15aa8-4a3a-711a-bbc1-25611e3a23bc",
-    "otoapp.tenant": "01a15aa8-4a45-7fb9-a8cb-84a2c7182372",
-    "otoapp.branch:central": "01a15aa8-4a45-7fb9-a8cb-84a31b457be6",
-    "otoapp.branch:chalong": "01a15aa8-4a45-7fb9-a8cb-84a41b2052be",
-    "otoapp.employee:anan": "01a15aa8-4a45-7fb9-a8cb-84a5fadd688b",
-    "otoapp.employee:chai": "01a15aa8-4a45-7fb9-a8cb-84a6fe868ef4",
-    "otoapp.employee:otoManager": "01a15aa8-4a45-7fb9-a8cb-84a74321006c",
-    "otoapp.user:otoManager": "01a15aa8-4a45-7fb9-a8cb-84a8aed31edf",
-    "otoapp.employee:otoStaff": "01a15aa8-4a45-7fb9-a8cb-84a9913bbfca",
-    "otoapp.user:otoStaff": "01a15aa8-4a45-7fb9-a8cb-84aa4e999f32",
-    "otoapp.user:opsAdmin": "01a15aa8-4a45-7fb9-a8cb-84ab6a47f665",
-    "otoapp.leave:1": "01a15aa8-4a46-768d-831f-964fcbf40388",
-    "member:mali": "01a15aa8-4a46-768d-831f-96504cf219ee",
-    "member:somchai": "01a15aa8-4a47-721f-904f-85dcffda4aca",
-    "employee:anan": "01a15aa8-4a48-7043-8678-cedb5ae0d6e8",
-    "conversation:1": "01a15aa8-4a71-76eb-8467-4522a0f46a2c",
-    "conversation:2": "01a15aa8-4a8d-7e89-8271-4806f6fa61d5"
+    "operator": "01a15b69-4856-7952-bccd-7d1ce7bdf200",
+    "branch:hkt-central": "01a15b69-4858-7fe5-9a54-be4a1468a7bc",
+    "branch:robinson-chalong": "01a15b69-485a-729f-a493-7cfe14c38f82",
+    "department:reception@central": "01a15b69-4864-765b-a972-f92de5750b01",
+    "account:reception": "01a15b69-4efe-7c2c-b96e-6a6bdd2c59ba",
+    "account:manager": "01a15b69-4f1d-7ed7-a4fa-5d8849221fd4",
+    "account:opsAdmin": "01a15b69-4f2f-77fa-8697-09cc56f17762",
+    "account:inboxAgent": "01a15b69-4f3c-70d4-95fb-16bfb65799e6",
+    "account:staff": "01a15b69-4f54-76aa-bc9a-ffd1aace106d",
+    "account:otoManager": "01a15b69-4f62-74e2-bf8c-e4d0a7361975",
+    "account:otoStaff": "01a15b69-4f72-70ee-b196-460ccb2ec778",
+    "account:otoNobody": "01a15b69-4f81-7df2-ab82-262c955a02da",
+    "otoapp.tenant": "01a15b69-4f91-7655-a754-b6f1dd97409a",
+    "otoapp.branch:central": "01a15b69-4f91-7655-a754-b6f266cc235d",
+    "otoapp.branch:chalong": "01a15b69-4f91-7655-a754-b6f369460e44",
+    "otoapp.employee:anan": "01a15b69-4f91-7655-a754-b6f4aa592d90",
+    "otoapp.employee:chai": "01a15b69-4f91-7655-a754-b6f5f570f728",
+    "otoapp.employee:otoManager": "01a15b69-4f91-7655-a754-b6f6d046d285",
+    "otoapp.user:otoManager": "01a15b69-4f91-7655-a754-b6f76063d5c9",
+    "otoapp.employee:otoStaff": "01a15b69-4f91-7655-a754-b6f857fd9e04",
+    "otoapp.user:otoStaff": "01a15b69-4f91-7655-a754-b6f9c79748f4",
+    "otoapp.user:opsAdmin": "01a15b69-4f91-7655-a754-b6fac1c37916",
+    "otoapp.leave:1": "01a15b69-4f92-7413-8ea5-7d846c45f7ef",
+    "member:mali": "01a15b69-4f92-7413-8ea5-7d8572dba49f",
+    "member:somchai": "01a15b69-4f93-7bab-9857-ee4ae408f7ed",
+    "employee:anan": "01a15b69-4f95-7771-8fe3-55550547fae4",
+    "conversation:1": "01a15b69-4fcc-797f-af74-6d76448e6d5f",
+    "conversation:2": "01a15b69-4ff6-7fb7-bf39-23a440af98a5"
   },
   "times": {
-    "conversation:1": "2026-10-20T18:52:20.000Z",
-    "conversation:2": "2026-10-20T18:52:21.000Z"
+    "conversation:1": "2026-10-20T22:23:10.000Z",
+    "conversation:2": "2026-10-20T22:23:10.000Z"
   },
   "responses": [
     {
       "model": "claude-opus-5-5",
-      "id": "msg_011CgDzcRj3GQbJRzaMLRyJi",
-      "type": "message",
-      "role": "assistant",
-      "content": [
-        {
-          "type": "tool_use",
-          "id": "toolu_012Kk8SFTAxf8s6AUYqy5Ygi",
-          "name": "oto_employees_find",
-          "input": {
-            "name": "Anan"
-          },
-          "caller": {
-            "type": "direct"
-          }
-        }
-      ],
-      "container": null,
-      "stop_reason": "tool_use",
-      "stop_sequence": null,
-      "stop_details": null,
-      "usage": {
-        "input_tokens": 174,
-        "cache_creation_input_tokens": 0,
-        "cache_read_input_tokens": 5133,
-        "cache_creation": {
-          "ephemeral_5m_input_tokens": 0,
-          "ephemeral_1h_input_tokens": 0
-        },
-        "iterations": [
-          {
-            "input_tokens": 174,
-            "output_tokens": 53,
-            "cache_read_input_tokens": 5133,
-            "cache_creation_input_tokens": 0,
-            "cache_creation": {
-              "ephemeral_5m_input_tokens": 0,
-              "ephemeral_1h_input_tokens": 0
-            },
-            "type": "message",
-            "model": null
-          }
-        ],
-        "output_tokens": 53,
-        "output_tokens_details": {
-          "thinking_tokens": 0
-        },
-        "service_tier": "standard",
-        "inference_geo": "global",
-        "speed": "standard"
-      },
-      "diagnostics": null
-    },
-    {
-      "model": "claude-opus-5-5",
-      "id": "msg_011CgDzcqDfFoW6ZgKitZep9",
+      "id": "msg_011CgEGhAKqfGRMLzSdSfej1",
       "type": "message",
       "role": "assistant",
       "content": [
         {
           "type": "thinking",
           "thinking": "",
-          "signature": "CAQSkAUKEAgTGAI4AUIIdGhpbmtpbmcSDKfXb8Qh3NlfxAqtiRoMIxuux1AsSn0PGPUaIjBbFyJSx+9BoaXVczrw2OE31cyuhK6eNdaWi2UTYfQMugeUSSTxhGMvhGVmdtUwIngqrQRdo3Hktmzv8Q4J3LUUeOdNTxAMjSkrwY7GqILX41+4SatcHLnT7GWVX8x0oCnLnby3IK10iv8QQ9b47IA8h710EwYM47y2uB7irPAXc9+1Cetana79GAZ2muyKP154cZVsaPJVdU2TLczJL/Dult7sBd4dM5bqu+9mZa6qomiYyy92s1pI2136nffsLbCfofiy5OG9+7jKpySwEHUU2/p5Z/Kot87Ix76UDsoKz+s4caI+AoSoFNzmE4lCXXEeFYiDtjnHupP7fNa7eXYJuHNYTzoB0RhaBZn4QtrAjSqxxONOG7km7YrtiZ2cozcygrTjQ7qDJvJS0SXV5eiowLU4Q/GP+yvs5FqPCTrYxeMU/hzUMm7usiPtWJNiYJdwUh0smF5BFos8ohBWxVHjS9FrlqInL4tVYRZen9CdAoc0kzZp9NwSuEr/U0J3zBjEOOg4fjf6bKvbde9Gibk9DDtqDKrDptX6OsCFvUPPGWnUx9mCb1NJVlYFeOKS4XmMG2mkQY3svvBk1/Uh7Mz3KevUUb5gSbiZT7CmiF1QjP4dU+9vSsDj5MkzhGcfT/1HPuwCEaYWHxnp3jBMp2BaHnocrG+EUpDEfcr04BX65xBGh+kapqVtS1GOG93IB9ZuuGoTtsFs6htphG9RsbQubreTUz0V3wEwLhC2kGUu1TLKiBNIcvDiD59p3yscjsNeD7XmwHaKPFMgNWs50m3SE/w8I4HEToXGmajAjEM/wRgB"
+          "signature": "CAQShAYKEAgTGAI4AUIIdGhpbmtpbmcSDBcmQ4vOinUfMp5gbhoM1YXeIEojNvA8sUwLIjA6LqxFqKnkJJ33XEWU8qQZKTACLQNcq78EIyTTV0EDiwiNKb4PsLWVdmaocW2VG+IqoQWFXs5acTDRtlUlrYkOqa26HYUDgjxCp9SUKH7Bvx8Cuni/roo8UKxipTEKgTOlmppXu4BzxiI4H8LNaDpNBnut4V8QLJnvXnoM+nge8qvAcHV0Sjb1warKP+sYvJrfSDrUTjKIGJmEKzBgSc+074uVqxWBBuxCLzeoBzZ9o3XCen6Pm8JYYM8nqfa+fLdGtah93AMGkXEEa7a2mHJEVPn3wzBkbDhgRagWVYkAEhmYyIX+OBbTDLcp66o+VjnwkfhDY7UCw6qfUDpZeJiRucwxsAcgRWiXsyBBg+3kcoIf01WyuBQLZ/BLK6H0JtiDwicllL0h7rdXUs7ShLObE/zmGNAquDNpq4rEh5m5jDIZf40uM8kKOpvP9ge1PCAHAtTP7Nmmm4nC9Q3uaGmmYHX52eCgdEW31WJL9e6k9tAMtuvefucW0x2z23Y8tICgwnJLKeu9Vg5PgAVIxwM8KB2We08t8tXf8IIR2ITC8v4kGIqyK/bg0dgN87yNrvqMxL8r5EiMMAXwJQ38jti6JT2pgdK6ejOsfTYErVb1/nXkHdIW4A9fjcWmKKaQ9PPrIiTU2hcEjtEIjdLZr3vkMa1SLpJVrFzNblC2VnyXN/9Ca97X2jfs/pvHSpPcJCOS9YojTEPQEsrKJdHy9U5Kx0GEG75Mj2+My5Dl2qB7UV/XZtTELUziLtOJbswO85f9kFspcSeaIs/MKqfRmRD8Fo4zV7hvh/J/GCTLHnuRozedQJEdVBmGNy+qbRk1brameO8m/ALHyz/eM9KRCViq0zWmqYQRMhvCa1qWALdFpoP0FuCFVLdBmRE+4tXsm+cWdAc/sCPFxmL7AJnbUqUvZmn21SzQQO5N9DT9ZJDXAg11dDrPNDa/7/FV19+O4cFa313mGAE="
         },
         {
           "type": "text",
-          "text": "{\"answer\":\"I have no tool that reads one person's salary. ZZ Anan Fixture's payroll profile shows the pay details your access allows.\",\"links\":[{\"key\":\"oto.payroll.person\",\"params\":[{\"name\":\"employeeId\",\"value\":\"01a15aa8-4a45-7fb9-a8cb-84a5fadd688b\"}]}],\"language\":\"en\"}"
+          "text": "{\"answer\":\"I have no tool that reads one person's salary. Anan's payroll profile shows the pay details your access allows.\",\"links\":[{\"key\":\"oto.payroll.person\",\"params\":[{\"name\":\"employeeId\",\"value\":\"01a15b69-4f91-7655-a754-b6f4aa592d90\"}]}],\"language\":\"en\",\"smallTalk\":false}"
         }
       ],
       "container": null,
@@ -117,18 +63,18 @@
       "stop_sequence": null,
       "stop_details": null,
       "usage": {
-        "input_tokens": 369,
+        "input_tokens": 348,
         "cache_creation_input_tokens": 0,
-        "cache_read_input_tokens": 5133,
+        "cache_read_input_tokens": 7587,
         "cache_creation": {
           "ephemeral_5m_input_tokens": 0,
           "ephemeral_1h_input_tokens": 0
         },
         "iterations": [
           {
-            "input_tokens": 369,
-            "output_tokens": 148,
-            "cache_read_input_tokens": 5133,
+            "input_tokens": 348,
+            "output_tokens": 187,
+            "cache_read_input_tokens": 7587,
             "cache_creation_input_tokens": 0,
             "cache_creation": {
               "ephemeral_5m_input_tokens": 0,
@@ -138,9 +84,9 @@
             "model": null
           }
         ],
-        "output_tokens": 148,
+        "output_tokens": 187,
         "output_tokens_details": {
-          "thinking_tokens": 23
+          "thinking_tokens": 67
         },
         "service_tier": "standard",
         "inference_geo": "global",
@@ -152,9 +98,7 @@
   "recorded": {
     "state": "answered",
     "reason": null,
-    "tools": [
-      "oto.employees.find"
-    ],
+    "tools": [],
     "pass": true,
     "failures": []
   }

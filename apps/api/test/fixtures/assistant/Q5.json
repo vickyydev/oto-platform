@@ -3,54 +3,54 @@
   "note": "Fictional fixture world only (SCRUM-591 I5). Every Messages API response of the ask is recorded verbatim, in order; no request, header or key is stored.",
   "requestedModel": "claude-opus-5-5",
   "servedModel": "claude-opus-5-5",
-  "personaVersion": "internal-persona-2026-10-20.4",
-  "worldVersion": "world-4e997400c81d7d03",
+  "personaVersion": "internal-persona-2026-10-21.1",
+  "worldVersion": "world-ad0ced46ab33a1b7",
   "recordedOn": "2026-10-20",
-  "askedAt": "2026-10-20T14:49:46.864Z",
+  "askedAt": "2026-10-20T22:23:39.044Z",
   "ids": {
-    "operator": "01a159c9-c796-7122-bcd9-dee94f83d07c",
-    "branch:hkt-central": "01a159c9-c797-7b54-b071-803f094e63c6",
-    "branch:robinson-chalong": "01a159c9-c798-731d-801a-2263ea4be4da",
-    "department:reception@central": "01a159c9-c79e-766a-8705-5784687b5494",
-    "account:reception": "01a159c9-caf4-78c0-a19a-efb39c90dda8",
-    "account:manager": "01a159c9-cb04-7e21-b48a-0fe977374a88",
-    "account:opsAdmin": "01a159c9-cb12-7886-a494-6e74383ff802",
-    "account:inboxAgent": "01a159c9-cb1c-7278-be12-2679b244af7b",
-    "account:staff": "01a159c9-cb25-7286-8ff1-ecedb527bd40",
-    "account:otoManager": "01a159c9-cb2f-7c15-8ccd-4398e906abc9",
-    "account:otoStaff": "01a159c9-cb39-76cb-9a17-7ebead12a443",
-    "account:otoNobody": "01a159c9-cb43-7e8f-b4e4-b9f7d4687910",
-    "otoapp.tenant": "01a159c9-cb4e-7ea1-b19b-e4577ef6403f",
-    "otoapp.branch:central": "01a159c9-cb4e-7ea1-b19b-e458fe5124da",
-    "otoapp.branch:chalong": "01a159c9-cb4e-7ea1-b19b-e45916f1ef01",
-    "otoapp.employee:anan": "01a159c9-cb4e-7ea1-b19b-e45a63f5d481",
-    "otoapp.employee:chai": "01a159c9-cb4e-7ea1-b19b-e45b18305445",
-    "otoapp.employee:otoManager": "01a159c9-cb4e-7ea1-b19b-e45c16562565",
-    "otoapp.user:otoManager": "01a159c9-cb4e-7ea1-b19b-e45dea23ec0f",
-    "otoapp.employee:otoStaff": "01a159c9-cb4e-7ea1-b19b-e45e8b222945",
-    "otoapp.user:otoStaff": "01a159c9-cb4e-7ea1-b19b-e45f8f1dbfc3",
-    "otoapp.user:opsAdmin": "01a159c9-cb4e-7ea1-b19b-e4609544e193",
-    "otoapp.leave:1": "01a159c9-cb4e-7ea1-b19b-e46375cad149",
-    "member:mali": "01a159c9-cb4f-74fa-aef7-42f48b19bab8",
-    "member:somchai": "01a159c9-cb50-736f-82da-790e097ef700",
-    "employee:anan": "01a159c9-cb50-736f-82da-791029c93c0c",
-    "conversation:1": "01a159c9-cb78-7356-9d6e-689b1b1eb9ec",
-    "conversation:2": "01a159c9-cb93-72e2-a754-33fb2ffb7159"
+    "operator": "01a15b69-4856-7952-bccd-7d1ce7bdf200",
+    "branch:hkt-central": "01a15b69-4858-7fe5-9a54-be4a1468a7bc",
+    "branch:robinson-chalong": "01a15b69-485a-729f-a493-7cfe14c38f82",
+    "department:reception@central": "01a15b69-4864-765b-a972-f92de5750b01",
+    "account:reception": "01a15b69-4efe-7c2c-b96e-6a6bdd2c59ba",
+    "account:manager": "01a15b69-4f1d-7ed7-a4fa-5d8849221fd4",
+    "account:opsAdmin": "01a15b69-4f2f-77fa-8697-09cc56f17762",
+    "account:inboxAgent": "01a15b69-4f3c-70d4-95fb-16bfb65799e6",
+    "account:staff": "01a15b69-4f54-76aa-bc9a-ffd1aace106d",
+    "account:otoManager": "01a15b69-4f62-74e2-bf8c-e4d0a7361975",
+    "account:otoStaff": "01a15b69-4f72-70ee-b196-460ccb2ec778",
+    "account:otoNobody": "01a15b69-4f81-7df2-ab82-262c955a02da",
+    "otoapp.tenant": "01a15b69-4f91-7655-a754-b6f1dd97409a",
+    "otoapp.branch:central": "01a15b69-4f91-7655-a754-b6f266cc235d",
+    "otoapp.branch:chalong": "01a15b69-4f91-7655-a754-b6f369460e44",
+    "otoapp.employee:anan": "01a15b69-4f91-7655-a754-b6f4aa592d90",
+    "otoapp.employee:chai": "01a15b69-4f91-7655-a754-b6f5f570f728",
+    "otoapp.employee:otoManager": "01a15b69-4f91-7655-a754-b6f6d046d285",
+    "otoapp.user:otoManager": "01a15b69-4f91-7655-a754-b6f76063d5c9",
+    "otoapp.employee:otoStaff": "01a15b69-4f91-7655-a754-b6f857fd9e04",
+    "otoapp.user:otoStaff": "01a15b69-4f91-7655-a754-b6f9c79748f4",
+    "otoapp.user:opsAdmin": "01a15b69-4f91-7655-a754-b6fac1c37916",
+    "otoapp.leave:1": "01a15b69-4f92-7413-8ea5-7d846c45f7ef",
+    "member:mali": "01a15b69-4f92-7413-8ea5-7d8572dba49f",
+    "member:somchai": "01a15b69-4f93-7bab-9857-ee4ae408f7ed",
+    "employee:anan": "01a15b69-4f95-7771-8fe3-55550547fae4",
+    "conversation:1": "01a15b69-4fcc-797f-af74-6d76448e6d5f",
+    "conversation:2": "01a15b69-4ff6-7fb7-bf39-23a440af98a5"
   },
   "times": {
-    "conversation:1": "2026-10-20T14:49:19.000Z",
-    "conversation:2": "2026-10-20T14:49:19.000Z"
+    "conversation:1": "2026-10-20T22:23:10.000Z",
+    "conversation:2": "2026-10-20T22:23:10.000Z"
   },
   "responses": [
     {
       "model": "claude-opus-5-5",
-      "id": "msg_011CgDg6wz2eGb1XoCw4iaVH",
+      "id": "msg_011CgEGiTSWP25xUpQrAwBet",
       "type": "message",
       "role": "assistant",
       "content": [
         {
           "type": "tool_use",
-          "id": "toolu_013CrgMgqeJTaVmDXnPaf5J6",
+          "id": "toolu_017iw8N7Mzme9SDbQtHShmGW",
           "name": "members_lookup",
           "input": {
             "phone": "081 234 5678"
@@ -67,7 +67,7 @@
       "usage": {
         "input_tokens": 174,
         "cache_creation_input_tokens": 0,
-        "cache_read_input_tokens": 3705,
+        "cache_read_input_tokens": 6159,
         "cache_creation": {
           "ephemeral_5m_input_tokens": 0,
           "ephemeral_1h_input_tokens": 0
@@ -76,7 +76,7 @@
           {
             "input_tokens": 174,
             "output_tokens": 55,
-            "cache_read_input_tokens": 3705,
+            "cache_read_input_tokens": 6159,
             "cache_creation_input_tokens": 0,
             "cache_creation": {
               "ephemeral_5m_input_tokens": 0,
@@ -98,13 +98,13 @@
     },
     {
       "model": "claude-opus-5-5",
-      "id": "msg_011CgDg76LpsykMVyFHHa85B",
+      "id": "msg_011CgEGibPFVAET846UbVxNi",
       "type": "message",
       "role": "assistant",
       "content": [
         {
           "type": "text",
-          "text": "{\"answer\":\"ZZ Mali Family (nickname ZZ Mali Family), +66 81 234 5678, tier: tourist. Notes: ZZ none.\\nChildren (2):\\n- ZZ Ploy, 6: medical alert yes, has allergies\\n- ZZ Tonkla, 4: no medical alert, no allergies\\nThis lookup doesn't show what ZZ Ploy is allergic to. I can look it up if you need it.\",\"links\":[],\"language\":\"en\"}"
+          "text": "{\"answer\":\"ZZ Mali Family, +66 81 234 5678, tier: tourist. Notes: ZZ none.\\nChildren (2):\\n- ZZ Ploy, 6. Medical alert: yes. Allergies: ZZ peanuts.\\n- ZZ Tonkla, 4. No medical alert, no allergies recorded.\",\"links\":[{\"key\":\"pos.member\",\"params\":[{\"name\":\"phone\",\"value\":\"081 234 5678\"}]}],\"language\":\"en\",\"smallTalk\":false}"
         }
       ],
       "container": null,
@@ -112,18 +112,18 @@
       "stop_sequence": null,
       "stop_details": null,
       "usage": {
-        "input_tokens": 436,
+        "input_tokens": 482,
         "cache_creation_input_tokens": 0,
-        "cache_read_input_tokens": 3705,
+        "cache_read_input_tokens": 6159,
         "cache_creation": {
           "ephemeral_5m_input_tokens": 0,
           "ephemeral_1h_input_tokens": 0
         },
         "iterations": [
           {
-            "input_tokens": 436,
-            "output_tokens": 167,
-            "cache_read_input_tokens": 3705,
+            "input_tokens": 482,
+            "output_tokens": 174,
+            "cache_read_input_tokens": 6159,
             "cache_creation_input_tokens": 0,
             "cache_creation": {
               "ephemeral_5m_input_tokens": 0,
@@ -133,7 +133,7 @@
             "model": null
           }
         ],
-        "output_tokens": 167,
+        "output_tokens": 174,
         "output_tokens_details": {
           "thinking_tokens": 0
         },

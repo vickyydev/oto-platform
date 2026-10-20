@@ -3,54 +3,54 @@
   "note": "Fictional fixture world only (SCRUM-591 I5). Every Messages API response of the ask is recorded verbatim, in order; no request, header or key is stored.",
   "requestedModel": "claude-opus-5-5",
   "servedModel": "claude-opus-5-5",
-  "personaVersion": "internal-persona-2026-10-20.4",
-  "worldVersion": "world-df563655fb8abacb",
+  "personaVersion": "internal-persona-2026-10-21.1",
+  "worldVersion": "world-a383df8115273785",
   "recordedOn": "2026-10-20",
-  "askedAt": "2026-10-20T18:52:39.916Z",
+  "askedAt": "2026-10-20T22:23:24.192Z",
   "ids": {
-    "operator": "01a15aa8-4684-783a-8662-899cc724c9b8",
-    "branch:hkt-central": "01a15aa8-4684-783a-8662-899d3e5357df",
-    "branch:robinson-chalong": "01a15aa8-4685-7a38-819d-4a7d4d079985",
-    "department:reception@central": "01a15aa8-468a-7f1a-be41-b1f626b89e85",
-    "account:reception": "01a15aa8-49e7-7081-8c51-f7cdd1a90584",
-    "account:manager": "01a15aa8-49f8-7cd4-b4a8-8c26d4578d0a",
-    "account:opsAdmin": "01a15aa8-4a05-7fb3-96a0-f3486ea5499e",
-    "account:inboxAgent": "01a15aa8-4a0f-724c-b239-6ec3fcf695aa",
-    "account:staff": "01a15aa8-4a18-7ce0-b515-596f9b131405",
-    "account:otoManager": "01a15aa8-4a23-73ae-bc95-744c98d56878",
-    "account:otoStaff": "01a15aa8-4a2f-77a3-919b-2800d669a33c",
-    "account:otoNobody": "01a15aa8-4a3a-711a-bbc1-25611e3a23bc",
-    "otoapp.tenant": "01a15aa8-4a45-7fb9-a8cb-84a2c7182372",
-    "otoapp.branch:central": "01a15aa8-4a45-7fb9-a8cb-84a31b457be6",
-    "otoapp.branch:chalong": "01a15aa8-4a45-7fb9-a8cb-84a41b2052be",
-    "otoapp.employee:anan": "01a15aa8-4a45-7fb9-a8cb-84a5fadd688b",
-    "otoapp.employee:chai": "01a15aa8-4a45-7fb9-a8cb-84a6fe868ef4",
-    "otoapp.employee:otoManager": "01a15aa8-4a45-7fb9-a8cb-84a74321006c",
-    "otoapp.user:otoManager": "01a15aa8-4a45-7fb9-a8cb-84a8aed31edf",
-    "otoapp.employee:otoStaff": "01a15aa8-4a45-7fb9-a8cb-84a9913bbfca",
-    "otoapp.user:otoStaff": "01a15aa8-4a45-7fb9-a8cb-84aa4e999f32",
-    "otoapp.user:opsAdmin": "01a15aa8-4a45-7fb9-a8cb-84ab6a47f665",
-    "otoapp.leave:1": "01a15aa8-4a46-768d-831f-964fcbf40388",
-    "member:mali": "01a15aa8-4a46-768d-831f-96504cf219ee",
-    "member:somchai": "01a15aa8-4a47-721f-904f-85dcffda4aca",
-    "employee:anan": "01a15aa8-4a48-7043-8678-cedb5ae0d6e8",
-    "conversation:1": "01a15aa8-4a71-76eb-8467-4522a0f46a2c",
-    "conversation:2": "01a15aa8-4a8d-7e89-8271-4806f6fa61d5"
+    "operator": "01a15b69-4856-7952-bccd-7d1ce7bdf200",
+    "branch:hkt-central": "01a15b69-4858-7fe5-9a54-be4a1468a7bc",
+    "branch:robinson-chalong": "01a15b69-485a-729f-a493-7cfe14c38f82",
+    "department:reception@central": "01a15b69-4864-765b-a972-f92de5750b01",
+    "account:reception": "01a15b69-4efe-7c2c-b96e-6a6bdd2c59ba",
+    "account:manager": "01a15b69-4f1d-7ed7-a4fa-5d8849221fd4",
+    "account:opsAdmin": "01a15b69-4f2f-77fa-8697-09cc56f17762",
+    "account:inboxAgent": "01a15b69-4f3c-70d4-95fb-16bfb65799e6",
+    "account:staff": "01a15b69-4f54-76aa-bc9a-ffd1aace106d",
+    "account:otoManager": "01a15b69-4f62-74e2-bf8c-e4d0a7361975",
+    "account:otoStaff": "01a15b69-4f72-70ee-b196-460ccb2ec778",
+    "account:otoNobody": "01a15b69-4f81-7df2-ab82-262c955a02da",
+    "otoapp.tenant": "01a15b69-4f91-7655-a754-b6f1dd97409a",
+    "otoapp.branch:central": "01a15b69-4f91-7655-a754-b6f266cc235d",
+    "otoapp.branch:chalong": "01a15b69-4f91-7655-a754-b6f369460e44",
+    "otoapp.employee:anan": "01a15b69-4f91-7655-a754-b6f4aa592d90",
+    "otoapp.employee:chai": "01a15b69-4f91-7655-a754-b6f5f570f728",
+    "otoapp.employee:otoManager": "01a15b69-4f91-7655-a754-b6f6d046d285",
+    "otoapp.user:otoManager": "01a15b69-4f91-7655-a754-b6f76063d5c9",
+    "otoapp.employee:otoStaff": "01a15b69-4f91-7655-a754-b6f857fd9e04",
+    "otoapp.user:otoStaff": "01a15b69-4f91-7655-a754-b6f9c79748f4",
+    "otoapp.user:opsAdmin": "01a15b69-4f91-7655-a754-b6fac1c37916",
+    "otoapp.leave:1": "01a15b69-4f92-7413-8ea5-7d846c45f7ef",
+    "member:mali": "01a15b69-4f92-7413-8ea5-7d8572dba49f",
+    "member:somchai": "01a15b69-4f93-7bab-9857-ee4ae408f7ed",
+    "employee:anan": "01a15b69-4f95-7771-8fe3-55550547fae4",
+    "conversation:1": "01a15b69-4fcc-797f-af74-6d76448e6d5f",
+    "conversation:2": "01a15b69-4ff6-7fb7-bf39-23a440af98a5"
   },
   "times": {
-    "conversation:1": "2026-10-20T18:52:20.000Z",
-    "conversation:2": "2026-10-20T18:52:21.000Z"
+    "conversation:1": "2026-10-20T22:23:10.000Z",
+    "conversation:2": "2026-10-20T22:23:10.000Z"
   },
   "responses": [
     {
       "model": "claude-opus-5-5",
-      "id": "msg_011CgDzdCx7gh3RSuvJsjJ1q",
+      "id": "msg_011CgEGhMsdDWwHDmPv69ooR",
       "type": "message",
       "role": "assistant",
       "content": [
         {
           "type": "tool_use",
-          "id": "toolu_01Vq32YT6VEYHTr3Fedb66Kj",
+          "id": "toolu_016RaThzh3LLnj332q8pn6r8",
           "name": "oto_employees_find",
           "input": {
             "name": "Anan"
@@ -67,7 +67,7 @@
       "usage": {
         "input_tokens": 172,
         "cache_creation_input_tokens": 0,
-        "cache_read_input_tokens": 5133,
+        "cache_read_input_tokens": 7587,
         "cache_creation": {
           "ephemeral_5m_input_tokens": 0,
           "ephemeral_1h_input_tokens": 0
@@ -76,7 +76,7 @@
           {
             "input_tokens": 172,
             "output_tokens": 53,
-            "cache_read_input_tokens": 5133,
+            "cache_read_input_tokens": 7587,
             "cache_creation_input_tokens": 0,
             "cache_creation": {
               "ephemeral_5m_input_tokens": 0,
@@ -98,16 +98,16 @@
     },
     {
       "model": "claude-opus-5-5",
-      "id": "msg_011CgDzdQ4MamDv7E3wQncoK",
+      "id": "msg_011CgEGhcoYrNg4TvKYesToj",
       "type": "message",
       "role": "assistant",
       "content": [
         {
           "type": "tool_use",
-          "id": "toolu_01QDoKJHu2Vj5ovYbcvra26y",
+          "id": "toolu_01GtXzYfUTeysebmnoAxnmb4",
           "name": "oto_attendance",
           "input": {
-            "employeeId": "01a15aa8-4a45-7fb9-a8cb-84a5fadd688b"
+            "employeeId": "01a15b69-4f91-7655-a754-b6f4aa592d90"
           },
           "caller": {
             "type": "direct"
@@ -119,18 +119,18 @@
       "stop_sequence": null,
       "stop_details": null,
       "usage": {
-        "input_tokens": 367,
+        "input_tokens": 359,
         "cache_creation_input_tokens": 0,
-        "cache_read_input_tokens": 5133,
+        "cache_read_input_tokens": 7587,
         "cache_creation": {
           "ephemeral_5m_input_tokens": 0,
           "ephemeral_1h_input_tokens": 0
         },
         "iterations": [
           {
-            "input_tokens": 367,
-            "output_tokens": 81,
-            "cache_read_input_tokens": 5133,
+            "input_tokens": 359,
+            "output_tokens": 77,
+            "cache_read_input_tokens": 7587,
             "cache_creation_input_tokens": 0,
             "cache_creation": {
               "ephemeral_5m_input_tokens": 0,
@@ -140,7 +140,7 @@
             "model": null
           }
         ],
-        "output_tokens": 81,
+        "output_tokens": 77,
         "output_tokens_details": {
           "thinking_tokens": 0
         },
@@ -152,13 +152,13 @@
     },
     {
       "model": "claude-opus-5-5",
-      "id": "msg_011CgDzdbBbWSdNWaCbKfFkE",
+      "id": "msg_011CgEGhkyv86TJgksXBYdGH",
       "type": "message",
       "role": "assistant",
       "content": [
         {
           "type": "text",
-          "text": "{\"answer\":\"Insufficient permissions. That's the same answer the screen gives.\",\"links\":[],\"language\":\"en\"}"
+          "text": "{\"answer\":\"You can't see Anan's attendance. That needs a manager's access in the OTO App. That's the same answer the screen gives.\",\"links\":[],\"language\":\"en\",\"smallTalk\":false}"
         }
       ],
       "container": null,
@@ -166,18 +166,18 @@
       "stop_sequence": null,
       "stop_details": null,
       "usage": {
-        "input_tokens": 494,
+        "input_tokens": 501,
         "cache_creation_input_tokens": 0,
-        "cache_read_input_tokens": 5133,
+        "cache_read_input_tokens": 7587,
         "cache_creation": {
           "ephemeral_5m_input_tokens": 0,
           "ephemeral_1h_input_tokens": 0
         },
         "iterations": [
           {
-            "input_tokens": 494,
-            "output_tokens": 41,
-            "cache_read_input_tokens": 5133,
+            "input_tokens": 501,
+            "output_tokens": 66,
+            "cache_read_input_tokens": 7587,
             "cache_creation_input_tokens": 0,
             "cache_creation": {
               "ephemeral_5m_input_tokens": 0,
@@ -187,7 +187,7 @@
             "model": null
           }
         ],
-        "output_tokens": 41,
+        "output_tokens": 66,
         "output_tokens_details": {
           "thinking_tokens": 0
         },
