@@ -36,9 +36,27 @@ describe('the tool registry, as data (§B.4)', () => {
     }
   });
 
-  it('lists the plan’s seventeen tools, the OTO App ones under oto.*', () => {
-    expect(ASSISTANT_TOOLS).toHaveLength(17);
+  it('lists the plan’s seventeen tools and the test night’s inbox.dashboard, the OTO App ones under oto.*', () => {
+    expect(ASSISTANT_TOOLS).toHaveLength(18);
     for (const tool of ASSISTANT_TOOLS) expect(tool.name.startsWith('oto.'), tool.name).toBe(tool.system === 'oto_app');
+    expect(findAssistantTool('inbox.dashboard')).toMatchObject({ system: 'platform', routes: ['GET /inbox/dashboard'] });
+  });
+
+  it('audit.search takes a known action, a free-text name, and a day or an instant (test night 2026-10-21, D1)', () => {
+    const audit = findAssistantTool('audit.search')!;
+    expect(audit.input.safeParse({}).success).toBe(true);
+    expect(audit.input.safeParse({ action: 'auth.sign_in', from: '2026-10-21' }).success).toBe(true);
+    expect(audit.input.safeParse({ action: 'auth.login' }).success).toBe(false);
+    expect(audit.input.safeParse({ q: 'auth.login', from: '2026-10-21T03:32' }).success).toBe(true);
+    expect(audit.input.safeParse({ from: 'today' }).success).toBe(false);
+    expect(audit.description).toContain('0 rows after a filter means nothing matched that filter');
+  });
+
+  it('a member lookup carries the allergies by default and the medical notes only with include (W5)', () => {
+    const lookup = findAssistantTool('members.lookup')!;
+    expect(lookup.input.safeParse({ phone: '081 234 5678', include: ['medical_notes'] }).success).toBe(true);
+    expect(lookup.input.safeParse({ phone: '081 234 5678', include: ['allergies'] }).success).toBe(false);
+    expect(lookup.description).toContain('allergies as written');
   });
 
   it('validates the model’s arguments before any call: unknown keys, bad ids and bad dates are refused', () => {
@@ -142,6 +160,19 @@ describe('the deep-link map (§C)', () => {
     expect(suiteScreenOffered(payroll, viewer(tile, { role: 'manager', permissions: [] }))).toBe(false);
     expect(suiteScreenOffered(payroll, viewer(tile, { role: 'admin', permissions: ['hr.view_salary'] }))).toBe(true);
     expect(suiteScreenOffered(rota, viewer([]))).toBe(false); // no OTO App tile
+  });
+
+  it('the till’s History on a phone (pos.member, test night 2026-10-21 W5): the POS tile and the member read, the phone as typed or shown', () => {
+    const member = findSuiteScreen('pos.member')!;
+    expect(member).toMatchObject({ app: 'pos', path: '/history' });
+    expect(buildSuiteScreenPath('pos.member', { phone: '081 234 5678' })).toBe('/history?phone=081+234+5678');
+    expect(buildSuiteScreenPath('pos.member', { phone: '+66 81 234 5678' })).toBe('/history?phone=%2B66+81+234+5678');
+    expect(buildSuiteScreenPath('pos.member')).toBeNull();
+    expect(buildSuiteScreenPath('pos.member', { phone: 'not a phone' })).toBeNull();
+    expect(buildSuiteScreenPath('pos.member', { phone: '0812345678&tab=x' })).toBeNull();
+    expect(suiteScreenOffered(member, viewer(['pos:member:read']))).toBe(false); // no POS tile
+    expect(suiteScreenOffered(member, viewer(['app:pos:access']))).toBe(false);
+    expect(suiteScreenOffered(member, viewer(['app:pos:access', 'pos:member:read']))).toBe(true);
   });
 });
 

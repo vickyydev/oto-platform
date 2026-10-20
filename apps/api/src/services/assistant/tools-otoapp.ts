@@ -203,7 +203,12 @@ const NO_BALANCE = 'The leave balance is not readable here; the leave screen sho
 
 /** `1 day`, `0.5 days`, `6 days`: a figure with its unit, as an answer states it. */
 function days(n: number): string {
-  return `${n} ${n === 1 ? 'day' : 'days'}`;
+  return plural(n, 'day');
+}
+
+/** `1 late arrival`, `2 late arrivals`, `0 no-shows`: a count with its noun. */
+function plural(n: number, noun: string): string {
+  return `${n} ${n === 1 ? noun : `${noun}s`}`;
 }
 
 /**
@@ -319,12 +324,19 @@ export const OTOAPP_TOOL_ADAPTERS: readonly OtoAppToolAdapter[] = [
           longShift: d.hasLongShift === true,
         };
       });
+      const name = str(employee.fullName) ?? 'this person';
+      const period = periodWords(i.startDate, i.endDate);
       return {
         data: {
           employee: { id: str(employee.id), name: str(employee.fullName), branch: str(employee.branchName) },
           // The period asked for, in words. The route's own `dateRange` is not read: it renders the
           // Bangkok midnight as a UTC day, one day early ("2026-09-30 to 2026-10-20" for October).
-          period: periodWords(i.startDate, i.endDate),
+          period,
+          // S12: an empty period is one plain sentence, not a list of zeros.
+          words:
+            daysWorked === 0
+              ? `No clock-ins on record for ${name} between ${String(period.words)}.`
+              : `${name}: ${plural(daysWorked, 'day')} worked, ${plural(totalHours, 'hour')}, ${plural(byType['LATE_ARRIVAL'] ?? 0, 'late arrival')}, ${plural(byType['SCHEDULED_NO_SHOW'] ?? 0, 'no-show')} between ${String(period.words)}.`,
           daysWorked,
           totalHours,
           averageHoursPerDay: daysWorked > 0 ? Math.round((totalHours / daysWorked) * 100) / 100 : 0,

@@ -1,17 +1,34 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { and, eq, inArray, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { FakeToolLoopClient, INTERNAL_LINES } from '@oto/assistant';
 import { schema as s } from '@oto/db';
-import { ASSISTANT_SUMMARY_MAX_BYTES, ASSISTANT_TOOLS, isoDateInTz, newId } from '@oto/shared';
+import {
+  ASSISTANT_AUDIT_ACTIONS,
+  ASSISTANT_AUDIT_ACTIONS_SHOWN,
+  ASSISTANT_SUMMARY_MAX_BYTES,
+  ASSISTANT_TOOLS,
+  isoDateInTz,
+  newId,
+} from '@oto/shared';
 import { hashToken } from '../src/plugins/session';
 import { assertGetRoute, matchesRoute } from '../src/services/assistant/call-platform';
-import { askAssistant, ASSISTANT_GATE_LINES, circuitOpen, groundedLinks, type AskCaller } from '../src/services/assistant/engine';
+import { askAssistant, ASSISTANT_GATE_LINES, circuitOpen, groundedLinks, isBareFollowUp, type AskCaller } from '../src/services/assistant/engine';
 import { toJsonSchema } from '../src/services/assistant/json-schema';
-import { PLATFORM_TOOLS, PLATFORM_TOOL_ADAPTERS, dayWords, fitSummary, monthWords, summaryBytes } from '../src/services/assistant/tools';
+import {
+  PLATFORM_TOOLS,
+  PLATFORM_TOOL_ADAPTERS,
+  auditInstant,
+  auditNothingMatched,
+  dayWords,
+  fitSummary,
+  monthWords,
+  questionCalendar,
+  summaryBytes,
+} from '../src/services/assistant/tools';
 import { resolveEffectivePermissions } from '../src/services/permissions';
 import {
   ASK_SENTINEL,
@@ -133,10 +150,11 @@ describe('the census (§F.3, R4)', () => {
     expect(methods).toEqual(['GET']);
   });
 
-  it('registers a platform adapter for exactly the ten platform tools; the OTO App tools live in tools-otoapp.ts (round I4)', () => {
+  it('registers a platform adapter for exactly the eleven platform tools; the OTO App tools live in tools-otoapp.ts (round I4)', () => {
     const platform = ASSISTANT_TOOLS.filter((t) => t.system === 'platform').map((t) => t.name);
     expect(PLATFORM_TOOL_ADAPTERS.map((a) => a.name).sort()).toEqual([...platform].sort());
-    expect(platform).toHaveLength(10);
+    // Ten from round I2, and inbox.dashboard from the test night of 2026-10-21 (W6).
+    expect(platform).toHaveLength(11);
     expect(PLATFORM_TOOL_ADAPTERS.some((a) => a.name.startsWith('oto.'))).toBe(false);
   });
 
@@ -149,12 +167,13 @@ describe('the census (§F.3, R4)', () => {
   it('builds every adapter URL inside its own route templates, from validated input only', () => {
     const uuid = newId();
     const samples: Record<string, unknown> = {
-      'audit.search': { action: 'member.create', from: '2026-10-01T00:00:00Z' },
+      'audit.search': { action: 'member.create', from: '2026-10-01', to: '2026-10-21T04:32' },
       'branches.list': {},
       'checkin.board': { branchId: uuid },
+      'inbox.dashboard': {},
       'inbox.queue': { tab: 'mine' },
       'me.whoami': {},
-      'members.get': { memberId: uuid, include: ['allergies'] },
+      'members.get': { memberId: uuid, include: ['medical_notes'] },
       'members.lookup': { phone: '081 234 5678' },
       'members.search': { q: 'a/../b?c=d' },
       'occupancy.now': { branchId: uuid },
@@ -748,8 +767,11 @@ describe('the asker’s own words are grounding (§E.4, the internal path)', () 
     const month = await ask(w, managerCookie, "Why does September's payroll look wrong?");
     expect(month.body).toMatchObject({ state: 'answered', reason: null, answer: 'The September month-end is where to look.' });
 
+    // By a person with no earlier ask: since the test night (D2) the asker's own recent answers ground
+    // too, and reception's first ask above would otherwise lend this one its number.
+    const alone = await staff(w, 'ZZ Alone', 'reception', { scopeType: 'branch', scopeId: w.central }, w.central);
     script(w, final('Nobody has the phone 081 234 5678.'));
-    const other = await ask(w, receptionCookie, 'Who has the phone 089 000 1111?');
+    const other = await ask(w, alone.cookie, 'Who has the phone 089 000 1111?');
     expect(other.body).toMatchObject({ state: 'failed', reason: 'GUARD_NUMBER', answer: INTERNAL_LINES.guardFallbackNoLink.en });
   });
 
@@ -863,5 +885,323 @@ describe('the record: audit and ops carry ids and words, never text (§E.1)', ()
     expect(line).not.toContain('0812340001');
     expect(line).not.toContain('?phone');
     expect(w.logLines.filter((l) => l.includes('0812340001'))).toEqual([]);
+  });
+});
+
+describe('the test night (SCRUM-591, 2026-10-21; plan "Test night 2026-10-21")', () => {
+  const bkkToday = () => isoDateInTz(new Date(), 'Asia/Bangkok');
+  const closingAudit = async (askId: string) => {
+    const [row] = await w.ctx.db
+      .select()
+      .from(s.auditLog)
+      .where(and(eq(s.auditLog.action, 'assistant.ask'), sql`${s.auditLog.after}->>'askId' = ${askId}`));
+    return row!;
+  };
+
+  it('D1: audit.search offers the actions the api writes, each with its meaning, and every name is a literal in the api', () => {
+    const spec = ASSISTANT_TOOLS.find((t) => t.name === 'audit.search')!;
+    const json = toJsonSchema(spec.input) as { properties: Record<string, { enum?: string[]; description?: string }>; required?: string[] };
+    // Nothing is required: the night's first call was INVALID_ARGUMENTS on a date.
+    expect(json.required).toBeUndefined();
+    expect(json.properties.action!.enum).toEqual(ASSISTANT_AUDIT_ACTIONS.map((a) => a.action));
+    expect(json.properties.action!.description).toContain('auth.sign_in = a person signed in');
+    expect(json.properties.q!.description).toContain('not in the action list');
+    const sources = sourceFiles(API_SRC).map((f) => readFileSync(f, 'utf8'));
+    for (const { action } of ASSISTANT_AUDIT_ACTIONS) {
+      expect(sources.some((src) => src.includes(`'${action}'`)), `${action} is an action the api writes`).toBe(true);
+    }
+    expect(ASSISTANT_AUDIT_ACTIONS.length).toBeGreaterThanOrEqual(ASSISTANT_AUDIT_ACTIONS_SHOWN);
+  });
+
+  it('D1: a day or a loose instant is a valid argument and reaches the route as the UTC instant the route takes', () => {
+    const input = PLATFORM_TOOLS.get('audit.search')!.input;
+    for (const from of ['2026-10-21', '2026-10-21T03:32', '2026-10-21 03:32:10', '2026-10-21T03:32:00Z', '2026-10-21T03:32:00+07:00']) {
+      expect(input.safeParse({ from }).success, from).toBe(true);
+    }
+    expect(input.safeParse({ from: 'yesterday' }).success).toBe(false);
+    // A name the audit does not write is not an `action`; `q` is for those, and the summary then says it was a guess.
+    expect(input.safeParse({ action: 'auth.login' }).success).toBe(false);
+    expect(input.safeParse({ q: 'auth.login' }).success).toBe(true);
+    expect(auditInstant('2026-10-21', 'from')).toBe('2026-10-20T17:00:00.000Z');
+    expect(auditInstant('2026-10-21', 'to')).toBe('2026-10-21T16:59:59.999Z');
+    expect(auditInstant('2026-10-21T03:32', 'from')).toBe('2026-10-20T20:32:00.000Z');
+    expect(auditInstant('2026-10-21T03:32:00Z', 'from')).toBe('2026-10-21T03:32:00.000Z');
+    expect(auditInstant(undefined, 'from')).toBeUndefined();
+    expect(PLATFORM_TOOLS.get('audit.search')!.urls({ q: 'auth.login', from: '2026-10-21' } as never)).toEqual([
+      '/audit?action=auth.login&from=2026-10-20T17%3A00%3A00.000Z&limit=20',
+    ]);
+    expect(auditNothingMatched('auth.login', '2026-10-21 00:00', null, true)).toContain('auth.login is not a name the audit writes, so that action was a guess');
+    expect(auditNothingMatched('auth.sign_in', null, null, false)).toContain('nothing of that kind matched, which is not the same as nothing happening');
+    expect(auditNothingMatched(undefined, '2026-10-21 00:00', '2026-10-21 04:32', false)).toContain('0 rows for these filters between');
+  });
+
+  it('D1: "who logged in today" — a guessed name gets 0 rows and the known names; the real name gets the sign-ins; the answer carries the count', async () => {
+    const admin = await staff(w, 'ZZ Trail Admin', 'operator_admin', { scopeType: 'operator', scopeId: w.oto }, w.central);
+    const from = bkkToday();
+    const direct = await call<{ entries: unknown[] }>(
+      w,
+      admin.cookie,
+      'GET',
+      `/audit?action=auth.sign_in&from=${encodeURIComponent(auditInstant(from, 'from')!)}&limit=20`,
+    );
+    expect(direct.status).toBe(200);
+    const n = direct.body.entries.length;
+    expect(n).toBeGreaterThan(0); // this file's own sign-ins
+    const fake = script(
+      w,
+      tool('audit.search', { q: 'auth.login', from }),
+      tool('audit.search', { action: 'auth.sign_in', from }),
+      final(`${n} sign-ins today.`, [{ key: 'console.activity', params: [] }]),
+    );
+    const res = await ask(w, admin.cookie, 'who logged in today');
+    expect(res.body, JSON.stringify(res.body)).toMatchObject({ state: 'answered', reason: null, answer: `${n} sign-ins today.` });
+    const seen = toolResultsSeen(fake);
+    const guessed = (seen[0]!.data as { data: Record<string, unknown> }).data;
+    expect(guessed).toMatchObject({ action: 'auth.login', shown: 0 });
+    expect(guessed.nothingMatched).toContain('0 rows for action=auth.login between');
+    expect(guessed.nothingMatched).toContain('auth.login is not a name the audit writes, so that action was a guess');
+    expect(guessed.nothingMatched).toContain('auth.sign_in = a person signed in');
+    const real = (seen[1]!.data as { data: Record<string, unknown> }).data;
+    expect(real).toMatchObject({ action: 'auth.sign_in', shown: n });
+    expect(real).not.toHaveProperty('nothingMatched');
+    expect((await toolRows(w.ctx.db, res.body.id)).map((r) => [r.status, r.rows])).toEqual([
+      [200, 0],
+      [200, n],
+    ]);
+  });
+
+  it('D2: the asker’s own earlier asks ride as prior turns, and a follow-up is answered from them with no tool', async () => {
+    const me = await staff(w, 'ZZ Follow Up', 'branch_manager', { scopeType: 'branch', scopeId: w.central }, w.central);
+    script(w, tool('occupancy.now', { branchId: w.central }), final('Central: 0 children and 0 adults inside right now.'));
+    const first = await ask(w, me.cookie, 'How many children are inside at Central right now?');
+    expect(first.body, JSON.stringify(first.body)).toMatchObject({ state: 'answered' });
+    const fake = script(w, final('Yesterday the same: 0 children at Central.'));
+    const res = await ask(w, me.cookie, 'and yesterday?');
+    expect(res.body, JSON.stringify(res.body)).toMatchObject({ state: 'answered', reason: null, answer: 'Yesterday the same: 0 children at Central.' });
+    expect(await toolRows(w.ctx.db, res.body.id)).toEqual([]);
+    const messages = fake.calls[0]!.messages;
+    expect(messages.map((m) => m.role)).toEqual(['user', 'assistant', 'user']);
+    expect(messages[0]!.content).toBe('How many children are inside at Central right now?');
+    expect(JSON.parse(messages[1]!.content as string)).toMatchObject({ answer: 'Central: 0 children and 0 adults inside right now.', language: 'en', links: [] });
+    expect(messages[2]!.content).toBe('and yesterday?');
+    // The conversation sits below the cache breakpoint: the static block is the same bytes as any other ask's.
+    expect(fake.calls[0]!.system[0]!.text).not.toContain('Central right now');
+    expect(fake.calls[0]!.system[1]!.text).not.toContain('Central right now');
+    // The audit says how many turns rode along, and never their words.
+    const closing = await closingAudit(res.body.id);
+    expect(closing.after).toMatchObject({ state: 'answered', priorTurns: 1, toolCalls: 0 });
+    expect(JSON.stringify(closing.after)).not.toContain('Central right now');
+  });
+
+  it('D2: a bare follow-up with no earlier ask gets the honest line, not a guard line; a plain question still gets the guard', async () => {
+    const me = await staff(w, 'ZZ No Context', 'branch_manager', { scopeType: 'branch', scopeId: w.central }, w.central);
+    script(w, final('Yesterday there were 12 children.'));
+    const res = await ask(w, me.cookie, 'and yesterday?');
+    expect(res.body).toMatchObject({ state: 'failed', reason: 'NO_CONTEXT', answer: INTERNAL_LINES.noContext.en, links: [], smallTalk: false });
+    expect(res.body.answer).not.toContain('12');
+    expect((await closingAudit(res.body.id)).after).toMatchObject({ state: 'failed', reason: 'NO_CONTEXT', guardRule: 'number', priorTurns: 0 });
+    // A failed ask is no prior turn: the next bare follow-up is still without context; a plain question keeps the guard's line.
+    script(w, final('Yesterday there were 12 children.'));
+    expect((await ask(w, me.cookie, 'แล้วเมื่อวานล่ะ')).body).toMatchObject({ state: 'failed', reason: 'NO_CONTEXT', answer: INTERNAL_LINES.noContext.th });
+    script(w, final('There were 12 children.'));
+    expect((await ask(w, me.cookie, 'How many children were inside?')).body).toMatchObject({ state: 'failed', reason: 'GUARD_NUMBER' });
+    for (const q of ['and yesterday?', 'What about Chalong?', 'แล้วเมื่อวานล่ะ', 'а вчера?', 'and the adults?']) expect(isBareFollowUp(q), q).toBe(true);
+    for (const q of ['How many children are inside?', 'ขอบคุณ', 'Anan attendance this month', 'Сколько детей сейчас в парке?', 'and'.repeat(40)]) {
+      expect(isBareFollowUp(q), q).toBe(false);
+    }
+  });
+
+  it('D2: only the asker’s own log is read — another person’s asks never ride along — and the window is the last three within two hours, oldest first', async () => {
+    const a = await staff(w, 'ZZ Own Log A', 'reception', { scopeType: 'branch', scopeId: w.central }, w.central);
+    const b = await staff(w, 'ZZ Own Log B', 'reception', { scopeType: 'branch', scopeId: w.central }, w.central);
+    script(w, final('Noted for A.'));
+    expect((await ask(w, a.cookie, 'ZZ a question of A’s')).body.state).toBe('answered');
+    const other = script(w, final('Noted for B.'));
+    expect((await ask(w, b.cookie, 'ZZ a question of B’s')).body.state).toBe('answered');
+    expect(other.calls[0]!.messages).toEqual([{ role: 'user', content: 'ZZ a question of B’s' }]);
+
+    for (const q of ['ZZ one', 'ZZ two', 'ZZ three', 'ZZ four']) {
+      script(w, final(`Answer to ${q}.`));
+      expect((await ask(w, a.cookie, q)).body.state).toBe('answered');
+    }
+    // An answered ask three hours old is outside the window.
+    const old = new Date(Date.now() - 3 * 3_600_000);
+    await w.ctx.db.insert(s.ask).values({
+      id: newId(),
+      operatorId: w.oto,
+      accountId: a.accountId,
+      question: 'ZZ stale',
+      answer: 'ZZ stale answer',
+      state: 'answered',
+      createdAt: old,
+      updatedAt: old,
+    });
+    const fake = script(w, final('Five.'));
+    const res = await ask(w, a.cookie, 'ZZ five');
+    expect(res.body.state).toBe('answered');
+    expect(fake.calls[0]!.messages.filter((m) => m.role === 'user').map((m) => m.content)).toEqual(['ZZ two', 'ZZ three', 'ZZ four', 'ZZ five']);
+    expect((await closingAudit(res.body.id)).after).toMatchObject({ priorTurns: 3 });
+  });
+
+  it('W3: the refusal line keeps the route’s words; the prose never repeats a permission string; the model is handed the plain sentence', async () => {
+    const fake = script(
+      w,
+      tool('inbox.queue', { tab: 'team' }),
+      final("Missing permission inbox:conversation:read. That's the same answer the screen gives."),
+    );
+    const res = await ask(w, receptionCookie, 'how many unanswered chats does the team have');
+    expect(res.body, JSON.stringify(res.body)).toMatchObject({
+      state: 'refused',
+      reason: 'TOOL_REFUSED',
+      answer: "You don't have access to the team inbox. That's the same answer the screen gives.",
+    });
+    expect(res.body.refusals.map((r) => r.line)).toEqual(['Platform: Missing permission inbox:conversation:read']);
+    expect(res.body.answer).not.toMatch(/Missing permission|inbox:conversation:read/);
+    const envelope = toolResultsSeen(fake)[0]!;
+    expect(envelope.isError).toBe(true);
+    expect((envelope.data as { error: Record<string, unknown> }).error).toEqual({
+      status: 403,
+      code: 'FORBIDDEN',
+      message: 'Missing permission inbox:conversation:read',
+      plain: "You don't have access to the team inbox.",
+    });
+    expect((await closingAudit(res.body.id)).after).toMatchObject({ refusalWordsRewritten: 1 });
+  });
+
+  it('W5: a member lookup carries the children’s allergies as written, and the till’s History on that phone is the link', async () => {
+    const fake = script(
+      w,
+      tool('members.lookup', { phone: '081 234 0001' }),
+      final('ZZ Somchai Family: ZZ Ploy, 6, allergies ZZ peanuts; ZZ Tonkla, 4, none on file.', [
+        { key: 'pos.member', params: [{ name: 'phone', value: '081 234 0001' }] },
+      ]),
+    );
+    const res = await ask(w, receptionCookie, 'find member 081 234 0001 and the kids’ allergies');
+    expect(res.body, JSON.stringify(res.body)).toMatchObject({ state: 'answered', reason: null });
+    const member = (toolResultsSeen(fake)[0]!.data as { data: { member: { children: Array<Record<string, unknown>> } } }).data.member;
+    expect(member.children).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: 'ZZ Ploy', age: 6, medicalAlert: true, hasAllergies: true, allergies: 'ZZ peanuts', hasMedicalNotes: false }),
+        expect.objectContaining({ name: 'ZZ Tonkla', age: 4, medicalAlert: false, hasAllergies: false, allergies: null }),
+      ]),
+    );
+    // The medical notes only when asked for.
+    expect(JSON.stringify(member)).not.toContain('medicalNotes');
+    expect(res.body.links).toEqual([
+      { key: 'pos.member', app: 'pos', path: '/history?phone=081+234+0001', shows: "The member's sales on the till (History)" },
+    ]);
+    // The screen the tool itself names (for an ask that ends short) is the same one, on the phone as typed.
+    expect(PLATFORM_TOOLS.get('members.lookup')!.deepLink({ phone: ' 081 234 0001 ' } as never)).toEqual({ key: 'pos.member', params: { phone: '081 234 0001' } });
+    const withNotes = script(w, tool('members.get', { memberId: somchai, include: ['medical_notes'] }), final('No medical notes.'));
+    expect((await ask(w, managerCookie, 'Any medical notes on the Somchai children?')).body.state).toBe('answered');
+    const children = (toolResultsSeen(withNotes)[0]!.data as { data: { member: { children: Array<Record<string, unknown>> } } }).data.member.children;
+    for (const c of children) expect(c).toHaveProperty('medicalNotes');
+  });
+
+  it('W6: "which team has the most open conversations" — the dashboard tool answers it by team, as the Inbox route counts for the asker', async () => {
+    const aw = asAiWorld(w);
+    const account = await simAccount(aw, { branchId: w.central, aiMode: 'off' });
+    await customer(aw, account, nextPhone(), 'ZZ is the party room free on Sunday?');
+    await customer(aw, account, nextPhone(), 'ZZ do you have parking?');
+    const gm = await staff(w, 'ZZ Hana GM', 'inbox_manager', { scopeType: 'operator', scopeId: w.oto });
+    const direct = await call<{ byCategory: { birthdays: number; general: number; marketing: number }; unanswered: number; active: number }>(
+      w,
+      gm.cookie,
+      'GET',
+      '/inbox/dashboard',
+    );
+    expect(direct.status).toBe(200);
+    const { general, birthdays, marketing } = direct.body.byCategory;
+    expect(general).toBeGreaterThanOrEqual(2);
+    const fake = script(
+      w,
+      tool('inbox.dashboard', {}),
+      final(`Reception has the most: ${general} conversations (general); birthdays ${birthdays}, marketing ${marketing}.`, [{ key: 'inbox.queue', params: [] }]),
+    );
+    const res = await ask(w, gm.cookie, 'which team has the most open conversations');
+    expect(res.body, JSON.stringify(res.body)).toMatchObject({ state: 'answered', reason: null });
+    const data = (toolResultsSeen(fake)[0]!.data as { data: Record<string, unknown> }).data;
+    expect(data).toMatchObject({
+      unanswered: direct.body.unanswered,
+      active: direct.body.active,
+      byTeam: [
+        { team: 'birthdays', category: 'birthdays', conversations: birthdays },
+        { team: 'reception', category: 'general', conversations: general },
+        { team: 'marketing', category: 'marketing', conversations: marketing },
+      ],
+      mostConversations: ['reception'],
+    });
+    expect(data.words).toContain('reception has the most conversations');
+    expect(JSON.stringify(data)).not.toContain('party room');
+    expect((await toolRows(w.ctx.db, res.body.id))[0]).toMatchObject({ tool: 'inbox.dashboard', route: 'GET /inbox/dashboard', status: 200, rows: 1 });
+    expect(res.body.links.map((l) => l.key)).toEqual(['inbox.queue']);
+    // The fence is the route's: reception is refused with its own sentence.
+    script(w, tool('inbox.dashboard', {}), final('Not mine to see.'));
+    const refused = await ask(w, receptionCookie, 'which team has the most open conversations');
+    expect(refused.body.refusals.map((r) => r.line)).toEqual(['Platform: Missing permission inbox:dashboard:read']);
+  });
+
+  it('W7, S11: a one-park count says which park, how many the asker can see and names the others; a stale count says so in one line', async () => {
+    await w.ctx.db.insert(s.branch).values({ id: newId(), operatorId: w.oto, name: 'ZZ Kathu', code: 'zz-kathu' });
+    const admin = await staff(w, 'ZZ Park Admin', 'operator_admin', { scopeType: 'operator', scopeId: w.oto }, w.central);
+    const names = await w.ctx.db.select({ id: s.branch.id, name: s.branch.name }).from(s.branch).where(eq(s.branch.operatorId, w.oto)).orderBy(asc(s.branch.name));
+    const central = names.find((b) => b.id === w.central)!;
+    const others = names.filter((b) => b.id !== w.central).map((b) => b.name);
+    const direct = await call<{ stale: boolean; asOf: string | null }>(w, admin.cookie, 'GET', `/branches/${w.central}/occupancy`);
+    expect(direct.status).toBe(200);
+    const fake = script(
+      w,
+      tool('branches.list', {}),
+      tool('occupancy.now', { branchId: w.central }),
+      final(`${central.name} only: 0 children inside; the other parks you can see are not counted here.`),
+    );
+    const res = await ask(w, admin.cookie, 'how many children are in the park right now?');
+    expect(res.body, JSON.stringify(res.body)).toMatchObject({ state: 'answered', reason: null });
+    const data = (toolResultsSeen(fake)[1]!.data as { data: Record<string, unknown> }).data;
+    expect(data).toMatchObject({ park: { id: w.central, name: central.name }, parksYouCanSee: 3, stale: direct.body.stale });
+    expect((data.otherParks as Array<{ name: string }>).map((p) => p.name)).toEqual(others);
+    expect(data.scope).toBe(
+      `This count is for ${central.name} only, 1 of 3 parks you can see; the others are ${others.join(', ')}. For the park as a whole, read each park and add them up, or say which park.`,
+    );
+    if (!direct.body.stale) expect(data.staleWords).toBeNull();
+    else if (direct.body.asOf === null) expect(data.staleWords).toBe('This count is stale: no headcount has been taken yet today (no gate has reported).');
+    else expect(data.staleWords).toMatch(/^This count is stale: the gate was last heard from at /);
+    // A branch-scoped reader sees one park: the count is said to be the only park they can see.
+    const one = script(w, tool('occupancy.now', { branchId: w.central }), final('0 children.'));
+    expect((await ask(w, managerCookie, 'how many children are in the park?')).body.state).toBe('answered');
+    expect((toolResultsSeen(one)[0]!.data as { data: Record<string, unknown> }).data).toMatchObject({
+      parksYouCanSee: 1,
+      otherParks: [],
+      scope: `This count is for ${central.name}, the one park you can see.`,
+    });
+  });
+
+  it('W4: the calendar the asker named grounds a link parameter — a month by name in three languages, a typed ISO month or day', () => {
+    const oct = new Date('2026-10-21T03:00:00Z');
+    expect(questionCalendar("Why does September's payroll look wrong?", oct)).toBe('2026-09 (September 2026 / กันยายน 2569 / сентябрь 2026)');
+    expect(questionCalendar('เงินเดือนเดือนกันยายนผิดตรงไหน', oct)).toContain('2026-09');
+    expect(questionCalendar('Что не так с зарплатой за сентябрь?', oct)).toContain('2026-09');
+    // A month still ahead is last year's; a typed ISO month or day is itself; "you may" is not a month.
+    expect(questionCalendar('the December run', oct)).toContain('2025-12');
+    expect(questionCalendar('the 2026-09-15 run and 2026-08', oct)).toBe('2026-09-15; 2026-08');
+    expect(questionCalendar('You may look at it', oct)).toBe('');
+    expect(questionCalendar('How many children are inside?', oct)).toBe('');
+    const link = [{ key: 'oto.payroll.month', params: { month: '2026-09', tab: 'preview' } }];
+    expect(groundedLinks(link, [questionCalendar('September payroll', oct)])).toHaveLength(1);
+    expect(groundedLinks(link, [questionCalendar('August payroll', oct)])).toEqual([]);
+  });
+
+  it('S10: small talk is the model’s word, kept on the row and shown on the view; every other answer and every server line is false', async () => {
+    script(w, final('ยินดีค่ะ', [], 'th', { smallTalk: true }));
+    const social = await ask(w, receptionCookie, 'ขอบคุณ');
+    expect(social.body).toMatchObject({ state: 'answered', smallTalk: true, answer: 'ยินดีค่ะ' });
+    expect((await askRow(w.ctx.db, social.body.id))!.smallTalk).toBe(true);
+    expect((await closingAudit(social.body.id)).after).toMatchObject({ smallTalk: true });
+    const one = await call<Record<string, unknown>>(w, receptionCookie, 'GET', `/assistant/asks/${social.body.id}`);
+    expect(one.body.smallTalk).toBe(true);
+    script(w, final('Noted.'));
+    expect((await ask(w, receptionCookie, 'Anything?')).body.smallTalk).toBe(false);
+    script(w, final('There are 31 children inside.', [], 'en', { smallTalk: true }));
+    expect((await ask(w, receptionCookie, 'How many children are inside?')).body).toMatchObject({ state: 'failed', reason: 'GUARD_NUMBER', smallTalk: false });
   });
 });

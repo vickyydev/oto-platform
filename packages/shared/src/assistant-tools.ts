@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ASSISTANT_AUDIT_ACTION_NAMES, assistantAuditActionsLine } from './assistant-audit-actions';
 
 /**
  * THE INTERNAL ASSISTANT'S SHARED CONTRACT (SCRUM-591, round I1, lane b).
@@ -142,10 +143,26 @@ const OtoAppId = z.string().regex(/^[A-Za-z0-9-]{1,64}$/);
 const None = z.object({}).strict();
 
 /**
- * Child medical notes reach the model only when the question was about them
- * (§B.4): otherwise the adapter reduces them to `medicalAlert`.
+ * A child's ALLERGY text is in every member summary (test night 2026-10-21,
+ * W5: it is the point of the lookup at the desk, and the asker can open the
+ * member anyway). The medical NOTES reach the model only when the question
+ * was about them (§B.4): otherwise the adapter reduces them to `medicalAlert`.
  */
-const MemberInclude = z.array(z.enum(['allergies'])).max(1).optional();
+const MemberInclude = z.array(z.enum(['medical_notes'])).max(1).optional();
+
+/**
+ * An audit instant as the model may give it (test night 2026-10-21, D1: the
+ * first audit call of the night was INVALID_ARGUMENTS on a date): a day
+ * (`2026-10-21`, read as the park's day in Bangkok), or an ISO instant with
+ * or without seconds, with `Z`, an offset, or none (none is Bangkok time).
+ * The adapter turns either into the UTC instant the route takes.
+ */
+const AuditInstant = z
+  .string()
+  .regex(
+    /^\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:?\d{2})?)?$/,
+    'a day (YYYY-MM-DD) or an ISO instant',
+  );
 
 /** Keeps each tool's name as a literal, so `AssistantToolName` is the list. */
 const spec = <N extends string, S extends z.ZodTypeAny>(
@@ -164,13 +181,22 @@ export const ASSISTANT_TOOLS = [
     system: 'platform',
     routes: ['GET /audit'],
     description:
-      'Search the audit trail: who did what, to what, and when. At most 20 rows; masked unless the asker may read sensitive fields.',
+      'Search the audit trail: who did what, to what, and when. Every argument is optional; with none, the latest 20 rows. ' +
+      'action filters by ONE of the listed names (what each means is in the argument’s description): "who logged in" is ' +
+      'action auth.sign_in. q is for an exact action name outside the list; a q that matches nothing was a guess, and the ' +
+      'summary then lists the known names. from and to are a day (YYYY-MM-DD, the park’s day) or an instant; a day alone ' +
+      'means that whole day. At most 20 rows; masked unless the asker may read sensitive fields. 0 rows after a filter ' +
+      'means nothing matched that filter, never that nothing happened.',
     input: z
       .object({
-        action: z.string().max(80).optional(),
+        action: z
+          .enum(ASSISTANT_AUDIT_ACTION_NAMES)
+          .optional()
+          .describe(`The action to filter by: ${assistantAuditActionsLine()}`),
+        q: z.string().max(80).optional().describe('An exact action name not in the action list, e.g. ticket_package.archive.'),
         entityType: z.string().max(60).optional(),
-        from: z.string().datetime().optional(),
-        to: z.string().datetime().optional(),
+        from: AuditInstant.optional().describe('From: a day (YYYY-MM-DD, Bangkok) or an ISO instant.'),
+        to: AuditInstant.optional().describe('To: a day (YYYY-MM-DD, the whole day, Bangkok) or an ISO instant.'),
       })
       .strict(),
   }),
@@ -187,6 +213,17 @@ export const ASSISTANT_TOOLS = [
     routes: ['GET /checkin/board'],
     description: "The drop-off board at one park: counts by state and up to 20 children's names.",
     input: z.object({ branchId: Uuid }).strict(),
+  }),
+  spec({
+    name: 'inbox.dashboard',
+    system: 'platform',
+    routes: ['GET /inbox/dashboard'],
+    description:
+      'The Inbox dashboard over the conversations the asker can see: new today, unanswered, handled today, active, the ' +
+      'average first response, and every conversation by category — each category is one team’s (birthdays: the ' +
+      'birthdays team; general: reception; marketing: marketing), so this answers which team has the most. Needs ' +
+      'inbox:dashboard:read.',
+    input: None,
   }),
   spec({
     name: 'inbox.queue',
@@ -207,7 +244,7 @@ export const ASSISTANT_TOOLS = [
     system: 'platform',
     routes: ['GET /members/:id'],
     description:
-      'One member by id: name, nickname, phone as the screen shows it, tier, the member’s notes, and children (name, age, medical alert yes or no; allergy text only with include).',
+      'One member by id: name, nickname, phone as the screen shows it, tier, the member’s notes, and children (name, age, allergies as written, medical alert yes or no; the medical notes text only with include).',
     input: z.object({ memberId: Uuid, include: MemberInclude }).strict(),
   }),
   spec({
@@ -215,7 +252,7 @@ export const ASSISTANT_TOOLS = [
     system: 'platform',
     routes: ['GET /members/lookup'],
     description:
-      'Find a member by phone number, in any format the asker typed: name, nickname, phone as the screen shows it, tier, the member’s notes, and children (name, age, medical alert yes or no; allergy text only with include).',
+      'Find a member by phone number, in any format the asker typed: name, nickname, phone as the screen shows it, tier, the member’s notes, and children (name, age, allergies as written, medical alert yes or no; the medical notes text only with include). The till’s History (pos.member, by that phone) shows their sales.',
     input: z.object({ phone: z.string().min(3).max(32), include: MemberInclude }).strict(),
   }),
   spec({

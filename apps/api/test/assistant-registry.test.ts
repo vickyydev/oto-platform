@@ -103,6 +103,8 @@ describe('assistant-registry census (§F.3)', () => {
       'audit.search',
       'branches.list',
       'checkin.board',
+      // The test night of 2026-10-21 (W6): the Inbox dashboard, a plain read over GET /inbox/dashboard.
+      'inbox.dashboard',
       'inbox.queue',
       'me.whoami',
       'members.get',

@@ -86,6 +86,12 @@ export const AssistantAskViewSchema = z.object({
   toolCalls: z.array(AssistantAskToolCallSchema),
   feedback: z.enum(ASSISTANT_FEEDBACK).nullable(),
   correction: z.string().nullable(),
+  /**
+   * The model's own word that the message was social (thanks, hello) and no
+   * tool was needed (test night 2026-10-21, S10): the launcher hides
+   * Good/Wrong on it. False on every server-written line.
+   */
+  smallTalk: z.boolean(),
   createdAt: Iso,
   updatedAt: Iso,
 });

@@ -94,8 +94,13 @@ export function script(w: AskWorld, ...steps: FakeToolLoopEntry[]): FakeToolLoop
   return fake;
 }
 
-export function final(answer: string, links: InternalAnswer['links'] = [], language: InternalAnswer['language'] = 'en'): FakeToolLoopEntry {
-  return { kind: 'final', answer: { answer, links, language } };
+export function final(
+  answer: string,
+  links: InternalAnswer['links'] = [],
+  language: InternalAnswer['language'] = 'en',
+  extra: Pick<InternalAnswer, 'smallTalk'> = {},
+): FakeToolLoopEntry {
+  return { kind: 'final', answer: { answer, links, language, ...extra } };
 }
 
 export function tool(name: string, input: unknown, extra: Partial<FakeToolLoopEntry> = {}): FakeToolLoopEntry {

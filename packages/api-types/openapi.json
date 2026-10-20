@@ -64865,6 +64865,7 @@
                               "oto_app",
                               "console",
                               "inbox",
+                              "pos",
                               "launcher"
                             ]
                           },
@@ -64982,6 +64983,9 @@
                       "type": "string",
                       "nullable": true
                     },
+                    "smallTalk": {
+                      "type": "boolean"
+                    },
                     "createdAt": {
                       "type": "string"
                     },
@@ -65000,6 +65004,7 @@
                     "toolCalls",
                     "feedback",
                     "correction",
+                    "smallTalk",
                     "createdAt",
                     "updatedAt"
                   ],
@@ -65088,6 +65093,7 @@
                                     "oto_app",
                                     "console",
                                     "inbox",
+                                    "pos",
                                     "launcher"
                                   ]
                                 },
@@ -65205,6 +65211,9 @@
                             "type": "string",
                             "nullable": true
                           },
+                          "smallTalk": {
+                            "type": "boolean"
+                          },
                           "createdAt": {
                             "type": "string"
                           },
@@ -65223,6 +65232,7 @@
                           "toolCalls",
                           "feedback",
                           "correction",
+                          "smallTalk",
                           "createdAt",
                           "updatedAt"
                         ],
@@ -65309,6 +65319,7 @@
                               "oto_app",
                               "console",
                               "inbox",
+                              "pos",
                               "launcher"
                             ]
                           },
@@ -65426,6 +65437,9 @@
                       "type": "string",
                       "nullable": true
                     },
+                    "smallTalk": {
+                      "type": "boolean"
+                    },
                     "createdAt": {
                       "type": "string"
                     },
@@ -65444,6 +65458,7 @@
                     "toolCalls",
                     "feedback",
                     "correction",
+                    "smallTalk",
                     "createdAt",
                     "updatedAt"
                   ],
@@ -65672,6 +65687,7 @@
                                     "oto_app",
                                     "console",
                                     "inbox",
+                                    "pos",
                                     "launcher"
                                   ]
                                 },
@@ -65789,6 +65805,9 @@
                             "type": "string",
                             "nullable": true
                           },
+                          "smallTalk": {
+                            "type": "boolean"
+                          },
                           "createdAt": {
                             "type": "string"
                           },
@@ -65824,6 +65843,7 @@
                           "toolCalls",
                           "feedback",
                           "correction",
+                          "smallTalk",
                           "createdAt",
                           "updatedAt",
                           "accountId",

@@ -9,7 +9,7 @@ import { ASSISTANT_TOOLS, isoDateInTz, newId } from '@oto/shared';
 import { firstBranchOf, identityOf, otoAppEnvelope, sessionCookieOf } from '../src/services/assistant/call-otoapp';
 import { matchesRoute } from '../src/services/assistant/call-platform';
 import { otoAppToolsOffered, resolveLinks } from '../src/services/assistant/engine';
-import { clockOf, dayWords, daysInclusive, hoursBetween, monthWords, periodSentence, weekdayWords } from '../src/services/assistant/tools';
+import { clockOf, dayWords, daysInclusive, hoursBetween, monthWords, periodSentence, questionCalendar, weekdayWords } from '../src/services/assistant/tools';
 import { OTOAPP_TOOLS, OTOAPP_TOOL_ADAPTERS, nameKey, nameMatches } from '../src/services/assistant/tools-otoapp';
 import { resolveEffectivePermissions } from '../src/services/permissions';
 import {
@@ -655,7 +655,8 @@ describe('the hand-off, as the person (§B.3, §F.2)', () => {
       const res = await ask(w, manager.cookie, "Anan's attendance this month");
       expect(res.body.state).toBe('answered');
       expect((fakeClient.calls[0]?.tools ?? []).map((t) => t.name).filter((n) => n.startsWith('oto_'))).toEqual([]);
-      expect(fakeClient.calls[0]!.tools).toHaveLength(10);
+      // The eleven platform tools (inbox.dashboard joined on the test night of 2026-10-21) and nothing of the app's.
+      expect(fakeClient.calls[0]!.tools).toHaveLength(11);
     } finally {
       cfg.otoAppTools = true;
     }
@@ -1120,5 +1121,96 @@ describe('the record (§E.1): the sentinel, the cookie and the token', () => {
     for (const r of fake.requests.filter((r) => /balance/.test(r.path))) {
       expect(['/api/leave-balances', '/api/all-leave-balances'], r.path).toContain(r.path);
     }
+  });
+});
+
+describe('the test night (SCRUM-591, 2026-10-21): a named screen’s link, grounded by the calendar and gated by the asker’s OTO App role; an empty period', () => {
+  const september = questionCalendar('September', new Date()).slice(0, 7);
+  const monthEnd = [
+    { name: 'month', value: september },
+    { name: 'tab', value: 'preview' },
+  ];
+  const closingAudit = async (askId: string) => {
+    const [row] = await w.ctx.db
+      .select()
+      .from(s.auditLog)
+      .where(and(eq(s.auditLog.action, 'assistant.ask'), sql`${s.auditLog.after}->>'askId' = ${askId}`));
+    return row!;
+  };
+
+  it('W4: an admin naming the September month-end with no tool call gets the link — the month from the asker’s own words, the gate from a session opened for the link alone and logged out after', async () => {
+    fake.resetObservations();
+    const issuedBefore = (await handoffRows('auth.handoff_issue')).length;
+    const fakeClient = script(
+      w,
+      final("I can't work out why from here; that takes analysis rather than a lookup. The September month-end screen shows that run's figures.", [
+        { key: 'oto.payroll.month', params: monthEnd },
+      ]),
+    );
+    const res = await ask(w, admin.cookie, "Why does September's payroll look wrong?");
+    expect(res.body, JSON.stringify(res.body)).toMatchObject({ state: 'answered', reason: null });
+    expect(res.body.links).toEqual([
+      { key: 'oto.payroll.month', app: 'oto_app', path: `/payroll/month-end?month=${september}&tab=preview`, shows: 'One month-end' },
+    ]);
+    expect(await toolRows(w.ctx.db, res.body.id)).toEqual([]);
+    expect(fakeClient.calls).toHaveLength(1);
+    // One hand-off, one app session opened for the gate: the app was asked who the asker is, then logged out.
+    expect((await handoffRows('auth.handoff_issue')).length).toBe(issuedBefore + 1);
+    expect(fake.sidsIssued).toHaveLength(1);
+    expect(fake.logouts).toHaveLength(1);
+    expect(fake.sessions.size).toBe(0);
+    expect(fake.requests.map((r) => r.path)).toEqual(['/api/auth/handoff', '/api/user', '/api/branches', '/api/logout']);
+    expect((await closingAudit(res.body.id)).after).toMatchObject({ otoApp: { role: 'admin' }, links: ['oto.payroll.month'], toolCalls: 0 });
+  });
+
+  it('W4: a manager without hr.view_salary naming the same screen gets no payroll link — the session opened to ask, the answer promising no button', async () => {
+    fake.resetObservations();
+    script(
+      w,
+      final("Nok's payroll profile shows the pay details your access allows.", [
+        { key: 'oto.payroll.month', params: monthEnd },
+        { key: 'oto.payroll.hub', params: [] },
+      ]),
+    );
+    const res = await ask(w, manager.cookie, "Why does September's payroll look wrong?");
+    expect(res.body, JSON.stringify(res.body)).toMatchObject({ state: 'answered', reason: null, links: [] });
+    expect(res.body.answer).not.toMatch(/linked below|the button|see the link|here:/i);
+    expect(fake.sidsIssued).toHaveLength(1);
+    expect(fake.logouts).toHaveLength(1);
+    expect(fake.sessions.size).toBe(0);
+    expect((await closingAudit(res.body.id)).after).toMatchObject({ otoApp: { role: 'manager' }, links: [] });
+  });
+
+  it('W4: with the OTO App tools off no session is opened for a link, and a screen that needs no OTO App identity opens none either', async () => {
+    fake.resetObservations();
+    const cfg = w.ctx.app.internalAi.config;
+    const before = cfg.otoAppTools;
+    cfg.otoAppTools = false;
+    try {
+      script(w, final('The September month-end is where to look.', [{ key: 'oto.payroll.month', params: monthEnd }]));
+      const res = await ask(w, admin.cookie, "Why does September's payroll look wrong?");
+      expect(res.body).toMatchObject({ state: 'answered', links: [] });
+      expect(fake.requests).toEqual([]);
+    } finally {
+      cfg.otoAppTools = before;
+    }
+    script(w, final('My rota shows the week.', [{ key: 'oto.rota', params: [] }]));
+    const rota = await ask(w, staffer.cookie, 'Where do I see my rota?');
+    expect(rota.body.links.map((l) => l.key)).toEqual(['oto.rota']);
+    expect(fake.requests).toEqual([]);
+  });
+
+  it('S12: an empty period is one sentence in the attendance summary, beside the zeros; a worked period is one sentence of figures', async () => {
+    const empty = script(w, attendanceCall(krit.id), final('No clock-ins on record for ZZ Oto Manager this month.'));
+    const res = await ask(w, manager.cookie, "Krit's attendance this month");
+    expect(res.body, JSON.stringify(res.body)).toMatchObject({ state: 'answered', reason: null });
+    const data = (toolResultsSeen(empty)[0]!.data as { data: Record<string, unknown> }).data;
+    expect(data).toMatchObject({ daysWorked: 0, totalHours: 0, anomalies: 0 });
+    expect(data.words).toBe(`No clock-ins on record for ZZ Oto Manager between ${periodSentence(firstOfMonth, today)}.`);
+    const worked = script(w, attendanceCall(anan.id), final('Checked.'));
+    expect((await ask(w, manager.cookie, "Anan's attendance this month")).body.state).toBe('answered');
+    expect((toolResultsSeen(worked)[0]!.data as { data: { words: string } }).data.words).toBe(
+      `ZZ Anan Fixture: ${attendance.days} days worked, ${attendance.hours} hours, 1 late arrival, 0 no-shows between ${periodSentence(firstOfMonth, today)}.`,
+    );
   });
 });

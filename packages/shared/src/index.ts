@@ -67,6 +67,7 @@ export * from './inbox-actions';
 export * from './inbox-reply';
 export * from './inbox-ai';
 export * from './assistant-tools';
+export * from './assistant-audit-actions';
 export * from './assistant-asks';
 export * from './suite-screens';
 export * from './handoff-target';

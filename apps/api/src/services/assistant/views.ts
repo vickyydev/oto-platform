@@ -86,6 +86,7 @@ function viewOf(row: AskRow, calls: ToolCallRow[]): AssistantAskView {
       })),
     feedback: row.feedback,
     correction: row.correction,
+    smallTalk: row.smallTalk,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };

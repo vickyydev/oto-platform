@@ -27477,7 +27477,7 @@ export interface paths {
                                 links: {
                                     key: string;
                                     /** @enum {string} */
-                                    app: "oto_app" | "console" | "inbox" | "launcher";
+                                    app: "oto_app" | "console" | "inbox" | "pos" | "launcher";
                                     path: string;
                                     shows: string;
                                 }[];
@@ -27503,6 +27503,7 @@ export interface paths {
                                 /** @enum {string|null} */
                                 feedback: "good" | "wrong" | null;
                                 correction: string | null;
+                                smallTalk: boolean;
                                 createdAt: string;
                                 updatedAt: string;
                             }[];
@@ -27548,7 +27549,7 @@ export interface paths {
                             links: {
                                 key: string;
                                 /** @enum {string} */
-                                app: "oto_app" | "console" | "inbox" | "launcher";
+                                app: "oto_app" | "console" | "inbox" | "pos" | "launcher";
                                 path: string;
                                 shows: string;
                             }[];
@@ -27574,6 +27575,7 @@ export interface paths {
                             /** @enum {string|null} */
                             feedback: "good" | "wrong" | null;
                             correction: string | null;
+                            smallTalk: boolean;
                             createdAt: string;
                             updatedAt: string;
                         };
@@ -27623,7 +27625,7 @@ export interface paths {
                             links: {
                                 key: string;
                                 /** @enum {string} */
-                                app: "oto_app" | "console" | "inbox" | "launcher";
+                                app: "oto_app" | "console" | "inbox" | "pos" | "launcher";
                                 path: string;
                                 shows: string;
                             }[];
@@ -27649,6 +27651,7 @@ export interface paths {
                             /** @enum {string|null} */
                             feedback: "good" | "wrong" | null;
                             correction: string | null;
+                            smallTalk: boolean;
                             createdAt: string;
                             updatedAt: string;
                         };
@@ -27760,7 +27763,7 @@ export interface paths {
                                 links: {
                                     key: string;
                                     /** @enum {string} */
-                                    app: "oto_app" | "console" | "inbox" | "launcher";
+                                    app: "oto_app" | "console" | "inbox" | "pos" | "launcher";
                                     path: string;
                                     shows: string;
                                 }[];
@@ -27786,6 +27789,7 @@ export interface paths {
                                 /** @enum {string|null} */
                                 feedback: "good" | "wrong" | null;
                                 correction: string | null;
+                                smallTalk: boolean;
                                 createdAt: string;
                                 updatedAt: string;
                                 /** Format: uuid */

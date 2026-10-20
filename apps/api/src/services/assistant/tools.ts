@@ -1,7 +1,10 @@
 import {
+  ASSISTANT_AUDIT_ACTIONS_SHOWN,
+  ASSISTANT_AUDIT_ACTION_NAMES,
   ASSISTANT_SUMMARY_MAX_BYTES,
   ASSISTANT_SUMMARY_ROWS,
   ASSISTANT_TOOLS,
+  assistantAuditActionsLine,
   dayOfWeekOfIsoDate,
   formatDisplayPhone,
   isoDateInTz,
@@ -35,8 +38,9 @@ import { toJsonSchema } from './json-schema';
  *   deepLink(input)   the screen that shows the same thing (§C), when the map
  *                     has one; the engine offers it when an ask ends short.
  *
- * WHAT A SUMMARY LEAVES OUT, on purpose: a child's allergy and medical text
- * unless the model asked for them (`include: ['allergies']`, §B.4); an Inbox
+ * WHAT A SUMMARY LEAVES OUT, on purpose: a child's medical NOTES unless the
+ * model asked for them (`include: ['medical_notes']`, §B.4; the allergy text
+ * is in every member summary since the test night of 2026-10-21, W5); an Inbox
  * message's words (only the customer's display name, the category and the
  * intent — the customer assistant's law that no body leaves the message
  * table holds here too); the audit trail's before/after payloads; a failure's
@@ -59,6 +63,18 @@ export interface SummaryDraft {
   more?: number;
 }
 
+/**
+ * What the engine knows of the asker on the platform side when it summarises
+ * (test night 2026-10-21, W7): the parks their counter access reaches, so a
+ * one-park count can say "1 of 3 you can see" and name the others. Read once
+ * per ask from the asker's own grants (`pos:checkin:read`), never from a tool.
+ */
+export interface PlatformAsker {
+  parks: ReadonlyArray<{ id: string; name: string; code: string }>;
+}
+
+export const NO_PLATFORM_ASKER: PlatformAsker = { parks: [] };
+
 export interface PlatformToolAdapter {
   name: string;
   routes: readonly GetRouteTemplate[];
@@ -66,7 +82,7 @@ export interface PlatformToolAdapter {
   /** The registry's own schema: the arguments are validated against it before any call. */
   input: z.ZodTypeAny;
   urls(input: never): string[];
-  summarise(bodies: unknown[], input: never, now: Date): SummaryDraft;
+  summarise(bodies: unknown[], input: never, now: Date, who: PlatformAsker): SummaryDraft;
   deepLink(input: never): { key: string; params: Record<string, string> } | null;
 }
 
@@ -217,6 +233,42 @@ export function clockGrounding(now: Date): string {
   ].join('. ');
 }
 
+const EN_MONTH_PATTERNS = [
+  'jan(?:uary)?', 'feb(?:ruary)?', 'mar(?:ch)?', 'apr(?:il)?', 'may', 'june?',
+  'july?', 'aug(?:ust)?', 'sept?(?:ember)?', 'oct(?:ober)?', 'nov(?:ember)?', 'dec(?:ember)?',
+];
+const RU_MONTH_STEMS = ['январ', 'феврал', 'март', 'апрел', 'ма[йя]', 'июн', 'июл', 'август', 'сентябр', 'октябр', 'ноябр', 'декабр'];
+
+/**
+ * The calendar the asker named in their own words (test night 2026-10-21,
+ * W4): a month by name ("September", "กันยายน", "сентябрь") is the ISO month
+ * of the ask's year — of last year when the month is still ahead — and a day
+ * or month they typed in ISO form is itself. Link grounding only: a month the
+ * asker typed may carry a month-end link (`oto.payroll.month`), as the
+ * asker's own words already ground the figures the guard checks.
+ */
+export function questionCalendar(question: string, now: Date): string {
+  const today = isoDateInTz(now, BANGKOK);
+  const [year, thisMonth] = today.split('-').map(Number) as [number, number];
+  const out = new Set<string>();
+  const month = (i: number) => {
+    const y = i + 1 > thisMonth ? year - 1 : year;
+    const key = `${y}-${String(i + 1).padStart(2, '0')}`;
+    out.add(`${key} (${monthWords(key)})`);
+  };
+  for (const [i, p] of EN_MONTH_PATTERNS.entries()) {
+    // "May" only beside a day number, as the guard reads it: "you may" is ordinary English.
+    const pattern = i === 4 ? /(?:\d\s*(?:st|nd|rd|th)?\s*May(?![A-Za-z]))|(?:(?<![A-Za-z])May\s*\d)/ : new RegExp(`(?<![A-Za-z])${p}(?![A-Za-z])`, 'i');
+    if (pattern.test(question)) month(i);
+  }
+  for (const [i, name] of TH_MONTHS.entries()) if (question.includes(name)) month(i);
+  for (const [i, stem] of RU_MONTH_STEMS.entries()) {
+    if (new RegExp(`(?<!\\p{L})${stem}\\p{L}*`, 'iu').test(question)) month(i);
+  }
+  for (const typed of question.match(/\b\d{4}-(?:0[1-9]|1[0-2])(?:-\d{2})?\b/g) ?? []) out.add(typed);
+  return [...out].join('; ');
+}
+
 /** The calendar days a range covers, both ends included; null when either end is not a date. */
 export function daysInclusive(from: string | null, to: string | null): number | null {
   if (!from || !to || !/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) return null;
@@ -264,19 +316,23 @@ function maskedPhone(phone: unknown): string | null {
 
 const hasText = (v: unknown) => typeof v === 'string' && v.trim() !== '';
 
-/** A member as the model reads it (lookup and get): never the email, never the tier evidence. */
-function memberSummary(m: Obj, includeAllergies: boolean, now: Date): Obj {
+/**
+ * A member as the model reads it (lookup and get): never the email, never the
+ * tier evidence. A child's allergies are in it as written (W5: reception asks
+ * for exactly that at the desk); the medical notes only when asked for.
+ */
+function memberSummary(m: Obj, includeMedicalNotes: boolean, now: Date): Obj {
   const children = arr(m.children).map((c) => {
     const child = obj(c);
     return {
       name: str(child.name),
       age: ageOf(child, now),
-      // A flag, not the text, unless the question was about it (§B.4).
+      // A flag for the notes, not their text, unless the question was about them (§B.4).
       medicalAlert: child.medicalAlert === true || hasText(child.allergies) || hasText(child.medicalNotes),
       hasAllergies: hasText(child.allergies),
-      ...(includeAllergies
-        ? { allergies: str(child.allergies), medicalNotes: str(child.medicalNotes) }
-        : {}),
+      allergies: hasText(child.allergies) ? str(child.allergies) : null,
+      hasMedicalNotes: hasText(child.medicalNotes),
+      ...(includeMedicalNotes ? { medicalNotes: str(child.medicalNotes) } : {}),
     };
   });
   const phone = str(m.phone);
@@ -292,7 +348,45 @@ function memberSummary(m: Obj, includeAllergies: boolean, now: Date): Obj {
   };
 }
 
-const MemberInclude = (input: { include?: readonly string[] | undefined }) => (input.include ?? []).includes('allergies');
+const MemberInclude = (input: { include?: readonly string[] | undefined }) => (input.include ?? []).includes('medical_notes');
+
+/**
+ * An audit instant as the route takes it (`z.string().datetime()`, UTC with
+ * `Z`), from what the model gave (D1): a bare day is the park's whole day —
+ * its start for `from`, its end for `to` — and an instant with no offset is
+ * Bangkok time.
+ */
+export function auditInstant(given: string | undefined, end: 'from' | 'to'): string | undefined {
+  if (!given) return undefined;
+  const s = given.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    return new Date(`${s}T${end === 'from' ? '00:00:00.000' : '23:59:59.999'}+07:00`).toISOString();
+  }
+  const withT = s.replace(' ', 'T');
+  const zoned = /(?:Z|[+-]\d{2}:?\d{2})$/.test(withT) ? withT : `${withT}+07:00`;
+  const at = new Date(zoned);
+  return Number.isNaN(at.getTime()) ? undefined : at.toISOString();
+}
+
+/** The audit action to filter by: the enum's name, else the free-text name (a guess until rows say otherwise). */
+function auditAction(i: { action?: string | undefined; q?: string | undefined }): string | undefined {
+  return i.action ?? (i.q?.trim() || undefined);
+}
+
+/**
+ * The sentence for a filtered search that found nothing (D1): the filter
+ * itself, and the names the audit does write, so the model cannot read
+ * "nobody signed in" into "no rows for a name that was a guess".
+ */
+export function auditNothingMatched(action: string | undefined, from: string | null, to: string | null, guessed: boolean): string {
+  const period = from || to ? ` between ${from ?? 'the start'} and ${to ?? 'now'}` : '';
+  const filter = action ? `action=${action}` : 'these filters';
+  const known = `the known actions are: ${assistantAuditActionsLine(ASSISTANT_AUDIT_ACTIONS_SHOWN)}`;
+  if (!action) return `0 rows for ${filter}${period}: nothing matched the filter, which is not the same as nothing happening.`;
+  return guessed
+    ? `0 rows for ${filter}${period}: ${action} is not a name the audit writes, so that action was a guess; ${known}.`
+    : `0 rows for ${filter}${period}: nothing of that kind matched, which is not the same as nothing happening. Other actions: ${known}.`;
+}
 
 // --- The ten -----------------------------------------------------------------------------
 
@@ -302,7 +396,7 @@ type In<N extends Spec['name']> = z.infer<SpecOf<N>['input']>;
 
 interface AdapterBody<N extends Spec['name']> {
   urls(input: In<N>): string[];
-  summarise(bodies: unknown[], input: In<N>, now: Date): SummaryDraft;
+  summarise(bodies: unknown[], input: In<N>, now: Date, who: PlatformAsker): SummaryDraft;
   deepLink?(input: In<N>): { key: string; params: Record<string, string> } | null;
 }
 
@@ -327,7 +421,13 @@ const enc = encodeURIComponent;
 export const PLATFORM_TOOL_ADAPTERS: readonly PlatformToolAdapter[] = [
   adapter('audit.search', {
     urls: (i) => [
-      `/audit${query({ action: i.action, entityType: i.entityType, from: i.from, to: i.to, limit: ASSISTANT_SUMMARY_ROWS })}`,
+      `/audit${query({
+        action: auditAction(i),
+        entityType: i.entityType,
+        from: auditInstant(i.from, 'from'),
+        to: auditInstant(i.to, 'to'),
+        limit: ASSISTANT_SUMMARY_ROWS,
+      })}`,
     ],
     summarise: ([body], i) => {
       const b = obj(body);
@@ -343,15 +443,20 @@ export const PLATFORM_TOOL_ADAPTERS: readonly PlatformToolAdapter[] = [
           at: bangkokTime(r.createdAt),
         };
       });
+      const action = auditAction(i);
+      const from = i.from ? bangkokTime(auditInstant(i.from, 'from')) : null;
+      const to = i.to ? bangkokTime(auditInstant(i.to, 'to')) : null;
+      const filtered = action !== undefined || i.entityType !== undefined || from !== null || to !== null;
+      // D1: a zero after a filter says so, and names the actions the audit writes when the name was a guess.
+      const guessed = action !== undefined && !(ASSISTANT_AUDIT_ACTION_NAMES as readonly string[]).includes(action);
       return {
         data: {
-          period: {
-            from: i.from ? bangkokTime(i.from) : null,
-            to: i.to ? bangkokTime(i.to) : null,
-          },
+          action: action ?? null,
+          period: { from, to },
           masked: b.masked === true,
           shown: entries.length,
           moreOnTheScreen: b.nextCursor ? true : false,
+          ...(entries.length === 0 && filtered ? { nothingMatched: auditNothingMatched(action, from, to, guessed) } : {}),
           entries,
         },
         listKey: 'entries',
@@ -406,6 +511,46 @@ export const PLATFORM_TOOL_ADAPTERS: readonly PlatformToolAdapter[] = [
         more: children.length - shown.length,
       };
     },
+  }),
+  adapter('inbox.dashboard', {
+    // W6: the metric cards, within what the asker can see; every conversation by category, and each
+    // category is one team's (`services/inbox/router.ts` TEAM_OF_CATEGORY), so "which team has the
+    // most" is answered from the mix.
+    urls: () => ['/inbox/dashboard'],
+    summarise: ([body], _i, now) => {
+      const b = obj(body);
+      const by = obj(b.byCategory);
+      const teams = [
+        { team: 'birthdays', category: 'birthdays', conversations: num(by.birthdays) ?? 0 },
+        { team: 'reception', category: 'general', conversations: num(by.general) ?? 0 },
+        { team: 'marketing', category: 'marketing', conversations: num(by.marketing) ?? 0 },
+      ];
+      const most = Math.max(...teams.map((t) => t.conversations));
+      const leaders = teams.filter((t) => t.conversations === most && most > 0).map((t) => t.team);
+      const avg = num(b.averageFirstResponseSeconds);
+      const day = str(b.day);
+      return {
+        data: {
+          day: day ? `${day} (${dayWords(day)})` : null,
+          asOf: nowWords(now),
+          newToday: num(b.newToday) ?? 0,
+          unanswered: num(b.unanswered) ?? 0,
+          handledToday: num(b.handledToday) ?? 0,
+          active: num(b.active) ?? 0,
+          averageFirstResponse:
+            avg === null ? { seconds: null, words: 'no first response measured yet' } : { seconds: avg, minutes: Math.round(avg / 60), words: `about ${Math.round(avg / 60)} minutes` },
+          // Every conversation the asker can see, any status, by the team whose category it is.
+          byTeam: teams,
+          mostConversations: leaders.length === 0 ? null : leaders,
+          words:
+            most === 0
+              ? 'No conversations by any team.'
+              : `${leaders.join(' and ')} ${leaders.length === 1 ? 'has' : 'have'} the most conversations: ${teams.map((t) => `${t.team} (${t.category}) ${t.conversations}`).join(', ')}.`,
+        },
+        rows: 1,
+      };
+    },
+    deepLink: () => ({ key: 'inbox.queue', params: {} }),
   }),
   adapter('inbox.queue', {
     // Unanswered conversations on the asked tab, as the Inbox counts them
@@ -500,6 +645,8 @@ export const PLATFORM_TOOL_ADAPTERS: readonly PlatformToolAdapter[] = [
         ? { data: { found: true, member: memberSummary(obj(m), MemberInclude(i), now) }, rows: 1 }
         : { data: { found: false, member: null }, rows: 0 };
     },
+    // W5: the till's History on the phone the asker typed — grounded by construction (it is their input).
+    deepLink: (i) => ({ key: 'pos.member', params: { phone: i.phone.trim() } }),
   }),
   adapter('members.search', {
     urls: (i) => [`/members${query({ q: i.q, limit: ASSISTANT_SUMMARY_ROWS })}`],
@@ -526,18 +673,38 @@ export const PLATFORM_TOOL_ADAPTERS: readonly PlatformToolAdapter[] = [
   }),
   adapter('occupancy.now', {
     urls: (i) => [`/branches/${enc(i.branchId)}/occupancy`],
-    summarise: ([body], i, now) => {
+    summarise: ([body], i, now, who) => {
       const b = obj(body);
       const businessDate = str(b.businessDate);
+      const countedAt = bangkokTime(b.asOf);
+      const stale = b.stale === true;
+      // W7: this park among the parks the asker's counter access reaches, so a one-park figure is said
+      // to be one park's, and the others are named for a "whole park" ask.
+      const park = who.parks.find((p) => p.id === i.branchId) ?? null;
+      const others = who.parks.filter((p) => p.id !== i.branchId);
+      const parkName = park?.name ?? 'this park';
       return {
         data: {
           branchId: i.branchId,
+          park: park ? { id: park.id, name: park.name, code: park.code } : null,
+          parksYouCanSee: who.parks.length,
+          otherParks: others.map((p) => ({ id: p.id, name: p.name })),
+          scope:
+            who.parks.length > 1
+              ? `This count is for ${parkName} only, 1 of ${who.parks.length} parks you can see; the others are ${others.map((p) => p.name).join(', ')}. For the park as a whole, read each park and add them up, or say which park.`
+              : `This count is for ${parkName}, the one park you can see.`,
           inside: { adults: num(b.adults) ?? 0, children: num(b.kids) ?? 0, total: num(b.total) ?? 0 },
           tradingDay: businessDate ? `${businessDate} (${dayWords(businessDate)})` : null,
-          countedAt: bangkokTime(b.asOf),
+          countedAt,
           asOf: nowWords(now),
           // The gate behind the count has not been heard from lately: the figure may be behind.
-          stale: b.stale === true,
+          stale,
+          // S11: the stale flag in one plain line, as the answer should say it.
+          staleWords: !stale
+            ? null
+            : countedAt === null
+              ? 'This count is stale: no headcount has been taken yet today (no gate has reported).'
+              : `This count is stale: the gate was last heard from at ${countedAt}, so the figure may be behind.`,
         },
         rows: 1,
       };

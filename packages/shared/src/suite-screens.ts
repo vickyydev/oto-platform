@@ -19,8 +19,11 @@ import type { Permission } from './permissions';
  * `apps/inbox/test/url.test.ts` reads every Inbox entry back through that
  * reader, so the two cannot drift apart.
  *
- * NOT IN THE MAP: the POS — it has no linkable member screen; a member answer
- * gives figures.
+ * THE POS (test night 2026-10-21, W5): one screen, `pos.member`, the till's
+ * History page opened on a phone number (`/history?phone=…`), which looks the
+ * member's sales up through `GET /sales/lookup`: a "Take me there" for
+ * reception after a member lookup. The POS honours the hand-off target the
+ * way the Console and the Inbox do (`apps/pos/src/auth/OperatorContext.tsx`).
  *
  * Prerequisite P1 lets the launcher's hand-off carry a target path
  * (`handoff-target.ts`), and the Console, the Inbox and the OTO App land on
@@ -35,7 +38,7 @@ import type { Permission } from './permissions';
  */
 
 /** The apps a link can open. */
-export const SUITE_SCREEN_APPS = ['oto_app', 'console', 'inbox', 'launcher'] as const;
+export const SUITE_SCREEN_APPS = ['oto_app', 'console', 'inbox', 'pos', 'launcher'] as const;
 export type SuiteScreenApp = (typeof SUITE_SCREEN_APPS)[number];
 
 /** The tile a person needs to open the app at all. The launcher is every session's. */
@@ -43,6 +46,7 @@ export const SUITE_SCREEN_APP_ACCESS: Record<SuiteScreenApp, Permission | null> 
   oto_app: 'app:oto_app:access',
   console: 'app:console:access',
   inbox: 'app:inbox:access',
+  pos: 'app:pos:access',
   launcher: null,
 };
 
@@ -63,7 +67,7 @@ export type SuiteScreenGate =
 export interface SuiteScreenParam {
   name: string;
   in: 'path' | 'query';
-  kind: 'otoapp_id' | 'uuid' | 'date' | 'month' | 'enum';
+  kind: 'otoapp_id' | 'uuid' | 'date' | 'month' | 'phone' | 'enum';
   values?: readonly string[];
   required: boolean;
 }
@@ -264,6 +268,15 @@ export const SUITE_SCREENS = [
     shows: 'The unanswered queue',
     worthOffering: { kind: 'permission', permission: 'inbox:conversation:read' },
   },
+  {
+    key: 'pos.member',
+    app: 'pos',
+    path: '/history',
+    // The phone as the asker typed it or as a member summary shows it; History normalises it (`parseHistorySearch`).
+    params: [{ name: 'phone', in: 'query', kind: 'phone', required: true }],
+    shows: "The member's sales on the till (History)",
+    worthOffering: { kind: 'permission', permission: 'pos:member:read' },
+  },
   { key: 'launcher.account', app: 'launcher', path: '/account', params: [], shows: 'My account', worthOffering: EVERYONE },
 ] as const satisfies readonly SuiteScreen[];
 
@@ -280,6 +293,8 @@ const PARAM_SHAPE: Record<Exclude<SuiteScreenParam['kind'], 'enum'>, RegExp> = {
   uuid: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
   date: /^\d{4}-\d{2}-\d{2}$/,
   month: /^\d{4}-(0[1-9]|1[0-2])$/,
+  /** A phone as typed or as a screen shows it: digits with spaces, dashes or brackets, an optional leading +. */
+  phone: /^\+?\d[\d\s()-]{6,24}$/,
 };
 
 function paramOk(param: SuiteScreenParam, value: string): boolean {

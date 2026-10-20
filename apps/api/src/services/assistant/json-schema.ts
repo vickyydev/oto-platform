@@ -65,6 +65,12 @@ function numberSchema(n: z.ZodNumber): JsonSchema {
   return out;
 }
 
+/** A property's `.describe()` text, carried to the model (test night 2026-10-21, D1: the audit actions' meanings). */
+function described(schema: z.ZodTypeAny, json: JsonSchema): JsonSchema {
+  const description = schema.description;
+  return description ? { ...json, description } : json;
+}
+
 export function toJsonSchema(schema: z.ZodTypeAny): JsonSchema {
   if (schema instanceof z.ZodObject) {
     const shape = schema.shape as Record<string, z.ZodTypeAny>;
@@ -72,9 +78,9 @@ export function toJsonSchema(schema: z.ZodTypeAny): JsonSchema {
     const required: string[] = [];
     for (const [key, value] of Object.entries(shape)) {
       if (value instanceof z.ZodOptional) {
-        properties[key] = toJsonSchema(value.unwrap() as z.ZodTypeAny);
+        properties[key] = described(value, toJsonSchema(value.unwrap() as z.ZodTypeAny));
       } else {
-        properties[key] = toJsonSchema(value);
+        properties[key] = described(value, toJsonSchema(value));
         required.push(key);
       }
     }

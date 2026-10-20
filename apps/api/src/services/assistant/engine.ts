@@ -1,12 +1,15 @@
-import { and, desc, eq, gte, isNotNull, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, ne, sql } from 'drizzle-orm';
 import {
   INTERNAL_LINES,
   buildInternalSystem,
   internalAnswerGuard,
   linkParams,
+  plainRefusal,
+  softenRefusalProse,
   type InternalAnswer,
   type InternalLanguage,
   type InternalLinkEntry,
+  type PriorTurn,
   type ToolCallRequest,
   type ToolCallResult,
   type ToolLoopOutcome,
@@ -30,6 +33,7 @@ import {
 import type { FastifyBaseLogger, FastifyInstance } from 'fastify';
 import { errors } from '../../lib/errors';
 import type { AuthContext } from '../../plugins/session';
+import { branchReach } from '../access-control';
 import { audit } from '../audit';
 import { claimClientId, markReplay } from '../client-id';
 import { holdsAnywhere } from '../inbox/read-visibility';
@@ -48,7 +52,17 @@ import {
 } from './call-otoapp';
 import { PlatformCallTimeout, callPlatform, toolRequestId, type PlatformResponse } from './call-platform';
 import { otoAppHandoff, type InternalAiRuntime } from './runtime';
-import { PLATFORM_TOOLS, clockGrounding, fitSummary, platformToolDefinitions, summaryBytes, type PlatformToolAdapter } from './tools';
+import {
+  NO_PLATFORM_ASKER,
+  PLATFORM_TOOLS,
+  clockGrounding,
+  fitSummary,
+  platformToolDefinitions,
+  questionCalendar,
+  summaryBytes,
+  type PlatformAsker,
+  type PlatformToolAdapter,
+} from './tools';
 import { OTOAPP_TOOLS, otoAppToolDefinitions, type OtoAppToolAdapter } from './tools-otoapp';
 import { loadAskView, type AskRow } from './views';
 
@@ -83,6 +97,14 @@ import { loadAskView, type AskRow } from './views';
  *      stripped, shape, every number and date word traced to THIS ask's
  *      summaries), the links resolved and filtered to what the asker may open,
  *      the refusals, the counts, and one `assistant.ask` audit row.
+ *
+ * THE CONVERSATION (test night 2026-10-21, D2; plan "Test night 2026-10-21").
+ * An ask is no longer answered alone: the asker's own last three asks of the
+ * last two hours — theirs, in this operator, and nobody else's — travel as
+ * prior user/assistant turns below the cache breakpoint, and their words join
+ * the grounding (they were checked when they were given, and the person has
+ * seen them). A bare follow-up with no earlier ask to resolve it gets the
+ * honest line (`INTERNAL_LINES.noContext`) in place of a guard line.
  *
  * NOTHING HERE WRITES TEXT OUTSIDE THE ASK ROW (§E.1). Audit and ops rows
  * carry ids, words, names of tools and counts; a thrown error is logged by
@@ -128,6 +150,25 @@ export function questionLanguage(question: string): InternalLanguage {
   if (/[฀-๿]/.test(question)) return 'th';
   if (/[Ѐ-ӿ]/.test(question)) return 'ru';
   return 'en';
+}
+
+/** How far back, and how many, of the asker's own asks ride along as the conversation (D2). */
+export const ASSISTANT_PRIOR_TURNS = 3;
+export const ASSISTANT_PRIOR_TURNS_WINDOW_MS = 2 * 3_600_000;
+/** The states a prior ask must have ended in to be a turn worth echoing: the ones with an answer the person read. */
+const PRIOR_TURN_STATES = ['answered', 'refused', 'link_only'] as const;
+
+/**
+ * A question that only continues an earlier one — "and yesterday?", "what
+ * about Chalong?", "แล้วเมื่อวานล่ะ", "а вчера?" — short, led by a
+ * conjunction, with nothing of its own to look up. With no prior turn to
+ * resolve it, a guard failure on such an ask is the model reaching for a
+ * subject it was never given, and the honest line replaces the guard line.
+ */
+export function isBareFollowUp(question: string): boolean {
+  const q = question.trim();
+  if (q.length === 0 || q.length > 80) return false;
+  return /^(?:(?:and|or|also|what about|how about|same for|now)\b|(?:แล้ว|และ|ส่วน)|(?:а|и|как насчёт|а что насчёт)\s)/iu.test(q);
 }
 
 export interface AskDeps {
@@ -458,6 +499,17 @@ const STATUS_WORDS: Record<number, string> = {
   423: 'This session is locked — unlock to continue',
 };
 
+/**
+ * The envelope the model gets for a failed call (§D.4): the route's own
+ * status, code and sentence, and — for a REFUSAL (401/403/404/423) — beside
+ * them (W3) the plain sentence the prose may use: what the person cannot see,
+ * with no permission string in it. A 400 is the route's own words alone.
+ */
+function refusalEnvelope(r: AssistantRefusal): ToolCallResult {
+  const plain = REFUSAL_STATUSES.has(r.status) ? { plain: plainRefusal(r) } : {};
+  return { ok: false, data: { error: { status: r.status, code: r.code, message: r.message, ...plain } } };
+}
+
 interface ToolRowInput {
   askId: string;
   seq: number;
@@ -529,7 +581,15 @@ interface ToolOutcome {
   outOfTime: boolean;
 }
 
-function executorFor(deps: AskDeps, caller: AskCaller, askId: string, trace: AskTrace, otoApp: OtoAppHolder, now: () => Date) {
+function executorFor(
+  deps: AskDeps,
+  caller: AskCaller,
+  askId: string,
+  trace: AskTrace,
+  otoApp: OtoAppHolder,
+  now: () => Date,
+  who: PlatformAsker = NO_PLATFORM_ASKER,
+) {
   /** A row for a call that got no answer, by word: WALL_TIME, OTOAPP_UNAVAILABLE, INVALID_ARGUMENTS. */
   const recordNoAnswer = async (
     adapter: PlatformToolAdapter | OtoAppToolAdapter,
@@ -648,7 +708,7 @@ function executorFor(deps: AskDeps, caller: AskCaller, askId: string, trace: Ask
     const deadline = started + call.remainingMs;
 
     let run: ToolOutcome;
-    let who: OtoAppIdentity | null = null;
+    let otoWho: OtoAppIdentity | null = null;
     if (platform) {
       run = await runPlatform(platform, input, call, deadline);
     } else {
@@ -687,11 +747,12 @@ function executorFor(deps: AskDeps, caller: AskCaller, askId: string, trace: Ask
           requestId: toolReqId,
         });
         trace.recorded += 1;
-        trace.refusals.push({ tool: adapter.name, system: r.system, status: r.status, code: r.code, message });
-        return { ok: false, data: { error: { status: r.status, code: r.code, message } } };
+        const refusal: AssistantRefusal = { tool: adapter.name, system: r.system, status: r.status, code: r.code, message };
+        trace.refusals.push(refusal);
+        return refusalEnvelope(refusal);
       }
-      who = opened.session.identity;
-      trace.otoApp = { role: who.role, permissions: who.permissions };
+      otoWho = opened.session.identity;
+      trace.otoApp = { role: otoWho.role, permissions: otoWho.permissions };
       const got = await runOtoApp(oto!, input, opened.session, call, deadline);
       if ('unavailable' in got) {
         await recordNoAnswer(adapter, system, call, args, 'OTOAPP_UNAVAILABLE', got.unavailable, Date.now() - started);
@@ -729,14 +790,15 @@ function executorFor(deps: AskDeps, caller: AskCaller, askId: string, trace: Ask
       trace.recorded += 1;
       if (failed.status >= 500) throw new ToolServerError();
       const sentence = (message ?? STATUS_WORDS[failed.status] ?? 'Refused').slice(0, 500);
+      const refusal: AssistantRefusal = { tool: adapter.name, system, status: failed.status, code, message: sentence };
       if (REFUSAL_STATUSES.has(failed.status)) {
         // §D.4: the route's own sentence, verbatim. The server shows it; the model cannot reword it.
-        trace.refusals.push({ tool: adapter.name, system, status: failed.status, code, message: sentence });
+        trace.refusals.push(refusal);
       }
-      return { ok: false, data: { error: { status: failed.status, code, message: sentence } } };
+      return refusalEnvelope(refusal);
     }
 
-    const draft = platform ? platform.summarise(run.bodies, input, now()) : oto!.summarise(run.bodies, input, now(), who!);
+    const draft = platform ? platform.summarise(run.bodies, input, now(), who) : oto!.summarise(run.bodies, input, now(), otoWho!);
     const summary = fitSummary(draft);
     await recordToolCall(deps, caller, {
       askId,
@@ -785,6 +847,75 @@ async function askerOf(db: Db, caller: AskCaller) {
     seatBranch: seat?.name ?? null,
     tiles,
   };
+}
+
+/**
+ * The parks the asker's counter access reaches (W7): the branches they hold
+ * `pos:checkin:read` at — every live branch of the operator for an
+ * operator-wide grant — by name, for the occupancy summary to say which park
+ * a count is for and name the others. From the asker's own grants; a tool
+ * route's own fence still decides every read.
+ */
+async function platformAskerOf(db: Db, caller: AskCaller): Promise<PlatformAsker> {
+  const reach = branchReach(caller.effective, 'pos:checkin:read', caller.auth.operatorId);
+  if (reach.kind === 'branches' && reach.branchIds.length === 0) return NO_PLATFORM_ASKER;
+  const parks = await db
+    .select({ id: branch.id, name: branch.name, code: branch.code })
+    .from(branch)
+    .where(
+      and(
+        eq(branch.operatorId, caller.auth.operatorId),
+        isNull(branch.archivedAt),
+        ...(reach.kind === 'branches' ? [inArray(branch.id, reach.branchIds)] : []),
+      ),
+    )
+    .orderBy(asc(branch.name));
+  return { parks };
+}
+
+// --- The conversation (D2) ------------------------------------------------------------------
+
+/**
+ * The asker's own recent asks, as prior turns: the last three of THEIR asks
+ * in THIS operator within two hours, ended with an answer they read, oldest
+ * first. Nobody else's log is read (PDPA: the log is the asker's own), and
+ * the reviewers' log is untouched. The answer travels as the model would
+ * have written it (links as key/param pairs; the language as the script of
+ * the answer); the row's own id is never one of them.
+ */
+export async function priorTurnsOf(db: Exec, auth: AuthContext, now: Date, excludeId: string): Promise<PriorTurn[]> {
+  const rows = await db
+    .select({ question: ask.question, answer: ask.answer, links: ask.links, smallTalk: ask.smallTalk })
+    .from(ask)
+    .where(
+      and(
+        eq(ask.operatorId, auth.operatorId),
+        eq(ask.accountId, auth.accountId),
+        ne(ask.id, excludeId),
+        inArray(ask.state, [...PRIOR_TURN_STATES]),
+        isNotNull(ask.answer),
+        gte(ask.createdAt, new Date(now.getTime() - ASSISTANT_PRIOR_TURNS_WINDOW_MS)),
+      ),
+    )
+    .orderBy(desc(ask.createdAt), desc(ask.id))
+    .limit(ASSISTANT_PRIOR_TURNS);
+  return rows.reverse().map((r) => ({
+    question: r.question,
+    answer: {
+      answer: r.answer!,
+      links: r.links.map((l) => ({ key: l.key, params: Object.entries(l.params).map(([name, value]) => ({ name, value })) })),
+      language: questionLanguage(r.answer!),
+      smallTalk: r.smallTalk,
+    },
+  }));
+}
+
+/** Whether a link the model wants is gated on who the asker is in the OTO App (a role floor or a permission key). */
+function needsOtoAppIdentity(links: ReadonlyArray<{ key: string }>): boolean {
+  return links.some((l) => {
+    const gate = findSuiteScreen(l.key)?.worthOffering;
+    return gate?.kind === 'otoapp_role' || gate?.kind === 'otoapp_permission';
+  });
 }
 
 // --- The ask ---------------------------------------------------------------------------------
@@ -865,6 +996,9 @@ export async function askAssistant(deps: AskDeps, caller: AskCaller, input: Assi
   const client = deps.runtime.client!;
   const trace: AskTrace = { refusals: [], gathered: [], okCalls: 0, recorded: 0, otoApp: null };
   const asker = await askerOf(deps.db, caller);
+  const platformAsker = await platformAskerOf(deps.db, caller);
+  // D2: the asker's own recent asks, as the conversation's earlier turns.
+  const priorTurns = await priorTurnsOf(deps.db, auth, now, opened.row.id);
   const built = buildInternalSystem({ links: linkEntries(), asker, now, answerMode: client.answerMode });
   // The OTO App tools are offered only when they can be served (§B.3, §E.2); the fence is still the app's.
   const offerOtoApp = otoAppToolsOffered(deps.runtime, caller);
@@ -892,12 +1026,28 @@ export async function askAssistant(deps: AskDeps, caller: AskCaller, input: Assi
     outcome = await client.converse({
       system: built.system,
       question: input.question,
+      priorTurns,
       tools: [...platformToolDefinitions(), ...(offerOtoApp ? otoAppToolDefinitions() : [])],
-      execute: executorFor(deps, caller, opened.row.id, trace, otoApp, () => new Date()),
+      execute: executorFor(deps, caller, opened.row.id, trace, otoApp, () => new Date(), platformAsker),
       maxToolCalls: deps.runtime.config.maxToolCalls,
       wallMs: deps.runtime.config.wallMs,
       answerMode: built.answerMode,
     });
+    // W4: a link to an OTO App screen gated on the asker's role there, named by an answer that called no
+    // oto.* tool, is a courtesy the gate can only judge once the app has said who the asker is. The
+    // session is theirs (the same hand-off a tool call makes), opened for the gate alone and logged out
+    // in the `finally` below; a refusal at the opening is no line — a link is never a guess.
+    if (outcome.ok && offerOtoApp && !otoApp.isOpen && needsOtoAppIdentity(outcome.answer.links)) {
+      const remaining = deps.runtime.config.wallMs - (Date.now() - started.getTime());
+      if (remaining > 2_000) {
+        try {
+          const forLinks = await otoApp.get(remaining);
+          if (forLinks.ok) trace.otoApp = { role: forLinks.session.identity.role, permissions: forLinks.session.identity.permissions };
+        } catch (err) {
+          deps.log?.debug({ askId: opened.row.id, error: errorName(err) }, 'the link gate could not open the asker’s OTO App session');
+        }
+      }
+    }
   } catch (err) {
     // The client never throws by contract; a throw is classified by class, never logged with values.
     deps.log?.error({ askId: opened.row.id, error: errorName(err) }, 'the internal assistant loop threw');
@@ -921,7 +1071,7 @@ export async function askAssistant(deps: AskDeps, caller: AskCaller, input: Assi
   await recordModelRun(deps.db, caller, opened.row.id, outcome, started, trace.recorded);
 
   // 4. The closing transaction.
-  const closedRow = await closeAsk(deps, caller, opened.row, outcome, trace, built.personaVersion, lang, now);
+  const closedRow = await closeAsk(deps, caller, opened.row, outcome, trace, built.personaVersion, lang, now, priorTurns);
 
   // §E.2: the provider failure that makes five in a row opens the breaker, raised once.
   if (!outcome.ok && isOutage(outcome.reason)) {
@@ -979,6 +1129,10 @@ interface Final {
   links: AssistantStoredLink[];
   guardRule: string | null;
   urlsStripped: number;
+  /** The model's word that the message was social (S10); false on every server-written line. */
+  smallTalk: boolean;
+  /** Permission strings the server rewrote out of the prose (W3). */
+  refusalWordsRewritten: number;
 }
 
 function finalOf(
@@ -988,6 +1142,7 @@ function finalOf(
   question: string,
   questionLang: InternalLanguage,
   askedAt: Date,
+  priorTurns: readonly PriorTurn[] = [],
 ): Final {
   const gathered = resolveLinks(trace.gathered, caller.effective, caller.auth.operatorId, trace.otoApp);
   if (!outcome.ok) {
@@ -1004,25 +1159,46 @@ function finalOf(
       links: gathered,
       guardRule: null,
       urlsStripped: 0,
+      smallTalk: false,
+      refusalWordsRewritten: 0,
     };
   }
   const answer: InternalAnswer = outcome.answer;
   const lang = answer.language;
-  // A link's parameter is held to the same grounding as a figure: this ask's summaries.
+  // The conversation's earlier turns (D2): the asker's own questions and the answers they were shown,
+  // which were grounded when given. They ground figures and link parameters alike.
+  const priorTexts = priorTurns.flatMap((t) => [t.question, t.answer.answer]);
+  // A link's parameter is held to the same grounding as a figure: this ask's summaries, the earlier
+  // turns, the asker's own words (a phone they typed opens the till's History on it), and (W4) the
+  // ask's own calendar — the clock, and the month or day the asker named.
   const wanted = groundedLinks(
     answer.links.map((l) => ({ key: l.key, params: linkParams(l) })),
-    outcome.groundingTexts,
+    [...outcome.groundingTexts, ...priorTexts, question, clockGrounding(askedAt), questionCalendar(question, askedAt)],
   );
   const modelLinks = resolveLinks(wanted, caller.effective, caller.auth.operatorId, trace.otoApp);
-  // Grounding = the summaries THIS ask's tools returned, the ask's own calendar (today in Bangkok,
-  // this month, last month: a year or a month the answer names is the asker's clock, not a figure
-  // found), and the asker's own words (a number or a month they typed may be echoed: it is their
-  // input). Never a refusal. The links above are held to the summaries alone.
-  const guard = internalAnswerGuard(answer, [...outcome.groundingTexts, clockGrounding(askedAt)], question);
+  // Grounding = the summaries THIS ask's tools returned, the earlier turns, the ask's own calendar
+  // (today in Bangkok, this month, last month: a year or a month the answer names is the asker's clock,
+  // not a figure found), and the asker's own words (a number or a month they typed may be echoed: it
+  // is their input). Never a refusal.
+  const guard = internalAnswerGuard(answer, [...outcome.groundingTexts, ...priorTexts, clockGrounding(askedAt)], question);
   if (!guard.ok) {
     // The links survive the guard (§C): the model's, grounded, and the screens the tools called show.
     const links = resolveLinks([...wanted, ...trace.gathered], caller.effective, caller.auth.operatorId, trace.otoApp);
     const linked = links.length > 0;
+    // D2: a bare follow-up with no earlier ask of the asker's to resolve it — the figure the model
+    // reached for had no subject. The honest line, in the asker's own script, in place of the guard's.
+    if (priorTurns.length === 0 && isBareFollowUp(question)) {
+      return {
+        state: 'failed',
+        reason: 'NO_CONTEXT',
+        answer: INTERNAL_LINES.noContext[questionLang],
+        links,
+        guardRule: guard.rule,
+        urlsStripped: guard.urlsStripped,
+        smallTalk: false,
+        refusalWordsRewritten: 0,
+      };
+    }
     return {
       // "The link plus the line": with no link the asker may open, the line stands as a sentence of its
       // own and the state follows the digging case above — link_only only when a link is there.
@@ -1032,16 +1208,22 @@ function finalOf(
       links,
       guardRule: guard.rule,
       urlsStripped: guard.urlsStripped,
+      smallTalk: false,
+      refusalWordsRewritten: 0,
     };
   }
   const allRefused = trace.refusals.length > 0 && trace.okCalls === 0;
+  // W3: the refusal line under the answer keeps the route's words; the prose never repeats a permission string.
+  const prose = softenRefusalProse(guard.answer.answer, trace.refusals);
   return {
     state: allRefused ? 'refused' : 'answered',
     reason: allRefused ? 'TOOL_REFUSED' : null,
-    answer: guard.answer.answer,
+    answer: prose.text,
     links: modelLinks,
     guardRule: null,
     urlsStripped: guard.urlsStripped,
+    smallTalk: answer.smallTalk === true,
+    refusalWordsRewritten: prose.rewrites,
   };
 }
 
@@ -1054,8 +1236,9 @@ async function closeAsk(
   personaVersion: string,
   lang: InternalLanguage,
   askedAt: Date,
+  priorTurns: readonly PriorTurn[] = [],
 ): Promise<AskRow> {
-  const f = finalOf(outcome, trace, caller, row.question, lang, askedAt);
+  const f = finalOf(outcome, trace, caller, row.question, lang, askedAt, priorTurns);
   const at = new Date();
   // The row's CHECK (`ask_version_words_check`) takes one word. A provider's model id in any other
   // shape must not fail the close and strand the ask: the id asked for stands in.
@@ -1072,6 +1255,7 @@ async function closeAsk(
         answer: f.answer,
         links: f.links,
         refusals: trace.refusals,
+        smallTalk: f.smallTalk,
         model,
         personaVersion,
         inputTokens: outcome.usage?.inputTokens ?? null,
@@ -1107,6 +1291,10 @@ async function closeAsk(
         refusals: trace.refusals.map((r) => ({ tool: r.tool, status: r.status, code: r.code })),
         links: f.links.map((l) => l.key),
         urlsStripped: f.urlsStripped,
+        refusalWordsRewritten: f.refusalWordsRewritten,
+        smallTalk: f.smallTalk,
+        // How many of the asker's own earlier asks rode along as the conversation (D2): a count, never text.
+        priorTurns: priorTurns.length,
         // Whether this ask signed the asker into the OTO App, and as which role: words, no id.
         otoApp: trace.otoApp ? { role: trace.otoApp.role } : null,
         turns: outcome.turns,

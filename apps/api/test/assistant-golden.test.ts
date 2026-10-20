@@ -120,9 +120,11 @@ describe('the recorded goldens: real model responses through the real loop, rout
     }
   });
 
-  it('the platform goldens’ world word is unchanged by round I4 (their recordings stand)', () => {
+  it('the platform goldens’ world word: moved on the test night of 2026-10-21 (every recording is to be re-recorded), pinned since', () => {
     // Pinned so a change to the platform tools, the world spec or the link map is seen as the re-record it asks for.
-    expect(worldVersion()).toBe('world-4e997400c81d7d03');
+    // Round I4 left it at world-4e997400c81d7d03; the test night's tool definitions (the audit action enum,
+    // allergies in a member summary, inbox.dashboard) and the POS screen in the link map moved it here.
+    expect(worldVersion()).toBe('world-ad0ced46ab33a1b7');
     expect(worldVersion(true)).not.toBe(worldVersion());
   });
 
@@ -201,20 +203,24 @@ describe('the goldens rehearsed on the fake (what assistant:eval --fake plays)',
     ]);
   });
 
-  it('Q5 — the E.164 record from a Thai local number; the allergy text only when the question is about it', async () => {
+  it('Q5 — the E.164 record from a Thai local number; the allergy text in the summary (W5), the till’s History on that phone as the link', async () => {
     const fake = rehearse(w, LIVE_GOLDENS.find((g) => g.id === 'Q5')!);
-    await playAsk(w, 'reception', 'Find the member 081 234 5678 and their kids');
+    const played = await playAsk(w, 'reception', 'Find the member 081 234 5678 and their kids');
     const data = (toolResultsSeen(fake)[0]!.data as { data: { found: boolean; member: Record<string, unknown> } }).data;
     expect(data.member).toMatchObject({
       id: w.members.mali,
       name: 'ZZ Mali Family',
       childCount: 2,
       children: expect.arrayContaining([
-        { name: 'ZZ Ploy', age: 6, medicalAlert: true, hasAllergies: true },
-        { name: 'ZZ Tonkla', age: 4, medicalAlert: false, hasAllergies: false },
+        { name: 'ZZ Ploy', age: 6, medicalAlert: true, hasAllergies: true, allergies: 'ZZ peanuts', hasMedicalNotes: false },
+        { name: 'ZZ Tonkla', age: 4, medicalAlert: false, hasAllergies: false, allergies: null, hasMedicalNotes: false },
       ]),
     });
-    expect(JSON.stringify(data)).not.toContain('peanuts');
+    // The medical notes stay behind `include`.
+    expect(JSON.stringify(data)).not.toContain('medicalNotes');
+    expect(played.view.links).toEqual([
+      { key: 'pos.member', app: 'pos', path: '/history?phone=081+234+5678', shows: "The member's sales on the till (History)" },
+    ]);
   });
 
   it('Q10 — the count the agent is told is the count the Inbox route gives the agent', async () => {
