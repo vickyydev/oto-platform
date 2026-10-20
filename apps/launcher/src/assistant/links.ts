@@ -31,6 +31,7 @@ const APP_NAMES: Record<AskLink['app'], string> = {
   console: 'Console',
   inbox: 'Inbox',
   launcher: 'the launcher',
+  pos: 'POS',
 };
 
 /**
