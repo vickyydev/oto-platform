@@ -639,8 +639,10 @@ function executorFor(deps: AskDeps, caller: AskCaller, askId: string, trace: Ask
         data: { error: { code: 'INVALID_ARGUMENTS', message: 'The arguments do not match the tool’s schema.' } },
       };
     }
-    const input = parsed.data as never;
-    const args = parsed.data as Record<string, unknown>;
+    // An OTO App adapter fills what the model may leave out (a period's default) by the clock; the
+    // row records what was called, not what was said.
+    const input = (oto ? oto.resolve(parsed.data as never, now()) : parsed.data) as never;
+    const args = input as Record<string, unknown>;
     const started = Date.now();
     // The ask's remaining wall time is this call's budget, shared by a tool's parts (§D.1 step 4).
     const deadline = started + call.remainingMs;

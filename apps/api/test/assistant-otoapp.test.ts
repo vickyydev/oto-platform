@@ -5,7 +5,7 @@ import { and, eq, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { INTERNAL_LINES } from '@oto/assistant';
 import { schema as s } from '@oto/db';
-import { ASSISTANT_TOOLS, newId } from '@oto/shared';
+import { ASSISTANT_TOOLS, isoDateInTz, newId } from '@oto/shared';
 import { identityOf, otoAppEnvelope, sessionCookieOf } from '../src/services/assistant/call-otoapp';
 import { matchesRoute } from '../src/services/assistant/call-platform';
 import { otoAppToolsOffered, resolveLinks } from '../src/services/assistant/engine';
@@ -748,6 +748,32 @@ describe('the summaries (§B.4)', () => {
       hours: 9,
     });
     expect(JSON.stringify(data)).not.toContain('10:00:00');
+  });
+
+  it('attendance with no dates ("this month"): the Bangkok calendar month reaches the route and is said in words, never the app’s rolling window or its UTC day', async () => {
+    // The proof round's "2026-09-30 to 2026-10-20" for October: the app renders the Bangkok midnight as a UTC
+    // day, and the period was read from its reply. The period is now the one asked for, defaulted by the clock.
+    fake.resetObservations();
+    const bkkToday = isoDateInTz(new Date(), 'Asia/Bangkok');
+    const first = `${bkkToday.slice(0, 7)}-01`;
+    const [monthEn] = monthWords(first).split(' / ');
+    const fakeClient = script(w, tool('oto.attendance', { employeeId: anan.id }), final('Checked.'));
+    const res = await ask(w, manager.cookie, "Anan's attendance this month");
+    expect(res.body, JSON.stringify(res.body)).toMatchObject({ state: 'answered', reason: null });
+    // Both dates reached the route: the 1st of the Bangkok month to Bangkok today — the app's own 30-day default never applied.
+    const call = fake.requests.find((r) => r.path === `/api/timekeeping/employee/${anan.id}`);
+    expect(call?.query).toBe(`?startDate=${first}&endDate=${bkkToday}`);
+    // The row records the arguments the call was made with.
+    const [row] = await toolRows(w.ctx.db, res.body.id);
+    expect(row!.args).toEqual({ employeeId: anan.id, startDate: first, endDate: bkkToday });
+    const period = (toolResultsSeen(fakeClient)[0]!.data as { data: { period: Record<string, unknown> & { from: string; to: string; words: string } } }).data.period;
+    expect(period.from.startsWith(first)).toBe(true);
+    expect(period.to.startsWith(bkkToday)).toBe(true);
+    expect(period.words).toBe(periodSentence(first, bkkToday));
+    expect(period.words).toContain(first === bkkToday ? `1 ${monthEn}` : `1 to ${Number(bkkToday.slice(8))} ${monthEn}`);
+    expect(period.days).toBe(daysInclusive(first, bkkToday));
+    // The app's dateRange says the day before the 1st (its UTC rendering); the period does not.
+    expect(JSON.stringify(period)).not.toContain(isoDay(new Date(`${first}T00:00:00+07:00`)));
   });
 
   it('my leave: the records and the weekly off days, never the note, and no balance (G2)', async () => {

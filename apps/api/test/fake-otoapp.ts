@@ -129,6 +129,8 @@ export interface FakeOtoAppSession {
 export interface FakeOtoAppRequest {
   method: string;
   path: string;
+  /** The query string the request carried (`?startDate=…`), or ''. */
+  query: string;
   requestId: string | null;
   origin: string | null;
   /** The `connect.sid` the request carried, if any. */
@@ -327,7 +329,8 @@ export class FakeOtoApp {
     const requestId = typeof req.headers['x-request-id'] === 'string' ? req.headers['x-request-id'] : null;
     const origin = typeof req.headers.origin === 'string' ? req.headers.origin : null;
     const sidRaw = cookieOf(req, 'connect.sid');
-    const record = (status: number) => this.requests.push({ method, path: url.pathname, requestId, origin, sid: sidRaw, status });
+    const record = (status: number) =>
+      this.requests.push({ method, path: url.pathname, query: url.search, requestId, origin, sid: sidRaw, status });
     const end = res.end.bind(res);
     res.end = ((...args: unknown[]) => {
       record(res.statusCode);
@@ -407,9 +410,9 @@ export class FakeOtoApp {
         const employee = this.employeeInTenant(user, employeeId);
         if (!employee) return json(res, 404, { message: OTOAPP_WORDS.employeeNotFound });
         if (!this.canAccessBranch(user, employee.branchId)) return json(res, 403, { message: OTOAPP_WORDS.employeeBranchDenied });
-        const start = url.searchParams.get('startDate') ?? '1970-01-01';
-        const endParam = url.searchParams.get('endDate');
-        const end = endParam ?? new Date().toISOString().slice(0, 10);
+        // The app defaults to the last 30 days when no dates are given (routes.ts: "default last 30 days").
+        const end = url.searchParams.get('endDate') ?? new Date().toISOString().slice(0, 10);
+        const start = url.searchParams.get('startDate') ?? isoDay(new Date(`${end}T00:00:00Z`), -30);
         const fixture = this.data.attendance.get(employeeId) ?? { days: [], anomalies: [] };
         const days = fixture.days.filter((d) => d.date >= start && d.date <= end).sort((a, b) => a.date.localeCompare(b.date));
         const anomalies = fixture.anomalies.filter((a) => a.date >= start && a.date <= end);
@@ -423,7 +426,9 @@ export class FakeOtoApp {
             branchName: branch?.name ?? null,
             hasFaceEnrolled: false,
           },
-          dateRange: { start, end },
+          // As the app renders it: the instants' UTC days (`startDate.toISOString().split('T')[0]`),
+          // so the Bangkok midnight that opens the range reads as the day before.
+          dateRange: { start: isoDay(new Date(`${start}T00:00:00+07:00`)), end: isoDay(new Date(`${end}T23:59:59+07:00`)) },
           sessions: days.map((d) => ({
             id: `s-${d.date}`,
             employeeId,

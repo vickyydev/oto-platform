@@ -244,8 +244,8 @@ export const ASSISTANT_TOOLS = [
     system: 'oto_app',
     routes: ['GET /api/timekeeping/employee/:employeeId'],
     description:
-      "One employee's attendance between two dates: days worked, hours, and anomalies by kind (late arrivals, no-shows, open sessions). Needs the employee's id from oto.employees.find.",
-    input: z.object({ employeeId: OtoAppId, startDate: Day, endDate: Day }).strict(),
+      "One employee's attendance over the calendar period the asker means: days worked, hours, and anomalies by kind (late arrivals, no-shows, open sessions). startDate and endDate are YYYY-MM-DD; 'this month' is the first of the current month (Asia/Bangkok) to today, and that is the period when both are left out. Needs the employee's id from oto.employees.find.",
+    input: z.object({ employeeId: OtoAppId, startDate: Day.optional(), endDate: Day.optional() }).strict(),
   }),
   spec({
     name: 'oto.employee_leave',

@@ -51,6 +51,9 @@ describe('the tool registry, as data (§B.4)', () => {
     expect(attendance.input.safeParse({ employeeId: 'a1b2', startDate: '2026-10-01', endDate: '2026-10-20' }).success).toBe(true);
     expect(attendance.input.safeParse({ employeeId: 'a/b', startDate: '2026-10-01', endDate: '2026-10-20' }).success).toBe(false);
     expect(attendance.input.safeParse({ employeeId: 'a1', startDate: 'yesterday', endDate: '2026-10-20' }).success).toBe(false);
+    // The period may be left out: the adapter fills the current Bangkok calendar month, and the description says so.
+    expect(attendance.input.safeParse({ employeeId: 'a1b2' }).success).toBe(true);
+    expect(attendance.description).toContain("'this month' is the first of the current month (Asia/Bangkok) to today");
   });
 
   it('lists no tool over the C1–C3 fence gaps (G2)', () => {

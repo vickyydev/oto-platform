@@ -58,6 +58,12 @@ export interface OtoAppToolAdapter {
   routes: readonly GetRouteTemplate[];
   description: string;
   input: z.ZodTypeAny;
+  /**
+   * The validated input with what the model may leave out filled in by the
+   * clock (a period's default): what `urls`, `summarise` and `deepLink` read,
+   * and what the tool-call row records as the arguments.
+   */
+  resolve(input: never, now: Date): never;
   urls(input: never, who: OtoAppIdentity): string[];
   summarise(bodies: unknown[], input: never, now: Date, who: OtoAppIdentity): SummaryDraft;
   deepLink(input: never): { key: string; params: Record<string, string> } | null;
@@ -68,13 +74,15 @@ type Spec = (typeof ASSISTANT_TOOLS)[number];
 type OtoName = Extract<Spec['name'], `oto.${string}`>;
 type In<N extends OtoName> = z.infer<Extract<Spec, { name: N }>['input']>;
 
-interface AdapterBody<N extends OtoName> {
-  urls(input: In<N>, who: OtoAppIdentity): string[];
-  summarise(bodies: unknown[], input: In<N>, now: Date, who: OtoAppIdentity): SummaryDraft;
-  deepLink?(input: In<N>): { key: string; params: Record<string, string> } | null;
+/** `R` is the resolved input: the registry's shape unless `resolve` narrows it (a filled default). */
+interface AdapterBody<N extends OtoName, R> {
+  resolve?(input: In<N>, now: Date): R;
+  urls(input: R, who: OtoAppIdentity): string[];
+  summarise(bodies: unknown[], input: R, now: Date, who: OtoAppIdentity): SummaryDraft;
+  deepLink?(input: R): { key: string; params: Record<string, string> } | null;
 }
 
-function adapter<N extends OtoName>(name: N, body: AdapterBody<N>): OtoAppToolAdapter {
+function adapter<N extends OtoName, R = In<N>>(name: N, body: AdapterBody<N, R>): OtoAppToolAdapter {
   const spec = ASSISTANT_TOOLS.find((t) => t.name === name);
   if (!spec) throw new TypeError(`assistant tool ${name}: not in the registry`);
   if (spec.system !== 'oto_app') throw new TypeError(`assistant tool ${name}: not an OTO App tool`);
@@ -85,6 +93,7 @@ function adapter<N extends OtoName>(name: N, body: AdapterBody<N>): OtoAppToolAd
     routes: spec.routes as readonly GetRouteTemplate[],
     description: spec.description,
     input: spec.input,
+    resolve: (body.resolve ?? ((i: In<N>) => i)) as OtoAppToolAdapter['resolve'],
     urls: body.urls as OtoAppToolAdapter['urls'],
     summarise: body.summarise as OtoAppToolAdapter['summarise'],
     deepLink: (body.deepLink ?? (() => null)) as OtoAppToolAdapter['deepLink'],
@@ -188,14 +197,22 @@ function leaveRecord(r: Obj): Obj {
 
 const NO_BALANCE = 'The leave balance is not readable here; the leave screen shows it.';
 
+/** A period with both ends given: the attendance call's, once the default is filled. */
+type Period = { startDate: string; endDate: string };
+
 export const OTOAPP_TOOL_ADAPTERS: readonly OtoAppToolAdapter[] = [
   adapter('oto.attendance', {
+    // "This month" is the current Bangkok calendar month, the 1st to today — never the route's own
+    // default, a rolling 30 days. Both dates always reach the route.
+    resolve: (i, now): In<'oto.attendance'> & Period => {
+      const today = isoDateInTz(now, BANGKOK);
+      return { ...i, startDate: i.startDate ?? `${today.slice(0, 7)}-01`, endDate: i.endDate ?? today };
+    },
     urls: (i) => [`/api/timekeeping/employee/${enc(i.employeeId)}${query({ startDate: i.startDate, endDate: i.endDate })}`],
     summarise: ([body], i) => {
       const b = obj(body);
       const employee = obj(b.employee);
       const stats = obj(b.stats);
-      const range = obj(b.dateRange);
       const days = arr(b.dailyTotals).map(obj);
       const anomalies = arr(b.anomalies).map(obj);
       const byType: Record<string, number> = {};
@@ -219,7 +236,9 @@ export const OTOAPP_TOOL_ADAPTERS: readonly OtoAppToolAdapter[] = [
       return {
         data: {
           employee: { id: str(employee.id), name: str(employee.fullName), branch: str(employee.branchName) },
-          period: periodWords(str(range.start) ?? i.startDate, str(range.end) ?? i.endDate),
+          // The period asked for, in words. The route's own `dateRange` is not read: it renders the
+          // Bangkok midnight as a UTC day, one day early ("2026-09-30 to 2026-10-20" for October).
+          period: periodWords(i.startDate, i.endDate),
           daysWorked,
           totalHours,
           averageHoursPerDay: daysWorked > 0 ? Math.round((totalHours / daysWorked) * 100) / 100 : 0,
