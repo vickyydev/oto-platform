@@ -25354,6 +25354,7 @@ export interface paths {
                                         body: string;
                                         /** @enum {string} */
                                         approvalStatus: "not_required" | "pending" | "approved" | "rejected";
+                                        needsTranslation: boolean;
                                         variables: string[];
                                     }[];
                                 } & {

@@ -158,7 +158,11 @@ export const InboxReplySchema = z.object({
 });
 export type InboxReply = z.infer<typeof InboxReplySchema>;
 
-/** A template the composer may offer outside the window. */
+/**
+ * A template the composer may offer outside the window. `needsTranslation`
+ * (SCRUM-220 test night) lets the composer mark a RU or TH row that still
+ * carries the English source, so nobody sends a customer English by mistake.
+ */
 export const InboxQualifyingTemplateSchema = InboxTemplateSchema.pick({
   id: true,
   key: true,
@@ -167,6 +171,7 @@ export const InboxQualifyingTemplateSchema = InboxTemplateSchema.pick({
   branchId: true,
   body: true,
   approvalStatus: true,
+  needsTranslation: true,
 }).extend({ variables: z.array(z.string()) });
 
 /**

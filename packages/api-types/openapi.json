@@ -60176,6 +60176,9 @@
                                       "rejected"
                                     ]
                                   },
+                                  "needsTranslation": {
+                                    "type": "boolean"
+                                  },
                                   "variables": {
                                     "type": "array",
                                     "items": {
@@ -60191,6 +60194,7 @@
                                   "branchId",
                                   "body",
                                   "approvalStatus",
+                                  "needsTranslation",
                                   "variables"
                                 ],
                                 "additionalProperties": false

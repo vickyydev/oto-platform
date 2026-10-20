@@ -205,6 +205,7 @@ export async function replyToConversation(
         branchId: t.branchId,
         body: t.body,
         approvalStatus: t.approvalStatus,
+        needsTranslation: t.needsTranslation,
         variables: templateVariables(t.body),
       })),
     });

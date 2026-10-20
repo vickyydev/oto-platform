@@ -360,19 +360,41 @@ describe('outside the 24-hour window (I2f)', () => {
     const longAgo = new Date(Date.now() - 25 * 3_600_000);
     await ctx.db.update(s.conversation).set({ lastCustomerMessageAt: longAgo }).where(eq(s.conversation.id, conv.id));
 
+    // As a deployed operator may still stand (SCRUM-220 test night): a Thai
+    // row that carries the English source, marked for translation. The
+    // composer must be able to mark it in the refusal's list.
+    const thaiOutOfHours = and(eq(s.template.key, 'out_of_hours'), eq(s.template.language, 'th'), isNull(s.template.channel), isNull(s.template.branchId));
+    const [thRow] = await ctx.db.select({ id: s.template.id, body: s.template.body }).from(s.template).where(thaiOutOfHours).limit(1);
+    await ctx.db.update(s.template).set({ body: 'Thanks for your message! We are closed right now.', needsTranslation: true }).where(thaiOutOfHours);
+
     const refused = await reply('agent', conv.id, { text: 'Sorry for the late answer!' });
     expect(refused.status).toBe(409);
     expect(refused.body.error!.code).toBe('TEMPLATE_REQUIRED');
     expect(refused.body.error!.message).toMatch(/more than 24 hours ago, so only a template can be sent/);
     const details = refused.body.error!.details as {
       window: { open: boolean; hours: number; closesAt: string };
-      qualifyingTemplates: Array<{ id: string; key: string; approvalStatus: string; variables: string[] }>;
+      qualifyingTemplates: Array<{
+        id: string;
+        key: string;
+        language: string;
+        approvalStatus: string;
+        needsTranslation: boolean;
+        variables: string[];
+      }>;
     };
     expect(details.window).toMatchObject({ open: false, hours: 24 });
     expect(new Date(details.window.closesAt).getTime()).toBe(longAgo.getTime() + 24 * 3_600_000);
     expect(details.qualifyingTemplates.length).toBeGreaterThan(0);
     expect(details.qualifyingTemplates.every((t) => ['approved', 'not_required'].includes(t.approvalStatus))).toBe(true);
     expect(details.qualifyingTemplates.map((t) => t.key)).toContain('welcome');
+    // Every row says its key and whether it still waits for a translator: the flagged Thai row does, the rest do not.
+    expect(details.qualifyingTemplates.every((t) => typeof t.key === 'string' && typeof t.needsTranslation === 'boolean')).toBe(true);
+    const flagged = details.qualifyingTemplates.filter((t) => t.needsTranslation);
+    expect(flagged.map((t) => t.id)).toContain(thRow!.id);
+    expect(flagged.map((t) => [t.key, t.language])).toEqual([['out_of_hours', 'th']]);
+    expect(details.qualifyingTemplates.find((t) => t.key === 'welcome' && t.language === 'en')).toMatchObject({ needsTranslation: false });
+    // The fixture back: the Thai row in its own words.
+    await ctx.db.update(s.template).set({ body: thRow!.body, needsTranslation: false }).where(thaiOutOfHours);
     // Nothing was written by the refusal.
     expect(await ctx.db.select().from(s.message).where(and(eq(s.message.conversationId, conv.id), eq(s.message.direction, 'outbound')))).toHaveLength(0);
 
