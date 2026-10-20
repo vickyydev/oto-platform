@@ -244,15 +244,16 @@ export const ASSISTANT_TOOLS = [
     system: 'oto_app',
     routes: ['GET /api/timekeeping/employee/:employeeId'],
     description:
-      "One employee's attendance between two dates: days worked, hours, late and early counts, anomalies. Needs the employee's id from oto.employees.find.",
+      "One employee's attendance between two dates: days worked, hours, and anomalies by kind (late arrivals, no-shows, open sessions). Needs the employee's id from oto.employees.find.",
     input: z.object({ employeeId: OtoAppId, startDate: Day, endDate: Day }).strict(),
   }),
   spec({
     name: 'oto.employee_leave',
     system: 'oto_app',
     routes: ['GET /api/employees/:employeeId/time-off'],
-    description: "One employee's leave requests. Needs the employee's id from oto.employees.find.",
-    input: z.object({ employeeId: OtoAppId }).strict(),
+    description:
+      "One employee's leave records, optionally between two dates. Needs the employee's id from oto.employees.find. No balance: the screen shows it.",
+    input: z.object({ employeeId: OtoAppId, from: Day.optional(), to: Day.optional() }).strict(),
   }),
   spec({
     name: 'oto.employees.find',
@@ -266,8 +267,9 @@ export const ASSISTANT_TOOLS = [
     name: 'oto.my_leave',
     system: 'oto_app',
     routes: ['GET /api/my-time-off'],
-    description: "The asker's own leave requests and balance.",
-    input: None,
+    description:
+      "The asker's own leave records (type, dates, half days), optionally between two dates, and their weekly off days. No balance figure: the screen shows it.",
+    input: z.object({ from: Day.optional(), to: Day.optional() }).strict(),
   }),
   spec({
     name: 'oto.my_payslips',
@@ -280,15 +282,18 @@ export const ASSISTANT_TOOLS = [
     name: 'oto.payroll_summary',
     system: 'oto_app',
     routes: ['GET /api/payroll/history'],
-    description: 'Payroll totals per month, for payroll roles only.',
+    description: 'Locked payroll runs with their totals per month (gross, deductions, net), for payroll roles only.',
     input: z.object({ month: Month.optional() }).strict(),
   }),
   spec({
     name: 'oto.rota',
     system: 'oto_app',
     routes: ['GET /api/rota'],
-    description: "Shifts in a date range: the asker's own, their department's or their park's.",
-    input: z.object({ scope: z.enum(['me', 'department', 'branch']), from: Day, to: Day }).strict(),
+    description:
+      "Shifts between two dates: the asker's own (me), their department's or the whole park's (branch) — who, when, which department. The park is the asker's own unless branchId (an OTO App branch id, as oto.employees.find shows it) is given.",
+    input: z
+      .object({ scope: z.enum(['me', 'department', 'branch']), from: Day, to: Day, branchId: OtoAppId.optional() })
+      .strict(),
   }),
 ] as const;
 

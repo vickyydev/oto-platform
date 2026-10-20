@@ -71,13 +71,13 @@ export interface PlatformToolAdapter {
 
 // --- Helpers -----------------------------------------------------------------------------
 
-type Obj = Record<string, unknown>;
-const obj = (v: unknown): Obj => (v && typeof v === 'object' && !Array.isArray(v) ? (v as Obj) : {});
-const arr = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
-const str = (v: unknown): string | null => (typeof v === 'string' ? v : null);
-const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+export type Obj = Record<string, unknown>;
+export const obj = (v: unknown): Obj => (v && typeof v === 'object' && !Array.isArray(v) ? (v as Obj) : {});
+export const arr = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
+export const str = (v: unknown): string | null => (typeof v === 'string' ? v : null);
+export const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null);
 
-function query(params: Record<string, string | number | undefined>): string {
+export function query(params: Record<string, string | number | undefined>): string {
   const q = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== '') q.set(k, String(v));
   const s = q.toString();
@@ -96,6 +96,11 @@ const RU_MONTHS = [
   'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
   'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря',
 ];
+/** The Russian month on its own ("октябрь 2026"), as a month is named without a day. */
+const RU_MONTHS_NOMINATIVE = [
+  'январь', 'февраль', 'март', 'апрель', 'май', 'июнь',
+  'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь',
+];
 
 /**
  * A day in words, in the three languages the assistant answers in, so the
@@ -109,6 +114,15 @@ export function dayWords(isoDate: string): string {
   const i = Number(mo) - 1;
   const day = Number(d);
   return `${day} ${EN_MONTHS[i]} ${y} / ${day} ${TH_MONTHS[i]} ${Number(y) + 543} / ${day} ${RU_MONTHS[i]} ${y}`;
+}
+
+/** A month in words ("October 2026", its Thai and Russian forms): what grounds "this month" in an answer. */
+export function monthWords(isoMonth: string): string {
+  const m = /^(\d{4})-(\d{2})/.exec(isoMonth);
+  if (!m) return isoMonth;
+  const [, y, mo] = m;
+  const i = Number(mo) - 1;
+  return `${EN_MONTHS[i]} ${y} / ${TH_MONTHS[i]} ${Number(y) + 543} / ${RU_MONTHS_NOMINATIVE[i]} ${y}`;
 }
 
 const BANGKOK = 'Asia/Bangkok';

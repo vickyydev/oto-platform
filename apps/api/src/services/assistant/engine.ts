@@ -36,9 +36,20 @@ import { holdsAnywhere } from '../inbox/read-visibility';
 import { recordRun } from '../ops';
 import type { EffectivePermission } from '../permissions';
 import { withTx, type Exec, type OpContext } from '../tx';
+import {
+  OtoAppCallTimeout,
+  OtoAppUnavailable,
+  openOtoAppSession,
+  otoAppEnvelope,
+  type OtoAppIdentity,
+  type OtoAppOpen,
+  type OtoAppResponse,
+  type OtoAppSession,
+} from './call-otoapp';
 import { PlatformCallTimeout, callPlatform, toolRequestId, type PlatformResponse } from './call-platform';
-import type { InternalAiRuntime } from './runtime';
-import { PLATFORM_TOOLS, fitSummary, platformToolDefinitions, summaryBytes } from './tools';
+import { otoAppHandoff, type InternalAiRuntime } from './runtime';
+import { PLATFORM_TOOLS, fitSummary, platformToolDefinitions, summaryBytes, type PlatformToolAdapter } from './tools';
+import { OTOAPP_TOOLS, otoAppToolDefinitions, type OtoAppToolAdapter } from './tools-otoapp';
 import { loadAskView, type AskRow } from './views';
 
 /**
@@ -58,12 +69,16 @@ import { loadAskView, type AskRow } from './views';
  *      is written in `asking` — before any model call, so a retry finds it —
  *      with `purge_after` set explicitly.
  *   3. THE LOOP, WITH NO TRANSACTION OPEN (the customer engine's pattern).
- *      Every tool call is the screen's own GET route run as the asker
- *      (`call-platform.ts`), and its row and audit are written as it happens,
- *      each in its own short transaction. A 401/403/404/423 is a REFUSAL: the
- *      route's own message, verbatim, recorded and shown by the server; the
- *      model gets the envelope and nothing to ground a figure on. A 5xx closes
- *      the ask as TOOL_ERROR rather than letting the model guess.
+ *      Every tool call is the screen's own GET route run as the asker — in
+ *      process for a platform tool (`call-platform.ts`); through the asker's
+ *      own OTO App session, opened by a server-side hand-off on the first
+ *      `oto.*` call and logged out in a `finally`, for an OTO App tool
+ *      (`call-otoapp.ts`, round I4) — and its row and audit are written as it
+ *      happens, each in its own short transaction. A 401/403/404/423 is a
+ *      REFUSAL: the route's own message, verbatim, recorded and shown by the
+ *      server; the model gets the envelope and nothing to ground a figure on.
+ *      A 5xx, or an OTO App that gives no answer, closes the ask as TOOL_ERROR
+ *      rather than letting the model guess.
  *   4. THE CLOSING TRANSACTION: the guards (`internalAnswerGuard`: URLs
  *      stripped, shape, every number and date word traced to THIS ask's
  *      summaries), the links resolved and filtered to what the asker may open,
@@ -338,17 +353,23 @@ export function groundedLinks(
   });
 }
 
+/** What the link gate knows of the asker's OTO App side: their role and permission keys, once an ask opened a session. */
+export type OtoAppViewer = Pick<OtoAppIdentity, 'role' | 'permissions'> | null;
+
 /**
  * Keys with parameters, resolved: an unknown key, a bad parameter or a screen
- * the asker would not be let into is dropped (§C). OTO App screens gated on an
- * OTO App role are not offered in I2 (no OTO App session is opened yet).
+ * the asker would not be let into is dropped (§C). An OTO App screen gated on
+ * an OTO App role or permission is offered only when THIS ask opened the
+ * asker's OTO App session (round I4) and the app said their role: a link is a
+ * courtesy, never a guess.
  */
 export function resolveLinks(
   wanted: ReadonlyArray<{ key: string; params: Record<string, string> }>,
   effective: EffectivePermission[],
   operatorId: string,
+  otoApp: OtoAppViewer = null,
 ): AssistantStoredLink[] {
-  const viewer = { has: (p: Permission) => holdsAnywhere(effective, p, operatorId), otoApp: null };
+  const viewer = { has: (p: Permission) => holdsAnywhere(effective, p, operatorId), otoApp };
   const out: AssistantStoredLink[] = [];
   const seen = new Set<string>();
   for (const link of wanted) {
@@ -374,6 +395,43 @@ interface AskTrace {
   gathered: Array<{ key: string; params: Record<string, string> }>;
   okCalls: number;
   recorded: number;
+  /** The asker's OTO App role and permission keys, once this ask opened their session (the link gate). */
+  otoApp: OtoAppViewer;
+}
+
+/**
+ * The asker's OTO App session for ONE ask (§B.3): opened by the first `oto.*`
+ * call, held for the rest, logged out by the engine's `finally`. A refusal at
+ * the opening (no tile, `not_provisioned`, `disabled`, a dead session) is
+ * remembered too: every later `oto.*` call of the ask gets the same refusal
+ * and no second hand-off is minted.
+ */
+class OtoAppHolder {
+  private opened: OtoAppOpen | null = null;
+  constructor(private readonly open: (remainingMs: number) => Promise<OtoAppOpen>) {}
+
+  async get(remainingMs: number): Promise<OtoAppOpen> {
+    if (!this.opened) this.opened = await this.open(remainingMs);
+    return this.opened;
+  }
+
+  /** Logs the app session out, if one was opened. Never throws. */
+  async close(): Promise<void> {
+    if (this.opened?.ok) await this.opened.session.close();
+  }
+
+  get isOpen(): boolean {
+    return this.opened?.ok === true;
+  }
+}
+
+/** The OTO App tools are offered when the switch is on, a hand-off to the app is configured, and the asker holds the tile. */
+export function otoAppToolsOffered(runtime: InternalAiRuntime, caller: AskCaller): boolean {
+  return (
+    runtime.config.otoAppTools &&
+    otoAppHandoff(runtime.config) !== null &&
+    holdsAnywhere(caller.effective, 'app:oto_app:access', caller.auth.operatorId)
+  );
 }
 
 /** Thrown by the executor on a 5xx: the loop closes the ask as TOOL_ERROR. */
@@ -404,6 +462,7 @@ interface ToolRowInput {
   askId: string;
   seq: number;
   tool: string;
+  system: 'platform' | 'oto_app';
   route: string;
   args: Record<string, unknown>;
   status: number | null;
@@ -425,7 +484,7 @@ async function recordToolCall(deps: AskDeps, caller: AskCaller, r: ToolRowInput)
       askId: r.askId,
       seq: r.seq,
       tool: r.tool,
-      system: 'platform',
+      system: r.system,
       route: r.route,
       args: r.args,
       status: r.status,
@@ -448,7 +507,7 @@ async function recordToolCall(deps: AskDeps, caller: AskCaller, r: ToolRowInput)
         askId: r.askId,
         seq: r.seq,
         tool: r.tool,
-        system: 'platform',
+        system: r.system,
         route: r.route,
         status: r.status,
         code: r.code,
@@ -461,46 +520,48 @@ async function recordToolCall(deps: AskDeps, caller: AskCaller, r: ToolRowInput)
   });
 }
 
-function executorFor(deps: AskDeps, caller: AskCaller, askId: string, trace: AskTrace, now: () => Date) {
-  return async (call: ToolCallRequest): Promise<ToolCallResult> => {
-    const adapter = PLATFORM_TOOLS.get(call.name);
-    // The loop only calls tools it was given; anything else is a programming error.
-    if (!adapter) throw new TypeError('assistant: an executor call for a tool that is not registered');
-    const route = adapter.routes[0]!;
-    // The same id the tool's own request carried, so its log line and any denial audit row correlate.
-    const toolReqId = toolRequestId(caller.requestId, call.seq);
-    const parsed = adapter.input.safeParse(call.input ?? {});
-    if (!parsed.success) {
-      await recordToolCall(deps, caller, {
-        askId,
-        seq: call.seq,
-        tool: adapter.name,
-        route,
-        args: {},
-        status: null,
-        code: 'INVALID_ARGUMENTS',
-        rows: null,
-        bytes: null,
-        truncated: false,
-        latencyMs: 0,
-        requestId: toolReqId,
-      });
-      trace.recorded += 1;
-      return {
-        ok: false,
-        data: { error: { code: 'INVALID_ARGUMENTS', message: 'The arguments do not match the tool’s schema.' } },
-      };
-    }
-    const input = parsed.data as never;
-    const args = parsed.data as Record<string, unknown>;
-    const started = Date.now();
-    // The ask's remaining wall time is this call's budget, shared by a tool's parts (§D.1 step 4).
-    const deadline = started + call.remainingMs;
-    const urls = adapter.urls(input);
-    const bodies: unknown[] = [];
-    let failed: PlatformResponse | null = null;
-    let outOfTime = false;
-    for (const [part, url] of urls.entries()) {
+/** The ask's remaining wall time at this instant, from the call's budget. */
+const remainingOf = (deadline: number) => Math.max(0, deadline - Date.now());
+
+interface ToolOutcome {
+  bodies: unknown[];
+  failed: { status: number; body: unknown; bytes: number } | null;
+  outOfTime: boolean;
+}
+
+function executorFor(deps: AskDeps, caller: AskCaller, askId: string, trace: AskTrace, otoApp: OtoAppHolder, now: () => Date) {
+  /** A row for a call that got no answer, by word: WALL_TIME, OTOAPP_UNAVAILABLE, INVALID_ARGUMENTS. */
+  const recordNoAnswer = async (
+    adapter: PlatformToolAdapter | OtoAppToolAdapter,
+    system: 'platform' | 'oto_app',
+    call: ToolCallRequest,
+    args: Record<string, unknown>,
+    code: string,
+    status: number | null,
+    latencyMs: number,
+  ) => {
+    await recordToolCall(deps, caller, {
+      askId,
+      seq: call.seq,
+      tool: adapter.name,
+      system,
+      route: adapter.routes[0]!,
+      args,
+      status,
+      code,
+      rows: null,
+      bytes: null,
+      truncated: false,
+      latencyMs,
+      requestId: toolRequestId(caller.requestId, call.seq),
+    });
+    trace.recorded += 1;
+  };
+
+  /** Every part of a platform tool, in process (§B.2). */
+  const runPlatform = async (adapter: PlatformToolAdapter, input: never, call: ToolCallRequest, deadline: number): Promise<ToolOutcome> => {
+    const out: ToolOutcome = { bodies: [], failed: null, outOfTime: false };
+    for (const [part, url] of adapter.urls(input).entries()) {
       let res: PlatformResponse;
       try {
         res = await callPlatform(deps.app, {
@@ -514,44 +575,145 @@ function executorFor(deps: AskDeps, caller: AskCaller, askId: string, trace: Ask
         });
       } catch (err) {
         if (!(err instanceof PlatformCallTimeout)) throw err;
-        outOfTime = true;
+        out.outOfTime = true;
         break;
       }
       if (res.status < 200 || res.status >= 300) {
-        failed = res;
+        out.failed = res;
         break;
       }
-      bodies.push(res.body);
+      out.bodies.push(res.body);
+    }
+    return out;
+  };
+
+  /**
+   * Every part of an OTO App tool, through the asker's own app session (§B.3).
+   * `unavailable` when the app gave no answer: the caller records
+   * OTOAPP_UNAVAILABLE and closes the ask as TOOL_ERROR.
+   */
+  const runOtoApp = async (
+    adapter: OtoAppToolAdapter,
+    input: never,
+    session: OtoAppSession,
+    call: ToolCallRequest,
+    deadline: number,
+  ): Promise<ToolOutcome | { unavailable: number | null }> => {
+    const out: ToolOutcome = { bodies: [], failed: null, outOfTime: false };
+    for (const [part, url] of adapter.urls(input, session.identity).entries()) {
+      let res: OtoAppResponse;
+      try {
+        res = await session.get({ url, routes: adapter.routes, seq: call.seq, part, remainingMs: remainingOf(deadline) });
+      } catch (err) {
+        if (err instanceof OtoAppCallTimeout) {
+          out.outOfTime = true;
+          break;
+        }
+        if (err instanceof OtoAppUnavailable) return { unavailable: err.status };
+        throw err;
+      }
+      if (res.status < 200 || res.status >= 300) {
+        out.failed = res;
+        break;
+      }
+      out.bodies.push(res.body);
+    }
+    return out;
+  };
+
+  return async (call: ToolCallRequest): Promise<ToolCallResult> => {
+    const platform = PLATFORM_TOOLS.get(call.name);
+    const oto = platform ? undefined : OTOAPP_TOOLS.get(call.name);
+    const adapter = platform ?? oto;
+    // The loop only calls tools it was given; anything else is a programming error.
+    if (!adapter) throw new TypeError('assistant: an executor call for a tool that is not registered');
+    const system = platform ? 'platform' : 'oto_app';
+    const route = adapter.routes[0]!;
+    // The same id the tool's own request carried, so its log line and any denial audit row correlate.
+    const toolReqId = toolRequestId(caller.requestId, call.seq);
+    const parsed = adapter.input.safeParse(call.input ?? {});
+    if (!parsed.success) {
+      await recordNoAnswer(adapter, system, call, {}, 'INVALID_ARGUMENTS', null, 0);
+      return {
+        ok: false,
+        data: { error: { code: 'INVALID_ARGUMENTS', message: 'The arguments do not match the tool’s schema.' } },
+      };
+    }
+    const input = parsed.data as never;
+    const args = parsed.data as Record<string, unknown>;
+    const started = Date.now();
+    // The ask's remaining wall time is this call's budget, shared by a tool's parts (§D.1 step 4).
+    const deadline = started + call.remainingMs;
+
+    let run: ToolOutcome;
+    let who: OtoAppIdentity | null = null;
+    if (platform) {
+      run = await runPlatform(platform, input, call, deadline);
+    } else {
+      // The asker's OTO App session: opened on the first oto.* call of the ask, one per ask (§B.3).
+      let opened: OtoAppOpen;
+      try {
+        opened = await otoApp.get(remainingOf(deadline));
+      } catch (err) {
+        if (err instanceof OtoAppCallTimeout) {
+          await recordNoAnswer(adapter, system, call, args, 'WALL_TIME', null, Date.now() - started);
+          return { ok: false, data: { error: { code: 'WALL_TIME', message: 'The question ran out of time before this answered.' } } };
+        }
+        if (err instanceof OtoAppUnavailable) {
+          await recordNoAnswer(adapter, system, call, args, 'OTOAPP_UNAVAILABLE', err.status, Date.now() - started);
+          throw new ToolServerError();
+        }
+        throw err;
+      }
+      if (!opened.ok) {
+        // §D.4: the refusal that stopped the sign-on, verbatim — the platform's (no tile) or the app's.
+        const r = opened.refusal;
+        const message = r.message.slice(0, 500);
+        await recordToolCall(deps, caller, {
+          askId,
+          seq: call.seq,
+          tool: adapter.name,
+          system,
+          route,
+          args,
+          status: r.status,
+          code: r.code,
+          rows: null,
+          bytes: null,
+          truncated: false,
+          latencyMs: Date.now() - started,
+          requestId: toolReqId,
+        });
+        trace.recorded += 1;
+        trace.refusals.push({ tool: adapter.name, system: r.system, status: r.status, code: r.code, message });
+        return { ok: false, data: { error: { status: r.status, code: r.code, message } } };
+      }
+      who = opened.session.identity;
+      trace.otoApp = { role: who.role, permissions: who.permissions };
+      const got = await runOtoApp(oto!, input, opened.session, call, deadline);
+      if ('unavailable' in got) {
+        await recordNoAnswer(adapter, system, call, args, 'OTOAPP_UNAVAILABLE', got.unavailable, Date.now() - started);
+        throw new ToolServerError();
+      }
+      run = got;
     }
     const latencyMs = Date.now() - started;
 
-    if (outOfTime) {
+    if (run.outOfTime) {
       // The route outlasted the ask. Recorded as a call that got no answer; the loop, whose
       // clock has now passed the wall time, closes the ask as WALL_TIME before any further turn.
-      await recordToolCall(deps, caller, {
-        askId,
-        seq: call.seq,
-        tool: adapter.name,
-        route,
-        args,
-        status: null,
-        code: 'WALL_TIME',
-        rows: null,
-        bytes: null,
-        truncated: false,
-        latencyMs,
-        requestId: toolReqId,
-      });
-      trace.recorded += 1;
+      await recordNoAnswer(adapter, system, call, args, 'WALL_TIME', null, latencyMs);
       return { ok: false, data: { error: { code: 'WALL_TIME', message: 'The question ran out of time before this answered.' } } };
     }
 
-    if (failed) {
-      const { code, message } = envelopeOf(failed.body);
+    if (run.failed) {
+      const failed = run.failed;
+      const { code, message } = platform ? envelopeOf(failed.body) : otoAppEnvelope(failed.body);
       await recordToolCall(deps, caller, {
         askId,
         seq: call.seq,
         tool: adapter.name,
+        system,
         route,
         args,
         status: failed.status,
@@ -567,17 +729,18 @@ function executorFor(deps: AskDeps, caller: AskCaller, askId: string, trace: Ask
       const sentence = (message ?? STATUS_WORDS[failed.status] ?? 'Refused').slice(0, 500);
       if (REFUSAL_STATUSES.has(failed.status)) {
         // §D.4: the route's own sentence, verbatim. The server shows it; the model cannot reword it.
-        trace.refusals.push({ tool: adapter.name, system: 'platform', status: failed.status, code, message: sentence });
+        trace.refusals.push({ tool: adapter.name, system, status: failed.status, code, message: sentence });
       }
       return { ok: false, data: { error: { status: failed.status, code, message: sentence } } };
     }
 
-    const draft = adapter.summarise(bodies, input, now());
+    const draft = platform ? platform.summarise(run.bodies, input, now()) : oto!.summarise(run.bodies, input, now(), who!);
     const summary = fitSummary(draft);
     await recordToolCall(deps, caller, {
       askId,
       seq: call.seq,
       tool: adapter.name,
+      system,
       route,
       args,
       status: 200,
@@ -698,17 +861,37 @@ export async function askAssistant(deps: AskDeps, caller: AskCaller, input: Assi
 
   // 3. The loop, with no transaction open.
   const client = deps.runtime.client!;
-  const trace: AskTrace = { refusals: [], gathered: [], okCalls: 0, recorded: 0 };
+  const trace: AskTrace = { refusals: [], gathered: [], okCalls: 0, recorded: 0, otoApp: null };
   const asker = await askerOf(deps.db, caller);
   const built = buildInternalSystem({ links: linkEntries(), asker, now, answerMode: client.answerMode });
+  // The OTO App tools are offered only when they can be served (§B.3, §E.2); the fence is still the app's.
+  const offerOtoApp = otoAppToolsOffered(deps.runtime, caller);
+  const otoApp = new OtoAppHolder((remainingMs) => {
+    const target = otoAppHandoff(deps.runtime.config);
+    // Offered only when configured (above); a switch flipped mid-ask is the app not answering.
+    if (!target) throw new OtoAppUnavailable(null);
+    return openOtoAppSession({
+      db: deps.db,
+      ctx: txCtx(caller, deps.log),
+      handoff: target.handoff,
+      auth,
+      effective: caller.effective,
+      token: caller.token,
+      requestId: caller.requestId,
+      askId: opened.row.id,
+      timeoutMs: deps.runtime.config.otoAppTimeoutMs,
+      remainingMs,
+      log: deps.log,
+    });
+  });
   const started = new Date();
   let outcome: ToolLoopOutcome;
   try {
     outcome = await client.converse({
       system: built.system,
       question: input.question,
-      tools: platformToolDefinitions(),
-      execute: executorFor(deps, caller, opened.row.id, trace, () => new Date()),
+      tools: [...platformToolDefinitions(), ...(offerOtoApp ? otoAppToolDefinitions() : [])],
+      execute: executorFor(deps, caller, opened.row.id, trace, otoApp, () => new Date()),
       maxToolCalls: deps.runtime.config.maxToolCalls,
       wallMs: deps.runtime.config.wallMs,
       answerMode: built.answerMode,
@@ -728,6 +911,10 @@ export async function askAssistant(deps: AskDeps, caller: AskCaller, input: Assi
       requestIds: [],
       latencyMs: Date.now() - started.getTime(),
     };
+  } finally {
+    // §B.3 step 4: the OTO App session lives for one ask — logged out however the loop ended,
+    // a tool that threw included. The cookie goes with the closure.
+    await otoApp.close();
   }
   await recordModelRun(deps.db, caller, opened.row.id, outcome, started, trace.recorded);
 
@@ -799,7 +986,7 @@ function finalOf(
   question: string,
   questionLang: InternalLanguage,
 ): Final {
-  const gathered = resolveLinks(trace.gathered, caller.effective, caller.auth.operatorId);
+  const gathered = resolveLinks(trace.gathered, caller.effective, caller.auth.operatorId, trace.otoApp);
   if (!outcome.ok) {
     const digging = outcome.reason === 'TOOL_CAP' || outcome.reason === 'WALL_TIME';
     const linked = gathered.length > 0;
@@ -823,13 +1010,13 @@ function finalOf(
     answer.links.map((l) => ({ key: l.key, params: linkParams(l) })),
     outcome.groundingTexts,
   );
-  const modelLinks = resolveLinks(wanted, caller.effective, caller.auth.operatorId);
+  const modelLinks = resolveLinks(wanted, caller.effective, caller.auth.operatorId, trace.otoApp);
   // Grounding = the summaries THIS ask's tools returned, and the asker's own words (a number or a
   // month they typed may be echoed: it is their input). Never a refusal.
   const guard = internalAnswerGuard(answer, outcome.groundingTexts, question);
   if (!guard.ok) {
     // The links survive the guard (§C): the model's, grounded, and the screens the tools called show.
-    const links = resolveLinks([...wanted, ...trace.gathered], caller.effective, caller.auth.operatorId);
+    const links = resolveLinks([...wanted, ...trace.gathered], caller.effective, caller.auth.operatorId, trace.otoApp);
     const linked = links.length > 0;
     return {
       // "The link plus the line": with no link the asker may open, the line stands as a sentence of its
@@ -915,6 +1102,8 @@ async function closeAsk(
         refusals: trace.refusals.map((r) => ({ tool: r.tool, status: r.status, code: r.code })),
         links: f.links.map((l) => l.key),
         urlsStripped: f.urlsStripped,
+        // Whether this ask signed the asker into the OTO App, and as which role: words, no id.
+        otoApp: trace.otoApp ? { role: trace.otoApp.role } : null,
         turns: outcome.turns,
         model,
         personaVersion,

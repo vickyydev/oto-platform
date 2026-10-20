@@ -21,7 +21,7 @@ import { AppError } from '../lib/errors';
 import { audit } from './audit';
 import { holdsAtOwnDepartment } from './access-control';
 import { hasPermission, resolveEffectivePermissions } from './permissions';
-import { withTx, type Exec } from './tx';
+import { withTx, type Exec, type OpContext } from './tx';
 
 /**
  * The signed hand-off (S2-02).
@@ -327,6 +327,55 @@ export async function issueHandoff(
     expiresAt,
     launchUrl: `${origin}/#handoff=${token}`,
   };
+}
+
+/**
+ * The mint and its record, as one transaction: `issueHandoff` and the
+ * `auth.handoff_issue` audit row (the jti, never the token). `POST
+ * /auth/handoff` is one caller; the internal assistant is the other
+ * (SCRUM-591 round I4, `services/assistant/call-otoapp.ts`), which mints an
+ * `oto_app` hand-off for the ASKER'S OWN session and passes the ask's request
+ * id, so the row correlates with the ask. The permission for the app
+ * (`app:oto_app:access`) is checked by each caller before this, exactly as the
+ * route checks it: this function mints, it does not decide.
+ */
+export async function issueHandoffAudited(
+  db: Db,
+  ctx: OpContext,
+  config: HandoffConfig,
+  opts: {
+    sessionId: string;
+    accountId: string;
+    operatorId: string;
+    branchId: string | null;
+    /** The session's own cookie token, read from the caller's request. */
+    sessionToken: string;
+    audience: HandoffApp;
+    requestId: string;
+    /** Words to add to the audit row (an ask id); never a value. */
+    after?: Record<string, string>;
+  },
+): Promise<IssuedHandoff> {
+  return withTx(db, ctx, 'auth.handoff_issue', async (tx) => {
+    const out = await issueHandoff(tx, config, {
+      sessionId: opts.sessionId,
+      accountId: opts.accountId,
+      sessionToken: opts.sessionToken,
+      audience: opts.audience,
+    });
+    await audit.record(tx, {
+      actorAccountId: opts.accountId,
+      operatorId: opts.operatorId,
+      branchId: opts.branchId,
+      action: 'auth.handoff_issue',
+      entityType: 'session',
+      entityId: opts.sessionId,
+      // The jti, never the token.
+      after: { jti: out.jti, audience: opts.audience, ...(opts.after ?? {}) },
+      requestId: opts.requestId,
+    });
+    return out;
+  });
 }
 
 // --- Exchanging -------------------------------------------------------------

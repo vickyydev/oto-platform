@@ -129,11 +129,18 @@ export function matchesRoute(url: string, route: GetRouteTemplate): boolean {
   });
 }
 
-/** The x-request-id of a tool call: within the 64 characters the api accepts as an id. */
-export function toolRequestId(requestId: string, seq: number, part = 0): string {
-  const suffix = `.t${seq}${part > 0 ? String.fromCharCode(97 + Math.min(part, 25)) : ''}`;
+/**
+ * The ask's request id with a suffix, within the 64 characters of
+ * `[A-Za-z0-9._-]` the api (and the OTO App, which adopts an inbound id) accept.
+ */
+export function suffixedRequestId(requestId: string, suffix: string): string {
   const base = requestId.replace(/[^A-Za-z0-9._-]/g, '').slice(0, 64 - suffix.length);
   return `${base}${suffix}`;
+}
+
+/** The x-request-id of a tool call: `<ask request id>.t<seq>`, a part letter after a second route. */
+export function toolRequestId(requestId: string, seq: number, part = 0): string {
+  return suffixedRequestId(requestId, `.t${seq}${part > 0 ? String.fromCharCode(97 + Math.min(part, 25)) : ''}`);
 }
 
 /** `promise`, or a `PlatformCallTimeout` after `ms`. The late settlement of `promise` is observed and dropped. */

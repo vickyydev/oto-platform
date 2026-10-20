@@ -713,7 +713,10 @@ services:
       # model claude-opus-5-5, effort low, timeout 20000, 6 tool calls and
       # 45000 ms per ask, 40 asks per person, 600 asks / 15000000 tokens per
       # operator per day, 2 asks running at once per person and 20 per
-      # operator, OTO App tools off.
+      # operator, OTO App tools off. INTERNAL_AI_OTOAPP_TOOLS=true (round I4)
+      # needs the oto_app= entry of HANDOFF_APP_ORIGINS above: the api signs
+      # the asker into the OTO App at that origin for one ask, with the
+      # hand-off and OTOAPP_DIRECTORY_TIMEOUT_MS; nothing else to set.
       - key: INTERNAL_AI_ENABLED
         sync: false
       - key: INTERNAL_AI_MODEL

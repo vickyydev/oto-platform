@@ -27,7 +27,7 @@ import {
   HANDOFF_APPS,
   handoffIdentity,
   IDENTITY_ONLY_AUDIENCES,
-  issueHandoff,
+  issueHandoffAudited,
   type HandoffConfig,
 } from '../services/handoff';
 import { holdsAtOwnDepartment } from '../services/access-control';
@@ -222,25 +222,16 @@ export async function authRoutes(app: App): Promise<void> {
       const sessionToken = req.cookies[SESSION_COOKIE];
       if (!sessionToken) throw errors.unauthorized();
 
-      const issued = await withTx(app.db, opCtx(req), 'auth.handoff_issue', async (tx) => {
-        const out = await issueHandoff(tx, config, {
-          sessionId: auth.sessionId,
-          accountId: auth.accountId,
-          sessionToken,
-          audience,
-        });
-        await audit.record(tx, {
-          actorAccountId: auth.accountId,
-          operatorId: auth.operatorId,
-          branchId: auth.branchId,
-          action: 'auth.handoff_issue',
-          entityType: 'session',
-          entityId: auth.sessionId,
-          // The jti, never the token.
-          after: { jti: out.jti, audience },
-          requestId: req.id,
-        });
-        return out;
+      // The mint and its `auth.handoff_issue` row, one transaction (shared with
+      // the internal assistant's server-side hand-off, SCRUM-591 round I4).
+      const issued = await issueHandoffAudited(app.db, opCtx(req), config, {
+        sessionId: auth.sessionId,
+        accountId: auth.accountId,
+        operatorId: auth.operatorId,
+        branchId: auth.branchId,
+        sessionToken,
+        audience,
+        requestId: req.id,
       });
 
       return {
