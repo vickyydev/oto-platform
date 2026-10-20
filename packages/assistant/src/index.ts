@@ -1,6 +1,12 @@
 /**
- * `@oto/assistant` — the Inbox customer assistant's pure core (SCRUM-590,
- * round A1, lane ai-a1a).
+ * `@oto/assistant` — the pure core of both OTO assistants:
+ *
+ *   - the Inbox CUSTOMER assistant (SCRUM-590, round A1, lane ai-a1a), and
+ *   - the INTERNAL assistant for colleagues (SCRUM-591, round I1, lane ia-1a;
+ *     `docs/progress/plans/internal-assistant-build/PLAN.md` §B, §D, §E):
+ *     the tool-use loop, its fake, the colleague persona, the answer schema
+ *     and its guards. The customer persona, gates and persona guard are not
+ *     used by it, and nothing of the customer assistant changed for it.
  *
  * `docs/progress/plans/inbox-ai-build/PLAN.md` is the authority (§B, §C.4,
  * §D.1, §D.4, §F.1). The package has the shape of `@oto/messaging`: pure
@@ -20,6 +26,21 @@
  *   client.ts     `AssistantClient`, the Anthropic implementation (logging
  *                 off; errors as class + status + request id only).
  *   fake.ts       `FakeAssistantClient`: scripted decisions, every failure.
+ *
+ * The internal assistant (Phase 3). The engine (I2) owns the routes, the
+ * tool registry and adapters, caps, audit and the ask-log.
+ *   internal-answer.ts   the final answer (text, link keys, language) and the
+ *                        loop's failure words (Phase 2's, plus three).
+ *   persona/internal.ts  the colleague voice in th/en/ru, its rules as data,
+ *                        the assistant label, the server's fixed lines.
+ *   internal-prompt.ts   the static block (cached, identical for every asker)
+ *                        and the per-asker block.
+ *   internal-guards.ts   URL stripping, shape, the traceability guard over the
+ *                        ask's tool summaries. No persona guard.
+ *   tool-loop.ts         `runToolLoop` (one loop for both transports),
+ *                        `interpretToolLoopReply`, `AnthropicToolLoopClient`.
+ *   tool-loop-fake.ts    `FakeToolLoopClient`: scripted tool calls and answers
+ *                        through the real loop.
  */
 
 export * from './intents';
@@ -31,3 +52,8 @@ export * from './prompt';
 export * from './pacing';
 export * from './client';
 export * from './fake';
+export * from './internal-answer';
+export * from './internal-prompt';
+export * from './internal-guards';
+export * from './tool-loop';
+export * from './tool-loop-fake';

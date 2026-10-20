@@ -407,7 +407,7 @@ export function bangkokStamp(at: Date): string {
 }
 
 /** JSON with `<`, `>` and `&` escaped, so customer text can never close the data tags. */
-function inertJson(value: unknown): string {
+export function inertJson(value: unknown): string {
   return JSON.stringify(value)
     .replace(/</g, '\\u003c')
     .replace(/>/g, '\\u003e')

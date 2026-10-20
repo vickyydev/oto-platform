@@ -201,7 +201,7 @@ export function interpretError(err: unknown, latencyMs: number): AssistantOutcom
 // ---------------------------------------------------------------------------
 
 /** The SDK's logger, silenced: nothing the SDK knows reaches a log line. */
-const SILENT_LOGGER = {
+export const SILENT_LOGGER = {
   error: () => undefined,
   warn: () => undefined,
   info: () => undefined,
