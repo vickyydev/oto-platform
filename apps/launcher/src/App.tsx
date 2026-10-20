@@ -6,6 +6,7 @@ import { ComingSoon } from '@/pages/ComingSoon';
 import { Backdrop } from '@/components/Backdrop';
 import { Button } from '@/components/ui/button';
 import { BrandMark } from '@/components/BrandMark';
+import { SuiteAssistant } from '@/components/assistant/AssistantDock';
 import { SessionProvider, useSession } from '@/auth/SessionContext';
 import { useTheme } from '@/lib/theme';
 
@@ -74,6 +75,10 @@ export default function App() {
     <SessionProvider>
       <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
         <Routes />
+        {/* The internal assistant's floating button and chat popup (SCRUM-591), on every
+            signed-in page and mounted once, so what is open and typed survives a move
+            between them. */}
+        <SuiteAssistant />
       </WouterRouter>
     </SessionProvider>
   );

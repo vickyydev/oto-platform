@@ -2,7 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <!-- viewport-fit=cover gives the safe-area insets a value on a phone with a home bar
+         (the assistant's floating button sits above it); interactive-widget=resizes-content
+         makes a phone keyboard shrink the layout, so the chat popup's composer stays above it. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
     <title>OTO Suite</title>
     <meta name="description" content="The front door to OTO Park's apps — sign in once and open the till, the console and the rest of the suite." />
     <meta name="robots" content="noindex, nofollow" />

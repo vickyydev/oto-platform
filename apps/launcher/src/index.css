@@ -3,6 +3,11 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Phone width for the assistant's chat popup (components/assistant/AssistantPopup.tsx):
+   at and under 480px it is a full-height sheet. `SHEET_MAX_WIDTH_PX` in
+   src/assistant/shell.ts is the same number for the script side. */
+@custom-variant sheet (@media (width <= 480px));
+
 /* Tokens are the POS's, copied verbatim from apps/pos/src/index.css so the two
    apps resolve the same colours, radii and type. Someone moving from the
    launcher into the till should not see the brand change under them. Only the
@@ -186,4 +191,15 @@
   .active-elevate-2:active::after {
     background-color: var(--elevate-2);
   }
+}
+
+/* The assistant's floating button (components/assistant/AssistantDock.tsx)
+   sits over the bottom-right corner of every signed-in page. While it is
+   there, each page's main keeps that corner clear, so the last tile, the
+   account page's sign-out buttons and a page's footer scroll above the button
+   rather than under it. On main, not body: a page shorter than the viewport
+   absorbs the padding in its flex-1 main and gains no scrollbar. Unlayered on
+   purpose, so it wins over the main's own py-* utility. */
+.assistant-docked main {
+  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
 }
