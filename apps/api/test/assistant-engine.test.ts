@@ -133,7 +133,7 @@ describe('the census (§F.3, R4)', () => {
     expect(methods).toEqual(['GET']);
   });
 
-  it('registers an adapter for exactly the ten platform tools, and no OTO App tool (round I4)', () => {
+  it('registers a platform adapter for exactly the ten platform tools; the OTO App tools live in tools-otoapp.ts (round I4)', () => {
     const platform = ASSISTANT_TOOLS.filter((t) => t.system === 'platform').map((t) => t.name);
     expect(PLATFORM_TOOL_ADAPTERS.map((a) => a.name).sort()).toEqual([...platform].sort());
     expect(platform).toHaveLength(10);

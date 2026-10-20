@@ -69,6 +69,23 @@ describe('assistant-registry census (§F.3)', () => {
     expect(problems).toEqual([]);
   });
 
+  it('names no tool over the three OTO App fence gaps (plan "Concerns" C1–C3; owner G2 open)', () => {
+    // Leave balances, `/api/time-events`, `/api/checklists/today`: readable across colleagues at a
+    // branch today. The assistant stays off them until the owner rules; a tool added over one fails here.
+    for (const tool of ASSISTANT_TOOLS) {
+      for (const route of tool.routes) expect(route, tool.name).not.toMatch(/time-events|checklists|balance/);
+    }
+    expect(ASSISTANT_TOOLS.filter((t) => t.system === 'oto_app').map((t) => t.name)).toEqual([
+      'oto.attendance',
+      'oto.employee_leave',
+      'oto.employees.find',
+      'oto.my_leave',
+      'oto.my_payslips',
+      'oto.payroll_summary',
+      'oto.rota',
+    ]);
+  });
+
   it('is looking at the platform tools the plan lists', () => {
     expect(ASSISTANT_TOOLS.filter((t) => t.system === 'platform').map((t) => t.name)).toEqual([
       'audit.search',

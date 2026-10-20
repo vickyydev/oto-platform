@@ -8,6 +8,7 @@ import {
 } from '@oto/assistant';
 import { schema as s, type Db } from '@oto/db';
 import { newId, type AssistantAskView, type Permission } from '@oto/shared';
+import type { Env } from '../src/env';
 import { SESSION_COOKIE, hashToken, newSessionToken } from '../src/plugins/session';
 import {
   CENTRAL_BRANCH_CODE,
@@ -54,7 +55,7 @@ export interface AskWorld {
   logLines: string[];
 }
 
-export async function askWorld(): Promise<AskWorld> {
+export async function askWorld(opts: { env?: Partial<Record<keyof Env, string>> } = {}): Promise<AskWorld> {
   const logLines: string[] = [];
   const ctx = await createTestContext({
     env: {
@@ -64,6 +65,8 @@ export async function askWorld(): Promise<AskWorld> {
       // The Inbox simulator, so a department's agent has real threads to count (golden Q10).
       INBOX_SIMULATOR: 'on',
       INBOX_SIMULATOR_SECRET: ASK_SIM_SECRET,
+      // Round I4: a suite that reaches the OTO App names its fake origin here (the hand-off and its switch).
+      ...(opts.env ?? {}),
     },
     logCapture: { stream: { write: (line) => void logLines.push(line) }, level: 'debug' },
   });
@@ -222,6 +225,31 @@ export async function customRole(w: AskWorld, name: string, permissions: Permiss
   const id = newId();
   await w.ctx.db.insert(s.role).values({ id, operatorId: w.oto, name, description: 'test role' });
   await w.ctx.db.insert(s.rolePermission).values(permissions.map((permission) => ({ id: newId(), roleId: id, permission })));
+}
+
+const TILE_ROLE = 'zz_oto_app_tile';
+
+/**
+ * The OTO App tile for an account (round I4): `app:oto_app:access` at one
+ * branch, through a role of the test's own that holds nothing else. No seeded
+ * staff bundle carries the tile; on a deployment it is assigned by an
+ * administrator, and the fixture does the same.
+ */
+export async function grantOtoAppTile(w: AskWorld, accountId: string, branchId: string): Promise<void> {
+  let [role] = await w.ctx.db
+    .select({ id: s.role.id })
+    .from(s.role)
+    .where(and(eq(s.role.operatorId, w.oto), eq(s.role.name, TILE_ROLE)))
+    .limit(1);
+  if (!role) {
+    await customRole(w, TILE_ROLE, ['app:oto_app:access']);
+    [role] = await w.ctx.db
+      .select({ id: s.role.id })
+      .from(s.role)
+      .where(and(eq(s.role.operatorId, w.oto), eq(s.role.name, TILE_ROLE)))
+      .limit(1);
+  }
+  await w.ctx.db.insert(s.roleAssignment).values({ id: newId(), accountId, roleId: role!.id, scopeType: 'branch', scopeId: branchId });
 }
 
 /** A ZZ family on the register, with a fictional note and two children (one with an allergy). */
