@@ -6,15 +6,16 @@
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import type { Assignee, ConversationDetail, ConversationRow, Dashboard as DashboardData, InboxMe } from '@/api/inbox';
+import type { Assignee, ConversationDetail, ConversationRow, Dashboard as DashboardData, InboxEvent, InboxMe, Message } from '@/api/inbox';
 import { TranslationNote } from '@/components/atoms';
 import { ChatPanel, type Thread } from '@/components/ChatPanel';
 import { PrimaryMoveConfirm, TeamMoveConfirm } from '@/components/confirms';
 import { Dashboard } from '@/components/Dashboard';
 import { DetailsDialog, MANAGERS_ADD_SUPPORT, type DetailsActions } from '@/components/dialogs';
+import { MessageBubble } from '@/components/MessageBubble';
 import { FilterFields } from '@/components/Rail';
 import { EMPTY_FILTERS } from '@/lib/query';
-import { SHADOW_LABEL, SUPPORT_FULL_HINT, TRANSLATION_PENDING } from '@/lib/view';
+import { SHADOW_LABEL, SUPPORT_FULL_HINT, TRANSLATION_PENDING, attachmentsOf } from '@/lib/view';
 
 const CENTRAL = '00000000-0000-7000-8000-00000000000c';
 const CHALONG = '00000000-0000-7000-8000-0000000000c2';
@@ -201,6 +202,121 @@ describe('the assistant’s state on a thread (U5)', () => {
     expect(live('shadow')).not.toContain('aria-pressed');
     expect(live('off')).toContain('Assistant off on this number');
     expect(live('off')).not.toContain('AI on · Pause');
+  });
+});
+
+function msg(over: Partial<Message> & Pick<Message, 'id' | 'createdAt'>): Message {
+  return {
+    direction: 'inbound',
+    authorKind: 'customer',
+    authorAccountId: null,
+    authorName: null,
+    body: 'hello',
+    bodyLanguage: 'en',
+    translatedBody: null,
+    translatedTo: null,
+    mediaFileIds: [],
+    audioFileId: null,
+    transcript: null,
+    templateId: null,
+    providerStatus: null,
+    source: 'channel',
+    sentAt: null,
+    deliveredAt: null,
+    readAt: null,
+    redacted: false,
+    ...over,
+  };
+}
+
+function ev(over: Partial<InboxEvent> & Pick<InboxEvent, 'id' | 'kind'>): InboxEvent {
+  return { actorKind: 'system', actorAccountId: null, actorName: null, payload: {}, createdAt: '2026-10-21T02:00:00.000Z', ...over };
+}
+
+describe('a hand-over’s pills, in one line (customer-AI test night, W7)', () => {
+  const at = '2026-10-21T02:00:00.000Z';
+  const r = row({ category: 'birthdays', teamId: T_BIRTHDAYS });
+  const handover: InboxEvent[] = [
+    ev({ id: 'c', kind: 'classified', actorKind: 'ai', payload: { turnId: 't', intent: 'birthday_party', language: 'en' }, createdAt: at }),
+    ev({ id: 'rl', kind: 'released', actorKind: 'ai', payload: { slot: 'primary', teamId: T_CENTRAL }, createdAt: at }),
+    ev({ id: 'mv', kind: 'moved_team', actorKind: 'ai', payload: { fromTeamId: T_CENTRAL, toTeamId: T_BIRTHDAYS }, createdAt: at }),
+    ev({ id: 'ro', kind: 'routed', actorKind: 'system', payload: { teamId: T_BIRTHDAYS, language: 'en' }, createdAt: at }),
+    ev({ id: 'a1', kind: 'assigned', actorKind: 'system', payload: { slot: 'primary', accountId: ANYA }, createdAt: at }),
+    ev({ id: 'a2', kind: 'assigned', actorKind: 'system', payload: { slot: 'support', accountId: VERA }, createdAt: at }),
+    ev({
+      id: 'h',
+      kind: 'ai_handover',
+      actorKind: 'ai',
+      payload: { turnId: 't', intent: 'birthday_party', reroutedTeamId: T_BIRTHDAYS, brochureFileIds: ['file-brochure'], messageIds: ['b1', 'h1'] },
+      createdAt: at,
+    }),
+  ];
+  const messages = [
+    msg({ id: 'c1', createdAt: '2026-10-21T01:59:00.000Z', body: 'hi my son turns 5 on 14 Nov, want a party for 15 kids' }),
+    msg({ id: 'b1', createdAt: at, direction: 'outbound', authorKind: 'ai', body: null, mediaFileIds: ['file-brochure'], providerStatus: 'sent' }),
+    msg({ id: 'h1', createdAt: '2026-10-21T02:00:01.000Z', direction: 'outbound', authorKind: 'ai', body: 'Here are our birthday packages 🎂. One moment please.', providerStatus: 'sent' }),
+  ];
+  const thread7 = (d: Partial<ConversationDetail> = {}): Thread => ({ ...thread(detail(r, { teamName: 'Birthdays & Events', events: handover, ...d })), messages });
+  const html = renderToStaticMarkup(
+    createElement(ChatPanel, {
+      row: r,
+      thread: thread7(),
+      me: anya,
+      now: new Date('2026-10-21T03:00:00.000Z'),
+      inserted: null,
+      detailsOpen: false,
+      onBack: noop,
+      onLoadOlder: noop,
+      onOpenDetails: noop,
+      onCloseDetails: noop,
+      onOpenTemplates: noop,
+      onAskHandle: noop,
+      onChanged: never,
+    }),
+  );
+
+  it('collapses the seven pills into one expandable line that says where, the brochure and who', () => {
+    expect(html).toContain('data-pill-group="7"');
+    expect(html).toContain('AI handed over to Birthdays &amp; Events — brochure sent, Demo Anya primary, Demo Vera support');
+    expect(html).toMatch(/<details[^>]*><summary/);
+    // The pills are still there, under the line.
+    expect(html).toContain('Assigned Demo Anya as primary');
+    expect(html).toContain('Moved from Reception · Central Floresta → Birthdays &amp; Events by AI');
+    expect((html.match(/lucide-bot/g) ?? []).length).toBeGreaterThanOrEqual(8);
+  });
+
+  it('names the brochure on the AI’s bubble with a way to open it, instead of "No text · 1 attachment"', () => {
+    expect(html).toContain('Birthday brochure');
+    expect(html).toContain('aria-label="Open Birthday brochure"');
+    expect(html).toContain('data-attachment="file-brochure"');
+    expect(html).not.toContain('No text');
+    expect(html).not.toContain('1 attachment');
+  });
+});
+
+describe('an attachment on a person’s message (customer-AI test night, W7)', () => {
+  const r = row();
+  const render = (m: Message) =>
+    renderToStaticMarkup(createElement(MessageBubble, { m, me: anya, now: new Date('2026-10-21T03:00:00.000Z'), attachments: attachmentsOf(m) }));
+  it('shows a plain attachment with its name unknown, openable on a press', () => {
+    const html = render(msg({ id: 's1', createdAt: '2026-10-21T02:00:00.000Z', direction: 'outbound', authorKind: 'staff', authorName: 'Demo Anya', body: 'Here is the map', mediaFileIds: ['file-map'] }));
+    expect(html).toContain('Attachment');
+    expect(html).toContain('aria-label="Open Attachment"');
+    expect(html).toContain('Here is the map');
+  });
+  it('links the api’s own url and name when the media entry carries them, read optionally', () => {
+    const m = {
+      ...msg({ id: 's2', createdAt: '2026-10-21T02:00:00.000Z', direction: 'outbound', authorKind: 'ai', body: null, mediaFileIds: ['file-b'] }),
+      media: [{ fileId: 'file-b', name: 'brochure.pdf', url: 'https://files.example/signed/b.pdf', contentType: 'application/pdf' }],
+    } as Message;
+    const html = render(m);
+    expect(html).toContain('brochure.pdf');
+    expect(html).toContain('href="https://files.example/signed/b.pdf"');
+    expect(html).not.toContain('No text');
+  });
+  it('keeps "No text" for a textless message with nothing attached', () => {
+    expect(render(msg({ id: 's3', createdAt: '2026-10-21T02:00:00.000Z', body: null }))).toContain('No text');
+    expect(r.id).toBe(CONV);
   });
 });
 

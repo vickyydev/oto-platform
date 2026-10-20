@@ -12,6 +12,8 @@ import {
   aiStateLineFor,
   archiveFrom,
   assigneeChip,
+  attachmentNames,
+  attachmentsOf,
   branchLabel,
   branchOptions,
   branchOutcome,
@@ -22,6 +24,7 @@ import {
   durationLabel,
   effectiveBranchId,
   eventText,
+  groupSummary,
   handleLabel,
   initialsOf,
   landingTab,
@@ -315,6 +318,117 @@ describe('shadow suggestions on the thread read (customer-AI test night, W5)', (
   });
   it('drops a shadow item with no words rather than show an empty bubble', () => {
     expect(timeline([], [event({ id: 's3', kind: 'ai.shadow', payload: { turnId: 't3' } })], true, ctx)).toEqual([]);
+  });
+});
+
+describe('runs of system pills in one line (customer-AI test night, W7)', () => {
+  const ctx = { me };
+  const at = '2026-10-20T03:00:00.000Z';
+  const later = (s: number) => new Date(Date.parse(at) + s * 1000).toISOString();
+  /** The seven pills one AI hand-over writes, in one moment. */
+  const handover = [
+    event({ id: 'c', kind: 'classified', actorKind: 'ai', payload: { turnId: 't', intent: 'birthday_party', language: 'en' }, createdAt: at }),
+    event({ id: 'r', kind: 'released', actorKind: 'ai', payload: { slot: 'primary', teamId: T_CENTRAL }, createdAt: at }),
+    event({ id: 'mv', kind: 'moved_team', actorKind: 'ai', payload: { fromTeamId: T_CENTRAL, toTeamId: T_BIRTHDAYS }, createdAt: at }),
+    event({ id: 'ro', kind: 'routed', actorKind: 'system', payload: { teamId: T_BIRTHDAYS, language: 'en' }, createdAt: at }),
+    event({ id: 'a1', kind: 'assigned', actorKind: 'system', payload: { slot: 'primary', accountId: ALINA }, createdAt: at }),
+    event({ id: 'a2', kind: 'assigned', actorKind: 'system', payload: { slot: 'support', accountId: GM }, createdAt: at }),
+    event({
+      id: 'h',
+      kind: 'ai_handover',
+      actorKind: 'ai',
+      payload: { turnId: 't', intent: 'birthday_party', reroutedTeamId: T_BIRTHDAYS, brochureFileIds: ['f1'], messageIds: ['m2'] },
+      createdAt: at,
+    }),
+  ];
+
+  it('says a hand-over in one line — where it went, the brochure, who it seated — with the pills under it', () => {
+    const items = timeline([], handover, true, ctx);
+    expect(items).toHaveLength(1);
+    const g = items[0]!;
+    expect(g.kind).toBe('group');
+    if (g.kind !== 'group') return;
+    expect(g.summary).toBe('AI handed over to Birthdays & Events — brochure sent, Alina primary, Hanna support');
+    expect(g.pills.map((p) => p.id)).toEqual(['c', 'r', 'mv', 'ro', 'a1', 'a2', 'h']);
+    expect(g.id).toBe('group:c');
+  });
+
+  it('says a hand-over with nothing seated and no brochure plainly', () => {
+    const only = [event({ id: 'h', kind: 'ai_handover', actorKind: 'ai', payload: { reroutedTeamId: null, intent: 'lost_item' }, createdAt: at })];
+    expect(groupSummary([{ item: { text: 'x' }, event: only[0]! }], ctx)).toBe('AI handed over to the team');
+  });
+
+  it('leads any other run with its most telling pill and counts the rest', () => {
+    const hana = { actorKind: 'account' as const, actorAccountId: GM };
+    const run = [
+      event({ id: 'r', kind: 'released', ...hana, payload: { slot: 'primary', teamId: T_CENTRAL }, createdAt: at }),
+      event({ id: 'a', kind: 'assigned', ...hana, payload: { slot: 'primary', accountId: ALINA }, createdAt: later(1) }),
+      event({ id: 'mv', kind: 'moved_team', ...hana, payload: { followsPrimary: true, fromTeamId: T_CENTRAL, toTeamId: T_BIRTHDAYS }, createdAt: later(1) }),
+    ];
+    const items = timeline([], run, true, ctx);
+    expect(items).toHaveLength(1);
+    expect(items[0]).toMatchObject({
+      kind: 'group',
+      summary: 'Auto-moved from Reception · Central → Birthdays & Events (follows primary owner) · 2 more',
+    });
+  });
+
+  it('breaks a run at a message, at another actor, at a gap, and never swallows an ai_silent pill', () => {
+    const auto = [
+      event({ id: 'ro', kind: 'routed', actorKind: 'system', payload: { teamId: T_CENTRAL }, createdAt: at }),
+      event({ id: 'a1', kind: 'assigned', actorKind: 'system', payload: { slot: 'primary', teamId: T_CENTRAL }, createdAt: at }),
+    ];
+    // A message between two pills: two single pills.
+    const split = timeline([msg('m1', later(1))], [auto[0]!, { ...auto[1]!, createdAt: later(2) }], true, ctx);
+    expect(split.map((i) => i.kind)).toEqual(['pill', 'message', 'pill']);
+    // The same actor within the gap: one group; a person's pill after the router's: apart.
+    const byHana = event({ id: 'h1', kind: 'handled', actorKind: 'account', actorAccountId: GM, createdAt: later(2) });
+    expect(timeline([], [...auto, byHana], true, ctx).map((i) => i.kind)).toEqual(['group', 'pill']);
+    // A gap longer than the moment: apart.
+    expect(timeline([], [auto[0]!, { ...auto[1]!, createdAt: later(61) }], true, ctx).map((i) => i.kind)).toEqual(['pill', 'pill']);
+    expect(timeline([], [auto[0]!, { ...auto[1]!, createdAt: later(60) }], true, ctx).map((i) => i.kind)).toEqual(['group']);
+    // An ai_silent pill keeps its correction control in view: never grouped.
+    const silent = event({ id: 's', kind: 'ai_silent', actorKind: 'ai', payload: { turnId: 't' }, createdAt: at });
+    const classified = event({ id: 'c', kind: 'classified', actorKind: 'ai', payload: { turnId: 't', intent: 'hours' }, createdAt: at });
+    expect(timeline([], [classified, silent], true, ctx).map((i) => i.kind)).toEqual(['pill', 'pill']);
+  });
+});
+
+describe('a message’s attachments (customer-AI test night, W7)', () => {
+  it('names the brochure from the assistant’s events', () => {
+    const names = attachmentNames([
+      event({ kind: 'ai_handover', actorKind: 'ai', payload: { brochureFileIds: ['f1', 'f2'] } }),
+      event({ id: 'e2', kind: 'ai_replied', actorKind: 'ai', payload: { brochureFileIds: [] } }),
+      event({ id: 'e3', kind: 'routed', payload: { brochureFileIds: ['not-this'] } }),
+    ]);
+    expect([...names.entries()]).toEqual([
+      ['f1', 'Birthday brochure'],
+      ['f2', 'Birthday brochure'],
+    ]);
+  });
+
+  it('lists the row’s file ids, named where known, and reads the api’s media entries optionally', () => {
+    const base = { mediaFileIds: ['f1', 'f2'], audioFileId: 'a1' };
+    expect(attachmentsOf(base, new Map([['f1', 'Birthday brochure']]))).toEqual([
+      { fileId: 'f1', name: 'Birthday brochure', url: null, contentType: null },
+      { fileId: 'f2', name: null, url: null, contentType: null },
+      { fileId: 'a1', name: null, url: null, contentType: null },
+    ]);
+    const withMedia = {
+      ...base,
+      media: [
+        { fileId: 'f1', name: 'brochure.pdf', url: 'https://files.example/b.pdf', contentType: 'application/pdf' },
+        { id: 'f9', name: 'photo.jpg', contentType: 'image/jpeg' },
+        'nonsense',
+      ],
+    };
+    expect(attachmentsOf(withMedia, new Map([['f1', 'Birthday brochure']]))).toEqual([
+      { fileId: 'f1', name: 'brochure.pdf', url: 'https://files.example/b.pdf', contentType: 'application/pdf' },
+      { fileId: 'f2', name: null, url: null, contentType: null },
+      { fileId: 'a1', name: null, url: null, contentType: null },
+      { fileId: 'f9', name: 'photo.jpg', url: null, contentType: 'image/jpeg' },
+    ]);
+    expect(attachmentsOf({ mediaFileIds: [], audioFileId: null })).toEqual([]);
   });
 });
 

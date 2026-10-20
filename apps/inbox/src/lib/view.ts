@@ -511,11 +511,15 @@ export function withdrawnNotes(messages: readonly Message[], events: readonly In
   return out;
 }
 
+export type PillItem = { kind: 'pill'; at: string; id: string; text: string; event: string };
+
 export type TimelineItem =
   | { kind: 'message'; at: string; message: Message }
-  | { kind: 'pill'; at: string; id: string; text: string; event: string }
+  | PillItem
   /** What the assistant would have said in shadow mode — never sent (customer-AI test night, W5). */
-  | { kind: 'shadow'; at: string; id: string; text: string; turnId: string | null };
+  | { kind: 'shadow'; at: string; id: string; text: string; turnId: string | null }
+  /** A run of system pills from one actor and moment, said in one line, expandable (customer-AI test night, W7). */
+  | { kind: 'group'; at: string; id: string; summary: string; pills: PillItem[] };
 
 /** The shadow item's kind on the thread read, and its words: on the payload, or on the item itself. */
 export const SHADOW_EVENT_KIND = 'ai.shadow';
@@ -553,10 +557,142 @@ export function timeline(
     if (text !== null) items.push({ kind: 'pill', at: e.createdAt, id: e.id, text, event: e.kind });
   }
   // Stable on ties: a pill written in the same instant as its message follows it.
-  return items
+  const sorted = items
     .map((item, i) => ({ item, i }))
     .sort((a, b) => (a.item.at < b.item.at ? -1 : a.item.at > b.item.at ? 1 : a.i - b.i))
     .map(({ item }) => item);
+  return collapsePills(sorted, new Map(events.map((e) => [e.id, e])), ctx);
+}
+
+// --- Runs of system pills, in one line (customer-AI test night, W7) ----------------------------
+
+/** Pills closer than this, from one actor, are one moment. */
+export const PILL_GROUP_GAP_MS = 60_000;
+
+/** One actor: the AI and the router act within the same moment; a person is themselves. */
+function actorKeyOf(e: InboxEvent): string {
+  return e.actorKind === 'account' ? `account:${e.actorAccountId ?? e.actorName ?? ''}` : 'auto';
+}
+
+/** The pill that heads a group's line when it is not a hand-over, most telling first. */
+const HEADLINE_ORDER = ['ai_handover', 'moved_team', 'diverted', 'branch_set', 'handled', 'reopened', 'routed', 'assigned', 'released'];
+
+/**
+ * One AI hand-over put about seven pills in a thread (classified, released,
+ * moved, routed, assigned twice, handed over). Consecutive pills from one
+ * actor within one moment collapse into one line — a hand-over says where it
+ * went and who it seated, with the brochure; any other run leads with its
+ * most telling pill and counts the rest — expandable to the pills. An
+ * `ai_silent` pill stays on its own: its "Correct the assistant" must stay
+ * in view.
+ */
+export function collapsePills(items: readonly TimelineItem[], eventsById: ReadonlyMap<string, InboxEvent>, ctx: PillContext): TimelineItem[] {
+  const out: TimelineItem[] = [];
+  let run: { item: PillItem; event: InboxEvent }[] = [];
+  const flush = () => {
+    if (run.length >= 2) {
+      const first = run[0]!;
+      out.push({ kind: 'group', at: first.item.at, id: `group:${first.item.id}`, summary: groupSummary(run, ctx), pills: run.map((r) => r.item) });
+    } else {
+      out.push(...run.map((r) => r.item));
+    }
+    run = [];
+  };
+  for (const item of items) {
+    const event = item.kind === 'pill' ? eventsById.get(item.id) : undefined;
+    if (item.kind !== 'pill' || event === undefined || item.event === 'ai_silent') {
+      flush();
+      out.push(item);
+      continue;
+    }
+    const last = run[run.length - 1];
+    if (last && (actorKeyOf(last.event) !== actorKeyOf(event) || Date.parse(item.at) - Date.parse(last.item.at) > PILL_GROUP_GAP_MS)) flush();
+    run.push({ item, event });
+  }
+  flush();
+  return out;
+}
+
+/** The one line for a run of pills. */
+export function groupSummary(run: readonly { item: Pick<PillItem, 'text'>; event: InboxEvent }[], ctx: PillContext): string {
+  const seatName = (p: Record<string, unknown>): string | null =>
+    personName(ctx, p.accountId) ?? teamName(ctx, p.teamId) ?? (p.assigneeKind === 'ai' ? 'the AI Assistant' : null);
+  const handover = run.find((r) => r.event.kind === 'ai_handover');
+  if (handover) {
+    const p = handover.event.payload;
+    const team = teamName(ctx, p.reroutedTeamId) ?? 'the team';
+    const parts: string[] = [];
+    if (Array.isArray(p.brochureFileIds) && p.brochureFileIds.length > 0) parts.push('brochure sent');
+    const primary = run.find((r) => r.event.kind === 'assigned' && r.event.payload.slot === 'primary');
+    const primaryName = primary ? seatName(primary.event.payload) : null;
+    if (primaryName) parts.push(`${primaryName} primary`);
+    const supports = run
+      .filter((r) => r.event.kind === 'assigned' && r.event.payload.slot === 'support')
+      .map((r) => seatName(r.event.payload))
+      .filter((n): n is string => n !== null);
+    if (supports.length > 0) parts.push(`${supports.join(' and ')} support`);
+    return `AI handed over to ${team}${parts.length > 0 ? ` — ${parts.join(', ')}` : ''}`;
+  }
+  const rank = (kind: string) => {
+    const i = HEADLINE_ORDER.indexOf(kind);
+    return i < 0 ? HEADLINE_ORDER.length : i;
+  };
+  const head = [...run].sort((a, b) => rank(a.event.kind) - rank(b.event.kind))[0]!;
+  return `${head.item.text} · ${run.length - 1} more`;
+}
+
+// --- A message's attachments (customer-AI test night, W7) ----------------------------------------
+
+/** The birthday brochure, named from the assistant's own events (`brochureFileIds`). */
+export const BROCHURE_NAME = 'Birthday brochure';
+
+/** File id → name, for the files the thread's events name: today, the brochure. */
+export function attachmentNames(events: readonly InboxEvent[]): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const e of events) {
+    if (e.kind !== 'ai_replied' && e.kind !== 'ai_handover') continue;
+    const ids = e.payload.brochureFileIds;
+    if (!Array.isArray(ids)) continue;
+    for (const id of ids) if (typeof id === 'string') out.set(id, BROCHURE_NAME);
+  }
+  return out;
+}
+
+export interface Attachment {
+  fileId: string;
+  /** The file's name, when anything names it: the api's `media` entry, else the thread's events; null means "Attachment". */
+  name: string | null;
+  /** A URL the api minted for it, when its `media` entry carries one; else the files api is asked on a press. */
+  url: string | null;
+  contentType: string | null;
+}
+
+/**
+ * What a message carries, as the screen shows it: the file ids the row has
+ * today, with a name where one is known, and — read optionally — the api's
+ * `media` entries (`fileId`, `name`, `url`, `contentType`) when it adds them.
+ */
+export function attachmentsOf(
+  m: Pick<Message, 'mediaFileIds' | 'audioFileId'>,
+  names: ReadonlyMap<string, string> = new Map(),
+): Attachment[] {
+  const own = (m as { media?: unknown }).media;
+  const entries = new Map<string, { name: string | null; url: string | null; contentType: string | null }>();
+  if (Array.isArray(own)) {
+    for (const raw of own) {
+      if (raw === null || typeof raw !== 'object') continue;
+      const r = raw as Record<string, unknown>;
+      const id = str(r.fileId) ?? str(r.id);
+      if (id === null) continue;
+      entries.set(id, { name: str(r.name), url: str(r.url), contentType: str(r.contentType) });
+    }
+  }
+  const ids = [...m.mediaFileIds, ...(m.audioFileId ? [m.audioFileId] : [])];
+  for (const id of entries.keys()) if (!ids.includes(id)) ids.push(id);
+  return ids.map((fileId) => {
+    const e = entries.get(fileId);
+    return { fileId, name: e?.name ?? names.get(fileId) ?? null, url: e?.url ?? null, contentType: e?.contentType ?? null };
+  });
 }
 
 // --- What the viewer may do, and the write switch ----------------------------------

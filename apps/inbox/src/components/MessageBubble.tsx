@@ -1,7 +1,78 @@
-import { AlertTriangle, Ban, Bot, Check, CheckCheck, Clock3, EyeOff, Languages, Paperclip, PenLine } from 'lucide-react';
+import { useState } from 'react';
+import { AlertTriangle, Ban, Bot, Check, CheckCheck, Clock3, ExternalLink, EyeOff, Languages, Loader2, Paperclip, PenLine } from 'lucide-react';
+import { ApiError } from '@/api/client';
+import { filesApi } from '@/api/files';
 import type { InboxMe, Message } from '@/api/inbox';
 import { ChipView } from '@/components/atoms';
-import { SHADOW_LABEL, bubbleTime, langLabel, personChip } from '@/lib/view';
+import { SHADOW_LABEL, bubbleTime, langLabel, personChip, type Attachment } from '@/lib/view';
+
+/** An attachment with no name known: the row carries ids only until the api names its media. */
+export const ATTACHMENT_FALLBACK_NAME = 'Attachment';
+
+/**
+ * One attachment on a bubble (customer-AI test night, W7: the brochure showed
+ * "No text · 1 attachment" with nothing to open). Its name, and a way to
+ * open it: the api's own URL when the media entry carries one, else the
+ * files api on a press — a read of a thread's media is access-logged, so it
+ * is never asked for on render. An image shows under the bubble once opened.
+ */
+export function AttachmentChip({ attachment: a, muted }: { attachment: Attachment; muted: boolean }) {
+  const [opened, setOpened] = useState<{ url: string; contentType: string | null } | null>(
+    a.url ? { url: a.url, contentType: a.contentType } : null,
+  );
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const name = a.name ?? ATTACHMENT_FALLBACK_NAME;
+  const image = opened !== null && (opened.contentType ?? '').startsWith('image/');
+
+  const open = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const r = await filesApi.url(a.fileId);
+      setOpened({ url: r.url, contentType: r.contentType });
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'The file could not be opened.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="mt-1 flex min-w-0 flex-col gap-1" data-attachment={a.fileId}>
+      <div className={`flex min-w-0 items-center gap-1.5 text-[11.5px] ${muted ? 'text-slate-400' : ''}`}>
+        <Paperclip className="h-3 w-3 shrink-0" />
+        <span className="min-w-0 truncate font-medium">{name}</span>
+        {opened ? (
+          <a
+            href={opened.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex shrink-0 items-center gap-1 rounded-md bg-white/80 px-1.5 py-0.5 text-[11px] font-medium text-slate-700 ring-1 ring-slate-200 hover:bg-white"
+          >
+            <ExternalLink className="h-3 w-3" /> Open
+          </a>
+        ) : (
+          <button
+            type="button"
+            onClick={() => void open()}
+            disabled={busy}
+            aria-label={`Open ${name}`}
+            className="inline-flex shrink-0 items-center gap-1 rounded-md bg-white/80 px-1.5 py-0.5 text-[11px] font-medium text-slate-700 ring-1 ring-slate-200 hover:bg-white disabled:opacity-60"
+          >
+            {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <ExternalLink className="h-3 w-3" />} Open
+          </button>
+        )}
+      </div>
+      {image && opened && (
+        <a href={opened.url} target="_blank" rel="noopener noreferrer">
+          <img src={opened.url} alt={name} className="max-h-48 max-w-full rounded-lg ring-1 ring-slate-200" />
+        </a>
+      )}
+      {error && <span className="text-[11px] text-rose-600">{error}</span>}
+    </div>
+  );
+}
 
 /**
  * What the assistant WOULD have said on a number in shadow mode (customer-AI
@@ -72,6 +143,7 @@ export function MessageBubble({
   me,
   now,
   withdrawnNote,
+  attachments = [],
   onCorrect,
 }: {
   m: Message;
@@ -79,6 +151,8 @@ export function MessageBubble({
   now: Date;
   /** Set when this AI line was withdrawn: the words under it. */
   withdrawnNote?: string;
+  /** The files the message carries, named where the thread knows them (`attachmentsOf`). */
+  attachments?: Attachment[];
   onCorrect?: () => void;
 }) {
   const isCustomer = m.authorKind === 'customer';
@@ -120,9 +194,11 @@ export function MessageBubble({
         >
           {m.body !== null ? (
             withdrawn ? <s className="decoration-slate-400">{m.body}</s> : m.body
-          ) : (
-            <span className="italic opacity-70">{m.redacted ? 'Removed at the customer’s request' : 'No text'}</span>
-          )}
+          ) : m.redacted ? (
+            <span className="italic opacity-70">Removed at the customer’s request</span>
+          ) : attachments.length === 0 ? (
+            <span className="italic opacity-70">No text</span>
+          ) : null}
           {m.translatedBody && (
             <div className={`mt-1.5 border-t pt-1.5 text-[12.5px] ${isCustomer ? 'border-slate-100' : 'border-white/15'}`}>
               <span className={`mr-1 inline-flex items-center gap-1 text-[10px] uppercase tracking-wide ${meta}`}>
@@ -131,13 +207,9 @@ export function MessageBubble({
               {m.translatedBody}
             </div>
           )}
-          {(m.mediaFileIds.length > 0 || m.audioFileId) && (
-            <div className={`mt-1 flex items-center gap-1 text-[11px] ${meta}`}>
-              <Paperclip className="h-3 w-3" />
-              {m.mediaFileIds.length + (m.audioFileId ? 1 : 0)} attachment
-              {m.mediaFileIds.length + (m.audioFileId ? 1 : 0) === 1 ? '' : 's'}
-            </div>
-          )}
+          {attachments.map((a) => (
+            <AttachmentChip key={a.fileId} attachment={a} muted={withdrawn} />
+          ))}
           <div className={`mt-1 flex items-center justify-end gap-1 text-[10px] ${meta}`}>
             <span>{bubbleTime(m.sentAt ?? m.createdAt, now)}</span>
             {m.direction === 'outbound' && <Ticks status={m.providerStatus} />}

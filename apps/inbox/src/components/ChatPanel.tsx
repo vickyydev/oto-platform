@@ -36,6 +36,8 @@ import {
   WRITES_PENDING_REASON,
   aiStateLineFor,
   assigneeChip,
+  attachmentNames,
+  attachmentsOf,
   branchLabel,
   branchOutcome,
   branchSelectOptions,
@@ -267,6 +269,8 @@ export function ChatPanel({
     () => withdrawnNotes(thread.messages, thread.detail?.events ?? []),
     [thread.messages, thread.detail],
   );
+  // The files the thread's events name (the brochure), for the bubbles' attachments.
+  const fileNames = useMemo(() => attachmentNames(thread.detail?.events ?? []), [thread.detail]);
 
   // Open at the newest line, and follow new ones as they arrive — but not when
   // an older page was just put above what the reader is looking at.
@@ -719,12 +723,23 @@ export function ChatPanel({
           {items.map((it) =>
             it.kind === 'shadow' ? (
               <ShadowBubble key={it.id} text={it.text} at={it.at} now={now} />
+            ) : it.kind === 'group' ? (
+              // One moment's pills in one line (customer-AI test night, W7), the pills under it on a press.
+              <details key={it.id} className="my-1 flex flex-col items-center gap-1" data-pill-group={it.pills.length}>
+                <summary className="inline-flex max-w-full cursor-pointer list-none items-center gap-1.5 rounded-full bg-slate-200/70 px-2.5 py-1 text-center text-[11px] font-medium text-slate-600 hover:bg-slate-300/60">
+                  <Bot className="h-3 w-3 shrink-0" />
+                  <span className="min-w-0">{it.summary}</span>
+                  <ChevronDown className="h-3 w-3 shrink-0 opacity-60" />
+                </summary>
+                <div className="flex flex-col items-center gap-1">
+                  {it.pills.map((p) => (
+                    <Pill key={p.id} text={p.text} />
+                  ))}
+                </div>
+              </details>
             ) : it.kind === 'pill' ? (
               <div key={it.id} className="my-1 flex flex-col items-center gap-0.5">
-                <span className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-slate-200/70 px-2.5 py-1 text-center text-[11px] font-medium text-slate-600">
-                  <Bot className="h-3 w-3 shrink-0" />
-                  <span className="min-w-0">{it.text}</span>
-                </span>
+                <Pill text={it.text} />
                 {it.event === 'ai_silent' && mayCorrect && (
                   <button
                     type="button"
@@ -743,6 +758,7 @@ export function ChatPanel({
                 me={me}
                 now={now}
                 withdrawnNote={withdrawn.get(it.message.id)}
+                attachments={attachmentsOf(it.message, fileNames)}
                 onCorrect={mayCorrect ? () => setCorrecting({ messageId: it.message.id }) : undefined}
               />
             ),
@@ -809,6 +825,16 @@ export function ChatPanel({
         actions={phoneActions}
       />
     </>
+  );
+}
+
+/** A system event's grey pill (:2019-2023). */
+function Pill({ text }: { text: string }) {
+  return (
+    <span className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-slate-200/70 px-2.5 py-1 text-center text-[11px] font-medium text-slate-600">
+      <Bot className="h-3 w-3 shrink-0" />
+      <span className="min-w-0">{text}</span>
+    </span>
   );
 }
 
