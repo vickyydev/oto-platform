@@ -14,6 +14,8 @@ import { inboxSearch, readInboxUrl, viewFromUrl } from '@/lib/url';
 const ID = '0192f0a0-1234-7abc-8def-0123456789ab';
 const AGENT: InboxTab[] = ['mine', 'team', 'handled'];
 const RECEPTION: InboxTab[] = ['team', 'handled'];
+/** What a view carries when the address names no settings page, no archive filter, and is not a plain landing. */
+const REST = { settings: null, archiveRange: null, resolvedBy: null, plain: false } as const;
 
 describe('reflecting the view into the URL', () => {
   it('writes nothing for the plain home', () => {
@@ -34,15 +36,80 @@ describe('reflecting the view into the URL', () => {
       { tab: 'handled' as const, unanswered: false, selectedId: ID },
       { tab: 'team' as const, unanswered: false, selectedId: null },
     ]) {
-      const back = viewFromUrl(inboxSearch(view, 'team'), AGENT, 'team');
-      expect(back).toEqual({ ...view, showChat: view.selectedId !== null });
+      const search = inboxSearch(view, 'team');
+      const back = viewFromUrl(search, AGENT, 'team');
+      // The plain home names nothing, so it comes back as a plain landing.
+      expect(back).toEqual({ ...view, showChat: view.selectedId !== null, ...REST, plain: search === '' });
     }
+  });
+});
+
+describe('the settings pages and the archive filters in the address (test night 2026-10-21, U11)', () => {
+  it('writes a settings page, and reads it back only for a viewer who may open it', () => {
+    expect(inboxSearch({ tab: 'team', unanswered: false, selectedId: null, settings: 'assistant' }, 'team')).toBe('?settings=assistant');
+    expect(inboxSearch({ tab: 'mine', unanswered: false, selectedId: ID, settings: 'templates' }, 'team')).toBe(
+      `?tab=mine&c=${ID}&settings=templates`,
+    );
+    expect(viewFromUrl('?settings=assistant', AGENT, 'team').settings).toBe('assistant');
+    expect(viewFromUrl('?settings=templates', AGENT, 'team', { templates: true, assistant: false }).settings).toBe('templates');
+    expect(viewFromUrl('?settings=assistant', AGENT, 'team', { templates: true, assistant: false }).settings).toBeNull();
+    expect(viewFromUrl('?settings=nonsense', AGENT, 'team').settings).toBeNull();
+  });
+
+  it('writes the archive filters on the Handled tab only, leaving the default range out', () => {
+    expect(inboxSearch({ tab: 'handled', unanswered: false, selectedId: null, archiveRange: '7d', resolvedBy: 'ai' }, 'team')).toBe(
+      '?tab=handled&range=7d&by=ai',
+    );
+    expect(inboxSearch({ tab: 'handled', unanswered: false, selectedId: null, archiveRange: '30d', resolvedBy: '' }, 'team')).toBe(
+      '?tab=handled',
+    );
+    expect(inboxSearch({ tab: 'team', unanswered: false, selectedId: null, archiveRange: '7d', resolvedBy: 'ai' }, 'team')).toBe('');
+  });
+
+  it('reads the archive filters back, on the archive only, dropping anything malformed', () => {
+    expect(viewFromUrl('?tab=handled&range=7d&by=human', AGENT, 'team')).toEqual({
+      tab: 'handled',
+      unanswered: false,
+      selectedId: null,
+      showChat: false,
+      settings: null,
+      archiveRange: '7d',
+      resolvedBy: 'human',
+      plain: false,
+    });
+    expect(viewFromUrl('?range=7d&by=ai', AGENT, 'team')).toMatchObject({ tab: 'team', archiveRange: null, resolvedBy: null });
+    expect(viewFromUrl('?tab=handled&range=99d&by=robot', AGENT, 'team')).toMatchObject({ archiveRange: null, resolvedBy: null });
+  });
+
+  it('round-trips the archive view', () => {
+    const view = { tab: 'handled' as const, unanswered: false, selectedId: ID, archiveRange: '90d' as const, resolvedBy: 'ai' as const };
+    expect(viewFromUrl(inboxSearch(view, 'team'), AGENT, 'team')).toEqual({
+      tab: 'handled',
+      unanswered: false,
+      selectedId: ID,
+      showChat: true,
+      settings: null,
+      archiveRange: '90d',
+      resolvedBy: 'ai',
+      plain: false,
+    });
+  });
+});
+
+describe('a plain landing (test night U8)', () => {
+  it('is an address that names nothing — the workspace then picks the tab itself', () => {
+    expect(viewFromUrl('', AGENT, 'team').plain).toBe(true);
+    expect(viewFromUrl('?', AGENT, 'team').plain).toBe(true);
+    expect(viewFromUrl('?tab=team', AGENT, 'team').plain).toBe(false);
+    expect(viewFromUrl('?unanswered=1', AGENT, 'team').plain).toBe(false);
+    expect(viewFromUrl(`?c=${ID}`, AGENT, 'team').plain).toBe(false);
+    expect(viewFromUrl('?settings=templates', AGENT, 'team').plain).toBe(false);
   });
 });
 
 describe('restoring the view on load', () => {
   it('opens a linked conversation straight onto the thread', () => {
-    expect(viewFromUrl(`?c=${ID}`, AGENT, 'team')).toEqual({ tab: 'team', unanswered: false, selectedId: ID, showChat: true });
+    expect(viewFromUrl(`?c=${ID}`, AGENT, 'team')).toEqual({ tab: 'team', unanswered: false, selectedId: ID, showChat: true, ...REST });
   });
 
   it('reads the plan spelling of the queue, /?tab=unanswered, as the unanswered filter', () => {
@@ -51,6 +118,7 @@ describe('restoring the view on load', () => {
       unanswered: true,
       selectedId: null,
       showChat: false,
+      ...REST,
     });
   });
 

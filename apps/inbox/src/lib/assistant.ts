@@ -9,6 +9,7 @@
  * the shell says them first so nobody types into a refusal.
  */
 import { AI_INTENTS, AI_KB_TOPICS, type AiIntent } from '@oto/assistant/intents';
+import type { InboxCategoryKey } from '@oto/shared/inbox';
 import type { AiMode, ExampleVerdict, KbEntry, KbLanguage, KbStatus } from '@/api/assistant';
 import type { Message } from '@/api/inbox';
 
@@ -190,6 +191,36 @@ export function exampleLanguage(code: string | null | undefined): KbLanguage {
 
 export function exampleIntent(intent: string | null | undefined): AiIntent {
   return (INTENTS as readonly string[]).includes(intent ?? '') ? (intent as AiIntent) : 'other';
+}
+
+/** The thread's intent when it is one of the assistant's, else null. */
+export function knownIntent(intent: string | null | undefined): AiIntent | null {
+  return (INTENTS as readonly string[]).includes(intent ?? '') ? (intent as AiIntent) : null;
+}
+
+/**
+ * The topic a correction starts on (test night 2026-10-21, U3). The api takes
+ * the assistant's own classification of that message, then the thread's
+ * (`ai-settings.ts` createExample), and refuses INTENT_REQUIRED when neither is
+ * one of its intents — which it did only after Propose. So: a thread the
+ * assistant classified starts blank ("as the assistant classified it", the
+ * server's default); one it never classified starts on its category's
+ * nearest topic, so there is always one to send.
+ */
+export const CATEGORY_DEFAULT_INTENT: Record<InboxCategoryKey, AiIntent> = {
+  birthdays: 'birthday_party',
+  general: 'faq',
+  marketing: 'influencer_marketing',
+};
+
+export function defaultExampleIntent(threadIntent: string | null, category: InboxCategoryKey): AiIntent | '' {
+  return knownIntent(threadIntent) !== null ? '' : CATEGORY_DEFAULT_INTENT[category];
+}
+
+/** The refusal the dialog says before Propose: a blank topic is only the server's default when the thread has one. */
+export function exampleIntentProblem(chosen: string, threadIntent: string | null): string | null {
+  if (chosen !== '' || knownIntent(threadIntent) !== null) return null;
+  return 'Choose the topic this example teaches: the assistant has not classified this conversation.';
 }
 
 /**

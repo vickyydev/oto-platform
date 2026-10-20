@@ -5,17 +5,30 @@ import { HANDOFF_FALLBACK, HANDOFF_REFUSALS, handoffRefusal, readHandoffToken } 
 import { stateForRefusal } from '@/auth/SessionContext';
 import { EMPTY_FILTERS, activeFilterCount, listQuery } from '@/lib/query';
 import {
+  SUPPORT_FULL_HINT,
+  TRANSLATION_PENDING,
+  aiStateLine,
   archiveFrom,
   assigneeChip,
   branchLabel,
   branchOptions,
+  branchOutcome,
   bubbleTime,
   canHandle,
+  categoryTitle,
   defaultTab,
   durationLabel,
+  effectiveBranchId,
   eventText,
+  handleLabel,
   initialsOf,
+  landingTab,
   listTime,
+  moveOutcome,
+  needsTranslation,
+  offeredTemplates,
+  responseScopeLabel,
+  supportCapLabel,
   timeline,
   tintFor,
   writeMode,
@@ -203,6 +216,134 @@ describe('branches, from the reception teams', () => {
     expect(branchLabel(null, me.teams)).toBe('All');
     expect(branchLabel(CHALONG, me.teams)).toBe('Chalong');
   });
+  it('puts a reception thread with no branch of its own at its desk’s park (test night U9)', () => {
+    expect(effectiveBranchId({ branchId: null, teamId: T_CENTRAL }, me.teams)).toBe(CENTRAL);
+    expect(effectiveBranchId({ branchId: CHALONG, teamId: T_CENTRAL }, me.teams)).toBe(CHALONG);
+    // A birthday thread with no branch is at every park.
+    expect(effectiveBranchId({ branchId: null, teamId: T_BIRTHDAYS }, me.teams)).toBeNull();
+    expect(effectiveBranchId({ branchId: null, teamId: null }, me.teams)).toBeNull();
+  });
+});
+
+describe('the wording a reception person misread (test night 2026-10-21, U9)', () => {
+  it('tells the topic badge from the team', () => {
+    expect(categoryTitle('general', 'Reception · Central')).toBe(
+      'Topic: General — what the conversation is about. Team: Reception · Central — who handles it.',
+    );
+    expect(categoryTitle('birthdays', null)).toBe('Topic: Birthdays & Events — what the conversation is about.');
+  });
+  it('labels a Facebook or Instagram id so it is not read as a phone number', () => {
+    expect(handleLabel('facebook')).toBe('Facebook ID');
+    expect(handleLabel('instagram')).toBe('Instagram ID');
+    expect(handleLabel('whatsapp')).toBeNull();
+    expect(handleLabel('line')).toBeNull();
+  });
+  it('says whose average the response time is, once the api says the scope', () => {
+    expect(responseScopeLabel('mine')).toBe('your average');
+    expect(responseScopeLabel('team')).toBe('the team’s average');
+    expect(responseScopeLabel('all')).toBe('all');
+    expect(responseScopeLabel(undefined)).toBeNull();
+    expect(responseScopeLabel('everyone')).toBeNull();
+  });
+});
+
+describe('the support cap (test night U4)', () => {
+  it('says "Support 2/2" only when both places are taken, in the api’s words', () => {
+    expect(supportCapLabel(0)).toBeNull();
+    expect(supportCapLabel(1)).toBeNull();
+    expect(supportCapLabel(2)).toBe('Support 2/2');
+    expect(SUPPORT_FULL_HINT).toBe('Both support places are taken. Remove someone first.');
+  });
+});
+
+describe('the assistant’s state line (test night U5)', () => {
+  it('derives from the number’s mode first, then the thread’s pause', () => {
+    expect(aiStateLine('off', false)).toEqual({ kind: 'label', text: 'Assistant off on this number' });
+    expect(aiStateLine('off', true)).toEqual({ kind: 'label', text: 'Assistant off on this number' });
+    expect(aiStateLine('shadow', false)).toEqual({ kind: 'label', text: 'Assistant in shadow' });
+    expect(aiStateLine('shadow', true)).toEqual({ kind: 'control', text: 'AI paused · Resume', paused: true });
+    expect(aiStateLine('live', false)).toEqual({ kind: 'control', text: 'AI on · Pause', paused: false });
+    expect(aiStateLine('live', true)).toEqual({ kind: 'control', text: 'AI paused · Resume', paused: true });
+  });
+});
+
+describe('the landing tab (test night U8)', () => {
+  it('opens an agent on My Inbox when they hold a thread, else on the default', () => {
+    expect(landingTab(['mine', 'team', 'handled'], 3)).toBe('mine');
+    expect(landingTab(['mine', 'team', 'handled'], 0)).toBe('team');
+    expect(landingTab(['mine', 'team', 'handled'], undefined)).toBe('team');
+    expect(landingTab(['team', 'handled'], 3)).toBe('team');
+  });
+});
+
+describe('what an action did, in a line (test night U6, U9)', () => {
+  const people = { people: me.people };
+  const before = [{ assignmentId: 'as-1' }];
+  it('names the branch step’s host, or why there is none, from the api’s answer', () => {
+    expect(branchOutcome({ hostAdded: false, hostSkipped: 'no_host' }, before, people)).toBe('No host for this branch');
+    expect(branchOutcome({ hostAdded: false, hostSkipped: 'host_inactive' }, before, people)).toBe('The host is inactive');
+    expect(branchOutcome({ hostAdded: false, hostSkipped: 'already_on' }, before, people)).toBe('Already on the thread');
+    expect(branchOutcome({ hostAdded: false, hostSkipped: 'support_full' }, before, people)).toBe('Support is full');
+    expect(branchOutcome({ hostAdded: true, host: { accountId: GM, name: 'Hanna' } }, before, people)).toBe('Host added: Hanna');
+    expect(branchOutcome({ hostAdded: true, host: { accountId: GM, name: null } }, before, people)).toBe('Host added: Hanna');
+    // Before the api lane lands: the new support place in the answer, by the people list.
+    expect(
+      branchOutcome(
+        {
+          hostAdded: true,
+          assignments: [
+            { assignmentId: 'as-1', slot: 'primary', accountId: ALINA, reason: 'auto' },
+            { assignmentId: 'as-9', slot: 'support', accountId: GM, reason: 'auto' },
+          ],
+        },
+        before,
+        people,
+      ),
+    ).toBe('Host added: Hanna');
+    expect(branchOutcome({ hostAdded: true }, before, people)).toBe('Host added');
+    expect(branchOutcome({ hostAdded: false }, before, people)).toBeNull();
+    expect(branchOutcome({}, before, people)).toBeNull();
+  });
+  it('names who a move seated', () => {
+    expect(
+      moveOutcome(
+        {
+          assignments: [
+            { slot: 'primary', assigneeKind: 'account', accountId: ALINA, teamId: null },
+            { slot: 'support', assigneeKind: 'account', accountId: GM, teamId: null },
+          ],
+        },
+        me,
+      ),
+    ).toBe('Now with Alina as primary · Hanna added as support');
+    expect(moveOutcome({ assignments: [{ slot: 'primary', assigneeKind: 'team', accountId: null, teamId: T_CENTRAL }] }, me)).toBe(
+      'Now with Reception · Central as primary',
+    );
+    expect(moveOutcome({ assignments: [] }, me)).toBeNull();
+    expect(moveOutcome({}, me)).toBeNull();
+  });
+});
+
+describe('the templates offered to a reply (test night U1)', () => {
+  const t = (key: string, language: string) => ({ id: `${key}-${language}`, key, language });
+  const list = [t('handover_birthday', 'en'), t('handover_events', 'ru'), t('follow_up', 'ru'), t('follow_up', 'en'), t('handover_general', 'th')];
+  it('puts the conversation’s language first with follow_up at the top, the rest under other languages', () => {
+    const { own, others } = offeredTemplates(list, 'ru');
+    expect(own.map((x) => x.id)).toEqual(['follow_up-ru', 'handover_events-ru']);
+    expect(others.map((x) => x.id)).toEqual(['follow_up-en', 'handover_birthday-en', 'handover_general-th']);
+  });
+  it('offers everything as own when the language is unknown', () => {
+    const { own, others } = offeredTemplates(list, null);
+    expect(own[0]!.key).toBe('follow_up');
+    expect(own).toHaveLength(5);
+    expect(others).toEqual([]);
+  });
+  it('reads needsTranslation optionally, and says it in one way everywhere', () => {
+    expect(needsTranslation({ needsTranslation: true })).toBe(true);
+    expect(needsTranslation({ needsTranslation: 'yes' })).toBe(false);
+    expect(needsTranslation({})).toBe(false);
+    expect(TRANSLATION_PENDING).toBe('English text — not translated yet');
+  });
 });
 
 describe('time, on the parks’ day', () => {
@@ -296,6 +437,20 @@ describe('the timeline', () => {
     expect(eventText(event({ kind: 'send_failed', payload: { refusal: 'INVALID_RECIPIENT' } }), ctx)).toBe(
       'Reply not sent · INVALID_RECIPIENT',
     );
+  });
+  it('names the branch a "Branch set" pill set, and the pause and its undo (test night U5, U9)', () => {
+    const hana = { kind: 'branch_set' as const, actorKind: 'account' as const, actorName: 'Hanna' };
+    // Today's payload names the branch by id; the api lane's `after.branchName` wins when it is there.
+    expect(eventText(event({ ...hana, payload: { fromBranchId: null, toBranchId: CENTRAL } }), ctx)).toBe('Branch set to Central by Hanna');
+    expect(
+      eventText(event({ ...hana, payload: { fromBranchId: null, toBranchId: CENTRAL, after: { branchName: 'Central Floresta' } } }), ctx),
+    ).toBe('Branch set to Central Floresta by Hanna');
+    expect(eventText(event({ ...hana, payload: { fromBranchId: CENTRAL, toBranchId: null } }), ctx)).toBe(
+      'Branch set to all branches by Hanna',
+    );
+    expect(eventText(event({ ...hana, payload: {} }), ctx)).toBe('Branch set by Hanna');
+    expect(eventText(event({ kind: 'ai.paused', actorKind: 'account', actorName: 'Hanna' }), ctx)).toBe('AI paused by Hanna');
+    expect(eventText(event({ kind: 'ai.resumed', actorKind: 'account', actorAccountId: GM }), ctx)).toBe('AI resumed by Hanna');
   });
   it('leaves out the events a bubble already shows', () => {
     expect(eventText(event({ kind: 'received' }), ctx)).toBeNull();

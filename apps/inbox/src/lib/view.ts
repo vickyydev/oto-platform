@@ -226,6 +226,41 @@ export function branchLabel(branchId: string | null, teams: readonly Team[]): st
 }
 
 /**
+ * The park a conversation is actually at (test night 2026-10-21, U9): its own
+ * branch, or — with none — the park of the reception desk it sits with, since
+ * `teamDestOf` puts a general thread with no branch at the first park's desk.
+ * A thread with Reception · Central Floresta as its team is at Central
+ * Floresta, not "All branches". Null when neither names a park.
+ */
+export function effectiveBranchId(row: { branchId: string | null; teamId: string | null }, teams: readonly Team[]): string | null {
+  if (row.branchId) return row.branchId;
+  const desk = row.teamId ? teams.find((t) => t.id === row.teamId && t.kind === 'reception') : undefined;
+  return desk?.branchId ?? null;
+}
+
+/**
+ * The category badge says the topic ("General"); the team says who handles it
+ * ("Reception · Central Floresta"). They are two things, and a reception
+ * person misread them as one (test night U9), so the badge's tooltip says
+ * which is which.
+ */
+export function categoryTitle(category: InboxCategoryKey, teamName: string | null): string {
+  const topic = `Topic: ${CATEGORY_LABEL[category]} — what the conversation is about.`;
+  return teamName ? `${topic} Team: ${teamName} — who handles it.` : topic;
+}
+
+/**
+ * A Facebook or Instagram handle is the platform's numeric id, which reads
+ * like a phone number (test night U9): it is labelled so nobody dials it.
+ * Null on the channels whose handle is self-explaining (a WhatsApp number).
+ */
+export function handleLabel(channel: InboxChannelKey): string | null {
+  if (channel === 'facebook') return 'Facebook ID';
+  if (channel === 'instagram') return 'Instagram ID';
+  return null;
+}
+
+/**
  * The move picker's current value (`CategoryBadge`, :994): the team the
  * conversation sits with, by `teamDestOf` from the shared rules.
  */
@@ -382,8 +417,21 @@ export function eventText(e: InboxEvent, ctx: PillContext): string | null {
       if (from && to) return `Moved from ${from} → ${to} by ${actorOf(e, ctx)}`;
       return `Moved${to ? ` to ${to}` : ''} by ${actorOf(e, ctx)}`;
     }
-    case 'branch_set':
+    case 'branch_set': {
+      // The branch by name (test night U9): the api's `after.branchName` when
+      // it is there, else the payload's `toBranchId` through the parks' desks.
+      const after = p.after !== null && typeof p.after === 'object' ? (p.after as Record<string, unknown>) : {};
+      const to = 'toBranchId' in p ? p.toBranchId : after.branchId;
+      const name = str(after.branchName) ?? (typeof to === 'string' ? branchLabel(to, ctx.me.teams) : null);
+      if (name !== null) return `Branch set to ${name === 'All' ? 'all branches' : name} by ${actorOf(e, ctx)}`;
+      if (to === null) return `Branch set to all branches by ${actorOf(e, ctx)}`;
       return `Branch set by ${actorOf(e, ctx)}`;
+    }
+    // The per-thread pause and its undo (SCRUM-590 §A.3; test night U5).
+    case 'ai.paused':
+      return `AI paused by ${actorOf(e, ctx)}`;
+    case 'ai.resumed':
+      return `AI resumed by ${actorOf(e, ctx)}`;
     case 'handled':
       return e.actorKind === 'ai' ? 'Marked as Handled by AI · Auto-resolved' : `Marked as Handled by ${actorOf(e, ctx)}`;
     case 'reopened':
@@ -597,4 +645,157 @@ export function canHandle(
 /** The tab to open on: Team, as the prototype opens (:1035), when the viewer has it. */
 export function defaultTab(tabs: readonly InboxTab[]): InboxTab {
   return tabs.includes('team') ? 'team' : (tabs[0] ?? 'team');
+}
+
+/**
+ * Where a plain landing opens (test night 2026-10-21, U8): an agent who holds
+ * any active thread lands on My Inbox, their own tab; everyone else, and an
+ * agent holding nothing, on the default. `mineCount` is the list's
+ * `tabCounts.mine`, counted before filters; unknown counts as none.
+ */
+export function landingTab(tabs: readonly InboxTab[], mineCount: number | undefined): InboxTab {
+  if (tabs.includes('mine') && mineCount !== undefined && mineCount > 0) return 'mine';
+  return defaultTab(tabs);
+}
+
+// --- The support cap (test night U4) -----------------------------------------------------
+
+/** The two support places (`InboxAssigneeSchema.slotIndex`: 1 and 2). */
+export const INBOX_SUPPORT_PLACES = 2;
+/** The api's own refusal (`INBOX_ACTION_MESSAGES.supportFull`), said before the press as a hint. */
+export const SUPPORT_FULL_HINT = 'Both support places are taken. Remove someone first.';
+
+/** "Support 2/2" when every place is taken, else null (the picker shows instead). */
+export function supportCapLabel(supportCount: number): string | null {
+  return supportCount >= INBOX_SUPPORT_PLACES ? `Support ${INBOX_SUPPORT_PLACES}/${INBOX_SUPPORT_PLACES}` : null;
+}
+
+// --- The assistant's state on a thread (test night U5) --------------------------------------
+
+export type AiStateLine = { kind: 'label'; text: string } | { kind: 'control'; text: string; paused: boolean };
+
+/**
+ * What the strip says about the assistant here, from the number's mode
+ * (`detail.aiMode`) and the thread's pause: Off is a plain label with no
+ * control ("AI on · Pause" showed where the assistant was off, U5); Shadow
+ * says so, with only a Resume when a pause is left on it; Live has the
+ * pause control.
+ */
+export function aiStateLine(mode: 'off' | 'shadow' | 'live', paused: boolean): AiStateLine {
+  if (mode === 'off') return { kind: 'label', text: 'Assistant off on this number' };
+  if (mode === 'shadow' && !paused) return { kind: 'label', text: 'Assistant in shadow' };
+  return paused
+    ? { kind: 'control', text: 'AI paused · Resume', paused: true }
+    : { kind: 'control', text: 'AI on · Pause', paused: false };
+}
+
+// --- The outcome of an action, in a line (test night U6, U9) -----------------------------------
+
+/**
+ * What the branch step did on a birthday thread, from the api's answer: the
+ * host it added, or why it did not (`hostSkipped`, the api lane's addition —
+ * read optionally, so until it lands only "Host added" can be said). Null when
+ * there is nothing to say (not a birthday, branch cleared, or the api did not
+ * say).
+ */
+export function branchOutcome(
+  result: {
+    hostAdded?: boolean;
+    hostSkipped?: string | null;
+    host?: { accountId: string; name: string | null } | null;
+    assignments?: readonly { assignmentId: string; slot: string; accountId: string | null; reason: string }[];
+  },
+  before: readonly Pick<Assignee, 'assignmentId'>[],
+  me: Pick<InboxMe, 'people'>,
+): string | null {
+  switch (result.hostSkipped) {
+    case 'no_host':
+      return 'No host for this branch';
+    case 'host_inactive':
+      return 'The host is inactive';
+    case 'already_on':
+      return 'Already on the thread';
+    case 'support_full':
+      return 'Support is full';
+    default:
+      break;
+  }
+  if (!result.hostAdded) return null;
+  const nameOf = (id: string | null | undefined) => (id ? (me.people.find((p) => p.accountId === id)?.name ?? null) : null);
+  // The api's name for the host, else the new support place the answer lists.
+  const seated = new Set(before.map((a) => a.assignmentId));
+  const added = (result.assignments ?? []).find((a) => a.slot === 'support' && a.reason === 'auto' && !seated.has(a.assignmentId));
+  const name = result.host?.name ?? nameOf(result.host?.accountId) ?? nameOf(added?.accountId);
+  return name ? `Host added: ${name}` : 'Host added';
+}
+
+/**
+ * Who a move seated, from the api's answer (test night U6: Mila became primary
+ * and the GM joined as support without notice): "Now with X as primary · Y
+ * added as support". Null when the answer names nobody.
+ */
+export function moveOutcome(
+  result: { assignments?: readonly { slot: string; assigneeKind: string; accountId: string | null; teamId: string | null }[] },
+  me: Pick<InboxMe, 'people' | 'teams'>,
+): string | null {
+  const name = (a: { assigneeKind: string; accountId: string | null; teamId: string | null }): string | null => {
+    if (a.assigneeKind === 'ai') return 'the AI Assistant';
+    if (a.assigneeKind === 'team') return me.teams.find((t) => t.id === a.teamId)?.name ?? null;
+    return me.people.find((p) => p.accountId === a.accountId)?.name ?? null;
+  };
+  const slots = result.assignments ?? [];
+  const primary = slots.find((a) => a.slot === 'primary');
+  const supports = slots.filter((a) => a.slot === 'support').map(name).filter((n): n is string => n !== null);
+  const parts: string[] = [];
+  const p = primary ? name(primary) : null;
+  if (p) parts.push(`Now with ${p} as primary`);
+  if (supports.length > 0) parts.push(`${supports.join(' and ')} added as support`);
+  return parts.length > 0 ? parts.join(' · ') : null;
+}
+
+// --- Templates offered to a reply (test night U1) ----------------------------------------------
+
+/** The words on a RU or TH row whose body is still the English source (`needsTranslation`). */
+export const TRANSLATION_PENDING = 'English text — not translated yet';
+/** The follow-up line: the one that works after a day, so it goes first. */
+export const FOLLOW_UP_KEY = 'follow_up';
+
+/**
+ * The 24-hour refusal listed 27 templates in every language (U1). The
+ * conversation's language comes first, `follow_up` at the top of it; the rest
+ * wait under "Other languages". With no language known, everything is "own".
+ */
+export function offeredTemplates<T extends { key: string; language: string }>(
+  list: readonly T[],
+  language: string | null,
+): { own: T[]; others: T[] } {
+  const followUpFirst = (a: T, b: T) => Number(b.key === FOLLOW_UP_KEY) - Number(a.key === FOLLOW_UP_KEY);
+  const own = (language ? list.filter((t) => t.language === language) : [...list]).sort(followUpFirst);
+  const others = (language ? list.filter((t) => t.language !== language) : []).sort(followUpFirst);
+  return { own, others };
+}
+
+/** A template row says `needsTranslation`; read optionally — the 409's rows may not carry it yet. */
+export function needsTranslation(t: object): boolean {
+  return (t as { needsTranslation?: unknown }).needsTranslation === true;
+}
+
+// --- The dashboard's average, by whose it is (test night U9) ---------------------------------
+
+/**
+ * The average response differs by viewer (18m 46s for an agent, 37m 31s for
+ * the GM) without saying whose. The api lane adds `scope`; until it lands the
+ * card says nothing, as before.
+ */
+export function responseScopeLabel(scope: unknown): string | null {
+  switch (scope) {
+    case 'mine':
+      return 'your average';
+    case 'team':
+      return 'the team’s average';
+    case 'all':
+      return 'all';
+    default:
+      return null;
+  }
 }
