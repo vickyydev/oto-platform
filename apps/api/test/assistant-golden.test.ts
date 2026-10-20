@@ -10,6 +10,8 @@ import {
   MECHANICAL_GOLDENS,
   SALARY_REFUSAL,
   alignWorldTimes,
+  BALANCE_WORDS,
+  PAYROLL_FIGURE_WORDS,
   buildAskGoldenWorld,
   capturingFetch,
   judgeAsk,
@@ -297,6 +299,34 @@ describe('the judge fails what it should', () => {
     ]);
   });
 
+  it('Q8: the leave records’ grounded figures may be stated; a figure beside a balance word may not (G2)', () => {
+    const q8 = LIVE_GOLDENS.find((g) => g.id === 'Q8')!.expect;
+    const observed = (first: string) => ({
+      state: 'answered' as const,
+      reason: null,
+      answer: `${first}\nรายการลาที่มีอยู่: ลาพักร้อน 9 พฤศจิกายน 2569 – 11 พฤศจิกายน 2569 (วันจันทร์ – วันพุธ) รวม 3 วัน`,
+      links: ['oto.account'],
+      refusals: [],
+      tools: [{ tool: 'oto.my_leave', status: 200 }],
+    });
+    expect(judgeAsk(q8, observed('ระบบนี้ไม่แสดงยอดวันลาคงเหลือ ดูยอดได้ที่หน้าบัญชีของฉัน'))).toEqual([]);
+    expect(judgeAsk(q8, observed('วันลาคงเหลือ 5 วัน'))).toEqual([`a figure beside ${String(BALANCE_WORDS)}: "วันลาคงเหลือ 5 วัน"`]);
+    expect(judgeAsk(q8, observed('You have 5 days of leave left.'))).toEqual([
+      `a figure beside ${String(BALANCE_WORDS)}: "You have 5 days of leave left"`,
+    ]);
+  });
+
+  it('Q6: the asker’s own month may be named; a payroll amount may not', () => {
+    const q6 = LIVE_GOLDENS.find((g) => g.id === 'Q6')!.expect;
+    const observed = (answer: string) => ({ state: 'answered' as const, reason: null, answer, links: [], refusals: [], tools: [] });
+    expect(judgeAsk(q6, observed("I can't diagnose payroll. The 2026-09 month-end screen shows that month's run, its totals and the details your access allows."))).toEqual([]);
+    expect(judgeAsk(q6, observed('September 2026 is where to look.'))).toEqual([]);
+    expect(judgeAsk(q6, observed('September looks wrong because net pay was 444000 for 12 people.'))).toEqual([
+      `a figure beside ${String(PAYROLL_FIGURE_WORDS)}: "September looks wrong because net pay was 444000 for 12 people"`,
+      'the answer matches /(looks|is|went) wrong because|the (cause|reason|problem|error) (is|was)\\b|(double|mis)[- ]?(counted|calculated|paid)/i',
+    ]);
+  });
+
   it('the outcome rules of the OTO App goldens: a refusal owed only when the call was made, a link from a set, never a figure', () => {
     const q2 = LIVE_GOLDENS.find((g) => g.id === 'Q2')!.expect;
     const base = { state: 'answered' as const, reason: null, answer: 'Not something your role can see.', links: [], refusals: [] };
@@ -322,7 +352,9 @@ describe('the judge fails what it should', () => {
       'none of the links [oto.timekeeping.employee, oto.employee.time] offered (links [])',
     ]);
     const q8 = LIVE_GOLDENS.find((g) => g.id === 'Q8')!.expect;
-    expect(judgeAsk(q8, { ...base, answer: 'คุณเหลือวันลา 7 วัน', links: ['oto.account'], tools: [] })).toEqual(['the answer holds a figure']);
+    expect(judgeAsk(q8, { ...base, answer: 'คุณเหลือวันลา 7 วัน', links: ['oto.account'], tools: [] })).toEqual([
+      `a figure beside ${String(BALANCE_WORDS)}: "คุณเหลือวันลา 7 วัน"`,
+    ]);
   });
 });
 

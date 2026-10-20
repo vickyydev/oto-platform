@@ -48,7 +48,7 @@ import {
 } from './call-otoapp';
 import { PlatformCallTimeout, callPlatform, toolRequestId, type PlatformResponse } from './call-platform';
 import { otoAppHandoff, type InternalAiRuntime } from './runtime';
-import { PLATFORM_TOOLS, fitSummary, platformToolDefinitions, summaryBytes, type PlatformToolAdapter } from './tools';
+import { PLATFORM_TOOLS, clockGrounding, fitSummary, platformToolDefinitions, summaryBytes, type PlatformToolAdapter } from './tools';
 import { OTOAPP_TOOLS, otoAppToolDefinitions, type OtoAppToolAdapter } from './tools-otoapp';
 import { loadAskView, type AskRow } from './views';
 
@@ -987,6 +987,7 @@ function finalOf(
   caller: AskCaller,
   question: string,
   questionLang: InternalLanguage,
+  askedAt: Date,
 ): Final {
   const gathered = resolveLinks(trace.gathered, caller.effective, caller.auth.operatorId, trace.otoApp);
   if (!outcome.ok) {
@@ -1013,9 +1014,11 @@ function finalOf(
     outcome.groundingTexts,
   );
   const modelLinks = resolveLinks(wanted, caller.effective, caller.auth.operatorId, trace.otoApp);
-  // Grounding = the summaries THIS ask's tools returned, and the asker's own words (a number or a
-  // month they typed may be echoed: it is their input). Never a refusal.
-  const guard = internalAnswerGuard(answer, outcome.groundingTexts, question);
+  // Grounding = the summaries THIS ask's tools returned, the ask's own calendar (today in Bangkok,
+  // this month, last month: a year or a month the answer names is the asker's clock, not a figure
+  // found), and the asker's own words (a number or a month they typed may be echoed: it is their
+  // input). Never a refusal. The links above are held to the summaries alone.
+  const guard = internalAnswerGuard(answer, [...outcome.groundingTexts, clockGrounding(askedAt)], question);
   if (!guard.ok) {
     // The links survive the guard (§C): the model's, grounded, and the screens the tools called show.
     const links = resolveLinks([...wanted, ...trace.gathered], caller.effective, caller.auth.operatorId, trace.otoApp);
@@ -1052,7 +1055,7 @@ async function closeAsk(
   lang: InternalLanguage,
   askedAt: Date,
 ): Promise<AskRow> {
-  const f = finalOf(outcome, trace, caller, row.question, lang);
+  const f = finalOf(outcome, trace, caller, row.question, lang, askedAt);
   const at = new Date();
   // The row's CHECK (`ask_version_words_check`) takes one word. A provider's model id in any other
   // shape must not fail the close and strand the ask: the id asked for stands in.

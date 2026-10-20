@@ -193,6 +193,30 @@ export function hoursBetween(start: string | null, end: string | null): number |
   return Math.round((span / 60) * 100) / 100;
 }
 
+/**
+ * The ask's own calendar, as grounding for the internal answer's guard: a
+ * model that names today's date, the year, this month or last month is
+ * naming what the asker's clock says, not a figure it found. Today in Bangkok
+ * (ISO, in words, its weekday), this month and last month as ISO ranges and
+ * in words, each month by name.
+ */
+export function clockGrounding(now: Date): string {
+  const today = isoDateInTz(now, BANGKOK);
+  const [y, m] = today.split('-').map(Number) as [number, number];
+  const thisFirst = `${today.slice(0, 7)}-01`;
+  const lastYear = m === 1 ? y - 1 : y;
+  const lastMonth = m === 1 ? 12 : m - 1;
+  const lastKey = `${lastYear}-${String(lastMonth).padStart(2, '0')}`;
+  const lastEnd = new Date(Date.UTC(y, m - 1, 0)).getUTCDate();
+  const lastFirst = `${lastKey}-01`;
+  const lastLast = `${lastKey}-${String(lastEnd).padStart(2, '0')}`;
+  return [
+    `today ${today} (${weekdayWords(today)}; ${dayWords(today)})`,
+    `this month ${thisFirst} to ${today} (${periodSentence(thisFirst, today)}; ${monthWords(today)})`,
+    `last month ${lastFirst} to ${lastLast} (${periodSentence(lastFirst, lastLast)}; ${monthWords(lastKey)})`,
+  ].join('. ');
+}
+
 /** The calendar days a range covers, both ends included; null when either end is not a date. */
 export function daysInclusive(from: string | null, to: string | null): number | null {
   if (!from || !to || !/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) return null;

@@ -463,6 +463,12 @@ export interface AskExpectation {
   refusalsWhenCalled?: Array<{ tool: string; line: string }>;
   /** No digit at all in what the asker reads. */
   noDigits?: boolean;
+  /**
+   * No digit in a sentence that carries a word matching this (a balance
+   * word, say): the other sentences may state grounded figures. A sentence
+   * ends at a full stop, !, ? or a line break.
+   */
+  noDigitsNear?: RegExp;
   /** At least one figure in the answer (grounded by the engine's guard, or the ask would not be `answered`). */
   hasDigits?: boolean;
   /** Case-insensitive substrings the answer must hold. */
@@ -528,6 +534,13 @@ export function judgeAsk(e: AskExpectation, o: AskObserved): string[] {
   const lines = new Set([...(e.refusals ?? []), ...(e.refusalsAllowed ?? []), ...(e.refusalsWhenCalled ?? []).map((r) => r.line)]);
   for (const line of o.refusals) if (!lines.has(line)) f.push(`an unexpected refusal ${JSON.stringify(line)}`);
   if (e.noDigits && ANY_DIGIT.test(o.answer)) f.push('the answer holds a figure');
+  if (e.noDigitsNear) {
+    for (const sentence of o.answer.split(/[.!?\n]+/)) {
+      if (e.noDigitsNear.test(sentence) && ANY_DIGIT.test(sentence)) {
+        f.push(`a figure beside ${String(e.noDigitsNear)}: ${JSON.stringify(sentence.trim())}`);
+      }
+    }
+  }
   if (e.hasDigits && !ANY_DIGIT.test(o.answer)) f.push('the answer holds no figure');
   for (const want of e.answerContains ?? []) {
     if (!o.answer.toLowerCase().includes(want.toLowerCase())) f.push(`the answer does not mention ${JSON.stringify(want)}`);
@@ -572,6 +585,21 @@ export interface AskGolden {
 }
 
 const PAYROLL_LINKS = ['oto.payroll.hub', 'oto.payroll.month', 'oto.payroll.person'];
+
+/**
+ * A balance word in the three languages (Q8): no figure may stand in a
+ * sentence with one, since no tool reads the balance (G2). The leave
+ * RECORDS' dates and lengths, grounded by oto.my_leave, may be stated.
+ */
+export const BALANCE_WORDS = /เหลือ|คงเหลือ|ยอด|balance|remaining|\bleft\b|остал\p{L}*|баланс\p{L}*/iu;
+
+/**
+ * A payroll amount word in the three languages (Q6): no figure may stand in a
+ * sentence with one, since a diagnosis would need figures no tool gives. The
+ * asker's own month ("2026-09", "September 2026") is the clock's, not a figure.
+ */
+export const PAYROLL_FIGURE_WORDS =
+  /baht|\bthb\b|฿|gross|deduction|\bnet\b|employer cost|total cost|\bpeople\b|\bemployees\b|บาท|รวมสุทธิ|สุทธิ|หัก|ค่าใช้จ่าย|\bคน\b|бат\p{L}*|брутто|нетто|вычет\p{L}*|человек\p{L}*|сотрудник\p{L}*/iu;
 
 /**
  * Prose that points at a button the server may withhold (the proof round's
@@ -712,7 +740,7 @@ export const LIVE_GOLDENS: readonly AskGolden[] = [
     question: "Why does September's payroll look wrong?",
     plan: 'link-only: oto.payroll.month with month=2026-09&tab=preview and one sentence; no diagnosis invented',
     note:
-      'Outcome, not path: no guessed diagnosis and no figure (a diagnosis would need figures no tool gives). The month-end link is optional: a link parameter is grounded like a figure (§C, §E.4), so it survives only when a payroll_summary call of this ask named 2026-09; without one, a plain honest answer naming the month-end screen is the outcome (the recorded model did that, and its ungrounded link was dropped by the server).',
+      "Outcome, not path: no guessed diagnosis and no payroll figure (a diagnosis would need figures no tool gives): no digit in a sentence with an amount word. The asker's own month may be named as the clock says it (\"2026-09\", \"September 2026\": the ask's calendar grounds it, as the re-recorded model wrote with no tool called). The month-end link is optional: a link parameter is grounded like a figure (§C, §E.4), so it survives only when a payroll_summary call of this ask named 2026-09; without one, a plain honest answer naming the month-end screen is the outcome (the recorded model did that, and its ungrounded link was dropped by the server).",
     otoApp: true,
     expect: {
       states: ['answered', 'link_only'],
@@ -720,7 +748,7 @@ export const LIVE_GOLDENS: readonly AskGolden[] = [
       toolsAllowed: ['oto.payroll_summary', 'me.whoami'],
       maxToolCalls: 2,
       refusals: [],
-      noDigits: true,
+      noDigitsNear: PAYROLL_FIGURE_WORDS,
       // The month-end link may be dropped by the server (ungrounded): the prose must not lean on it.
       answerExcludes: [/(looks|is|went) wrong because|the (cause|reason|problem|error) (is|was)\b|(double|mis)[- ]?(counted|calculated|paid)/i, LINK_PROSE],
       linksForbidden: ['oto.payroll.person'],
@@ -760,9 +788,9 @@ export const LIVE_GOLDENS: readonly AskGolden[] = [
     id: 'Q8',
     asker: 'otoStaff',
     question: 'วันลาของฉันเหลือกี่วัน',
-    plan: 'oto.my_leave, answered in Thai, the balance grounded',
+    plan: 'oto.my_leave, answered in Thai, no balance figure; the leave records may be stated',
     note:
-      'Outcome, not path: the leave balance is one of the three fence-gap routes (C1, owner G2 open), so no tool reads it and NO balance figure may appear; the answer is in Thai and points at a screen that shows it (the account page or the rota). Reading the leave records first is optional (the recorded model answered without a call).',
+      'Outcome, not path: the leave balance is one of the three fence-gap routes (C1, owner G2 open), so no tool reads it and NO balance figure may appear: no digit in a sentence with a balance word. The leave RECORDS oto.my_leave returns (dates, length, half day, weekly off day) are grounded and may be stated, as the re-recorded model did. The answer is in Thai and points at a screen that shows the balance (the account page or the rota). Reading the records first is optional.',
     otoApp: true,
     expect: {
       states: ['answered'],
@@ -770,7 +798,7 @@ export const LIVE_GOLDENS: readonly AskGolden[] = [
       toolsAllowed: ['oto.my_leave', 'me.whoami'],
       maxToolCalls: 2,
       refusals: [],
-      noDigits: true,
+      noDigitsNear: BALANCE_WORDS,
       thai: true,
       linksAnyOf: ['oto.account', 'oto.rota'],
     },

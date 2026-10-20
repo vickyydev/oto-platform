@@ -6,12 +6,12 @@ import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { FakeToolLoopClient, INTERNAL_LINES } from '@oto/assistant';
 import { schema as s } from '@oto/db';
-import { ASSISTANT_SUMMARY_MAX_BYTES, ASSISTANT_TOOLS, newId } from '@oto/shared';
+import { ASSISTANT_SUMMARY_MAX_BYTES, ASSISTANT_TOOLS, isoDateInTz, newId } from '@oto/shared';
 import { hashToken } from '../src/plugins/session';
 import { assertGetRoute, matchesRoute } from '../src/services/assistant/call-platform';
 import { askAssistant, ASSISTANT_GATE_LINES, circuitOpen, groundedLinks, type AskCaller } from '../src/services/assistant/engine';
 import { toJsonSchema } from '../src/services/assistant/json-schema';
-import { PLATFORM_TOOLS, PLATFORM_TOOL_ADAPTERS, fitSummary, summaryBytes } from '../src/services/assistant/tools';
+import { PLATFORM_TOOLS, PLATFORM_TOOL_ADAPTERS, dayWords, fitSummary, monthWords, summaryBytes } from '../src/services/assistant/tools';
 import { resolveEffectivePermissions } from '../src/services/permissions';
 import {
   ASK_SENTINEL,
@@ -751,6 +751,21 @@ describe('the asker’s own words are grounding (§E.4, the internal path)', () 
     script(w, final('Nobody has the phone 081 234 5678.'));
     const other = await ask(w, receptionCookie, 'Who has the phone 089 000 1111?');
     expect(other.body).toMatchObject({ state: 'failed', reason: 'GUARD_NUMBER', answer: INTERNAL_LINES.guardFallbackNoLink.en });
+  });
+
+  it('the ask’s own date is grounding: the current year, month and day in Bangkok pass with no tool called; another year is still refused', async () => {
+    // Q6 re-recorded: "the 2026-09 month-end screen" with no tool called was set aside for the year.
+    const today = isoDateInTz(new Date(), 'Asia/Bangkok');
+    const year = Number(today.slice(0, 4));
+    const [monthEn] = monthWords(today).split(' / ');
+    const [dayEn] = dayWords(today).split(' / ');
+    script(w, final(`The ${today.slice(0, 7)} month-end screen shows that month's run. Today is ${dayEn}, ${monthEn}; the year is ${year}.`));
+    const thisYear = await ask(w, managerCookie, 'Why does the payroll look wrong?');
+    expect(thisYear.body, JSON.stringify(thisYear.body)).toMatchObject({ state: 'answered', reason: null });
+
+    script(w, final(`The year is ${year + 1}.`));
+    const otherYear = await ask(w, managerCookie, 'Why does the payroll look wrong?');
+    expect(otherYear.body).toMatchObject({ state: 'failed', reason: 'GUARD_NUMBER', answer: INTERNAL_LINES.guardFallbackNoLink.en });
   });
 });
 
