@@ -25447,11 +25447,15 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
+                            /** @enum {string} */
+                            scope: "mine" | "team" | "all";
                             newToday: number;
                             unanswered: number;
                             handledToday: number;
                             active: number;
                             averageFirstResponseSeconds: number | null;
+                            /** @enum {string} */
+                            population: "active" | "all";
                             byCategory: {
                                 birthdays: number;
                                 general: number;
@@ -25532,7 +25536,7 @@ export interface paths {
                         /** Format: uuid */
                         id?: string;
                         /** @enum {string} */
-                        key: "welcome" | "handover_birthday" | "handover_events" | "handover_complaint_online" | "handover_complaint_onsite" | "handover_lost_found" | "handover_marketing" | "out_of_hours" | "handover_general";
+                        key: "welcome" | "handover_birthday" | "handover_events" | "handover_complaint_online" | "handover_complaint_onsite" | "handover_lost_found" | "handover_marketing" | "out_of_hours" | "handover_general" | "follow_up";
                         language: string;
                         /** @enum {string|null} */
                         channel?: "whatsapp" | "instagram" | "facebook" | "line" | "telegram" | "webform" | null;
@@ -25663,6 +25667,23 @@ export interface paths {
                         };
                     };
                 };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                };
+                            };
+                        };
+                    };
+                };
             };
         };
         post?: never;
@@ -25745,6 +25766,23 @@ export interface paths {
                         };
                     };
                 };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                };
+                            };
+                        };
+                    };
+                };
             };
         };
         delete?: never;
@@ -25821,6 +25859,23 @@ export interface paths {
                         };
                     };
                 };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                };
+                            };
+                        };
+                    };
+                };
             };
         };
         options?: never;
@@ -25891,6 +25946,23 @@ export interface paths {
                                 assignedAt: string;
                             }[];
                             moved: boolean;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                };
+                            };
                         };
                     };
                 };
@@ -25985,6 +26057,23 @@ export interface paths {
                         };
                     };
                 };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                };
+                            };
+                        };
+                    };
+                };
             };
         };
         delete?: never;
@@ -26068,6 +26157,30 @@ export interface paths {
                             }[];
                             moved: boolean;
                             hostAdded: boolean;
+                            /** @enum {string|null} */
+                            hostSkipped: "no_host" | "host_inactive" | "already_on" | "support_full" | null;
+                            host: {
+                                /** Format: uuid */
+                                accountId: string;
+                                name: string | null;
+                            } | null;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                };
+                            };
                         };
                     };
                 };
@@ -26138,6 +26251,23 @@ export interface paths {
                                 assignedAt: string;
                             }[];
                             moved: boolean;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                };
+                            };
                         };
                     };
                 };
@@ -26212,6 +26342,23 @@ export interface paths {
                                 assignedAt: string;
                             }[];
                             moved: boolean;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                };
+                            };
                         };
                     };
                 };
@@ -26294,7 +26441,7 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
-                    key?: "welcome" | "handover_birthday" | "handover_events" | "handover_complaint_online" | "handover_complaint_onsite" | "handover_lost_found" | "handover_marketing" | "out_of_hours" | "handover_general";
+                    key?: "welcome" | "handover_birthday" | "handover_events" | "handover_complaint_online" | "handover_complaint_onsite" | "handover_lost_found" | "handover_marketing" | "out_of_hours" | "handover_general" | "follow_up";
                     language?: string;
                     archived?: "true" | "false";
                 };
