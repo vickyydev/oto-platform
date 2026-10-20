@@ -23,7 +23,6 @@ import { ErrorNote, Loading, RouteUnavailable } from '@/components/Panel';
 import {
   StatusMark,
   toneForHealth,
-  toneForOutcome,
   toneForSeverity,
   type Tone,
 } from '@/components/Status';
@@ -33,6 +32,7 @@ import { CardShell, PageGrid, StripedList } from '@/components/redesign/layout';
 import { EmptyNote, UnreadNote } from '@/components/redesign/StatTile';
 import { useSession } from '@/auth/SessionContext';
 import { boxStoreAlertNote } from '@/lib/fleetWords';
+import { jobOutcomeChip, jobWaitingLine } from '@/lib/jobWords';
 import { usePlatformStatus } from '@/lib/platformStatus';
 import { isEstateWide, readReach, reachLabel } from '@/lib/reach';
 import { elapsed, formatWhen, millis, timeAgo } from '@/lib/time';
@@ -306,14 +306,16 @@ function JobRow({ job, timezone }: { job: JobStatus; timezone?: string | null })
   const tone = toneForHealth(job.status);
   const late =
     job.expectedEverySeconds && job.ageSeconds && job.ageSeconds > job.expectedEverySeconds * 2;
+  // SCRUM-594: a job that is built but switched off reads "off — waiting on
+  // <variable>", in the quiet tone; never ok, never an error, never an alert.
+  const outcome = jobOutcomeChip(job);
+  const waiting = jobWaitingLine(job);
   return (
     <li className="px-3 py-2.5">
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
         <StatusMark tone={tone} />
         <span className="min-w-0 font-mono text-[12.5px] font-semibold break-all">{job.name}</span>
-        {job.lastOutcome && (
-          <StatusChip tone={toneForOutcome(job.lastOutcome)}>{job.lastOutcome}</StatusChip>
-        )}
+        {outcome && <StatusChip tone={outcome.tone}>{outcome.label}</StatusChip>}
         <span className="ml-auto text-[12.5px] text-muted-foreground tabular-nums">
           {job.ageSeconds !== null && job.ageSeconds !== undefined ? elapsed(job.ageSeconds) : '—'}
           {job.expectedEverySeconds ? ` / every ${elapsed(job.expectedEverySeconds)}` : ''}
@@ -323,6 +325,7 @@ function JobRow({ job, timezone }: { job: JobStatus; timezone?: string | null })
       <p className="mt-0.5 text-xs text-muted-foreground">
         {job.lastRunAt ? `last ran ${formatWhen(job.lastRunAt, timezone)}` : 'never run'}
       </p>
+      {waiting && <p className="mt-0.5 font-mono text-xs text-muted-foreground break-all">{waiting}</p>}
       {job.lastError && <p className="mt-0.5 text-xs text-status-down break-words">{job.lastError}</p>}
     </li>
   );

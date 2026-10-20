@@ -569,12 +569,48 @@ export interface JobStatus {
   status: HealthState;
   /** When it last finished, whatever the outcome. Null if it never has. */
   lastRunAt: string | null;
+  /**
+   * The runner's outcome of the last run — or `refused` when the run finished
+   * cleanly having done NOTHING, because every part of the job reported
+   * itself refused (SCRUM-594): a purge whose retention period is unset, say.
+   * Not a failure and not an alert; `status` is unchanged by it. A run in
+   * which some parts refused and others ran keeps the runner's `ok`, and
+   * `waitingOn` says which parts are off.
+   */
   lastOutcome: string | null;
   expectedEverySeconds: number | null;
   /** Seconds since it last finished — so "runs and fails" reads differently
    *  from "stopped running", which are two different problems. */
   ageSeconds: number | null;
   lastError: string | null;
+  /**
+   * The environment variables the last run said it is waiting on — each part
+   * of the job that refused to run names the one that would switch it on
+   * (`{ state: 'refused', variable }` in the run's detail). Empty for a job
+   * that has nothing of the kind, or whose last run refused nothing.
+   */
+  waitingOn: string[];
+}
+
+/**
+ * What the last run's detail says is OFF, and whether that was all of it
+ * (SCRUM-594). A job that is built but switched off by configuration records
+ * each refused part as `{ state: 'refused', variable }` in its detail — the
+ * Inbox retention's three purges are the shape this was written for — and
+ * until now that was the only place it said so: `ops_last` read `ok`, and so
+ * did the Health page. The variables are read out of the detail here so the
+ * snapshot row can carry them; nothing is inferred from a job's name.
+ */
+export function refusalsOf(detail: unknown): { waitingOn: string[]; allRefused: boolean } {
+  if (!detail || typeof detail !== 'object' || Array.isArray(detail)) return { waitingOn: [], allRefused: false };
+  const parts = Object.values(detail as Record<string, unknown>).filter(
+    (part): part is Record<string, unknown> => Boolean(part) && typeof part === 'object' && !Array.isArray(part),
+  );
+  const refused = parts.filter((part) => part.state === 'refused' && typeof part.variable === 'string');
+  // Sorted: jsonb keeps an object's keys in its own order, not the writer's,
+  // so the order they are read back in means nothing and must not vary.
+  const waitingOn = [...new Set(refused.map((part) => part.variable as string))].sort();
+  return { waitingOn, allRefused: parts.length > 0 && refused.length === parts.length };
 }
 
 export interface AlertRow {
@@ -756,18 +792,23 @@ export async function jobRegister(deps: HealthDeps, now = Date.now()): Promise<J
   const lastByName = new Map(lasts.map((l) => [l.name, l]));
 
   /**
-   * The message behind the code, from the run `ops_last` points at. One extra
-   * query for the whole register rather than one per job — and it tolerates
-   * the run having been pruned since, which `ops_last` survives by design.
+   * The message behind the code, and what the run said it is waiting on
+   * (SCRUM-594), from the run `ops_last` points at. One extra query for the
+   * whole register rather than one per job — and it tolerates the run having
+   * been pruned since, which `ops_last` survives by design.
    */
   const runIds = lasts.map((l) => l.lastRunId).filter((id): id is string => Boolean(id));
   const messages = new Map<string, string | null>();
+  const refusals = new Map<string, ReturnType<typeof refusalsOf>>();
   if (runIds.length > 0) {
     const rows = await db
-      .select({ id: opsRun.id, errorCode: opsRun.errorCode, errorMessage: opsRun.errorMessage })
+      .select({ id: opsRun.id, errorCode: opsRun.errorCode, errorMessage: opsRun.errorMessage, detail: opsRun.detail })
       .from(opsRun)
       .where(inArray(opsRun.id, runIds));
-    for (const row of rows) messages.set(row.id, row.errorMessage ?? row.errorCode);
+    for (const row of rows) {
+      messages.set(row.id, row.errorMessage ?? row.errorCode);
+      refusals.set(row.id, refusalsOf(row.detail));
+    }
   }
 
   const status = (
@@ -800,15 +841,22 @@ export async function jobRegister(deps: HealthDeps, now = Date.now()): Promise<J
     name: string,
     expectation: (typeof expectations)[number] | undefined,
     last: (typeof lasts)[number] | undefined,
-  ): JobStatus => ({
-    name,
-    status: status(expectation, last),
-    lastRunAt: iso(last?.lastFinishedAt ?? last?.lastStartedAt ?? null),
-    lastOutcome: last?.lastOutcome ?? null,
-    expectedEverySeconds: expectation?.intervalSeconds ?? null,
-    ageSeconds: secondsSince(last?.lastFinishedAt ?? last?.lastStartedAt ?? null, now),
-    lastError: last?.lastRunId ? (messages.get(last.lastRunId) ?? last.errorCode) : (last?.errorCode ?? null),
-  });
+  ): JobStatus => {
+    const refusal = (last?.lastRunId && refusals.get(last.lastRunId)) || { waitingOn: [], allRefused: false };
+    return {
+      name,
+      status: status(expectation, last),
+      lastRunAt: iso(last?.lastFinishedAt ?? last?.lastStartedAt ?? null),
+      // A clean run that did nothing because every part of it is switched
+      // off can never read as `ok` here (SCRUM-594); the runner's row keeps
+      // its own word, and `status` above is computed from that.
+      lastOutcome: last?.lastOutcome === 'ok' && refusal.allRefused ? 'refused' : (last?.lastOutcome ?? null),
+      expectedEverySeconds: expectation?.intervalSeconds ?? null,
+      ageSeconds: secondsSince(last?.lastFinishedAt ?? last?.lastStartedAt ?? null, now),
+      lastError: last?.lastRunId ? (messages.get(last.lastRunId) ?? last.errorCode) : (last?.errorCode ?? null),
+      waitingOn: refusal.waitingOn,
+    };
+  };
 
   const declared = expectations.map((e) => row(e.name, e, lastByName.get(e.name)));
   /**

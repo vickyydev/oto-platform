@@ -79,6 +79,8 @@ interface HealthBody {
     expectedEverySeconds: number | null;
     ageSeconds: number | null;
     lastError: string | null;
+    /** SCRUM-594: the variables the last run said it is waiting on. */
+    waitingOn: string[];
   }>;
   boxes: Array<{
     id: string;
@@ -180,6 +182,9 @@ describe('S2-03 — GET /ops/health', () => {
     expect(job, 'the register must list a job this process does not run').toBeTruthy();
     expect(job!.expectedEverySeconds).toBe(60);
     expect(job!.lastOutcome).toBe('ok');
+    // SCRUM-594: every row carries what it is waiting on — here, nothing.
+    expect(job!.waitingOn).toEqual([]);
+    for (const row of body.jobs) expect(Array.isArray(row.waitingOn), row.name).toBe(true);
     expect(job!.lastRunAt).toBe(hourAgo.toISOString());
     // An hour late on a one-minute schedule.
     expect(job!.ageSeconds).toBeGreaterThan(3_500);

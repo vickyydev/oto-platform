@@ -25,7 +25,9 @@ import {
 import {
   buildAlertChannels,
   errorFingerprint,
+  jobRegister,
   recordRun,
+  refusalsOf,
   scrubDetail,
   type AlertChannel,
   type AlertMessage,
@@ -602,6 +604,85 @@ describe('S2-03 — the sweeps that had never run', () => {
     });
     const age = await runner.watchdogAgeSeconds();
     expect(age).toBeGreaterThanOrEqual(110);
+  });
+});
+
+describe('SCRUM-594 — a job that is built but switched off never reads as ok on the snapshot', () => {
+  const register = () =>
+    jobRegister({
+      db: ctx.db,
+      operatorId: 'unused',
+      watchdogJob: WATCHDOG_JOB,
+      watchdogIntervalSeconds: 60,
+      failureThreshold: ctx.app.env.ALERT_FAILURE_THRESHOLD,
+    });
+
+  it('reads the refused parts and their variables out of a run detail, and whether that was all of it', () => {
+    expect(
+      refusalsOf({
+        conversations: { state: 'refused', reason: 'NOT_CONFIGURED', variable: 'INBOX_CONVERSATION_RETENTION_DAYS' },
+        media: { state: 'refused', reason: 'NOT_CONFIGURED', variable: 'INBOX_MEDIA_RETENTION_DAYS' },
+      }),
+    ).toEqual({ waitingOn: ['INBOX_CONVERSATION_RETENTION_DAYS', 'INBOX_MEDIA_RETENTION_DAYS'], allRefused: true });
+    // Some ran: the variables are still named, but the run did do something.
+    expect(
+      refusalsOf({
+        conversations: { state: 'ran', days: 365, conversationsPurged: 2, more: false },
+        media: { state: 'refused', reason: 'NOT_CONFIGURED', variable: 'INBOX_MEDIA_RETENTION_DAYS' },
+      }),
+    ).toEqual({ waitingOn: ['INBOX_MEDIA_RETENTION_DAYS'], allRefused: false });
+    // Counts, nothing, or a detail of another shape: nothing is waiting.
+    expect(refusalsOf({ swept: 7 })).toEqual({ waitingOn: [], allRefused: false });
+    expect(refusalsOf(null)).toEqual({ waitingOn: [], allRefused: false });
+    expect(refusalsOf({ part: { state: 'refused' } })).toEqual({ waitingOn: [], allRefused: false });
+  });
+
+  it('a run that refused every part reads `refused` with the variables; a run that did some of its work keeps `ok` and names the rest', async () => {
+    const off = 'job:test.switched-off';
+    const partial = 'job:test.partly-off';
+    const runner = runnerWith([
+      {
+        name: off,
+        description: 'Every part refuses: nothing is configured',
+        intervalSeconds: 3600,
+        run: async () => ({
+          detail: {
+            conversations: { state: 'refused', reason: 'NOT_CONFIGURED', variable: 'INBOX_CONVERSATION_RETENTION_DAYS' },
+            media: { state: 'refused', reason: 'NOT_CONFIGURED', variable: 'INBOX_MEDIA_RETENTION_DAYS' },
+          },
+        }),
+      },
+      {
+        name: partial,
+        description: 'One part runs, one refuses',
+        intervalSeconds: 3600,
+        run: async () => ({
+          detail: {
+            conversations: { state: 'ran', days: 365, conversationsPurged: 0, more: false },
+            media: { state: 'refused', reason: 'NOT_CONFIGURED', variable: 'INBOX_MEDIA_RETENTION_DAYS' },
+          },
+        }),
+      },
+    ]);
+    expect(await runner.runJob(off, { force: true })).toBe('ok');
+    expect(await runner.runJob(partial, { force: true })).toBe('ok');
+    // The runner's own record is unchanged: the run finished cleanly.
+    expect((await lastOf(off))!.lastOutcome).toBe('ok');
+
+    const rows = await register();
+    expect(rows.find((r) => r.name === off)).toMatchObject({
+      status: 'ok',
+      lastOutcome: 'refused',
+      lastError: null,
+      waitingOn: ['INBOX_CONVERSATION_RETENTION_DAYS', 'INBOX_MEDIA_RETENTION_DAYS'],
+    });
+    expect(rows.find((r) => r.name === partial)).toMatchObject({
+      status: 'ok',
+      lastOutcome: 'ok',
+      waitingOn: ['INBOX_MEDIA_RETENTION_DAYS'],
+    });
+    // And a job with nothing of the kind waits on nothing.
+    expect(rows.find((r) => r.name === 'job:test.ok')).toMatchObject({ lastOutcome: 'ok', waitingOn: [] });
   });
 });
 

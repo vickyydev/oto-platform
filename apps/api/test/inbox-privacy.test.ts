@@ -751,6 +751,22 @@ describe('retention: built, OFF until owner Q19 sets the periods (I2g)', () => {
     expect(stored.has(`inbox/${oldFile}.jpg`)).toBe(true);
     // The env reads empty as unset, too.
     expect(retentionConfigOf({ INBOX_WEBHOOK_PAYLOAD_RETENTION_DAYS: undefined }).webhookPayloadDays).toBeNull();
+
+    /**
+     * SCRUM-594 — and the Health snapshot says so. A refused purge can never
+     * read as `ok` on the jobs row: the row says `refused` and names the
+     * three variables, while its health state stays `ok` with no error, so
+     * it is neither a problem on the page nor an alert.
+     */
+    const health = await ctx.app.inject({ method: 'GET', url: '/ops/health', headers: { cookie: await signInAs(ctx.app, ADMIN.phone, ADMIN.password) } });
+    expect(health.statusCode).toBe(200);
+    const row = (health.json() as { jobs: Array<Record<string, unknown>> }).jobs.find((j) => j.name === INBOX_RETENTION_JOB);
+    expect(row).toMatchObject({
+      status: 'ok',
+      lastOutcome: 'refused',
+      lastError: null,
+      waitingOn: ['INBOX_CONVERSATION_RETENTION_DAYS', 'INBOX_MEDIA_RETENTION_DAYS', 'INBOX_WEBHOOK_PAYLOAD_RETENTION_DAYS'],
+    });
   });
 
   it('webhook payloads: an old receipt keeps its row and loses its payload; recent ones are kept', async () => {
@@ -843,6 +859,10 @@ describe('retention: built, OFF until owner Q19 sets the periods (I2g)', () => {
       media: { state: 'ran', days: 30, messages: 0 },
       webhookPayloads: { state: 'ran', days: 30, payloadsPurged: 0 },
     });
+    // SCRUM-594: switched on, the row reads ok again and waits on nothing.
+    const health = await ctx.app.inject({ method: 'GET', url: '/ops/health', headers: { cookie: await signInAs(ctx.app, ADMIN.phone, ADMIN.password) } });
+    const row = (health.json() as { jobs: Array<Record<string, unknown>> }).jobs.find((j) => j.name === INBOX_RETENTION_JOB);
+    expect(row).toMatchObject({ status: 'ok', lastOutcome: 'ok', waitingOn: [] });
   });
 });
 

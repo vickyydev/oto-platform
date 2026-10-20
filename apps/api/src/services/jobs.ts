@@ -815,8 +815,10 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
      * (`runInboxRetention` in `services/inbox/privacy.ts`). EACH PURGE REFUSES
      * while its period is unset — `INBOX_CONVERSATION_RETENTION_DAYS`,
      * `INBOX_MEDIA_RETENTION_DAYS`, `INBOX_WEBHOOK_PAYLOAD_RETENTION_DAYS` — and
-     * the run's detail says `refused` with the variable's name, so the Health
-     * page shows a purge that is off as off rather than as quiet.
+     * the run's detail says `refused` with the variable's name, which the
+     * jobs snapshot carries as `lastOutcome: 'refused'` and `waitingOn`
+     * (`jobRegister`, SCRUM-594), so the Health page shows a purge that is
+     * off as off rather than as quiet.
      */
     {
       name: INBOX_RETENTION_JOB,

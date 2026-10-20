@@ -167,12 +167,19 @@ export interface JobStatus {
   name: string;
   status: HealthState;
   lastRunAt: string | null;
+  /** The runner's word, or `refused` when the last run did nothing because every part of it is switched off (SCRUM-594). */
   lastOutcome?: string | null;
   /** How often this job is expected to run, from its ops_expectation row. */
   expectedEverySeconds?: number | null;
   /** Seconds since it last finished. The watchdog's whole argument. */
   ageSeconds?: number | null;
   lastError?: string | null;
+  /**
+   * The environment variables the last run said it is waiting on — one per
+   * part of the job that is built but off until it is set (SCRUM-594). Absent
+   * on an older API; empty when nothing is waiting.
+   */
+  waitingOn?: string[];
 }
 
 export interface AlertRow {
