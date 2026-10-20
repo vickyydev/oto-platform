@@ -837,6 +837,26 @@ prints each decision and gate result, and can re-record fixtures. It is how
 the model tier (G3) is compared: same suite, each model, same verdicts
 required.
 
+*As built (A4, 2026-10-20).* The fixture world, the sixteen goldens and their
+judges are one module, `apps/api/test/inbox-ai-golden.ts`; the eval is
+`apps/api/scripts/inbox-ai-eval.ts` (`--record`, `--model <id>`, `--only
+G3,G9`, and `--fake`, which rehearses the script with scripted decisions and
+no key). It reads `ANTHROPIC_API_KEY` from the environment or `apps/api/.env`
+and refuses to start without it. It plays G1–G9 through the whole engine (the
+webhook, the turn, `job:inbox.ai`, the real client, the gates, the commit) at
+the real clock with the debounce at zero, so the "11:00" / "Saturday" setups
+are not pinned: no golden's verdict depends on the hour (G3 names Saturday
+itself). G10–G16 run on the fake client and need no key. A fixture holds the
+response body only (no request, no header) plus the verdict it produced; the
+replay suite (`inbox-ai-golden.test.ts`) feeds it through
+`AnthropicAssistantClient` over an injected fetch, `interpretReply`, the
+schema and `applyGates`, and asserts both the golden's expectation and the
+recorded verdict. It also pins the fixture KB and `PERSONA_VERSION` the
+recording was made with: a persona or fixture-KB change asks for a re-record
+(about ten calls, roughly $0.10 on Opus 5.5). First recording, Claude Opus 5.5
+at `low`: 16/16 PASS, about 5.9k cached system tokens per turn (not the 12k
+estimated in §B.7).
+
 ### F.4 The golden conversations
 
 The fixture KB is fictional test data written for these dialogues and marked
