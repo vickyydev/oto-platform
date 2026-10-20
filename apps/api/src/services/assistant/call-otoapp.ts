@@ -31,7 +31,11 @@ import { matchesRoute, suffixedRequestId, toolRequestId, type GetRouteTemplate }
  *      `/auth/handoff/exchange` itself, maps the account to its own user
  *      (`not_provisioned` or `disabled` otherwise, passed through verbatim as
  *      OTO App refusal lines) and answers its session cookie, `connect.sid`.
- *      One OTO App session per ask.
+ *      One OTO App session per ask. Then `GET /api/user` says who signed on
+ *      (role, parks); when that names no single park, `GET /api/branches`
+ *      lists the asker's parks as the app's own screens read them, and the
+ *      first listed is the park a rota request names (the rota screen's own
+ *      default) — the rota route refuses a request without one, for every scope.
  *   3. CALL. Each tool is one of the app's existing GET routes, called with
  *      that cookie and an `x-request-id` the app adopts for its own log line.
  *      The app's fences answer: `requireAuth`, `requireManager`, the park
@@ -101,6 +105,13 @@ export interface OtoAppIdentity {
   /** The one park the asker's access names, when it names exactly one. */
   homeBranchId: string | null;
   allBranches: boolean;
+  /**
+   * The park a tool names when its input names none: the home park, else the
+   * first park the app lists for the asker (`GET /api/branches`, read at
+   * sign-on only then — the rota screen's own default), else null when the
+   * app lists none.
+   */
+  defaultBranchId: string | null;
 }
 
 export interface OtoAppCall {
@@ -176,13 +187,29 @@ export function identityOf(body: unknown): OtoAppIdentity | null {
   const role: OtoAppRole = (OTOAPP_ROLES as readonly string[]).includes(rawRole ?? '') ? (rawRole as OtoAppRole) : 'staff';
   const allBranches = u.hasAllBranchesAccess === true;
   const allowed = Array.isArray(u.allowedBranchIds) ? u.allowedBranchIds.filter((b): b is string => typeof b === 'string') : [];
+  const homeBranchId = !allBranches && allowed.length === 1 ? allowed[0]! : null;
   return {
     userId,
     role,
     permissions: SALARY_ROLES.has(role) ? ['hr.view_salary'] : [],
-    homeBranchId: !allBranches && allowed.length === 1 ? allowed[0]! : null,
+    homeBranchId,
     allBranches,
+    defaultBranchId: homeBranchId,
   };
+}
+
+/**
+ * The first park of the app's `GET /api/branches` body — the one the rota
+ * screen opens on when none is chosen (`rota.tsx`: `branches[0]`) — or null
+ * when the app lists none for the asker.
+ */
+export function firstBranchOf(body: unknown): string | null {
+  if (!Array.isArray(body)) return null;
+  for (const b of body) {
+    const id = b && typeof b === 'object' ? str((b as { id?: unknown }).id) : null;
+    if (id) return id;
+  }
+  return null;
 }
 
 interface Fetched {
@@ -333,10 +360,34 @@ export async function openOtoAppSession(input: OpenOtoAppSessionInput): Promise<
     const { code, message } = otoAppEnvelope(who.body);
     return { ok: false, refusal: { system: 'oto_app', status: who.status, code, message: (message ?? 'Not signed in').slice(0, 500) } };
   }
-  const identity = who.status === 200 ? identityOf(who.body) : null;
-  if (!identity) {
+  const signedOn = who.status === 200 ? identityOf(who.body) : null;
+  if (!signedOn) {
     await close();
     throw new OtoAppUnavailable(who.status);
+  }
+  // The park a rota request names when the model names none. `/api/user` names it when the asker's
+  // access names exactly one park. Otherwise the app's own list for this asker (`/api/branches`: the
+  // allowed parks plus their employee record's, or every park under all-branches access), of which
+  // the rota screen opens on the first. The rota route refuses a request without a park for every
+  // scope, `me` included ("branchId, from, and to are required"), so the list is read here, once,
+  // and only for an asker `/api/user` leaves without one. A list the app withholds leaves none:
+  // the rota request then names no park and the route's own refusal comes back verbatim.
+  let identity = signedOn;
+  if (signedOn.homeBranchId === null) {
+    let listed: Fetched;
+    try {
+      listed = await request(
+        origin,
+        '/api/branches',
+        { method: 'GET', headers: headersFor(suffixedRequestId(input.requestId, '.b')) },
+        { timeoutMs: input.timeoutMs, wallMs: input.remainingMs },
+      );
+    } catch (err) {
+      await close();
+      throw err;
+    }
+    if (listed.status === 200) identity = { ...signedOn, defaultBranchId: firstBranchOf(listed.body) };
+    else input.log?.warn({ status: listed.status }, 'the OTO App did not list the asker’s parks');
   }
 
   const session: OtoAppSession = {

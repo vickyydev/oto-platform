@@ -20,6 +20,10 @@ import { newId } from '@oto/shared';
  *                            with the person's own token; a 401 ends the app
  *                            session before the route runs.
  *   POST /api/logout         ends the app session; recorded.
+ *   GET /api/user            who signed on: role, park access, the linked employee.
+ *   GET /api/branches        the asker's parks as the app lists them (the allowed
+ *                            ones plus the employee record's, or every park):
+ *                            the rota screen's list, whose first is its default.
  *   the tool routes          the seven GET routes the registry names, with the
  *                            app's own fences and the app's own refusal
  *                            sentences (pinned against the app's source by
@@ -198,7 +202,11 @@ export const OTOAPP_WORDS = {
   tenantRequired: 'Tenant access required',
   noEmployeeRecord: 'Employee record not found for current user',
   rotaRequired: 'branchId, from, and to are required',
+  rotaBadScope: "Invalid scope. Must be 'me', 'department', or 'branch'",
+  rotaBadDates: "Invalid date format for 'from' or 'to'",
+  rotaOrder: "'from' date must be before or equal to 'to' date",
   rotaBranchDenied: "You don't have access to this branch",
+  branchesDenied: 'Access denied',
   parkGroupRequired: 'Park group context required',
   /** `payroll/routes.ts` */
   payrollRoles: 'Payroll is for payroll roles only (hr.view_salary required).',
@@ -387,7 +395,20 @@ export class FakeOtoApp {
           phoneVerified: true,
         });
 
+      case url.pathname === '/api/branches': {
+        // routes.ts "/api/branches": the park group's parks — every one under all-branches access,
+        // else the allowed ones plus the linked employee record's — in the app's own order.
+        if (!user.tenantId) return json(res, 403, { message: OTOAPP_WORDS.branchesDenied });
+        const parks = [...this.data.branches.values()].filter((b) => b.tenantId === user.tenantId);
+        if (user.hasAllBranchesAccess) return json(res, 200, parks);
+        const allowed = new Set(user.allowedBranchIds);
+        const own = this.ownEmployee(user);
+        if (own) allowed.add(own.branchId);
+        return json(res, 200, parks.filter((b) => allowed.has(b.id)));
+      }
+
       case url.pathname === '/api/employees': {
+        // routes.ts "/api/employees": no parameter is required; branchId is an optional filter.
         const branchId = url.searchParams.get('branchId');
         let rows = this.data.employees.filter((e) => e.tenantId === user.tenantId);
         if (!user.hasAllBranchesAccess) rows = rows.filter((e) => user.allowedBranchIds.includes(e.branchId));
@@ -487,21 +508,32 @@ export class FakeOtoApp {
       }
 
       case url.pathname === '/api/rota': {
+        // routes.ts "/api/rota", in the route's own order: the park group, the scope word, the three
+        // parameters it requires for EVERY scope (`me` included), the dates' validity and order, then
+        // the park's access (an admin role, the access rows, or the asker's own employee record).
         if (!user.tenantId) return json(res, 403, { message: OTOAPP_WORDS.parkGroupRequired });
         const scope = url.searchParams.get('scope') ?? 'me';
         const branchId = url.searchParams.get('branchId');
         const from = url.searchParams.get('from');
         const to = url.searchParams.get('to');
-        if (!['me', 'department', 'branch'].includes(scope)) {
-          return json(res, 400, { message: "Invalid scope. Must be 'me', 'department', or 'branch'" });
-        }
+        if (!['me', 'department', 'branch'].includes(scope)) return json(res, 400, { message: OTOAPP_WORDS.rotaBadScope });
         if (!branchId || !from || !to) return json(res, 400, { message: OTOAPP_WORDS.rotaRequired });
+        const fromDate = new Date(from);
+        const toDate = new Date(to);
+        if (Number.isNaN(fromDate.getTime()) || Number.isNaN(toDate.getTime())) {
+          return json(res, 400, { message: OTOAPP_WORDS.rotaBadDates });
+        }
+        if (fromDate > toDate) return json(res, 400, { message: OTOAPP_WORDS.rotaOrder });
         const mine = this.ownEmployee(user);
         if (!ADMIN_ROLES.has(user.role) && !this.canAccessBranch(user, branchId) && mine?.branchId !== branchId) {
           return json(res, 403, { message: OTOAPP_WORDS.rotaBranchDenied });
         }
+        // `scope=me` with an employee record reads every park of the group (the route's `rotaBranchIds`);
+        // the other scopes read the park named.
+        const everyPark = scope === 'me' && mine !== undefined;
         const shifts = this.data.shifts
-          .filter((s) => s.branchId === branchId && s.date >= from && s.date <= to)
+          .filter((s) => (everyPark ? this.data.branches.get(s.branchId)?.tenantId === user.tenantId : s.branchId === branchId))
+          .filter((s) => s.date >= from && s.date <= to)
           .filter((s) => scope !== 'me' || (mine !== undefined && s.employeeId === mine.id))
           .map((s) => {
             const e = this.data.employees.find((x) => x.id === s.employeeId);
@@ -664,20 +696,32 @@ export function fakeEmployee(
   return e;
 }
 
-/** An OTO App user mapped to a platform account, at one branch (or every branch). */
+/**
+ * An OTO App user mapped to a platform account: at one branch (`branchId`),
+ * at several (`branchIds`, the access rows in their own order), at none
+ * (`branchIds: []`: a park only through the employee record, which the app's
+ * `/api/branches` adds), or at every branch (neither given).
+ */
 export function fakeUser(
   fake: FakeOtoApp,
   world: FakeOtoAppWorld,
-  opts: { platformAccountId: string; role: FakeOtoAppRole; branchId?: string | null; isActive?: boolean; employeeId?: string | null },
+  opts: {
+    platformAccountId: string;
+    role: FakeOtoAppRole;
+    branchId?: string | null;
+    branchIds?: string[];
+    isActive?: boolean;
+    employeeId?: string | null;
+  },
 ): FakeOtoAppUser {
-  const all = opts.branchId === null || opts.branchId === undefined;
+  const all = opts.branchIds === undefined && (opts.branchId === null || opts.branchId === undefined);
   const u: FakeOtoAppUser = {
     id: newId(),
     platformAccountId: opts.platformAccountId,
     role: opts.role,
     isActive: opts.isActive ?? true,
     tenantId: world.tenantId,
-    allowedBranchIds: all ? [] : [opts.branchId!],
+    allowedBranchIds: all ? [] : (opts.branchIds ?? [opts.branchId!]),
     hasAllBranchesAccess: all,
     employeeId: opts.employeeId ?? null,
   };

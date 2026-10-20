@@ -6,7 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { INTERNAL_LINES } from '@oto/assistant';
 import { schema as s } from '@oto/db';
 import { ASSISTANT_TOOLS, isoDateInTz, newId } from '@oto/shared';
-import { identityOf, otoAppEnvelope, sessionCookieOf } from '../src/services/assistant/call-otoapp';
+import { firstBranchOf, identityOf, otoAppEnvelope, sessionCookieOf } from '../src/services/assistant/call-otoapp';
 import { matchesRoute } from '../src/services/assistant/call-platform';
 import { otoAppToolsOffered, resolveLinks } from '../src/services/assistant/engine';
 import { clockOf, dayWords, daysInclusive, hoursBetween, monthWords, periodSentence, weekdayWords } from '../src/services/assistant/tools';
@@ -192,12 +192,14 @@ describe('the census (§B.3, R4)', () => {
     expect(fetching).toEqual(['call-otoapp.ts']);
   });
 
-  it('call-otoapp.ts GETs the tools and POSTs only the exchange and the logout, both literals', () => {
+  it('call-otoapp.ts GETs the identity, the park list and the tools, and POSTs only the exchange and the logout, all literals', () => {
     const src = readFileSync(join(API_SRC, 'services/assistant/call-otoapp.ts'), 'utf8');
     // Call sites (`method: 'X',`), not the request helper's type (`'GET' | 'POST'`).
     const methods = [...src.matchAll(/method:\s*'([A-Z]+)'\s*,/g)].map((m) => m[1]).sort();
-    expect(methods).toEqual(['GET', 'GET', 'POST', 'POST']);
+    expect(methods).toEqual(['GET', 'GET', 'GET', 'POST', 'POST']);
     expect(src).toContain("'/api/auth/handoff'");
+    expect(src).toContain("'/api/user'");
+    expect(src).toContain("'/api/branches'");
     expect(src).toContain("'/api/logout'");
   });
 
@@ -220,7 +222,7 @@ describe('the census (§B.3, R4)', () => {
   });
 
   it('builds every adapter URL inside its own route templates, from validated input only', () => {
-    const who = { userId: 'u1', role: 'manager' as const, permissions: [], homeBranchId: 'b-central', allBranches: false };
+    const who = { userId: 'u1', role: 'manager' as const, permissions: [], homeBranchId: 'b-central', allBranches: false, defaultBranchId: 'b-central' };
     const samples: Record<string, unknown> = {
       'oto.attendance': { employeeId: 'e-1', startDate: '2026-10-01', endDate: '2026-10-20' },
       'oto.employee_leave': { employeeId: 'e-1', from: '2026-10-01' },
@@ -238,6 +240,18 @@ describe('the census (§B.3, R4)', () => {
     }
     expect(OTOAPP_TOOLS.get('oto.attendance')!.input.safeParse({ employeeId: '../user', startDate: '2026-10-01', endDate: '2026-10-20' }).success).toBe(false);
     expect(OTOAPP_TOOLS.get('oto.rota')!.input.safeParse({ scope: 'all', from: '2026-10-21', to: '2026-10-21' }).success).toBe(false);
+  });
+
+  it('the rota names the park the route requires for every scope: the input’s, else the asker’s default park, else none — never a guess', () => {
+    const who = { userId: 'u1', role: 'staff' as const, permissions: [], homeBranchId: 'b-home', allBranches: false, defaultBranchId: 'b-home' };
+    const rota = OTOAPP_TOOLS.get('oto.rota')!;
+    const day = { scope: 'me' as const, from: '2026-10-21', to: '2026-10-21' };
+    expect(rota.urls(day as never, who)).toEqual(['/api/rota?scope=me&branchId=b-home&from=2026-10-21&to=2026-10-21']);
+    expect(rota.urls({ ...day, scope: 'branch', branchId: 'b-named' } as never, who)).toEqual(['/api/rota?scope=branch&branchId=b-named&from=2026-10-21&to=2026-10-21']);
+    // Two parks or every park: no home park, the first the app listed stands in.
+    expect(rota.urls(day as never, { ...who, homeBranchId: null, defaultBranchId: 'b-first' })).toEqual(['/api/rota?scope=me&branchId=b-first&from=2026-10-21&to=2026-10-21']);
+    // No park listed at all: none is sent, and the route's own refusal will say so.
+    expect(rota.urls(day as never, { ...who, homeBranchId: null, defaultBranchId: null })).toEqual(['/api/rota?scope=me&from=2026-10-21&to=2026-10-21']);
   });
 
   it("the fake speaks the app's own sentences: every refusal it answers is in the app's source", () => {
@@ -269,7 +283,11 @@ describe('the census (§B.3, R4)', () => {
       OTOAPP_WORDS.tenantRequired,
       OTOAPP_WORDS.noEmployeeRecord,
       OTOAPP_WORDS.rotaRequired,
+      OTOAPP_WORDS.rotaBadScope,
+      OTOAPP_WORDS.rotaBadDates,
+      OTOAPP_WORDS.rotaOrder,
       OTOAPP_WORDS.rotaBranchDenied,
+      OTOAPP_WORDS.branchesDenied,
       OTOAPP_WORDS.parkGroupRequired,
       'Payroll is for payroll roles only',
       'required).',
@@ -291,19 +309,28 @@ describe('the census (§B.3, R4)', () => {
       permissions: [],
       homeBranchId: 'b',
       allBranches: false,
+      defaultBranchId: 'b',
     });
     expect(identityOf({ id: 'u', role: 'admin', hasAllBranchesAccess: true, allowedBranchIds: [] })).toMatchObject({
       role: 'admin',
       permissions: ['hr.view_salary'],
       homeBranchId: null,
       allBranches: true,
+      defaultBranchId: null,
     });
     // A role the map does not know (an advisor's raw value) is offered nothing a manager would get.
+    // Two parks name no home park; `/api/user` alone leaves the default park to the app's branch list.
     expect(identityOf({ id: 'u', role: 'advisor', hasAllBranchesAccess: false, allowedBranchIds: ['a', 'b'] })).toMatchObject({
       role: 'staff',
       homeBranchId: null,
+      defaultBranchId: null,
     });
     expect(identityOf({ role: 'staff' })).toBeNull();
+    // The app's branch list, as the rota screen reads it: the first park, or none.
+    expect(firstBranchOf([{ id: 'b-1', name: 'ZZ Central' }, { id: 'b-2', name: 'ZZ Chalong' }])).toBe('b-1');
+    expect(firstBranchOf([{ name: 'no id' }, { id: 'b-2' }])).toBe('b-2');
+    expect(firstBranchOf([])).toBeNull();
+    expect(firstBranchOf({ id: 'b-1' })).toBeNull();
   });
 
   it('states the figures an answer will use: HH:MM from a database time, a shift’s hours, a period and a day in words', () => {
@@ -706,8 +733,15 @@ describe('the summaries (§B.4)', () => {
     const text = JSON.stringify(toolResultsSeen(fakeClient)[0]!.data);
     expect(text).toContain(chai.id);
     expect(text).not.toMatch(/salary|31000/i);
-    // The hand-off, the identity read, the list — with no branch filter for an all-parks admin — then the logout.
-    expect(fake.requests.slice(-4).map((r) => r.path)).toEqual(['/api/auth/handoff', '/api/user', '/api/employees', '/api/logout']);
+    // The hand-off, the identity read, the park list (an all-parks admin has no home park in `/api/user`),
+    // the employees list — with no branch filter for an all-parks admin — then the logout.
+    expect(fake.requests.slice(-5).map((r) => [r.path, r.query])).toEqual([
+      ['/api/auth/handoff', ''],
+      ['/api/user', ''],
+      ['/api/branches', ''],
+      ['/api/employees', ''],
+      ['/api/logout', ''],
+    ]);
   });
 
   it('the rota: the shifts of the day, grounded names and times, the period in words', async () => {
@@ -810,6 +844,121 @@ describe('the summaries (§B.4)', () => {
     expect(rows[0]).toMatchObject({ tool: 'oto.employee_leave', status: 200, rows: 1 });
     // Not asked for by the model; the engine gathered it from the tool, and a manager may open it.
     expect(res.body.links).toEqual([]);
+  });
+});
+
+describe('the rota names the park the route requires (SCRUM-591: the staging regression)', () => {
+  // On staging, after the proof fixes landed, "Who's on shift with me tomorrow?" as reception got
+  // `oto.rota[400]` twice: "branchId, from, and to are required". The route (apps/oto-app/server/
+  // routes.ts "/api/rota") requires the park for EVERY scope, `me` included; the adapter named one
+  // only when `/api/user` listed exactly one allowed park, and the asker's access had come to name
+  // two. The fixture askers all had one, so the suite never sent a park-less request. Now the app's
+  // own branch list (what the rota screen opens on) supplies the park, and these pins send each
+  // shape of access through the fake, which refuses exactly what the route refuses.
+
+  it('an asker whose access names two parks (the staging shape): the park the app lists first reaches the route on both calls; 200; names and times', async () => {
+    const twoParks = await staff(w, 'ZZ Oto Two Parks', 'staff', { scopeType: 'branch', scopeId: w.central }, w.central);
+    await grantOtoAppTile(w, twoParks.accountId, w.central);
+    const som = fakeEmployee(fake, world, { fullName: 'ZZ Oto Two Parks', nickname: 'Som', branchId: world.central });
+    // The access rows name Chalong first; the app's branch list is in the app's own order (Central first).
+    fakeUser(fake, world, { platformAccountId: twoParks.accountId, role: 'staff', branchIds: [world.chalong, world.central], employeeId: som.id });
+    fake.data.shifts.push({ date: tomorrow, start: '10:00:00', end: '19:00:00', employeeId: som.id, department: 'Reception', branchId: world.central });
+    fake.resetObservations();
+    const fakeClient = script(
+      w,
+      tool('oto.rota', { scope: 'me', from: tomorrow, to: tomorrow }),
+      tool('oto.rota', { scope: 'branch', from: tomorrow, to: tomorrow }),
+      final('Tomorrow you work 10:00 to 19:00. Also on at Central: Anan, Beam and Krit, 10:00–19:00.', [{ key: 'oto.rota', params: [] }]),
+    );
+    const res = await ask(w, twoParks.cookie, "Who's on shift with me tomorrow?");
+    expect(res.body, JSON.stringify(res.body)).toMatchObject({ state: 'answered', reason: null, refusals: [] });
+    expect(res.body.answer).toContain('10:00 to 19:00');
+    // The app's list was read once, after the identity; both rota requests name its first park and the day.
+    const reqId = await askRequestId(res.body.id);
+    expect(fake.requests.map((r) => [r.path, r.query, r.status, r.requestId])).toEqual([
+      ['/api/auth/handoff', '', 200, `${reqId}.h`],
+      ['/api/user', '', 200, `${reqId}.u`],
+      ['/api/branches', '', 200, `${reqId}.b`],
+      ['/api/rota', `?scope=me&branchId=${world.central}&from=${tomorrow}&to=${tomorrow}`, 200, `${reqId}.t1`],
+      ['/api/rota', `?scope=branch&branchId=${world.central}&from=${tomorrow}&to=${tomorrow}`, 200, `${reqId}.t2`],
+      ['/api/logout', '', 200, `${reqId}.x`],
+    ]);
+    const rows = await toolRows(w.ctx.db, res.body.id);
+    expect(rows.map((r) => [r.tool, r.status])).toEqual([
+      ['oto.rota', 200],
+      ['oto.rota', 200],
+    ]);
+    const seen = toolResultsSeen(fakeClient);
+    const own = (seen[0]!.data as { data: Record<string, unknown> }).data;
+    expect(own).toMatchObject({ scope: 'me', branchId: world.central, shifts: 1, days: 1, people: 1 });
+    expect(own.list).toEqual([expect.objectContaining({ employee: 'Som', start: '10:00', end: '19:00', hours: 9, weekday: weekdayWords(tomorrow) })]);
+    const park = (seen[1]!.data as { data: Record<string, unknown> }).data;
+    expect(park).toMatchObject({ scope: 'branch', branchId: world.central, days: 1 });
+    expect((park.list as Array<{ employee: string }>).map((x) => x.employee).sort()).toEqual(['Anan', 'Beam', 'Krit', 'Som']);
+  });
+
+  it('an all-branches asker (an admin, no park in /api/user): the first park the app lists stands in; the whole park’s day, 200', async () => {
+    fake.resetObservations();
+    const fakeClient = script(
+      w,
+      tool('oto.rota', { scope: 'branch', from: tomorrow, to: tomorrow }),
+      final('Tomorrow at Central: Anan, Beam and Krit, 10:00–19:00.', [{ key: 'oto.rota', params: [] }]),
+    );
+    const res = await ask(w, admin.cookie, "Who's on shift tomorrow?");
+    expect(res.body, JSON.stringify(res.body)).toMatchObject({ state: 'answered', refusals: [] });
+    expect(fake.requests.map((r) => [r.path, r.query, r.status])).toEqual([
+      ['/api/auth/handoff', '', 200],
+      ['/api/user', '', 200],
+      ['/api/branches', '', 200],
+      ['/api/rota', `?scope=branch&branchId=${world.central}&from=${tomorrow}&to=${tomorrow}`, 200],
+      ['/api/logout', '', 200],
+    ]);
+    const data = (toolResultsSeen(fakeClient)[0]!.data as { data: Record<string, unknown> }).data;
+    expect(data).toMatchObject({ scope: 'branch', branchId: world.central, days: 1 });
+    expect((data.list as Array<{ employee: string }>).map((x) => x.employee)).toEqual(expect.arrayContaining(['Anan', 'Beam', 'Krit']));
+  });
+
+  it('an asker the app lists no park for: none is guessed, and the route’s own 400 reaches the model word for word', async () => {
+    const noPark = await staff(w, 'ZZ Oto No Park', 'staff', { scopeType: 'branch', scopeId: w.central }, w.central);
+    await grantOtoAppTile(w, noPark.accountId, w.central);
+    // No access row and no employee record: the app's branch list is empty for this user.
+    fakeUser(fake, world, { platformAccountId: noPark.accountId, role: 'staff', branchIds: [] });
+    fake.resetObservations();
+    const fakeClient = script(w, tool('oto.rota', { scope: 'me', from: tomorrow, to: tomorrow }), final('I could not read the rota.'));
+    const res = await ask(w, noPark.cookie, "Who's on shift with me tomorrow?");
+    expect(fake.requests.map((r) => [r.path, r.query, r.status])).toEqual([
+      ['/api/auth/handoff', '', 200],
+      ['/api/user', '', 200],
+      ['/api/branches', '', 200],
+      ['/api/rota', `?scope=me&from=${tomorrow}&to=${tomorrow}`, 400],
+      ['/api/logout', '', 200],
+    ]);
+    expect((await toolRows(w.ctx.db, res.body.id)).map((r) => [r.tool, r.status])).toEqual([['oto.rota', 400]]);
+    expect(toolResultsSeen(fakeClient)[0]).toEqual({
+      isError: true,
+      data: { error: { status: 400, code: null, message: OTOAPP_WORDS.rotaRequired } },
+    });
+  });
+
+  it('the fake refuses what the route refuses, in the route’s words: the trio for every scope, the scope word, the dates’ shape and order, the park’s access', async () => {
+    // A session on the fake for the staffer, alive at the platform as the staffer's own session.
+    const sid = `s%3Azz.${newId()}`;
+    const user = fake.userByAccount(staffer.accountId)!;
+    fake.sessions.set(sid, { sid, userId: user.id, platformAccountId: staffer.accountId, platformToken: staffer.cookie.split('=')[1]! });
+    const rota = async (q: string) => {
+      const r = await fetch(`${fake.origin}/api/rota${q}`, { headers: { cookie: `connect.sid=${sid}` } });
+      return [r.status, ((await r.json()) as { message?: string }).message ?? null] as const;
+    };
+    const day = `from=${tomorrow}&to=${tomorrow}`;
+    for (const scope of ['me', 'department', 'branch']) expect(await rota(`?scope=${scope}&${day}`), scope).toEqual([400, OTOAPP_WORDS.rotaRequired]);
+    expect(await rota(`?scope=me&branchId=${world.central}&from=${tomorrow}`)).toEqual([400, OTOAPP_WORDS.rotaRequired]);
+    expect(await rota(`?scope=me&branchId=${world.central}&to=${tomorrow}`)).toEqual([400, OTOAPP_WORDS.rotaRequired]);
+    expect(await rota(`?scope=all&branchId=${world.central}&${day}`)).toEqual([400, OTOAPP_WORDS.rotaBadScope]);
+    expect(await rota(`?scope=me&branchId=${world.central}&from=tomorrow&to=${tomorrow}`)).toEqual([400, OTOAPP_WORDS.rotaBadDates]);
+    expect(await rota(`?scope=me&branchId=${world.central}&from=${isoDay(new Date(), 3)}&to=${tomorrow}`)).toEqual([400, OTOAPP_WORDS.rotaOrder]);
+    expect(await rota(`?scope=branch&branchId=${world.chalong}&${day}`)).toEqual([403, OTOAPP_WORDS.rotaBranchDenied]);
+    expect((await rota(`?scope=me&branchId=${world.central}&${day}`))[0]).toBe(200);
+    fake.sessions.delete(sid);
   });
 });
 

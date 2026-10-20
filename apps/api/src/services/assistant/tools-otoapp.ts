@@ -397,8 +397,11 @@ export const OTOAPP_TOOL_ADAPTERS: readonly OtoAppToolAdapter[] = [
       i.month ? { key: 'oto.payroll.month', params: { month: i.month } } : { key: 'oto.payroll.hub', params: {} },
   }),
   adapter('oto.rota', {
-    // The route needs the park; the asker's own stands in unless the input names one.
-    urls: (i, who) => [`/api/rota${query({ scope: i.scope, branchId: i.branchId ?? who.homeBranchId ?? undefined, from: i.from, to: i.to })}`],
+    // The route needs a park for every scope, `me` included ("branchId, from, and to are required"):
+    // the input's, else the asker's own — the one their access names, else the first the app lists
+    // for them, as the rota screen opens (call-otoapp.ts `defaultBranchId`). Nothing is guessed: an
+    // asker the app lists no park for sends none, and the route's own refusal comes back verbatim.
+    urls: (i, who) => [`/api/rota${query({ scope: i.scope, branchId: i.branchId ?? who.defaultBranchId ?? undefined, from: i.from, to: i.to })}`],
     summarise: ([body], i, _now, who) => {
       const shifts = arr(body)
         .map(obj)
@@ -427,7 +430,7 @@ export const OTOAPP_TOOL_ADAPTERS: readonly OtoAppToolAdapter[] = [
       return {
         data: {
           scope: i.scope,
-          branchId: i.branchId ?? who.homeBranchId ?? null,
+          branchId: i.branchId ?? who.defaultBranchId ?? null,
           period: periodWords(i.from, i.to),
           shifts: shifts.length,
           days: new Set(shifts.map((s) => dayOf(s.date)).filter(Boolean)).size,
