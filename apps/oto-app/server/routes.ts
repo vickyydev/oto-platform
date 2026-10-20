@@ -14101,8 +14101,9 @@ OTO Company Limited`,
       
       // Authorization: verify user can access this employee's branch
       const { branchIds: allowedBranchIds, isGlobalAdmin } = await getAllowedOperatorAndBranchIds(user);
-      // Global admins (allowedBranchIds === null) have access to all branches
-      if (!isGlobalAdmin && allowedBranchIds && !allowedBranchIds.includes(employee.branchId)) {
+      // Global admins (allowedBranchIds === null) have access to all branches;
+      // an employee with no branch is refused (matches the original app's rule).
+      if (!isGlobalAdmin && allowedBranchIds && (!employee.branchId || !allowedBranchIds.includes(employee.branchId))) {
         return res.status(403).json({ message: "Access denied - branch not allowed" });
       }
       

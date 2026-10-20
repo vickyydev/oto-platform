@@ -14,7 +14,7 @@
 //      "Access denied - branch not allowed" for Y and the 200 for X.
 //   2. An employee with no branch: the balance read
 //      (/api/leave-balances/employee/:id) is the 403 for anyone without
-//      all-branch access, as is the sick-leave balance.
+//      all-branch access, as are the sick-leave and all-leave balances.
 //   3. A manager with all-branch access reads all of the above (200).
 //
 // Usage, from apps/oto-app, with DATABASE_URL naming a database whose otoapp
@@ -211,6 +211,7 @@ try {
   await check("staff reading a no-branch employee's balance is the 403", async () => {
     await refused(`/api/leave-balances/employee/${empNone}`, staff, DENIED);
     await refused(`/api/employees/${empNone}/sick-leave-balance`, staff, EMPLOYEE_BRANCH_DENIED);
+    await refused(`/api/employees/${empNone}/all-leave-balances`, staff, BRANCH_DENIED);
   });
   await check("staff reading a branch-X employee's balance is still the 200", async () => {
     await allowed(`/api/leave-balances/employee/${empX}`, staff);
@@ -222,6 +223,7 @@ try {
       await allowed(`/api/employees/${id}/sick-leave-balance`, manager);
       await allowed(`/api/leave-balances/employee/${id}`, manager);
     }
+    await allowed(`/api/employees/${empNone}/all-leave-balances`, manager);
     await allowed(`/api/sick-leave-balances?branchId=${x}`, manager);
     await allowed(`/api/sick-leave-balances?branchId=${y}`, manager);
   });
