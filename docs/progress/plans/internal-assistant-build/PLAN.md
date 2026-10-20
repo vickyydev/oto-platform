@@ -348,7 +348,7 @@ are in round I4.
 |---|---|---|---|---|
 | `me.whoami` | platform | `GET /me`, `GET /me/permissions` | session | name, seat branch, roles, permission scopes (for "what can I do") |
 | `branches.list` | platform | `GET /branches` | `admin:branch:read` | id, name, code. This is how "Chalong" becomes an id. |
-| `members.lookup` | platform | `GET /members/lookup?phone=` | `pos:member:read` | name, tier, children (name, age, `medicalAlert`), last visit |
+| `members.lookup` | platform | `GET /members/lookup?phone=` | `pos:member:read` | name, nickname, tier, display phone, notes, children (name, age, `medicalAlert`) — the route carries no last visit, so the summary never promises one (review F8) |
 | `members.search` | platform | `GET /members?q=` | `pos:member:list` | ≤ 20 matches: id, name, masked phone |
 | `members.get` | platform | `GET /members/:id` | `pos:member:read` | as `lookup` |
 | `occupancy.now` | platform | `GET /branches/:id/occupancy` | the route's (`pos:checkin:read`, target branch) | inside now, by kind |
