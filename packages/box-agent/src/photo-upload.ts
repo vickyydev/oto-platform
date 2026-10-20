@@ -60,7 +60,9 @@ export interface PhotoUploader {
 
 /** The default PUT: global fetch, the bytes as they are. */
 export async function fetchPut(url: string, bytes: Uint8Array, contentType: string): Promise<number> {
-  const res = await fetch(url, { method: 'PUT', body: bytes, headers: { 'content-type': contentType } });
+  // fetch's body must be backed by a plain ArrayBuffer; a store may hand over a shared-buffer view.
+  const body = new Uint8Array(bytes);
+  const res = await fetch(url, { method: 'PUT', body, headers: { 'content-type': contentType } });
   return res.status;
 }
 
