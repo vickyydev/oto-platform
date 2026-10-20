@@ -41,6 +41,70 @@ export const InternalAnswerSchema = z.object({
 });
 export type InternalAnswer = z.infer<typeof InternalAnswerSchema>;
 
+/**
+ * How the final answer travels (§D.1).
+ *
+ *   trailing_json  THE DEFAULT, the plan's fallback: no structured output
+ *                  format on any request. The final turn is plain text, the
+ *                  answer, ending with ONE JSON object carrying the link keys
+ *                  and the language, which the server parses
+ *                  (`parseTrailingAnswer`). The live check of 2026-10-20 got
+ *                  a 400 for tools and the format in one request on
+ *                  claude-opus-5-5.
+ *   combined       tools and the answer format in the same request; the
+ *                  final turn is the schema's JSON. Kept so one option
+ *                  restores it if the API accepts the combination.
+ *
+ * Either way the result is validated by `InternalAnswerSchema`, so the
+ * engine sees the same `InternalAnswer`.
+ */
+export const INTERNAL_ANSWER_MODES = ['trailing_json', 'combined'] as const;
+export type InternalAnswerMode = (typeof INTERNAL_ANSWER_MODES)[number];
+export const DEFAULT_INTERNAL_ANSWER_MODE: InternalAnswerMode = 'trailing_json';
+
+function isPlainObject(v: unknown): v is Record<string, unknown> {
+  return typeof v === 'object' && v !== null && !Array.isArray(v);
+}
+
+/**
+ * The trailing-JSON final turn, parsed: the prose before the LAST JSON object
+ * in the text is the answer; that object holds `links` and `language` and
+ * nothing after it but whitespace (or a closing code fence). A text with no
+ * such block, or whose parts fail the schema, is null (MALFORMED).
+ */
+export function parseTrailingAnswer(text: string): InternalAnswer | null {
+  const body = text.replace(/\s*```\s*$/, '').trimEnd();
+  if (!body.endsWith('}')) return null;
+  for (let i = body.lastIndexOf('{'); i >= 0; i = body.lastIndexOf('{', i - 1)) {
+    let block: unknown;
+    try {
+      block = JSON.parse(body.slice(i));
+    } catch {
+      if (i === 0) break;
+      continue;
+    }
+    if (!isPlainObject(block) || !('language' in block) || !('links' in block)) return null;
+    const keys = Object.keys(block);
+    if (keys.some((k) => k !== 'links' && k !== 'language')) return null;
+    const prose = body
+      .slice(0, i)
+      .replace(/```(?:json)?\s*$/i, '')
+      .trim();
+    const parsed = InternalAnswerSchema.safeParse({
+      answer: prose,
+      links: block['links'],
+      language: block['language'],
+    });
+    return parsed.success ? parsed.data : null;
+  }
+  return null;
+}
+
+/** The trailing form of an answer: what the model is asked to write (and the fake writes). */
+export function renderTrailingAnswer(answer: InternalAnswer): string {
+  return `${answer.answer}\n${JSON.stringify({ links: answer.links, language: answer.language })}`;
+}
+
 /** The pairs as a record for the link resolver. A repeated name keeps its first value. */
 export function linkParams(link: InternalLink): Record<string, string> {
   const out: Record<string, string> = {};

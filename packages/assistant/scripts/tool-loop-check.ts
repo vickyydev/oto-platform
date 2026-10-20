@@ -1,24 +1,33 @@
 /**
  * THE LIVE COMBINE CHECK (SCRUM-591 round I1, lane ia-1a; Phase 3 PLAN §D.1,
- * §F.1 I1a row): does the chosen model take tools AND the structured answer
- * format in the same request, call a tool, and then return a schema-valid
- * answer? It runs the real `AnthropicToolLoopClient` over one fictional tool.
+ * §F.1 I1a row). It runs the real `AnthropicToolLoopClient` over one
+ * fictional tool in both answer modes, in this order:
+ *
+ *   1. combined       tools AND the structured answer format in one request.
+ *                     The first live run (2026-10-20, claude-opus-5-5) was a
+ *                     400 on the first turn.
+ *   2. trailing_json  the plan's fallback and the package default: tools
+ *                     with no format; a plain-text final turn ending in one
+ *                     JSON block (links, language) that the server parses.
+ *
+ * It prints which mode held. The exit is green when the fallback holds
+ * (whatever the combined mode did), and red when it does not.
  *
  *   pnpm --filter @oto/assistant tool-loop:check
  *   pnpm --filter @oto/assistant tool-loop:check --model claude-sonnet-5-5
  *
- * BY HAND, NEVER IN CI: it calls the real API (two or three small calls a
+ * BY HAND, NEVER IN CI: it calls the real API (up to about six small calls a
  * run). It refuses when `CI` is set, and refuses politely without a key.
  *
- * If the combination fails (a 400 naming the format, or a final turn that
- * is never schema-valid), the plan's fallback applies: a plain-text final
- * turn whose link keys travel in a trailing JSON block (§D.1).
+ * DIAGNOSTICS, THIS SCRIPT ONLY. On an HTTP error it prints the status, the
+ * SDK error class and the first 200 characters of the API's own error
+ * message, read from the response by a fetch wrapper here. The request
+ * carries fixture text only (ZZ), so the message cannot hold customer
+ * content. The library never reads or logs an error message.
  *
  * THE KEY. `ANTHROPIC_API_KEY` from the environment, else from
  * `apps/api/.env`. It is handed to the client's constructor and nowhere else:
  * never printed, never put in `process.env`, never written anywhere.
- *
- * All data here is fictional (ZZ).
  */
 
 import { existsSync, readFileSync } from 'node:fs';
@@ -29,6 +38,7 @@ import {
   buildInternalSystem,
   DEFAULT_MODEL,
   internalAnswerGuard,
+  type InternalAnswerMode,
   type ToolCallResult,
   type ToolDefinition,
 } from '../src/index';
@@ -73,6 +83,99 @@ const RESULT: ToolCallResult = {
   data: { branch: 'ZZ Central', date: '2026-10-20', children: 41, adults: 29, truncated: false },
 };
 
+/** The last HTTP error the API returned in this run: status and the API's message, cut to 200. */
+interface ApiErrorNote {
+  status: number;
+  message: string;
+}
+
+/** A fetch that notes the API's error message. Script-only diagnostics; the body is fixture text. */
+function notingFetch(note: { last: ApiErrorNote | null }): typeof fetch {
+  return async (input, init) => {
+    const res = await fetch(input, init);
+    if (res.status >= 400) {
+      let message = '';
+      try {
+        const body = (await res.clone().json()) as { error?: { message?: unknown } };
+        message = typeof body.error?.message === 'string' ? body.error.message : '';
+      } catch {
+        message = '(no JSON error body)';
+      }
+      note.last = { status: res.status, message: message.slice(0, 200) };
+    }
+    return res;
+  };
+}
+
+type ModeVerdict = 'HELD' | 'FAILED' | 'NO_TOOL_CALL';
+
+async function runMode(
+  apiKey: string,
+  model: string,
+  mode: InternalAnswerMode,
+): Promise<ModeVerdict> {
+  const note: { last: ApiErrorNote | null } = { last: null };
+  const client = new AnthropicToolLoopClient({
+    apiKey,
+    model,
+    timeoutMs: 60_000,
+    answerMode: mode,
+    fetch: notingFetch(note),
+  });
+  const built = buildInternalSystem({
+    links: [
+      { key: 'zz.visitors.screen', shows: "today's visitors at a branch", params: ['branch'] },
+    ],
+    asker: { name: 'ZZ Check', seatBranch: 'ZZ Central', tiles: ['pos'] },
+    now: new Date(),
+    answerMode: client.answerMode,
+  });
+  const toolCalls: string[] = [];
+  const out = await client.converse({
+    system: built.system,
+    answerMode: built.answerMode,
+    question: 'How many children have visited ZZ Central today?',
+    tools: [TOOL],
+    wallMs: 120_000,
+    execute: async (call) => {
+      toolCalls.push(`${call.seq}:${call.name} ${JSON.stringify(call.input)}`);
+      return RESULT;
+    },
+  });
+
+  console.log(`\n== ${mode} ==`);
+  console.log(`model served:  ${out.model ?? '-'}`);
+  console.log(`turns:         ${out.turns}`);
+  console.log(`tool calls:    ${toolCalls.length === 0 ? '(none)' : toolCalls.join(' | ')}`);
+  console.log(`latency:       ${out.latencyMs} ms`);
+  if (out.usage) {
+    const u = out.usage;
+    console.log(
+      `tokens:        in ${u.inputTokens}, out ${u.outputTokens}, cache read ${u.cacheReadTokens}, cache write ${u.cacheWriteTokens}`,
+    );
+  }
+
+  if (!out.ok) {
+    const err = out.error ? `, ${out.error.errorClass} ${out.error.status ?? ''}`.trimEnd() : '';
+    console.log(`verdict:       FAILED (${out.reason}${err})`);
+    if (note.last) {
+      console.log(`api status:    ${note.last.status}`);
+      console.log(`api message:   ${note.last.message || '(empty)'}`);
+    }
+    return 'FAILED';
+  }
+  const guard = internalAnswerGuard(out.answer, out.groundingTexts);
+  console.log(`answer (${out.answer.language}): ${out.answer.answer}`);
+  console.log(`links:         ${out.answer.links.map((l) => l.key).join(', ') || '(none)'}`);
+  console.log(`guard:         ${guard.ok ? 'ok' : `${guard.reason} (${guard.rule})`}`);
+  if (toolCalls.length === 0) {
+    console.log('verdict:       NO TOOL CALL (a valid answer, but the loop was not exercised)');
+    return 'NO_TOOL_CALL';
+  }
+  console.log('verdict:       HELD (a tool call, then a schema-valid answer)');
+  return 'HELD';
+}
+
 async function main(): Promise<void> {
   if (process.env['CI']) {
     console.error('tool-loop:check calls the real Anthropic API and never runs in CI. Skipped.');
@@ -89,61 +192,23 @@ async function main(): Promise<void> {
     return;
   }
   const model = parseModel(process.argv.slice(2));
-  const client = new AnthropicToolLoopClient({ apiKey, model, timeoutMs: 60_000 });
-  const { system } = buildInternalSystem({
-    links: [
-      { key: 'zz.visitors.screen', shows: "today's visitors at a branch", params: ['branch'] },
-    ],
-    asker: { name: 'ZZ Check', seatBranch: 'ZZ Central', tiles: ['pos'] },
-    now: new Date(),
-  });
-  const toolCalls: string[] = [];
-  const out = await client.converse({
-    system,
-    question: 'How many children have visited ZZ Central today?',
-    tools: [TOOL],
-    wallMs: 120_000,
-    execute: async (call) => {
-      toolCalls.push(`${call.seq}:${call.name} ${JSON.stringify(call.input)}`);
-      return RESULT;
-    },
-  });
-
   console.log(`model asked:   ${model}`);
-  console.log(`model served:  ${out.model ?? '-'}`);
-  console.log(`turns:         ${out.turns}`);
-  console.log(`tool calls:    ${toolCalls.length === 0 ? '(none)' : toolCalls.join(' | ')}`);
-  console.log(`latency:       ${out.latencyMs} ms`);
-  if (out.usage) {
-    const u = out.usage;
-    console.log(
-      `tokens:        in ${u.inputTokens}, out ${u.outputTokens}, cache read ${u.cacheReadTokens}, cache write ${u.cacheWriteTokens}`,
-    );
-  }
+  const combined = await runMode(apiKey, model, 'combined');
+  const fallback = await runMode(apiKey, model, 'trailing_json');
 
-  if (!out.ok) {
+  console.log('\n== result ==');
+  console.log(`combined:      ${combined}`);
+  console.log(`trailing_json: ${fallback}  (the package default)`);
+  if (fallback === 'HELD') {
     console.log(
-      `RESULT:        FAILED (${out.reason}${out.error ? `, ${out.error.errorClass} ${out.error.status ?? ''}` : ''})`,
+      combined === 'HELD'
+        ? 'RESULT: both modes hold. trailing_json stays the default; combined can be switched on.'
+        : 'RESULT: the fallback holds. Keep answerMode trailing_json.',
     );
-    if (out.reason === 'MALFORMED' || out.error?.status === 400) {
-      console.log(
-        'The combination did not hold: apply the plan fallback (§D.1, plain-text final turn).',
-      );
-    }
+  } else {
+    console.log('RESULT: the fallback did not hold. Do not build I2 on this model until it does.');
     process.exitCode = 1;
-    return;
   }
-  const guard = internalAnswerGuard(out.answer, out.groundingTexts);
-  console.log(`answer (${out.answer.language}): ${out.answer.answer}`);
-  console.log(`links:         ${out.answer.links.map((l) => l.key).join(', ') || '(none)'}`);
-  console.log(`guard:         ${guard.ok ? 'ok' : `${guard.reason} (${guard.rule})`}`);
-  const combined = toolCalls.length > 0;
-  console.log(
-    combined
-      ? 'RESULT:        COMBINED: a tool call, then a schema-valid structured answer.'
-      : 'RESULT:        INCONCLUSIVE: a valid answer, but no tool was called.',
-  );
-  if (!combined) process.exitCode = 1;
 }
 
 main().catch(() => {

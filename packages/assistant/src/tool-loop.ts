@@ -40,7 +40,14 @@ import {
   type ProviderErrorInfo,
   type TurnUsage,
 } from './client';
-import { InternalAnswerSchema, type InternalAnswer, type ToolLoopFailure } from './internal-answer';
+import {
+  DEFAULT_INTERNAL_ANSWER_MODE,
+  InternalAnswerSchema,
+  parseTrailingAnswer,
+  type InternalAnswer,
+  type InternalAnswerMode,
+  type ToolLoopFailure,
+} from './internal-answer';
 import { inertJson, type SystemBlock } from './prompt';
 
 type BetaMessageParam = Anthropic.Beta.BetaMessageParam;
@@ -162,8 +169,16 @@ export type ToolLoopStep =
  * reply is never parsed, so a cut-off JSON is MAX_TOKENS, not MALFORMED.
  * A `tool_use` stop with no usable tool block, `pause_turn` (no server tools
  * are offered) and any other stop are MALFORMED.
+ *
+ * The final turn is read per answer mode (§D.1): `combined` parses the text
+ * as the schema's JSON; `trailing_json` (the default) takes the prose and the
+ * trailing JSON block (`parseTrailingAnswer`). Both end in
+ * `InternalAnswerSchema`, and any other shape is MALFORMED.
  */
-export function interpretToolLoopReply(reply: ToolLoopReply): ToolLoopStep {
+export function interpretToolLoopReply(
+  reply: ToolLoopReply,
+  mode: InternalAnswerMode = DEFAULT_INTERNAL_ANSWER_MODE,
+): ToolLoopStep {
   if (reply.stop_reason === 'refusal') return { kind: 'fail', reason: 'REFUSAL' };
   if (reply.stop_reason === 'max_tokens') return { kind: 'fail', reason: 'MAX_TOKENS' };
   if (reply.stop_reason === 'tool_use') {
@@ -182,6 +197,10 @@ export function interpretToolLoopReply(reply: ToolLoopReply): ToolLoopStep {
     .filter((b) => b.type === 'text')
     .map((b) => b.text ?? '')
     .join('');
+  if (mode === 'trailing_json') {
+    const answer = parseTrailingAnswer(text);
+    return answer ? { kind: 'final', answer } : { kind: 'fail', reason: 'MALFORMED' };
+  }
   let json: unknown;
   try {
     json = JSON.parse(text);
@@ -206,6 +225,12 @@ export interface ToolLoopRequest {
   execute: ToolExecutor;
   maxToolCalls?: number;
   wallMs?: number;
+  /**
+   * `buildInternalSystem(...).answerMode`. When given, it must equal the
+   * client's: the system block's output contract and the reply's reading
+   * must agree. A mismatch is a programming error and throws.
+   */
+  answerMode?: InternalAnswerMode;
 }
 
 interface LoopTrace {
@@ -236,6 +261,7 @@ export type ToolLoopOutcome =
 
 export interface ToolLoopClient {
   readonly model: string;
+  readonly answerMode: InternalAnswerMode;
   converse(request: ToolLoopRequest): Promise<ToolLoopOutcome>;
 }
 
@@ -271,8 +297,13 @@ function addUsage(total: TurnUsage | null, reply: ToolLoopReply): TurnUsage {
 export async function runToolLoop(
   transport: ToolLoopTransport,
   request: ToolLoopRequest,
-  options: { now: () => number; timeoutMs: number },
+  options: { now: () => number; timeoutMs: number; answerMode: InternalAnswerMode },
 ): Promise<ToolLoopOutcome> {
+  if (request.answerMode !== undefined && request.answerMode !== options.answerMode) {
+    throw new TypeError(
+      `tool loop: the system was built for ${request.answerMode}, the client reads ${options.answerMode}`,
+    );
+  }
   const tools = toolsForRequest(request.tools);
   const known = new Set(tools.map((t) => t.name));
   const maxToolCalls = request.maxToolCalls ?? INTERNAL_DEFAULT_MAX_TOOL_CALLS;
@@ -328,7 +359,7 @@ export async function runToolLoop(
     model = reply.model;
     if (reply._request_id) requestIds.push(reply._request_id);
 
-    const step = interpretToolLoopReply(reply);
+    const step = interpretToolLoopReply(reply, options.answerMode);
     if (step.kind === 'fail') return fail(step.reason);
     if (step.kind === 'final') {
       return { ...trace(), ok: true, answer: step.answer, usage, model: reply.model };
@@ -394,6 +425,8 @@ export interface AnthropicToolLoopClientOptions {
   timeoutMs?: number | undefined;
   maxRetries?: number | undefined;
   maxOutputTokens?: number | undefined;
+  /** How the final answer travels (§D.1). Default `trailing_json`, the plan's fallback. */
+  answerMode?: InternalAnswerMode | undefined;
   /** Tests inject a fetch so the network is never reached. */
   fetch?: typeof fetch | undefined;
   now?: () => number;
@@ -403,6 +436,7 @@ const ANSWER_FORMAT = betaZodOutputFormat(InternalAnswerSchema);
 
 export class AnthropicToolLoopClient implements ToolLoopClient {
   readonly model: string;
+  readonly answerMode: InternalAnswerMode;
   private readonly effort: AiEffort;
   private readonly timeoutMs: number;
   private readonly maxRetries: number;
@@ -413,6 +447,7 @@ export class AnthropicToolLoopClient implements ToolLoopClient {
   constructor(options: AnthropicToolLoopClientOptions) {
     this.model = options.model ?? DEFAULT_MODEL;
     this.effort = options.effort ?? DEFAULT_EFFORT;
+    this.answerMode = options.answerMode ?? DEFAULT_INTERNAL_ANSWER_MODE;
     this.timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
     this.maxRetries = options.maxRetries ?? DEFAULT_MAX_RETRIES;
     this.maxOutputTokens = options.maxOutputTokens ?? INTERNAL_MAX_OUTPUT_TOKENS;
@@ -429,14 +464,19 @@ export class AnthropicToolLoopClient implements ToolLoopClient {
   }
 
   /**
-   * Tools and the structured answer format in the same request: the model
-   * may call tools, and its final text turn is constrained to the answer
-   * schema. `create`, not `parse`, so the stop reason is read first (as
-   * Phase 2). Thinking is the model's default (adaptive); the assistant
-   * content is echoed back whole, thinking blocks included.
+   * `trailing_json` (default): tools and no output format on every turn;
+   * the final turn is plain text ending in the JSON block. `combined`: tools
+   * and the structured answer format in the same request. `create`, not
+   * `parse`, so the stop reason is read first (as Phase 2). Thinking is the
+   * model's default (adaptive); the assistant content is echoed back whole,
+   * thinking blocks included.
    */
   converse(request: ToolLoopRequest): Promise<ToolLoopOutcome> {
     const fallback = supportsServerFallback(this.model);
+    const outputConfig =
+      this.answerMode === 'combined'
+        ? { effort: this.effort, format: ANSWER_FORMAT }
+        : { effort: this.effort };
     const transport: ToolLoopTransport = {
       send: async ({ system, tools, messages }, timeoutMs) => {
         try {
@@ -447,7 +487,7 @@ export class AnthropicToolLoopClient implements ToolLoopClient {
               system: [...system],
               tools,
               messages,
-              output_config: { effort: this.effort, format: ANSWER_FORMAT },
+              output_config: outputConfig,
               ...(fallback ? { betas: [FALLBACK_BETA], fallbacks: 'default' as const } : {}),
             },
             { timeout: timeoutMs, maxRetries: this.maxRetries },
@@ -458,6 +498,10 @@ export class AnthropicToolLoopClient implements ToolLoopClient {
         }
       },
     };
-    return runToolLoop(transport, request, { now: this.now, timeoutMs: this.timeoutMs });
+    return runToolLoop(transport, request, {
+      now: this.now,
+      timeoutMs: this.timeoutMs,
+      answerMode: this.answerMode,
+    });
   }
 }

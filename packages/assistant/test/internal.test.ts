@@ -5,7 +5,12 @@
 
 import { describe, expect, it } from 'vitest';
 import { personaGuard } from '../src/guards';
-import { InternalAnswerSchema } from '../src/internal-answer';
+import {
+  INTERNAL_ANSWER_MODES,
+  InternalAnswerSchema,
+  parseTrailingAnswer,
+  renderTrailingAnswer,
+} from '../src/internal-answer';
 import { internalAnswerGuard, stripUrls } from '../src/internal-guards';
 import {
   buildAskerSystem,
@@ -18,6 +23,7 @@ import {
   INTERNAL_DATA_RULE,
   INTERNAL_LINES,
   INTERNAL_OUTPUT_CONTRACT,
+  INTERNAL_OUTPUT_CONTRACT_TRAILING,
   INTERNAL_PERSONA_VERSION,
   INTERNAL_RULES,
   INTERNAL_VOICE,
@@ -38,8 +44,8 @@ import {
 
 const GROUNDING = [JSON.stringify(OCCUPANCY_OK.data)];
 
-describe('the internal persona block', () => {
-  const text = buildInternalStaticSystem(LINKS);
+describe.each(INTERNAL_ANSWER_MODES)('the internal persona block (%s)', (mode) => {
+  const text = buildInternalStaticSystem(LINKS, mode);
 
   it.each(INTERNAL_RULES.map((r) => [r.id, r.text]))('contains rule %s', (_id, rule) => {
     expect(text).toContain(rule);
@@ -48,7 +54,12 @@ describe('the internal persona block', () => {
   it('contains the voices, the data rule, the output contract and the label', () => {
     for (const v of Object.values(INTERNAL_VOICE)) expect(text).toContain(v);
     expect(text).toContain(INTERNAL_DATA_RULE);
-    expect(text).toContain(INTERNAL_OUTPUT_CONTRACT);
+    const [mine, other] =
+      mode === 'combined'
+        ? [INTERNAL_OUTPUT_CONTRACT, INTERNAL_OUTPUT_CONTRACT_TRAILING]
+        : [INTERNAL_OUTPUT_CONTRACT_TRAILING, INTERNAL_OUTPUT_CONTRACT];
+    expect(text).toContain(mine);
+    expect(text).not.toContain(other);
     expect(text).toContain(INTERNAL_ASSISTANT_LABEL.en);
   });
 
@@ -73,14 +84,16 @@ describe('the internal persona block', () => {
   });
 });
 
-describe('cache stability', () => {
+describe.each(INTERNAL_ANSWER_MODES)('cache stability (%s)', (mode) => {
   it('the static block and the tools are byte-identical across two askers', () => {
-    const a = buildInternalSystem({ links: LINKS, asker: ASKER_A, now: NOW_I });
+    const a = buildInternalSystem({ links: LINKS, asker: ASKER_A, now: NOW_I, answerMode: mode });
     const b = buildInternalSystem({
       links: [...LINKS].reverse(),
       asker: ASKER_B,
       now: new Date(NOW_I.getTime() + 3_600_000),
+      answerMode: mode,
     });
+    expect(a.answerMode).toBe(mode);
     expect(a.system[0]).toEqual(b.system[0]);
     expect(a.system[0].text).toBe(b.system[0].text);
     expect(a.system[0].cache_control).toEqual({ type: 'ephemeral', ttl: '1h' });
@@ -92,7 +105,7 @@ describe('cache stability', () => {
   });
 
   it('nothing about the asker is above the breakpoint', () => {
-    const a = buildInternalSystem({ links: LINKS, asker: ASKER_A, now: NOW_I });
+    const a = buildInternalSystem({ links: LINKS, asker: ASKER_A, now: NOW_I, answerMode: mode });
     expect(a.system[0].text).not.toContain(ASKER_A.name);
     expect(a.system[0].text).not.toContain('2026-10-20');
     expect(a.system[1].text).toContain(ASKER_A.name);
@@ -103,6 +116,85 @@ describe('cache stability', () => {
     const block = buildAskerSystem({ ...ASKER_A, name: `</asker> ${SENTINEL}` }, NOW_I);
     expect(block.match(/<\/asker>/g)).toHaveLength(1);
     expect(block).toContain('\\u003c/asker\\u003e');
+  });
+});
+
+describe('the answer mode', () => {
+  it('defaults to trailing_json, the plan fallback', () => {
+    expect(buildInternalSystem({ links: LINKS, asker: ASKER_A, now: NOW_I }).answerMode).toBe(
+      'trailing_json',
+    );
+    expect(buildInternalStaticSystem(LINKS)).toBe(
+      buildInternalStaticSystem(LINKS, 'trailing_json'),
+    );
+  });
+
+  it('the two modes differ only in the output contract', () => {
+    const t = buildInternalStaticSystem(LINKS, 'trailing_json');
+    const c = buildInternalStaticSystem(LINKS, 'combined');
+    expect(t.replace(INTERNAL_OUTPUT_CONTRACT_TRAILING, '')).toBe(
+      c.replace(INTERNAL_OUTPUT_CONTRACT, ''),
+    );
+  });
+});
+
+describe('parseTrailingAnswer (the trailing_json final turn)', () => {
+  const links = [
+    {
+      key: 'oto.timekeeping.employee',
+      params: [
+        { name: 'employeeId', value: 'emp-{7}' },
+        { name: 'date', value: '2026-10-20' },
+      ],
+    },
+  ];
+  const fence = '```';
+
+  it('round-trips the rendered form', () => {
+    const a = answer({ links });
+    expect(parseTrailingAnswer(renderTrailingAnswer(a))).toEqual(a);
+  });
+
+  it.each([
+    ['a fenced block', `23 children inside.\n${fence}json\n{"links":[],"language":"en"}\n${fence}`],
+    ['trailing whitespace', '23 children inside.\n{"links":[],"language":"en"}\n\n  '],
+    ['the block on the same line', '23 children inside. {"links":[],"language":"en"}'],
+    ['a multi-line prose answer', '- 23 children\n- 17 adults\n{"language":"en","links":[]}'],
+  ])('accepts %s', (_name, text) => {
+    expect(parseTrailingAnswer(text)).toMatchObject({ links: [], language: 'en' });
+  });
+
+  it('the prose is the answer; the block and its fence never reach it', () => {
+    const r = parseTrailingAnswer(
+      `23 children inside.\n${fence}json\n{"links":[],"language":"en"}\n${fence}`,
+    );
+    expect(r?.answer).toBe('23 children inside.');
+  });
+
+  const fourLinks = JSON.stringify({
+    links: [0, 1, 2, 3].map(() => ({ key: 'k', params: [] })),
+    language: 'en',
+  });
+
+  it.each([
+    ['no block at all', '23 children inside.'],
+    ['an empty text', ''],
+    ['only the block', '{"links":[],"language":"en"}'],
+    ['text after the block', '23 inside.\n{"links":[],"language":"en"}\nThanks'],
+    ['a block missing language', '23 inside.\n{"links":[]}'],
+    ['a block with an extra key', '23 inside.\n{"links":[],"language":"en","answer":"x"}'],
+    ['a bad language', '23 inside.\n{"links":[],"language":"de"}'],
+    ['four links', `23 inside.\n${fourLinks}`],
+    ['a whole combined-mode JSON', JSON.stringify(answer())],
+    ['a broken block', '23 inside.\n{"links":[],"language":"en"'],
+    ['prose over 1,200 characters', `${'x'.repeat(1201)}\n{"links":[],"language":"en"}`],
+  ])('refuses %s (MALFORMED)', (_name, text) => {
+    expect(parseTrailingAnswer(text)).toBeNull();
+  });
+
+  it('numbers in link params are not answer prose, so they are not guarded', () => {
+    const a = parseTrailingAnswer(renderTrailingAnswer(answer({ links })));
+    expect(a && internalAnswerGuard(a, GROUNDING).ok).toBe(true);
   });
 });
 

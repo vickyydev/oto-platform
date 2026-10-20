@@ -16,11 +16,17 @@
  * Nothing here reads a clock, an environment variable or a database.
  */
 
-import { INTERNAL_MAX_ANSWER_CHARS, INTERNAL_MAX_LINKS } from './internal-answer';
+import {
+  DEFAULT_INTERNAL_ANSWER_MODE,
+  INTERNAL_MAX_ANSWER_CHARS,
+  INTERNAL_MAX_LINKS,
+  type InternalAnswerMode,
+} from './internal-answer';
 import {
   INTERNAL_ASSISTANT_LABEL,
   INTERNAL_DATA_RULE,
   INTERNAL_OUTPUT_CONTRACT,
+  INTERNAL_OUTPUT_CONTRACT_TRAILING,
   INTERNAL_PERSONA_VERSION,
   INTERNAL_RULES,
   INTERNAL_VOICE,
@@ -63,11 +69,19 @@ function renderLinks(links: readonly InternalLinkEntry[]): string {
     .join('\n');
 }
 
+/** The output contract the model reads, per answer mode (§D.1). */
+export function internalOutputContract(mode: InternalAnswerMode): string {
+  return mode === 'combined' ? INTERNAL_OUTPUT_CONTRACT : INTERNAL_OUTPUT_CONTRACT_TRAILING;
+}
+
 /**
- * Block 1. Pure in the link map: the same entries in any order give the same
- * bytes, whoever asks.
+ * Block 1. Pure in the link map and the answer mode (a deploy-wide setting):
+ * the same entries in any order give the same bytes, whoever asks.
  */
-export function buildInternalStaticSystem(links: readonly InternalLinkEntry[]): string {
+export function buildInternalStaticSystem(
+  links: readonly InternalLinkEntry[],
+  mode: InternalAnswerMode = DEFAULT_INTERNAL_ANSWER_MODE,
+): string {
   return [
     `You are the ${INTERNAL_ASSISTANT_LABEL.en} for OTO Play Park, an indoor children's play park in Phuket. Colleagues (reception, floor, managers, admins) ask you about the park's own records. You answer from the tools you are given, which read the park's systems as the asking colleague: each tool sees exactly what that colleague's own screens would show.`,
     '',
@@ -86,7 +100,7 @@ export function buildInternalStaticSystem(links: readonly InternalLinkEntry[]): 
     renderLinks(links),
     '',
     '## Output',
-    INTERNAL_OUTPUT_CONTRACT,
+    internalOutputContract(mode),
     `The answer is at most ${INTERNAL_MAX_ANSWER_CHARS} characters.`,
   ].join('\n');
 }
@@ -109,19 +123,25 @@ export interface InternalSystemInput {
   links: readonly InternalLinkEntry[];
   asker: InternalAsker;
   now: Date;
+  /** Must be the client's `answerMode`; pass `client.answerMode`. Default: `trailing_json`. */
+  answerMode?: InternalAnswerMode;
 }
 
 export interface InternalSystem {
   system: [SystemBlock, SystemBlock];
   personaVersion: string;
+  /** Pass on as `ToolLoopRequest.answerMode`: the loop refuses a mismatch with its client. */
+  answerMode: InternalAnswerMode;
 }
 
 export function buildInternalSystem(input: InternalSystemInput): InternalSystem {
+  const mode = input.answerMode ?? DEFAULT_INTERNAL_ANSWER_MODE;
   return {
+    answerMode: mode,
     system: [
       {
         type: 'text',
-        text: buildInternalStaticSystem(input.links),
+        text: buildInternalStaticSystem(input.links, mode),
         cache_control: { type: 'ephemeral', ttl: '1h' },
       },
       { type: 'text', text: buildAskerSystem(input.asker, input.now) },

@@ -8,7 +8,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FALLBACK_BETA, PROVIDER_FAILURES, type ProviderFailure } from '../src/client';
 import { FakeAssistantClient, FAKE_REQUEST_ID, type FakeStep } from '../src/fake';
-import { TOOL_LOOP_FAILURES, linkParams } from '../src/internal-answer';
+import {
+  INTERNAL_ANSWER_MODES,
+  renderTrailingAnswer,
+  TOOL_LOOP_FAILURES,
+  linkParams,
+  type InternalAnswer,
+  type InternalAnswerMode,
+} from '../src/internal-answer';
 import { buildInternalSystem } from '../src/internal-prompt';
 import { buildPrompt } from '../src/prompt';
 import {
@@ -60,8 +67,11 @@ function request(
   execute: ToolLoopRequest['execute'],
   extra: Partial<ToolLoopRequest> = {},
 ): ToolLoopRequest {
+  const mode = extra.answerMode ?? 'trailing_json';
+  const built = buildInternalSystem({ links: LINKS, asker: ASKER_A, now: NOW_I, answerMode: mode });
   return {
-    system: SYSTEM,
+    system: built.system,
+    answerMode: built.answerMode,
     question: 'How many children are inside Central right now?',
     tools: TOOLS,
     execute,
@@ -282,96 +292,109 @@ describe('FakeToolLoopClient', () => {
 // Every Phase 2 failure keeps its reason word
 // ---------------------------------------------------------------------------
 
-describe('every Phase 2 failure step maps to the same reason word', () => {
-  const shapes: Array<[Exclude<FakeStep, { kind: 'decision' }>, ProviderFailure]> = [
-    [{ kind: 'timeout' }, 'PROVIDER_TIMEOUT'],
-    [{ kind: 'rate_limit' }, 'PROVIDER_RATE_LIMIT'],
-    [{ kind: 'server_error' }, 'PROVIDER_UNAVAILABLE'],
-    [{ kind: 'server_error', status: 529 }, 'PROVIDER_UNAVAILABLE'],
-    [{ kind: 'connection' }, 'PROVIDER_UNAVAILABLE'],
-    [{ kind: 'bad_request' }, 'PROVIDER_ERROR'],
-    [{ kind: 'throw', error: new TypeError(`${SENTINEL} boom`) }, 'PROVIDER_ERROR'],
-    [{ kind: 'refusal' }, 'REFUSAL'],
-    [{ kind: 'malformed' }, 'MALFORMED'],
-    [{ kind: 'invalid_shape', value: { ...answer(), language: 'de' } }, 'MALFORMED'],
-    [{ kind: 'invalid_shape', value: { ...answer(), answer: 'x'.repeat(1201) } }, 'MALFORMED'],
-    [{ kind: 'max_tokens' }, 'MAX_TOKENS'],
-  ];
+describe.each(INTERNAL_ANSWER_MODES)(
+  'every Phase 2 failure step keeps its reason word (%s)',
+  (mode) => {
+    const shapes: Array<[Exclude<FakeStep, { kind: 'decision' }>, ProviderFailure]> = [
+      [{ kind: 'timeout' }, 'PROVIDER_TIMEOUT'],
+      [{ kind: 'rate_limit' }, 'PROVIDER_RATE_LIMIT'],
+      [{ kind: 'server_error' }, 'PROVIDER_UNAVAILABLE'],
+      [{ kind: 'server_error', status: 529 }, 'PROVIDER_UNAVAILABLE'],
+      [{ kind: 'connection' }, 'PROVIDER_UNAVAILABLE'],
+      [{ kind: 'bad_request' }, 'PROVIDER_ERROR'],
+      [{ kind: 'throw', error: new TypeError(`${SENTINEL} boom`) }, 'PROVIDER_ERROR'],
+      [{ kind: 'refusal' }, 'REFUSAL'],
+      [{ kind: 'malformed' }, 'MALFORMED'],
+      [{ kind: 'invalid_shape', value: { ...answer(), language: 'de' } }, 'MALFORMED'],
+      [{ kind: 'invalid_shape', value: { ...answer(), answer: 'x'.repeat(1201) } }, 'MALFORMED'],
+      [{ kind: 'max_tokens' }, 'MAX_TOKENS'],
+    ];
 
-  function phase2Prompt() {
-    const r = buildPrompt({
-      knowledge: fixtureKnowledge(),
-      episode: [{ from: 'customer', at: NOW, text: 'hello' }],
-      context: context(),
-    });
-    if (!r.ok) throw new Error(r.reason);
-    return r.prompt;
-  }
-
-  it.each(shapes)('%o is %s on the first turn, as in Phase 2', async (step, reason) => {
-    const out = await new FakeToolLoopClient([step]).converse(request(executor({}).execute));
-    expect(out).toMatchObject({ ok: false, reason });
-    expect(out).not.toHaveProperty('answer');
-    // The same step through the Phase 2 fake gives the same word (invalid
-    // shapes differ in content, not in kind: they are decision-shaped there).
-    if (step.kind !== 'invalid_shape') {
-      const p2 = await new FakeAssistantClient([step]).decide({ prompt: phase2Prompt() });
-      expect(p2).toMatchObject({ ok: false, reason });
+    function phase2Prompt() {
+      const r = buildPrompt({
+        knowledge: fixtureKnowledge(),
+        episode: [{ from: 'customer', at: NOW, text: 'hello' }],
+        context: context(),
+      });
+      if (!r.ok) throw new Error(r.reason);
+      return r.prompt;
     }
-    expect(JSON.stringify(out)).not.toContain(SENTINEL);
-  });
 
-  it.each(shapes)('%o is %s after a tool call too', async (step, reason) => {
-    const ex = executor({ 'branches.list': BRANCHES_OK });
-    const out = await new FakeToolLoopClient([
-      { kind: 'tool_use', calls: [{ name: 'branches.list', input: {} }] },
-      step,
-    ]).converse(request(ex.execute));
-    expect(out).toMatchObject({ ok: false, reason, turns: 2 });
-    expect(out.calls).toHaveLength(1);
-  });
-
-  it('reaches every provider failure word, and the loop adds only its own three', () => {
-    expect([...new Set(shapes.map(([, r]) => r))].sort()).toEqual([...PROVIDER_FAILURES].sort());
-    expect(
-      TOOL_LOOP_FAILURES.filter((r) => !(PROVIDER_FAILURES as readonly string[]).includes(r)),
-    ).toEqual(['TOOL_CAP', 'WALL_TIME', 'TOOL_ERROR']);
-  });
-
-  it('an HTTP failure carries class, status and request id only', async () => {
-    const out = await new FakeToolLoopClient([{ kind: 'rate_limit' }]).converse(
-      request(executor({}).execute),
-    );
-    expect(out).toMatchObject({
-      ok: false,
-      error: { errorClass: 'RateLimitError', status: 429, requestId: FAKE_REQUEST_ID },
+    it.each(shapes)('%o is %s on the first turn, as in Phase 2', async (step, reason) => {
+      const out = await new FakeToolLoopClient([step], undefined, mode).converse(
+        request(executor({}).execute, { answerMode: mode }),
+      );
+      expect(out).toMatchObject({ ok: false, reason });
+      expect(out).not.toHaveProperty('answer');
+      // The same step through the Phase 2 fake gives the same word (invalid
+      // shapes differ in content, not in kind: they are decision-shaped there).
+      if (step.kind !== 'invalid_shape') {
+        const p2 = await new FakeAssistantClient([step]).decide({ prompt: phase2Prompt() });
+        expect(p2).toMatchObject({ ok: false, reason });
+      }
+      expect(JSON.stringify(out)).not.toContain(SENTINEL);
     });
-    if (!out.ok)
-      expect(Object.keys(out.error ?? {}).sort()).toEqual(['errorClass', 'requestId', 'status']);
-  });
 
-  it('a tool_use stop with no tool block, and pause_turn, are MALFORMED', () => {
-    const base: Omit<ToolLoopReply, 'stop_reason' | 'content'> = {
-      model: 'm',
-      usage: { input_tokens: 1, output_tokens: 1 },
-    };
-    expect(interpretToolLoopReply({ ...base, stop_reason: 'tool_use', content: [] })).toEqual({
-      kind: 'fail',
-      reason: 'MALFORMED',
+    it.each(shapes)('%o is %s after a tool call too', async (step, reason) => {
+      const ex = executor({ 'branches.list': BRANCHES_OK });
+      const out = await new FakeToolLoopClient(
+        [{ kind: 'tool_use', calls: [{ name: 'branches.list', input: {} }] }, step],
+        undefined,
+        mode,
+      ).converse(request(ex.execute, { answerMode: mode }));
+      expect(out).toMatchObject({ ok: false, reason, turns: 2 });
+      expect(out.calls).toHaveLength(1);
     });
-    expect(interpretToolLoopReply({ ...base, stop_reason: 'pause_turn', content: [] })).toEqual({
-      kind: 'fail',
-      reason: 'MALFORMED',
+
+    it('reaches every provider failure word, and the loop adds only its own three', () => {
+      expect([...new Set(shapes.map(([, r]) => r))].sort()).toEqual([...PROVIDER_FAILURES].sort());
+      expect(
+        TOOL_LOOP_FAILURES.filter((r) => !(PROVIDER_FAILURES as readonly string[]).includes(r)),
+      ).toEqual(['TOOL_CAP', 'WALL_TIME', 'TOOL_ERROR']);
     });
-    expect(
-      interpretToolLoopReply({
-        ...base,
-        stop_reason: 'tool_use',
-        content: [{ type: 'tool_use', name: 'x', input: {} }],
-      }),
-    ).toEqual({ kind: 'fail', reason: 'MALFORMED' });
-  });
-});
+
+    it('an HTTP failure carries class, status and request id only', async () => {
+      const out = await new FakeToolLoopClient([{ kind: 'rate_limit' }], undefined, mode).converse(
+        request(executor({}).execute, { answerMode: mode }),
+      );
+      expect(out).toMatchObject({
+        ok: false,
+        error: { errorClass: 'RateLimitError', status: 429, requestId: FAKE_REQUEST_ID },
+      });
+      if (!out.ok)
+        expect(Object.keys(out.error ?? {}).sort()).toEqual(['errorClass', 'requestId', 'status']);
+    });
+
+    it('a tool_use stop with no tool block, and pause_turn, are MALFORMED', () => {
+      const base: Omit<ToolLoopReply, 'stop_reason' | 'content'> = {
+        model: 'm',
+        usage: { input_tokens: 1, output_tokens: 1 },
+      };
+      expect(
+        interpretToolLoopReply({ ...base, stop_reason: 'tool_use', content: [] }, mode),
+      ).toEqual({
+        kind: 'fail',
+        reason: 'MALFORMED',
+      });
+      expect(
+        interpretToolLoopReply({ ...base, stop_reason: 'pause_turn', content: [] }, mode),
+      ).toEqual({
+        kind: 'fail',
+        reason: 'MALFORMED',
+      });
+      expect(
+        interpretToolLoopReply(
+          {
+            ...base,
+            stop_reason: 'tool_use',
+            content: [{ type: 'tool_use', name: 'x', input: {} }],
+          },
+          mode,
+        ),
+      ).toEqual({ kind: 'fail', reason: 'MALFORMED' });
+    });
+  },
+);
 
 // ---------------------------------------------------------------------------
 // The real client against a stub fetch: the same interpretation as the fake
@@ -420,24 +443,31 @@ function wire(reply: ToolLoopReply) {
   };
 }
 
-function realClient(f: typeof fetch, timeoutMs?: number) {
+function realClient(f: typeof fetch, timeoutMs?: number, answerMode?: InternalAnswerMode) {
   return new AnthropicToolLoopClient({
     apiKey: 'sk-test-not-a-key',
     baseURL: 'http://anthropic.stub.invalid',
     fetch: f,
     maxRetries: 0,
     ...(timeoutMs ? { timeoutMs } : {}),
+    ...(answerMode ? { answerMode } : {}),
   });
 }
 
+/** The final text a model writes in each mode. */
+function finalText(a: InternalAnswer, mode: InternalAnswerMode): string {
+  return mode === 'combined' ? JSON.stringify(a) : renderTrailingAnswer(a);
+}
+
 /** Replays a fake script over HTTP: each step's materialised reply or error status. */
-function replay(script: FakeToolLoopStep[]) {
+function replay(script: FakeToolLoopStep[], mode: InternalAnswerMode) {
   let n = 0;
   return stubFetch((_call, i) => {
     const made = materialiseToolLoopStep(
       script[i]!,
       'claude-opus-5-5',
       () => `toolu_fake_${String(++n).padStart(4, '0')}`,
+      mode,
     );
     if ('error' in made) throw new Error('replay covers replies only');
     return json(200, wire(made.reply));
@@ -449,162 +479,216 @@ function comparable(out: ToolLoopOutcome) {
   return rest;
 }
 
-describe('AnthropicToolLoopClient (stub fetch, never the network)', () => {
-  it('the fake and the real client give the same outcome for the same script', async () => {
-    const script: FakeToolLoopStep[] = HAPPY;
-    const exReal = executor({ 'branches.list': BRANCHES_OK, 'occupancy.now': OCCUPANCY_OK });
-    const exFake = executor({ 'branches.list': BRANCHES_OK, 'occupancy.now': OCCUPANCY_OK });
-    const s = replay(script);
-    const real = await realClient(s.fetch).converse(request(exReal.execute));
-    const fake = await new FakeToolLoopClient(script).converse(request(exFake.execute));
-    expect(real.ok).toBe(true);
-    expect(comparable(real)).toEqual(comparable(fake));
-    expect(exReal.seen.map(({ remainingMs: _r, ...c }) => c)).toEqual(
-      exFake.seen.map(({ remainingMs: _r, ...c }) => c),
-    );
-  });
+describe.each(INTERNAL_ANSWER_MODES)(
+  'AnthropicToolLoopClient, %s mode (stub fetch, never the network)',
+  (mode) => {
+    const req = (execute: ToolLoopRequest['execute'], extra: Partial<ToolLoopRequest> = {}) =>
+      request(execute, { answerMode: mode, ...extra });
 
-  it('sends tools (sorted), the answer format, both system blocks and the echoed turns', async () => {
-    const s = replay(HAPPY);
-    const ex = executor({ 'branches.list': BRANCHES_OK, 'occupancy.now': OCCUPANCY_OK });
-    await realClient(s.fetch).converse(request(ex.execute));
-    expect(s.calls).toHaveLength(3);
-    const first = s.calls[0]!;
-    expect(first.headers.get('anthropic-beta')).toContain(FALLBACK_BETA);
-    const body = first.body as {
-      model: string;
-      max_tokens: number;
-      fallbacks: string;
-      tools: Array<{ name: string }>;
-      system: Array<{ text: string; cache_control?: unknown }>;
-      output_config: { effort: string; format: { type: string } };
-      messages: Array<{ role: string; content: unknown }>;
-    };
-    expect(body.model).toBe('claude-opus-5-5');
-    expect(body.max_tokens).toBe(4000);
-    expect(body.fallbacks).toBe('default');
-    expect(body.output_config.effort).toBe('low');
-    expect(body.output_config.format.type).toBe('json_schema');
-    expect(body.tools.map((t) => t.name)).toEqual(['branches.list', 'occupancy.now']);
-    expect(body.system).toHaveLength(2);
-    expect(body.system[0]!.cache_control).toEqual({ type: 'ephemeral', ttl: '1h' });
-    expect(body.system[1]).not.toHaveProperty('cache_control');
-    expect(body).not.toHaveProperty('thinking');
-    expect(body).not.toHaveProperty('tool_choice');
-    expect(body.messages).toEqual([
-      { role: 'user', content: 'How many children are inside Central right now?' },
-    ]);
-    const third = s.calls[2]!.body as { messages: Array<{ role: string; content: unknown }> };
-    expect(third.messages.map((m) => m.role)).toEqual([
-      'user',
-      'assistant',
-      'user',
-      'assistant',
-      'user',
-    ]);
-    expect(third.messages[4]!.content).toEqual([
-      {
-        type: 'tool_result',
-        tool_use_id: 'toolu_fake_0002',
-        content: JSON.stringify({ data: OCCUPANCY_OK.data }),
-      },
-    ]);
-  });
-
-  it('a 500 whose body echoes the ask surfaces class, status and request id only', async () => {
-    const s = stubFetch(() =>
-      json(500, { type: 'error', error: { type: 'api_error', message: `echo ${SENTINEL}` } }),
-    );
-    const out = await realClient(s.fetch).converse(request(executor({}).execute));
-    expect(out).toMatchObject({
-      ok: false,
-      reason: 'PROVIDER_UNAVAILABLE',
-      error: { errorClass: 'InternalServerError', status: 500, requestId: 'req_stub_1' },
-      turns: 1,
-      requestIds: ['req_stub_1'],
+    it('the fake and the real client give the same outcome for the same script', async () => {
+      const script: FakeToolLoopStep[] = HAPPY;
+      const exReal = executor({ 'branches.list': BRANCHES_OK, 'occupancy.now': OCCUPANCY_OK });
+      const exFake = executor({ 'branches.list': BRANCHES_OK, 'occupancy.now': OCCUPANCY_OK });
+      const s = replay(script, mode);
+      const real = await realClient(s.fetch, undefined, mode).converse(req(exReal.execute));
+      const fake = await new FakeToolLoopClient(script, undefined, mode).converse(
+        req(exFake.execute),
+      );
+      expect(real.ok).toBe(true);
+      expect(comparable(real)).toEqual(comparable(fake));
+      expect(exReal.seen.map(({ remainingMs: _r, ...c }) => c)).toEqual(
+        exFake.seen.map(({ remainingMs: _r, ...c }) => c),
+      );
     });
-    expect(JSON.stringify(out)).not.toContain(SENTINEL);
+
+    it('sends tools (sorted), the mode output config, both system blocks and the echoed turns', async () => {
+      const s = replay(HAPPY, mode);
+      const ex = executor({ 'branches.list': BRANCHES_OK, 'occupancy.now': OCCUPANCY_OK });
+      await realClient(s.fetch, undefined, mode).converse(req(ex.execute));
+      expect(s.calls).toHaveLength(3);
+      const first = s.calls[0]!;
+      expect(first.headers.get('anthropic-beta')).toContain(FALLBACK_BETA);
+      const body = first.body as {
+        model: string;
+        max_tokens: number;
+        fallbacks: string;
+        tools: Array<{ name: string }>;
+        system: Array<{ text: string; cache_control?: unknown }>;
+        output_config: { effort: string; format?: { type: string } };
+        messages: Array<{ role: string; content: unknown }>;
+      };
+      expect(body.model).toBe('claude-opus-5-5');
+      expect(body.max_tokens).toBe(4000);
+      expect(body.fallbacks).toBe('default');
+      expect(body.output_config.effort).toBe('low');
+      // The live check of 2026-10-20: tools + format in one request was a 400.
+      if (mode === 'combined') expect(body.output_config.format?.type).toBe('json_schema');
+      else expect(body.output_config).toEqual({ effort: 'low' });
+      for (const c of s.calls) {
+        const b = c.body as { output_config: Record<string, unknown> };
+        expect('format' in b.output_config).toBe(mode === 'combined');
+      }
+      expect(body.tools.map((t) => t.name)).toEqual(['branches.list', 'occupancy.now']);
+      expect(body.system).toHaveLength(2);
+      expect(body.system[0]!.cache_control).toEqual({ type: 'ephemeral', ttl: '1h' });
+      expect(body.system[1]).not.toHaveProperty('cache_control');
+      expect(body).not.toHaveProperty('thinking');
+      expect(body).not.toHaveProperty('tool_choice');
+      expect(body.messages).toEqual([
+        { role: 'user', content: 'How many children are inside Central right now?' },
+      ]);
+      const third = s.calls[2]!.body as { messages: Array<{ role: string; content: unknown }> };
+      expect(third.messages.map((m) => m.role)).toEqual([
+        'user',
+        'assistant',
+        'user',
+        'assistant',
+        'user',
+      ]);
+      expect(third.messages[4]!.content).toEqual([
+        {
+          type: 'tool_result',
+          tool_use_id: 'toolu_fake_0002',
+          content: JSON.stringify({ data: OCCUPANCY_OK.data }),
+        },
+      ]);
+    });
+
+    it('a 500 whose body echoes the ask surfaces class, status and request id only', async () => {
+      const s = stubFetch(() =>
+        json(500, { type: 'error', error: { type: 'api_error', message: `echo ${SENTINEL}` } }),
+      );
+      const out = await realClient(s.fetch, undefined, mode).converse(req(executor({}).execute));
+      expect(out).toMatchObject({
+        ok: false,
+        reason: 'PROVIDER_UNAVAILABLE',
+        error: { errorClass: 'InternalServerError', status: 500, requestId: 'req_stub_1' },
+        turns: 1,
+        requestIds: ['req_stub_1'],
+      });
+      expect(JSON.stringify(out)).not.toContain(SENTINEL);
+    });
+
+    it.each([
+      [429, 'PROVIDER_RATE_LIMIT'],
+      [400, 'PROVIDER_ERROR'],
+      [529, 'PROVIDER_UNAVAILABLE'],
+    ] as const)('HTTP %i is %s, as in Phase 2', async (status, reason) => {
+      const s = stubFetch(() =>
+        json(status, { type: 'error', error: { type: 'x', message: SENTINEL } }),
+      );
+      const out = await realClient(s.fetch, undefined, mode).converse(req(executor({}).execute));
+      expect(out).toMatchObject({ ok: false, reason });
+      expect(JSON.stringify(out)).not.toContain(SENTINEL);
+    });
+
+    it('a hung request is PROVIDER_TIMEOUT', async () => {
+      const s = stubFetch(
+        (_c, _n, signal) =>
+          new Promise<Response>((_resolve, reject) => {
+            signal?.addEventListener('abort', () =>
+              reject(new DOMException('aborted', 'AbortError')),
+            );
+          }),
+      );
+      const out = await realClient(s.fetch, 50, mode).converse(req(executor({}).execute));
+      expect(out).toMatchObject({ ok: false, reason: 'PROVIDER_TIMEOUT' });
+    });
+
+    it.each([
+      ['refusal', '', 'REFUSAL'],
+      ['max_tokens', '{"answer":"23 chil', 'MAX_TOKENS'],
+      ['end_turn', 'not json at all', 'MALFORMED'],
+      ['end_turn', JSON.stringify({ ...answer(), links: 'none' }), 'MALFORMED'],
+      ['end_turn', '23 children inside.\n{"links":"none","language":"en"}', 'MALFORMED'],
+      ['end_turn', '', 'MALFORMED'],
+    ] as const)('stop_reason %s with %j is %s', async (stop, text, reason) => {
+      const s = stubFetch(() =>
+        json(
+          200,
+          wire({
+            model: 'claude-opus-5-5',
+            stop_reason: stop,
+            content: [{ type: 'text', text }],
+            usage: { input_tokens: 1400, output_tokens: 250 },
+          }),
+        ),
+      );
+      const out = await realClient(s.fetch, undefined, mode).converse(req(executor({}).execute));
+      expect(out).toMatchObject({ ok: false, reason, usage: { inputTokens: 1400 } });
+    });
+
+    it('echoes the assistant content whole, thinking blocks included', async () => {
+      const thinking = { type: 'thinking', thinking: '', signature: 'sig_stub' };
+      const s = stubFetch((_c, i) =>
+        i === 0
+          ? json(200, {
+              ...wire({
+                model: 'claude-opus-5-5',
+                stop_reason: 'tool_use',
+                content: [],
+                usage: { input_tokens: 1, output_tokens: 1 },
+              }),
+              content: [
+                thinking,
+                { type: 'tool_use', id: 'toolu_x', name: 'branches.list', input: {} },
+              ],
+            })
+          : json(
+              200,
+              wire({
+                model: 'claude-opus-5-5',
+                stop_reason: 'end_turn',
+                content: [{ type: 'text', text: finalText(answer(), mode) }],
+                usage: { input_tokens: 1, output_tokens: 1 },
+              }),
+            ),
+      );
+      const out = await realClient(s.fetch, undefined, mode).converse(
+        req(executor({ 'branches.list': BRANCHES_OK }).execute),
+      );
+      expect(out.ok).toBe(true);
+      const second = s.calls[1]!.body as { messages: Array<{ role: string; content: unknown[] }> };
+      expect(second.messages[1]!.content[0]).toEqual(thinking);
+    });
+  },
+);
+
+describe('trailing_json final turns through the fake', () => {
+  const fence = '```';
+
+  it('a fenced trailing block is the answer and its links', async () => {
+    const ex = executor({ 'occupancy.now': OCCUPANCY_OK });
+    const out = await new FakeToolLoopClient([
+      { kind: 'tool_use', calls: [{ name: 'occupancy.now', input: { branchId: 'br-central' } }] },
+      {
+        kind: 'final_text',
+        text: `23 children inside.\n${fence}json\n{"links":[{"key":"console.activity","params":[]}],"language":"en"}\n${fence}`,
+      },
+    ]).converse(request(ex.execute));
+    expect(out).toMatchObject({
+      ok: true,
+      answer: {
+        answer: '23 children inside.',
+        links: [{ key: 'console.activity', params: [] }],
+        language: 'en',
+      },
+    });
   });
 
-  it.each([
-    [429, 'PROVIDER_RATE_LIMIT'],
-    [400, 'PROVIDER_ERROR'],
-    [529, 'PROVIDER_UNAVAILABLE'],
-  ] as const)('HTTP %i is %s, as in Phase 2', async (status, reason) => {
-    const s = stubFetch(() =>
-      json(status, { type: 'error', error: { type: 'x', message: SENTINEL } }),
-    );
-    const out = await realClient(s.fetch).converse(request(executor({}).execute));
-    expect(out).toMatchObject({ ok: false, reason });
-    expect(JSON.stringify(out)).not.toContain(SENTINEL);
+  it('plain prose with no block is MALFORMED', async () => {
+    const out = await new FakeToolLoopClient([
+      { kind: 'final_text', text: '23 children inside.' },
+    ]).converse(request(executor({}).execute));
+    expect(out).toMatchObject({ ok: false, reason: 'MALFORMED' });
   });
 
-  it('a hung request is PROVIDER_TIMEOUT', async () => {
-    const s = stubFetch(
-      (_c, _n, signal) =>
-        new Promise<Response>((_resolve, reject) => {
-          signal?.addEventListener('abort', () =>
-            reject(new DOMException('aborted', 'AbortError')),
-          );
-        }),
-    );
-    const out = await realClient(s.fetch, 50).converse(request(executor({}).execute));
-    expect(out).toMatchObject({ ok: false, reason: 'PROVIDER_TIMEOUT' });
-  });
-
-  it.each([
-    ['refusal', '', 'REFUSAL'],
-    ['max_tokens', '{"answer":"23 chil', 'MAX_TOKENS'],
-    ['end_turn', 'not json at all', 'MALFORMED'],
-    ['end_turn', JSON.stringify({ ...answer(), links: 'none' }), 'MALFORMED'],
-  ] as const)('stop_reason %s with %j is %s', async (stop, text, reason) => {
-    const s = stubFetch(() =>
-      json(
-        200,
-        wire({
-          model: 'claude-opus-5-5',
-          stop_reason: stop,
-          content: [{ type: 'text', text }],
-          usage: { input_tokens: 1400, output_tokens: 250 },
-        }),
+  it('a system built for one mode cannot run on a client of the other', async () => {
+    await expect(
+      new FakeToolLoopClient([], undefined, 'trailing_json').converse(
+        request(executor({}).execute, { answerMode: 'combined' }),
       ),
-    );
-    const out = await realClient(s.fetch).converse(request(executor({}).execute));
-    expect(out).toMatchObject({ ok: false, reason, usage: { inputTokens: 1400 } });
-  });
-
-  it('echoes the assistant content whole, thinking blocks included', async () => {
-    const thinking = { type: 'thinking', thinking: '', signature: 'sig_stub' };
-    const s = stubFetch((_c, i) =>
-      i === 0
-        ? json(200, {
-            ...wire({
-              model: 'claude-opus-5-5',
-              stop_reason: 'tool_use',
-              content: [],
-              usage: { input_tokens: 1, output_tokens: 1 },
-            }),
-            content: [
-              thinking,
-              { type: 'tool_use', id: 'toolu_x', name: 'branches.list', input: {} },
-            ],
-          })
-        : json(
-            200,
-            wire({
-              model: 'claude-opus-5-5',
-              stop_reason: 'end_turn',
-              content: [{ type: 'text', text: JSON.stringify(answer()) }],
-              usage: { input_tokens: 1, output_tokens: 1 },
-            }),
-          ),
-    );
-    const out = await realClient(s.fetch).converse(
-      request(executor({ 'branches.list': BRANCHES_OK }).execute),
-    );
-    expect(out.ok).toBe(true);
-    const second = s.calls[1]!.body as { messages: Array<{ role: string; content: unknown[] }> };
-    expect(second.messages[1]!.content[0]).toEqual(thinking);
+    ).rejects.toThrow(TypeError);
   });
 });
 

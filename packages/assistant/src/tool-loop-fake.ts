@@ -17,7 +17,12 @@
 import type Anthropic from '@anthropic-ai/sdk';
 import { DEFAULT_MODEL, DEFAULT_TIMEOUT_MS } from './client';
 import { FAKE_REQUEST_ID, FAKE_USAGE, materialise, type FakeStep } from './fake';
-import type { InternalAnswer } from './internal-answer';
+import {
+  DEFAULT_INTERNAL_ANSWER_MODE,
+  renderTrailingAnswer,
+  type InternalAnswer,
+  type InternalAnswerMode,
+} from './internal-answer';
 import {
   runToolLoop,
   type ToolLoopBlock,
@@ -36,8 +41,10 @@ type BetaTool = Anthropic.Beta.BetaTool;
 export type FakeToolLoopStep =
   /** The model calls one or more tools (several = parallel calls in one turn). */
   | { kind: 'tool_use'; calls: Array<{ name: string; input: unknown; id?: string }> }
-  /** The model's final structured answer. */
+  /** The model's final answer, written in the client's answer mode (JSON, or prose + trailing block). */
   | { kind: 'final'; answer: InternalAnswer }
+  /** A final turn of exactly this text (end_turn): for shapes the answer modes must refuse or accept. */
+  | { kind: 'final_text'; text: string }
   /** Every Phase 2 step but the customer decision: failures, invalid shapes, raw replies. */
   | Exclude<FakeStep, { kind: 'decision' }>;
 
@@ -88,6 +95,7 @@ export function materialiseToolLoopStep(
   step: FakeToolLoopStep,
   model: string,
   nextToolUseId: () => string,
+  mode: InternalAnswerMode = DEFAULT_INTERNAL_ANSWER_MODE,
 ): { reply: ToolLoopReply } | { error: unknown } {
   switch (step.kind) {
     case 'tool_use':
@@ -105,8 +113,16 @@ export function materialiseToolLoopStep(
       };
     case 'final':
       return {
-        reply: fakeReply(model, 'end_turn', [{ type: 'text', text: JSON.stringify(step.answer) }]),
+        reply: fakeReply(model, 'end_turn', [
+          {
+            type: 'text',
+            text:
+              mode === 'combined' ? JSON.stringify(step.answer) : renderTrailingAnswer(step.answer),
+          },
+        ]),
       };
+    case 'final_text':
+      return { reply: fakeReply(model, 'end_turn', [{ type: 'text', text: step.text }]) };
     default:
       return materialise(step, model);
   }
@@ -114,15 +130,21 @@ export function materialiseToolLoopStep(
 
 export class FakeToolLoopClient implements ToolLoopClient {
   readonly model: string;
+  readonly answerMode: InternalAnswerMode;
   /** Every model call received, in order. */
   readonly calls: FakeToolLoopCall[] = [];
   private readonly script: FakeToolLoopEntry[];
   private clock = 0;
   private toolUseCounter = 0;
 
-  constructor(script: FakeToolLoopEntry[] = [], model: string = DEFAULT_MODEL) {
+  constructor(
+    script: FakeToolLoopEntry[] = [],
+    model: string = DEFAULT_MODEL,
+    answerMode: InternalAnswerMode = DEFAULT_INTERNAL_ANSWER_MODE,
+  ) {
     this.script = [...script];
     this.model = model;
+    this.answerMode = answerMode;
   }
 
   push(...steps: FakeToolLoopEntry[]): this {
@@ -159,16 +181,22 @@ export class FakeToolLoopClient implements ToolLoopClient {
         }
         if (step.during) await step.during();
         this.clock += step.latencyMs ?? 1200;
-        const made = materialiseToolLoopStep(step, this.model, () => {
-          this.toolUseCounter += 1;
-          return `toolu_fake_${String(this.toolUseCounter).padStart(4, '0')}`;
-        });
+        const made = materialiseToolLoopStep(
+          step,
+          this.model,
+          () => {
+            this.toolUseCounter += 1;
+            return `toolu_fake_${String(this.toolUseCounter).padStart(4, '0')}`;
+          },
+          this.answerMode,
+        );
         return 'reply' in made ? { reply: made.reply, echo: echoOf(made.reply) } : made;
       },
     };
     return runToolLoop(transport, request, {
       now: () => this.clock,
       timeoutMs: DEFAULT_TIMEOUT_MS,
+      answerMode: this.answerMode,
     });
   }
 }
