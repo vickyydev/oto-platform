@@ -6,8 +6,10 @@
 // interaction (open, close, send, scroll) is in dock-dom.test.tsx.
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
+import type { Permission } from '@oto/shared/permissions';
 import type { AskView } from '@/api/assistant';
 import type { AskPhase } from '@/assistant/ask';
+import { EMPTY_THREAD_NEUTRAL_LINE } from '@/assistant/shell';
 import { AssistantDock } from '@/components/assistant/AssistantDock';
 import { ASSISTANT_SUBTITLE, AssistantPopup } from '@/components/assistant/AssistantPopup';
 import { AskAnswer, type LinkOpeners } from '@/components/assistant/AskAnswer';
@@ -16,6 +18,7 @@ import type { SuiteApp } from '@/suite/apps';
 
 const openers: LinkOpeners = { openApp: async () => {}, navigate: () => {} };
 const noFeedback = async () => {};
+const nothing = () => false;
 
 const consoleApp: SuiteApp = {
   key: 'console',
@@ -28,10 +31,10 @@ const consoleApp: SuiteApp = {
   arriving: '',
 };
 
-function view(over: Partial<AskView> = {}): AskView {
-  return {
+function view(over: Partial<AskView> & { smallTalk?: boolean } = {}): AskView {
+  const base = {
     id: '01928f6e-0000-7000-8000-000000000001',
-    state: 'answered',
+    state: 'answered' as const,
     reason: null,
     question: 'q',
     answer: '**42** children inside.\nSee the board.',
@@ -42,8 +45,11 @@ function view(over: Partial<AskView> = {}): AskView {
     correction: null,
     createdAt: '2026-10-20T08:00:00.000Z',
     updatedAt: '2026-10-20T08:00:01.000Z',
-    ...over,
+    // The api's additive mark (the test-night round), set here so the fixture
+    // typechecks whether or not the api's description carries it yet.
+    smallTalk: false,
   };
+  return { ...base, ...over };
 }
 
 /** A thread at rest, as the hook would hand it over. */
@@ -63,9 +69,17 @@ function thread(over: Partial<AskThreadState> = {}): AskThreadState {
   };
 }
 
-function popup(over: Partial<AskThreadState> = {}, tiles: SuiteApp[] = []) {
+function popup(over: Partial<AskThreadState> = {}, tiles: SuiteApp[] = [], has: (p: Permission) => boolean = nothing) {
   return renderToStaticMarkup(
-    <AssistantPopup thread={thread(over)} draft="" onDraft={() => {}} onClose={() => {}} tiles={tiles} openers={openers} />,
+    <AssistantPopup
+      thread={thread(over)}
+      draft=""
+      onDraft={() => {}}
+      onClose={() => {}}
+      has={has}
+      tiles={tiles}
+      openers={openers}
+    />,
   );
 }
 
@@ -105,12 +119,24 @@ describe('the popup', () => {
     expect(html).toContain('w-[min(400px,calc(100vw_-_2rem))]');
   });
 
-  it('shows one quiet line when the thread is empty, with examples from the tools this person could use', () => {
-    expect(popup()).toContain('check-ins…');
-    expect(popup()).not.toContain('the rota');
-    expect(popup({}, [{ ...consoleApp, key: 'oto_app', name: 'OTO App', permission: 'app:oto_app:access' }])).toContain(
-      'the rota, your payslips…',
+  it('shows one quiet line when the thread is empty, with examples only from what this person can use', () => {
+    const otoApp: SuiteApp = { ...consoleApp, key: 'oto_app', name: 'OTO App', permission: 'app:oto_app:access' };
+    // Someone with the Inbox alone is offered the queue, not members or payslips.
+    const inboxOnly = (p: Permission) => p === 'inbox:conversation:read' || p === 'app:inbox:access';
+    const hana = popup({}, [], inboxOnly);
+    expect(hana).toContain('Ask about the unanswered queue…');
+    expect(hana).not.toContain('members');
+    expect(hana).not.toContain('the rota');
+    // A manager with everything: four, in order; the rota and payslips do not fit.
+    expect(popup({}, [consoleApp, otoApp], () => true)).toContain(
+      'Ask about members, today&#x27;s check-ins, the unanswered queue, recent activity…',
     );
+    // The OTO App's examples come from its tile.
+    expect(popup({}, [otoApp], nothing)).toContain('Ask about the rota, your payslips…');
+    // Nobody: the neutral line, never an example.
+    const nobody = popup({}, [], nothing);
+    expect(nobody).toContain(EMPTY_THREAD_NEUTRAL_LINE);
+    expect(nobody).not.toContain('Ask about');
   });
 
   it('lays the thread out oldest at the top and newest at the bottom, the question in flight last', () => {
@@ -239,6 +265,45 @@ describe('an answer', () => {
       />,
     );
     expect(html).toContain('The assistant is switched off right now.');
+    expect(html).not.toContain('Was this right?');
+  });
+
+  it('shows no feedback row at all on chit-chat the api marked as small talk (the test-night round, S10)', () => {
+    const html = renderToStaticMarkup(
+      <AskAnswer
+        ask={view({ question: 'hello', answer: 'Hello! What can I help you with?', smallTalk: true })}
+        tiles={[]}
+        openers={openers}
+        onFeedback={noFeedback}
+      />,
+    );
+    expect(html).toContain('Hello! What can I help you with?');
+    expect(html).not.toContain('Was this right?');
+    expect(html).not.toContain('lucide-thumbs-up');
+    expect(html).not.toContain('lucide-thumbs-down');
+    // An ordinary answer is unchanged.
+    const ordinary = renderToStaticMarkup(
+      <AskAnswer ask={view({ smallTalk: false })} tiles={[]} openers={openers} onFeedback={noFeedback} />,
+    );
+    expect(ordinary).toContain('Was this right?');
+    expect(ordinary).toContain('lucide-thumbs-up');
+  });
+
+  it('renders the clarification line a follow-up gets as a normal answer bubble, feedback hidden (the test-night round, D2)', () => {
+    const line = 'I answer each question on its own — which figure do you mean?';
+    const html = renderToStaticMarkup(
+      <AskAnswer
+        ask={view({ question: 'and last week?', answer: line, smallTalk: true })}
+        tiles={[]}
+        openers={openers}
+        onFeedback={noFeedback}
+      />,
+    );
+    expect(html).toContain(line);
+    // The plain-prose style, not the quiet one a failure or a cap gets.
+    expect(html).toContain('text-base whitespace-pre-wrap');
+    expect(html).not.toContain('text-foreground/70');
+    expect(html).not.toContain('lucide-triangle-alert');
     expect(html).not.toContain('Was this right?');
   });
 });

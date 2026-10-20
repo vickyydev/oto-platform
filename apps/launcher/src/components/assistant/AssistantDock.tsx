@@ -107,6 +107,7 @@ export function AssistantDock({ has, tiles, openers, client, timezone }: Assista
           draft={draft}
           onDraft={setDraft}
           onClose={close}
+          has={has}
           tiles={tiles}
           openers={openers}
           timezone={timezone}

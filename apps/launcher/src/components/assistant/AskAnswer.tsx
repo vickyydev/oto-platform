@@ -2,7 +2,7 @@ import { useId, useState } from 'react';
 import { ArrowRight, Check, Loader2, ThumbsDown, ThumbsUp, TriangleAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { AskLink, AskView } from '@/api/assistant';
-import { CORRECTION_MAX, canGiveFeedback, shownAnswer } from '@/assistant/ask';
+import { CORRECTION_MAX, canGiveFeedback, isSmallTalk, shownAnswer } from '@/assistant/ask';
 import { resolveLink } from '@/assistant/links';
 import type { SuiteApp } from '@/suite/apps';
 
@@ -142,7 +142,9 @@ export function AskFeedback({
  * api sends no markdown and none is rendered — the refusal lines exactly as
  * the api wrote them, the links, and feedback. An ask still `asking` (one the
  * list caught in flight, or abandoned) shows the in-flight line and nothing
- * to rate.
+ * to rate. Chit-chat, and the clarification line that asks a follow-up which
+ * figure it means (`smallTalk`), is a normal bubble with no feedback row at
+ * all: there is nothing in it to mark good or wrong.
  */
 export function AskAnswer({
   ask,
@@ -199,7 +201,7 @@ export function AskAnswer({
         </div>
       )}
       {replayed && <p className="text-xs text-foreground/45">Answered when it was first sent.</p>}
-      <AskFeedback ask={ask} onSend={onFeedback} />
+      {!isSmallTalk(ask) && <AskFeedback ask={ask} onSend={onFeedback} />}
     </div>
   );
 }

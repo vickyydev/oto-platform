@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { Bot, Loader2, Send, X } from 'lucide-react';
 import { INTERNAL_ASSISTANT_LABEL } from '@oto/assistant/internal-lines';
+import type { Permission } from '@oto/shared/permissions';
 import { Button } from '@/components/ui/button';
 import { QUESTION_MAX, type AskPhase } from '@/assistant/ask';
 import { SHEET_MAX_WIDTH_PX, emptyThreadLine, threadOf } from '@/assistant/shell';
@@ -58,6 +59,8 @@ export interface AssistantPopupProps {
   draft: string;
   onDraft: (value: string) => void;
   onClose: () => void;
+  /** The session's permission check: what the empty thread's examples are drawn from. */
+  has: (permission: Permission) => boolean;
   tiles: SuiteApp[];
   openers: LinkOpeners;
   timezone?: string | null;
@@ -69,7 +72,7 @@ export interface AssistantPopupProps {
  * dock listens on the document); a click outside does not. Focus moves to
  * the composer when it opens.
  */
-export function AssistantPopup({ thread, draft, onDraft, onClose, tiles, openers, timezone }: AssistantPopupProps) {
+export function AssistantPopup({ thread, draft, onDraft, onClose, has, tiles, openers, timezone }: AssistantPopupProps) {
   const { phase, sentAt, mine, mineBusy, mineError, busy, send, feedbackFor, loadMine } = thread;
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fit = useKeyboardFit();
@@ -145,7 +148,7 @@ export function AssistantPopup({ thread, draft, onDraft, onClose, tiles, openers
         openers={openers}
         feedbackFor={feedbackFor}
         timezone={timezone}
-        emptyLine={emptyThreadLine(tiles)}
+        emptyLine={emptyThreadLine(has, tiles)}
       />
 
       <form

@@ -2,15 +2,22 @@
 // after each event, the thread's order, and the empty thread's one line.
 // Pure; no DOM.
 import { describe, expect, it } from 'vitest';
+import type { Permission } from '@oto/shared/permissions';
 import type { AskView } from '@/api/assistant';
 import type { AskPhase } from '@/assistant/ask';
-import { emptyThreadLine, shellReducer, threadItemKey, threadOf } from '@/assistant/shell';
+import {
+  EMPTY_THREAD_NEUTRAL_LINE,
+  emptyThreadLine,
+  shellReducer,
+  threadItemKey,
+  threadOf,
+} from '@/assistant/shell';
 import type { SuiteApp } from '@/suite/apps';
 
 function view(over: Partial<AskView> = {}): AskView {
-  return {
+  const base = {
     id: '01928f6e-0000-7000-8000-000000000001',
-    state: 'answered',
+    state: 'answered' as const,
     reason: null,
     question: 'q',
     answer: 'a',
@@ -21,8 +28,11 @@ function view(over: Partial<AskView> = {}): AskView {
     correction: null,
     createdAt: '2026-10-20T08:00:00.000Z',
     updatedAt: '2026-10-20T08:00:01.000Z',
-    ...over,
+    // The api's additive mark (the test-night round), set here so the fixture
+    // typechecks whether or not the api's description carries it yet.
+    smallTalk: false,
   };
+  return { ...base, ...over };
 }
 
 const app = (key: SuiteApp['key']): SuiteApp => ({
@@ -82,14 +92,42 @@ describe('the thread', () => {
   });
 });
 
-describe('the empty thread', () => {
-  it('names the platform tools every asker has', () => {
-    expect(emptyThreadLine([app('console')])).toBe("Ask about members, today's check-ins…");
+describe('the empty thread (the test-night round, W8)', () => {
+  const nothing = () => false;
+  const everything = () => true;
+  const only =
+    (...held: Permission[]) =>
+    (p: Permission) =>
+      held.includes(p);
+
+  it('names only the unanswered queue for someone with the Inbox alone', () => {
+    const hana = only('assistant:ask:use', 'app:inbox:access', 'inbox:conversation:read');
+    expect(emptyThreadLine(hana, [app('inbox')])).toBe('Ask about the unanswered queue…');
   });
 
-  it("adds the OTO App's rota and payslips only when that app is on the launcher", () => {
-    expect(emptyThreadLine([app('console'), app('oto_app')])).toBe(
+  it('names four examples, in order, for a manager with everything: the rota and payslips do not fit', () => {
+    expect(emptyThreadLine(everything, [app('console'), app('oto_app'), app('inbox')])).toBe(
+      "Ask about members, today's check-ins, the unanswered queue, recent activity…",
+    );
+  });
+
+  it("names the OTO App's rota and payslips by its tile on the launcher, not by a permission", () => {
+    expect(emptyThreadLine(nothing, [app('oto_app')])).toBe('Ask about the rota, your payslips…');
+    expect(emptyThreadLine(only('pos:member:read', 'pos:checkin:read'), [app('oto_app')])).toBe(
       "Ask about members, today's check-ins, the rota, your payslips…",
     );
+  });
+
+  it('names each example only for its own permission, whatever other tiles are there', () => {
+    expect(emptyThreadLine(only('admin:audit:read'), [app('console'), app('pos')])).toBe('Ask about recent activity…');
+    expect(emptyThreadLine(only('pos:checkin:read'), [app('pos')])).toBe("Ask about today's check-ins…");
+  });
+
+  it('falls back to the neutral line when none of the examples is true of this person', () => {
+    expect(emptyThreadLine(nothing, [])).toBe(EMPTY_THREAD_NEUTRAL_LINE);
+    expect(emptyThreadLine(only('assistant:ask:use', 'app:console:access'), [app('console')])).toBe(
+      EMPTY_THREAD_NEUTRAL_LINE,
+    );
+    expect(EMPTY_THREAD_NEUTRAL_LINE).toBe('Ask a question about your work; I answer from what your access can see.');
   });
 });

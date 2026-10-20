@@ -143,12 +143,29 @@ export function shownAnswer(ask: Pick<AskView, 'state' | 'answer' | 'question'>)
   return null;
 }
 
+/**
+ * The api's mark on an answer that answers nothing (the test-night round,
+ * S10 and D2): a greeting or thanks returned in kind, or the clarification
+ * line that asks which figure a follow-up means. Read as optional, so this
+ * app builds against an api description with or without the field.
+ */
+export type SmallTalkMark = Pick<AskView, 'state'> & { smallTalk?: boolean };
+
+/** Whether the api marked this ask as pure chit-chat, or a question back. */
+export function isSmallTalk(ask: SmallTalkMark): boolean {
+  return ask.smallTalk === true;
+}
+
 /** States a person can rate: the model answered, refused or linked. A switch or a cap is nothing to rate. */
 const RATEABLE: ReadonlySet<AskView['state']> = new Set(['answered', 'refused', 'link_only']);
 
-/** Feedback is once per ask, and only on an ask that ended in something the assistant said. */
-export function canGiveFeedback(ask: Pick<AskView, 'state' | 'feedback'>): boolean {
-  return ask.feedback === null && RATEABLE.has(ask.state);
+/**
+ * Feedback is once per ask, and only on an ask that ended in something the
+ * assistant said about the person's work: chit-chat and a question back are
+ * nothing to mark good or wrong.
+ */
+export function canGiveFeedback(ask: Pick<AskView, 'state' | 'feedback'> & SmallTalkMark): boolean {
+  return !isSmallTalk(ask) && ask.feedback === null && RATEABLE.has(ask.state);
 }
 
 export interface FeedbackDeps {

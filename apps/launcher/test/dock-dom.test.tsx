@@ -21,9 +21,9 @@ import type { ThreadApi } from '@/components/assistant/useAskThread';
 const openers: LinkOpeners = { openApp: async () => {}, navigate: () => {} };
 
 function view(over: Partial<AskView> = {}): AskView {
-  return {
+  const base = {
     id: '01928f6e-0000-7000-8000-000000000001',
-    state: 'answered',
+    state: 'answered' as const,
     reason: null,
     question: 'q',
     answer: 'a',
@@ -34,8 +34,11 @@ function view(over: Partial<AskView> = {}): AskView {
     correction: null,
     createdAt: '2026-10-20T08:00:00.000Z',
     updatedAt: '2026-10-20T08:00:01.000Z',
-    ...over,
+    // The api's additive mark (the test-night round), set here so the fixture
+    // typechecks whether or not the api's description carries it yet.
+    smallTalk: false,
   };
+  return { ...base, ...over };
 }
 
 const OLDER = view({ id: '01928f6e-0000-7000-8000-00000000000a', question: 'Older question', answer: 'Older answer', createdAt: '2026-10-20T08:00:00.000Z' });

@@ -11,6 +11,7 @@ import {
   canGiveFeedback,
   giveFeedback,
   idForSend,
+  isSmallTalk,
   mergeAsks,
   runAsk,
   shownAnswer,
@@ -22,10 +23,10 @@ import type { SuiteApp } from '@/suite/apps';
 
 const ID = '01928f6e-0000-7000-8000-000000000001';
 
-function view(over: Partial<AskView> = {}): AskView {
-  return {
+function view(over: Partial<AskView> & { smallTalk?: boolean } = {}): AskView {
+  const base = {
     id: ID,
-    state: 'answered',
+    state: 'answered' as const,
     reason: null,
     question: 'How many children are inside at Central?',
     answer: '42 children are inside at Central.',
@@ -36,8 +37,11 @@ function view(over: Partial<AskView> = {}): AskView {
     correction: null,
     createdAt: '2026-10-20T08:00:00.000Z',
     updatedAt: '2026-10-20T08:00:01.000Z',
-    ...over,
+    // The api's additive mark (the test-night round), set here so the fixture
+    // typechecks whether or not the api's description carries it yet.
+    smallTalk: false,
   };
+  return { ...base, ...over };
 }
 
 /** A fake api and clock: `sleep` advances time instead of waiting. */
@@ -198,6 +202,24 @@ describe('feedback, once per ask', () => {
     for (const state of ['failed', 'capped', 'off', 'asking'] as const) {
       expect(canGiveFeedback(view({ state }))).toBe(false);
     }
+  });
+
+  it('is never offered on chit-chat, or a question back, that the api marked as small talk', () => {
+    expect(isSmallTalk(view())).toBe(false);
+    expect(isSmallTalk(view({ smallTalk: true }))).toBe(true);
+    expect(canGiveFeedback(view({ state: 'answered', smallTalk: true }))).toBe(false);
+    expect(canGiveFeedback(view({ state: 'answered', smallTalk: false }))).toBe(true);
+  });
+
+  it('sends nothing to the api for an ask marked as small talk', async () => {
+    let sent = 0;
+    const send = async () => {
+      sent += 1;
+      return { id: ID, feedback: 'good' as const, hasCorrection: false, updatedAt: 'later' };
+    };
+    const chat = view({ answer: 'Hello! What can I help you with?', smallTalk: true });
+    expect(await giveFeedback(chat, 'good', '', { send, mint: () => 'k' })).toBe(chat);
+    expect(sent).toBe(0);
   });
 
   it('sends once; the ask comes back rated and is not offered again', async () => {
