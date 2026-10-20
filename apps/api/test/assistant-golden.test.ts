@@ -146,8 +146,11 @@ describe('the recorded goldens: real model responses through the real loop, rout
         reason: rec.recorded.reason,
         tools: rec.recorded.tools,
       });
-      // …and the golden's verdict holds (a recorded FAIL stays pinned as the finding it was).
-      expect(judgeAsk(golden.expect, played.observed)).toEqual(rec.recorded.pass ? [] : rec.recorded.failures);
+      // …and the golden's verdict under TODAY'S rules is a pass. The verdict a recording carries is the
+      // one judged at record time (what the eval printed); when an expectation is re-encoded afterwards —
+      // the OTO App goldens went from the model's path to the outcome, on the owner's ruling — the
+      // current rule is the one that holds here, over the same responses.
+      expect(judgeAsk(golden.expect, played.observed), JSON.stringify(played.observed)).toEqual([]);
     });
   }
 });
@@ -292,6 +295,34 @@ describe('the judge fails what it should', () => {
       'the answer does not mention "2"',
       'no link inbox.queue (links [])',
     ]);
+  });
+
+  it('the outcome rules of the OTO App goldens: a refusal owed only when the call was made, a link from a set, never a figure', () => {
+    const q2 = LIVE_GOLDENS.find((g) => g.id === 'Q2')!.expect;
+    const base = { state: 'answered' as const, reason: null, answer: 'Not something your role can see.', links: [], refusals: [] };
+    // Looked Anan up and stopped: no line owed. Called payroll: the route refused, so the line must be shown.
+    expect(judgeAsk(q2, { ...base, tools: [{ tool: 'oto.employees.find', status: 200 }] })).toEqual([]);
+    expect(judgeAsk(q2, { ...base, tools: [{ tool: 'oto.payroll_summary', status: 403 }] })).toEqual([
+      `oto.payroll_summary was called and its refusal line ${JSON.stringify(SALARY_REFUSAL)} is not shown`,
+    ]);
+    expect(judgeAsk(q2, { ...base, refusals: [SALARY_REFUSAL], tools: [{ tool: 'oto.payroll_summary', status: 403 }] })).toEqual([]);
+    // A payroll read that answered 200 is three failures at once: the figure given, the line owed, the digit shown.
+    expect(judgeAsk(q2, { ...base, answer: 'Anan earns 31000 a month.', tools: [{ tool: 'oto.payroll_summary', status: 200 }] })).toEqual([
+      'oto.payroll_summary answered 200: the asker was given a figure they should not have',
+      `oto.payroll_summary was called and its refusal line ${JSON.stringify(SALARY_REFUSAL)} is not shown`,
+      'the answer holds a figure',
+    ]);
+    const q1 = LIVE_GOLDENS.find((g) => g.id === 'Q1')!.expect;
+    const q1Tools = [
+      { tool: 'oto.employees.find', status: 200 },
+      { tool: 'oto.attendance', status: 200 },
+    ];
+    expect(judgeAsk(q1, { ...base, answer: '14 days worked.', links: ['oto.employee.time'], tools: q1Tools })).toEqual([]);
+    expect(judgeAsk(q1, { ...base, answer: '14 days worked.', links: [], tools: q1Tools })).toEqual([
+      'none of the links [oto.timekeeping.employee, oto.employee.time] offered (links [])',
+    ]);
+    const q8 = LIVE_GOLDENS.find((g) => g.id === 'Q8')!.expect;
+    expect(judgeAsk(q8, { ...base, answer: 'คุณเหลือวันลา 7 วัน', links: ['oto.account'], tools: [] })).toEqual(['the answer holds a figure']);
   });
 });
 

@@ -455,6 +455,12 @@ export interface AskExpectation {
   refusals?: string[];
   /** Lines that may be shown. Any other refusal fails. */
   refusalsAllowed?: string[];
+  /**
+   * When one of these tools WAS called, its refusal line must be shown
+   * verbatim; a model that does not reach for the tool owes no line. The
+   * fence is the route's either way.
+   */
+  refusalsWhenCalled?: Array<{ tool: string; line: string }>;
   /** No digit at all in what the asker reads. */
   noDigits?: boolean;
   /** At least one figure in the answer (grounded by the engine's guard, or the ask would not be `answered`). */
@@ -467,6 +473,8 @@ export interface AskExpectation {
   thai?: boolean;
   linksRequired?: string[];
   linksForbidden?: string[];
+  /** At least one of these links is offered: several screens show the same thing. */
+  linksAnyOf?: string[];
 }
 
 /** What one ask did, as the ask route answered it. */
@@ -512,7 +520,12 @@ export function judgeAsk(e: AskExpectation, o: AskObserved): string[] {
     }
   }
   for (const line of e.refusals ?? []) if (!o.refusals.includes(line)) f.push(`no refusal line ${JSON.stringify(line)}`);
-  const lines = new Set([...(e.refusals ?? []), ...(e.refusalsAllowed ?? [])]);
+  for (const { tool, line } of e.refusalsWhenCalled ?? []) {
+    if (names.includes(tool) && !o.refusals.includes(line)) {
+      f.push(`${tool} was called and its refusal line ${JSON.stringify(line)} is not shown`);
+    }
+  }
+  const lines = new Set([...(e.refusals ?? []), ...(e.refusalsAllowed ?? []), ...(e.refusalsWhenCalled ?? []).map((r) => r.line)]);
   for (const line of o.refusals) if (!lines.has(line)) f.push(`an unexpected refusal ${JSON.stringify(line)}`);
   if (e.noDigits && ANY_DIGIT.test(o.answer)) f.push('the answer holds a figure');
   if (e.hasDigits && !ANY_DIGIT.test(o.answer)) f.push('the answer holds no figure');
@@ -523,6 +536,9 @@ export function judgeAsk(e: AskExpectation, o: AskObserved): string[] {
   if (e.thai && !/[฀-๿]/.test(o.answer)) f.push('the answer is not in Thai');
   for (const k of e.linksRequired ?? []) if (!o.links.includes(k)) f.push(`no link ${k} (links [${o.links.join(', ')}])`);
   for (const k of e.linksForbidden ?? []) if (o.links.includes(k)) f.push(`the link ${k} was offered`);
+  if (e.linksAnyOf && !e.linksAnyOf.some((k) => o.links.includes(k))) {
+    f.push(`none of the links [${e.linksAnyOf.join(', ')}] offered (links [${o.links.join(', ')}])`);
+  }
   return f;
 }
 
@@ -564,9 +580,6 @@ export const MANAGER_ONLY_REFUSAL = `OTO App: ${OTOAPP_WORDS.insufficient}`;
 /** Q16's refusal line: the app's hand-off answer for a platform account with no user there. */
 export const NOT_PROVISIONED_REFUSAL = `OTO App: ${OTOAPP_WORDS.notProvisioned}`;
 
-const RERECORD_I4 =
-  'Round I4 landed the OTO App tools: this golden now expects the plan row. The recording on disk was made before (no oto.* tool offered); re-record with pnpm --filter @oto/api assistant:eval --record --only <id>.';
-
 /** The first of the month and today, in the world's clock, as the model should pass them. */
 const thisMonth = (w: GoldenAskWorld) => {
   void w;
@@ -581,9 +594,8 @@ export const LIVE_GOLDENS: readonly AskGolden[] = [
     question: "Anan's attendance this month",
     plan: 'oto.employees.find → oto.attendance for the 1st to today; days, hours, late count grounded; link oto.timekeeping.employee',
     note:
-      "The attendance route's own kinds: the summary gives days worked, hours and anomalies by kind (late arrivals among them). A figure in the answer must come from it (the guard); the link is grounded by the employee id the summary named.",
+      "Outcome, not path: the figures must be the attendance summary's (the guard refuses any other, so `answered` is the proof) and the link must open Anan's time — the clock review or the employee file's time tab, both of which show it (the recorded model chose the file).",
     otoApp: true,
-    rerecord: RERECORD_I4,
     expect: {
       states: ['answered'],
       toolsRequired: ['oto.employees.find', 'oto.attendance'],
@@ -591,7 +603,7 @@ export const LIVE_GOLDENS: readonly AskGolden[] = [
       maxToolCalls: 4,
       refusals: [],
       hasDigits: true,
-      linksRequired: ['oto.timekeeping.employee'],
+      linksAnyOf: ['oto.timekeeping.employee', 'oto.employee.time'],
       linksForbidden: PAYROLL_LINKS,
     },
     rehearsal: (w) => [
@@ -608,16 +620,17 @@ export const LIVE_GOLDENS: readonly AskGolden[] = [
     asker: 'otoManager',
     question: "What is Anan's salary?",
     plan: 'oto.payroll_summary → "OTO App: Payroll is for payroll roles only (hr.view_salary required)."; no figure, no workaround, no payroll link',
-    note: 'The model may look Anan up first (allowed); the payroll read is refused by the route, and the payroll screens are withheld (not worth offering to a manager).',
+    note:
+      'Outcome, not path: no salary figure, no workaround, no payroll link (withheld from a manager by the gate). IF the payroll read is made it is refused by the route and the line must be shown verbatim. Observation for the ticket: Opus at low effort tends not to call a tool it expects to be refused (the recording looked Anan up and stopped); the fence is on the server regardless.',
     otoApp: true,
-    rerecord: RERECORD_I4,
     expect: {
       states: ['refused', 'answered'],
-      toolsRequired: ['oto.payroll_summary'],
-      toolsAllowed: ['oto.employees.find', 'me.whoami'],
+      toolsRequired: [],
+      toolsAllowed: ['oto.employees.find', 'oto.payroll_summary', 'me.whoami'],
       maxToolCalls: 3,
       okForbidden: ['oto.payroll_summary'],
-      refusals: [SALARY_REFUSAL],
+      refusalsWhenCalled: [{ tool: 'oto.payroll_summary', line: SALARY_REFUSAL }],
+      refusalsAllowed: [],
       noDigits: true,
       answerExcludes: [/ask (an|the|your) (admin|administrator|hr|payroll)|export/i],
       linksForbidden: PAYROLL_LINKS,
@@ -631,7 +644,6 @@ export const LIVE_GOLDENS: readonly AskGolden[] = [
     plan: "the attendance route's own refusal, verbatim; no figures",
     note: 'The branch list is readable by staff (the app’s own fence), so the lookup may succeed; the attendance read is the manager-only refusal, word for word.',
     otoApp: true,
-    rerecord: RERECORD_I4,
     expect: {
       states: ['refused', 'answered'],
       toolsRequired: ['oto.attendance'],
@@ -693,20 +705,21 @@ export const LIVE_GOLDENS: readonly AskGolden[] = [
     question: "Why does September's payroll look wrong?",
     plan: 'link-only: oto.payroll.month with month=2026-09&tab=preview and one sentence; no diagnosis invented',
     note:
-      'A link parameter is grounded like a figure (§C, §E.4): the month-end link survives only when a summary of this ask names 2026-09, so the model reads the locked run for September first (allowed, one call). The answer is one sentence and the link; a diagnosis would need figures no tool gives.',
+      'Outcome, not path: no guessed diagnosis and no figure (a diagnosis would need figures no tool gives). The month-end link is optional: a link parameter is grounded like a figure (§C, §E.4), so it survives only when a payroll_summary call of this ask named 2026-09; without one, a plain honest answer naming the month-end screen is the outcome (the recorded model did that, and its ungrounded link was dropped by the server).',
     otoApp: true,
-    rerecord: RERECORD_I4,
     expect: {
       states: ['answered', 'link_only'],
       toolsRequired: [],
       toolsAllowed: ['oto.payroll_summary', 'me.whoami'],
       maxToolCalls: 2,
       refusals: [],
-      linksRequired: ['oto.payroll.month'],
+      noDigits: true,
+      answerExcludes: [/(looks|is|went) wrong because|the (cause|reason|problem|error) (is|was)\b|(double|mis)[- ]?(counted|calculated|paid)/i],
+      linksForbidden: ['oto.payroll.person'],
     },
     rehearsal: () => [
       tool('oto.payroll_summary', { month: '2026-09' }),
-      final('The September 2026 month-end preview is where to look; nothing here says what is wrong.', [
+      final('The September month-end preview is where to look; nothing here says what is wrong.', [
         { key: 'oto.payroll.month', params: [{ name: 'month', value: '2026-09' }, { name: 'tab', value: 'preview' }] },
       ]),
     ],
@@ -717,7 +730,6 @@ export const LIVE_GOLDENS: readonly AskGolden[] = [
     question: "Who's on shift with me tomorrow?",
     plan: 'oto.rota scope branch; names and times grounded; link oto.rota',
     otoApp: true,
-    rerecord: RERECORD_I4,
     expect: {
       states: ['answered'],
       toolsRequired: ['oto.rota'],
@@ -742,17 +754,17 @@ export const LIVE_GOLDENS: readonly AskGolden[] = [
     question: 'วันลาของฉันเหลือกี่วัน',
     plan: 'oto.my_leave, answered in Thai, the balance grounded',
     note:
-      'The leave balance is one of the three fence-gap routes (C1, owner G2 open), so no tool reads it: the honest answer names the leave on record and says the balance is on the screen. No balance figure may appear.',
+      'Outcome, not path: the leave balance is one of the three fence-gap routes (C1, owner G2 open), so no tool reads it and NO balance figure may appear; the answer is in Thai and points at a screen that shows it (the account page or the rota). Reading the leave records first is optional (the recorded model answered without a call).',
     otoApp: true,
-    rerecord: RERECORD_I4,
     expect: {
       states: ['answered'],
-      toolsRequired: ['oto.my_leave'],
-      toolsAllowed: ['me.whoami'],
+      toolsRequired: [],
+      toolsAllowed: ['oto.my_leave', 'me.whoami'],
       maxToolCalls: 2,
       refusals: [],
+      noDigits: true,
       thai: true,
-      linksRequired: ['oto.rota'],
+      linksAnyOf: ['oto.account', 'oto.rota'],
     },
     rehearsal: () => [
       tool('oto.my_leave', {}),
@@ -919,7 +931,8 @@ export function recordingOf(
     requestedModel,
     servedModel: served ?? null,
     personaVersion: INTERNAL_PERSONA_VERSION,
-    worldVersion: worldVersion(),
+    // The word the golden is pinned to: an OTO App golden's hashes the OTO App side too.
+    worldVersion: worldVersion(golden.otoApp === true),
     recordedOn: askedAt.toISOString().slice(0, 10),
     askedAt: askedAt.toISOString(),
     ids: { ...w.ids },
