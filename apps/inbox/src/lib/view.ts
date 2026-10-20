@@ -467,6 +467,19 @@ export function eventText(e: InboxEvent, ctx: PillContext): string | null {
       return 'AI left this one for the team';
     case 'ai_withdrawn':
       return `AI reply not sent · ${withdrawnWhy(p.reason)}`;
+    case 'ai_shadow': {
+      // What the shadow turn would have done (W5); its lines are the shadow row, never this pill.
+      const did =
+        p.action === 'answer'
+          ? 'would have answered'
+          : p.action === 'handover'
+            ? 'would have handed over'
+            : p.action === 'silent'
+              ? 'would have stayed silent'
+              : null;
+      const intent = str(p.intent);
+      return `AI in shadow${did ? ` · ${did}` : ''}${intent ? ` · ${intentWords(intent)}` : ''}`;
+    }
     default:
       return e.kind.replace(/_/g, ' ');
   }
@@ -520,20 +533,30 @@ export type PillItem = { kind: 'pill'; at: string; id: string; text: string; eve
 export type TimelineItem =
   | { kind: 'message'; at: string; message: Message }
   | PillItem
-  /** What the assistant would have said in shadow mode — never sent (customer-AI test night, W5). */
+  /** A shadow row: what the assistant would have said in shadow mode — never sent (customer-AI test night, W5). */
   | { kind: 'shadow'; at: string; id: string; text: string; turnId: string | null }
   /** A run of system pills from one actor and moment, said in one line, expandable (customer-AI test night, W7). */
   | { kind: 'group'; at: string; id: string; summary: string; pills: PillItem[] };
 
-/** The shadow item's kind on the thread read (the api's enum spelling), and its words: on the payload, or on the item itself. */
+/**
+ * A shadow turn (customer-AI test night, W5) is ONE message row the assistant
+ * wrote and never sent — `authorKind` ai, `providerStatus` 'shadow', the
+ * would-be lines joined by newlines — plus an `ai_shadow` pill whose payload
+ * names the row (`messageId`) and the turn, never any text. The status is the
+ * customer-AI lane's, read as a string until the api describes it.
+ */
 export const SHADOW_EVENT_KIND = 'ai_shadow';
+export const SHADOW_MESSAGE_STATUS = 'shadow';
 export const SHADOW_LABEL = 'Shadow suggestion — not sent';
 
-function shadowOf(e: InboxEvent): { text: string; turnId: string | null } | null {
-  const own = e as unknown as { text?: unknown; turnId?: unknown };
-  const text = str(e.payload.text) ?? str(own.text);
-  if (text === null) return null;
-  return { text, turnId: str(e.payload.turnId) ?? str(own.turnId) };
+export function isShadowMessage(m: Pick<Message, 'providerStatus'>): boolean {
+  return (m.providerStatus as string | null) === SHADOW_MESSAGE_STATUS;
+}
+
+/** The turn behind a shadow row: the `ai_shadow` pill that names it. */
+function shadowTurnId(events: readonly InboxEvent[], messageId: string): string | null {
+  const e = events.find((x) => x.kind === SHADOW_EVENT_KIND && x.payload.messageId === messageId);
+  return e ? str(e.payload.turnId) : null;
 }
 
 /**
@@ -549,14 +572,13 @@ export function timeline(
   ctx: PillContext,
 ): TimelineItem[] {
   const oldest = messages[0]?.createdAt;
-  const items: TimelineItem[] = messages.map((m) => ({ kind: 'message', at: m.createdAt, message: m }));
+  const items: TimelineItem[] = messages.map((m) =>
+    isShadowMessage(m)
+      ? { kind: 'shadow', at: m.createdAt, id: m.id, text: m.body ?? '', turnId: shadowTurnId(events, m.id) }
+      : { kind: 'message', at: m.createdAt, message: m },
+  );
   for (const e of events) {
     if (!reachesStart && oldest !== undefined && e.createdAt < oldest) continue;
-    if (e.kind === SHADOW_EVENT_KIND) {
-      const shadow = shadowOf(e);
-      if (shadow !== null) items.push({ kind: 'shadow', at: e.createdAt, id: e.id, ...shadow });
-      continue;
-    }
     const text = eventText(e, ctx);
     if (text !== null) items.push({ kind: 'pill', at: e.createdAt, id: e.id, text, event: e.kind });
   }
@@ -579,7 +601,7 @@ function actorKeyOf(e: InboxEvent): string {
 }
 
 /** The pill that heads a group's line when it is not a hand-over, most telling first. */
-const HEADLINE_ORDER = ['ai_handover', 'moved_team', 'diverted', 'branch_set', 'handled', 'reopened', 'routed', 'assigned', 'released'];
+const HEADLINE_ORDER = ['ai_handover', 'ai_shadow', 'moved_team', 'diverted', 'branch_set', 'handled', 'reopened', 'routed', 'assigned', 'released'];
 
 /**
  * One AI hand-over put about seven pills in a thread (classified, released,

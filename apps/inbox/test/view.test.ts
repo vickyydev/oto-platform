@@ -27,6 +27,7 @@ import {
   groupSummary,
   handleLabel,
   initialsOf,
+  isShadowMessage,
   landingTab,
   listTime,
   moveOutcome,
@@ -300,24 +301,46 @@ describe('the assistant’s state line (test night U5)', () => {
 
 describe('shadow suggestions on the thread read (customer-AI test night, W5)', () => {
   const ctx = { me };
-  it('becomes a shadow item, not a pill, with its words from the payload or the item itself', () => {
-    const items = timeline(
-      [],
-      [
-        event({ id: 's1', kind: 'ai_shadow', actorKind: 'ai', payload: { text: 'We open at 10:00.', turnId: 't1' } }),
-        { ...event({ id: 's2', kind: 'ai_shadow', actorKind: 'ai' }), text: 'Socks are available at reception.', turnId: 't2' } as InboxEvent,
-      ],
-      true,
-      ctx,
-    );
-    expect(items).toEqual([
-      { kind: 'shadow', at: '2026-10-20T03:00:00.000Z', id: 's1', text: 'We open at 10:00.', turnId: 't1' },
-      { kind: 'shadow', at: '2026-10-20T03:00:00.000Z', id: 's2', text: 'Socks are available at reception.', turnId: 't2' },
+  const at = '2026-10-20T03:00:00.000Z';
+  // The shadow turn: one unsent row with the would-be lines, and a pill that names it — never any text on the pill.
+  const shadowRow = msg('sm1', at, {
+    direction: 'outbound',
+    authorKind: 'ai',
+    body: 'We open at 10:00.\nEvery day.',
+    providerStatus: 'shadow' as unknown as Message['providerStatus'],
+  });
+  const pill = event({
+    id: 's1',
+    kind: 'ai_shadow',
+    actorKind: 'ai',
+    createdAt: at,
+    payload: { turnId: 't1', messageId: 'sm1', intent: 'hours', intents: ['hours'], language: 'en', action: 'answer', templateKey: null, holdingLine: 'none', brochure: false },
+  });
+
+  it('shows the shadow row as the shadow item, its turn from the pill that names it, and the pill as a pill', () => {
+    expect(timeline([shadowRow], [pill], true, ctx)).toEqual([
+      { kind: 'shadow', at, id: 'sm1', text: 'We open at 10:00.\nEvery day.', turnId: 't1' },
+      { kind: 'pill', at, id: 's1', text: 'AI in shadow · would have answered · hours', event: 'ai_shadow' },
     ]);
+    expect(isShadowMessage(shadowRow)).toBe(true);
+    expect(isShadowMessage(msg('m', at, { providerStatus: 'sent' }))).toBe(false);
     expect(SHADOW_LABEL).toBe('Shadow suggestion — not sent');
   });
-  it('drops a shadow item with no words rather than show an empty bubble', () => {
-    expect(timeline([], [event({ id: 's3', kind: 'ai_shadow', payload: { turnId: 't3' } })], true, ctx)).toEqual([]);
+
+  it('words the shadow pill by what it would have done, and never builds a bubble from the pill', () => {
+    expect(eventText(event({ kind: 'ai_shadow', payload: { action: 'handover', intent: 'birthday_party', brochure: true } }), ctx)).toBe(
+      'AI in shadow · would have handed over · birthday party',
+    );
+    expect(eventText(event({ kind: 'ai_shadow', payload: { action: 'silent' } }), ctx)).toBe('AI in shadow · would have stayed silent');
+    expect(eventText(event({ kind: 'ai_shadow', payload: {} }), ctx)).toBe('AI in shadow');
+    // A payload with words (an older shape) is still a pill, never a bubble.
+    expect(timeline([], [event({ id: 's9', kind: 'ai_shadow', payload: { text: 'not a bubble', turnId: 't9' } })], true, ctx).map((i) => i.kind)).toEqual([
+      'pill',
+    ]);
+  });
+
+  it('leaves a shadow row’s turn unknown when no pill names it', () => {
+    expect(timeline([shadowRow], [], true, ctx)).toEqual([{ kind: 'shadow', at, id: 'sm1', text: 'We open at 10:00.\nEvery day.', turnId: null }]);
   });
 });
 

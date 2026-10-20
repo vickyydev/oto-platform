@@ -321,31 +321,62 @@ describe('an attachment on a person’s message (customer-AI test night, W7)', (
 });
 
 describe('shadow suggestions (customer-AI test night, W5)', () => {
-  it('renders what the assistant would have said as a muted, staff-only bubble under the AI chip', () => {
+  it('renders the shadow row as a muted, staff-only bubble under the AI chip, and its pill as a pill', () => {
     const r = row();
+    const at = '2026-10-21T02:00:00.000Z';
     const d = detail(r, {
       aiMode: 'shadow',
       events: [
-        {
+        ev({
           id: 'sh-1',
           kind: 'ai_shadow',
           actorKind: 'ai',
-          actorAccountId: null,
-          actorName: null,
-          payload: { text: 'Yes, there are free lockers at reception.', turnId: 'turn-9' },
-          createdAt: '2026-10-21T02:00:00.000Z',
-        },
+          payload: { turnId: 'turn-9', messageId: 'shadow-1', intent: 'faq', intents: ['faq'], language: 'en', action: 'answer', templateKey: null, holdingLine: 'none', brochure: false },
+          createdAt: at,
+        }),
       ],
     });
-    const html = panel(anya, r, d);
+    const t: Thread = {
+      ...thread(d),
+      messages: [
+        msg({ id: 'c1', createdAt: '2026-10-21T01:59:00.000Z', body: 'do you have lockers for bags?' }),
+        msg({
+          id: 'shadow-1',
+          createdAt: at,
+          direction: 'outbound',
+          authorKind: 'ai',
+          body: 'Yes, there are free lockers at reception.\nAsk the team for a key.',
+          providerStatus: 'shadow' as unknown as Message['providerStatus'],
+        }),
+      ],
+    };
+    const html = renderToStaticMarkup(
+      createElement(ChatPanel, {
+        row: r,
+        thread: t,
+        me: anya,
+        now: new Date('2026-10-21T03:00:00.000Z'),
+        inserted: null,
+        detailsOpen: false,
+        onBack: noop,
+        onLoadOlder: noop,
+        onOpenDetails: noop,
+        onCloseDetails: noop,
+        onOpenTemplates: noop,
+        onAskHandle: noop,
+        onChanged: never,
+      }),
+    );
     expect(html).toContain('data-shadow="true"');
     expect(html).toContain(SHADOW_LABEL);
     expect(html).toContain('Yes, there are free lockers at reception.');
     expect(html).toContain('AI Assistant');
     expect(html).toContain('border-dashed');
-    // Never a pill (the default pill would read "ai shadow"), never a sent bubble.
-    expect(html).not.toContain('ai shadow');
+    expect(html).toContain('AI in shadow · would have answered · faq');
+    // Never an ordinary AI bubble, never the default pill ("ai shadow"), no correction control on it.
     expect(html).not.toContain('bg-indigo-50 text-indigo-900');
+    expect(html).not.toContain('ai shadow');
+    expect(html).not.toContain('Correct the assistant');
   });
 });
 
