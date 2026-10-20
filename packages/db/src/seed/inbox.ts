@@ -26,6 +26,9 @@
  * archived row still counts as present:
  *   - a role exists by (operator, name) — its permissions are laid only when
  *     the row is created, never re-synced, because it is the operator's role;
+ *     the one exception is `INBOX_ROLE_LATE_GRANTS` below: a permission that
+ *     joined a bundle AFTER deployed operators already had the role is added
+ *     to that role, insert-if-absent, and nothing is ever taken away;
  *   - a team exists by (operator, key, branch);
  *   - a team that has ANY routing rule, live or archived, is left alone — a
  *     person named on a rule, or a rule archived, is never undone;
@@ -47,6 +50,7 @@ import {
   INBOX_ROLES,
   newId,
   type InboxRole,
+  type Permission,
 } from '@oto/shared';
 import type { Db } from '../index';
 import * as s from '../schema/index';
@@ -162,6 +166,8 @@ export function shortBranchName(name: string): string {
 export interface InboxSyncCounts {
   operators: number;
   roles: number;
+  /** Permissions added to an existing inbox role by `INBOX_ROLE_LATE_GRANTS`. */
+  grants: number;
   departments: number;
   teams: number;
   rules: number;
@@ -172,12 +178,33 @@ export interface InboxSyncCounts {
 const emptyCounts = (): InboxSyncCounts => ({
   operators: 0,
   roles: 0,
+  grants: 0,
   departments: 0,
   teams: 0,
   rules: 0,
   templates: 0,
   channelAccounts: 0,
 });
+
+/**
+ * THE ONE-TIME GRANT STEP (SCRUM-590, round A3). Role permissions are laid
+ * when the role row is created, so an `inbox_admin` laid before the assistant
+ * existed lacks the two permissions SCRUM-590 folded into its bundle (plan
+ * R9) — and the Assistant settings page would be closed to every inbox
+ * administrator on a deployed database.
+ *
+ * Only the permissions named here are granted, only to the inbox role of that
+ * NAME that platform-sync itself lays (the operator's row, `is_system` false),
+ * and only when absent. Nothing is removed, the rest of the bundle is not
+ * re-laid (an operator who took a permission out of the role keeps that
+ * edit), and no other role — a custom role, a system bundle — is touched. A
+ * permission joins this list only together with its bundle above, so on a
+ * freshly laid role every entry is already present and the step writes
+ * nothing.
+ */
+export const INBOX_ROLE_LATE_GRANTS: Readonly<Partial<Record<InboxRole, readonly Permission[]>>> = {
+  inbox_admin: ['inbox:kb:manage', 'inbox:ai:manage'],
+};
 
 /** Find-or-create a department by (operator, branch, name). Returns its id and whether it was made. */
 async function department(
@@ -226,6 +253,15 @@ async function syncRoles(db: Db, operatorId: string, counts: InboxSyncCounts): P
         .where(and(eq(s.role.operatorId, operatorId), eq(s.role.name, name)))
         .limit(1);
       ids[name] = row!.id;
+      const late = INBOX_ROLE_LATE_GRANTS[name] ?? [];
+      if (late.length > 0) {
+        const granted = await db
+          .insert(s.rolePermission)
+          .values(late.map((permission) => ({ id: newId(), roleId: row!.id, permission })))
+          .onConflictDoNothing({ target: [s.rolePermission.roleId, s.rolePermission.permission] })
+          .returning({ id: s.rolePermission.id });
+        counts.grants += granted.length;
+      }
     }
   }
   return ids;
@@ -439,5 +475,5 @@ export async function syncInboxSetup(db: Db): Promise<InboxSyncCounts> {
 /** One line for the deploy log, or null when nothing was laid. */
 export function describeInboxSync(c: InboxSyncCounts): string | null {
   if (c.operators === 0) return null;
-  return `Inbox: laid ${c.roles} role(s), ${c.departments} department(s), ${c.teams} team(s), ${c.rules} routing rule(s), ${c.templates} template(s) and ${c.channelAccounts} console channel account(s) at ${c.operators} operator(s) — the rules' people are blank until somebody names them.`;
+  return `Inbox: laid ${c.roles} role(s), ${c.grants} late permission grant(s), ${c.departments} department(s), ${c.teams} team(s), ${c.rules} routing rule(s), ${c.templates} template(s) and ${c.channelAccounts} console channel account(s) at ${c.operators} operator(s) — the rules' people are blank until somebody names them.`;
 }

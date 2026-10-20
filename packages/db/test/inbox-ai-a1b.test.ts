@@ -213,6 +213,46 @@ describe('platform-sync for the assistant', () => {
     expect(rows.find((r) => r.id === th!.id)!.archivedAt).not.toBeNull();
   });
 
+  it('heals an inbox_admin laid under the old list: exactly the two assistant permissions, once; a custom role is untouched (A3 grant step)', async () => {
+    const [admin] = await db
+      .select({ id: s.role.id })
+      .from(s.role)
+      .where(and(eq(s.role.operatorId, second), eq(s.role.name, 'inbox_admin')));
+    const permsOf = async (roleId: string) =>
+      (await db.select({ p: s.rolePermission.permission }).from(s.rolePermission).where(eq(s.rolePermission.roleId, roleId)))
+        .map((x) => x.p)
+        .sort();
+    // As a deployed database stands: the role laid before SCRUM-590 joined the bundle.
+    await db
+      .delete(s.rolePermission)
+      .where(
+        and(
+          eq(s.rolePermission.roleId, admin!.id),
+          inArray(s.rolePermission.permission, ['inbox:kb:manage', 'inbox:ai:manage']),
+        ),
+      );
+    // An operator's edit to the role (a permission taken out) is theirs to keep.
+    await db
+      .delete(s.rolePermission)
+      .where(and(eq(s.rolePermission.roleId, admin!.id), eq(s.rolePermission.permission, 'inbox:routing:manage')));
+    const oldList = await permsOf(admin!.id);
+    // A custom role of the same operator, carrying none of the assistant permissions.
+    const customId = newId();
+    await db.insert(s.role).values({ id: customId, operatorId: second, name: 'marketing_custom', description: 'custom', isSystem: false });
+    await db.insert(s.rolePermission).values({ id: newId(), roleId: customId, permission: 'inbox:conversation:read' });
+
+    const first = await syncInboxSetup(db);
+    expect(first.grants).toBe(2);
+    const healed = await permsOf(admin!.id);
+    expect(healed.filter((p) => !oldList.includes(p)).sort()).toEqual(['inbox:ai:manage', 'inbox:kb:manage']);
+    expect(healed).not.toContain('inbox:routing:manage');
+    expect(await permsOf(customId)).toEqual(['inbox:conversation:read']);
+
+    const again = await syncInboxSetup(db);
+    expect(again.grants).toBe(0);
+    expect(await permsOf(admin!.id)).toEqual(healed);
+  });
+
   it('a sync never switches an account on: a live account stays live, an off one stays off', async () => {
     const [one] = await db.select().from(s.channelAccount).where(eq(s.channelAccount.operatorId, oto)).limit(1);
     await db.update(s.channelAccount).set({ aiMode: 'shadow' }).where(eq(s.channelAccount.id, one!.id));

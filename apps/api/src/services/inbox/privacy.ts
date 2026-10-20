@@ -9,6 +9,44 @@ import type { FileStorage } from '../files';
 import { withTx, type Exec, type Tx } from '../tx';
 import { cancelAiForThread } from './ai-turns';
 
+/** The examples sourced from these threads (or a message in them): soft links, so matched by value. */
+function sourcedFrom(operatorId: string, conversationIds: string[]): SQL {
+  return and(
+    eq(s.aiExample.operatorId, operatorId),
+    or(
+      inArray(s.aiExample.sourceConversationId, conversationIds),
+      sql`${s.aiExample.sourceMessageId} in (select m.id from ${s.message} m
+            where m.operator_id = ${operatorId} and m.conversation_id in (${sql.join(
+              conversationIds.map((id) => sql`${id}::uuid`),
+              sql`, `,
+            )}))`,
+    ),
+  )!;
+}
+
+/**
+ * R6: the unapproved examples from the subject's threads deleted, the source
+ * links of any approved one nulled. Answers how many were deleted.
+ */
+async function eraseExamples(tx: Tx, operatorId: string, conversationIds: string[], now: Date): Promise<number> {
+  if (conversationIds.length === 0) return 0;
+  const gone = await tx
+    .delete(s.aiExample)
+    .where(and(sourcedFrom(operatorId, conversationIds), sql`${s.aiExample.status} <> 'approved'`))
+    .returning({ id: s.aiExample.id });
+  await tx
+    .update(s.aiExample)
+    .set({ sourceMessageId: null, sourceConversationId: null, updatedAt: now })
+    .where(and(sourcedFrom(operatorId, conversationIds), eq(s.aiExample.status, 'approved')));
+  if (gone.length > 0) {
+    await tx
+      .update(s.kbEntry)
+      .set({ sourceExampleId: null, updatedAt: now })
+      .where(and(eq(s.kbEntry.operatorId, operatorId), inArray(s.kbEntry.sourceExampleId, gone.map((g) => g.id))));
+  }
+  return gone.length;
+}
+
 /**
  * THE INBOX'S PDPA PATHS (S2-19 I2g, SCRUM-586; plan
  * `docs/progress/plans/inbox-build/PLAN.md` §3.6, `docs/features/inbox.md`
@@ -47,6 +85,13 @@ import { cancelAiForThread } from './ai-turns';
  *     payload is a duplicate); missing one would keep the words.
  *   - THE ASSISTANT (SCRUM-590): every pending or deciding turn on the threads
  *     is cancelled and every unsent AI line withdrawn before the words go.
+ *   - THE CURATED EXAMPLES (SCRUM-590 plan §D.5, rails change R6): every
+ *     UNAPPROVED example (proposed or rejected) whose source links point at
+ *     the threads or their messages is DELETED — it may hold the customer's
+ *     words as staff copied them; an approved one was de-identified at
+ *     approval and points at nothing (`ai_example_approved_check`), and any
+ *     source link it might still carry is nulled. A KB entry promoted from a
+ *     deleted example loses that soft link and keeps its own words.
  *   - ONE AUDIT ROW, `inbox.contact.erase`: ids and counts, nothing erased.
  *
  * Re-erasing finds nothing left to remove, says so (`alreadyErased`), and
@@ -327,6 +372,14 @@ export async function previewErasure(db: Db, operatorId: string, contactId: stri
     files = Number(m?.files ?? 0);
   }
   files += subject.contacts.filter((c) => c.avatarFileId).length;
+  let examplesDeleted = 0;
+  if (convIds.length > 0) {
+    const [e] = await db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(s.aiExample)
+      .where(and(sourcedFrom(operatorId, convIds), sql`${s.aiExample.status} <> 'approved'`));
+    examplesDeleted = Number(e?.n ?? 0);
+  }
   return {
     contactIds: subject.contacts.map((c) => c.id),
     conversations: convIds.length,
@@ -336,6 +389,7 @@ export async function previewErasure(db: Db, operatorId: string, contactId: stri
     filesUnlinked: 0,
     eventsRedacted: 0,
     webhookPayloadsPurged: 0,
+    examplesDeleted,
   };
 }
 
@@ -386,6 +440,9 @@ export async function eraseContact(tx: Tx, storage: FileStorage | null, input: E
       now,
     });
   }
+
+  // 0b. The curated examples copied from their threads (R6).
+  const examplesDeleted = await eraseExamples(tx, operatorId, convIds, now);
 
   // 1. The words and the media, every message in every thread of theirs.
   const redacted = await redactThreadMessages(tx, storage, operatorId, convIds, contactIds, now);
@@ -474,6 +531,7 @@ export async function eraseContact(tx: Tx, storage: FileStorage | null, input: E
     filesUnlinked: redacted.filesUnlinked + avatarFiles.filesUnlinked,
     eventsRedacted,
     webhookPayloadsPurged,
+    examplesDeleted,
   };
 
   // 6. One audit row: ids and counts. Never what was erased.

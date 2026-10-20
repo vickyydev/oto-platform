@@ -65,3 +65,4 @@ export * from './scanner-burst';
 export * from './inbox';
 export * from './inbox-actions';
 export * from './inbox-reply';
+export * from './inbox-ai';

@@ -304,7 +304,7 @@ describe('platform-sync lays the inbox configuration (I1)', () => {
 
     const first = await syncInboxSetup(db);
     await platformSync(db);
-    expect(first).toEqual({ operators: 0, roles: 0, departments: 0, teams: 0, rules: 0, templates: 0, channelAccounts: 0 });
+    expect(first).toEqual({ operators: 0, roles: 0, grants: 0, departments: 0, teams: 0, rules: 0, templates: 0, channelAccounts: 0 });
     expect(await inboxCounts()).toEqual(before);
     expect((await db.select().from(s.role)).length).toBe(rolesBefore);
     expect((await db.select().from(s.department)).length).toBe(deptsBefore);

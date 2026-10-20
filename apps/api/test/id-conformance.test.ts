@@ -227,6 +227,10 @@ const CALLER_NAMED = [
   // send), and a template variant is named by the Console that makes it.
   'POST /inbox/conversations/:id/messages',
   'POST /inbox/templates',
+  // SCRUM-590 A3 (plan §F.3 "Censuses"): a knowledge-base entry and an
+  // example are caller-named, as a template variant is.
+  'POST /inbox/kb',
+  'POST /inbox/ai/examples',
   'POST /members',
   'POST /members/:id/children',
   'POST /operators',

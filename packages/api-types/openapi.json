@@ -58761,6 +58761,12 @@
                         },
                         "templates": {
                           "type": "boolean"
+                        },
+                        "kb": {
+                          "type": "boolean"
+                        },
+                        "ai": {
+                          "type": "boolean"
                         }
                       },
                       "required": [
@@ -58769,7 +58775,9 @@
                         "assign",
                         "move",
                         "reopen",
-                        "templates"
+                        "templates",
+                        "kb",
+                        "ai"
                       ],
                       "additionalProperties": false
                     },
@@ -59588,6 +59596,26 @@
                       ],
                       "additionalProperties": false,
                       "nullable": true
+                    },
+                    "aiMode": {
+                      "type": "string",
+                      "enum": [
+                        "off",
+                        "shadow",
+                        "live"
+                      ]
+                    },
+                    "aiPaused": {
+                      "type": "boolean"
+                    },
+                    "aiPausedAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "aiPausedByAccountId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
                     }
                   },
                   "required": [
@@ -59616,7 +59644,11 @@
                     "reopenedAt",
                     "member",
                     "events",
-                    "divertTo"
+                    "divertTo",
+                    "aiMode",
+                    "aiPaused",
+                    "aiPausedAt",
+                    "aiPausedByAccountId"
                   ],
                   "additionalProperties": false
                 }
@@ -62235,6 +62267,9 @@
                     "webhookPayloadsPurged": {
                       "type": "integer"
                     },
+                    "examplesDeleted": {
+                      "type": "integer"
+                    },
                     "contactId": {
                       "type": "string",
                       "format": "uuid"
@@ -62255,6 +62290,7 @@
                     "filesUnlinked",
                     "eventsRedacted",
                     "webhookPayloadsPurged",
+                    "examplesDeleted",
                     "contactId",
                     "alreadyErased",
                     "erasedAt"
@@ -62726,6 +62762,1892 @@
                     "updatedByAccountId",
                     "updatedAt",
                     "archivedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inbox/kb": {
+      "get": {
+        "description": "The assistant’s knowledge base for the Assistant settings page: every entry of the operator (draft and approved; archived only with `status=archived`), filtered by language, topic or status, each saying whether the viewer may manage it (`canManage`: inbox:kb:manage at its park, or operator-wide for a both-parks entry). Only approved entries reach the assistant. Needs inbox:kb:manage somewhere in the operator.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "th",
+                "en",
+                "ru"
+              ]
+            },
+            "in": "query",
+            "name": "language",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "about_oto",
+                "hours_note",
+                "address_note",
+                "directions",
+                "parking",
+                "age_rules",
+                "socks",
+                "prices_note",
+                "faq"
+              ]
+            },
+            "in": "query",
+            "name": "topic",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "draft",
+                "approved",
+                "archived"
+              ]
+            },
+            "in": "query",
+            "name": "status",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "entries": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "branchId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "topic": {
+                            "type": "string",
+                            "enum": [
+                              "about_oto",
+                              "hours_note",
+                              "address_note",
+                              "directions",
+                              "parking",
+                              "age_rules",
+                              "socks",
+                              "prices_note",
+                              "faq"
+                            ]
+                          },
+                          "key": {
+                            "type": "string"
+                          },
+                          "language": {
+                            "type": "string",
+                            "enum": [
+                              "th",
+                              "en",
+                              "ru"
+                            ]
+                          },
+                          "question": {
+                            "type": "string"
+                          },
+                          "body": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "draft",
+                              "approved",
+                              "archived"
+                            ]
+                          },
+                          "needsTranslation": {
+                            "type": "boolean"
+                          },
+                          "sourceExampleId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "updatedByAccountId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "approvedByAccountId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "approvedAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "canManage": {
+                            "type": "boolean"
+                          },
+                          "createdAt": {
+                            "type": "string"
+                          },
+                          "updatedAt": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "branchId",
+                          "topic",
+                          "key",
+                          "language",
+                          "question",
+                          "body",
+                          "status",
+                          "needsTranslation",
+                          "sourceExampleId",
+                          "updatedByAccountId",
+                          "approvedByAccountId",
+                          "approvedAt",
+                          "canManage",
+                          "createdAt",
+                          "updatedAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "entries"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "description": "Draft a knowledge-base entry: a topic, a stable key (a slug such as faq.food-outside, the id the assistant cites), a language (th, en, ru), the question as a customer would ask it (1–200 characters) and the fact (1–1,200), for one park or both (`branchId` null). Always a draft until approved. One live entry per key, language and park (409 KB_KEY_TAKEN). `sourceExampleId` promotes an APPROVED example (409 EXAMPLE_NOT_APPROVED). The body id is caller-named. Needs inbox:kb:manage at the park, or operator-wide for a both-parks entry. Audited as inbox.kb.create (ids, key, lengths — never the words).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "branchId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  },
+                  "topic": {
+                    "type": "string",
+                    "enum": [
+                      "about_oto",
+                      "hours_note",
+                      "address_note",
+                      "directions",
+                      "parking",
+                      "age_rules",
+                      "socks",
+                      "prices_note",
+                      "faq"
+                    ]
+                  },
+                  "key": {
+                    "type": "string",
+                    "maxLength": 80,
+                    "pattern": "^[a-z0-9]+([._-][a-z0-9]+)*$"
+                  },
+                  "language": {
+                    "type": "string",
+                    "enum": [
+                      "th",
+                      "en",
+                      "ru"
+                    ]
+                  },
+                  "question": {
+                    "type": "string"
+                  },
+                  "body": {
+                    "type": "string"
+                  },
+                  "needsTranslation": {
+                    "type": "boolean"
+                  },
+                  "sourceExampleId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "topic",
+                  "key",
+                  "language",
+                  "question",
+                  "body"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "branchId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "topic": {
+                      "type": "string",
+                      "enum": [
+                        "about_oto",
+                        "hours_note",
+                        "address_note",
+                        "directions",
+                        "parking",
+                        "age_rules",
+                        "socks",
+                        "prices_note",
+                        "faq"
+                      ]
+                    },
+                    "key": {
+                      "type": "string"
+                    },
+                    "language": {
+                      "type": "string",
+                      "enum": [
+                        "th",
+                        "en",
+                        "ru"
+                      ]
+                    },
+                    "question": {
+                      "type": "string"
+                    },
+                    "body": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "approved",
+                        "archived"
+                      ]
+                    },
+                    "needsTranslation": {
+                      "type": "boolean"
+                    },
+                    "sourceExampleId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "updatedByAccountId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "approvedByAccountId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "approvedAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "canManage": {
+                      "type": "boolean"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "branchId",
+                    "topic",
+                    "key",
+                    "language",
+                    "question",
+                    "body",
+                    "status",
+                    "needsTranslation",
+                    "sourceExampleId",
+                    "updatedByAccountId",
+                    "approvedByAccountId",
+                    "approvedAt",
+                    "canManage",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inbox/kb/{id}": {
+      "patch": {
+        "description": "Edit a DRAFT entry: its topic, key, language, park, question, fact or needsTranslation. An approved or archived entry answers 409 KB_NOT_DRAFT — archive it and draft a new one with the same key. Needs inbox:kb:manage over the entry as it stands and as it will be.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "branchId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  },
+                  "topic": {
+                    "type": "string",
+                    "enum": [
+                      "about_oto",
+                      "hours_note",
+                      "address_note",
+                      "directions",
+                      "parking",
+                      "age_rules",
+                      "socks",
+                      "prices_note",
+                      "faq"
+                    ]
+                  },
+                  "key": {
+                    "type": "string",
+                    "maxLength": 80,
+                    "pattern": "^[a-z0-9]+([._-][a-z0-9]+)*$"
+                  },
+                  "language": {
+                    "type": "string",
+                    "enum": [
+                      "th",
+                      "en",
+                      "ru"
+                    ]
+                  },
+                  "question": {
+                    "type": "string"
+                  },
+                  "body": {
+                    "type": "string"
+                  },
+                  "needsTranslation": {
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "branchId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "topic": {
+                      "type": "string",
+                      "enum": [
+                        "about_oto",
+                        "hours_note",
+                        "address_note",
+                        "directions",
+                        "parking",
+                        "age_rules",
+                        "socks",
+                        "prices_note",
+                        "faq"
+                      ]
+                    },
+                    "key": {
+                      "type": "string"
+                    },
+                    "language": {
+                      "type": "string",
+                      "enum": [
+                        "th",
+                        "en",
+                        "ru"
+                      ]
+                    },
+                    "question": {
+                      "type": "string"
+                    },
+                    "body": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "approved",
+                        "archived"
+                      ]
+                    },
+                    "needsTranslation": {
+                      "type": "boolean"
+                    },
+                    "sourceExampleId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "updatedByAccountId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "approvedByAccountId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "approvedAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "canManage": {
+                      "type": "boolean"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "branchId",
+                    "topic",
+                    "key",
+                    "language",
+                    "question",
+                    "body",
+                    "status",
+                    "needsTranslation",
+                    "sourceExampleId",
+                    "updatedByAccountId",
+                    "approvedByAccountId",
+                    "approvedAt",
+                    "canManage",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inbox/kb/{id}/approve": {
+      "post": {
+        "description": "Approve a draft: the approver and the time are recorded and the entry reaches the assistant from its next turn (a row still marked needsTranslation is held back; its English row is used). An archived entry answers 409 KB_ARCHIVED; an approved one is answered as it stands. Needs inbox:kb:manage at its park.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "branchId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "topic": {
+                      "type": "string",
+                      "enum": [
+                        "about_oto",
+                        "hours_note",
+                        "address_note",
+                        "directions",
+                        "parking",
+                        "age_rules",
+                        "socks",
+                        "prices_note",
+                        "faq"
+                      ]
+                    },
+                    "key": {
+                      "type": "string"
+                    },
+                    "language": {
+                      "type": "string",
+                      "enum": [
+                        "th",
+                        "en",
+                        "ru"
+                      ]
+                    },
+                    "question": {
+                      "type": "string"
+                    },
+                    "body": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "approved",
+                        "archived"
+                      ]
+                    },
+                    "needsTranslation": {
+                      "type": "boolean"
+                    },
+                    "sourceExampleId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "updatedByAccountId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "approvedByAccountId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "approvedAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "canManage": {
+                      "type": "boolean"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "branchId",
+                    "topic",
+                    "key",
+                    "language",
+                    "question",
+                    "body",
+                    "status",
+                    "needsTranslation",
+                    "sourceExampleId",
+                    "updatedByAccountId",
+                    "approvedByAccountId",
+                    "approvedAt",
+                    "canManage",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inbox/kb/{id}/archive": {
+      "post": {
+        "description": "Archive an entry: it leaves the assistant and frees its key for a new draft. Never deleted. Archiving twice is the same act. Needs inbox:kb:manage at its park.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "branchId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "topic": {
+                      "type": "string",
+                      "enum": [
+                        "about_oto",
+                        "hours_note",
+                        "address_note",
+                        "directions",
+                        "parking",
+                        "age_rules",
+                        "socks",
+                        "prices_note",
+                        "faq"
+                      ]
+                    },
+                    "key": {
+                      "type": "string"
+                    },
+                    "language": {
+                      "type": "string",
+                      "enum": [
+                        "th",
+                        "en",
+                        "ru"
+                      ]
+                    },
+                    "question": {
+                      "type": "string"
+                    },
+                    "body": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "approved",
+                        "archived"
+                      ]
+                    },
+                    "needsTranslation": {
+                      "type": "boolean"
+                    },
+                    "sourceExampleId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "updatedByAccountId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "approvedByAccountId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "approvedAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "canManage": {
+                      "type": "boolean"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "branchId",
+                    "topic",
+                    "key",
+                    "language",
+                    "question",
+                    "body",
+                    "status",
+                    "needsTranslation",
+                    "sourceExampleId",
+                    "updatedByAccountId",
+                    "approvedByAccountId",
+                    "approvedAt",
+                    "canManage",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inbox/ai/examples": {
+      "get": {
+        "description": "The examples queue: corrected answers, newest first, filtered by status, intent or language, and the assistant’s intents for the editor’s picker. Approved examples reach the assistant (at most thirty). Needs inbox:kb:manage with operator reach (operator-wide, or an operator-wide department such as Marketing).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "proposed",
+                "approved",
+                "rejected"
+              ]
+            },
+            "in": "query",
+            "name": "status",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]{0,47}$"
+            },
+            "in": "query",
+            "name": "intent",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "th",
+                "en",
+                "ru"
+              ]
+            },
+            "in": "query",
+            "name": "language",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "examples": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "intent": {
+                            "type": "string"
+                          },
+                          "language": {
+                            "type": "string",
+                            "enum": [
+                              "th",
+                              "en",
+                              "ru"
+                            ]
+                          },
+                          "customerText": {
+                            "type": "string"
+                          },
+                          "goodReply": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "verdict": {
+                            "type": "string",
+                            "enum": [
+                              "should_answer",
+                              "should_handover",
+                              "should_stay_silent"
+                            ]
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "proposed",
+                              "approved",
+                              "rejected"
+                            ]
+                          },
+                          "sourceMessageId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "sourceConversationId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "proposedByAccountId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "approvedByAccountId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "approvedAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "deidentifiedConfirmed": {
+                            "type": "boolean"
+                          },
+                          "createdAt": {
+                            "type": "string"
+                          },
+                          "updatedAt": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "intent",
+                          "language",
+                          "customerText",
+                          "goodReply",
+                          "verdict",
+                          "status",
+                          "sourceMessageId",
+                          "sourceConversationId",
+                          "proposedByAccountId",
+                          "approvedByAccountId",
+                          "approvedAt",
+                          "deidentifiedConfirmed",
+                          "createdAt",
+                          "updatedAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "intents": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [
+                    "examples",
+                    "intents"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "description": "\"Correct the assistant\": propose an example from a message — an AI line, or the customer message an ai_silent pill stayed silent on. The caller writes the customer text WITH PERSONAL DATA REMOVED (1–500 characters), the verdict, and for should_answer the good reply (1–800). Language and intent come from the assistant’s turn for that message, else the thread; `language` / `intent` override them (409 LANGUAGE_REQUIRED / INTENT_REQUIRED when neither names one). The thread is not changed. The example keeps its source links until it is approved. The body id is caller-named. 404 when the message is not in a thread the caller can see; needs inbox:conversation:reply on that thread.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "messageId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "customerText": {
+                    "type": "string"
+                  },
+                  "goodReply": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "verdict": {
+                    "type": "string",
+                    "enum": [
+                      "should_answer",
+                      "should_handover",
+                      "should_stay_silent"
+                    ]
+                  },
+                  "intent": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9_]{0,47}$"
+                  },
+                  "language": {
+                    "type": "string",
+                    "enum": [
+                      "th",
+                      "en",
+                      "ru"
+                    ]
+                  }
+                },
+                "required": [
+                  "messageId",
+                  "customerText",
+                  "verdict"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "intent": {
+                      "type": "string"
+                    },
+                    "language": {
+                      "type": "string",
+                      "enum": [
+                        "th",
+                        "en",
+                        "ru"
+                      ]
+                    },
+                    "customerText": {
+                      "type": "string"
+                    },
+                    "goodReply": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "verdict": {
+                      "type": "string",
+                      "enum": [
+                        "should_answer",
+                        "should_handover",
+                        "should_stay_silent"
+                      ]
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "proposed",
+                        "approved",
+                        "rejected"
+                      ]
+                    },
+                    "sourceMessageId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "sourceConversationId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "proposedByAccountId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "approvedByAccountId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "approvedAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "deidentifiedConfirmed": {
+                      "type": "boolean"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "intent",
+                    "language",
+                    "customerText",
+                    "goodReply",
+                    "verdict",
+                    "status",
+                    "sourceMessageId",
+                    "sourceConversationId",
+                    "proposedByAccountId",
+                    "approvedByAccountId",
+                    "approvedAt",
+                    "deidentifiedConfirmed",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inbox/ai/examples/{id}": {
+      "patch": {
+        "description": "Edit a PROPOSED example: the customer text, the good reply, the verdict, the intent or the language. Otherwise 409 EXAMPLE_NOT_PROPOSED. A should_answer verdict needs a good reply (409 GOOD_REPLY_REQUIRED). Needs inbox:kb:manage with operator reach.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "customerText": {
+                    "type": "string"
+                  },
+                  "goodReply": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "verdict": {
+                    "type": "string",
+                    "enum": [
+                      "should_answer",
+                      "should_handover",
+                      "should_stay_silent"
+                    ]
+                  },
+                  "intent": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9_]{0,47}$"
+                  },
+                  "language": {
+                    "type": "string",
+                    "enum": [
+                      "th",
+                      "en",
+                      "ru"
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "intent": {
+                      "type": "string"
+                    },
+                    "language": {
+                      "type": "string",
+                      "enum": [
+                        "th",
+                        "en",
+                        "ru"
+                      ]
+                    },
+                    "customerText": {
+                      "type": "string"
+                    },
+                    "goodReply": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "verdict": {
+                      "type": "string",
+                      "enum": [
+                        "should_answer",
+                        "should_handover",
+                        "should_stay_silent"
+                      ]
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "proposed",
+                        "approved",
+                        "rejected"
+                      ]
+                    },
+                    "sourceMessageId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "sourceConversationId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "proposedByAccountId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "approvedByAccountId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "approvedAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "deidentifiedConfirmed": {
+                      "type": "boolean"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "intent",
+                    "language",
+                    "customerText",
+                    "goodReply",
+                    "verdict",
+                    "status",
+                    "sourceMessageId",
+                    "sourceConversationId",
+                    "proposedByAccountId",
+                    "approvedByAccountId",
+                    "approvedAt",
+                    "deidentifiedConfirmed",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "description": "Delete a PROPOSED example (a draft that may hold a thread’s words). An approved or rejected one answers 409 EXAMPLE_NOT_DELETABLE — reject it instead. Needs inbox:kb:manage with operator reach.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "deleted": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "deleted"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inbox/ai/examples/{id}/approve": {
+      "post": {
+        "description": "Approve a proposed example. REQUIRES `deidentifiedConfirmed: true` — the approver’s confirmation that it contains no personal data — else 409 DEIDENTIFICATION_REQUIRED. Approval severs it from its thread: both source links are nulled, the approver and time recorded, and it reaches the assistant from its next turn. A rejected one answers 409 EXAMPLE_REJECTED; an approved one is answered as it stands. Needs inbox:kb:manage with operator reach.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "deidentifiedConfirmed": {
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "intent": {
+                      "type": "string"
+                    },
+                    "language": {
+                      "type": "string",
+                      "enum": [
+                        "th",
+                        "en",
+                        "ru"
+                      ]
+                    },
+                    "customerText": {
+                      "type": "string"
+                    },
+                    "goodReply": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "verdict": {
+                      "type": "string",
+                      "enum": [
+                        "should_answer",
+                        "should_handover",
+                        "should_stay_silent"
+                      ]
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "proposed",
+                        "approved",
+                        "rejected"
+                      ]
+                    },
+                    "sourceMessageId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "sourceConversationId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "proposedByAccountId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "approvedByAccountId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "approvedAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "deidentifiedConfirmed": {
+                      "type": "boolean"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "intent",
+                    "language",
+                    "customerText",
+                    "goodReply",
+                    "verdict",
+                    "status",
+                    "sourceMessageId",
+                    "sourceConversationId",
+                    "proposedByAccountId",
+                    "approvedByAccountId",
+                    "approvedAt",
+                    "deidentifiedConfirmed",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inbox/ai/examples/{id}/reject": {
+      "post": {
+        "description": "Reject an example (its archive): out of the queue, and out of the assistant if it was approved. Rejecting twice is the same act. Needs inbox:kb:manage with operator reach.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "intent": {
+                      "type": "string"
+                    },
+                    "language": {
+                      "type": "string",
+                      "enum": [
+                        "th",
+                        "en",
+                        "ru"
+                      ]
+                    },
+                    "customerText": {
+                      "type": "string"
+                    },
+                    "goodReply": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "verdict": {
+                      "type": "string",
+                      "enum": [
+                        "should_answer",
+                        "should_handover",
+                        "should_stay_silent"
+                      ]
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "proposed",
+                        "approved",
+                        "rejected"
+                      ]
+                    },
+                    "sourceMessageId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "sourceConversationId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "proposedByAccountId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "approvedByAccountId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "approvedAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "deidentifiedConfirmed": {
+                      "type": "boolean"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "intent",
+                    "language",
+                    "customerText",
+                    "goodReply",
+                    "verdict",
+                    "status",
+                    "sourceMessageId",
+                    "sourceConversationId",
+                    "proposedByAccountId",
+                    "approvedByAccountId",
+                    "approvedAt",
+                    "deidentifiedConfirmed",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inbox/ai/channel-accounts": {
+      "get": {
+        "description": "The numbers whose assistant the caller may switch, with each one’s `aiMode`: live accounts that can reply (a check-in notice sender carries no assistant), at the branches the caller holds inbox:ai:manage at, and the operator-wide ones when they hold it operator-wide. Needs inbox:ai:manage somewhere in the operator.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "channelAccounts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "channel": {
+                            "type": "string",
+                            "enum": [
+                              "whatsapp",
+                              "instagram",
+                              "facebook",
+                              "line",
+                              "telegram",
+                              "webform"
+                            ]
+                          },
+                          "provider": {
+                            "type": "string"
+                          },
+                          "displayName": {
+                            "type": "string"
+                          },
+                          "branchId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "canReply": {
+                            "type": "boolean"
+                          },
+                          "aiMode": {
+                            "type": "string",
+                            "enum": [
+                              "off",
+                              "shadow",
+                              "live"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "channel",
+                          "provider",
+                          "displayName",
+                          "branchId",
+                          "status",
+                          "canReply",
+                          "aiMode"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "channelAccounts"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inbox/channel-accounts/{id}/ai-mode": {
+      "patch": {
+        "description": "Switch a number’s assistant: `off` (no turn is written), `shadow` (decides and writes nothing to the thread) or `live` (answers). Every number starts off. A notice sender cannot be switched on (409 CHANNEL_CANNOT_REPLY). The same mode again writes nothing. Needs inbox:ai:manage at the number’s branch, or operator-wide for an operator-wide number. Audited as inbox.ai.mode.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "aiMode": {
+                    "type": "string",
+                    "enum": [
+                      "off",
+                      "shadow",
+                      "live"
+                    ]
+                  }
+                },
+                "required": [
+                  "aiMode"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "channel": {
+                      "type": "string",
+                      "enum": [
+                        "whatsapp",
+                        "instagram",
+                        "facebook",
+                        "line",
+                        "telegram",
+                        "webform"
+                      ]
+                    },
+                    "provider": {
+                      "type": "string"
+                    },
+                    "displayName": {
+                      "type": "string"
+                    },
+                    "branchId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "status": {
+                      "type": "string"
+                    },
+                    "canReply": {
+                      "type": "boolean"
+                    },
+                    "aiMode": {
+                      "type": "string",
+                      "enum": [
+                        "off",
+                        "shadow",
+                        "live"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "channel",
+                    "provider",
+                    "displayName",
+                    "branchId",
+                    "status",
+                    "canReply",
+                    "aiMode"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inbox/conversations/{id}/ai-pause": {
+      "post": {
+        "description": "Pause the assistant on this thread: it writes no turn here until resumed. In the same transaction every pending or deciding turn is cancelled (PAUSED) and every unsent AI line withdrawn; the answer counts them. Pausing a paused thread is the same act. 404 when the caller cannot see the thread; needs inbox:conversation:reply on it (the reply route’s rule), or inbox:ai:manage at it. Audited as inbox.ai.pause.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "conversationId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "aiPaused": {
+                      "type": "boolean"
+                    },
+                    "aiPausedAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "aiPausedByAccountId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "turnsCancelled": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "messagesWithdrawn": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "conversationId",
+                    "aiPaused",
+                    "aiPausedAt",
+                    "aiPausedByAccountId",
+                    "turnsCancelled",
+                    "messagesWithdrawn"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inbox/conversations/{id}/ai-resume": {
+      "post": {
+        "description": "Resume the assistant on this thread: the pause (who and when) is cleared. No turn is written now; the next customer message writes one if the thread is then eligible. Resuming an unpaused thread is the same act. Same rule as the pause; audited as inbox.ai.pause with `paused: false`.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "conversationId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "aiPaused": {
+                      "type": "boolean"
+                    },
+                    "aiPausedAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "aiPausedByAccountId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "turnsCancelled": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "messagesWithdrawn": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "conversationId",
+                    "aiPaused",
+                    "aiPausedAt",
+                    "aiPausedByAccountId",
+                    "turnsCancelled",
+                    "messagesWithdrawn"
                   ],
                   "additionalProperties": false
                 }

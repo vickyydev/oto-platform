@@ -48,7 +48,7 @@ const me: InboxMe = {
     { accountId: GM, name: 'Hanna', teamIds: [], operatorWide: true },
   ],
   defaultReceptionBranchId: CENTRAL,
-  capabilities: { writes: false, dashboard: true, assign: false, move: false, reopen: false, templates: false },
+  capabilities: { writes: false, dashboard: true, assign: false, move: false, reopen: false, templates: false, kb: false, ai: false },
   simulator: null,
 };
 

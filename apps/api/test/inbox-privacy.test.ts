@@ -322,6 +322,8 @@ describe('PDPA erasure (I2g)', () => {
   let templateFile: string;
   let avatarFile: string;
   let eraserCookie: string;
+  /** SCRUM-590 R6: the curated examples sourced from Mali's threads, and the ones that must survive. */
+  let examples: { proposed: string; rejected: string; approved: string; otherThread: string; kbEntry: string };
   let shape: { id: string; status: string; teamId: string | null; branchId: string | null; owners: number; messages: number }[];
 
   beforeAll(async () => {
@@ -363,6 +365,34 @@ describe('PDPA erasure (I2g)', () => {
       kind: 'pos_update',
       actorKind: 'system',
       payload: { bookingRef: 'B-1', displayName: 'Khun Mali', nested: { phone: MALI_PHONE, kept: 'yes' } },
+    });
+
+    // SCRUM-590 R6 — the assistant's curated examples. Two UNAPPROVED ones
+    // copied from Mali's threads (one linked by thread, one by message only),
+    // an approved one (de-identified, no links), one from another customer's
+    // thread, and a KB entry promoted from the first.
+    const [otherThread] = await ctx.db
+      .select({ id: s.conversation.id })
+      .from(s.conversation)
+      .where(and(eq(s.conversation.operatorId, oto), sql`${s.conversation.contactId} not in (${contactId}, ${lineContactId})`))
+      .limit(1);
+    examples = { proposed: newId(), rejected: newId(), approved: newId(), otherThread: newId(), kbEntry: newId() };
+    const example = { operatorId: oto, intent: 'birthday_party', language: 'en' as const, verdict: 'should_handover' as const, proposedByAccountId: admin };
+    await ctx.db.insert(s.aiExample).values([
+      { ...example, id: examples.proposed, customerText: 'A party for two, please — Khun Mali', sourceConversationId: threads[0]!.id, sourceMessageId: customerLine!.id },
+      { ...example, id: examples.rejected, customerText: 'A party, Khun Mali', status: 'rejected', sourceMessageId: notice!.id },
+      { ...example, id: examples.approved, customerText: 'A party for two, please', status: 'approved', deidentifiedConfirmed: true, approvedByAccountId: admin, approvedAt: new Date() },
+      { ...example, id: examples.otherThread, customerText: 'Somebody else asks', sourceConversationId: otherThread!.id },
+    ]);
+    await ctx.db.insert(s.kbEntry).values({
+      id: examples.kbEntry,
+      operatorId: oto,
+      topic: 'faq',
+      key: 'faq.privacy-test',
+      language: 'en',
+      question: 'A question',
+      body: 'A fact',
+      sourceExampleId: examples.proposed,
     });
 
     shape = [];
@@ -412,6 +442,7 @@ describe('PDPA erasure (I2g)', () => {
         contactIds: [contactId, lineContactId],
         conversations: 3,
         noticeMessages: 2,
+        examplesDeleted: 2,
       });
     }
     expect((await contactOf('whatsapp'))!.erasedAt).toBeNull();
@@ -437,8 +468,18 @@ describe('PDPA erasure (I2g)', () => {
       filesUnlinked: 1,
       eventsRedacted: 1,
       webhookPayloadsPurged: 1,
+      examplesDeleted: 2,
     });
     expect(body.messages).toBeGreaterThanOrEqual(3);
+
+    // SCRUM-590 R6, in the same transaction: the unapproved examples copied
+    // from Mali's threads deleted — by thread link and by message link alike;
+    // the approved one and another customer's untouched; the KB entry
+    // promoted from a deleted one keeps its words and loses the soft link.
+    const left = await ctx.db.select({ id: s.aiExample.id }).from(s.aiExample).where(eq(s.aiExample.operatorId, oto));
+    expect(left.map((e) => e.id).sort()).toEqual([examples.approved, examples.otherThread].sort());
+    const [promoted] = await ctx.db.select().from(s.kbEntry).where(eq(s.kbEntry.id, examples.kbEntry));
+    expect(promoted).toMatchObject({ sourceExampleId: null, body: 'A fact' });
 
     // The person: anonymised, both contacts.
     for (const id of [contactId, lineContactId]) {
@@ -535,6 +576,7 @@ describe('PDPA erasure (I2g)', () => {
       filesDeleted: 0,
       eventsRedacted: 0,
       webhookPayloadsPurged: 0,
+      examplesDeleted: 0,
     });
     const replay = await erase(cookie, contactId, confirmed(contactId), 'erase-mali-2');
     expect(replay.statusCode).toBe(200);

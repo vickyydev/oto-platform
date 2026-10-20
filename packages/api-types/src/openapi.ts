@@ -24918,6 +24918,8 @@ export interface paths {
                                 move: boolean;
                                 reopen: boolean;
                                 templates: boolean;
+                                kb: boolean;
+                                ai: boolean;
                             };
                             simulator: {
                                 channelAccounts: {
@@ -25163,6 +25165,12 @@ export interface paths {
                                 accountId: string;
                                 name: string | null;
                             } | null;
+                            /** @enum {string} */
+                            aiMode: "off" | "shadow" | "live";
+                            aiPaused: boolean;
+                            aiPausedAt: string | null;
+                            /** Format: uuid */
+                            aiPausedByAccountId: string | null;
                         };
                     };
                 };
@@ -26259,6 +26267,7 @@ export interface paths {
                             filesUnlinked: number;
                             eventsRedacted: number;
                             webhookPayloadsPurged: number;
+                            examplesDeleted: number;
                             /** Format: uuid */
                             contactId: string;
                             alreadyErased: boolean;
@@ -26460,6 +26469,902 @@ export interface paths {
                             updatedByAccountId: string | null;
                             updatedAt: string;
                             archivedAt: string | null;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inbox/kb": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The assistant’s knowledge base for the Assistant settings page: every entry of the operator (draft and approved; archived only with `status=archived`), filtered by language, topic or status, each saying whether the viewer may manage it (`canManage`: inbox:kb:manage at its park, or operator-wide for a both-parks entry). Only approved entries reach the assistant. Needs inbox:kb:manage somewhere in the operator. */
+        get: {
+            parameters: {
+                query?: {
+                    language?: "th" | "en" | "ru";
+                    topic?: "about_oto" | "hours_note" | "address_note" | "directions" | "parking" | "age_rules" | "socks" | "prices_note" | "faq";
+                    status?: "draft" | "approved" | "archived";
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            entries: {
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                branchId: string | null;
+                                /** @enum {string} */
+                                topic: "about_oto" | "hours_note" | "address_note" | "directions" | "parking" | "age_rules" | "socks" | "prices_note" | "faq";
+                                key: string;
+                                /** @enum {string} */
+                                language: "th" | "en" | "ru";
+                                question: string;
+                                body: string;
+                                /** @enum {string} */
+                                status: "draft" | "approved" | "archived";
+                                needsTranslation: boolean;
+                                /** Format: uuid */
+                                sourceExampleId: string | null;
+                                /** Format: uuid */
+                                updatedByAccountId: string | null;
+                                /** Format: uuid */
+                                approvedByAccountId: string | null;
+                                approvedAt: string | null;
+                                canManage: boolean;
+                                createdAt: string;
+                                updatedAt: string;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** @description Draft a knowledge-base entry: a topic, a stable key (a slug such as faq.food-outside, the id the assistant cites), a language (th, en, ru), the question as a customer would ask it (1–200 characters) and the fact (1–1,200), for one park or both (`branchId` null). Always a draft until approved. One live entry per key, language and park (409 KB_KEY_TAKEN). `sourceExampleId` promotes an APPROVED example (409 EXAMPLE_NOT_APPROVED). The body id is caller-named. Needs inbox:kb:manage at the park, or operator-wide for a both-parks entry. Audited as inbox.kb.create (ids, key, lengths — never the words). */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id?: string;
+                        /** Format: uuid */
+                        branchId?: string | null;
+                        /** @enum {string} */
+                        topic: "about_oto" | "hours_note" | "address_note" | "directions" | "parking" | "age_rules" | "socks" | "prices_note" | "faq";
+                        key: string;
+                        /** @enum {string} */
+                        language: "th" | "en" | "ru";
+                        question: string;
+                        body: string;
+                        needsTranslation?: boolean;
+                        /** Format: uuid */
+                        sourceExampleId?: string | null;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            branchId: string | null;
+                            /** @enum {string} */
+                            topic: "about_oto" | "hours_note" | "address_note" | "directions" | "parking" | "age_rules" | "socks" | "prices_note" | "faq";
+                            key: string;
+                            /** @enum {string} */
+                            language: "th" | "en" | "ru";
+                            question: string;
+                            body: string;
+                            /** @enum {string} */
+                            status: "draft" | "approved" | "archived";
+                            needsTranslation: boolean;
+                            /** Format: uuid */
+                            sourceExampleId: string | null;
+                            /** Format: uuid */
+                            updatedByAccountId: string | null;
+                            /** Format: uuid */
+                            approvedByAccountId: string | null;
+                            approvedAt: string | null;
+                            canManage: boolean;
+                            createdAt: string;
+                            updatedAt: string;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inbox/kb/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Edit a DRAFT entry: its topic, key, language, park, question, fact or needsTranslation. An approved or archived entry answers 409 KB_NOT_DRAFT — archive it and draft a new one with the same key. Needs inbox:kb:manage over the entry as it stands and as it will be. */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        branchId?: string | null;
+                        /** @enum {string} */
+                        topic?: "about_oto" | "hours_note" | "address_note" | "directions" | "parking" | "age_rules" | "socks" | "prices_note" | "faq";
+                        key?: string;
+                        /** @enum {string} */
+                        language?: "th" | "en" | "ru";
+                        question?: string;
+                        body?: string;
+                        needsTranslation?: boolean;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            branchId: string | null;
+                            /** @enum {string} */
+                            topic: "about_oto" | "hours_note" | "address_note" | "directions" | "parking" | "age_rules" | "socks" | "prices_note" | "faq";
+                            key: string;
+                            /** @enum {string} */
+                            language: "th" | "en" | "ru";
+                            question: string;
+                            body: string;
+                            /** @enum {string} */
+                            status: "draft" | "approved" | "archived";
+                            needsTranslation: boolean;
+                            /** Format: uuid */
+                            sourceExampleId: string | null;
+                            /** Format: uuid */
+                            updatedByAccountId: string | null;
+                            /** Format: uuid */
+                            approvedByAccountId: string | null;
+                            approvedAt: string | null;
+                            canManage: boolean;
+                            createdAt: string;
+                            updatedAt: string;
+                        };
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/inbox/kb/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Approve a draft: the approver and the time are recorded and the entry reaches the assistant from its next turn (a row still marked needsTranslation is held back; its English row is used). An archived entry answers 409 KB_ARCHIVED; an approved one is answered as it stands. Needs inbox:kb:manage at its park. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            branchId: string | null;
+                            /** @enum {string} */
+                            topic: "about_oto" | "hours_note" | "address_note" | "directions" | "parking" | "age_rules" | "socks" | "prices_note" | "faq";
+                            key: string;
+                            /** @enum {string} */
+                            language: "th" | "en" | "ru";
+                            question: string;
+                            body: string;
+                            /** @enum {string} */
+                            status: "draft" | "approved" | "archived";
+                            needsTranslation: boolean;
+                            /** Format: uuid */
+                            sourceExampleId: string | null;
+                            /** Format: uuid */
+                            updatedByAccountId: string | null;
+                            /** Format: uuid */
+                            approvedByAccountId: string | null;
+                            approvedAt: string | null;
+                            canManage: boolean;
+                            createdAt: string;
+                            updatedAt: string;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inbox/kb/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Archive an entry: it leaves the assistant and frees its key for a new draft. Never deleted. Archiving twice is the same act. Needs inbox:kb:manage at its park. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            branchId: string | null;
+                            /** @enum {string} */
+                            topic: "about_oto" | "hours_note" | "address_note" | "directions" | "parking" | "age_rules" | "socks" | "prices_note" | "faq";
+                            key: string;
+                            /** @enum {string} */
+                            language: "th" | "en" | "ru";
+                            question: string;
+                            body: string;
+                            /** @enum {string} */
+                            status: "draft" | "approved" | "archived";
+                            needsTranslation: boolean;
+                            /** Format: uuid */
+                            sourceExampleId: string | null;
+                            /** Format: uuid */
+                            updatedByAccountId: string | null;
+                            /** Format: uuid */
+                            approvedByAccountId: string | null;
+                            approvedAt: string | null;
+                            canManage: boolean;
+                            createdAt: string;
+                            updatedAt: string;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inbox/ai/examples": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The examples queue: corrected answers, newest first, filtered by status, intent or language, and the assistant’s intents for the editor’s picker. Approved examples reach the assistant (at most thirty). Needs inbox:kb:manage with operator reach (operator-wide, or an operator-wide department such as Marketing). */
+        get: {
+            parameters: {
+                query?: {
+                    status?: "proposed" | "approved" | "rejected";
+                    intent?: string;
+                    language?: "th" | "en" | "ru";
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            examples: {
+                                /** Format: uuid */
+                                id: string;
+                                intent: string;
+                                /** @enum {string} */
+                                language: "th" | "en" | "ru";
+                                customerText: string;
+                                goodReply: string | null;
+                                /** @enum {string} */
+                                verdict: "should_answer" | "should_handover" | "should_stay_silent";
+                                /** @enum {string} */
+                                status: "proposed" | "approved" | "rejected";
+                                /** Format: uuid */
+                                sourceMessageId: string | null;
+                                /** Format: uuid */
+                                sourceConversationId: string | null;
+                                /** Format: uuid */
+                                proposedByAccountId: string;
+                                /** Format: uuid */
+                                approvedByAccountId: string | null;
+                                approvedAt: string | null;
+                                deidentifiedConfirmed: boolean;
+                                createdAt: string;
+                                updatedAt: string;
+                            }[];
+                            intents: string[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** @description "Correct the assistant": propose an example from a message — an AI line, or the customer message an ai_silent pill stayed silent on. The caller writes the customer text WITH PERSONAL DATA REMOVED (1–500 characters), the verdict, and for should_answer the good reply (1–800). Language and intent come from the assistant’s turn for that message, else the thread; `language` / `intent` override them (409 LANGUAGE_REQUIRED / INTENT_REQUIRED when neither names one). The thread is not changed. The example keeps its source links until it is approved. The body id is caller-named. 404 when the message is not in a thread the caller can see; needs inbox:conversation:reply on that thread. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id?: string;
+                        /** Format: uuid */
+                        messageId: string;
+                        customerText: string;
+                        goodReply?: string | null;
+                        /** @enum {string} */
+                        verdict: "should_answer" | "should_handover" | "should_stay_silent";
+                        intent?: string;
+                        /** @enum {string} */
+                        language?: "th" | "en" | "ru";
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            intent: string;
+                            /** @enum {string} */
+                            language: "th" | "en" | "ru";
+                            customerText: string;
+                            goodReply: string | null;
+                            /** @enum {string} */
+                            verdict: "should_answer" | "should_handover" | "should_stay_silent";
+                            /** @enum {string} */
+                            status: "proposed" | "approved" | "rejected";
+                            /** Format: uuid */
+                            sourceMessageId: string | null;
+                            /** Format: uuid */
+                            sourceConversationId: string | null;
+                            /** Format: uuid */
+                            proposedByAccountId: string;
+                            /** Format: uuid */
+                            approvedByAccountId: string | null;
+                            approvedAt: string | null;
+                            deidentifiedConfirmed: boolean;
+                            createdAt: string;
+                            updatedAt: string;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inbox/ai/examples/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** @description Delete a PROPOSED example (a draft that may hold a thread’s words). An approved or rejected one answers 409 EXAMPLE_NOT_DELETABLE — reject it instead. Needs inbox:kb:manage with operator reach. */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            /** @enum {boolean} */
+                            deleted: true;
+                        };
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        /** @description Edit a PROPOSED example: the customer text, the good reply, the verdict, the intent or the language. Otherwise 409 EXAMPLE_NOT_PROPOSED. A should_answer verdict needs a good reply (409 GOOD_REPLY_REQUIRED). Needs inbox:kb:manage with operator reach. */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        customerText?: string;
+                        goodReply?: string | null;
+                        /** @enum {string} */
+                        verdict?: "should_answer" | "should_handover" | "should_stay_silent";
+                        intent?: string;
+                        /** @enum {string} */
+                        language?: "th" | "en" | "ru";
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            intent: string;
+                            /** @enum {string} */
+                            language: "th" | "en" | "ru";
+                            customerText: string;
+                            goodReply: string | null;
+                            /** @enum {string} */
+                            verdict: "should_answer" | "should_handover" | "should_stay_silent";
+                            /** @enum {string} */
+                            status: "proposed" | "approved" | "rejected";
+                            /** Format: uuid */
+                            sourceMessageId: string | null;
+                            /** Format: uuid */
+                            sourceConversationId: string | null;
+                            /** Format: uuid */
+                            proposedByAccountId: string;
+                            /** Format: uuid */
+                            approvedByAccountId: string | null;
+                            approvedAt: string | null;
+                            deidentifiedConfirmed: boolean;
+                            createdAt: string;
+                            updatedAt: string;
+                        };
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/inbox/ai/examples/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Approve a proposed example. REQUIRES `deidentifiedConfirmed: true` — the approver’s confirmation that it contains no personal data — else 409 DEIDENTIFICATION_REQUIRED. Approval severs it from its thread: both source links are nulled, the approver and time recorded, and it reaches the assistant from its next turn. A rejected one answers 409 EXAMPLE_REJECTED; an approved one is answered as it stands. Needs inbox:kb:manage with operator reach. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        deidentifiedConfirmed?: boolean;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            intent: string;
+                            /** @enum {string} */
+                            language: "th" | "en" | "ru";
+                            customerText: string;
+                            goodReply: string | null;
+                            /** @enum {string} */
+                            verdict: "should_answer" | "should_handover" | "should_stay_silent";
+                            /** @enum {string} */
+                            status: "proposed" | "approved" | "rejected";
+                            /** Format: uuid */
+                            sourceMessageId: string | null;
+                            /** Format: uuid */
+                            sourceConversationId: string | null;
+                            /** Format: uuid */
+                            proposedByAccountId: string;
+                            /** Format: uuid */
+                            approvedByAccountId: string | null;
+                            approvedAt: string | null;
+                            deidentifiedConfirmed: boolean;
+                            createdAt: string;
+                            updatedAt: string;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inbox/ai/examples/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Reject an example (its archive): out of the queue, and out of the assistant if it was approved. Rejecting twice is the same act. Needs inbox:kb:manage with operator reach. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            intent: string;
+                            /** @enum {string} */
+                            language: "th" | "en" | "ru";
+                            customerText: string;
+                            goodReply: string | null;
+                            /** @enum {string} */
+                            verdict: "should_answer" | "should_handover" | "should_stay_silent";
+                            /** @enum {string} */
+                            status: "proposed" | "approved" | "rejected";
+                            /** Format: uuid */
+                            sourceMessageId: string | null;
+                            /** Format: uuid */
+                            sourceConversationId: string | null;
+                            /** Format: uuid */
+                            proposedByAccountId: string;
+                            /** Format: uuid */
+                            approvedByAccountId: string | null;
+                            approvedAt: string | null;
+                            deidentifiedConfirmed: boolean;
+                            createdAt: string;
+                            updatedAt: string;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inbox/ai/channel-accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The numbers whose assistant the caller may switch, with each one’s `aiMode`: live accounts that can reply (a check-in notice sender carries no assistant), at the branches the caller holds inbox:ai:manage at, and the operator-wide ones when they hold it operator-wide. Needs inbox:ai:manage somewhere in the operator. */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            channelAccounts: {
+                                /** Format: uuid */
+                                id: string;
+                                /** @enum {string} */
+                                channel: "whatsapp" | "instagram" | "facebook" | "line" | "telegram" | "webform";
+                                provider: string;
+                                displayName: string;
+                                /** Format: uuid */
+                                branchId: string | null;
+                                status: string;
+                                canReply: boolean;
+                                /** @enum {string} */
+                                aiMode: "off" | "shadow" | "live";
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inbox/channel-accounts/{id}/ai-mode": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Switch a number’s assistant: `off` (no turn is written), `shadow` (decides and writes nothing to the thread) or `live` (answers). Every number starts off. A notice sender cannot be switched on (409 CHANNEL_CANNOT_REPLY). The same mode again writes nothing. Needs inbox:ai:manage at the number’s branch, or operator-wide for an operator-wide number. Audited as inbox.ai.mode. */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        aiMode: "off" | "shadow" | "live";
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            /** @enum {string} */
+                            channel: "whatsapp" | "instagram" | "facebook" | "line" | "telegram" | "webform";
+                            provider: string;
+                            displayName: string;
+                            /** Format: uuid */
+                            branchId: string | null;
+                            status: string;
+                            canReply: boolean;
+                            /** @enum {string} */
+                            aiMode: "off" | "shadow" | "live";
+                        };
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/inbox/conversations/{id}/ai-pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Pause the assistant on this thread: it writes no turn here until resumed. In the same transaction every pending or deciding turn is cancelled (PAUSED) and every unsent AI line withdrawn; the answer counts them. Pausing a paused thread is the same act. 404 when the caller cannot see the thread; needs inbox:conversation:reply on it (the reply route’s rule), or inbox:ai:manage at it. Audited as inbox.ai.pause. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            conversationId: string;
+                            aiPaused: boolean;
+                            aiPausedAt: string | null;
+                            /** Format: uuid */
+                            aiPausedByAccountId: string | null;
+                            turnsCancelled: number;
+                            messagesWithdrawn: number;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inbox/conversations/{id}/ai-resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Resume the assistant on this thread: the pause (who and when) is cleared. No turn is written now; the next customer message writes one if the thread is then eligible. Resuming an unpaused thread is the same act. Same rule as the pause; audited as inbox.ai.pause with `paused: false`. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            conversationId: string;
+                            aiPaused: boolean;
+                            aiPausedAt: string | null;
+                            /** Format: uuid */
+                            aiPausedByAccountId: string | null;
+                            turnsCancelled: number;
+                            messagesWithdrawn: number;
                         };
                     };
                 };

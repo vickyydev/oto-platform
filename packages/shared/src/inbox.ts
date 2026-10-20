@@ -364,6 +364,12 @@ export const InboxConversationDetailSchema = InboxConversationRowSchema.extend({
    * press would answer `DIVERT_NO_BACKUP`.
    */
   divertTo: z.object({ accountId: Uuid, name: z.string().nullable() }).nullable(),
+  /** The thread's number's assistant switch (SCRUM-590): `off`, `shadow` or `live`. */
+  aiMode: z.enum(['off', 'shadow', 'live']),
+  /** A person paused the assistant on this thread (`POST …/ai-pause`); `…/ai-resume` clears it. */
+  aiPaused: z.boolean(),
+  aiPausedAt: Iso.nullable(),
+  aiPausedByAccountId: Uuid.nullable(),
 });
 export type InboxConversationDetail = z.infer<typeof InboxConversationDetailSchema>;
 
@@ -485,6 +491,10 @@ export const InboxMeSchema = z.object({
     reopen: z.boolean(),
     /** Holds `inbox:template:manage` somewhere: the template settings page (I3b). */
     templates: z.boolean(),
+    /** Holds `inbox:kb:manage` somewhere: the Assistant page's knowledge base and examples queue (SCRUM-590). */
+    kb: z.boolean(),
+    /** Holds `inbox:ai:manage` somewhere: the per-number assistant switch (SCRUM-590). */
+    ai: z.boolean(),
   }),
   /**
    * The simulator panel (I3b): non-null only when this deployment runs the
@@ -558,6 +568,12 @@ export const InboxErasureCountsSchema = z.object({
   filesUnlinked: z.number().int(),
   eventsRedacted: z.number().int(),
   webhookPayloadsPurged: z.number().int(),
+  /**
+   * The assistant's curated examples (SCRUM-590, plan §D.5): the UNAPPROVED
+   * ones (proposed or rejected) whose source links point at the subject's
+   * threads, deleted. An approved one already points at nothing.
+   */
+  examplesDeleted: z.number().int(),
 });
 
 export const InboxEraseContactSchema = InboxErasureCountsSchema.extend({

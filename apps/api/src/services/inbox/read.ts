@@ -421,6 +421,14 @@ export async function conversationDetail(
     ? { accountId: divertAccountId, name: (await accountNames(db, viewer.operatorId, [divertAccountId])).get(divertAccountId) ?? null }
     : null;
 
+  // The assistant on this thread (SCRUM-590, A3): the number's switch and the
+  // thread's own pause, so the shell shows the pause toggle where it matters.
+  const [acct] = await db
+    .select({ aiMode: s.channelAccount.aiMode })
+    .from(s.channelAccount)
+    .where(and(eq(s.channelAccount.operatorId, viewer.operatorId), eq(s.channelAccount.id, conv.channelAccountId)))
+    .limit(1);
+
   return {
     ...toRow(raw, assignments),
     teamName,
@@ -437,6 +445,10 @@ export async function conversationDetail(
       createdAt: e.createdAt.toISOString(),
     })),
     divertTo,
+    aiMode: acct?.aiMode ?? 'off',
+    aiPaused: conv.aiPausedAt !== null,
+    aiPausedAt: iso(conv.aiPausedAt),
+    aiPausedByAccountId: conv.aiPausedByAccountId,
   };
 }
 
@@ -809,6 +821,8 @@ export async function inboxMe(
       move: holdsAnywhere(effective, 'inbox:conversation:move', viewer.operatorId),
       reopen: holdsAnywhere(effective, 'inbox:conversation:reopen', viewer.operatorId),
       templates: holdsAnywhere(effective, 'inbox:template:manage', viewer.operatorId),
+      kb: holdsAnywhere(effective, 'inbox:kb:manage', viewer.operatorId),
+      ai: holdsAnywhere(effective, 'inbox:ai:manage', viewer.operatorId),
     },
     simulator,
   };

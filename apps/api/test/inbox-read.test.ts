@@ -684,7 +684,7 @@ describe('the viewer and the templates', () => {
       ['reception', false],
       ['marketing', false],
     ]);
-    expect(me.capabilities).toEqual({ writes: true, dashboard: true, assign: false, move: false, reopen: false, templates: false });
+    expect(me.capabilities).toEqual({ writes: true, dashboard: true, assign: false, move: false, reopen: false, templates: false, kb: false, ai: false });
     // No simulator panel for an agent: the suite runs the simulator, but they hold no inbox:channel:manage.
     expect(me.simulator).toBeNull();
     expect(me.defaultReceptionBranchId).toBe(central);
