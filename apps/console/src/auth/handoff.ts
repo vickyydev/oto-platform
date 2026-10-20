@@ -1,3 +1,4 @@
+import { landingUrl, readHandoffTarget } from '@oto/shared/handoff-target';
 import { ApiError } from '@/api/client';
 import { authApi } from '@/api/platform';
 
@@ -20,12 +21,34 @@ const HANDOFF_REFUSALS: Record<string, string> = {
     'The launcher sent a sign-in meant for a different address. Sign in here, and say so if it keeps happening.',
 };
 
-function refusal(err: unknown): string {
+export function refusal(err: unknown): string {
   const fallback = 'The launcher could not open the console for you. Sign in here to continue.';
   if (!(err instanceof ApiError)) return fallback; // offline, or the api is down
   const details = err.details as { reason?: string } | undefined;
   const reason = details?.reason ?? err.code.replace(/^HANDOFF_/, '').toLowerCase();
   return HANDOFF_REFUSALS[reason] ?? fallback;
+}
+
+/** The token in a `#handoff=` fragment, or null. Pure, for the test. */
+export function readHandoffToken(hash: string): string | null {
+  const match = /(?:^|&)handoff=([^&]*)/.exec(hash.replace(/^#/, ''));
+  if (!match || !match[1]) return null;
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return match[1]; // a JWS needs no escaping; a malformed one is the api's to refuse
+  }
+}
+
+/** What arriving touches, so the test can hand in its own. */
+export interface HandoffArrivalPort {
+  hash: string;
+  pathname: string;
+  search: string;
+  /** Vite's `BASE_URL`: where the console's routes start. */
+  base: string;
+  replaceUrl(url: string): void;
+  exchange(token: string): Promise<unknown>;
 }
 
 /**
@@ -38,26 +61,52 @@ function refusal(err: unknown): string {
  * means a provider that mounts twice cannot exchange it twice — the second
  * mount awaits this same promise and sees the same answer.
  *
+ * The fragment may also carry a target (`&to=/health`, SCRUM-591 P1): after a
+ * SUCCESSFUL exchange the address becomes that page, before the router reads
+ * it, so the console opens there. The target is checked again here
+ * (`readHandoffTarget`); a refused one, or a refused exchange, leaves the
+ * console at its home.
+ *
  * Resolves to null when the session cookie is now set, or to the sentence the
  * sign-in screen should show.
  */
-function acceptHandoffOnArrival(): Promise<string | null> | null {
-  const match = /(?:^|&)handoff=([^&]*)/.exec(window.location.hash.slice(1));
-  if (!match || !match[1]) return null;
-  const raw = match[1];
+export function acceptHandoff(port: HandoffArrivalPort): Promise<string | null> | null {
+  const token = readHandoffToken(port.hash);
+  if (token === null) return null;
+  const target = readHandoffTarget(port.hash);
   // Strip before anything else can fail: a fragment that survives a bad token
   // is still a fragment somebody can copy.
-  window.history.replaceState(null, '', window.location.pathname + window.location.search);
-  let token: string;
+  port.replaceUrl(port.pathname + port.search);
+  return port
+    .exchange(token)
+    .then(
+      () => {
+        if (target) land(port, target);
+        return null;
+      },
+      refusal,
+    );
+}
+
+/** The session is set either way; a landing the browser refuses leaves the console at home. */
+function land(port: HandoffArrivalPort, target: string): void {
   try {
-    token = decodeURIComponent(raw);
+    port.replaceUrl(landingUrl(port.base, target));
   } catch {
-    token = raw; // a JWS needs no escaping; a malformed one is the api's to refuse
+    // Home is where it would have opened before P1.
   }
-  return authApi
-    .handoffExchange(token)
-    .then(() => null)
-    .catch(refusal);
+}
+
+function acceptHandoffOnArrival(): Promise<string | null> | null {
+  if (typeof window === 'undefined') return null;
+  return acceptHandoff({
+    hash: window.location.hash,
+    pathname: window.location.pathname,
+    search: window.location.search,
+    base: import.meta.env.BASE_URL,
+    replaceUrl: (url) => window.history.replaceState(null, '', url),
+    exchange: (token) => authApi.handoffExchange(token),
+  });
 }
 
 /** Awaited by the session provider before it asks `/me` anything. */

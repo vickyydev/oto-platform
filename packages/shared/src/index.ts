@@ -68,3 +68,4 @@ export * from './inbox-reply';
 export * from './inbox-ai';
 export * from './assistant-tools';
 export * from './suite-screens';
+export * from './handoff-target';

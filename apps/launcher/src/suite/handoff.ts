@@ -1,3 +1,4 @@
+import { withHandoffTarget } from '@oto/shared/handoff-target';
 import { handoffApi } from '@/api/platform';
 import type { SuiteApp, SuiteAppKey } from './apps';
 
@@ -65,12 +66,19 @@ export function clearOpened(): void {
  * and a window opened after an await has lost the click that authorised it —
  * Safari and Firefox block it. A blank tab that may or may not fill is a worse
  * front door than one that simply goes there.
+ *
+ * `target` (SCRUM-591 P1) is a path inside that app to land on after the
+ * exchange — "take me there" from the assistant's link buttons. It rides the
+ * same fragment as the token (`&to=…`), never the api, and is checked here by
+ * the same rule the receiving app checks it by again (`safeTargetPath`): a
+ * target that is not plainly a same-app path is dropped and the app opens at
+ * its home, exactly as it did before.
  */
-export async function openApp(app: SuiteApp): Promise<void> {
+export async function openApp(app: SuiteApp, target?: string | null): Promise<void> {
   if (!app.origin) throw new Error(`${app.name} has no address on this deployment`);
   const issued = await handoffApi.issue(app.key);
   recordOpen(app.key);
-  window.location.assign(issued.launchUrl || `${app.origin}/#handoff=${issued.token}`);
+  window.location.assign(withHandoffTarget(issued.launchUrl || `${app.origin}/#handoff=${issued.token}`, target));
 }
 
 /** Open an app without a hand-off, leaving it to ask for its own sign-in. */

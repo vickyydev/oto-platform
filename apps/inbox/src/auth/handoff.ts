@@ -1,3 +1,4 @@
+import { landingUrl, readHandoffTarget } from '@oto/shared/handoff-target';
 import { api, ApiError } from '@/api/client';
 
 /**
@@ -41,6 +42,17 @@ export function readHandoffToken(hash: string): string | null {
   }
 }
 
+/** What arriving touches, so the test can hand in its own. */
+export interface HandoffArrivalPort {
+  hash: string;
+  pathname: string;
+  search: string;
+  /** Vite's `BASE_URL`: where the Inbox is served from. */
+  base: string;
+  replaceUrl(url: string): void;
+  exchange(token: string): Promise<unknown>;
+}
+
 /**
  * Take the launcher's hand-off token out of the URL and spend it, once, as this
  * module loads (S2-02).
@@ -53,20 +65,50 @@ export function readHandoffToken(hash: string): string | null {
  * The exchange goes through this site's own `/api` rewrite and answers with a
  * host-only cookie bound to the same session row as the launcher's.
  *
+ * The fragment may also carry a target (`&to=/?c=<id>`, SCRUM-591 P1): after
+ * a SUCCESSFUL exchange the address becomes that one, before the workspace
+ * reads its URL state (`lib/url.ts`), so the Inbox opens on that conversation
+ * or tab. The target is checked again here (`readHandoffTarget`); a refused
+ * one, or a refused exchange, leaves the Inbox at its home.
+ *
  * Resolves to null when the cookie is now set, or to the sentence the sign-in
  * screen should show.
  */
-function acceptHandoffOnArrival(): Promise<string | null> | null {
-  if (typeof window === 'undefined') return null;
-  const token = readHandoffToken(window.location.hash);
+export function acceptHandoff(port: HandoffArrivalPort): Promise<string | null> | null {
+  const token = readHandoffToken(port.hash);
   if (token === null) return null;
+  const target = readHandoffTarget(port.hash);
   // Strip before anything else can fail: a fragment that survives a bad token
   // is still a fragment somebody can copy.
-  window.history.replaceState(null, '', window.location.pathname + window.location.search);
-  return api
-    .post('/auth/handoff/exchange', { token })
-    .then(() => null)
-    .catch(handoffRefusal);
+  port.replaceUrl(port.pathname + port.search);
+  return port.exchange(token).then(
+    () => {
+      if (target) land(port, target);
+      return null;
+    },
+    handoffRefusal,
+  );
+}
+
+/** The cookie is set either way; a landing the browser refuses leaves the Inbox at home. */
+function land(port: HandoffArrivalPort, target: string): void {
+  try {
+    port.replaceUrl(landingUrl(port.base, target));
+  } catch {
+    // Home is where it would have opened before P1.
+  }
+}
+
+function acceptHandoffOnArrival(): Promise<string | null> | null {
+  if (typeof window === 'undefined') return null;
+  return acceptHandoff({
+    hash: window.location.hash,
+    pathname: window.location.pathname,
+    search: window.location.search,
+    base: import.meta.env.BASE_URL,
+    replaceUrl: (url) => window.history.replaceState(null, '', url),
+    exchange: (token) => api.post('/auth/handoff/exchange', { token }),
+  });
 }
 
 /** Awaited by the session provider before it asks the api anything. */
