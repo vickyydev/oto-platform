@@ -822,11 +822,16 @@ function finalOf(
   // Grounding = the summaries THIS ask's tools returned. Never the question, never a refusal.
   const guard = internalAnswerGuard(answer, outcome.groundingTexts);
   if (!guard.ok) {
+    // The links survive the guard (§C): the model's, grounded, and the screens the tools called show.
+    const links = resolveLinks([...wanted, ...trace.gathered], caller.effective, caller.auth.operatorId);
+    const linked = links.length > 0;
     return {
-      state: 'link_only',
+      // "The link plus the line": with no link the asker may open, the line stands as a sentence of its
+      // own and the state follows the digging case above — link_only only when a link is there.
+      state: linked ? 'link_only' : 'failed',
       reason: guard.reason,
-      answer: INTERNAL_LINES.guardFallback[lang],
-      links: resolveLinks([...wanted, ...trace.gathered], caller.effective, caller.auth.operatorId),
+      answer: (linked ? INTERNAL_LINES.guardFallback : INTERNAL_LINES.guardFallbackNoLink)[lang],
+      links,
       guardRule: guard.rule,
       urlsStripped: guard.urlsStripped,
     };

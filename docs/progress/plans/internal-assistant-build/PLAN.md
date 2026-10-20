@@ -451,7 +451,10 @@ map. A member answer gives figures instead.
   instructed to answer with the closest link and one sentence on what it
   will show.
 - The traceability guard (§E.4) refusing a figure turns the answer into the
-  link plus "I couldn't check that figure; it's here".
+  link plus "I couldn't check that figure; it's here". When no link the asker
+  may open is left to follow it, the line stands alone as a sentence ("I
+  couldn't check that figure.") and the ask closes `failed` with the guard's
+  reason, as an ask cut short with nothing to link does (proof round, SCRUM-591).
 
 ## D. The conversation, the persona and the ask-log
 
@@ -686,7 +689,9 @@ notes, thread titles, employee names, audit entity names). The posture:
   must occur in a tool summary. The question does not count, for the same
   reason the customer's words do not count in Phase 2. A failure keeps the
   links and refusals and replaces the prose with "I couldn't check that
-  figure; it's here:" (state `link_only`, reason `GUARD_NUMBER`).
+  figure; it's here:" (state `link_only`, reason `GUARD_NUMBER`); with no
+  link left to offer, "I couldn't check that figure." (state `failed`, the
+  same reason).
 - **A shape guard:** at most 1,200 characters and no URLs. Lists are allowed
   here, since an internal answer may list five shifts.
 - **The persona guard does not apply** (§D.2).

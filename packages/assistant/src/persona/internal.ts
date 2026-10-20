@@ -110,11 +110,17 @@ export const INTERNAL_OUTPUT_CONTRACT = [
  * engine picks the line; the model never writes these.
  */
 export const INTERNAL_LINES = {
-  /** The traceability guard refused a figure: links and refusals are kept. */
+  /** The traceability guard refused a figure: links and refusals are kept, and a link follows the colon. */
   guardFallback: {
     th: 'ตรวจสอบตัวเลขนั้นไม่ได้ ดูได้ที่นี่:',
     en: "I couldn't check that figure; it's here:",
     ru: 'Не удалось проверить эту цифру; она здесь:',
+  },
+  /** The same refusal when no link the asker may open is left to follow it: a sentence on its own. */
+  guardFallbackNoLink: {
+    th: 'ตรวจสอบตัวเลขนั้นไม่ได้',
+    en: "I couldn't check that figure.",
+    ru: 'Не удалось проверить эту цифру.',
   },
   /** The tool-call cap or the wall time was reached. */
   tooMuchDigging: {

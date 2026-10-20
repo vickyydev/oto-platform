@@ -691,6 +691,39 @@ describe('links are grounded like figures (§C, §E.4)', () => {
   });
 });
 
+describe('the guard’s fallback line (§C, §E.4)', () => {
+  it('a figure no tool returned, with no link to offer: the line stands alone as a sentence, and the ask is failed', async () => {
+    script(w, final('There are 31 children inside.'));
+    const res = await ask(w, receptionCookie, 'How many children are inside?');
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      state: 'failed',
+      reason: 'GUARD_NUMBER',
+      answer: INTERNAL_LINES.guardFallbackNoLink.en,
+      links: [],
+    });
+    // A complete sentence: nothing follows it, so no colon may end it.
+    expect(res.body.answer).not.toMatch(/:\s*$/);
+    expect(res.body.answer).not.toContain('31');
+    // The audit words are the guard's, as before: the state, the reason and the rule.
+    const [closing] = await w.ctx.db
+      .select()
+      .from(s.auditLog)
+      .where(and(eq(s.auditLog.action, 'assistant.ask'), sql`${s.auditLog.after}->>'askId' = ${res.body.id}`));
+    expect(closing!.after).toMatchObject({ state: 'failed', reason: 'GUARD_NUMBER', guardRule: 'number', links: [] });
+  });
+
+  it('with a link to offer: the existing line, the link under it, link_only', async () => {
+    script(w, final('There are 31 children inside.', [{ key: 'launcher.account', params: [] }]));
+    const res = await ask(w, receptionCookie, 'How many children are inside?');
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ state: 'link_only', reason: 'GUARD_NUMBER', answer: INTERNAL_LINES.guardFallback.en });
+    expect(res.body.answer).toMatch(/:$/);
+    expect(res.body.links.map((l) => l.key)).toEqual(['launcher.account']);
+    expect(res.body.answer).not.toContain('31');
+  });
+});
+
 describe('the record: audit and ops carry ids and words, never text (§E.1)', () => {
   it('every ask and tool call is audited, and every model loop is an adapter run', async () => {
     script(w, tool('members.lookup', { phone: '081 234 0001' }), final('Found the ZZ Somchai Family.'));
