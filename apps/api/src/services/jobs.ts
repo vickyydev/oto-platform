@@ -31,6 +31,8 @@ import {
 } from './otoapp-jobs';
 import { buildInboxChannels, type InboxChannels } from './inbox/channels';
 import { INBOX_SEND_INTERVAL_S, INBOX_SEND_JOB, runInboxSendJob } from './inbox/send';
+import { INBOX_AI_INTERVAL_S, INBOX_AI_JOB, runInboxAiJob } from './inbox/ai-engine';
+import { buildInboxAiRuntime, type InboxAiRuntime } from './inbox/ai-runtime';
 import { flagPendingPayments, gatewayFor, pollPendingAttempts } from './payments/gateway';
 import { PRINT_RETENTION_DAYS, purgeOldPrintJobs } from './print';
 import {
@@ -226,6 +228,12 @@ export interface JobDeps {
    * own is built from the env.
    */
   inboxChannels?: InboxChannels;
+  /**
+   * The customer assistant's runtime (`app.inboxAi`, SCRUM-590): its switch,
+   * caps and model client, shared with the routes so a test's fake client is
+   * the one `job:inbox.ai` asks. Absent, one is built from the env.
+   */
+  inboxAi?: InboxAiRuntime;
 }
 
 // --- The watchdog -----------------------------------------------------------
@@ -842,8 +850,41 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
         detail: await runInboxSendJob(db, { channels: inboxChannelsOf(deps), storage: deps.fileStorage ?? null, log }, now),
       }),
     },
+    /**
+     * `job:inbox.ai` — THE CUSTOMER ASSISTANT'S TURN ENGINE (SCRUM-590; plan
+     * `docs/progress/plans/inbox-ai-build/PLAN.md` §A.2; `services/inbox/ai-engine.ts`).
+     *
+     * Every five seconds: each due turn claimed under a lease, decided by the
+     * model with no transaction open, and committed under the thread lock
+     * after re-checking that no person acted and no newer message arrived;
+     * then the assistant's queued lines whose typing time is over are sent.
+     * With `INBOX_AI_ENABLED` off a due turn is cancelled, never decided.
+     * Counts only in the run's detail.
+     */
+    {
+      name: INBOX_AI_JOB,
+      description:
+        "Runs the Inbox customer assistant's due turns — decides each with the model, then answers, hands over to a person or stays silent — and sends its paced replies as they fall due",
+      intervalSeconds: INBOX_AI_INTERVAL_S,
+      graceSeconds: 120,
+      run: async ({ db, log, now }) => ({
+        detail: await runInboxAiJob(db, { runtime: inboxAiOf(deps), channels: inboxChannelsOf(deps), storage: deps.fileStorage ?? null, log }, now),
+      }),
+    },
     ...buildOtoAppNightJobs(deps),
   ];
+}
+
+/** The routes' assistant runtime when the runner was given it; otherwise one built from the env, once. */
+const ownInboxAi = new WeakMap<JobDeps, InboxAiRuntime>();
+function inboxAiOf(deps: JobDeps): InboxAiRuntime {
+  if (deps.inboxAi) return deps.inboxAi;
+  let built = ownInboxAi.get(deps);
+  if (!built) {
+    built = buildInboxAiRuntime(deps.env);
+    ownInboxAi.set(deps, built);
+  }
+  return built;
 }
 
 /** The routes' channel map when the runner was given it; otherwise one built from the env, once. */
@@ -1003,6 +1044,8 @@ export interface JobRunnerOptions {
   fileStorage?: FileStorage | null;
   /** The api's inbox channel map, for the send job (`JobDeps.inboxChannels`). */
   inboxChannels?: InboxChannels;
+  /** The api's assistant runtime, for `job:inbox.ai` (`JobDeps.inboxAi`). */
+  inboxAi?: InboxAiRuntime;
 }
 
 export function processRoles(env: Env): string[] {
@@ -1026,6 +1069,7 @@ export function createJobRunner(opts: JobRunnerOptions): JobRunner {
       channels,
       fileStorage: opts.fileStorage ?? null,
       ...(opts.inboxChannels ? { inboxChannels: opts.inboxChannels } : {}),
+      ...(opts.inboxAi ? { inboxAi: opts.inboxAi } : {}),
     });
   const enabled = processRoles(env).includes('jobs');
 

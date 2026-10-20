@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { App } from '../app';
 import { ipLimited } from '../plugins/rate-limit';
 import { answerChallenge, ingestDelivery } from '../services/inbox/ingest';
+import { scheduleOf } from '../services/inbox/ai-runtime';
 
 /**
  * WHAT A MESSAGING PROVIDER POSTS TO US (S2-19 I2d, SCRUM-583; plan
@@ -91,7 +92,7 @@ export function inboxWebhookRoutes(app: App): Promise<void> {
       const raw = Buffer.isBuffer(req.body) ? req.body : Buffer.from(req.body === undefined ? '' : JSON.stringify(req.body));
       const result = await ingestDelivery(
         app.db,
-        { channels: app.inboxChannels, log: req.log, storage: app.fileStorage },
+        { channels: app.inboxChannels, log: req.log, storage: app.fileStorage, ai: scheduleOf(app.inboxAi) },
         {
           channelAccountId: req.params.channelAccountId,
           webhook: {

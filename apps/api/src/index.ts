@@ -63,7 +63,7 @@ app.log.info(
 );
 
 // The inbox's send job reaches the channels the api's routes use (one simulator per account, per process).
-const jobs = createJobRunner({ db, env, log: app.log, fileStorage: app.fileStorage, inboxChannels: app.inboxChannels });
+const jobs = createJobRunner({ db, env, log: app.log, fileStorage: app.fileStorage, inboxChannels: app.inboxChannels, inboxAi: app.inboxAi });
 if (jobs.enabled) {
   await jobs.start();
   app.log.info({ jobs: jobs.jobs.map((j) => j.name) }, 'job runner started');

@@ -7,6 +7,7 @@ import { AppError, errors } from '../../lib/errors';
 import { audit } from '../audit';
 import type { FileStorage } from '../files';
 import { withTx, type Exec, type Tx } from '../tx';
+import { cancelAiForThread } from './ai-turns';
 
 /**
  * THE INBOX'S PDPA PATHS (S2-19 I2g, SCRUM-586; plan
@@ -44,6 +45,8 @@ import { withTx, type Exec, type Tx } from '../tx';
  *     digits or one of their messages' provider ids has its payload nulled and
  *     `payload_purged_at` stamped. Over-reaching here costs nothing (the
  *     payload is a duplicate); missing one would keep the words.
+ *   - THE ASSISTANT (SCRUM-590): every pending or deciding turn on the threads
+ *     is cancelled and every unsent AI line withdrawn before the words go.
  *   - ONE AUDIT ROW, `inbox.contact.erase`: ids and counts, nothing erased.
  *
  * Re-erasing finds nothing left to remove, says so (`alreadyErased`), and
@@ -372,6 +375,17 @@ export async function eraseContact(tx: Tx, storage: FileStorage | null, input: E
     ...live.flatMap((c) => [c.externalHandle, c.phone, c.phone?.replace(/^\+/, '')]),
     ...inbound.map((m) => m.externalMessageId),
   ]);
+
+  // 0. The assistant stands down on every thread of theirs (SCRUM-590 plan
+  // §D.5): pending and deciding turns cancelled — a deciding turn's commit
+  // then finds it so, and the contact erased, and writes nothing — and its
+  // queued lines withdrawn before step 1 removes their words.
+  for (const convId of convIds) {
+    await cancelAiForThread(tx, operatorId, convId, 'ERASED', input.actorAccountId, {
+      requestId: input.requestId ?? null,
+      now,
+    });
+  }
 
   // 1. The words and the media, every message in every thread of theirs.
   const redacted = await redactThreadMessages(tx, storage, operatorId, convIds, contactIds, now);

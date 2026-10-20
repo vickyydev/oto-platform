@@ -38,6 +38,7 @@ import { webhookRoutes } from './routes/webhooks';
 import { inboxWebhookRoutes } from './routes/inbox-webhooks';
 import { inboxSimulatorRoutes } from './routes/inbox-simulator';
 import { buildInboxChannels, type InboxChannels } from './services/inbox/channels';
+import { buildInboxAiRuntime, type InboxAiRuntime } from './services/inbox/ai-runtime';
 import { saleTierRoutes } from './routes/sale-tier';
 import { catalogRoutes } from './routes/catalog';
 import { branchCloneRoutes } from './routes/branch-clone';
@@ -104,6 +105,8 @@ declare module 'fastify' {
     otoAppDirectory: OtoAppDirectory;
     /** S2-19 I2d — channel account to messaging adapter, one per account per process. */
     inboxChannels: InboxChannels;
+    /** SCRUM-590 — the customer assistant's switch, debounce and model client (tests swap the client). */
+    inboxAi: InboxAiRuntime;
   }
 }
 
@@ -209,6 +212,10 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   // S2-19 I2d — the inbox's channel map. The console sender is read at send
   // time, so a test's capturing `sms` is the one used.
   app.decorate('inboxChannels', buildInboxChannels({ env: opts.env, consoleSender: () => app.sms }));
+  // SCRUM-590 — the customer assistant: the ingest reads its switch and
+  // debounce per delivery, `job:inbox.ai` its client. A test replaces the
+  // client with a fake; under NODE_ENV=test there is never a real one.
+  app.decorate('inboxAi', buildInboxAiRuntime(opts.env, app.log));
   // S2-20 E5 — a booked event pass is written back after the gateway's
   // settlement commits, which has no request to reach the app from: read
   // the decoration when it is needed, so a test's stub is the one used.

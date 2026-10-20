@@ -34,6 +34,8 @@ import { storeInboundMedia, type PendingMedia } from './media';
 import { routeConversation } from './router';
 import { reopenAuditBefore, reopenPatch, reopenedPayload } from './status';
 import { sendAfterCommit } from './send';
+import type { InboxAiSchedule } from './ai-runtime';
+import { aiEligibility, scheduleAiTurn } from './ai-turns';
 
 /**
  * THE INBOX INGEST (S2-19 I2d, SCRUM-583; plan
@@ -68,6 +70,11 @@ import { sendAfterCommit } from './send';
  *      delivery arrives outside them, the `out_of_hours` template is queued
  *      as the reply, at most once per closed period per thread, and sent
  *      through the channel after the commit. The thread stays active.
+ *  7a. THE ASSISTANT'S TURN (SCRUM-590, `ai-turns.ts`): in hours, on an
+ *      account whose `ai_mode` is live or shadow, with `INBOX_AI_ENABLED`,
+ *      on a thread no person has acted on this episode, the thread's one
+ *      pending turn is written or extended (the debounce). Out of hours
+ *      writes none: the hours line above is the reply, then the thread waits.
  *   8. Status events move an outbound message's `provider_status` forward.
  *   9. `processed_at`, and one audit row for the delivery.
  *
@@ -123,6 +130,8 @@ export interface IngestDeps {
   dispatch?: boolean;
   /** Where inbound media are stored (`app.fileStorage`); null keeps none and says so in `ops_run`. */
   storage?: FileStorage | null;
+  /** The assistant's switch and debounce (`app.inboxAi`); absent writes no turn (step 7a). */
+  ai?: InboxAiSchedule;
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -297,7 +306,7 @@ export async function ingestDelivery(db: Exec, deps: IngestDeps, input: IngestIn
         db,
         { requestId: input.requestId ?? undefined, operatorId, branchId, actorAccountId: input.actorAccountId ?? null, log: deps.log },
         'inbox.webhook.receive',
-        (tx) => receive(tx, { account, channel, deliveryId, input, now: now(), media }),
+        (tx) => receive(tx, { account, channel, deliveryId, input, now: now(), media, ai: deps.ai ?? null }),
       );
     } catch (err) {
       // The work rolled back. The delivery is kept, with its error, so it is
@@ -354,6 +363,7 @@ interface ReceiveCtx {
   now: Date;
   /** The media of the new messages, fetched after the commit (`media.ts`). */
   media: PendingMedia[];
+  ai: InboxAiSchedule | null;
 }
 
 /** Steps 2 to 9, inside the delivery's one transaction. */
@@ -710,6 +720,49 @@ async function receiveMessage(
 
   const queued = await queueOutOfHours(tx, c, thread.id, person.language ?? hintLanguage ?? thread.language);
   if (queued) result.outOfHours.push(queued);
+
+  // 7a. The assistant's turn, after the reopen and the routing, so the turn
+  // is born seeing the thread as it now stands.
+  if (await aiTurnDue(tx, c)) {
+    const [current] = await tx
+      .select()
+      .from(conversation)
+      .where(and(eq(conversation.operatorId, operatorId), eq(conversation.id, thread.id)))
+      .limit(1);
+    if (current && (await aiEligibility(tx, current)).ok) {
+      await scheduleAiTurn(tx, c.ai!, {
+        operatorId,
+        branchId: current.branchId,
+        conversation: current,
+        triggerMessageId: messageId,
+        triggerAt: at,
+        now: c.now,
+        requestId: c.input.requestId ?? null,
+      });
+    }
+  }
+}
+
+/** The branch's timezone for an account's hours; Bangkok for an operator-wide account. */
+async function accountTimeZone(tx: Tx, account: AccountRow): Promise<string> {
+  if (!account.branchId) return 'Asia/Bangkok';
+  const [b] = await tx.select({ tz: branch.timezone }).from(branch).where(eq(branch.id, account.branchId)).limit(1);
+  return b?.tz ?? 'Asia/Bangkok';
+}
+
+/**
+ * Step 7a's account-level conditions (plan §A.1, 2–3): the switch, the
+ * account's mode, a channel that can reply, and the account OPEN now — out
+ * of hours the rails' template is the whole reply, whether or not this
+ * delivery is the one that queued it.
+ */
+async function aiTurnDue(tx: Tx, c: ReceiveCtx): Promise<boolean> {
+  const { account } = c;
+  if (!c.ai?.enabled) return false;
+  if (account.aiMode !== 'live' && account.aiMode !== 'shadow') return false;
+  if (!account.canReply || !c.channel.capabilities.reply) return false;
+  const hours = readOpeningHours(account.openingHours);
+  return isOpenAt(hours, await accountTimeZone(tx, account), c.now);
 }
 
 /**
@@ -722,11 +775,7 @@ async function queueOutOfHours(tx: Tx, c: ReceiveCtx, conversationId: string, la
   if (!account.canReply || !c.channel.capabilities.reply) return null;
   const hours = readOpeningHours(account.openingHours);
   if (!hours) return null;
-  let timeZone = 'Asia/Bangkok';
-  if (account.branchId) {
-    const [b] = await tx.select({ tz: branch.timezone }).from(branch).where(eq(branch.id, account.branchId)).limit(1);
-    if (b?.tz) timeZone = b.tz;
-  }
+  const timeZone = await accountTimeZone(tx, account);
   if (isOpenAt(hours, timeZone, c.now)) return null;
 
   const key = account.outOfHoursTemplateKey ?? 'out_of_hours';

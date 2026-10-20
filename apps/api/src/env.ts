@@ -709,6 +709,40 @@ const EnvSchema = z.object({
   INBOX_CONVERSATION_RETENTION_DAYS: retentionDays(),
   INBOX_MEDIA_RETENTION_DAYS: retentionDays(),
   INBOX_WEBHOOK_PAYLOAD_RETENTION_DAYS: retentionDays(),
+
+  /**
+   * THE INBOX'S CUSTOMER ASSISTANT (SCRUM-590; plan
+   * `docs/progress/plans/inbox-ai-build/PLAN.md` §D.6). Off unless switched
+   * on, here AND per channel account (`channel_account.ai_mode`, default
+   * `off`) AND not paused on the thread (`conversation.ai_paused_at`): three
+   * kill switches, any one of which silences it (§D.4).
+   *
+   *  - `INBOX_AI_ENABLED` — the deploy-wide switch. `true` with no
+   *    `ANTHROPIC_API_KEY` refuses the boot (`assertProductionSafe`).
+   *  - `ANTHROPIC_API_KEY` — **Secret.** Read only to build the client; never
+   *    logged (the boot line names the model, not the key).
+   *  - `ANTHROPIC_BASE_URL` — honoured when set, as the OTO App does.
+   *  - `INBOX_AI_MODEL`, `INBOX_AI_EFFORT`, `INBOX_AI_TIMEOUT_MS` — the call
+   *    (§B.1, §B.7; owner G3).
+   *  - `INBOX_AI_DEBOUNCE_S`, `INBOX_AI_DEBOUNCE_MAX_S` — how long a turn
+   *    waits after the customer's last bubble, and at most after the first
+   *    (§A.1; owner G2).
+   *  - `INBOX_AI_DAILY_TURN_CAP`, `INBOX_AI_DAILY_TOKEN_CAP` — per operator per
+   *    Bangkok day; over either, every turn is silence (`CAP_DAILY`, §D.4).
+   */
+  INBOX_AI_ENABLED: z.enum(['true', 'false']).default('false'),
+  ANTHROPIC_API_KEY: z.string().default(''),
+  ANTHROPIC_BASE_URL: z.string().default(''),
+  INBOX_AI_MODEL: z
+    .string()
+    .regex(/^[A-Za-z0-9][A-Za-z0-9._:-]{0,79}$/, 'a model id, one word')
+    .default('claude-opus-5-5'),
+  INBOX_AI_EFFORT: z.enum(['low', 'medium', 'high', 'xhigh', 'max']).default('low'),
+  INBOX_AI_TIMEOUT_MS: z.coerce.number().int().min(1000).max(120_000).default(20_000),
+  INBOX_AI_DEBOUNCE_S: z.coerce.number().int().min(0).max(600).default(20),
+  INBOX_AI_DEBOUNCE_MAX_S: z.coerce.number().int().min(0).max(3600).default(60),
+  INBOX_AI_DAILY_TURN_CAP: z.coerce.number().int().min(0).default(1500),
+  INBOX_AI_DAILY_TOKEN_CAP: z.coerce.number().int().min(0).default(30_000_000),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
@@ -970,6 +1004,12 @@ export function assertProductionSafe(env: Env): void {
       problems.push(`INBOX_WHATSAPP_ENABLED is true but ${missing.join(' and ')} ${missing.length > 1 ? 'are' : 'is'} not set`);
     }
   }
+  // SCRUM-590 (plan §D.6): the assistant switched on with nothing to call
+  // the model with would be an assistant that is silent on every turn while
+  // the Console shows it on. Named, never its value.
+  if (env.INBOX_AI_ENABLED === 'true' && !(env.ANTHROPIC_API_KEY ?? '').trim()) {
+    problems.push('INBOX_AI_ENABLED is true but ANTHROPIC_API_KEY is not set — the assistant has no model to ask');
+  }
 
   if (problems.length) {
     throw new Error(
@@ -1005,6 +1045,11 @@ export function loadEnv(overrides: Partial<Record<keyof Env, string>> = {}): Env
     // And the OTO App's provisioning key (SCRUM-539): one in `.env` would let
     // a test mint accounts with it. The suite passes its own where it needs one.
     if (overrides.OTOAPP_PROVISION_KEYS === undefined) raw.OTOAPP_PROVISION_KEYS = '';
+    // And the customer assistant (SCRUM-590, plan §D.6): a key in `.env` must
+    // never let `pnpm test` call the real model and spend real money. The
+    // suites inject a fake client and switch the assistant on themselves.
+    if (overrides.ANTHROPIC_API_KEY === undefined) raw.ANTHROPIC_API_KEY = '';
+    if (overrides.INBOX_AI_ENABLED === undefined) raw.INBOX_AI_ENABLED = 'false';
   }
   const env = EnvSchema.parse(raw);
   assertProductionSafe(env);

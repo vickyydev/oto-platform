@@ -22,6 +22,7 @@ import type { Exec, Tx } from '../tx';
 import { INBOX_READ, loadVisibleConversation, type InboxViewer } from './read-visibility';
 import { pickRule, routeConversation } from './router';
 import { handledPatch, reopenAuditBefore, reopenPatch, reopenedPayload } from './status';
+import { cancelAiForThread, type AiCancelReason } from './ai-turns';
 
 /**
  * THE INBOX'S OWNERSHIP AND STATUS ACTIONS (S2-19 I2e, SCRUM-584; plan
@@ -381,6 +382,18 @@ function auditAction(
   });
 }
 
+/**
+ * A person acted on the thread (SCRUM-590 plan §A.3, rails change R5): the
+ * assistant's pending turn is cancelled and its unsent lines withdrawn, in
+ * this action's own transaction, under the lock `loadForAction` took.
+ */
+function quietAssistant(tx: Tx, ctx: ActionCtx, conversationId: string, reason: AiCancelReason) {
+  return cancelAiForThread(tx, ctx.viewer.operatorId, conversationId, reason, ctx.viewer.accountId, {
+    requestId: ctx.requestId,
+    now: ctx.now,
+  });
+}
+
 const slotSummary = (slots: SlotRow[]) =>
   slots.map((a) => ({ id: a.id, slotIndex: a.slotIndex, accountId: a.accountId, teamId: a.teamId }));
 
@@ -490,6 +503,7 @@ export async function setPrimary(tx: Tx, ctx: ActionCtx, input: SetPrimaryInput)
       confirmMove: input.confirmMove === true,
     },
   );
+  await quietAssistant(tx, ctx, l.conv.id, 'ASSIGNED');
   return actionResult(tx, ctx, l.conv.id, Boolean(dest));
 }
 
@@ -521,6 +535,7 @@ export async function addSupport(
   await auditAction(tx, ctx, l.conv, 'inbox.conversation.support_add', null, {
     support: { id: made.id, slotIndex: index, accountId: input.accountId },
   });
+  await quietAssistant(tx, ctx, l.conv.id, 'ASSIGNED');
   return actionResult(tx, ctx, l.conv.id, false);
 }
 
@@ -537,6 +552,7 @@ export async function removeSupport(
   await auditAction(tx, ctx, l.conv, 'inbox.conversation.support_remove', { support: slotSummary([row])[0] }, {
     released: row.id,
   });
+  await quietAssistant(tx, ctx, l.conv.id, 'ASSIGNED');
   return actionResult(tx, ctx, l.conv.id, false);
 }
 
@@ -648,6 +664,7 @@ export async function divert(tx: Tx, ctx: ActionCtx, input: { conversationId: st
     { slots: slotSummary(l.slots) },
     { ruleId, primaryAccountId: target, oldPrimarySupportIndex: oldTo },
   );
+  await quietAssistant(tx, ctx, l.conv.id, 'ASSIGNED');
   return actionResult(tx, ctx, l.conv.id, false);
 }
 
@@ -730,6 +747,7 @@ export async function moveTeam(
       slots: routed.assignments.map((a) => ({ id: a.id, slotIndex: a.slotIndex, accountId: a.accountId, teamId: a.teamId })),
     },
   );
+  await quietAssistant(tx, ctx, l.conv.id, 'ASSIGNED');
   return actionResult(tx, ctx, l.conv.id, true);
 }
 
@@ -827,6 +845,7 @@ export async function setBranch(
       hostSkipped,
     },
   );
+  await quietAssistant(tx, ctx, l.conv.id, 'ASSIGNED');
   return { ...(await actionResult(tx, ctx, l.conv.id, false)), hostAdded: host !== null };
 }
 
@@ -855,6 +874,7 @@ export async function markHandled(tx: Tx, ctx: ActionCtx, input: { conversationI
     { status: 'active' },
     { status: 'handled', handledAt: ctx.now.toISOString(), handledByKind: 'account', handledByAccountId: ctx.viewer.accountId },
   );
+  await quietAssistant(tx, ctx, l.conv.id, 'HANDLED');
   return actionResult(tx, ctx, l.conv.id, false);
 }
 
@@ -877,6 +897,7 @@ export async function reopenConversation(
     reopenedAt: ctx.now.toISOString(),
     by: 'account',
   });
+  await quietAssistant(tx, ctx, l.conv.id, 'REOPENED');
   return actionResult(tx, ctx, l.conv.id, false);
 }
 

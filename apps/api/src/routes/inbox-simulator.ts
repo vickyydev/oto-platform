@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { INBOX_CATEGORIES } from '@oto/db';
 import type { App } from '../app';
+import { scheduleOf } from '../services/inbox/ai-runtime';
 import {
   playDemoScenario,
   simulateInbound,
@@ -43,7 +44,12 @@ const ingestAnswer = z.object({
 });
 
 export function inboxSimulatorRoutes(app: App): Promise<void> {
-  const deps = (log: SimulatorDeps['log']): SimulatorDeps => ({ db: app.db, channels: app.inboxChannels, log });
+  const deps = (log: SimulatorDeps['log']): SimulatorDeps => ({
+    db: app.db,
+    channels: app.inboxChannels,
+    log,
+    ai: scheduleOf(app.inboxAi),
+  });
 
   app.post(
     '/inbox/simulator/inbound',

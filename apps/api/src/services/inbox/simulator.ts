@@ -24,6 +24,7 @@ import type { FastifyBaseLogger } from 'fastify';
 import { errors } from '../../lib/errors';
 import { audit } from '../audit';
 import type { InboxChannels } from './channels';
+import type { InboxAiSchedule } from './ai-runtime';
 import { channelRow, ingestDelivery, type IngestResult } from './ingest';
 
 /**
@@ -45,6 +46,8 @@ export interface SimulatorDeps {
   channels: InboxChannels;
   log?: FastifyBaseLogger;
   now?: () => Date;
+  /** The assistant's switch and debounce: a played message schedules a turn as a real one does (SCRUM-590). */
+  ai?: InboxAiSchedule;
 }
 
 export interface DriveCtx {
@@ -109,7 +112,12 @@ export async function simulateInbound(
   });
   const result = await ingestDelivery(
     deps.db,
-    { channels: deps.channels, ...(deps.log ? { log: deps.log } : {}), ...(deps.now ? { now: deps.now } : {}) },
+    {
+      channels: deps.channels,
+      ...(deps.log ? { log: deps.log } : {}),
+      ...(deps.now ? { now: deps.now } : {}),
+      ...(deps.ai ? { ai: deps.ai } : {}),
+    },
     { channelAccountId: account.id, webhook: played.webhook, requestId: ctx.requestId, actorAccountId: ctx.actorAccountId },
   );
   return { externalMessageId: played.externalMessageId, result };

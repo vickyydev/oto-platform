@@ -679,6 +679,33 @@ services:
       # Q19: no purge yet). Unset, job:inbox.retention records each purge as
       # refused and removes nothing; setting a number of days is the switch.
 
+      # -- the Inbox's customer assistant (SCRUM-590) ---------------------------
+      # Names only: set in the dashboard (no blueprint is linked). Off unless
+      # INBOX_AI_ENABLED=true; true without ANTHROPIC_API_KEY refuses the boot.
+      # Each channel account is also off until its ai_mode is switched.
+      # Defaults when unset: model claude-opus-5-5, effort low, timeout 20000,
+      # debounce 20 / 60 s, daily caps 1500 turns / 30000000 tokens.
+      - key: INBOX_AI_ENABLED
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: ANTHROPIC_BASE_URL
+        sync: false
+      - key: INBOX_AI_MODEL
+        sync: false
+      - key: INBOX_AI_EFFORT
+        sync: false
+      - key: INBOX_AI_TIMEOUT_MS
+        sync: false
+      - key: INBOX_AI_DEBOUNCE_S
+        sync: false
+      - key: INBOX_AI_DEBOUNCE_MAX_S
+        sync: false
+      - key: INBOX_AI_DAILY_TURN_CAP
+        sync: false
+      - key: INBOX_AI_DAILY_TOKEN_CAP
+        sync: false
+
       # -- error reporting -----------------------------------------------------
       - key: SENTRY_DSN
         # Optional. The error hook is a no-op while this is empty.

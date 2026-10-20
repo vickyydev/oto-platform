@@ -19,6 +19,7 @@ import type { Exec, Tx } from '../tx';
 import type { InboxChannels } from './channels';
 import { loadVisibleConversation, type InboxViewer } from './read-visibility';
 import { templatesForThread } from './templates';
+import { cancelAiForThread } from './ai-turns';
 
 /**
  * A STAFF REPLY (S2-19 I2f, SCRUM-585; plan §3.3 "POST /inbox/conversations/
@@ -43,6 +44,8 @@ import { templatesForThread } from './templates';
  *      `last_staff_message_at` moves (which is what answers it — `isUnanswered`
  *      reads the timestamps), and `first_response_at` is set if unset.
  *   4. One audit row: ids, the template key, the length — never the words.
+ *   5. The customer assistant stands down (SCRUM-590): its pending turn on
+ *      the thread is cancelled and its queued lines withdrawn.
  *
  * The send itself happens after the commit (`send.ts`), so the answer is the
  * message as the first attempt left it.
@@ -283,6 +286,12 @@ export async function replyToConversation(
       length: [...body].length,
       windowOpen: window.open,
     },
+  });
+  // A person spoke (SCRUM-590 plan §A.3): the assistant's pending turn is
+  // cancelled and its unsent lines withdrawn, in this reply's transaction.
+  await cancelAiForThread(tx, conv!.operatorId, conv!.id, 'STAFF_REPLY', viewers.read.accountId, {
+    requestId: ctx.requestId,
+    now: ctx.now,
   });
   return { conversationId: conv!.id, messageId: id, replay: false, window };
 }

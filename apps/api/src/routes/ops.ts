@@ -100,7 +100,7 @@ export async function opsRoutes(app: App): Promise<void> {
    */
   let runner: JobRunner | null = null;
   const jobRunner = (): JobRunner =>
-    (runner ??= createJobRunner({ db: app.db, env: app.env, log: app.log, inboxChannels: app.inboxChannels }));
+    (runner ??= createJobRunner({ db: app.db, env: app.env, log: app.log, inboxChannels: app.inboxChannels, inboxAi: app.inboxAi }));
 
   const health = () => ({
     db: app.db,

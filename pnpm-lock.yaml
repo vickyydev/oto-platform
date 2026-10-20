@@ -101,6 +101,9 @@ importers:
       '@node-rs/argon2':
         specifier: ^2.2.1
         version: 2.2.1
+      '@oto/assistant':
+        specifier: workspace:*
+        version: link:../../packages/assistant
       '@oto/box-agent':
         specifier: workspace:*
         version: link:../../packages/box-agent

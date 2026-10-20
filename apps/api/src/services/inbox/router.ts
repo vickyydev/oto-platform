@@ -62,9 +62,18 @@ export interface RouteInput {
    * A re-route (I2e, move-team): only this team's rules, and this team when
    * none matches; the rows carry `reason` and who asked. Absent on a new
    * conversation, which is routed by the system with reason `auto`.
+   *
+   * `by: 'ai'` (SCRUM-590, rails change R3) is the assistant re-routing a
+   * thread whose category it read differently and that no person has touched:
+   * the rows say `assigned_by_kind 'ai'` with no account, and the pills name
+   * the assistant as the actor. Absent `by` is a person, as before.
    */
-  reroute?: { teamId: string; reason: 'move'; actorAccountId: string };
+  reroute?: RerouteBy;
 }
+
+export type RerouteBy =
+  | { teamId: string; reason: 'move'; by?: 'account'; actorAccountId: string }
+  | { teamId: string; reason: 'move'; by: 'ai' };
 
 export interface RoutedAssignment {
   id: string;
@@ -195,6 +204,8 @@ export async function routeConversation(tx: Exec, input: RouteInput): Promise<Ro
     });
   }
 
+  const byAi = input.reroute?.by === 'ai';
+  const actorAccountId = input.reroute && input.reroute.by !== 'ai' ? input.reroute.actorAccountId : null;
   await tx.insert(assignment).values(
     assignments.map((a) => ({
       id: a.id,
@@ -205,8 +216,8 @@ export async function routeConversation(tx: Exec, input: RouteInput): Promise<Ro
       assigneeKind: a.assigneeKind,
       accountId: a.accountId,
       teamId: a.teamId,
-      assignedByKind: input.reroute ? ('account' as const) : ('system' as const),
-      assignedByAccountId: input.reroute?.actorAccountId ?? null,
+      assignedByKind: byAi ? ('ai' as const) : input.reroute ? ('account' as const) : ('system' as const),
+      assignedByAccountId: actorAccountId,
       reason: input.reroute?.reason ?? ('auto' as const),
       assignedAt: input.at,
     })),
@@ -223,7 +234,7 @@ export async function routeConversation(tx: Exec, input: RouteInput): Promise<Ro
       operatorId: input.operatorId,
       conversationId: input.conversationId,
       kind: 'routed' as const,
-      actorKind: 'system' as const,
+      actorKind: byAi ? ('ai' as const) : ('system' as const),
       payload: {
         ruleId: rule?.id ?? null,
         teamId,
@@ -239,7 +250,7 @@ export async function routeConversation(tx: Exec, input: RouteInput): Promise<Ro
       operatorId: input.operatorId,
       conversationId: input.conversationId,
       kind: 'assigned' as const,
-      actorKind: 'system' as const,
+      actorKind: byAi ? ('ai' as const) : ('system' as const),
       payload: {
         assignmentId: a.id,
         slot: a.slot,
