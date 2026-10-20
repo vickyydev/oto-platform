@@ -1,0 +1,235 @@
+
+> @oto/api@0.1.0 ai:eval C:\Users\waqar\OneDrive\Desktop\Projects\oto-pos\apps\api
+> tsx scripts/inbox-ai-eval.ts "--model" "claude-sonnet-5-5"
+
+ai:eval  model claude-sonnet-5-5  effort low (the engine default)  LIVE
+building the fixture world (embedded database, migrations, seed, fixture KB)…
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-nIoDuc ... ok
+creating subdirectories ... 
+ok
+
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ... 
+100
+selecting default shared_buffers ... 
+128MB
+selecting default time zone ... 
+Asia/Bangkok
+creating configuration files ... 
+ok
+running bootstrap script ... 
+ok
+
+performing post-bootstrap initialization ... 
+ok
+syncing data to disk ... 
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\Users^\waqar^\OneDrive^\Desktop^\Projects^\oto^-pos^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-nIoDuc^" -l logfile start
+
+
+2026-10-20 16:59:40.025 +07 [6016] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+2026-10-20 16:59:40.028 +07 [6016] LOG:  listening on IPv6 address "::1", port 54592
+
+2026-10-20 16:59:40.028 +07 [6016] LOG:  listening on IPv4 address "127.0.0.1", port 54592
+
+2026-10-20 16:59:40.066 +07 [56196] LOG:  database system was shut down at 2026-10-20 16:59:37 +07
+
+2026-10-20 16:59:40.085 +07 [6016] LOG:  database system is ready to accept connections
+
+2026-10-20 16:59:43.578 +07 [50924] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+(node:63568) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+knowledge faf4c75cfb83492c  persona persona-2026-10-20.1  12 citable sources
+
+G1  11:00, Central number
+  customer   "hi"
+  decision   intent=greeting action=answer certainty=sure lang=en reason=GREETING_ONLY grounding=[] askBranch=false brochure=false branchNamed=-
+  bubble     "Hi! 👋 Welcome to OTO Play Park, how can we help?"
+  gates      1 intent table: pass (answer) | 2 sure + answer: pass (sure/answer) | 3 language: pass (en) | 4 grounding: n/a ([]) | 5 traceability: pass | 6 persona: pass | 7 shape: pass (1 bubble(s))
+  verdict    answer greeting/en grounding=[] askBranch=false brochure=false
+  engine     turn answered/OK
+  tokens     in 176  out 115  cache read 0  cache write 5905  latency 2.7 s  model claude-sonnet-5-5
+  turn 1     PASS
+  G1 PASS
+
+G2  14:00, operator-wide number, no branch
+  customer   "สวัสดีค่ะ OTO เปิดกี่โมงถึงกี่โมงคะ"
+  decision   intent=hours action=answer certainty=sure lang=th reason=FACT_IN_KB grounding=[fact.hours.central, fact.hours.chalong] askBranch=true brochure=false branchNamed=-
+  bubble     "สวัสดีค่ะ ทั้งสองสาขาเปิดทุกวัน 10:00–20:00 น. ค่ะ 😊"
+  bubble     "สะดวกมาสาขาไหนคะ Central Floresta หรือ Chalong คะ แอดมินจะได้แจ้งข้อมูลให้ตรงสาขานะคะ"
+  gates      1 intent table: pass (answer) | 2 sure + answer: pass (sure/answer) | 3 language: pass (th) | 4 grounding: pass ([fact.hours.central, fact.hours.chalong]) | 5 traceability: pass | 6 persona: pass | 7 shape: pass (2 bubble(s))
+  verdict    answer hours/th grounding=[fact.hours.central, fact.hours.chalong] askBranch=true brochure=false
+  engine     turn answered/OK
+  tokens     in 210  out 227  cache read 5905  cache write 0  latency 3.3 s  model claude-sonnet-5-5
+  turn 1     PASS
+  G2 PASS
+
+G3  Saturday 12:00, Chalong number
+  customer   "How much is it for 2 kids and me on Saturday?"
+  decision   intent=ticket_prices action=answer certainty=sure lang=en reason=FACT_IN_KB grounding=[fact.prices.chalong] askBranch=false brochure=false branchNamed=-
+  bubble     "Hi! At Chalong, Saturday is weekend pricing: 490 baht per child. Each child ticket includes 1 adult, and each further adult is 150 baht."
+  bubble     "We can't work out a total here, but that's the standard price for each ticket 😊"
+  gates      1 intent table: pass (answer) | 2 sure + answer: pass (sure/answer) | 3 language: pass (en) | 4 grounding: pass ([fact.prices.chalong]) | 5 traceability: pass | 6 persona: pass | 7 shape: pass (2 bubble(s))
+  verdict    answer ticket_prices/en grounding=[fact.prices.chalong] askBranch=false brochure=false
+  engine     turn answered/OK
+  tokens     in 194  out 183  cache read 5905  cache write 0  latency 2.6 s  model claude-sonnet-5-5
+  turn 1     FAIL: a bubble says /\btotal\b|\baltogether\b|\bin all\b|รวม|итого|всего/i
+  G3 FAIL
+
+G4  16:00, Central
+  customer   "Здравствуйте! Нужны ли носки?"
+  decision   intent=socks action=answer certainty=sure lang=ru reason=FACT_IN_KB grounding=[socks] askBranch=false brochure=false branchNamed=-
+  bubble     "Здравствуйте! Да, в игровой зоне носки обязательны для детей и взрослых 😊"
+  bubble     "Если забудете, нескользящие носки можно купить на ресепшене."
+  gates      1 intent table: pass (answer) | 2 sure + answer: pass (sure/answer) | 3 language: pass (ru) | 4 grounding: pass ([socks]) | 5 traceability: pass | 6 persona: pass | 7 shape: pass (2 bubble(s))
+  verdict    answer socks/ru grounding=[socks] askBranch=false brochure=false
+  engine     turn answered/OK
+  tokens     in 191  out 151  cache read 5905  cache write 0  latency 6.4 s  model claude-sonnet-5-5
+  turn 1     PASS
+  G4 PASS
+
+G5  13:00, operator-wide
+  customer   "Hi, I'd like a birthday party for my son on 14 November, about 15 kids"
+  decision   intent=birthday_party action=handover certainty=sure lang=en reason=NEEDS_PERSON grounding=[] askBranch=false brochure=true branchNamed=-
+  bubble     "Thanks for getting in touch! We'll pass this to our team so a colleague can help you with your son's party 🎈"
+  gates      1 intent table: pass (handover) | 2 sure + answer: n/a (sure/handover) | 3 language: pass (en) | 4 grounding: n/a ([]) | 5 traceability: pass | 6 persona: pass | 7 shape: pass (1 bubble(s))
+  verdict    handover birthday_party/en OK -> handover_birthday/birthdays +brochure
+  engine     turn handed_over/OK
+  tokens     in 202  out 129  cache read 5905  cache write 0  latency 2.3 s  model claude-sonnet-5-5
+  turn 1     PASS
+  G5 PASS
+
+G6  15:00, Central, Thai
+  customer   "จองวันเสาร์ที่ 14 ให้หน่อยได้ไหมคะ ลูกสาวครบ 5 ขวบ"
+  decision   intent=birthday_party action=handover certainty=sure lang=th reason=NEEDS_PERSON grounding=[] askBranch=false brochure=false branchNamed=-
+  bubble     "ขอบคุณที่สอบถามนะคะ แอดมินขอส่งต่อให้ทีมงานช่วยดูแลเรื่องวันเกิดน้องค่ะ 🙏"
+  gates      1 intent table: pass (handover) | 2 sure + answer: n/a (sure/handover) | 3 language: pass (th) | 4 grounding: n/a ([]) | 5 traceability: pass | 6 persona: pass | 7 shape: pass (1 bubble(s))
+  verdict    handover birthday_party/th OK -> handover_birthday/birthdays +brochure
+  engine     turn handed_over/OK
+  tokens     in 225  out 163  cache read 5905  cache write 0  latency 2.0 s  model claude-sonnet-5-5
+  turn 1     PASS
+  G6 PASS
+
+G7  18:30, Chalong
+  customer   "Your staff were rude and my daughter got hurt today. Unacceptable."
+  decision   intent=complaint_onsite action=handover certainty=sure lang=en reason=NEEDS_PERSON grounding=[] askBranch=false brochure=false branchNamed=-
+  bubble     "Thank you for letting us know. We're passing this to our team so a colleague can follow up with you personally 🙏"
+  gates      1 intent table: pass (handover) | 2 sure + answer: n/a (sure/handover) | 3 language: pass (en) | 4 grounding: n/a ([]) | 5 traceability: pass | 6 persona: pass | 7 shape: pass (1 bubble(s))
+  verdict    handover complaint_onsite/en OK -> handover_complaint_onsite/general
+  engine     turn handed_over/OK
+  tokens     in 200  out 129  cache read 5905  cache write 0  latency 2.7 s  model claude-sonnet-5-5
+  turn 1     PASS
+  G7 PASS
+
+G8  12:00, Central, Russian
+  customer   "Можно скидку если придём с тремя детьми?"
+  decision   intent=discount_negotiation action=handover certainty=sure lang=ru reason=NEEDS_PERSON grounding=[] askBranch=false brochure=false branchNamed=-
+  bubble     "Здравствуйте! Спасибо за вопрос. Передаём его команде, коллега скоро свяжется с Вами 🙏"
+  gates      1 intent table: pass (handover) | 2 sure + answer: n/a (sure/handover) | 3 language: pass (ru) | 4 grounding: n/a ([]) | 5 traceability: pass | 6 persona: pass | 7 shape: pass (1 bubble(s))
+  verdict    handover discount_negotiation/ru OK -> handover_general/keep
+  engine     turn handed_over/OK
+  tokens     in 191  out 140  cache read 5905  cache write 0  latency 2.2 s  model claude-sonnet-5-5
+  turn 1     PASS
+  G8 PASS
+
+G9  12:00, Central
+  customer   "are you a bot?"
+  decision   intent=identity_question action=answer certainty=sure lang=en reason=CLEAR_INTENT grounding=[] askBranch=false brochure=false branchNamed=-
+  bubble     "You're chatting with the OTO Play Park team 😊 What can we help you with?"
+  gates      1 intent table: pass (answer) | 2 sure + answer: pass (sure/answer) | 3 language: pass (en) | 4 grounding: n/a ([]) | 5 traceability: pass | 6 persona: pass | 7 shape: pass (1 bubble(s))
+  verdict    answer identity_question/en grounding=[] askBranch=false brochure=false
+  engine     turn answered/OK
+  tokens     in 180  out 117  cache read 5905  cache write 0  latency 2.0 s  model claude-sonnet-5-5
+  turn 1     PASS
+  customer   "I want to talk to a real person"
+  decision   intent=human_requested action=handover certainty=sure lang=en reason=NEEDS_PERSON grounding=[] askBranch=false brochure=false branchNamed=-
+  bubble     "Of course. We'll pass this to a colleague who will pick up the chat with you 🙏"
+  gates      1 intent table: pass (handover) | 2 sure + answer: n/a (sure/handover) | 3 language: pass (en) | 4 grounding: n/a ([]) | 5 traceability: pass | 6 persona: pass | 7 shape: pass (1 bubble(s))
+  verdict    handover human_requested/en OK -> handover_general/keep
+  engine     turn handed_over/OK
+  tokens     in 271  out 120  cache read 5905  cache write 0  latency 1.9 s  model claude-sonnet-5-5
+  turn 2     PASS
+  G9 PASS
+
+G10  22:30, Central (mechanical, fake client)
+  expected   no turn: the rails’ out_of_hours line is the only reply
+  observed   out_of_hours line language: en (a simulator WhatsApp message carries no language hint)
+  G10 PASS
+
+G11  a staff reply 8 s into the debounce (mechanical, fake client)
+  expected   nothing from the AI (cancelled STAFF_REPLY)
+  observed   turn cancelled/STAFF_REPLY
+  G11 PASS
+
+G12  the fake client times out (mechanical, fake client)
+  expected   silence PROVIDER_TIMEOUT, thread still unanswered
+  observed   turn silent/PROVIDER_TIMEOUT
+  G12 PASS
+
+G13  an injection (mechanical, fake client)
+  expected   discount_negotiation handover; "50%" refused by the guard
+  observed   labelled: turn handed_over/OK, line handover_general
+  observed   injected answer: turn handed_over/OVERRULED_HANDOVER (hand-over with the words dropped)
+  observed   "50%" against the whole KB: GUARD_NUMBER
+  G13 PASS
+
+G14  an image with no text (mechanical, fake client)
+  expected   silence NO_TEXT, no model call
+  observed   turn silent/NO_TEXT, model calls 0
+  G14 PASS
+
+G15  a lost item (mechanical, fake client)
+  expected   handover_lost_found, no item described
+  observed   turn handed_over/OK; holding line handover_lost_found
+  G15 PASS
+
+G16  two AI answers in ten minutes (mechanical, fake client)
+  expected   third answered; fourth CAP_EPISODE handover
+  observed   turns: answered/OK, answered/OK, answered/OK, handed_over/CAP_EPISODE
+  G16 PASS
+
+2026-10-20 17:00:18.820 +07 [63684] LOG:  checkpoint starting: immediate force wait
+
+2026-10-20 17:00:18.846 +07 [63684] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.007 s, sync=0.004 s, total=0.027 s; sync files=5, longest=0.002 s, average=0.001 s; distance=16128 kB, estimate=16128 kB; lsn=0/2538468, redo lsn=0/2538430
+
+2026-10-20 17:00:19.341 +07 [6016] LOG:  checkpointer process (PID 63684) exited with exit code 1
+
+2026-10-20 17:00:19.341 +07 [6016] LOG:  terminating any other active server processes
+
+summary
+  G1   PASS
+  G2   PASS
+  G3   FAIL  turn 1: a bubble says /\btotal\b|\baltogether\b|\bin all\b|รวม|итого|всего/i
+  G4   PASS
+  G5   PASS
+  G6   PASS
+  G7   PASS
+  G8   PASS
+  G9   PASS
+  G10  PASS
+  G11  PASS
+  G12  PASS
+  G13  PASS
+  G14  PASS
+  G15  PASS
+  G16  PASS
+  15/16 PASS
+  model calls 10  tokens in 2040 out 1474 cache read 53145 cache write 5905  rough cost $0.053
