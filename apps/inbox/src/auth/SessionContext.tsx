@@ -28,6 +28,8 @@ interface SessionValue {
   signIn: (phone: string, password: string) => Promise<void>;
   unlock: (password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  /** Re-read `GET /inbox/me` — after the simulator's demo lays new people, teams' rules and channel accounts. */
+  reload: () => Promise<void>;
 }
 
 const SessionContext = createContext<SessionValue | null>(null);
@@ -131,9 +133,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     if (LAUNCHER_URL) window.location.assign(LAUNCHER_URL);
   }, []);
 
+  const reload = useCallback(() => load().catch(() => undefined), [load]);
+
   const value = useMemo<SessionValue>(
-    () => ({ state, me, handoffError, signIn, unlock, signOut }),
-    [state, me, handoffError, signIn, unlock, signOut],
+    () => ({ state, me, handoffError, signIn, unlock, signOut, reload }),
+    [state, me, handoffError, signIn, unlock, signOut, reload],
   );
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }

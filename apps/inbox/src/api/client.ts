@@ -58,12 +58,17 @@ export const api = {
   get: <T>(path: string) => request<T>('GET', path),
   post: <T>(path: string, body?: unknown, opts?: { idempotencyKey?: string }) =>
     request<T>('POST', path, body, opts),
+  put: <T>(path: string, body?: unknown, opts?: { idempotencyKey?: string }) =>
+    request<T>('PUT', path, body, opts),
+  patch: <T>(path: string, body?: unknown, opts?: { idempotencyKey?: string }) =>
+    request<T>('PATCH', path, body, opts),
+  delete: <T>(path: string, opts?: { idempotencyKey?: string }) => request<T>('DELETE', path, undefined, opts),
 };
 
 /**
  * A fresh key for one mutation, minted where it happens. Every write carries
- * one (the api's idempotency plugin covers all four methods) — the Inbox's
- * only one in this build is the read marker, which a retry must not double.
+ * one (the api's idempotency plugin covers all four methods): the read
+ * marker, the actions, the reply, the template settings and the simulator.
  */
 export const idemKey = (): string => crypto.randomUUID();
 

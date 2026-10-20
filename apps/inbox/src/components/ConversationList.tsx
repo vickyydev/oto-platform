@@ -52,6 +52,7 @@ export function ConversationList({
   onTab,
   onOpenFilters,
   onSelect,
+  onAskHandle,
   onMore,
 }: {
   me: InboxMe;
@@ -70,6 +71,8 @@ export function ConversationList({
   onTab: (t: InboxTab) => void;
   onOpenFilters: () => void;
   onSelect: (id: string) => void;
+  /** The row's hover "Mark handled" (:1610-1620): opens the confirmation. */
+  onAskHandle: (id: string) => void;
   onMore: () => void;
 }) {
   const filterCount = activeFilterCount(filters);
@@ -217,7 +220,15 @@ export function ConversationList({
         ) : (
           <>
             {rows.map((c) => (
-              <Row key={c.id} c={c} me={me} selected={c.id === selectedId} now={now} onSelect={onSelect} />
+              <Row
+                key={c.id}
+                c={c}
+                me={me}
+                selected={c.id === selectedId}
+                now={now}
+                onSelect={onSelect}
+                onAskHandle={onAskHandle}
+              />
             ))}
             {page?.nextCursor && (
               <div className="flex justify-center p-3">
@@ -250,17 +261,20 @@ function Row({
   selected,
   now,
   onSelect,
+  onAskHandle,
 }: {
   c: ConversationRow;
   me: InboxMe;
   selected: boolean;
   now: Date;
   onSelect: (id: string) => void;
+  onAskHandle: (id: string) => void;
 }) {
   const name = contactName(c.contact);
   const primary = primaryOf(c);
   const supports = supportsOf(c);
-  const handleHere = writeMode(me) === 'disabled' && canHandle(c, me);
+  const pendingWrites = writeMode(me) === 'disabled';
+  const handleHere = canHandle(c, me);
   return (
     <div
       role="button"
@@ -329,7 +343,7 @@ function Row({
             {supports.map((s) => (
               <ChipView key={s.assignmentId} chip={assigneeChip(s, me)} withName={false} />
             ))}
-            {handleHere && (
+            {handleHere && pendingWrites && (
               <span className="ml-auto hidden opacity-0 transition group-hover:opacity-100 sm:inline-flex">
                 <PendingControl
                   reason={WRITES_PENDING_REASON}
@@ -339,6 +353,20 @@ function Row({
                   <CheckCircle2 className="h-3 w-3" /> Mark handled
                 </PendingControl>
               </span>
+            )}
+            {handleHere && !pendingWrites && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAskHandle(c.id);
+                }}
+                onKeyDown={(e) => e.stopPropagation()}
+                className="ml-auto inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 opacity-0 ring-1 ring-emerald-200 transition hover:bg-emerald-100 group-hover:opacity-100 focus:opacity-100"
+                title="Mark this conversation as handled"
+              >
+                <CheckCircle2 className="h-3 w-3" /> Mark handled
+              </button>
             )}
           </div>
         </div>

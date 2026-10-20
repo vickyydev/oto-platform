@@ -74,18 +74,23 @@ export function DetailsDialog({
 /**
  * The composer's templates (plan §3.3 `GET /inbox/templates`): the welcome
  * line, the handover lines and the out-of-hours reply, in the conversation's
- * language. Readable now; "Insert" is the composer's, and waits with it.
+ * language. "Insert" hands one to the composer (I3b), which fills its
+ * `{{name}}` values and sends it as a template — the server decides whether
+ * it may go.
  */
 export function TemplatesDialog({
   open,
   onClose,
   language,
   me,
+  onInsert,
 }: {
   open: boolean;
   onClose: () => void;
   language: string | null;
   me: InboxMe;
+  /** Absent: the open conversation cannot take a reply, so there is nothing to insert into. */
+  onInsert?: (t: Template) => void;
 }) {
   const [templates, setTemplates] = useState<Template[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -135,7 +140,7 @@ export function TemplatesDialog({
                   English source, to translate
                 </span>
               )}
-              {pending && (
+              {pending ? (
                 <span className="ml-auto">
                   <PendingControl
                     reason={WRITES_PENDING_REASON}
@@ -145,6 +150,17 @@ export function TemplatesDialog({
                     Insert
                   </PendingControl>
                 </span>
+              ) : (
+                onInsert && (
+                  <button
+                    type="button"
+                    onClick={() => onInsert(t)}
+                    aria-label={`Insert ${t.key.replace(/[_.]/g, ' ')} into the reply`}
+                    className="ml-auto rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                  >
+                    Insert
+                  </button>
+                )
               )}
             </div>
             <p className="mt-1.5 whitespace-pre-line break-words text-[12.5px] text-slate-700">{t.body}</p>

@@ -18,7 +18,16 @@ import {
   type InboxStatusKey,
   type InboxTab,
 } from '@oto/shared/inbox';
-import type { Assignee, ConversationRow, InboxEvent, InboxMe, Message, Team } from '@/api/inbox';
+import type {
+  Assignee,
+  ConversationRow,
+  InboxEvent,
+  InboxMe,
+  Message,
+  MoveDest,
+  PrimaryAssignee,
+  Team,
+} from '@/api/inbox';
 
 // --- The colour code ------------------------------------------------------------
 
@@ -355,16 +364,21 @@ export function eventText(e: InboxEvent, ctx: PillContext): string | null {
       return `${lang ? `Language: ${langLabel(lang)} · ` : ''}Routed to ${team}`;
     }
     case 'assigned':
+    case 'released':
+      // A Divert's four seat changes are said once, by its own "Diverted to …" pill.
+      if (p.reason === 'divert') return null;
+      if (e.kind === 'released') return `${actorOf(e, ctx)} removed ${assignee()} (${slot})`;
       return e.actorKind === 'account'
         ? `${actorOf(e, ctx)} added ${assignee()} as ${slot}`
         : `Assigned ${assignee()} as ${slot}`;
-    case 'released':
-      return `${actorOf(e, ctx)} removed ${assignee()} (${slot})`;
     case 'diverted':
-      return `Diverted to ${assignee()} by ${actorOf(e, ctx)}`;
+      // The action names the new primary `toAccountId` (I2e `divert`).
+      return `Diverted to ${personName(ctx, p.toAccountId) ?? assignee()} by ${actorOf(e, ctx)}`;
     case 'moved_team': {
       const to = teamName(ctx, p.toTeamId) ?? teamName(ctx, p.teamId);
       const from = teamName(ctx, p.fromTeamId);
+      // The prototype's pill when a cross-team primary took it (:1158).
+      if (p.followsPrimary === true && from && to) return `Auto-moved from ${from} → ${to} (follows primary owner)`;
       if (from && to) return `Moved from ${from} → ${to} by ${actorOf(e, ctx)}`;
       return `Moved${to ? ` to ${to}` : ''} by ${actorOf(e, ctx)}`;
     }
@@ -386,6 +400,9 @@ export function eventText(e: InboxEvent, ctx: PillContext): string | null {
       return 'Waiting longer than usual';
     case 'notice_mirrored':
       return 'Check-in notice sent from the till';
+    case 'send_failed':
+      // The channel's own refusal word, as the send job recorded it.
+      return str(p.refusal) ? `Reply not sent · ${str(p.refusal)}` : 'Reply not sent';
     default:
       return e.kind.replace(/_/g, ' ');
   }
@@ -426,18 +443,80 @@ export function timeline(
 /**
  * The write switch (plan §4.3, "How Cut A is marked"). While `GET /inbox/me`
  * says `writes: false`, every write control renders, disabled, with the reason
- * below — the same component Cut B enables. If the api ever says `true` before
- * this shell carries the wiring (I3b), the controls are HIDDEN rather than
- * shown live: a button that looks pressable and does nothing is worse than
- * none.
+ * below; with `writes: true` (since I2f) the same controls are live (I3b).
  */
-export type WriteMode = 'disabled' | 'hidden';
+export type WriteMode = 'disabled' | 'live';
 export const WRITES_PENDING_REASON = 'Coming with the channel connection';
 /** Book Date and Create BEO, in both cuts (owner Q23). */
 export const EVENT_ORDERS_REASON = 'With the event orders (open decision)';
+/** The composer's emoji and attachment buttons: the reply route takes words and templates only. */
+export const COMPOSER_EXTRAS_REASON = 'Not in this build yet';
 
 export function writeMode(me: Pick<InboxMe, 'capabilities'>): WriteMode {
-  return me.capabilities.writes ? 'hidden' : 'disabled';
+  return me.capabilities.writes ? 'live' : 'disabled';
+}
+
+// --- The move-team badge -----------------------------------------------------------
+
+export type MoveOption = { value: string; label: string; dest: MoveDest };
+
+/**
+ * The move picker's four destinations (`CategoryBadge`, :1003-1008):
+ * Birthdays & Events, each park's reception desk, Marketing — named by the
+ * operator's own teams, in the prototype's order.
+ */
+export function moveOptions(me: Pick<InboxMe, 'teams'>): MoveOption[] {
+  const out: MoveOption[] = [];
+  const birthdays = me.teams.find((t) => t.kind === 'birthdays');
+  if (birthdays) out.push({ value: 'birthdays', label: birthdays.name, dest: { kind: 'birthdays' } });
+  for (const t of me.teams) {
+    if (t.kind !== 'reception' || !t.branchId) continue;
+    out.push({ value: `reception:${t.branchId}`, label: t.name, dest: { kind: 'reception', branchId: t.branchId } });
+  }
+  const marketing = me.teams.find((t) => t.kind === 'marketing');
+  if (marketing) out.push({ value: 'marketing', label: marketing.name, dest: { kind: 'marketing' } });
+  return out;
+}
+
+/** The picker's current value: where `teamDestOf` puts the conversation. */
+export function moveValue(
+  row: { category: InboxCategoryKey; branchId: string | null },
+  me: Pick<InboxMe, 'defaultReceptionBranchId'>,
+): string {
+  const dest = teamDestOf(row, me.defaultReceptionBranchId);
+  return dest.kind === 'reception' ? `reception:${dest.branchId}` : dest.kind;
+}
+
+// --- The slot pickers ----------------------------------------------------------------
+
+export type SlotOption = { value: string; label: string; assignee: PrimaryAssignee };
+
+/**
+ * Who a slot picker offers (`SlotPicker`, :810-818): every person who can
+ * hold a place but those already on the conversation — one place per person
+ * (:1142) — then, for the primary only, the reception desks, which a
+ * reception thread is owned by (a phone, never a person's name).
+ */
+export function slotOptions(
+  row: Pick<ConversationRow, 'assignments'>,
+  me: Pick<InboxMe, 'people' | 'teams'>,
+  slot: 'primary' | 'support',
+): SlotOption[] {
+  const seatedAccounts = new Set(row.assignments.flatMap((a) => (a.accountId ? [a.accountId] : [])));
+  const seatedTeams = new Set(row.assignments.flatMap((a) => (a.teamId ? [a.teamId] : [])));
+  const people: SlotOption[] = me.people
+    .filter((p) => !seatedAccounts.has(p.accountId))
+    .map((p) => ({ value: `account:${p.accountId}`, label: p.name ?? 'Someone', assignee: { kind: 'account', id: p.accountId } }));
+  if (slot === 'support') return people;
+  const desks: SlotOption[] = me.teams
+    .filter((t) => t.kind === 'reception' && !seatedTeams.has(t.id))
+    .map((t) => ({ value: `team:${t.id}`, label: t.name, assignee: { kind: 'team', id: t.id } }));
+  return [...people, ...desks];
+}
+
+/** The branch select (:1953-1960): each park, then "All branches" (no branch). */
+export function branchSelectOptions(teams: readonly Team[]): { value: string; label: string }[] {
+  return [...branchOptions(teams).map((b) => ({ value: b.id, label: b.label })), { value: '', label: 'All branches' }];
 }
 
 /** Reads every conversation of the operator: the prototype's owner view. */

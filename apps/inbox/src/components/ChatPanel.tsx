@@ -1,42 +1,49 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  AlertTriangle,
   Archive,
   ArrowLeft,
   Bot,
   Calendar,
   CheckCircle2,
+  ChevronDown,
   FileText,
   Loader2,
   MapPin,
   MoreHorizontal,
-  Paperclip,
   Plus,
   Repeat,
-  Send,
-  Smile,
-  type LucideIcon,
+  X,
 } from 'lucide-react';
-import type { ConversationDetail, ConversationRow, InboxMe, Message } from '@/api/inbox';
+import type { InboxCategoryKey } from '@oto/shared/inbox';
+import { ApiError } from '@/api/client';
+import { inboxApi, type ConversationDetail, type ConversationRow, type InboxMe, type Message } from '@/api/inbox';
 import { Avatar, CategoryBadge, ChannelDot, ChipView, StatusBadge } from '@/components/atoms';
-import { PendingControl } from '@/components/writes';
+import { Composer, type InsertedTemplate } from '@/components/Composer';
+import { PrimaryMoveConfirm, type PendingPrimaryMove } from '@/components/confirms';
 import { MessageBubble } from '@/components/MessageBubble';
+import { SlotPicker } from '@/components/SlotPicker';
+import { PendingControl } from '@/components/writes';
 import {
   CHANNEL_LABEL,
   EVENT_ORDERS_REASON,
   WRITES_PENDING_REASON,
   assigneeChip,
   branchLabel,
+  branchSelectOptions,
   canHandle,
   contactName,
   initialsOf,
   langLabel,
+  moveOptions,
+  moveValue,
   primaryOf,
+  slotOptions,
   supportsOf,
   teamDestLabel,
   timeline,
   tintFor,
   writeMode,
+  type SlotOption,
 } from '@/lib/view';
 
 export interface Thread {
@@ -48,47 +55,136 @@ export interface Thread {
   error: string | null;
 }
 
+type Busy = 'primary' | 'support' | 'divert' | 'move' | 'branch' | 'reopen' | null;
+
+const CATEGORY_KEYS: readonly InboxCategoryKey[] = ['birthdays', 'general', 'marketing'];
+const categoryOf = (v: unknown): InboxCategoryKey | null =>
+  CATEGORY_KEYS.includes(v as InboxCategoryKey) ? (v as InboxCategoryKey) : null;
+
+function refusalOf(err: unknown, fallback: string): string {
+  return err instanceof ApiError ? err.message : fallback;
+}
+
 /**
- * The chat panel (WhatsAppDemo.tsx `ChatPanel`, :1870-2062), READING: the
- * header, the assignment strip, the timeline and the composer, from the api.
+ * The chat panel (WhatsAppDemo.tsx `ChatPanel`, :1870-2062): the header, the
+ * assignment strip, the timeline and the composer, from the api.
  *
- * Every write control is here in its place — the slot pickers, "+ Add
- * support", the move badge, the status picker, the branch select, Divert,
- * Mark as Handled, the composer — rendered disabled with its reason while
- * the write switch is off (`writeMode`), and hidden if the api turns writes
- * on before I3b wires them. Book Date and Create BEO are disabled in both
- * cuts: they wait on the event orders (owner Q23).
+ * LIVE since I3b (SCRUM-588), behind the same write switch (`writeMode`):
+ * the move-team badge and the status picker in the header; the primary and
+ * support slot pickers, Divert and the branch select in the strip; Mark as
+ * Handled; the composer. Every refusal is the server's sentence, shown as it
+ * was said. While the api says `writes: false` the same controls render
+ * disabled with their reason, as in Cut A. Book Date and Create BEO are
+ * disabled in both cuts: they wait on the event orders (owner Q23).
  */
 export function ChatPanel({
   row,
   thread,
   me,
   now,
+  inserted,
   onBack,
   onLoadOlder,
   onOpenDetails,
   onOpenTemplates,
+  onAskHandle,
+  onChanged,
 }: {
   row: ConversationRow;
   thread: Thread;
   me: InboxMe;
   now: Date;
+  inserted: InsertedTemplate | null;
   onBack: () => void;
   onLoadOlder: () => void;
   onOpenDetails: () => void;
   onOpenTemplates: () => void;
+  onAskHandle: () => void;
+  /** After a write: re-read the thread, the list and the dashboard. */
+  onChanged: () => Promise<void>;
 }) {
-  const mode = writeMode(me);
-  const pending = mode === 'disabled';
+  const pending = writeMode(me) === 'disabled';
+  const live = !pending;
   // The detail is fresher than the list row once it is in; until then the row
   // carries everything the header and the strip need.
-  const conv: ConversationRow = thread.detail?.id === row.id ? thread.detail : row;
+  const detail = thread.detail?.id === row.id ? thread.detail : null;
+  const conv: ConversationRow = detail ?? row;
   const name = contactName(conv.contact);
   const primary = primaryOf(conv);
   const supports = supportsOf(conv);
   const viewerIsPrimary = primary?.accountId === me.accountId;
   const handleable = canHandle(conv, me);
   const mayAssign = me.capabilities.assign || viewerIsPrimary;
+  const reopenable = conv.status === 'handled' && me.capabilities.reopen;
+  // Divert: only when the rule's pair has someone to hand it to (the api reads
+  // it exactly as the divert route will), and only for the primary or a manager.
+  const divertTo = detail?.divertTo ?? null;
+
+  const [busy, setBusy] = useState<Busy>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [pendingPrimary, setPendingPrimary] = useState<(PendingPrimaryMove & { option: SlotOption }) | null>(null);
+  const [confirmError, setConfirmError] = useState<string | null>(null);
+
+  // A refusal belongs to the conversation it was said about.
+  useEffect(() => {
+    setError(null);
+    setPendingPrimary(null);
+  }, [conv.id]);
+
+  const run = async (what: Exclude<Busy, null>, fn: () => Promise<unknown>, fallback: string) => {
+    setBusy(what);
+    setError(null);
+    try {
+      await fn();
+      await onChanged();
+    } catch (err) {
+      setError(refusalOf(err, fallback));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const pickPrimary = async (option: SlotOption) => {
+    setBusy('primary');
+    setError(null);
+    try {
+      await inboxApi.setPrimary(conv.id, option.assignee);
+      await onChanged();
+    } catch (err) {
+      if (err instanceof ApiError && err.code === 'CATEGORY_MOVE_UNCONFIRMED') {
+        // The server's confirmation: its sentence, and the move it means.
+        const d = (err.details ?? {}) as Record<string, unknown>;
+        setConfirmError(null);
+        setPendingPrimary({
+          option,
+          name: option.label,
+          question: err.message,
+          fromCategory: categoryOf(d.fromCategory),
+          toCategory: categoryOf(d.toCategory),
+          toTeamName: typeof d.toTeamName === 'string' ? d.toTeamName : null,
+        });
+      } else {
+        setError(refusalOf(err, 'The primary owner could not be changed.'));
+      }
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const confirmPrimary = async () => {
+    if (!pendingPrimary) return;
+    setBusy('primary');
+    setConfirmError(null);
+    try {
+      await inboxApi.setPrimary(conv.id, pendingPrimary.option.assignee, true);
+      setPendingPrimary(null);
+      await onChanged();
+    } catch (err) {
+      setConfirmError(refusalOf(err, 'The primary owner could not be changed.'));
+    } finally {
+      setBusy(null);
+    }
+  };
 
   const items = useMemo(
     () => timeline(thread.messages, thread.detail?.events ?? [], thread.olderCursor === null, { me }),
@@ -103,6 +199,10 @@ export function ChatPanel({
     const el = scroller.current;
     if (el) el.scrollTop = el.scrollHeight;
   }, [conv.id, newest]);
+
+  const moves = moveOptions(me);
+  const currentMove = moveValue(conv, me);
+  const branchValue = conv.branchId ?? '';
 
   return (
     <>
@@ -142,18 +242,53 @@ export function ChatPanel({
           <CategoryBadge
             category={conv.category}
             label={me.capabilities.move ? teamDestLabel(conv, me) : undefined}
+            live={live && me.capabilities.move}
             picker={
-              me.capabilities.move && pending ? (
+              !me.capabilities.move ? undefined : pending ? (
                 <PendingOverlay label="Move to another team" />
-              ) : undefined
+              ) : (
+                <select
+                  value={currentMove}
+                  disabled={busy !== null}
+                  onChange={(e) => {
+                    const opt = moves.find((m) => m.value === e.target.value);
+                    if (opt && opt.value !== currentMove) {
+                      void run('move', () => inboxApi.move(conv.id, opt.dest), 'The conversation could not be moved.');
+                    }
+                  }}
+                  aria-label="Move to team"
+                  className="absolute inset-0 cursor-pointer opacity-0 disabled:cursor-wait"
+                >
+                  {moves.map((m) => (
+                    <option key={m.value} value={m.value}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+              )
             }
           />
           <StatusBadge
             status={conv.status}
+            live={live && (handleable || reopenable)}
             picker={
-              pending && (handleable || (conv.status === 'handled' && me.capabilities.reopen)) ? (
+              !(handleable || reopenable) ? undefined : pending ? (
                 <PendingOverlay label={conv.status === 'handled' ? 'Reopen' : 'Mark as handled'} />
-              ) : undefined
+              ) : (
+                <select
+                  value={conv.status === 'handled' ? 'handled' : 'new'}
+                  disabled={busy !== null}
+                  onChange={(e) => {
+                    if (e.target.value === 'handled') onAskHandle();
+                    else void run('reopen', () => inboxApi.reopen(conv.id), 'The conversation could not be reopened.');
+                  }}
+                  aria-label="Set conversation status"
+                  className="absolute inset-0 cursor-pointer opacity-0 disabled:cursor-wait"
+                >
+                  <option value="new">Active</option>
+                  <option value="handled">Handled</option>
+                </select>
+              )
             }
           />
         </div>
@@ -172,7 +307,16 @@ export function ChatPanel({
       <div className="border-b border-slate-200 bg-white/70 px-4 py-2">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Primary</span>
-          {primary ? (
+          {live && mayAssign ? (
+            <SlotPicker
+              slotLabel="primary"
+              current={primary ? assigneeChip(primary, me) : null}
+              options={slotOptions(conv, me, 'primary')}
+              onPick={(o) => void pickPrimary(o)}
+              emptyLabel="Assign primary"
+              disabled={busy !== null}
+            />
+          ) : primary ? (
             pending && mayAssign ? (
               <PendingControl reason={WRITES_PENDING_REASON} label="Change the primary owner" className="rounded-full">
                 <ChipView chip={assigneeChip(primary, me)} />
@@ -185,37 +329,120 @@ export function ChatPanel({
               Unassigned
             </span>
           )}
-          {pending && me.capabilities.assign && supports.length < 2 && (
-            <PendingControl
-              reason={WRITES_PENDING_REASON}
-              label="Add support"
-              className="inline-flex items-center gap-1 rounded-full border border-dashed border-slate-300 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-500"
-            >
-              <Plus className="h-3 w-3" />
-              Add support
-            </PendingControl>
-          )}
+          {me.capabilities.assign &&
+            supports.length < 2 &&
+            (live ? (
+              <SlotPicker
+                slotLabel="support"
+                current={null}
+                options={slotOptions(conv, me, 'support')}
+                onPick={(o) =>
+                  void run('support', () => inboxApi.addSupport(conv.id, o.assignee.id), 'Support could not be added.')
+                }
+                emptyLabel="Add support"
+                disabled={busy !== null}
+              />
+            ) : (
+              <PendingControl
+                reason={WRITES_PENDING_REASON}
+                label="Add support"
+                className="inline-flex items-center gap-1 rounded-full border border-dashed border-slate-300 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-500"
+              >
+                <Plus className="h-3 w-3" />
+                Add support
+              </PendingControl>
+            ))}
           {supports.length > 0 && (
             <>
               <span className="mx-1 h-4 w-px bg-slate-200" />
               <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Support</span>
-              {supports.map((s) => (
-                <ChipView key={s.assignmentId} chip={assigneeChip(s, me)} />
-              ))}
+              {supports.map((s) =>
+                live && me.capabilities.assign ? (
+                  <SlotPicker
+                    key={s.assignmentId}
+                    slotLabel="support"
+                    current={assigneeChip(s, me)}
+                    options={slotOptions(conv, me, 'support')}
+                    // A different person in this place: release it, then seat them.
+                    onPick={(o) =>
+                      void run(
+                        'support',
+                        async () => {
+                          await inboxApi.removeSupport(conv.id, s.assignmentId);
+                          await inboxApi.addSupport(conv.id, o.assignee.id);
+                        },
+                        'Support could not be changed.',
+                      )
+                    }
+                    onRemove={() =>
+                      void run(
+                        'support',
+                        () => inboxApi.removeSupport(conv.id, s.assignmentId),
+                        'Support could not be removed.',
+                      )
+                    }
+                    emptyLabel="Add support"
+                    disabled={busy !== null}
+                  />
+                ) : (
+                  <ChipView key={s.assignmentId} chip={assigneeChip(s, me)} />
+                ),
+              )}
             </>
           )}
-          {pending && mayAssign && primary?.assigneeKind === 'account' && (
-            <PendingControl
-              reason={WRITES_PENDING_REASON}
-              label="Divert to the backup"
-              className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-0.5 text-[11px] font-medium text-slate-600 ring-1 ring-slate-200"
-            >
-              <Repeat className="h-3 w-3" />
-              Divert
-            </PendingControl>
-          )}
+          {mayAssign &&
+            primary?.assigneeKind === 'account' &&
+            (pending ? (
+              <PendingControl
+                reason={WRITES_PENDING_REASON}
+                label="Divert to the backup"
+                className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-0.5 text-[11px] font-medium text-slate-600 ring-1 ring-slate-200"
+              >
+                <Repeat className="h-3 w-3" />
+                Divert
+              </PendingControl>
+            ) : (
+              divertTo && (
+                <button
+                  type="button"
+                  disabled={busy !== null}
+                  onClick={() => void run('divert', () => inboxApi.divert(conv.id), 'The conversation could not be diverted.')}
+                  title={`Divert to ${divertTo.name ?? 'the backup'}`}
+                  aria-label={`Divert to ${divertTo.name ?? 'the backup'}`}
+                  className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-0.5 text-[11px] font-medium text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 hover:text-slate-900 disabled:opacity-60"
+                >
+                  {busy === 'divert' ? <Loader2 className="h-3 w-3 animate-spin" /> : <Repeat className="h-3 w-3" />}
+                  Divert
+                </button>
+              )
+            ))}
           <span className="ml-auto flex flex-wrap items-center gap-2">
-            {pending && me.capabilities.assign ? (
+            {me.capabilities.assign && live ? (
+              <label className="flex items-center gap-1.5 text-[11px] text-slate-500">
+                <MapPin className="h-3 w-3" />
+                <span className="relative">
+                  <select
+                    value={branchValue}
+                    disabled={busy !== null}
+                    onChange={(e) => {
+                      const next = e.target.value || null;
+                      if (next !== conv.branchId) {
+                        void run('branch', () => inboxApi.setBranch(conv.id, next), 'The branch could not be changed.');
+                      }
+                    }}
+                    aria-label="Branch"
+                    className="appearance-none rounded-md border border-slate-200 bg-white py-0.5 pl-2 pr-6 text-[11px] capitalize text-slate-700 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                  >
+                    {branchSelectOptions(me.teams).map((b) => (
+                      <option key={b.value} value={b.value}>
+                        {b.label}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-1 top-1/2 h-3 w-3 -translate-y-1/2 text-slate-400" />
+                </span>
+              </label>
+            ) : pending && me.capabilities.assign ? (
               <PendingControl
                 reason={WRITES_PENDING_REASON}
                 label="Change the branch"
@@ -252,16 +479,40 @@ export function ChatPanel({
             )}
           </span>
         </div>
-        {pending && handleable && (
-          <div className="mt-2">
-            <PendingControl
-              reason={WRITES_PENDING_REASON}
-              label="Mark as Handled"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-2.5 py-1 text-[12px] font-medium text-white"
-            >
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              Mark as Handled
-            </PendingControl>
+        {handleable && (
+          <div className="mt-2 flex items-center gap-2">
+            {pending ? (
+              <PendingControl
+                reason={WRITES_PENDING_REASON}
+                label="Mark as Handled"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-2.5 py-1 text-[12px] font-medium text-white"
+              >
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                Mark as Handled
+              </PendingControl>
+            ) : (
+              <button
+                type="button"
+                onClick={onAskHandle}
+                disabled={busy !== null}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-2.5 py-1 text-[12px] font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
+              >
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                Mark as Handled
+              </button>
+            )}
+            {busy !== null && busy !== 'divert' && <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-400" />}
+          </div>
+        )}
+        {!handleable && busy !== null && busy !== 'divert' && (
+          <Loader2 className="mt-1.5 h-3.5 w-3.5 animate-spin text-slate-400" />
+        )}
+        {error && (
+          <div role="alert" className="mt-2 flex items-start gap-2 rounded-lg bg-rose-50 px-3 py-1.5 text-[12px] text-rose-700 ring-1 ring-rose-200">
+            <span className="min-w-0 flex-1 break-words">{error}</span>
+            <button type="button" onClick={() => setError(null)} aria-label="Dismiss" className="shrink-0 opacity-70 hover:opacity-100">
+              <X className="h-3.5 w-3.5" />
+            </button>
           </div>
         )}
         {pending && (
@@ -320,63 +571,77 @@ export function ChatPanel({
       </div>
 
       {/* Composer */}
-      {mode === 'disabled' && (
-        <div className="border-t border-slate-200 bg-white px-4 py-3">
-          {!conv.canReply ? (
-            <div className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-[12.5px] text-slate-500">
-              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-              Notices from the till — this thread cannot take a reply.
-            </div>
-          ) : conv.status === 'handled' ? (
-            <div className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2 text-[12.5px] text-slate-500">
-              <span className="flex items-center gap-2">
-                <AlertTriangle className="h-3.5 w-3.5 shrink-0" /> Handled — composer disabled
-              </span>
-              {me.capabilities.reopen && (
-                <PendingControl reason={WRITES_PENDING_REASON} label="Reopen" className="text-[12px] font-medium text-slate-700">
-                  Reopen
-                </PendingControl>
-              )}
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-              <ComposerIcon icon={Smile} label="Emoji" />
-              <ComposerIcon icon={Paperclip} label="Attach a file" />
-              <button
-                type="button"
-                onClick={onOpenTemplates}
-                aria-label="Templates"
-                title="Templates"
-                className="text-slate-400 hover:text-slate-600"
-              >
-                <FileText className="h-4 w-4" />
-              </button>
-              <input
-                disabled
-                aria-label="Reply"
-                placeholder={`Replying is ${WRITES_PENDING_REASON.toLowerCase()}`}
-                className="min-w-0 flex-1 cursor-not-allowed bg-transparent text-[13px] placeholder:text-slate-400 focus:outline-none"
-              />
-              <PendingControl
-                reason={WRITES_PENDING_REASON}
-                label="Send"
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-900 text-white"
-              >
-                <Send className="h-3.5 w-3.5" />
-              </PendingControl>
-            </div>
-          )}
-        </div>
+      {live ? (
+        <Composer
+          key={conv.id}
+          conv={conv}
+          me={me}
+          inserted={inserted}
+          onOpenTemplates={onOpenTemplates}
+          onSent={() => void onChanged()}
+          onReopen={() => void run('reopen', () => inboxApi.reopen(conv.id), 'The conversation could not be reopened.')}
+          reopening={busy === 'reopen'}
+        />
+      ) : (
+        <PendingComposer conv={conv} me={me} onOpenTemplates={onOpenTemplates} />
       )}
+
+      <PrimaryMoveConfirm
+        pending={pendingPrimary}
+        busy={busy === 'primary'}
+        error={confirmError}
+        onCancel={() => setPendingPrimary(null)}
+        onConfirm={() => void confirmPrimary()}
+      />
     </>
   );
 }
 
-function ComposerIcon({ icon: Icon, label }: { icon: LucideIcon; label: string }) {
+/** The composer while the write switch is off (Cut A): every control there, disabled, with its reason. */
+function PendingComposer({
+  conv,
+  me,
+  onOpenTemplates,
+}: {
+  conv: ConversationRow;
+  me: InboxMe;
+  onOpenTemplates: () => void;
+}) {
   return (
-    <PendingControl reason={WRITES_PENDING_REASON} label={label} className="text-slate-400">
-      <Icon className="h-4 w-4" />
-    </PendingControl>
+    <div className="border-t border-slate-200 bg-white px-4 py-3">
+      {!conv.canReply ? (
+        <div className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-[12.5px] text-slate-500">
+          Notices from the till — this thread cannot take a reply.
+        </div>
+      ) : conv.status === 'handled' ? (
+        <div className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2 text-[12.5px] text-slate-500">
+          <span>Handled — composer disabled</span>
+          {me.capabilities.reopen && (
+            <PendingControl reason={WRITES_PENDING_REASON} label="Reopen" className="text-[12px] font-medium text-slate-700">
+              Reopen
+            </PendingControl>
+          )}
+        </div>
+      ) : (
+        <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+          <button
+            type="button"
+            onClick={onOpenTemplates}
+            aria-label="Templates"
+            title="Templates"
+            className="text-slate-400 hover:text-slate-600"
+          >
+            <FileText className="h-4 w-4" />
+          </button>
+          <input
+            disabled
+            aria-label="Reply"
+            placeholder={`Replying is ${WRITES_PENDING_REASON.toLowerCase()}`}
+            className="min-w-0 flex-1 cursor-not-allowed bg-transparent text-[13px] placeholder:text-slate-400 focus:outline-none"
+          />
+        </div>
+      )}
+    </div>
   );
 }
 

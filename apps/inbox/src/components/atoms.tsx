@@ -33,7 +33,7 @@ export function Avatar({ initials, tint, size = 40 }: { initials: string; tint: 
 export function ChipView({ chip, withName = true }: { chip: Chip; withName?: boolean }) {
   return (
     <span
-      className={`inline-flex max-w-full items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium ${chip.tint}`}
+      className={`inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium ${chip.tint}`}
       title={withName ? undefined : chip.name}
     >
       <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-white/70 text-[9px] font-bold text-slate-700">
@@ -44,11 +44,26 @@ export function ChipView({ chip, withName = true }: { chip: Chip; withName?: boo
   );
 }
 
-export function StatusBadge({ status, picker }: { status: InboxStatusKey; picker?: ReactNode }) {
+/**
+ * `StatusBadge` (:931-962). With a live `picker` (the native select laid
+ * over it) the badge takes the prototype's pointer, hover ring and hint.
+ */
+export function StatusBadge({
+  status,
+  picker,
+  live = false,
+}: {
+  status: InboxStatusKey;
+  picker?: ReactNode;
+  live?: boolean;
+}) {
   return (
     <span className="relative inline-flex">
       <span
-        className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ${STATUS_TINT[status]}`}
+        className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ${STATUS_TINT[status]}${
+          live ? ' cursor-pointer hover:ring-slate-400' : ''
+        }`}
+        title={live ? (status === 'handled' ? 'Click to reopen this conversation' : 'Click to mark as handled') : undefined}
       >
         <span className={`h-1.5 w-1.5 rounded-full ${STATUS_DOT[status]}`} />
         {STATUS_LABEL[status]}
@@ -63,16 +78,22 @@ export function CategoryBadge({
   category,
   label,
   picker,
+  live = false,
 }: {
   category: InboxCategoryKey;
   /** The move picker shows the team ("Reception · Central"); the list shows the category. */
   label?: string;
   picker?: ReactNode;
+  /** The picker is live: the prototype's pointer, hover ring and hint (:995-998). */
+  live?: boolean;
 }) {
   return (
     <span className="relative inline-flex">
       <span
-        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ${CATEGORY_TINT[category]}`}
+        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ${CATEGORY_TINT[category]}${
+          live ? ' cursor-pointer hover:ring-slate-400' : ''
+        }`}
+        title={live ? 'Click to move this conversation to another team' : undefined}
       >
         {label ?? CATEGORY_LABEL[category]}
         {picker && <ChevronDown className="h-3 w-3 opacity-60" />}

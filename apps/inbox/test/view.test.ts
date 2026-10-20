@@ -19,6 +19,10 @@ import {
   timeline,
   tintFor,
   writeMode,
+  moveOptions,
+  moveValue,
+  slotOptions,
+  branchSelectOptions,
 } from '@/lib/view';
 
 const CENTRAL = '00000000-0000-7000-8000-00000000000c';
@@ -44,7 +48,8 @@ const me: InboxMe = {
     { accountId: GM, name: 'Hanna', teamIds: [], operatorWide: true },
   ],
   defaultReceptionBranchId: CENTRAL,
-  capabilities: { writes: false, dashboard: true, assign: false, move: false, reopen: false },
+  capabilities: { writes: false, dashboard: true, assign: false, move: false, reopen: false, templates: false },
+  simulator: null,
 };
 
 function assignee(over: Partial<Assignee>): Assignee {
@@ -105,8 +110,47 @@ describe('the write switch (plan §4.3)', () => {
   it('renders the controls disabled while the api says writes are off', () => {
     expect(writeMode(me)).toBe('disabled');
   });
-  it('hides them, never fakes them, if writes come on before this shell carries the wiring', () => {
-    expect(writeMode({ capabilities: { ...me.capabilities, writes: true } })).toBe('hidden');
+  it('makes the same controls live once the api says writes are on (I3b)', () => {
+    expect(writeMode({ capabilities: { ...me.capabilities, writes: true } })).toBe('live');
+  });
+});
+
+describe('the write controls’ choices (I3b)', () => {
+  it('the move badge offers the four destinations in the prototype’s order, and knows where the thread is', () => {
+    const withMarketing = {
+      teams: [...me.teams, { id: 'tm', kind: 'marketing' as const, name: 'Marketing', colour: 'pink', branchId: null, member: false }],
+    };
+    expect(moveOptions(withMarketing).map((o) => [o.value, o.label])).toEqual([
+      ['birthdays', 'Birthdays & Events'],
+      [`reception:${CENTRAL}`, 'Reception · Central'],
+      [`reception:${CHALONG}`, 'Reception · Chalong'],
+      ['marketing', 'Marketing'],
+    ]);
+    expect(moveOptions(withMarketing)[2]!.dest).toEqual({ kind: 'reception', branchId: CHALONG });
+    expect(moveValue({ category: 'general', branchId: CHALONG }, me)).toBe(`reception:${CHALONG}`);
+    // A general thread with no branch sits with the first park's desk (`teamDestOf`).
+    expect(moveValue({ category: 'general', branchId: null }, me)).toBe(`reception:${CENTRAL}`);
+    expect(moveValue({ category: 'birthdays', branchId: CHALONG }, me)).toBe('birthdays');
+  });
+
+  it('a slot picker never offers someone already on the thread; only the primary offers the desks', () => {
+    const row = { assignments: [assignee({ accountId: ALINA })] };
+    expect(slotOptions(row, me, 'support').map((o) => o.label)).toEqual(['Hanna']);
+    expect(slotOptions(row, me, 'primary').map((o) => [o.label, o.assignee.kind])).toEqual([
+      ['Hanna', 'account'],
+      ['Reception · Central', 'team'],
+      ['Reception · Chalong', 'team'],
+    ]);
+    const desk = { assignments: [assignee({ assigneeKind: 'team', accountId: null, teamId: T_CENTRAL })] };
+    expect(slotOptions(desk, me, 'primary').map((o) => o.label)).toEqual(['Alina', 'Hanna', 'Reception · Chalong']);
+  });
+
+  it('the branch select: each park, then all branches', () => {
+    expect(branchSelectOptions(me.teams)).toEqual([
+      { value: CENTRAL, label: 'Central' },
+      { value: CHALONG, label: 'Chalong' },
+      { value: '', label: 'All branches' },
+    ]);
   });
 });
 
@@ -230,6 +274,27 @@ describe('the timeline', () => {
     expect(eventText(event({ kind: 'handled', actorKind: 'account', actorName: 'Alina' }), ctx)).toBe('Marked as Handled by Alina');
     expect(eventText(event({ kind: 'reopened', actorKind: 'customer', payload: { automatic: true } }), ctx)).toBe(
       'Reopened · the customer wrote again',
+    );
+    // I3b: the cross-team primary's pill (:1158), and a reply the channel refused.
+    expect(
+      eventText(
+        event({
+          kind: 'moved_team',
+          actorKind: 'account',
+          actorName: 'Alina',
+          payload: { followsPrimary: true, fromTeamId: T_CENTRAL, toTeamId: T_BIRTHDAYS },
+        }),
+        ctx,
+      ),
+    ).toBe('Auto-moved from Reception · Central → Birthdays & Events (follows primary owner)');
+    expect(
+      eventText(event({ kind: 'diverted', actorKind: 'account', actorName: 'Alina', payload: { toAccountId: GM } }), ctx),
+    ).toBe('Diverted to Hanna by Alina');
+    // Its seat changes are not said twice.
+    expect(eventText(event({ kind: 'released', payload: { slot: 'primary', accountId: ALINA, reason: 'divert' } }), ctx)).toBeNull();
+    expect(eventText(event({ kind: 'assigned', payload: { slot: 'primary', accountId: GM, reason: 'divert' } }), ctx)).toBeNull();
+    expect(eventText(event({ kind: 'send_failed', payload: { refusal: 'INVALID_RECIPIENT' } }), ctx)).toBe(
+      'Reply not sent · INVALID_RECIPIENT',
     );
   });
   it('leaves out the events a bubble already shows', () => {
