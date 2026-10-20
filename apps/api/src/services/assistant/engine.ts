@@ -15,6 +15,7 @@ import { account, ask, branch, employee, toolCall, type AssistantStoredLink, typ
 import {
   ASSISTANT_ASK_RETENTION_DAYS,
   ASSISTANT_ERROR_CODE,
+  ASSISTANT_VERSION_WORD,
   SUITE_SCREENS,
   buildSuiteScreenPath,
   findSuiteScreen,
@@ -35,7 +36,7 @@ import { holdsAnywhere } from '../inbox/read-visibility';
 import { recordRun } from '../ops';
 import type { EffectivePermission } from '../permissions';
 import { withTx, type Exec, type OpContext } from '../tx';
-import { callPlatform, toolRequestId, type PlatformResponse } from './call-platform';
+import { PlatformCallTimeout, callPlatform, toolRequestId, type PlatformResponse } from './call-platform';
 import type { InternalAiRuntime } from './runtime';
 import { PLATFORM_TOOLS, fitSummary, platformToolDefinitions, summaryBytes } from './tools';
 import { loadAskView, type AskRow } from './views';
@@ -50,11 +51,12 @@ import { loadAskView, type AskRow } from './views';
  *      `replaysByOwnId`: no second copy of the answer sits in the replay
  *      store); an id naming anybody else's ask is 409 ID_IN_USE.
  *   2. THE OPENING TRANSACTION, under the operator's advisory lock: the kill
- *      switch, a client to ask, the circuit breaker, the person's and the
- *      operator's daily caps. Closed, the row is written in its final state
- *      (`off`, `capped`) with the server's fixed line, and NO model call is
- *      made. Open, the row is written in `asking` — before any model call, so
- *      a retry finds it — with `purge_after` set explicitly.
+ *      switch, a client to ask, the circuit breaker, the asks still in flight
+ *      (a person's and the operator's), the person's and the operator's daily
+ *      caps. Closed, the row is written in its final state (`off`, `capped`)
+ *      with the server's fixed line, and NO model call is made. Open, the row
+ *      is written in `asking` — before any model call, so a retry finds it —
+ *      with `purge_after` set explicitly.
  *   3. THE LOOP, WITH NO TRANSACTION OPEN (the customer engine's pattern).
  *      Every tool call is the screen's own GET route run as the asker
  *      (`call-platform.ts`), and its row and audit are written as it happens,
@@ -97,6 +99,12 @@ export const ASSISTANT_GATE_LINES = {
     th: 'ผู้ช่วยตอบครบจำนวนของวันนี้แล้ว ลองใหม่พรุ่งนี้',
     en: 'The assistant has reached today’s limit for the park. Try again tomorrow.',
     ru: 'Ассистент исчерпал сегодняшний лимит для парка. Попробуйте завтра.',
+  },
+  /** Too many asks still running — the asker's own or the park's (`INTERNAL_AI_CONCURRENT_*`). */
+  busy: {
+    th: 'ผู้ช่วยกำลังตอบคำถามอื่นอยู่ ลองใหม่อีกสักครู่',
+    en: 'The assistant is busy with other questions right now. Try again in a moment.',
+    ru: 'Ассистент сейчас занят другими вопросами. Попробуйте снова чуть позже.',
   },
 } as const;
 
@@ -152,15 +160,17 @@ function bangkokDayStart(now: Date): string {
 
 // --- The gate (§E.2) ----------------------------------------------------------------------
 
+type GateLine = 'off' | 'capPerson' | 'capOperator' | 'busy';
+
 type Gate =
   | { open: true }
-  | { open: false; state: 'off' | 'capped'; reason: string; line: 'off' | 'capPerson' | 'capOperator'; raise: boolean };
+  | { open: false; state: 'off' | 'capped'; reason: string; line: GateLine; raise: boolean };
 
 interface DayUsage {
   personAsks: number;
   operatorAsks: number;
   tokens: number;
-  raised: { person: boolean; asks: boolean; tokens: boolean };
+  raised: { person: boolean; asks: boolean; tokens: boolean; busy: boolean };
 }
 
 /** Today's (Bangkok) asks and tokens: asks that went to the model, not ones a gate closed. */
@@ -174,13 +184,15 @@ async function todaysUsage(db: Exec, auth: AuthContext, now: Date): Promise<DayU
       raised_person: boolean | null;
       raised_asks: boolean | null;
       raised_tokens: boolean | null;
+      raised_busy: boolean | null;
     }>(sql`
       select count(*) filter (where state not in ('off', 'capped') and account_id = ${auth.accountId})::int as person_asks,
              count(*) filter (where state not in ('off', 'capped'))::int as operator_asks,
              coalesce(sum(coalesce(input_tokens, 0) + coalesce(output_tokens, 0) + coalesce(cache_read_tokens, 0)), 0) as tokens,
              bool_or(reason = 'CAP_PERSON' and account_id = ${auth.accountId}) as raised_person,
              bool_or(reason = 'CAP_DAILY') as raised_asks,
-             bool_or(reason = 'CAP_TOKENS') as raised_tokens
+             bool_or(reason = 'CAP_TOKENS') as raised_tokens,
+             bool_or(reason = 'BUSY') as raised_busy
         from assistant.ask
        where operator_id = ${auth.operatorId} and created_at >= ${dayStart}::timestamptz`)
   ).rows;
@@ -192,14 +204,40 @@ async function todaysUsage(db: Exec, auth: AuthContext, now: Date): Promise<DayU
       person: Boolean(row?.raised_person),
       asks: Boolean(row?.raised_asks),
       tokens: Boolean(row?.raised_tokens),
+      busy: Boolean(row?.raised_busy),
     },
   };
 }
 
-/** The operator's latest asks that reached the model, newest first: the breaker's evidence. */
+/**
+ * The asks still running: `asking` rows young enough to be (an ask's loop
+ * ends within `created_at` + the wall time; past the abandon grace the row is
+ * a process that went away, closed by the purge or the next resend). Tokens
+ * are counted only when a row closes, so this is the one bound on what is
+ * open at once — per person and per operator.
+ */
+async function inFlight(db: Exec, auth: AuthContext, now: Date, windowMs: number): Promise<{ person: number; operator: number }> {
+  const since = new Date(now.getTime() - windowMs).toISOString();
+  const [row] = (
+    await db.execute<{ person: number; operator: number }>(sql`
+      select count(*) filter (where account_id = ${auth.accountId})::int as person,
+             count(*)::int as operator
+        from assistant.ask
+       where operator_id = ${auth.operatorId} and state = 'asking' and created_at >= ${since}::timestamptz`)
+  ).rows;
+  return { person: Number(row?.person ?? 0), operator: Number(row?.operator ?? 0) };
+}
+
+/**
+ * The operator's latest asks that reached the model, newest first by
+ * `created_at`: the breaker's evidence. Keyed on when the ask was made, never
+ * on `updated_at` — an ask's loop ends within `created_at` + the wall time,
+ * and a later edit of the row (the asker rating it, which bumps `updated_at`)
+ * must not move an old failure back into the window.
+ */
 async function recentModelAsks(db: Exec, operatorId: string, now: Date, n: number) {
   return db
-    .select({ reason: ask.reason, at: ask.updatedAt })
+    .select({ reason: ask.reason, at: ask.createdAt })
     .from(ask)
     .where(
       and(
@@ -208,11 +246,11 @@ async function recentModelAsks(db: Exec, operatorId: string, now: Date, n: numbe
         gte(ask.createdAt, new Date(now.getTime() - 86_400_000)),
       ),
     )
-    .orderBy(desc(ask.updatedAt), desc(ask.id))
+    .orderBy(desc(ask.createdAt), desc(ask.id))
     .limit(n);
 }
 
-/** Five consecutive provider failures pause the assistant for ten minutes (§E.2). */
+/** Five consecutive provider failures pause the assistant for ten minutes from the fifth's `created_at` (§E.2). */
 export async function circuitOpen(db: Exec, operatorId: string, now: Date): Promise<boolean> {
   const asks = await recentModelAsks(db, operatorId, now, ASSISTANT_CIRCUIT_FAILURES);
   return (
@@ -230,6 +268,10 @@ async function gateOf(tx: Exec, runtime: InternalAiRuntime, auth: AuthContext, n
     return { open: false, state: 'off', reason: 'CIRCUIT_OPEN', line: 'off', raise: false };
   }
   const usage = await todaysUsage(tx, auth, now);
+  const open = await inFlight(tx, auth, now, cfg.wallMs + ASSISTANT_ABANDON_GRACE_MS);
+  if (open.person >= cfg.concurrentPerPerson || open.operator >= cfg.concurrentPerOperator) {
+    return { open: false, state: 'capped', reason: 'BUSY', line: 'busy', raise: !usage.raised.busy };
+  }
   if (usage.personAsks >= cfg.personDailyCap) {
     return { open: false, state: 'capped', reason: 'CAP_PERSON', line: 'capPerson', raise: !usage.raised.person };
   }
@@ -242,7 +284,7 @@ async function gateOf(tx: Exec, runtime: InternalAiRuntime, auth: AuthContext, n
   return { open: true };
 }
 
-function gateLine(line: 'off' | 'capPerson' | 'capOperator', lang: InternalLanguage): string {
+function gateLine(line: GateLine, lang: InternalLanguage): string {
   return line === 'off' ? INTERNAL_LINES.off[lang] : ASSISTANT_GATE_LINES[line][lang];
 }
 
@@ -268,6 +310,32 @@ async function raiseGuard(db: Db, caller: AskCaller, askId: string, word: string
 /** The link map as the model reads it: every screen's key, what it shows, its parameters. */
 export function linkEntries(): InternalLinkEntry[] {
   return SUITE_SCREENS.map((s) => ({ key: s.key, shows: s.shows, params: s.params.map((p) => p.name) }));
+}
+
+/**
+ * The model's links whose parameter VALUES this ask's own summaries contain
+ * (§C, §E.4): an id no tool returned is dropped, as a figure no tool returned
+ * would be. A path shape check alone lets a number dressed as a uuid through.
+ * An enum value is the screen's fixed vocabulary (`tab=preview`), not data,
+ * and passes; an empty optional value is skipped by the path builder and
+ * passes too. Links the server gathered from the tools called are grounded
+ * by construction and are not filtered here.
+ */
+export function groundedLinks(
+  wanted: ReadonlyArray<{ key: string; params: Record<string, string> }>,
+  groundingTexts: readonly string[],
+): Array<{ key: string; params: Record<string, string> }> {
+  const ground = groundingTexts.join('\n').toLowerCase();
+  return wanted.filter((link) => {
+    const screen = findSuiteScreen(link.key);
+    if (!screen) return false;
+    return Object.entries(link.params).every(([name, value]) => {
+      const param = screen.params.find((p) => p.name === name);
+      if (!param) return false;
+      if (param.kind === 'enum' || value === '') return true;
+      return ground.includes(value.toLowerCase());
+    });
+  });
 }
 
 /**
@@ -426,18 +494,29 @@ function executorFor(deps: AskDeps, caller: AskCaller, askId: string, trace: Ask
     const input = parsed.data as never;
     const args = parsed.data as Record<string, unknown>;
     const started = Date.now();
+    // The ask's remaining wall time is this call's budget, shared by a tool's parts (§D.1 step 4).
+    const deadline = started + call.remainingMs;
     const urls = adapter.urls(input);
     const bodies: unknown[] = [];
     let failed: PlatformResponse | null = null;
+    let outOfTime = false;
     for (const [part, url] of urls.entries()) {
-      const res = await callPlatform(deps.app, {
-        token: caller.token,
-        requestId: caller.requestId,
-        seq: call.seq,
-        part,
-        url,
-        routes: adapter.routes,
-      });
+      let res: PlatformResponse;
+      try {
+        res = await callPlatform(deps.app, {
+          token: caller.token,
+          requestId: caller.requestId,
+          seq: call.seq,
+          part,
+          url,
+          routes: adapter.routes,
+          timeoutMs: deadline - Date.now(),
+        });
+      } catch (err) {
+        if (!(err instanceof PlatformCallTimeout)) throw err;
+        outOfTime = true;
+        break;
+      }
       if (res.status < 200 || res.status >= 300) {
         failed = res;
         break;
@@ -445,6 +524,27 @@ function executorFor(deps: AskDeps, caller: AskCaller, askId: string, trace: Ask
       bodies.push(res.body);
     }
     const latencyMs = Date.now() - started;
+
+    if (outOfTime) {
+      // The route outlasted the ask. Recorded as a call that got no answer; the loop, whose
+      // clock has now passed the wall time, closes the ask as WALL_TIME before any further turn.
+      await recordToolCall(deps, caller, {
+        askId,
+        seq: call.seq,
+        tool: adapter.name,
+        route,
+        args,
+        status: null,
+        code: 'WALL_TIME',
+        rows: null,
+        bytes: null,
+        truncated: false,
+        latencyMs,
+        requestId: toolReqId,
+      });
+      trace.recorded += 1;
+      return { ok: false, data: { error: { code: 'WALL_TIME', message: 'The question ran out of time before this answered.' } } };
+    }
 
     if (failed) {
       const { code, message } = envelopeOf(failed.body);
@@ -713,7 +813,11 @@ function finalOf(
   }
   const answer: InternalAnswer = outcome.answer;
   const lang = answer.language;
-  const wanted = answer.links.map((l) => ({ key: l.key, params: linkParams(l) }));
+  // A link's parameter is held to the same grounding as a figure: this ask's summaries.
+  const wanted = groundedLinks(
+    answer.links.map((l) => ({ key: l.key, params: linkParams(l) })),
+    outcome.groundingTexts,
+  );
   const modelLinks = resolveLinks(wanted, caller.effective, caller.auth.operatorId);
   // Grounding = the summaries THIS ask's tools returned. Never the question, never a refusal.
   const guard = internalAnswerGuard(answer, outcome.groundingTexts);
@@ -750,6 +854,12 @@ async function closeAsk(
 ): Promise<AskRow> {
   const f = finalOf(outcome, trace, caller, lang);
   const at = new Date();
+  // The row's CHECK (`ask_version_words_check`) takes one word. A provider's model id in any other
+  // shape must not fail the close and strand the ask: the id asked for stands in.
+  const model =
+    [outcome.model, deps.runtime.client?.model, deps.runtime.config.model].find(
+      (m): m is string => typeof m === 'string' && ASSISTANT_VERSION_WORD.test(m),
+    ) ?? null;
   return withTx(deps.db, txCtx(caller, deps.log), 'assistant.ask.close', async (tx) => {
     const [closed] = await tx
       .update(ask)
@@ -759,7 +869,7 @@ async function closeAsk(
         answer: f.answer,
         links: f.links,
         refusals: trace.refusals,
-        model: outcome.model ?? deps.runtime.client?.model ?? null,
+        model,
         personaVersion,
         inputTokens: outcome.usage?.inputTokens ?? null,
         outputTokens: outcome.usage?.outputTokens ?? null,
@@ -795,7 +905,7 @@ async function closeAsk(
         links: f.links.map((l) => l.key),
         urlsStripped: f.urlsStripped,
         turns: outcome.turns,
-        model: outcome.model,
+        model,
         personaVersion,
         inputTokens: outcome.usage?.inputTokens ?? null,
         outputTokens: outcome.usage?.outputTokens ?? null,

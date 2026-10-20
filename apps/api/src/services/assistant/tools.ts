@@ -305,8 +305,10 @@ export const PLATFORM_TOOL_ADAPTERS: readonly PlatformToolAdapter[] = [
       const exact = !b.nextCursor;
       const threads = rows.slice(0, 10).map((r) => {
         const contact = obj(r.contact);
-        // A title, never a message: who, which desk, what about, when.
+        // A title, never a message: who, which desk, what about, when. The id is what grounds
+        // an `inbox.thread` link (§C): a link to a conversation this summary never named is dropped.
         return {
+          id: str(r.id),
           customer: str(contact.displayName) ?? 'unnamed',
           channel: str(r.channel),
           category: str(r.category),

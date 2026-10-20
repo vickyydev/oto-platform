@@ -1,3 +1,4 @@
+import { ASSISTANT_TOOLS } from '@oto/shared';
 import type { FastifyInstance } from 'fastify';
 import { SESSION_COOKIE } from '../../plugins/session';
 
@@ -32,6 +33,10 @@ import { SESSION_COOKIE } from '../../plugins/session';
  *     audit row correlate with the ask) — no other header, no other cookie.
  *   - The token lives in the caller's local variable for one ask. It is never
  *     logged, stored or returned, and nothing here reads a response header.
+ *   - A call is held to the ask's remaining wall time (`timeoutMs`): a route
+ *     that stalls past it is a `PlatformCallTimeout`, which the engine records
+ *     and the loop closes as WALL_TIME. The in-process GET finishing later is
+ *     harmless: nothing reads its answer.
  */
 
 /** A route template as the registry names it: `GET /members/lookup`. */
@@ -57,6 +62,19 @@ export interface PlatformCall {
   url: string;
   /** The tool's declared route templates: the URL must be one of them. */
   routes: readonly GetRouteTemplate[];
+  /**
+   * The ask's remaining wall time: the route must answer within it or the
+   * call is a `PlatformCallTimeout`. Absent, the call waits for the route.
+   */
+  timeoutMs?: number;
+}
+
+/** The route did not answer within the ask's remaining wall time. Carries no body. */
+export class PlatformCallTimeout extends Error {
+  constructor() {
+    super('a tool route did not answer within the ask’s wall time');
+    this.name = 'PlatformCallTimeout';
+  }
 }
 
 /** Refuses, at registry build, a route that is not a GET. */
@@ -66,7 +84,33 @@ export function assertGetRoute(tool: string, route: string): asserts route is Ge
   }
 }
 
-/** Whether a URL's path is an instance of a route template (`:param` = one path segment). */
+/** Every registry route as path segments: the sibling rule in `matchesRoute` reads them. */
+const REGISTRY_PATHS: readonly (readonly string[])[] = ASSISTANT_TOOLS.flatMap((t) =>
+  t.routes.map((r) => r.slice('GET '.length).split('/')),
+);
+
+/**
+ * The literal segments any registry route has at position `i` under the same
+ * prefix as `parts`: what a `:param` there may not equal. `/members/lookup`
+ * is the register's own route, never "the member whose id is lookup".
+ */
+function literalSiblings(parts: readonly string[], i: number): Set<string> {
+  const out = new Set<string>();
+  for (const other of REGISTRY_PATHS) {
+    if (other.length <= i) continue;
+    if (!parts.slice(0, i).every((p, j) => p === other[j])) continue;
+    const seg = other[i]!;
+    if (!seg.startsWith(':')) out.add(seg);
+  }
+  return out;
+}
+
+/**
+ * Whether a URL's path is an instance of a route template: a `:param` is one
+ * plain path segment — no percent-encoding (an encoded slash is still a
+ * slash to a decoder downstream), no dot segments, and not a literal segment
+ * a sibling registry route has at that position.
+ */
 export function matchesRoute(url: string, route: GetRouteTemplate): boolean {
   const q = url.indexOf('?');
   const path = q === -1 ? url : url.slice(0, q);
@@ -76,7 +120,11 @@ export function matchesRoute(url: string, route: GetRouteTemplate): boolean {
   if (parts.length !== segments.length) return false;
   return parts.every((p, i) => {
     const seg = segments[i]!;
-    if (p.startsWith(':')) return /^[A-Za-z0-9._~%-]+$/.test(seg) && !seg.includes('..');
+    if (p.startsWith(':')) {
+      return (
+        /^[A-Za-z0-9._~-]+$/.test(seg) && seg !== '.' && !seg.includes('..') && !literalSiblings(parts, i).has(seg)
+      );
+    }
     return p === seg;
   });
 }
@@ -88,9 +136,23 @@ export function toolRequestId(requestId: string, seq: number, part = 0): string 
   return `${base}${suffix}`;
 }
 
+/** `promise`, or a `PlatformCallTimeout` after `ms`. The late settlement of `promise` is observed and dropped. */
+async function withinWallTime<T>(promise: Promise<T>, ms: number): Promise<T> {
+  let timer: NodeJS.Timeout | undefined;
+  const expiry = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new PlatformCallTimeout()), Math.max(0, ms));
+  });
+  try {
+    return await Promise.race([promise, expiry]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /**
  * One GET, in process, as the asker. Throws (a programming error, which the
- * loop closes as TOOL_ERROR) when the URL is not one of the tool's routes.
+ * loop closes as TOOL_ERROR) when the URL is not one of the tool's routes;
+ * throws `PlatformCallTimeout` when the route outlasts `timeoutMs`.
  */
 export async function callPlatform(app: FastifyInstance, call: PlatformCall): Promise<PlatformResponse> {
   if (!call.url.startsWith('/') || call.url.startsWith('//') || call.url.includes('://')) {
@@ -99,12 +161,15 @@ export async function callPlatform(app: FastifyInstance, call: PlatformCall): Pr
   if (!call.routes.some((r) => matchesRoute(call.url, r))) {
     throw new TypeError('assistant tool call: the URL is not one of the tool’s declared routes');
   }
-  const res = await app.inject({
-    method: 'GET',
-    url: call.url,
-    cookies: { [SESSION_COOKIE]: call.token },
-    headers: { 'x-request-id': toolRequestId(call.requestId, call.seq, call.part ?? 0) },
-  });
+  const injected = Promise.resolve(
+    app.inject({
+      method: 'GET',
+      url: call.url,
+      cookies: { [SESSION_COOKIE]: call.token },
+      headers: { 'x-request-id': toolRequestId(call.requestId, call.seq, call.part ?? 0) },
+    }),
+  );
+  const res = call.timeoutMs === undefined ? await injected : await withinWallTime(injected, call.timeoutMs);
   let body: unknown = null;
   try {
     body = res.body ? (JSON.parse(res.body) as unknown) : null;

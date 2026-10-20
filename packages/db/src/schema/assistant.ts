@@ -199,7 +199,12 @@ export const toolCall = assistant.table(
     system: text('system').$type<AssistantToolSystem>().notNull(),
     /** `GET /members/lookup`: the template, never the URL with its values. */
     route: text('route').notNull(),
-    /** The validated input (personal data, as the ask's text: purged with it). */
+    /**
+     * The validated input: personal data of the ask-log's tier, purged with
+     * the ask. It may carry up to 200 characters of the question itself
+     * (`members.search.q` is free text the model copies from the ask), so no
+     * view shows it and no audit row carries it (§E.1).
+     */
     args: jsonb('args').$type<Record<string, unknown>>().notNull().default(sql`'{}'::jsonb`),
     status: integer('status'),
     code: text('code'),

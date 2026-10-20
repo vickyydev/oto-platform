@@ -33,6 +33,9 @@ export interface InternalAiConfig {
   /** Per operator per Bangkok day. */
   dailyAskCap: number;
   dailyTokenCap: number;
+  /** Asks that may be running at once: per account, and per operator (BUSY past either). */
+  concurrentPerPerson: number;
+  concurrentPerOperator: number;
   /** Round I4's switch; no OTO App tool is registered in I2, so it changes nothing yet. */
   otoAppTools: boolean;
 }
@@ -54,6 +57,8 @@ export function internalAiConfigOf(env: Env): InternalAiConfig {
     personDailyCap: env.INTERNAL_AI_PERSON_DAILY_CAP,
     dailyAskCap: env.INTERNAL_AI_DAILY_ASK_CAP,
     dailyTokenCap: env.INTERNAL_AI_DAILY_TOKEN_CAP,
+    concurrentPerPerson: env.INTERNAL_AI_CONCURRENT_PER_PERSON,
+    concurrentPerOperator: env.INTERNAL_AI_CONCURRENT_PER_OPERATOR,
     otoAppTools: env.INTERNAL_AI_OTOAPP_TOOLS === 'true',
   };
 }

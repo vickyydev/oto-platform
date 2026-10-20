@@ -212,7 +212,8 @@ export const ASSISTANT_TOOLS = [
     name: 'members.get',
     system: 'platform',
     routes: ['GET /members/:id'],
-    description: 'One member by id: name, tier, children (name, age, medical alert yes or no) and last visit.',
+    description:
+      'One member by id: name, nickname, phone as the screen shows it, tier, the member’s notes, and children (name, age, medical alert yes or no; allergy text only with include).',
     input: z.object({ memberId: Uuid, include: MemberInclude }).strict(),
   }),
   spec({
@@ -220,7 +221,7 @@ export const ASSISTANT_TOOLS = [
     system: 'platform',
     routes: ['GET /members/lookup'],
     description:
-      'Find a member by phone number, in any format the asker typed: name, tier, children (name, age, medical alert yes or no) and last visit.',
+      'Find a member by phone number, in any format the asker typed: name, nickname, phone as the screen shows it, tier, the member’s notes, and children (name, age, medical alert yes or no; allergy text only with include).',
     input: z.object({ phone: z.string().min(3).max(32), include: MemberInclude }).strict(),
   }),
   spec({

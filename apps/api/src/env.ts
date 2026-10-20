@@ -761,6 +761,10 @@ const EnvSchema = z.object({
    *  - `INTERNAL_AI_PERSON_DAILY_CAP` — asks per account per Bangkok day.
    *  - `INTERNAL_AI_DAILY_ASK_CAP`, `INTERNAL_AI_DAILY_TOKEN_CAP` — per
    *    operator per Bangkok day.
+   *  - `INTERNAL_AI_CONCURRENT_PER_PERSON`, `INTERNAL_AI_CONCURRENT_PER_OPERATOR`
+   *    — asks that may be running at once; past either the ask is `capped`
+   *    (BUSY) before any model call. Tokens are counted as asks close, so
+   *    this is the bound on what is open at the same time.
    *  - `INTERNAL_AI_OTOAPP_TOOLS` — round I4's own switch: off, the OTO App
    *    tools are not offered at all.
    */
@@ -776,6 +780,8 @@ const EnvSchema = z.object({
   INTERNAL_AI_PERSON_DAILY_CAP: z.coerce.number().int().min(0).default(40),
   INTERNAL_AI_DAILY_ASK_CAP: z.coerce.number().int().min(0).default(600),
   INTERNAL_AI_DAILY_TOKEN_CAP: z.coerce.number().int().min(0).default(15_000_000),
+  INTERNAL_AI_CONCURRENT_PER_PERSON: z.coerce.number().int().min(1).max(100).default(2),
+  INTERNAL_AI_CONCURRENT_PER_OPERATOR: z.coerce.number().int().min(1).max(1000).default(20),
   INTERNAL_AI_OTOAPP_TOOLS: z.enum(['true', 'false']).default('false'),
 });
 

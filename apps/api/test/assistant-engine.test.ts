@@ -9,13 +9,14 @@ import { schema as s } from '@oto/db';
 import { ASSISTANT_SUMMARY_MAX_BYTES, ASSISTANT_TOOLS, newId } from '@oto/shared';
 import { hashToken } from '../src/plugins/session';
 import { assertGetRoute, matchesRoute } from '../src/services/assistant/call-platform';
-import { askAssistant, ASSISTANT_GATE_LINES } from '../src/services/assistant/engine';
+import { askAssistant, ASSISTANT_GATE_LINES, circuitOpen, groundedLinks, type AskCaller } from '../src/services/assistant/engine';
 import { toJsonSchema } from '../src/services/assistant/json-schema';
 import { PLATFORM_TOOLS, PLATFORM_TOOL_ADAPTERS, fitSummary, summaryBytes } from '../src/services/assistant/tools';
 import { resolveEffectivePermissions } from '../src/services/permissions';
 import {
   ASK_SENTINEL,
   NO_ASK_LEAKS,
+  asAiWorld,
   ask,
   askLeaks,
   askRow,
@@ -32,6 +33,7 @@ import {
   type AskWorld,
 } from './assistant-support';
 import { BRANCH_MANAGER, RECEPTION, signInAs, teardownAll } from './helpers';
+import { customer, nextPhone, simAccount, teamOf } from './inbox-ai-support';
 
 /**
  * SCRUM-591 — THE INTERNAL ASSISTANT'S ENGINE, round I2 (plan
@@ -79,12 +81,50 @@ function sourceFiles(dir: string): string[] {
   });
 }
 
+/** The engine called directly, as the route would call it for this session: for a test that swaps the app. */
+async function callerFor(cookie: string, phone: string): Promise<AskCaller> {
+  const [acc] = await w.ctx.db.select().from(s.account).where(eq(s.account.phone, phone)).limit(1);
+  const token = cookie.split('=')[1]!;
+  const [sess] = await w.ctx.db.select().from(s.session).where(eq(s.session.tokenHash, hashToken(token))).limit(1);
+  return {
+    auth: {
+      accountId: acc!.id,
+      operatorId: acc!.operatorId,
+      sessionId: sess!.id,
+      branchId: sess!.branchId,
+      stationId: null,
+      status: 'active',
+      mustChangePassword: false,
+      isPlatformAdmin: false,
+      lockedAt: null,
+    },
+    effective: await resolveEffectivePermissions(w.ctx.db, acc!.id),
+    requestId: `req-${newId()}`,
+    token,
+  };
+}
+
 describe('the census (§F.3, R4)', () => {
   it('no production file but call-platform.ts makes an in-process request', () => {
+    // A TEXT match: `app['inject'](` or an aliased method would pass it. The second line is the
+    // route census (`assistant-registry.test.ts`): every tool route is a registered, guarded GET,
+    // so whatever makes the request, only those routes answer it.
     const calling = sourceFiles(API_SRC)
       .filter((f) => /\.inject\s*\(/.test(readFileSync(f, 'utf8')))
       .map((f) => relative(API_SRC, f).replace(/\\/g, '/'));
     expect(calling).toEqual(['services/assistant/call-platform.ts']);
+  });
+
+  it('a :param is one plain segment: no encoding, no dot segment, never a sibling route’s literal', () => {
+    const uuid = newId();
+    expect(matchesRoute(`/members/${uuid}`, 'GET /members/:id')).toBe(true);
+    // `/members/lookup` is the register's own route, not the member whose id is "lookup".
+    expect(matchesRoute('/members/lookup', 'GET /members/:id')).toBe(false);
+    // An encoded slash is still a slash to the next decoder.
+    expect(matchesRoute('/members/a%2Fb', 'GET /members/:id')).toBe(false);
+    expect(matchesRoute('/members/.', 'GET /members/:id')).toBe(false);
+    expect(matchesRoute('/members/..', 'GET /members/:id')).toBe(false);
+    expect(matchesRoute(`/branches/${uuid}/occupancy`, 'GET /branches/:id/occupancy')).toBe(true);
   });
 
   it('call-platform.ts injects GET and nothing else', () => {
@@ -249,6 +289,12 @@ describe('as the person (§B.2, §F.3)', () => {
     expect(rows.map((r) => r.status)).toEqual([200, 401]);
     expect(res.body.refusals).toEqual([expect.objectContaining({ tool: 'me.whoami', status: 401, message: 'Not signed in' })]);
     expect(toolResultsSeen(fake)[1]!.isError).toBe(true);
+    // A DESIGN DECISION, pinned: the ask still closes `answered`, with prose the model wrote after
+    // the revocation, and the answer goes to the connection that authenticated at the start of the
+    // ask. Nothing read after the revocation is in it — the second call got 401 and no data — and
+    // the first call's summary was the person's to see when they asked.
+    expect(res.body.state).toBe('answered');
+    expect(res.body.answer).toBe('You were signed out.');
   });
 
   it('a locked session is refused at the ask route, before any model call', async () => {
@@ -288,9 +334,6 @@ describe('as the person (§B.2, §F.3)', () => {
   });
 
   it('a tool route answering 5xx closes the ask as TOOL_ERROR, recorded, with no guess', async () => {
-    const [acc] = await w.ctx.db.select().from(s.account).where(eq(s.account.phone, RECEPTION.phone)).limit(1);
-    const token = receptionCookie.split('=')[1]!;
-    const [sess] = await w.ctx.db.select().from(s.session).where(eq(s.session.tokenHash, hashToken(token))).limit(1);
     const failing = {
       inject: async () => ({ statusCode: 500, body: JSON.stringify({ error: { code: 'INTERNAL', message: 'boom' } }) }),
     } as unknown as FastifyInstance;
@@ -298,28 +341,36 @@ describe('as the person (§B.2, §F.3)', () => {
     const runtime = { config: { ...w.ctx.app.internalAi.config }, client: fake };
     const view = await askAssistant(
       { app: failing, db: w.ctx.db, runtime },
-      {
-        auth: {
-          accountId: acc!.id,
-          operatorId: acc!.operatorId,
-          sessionId: sess!.id,
-          branchId: sess!.branchId,
-          stationId: null,
-          status: 'active',
-          mustChangePassword: false,
-          isPlatformAdmin: false,
-          lockedAt: null,
-        },
-        effective: await resolveEffectivePermissions(w.ctx.db, acc!.id),
-        requestId: `req-${newId()}`,
-        token,
-      },
+      await callerFor(receptionCookie, RECEPTION.phone),
       { id: newId(), question: 'Who am I?' },
     );
     expect(view).toMatchObject({ state: 'failed', reason: 'TOOL_ERROR', answer: INTERNAL_LINES.failed.en });
     expect((await toolRows(w.ctx.db, view.id)).map((r) => [r.status, r.code])).toEqual([[500, 'INTERNAL']]);
     expect(fake.remaining).toBe(1);
   });
+
+  it('a tool route that stalls past the ask’s remaining wall time closes the ask as WALL_TIME without waiting for it', async () => {
+    const fake = new FakeToolLoopClient([tool('me.whoami', {}, { latencyMs: 0 }), final('never reached')]);
+    const stalling = {
+      inject: () => {
+        // The route takes the rest of the ask's wall time, in the fake's virtual clock, and never answers.
+        fake.advance(60_000);
+        return new Promise(() => {});
+      },
+    } as unknown as FastifyInstance;
+    const runtime = { config: { ...w.ctx.app.internalAi.config, wallMs: 1_000 }, client: fake };
+    const started = Date.now();
+    const view = await askAssistant(
+      { app: stalling, db: w.ctx.db, runtime },
+      await callerFor(receptionCookie, RECEPTION.phone),
+      { id: newId(), question: 'Who am I?' },
+    );
+    // Closed by the race on the remaining wall time (1 s here), not by the stall (never).
+    expect(Date.now() - started).toBeLessThan(10_000);
+    expect(view).toMatchObject({ state: 'failed', reason: 'WALL_TIME', answer: INTERNAL_LINES.tooMuchDigging.en });
+    expect((await toolRows(w.ctx.db, view.id)).map((r) => [r.status, r.code])).toEqual([[null, 'WALL_TIME']]);
+    expect(fake.remaining).toBe(1);
+  }, 30_000);
 });
 
 describe('a resend of the same id (§D.1)', () => {
@@ -348,6 +399,11 @@ describe('a resend of the same id (§D.1)', () => {
     const res = await ask(w, managerCookie, 'ZZ in flight', running);
     expect(res.status).toBe(409);
     expect(res.body.error!.code).toBe('ASK_IN_FLIGHT');
+    // Left `asking`, the row would count against the in-flight cap for the rest of the file.
+    await w.ctx.db
+      .update(s.ask)
+      .set({ state: 'failed', reason: 'ABANDONED', answer: 'ZZ closed by the test' })
+      .where(eq(s.ask.id, running));
 
     const gone = newId();
     const old = new Date(Date.now() - 3_600_000);
@@ -455,6 +511,72 @@ describe('switches, caps and the breaker (§E.2)', () => {
     }
   });
 
+  it('asks running at once: past the person’s cap the next ask is BUSY before any model call, raised once', async () => {
+    const me = await staff(w, 'ZZ Parallel', 'reception', { scopeType: 'branch', scopeId: w.central }, w.central);
+    const cfg = w.ctx.app.internalAi.config;
+    const before = cfg.concurrentPerPerson;
+    cfg.concurrentPerPerson = 1;
+    try {
+      let second: Awaited<ReturnType<typeof ask>> | undefined;
+      const fake = script(
+        w,
+        tool('me.whoami', {}, {
+          during: async () => {
+            // While the first ask's model is "thinking", the same person asks again.
+            second = await ask(w, me.cookie, 'Two');
+          },
+        }),
+        final('One.'),
+      );
+      const first = await ask(w, me.cookie, 'One');
+      expect(first.body.state).toBe('answered');
+      expect(second!.status).toBe(200);
+      expect(second!.body).toMatchObject({ state: 'capped', reason: 'BUSY', answer: ASSISTANT_GATE_LINES.busy.en, toolCalls: [] });
+      // The first ask's two model calls, and none for the second: it never reached the client.
+      expect(fake.calls).toHaveLength(2);
+      expect(fake.remaining).toBe(0);
+      expect((await askRow(w.ctx.db, second!.body.id))!.personaVersion).toBeNull();
+      const raised = await w.ctx.db
+        .select()
+        .from(s.opsRun)
+        .where(and(eq(s.opsRun.name, 'adapter:assistant.ai'), eq(s.opsRun.errorCode, 'BUSY')));
+      expect(raised).toHaveLength(1);
+    } finally {
+      cfg.concurrentPerPerson = before;
+    }
+  });
+
+  it('asks running at once: past the operator’s cap another person’s ask is BUSY too', async () => {
+    const one = await staff(w, 'ZZ Parallel One', 'reception', { scopeType: 'branch', scopeId: w.central }, w.central);
+    const two = await staff(w, 'ZZ Parallel Two', 'reception', { scopeType: 'branch', scopeId: w.central }, w.central);
+    const cfg = w.ctx.app.internalAi.config;
+    const before = cfg.concurrentPerOperator;
+    cfg.concurrentPerOperator = 1;
+    try {
+      let other: Awaited<ReturnType<typeof ask>> | undefined;
+      const fake = script(
+        w,
+        tool('me.whoami', {}, {
+          during: async () => {
+            other = await ask(w, two.cookie, 'Me too');
+          },
+        }),
+        final('One.'),
+      );
+      expect((await ask(w, one.cookie, 'One')).body.state).toBe('answered');
+      expect(other!.body).toMatchObject({ state: 'capped', reason: 'BUSY', answer: ASSISTANT_GATE_LINES.busy.en });
+      expect(fake.calls).toHaveLength(2);
+      // Raised once a day for the operator: the earlier BUSY already did.
+      const raised = await w.ctx.db
+        .select()
+        .from(s.opsRun)
+        .where(and(eq(s.opsRun.name, 'adapter:assistant.ai'), eq(s.opsRun.errorCode, 'BUSY')));
+      expect(raised).toHaveLength(1);
+    } finally {
+      cfg.concurrentPerOperator = before;
+    }
+  });
+
   it('the wall time ends the ask with the fixed line before the next tool runs', async () => {
     const fake = script(w, tool('me.whoami', {}, { latencyMs: 50_000 }), final('never'));
     const res = await ask(w, receptionCookie, 'Who am I?');
@@ -485,13 +607,87 @@ describe('switches, caps and the breaker (§E.2)', () => {
       .from(s.opsRun)
       .where(and(eq(s.opsRun.name, 'adapter:assistant.ai'), eq(s.opsRun.errorCode, 'PROVIDER_TIMEOUT')));
     expect(failedRuns).toHaveLength(5);
-    // Ten minutes later the breaker is closed again.
+    // Ten minutes later the breaker is closed again. The window is on `created_at`: an ask's loop
+    // ends within created_at + the wall time, so that is when the failure happened.
     await w.ctx.db
       .update(s.ask)
-      .set({ updatedAt: new Date(Date.now() - 11 * 60_000) })
+      .set({ createdAt: new Date(Date.now() - 11 * 60_000) })
       .where(inArray(s.ask.id, ids));
+    expect(await circuitOpen(w.ctx.db, w.oto, new Date())).toBe(false);
+    // Rating the five now bumps their `updated_at` to now. Feedback is the asker's verdict on an
+    // old answer, not a new failure: it must not reopen the breaker for the whole operator.
+    for (const id of ids) {
+      const fb = await call(w, receptionCookie, 'PATCH', `/assistant/asks/${id}/feedback`, {
+        feedback: 'wrong',
+        correction: 'ZZ it timed out',
+      });
+      expect(fb.status).toBe(200);
+    }
+    expect(await circuitOpen(w.ctx.db, w.oto, new Date())).toBe(false);
     script(w, final('Back.'));
     expect((await ask(w, receptionCookie, 'And now?')).body.state).toBe('answered');
+  });
+
+  it('a model id the ask row’s CHECK would refuse does not strand the ask', async () => {
+    // `ask_version_words_check` takes one word; a provider could serve under any id.
+    w.ctx.app.internalAi.client = new FakeToolLoopClient([final('Hi.')], 'x y');
+    const res = await ask(w, receptionCookie, 'Hello?');
+    expect(res.status).toBe(200);
+    expect(res.body.state).toBe('answered');
+    expect((await askRow(w.ctx.db, res.body.id))!.model).toBe(w.ctx.app.internalAi.config.model);
+  });
+});
+
+describe('links are grounded like figures (§C, §E.4)', () => {
+  it('a link whose parameter value no summary of this ask contains is dropped; enum values and empties pass', () => {
+    const seen = newId();
+    const ground = [JSON.stringify({ data: { threads: [{ id: seen }] } })];
+    expect(groundedLinks([{ key: 'inbox.thread', params: { c: seen } }], ground)).toHaveLength(1);
+    expect(groundedLinks([{ key: 'inbox.thread', params: { c: seen.toUpperCase() } }], ground)).toHaveLength(1);
+    expect(groundedLinks([{ key: 'inbox.thread', params: { c: newId() } }], ground)).toEqual([]);
+    expect(groundedLinks([{ key: 'inbox.thread', params: { c: seen } }], [])).toEqual([]);
+    expect(groundedLinks([{ key: 'inbox.thread', params: { nope: seen } }], ground)).toEqual([]);
+    expect(groundedLinks([{ key: 'no.such.screen', params: {} }], ground)).toEqual([]);
+    expect(groundedLinks([{ key: 'inbox.queue', params: {} }], [])).toHaveLength(1);
+    expect(groundedLinks([{ key: 'oto.payroll.month', params: { month: '2026-09', tab: 'preview' } }], ['"period":"2026-09-01"'])).toHaveLength(1);
+    expect(groundedLinks([{ key: 'oto.payroll.month', params: { month: '2026-08', tab: 'preview' } }], ['"period":"2026-09-01"'])).toEqual([]);
+    expect(groundedLinks([{ key: 'oto.timekeeping.employee', params: { employeeId: 'e1', date: '' } }], ['"id":"e1"'])).toHaveLength(1);
+  });
+
+  it('through an ask: an inbox.thread link to an id the queue summary named survives; one it never named is dropped', async () => {
+    const aw = asAiWorld(w);
+    const account = await simAccount(aw, { branchId: w.central, aiMode: 'off' });
+    await customer(aw, account, nextPhone(), 'ZZ hello, is the park open on Sunday?');
+    const receptionTeam = await teamOf(aw, 'reception', w.central);
+    const agent = await staff(w, 'ZZ Linking Agent', 'inbox_agent', {
+      scopeType: 'department',
+      scopeId: receptionTeam.departmentId!,
+    });
+    const direct = await call<{ conversations: Array<{ id: string }> }>(
+      w,
+      agent.cookie,
+      'GET',
+      '/inbox/conversations?tab=team&unanswered=true&limit=100',
+    );
+    const named = direct.body.conversations[0]!.id;
+    const invented = newId();
+    const fake = script(
+      w,
+      tool('inbox.queue', { tab: 'team' }),
+      final('One thread is waiting.', [
+        { key: 'inbox.thread', params: [{ name: 'c', value: invented }] },
+        { key: 'inbox.thread', params: [{ name: 'c', value: named }] },
+      ]),
+    );
+    const res = await ask(w, agent.cookie, 'Which thread is waiting?');
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    expect(res.body.state).toBe('answered');
+    // The queue summary now names ids, alongside the titles, so a thread link CAN be grounded.
+    const summary = toolResultsSeen(fake)[0]!.data as { data: { threads: Array<{ id: string }> } };
+    expect(summary.data.threads.map((t) => t.id)).toContain(named);
+    expect(res.body.links).toEqual([
+      { key: 'inbox.thread', app: 'inbox', path: `/?c=${named}`, shows: 'One conversation in the Inbox' },
+    ]);
   });
 });
 
@@ -553,6 +749,31 @@ describe('the record: audit and ops carry ids and words, never text (§E.1)', ()
     expect(row!.answer).toContain(ASK_SENTINEL);
     expect(row!.correction).toContain(ASK_SENTINEL);
     expect(await askLeaks(w.ctx.db, ASK_SENTINEL, w.logLines)).toEqual(NO_ASK_LEAKS);
+  });
+
+  it('THE SENTINEL through a tool ARGUMENT on a denied call: the denial’s audit row carries the route, not the query', async () => {
+    // A word no record holds, no digit: it travels only as `members.search.q`, which reception may not call.
+    const DENIED_SENTINEL = 'ZQXDENIEDARGSENTINELQZX';
+    script(w, tool('members.search', { q: DENIED_SENTINEL }), final('I can’t search the register from your role.'));
+    const res = await ask(w, receptionCookie, 'Who is that?');
+    expect(res.body.state).toBe('refused');
+    expect(res.body.refusals.map((r) => r.line)).toEqual(['Platform: Missing permission pos:member:list']);
+    const rows = await toolRows(w.ctx.db, res.body.id);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ tool: 'members.search', status: 403, code: 'FORBIDDEN' });
+    // The route's own denial row, correlated by the tool call's request id: the URL is scrubbed to the path.
+    const [toolAudit] = await w.ctx.db
+      .select()
+      .from(s.auditLog)
+      .where(and(eq(s.auditLog.action, 'assistant.tool.call'), sql`${s.auditLog.after}->>'askId' = ${res.body.id}`));
+    const denied = await w.ctx.db
+      .select()
+      .from(s.auditLog)
+      .where(and(eq(s.auditLog.action, 'auth.permission_denied'), eq(s.auditLog.requestId, toolAudit!.requestId!)));
+    expect(denied).toHaveLength(1);
+    expect(denied[0]!.after).toMatchObject({ method: 'GET', url: '/members?[redacted]' });
+    // The one place the argument lives: the tool-call row (ask-log tier, purged with the ask).
+    expect(await askLeaks(w.ctx.db, DENIED_SENTINEL, w.logLines)).toEqual({ ...NO_ASK_LEAKS, toolCalls: 1 });
   });
 
   it('the tool call’s own request line names the route and carries no query string', async () => {
