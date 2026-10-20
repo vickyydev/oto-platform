@@ -439,7 +439,18 @@ describe('the test night’s rules (SCRUM-591, 2026-10-21; plan "Test night 2026
     expect(parseTrailingAnswer('Thanks.\n{"links":[],"language":"en","smallTalk":"yes"}')).toBeNull();
   });
 
-  it('bumped the persona version for the night’s words', () => {
-    expect(INTERNAL_PERSONA_VERSION).toBe('internal-persona-2026-10-21.1');
+  it('the re-check’s polish: a question back is marked like small talk, people are named and never ids, a page’s count says so', () => {
+    const smallTalk = INTERNAL_RULES.find((r) => r.id === 'small_talk')!;
+    expect(smallTalk.text).toContain('So does a question back');
+    expect(smallTalk.text).toContain('with no figure and no link in it');
+    expect(smallTalk.text).toContain('Every other answer has smallTalk false');
+    const people = INTERNAL_RULES.find((r) => r.id === 'people_not_ids')!;
+    expect(people.text).toContain('never by an account, employee or member id');
+    expect(people.text).toContain('("the latest 20 of 38")');
+    for (const rule of [smallTalk, people]) expect(text).toContain(rule.text);
+  });
+
+  it('bumped the persona version for the night’s words, and again for the re-check’s polish', () => {
+    expect(INTERNAL_PERSONA_VERSION).toBe('internal-persona-2026-10-21.2');
   });
 });

@@ -18352,6 +18352,7 @@ export interface paths {
                     to?: string;
                     cursor?: string;
                     limit?: number;
+                    count?: "true";
                 };
                 header?: never;
                 path?: never;

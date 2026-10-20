@@ -93,6 +93,15 @@ function numbersIn(text: string): string[] {
   return asciiDigits(text).match(NUMBER_TOKEN) ?? [];
 }
 
+/**
+ * Whether a text states any number at all, by the traceability guard's own
+ * tokeniser (Thai digits included): what the internal engine asks of a
+ * question back before marking it as small talk.
+ */
+export function statesNumber(text: string): boolean {
+  return numbersIn(text).length > 0;
+}
+
 function groundedNumbers(grounding: string): Set<string> {
   const out = new Set<string>();
   for (const token of numbersIn(grounding)) {

@@ -16,7 +16,7 @@ import {
 } from '@oto/shared';
 import { hashToken } from '../src/plugins/session';
 import { assertGetRoute, matchesRoute } from '../src/services/assistant/call-platform';
-import { askAssistant, ASSISTANT_GATE_LINES, circuitOpen, groundedLinks, isBareFollowUp, type AskCaller } from '../src/services/assistant/engine';
+import { askAssistant, ASSISTANT_GATE_LINES, circuitOpen, groundedLinks, isBareFollowUp, memberLinkGate, type AskCaller } from '../src/services/assistant/engine';
 import { toJsonSchema } from '../src/services/assistant/json-schema';
 import {
   PLATFORM_TOOLS,
@@ -928,7 +928,7 @@ describe('the test night (SCRUM-591, 2026-10-21; plan "Test night 2026-10-21")',
     expect(auditInstant('2026-10-21T03:32:00Z', 'from')).toBe('2026-10-21T03:32:00.000Z');
     expect(auditInstant(undefined, 'from')).toBeUndefined();
     expect(PLATFORM_TOOLS.get('audit.search')!.urls({ q: 'auth.login', from: '2026-10-21' } as never)).toEqual([
-      '/audit?action=auth.login&from=2026-10-20T17%3A00%3A00.000Z&limit=20',
+      '/audit?action=auth.login&from=2026-10-20T17%3A00%3A00.000Z&limit=20&count=true',
     ]);
     expect(auditNothingMatched('auth.login', '2026-10-21 00:00', null, true)).toContain('auth.login is not a name the audit writes, so that action was a guess');
     expect(auditNothingMatched('auth.sign_in', null, null, false)).toContain('nothing of that kind matched, which is not the same as nothing happening');
@@ -1203,5 +1203,136 @@ describe('the test night (SCRUM-591, 2026-10-21; plan "Test night 2026-10-21")',
     expect((await ask(w, receptionCookie, 'Anything?')).body.smallTalk).toBe(false);
     script(w, final('There are 31 children inside.', [], 'en', { smallTalk: true }));
     expect((await ask(w, receptionCookie, 'How many children are inside?')).body).toMatchObject({ state: 'failed', reason: 'GUARD_NUMBER', smallTalk: false });
+  });
+});
+
+describe('the re-check’s polish (SCRUM-591, the night of 2026-10-21; docs/qa/test-night-2026-10-21/assistant-recheck/results.jsonl)', () => {
+  it('D2: a question back with nothing in it is marked like small talk whether the model said so or not; a real answer ending in an offer after a tool keeps its row', async () => {
+    // Som, with no ask of hers to resolve "and yesterday?": the model's own clarification, left unmarked —
+    // on staging it was recorded as an ordinary answer and the screen showed Good/Wrong under it.
+    const som = await staff(w, 'ZZ Som Recheck', 'reception', { scopeType: 'branch', scopeId: w.central }, w.central);
+    script(w, final("Which figure do you mean for yesterday? There's no earlier question in this conversation to go on."));
+    const back = await ask(w, som.cookie, 'and yesterday?');
+    expect(back.body, JSON.stringify(back.body)).toMatchObject({ state: 'answered', reason: null, smallTalk: true, links: [] });
+    expect((await askRow(w.ctx.db, back.body.id))!.smallTalk).toBe(true);
+    // The persona's own mark is kept as it was.
+    script(w, final('Which Anan do you mean?', [], 'en', { smallTalk: true }));
+    expect((await ask(w, som.cookie, 'what are Anan’s hours?')).body.smallTalk).toBe(true);
+    // A real answer that ends in an offer after a tool call: a figure stands in it, and the row stays.
+    script(w, tool('members.lookup', { phone: '081 234 0001' }), final('ZZ Somchai Family, 2 children on file. Want the breakdown?'));
+    const real = await ask(w, som.cookie, 'find 081 234 0001');
+    expect(real.body, JSON.stringify(real.body)).toMatchObject({ state: 'answered', smallTalk: false });
+    // A question with no tool behind it but a link the asker may open points somewhere: it is rateable.
+    script(w, final('Do you mean your own account?', [{ key: 'launcher.account', params: [] }]));
+    const pointed = await ask(w, som.cookie, 'show me the account');
+    expect(pointed.body.links.map((l) => l.key)).toEqual(['launcher.account']);
+    expect(pointed.body.smallTalk).toBe(false);
+    // A question that states a figure (grounded by the asker's own words) is not nothing: rateable.
+    script(w, final('Do you mean the 2026 figure?'));
+    expect((await ask(w, som.cookie, 'and 2026?')).body.smallTalk).toBe(false);
+    // Not a question: a plain line with nothing in it is the model's answer, and stays rateable.
+    script(w, final('Noted.'));
+    expect((await ask(w, som.cookie, 'ok')).body.smallTalk).toBe(false);
+  });
+
+  it('D1: the trail names its actors and says what page a count is from — "the latest 20 of 38"; the route answers names on every page and the total on count=true', async () => {
+    const reader = await staff(w, 'ZZ Trail Reader', 'operator_admin', { scopeType: 'operator', scopeId: w.oto }, w.central);
+    const anan = await staff(w, 'ZZ Trail Anan', 'reception', { scopeType: 'branch', scopeId: w.central }, w.central);
+    const som = await staff(w, 'ZZ Trail Som', 'reception', { scopeType: 'branch', scopeId: w.central }, w.central);
+    // 38 sign-ins from this instant, as the api writes them (`signIn`: a session, no branch — an operator-level
+    // event): 30 of Anan's, then 8 of Som's (the newest ids), so the latest 20 hold both.
+    const from = new Date(Date.now() - 1_000).toISOString();
+    await w.ctx.db.insert(s.auditLog).values(
+      Array.from({ length: 38 }, (_, i) => ({
+        id: newId(),
+        operatorId: w.oto,
+        branchId: null,
+        actorAccountId: i < 30 ? anan.accountId : som.accountId,
+        action: 'auth.sign_in',
+        entityType: 'session',
+        entityId: newId(),
+      })),
+    );
+    const fake = script(
+      w,
+      tool('audit.search', { action: 'auth.sign_in', from }),
+      final('38 sign-ins since then; the latest 20 are ZZ Trail Anan’s and ZZ Trail Som’s.'),
+    );
+    const res = await ask(w, reader.cookie, 'who logged in today');
+    expect(res.body, JSON.stringify(res.body)).toMatchObject({ state: 'answered', reason: null });
+    const seen = (toolResultsSeen(fake)[0]!.data as { data: Record<string, unknown> }).data;
+    expect(seen).toMatchObject({ action: 'auth.sign_in', total: 38, shown: 20, moreOnTheScreen: true });
+    expect(seen.page).toBe("Showing the latest 20 of 38: a count made from these rows is a page's count, not the total.");
+    const entries = seen.entries as Array<Record<string, unknown>>;
+    expect(entries).toHaveLength(20);
+    expect(new Set(entries.map((e) => e.actor))).toEqual(new Set(['ZZ Trail Anan', 'ZZ Trail Som']));
+    // Names, never ids: no account id reaches the model.
+    expect(JSON.stringify(seen)).not.toContain('actorAccountId');
+    expect(JSON.stringify(seen)).not.toContain(anan.accountId);
+    expect((await toolRows(w.ctx.db, res.body.id)).map((r) => [r.status, r.rows])).toEqual([[200, 20]]);
+    // A page that is the whole result says nothing about a page.
+    const whole = script(w, tool('audit.search', { action: 'auth.sign_in', from: new Date(Date.now() + 60_000).toISOString() }), final('None since then.'));
+    await ask(w, reader.cookie, 'who logged in in the last minute');
+    const none = (toolResultsSeen(whole)[0]!.data as { data: Record<string, unknown> }).data;
+    expect(none).toMatchObject({ total: 0, shown: 0 });
+    expect(none).not.toHaveProperty('page');
+    // The route itself, as the reader: the actor's name on every entry; the total only when asked for.
+    type Page = { entries: Array<{ actorAccountId: string | null; actorName: string | null }>; total?: number };
+    const q = `action=auth.sign_in&from=${encodeURIComponent(from)}&limit=20`;
+    const counted = await call<Page>(w, reader.cookie, 'GET', `/audit?${q}&count=true`);
+    expect(counted.status).toBe(200);
+    expect(counted.body.total).toBe(38);
+    expect(counted.body.entries.find((e) => e.actorAccountId === som.accountId)?.actorName).toBe('ZZ Trail Som');
+    expect(counted.body.entries.find((e) => e.actorAccountId === anan.accountId)?.actorName).toBe('ZZ Trail Anan');
+    const plain = await call<Page>(w, reader.cookie, 'GET', `/audit?${q}`);
+    expect(plain.status).toBe(200);
+    expect(plain.body).not.toHaveProperty('total');
+    expect(plain.body.entries[0]?.actorName).toMatch(/^ZZ Trail /);
+    expect((await call<Page>(w, reader.cookie, 'GET', '/audit?count=false')).status).toBe(400);
+  });
+
+  it('W5: no History button for a phone no member was found on — a lookup that found nobody, or no lookup at all; a member found keeps it, by the phone as typed or as shown', async () => {
+    // The staging run: "find the member +66810000999" found nobody, and the till's History on that phone was still offered.
+    const fake = script(
+      w,
+      tool('members.lookup', { phone: '+66810000999' }),
+      final("I couldn't find a member with the phone number +66810000999.", [
+        { key: 'pos.member', params: [{ name: 'phone', value: '+66810000999' }] },
+      ]),
+    );
+    const none = await ask(w, receptionCookie, 'find the member +66810000999 and their kids');
+    expect(none.body, JSON.stringify(none.body)).toMatchObject({ state: 'answered', reason: null, links: [] });
+    expect((toolResultsSeen(fake)[0]!.data as { data: Record<string, unknown> }).data).toEqual({ found: false, member: null });
+    // No lookup at all: the phone the asker typed grounds the parameter, and still earns no button.
+    script(w, final('The till’s History shows the member on 081 234 0001.', [{ key: 'pos.member', params: [{ name: 'phone', value: '081 234 0001' }] }]));
+    expect((await ask(w, receptionCookie, 'where are the sales for 081 234 0001?')).body.links).toEqual([]);
+    // An ask that ends short after a lookup that found nobody: the screen the tool reached is not offered either.
+    script(w, tool('members.lookup', { phone: '+66810000999' }), final('They spent 4242 baht.'));
+    expect((await ask(w, receptionCookie, 'what did +66810000999 spend?')).body).toMatchObject({
+      state: 'failed',
+      reason: 'GUARD_NUMBER',
+      answer: INTERNAL_LINES.guardFallbackNoLink.en,
+      links: [],
+    });
+    // A member found keeps the button: here by the phone as the summary shows it ("+66 81 234 0001"), the lookup typed bare.
+    script(w, tool('members.lookup', { phone: '0812340001' }), final('ZZ Somchai Family.', [{ key: 'pos.member', params: [{ name: 'phone', value: '+66 81 234 0001' }] }]));
+    const shown = await ask(w, receptionCookie, 'find 0812340001');
+    expect(shown.body.links).toEqual([
+      { key: 'pos.member', app: 'pos', path: '/history?phone=%2B66+81+234+0001', shows: "The member's sales on the till (History)" },
+    ]);
+    // The gate itself: one key, by the phone's E.164 key; every other key passes untouched.
+    const have = new Set(['+66812340001']);
+    expect(memberLinkGate([{ key: 'pos.member', params: { phone: '081 234 0001' } }], have)).toHaveLength(1);
+    expect(memberLinkGate([{ key: 'pos.member', params: { phone: '+66 81 234 0001' } }], have)).toHaveLength(1);
+    expect(memberLinkGate([{ key: 'pos.member', params: { phone: '+66810000999' } }], have)).toEqual([]);
+    expect(memberLinkGate([{ key: 'pos.member', params: { phone: '' } }], have)).toEqual([]);
+    expect(memberLinkGate([{ key: 'pos.member', params: { phone: '081 234 0001' } }], new Set())).toEqual([]);
+    expect(memberLinkGate([{ key: 'console.activity', params: {} }], new Set())).toHaveLength(1);
+    // What each member tool warrants: a lookup that found one, by the phone as typed and the member's own; nothing for a miss.
+    const lookup = PLATFORM_TOOLS.get('members.lookup')!;
+    expect(lookup.memberPhones([{ member: { phone: '+66812340001' } }], { phone: '081 234 0001' } as never)).toEqual(['081 234 0001', '+66812340001']);
+    expect(lookup.memberPhones([{ member: null }], { phone: '+66810000999' } as never)).toEqual([]);
+    expect(PLATFORM_TOOLS.get('members.search')!.memberPhones([{ members: [{ phone: '+66812340001' }, { phone: '+66812340002' }] }], {} as never)).toEqual(['+66812340001', '+66812340002']);
+    expect(PLATFORM_TOOLS.get('audit.search')!.memberPhones([{}], {} as never)).toEqual([]);
   });
 });

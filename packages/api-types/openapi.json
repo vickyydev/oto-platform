@@ -41677,6 +41677,17 @@
             "in": "query",
             "name": "limit",
             "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true"
+              ]
+            },
+            "in": "query",
+            "name": "count",
+            "required": false
           }
         ],
         "responses": {

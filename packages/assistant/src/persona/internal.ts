@@ -16,9 +16,14 @@
  * words and never as a permission string, a named screen carries its link
  * key, one park's count is one park's, an empty period is one sentence, and
  * small talk is marked as such.
+ *
+ * 2026-10-21.2 — the re-check's polish (the same plan, the night's staging
+ * run): a question back with nothing in it is marked like small talk, so the
+ * screen shows no feedback row under it; people are named by the name a tool
+ * gives, never by an id; a count made from one page of rows says so.
  */
 
-export const INTERNAL_PERSONA_VERSION = 'internal-persona-2026-10-21.1';
+export const INTERNAL_PERSONA_VERSION = 'internal-persona-2026-10-21.2';
 
 /** The label the launcher panel shows, per language. */
 export const INTERNAL_ASSISTANT_LABEL = {
@@ -99,8 +104,12 @@ export const INTERNAL_RULES: ReadonlyArray<{ id: string; text: string }> = [
     text: 'An empty period (0 days worked, no records, no rows) is one plain sentence — "No clock-ins this month" — never a list of zeros.',
   },
   {
+    id: 'people_not_ids',
+    text: 'Name people by the name the tool gives (an actor, a member, an employee), never by an account, employee or member id. When a summary says it shows the latest 20 of a larger total, a count you make from those rows is a page\'s count, not the period\'s: say so in the summary\'s own words ("the latest 20 of 38").',
+  },
+  {
     id: 'small_talk',
-    text: 'A social message with nothing to look up (thanks, hello, goodbye) gets one short line and smallTalk true. Every other answer has smallTalk false.',
+    text: 'A social message with nothing to look up (thanks, hello, goodbye) gets one short line and smallTalk true. So does a question back: one line asking which figure, person or park is meant, with no figure and no link in it. Every other answer has smallTalk false.',
   },
   {
     id: 'no_internals',

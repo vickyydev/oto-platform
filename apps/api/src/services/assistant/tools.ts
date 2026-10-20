@@ -84,6 +84,14 @@ export interface PlatformToolAdapter {
   urls(input: never): string[];
   summarise(bodies: unknown[], input: never, now: Date, who: PlatformAsker): SummaryDraft;
   deepLink(input: never): { key: string; params: Record<string, string> } | null;
+  /**
+   * The phones of the members this call FOUND (the re-check of the test night
+   * 2026-10-21, W5): for a lookup that found one, the phone as typed and the
+   * member's own; for a get or a search, the members' own. The engine's link
+   * gate keeps a `pos.member` link only on one of these — a lookup that found
+   * nobody earns no History button for the phone the asker typed.
+   */
+  memberPhones(bodies: unknown[], input: never): string[];
 }
 
 // --- Helpers -----------------------------------------------------------------------------
@@ -398,6 +406,7 @@ interface AdapterBody<N extends Spec['name']> {
   urls(input: In<N>): string[];
   summarise(bodies: unknown[], input: In<N>, now: Date, who: PlatformAsker): SummaryDraft;
   deepLink?(input: In<N>): { key: string; params: Record<string, string> } | null;
+  memberPhones?(bodies: unknown[], input: In<N>): string[];
 }
 
 function adapter<N extends Spec['name']>(name: N, body: AdapterBody<N>): PlatformToolAdapter {
@@ -413,7 +422,15 @@ function adapter<N extends Spec['name']>(name: N, body: AdapterBody<N>): Platfor
     urls: body.urls as PlatformToolAdapter['urls'],
     summarise: body.summarise as PlatformToolAdapter['summarise'],
     deepLink: (body.deepLink ?? (() => null)) as PlatformToolAdapter['deepLink'],
+    memberPhones: (body.memberPhones ?? (() => [])) as PlatformToolAdapter['memberPhones'],
   };
+}
+
+/** The phones of the members a route body holds: one under `member`, or each under `members`. */
+function phonesOf(body: unknown): string[] {
+  const b = obj(body);
+  const members = b.member ? [b.member] : arr(b.members);
+  return members.map((m) => str(obj(m).phone)).filter((p): p is string => p !== null);
 }
 
 const enc = encodeURIComponent;
@@ -427,18 +444,21 @@ export const PLATFORM_TOOL_ADAPTERS: readonly PlatformToolAdapter[] = [
         from: auditInstant(i.from, 'from'),
         to: auditInstant(i.to, 'to'),
         limit: ASSISTANT_SUMMARY_ROWS,
+        // The total under the filter, so a page of 20 can say how many it is a page of.
+        count: 'true',
       })}`,
     ],
     summarise: ([body], i) => {
       const b = obj(body);
       const entries = arr(b.entries).map((e) => {
         const r = obj(e);
-        // Who, what, to what, when — never the before/after payloads.
+        // Who (by name: the route resolves the employee behind the account; never an id, which the
+        // model would echo), what, to what, when — never the before/after payloads.
         return {
           action: str(r.action),
           entityType: str(r.entityType),
           entityId: str(r.entityId),
-          actorAccountId: str(r.actorAccountId),
+          actor: str(r.actorName),
           branchId: str(r.branchId),
           at: bangkokTime(r.createdAt),
         };
@@ -449,13 +469,19 @@ export const PLATFORM_TOOL_ADAPTERS: readonly PlatformToolAdapter[] = [
       const filtered = action !== undefined || i.entityType !== undefined || from !== null || to !== null;
       // D1: a zero after a filter says so, and names the actions the audit writes when the name was a guess.
       const guessed = action !== undefined && !(ASSISTANT_AUDIT_ACTION_NAMES as readonly string[]).includes(action);
+      // The rows the filter matches in all (the route's `total`); the page is the latest of them.
+      const total = num(b.total) ?? entries.length;
       return {
         data: {
           action: action ?? null,
           period: { from, to },
           masked: b.masked === true,
+          total,
           shown: entries.length,
           moreOnTheScreen: b.nextCursor ? true : false,
+          ...(total > entries.length
+            ? { page: `Showing the latest ${entries.length} of ${total}: a count made from these rows is a page's count, not the total.` }
+            : {}),
           ...(entries.length === 0 && filtered ? { nothingMatched: auditNothingMatched(action, from, to, guessed) } : {}),
           entries,
         },
@@ -636,6 +662,7 @@ export const PLATFORM_TOOL_ADAPTERS: readonly PlatformToolAdapter[] = [
       data: { found: true, member: memberSummary(obj(obj(body).member), MemberInclude(i), now) },
       rows: 1,
     }),
+    memberPhones: ([body]) => phonesOf(body),
   }),
   adapter('members.lookup', {
     urls: (i) => [`/members/lookup${query({ phone: i.phone })}`],
@@ -646,10 +673,13 @@ export const PLATFORM_TOOL_ADAPTERS: readonly PlatformToolAdapter[] = [
         : { data: { found: false, member: null }, rows: 0 };
     },
     // W5: the till's History on the phone the asker typed — grounded by construction (it is their input).
+    // The engine's link gate offers it only when this lookup found a member (`memberPhones`).
     deepLink: (i) => ({ key: 'pos.member', params: { phone: i.phone.trim() } }),
+    memberPhones: ([body], i) => (obj(body).member ? [i.phone, ...phonesOf(body)] : []),
   }),
   adapter('members.search', {
     urls: (i) => [`/members${query({ q: i.q, limit: ASSISTANT_SUMMARY_ROWS })}`],
+    memberPhones: ([body]) => phonesOf(body),
     summarise: ([body]) => {
       const b = obj(body);
       const matches = arr(b.members).map((x) => {

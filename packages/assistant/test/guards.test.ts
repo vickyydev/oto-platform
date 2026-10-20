@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bubbleGuard, PERSONA_GUARD_RULES, personaGuard, traceabilityGuard } from '../src/guards';
+import { bubbleGuard, PERSONA_GUARD_RULES, personaGuard, statesNumber, traceabilityGuard } from '../src/guards';
 import { EN_PERSONA, RU_PERSONA, TH_PERSONA } from '../src/persona';
 
 describe('the traceability guard (PLAN §B.3 gate 5)', () => {
@@ -22,6 +22,13 @@ describe('the traceability guard (PLAN §B.3 gate 5)', () => {
         ok: false,
         reason: 'GUARD_NUMBER',
       });
+    });
+    it('statesNumber: whether a text states any number, by the same tokeniser (Thai digits included)', () => {
+      expect(statesNumber('Which figure do you mean for yesterday?')).toBe(false);
+      expect(statesNumber('หมายถึงตัวเลขไหนคะ')).toBe(false);
+      expect(statesNumber('Do you mean the 2026 figure?')).toBe(true);
+      expect(statesNumber('เปิด ๙ โมง')).toBe(true);
+      expect(statesNumber('')).toBe(false);
     });
     it('reads Thai digits, a 10.00 time and part of a compound grounding token', () => {
       expect(trace('เปิด ๑๐:๐๐ น.', ['10:00–20:00'])).toEqual({ ok: true });

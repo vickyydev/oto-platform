@@ -6,6 +6,7 @@ import {
   linkParams,
   plainRefusal,
   softenRefusalProse,
+  statesNumber,
   type InternalAnswer,
   type InternalLanguage,
   type InternalLinkEntry,
@@ -24,6 +25,7 @@ import {
   findSuiteScreen,
   isoDateInTz,
   newId,
+  normalizePhone,
   suiteScreenOffered,
   type AssistantAskCreate,
   type AssistantAskState,
@@ -394,6 +396,31 @@ export function groundedLinks(
   });
 }
 
+/** A phone as a key: E.164 when it parses (TH default), else its digits. */
+function phoneKey(raw: string): string {
+  return normalizePhone(raw) ?? raw.replace(/\D/g, '');
+}
+
+/**
+ * The member link gate (the re-check of the test night 2026-10-21, W5): a
+ * `pos.member` link — the till's History on a phone — is kept only when a
+ * tool of THIS ask found a member on that phone (`PlatformToolAdapter.
+ * memberPhones`: a lookup that found one, by the phone as typed and the
+ * member's own; a get or a search, by the members' own). A lookup that found
+ * nobody, or no lookup at all, earns no button for the phone the asker
+ * typed, grounded though it is by their own words. Every other key passes.
+ */
+export function memberLinkGate<L extends { key: string; params: Record<string, string> }>(
+  links: readonly L[],
+  found: ReadonlySet<string>,
+): L[] {
+  return links.filter((l) => {
+    if (l.key !== 'pos.member') return true;
+    const phone = l.params.phone;
+    return typeof phone === 'string' && phone.trim() !== '' && found.has(phoneKey(phone));
+  });
+}
+
 /** What the link gate knows of the asker's OTO App side: their role and permission keys, once an ask opened a session. */
 export type OtoAppViewer = Pick<OtoAppIdentity, 'role' | 'permissions'> | null;
 
@@ -438,6 +465,8 @@ interface AskTrace {
   recorded: number;
   /** The asker's OTO App role and permission keys, once this ask opened their session (the link gate). */
   otoApp: OtoAppViewer;
+  /** The phones (as keys) of the members this ask's tools found: what a `pos.member` link may point at. */
+  memberPhones: Set<string>;
 }
 
 /**
@@ -819,6 +848,8 @@ function executorFor(
     trace.okCalls += 1;
     const link = adapter.deepLink(input);
     if (link) trace.gathered.push(link);
+    // The members a platform tool found, by phone: the link gate's warrant for a pos.member button.
+    if (platform) for (const p of platform.memberPhones(run.bodies, input)) trace.memberPhones.add(phoneKey(p));
     return { ok: true, data: summary };
   };
 }
@@ -994,7 +1025,7 @@ export async function askAssistant(deps: AskDeps, caller: AskCaller, input: Assi
 
   // 3. The loop, with no transaction open.
   const client = deps.runtime.client!;
-  const trace: AskTrace = { refusals: [], gathered: [], okCalls: 0, recorded: 0, otoApp: null };
+  const trace: AskTrace = { refusals: [], gathered: [], okCalls: 0, recorded: 0, otoApp: null, memberPhones: new Set() };
   const asker = await askerOf(deps.db, caller);
   const platformAsker = await platformAskerOf(deps.db, caller);
   // D2: the asker's own recent asks, as the conversation's earlier turns.
@@ -1129,7 +1160,11 @@ interface Final {
   links: AssistantStoredLink[];
   guardRule: string | null;
   urlsStripped: number;
-  /** The model's word that the message was social (S10); false on every server-written line. */
+  /**
+   * The model's word that the message was social (S10), or the engine's that
+   * the answer was a question back with nothing in it (the re-check, D2);
+   * false on every server-written line.
+   */
   smallTalk: boolean;
   /** Permission strings the server rewrote out of the prose (W3). */
   refusalWordsRewritten: number;
@@ -1144,7 +1179,9 @@ function finalOf(
   askedAt: Date,
   priorTurns: readonly PriorTurn[] = [],
 ): Final {
-  const gathered = resolveLinks(trace.gathered, caller.effective, caller.auth.operatorId, trace.otoApp);
+  // The screens the tools reached, less a History button for a phone no member was found on (W5, the re-check).
+  const gatheredLinks = memberLinkGate(trace.gathered, trace.memberPhones);
+  const gathered = resolveLinks(gatheredLinks, caller.effective, caller.auth.operatorId, trace.otoApp);
   if (!outcome.ok) {
     const digging = outcome.reason === 'TOOL_CAP' || outcome.reason === 'WALL_TIME';
     const linked = gathered.length > 0;
@@ -1171,9 +1208,14 @@ function finalOf(
   // A link's parameter is held to the same grounding as a figure: this ask's summaries, the earlier
   // turns, the asker's own words (a phone they typed opens the till's History on it), and (W4) the
   // ask's own calendar — the clock, and the month or day the asker named.
-  const wanted = groundedLinks(
-    answer.links.map((l) => ({ key: l.key, params: linkParams(l) })),
-    [...outcome.groundingTexts, ...priorTexts, question, clockGrounding(askedAt), questionCalendar(question, askedAt)],
+  // A pos.member link is further held to a member found: the phone the asker typed grounds the parameter,
+  // but a lookup that found nobody on it earns no History button (W5, the re-check).
+  const wanted = memberLinkGate(
+    groundedLinks(
+      answer.links.map((l) => ({ key: l.key, params: linkParams(l) })),
+      [...outcome.groundingTexts, ...priorTexts, question, clockGrounding(askedAt), questionCalendar(question, askedAt)],
+    ),
+    trace.memberPhones,
   );
   const modelLinks = resolveLinks(wanted, caller.effective, caller.auth.operatorId, trace.otoApp);
   // Grounding = the summaries THIS ask's tools returned, the earlier turns, the ask's own calendar
@@ -1183,7 +1225,7 @@ function finalOf(
   const guard = internalAnswerGuard(answer, [...outcome.groundingTexts, ...priorTexts, clockGrounding(askedAt)], question);
   if (!guard.ok) {
     // The links survive the guard (§C): the model's, grounded, and the screens the tools called show.
-    const links = resolveLinks([...wanted, ...trace.gathered], caller.effective, caller.auth.operatorId, trace.otoApp);
+    const links = resolveLinks([...wanted, ...gatheredLinks], caller.effective, caller.auth.operatorId, trace.otoApp);
     const linked = links.length > 0;
     // D2: a bare follow-up with no earlier ask of the asker's to resolve it — the figure the model
     // reached for had no subject. The honest line, in the asker's own script, in place of the guard's.
@@ -1215,6 +1257,14 @@ function finalOf(
   const allRefused = trace.refusals.length > 0 && trace.okCalls === 0;
   // W3: the refusal line under the answer keeps the route's words; the prose never repeats a permission string.
   const prose = softenRefusalProse(guard.answer.answer, trace.refusals);
+  // D2, the re-check: a question back — no tool called, no link the asker may open, no figure (the guard's
+  // own tokeniser), and a sentence of it ending in a question mark — is marked like small talk whatever
+  // the model said, so the screen shows no feedback row under it: there is nothing in it to mark good or
+  // wrong. A sentence, not the last character: the night's own answer was "Which figure do you mean for
+  // yesterday? There's no earlier question in this conversation to go on." A real answer that ends in an
+  // offer ("…want the breakdown?") after a tool call keeps its row.
+  const questionBack =
+    outcome.calls.length === 0 && modelLinks.length === 0 && !statesNumber(prose.text) && /[?？](?:\s|$)/u.test(prose.text);
   return {
     state: allRefused ? 'refused' : 'answered',
     reason: allRefused ? 'TOOL_REFUSED' : null,
@@ -1222,7 +1272,7 @@ function finalOf(
     links: modelLinks,
     guardRule: null,
     urlsStripped: guard.urlsStripped,
-    smallTalk: answer.smallTalk === true,
+    smallTalk: answer.smallTalk === true || questionBack,
     refusalWordsRewritten: prose.rewrites,
   };
 }

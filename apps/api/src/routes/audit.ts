@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { and, desc, eq, gte, inArray, lte, not, sql, type SQL } from 'drizzle-orm';
-import { auditLog } from '@oto/db';
+import { account, auditLog, employee } from '@oto/db';
 import type { App } from '../app';
 import { errors } from '../lib/errors';
 import { audit } from '../services/audit';
@@ -24,6 +24,18 @@ import { opCtx, withTx, type Exec } from '../services/tx';
  *    A caller without `admin:audit:read_sensitive` sees the shape of the
  *    change and not its contents — and a caller WITH it leaves a row of their
  *    own, because reading a child's medical note is itself an event.
+ *
+ * Since the internal assistant's re-check (SCRUM-591, test night 2026-10-21):
+ *
+ *  - **The actor's name.** Each entry carries `actorName`, the employee's
+ *    name behind the actor account (null for an account with no employee, and
+ *    for the system). The Activity screen already shows this name, resolved
+ *    from the accounts list; the assistant reads the trail as the asker and
+ *    names people, never ids.
+ *  - **A total, on request.** `count=true` answers `total`, the rows matching
+ *    the filters with the cursor ignored, so a reader of one page can say
+ *    "the latest 20 of 38". Opt-in: a count over an unfiltered trail is a
+ *    walk of the operator's whole log, which no page of the console needs.
  */
 
 /**
@@ -101,6 +113,8 @@ export async function auditRoutes(app: App): Promise<void> {
           /** From a previous page's `nextCursor`; supersedes `to`. */
           cursor: z.string().max(200).optional(),
           limit: z.coerce.number().int().min(1).max(200).default(50),
+          /** `true` also answers `total`: the rows matching the filters, the cursor ignored. */
+          count: z.literal('true').optional(),
         }),
       },
     },
@@ -130,10 +144,11 @@ export async function auditRoutes(app: App): Promise<void> {
       const reach = branchReach(effective, 'admin:audit:read', auth.operatorId);
       if (q.branchId) await req.requirePermission('admin:audit:read', { branchId: q.branchId });
 
+      const counting = q.count === 'true';
       const clauses: SQL[] = [eq(auditLog.operatorId, auth.operatorId)];
       if (!q.branchId && reach.kind === 'branches') {
         if (reach.branchIds.length === 0) {
-          return { entries: [], masked: true, nextCursor: null };
+          return { entries: [], masked: true, nextCursor: null, ...(counting ? { total: 0 } : {}) };
         }
         clauses.push(inArray(auditLog.branchId, reach.branchIds));
       }
@@ -146,11 +161,13 @@ export async function auditRoutes(app: App): Promise<void> {
       if (q.outcome === 'success') clauses.push(not(FAILURE));
       if (q.from) clauses.push(gte(auditLog.createdAt, new Date(q.from)));
       if (q.to) clauses.push(lte(auditLog.createdAt, new Date(q.to)));
+      // The page's own clauses: the filters, then the cursor. The total counts the filters alone.
+      const pageClauses: SQL[] = [...clauses];
       if (q.cursor) {
         const c = decodeCursor(q.cursor);
         // Row-wise comparison, which is what makes the tie-break free: rows
         // sharing a timestamp to the microsecond still have a total order.
-        clauses.push(
+        pageClauses.push(
           sql`(${auditLog.createdAt}, ${auditLog.id}) < (${c.createdAt}::timestamptz, ${c.id}::uuid)`,
         );
       }
@@ -159,9 +176,33 @@ export async function auditRoutes(app: App): Promise<void> {
         exec
           .select()
           .from(auditLog)
-          .where(and(...clauses))
+          .where(and(...pageClauses))
           .orderBy(desc(auditLog.createdAt), desc(auditLog.id))
           .limit(q.limit);
+
+      /** The rows matching the filters, the cursor ignored: only when asked for (`count=true`). */
+      const total = async (exec: Exec): Promise<number | null> => {
+        if (!counting) return null;
+        const [row] = await exec
+          .select({ n: sql<number>`count(*)::int` })
+          .from(auditLog)
+          .where(and(...clauses));
+        return Number(row?.n ?? 0);
+      };
+
+      /** The employee's name behind each actor account on the page: what the Activity screen shows for the actor. */
+      const actorNames = async (exec: Exec, actorIds: Array<string | null>): Promise<Map<string, string | null>> => {
+        const ids = [...new Set(actorIds.filter((id): id is string => id !== null))];
+        const names = new Map<string, string | null>();
+        if (ids.length === 0) return names;
+        const rows = await exec
+          .select({ id: account.id, name: employee.name })
+          .from(account)
+          .leftJoin(employee, eq(employee.id, account.employeeId))
+          .where(and(eq(account.operatorId, auth.operatorId), inArray(account.id, ids)));
+        for (const r of rows) names.set(r.id, r.name ?? null);
+        return names;
+      };
 
       /**
        * Unmasking is judged against the rows actually being read, not against
@@ -182,13 +223,14 @@ export async function auditRoutes(app: App): Promise<void> {
         (reading !== 'all' && reading.every((b) => sensitive.branchIds.includes(b)));
 
       type Row = Awaited<ReturnType<typeof read>>[number];
-      const shape = (rows: Row[]) => ({
+      const shape = (rows: Row[], names: Map<string, string | null>, count: number | null) => ({
         entries: rows.map((r) => ({
           id: r.id,
           action: r.action,
           entityType: r.entityType,
           entityId: r.entityId,
           actorAccountId: r.actorAccountId,
+          actorName: r.actorAccountId === null ? null : (names.get(r.actorAccountId) ?? null),
           branchId: r.branchId,
           requestId: r.requestId,
           before: unmasked ? r.before : mask(r.before),
@@ -204,9 +246,16 @@ export async function auditRoutes(app: App): Promise<void> {
                 id: rows[rows.length - 1]!.id,
               })
             : null,
+        ...(count === null ? {} : { total: count }),
       });
 
-      if (!unmasked) return shape(await read(app.db));
+      /** The page, the names behind its actors, and the total when asked: one reader, either path. */
+      const page = async (exec: Exec) => {
+        const rows = await read(exec);
+        return { rows, shaped: shape(rows, await actorNames(exec, rows.map((r) => r.actorAccountId)), await total(exec)) };
+      };
+
+      if (!unmasked) return (await page(app.db)).shaped;
 
       /**
        * The read and the record of it commit together. If we cannot write
@@ -215,7 +264,7 @@ export async function auditRoutes(app: App): Promise<void> {
        * whole surface exists to prevent.
        */
       return withTx(app.db, opCtx(req), 'audit.read_sensitive', async (tx) => {
-        const rows = await read(tx);
+        const { rows, shaped } = await page(tx);
         if (rows.length > 0) {
           await audit.record(tx, {
             actorAccountId: auth.accountId,
@@ -241,7 +290,7 @@ export async function auditRoutes(app: App): Promise<void> {
             requestId: req.id,
           });
         }
-        return shape(rows);
+        return shaped;
       });
     },
   );
