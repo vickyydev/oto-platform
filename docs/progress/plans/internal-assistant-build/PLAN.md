@@ -24,6 +24,7 @@ this file.
 - G. Open decisions for the owner
 - What Phase 3 changes in Phase 2 and in the rails
 - Risks
+- Test night 2026-10-21 — design changes from the human-style test
 
 ## The owner's requirement, restated
 
@@ -917,3 +918,156 @@ the owner are independent of this plan.
   refused (G6).
 - **Prompt injection through stored text.** It can at most misword an answer
   to someone already entitled to the data (§E.3, Q9).
+
+## Test night 2026-10-21 — design changes from the human-style test
+
+The owner's test night (`docs/qa/test-night-2026-10-21/assistant/`: four
+people, twenty asks on staging) found two defects and seven wording or
+shape findings. Each is recorded here with the design change it brought,
+the file that carries it and the test that pins it. The persona is
+`internal-persona-2026-10-21.1`; every recording in
+`apps/api/test/fixtures/assistant/` is to be re-recorded (the persona and
+the tool definitions moved; the goldens carry `rerecord` until then).
+
+### D1 — a guessed audit filter read as "nobody signed in"
+
+"Who logged in today" was answered "no login entries" while the trail held
+38 `auth.sign_in` rows: the model guessed an action name, got 0 rows, and
+stated the zero as a fact. The first audit call of the night was also
+`INVALID_ARGUMENTS` on a date.
+
+- `audit.search` takes `action` as an ENUM of names the api writes, each
+  with its meaning ("auth.sign_in = a person signed in"), from
+  `packages/shared/src/assistant-audit-actions.ts`; `q` carries an exact name
+  outside the list; `from`/`to` take a day (`2026-10-21`, the park's day) or
+  a loose instant, which the adapter turns into the UTC instant the route
+  takes (`auditInstant`, `apps/api/src/services/assistant/tools.ts`). Nothing
+  is required. The schema converter now carries a property's `.describe()`
+  text to the model.
+- A filtered search with 0 rows says so in the summary (`nothingMatched`):
+  "0 rows for action=auth.login between … — auth.login is not a name the
+  audit writes, so that action was a guess; the known actions are: …" (the
+  first twenty). The persona rule `zero_is_filter`: a zero after a filter is
+  "nothing matched that filter", never "nothing happened".
+- Pinned: the engine census checks every enum name is a literal in
+  `apps/api/src`; `assistant-engine.test.ts` "D1" replays the ask with a
+  guessed name corrected by the summary and ends answered with the sign-in
+  count.
+
+### D2 — "and yesterday?" answered alone (the conversation)
+
+"And yesterday?" after "who is on shift tomorrow" ended `failed /
+GUARD_NUMBER` because each ask was answered alone. The owner's test demands
+a conversation.
+
+**Design change.** The engine passes the asker's own recent asks as prior
+turns: the last three of THEIR asks within the last two hours — same
+account, same operator, ended `answered`, `refused` or `link_only` — as
+user/assistant pairs BELOW the cache breakpoint, oldest first, the answer
+rendered as the model itself writes a final turn (`PriorTurn`,
+`packages/assistant/src/tool-loop.ts`; `priorTurnsOf`,
+`apps/api/src/services/assistant/engine.ts`). Their words join the
+grounding: those figures were checked when they were given, and the person
+has seen them. The persona rule `follow_ups` says the earlier questions and
+answers of this conversation may resolve a follow-up, and that with none the
+model asks which figure is meant. The static block and the tools are the
+same bytes as before, so the cache prefix is untouched; the closing audit
+row carries `priorTurns` as a count, never the words.
+
+A bare follow-up ("and yesterday?", "แล้วเมื่อวานล่ะ", "а вчера?":
+`isBareFollowUp`) with no prior turn whose answer fails the guard gets the
+honest line `INTERNAL_LINES.noContext` — "I answer each question on its own
+— which figure do you mean?" (th/en/ru) — in the asker's script, state
+`failed / NO_CONTEXT`, in place of a guard line.
+
+**PDPA.** Only the asker's own log is read, and only the window above: no
+other person's asks ever ride along, and the reviewers' log is unchanged.
+Pinned in `assistant-engine.test.ts` "D2" (the prior turn present in the
+request, the follow-up answered with no tool, another person's asks absent,
+the window of three within two hours, the honest line with none).
+
+### W3 — permission strings in prose
+
+"Missing permission inbox:conversation:read. That's the same answer the
+screen gives." The refusal LINE under the answer stays verbatim (§D.4). The
+PROSE explains it: the error envelope the model gets for a refusal carries
+`plain` — "You don't have access to the team inbox", "Salary details need
+the payroll role", "That branch (…) is not on your access"
+(`plainRefusal`, `packages/assistant/src/refusal-words.ts`) — and the
+persona rule `refusal_plain` says never to repeat a permission string, a
+role name from a fence or a code. Belt and braces: the server rewrites any
+permission string left in the final prose (`softenRefusalProse`; the count
+is `refusalWordsRewritten` on the audit row). Pinned in the persona-block
+test and `assistant-engine.test.ts` "W3".
+
+### W4 — screens named without buttons
+
+"Why does September's payroll look wrong?" named the month-end screen with
+no button under it. Two changes: the link gate grounds a parameter from the
+ask's own calendar too — the clock, and the month or day the asker named
+("September" is 2026-09: `questionCalendar`), no data risk — and, when an
+answer that called no `oto.*` tool names an OTO App screen gated on the
+asker's role there, the engine opens the asker's own OTO App session for the
+gate alone (the same hand-off a tool call makes, logged out in the same
+`finally`; a refusal at the opening is no line). The persona rule
+`name_screen_link`: a named screen carries its key in `links`; the prose
+never promises a button (the existing `no_link_prose`). Pinned in
+`assistant-otoapp.test.ts` "W4": an admin gets the month-end link with no
+tool call; a manager without `hr.view_salary` gets no payroll link and prose
+that names no button; with the OTO App tools off no session is opened.
+
+### W5 — allergy detail for reception, and a till link
+
+A member summary carries each child's allergy text as written (the point of
+the lookup at the desk; the asker can open the member anyway); the medical
+notes stay behind `include: ['medical_notes']`. The link map gains the POS
+(`pos.member`: the till's History opened on a phone, `/history?phone=…`,
+gated on the POS tile and `pos:member:read`); the POS honours the hand-off
+target as the Console and the Inbox do (`apps/pos/src/auth/OperatorContext.tsx`)
+and History reads `?phone=` into its search box. The phone the asker typed
+grounds the parameter (their own words now ground links as they ground
+figures). Pinned in `assistant-engine.test.ts` "W5" and golden Q5.
+
+### W6 — "which team has the most open conversations"
+
+A new platform tool, `inbox.dashboard`, over `GET /inbox/dashboard`
+(`inbox:dashboard:read`; a plain read the registry census allows): the
+metric cards within what the asker can see, and every conversation by
+category, each category named for its team (birthdays, reception for
+general, marketing — `TEAM_OF_CATEGORY`), with the leader stated in words.
+Pinned in `assistant-engine.test.ts` "W6".
+
+### W7 — "children in the park" for one of three parks
+
+The occupancy summary now says which park the count is for, how many parks
+the asker's counter access reaches (`platformAskerOf`: the branches they
+hold `pos:checkin:read` at) and names the others: "This count is for Central
+only, 1 of 3 parks you can see; the others are …". The persona rule `parks`:
+read each park and add them up, or say which park. Pinned in
+`assistant-engine.test.ts` "W7".
+
+### S10 — Good/Wrong on chit-chat
+
+The answer schema gains `smallTalk` (optional on the wire, false when
+absent): the model's word that the message was social and needed no tool.
+The ask row keeps it (`small_talk`, migration `0082_assistant_small_talk`,
+expand-only), the view exposes it, the launcher hides feedback on it (the
+launcher lane). Every server-written line is false.
+
+### S11, S12 — wording
+
+The occupancy summary says a stale count in one plain line (`staleWords`:
+"This count is stale: no headcount has been taken yet today (no gate has
+reported)", or the gate's last contact). The attendance summary says an
+empty period in one sentence (`words`: "No clock-ins on record for … between
+…") and a worked one as one sentence of figures; the persona rule
+`empty_period` forbids a list of zeros.
+
+### What moved for the goldens
+
+The persona version and the tool definitions changed, so every recording's
+world word moved: the eleven recordings (Q1–Q10, Q9R) are skipped by name
+until re-recorded (`pnpm --filter @oto/api assistant:eval --record`), and
+the goldens' expectations follow the new rules (Q5 states the allergy text
+and carries the till link; Q6 may carry the month-end link grounded by the
+calendar; Q9R's prose names no permission string).
