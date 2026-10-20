@@ -123,7 +123,7 @@ export interface InternalSystemInput {
   links: readonly InternalLinkEntry[];
   asker: InternalAsker;
   now: Date;
-  /** Must be the client's `answerMode`; pass `client.answerMode`. Default: `trailing_json`. */
+  /** Must be the client's `answerMode`; pass `client.answerMode`. Default: `combined`. */
   answerMode?: InternalAnswerMode;
 }
 

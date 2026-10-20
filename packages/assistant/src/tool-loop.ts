@@ -222,7 +222,7 @@ export type ToolLoopStep =
  * are offered) and any other stop are MALFORMED.
  *
  * The final turn is read per answer mode (§D.1): `combined` parses the text
- * as the schema's JSON; `trailing_json` (the default) takes the prose and the
+ * as the schema's JSON (the default); `trailing_json` takes the prose and the
  * trailing JSON block (`parseTrailingAnswer`). Both end in
  * `InternalAnswerSchema`, and any other shape is MALFORMED.
  */
@@ -478,7 +478,7 @@ export interface AnthropicToolLoopClientOptions {
   timeoutMs?: number | undefined;
   maxRetries?: number | undefined;
   maxOutputTokens?: number | undefined;
-  /** How the final answer travels (§D.1). Default `trailing_json`, the plan's fallback. */
+  /** How the final answer travels (§D.1). Default `combined`; `trailing_json` is the plan's fallback. */
   answerMode?: InternalAnswerMode | undefined;
   /** Tests inject a fetch so the network is never reached. */
   fetch?: typeof fetch | undefined;
@@ -517,8 +517,8 @@ export class AnthropicToolLoopClient implements ToolLoopClient {
   }
 
   /**
-   * `trailing_json` (default): tools and no output format on every turn;
-   * the final turn is plain text ending in the JSON block. `combined`: tools
+   * `trailing_json` (the fallback): tools and no output format on every turn;
+   * the final turn is plain text ending in the JSON block. `combined` (default): tools
    * and the structured answer format in the same request. `create`, not
    * `parse`, so the stop reason is read first (as Phase 2). Thinking is the
    * model's default (adaptive); the assistant content is echoed back whole,

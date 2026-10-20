@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FALLBACK_BETA, PROVIDER_FAILURES, type ProviderFailure } from '../src/client';
 import { FakeAssistantClient, FAKE_REQUEST_ID, type FakeStep } from '../src/fake';
 import {
+  DEFAULT_INTERNAL_ANSWER_MODE,
   INTERNAL_ANSWER_MODES,
   renderTrailingAnswer,
   TOOL_LOOP_FAILURES,
@@ -71,7 +72,7 @@ function request(
   execute: ToolLoopRequest['execute'],
   extra: Partial<ToolLoopRequest> = {},
 ): ToolLoopRequest {
-  const mode = extra.answerMode ?? 'trailing_json';
+  const mode = extra.answerMode ?? DEFAULT_INTERNAL_ANSWER_MODE;
   const built = buildInternalSystem({ links: LINKS, asker: ASKER_A, now: NOW_I, answerMode: mode });
   return {
     system: built.system,
@@ -663,13 +664,17 @@ describe('trailing_json final turns through the fake', () => {
 
   it('a fenced trailing block is the answer and its links', async () => {
     const ex = executor({ 'occupancy.now': OCCUPANCY_OK });
-    const out = await new FakeToolLoopClient([
-      { kind: 'tool_use', calls: [{ name: 'occupancy.now', input: { branchId: 'br-central' } }] },
-      {
-        kind: 'final_text',
-        text: `23 children inside.\n${fence}json\n{"links":[{"key":"console.activity","params":[]}],"language":"en"}\n${fence}`,
-      },
-    ]).converse(request(ex.execute));
+    const out = await new FakeToolLoopClient(
+      [
+        { kind: 'tool_use', calls: [{ name: 'occupancy.now', input: { branchId: 'br-central' } }] },
+        {
+          kind: 'final_text',
+          text: `23 children inside.\n${fence}json\n{"links":[{"key":"console.activity","params":[]}],"language":"en"}\n${fence}`,
+        },
+      ],
+      undefined,
+      'trailing_json',
+    ).converse(request(ex.execute, { answerMode: 'trailing_json' }));
     expect(out).toMatchObject({
       ok: true,
       answer: {
@@ -681,9 +686,11 @@ describe('trailing_json final turns through the fake', () => {
   });
 
   it('plain prose with no block is MALFORMED', async () => {
-    const out = await new FakeToolLoopClient([
-      { kind: 'final_text', text: '23 children inside.' },
-    ]).converse(request(executor({}).execute));
+    const out = await new FakeToolLoopClient(
+      [{ kind: 'final_text', text: '23 children inside.' }],
+      undefined,
+      'trailing_json',
+    ).converse(request(executor({}).execute, { answerMode: 'trailing_json' }));
     expect(out).toMatchObject({ ok: false, reason: 'MALFORMED' });
   });
 

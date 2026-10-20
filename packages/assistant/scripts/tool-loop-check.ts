@@ -3,16 +3,17 @@
  * §F.1 I1a row). It runs the real `AnthropicToolLoopClient` over one
  * fictional tool in both answer modes, in this order:
  *
- *   1. combined       tools AND the structured answer format in one request.
- *                     The first live runs (2026-10-20, claude-opus-5-5) got
- *                     a 400 in both modes: the dotted tool name, now mapped
- *                     to its wire name.
- *   2. trailing_json  the plan's fallback and the package default: tools
+ *   1. combined       THE PACKAGE DEFAULT: tools AND the structured answer
+ *                     format in one request. The first live runs (2026-10-20,
+ *                     claude-opus-5-5) got a 400 in both modes: the dotted
+ *                     tool name, now mapped to its wire name; three re-runs
+ *                     held in both modes.
+ *   2. trailing_json  the plan's fallback, tested and one option away: tools
  *                     with no format; a plain-text final turn ending in one
  *                     JSON block (links, language) that the server parses.
  *
- * It prints which mode held. The exit is green when the fallback holds
- * (whatever the combined mode did), and red when it does not.
+ * It prints which mode held. The exit is green when at least one mode holds
+ * (the closing line says which answerMode to run), and red when neither does.
  *
  *   pnpm --filter @oto/assistant tool-loop:check
  *   pnpm --filter @oto/assistant tool-loop:check --model claude-sonnet-5-5
@@ -202,16 +203,24 @@ async function main(): Promise<void> {
   const fallback = await runMode(apiKey, model, 'trailing_json');
 
   console.log('\n== result ==');
-  console.log(`combined:      ${combined}`);
-  console.log(`trailing_json: ${fallback}  (the package default)`);
-  if (fallback === 'HELD') {
+  console.log(`combined:      ${combined}  (the package default)`);
+  console.log(`trailing_json: ${fallback}  (the tested fallback)`);
+  if (combined === 'HELD' && fallback === 'HELD') {
     console.log(
-      combined === 'HELD'
-        ? 'RESULT: both modes hold. trailing_json stays the default; combined can be switched on.'
-        : 'RESULT: the fallback holds. Keep answerMode trailing_json.',
+      'RESULT: both modes hold. combined is the default; trailing_json is the tested fallback.',
+    );
+  } else if (combined === 'HELD') {
+    console.log(
+      'RESULT: combined (the default) holds; the trailing_json fallback did not. The default is safe, but the fallback needs a look before it is relied on.',
+    );
+  } else if (fallback === 'HELD') {
+    console.log(
+      'RESULT: combined (the default) did not hold; the fallback does. Run with answerMode trailing_json until combined holds again.',
     );
   } else {
-    console.log('RESULT: the fallback did not hold. Do not build I2 on this model until it does.');
+    console.log(
+      'RESULT: neither mode held. Do not run the assistant on this model until one does.',
+    );
     process.exitCode = 1;
   }
 }

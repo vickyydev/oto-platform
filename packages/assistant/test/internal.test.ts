@@ -6,6 +6,7 @@
 import { describe, expect, it } from 'vitest';
 import { personaGuard } from '../src/guards';
 import {
+  DEFAULT_INTERNAL_ANSWER_MODE,
   INTERNAL_ANSWER_MODES,
   InternalAnswerSchema,
   parseTrailingAnswer,
@@ -120,13 +121,12 @@ describe.each(INTERNAL_ANSWER_MODES)('cache stability (%s)', (mode) => {
 });
 
 describe('the answer mode', () => {
-  it('defaults to trailing_json, the plan fallback', () => {
+  it('defaults to combined; trailing_json is the fallback', () => {
+    expect(DEFAULT_INTERNAL_ANSWER_MODE).toBe('combined');
     expect(buildInternalSystem({ links: LINKS, asker: ASKER_A, now: NOW_I }).answerMode).toBe(
-      'trailing_json',
+      'combined',
     );
-    expect(buildInternalStaticSystem(LINKS)).toBe(
-      buildInternalStaticSystem(LINKS, 'trailing_json'),
-    );
+    expect(buildInternalStaticSystem(LINKS)).toBe(buildInternalStaticSystem(LINKS, 'combined'));
   });
 
   it('the two modes differ only in the output contract', () => {

@@ -11,7 +11,7 @@
  * model was given.
  */
 
-export const INTERNAL_PERSONA_VERSION = 'internal-persona-2026-10-20.2';
+export const INTERNAL_PERSONA_VERSION = 'internal-persona-2026-10-20.3';
 
 /** The label the launcher panel shows, per language. */
 export const INTERNAL_ASSISTANT_LABEL = {

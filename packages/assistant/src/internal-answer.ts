@@ -44,24 +44,23 @@ export type InternalAnswer = z.infer<typeof InternalAnswerSchema>;
 /**
  * How the final answer travels (§D.1).
  *
- *   trailing_json  THE DEFAULT, the plan's fallback: no structured output
- *                  format on any request. The final turn is plain text, the
- *                  answer, ending with ONE JSON object carrying the link keys
- *                  and the language, which the server parses
- *                  (`parseTrailingAnswer`). The default since the first
- *                  live check (2026-10-20): its 400 turned out to be the
- *                  dotted tool names (see `wireToolName`), not the
- *                  combination; which mode to keep is decided by the re-run.
- *   combined       tools and the answer format in the same request; the
- *                  final turn is the schema's JSON. Kept so one option
- *                  restores it if the API accepts the combination.
+ *   combined       THE DEFAULT: tools and the answer format in the same
+ *                  request; the final turn is the schema's JSON, its shape
+ *                  guaranteed by the decoder. Three live runs on
+ *                  claude-opus-5-5 (2026-10-20) held, once tool names
+ *                  travelled under legal wire names (`wireToolName`).
+ *   trailing_json  the plan's fallback (§D.1), tested and one option away:
+ *                  no structured output format on any request. The final
+ *                  turn is plain text, the answer, ending with ONE JSON
+ *                  object carrying the link keys and the language, which the
+ *                  server parses (`parseTrailingAnswer`).
  *
  * Either way the result is validated by `InternalAnswerSchema`, so the
  * engine sees the same `InternalAnswer`.
  */
 export const INTERNAL_ANSWER_MODES = ['trailing_json', 'combined'] as const;
 export type InternalAnswerMode = (typeof INTERNAL_ANSWER_MODES)[number];
-export const DEFAULT_INTERNAL_ANSWER_MODE: InternalAnswerMode = 'trailing_json';
+export const DEFAULT_INTERNAL_ANSWER_MODE: InternalAnswerMode = 'combined';
 
 function isPlainObject(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
