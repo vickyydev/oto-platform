@@ -610,14 +610,6 @@ export interface AskGolden {
 const PAYROLL_LINKS = ['oto.payroll.hub', 'oto.payroll.month', 'oto.payroll.person'];
 
 /**
- * A payroll amount word in the three languages (Q6): no figure may stand in a
- * sentence with one, since a diagnosis would need figures no tool gives. The
- * asker's own month ("2026-09", "September 2026") is the clock's, not a figure.
- */
-export const PAYROLL_FIGURE_WORDS =
-  /baht|\bthb\b|฿|gross|deduction|\bnet\b|employer cost|total cost|\bpeople\b|\bemployees\b|บาท|รวมสุทธิ|สุทธิ|หัก|ค่าใช้จ่าย|\bคน\b|бат\p{L}*|брутто|нетто|вычет\p{L}*|человек\p{L}*|сотрудник\p{L}*/iu;
-
-/**
  * Prose that points at a button the server may withhold (the proof round's
  * "Anan's payroll profile is linked below", with no button under it): the
  * persona's `no_link_prose` rule, in the three languages.
@@ -756,7 +748,7 @@ export const LIVE_GOLDENS: readonly AskGolden[] = [
     question: "Why does September's payroll look wrong?",
     plan: 'link-only: oto.payroll.month with month=2026-09&tab=preview and one sentence; no diagnosis invented',
     note:
-      "Outcome, not path: no guessed diagnosis and no payroll figure (a diagnosis would need figures no tool gives): no digit in a sentence with an amount word. The asker's own month may be named as the clock says it (\"2026-09\", \"September 2026\": the ask's calendar grounds it, as the re-recorded model wrote with no tool called). The month-end link is optional: a link parameter is grounded like a figure (§C, §E.4), so it survives only when a payroll_summary call of this ask named 2026-09; without one, a plain honest answer naming the month-end screen is the outcome (the recorded model did that, and its ungrounded link was dropped by the server).",
+      "Outcome, not path: no guessed diagnosis. An asker with hr.view_salary may be given the run's totals; a manager without it gets the refusal (Q2). Every figure the answer states is the summary's — the engine's guard refuses any other, so `answered` is the proof (the re-recorded model called oto.payroll_summary and stated the locked run's totals, all grounded; an earlier recording named the month-end screen with no call, which also passes). The asker's own month may be named as the clock says it (\"2026-09\", \"September 2026\": the ask's calendar grounds it). The month-end link is optional: a link parameter is grounded like a figure (§C, §E.4), so it survives only when a payroll_summary call of this ask named 2026-09; without one, a plain honest answer naming the month-end screen is the outcome.",
     otoApp: true,
     expect: {
       states: ['answered', 'link_only'],
@@ -764,7 +756,6 @@ export const LIVE_GOLDENS: readonly AskGolden[] = [
       toolsAllowed: ['oto.payroll_summary', 'me.whoami'],
       maxToolCalls: 2,
       refusals: [],
-      noDigitsNear: PAYROLL_FIGURE_WORDS,
       // The month-end link may be dropped by the server (ungrounded): the prose must not lean on it.
       answerExcludes: [/(looks|is|went) wrong because|the (cause|reason|problem|error) (is|was)\b|(double|mis)[- ]?(counted|calculated|paid)/i, LINK_PROSE],
       linksForbidden: ['oto.payroll.person'],

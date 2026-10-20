@@ -10,7 +10,6 @@ import {
   MECHANICAL_GOLDENS,
   SALARY_REFUSAL,
   alignWorldTimes,
-  PAYROLL_FIGURE_WORDS,
   buildAskGoldenWorld,
   capturingFetch,
   judgeAsk,
@@ -317,13 +316,25 @@ describe('the judge fails what it should', () => {
     expect(judgeAsk(q8, observed('วันลาพักร้อนของคุณเหลือ 6 วัน', []))).toEqual(['tools [] do not include [oto.my_leave] in order']);
   });
 
-  it('Q6: the asker’s own month may be named; a payroll amount may not', () => {
+  it('Q6: the asker’s own month may be named and, for an asker with hr.view_salary, the run’s grounded totals; a diagnosis may not', () => {
     const q6 = LIVE_GOLDENS.find((g) => g.id === 'Q6')!.expect;
-    const observed = (answer: string) => ({ state: 'answered' as const, reason: null, answer, links: [], refusals: [], tools: [] });
+    const observed = (answer: string, tools: Array<{ tool: string; status: number }> = []) => ({ state: 'answered' as const, reason: null, answer, links: [], refusals: [], tools });
     expect(judgeAsk(q6, observed("I can't diagnose payroll. The 2026-09 month-end screen shows that month's run, its totals and the details your access allows."))).toEqual([]);
     expect(judgeAsk(q6, observed('September 2026 is where to look.'))).toEqual([]);
-    expect(judgeAsk(q6, observed('September looks wrong because net pay was 444000 for 12 people.'))).toEqual([
-      `a figure beside ${String(PAYROLL_FIGURE_WORDS)}: "September looks wrong because net pay was 444000 for 12 people"`,
+    // The re-recorded answer: the locked run's totals, every figure the summary's (grounding is the engine's
+    // guard's proof — a figure no tool returned never reaches the judge as `answered`). A manager without
+    // hr.view_salary never gets this far: the route refuses, and Q2 pins that line.
+    expect(
+      judgeAsk(
+        q6,
+        observed(
+          'September 2026 has 1 locked run (ZZ Payer Co, version 1, paid), covering 12 people: gross 480000, deductions 36000, net 444000, employer cost 24000, total cost 504000.',
+          [{ tool: 'oto.payroll_summary', status: 200 }],
+        ),
+      ),
+    ).toEqual([]);
+    // A diagnosis is still refused, figures or not.
+    expect(judgeAsk(q6, observed('September looks wrong because net pay was 444000 for 12 people.', [{ tool: 'oto.payroll_summary', status: 200 }]))).toEqual([
       'the answer matches /(looks|is|went) wrong because|the (cause|reason|problem|error) (is|was)\\b|(double|mis)[- ]?(counted|calculated|paid)/i',
     ]);
   });
