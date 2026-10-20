@@ -62771,6 +62771,136 @@
         }
       }
     },
+    "/inbox/templates/{id}/brochure": {
+      "put": {
+        "description": "Put the brochure on a template (SCRUM-590; plan §C.5): the request body is the file’s raw bytes, sent as application/pdf, image/jpeg, image/png or image/webp, at most 10 MB, and its signature must match the type (415 BROCHURE_WRONG_TYPE, 413 BROCHURE_TOO_LARGE, in plain sentences). The file is stored owned by the template (`inbox.template`) and becomes its only attachment; the assistant sends it with the birthday handover. Sending another replaces it: a new file, the id swapped, the previous file left unlinked (a queued line may still name it). Not an archived template. Needs inbox:template:manage at the template’s branch, or operator-wide for an every-branch template. Audited as inbox.template.brochure (ids only).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "key": {
+                      "type": "string"
+                    },
+                    "language": {
+                      "type": "string"
+                    },
+                    "channel": {
+                      "type": "string",
+                      "enum": [
+                        "whatsapp",
+                        "instagram",
+                        "facebook",
+                        "line",
+                        "telegram",
+                        "webform"
+                      ],
+                      "nullable": true
+                    },
+                    "branchId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "body": {
+                      "type": "string"
+                    },
+                    "attachmentFileIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "format": "uuid"
+                      }
+                    },
+                    "approvalStatus": {
+                      "type": "string",
+                      "enum": [
+                        "not_required",
+                        "pending",
+                        "approved",
+                        "rejected"
+                      ]
+                    },
+                    "needsTranslation": {
+                      "type": "boolean"
+                    },
+                    "providerTemplateName": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "active": {
+                      "type": "boolean"
+                    },
+                    "variables": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "updatedByAccountId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    },
+                    "archivedAt": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "key",
+                    "language",
+                    "channel",
+                    "branchId",
+                    "body",
+                    "attachmentFileIds",
+                    "approvalStatus",
+                    "needsTranslation",
+                    "providerTemplateName",
+                    "active",
+                    "variables",
+                    "updatedByAccountId",
+                    "updatedAt",
+                    "archivedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/inbox/kb": {
       "get": {
         "description": "The assistant’s knowledge base for the Assistant settings page: every entry of the operator (draft and approved; archived only with `status=archived`), filtered by language, topic or status, each saying whether the viewer may manage it (`canManage`: inbox:kb:manage at its park, or operator-wide for a both-parks entry). Only approved entries reach the assistant. Needs inbox:kb:manage somewhere in the operator.",

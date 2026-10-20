@@ -1,4 +1,4 @@
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, isNull } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   AI_CONTENT_LANGUAGES,
@@ -407,6 +407,93 @@ describe('the controls (§D.4)', () => {
     const me = (cookie: string) => call<{ capabilities: Record<string, boolean> }>(w, cookie, 'GET', '/inbox/me');
     expect((await me(adminCookie)).body.capabilities).toMatchObject({ kb: true, ai: true });
     expect((await me(agentCookie)).body.capabilities).toMatchObject({ kb: false, ai: false });
+  });
+});
+
+describe('the brochure on a template (PUT /inbox/templates/{id}/brochure, §C.5)', () => {
+  const PDF = (n: number) => Buffer.concat([Buffer.from('%PDF-1.7 '), Buffer.alloc(n, 0x20)]);
+  const put = (cookie: string, id: string, bytes: Buffer, contentType: string) =>
+    w.ctx.app.inject({
+      method: 'PUT',
+      url: `/inbox/templates/${id}/brochure`,
+      headers: { cookie, 'content-type': contentType, 'idempotency-key': newId() },
+      payload: bytes,
+    });
+  let templateId: string;
+  let managerCookie: string;
+
+  beforeAll(async () => {
+    const [t] = await w.ctx.db
+      .select()
+      .from(s.template)
+      .where(
+        and(
+          eq(s.template.operatorId, w.oto),
+          eq(s.template.key, 'handover_birthday'),
+          eq(s.template.language, 'en'),
+          isNull(s.template.branchId),
+          isNull(s.template.channel),
+        ),
+      )
+      .limit(1);
+    templateId = t!.id;
+    [, managerCookie] = await staff(w, '+66810019005', 'KB Test Branch Manager', 'inbox_manager', {
+      scopeType: 'branch',
+      scopeId: w.central,
+    });
+  });
+
+  it('uploads, then a replace swaps the id; the file is the template’s own (inbox.template); audited by id', async () => {
+    const first = await put(adminCookie, templateId, PDF(2048), 'application/pdf');
+    expect(first.statusCode, first.body).toBe(200);
+    const [a] = first.json().attachmentFileIds as string[];
+    const [fa] = await w.ctx.db.select().from(s.fileObject).where(eq(s.fileObject.id, a!));
+    expect(fa).toMatchObject({ ownerEntityType: 'inbox.template', ownerEntityId: templateId, contentType: 'application/pdf' });
+
+    const second = await put(adminCookie, templateId, PDF(4096), 'application/pdf');
+    expect(second.statusCode, second.body).toBe(200);
+    expect(second.json().attachmentFileIds).toHaveLength(1);
+    const [b] = second.json().attachmentFileIds as string[];
+    expect(b).not.toBe(a);
+    // The previous file is left unlinked, not deleted.
+    expect(await w.ctx.db.select().from(s.fileObject).where(eq(s.fileObject.id, a!))).toHaveLength(1);
+    const [t] = await w.ctx.db.select().from(s.template).where(eq(s.template.id, templateId));
+    expect(t!.attachmentFileIds).toEqual([b]);
+    const rows = await auditOf('inbox.template.brochure', templateId);
+    expect(rows).toHaveLength(2);
+    expect(rows[0]!.after).toMatchObject({ attachmentFileIds: [b] });
+    expect(rows[0]!.before).toMatchObject({ attachmentFileIds: [a] });
+  });
+
+  it('refuses a wrong type and an oversize file in plain sentences', async () => {
+    const wrongHeader = await put(adminCookie, templateId, Buffer.from('hello'), 'text/plain');
+    expect(wrongHeader.statusCode).toBe(415);
+    expect(wrongHeader.json().error).toMatchObject({ code: 'BROCHURE_WRONG_TYPE', message: 'A brochure must be a PDF or a JPEG, PNG or WebP image.' });
+    // Says PDF, is not one.
+    const lying = await put(adminCookie, templateId, Buffer.from('not a pdf at all'), 'application/pdf');
+    expect(lying.statusCode).toBe(415);
+    expect(lying.json().error.code).toBe('BROCHURE_WRONG_TYPE');
+    const big = await put(adminCookie, templateId, PDF(10 * 1024 * 1024), 'application/pdf');
+    expect(big.statusCode).toBe(413);
+    expect(big.json().error).toMatchObject({ code: 'BROCHURE_TOO_LARGE' });
+    expect(big.json().error.message).toMatch(/at most 10 MB/);
+  });
+
+  it('a branch-scoped manager cannot touch an every-branch template; an agent holds no template permission', async () => {
+    expect((await put(managerCookie, templateId, PDF(64), 'application/pdf')).statusCode).toBe(403);
+    expect((await put(agentCookie, templateId, PDF(64), 'application/pdf')).statusCode).toBe(403);
+  });
+
+  it('the assistant’s birthday handover carries the template’s file onto the outbound row', async () => {
+    const [t] = await w.ctx.db.select().from(s.template).where(eq(s.template.id, templateId));
+    const conv = await customer(w, line, nextPhone(), 'a birthday party for my son please');
+    w.fake.push({
+      kind: 'decision',
+      decision: decision({ intent: 'birthday_party', action: 'handover', reason: 'NEEDS_PERSON', sendBrochure: true, bubbles: [] }),
+    });
+    expect((await tick(w, later(25_000))).handedOver).toBe(1);
+    const lines = await aiLines(w, conv.id);
+    expect(lines[0]!).toMatchObject({ direction: 'outbound', mediaFileIds: t!.attachmentFileIds });
   });
 });
 

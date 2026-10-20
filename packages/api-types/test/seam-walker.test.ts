@@ -170,6 +170,8 @@ const NOT_YET_CALLED = new Map<string, string>([
   ['PATCH /inbox/channel-accounts/{id}/ai-mode', 'the per-number assistant switch lands in SCRUM-590 A3b'],
   ['POST /inbox/conversations/{id}/ai-pause', 'the thread pause toggle lands in SCRUM-590 A3b'],
   ['POST /inbox/conversations/{id}/ai-resume', 'the thread pause toggle lands in SCRUM-590 A3b'],
+  // 2026-10-20, SCRUM-590 A3a: the brochure upload, called by the A3b template settings.
+  ['PUT /inbox/templates/{id}/brochure', 'the brochure upload on the template settings lands in SCRUM-590 A3b'],
 ]);
 
 function machineCaller(path: string): string | null {

@@ -1,4 +1,4 @@
-import type { FastifyRequest } from 'fastify';
+import type { FastifyError, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import {
   InboxManagedTemplateListSchema,
@@ -9,6 +9,7 @@ import {
   InboxTemplateCreateSchema,
   InboxTemplateManageQuerySchema,
   InboxTemplatePatchSchema,
+  newId,
   type Permission,
 } from '@oto/shared';
 import type { App } from '../app';
@@ -20,12 +21,19 @@ import { holdsAnywhere, viewerScopeOf, type InboxViewer } from '../services/inbo
 import { INBOX_REPLY, messageView, replyToConversation, replyViewerOf, type ReplyResult } from '../services/inbox/reply';
 import { sendAfterCommit } from '../services/inbox/send';
 import {
+  INBOX_BROCHURE_MAX_BYTES,
+  INBOX_BROCHURE_TYPES,
   archiveTemplate,
+  brochureTooLarge,
+  brochureTypeOf,
+  brochureWrongType,
   createTemplate,
   listManagedTemplates,
   loadTemplate,
+  setTemplateBrochure,
   updateTemplate,
 } from '../services/inbox/templates';
+import { errors } from '../lib/errors';
 
 /**
  * THE INBOX'S REPLY AND TEMPLATE ROUTES (S2-19 I2f, SCRUM-585; plan §3.3).
@@ -35,6 +43,7 @@ import {
  *   POST  /inbox/templates                     create a variant
  *   PATCH /inbox/templates/{id}                edit, approve, deactivate
  *   POST  /inbox/templates/{id}/archive        retire for good
+ *   PUT   /inbox/templates/{id}/brochure       the file the template carries (raw bytes; SCRUM-590 A3)
  *
  * Every route declares `dynamicPermission`, as the read routes do: the reply
  * permission sits at a team's department as often as at a branch, which no
@@ -212,6 +221,60 @@ export async function inboxReplyRoutes(app: App): Promise<void> {
           tx,
           { operatorId: auth.operatorId, accountId: auth.accountId, requestId: req.id, now: new Date() },
           await loadTemplate(tx, auth.operatorId, before.id),
+        ),
+      );
+    },
+  );
+
+  // The brochure's bytes arrive raw (a PDF or an image), not as JSON. These
+  // parsers live in this plugin only, so no other route accepts them.
+  app.addContentTypeParser(
+    Object.keys(INBOX_BROCHURE_TYPES),
+    { parseAs: 'buffer', bodyLimit: INBOX_BROCHURE_MAX_BYTES },
+    (_req, body, done) => done(null, body),
+  );
+
+  app.put(
+    '/templates/:id/brochure',
+    {
+      config: { dynamicPermission: true },
+      bodyLimit: INBOX_BROCHURE_MAX_BYTES,
+      // Fastify refuses an oversize body or an unknown type before the
+      // handler runs; say it as the route's own sentence.
+      errorHandler: (err: FastifyError) => {
+        if (err.code === 'FST_ERR_CTP_BODY_TOO_LARGE') throw brochureTooLarge();
+        if (err.code === 'FST_ERR_CTP_INVALID_MEDIA_TYPE') throw brochureWrongType();
+        throw err;
+      },
+      schema: {
+        description:
+          'Put the brochure on a template (SCRUM-590; plan §C.5): the request body is the file’s raw bytes, sent ' +
+          'as application/pdf, image/jpeg, image/png or image/webp, at most 10 MB, and its signature must match the ' +
+          'type (415 BROCHURE_WRONG_TYPE, 413 BROCHURE_TOO_LARGE, in plain sentences). The file is stored owned by ' +
+          'the template (`inbox.template`) and becomes its only attachment; the assistant sends it with the ' +
+          'birthday handover. Sending another replaces it: a new file, the id swapped, the previous file left ' +
+          'unlinked (a queued line may still name it). Not an archived template. Needs inbox:template:manage at the ' +
+          'template’s branch, or operator-wide for an every-branch template. Audited as inbox.template.brochure ' +
+          '(ids only).',
+        params: IdParams,
+        body: z.any(),
+        response: { 200: InboxManagedTemplateSchema },
+      },
+    },
+    async (req) => {
+      const { auth, effective } = await callerHolding(req, TEMPLATE_MANAGE);
+      const before = await loadTemplate(app.db, auth.operatorId, req.params.id);
+      requireTemplateScope(effective, auth.operatorId, before.branchId);
+      const { contentType, ext } = brochureTypeOf(req.headers['content-type'], req.body);
+      const storage = app.fileStorage;
+      if (!storage) throw errors.conflict('STORAGE_NOT_CONFIGURED', 'File storage is not configured on this deployment.');
+      return withTx(app.db, opCtx(req), 'inbox.template.brochure', async (tx) =>
+        setTemplateBrochure(
+          tx,
+          storage,
+          { operatorId: auth.operatorId, accountId: auth.accountId, requestId: req.id, now: new Date() },
+          await loadTemplate(tx, auth.operatorId, before.id),
+          { id: newId(), bytes: req.body as Buffer, contentType, ext },
         ),
       );
     },

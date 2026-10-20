@@ -26480,6 +26480,69 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/inbox/templates/{id}/brochure": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Put the brochure on a template (SCRUM-590; plan §C.5): the request body is the file’s raw bytes, sent as application/pdf, image/jpeg, image/png or image/webp, at most 10 MB, and its signature must match the type (415 BROCHURE_WRONG_TYPE, 413 BROCHURE_TOO_LARGE, in plain sentences). The file is stored owned by the template (`inbox.template`) and becomes its only attachment; the assistant sends it with the birthday handover. Sending another replaces it: a new file, the id swapped, the previous file left unlinked (a queued line may still name it). Not an archived template. Needs inbox:template:manage at the template’s branch, or operator-wide for an every-branch template. Audited as inbox.template.brochure (ids only). */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            key: string;
+                            language: string;
+                            /** @enum {string|null} */
+                            channel: "whatsapp" | "instagram" | "facebook" | "line" | "telegram" | "webform" | null;
+                            /** Format: uuid */
+                            branchId: string | null;
+                            body: string;
+                            attachmentFileIds: string[];
+                            /** @enum {string} */
+                            approvalStatus: "not_required" | "pending" | "approved" | "rejected";
+                            needsTranslation: boolean;
+                            providerTemplateName: string | null;
+                            active: boolean;
+                            variables: string[];
+                            /** Format: uuid */
+                            updatedByAccountId: string | null;
+                            updatedAt: string;
+                            archivedAt: string | null;
+                        };
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/inbox/kb": {
         parameters: {
             query?: never;
