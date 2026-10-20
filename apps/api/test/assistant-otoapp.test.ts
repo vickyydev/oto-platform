@@ -9,7 +9,7 @@ import { ASSISTANT_TOOLS, newId } from '@oto/shared';
 import { identityOf, otoAppEnvelope, sessionCookieOf } from '../src/services/assistant/call-otoapp';
 import { matchesRoute } from '../src/services/assistant/call-platform';
 import { otoAppToolsOffered, resolveLinks } from '../src/services/assistant/engine';
-import { monthWords } from '../src/services/assistant/tools';
+import { clockOf, dayWords, daysInclusive, hoursBetween, monthWords, periodSentence, weekdayWords } from '../src/services/assistant/tools';
 import { OTOAPP_TOOLS, OTOAPP_TOOL_ADAPTERS, nameKey, nameMatches } from '../src/services/assistant/tools-otoapp';
 import { resolveEffectivePermissions } from '../src/services/permissions';
 import {
@@ -79,6 +79,7 @@ let elsewhere: { accountId: string; sessionId: string; cookie: string };
 let anan: FakeOtoAppEmployee;
 let chai: FakeOtoAppEmployee;
 let beam: FakeOtoAppEmployee;
+let krit: FakeOtoAppEmployee;
 let sentinelPerson: FakeOtoAppEmployee;
 let attendance: { days: number; hours: number };
 const today = isoDay(new Date());
@@ -114,7 +115,7 @@ beforeAll(async () => {
   anan = fakeEmployee(fake, world, { fullName: 'ZZ Anan Fixture', nickname: 'Anan', branchId: world.central });
   chai = fakeEmployee(fake, world, { fullName: 'ZZ Chalong Person', nickname: 'Chai', branchId: world.chalong });
   beam = fakeEmployee(fake, world, { fullName: 'ZZ Oto Staff', nickname: 'Beam', branchId: world.central });
-  const krit = fakeEmployee(fake, world, { fullName: 'ZZ Oto Manager', nickname: 'Krit', branchId: world.central });
+  krit = fakeEmployee(fake, world, { fullName: 'ZZ Oto Manager', nickname: 'Krit', branchId: world.central });
   sentinelPerson = fakeEmployee(fake, world, { fullName: 'ZZ Sentinel Person', nickname: `ZZ ${ASK_SENTINEL}`, branchId: world.central });
   fakeUser(fake, world, { platformAccountId: manager.accountId, role: 'manager', branchId: world.central, employeeId: krit.id });
   fakeUser(fake, world, { platformAccountId: staffer.accountId, role: 'staff', branchId: world.central, employeeId: beam.id });
@@ -303,6 +304,29 @@ describe('the census (§B.3, R4)', () => {
       homeBranchId: null,
     });
     expect(identityOf({ role: 'staff' })).toBeNull();
+  });
+
+  it('states the figures an answer will use: HH:MM from a database time, a shift’s hours, a period and a day in words', () => {
+    expect(clockOf('10:00:00')).toBe('10:00');
+    expect(clockOf('9:30')).toBe('09:30');
+    expect(clockOf('10.00')).toBe('10:00');
+    expect(clockOf('19:00:00.000')).toBe('19:00');
+    expect(clockOf('25:00')).toBeNull();
+    expect(clockOf('soon')).toBeNull();
+    expect(hoursBetween('10:00', '19:00')).toBe(9);
+    expect(hoursBetween('10:00', '18:30')).toBe(8.5);
+    expect(hoursBetween('22:00', '02:00')).toBe(4);
+    expect(hoursBetween(null, '02:00')).toBeNull();
+    expect(daysInclusive('2026-11-09', '2026-11-11')).toBe(3);
+    expect(daysInclusive('2026-11-09', '2026-11-09')).toBe(1);
+    expect(daysInclusive('2026-11-11', '2026-11-09')).toBeNull();
+    expect(periodSentence('2026-10-01', '2026-10-20')).toBe('1 to 20 October 2026 / 1 ถึง 20 ตุลาคม 2569 / с 1 по 20 октября 2026');
+    expect(periodSentence('2026-09-30', '2026-10-20')).toBe(
+      '30 September 2026 to 20 October 2026 / 30 กันยายน 2569 ถึง 20 ตุลาคม 2569 / с 30 сентября 2026 по 20 октября 2026',
+    );
+    expect(periodSentence('2026-10-21', '2026-10-21')).toBe(dayWords('2026-10-21'));
+    expect(weekdayWords('2026-10-21')).toBe('Wednesday / วันพุธ / среда');
+    expect(weekdayWords('2026-10-21T00:00:00Z')).toBeNull();
   });
 
   it('matches a colleague by name or nickname, case- and diacritic-insensitive, Thai and Latin', () => {
@@ -636,7 +660,8 @@ describe('the fences pass through verbatim (§D.4, X3, X4)', () => {
     expect(allowed.body.state, JSON.stringify(allowed.body)).toBe('answered');
     const summary = (toolResultsSeen(fakeClient)[0]!.data as { data: { runs: Array<Record<string, unknown>>; monthWords: string } }).data;
     expect(summary.monthWords).toBe(monthWords('2026-09'));
-    expect(summary.runs[0]).toMatchObject({ month: '2026-09', net: 444000, people: 12 });
+    // The lock instant carries its day in words: "locked on 1 October" is grounded, as the month-end figures are.
+    expect(summary.runs[0]).toMatchObject({ month: '2026-09', net: 444000, people: 12, lockedAt: `2026-10-01 10:00 (${dayWords('2026-10-01')})` });
     // The payroll screen is worth offering to an admin (hr.view_salary), and the month is grounded.
     expect(allowed.body.links).toEqual([
       { key: 'oto.payroll.month', app: 'oto_app', path: '/payroll/month-end?month=2026-09&tab=preview', shows: 'One month-end' },
@@ -695,13 +720,49 @@ describe('the summaries (§B.4)', () => {
     expect(JSON.stringify(data.period)).toContain(tomorrow);
   });
 
+  it('the rota as a deployment shapes it (a Postgres `time`, 10:00:00): the date spelled out, the hours and the headcount are grounded', async () => {
+    // The proof round's miss: the fixture's `10:00` grounded the answer's `10:00`; the app's shift rows carry
+    // `10:00:00`, which did not, and the rota answer was set aside as GUARD_NUMBER. A day the fixture shifts do not cover.
+    const day = isoDay(new Date(), 5);
+    for (const employeeId of [anan.id, krit.id]) {
+      fake.data.shifts.push({ date: day, start: '10:00:00', end: '19:00:00', employeeId, department: 'Floor', branchId: world.central });
+    }
+    const [dayEn] = dayWords(day).split(' / ');
+    const [weekdayEn] = weekdayWords(day)!.split(' / ');
+    const fakeClient = script(
+      w,
+      tool('oto.rota', { scope: 'branch', from: day, to: day }),
+      final(`On ${weekdayEn} ${dayEn}, 2 people are on shift at Central: Anan and Krit, 10:00–19:00, 9 hours each.`, [{ key: 'oto.rota', params: [] }]),
+    );
+    const res = await ask(w, staffer.cookie, `Who's on shift with me on ${day}?`);
+    expect(res.body, JSON.stringify(res.body)).toMatchObject({ state: 'answered', reason: null });
+    expect(res.body.answer).toContain('10:00–19:00, 9 hours');
+    const data = (toolResultsSeen(fakeClient)[0]!.data as { data: Record<string, unknown> }).data;
+    expect(data).toMatchObject({ shifts: 2, days: 1, people: 2 });
+    expect((data.list as Array<Record<string, unknown>>)[0]).toMatchObject({
+      date: day,
+      day: dayWords(day),
+      weekday: weekdayWords(day),
+      start: '10:00',
+      end: '19:00',
+      hours: 9,
+    });
+    expect(JSON.stringify(data)).not.toContain('10:00:00');
+  });
+
   it('my leave: the records and the weekly off days, never the note, and no balance (G2)', async () => {
     const fakeClient = script(w, tool('oto.my_leave', {}), final('One annual leave booked; the balance is on the screen.'));
     const res = await ask(w, staffer.cookie, 'วันลาของฉันเหลือกี่วัน');
     expect(res.body.state).toBe('answered');
     const data = (toolResultsSeen(fakeClient)[0]!.data as { data: Record<string, unknown> }).data;
     expect(data).toMatchObject({ employeeId: beam.id, records: 1, weeklyOffDays: ['monday'], balanceAvailable: false });
-    expect((data.leave as Array<{ type: string; halfDay: unknown }>)[0]).toMatchObject({ type: 'annual', halfDay: false });
+    // The length an answer states ("3 days") is a figure the summary carries, with the days by name.
+    expect((data.leave as Array<{ type: string; halfDay: unknown; days: number; weekdays: string }>)[0]).toMatchObject({
+      type: 'annual',
+      halfDay: false,
+      days: 3,
+      weekdays: `${weekdayWords(isoDay(new Date(), 20))} – ${weekdayWords(isoDay(new Date(), 22))}`,
+    });
     expect(JSON.stringify(data)).not.toContain(ASK_SENTINEL);
     expect(res.body.links.map((l) => l.key)).toEqual([]);
   });

@@ -2,6 +2,7 @@ import {
   ASSISTANT_SUMMARY_MAX_BYTES,
   ASSISTANT_SUMMARY_ROWS,
   ASSISTANT_TOOLS,
+  dayOfWeekOfIsoDate,
   formatDisplayPhone,
   isoDateInTz,
   type AssistantToolSummary,
@@ -123,6 +124,80 @@ export function monthWords(isoMonth: string): string {
   const [, y, mo] = m;
   const i = Number(mo) - 1;
   return `${EN_MONTHS[i]} ${y} / ${TH_MONTHS[i]} ${Number(y) + 543} / ${RU_MONTHS_NOMINATIVE[i]} ${y}`;
+}
+
+const EN_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const TH_DAYS = ['วันอาทิตย์', 'วันจันทร์', 'วันอังคาร', 'วันพุธ', 'วันพฤหัสบดี', 'วันศุกร์', 'วันเสาร์'];
+const RU_DAYS = ['воскресенье', 'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота'];
+
+/** The weekday of a date, in the three languages ("Wednesday / วันพุธ / среда"): a rota answer says the day by its name. */
+export function weekdayWords(isoDate: string): string | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) return null;
+  const d = dayOfWeekOfIsoDate(isoDate);
+  return `${EN_DAYS[d]} / ${TH_DAYS[d]} / ${RU_DAYS[d]}`;
+}
+
+/**
+ * A period as a sentence, in the three languages, so the guard grounds the
+ * words an answer uses for it: "1 to 20 October 2026" within one month,
+ * "30 September 2026 to 20 October 2026" across months, one day on its own.
+ */
+export function periodSentence(from: string, to: string): string {
+  const parse = (d: string) => /^(\d{4})-(\d{2})-(\d{2})$/.exec(d);
+  const f = parse(from);
+  const t = parse(to);
+  if (!f || !t) return `${from} to ${to}`;
+  if (from === to) return dayWords(from);
+  const [, fy, fm, fd] = f;
+  const [, ty, tm, td] = t;
+  const fi = Number(fm) - 1;
+  const ti = Number(tm) - 1;
+  if (fy === ty && fm === tm) {
+    return [
+      `${Number(fd)} to ${Number(td)} ${EN_MONTHS[ti]} ${ty}`,
+      `${Number(fd)} ถึง ${Number(td)} ${TH_MONTHS[ti]} ${Number(ty) + 543}`,
+      `с ${Number(fd)} по ${Number(td)} ${RU_MONTHS[ti]} ${ty}`,
+    ].join(' / ');
+  }
+  return [
+    `${Number(fd)} ${EN_MONTHS[fi]} ${fy} to ${Number(td)} ${EN_MONTHS[ti]} ${ty}`,
+    `${Number(fd)} ${TH_MONTHS[fi]} ${Number(fy) + 543} ถึง ${Number(td)} ${TH_MONTHS[ti]} ${Number(ty) + 543}`,
+    `с ${Number(fd)} ${RU_MONTHS[fi]} ${fy} по ${Number(td)} ${RU_MONTHS[ti]} ${ty}`,
+  ].join(' / ');
+}
+
+/**
+ * A clock time as the app's screens show it, `10:00`: from `10:00`, `10.00`
+ * or a Postgres `time` such as `10:00:00` (what the rota's shift rows carry on
+ * a deployment, where the fixture had `10:00`). Null for anything else.
+ */
+export function clockOf(v: unknown): string | null {
+  const s = str(v);
+  if (!s) return null;
+  const m = /^(\d{1,2})[.:](\d{2})(?::\d{2}(?:\.\d+)?)?$/.exec(s.trim());
+  if (!m) return null;
+  const h = Number(m[1]);
+  if (h > 23 || Number(m[2]) > 59) return null;
+  return `${String(h).padStart(2, '0')}:${m[2]}`;
+}
+
+/** The hours between two clock times, to the hundredth; a shift that ends after midnight wraps. */
+export function hoursBetween(start: string | null, end: string | null): number | null {
+  if (!start || !end) return null;
+  const minutes = (t: string) => {
+    const [h, m] = t.split(':').map(Number) as [number, number];
+    return h * 60 + m;
+  };
+  let span = minutes(end) - minutes(start);
+  if (span < 0) span += 24 * 60;
+  return Math.round((span / 60) * 100) / 100;
+}
+
+/** The calendar days a range covers, both ends included; null when either end is not a date. */
+export function daysInclusive(from: string | null, to: string | null): number | null {
+  if (!from || !to || !/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) return null;
+  const span = Math.round((Date.parse(`${to}T12:00:00Z`) - Date.parse(`${from}T12:00:00Z`)) / 86_400_000);
+  return span >= 0 ? span + 1 : null;
 }
 
 const BANGKOK = 'Asia/Bangkok';

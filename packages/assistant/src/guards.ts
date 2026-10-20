@@ -65,10 +65,14 @@ function asciiDigits(text: string): string {
   return text.replace(/[๐-๙]/g, (d) => String(d.charCodeAt(0) - 0x0e50));
 }
 
-/** A time written 10:00 or 10.00 is the same time. */
+/**
+ * A time written 10:00, 10.00 or 10:00:00 (a database `time` column, as the
+ * OTO App's shift rows carry it) is the same time. Seconds other than :00
+ * are kept: 10:00:30 is not 10:00.
+ */
 function canonicalNumber(token: string): string {
   const t = token.replace(/,/g, '');
-  const time = /^(\d{1,2})[.:](\d{2})$/.exec(t);
+  const time = /^(\d{1,2})[.:](\d{2})(?::00)?$/.exec(t);
   if (time) return `${Number(time[1])}:${time[2]}`;
   return t.replace(/^0+(?=\d)/, '');
 }

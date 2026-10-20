@@ -29,6 +29,11 @@ describe('the traceability guard (PLAN §B.3 gate 5)', () => {
       expect(trace('From 10 until 8pm', ['10:00–20:00'])).toMatchObject({ ok: false });
       expect(trace('From 10 in the morning', ['10:00–20:00'])).toEqual({ ok: true });
     });
+    it('a database time with :00 seconds is the same time (the OTO App rota’s 10:00:00); other seconds are not', () => {
+      expect(trace('Anan and Krit, 10:00–19:00.', ['{"start":"10:00:00","end":"19:00:00"}'])).toEqual({ ok: true });
+      expect(trace('Clocked in at 10:00:00.', ['in at 10:00'])).toEqual({ ok: true });
+      expect(trace('Clocked in at 10:00.', ['in at 10:00:30'])).toMatchObject({ ok: false, reason: 'GUARD_NUMBER' });
+    });
     it('ungrounded when no source is cited at all', () => {
       expect(trace('Come at 3!', [])).toMatchObject({ ok: false, reason: 'GUARD_NUMBER' });
     });

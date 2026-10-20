@@ -4,7 +4,23 @@ import type { z } from 'zod';
 import { assertGetRoute, type GetRouteTemplate } from './call-platform';
 import type { OtoAppIdentity } from './call-otoapp';
 import { toJsonSchema } from './json-schema';
-import { arr, bangkokTime, dayWords, monthWords, num, obj, query, str, type Obj, type SummaryDraft } from './tools';
+import {
+  arr,
+  bangkokTime,
+  clockOf,
+  daysInclusive,
+  dayWords,
+  hoursBetween,
+  monthWords,
+  num,
+  obj,
+  periodSentence,
+  query,
+  str,
+  weekdayWords,
+  type Obj,
+  type SummaryDraft,
+} from './tools';
 
 /**
  * THE OTO APP TOOLS (SCRUM-591, round I4; plan
@@ -92,7 +108,11 @@ function dayOf(v: unknown): string | null {
   return m[1]!;
 }
 
-/** A period in words: each end as a day, and every month it touches (what grounds "this month"). */
+/**
+ * A period in words: each end as a day, the whole as a sentence ("1 to 20
+ * October 2026"), and every month it touches (what grounds "this month").
+ * The figures an answer uses for a period are all here, in the three languages.
+ */
 function periodWords(from: string | null, to: string | null): Obj {
   const months = new Set<string>();
   for (const d of [from, to]) if (d) months.add(monthWords(d));
@@ -107,8 +127,16 @@ function periodWords(from: string | null, to: string | null): Obj {
   return {
     from: from ? `${from} (${dayWords(from)})` : null,
     to: to ? `${to} (${dayWords(to)})` : null,
+    words: from && to ? periodSentence(from, to) : null,
+    days: daysInclusive(from, to),
     months: [...months],
   };
+}
+
+/** An instant as the park reads it, with the day in words: `2026-10-01 10:00 (1 October 2026 / …)`. */
+function whenWords(iso: unknown): string | null {
+  const at = bangkokTime(iso);
+  return at ? `${at} (${dayWords(at.slice(0, 10))})` : null;
 }
 
 /**
@@ -141,15 +169,20 @@ function employeeName(e: Obj): string | null {
   return first && last ? `${first} ${last}` : (first ?? last);
 }
 
-/** A leave record as the model reads it: type and days, never the note. */
+/** A leave record as the model reads it: type, the days and their count, never the note. */
 function leaveRecord(r: Obj): Obj {
   const from = dayOf(r.startDate);
   const to = dayOf(r.endDate);
+  const halfDay = r.isHalfDay === true;
+  const span = daysInclusive(from, to);
   return {
     type: str(r.type) ?? str(r.timeOffType),
     from: from ? `${from} (${dayWords(from)})` : null,
     to: to ? `${to} (${dayWords(to)})` : null,
-    halfDay: r.isHalfDay === true ? (str(r.halfDayPeriod) ?? true) : false,
+    weekdays: from && to ? `${weekdayWords(from)} – ${weekdayWords(to)}` : null,
+    // The length an answer states: calendar days both ends included, a half day as 0.5.
+    days: halfDay ? 0.5 : span,
+    halfDay: halfDay ? (str(r.halfDayPeriod) ?? true) : false,
   };
 }
 
@@ -177,6 +210,7 @@ export const OTOAPP_TOOL_ADAPTERS: readonly OtoAppToolAdapter[] = [
         return {
           date,
           day: date ? dayWords(date) : null,
+          weekday: date ? weekdayWords(date) : null,
           hours: num(d.totalHours),
           sessions: num(d.sessionCount),
           longShift: d.hasLongShift === true,
@@ -289,7 +323,7 @@ export const OTOAPP_TOOL_ADAPTERS: readonly OtoAppToolAdapter[] = [
           payer: str(p.entityName),
           version: num(p.version),
           status: str(p.status),
-          lockedAt: bangkokTime(p.lockedAt),
+          lockedAt: whenWords(p.lockedAt),
         };
       });
       return {
@@ -325,7 +359,7 @@ export const OTOAPP_TOOL_ADAPTERS: readonly OtoAppToolAdapter[] = [
           net: num(totals.net),
           employerCost: num(totals.employer),
           totalCost: num(totals.totalCost),
-          lockedAt: bangkokTime(r.lockedAt),
+          lockedAt: whenWords(r.lockedAt),
         };
       });
       return {
@@ -352,11 +386,17 @@ export const OTOAPP_TOOL_ADAPTERS: readonly OtoAppToolAdapter[] = [
         .sort((a, b) => `${str(a.date)} ${str(a.start)}`.localeCompare(`${str(b.date)} ${str(b.start)}`));
       const shown = shifts.slice(0, ASSISTANT_SUMMARY_ROWS).map((s) => {
         const date = dayOf(s.date);
+        // The app's shift rows carry a Postgres `time` (`10:00:00`); the answer writes `10:00`,
+        // the date by its name and the shift's length, so the summary states each of those.
+        const start = clockOf(s.start);
+        const end = clockOf(s.end);
         return {
           date,
           day: date ? dayWords(date) : null,
-          start: str(s.start),
-          end: str(s.end),
+          weekday: date ? weekdayWords(date) : null,
+          start,
+          end,
+          hours: hoursBetween(start, end),
           employeeId: str(s.employeeId),
           employee: str(s.employeeName),
           department: str(s.department),
