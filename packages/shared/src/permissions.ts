@@ -357,6 +357,8 @@ export const PERMISSIONS = [
 
 export type Permission = (typeof PERMISSIONS)[number];
 
+export { PERMISSION_WORDS } from './permission-words';
+
 export type ScopeType = 'operator' | 'branch' | 'department' | 'record';
 
 export const SYSTEM_ROLES = [

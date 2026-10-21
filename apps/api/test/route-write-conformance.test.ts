@@ -330,6 +330,14 @@ const mutatingCloudRoutes = (): SourceRoute[] =>
   );
 
 describe('one operation, one transaction (SCRUM-291)', () => {
+  it('the Roles catalogue, reverse lookup and effective diff are reads (SCRUM-612)', () => {
+    const roleRoutes = routes.filter((r) => r.path.startsWith('/roles'));
+    expect(roleRoutes.map((r) => `${r.method} ${r.path}`).sort()).toEqual([
+      'GET /roles', 'GET /roles/holders', 'GET /roles/preview',
+    ]);
+    expect(roleRoutes.some((r) => MUTATING.has(r.method))).toBe(false);
+  });
+
   it('the source walk found every route the app registered', () => {
     const live = new Set(
       app.routeRegistry

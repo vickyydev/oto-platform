@@ -364,6 +364,12 @@ describe('every create names its record where OD-12 says (SCRUM-270)', () => {
     expect([...CALLER_NAMED, ...Object.keys(PLATFORM_NAMED)].filter((k) => !live.has(k)).sort()).toEqual([]);
   });
 
+  it('the Roles reads mint no assignment or account ids (SCRUM-612)', () => {
+    const roleReads = routes.filter((r) => r.method === 'GET' && r.path.startsWith('/roles'));
+    expect(roleReads.map((r) => r.path).sort()).toEqual(['/roles', '/roles/holders', '/roles/preview']);
+    expect(roleReads.filter((r) => reachesText(r.handlerText, MINTS_ITS_ID, functions, 2)).map((r) => r.path)).toEqual([]);
+  });
+
   it('every caller-named create reads the id it was sent', () => {
     const blind = CALLER_NAMED.filter((key) => {
       const route = routes.find((r) => `${r.method} ${r.path}` === key);

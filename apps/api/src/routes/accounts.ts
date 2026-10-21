@@ -29,6 +29,17 @@ const RoleAssignmentInput = z.object({
   scopeId: z.string().uuid().nullable(),
 });
 
+const AccountPermissions = z.object({
+  assignments: z.array(z.object({
+    id: z.string().uuid(), roleName: z.string(), scopeType: z.enum(['operator', 'branch', 'department', 'record']),
+    scopeId: z.string().uuid().nullable(),
+  })),
+  effective: z.array(z.object({
+    permission: z.string(), roleName: z.string(), scopeType: z.enum(['operator', 'branch', 'department', 'record']),
+    scopeId: z.string().uuid().nullable(),
+  })),
+});
+
 const AccountSummary = z.object({
   id: z.string().uuid(),
   phone: z.string(),
@@ -242,7 +253,7 @@ export async function accountRoutes(app: App): Promise<void> {
   // SCRUM-22 — an account's assignments + the resulting effective permissions.
   app.get(
     '/:id/permissions',
-    { config: { permission: 'admin:role:read' }, schema: { description: 'Roles and effective permissions', params: z.object({ id: z.string().uuid() }) } },
+    { config: { permission: 'admin:role:read' }, schema: { description: 'Roles and effective permissions', params: z.object({ id: z.string().uuid() }), response: { 200: AccountPermissions } } },
     async (req) => {
       const auth = req.requireAuth();
       await loadTargetAccount(app.db, auth.operatorId, req.params.id);
@@ -285,6 +296,7 @@ export async function accountRoutes(app: App): Promise<void> {
           /** Optional, client-minted (OD-12). Absent, the platform mints one as before. */
           id: ClientIdSchema.optional(),
         }),
+        response: { 200: z.object({ id: z.string().uuid() }) },
       },
     },
     async (req, reply) => {
@@ -356,6 +368,7 @@ export async function accountRoutes(app: App): Promise<void> {
       schema: {
         description: 'Remove a role assignment',
         params: z.object({ id: z.string().uuid(), assignmentId: z.string().uuid() }),
+        response: { 200: z.object({ ok: z.literal(true) }) },
       },
     },
     async (req) => {

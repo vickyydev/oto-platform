@@ -775,7 +775,27 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            assignments: {
+                                /** Format: uuid */
+                                id: string;
+                                roleName: string;
+                                /** @enum {string} */
+                                scopeType: "operator" | "branch" | "department" | "record";
+                                /** Format: uuid */
+                                scopeId: string | null;
+                            }[];
+                            effective: {
+                                permission: string;
+                                roleName: string;
+                                /** @enum {string} */
+                                scopeType: "operator" | "branch" | "department" | "record";
+                                /** Format: uuid */
+                                scopeId: string | null;
+                            }[];
+                        };
+                    };
                 };
             };
         };
@@ -825,7 +845,12 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                        };
+                    };
                 };
             };
         };
@@ -863,7 +888,12 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            ok: true;
+                        };
+                    };
                 };
             };
         };
@@ -1050,6 +1080,209 @@ export interface paths {
                 };
             };
         };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/roles/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description System roles and this operator’s role catalogue, with permission sentences. Read-only; no role editor. */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            roles: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                                description: string | null;
+                                system: boolean;
+                                permissions: {
+                                    permission: string;
+                                    words: string;
+                                }[];
+                            }[];
+                            permissions: {
+                                permission: string;
+                                words: string;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/roles/holders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Who holds one permission, within this operator, the caller’s readable account reach and readable/dominated assignment scopes. Unsupported record scopes are omitted because no owned record target exists. */
+        get: {
+            parameters: {
+                query: {
+                    permission: "console:overview:read" | "admin:account:create" | "admin:account:read" | "admin:account:update" | "admin:role:read" | "admin:role:assign" | "admin:operator:create" | "admin:operator:read" | "admin:operator:update" | "admin:operator:all" | "admin:branch:create" | "admin:branch:read" | "admin:branch:update" | "admin:audit:read" | "admin:audit:read_sensitive" | "admin:station:read" | "admin:station:create" | "admin:station:update" | "admin:station:archive" | "admin:box:read" | "admin:box:register" | "admin:box:update" | "admin:box:command" | "admin:box:archive" | "admin:device:read" | "admin:device:create" | "admin:device:update" | "admin:device:archive" | "admin:device:pair" | "admin:device:revoke" | "admin:booth:read" | "admin:booth:manage" | "admin:booth:publish" | "admin:booth:staff_assign" | "booth:staff:sign_in" | "admin:health:read" | "admin:ops:manage" | "pos:member:read" | "pos:member:list" | "pos:member:create" | "pos:member:update" | "pos:member:tier_downgrade" | "pos:child:read" | "pos:child:create" | "pos:child:update" | "pos:visit:create" | "pos:visit:read" | "pos:visit:update" | "pos:booking:read" | "pos:booking:redeem" | "pos:station:takeover" | "pos:sale:read" | "pos:sale:create" | "pos:sale:update" | "pos:sale:discount" | "pos:sale:void" | "pos:payment:read" | "pos:payment:capture" | "pos:payment:confirm" | "pos:payment:void" | "pos:payment:settle" | "pos:refund:read" | "pos:refund:create" | "pos:refund:approve" | "pos:voucher:redeem" | "pos:print:read" | "pos:print:receipt" | "pos:print:band" | "pos:print:voucher" | "pos:print:reprint" | "pos:cash:read" | "pos:cash:session_open" | "pos:cash:session_close" | "pos:cash:movement" | "pos:cash:approve" | "pos:cash:day_close" | "pos:checkin:read" | "pos:checkin:create" | "pos:checkin:update" | "pos:checkin:release" | "pos:checkin:guardian_manage" | "pos:event:read" | "pos:event:attendee_create" | "pos:event:pass_sell" | "pos:party:charge" | "pos:party:payment" | "pos:party:update" | "pos:event:checkin" | "admin:event_pricing:manage" | "pos:wallet:read" | "pos:wallet:grant" | "pos:wallet:spend" | "pos:wallet:adjust" | "pos:wallet:reactivate" | "pos:stock:read" | "pos:stock:adjust" | "pos:stock:transfer" | "pos:stock:count" | "pos:stock:receive" | "pos:stock:order" | "pos:stock:approve" | "catalog:package:read" | "catalog:package:create" | "catalog:package:update" | "catalog:holiday:read" | "catalog:holiday:manage" | "catalog:tax:read" | "catalog:tax:manage" | "catalog:menu:read" | "catalog:menu:manage" | "catalog:menu:import" | "pos:benefit:apply" | "admin:benefit:read" | "admin:benefit:manage" | "admin:benefit:credential_issue" | "analytics:read" | "inbox:conversation:read" | "inbox:conversation:reply" | "inbox:conversation:assign" | "inbox:conversation:move" | "inbox:conversation:handle" | "inbox:conversation:reopen" | "inbox:template:manage" | "inbox:channel:manage" | "inbox:dashboard:read" | "inbox:routing:manage" | "inbox:contact:erase" | "inbox:kb:manage" | "inbox:ai:manage" | "assistant:ask:use" | "assistant:log:review" | "app:pos:access" | "app:console:access" | "app:oto_app:access" | "app:radar:access" | "app:booth:access" | "app:inbox:access";
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            permission: string;
+                            words: string;
+                            holders: {
+                                /** Format: uuid */
+                                accountId: string;
+                                phone: string;
+                                /** @enum {string} */
+                                status: "invited" | "active" | "inactive";
+                                employee: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                } | null;
+                                assignments: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    roleName: string;
+                                    /** @enum {string} */
+                                    scopeType: "operator" | "branch" | "department" | "record";
+                                    /** Format: uuid */
+                                    scopeId: string | null;
+                                    scopeName: string;
+                                }[];
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/roles/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read-only effective-permission before-save preview. Requires the existing permission-read and assignment-write checks, including last-admin protection. Grant needs roleName and scopeType (omit scopeId only for whole-platform operator scope); remove needs assignmentId. Before/after omit redundant narrower grants. Added/removed compare effective coverage, preserving access provided by another role or wider grant; unchanged lists resulting grants already covered before. The actual write rechecks everything. */
+        get: {
+            parameters: {
+                query: {
+                    accountId: string;
+                    operation: "grant" | "remove";
+                    roleName?: string;
+                    scopeType?: "operator" | "branch" | "department" | "record";
+                    scopeId?: string;
+                    assignmentId?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            accountId: string;
+                            /** @enum {string} */
+                            operation: "grant" | "remove";
+                            before: {
+                                permission: string;
+                                words: string;
+                                /** @enum {string} */
+                                scopeType: "operator" | "branch" | "department" | "record";
+                                /** Format: uuid */
+                                scopeId: string | null;
+                            }[];
+                            after: {
+                                permission: string;
+                                words: string;
+                                /** @enum {string} */
+                                scopeType: "operator" | "branch" | "department" | "record";
+                                /** Format: uuid */
+                                scopeId: string | null;
+                            }[];
+                            added: {
+                                permission: string;
+                                words: string;
+                                /** @enum {string} */
+                                scopeType: "operator" | "branch" | "department" | "record";
+                                /** Format: uuid */
+                                scopeId: string | null;
+                            }[];
+                            removed: {
+                                permission: string;
+                                words: string;
+                                /** @enum {string} */
+                                scopeType: "operator" | "branch" | "department" | "record";
+                                /** Format: uuid */
+                                scopeId: string | null;
+                            }[];
+                            unchanged: {
+                                permission: string;
+                                words: string;
+                                /** @enum {string} */
+                                scopeType: "operator" | "branch" | "department" | "record";
+                                /** Format: uuid */
+                                scopeId: string | null;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;

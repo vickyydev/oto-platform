@@ -26,6 +26,7 @@ import { VoucherTypes } from '@/pages/VoucherTypes';
 import { AreaLanding } from '@/pages/AreaLanding';
 import { Overview } from '@/pages/Overview';
 import { Accounts } from '@/pages/Accounts';
+import { Roles } from '@/pages/Roles';
 
 const LAUNCHER_URL = import.meta.env.VITE_LAUNCHER_URL?.trim();
 
@@ -126,6 +127,7 @@ function NotFound() {
 
 const pageElements: Record<string, ReactElement> = {
   accounts: <Accounts />,
+  roles: <Roles />,
   health: <Health />, failures: <Failures />, activity: <Activity />,
   devices: <Devices />, branches: <Branches />, bookings: <Bookings />,
   booths: <Booths />, 'booth-report': <BoothReport />, vouchers: <Vouchers />,

@@ -678,7 +678,92 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "assignments": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "roleName": {
+                            "type": "string"
+                          },
+                          "scopeType": {
+                            "type": "string",
+                            "enum": [
+                              "operator",
+                              "branch",
+                              "department",
+                              "record"
+                            ]
+                          },
+                          "scopeId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "roleName",
+                          "scopeType",
+                          "scopeId"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "effective": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "permission": {
+                            "type": "string"
+                          },
+                          "roleName": {
+                            "type": "string"
+                          },
+                          "scopeType": {
+                            "type": "string",
+                            "enum": [
+                              "operator",
+                              "branch",
+                              "department",
+                              "record"
+                            ]
+                          },
+                          "scopeId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "permission",
+                          "roleName",
+                          "scopeType",
+                          "scopeId"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "assignments",
+                    "effective"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -738,7 +823,24 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "required": [
+                    "id"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -768,7 +870,26 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -985,6 +1106,645 @@
                   },
                   "required": [
                     "sessionsEnded"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/roles/": {
+      "get": {
+        "description": "System roles and this operator’s role catalogue, with permission sentences. Read-only; no role editor.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "roles": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "system": {
+                            "type": "boolean"
+                          },
+                          "permissions": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "permission": {
+                                  "type": "string"
+                                },
+                                "words": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "permission",
+                                "words"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "description",
+                          "system",
+                          "permissions"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "permissions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "permission": {
+                            "type": "string"
+                          },
+                          "words": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "permission",
+                          "words"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "roles",
+                    "permissions"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/roles/holders": {
+      "get": {
+        "description": "Who holds one permission, within this operator, the caller’s readable account reach and readable/dominated assignment scopes. Unsupported record scopes are omitted because no owned record target exists.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "console:overview:read",
+                "admin:account:create",
+                "admin:account:read",
+                "admin:account:update",
+                "admin:role:read",
+                "admin:role:assign",
+                "admin:operator:create",
+                "admin:operator:read",
+                "admin:operator:update",
+                "admin:operator:all",
+                "admin:branch:create",
+                "admin:branch:read",
+                "admin:branch:update",
+                "admin:audit:read",
+                "admin:audit:read_sensitive",
+                "admin:station:read",
+                "admin:station:create",
+                "admin:station:update",
+                "admin:station:archive",
+                "admin:box:read",
+                "admin:box:register",
+                "admin:box:update",
+                "admin:box:command",
+                "admin:box:archive",
+                "admin:device:read",
+                "admin:device:create",
+                "admin:device:update",
+                "admin:device:archive",
+                "admin:device:pair",
+                "admin:device:revoke",
+                "admin:booth:read",
+                "admin:booth:manage",
+                "admin:booth:publish",
+                "admin:booth:staff_assign",
+                "booth:staff:sign_in",
+                "admin:health:read",
+                "admin:ops:manage",
+                "pos:member:read",
+                "pos:member:list",
+                "pos:member:create",
+                "pos:member:update",
+                "pos:member:tier_downgrade",
+                "pos:child:read",
+                "pos:child:create",
+                "pos:child:update",
+                "pos:visit:create",
+                "pos:visit:read",
+                "pos:visit:update",
+                "pos:booking:read",
+                "pos:booking:redeem",
+                "pos:station:takeover",
+                "pos:sale:read",
+                "pos:sale:create",
+                "pos:sale:update",
+                "pos:sale:discount",
+                "pos:sale:void",
+                "pos:payment:read",
+                "pos:payment:capture",
+                "pos:payment:confirm",
+                "pos:payment:void",
+                "pos:payment:settle",
+                "pos:refund:read",
+                "pos:refund:create",
+                "pos:refund:approve",
+                "pos:voucher:redeem",
+                "pos:print:read",
+                "pos:print:receipt",
+                "pos:print:band",
+                "pos:print:voucher",
+                "pos:print:reprint",
+                "pos:cash:read",
+                "pos:cash:session_open",
+                "pos:cash:session_close",
+                "pos:cash:movement",
+                "pos:cash:approve",
+                "pos:cash:day_close",
+                "pos:checkin:read",
+                "pos:checkin:create",
+                "pos:checkin:update",
+                "pos:checkin:release",
+                "pos:checkin:guardian_manage",
+                "pos:event:read",
+                "pos:event:attendee_create",
+                "pos:event:pass_sell",
+                "pos:party:charge",
+                "pos:party:payment",
+                "pos:party:update",
+                "pos:event:checkin",
+                "admin:event_pricing:manage",
+                "pos:wallet:read",
+                "pos:wallet:grant",
+                "pos:wallet:spend",
+                "pos:wallet:adjust",
+                "pos:wallet:reactivate",
+                "pos:stock:read",
+                "pos:stock:adjust",
+                "pos:stock:transfer",
+                "pos:stock:count",
+                "pos:stock:receive",
+                "pos:stock:order",
+                "pos:stock:approve",
+                "catalog:package:read",
+                "catalog:package:create",
+                "catalog:package:update",
+                "catalog:holiday:read",
+                "catalog:holiday:manage",
+                "catalog:tax:read",
+                "catalog:tax:manage",
+                "catalog:menu:read",
+                "catalog:menu:manage",
+                "catalog:menu:import",
+                "pos:benefit:apply",
+                "admin:benefit:read",
+                "admin:benefit:manage",
+                "admin:benefit:credential_issue",
+                "analytics:read",
+                "inbox:conversation:read",
+                "inbox:conversation:reply",
+                "inbox:conversation:assign",
+                "inbox:conversation:move",
+                "inbox:conversation:handle",
+                "inbox:conversation:reopen",
+                "inbox:template:manage",
+                "inbox:channel:manage",
+                "inbox:dashboard:read",
+                "inbox:routing:manage",
+                "inbox:contact:erase",
+                "inbox:kb:manage",
+                "inbox:ai:manage",
+                "assistant:ask:use",
+                "assistant:log:review",
+                "app:pos:access",
+                "app:console:access",
+                "app:oto_app:access",
+                "app:radar:access",
+                "app:booth:access",
+                "app:inbox:access"
+              ]
+            },
+            "in": "query",
+            "name": "permission",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "permission": {
+                      "type": "string"
+                    },
+                    "words": {
+                      "type": "string"
+                    },
+                    "holders": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "accountId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "phone": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "invited",
+                              "active",
+                              "inactive"
+                            ]
+                          },
+                          "employee": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ],
+                            "additionalProperties": false,
+                            "nullable": true
+                          },
+                          "assignments": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "roleName": {
+                                  "type": "string"
+                                },
+                                "scopeType": {
+                                  "type": "string",
+                                  "enum": [
+                                    "operator",
+                                    "branch",
+                                    "department",
+                                    "record"
+                                  ]
+                                },
+                                "scopeId": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "nullable": true
+                                },
+                                "scopeName": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "roleName",
+                                "scopeType",
+                                "scopeId",
+                                "scopeName"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "required": [
+                          "accountId",
+                          "phone",
+                          "status",
+                          "employee",
+                          "assignments"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "permission",
+                    "words",
+                    "holders"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/roles/preview": {
+      "get": {
+        "description": "Read-only effective-permission before-save preview. Requires the existing permission-read and assignment-write checks, including last-admin protection. Grant needs roleName and scopeType (omit scopeId only for whole-platform operator scope); remove needs assignmentId. Before/after omit redundant narrower grants. Added/removed compare effective coverage, preserving access provided by another role or wider grant; unchanged lists resulting grants already covered before. The actual write rechecks everything.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "query",
+            "name": "accountId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "grant",
+                "remove"
+              ]
+            },
+            "in": "query",
+            "name": "operation",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "roleName",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "operator",
+                "branch",
+                "department",
+                "record"
+              ]
+            },
+            "in": "query",
+            "name": "scopeType",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "query",
+            "name": "scopeId",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "query",
+            "name": "assignmentId",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accountId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "operation": {
+                      "type": "string",
+                      "enum": [
+                        "grant",
+                        "remove"
+                      ]
+                    },
+                    "before": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "permission": {
+                            "type": "string"
+                          },
+                          "words": {
+                            "type": "string"
+                          },
+                          "scopeType": {
+                            "type": "string",
+                            "enum": [
+                              "operator",
+                              "branch",
+                              "department",
+                              "record"
+                            ]
+                          },
+                          "scopeId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "permission",
+                          "words",
+                          "scopeType",
+                          "scopeId"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "after": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "permission": {
+                            "type": "string"
+                          },
+                          "words": {
+                            "type": "string"
+                          },
+                          "scopeType": {
+                            "type": "string",
+                            "enum": [
+                              "operator",
+                              "branch",
+                              "department",
+                              "record"
+                            ]
+                          },
+                          "scopeId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "permission",
+                          "words",
+                          "scopeType",
+                          "scopeId"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "added": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "permission": {
+                            "type": "string"
+                          },
+                          "words": {
+                            "type": "string"
+                          },
+                          "scopeType": {
+                            "type": "string",
+                            "enum": [
+                              "operator",
+                              "branch",
+                              "department",
+                              "record"
+                            ]
+                          },
+                          "scopeId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "permission",
+                          "words",
+                          "scopeType",
+                          "scopeId"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "removed": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "permission": {
+                            "type": "string"
+                          },
+                          "words": {
+                            "type": "string"
+                          },
+                          "scopeType": {
+                            "type": "string",
+                            "enum": [
+                              "operator",
+                              "branch",
+                              "department",
+                              "record"
+                            ]
+                          },
+                          "scopeId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "permission",
+                          "words",
+                          "scopeType",
+                          "scopeId"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "unchanged": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "permission": {
+                            "type": "string"
+                          },
+                          "words": {
+                            "type": "string"
+                          },
+                          "scopeType": {
+                            "type": "string",
+                            "enum": [
+                              "operator",
+                              "branch",
+                              "department",
+                              "record"
+                            ]
+                          },
+                          "scopeId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "permission",
+                          "words",
+                          "scopeType",
+                          "scopeId"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "accountId",
+                    "operation",
+                    "before",
+                    "after",
+                    "added",
+                    "removed",
+                    "unchanged"
                   ],
                   "additionalProperties": false
                 }

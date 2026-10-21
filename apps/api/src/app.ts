@@ -26,6 +26,7 @@ import { healthRoutes } from './routes/health';
 import { authRoutes } from './routes/auth';
 import { meRoutes } from './routes/me';
 import { accountRoutes } from './routes/accounts';
+import { roleRoutes } from './routes/roles';
 import { appIdentityRoutes } from './routes/app-identities';
 import { operatorRoutes } from './routes/operators';
 import { branchRoutes } from './routes/branches';
@@ -432,6 +433,7 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   await app.register(authRoutes, { prefix: '/auth' });
   await app.register(meRoutes, { prefix: '/me' });
   await app.register(accountRoutes, { prefix: '/accounts' });
+  await app.register(roleRoutes, { prefix: '/roles' });
   await app.register(appIdentityRoutes, { prefix: '/admin/apps' });
   await app.register(operatorRoutes, { prefix: '/operators' });
   await app.register(branchRoutes, { prefix: '/branches' });

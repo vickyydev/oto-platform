@@ -33,6 +33,9 @@ export interface ConsoleNavGroup {
 
 /** Existing pages keep their permissions and their old addresses. */
 export const CONSOLE_SECTIONS: ConsoleSection[] = [
+  { id: 'roles', path: '/people/roles', label: 'Roles & scopes', icon: Shield,
+    description: 'Existing roles in plain words, who holds a permission and previews before role changes.',
+    permission: 'admin:role:read' },
   {
     id: 'accounts', path: '/people/accounts', label: 'Accounts', icon: Users,
     description: 'Staff sign-in accounts, invitations, phones, passwords and signed-in devices.',
@@ -174,7 +177,7 @@ export const consoleNav: ConsoleNavGroup[] = [
   {
     id: 'people', label: 'People & access', icon: Users,
     description: 'Accounts, roles, app access, employees and departments.',
-    gate: { any: ['admin:account:read'] }, sections: pages('accounts'),
+    gate: { any: ['admin:account:read'] }, sections: pages('accounts', 'roles'),
     currentHome: { app: 'pos', path: '/admin?panel=login-users', label: 'Open Login Users in POS Admin' },
   },
   {

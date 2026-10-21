@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AdminNotifications, LoginUsersPanel, type AdminBranch } from '@oto/admin-screens';
+import { AccountPermissionsDialog, AdminNotifications, LoginUsersPanel, type AdminBranch, type PermissionAccount } from '@oto/admin-screens';
 import { api } from '@/api/client';
 import { directoryApi } from '@/api/platform';
 import { useSession } from '@/auth/SessionContext';
@@ -12,6 +12,7 @@ export function Accounts() {
   const [branches, setBranches] = useState<AdminBranch[]>([]);
   const [branchError, setBranchError] = useState<string | null>(null);
   const [refresh, setRefresh] = useState(0);
+  const [permissionsFor, setPermissionsFor] = useState<PermissionAccount | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -31,7 +32,11 @@ export function Accounts() {
     {branchError && <ErrorNote message={`The park list could not be read. ${branchError}`}
       onRetry={() => setRefresh((held) => held + 1)} />}
     <LoginUsersPanel key={me.account.id} api={api} branches={branches}
-      me={{ operatorId: me.account.operatorId, isPlatformAdmin: me.isPlatformAdmin }} can={has} />
+      me={{ operatorId: me.account.operatorId, isPlatformAdmin: me.isPlatformAdmin }} can={has}
+      onPermissions={has('admin:role:read') ? setPermissionsFor : undefined} />
+    <AccountPermissionsDialog account={permissionsFor} api={api} branches={branches}
+      me={{ operatorId: me.account.operatorId, isPlatformAdmin: me.isPlatformAdmin }}
+      canAssign={has('admin:role:assign')} onClose={() => setPermissionsFor(null)} />
     <AdminNotifications />
   </>;
 }

@@ -188,6 +188,16 @@ describe('operator-wide settings are changed at operator scope (SCRUM-606)', () 
 });
 
 describe('by-id routes (SCRUM-290)', () => {
+  it('Roles reads carry the operator into the catalogue, holder lookup and preview (SCRUM-612)', () => {
+    for (const path of ['/roles', '/roles/holders', '/roles/preview']) {
+      const route = routes.find((r) => r.method === 'GET' && r.path === path);
+      expect(route, path).toBeDefined();
+      expect(establishesOwnership(route!.handlerText), path).toBe(true);
+    }
+    const preview = routes.find((r) => r.method === 'GET' && r.path === '/roles/preview');
+    expect(preview!.handlerText).toContain("requirePermission('admin:role:assign')");
+  });
+
   it('the source walk found every route the app registered', () => {
     // Everything below reads the handler out of the source, so a file this
     // walk missed would be a file whose routes are silently unchecked. This is

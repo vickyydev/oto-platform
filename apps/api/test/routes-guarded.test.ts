@@ -34,6 +34,14 @@ afterAll(async () => {
 const NOT_OURS = new Set(['/*']);
 
 describe('route guards (S2-01b)', () => {
+  it('the Roles catalogue, reverse lookup and preview retain the permission-read gate (SCRUM-612)', () => {
+    for (const url of ['/roles', '/roles/holders', '/roles/preview']) {
+      const route = ctx.app.routeRegistry.find((r) => r.method === 'GET' && r.url === url);
+      expect(route?.config.permission, url).toBe('admin:role:read');
+      expect(route?.config.public, url).not.toBe(true);
+    }
+  });
+
   it('pins the cloud trading surface refused by a selected forced-offline station', () => {
     const trading = ctx.app.routeRegistry
       .filter((r) => r.config.stationTrading && r.method !== 'HEAD' && r.method !== 'OPTIONS')
