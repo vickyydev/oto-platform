@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AccountPermissionsDialog, AdminNotifications, LoginUsersPanel, type AdminBranch, type PermissionAccount } from '@oto/admin-screens';
+import { AccountAppsDialog, AccountPermissionsDialog, AdminNotifications, LoginUsersPanel, scopeWords, type AdminBranch, type AppsDialogAccount, type PermissionAccount } from '@oto/admin-screens';
 import { api } from '@/api/client';
 import { directoryApi } from '@/api/platform';
 import { useSession } from '@/auth/SessionContext';
@@ -13,6 +13,7 @@ export function Accounts() {
   const [branchError, setBranchError] = useState<string | null>(null);
   const [refresh, setRefresh] = useState(0);
   const [permissionsFor, setPermissionsFor] = useState<PermissionAccount | null>(null);
+  const [appsFor, setAppsFor] = useState<AppsDialogAccount | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -33,10 +34,14 @@ export function Accounts() {
       onRetry={() => setRefresh((held) => held + 1)} />}
     <LoginUsersPanel key={me.account.id} api={api} branches={branches}
       me={{ operatorId: me.account.operatorId, isPlatformAdmin: me.isPlatformAdmin }} can={has}
-      onPermissions={has('admin:role:read') ? setPermissionsFor : undefined} />
+      onPermissions={has('admin:role:read') ? setPermissionsFor : undefined}
+      onApps={has('admin:role:read') ? setAppsFor : undefined} />
     <AccountPermissionsDialog account={permissionsFor} api={api} branches={branches}
       me={{ operatorId: me.account.operatorId, isPlatformAdmin: me.isPlatformAdmin }}
       canAssign={has('admin:role:assign')} onClose={() => setPermissionsFor(null)} />
+    <AccountAppsDialog account={appsFor} api={api} branches={branches}
+      scopeLabel={(type, id) => scopeWords(type, id, branches)}
+      canAssign={has('admin:role:assign')} onClose={() => setAppsFor(null)} />
     <AdminNotifications />
   </>;
 }

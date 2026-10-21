@@ -148,6 +148,64 @@ const canOpenOtoApp = async (accountId: string): Promise<boolean> =>
   );
 
 describe('POST /admin/apps/:app/users', () => {
+  it('describes every app-access response consumed by the lifted console', () => {
+    const doc = ctx.app.swagger();
+    for (const [path, verb] of [
+      ['/admin/apps/users/{accountId}', 'get'], ['/admin/apps/{app}/users', 'post'],
+      ['/admin/apps/{app}/users/{accountId}', 'delete'],
+      ['/admin/apps/oto_app/users/{accountId}/branches', 'put'],
+      ['/admin/apps/oto_app/unlinked-users', 'get'],
+    ] as const) {
+      const response = doc.paths?.[path]?.[verb]?.responses?.['200'];
+      expect(Boolean(response && 'content' in response && response.content), `${verb} ${path} must describe its answer`).toBe(true);
+    }
+  });
+
+  it('provisions an existing account in one action without SMS, with replay, branch read-back and unlink', async () => {
+    const targetId = newId();
+    await ctx.db.insert(account).values({
+      id: targetId, operatorId, phone: '+66999000613', status: 'active',
+    });
+    const [park] = await ctx.db.select({ id: branch.id }).from(branch)
+      .where(eq(branch.operatorId, operatorId)).limit(1);
+    const smsBefore = ctx.smsLog.length;
+    const payload = { accountId: targetId, branchIds: [park!.id],
+      otoApp: { email: 'zz-test-scrum-613@otopark.test', fullName: 'ZZ TEST App access one action', role: 'staff' } };
+    const headers = { cookie: adminCookie, 'idempotency-key': newId() };
+    const first = await ctx.app.inject({ method: 'POST', url: '/admin/apps/oto_app/users', headers, payload });
+    expect(first.statusCode).toBe(200);
+    expect(first.json()).toMatchObject({ app: 'oto_app', accountId: targetId, accountCreated: false, appUserCreated: true,
+      appBranch: { seatedFrom: 'chosen', unplacedReason: null } });
+    expect(first.json()).not.toHaveProperty('codeSent');
+    const replay = await ctx.app.inject({ method: 'POST', url: '/admin/apps/oto_app/users', headers, payload });
+    expect(replay.statusCode).toBe(200);
+    expect(replay.headers['x-oto-replay']).toBe('true');
+    expect(replay.json()).toEqual(first.json());
+    expect(ctx.smsLog.length).toBe(smsBefore);
+    const listed = await ctx.app.inject({ method: 'GET', url: `/admin/apps/users/${targetId}`, headers });
+    expect(listed.statusCode).toBe(200);
+    expect(listed.json().identities).toHaveLength(1);
+    expect(listed.json().identities[0]).toMatchObject({
+      id: first.json().id, app: 'oto_app', externalUserId: first.json().externalUserId,
+      branches: { accessBranches: [park!.id], appBranches: { allBranches: false,
+        branches: [expect.objectContaining({ platformBranchId: park!.id })] } },
+    });
+    const audits = await ctx.db.select().from(auditLog).where(eq(auditLog.entityId, first.json().id));
+    expect(audits.filter((row) => row.action === 'app_identity.link')).toHaveLength(1);
+    expect((await otoAppUserById(first.json().externalUserId))!.platformUserId).toBe(targetId);
+    const changed = await ctx.app.inject({ method: 'PUT', url: `/admin/apps/oto_app/users/${targetId}/branches`,
+      headers: { cookie: adminCookie, 'idempotency-key': newId() }, payload: { branchIds: null } });
+    expect(changed.statusCode).toBe(200);
+    expect(changed.json()).toMatchObject({ ok: true, accessBranches: null, accessChanged: true });
+    const removed = await ctx.app.inject({ method: 'DELETE', url: `/admin/apps/oto_app/users/${targetId}`,
+      headers: { cookie: adminCookie, 'idempotency-key': newId() } });
+    expect(removed.statusCode).toBe(200);
+    expect(removed.json()).toEqual({ ok: true, accessRevoked: true });
+    expect((await otoAppUserById(first.json().externalUserId))!.platformUserId).toBeNull();
+    expect(await ctx.db.select().from(appIdentity).where(eq(appIdentity.accountId, targetId))).toEqual([]);
+    expect(ctx.smsLog.length).toBe(smsBefore);
+  });
+
   let accountId: string;
   let identityId: string;
 
@@ -222,6 +280,8 @@ describe('POST /admin/apps/:app/users', () => {
       externalUserId: 'otoapp-user-1',
       hasAccess: true,
     });
+    expect(res.json().identities[0].createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+    expect(typeof res.json().identities[0].createdBy).toBe('string');
   });
 
   it('refuses a second link for the same account with 409, not 500', async () => {

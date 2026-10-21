@@ -27,6 +27,7 @@ import { AreaLanding } from '@/pages/AreaLanding';
 import { Overview } from '@/pages/Overview';
 import { Accounts } from '@/pages/Accounts';
 import { Roles } from '@/pages/Roles';
+import { AppAccess } from '@/pages/AppAccess';
 
 const LAUNCHER_URL = import.meta.env.VITE_LAUNCHER_URL?.trim();
 
@@ -128,6 +129,7 @@ function NotFound() {
 const pageElements: Record<string, ReactElement> = {
   accounts: <Accounts />,
   roles: <Roles />,
+  'app-access': <AppAccess />,
   health: <Health />, failures: <Failures />, activity: <Activity />,
   devices: <Devices />, branches: <Branches />, bookings: <Bookings />,
   booths: <Booths />, 'booth-report': <BoothReport />, vouchers: <Vouchers />,

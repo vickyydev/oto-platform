@@ -1387,7 +1387,35 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            /** @enum {string} */
+                            app: "pos" | "console" | "oto_app" | "radar" | "booth" | "inbox";
+                            /** Format: uuid */
+                            accountId: string;
+                            externalUserId: string;
+                            accountCreated: boolean;
+                            appUserCreated: boolean;
+                            appBranch: {
+                                branchId: string | null;
+                                branchName: string | null;
+                                branchIds: string[];
+                                /** @enum {string|null} */
+                                matchedBy: "core_branch_id" | "name" | null;
+                                /** @enum {string|null} */
+                                seatedFrom: "request" | "employee" | "session" | "operator_wide" | "chosen" | null;
+                                /** @enum {string|null} */
+                                unplacedReason: "no_platform_branch" | "no_app_branch" | "ambiguous_name" | "no_mapped_branch" | null;
+                            } | null;
+                            codeSent?: boolean;
+                            warning?: {
+                                code: string;
+                                message: string;
+                            };
+                        };
+                    };
                 };
             };
         };
@@ -1530,7 +1558,33 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            identities: {
+                                /** Format: uuid */
+                                id: string;
+                                /** @enum {string} */
+                                app: "pos" | "console" | "oto_app" | "radar" | "booth" | "inbox";
+                                externalUserId: string;
+                                /** Format: uuid */
+                                createdBy: string;
+                                /** Format: date-time */
+                                createdAt: string;
+                                hasAccess: boolean;
+                                branches?: {
+                                    accessBranches: string[] | null;
+                                    appBranches: {
+                                        allBranches: boolean;
+                                        branches: {
+                                            id: string;
+                                            name: string;
+                                            platformBranchId: string | null;
+                                        }[];
+                                    } | null;
+                                };
+                            }[];
+                        };
+                    };
                 };
             };
         };
@@ -1627,7 +1681,13 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            ok: true;
+                            accessRevoked: boolean;
+                        };
+                    };
                 };
             };
         };

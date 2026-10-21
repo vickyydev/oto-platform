@@ -1923,7 +1923,131 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "app": {
+                      "type": "string",
+                      "enum": [
+                        "pos",
+                        "console",
+                        "oto_app",
+                        "radar",
+                        "booth",
+                        "inbox"
+                      ]
+                    },
+                    "accountId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "externalUserId": {
+                      "type": "string"
+                    },
+                    "accountCreated": {
+                      "type": "boolean"
+                    },
+                    "appUserCreated": {
+                      "type": "boolean"
+                    },
+                    "appBranch": {
+                      "type": "object",
+                      "properties": {
+                        "branchId": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "branchName": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "branchIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "matchedBy": {
+                          "type": "string",
+                          "enum": [
+                            "core_branch_id",
+                            "name"
+                          ],
+                          "nullable": true
+                        },
+                        "seatedFrom": {
+                          "type": "string",
+                          "enum": [
+                            "request",
+                            "employee",
+                            "session",
+                            "operator_wide",
+                            "chosen"
+                          ],
+                          "nullable": true
+                        },
+                        "unplacedReason": {
+                          "type": "string",
+                          "enum": [
+                            "no_platform_branch",
+                            "no_app_branch",
+                            "ambiguous_name",
+                            "no_mapped_branch"
+                          ],
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "branchId",
+                        "branchName",
+                        "branchIds",
+                        "matchedBy",
+                        "seatedFrom",
+                        "unplacedReason"
+                      ],
+                      "additionalProperties": false,
+                      "nullable": true
+                    },
+                    "codeSent": {
+                      "type": "boolean"
+                    },
+                    "warning": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "app",
+                    "accountId",
+                    "externalUserId",
+                    "accountCreated",
+                    "appUserCreated",
+                    "appBranch"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -2131,7 +2255,122 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "identities": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "app": {
+                            "type": "string",
+                            "enum": [
+                              "pos",
+                              "console",
+                              "oto_app",
+                              "radar",
+                              "booth",
+                              "inbox"
+                            ]
+                          },
+                          "externalUserId": {
+                            "type": "string"
+                          },
+                          "createdBy": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "hasAccess": {
+                            "type": "boolean"
+                          },
+                          "branches": {
+                            "type": "object",
+                            "properties": {
+                              "accessBranches": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "nullable": true
+                              },
+                              "appBranches": {
+                                "type": "object",
+                                "properties": {
+                                  "allBranches": {
+                                    "type": "boolean"
+                                  },
+                                  "branches": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "name": {
+                                          "type": "string"
+                                        },
+                                        "platformBranchId": {
+                                          "type": "string",
+                                          "nullable": true
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "name",
+                                        "platformBranchId"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "allBranches",
+                                  "branches"
+                                ],
+                                "additionalProperties": false,
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "accessBranches",
+                              "appBranches"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "app",
+                          "externalUserId",
+                          "createdBy",
+                          "createdAt",
+                          "hasAccess"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "identities"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -2289,7 +2528,30 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "accessRevoked": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "accessRevoked"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }

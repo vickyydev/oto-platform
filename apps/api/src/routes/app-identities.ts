@@ -41,6 +41,49 @@ import { opCtx, withTx } from '../services/tx';
 import { otoAppProvisionerOf } from '../plugins/credential';
 import { provisionExistingOtoAppUser } from '../services/otoapp-provision';
 
+const OtoAppBranchPlacementSchema = z.object({
+  branchId: z.string().nullable(),
+  branchName: z.string().nullable(),
+  branchIds: z.array(z.string()),
+  matchedBy: z.enum(['core_branch_id', 'name']).nullable(),
+  seatedFrom: z.enum(['request', 'employee', 'session', 'operator_wide', 'chosen']).nullable(),
+  unplacedReason: z.enum(['no_platform_branch', 'no_app_branch', 'ambiguous_name', 'no_mapped_branch']).nullable(),
+});
+
+const LinkedAppIdentitySchema = z.object({
+  id: z.string().uuid(),
+  app: z.enum(HANDOFF_AUDIENCES),
+  accountId: z.string().uuid(),
+  externalUserId: z.string(),
+  accountCreated: z.boolean(),
+  appUserCreated: z.boolean(),
+  appBranch: OtoAppBranchPlacementSchema.nullable(),
+  // Present only when this request creates the platform account and attempts
+  // delivery; linking an existing account never sends a setup code.
+  codeSent: z.boolean().optional(),
+  warning: z.object({ code: z.string(), message: z.string() }).optional(),
+});
+
+const AccountAppIdentitiesSchema = z.object({
+  identities: z.array(z.object({
+    id: z.string().uuid(),
+    app: z.enum(HANDOFF_AUDIENCES),
+    externalUserId: z.string(),
+    createdBy: z.string().uuid(),
+    createdAt: z.string().datetime(),
+    hasAccess: z.boolean(),
+    branches: z.object({
+      accessBranches: z.array(z.string().uuid()).nullable(),
+      appBranches: z.object({
+        allBranches: z.boolean(),
+        branches: z.array(z.object({
+          id: z.string(), name: z.string(), platformBranchId: z.string().nullable(),
+        })),
+      }).nullable(),
+    }).optional(),
+  })),
+});
+
 /**
  * S2-17a — provisioning a person into one of the suite's apps.
  *
@@ -151,6 +194,7 @@ export async function appIdentityRoutes(app: App): Promise<void> {
             })
             .optional(),
         }),
+        response: { 200: LinkedAppIdentitySchema },
       },
     },
     async (req) => {
@@ -573,6 +617,7 @@ export async function appIdentityRoutes(app: App): Promise<void> {
       schema: {
         description: 'The app identities linked to one account',
         params: z.object({ accountId: z.string().uuid() }),
+        response: { 200: AccountAppIdentitiesSchema },
       },
     },
     async (req) => {
@@ -603,14 +648,12 @@ export async function appIdentityRoutes(app: App): Promise<void> {
        * seats them, so the dialog can show (and start an edit from) both.
        */
       const otoAppRow = rows.find((r) => r.app === 'oto_app');
+      const accessBranches = otoAppRow
+        ? await appAccessBranches(app.db, req.params.accountId, auth.operatorId, 'oto_app')
+        : null;
       const otoAppBranches = otoAppRow
         ? {
-            accessBranches: await appAccessBranches(
-              app.db,
-              req.params.accountId,
-              auth.operatorId,
-              'oto_app',
-            ),
+            accessBranches: accessBranches === null ? null : [...accessBranches],
             appBranches: await readOtoAppUserBranches(app.db, otoAppRow.externalUserId),
           }
         : null;
@@ -620,7 +663,7 @@ export async function appIdentityRoutes(app: App): Promise<void> {
           app: r.app,
           externalUserId: r.externalUserId,
           createdBy: r.createdBy,
-          createdAt: r.createdAt,
+          createdAt: r.createdAt.toISOString(),
           /**
            * Whether the tile actually opens. A link and the grant behind it
            * are separate rows, and an administrator looking at this page
@@ -728,6 +771,7 @@ export async function appIdentityRoutes(app: App): Promise<void> {
       schema: {
         description: 'Unlink an account from an app and withdraw its access',
         params: z.object({ app: AppParam, accountId: z.string().uuid() }),
+        response: { 200: z.object({ ok: z.literal(true), accessRevoked: z.boolean() }) },
       },
     },
     async (req) => {

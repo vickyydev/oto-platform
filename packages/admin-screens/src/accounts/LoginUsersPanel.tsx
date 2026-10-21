@@ -771,9 +771,9 @@ export function LoginUsersPanel({ api, branches, me, can, onPermissions, onApps,
 interface AccountsTableProps {
   accounts: AccountRow[]; loading: boolean; error: string | null; onRetry: () => void;
   temporaryPasswordBusy?: boolean;
-  onPhone: (account: AccountRow) => void; onSessions: (account: AccountRow) => void;
-  onRevoke: (account: AccountRow) => void; onTemporaryPassword: (account: AccountRow) => void;
-  onStatus: (account: AccountRow, status: 'active' | 'inactive') => void;
+  onPhone?: (account: AccountRow) => void; onSessions?: (account: AccountRow) => void;
+  onRevoke?: (account: AccountRow) => void; onTemporaryPassword?: (account: AccountRow) => void;
+  onStatus?: (account: AccountRow, status: 'active' | 'inactive') => void;
   onPermissions?: (account: AccountRow) => void; onApps?: (account: AccountRow) => void;
 }
 
@@ -815,29 +815,29 @@ export function AccountsTable({ accounts, loading, error, onRetry, onPhone, onSe
                     {onPermissions && <Button variant="ghost" size="sm" title="Effective permissions" onClick={() => onPermissions(a)}>
                       <ShieldCheck className="w-4 h-4" />
                     </Button>}
-                    <Button
+                    {onPhone && <Button
                       variant="ghost"
                       size="sm"
                       title="Change phone"
                       onClick={() => onPhone(a)}
                     >
                       <Pencil className="w-4 h-4" />
-                    </Button>
+                    </Button>}
                     {onApps && <Button variant="ghost" size="sm" title="Apps" onClick={() => onApps(a)}>
                       <LayoutGrid className="w-4 h-4" />
                     </Button>}
-                    <Button variant="ghost" size="sm" title="Sessions" onClick={() => onSessions(a)}>
+                    {onSessions && <Button variant="ghost" size="sm" title="Sessions" onClick={() => onSessions(a)}>
                       <MonitorSmartphone className="w-4 h-4" />
-                    </Button>
-                    <Button
+                    </Button>}
+                    {onRevoke && <Button
                       variant="ghost"
                       size="sm"
                       title="Sign out everywhere"
                       onClick={() => onRevoke(a)}
                     >
                       <LogOut className="w-4 h-4" />
-                    </Button>
-                    <Button
+                    </Button>}
+                    {onTemporaryPassword && <Button
                       variant="ghost"
                       size="sm"
                       title="Temporary password"
@@ -845,8 +845,8 @@ export function AccountsTable({ accounts, loading, error, onRetry, onPhone, onSe
                       onClick={() => onTemporaryPassword(a)}
                     >
                       <KeyRound className="w-4 h-4" />
-                    </Button>
-                    {a.status === 'inactive' ? (
+                    </Button>}
+                    {onStatus && (a.status === 'inactive' ? (
                       <Button variant="ghost" size="sm" title="Activate" onClick={() => onStatus(a, 'active')}>
                         <UserCheck className="w-4 h-4" />
                       </Button>
@@ -860,7 +860,7 @@ export function AccountsTable({ accounts, loading, error, onRetry, onPhone, onSe
                       >
                         <UserX className="w-4 h-4" />
                       </Button>
-                    )}
+                    ))}
                   </div>
                 </TableCell>
               </TableRow>

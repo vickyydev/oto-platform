@@ -5,3 +5,7 @@ export type { AdminApi } from './api/admin-api';
 export { AccountPermissionsDialog, type PermissionAccount } from './roles/AccountPermissionsDialog';
 export { PermissionDiffView } from './roles/PermissionDiffView';
 export { createRolesApi, type RoleCatalogue, type PermissionHolders, type PermissionPreview } from './api/roles';
+export { AccountAppsDialog, type AppsDialogAccount, type AppsDialogBranch } from './apps/AccountAppsDialog';
+export { UnlinkedOtoAppUsers } from './apps/UnlinkedOtoAppUsers';
+export { createAppIdentitiesApi, APP_KEYS, OTO_APP_ROLES, type AppIdentity, type AppKey } from './api/app-identities';
+export { scopeWords } from './roles/presentation';
