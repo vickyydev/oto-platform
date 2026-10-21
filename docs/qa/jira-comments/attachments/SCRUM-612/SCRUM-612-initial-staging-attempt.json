@@ -1,0 +1,64 @@
+{
+  "ticket": "SCRUM-612",
+  "sha": "a25b539b44ab45770b22128d39339857ffbd1544",
+  "failedStep": "manager reach and phone view",
+  "diagnostic": {
+    "kind": "Error",
+    "message": "Phone page overflows"
+  },
+  "checks": [
+    {
+      "name": "The real role catalogue shows the approved roles and all 137 permission descriptions",
+      "passed": true,
+      "at": "2026-10-21T22:05:08.586Z"
+    },
+    {
+      "name": "Reverse lookup identifies the seeded manager and refund approval park scope, and opens the actual permissions drawer",
+      "passed": true,
+      "at": "2026-10-21T22:05:12.780Z"
+    },
+    {
+      "name": "Before-save preview is read-only and correctly explains the overlapping role as no effective access change",
+      "passed": true,
+      "at": "2026-10-21T22:05:18.204Z"
+    },
+    {
+      "name": "The actual branch-scoped grant saves once; replay returns the same assignment and the effective result matches the preview",
+      "passed": true,
+      "at": "2026-10-21T22:05:21.566Z"
+    },
+    {
+      "name": "Remove previews the surviving access, removes only the new grant and restores the demo’s exact original assignments",
+      "passed": true,
+      "at": "2026-10-21T22:05:25.048Z"
+    },
+    {
+      "name": "Fresh audit rows record one grant and one removal, with no second row from grant replay",
+      "passed": true,
+      "at": "2026-10-21T22:05:25.669Z"
+    }
+  ],
+  "audit": [
+    {
+      "id": "01a1607f-6b45-7347-8e0d-3d3d72429e9e",
+      "action": "role_assignment.delete",
+      "createdAt": "2026-10-21T22:05:25.700Z",
+      "requestId": "919e1c63-767e-497d-89e8-478178a86af9"
+    },
+    {
+      "id": "01a1607f-58ee-768f-b7bd-6e97c5c356cd",
+      "action": "role_assignment.create",
+      "createdAt": "2026-10-21T22:05:21.001Z",
+      "requestId": "61c18e4e-5a39-495e-b9dc-aa507f0d02a2"
+    }
+  ],
+  "proofAssignmentId": "01a1607f-58e9-72d4-b3f6-a10fb9311e6a",
+  "demoRestored": true,
+  "originalAssignmentsFingerprint": "d4658a3f98eb17e54c7ce3ddeb05af4c74bbbcc99ec4271e86250306716489c3",
+  "restoredAssignmentsFingerprint": "d4658a3f98eb17e54c7ce3ddeb05af4c74bbbcc99ec4271e86250306716489c3",
+  "originalCoverageFingerprint": "47653cc14eb045017c858ee619d9da281a4b581b339c7ec97673fe9652d35139",
+  "restoredCoverageFingerprint": "47653cc14eb045017c858ee619d9da281a4b581b339c7ec97673fe9652d35139",
+  "restoreNeedsAttention": false,
+  "retainedScreenshot": "SCRUM-612-05-phone-overflow-before-fix.png",
+  "subsequentResolution": "The width fix has a failed-before browser regression, passing full local and exact-SHA CI gates, and a subsequent seven-check staging pass."
+}

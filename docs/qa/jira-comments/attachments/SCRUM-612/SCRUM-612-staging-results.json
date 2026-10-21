@@ -1,0 +1,182 @@
+{
+  "ticket": "SCRUM-612",
+  "consoleSha": "803cac2464fe15015ea92be1bb3e1f5e22ad11af",
+  "apiSha": "803cac2464fe15015ea92be1bb3e1f5e22ad11af",
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "expectedSha": "803cac2464fe15015ea92be1bb3e1f5e22ad11af",
+      "sourceSha": "803cac2464fe15015ea92be1bb3e1f5e22ad11af",
+      "deployId": "dep-dbcjrlc9v7es73bkjal0",
+      "finishedAt": "2026-10-21T22:37:08.411931Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "expectedSha": "803cac2464fe15015ea92be1bb3e1f5e22ad11af",
+      "sourceSha": "803cac2464fe15015ea92be1bb3e1f5e22ad11af",
+      "deployId": "dep-dbcjrlc9v7es73bkjbpg",
+      "finishedAt": "2026-10-21T22:34:53.778523Z"
+    }
+  ],
+  "checks": [
+    {
+      "name": "The real role catalogue shows the approved roles and all 137 permission descriptions",
+      "passed": true,
+      "at": "2026-10-21T22:40:39.811Z"
+    },
+    {
+      "name": "Reverse lookup identifies the seeded manager and refund approval park scope, and opens the actual permissions drawer",
+      "passed": true,
+      "at": "2026-10-21T22:40:43.265Z"
+    },
+    {
+      "name": "Before-save preview is read-only and correctly explains the overlapping role as no effective access change",
+      "passed": true,
+      "at": "2026-10-21T22:40:48.855Z"
+    },
+    {
+      "name": "The actual branch-scoped grant saves once; replay returns the same assignment and the effective result matches the preview",
+      "passed": true,
+      "at": "2026-10-21T22:40:52.313Z"
+    },
+    {
+      "name": "Remove previews the surviving access, removes only the new grant and restores the demo’s exact original assignments",
+      "passed": true,
+      "at": "2026-10-21T22:40:55.858Z"
+    },
+    {
+      "name": "Fresh audit rows record one grant and one removal, with no second row from grant replay",
+      "passed": true,
+      "at": "2026-10-21T22:40:56.717Z"
+    },
+    {
+      "name": "The seeded manager sees only her park’s lookup assignments, cannot preview another park’s grant, and the longest sentence in the 137-permission picker fits 390 pixels",
+      "passed": true,
+      "at": "2026-10-21T22:41:01.397Z"
+    }
+  ],
+  "screenshots": [
+    {
+      "filename": "SCRUM-612-06-final-role-catalogue.png",
+      "label": "SCRUM-612: role catalogue and permission sentences",
+      "consoleSha": "803cac2464fe15015ea92be1bb3e1f5e22ad11af",
+      "apiSha": "803cac2464fe15015ea92be1bb3e1f5e22ad11af",
+      "capturedAt": "2026-10-21T22:40:40.186Z",
+      "redactions": [
+        "Other account rows, including any arriving during capture",
+        "Unrelated refusal request details"
+      ],
+      "sha256": "c50acc5fb2d19eda96fc564bb43d040ad047ff3d7d70a59c5f439a37668f086e",
+      "reviewedAt": "2026-10-21T22:41:33.477Z",
+      "review": "Visually inspected: the named feature is readable, the proof timestamp and service sources are visible, and unrelated rows/details are redacted."
+    },
+    {
+      "filename": "SCRUM-612-07-final-branch-grant-preview.png",
+      "label": "SCRUM-612: real branch grant preview before saving; overlap adds no new access",
+      "consoleSha": "803cac2464fe15015ea92be1bb3e1f5e22ad11af",
+      "apiSha": "803cac2464fe15015ea92be1bb3e1f5e22ad11af",
+      "capturedAt": "2026-10-21T22:40:49.226Z",
+      "redactions": [
+        "Other account rows, including any arriving during capture",
+        "Unrelated refusal request details"
+      ],
+      "sha256": "6a23146ccd3dda713601a29b10d25b0d2c147aba0760c5e076ab8dd418fb4090",
+      "reviewedAt": "2026-10-21T22:41:33.477Z",
+      "review": "Visually inspected: the named feature is readable, the proof timestamp and service sources are visible, and unrelated rows/details are redacted."
+    },
+    {
+      "filename": "SCRUM-612-08-final-saved-branch-grant.png",
+      "label": "SCRUM-612: new reception role saved at the demo manager’s existing park",
+      "consoleSha": "803cac2464fe15015ea92be1bb3e1f5e22ad11af",
+      "apiSha": "803cac2464fe15015ea92be1bb3e1f5e22ad11af",
+      "capturedAt": "2026-10-21T22:40:52.672Z",
+      "redactions": [
+        "Other account rows, including any arriving during capture",
+        "Unrelated refusal request details"
+      ],
+      "sha256": "a9b08145bfe01bf80cd2079d54e49f1c0bca7d8d6b040c43179ba33e3dd28213",
+      "reviewedAt": "2026-10-21T22:41:33.477Z",
+      "review": "Visually inspected: the named feature is readable, the proof timestamp and service sources are visible, and unrelated rows/details are redacted."
+    },
+    {
+      "filename": "SCRUM-612-09-final-manager-phone.png",
+      "label": "SCRUM-612: longest sentence in the 137-permission picker fits 390px; demo restored",
+      "consoleSha": "803cac2464fe15015ea92be1bb3e1f5e22ad11af",
+      "apiSha": "803cac2464fe15015ea92be1bb3e1f5e22ad11af",
+      "capturedAt": "2026-10-21T22:41:01.738Z",
+      "redactions": [
+        "Other account rows, including any arriving during capture",
+        "Unrelated refusal request details"
+      ],
+      "sha256": "325b7a25e57bb71c5d51d22b9a335af030dce746a1b4c26a15b065b7bc7773ac",
+      "reviewedAt": "2026-10-21T22:41:33.477Z",
+      "review": "Visually inspected: the named feature is readable, the proof timestamp and service sources are visible, and unrelated rows/details are redacted."
+    }
+  ],
+  "demoRestored": true,
+  "createdNamedBusinessFixtures": false,
+  "temporaryDemoRoleAssignmentCreated": true,
+  "demoAccountId": "01a0c9ae-539f-7a52-987e-69d1c1a7a3cf",
+  "demoName": "Khun Dao (Manager)",
+  "scope": {
+    "type": "branch",
+    "id": "01a0c9ae-52cf-7aa1-baca-fc55e449148e",
+    "name": "Oto Play Park, Robinson Chalong"
+  },
+  "originalAssignmentsFingerprint": "d4658a3f98eb17e54c7ce3ddeb05af4c74bbbcc99ec4271e86250306716489c3",
+  "originalCoverageFingerprint": "47653cc14eb045017c858ee619d9da281a4b581b339c7ec97673fe9652d35139",
+  "proofAssignmentId": "01a1609f-de79-7a52-b840-0c1d0e8d929c",
+  "restoredAssignmentsFingerprint": "d4658a3f98eb17e54c7ce3ddeb05af4c74bbbcc99ec4271e86250306716489c3",
+  "restoredCoverageFingerprint": "47653cc14eb045017c858ee619d9da281a4b581b339c7ec97673fe9652d35139",
+  "audit": [
+    {
+      "id": "01a1609f-edae-78fb-8c45-4cc343422f4f",
+      "action": "role_assignment.delete",
+      "createdAt": "2026-10-21T22:40:56.238Z",
+      "requestId": "bee5029f-91ac-4a5b-8bf4-023b3e9bfcaa"
+    },
+    {
+      "id": "01a1609f-de7b-7fce-836e-a9b48c8109c1",
+      "action": "role_assignment.create",
+      "createdAt": "2026-10-21T22:40:52.346Z",
+      "requestId": "7a0accf3-8c5d-4ee0-9076-03a2088ca28f"
+    }
+  ],
+  "phoneLayout": {
+    "viewport": 390,
+    "documentWidth": 390,
+    "left": 37,
+    "right": 353,
+    "top": 550.625,
+    "bottom": 586.625,
+    "permissionCount": 137,
+    "selectedPermission": "pos:cash:approve"
+  },
+  "realSmsRequests": 0,
+  "completedAt": "2026-10-21T22:41:01.738Z",
+  "independentAcceptanceReview": "No blockers: fresh audits, exact assignment/coverage restoration, separated baseline and Console fix source evidence, and honest no-SMS claims.",
+  "initialAttempt": {
+    "receipt": "SCRUM-612-initial-staging-attempt.json",
+    "passedChecks": 6,
+    "failure": "Real full permission picker overflowed the phone width; fixed with failed-before regression.",
+    "demoRestored": true
+  },
+  "jiraAttachments": [
+    {
+      "id": "11906",
+      "name": "SCRUM-612-06-final-role-catalogue.png"
+    },
+    {
+      "id": "11907",
+      "name": "SCRUM-612-07-final-branch-grant-preview.png"
+    },
+    {
+      "id": "11908",
+      "name": "SCRUM-612-08-final-saved-branch-grant.png"
+    },
+    {
+      "id": "11909",
+      "name": "SCRUM-612-09-final-manager-phone.png"
+    }
+  ]
+}

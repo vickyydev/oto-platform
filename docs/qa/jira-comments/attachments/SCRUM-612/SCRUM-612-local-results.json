@@ -1,0 +1,288 @@
+{
+  "ticket": "SCRUM-612",
+  "candidate": "a25b539b44ab45770b22128d39339857ffbd1544",
+  "recordedAt": "2026-10-21T21:42:44.358Z",
+  "sourceFiles": [
+    {
+      "path": "apps/api/src/app.ts",
+      "sha256": "51d6e790b46f436ce2963259c4915fcd0989ae214f2964c024fbc64994ae7f6f"
+    },
+    {
+      "path": "apps/api/src/routes/accounts.ts",
+      "sha256": "b83f73309c9ef050bf004851df156f48972d4d64f6e54cafa7ab150e7b6e1fff"
+    },
+    {
+      "path": "apps/api/test/id-conformance.test.ts",
+      "sha256": "9ab0d597e5d0bb036d6ea7c07523ef0e9702b3a20398e5e0343724b110f4d56e"
+    },
+    {
+      "path": "apps/api/test/route-scope-target.test.ts",
+      "sha256": "0619a659f98314ffea29ed946b8db265127df9882120dca47b5e355062c33f2b"
+    },
+    {
+      "path": "apps/api/test/route-write-conformance.test.ts",
+      "sha256": "2a4b239d98f956077cff1fea7d9ad13efdcab39860e282d189ca902c78439871"
+    },
+    {
+      "path": "apps/api/test/routes-guarded.test.ts",
+      "sha256": "cb15b0a8105971b06f252473eb83f56436d434208d11552ededd6f4aa2c2a064"
+    },
+    {
+      "path": "apps/console/src/App.tsx",
+      "sha256": "19671abb04bd4272f613cbe57f3574f858be04c1d99937b94eb0d221b4c16671"
+    },
+    {
+      "path": "apps/console/src/components/consoleSections.tsx",
+      "sha256": "e01e9e7a07e0e31a151da9bf79b9c988b339453f0abd819a05518dcf5e1128c8"
+    },
+    {
+      "path": "apps/console/src/pages/Accounts.tsx",
+      "sha256": "efe71961ae56cb2ae448d7c11734218f5613c0cd677231fd5c218197daa9ad13"
+    },
+    {
+      "path": "packages/admin-screens/src/index.ts",
+      "sha256": "554869d1718733e77bc857eecd0ff734f97bb858c5ac013f5f2477e70456fdb8"
+    },
+    {
+      "path": "packages/api-types/openapi.json",
+      "sha256": "3c3775d38c49cedc11ea4cb283f84308f9b0d901d55bfa27185c5c8a7164c898"
+    },
+    {
+      "path": "packages/api-types/src/openapi.ts",
+      "sha256": "69c6bbc2aceee43139196ca8779bd9a15d79cedc09259cf59a8ac9a16513dde4"
+    },
+    {
+      "path": "packages/shared/src/permissions.ts",
+      "sha256": "bfbdbd414c799c338d1b99caf40cebdc83a2f466a36267c3c9dafc3d64460d84"
+    },
+    {
+      "path": "apps/api/src/routes/roles.ts",
+      "sha256": "07984c9478bdfdde403ee2873a9ed7c829ba61dc15758faf5b6ef8d12de317b1"
+    },
+    {
+      "path": "apps/api/src/services/roles.ts",
+      "sha256": "dac8287431c09651d63ce634eb69fb2e0fad247a80379065f556ee7d5e81e62a"
+    },
+    {
+      "path": "apps/api/test/roles-console.test.ts",
+      "sha256": "6c472e3aea8696b7b4660dfe7b9c8ea5994ca766815fd7c29bf2d11bed32a16b"
+    },
+    {
+      "path": "apps/api/test/s612-roles-review.test.ts",
+      "sha256": "d2ede0aac642a5d5676203183821158c2eed5a113d2b4fa7b2bf62c33d41f3dc"
+    },
+    {
+      "path": "apps/console/e2e/roles.spec.ts",
+      "sha256": "1d98cd25e4b38e678d5b2a51b4181a12aa2d55ea06948dc6ae1aee892e7f78cd"
+    },
+    {
+      "path": "apps/console/src/pages/Roles.tsx",
+      "sha256": "7bee23997a1260ce22a3e5e0b290c6b6fddb95dc9a93fdcaf342ad496948c86b"
+    },
+    {
+      "path": "apps/console/test/roles-markup.test.ts",
+      "sha256": "33e9a63e446404e2a10f3168ac94beb7b0a1b9226dae0d192d7d3211e7d20a62"
+    },
+    {
+      "path": "packages/admin-screens/src/api/roles.ts",
+      "sha256": "111cb79356667e983902c5174b5649a4dbac33b51e89887cc55bd7b79dde938b"
+    },
+    {
+      "path": "packages/admin-screens/src/roles/AccountPermissionsDialog.tsx",
+      "sha256": "b14ccc6fc2ccbce68044ec8c8324f5eaae0acf32aedfc457481b3de401c55ecb"
+    },
+    {
+      "path": "packages/admin-screens/src/roles/PermissionDiffView.tsx",
+      "sha256": "c4f7f836cfd184fe6e84d8c403d887bb80798d301f017ae2d0945e378965aa85"
+    },
+    {
+      "path": "packages/admin-screens/src/roles/presentation.ts",
+      "sha256": "77ebf24209af6d64248d3d80edfd3a269af0dcc67f841dcb154ff3a73b4bd09d"
+    },
+    {
+      "path": "packages/shared/src/permission-words.ts",
+      "sha256": "d777a622129a29c25f6dee6020abda84b292551fb9add58bb3db543075f89fca"
+    },
+    {
+      "path": "packages/shared/test/permission-words.test.ts",
+      "sha256": "caea81dc8ed4b7b8c5a0bdb874e3fb22ad77541b9163913fc5e33d81207fbad5"
+    }
+  ],
+  "verifiedSourceAndConfigFiles": 3292,
+  "fullSourceManifestSha256": "86ada5a28b69dc7cad09ba23b1907e3a2dc46e9cbb65da189bdbf400bd3cc1ef",
+  "api": {
+    "cases": {
+      "passed": 4610,
+      "skipped": 401,
+      "todo": 5
+    },
+    "files": {
+      "passed": 313,
+      "skipped": 8
+    },
+    "shards": [
+      {
+        "shard": 1,
+        "cases": {
+          "passed": 1586,
+          "skipped": 106
+        },
+        "files": {
+          "passed": 105,
+          "skipped": 2
+        },
+        "log": "api-1.log",
+        "sha256": "de70dabafaab69886432e503d34488f43e7953210a2ad98419fdc917dfa3dd28"
+      },
+      {
+        "shard": 2,
+        "cases": {
+          "passed": 1574,
+          "skipped": 174,
+          "todo": 4
+        },
+        "files": {
+          "passed": 103,
+          "skipped": 4
+        },
+        "log": "api-2.log",
+        "sha256": "c47fb93f8b00cc7eecc627be6eb6221d26bc304df593fe02c4d300fb35c85c45"
+      },
+      {
+        "shard": 3,
+        "cases": {
+          "passed": 1450,
+          "skipped": 121,
+          "todo": 1
+        },
+        "files": {
+          "passed": 105,
+          "skipped": 2
+        },
+        "log": "api-3.log",
+        "sha256": "2d1806c1c0be15eca8f26f9548bf7623a3e6019146e75b30a52a5e290b185ba6"
+      }
+    ],
+    "exitCodes": [
+      0,
+      0,
+      0
+    ]
+  },
+  "packages": [
+    {
+      "package": "@oto/shared",
+      "passed": 759
+    },
+    {
+      "package": "@oto/api-types",
+      "passed": 8
+    },
+    {
+      "package": "@oto/db",
+      "passed": 305
+    },
+    {
+      "package": "@oto/pos",
+      "passed": 1413
+    },
+    {
+      "package": "@oto/booth",
+      "passed": 33
+    },
+    {
+      "package": "@oto/launcher",
+      "passed": 65
+    },
+    {
+      "package": "@oto/inbox",
+      "passed": 157
+    },
+    {
+      "package": "@oto/assistant",
+      "passed": 434
+    },
+    {
+      "package": "@oto/print",
+      "passed": 271
+    },
+    {
+      "package": "@oto/messaging",
+      "passed": 78
+    },
+    {
+      "package": "@oto/payments-2c2p",
+      "passed": 81
+    },
+    {
+      "package": "@oto/telemetry",
+      "passed": 36
+    },
+    {
+      "package": "@oto/admin-screens",
+      "passed": 3
+    },
+    {
+      "package": "@oto/console",
+      "passed": 174,
+      "todo": 3
+    }
+  ],
+  "box": {
+    "passed": 749,
+    "failed": 0
+  },
+  "browser": {
+    "passed": 53,
+    "built": true,
+    "newRolesCases": 8
+  },
+  "focused": {
+    "roles": 10,
+    "houseReview": 4,
+    "conformance": 56,
+    "finalPostRebase": 70
+  },
+  "checks": {
+    "workspaceOwnTypechecks": "passed",
+    "apiCompilerDiagnostics": 0,
+    "finalAffectedOwnTypechecks": "passed",
+    "fullLintErrors": 0,
+    "inheritedLintWarnings": 3,
+    "finalGeneratedIgnoredFileWarning": 1,
+    "builds": "passed",
+    "apiTypes": "passed",
+    "seamWalker": {
+      "passed": 8,
+      "newAllowances": 0
+    }
+  },
+  "observations": [
+    "New routes, navigation and boundary checks failed before the feature existed.",
+    "The uppercase UUID preview check failed before normalization.",
+    "An exact-duplicate review fixture was rejected by the existing assignment uniqueness constraint; the fixture was corrected to distinct overlapping roles.",
+    "No migration, existing grant-rule change or POS source edit."
+  ],
+  "logs": [
+    {
+      "name": "workspace-checks.log",
+      "sha256": "e835277ca688cdf661f53d516eaca48c060535cb55056ef538840936941de0ad"
+    },
+    {
+      "name": "workspace-tests.log",
+      "sha256": "6437cfe2478bbb662c65e4a6511e412d7e08f441c59623304b7a0db5a288f722"
+    },
+    {
+      "name": "workspace-box.log",
+      "sha256": "14d15a7a1015d49c444f1fc1238d6d7faecd959ec0084b07913e04aaf3c27af0"
+    },
+    {
+      "name": "workspace-browser.log",
+      "sha256": "d2b3191489473d136bc72bd322cc8b925dbad5f1986f352e445a6139d599a3ed"
+    },
+    {
+      "name": "final-post-rebase.log",
+      "sha256": "ac7a78fed6d1c3a315e220986471f7fcedf3834bd017f0a9b30d852a92b0a82f"
+    }
+  ]
+}
