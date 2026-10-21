@@ -6,7 +6,9 @@ import {
   holdsRadarAccess,
   launcherUrl,
   platformSessionFromSetCookie,
+  putPlatformPreferences,
   requireRadarSession,
+  resolveIdentity,
 } from "./platformSession";
 
 test("reads the platform session token and its lifetime from an exchange", () => {
@@ -92,5 +94,36 @@ test("a signed-out answer names the launcher when LAUNCHER_URL is set, and nothi
   } finally {
     if (before === undefined) delete process.env.LAUNCHER_URL;
     else process.env.LAUNCHER_URL = before;
+  }
+});
+
+test("SCRUM-653: the identity carries the account's preferences, and a write is forwarded as the person", async () => {
+  const realFetch = globalThis.fetch;
+  const seen: Array<{ url: string; init?: RequestInit }> = [];
+  globalThis.fetch = (async (url: string, init?: RequestInit) => {
+    seen.push({ url: String(url), init });
+    if (String(url).endsWith("/me/permissions")) {
+      return Response.json({ permissions: [{ permission: "app:radar:access", scopeType: "operator", scopeId: null }] });
+    }
+    if (String(url).endsWith("/me/preferences")) {
+      return Response.json({ preferences: { theme: "dark", language: "en" } });
+    }
+    return Response.json({ account: { id: "acc-prefs" }, employee: { name: "Lek" }, branch: null, preferences: { theme: "system", language: "th" } });
+  }) as typeof fetch;
+  try {
+    const answer = await resolveIdentity("http://platform.test", "prefs-token");
+    assert.equal(answer.kind, "ok");
+    assert.deepEqual(answer.kind === "ok" ? answer.identity.preferences : null, { theme: "system", language: "th" });
+
+    const put = await putPlatformPreferences("http://platform.test", "prefs-token", { theme: "dark" }, "key-1");
+    assert.deepEqual(put, { status: 200, body: { preferences: { theme: "dark", language: "en" } } });
+    const call = seen.find((c) => c.url === "http://platform.test/me/preferences")!;
+    assert.equal(call.init?.method, "PUT");
+    const headers = call.init?.headers as Record<string, string>;
+    assert.equal(headers.cookie, "oto_session=prefs-token");
+    assert.equal(headers["idempotency-key"], "key-1");
+    assert.equal(call.init?.body, JSON.stringify({ theme: "dark" }));
+  } finally {
+    globalThis.fetch = realFetch;
   }
 });

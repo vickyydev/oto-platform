@@ -51,6 +51,8 @@ export const KEY_ROUTES = [
 
 export const GUARDED_ROUTES = [
   "GET /api/me",
+  // SCRUM-653: the theme toggle, forwarded to the platform as the person.
+  "PUT /api/me/preferences",
   // Figures: the OTO POS rollup through the platform (sources/otoPos.ts).
   "GET /api/figures/branches",
   "GET /api/figures/today",

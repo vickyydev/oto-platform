@@ -5,11 +5,14 @@ import {
   clearRadarCookie,
   exchangeHandoff,
   forgetIdentity,
+  platformApiUrl,
   platformConfig,
+  putPlatformPreferences,
   readCookie,
   setRadarCookie,
   withLauncher,
 } from "./platformSession";
+import { readPreferencesUpdate } from "@shared/uiPreferences";
 
 /**
  * Signing on from the suite launcher, and out again (S2-18 R2). The design is
@@ -79,5 +82,33 @@ export function registerSignOnRoutes(app: Express): void {
   /** Who is signed in. Guarded: reaching the handler means the census guard said yes. */
   app.get("/api/me", (req: Request, res: Response) => {
     res.json(withLauncher({ signedIn: true, ...req.radar!.identity }));
+  });
+
+  /**
+   * SCRUM-653 — Radar's theme toggle writes the person's choice back to their
+   * platform account, so the launcher, the till and the console show it too.
+   * Guarded like /api/me; forwarded with the person's own platform token and
+   * the caller's replay key. The cached identity is dropped afterwards so the
+   * next /api/me reads the new value rather than the one from ten seconds ago.
+   */
+  app.put("/api/me/preferences", async (req: Request, res: Response, next) => {
+    try {
+      const body = readPreferencesUpdate(req.body);
+      if (!body) {
+        return res.status(400).json({
+          reason: "bad_preferences",
+          message: "Send a theme (system, light or dark), a language (en or th), or both.",
+        });
+      }
+      const apiUrl = platformApiUrl();
+      const token = req.radar!.token;
+      if (!apiUrl) return res.status(503).json(withLauncher({ reason: "unconfigured", message: REFUSAL_FALLBACK }));
+      const key = req.get("idempotency-key");
+      const answer = await putPlatformPreferences(apiUrl, token, body, key && key.length <= 200 ? key : null);
+      if (answer.status === 200) forgetIdentity(token);
+      res.status(answer.status).json(answer.body);
+    } catch (err) {
+      next(err);
+    }
   });
 }

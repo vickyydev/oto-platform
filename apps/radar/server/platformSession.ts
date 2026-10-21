@@ -1,5 +1,6 @@
 import { createHash } from "crypto";
 import type { NextFunction, Request, Response } from "express";
+import { readUiPreferences, type UiPreferences } from "@shared/uiPreferences";
 
 /**
  * Who is using Radar (S2-18 R2).
@@ -240,6 +241,11 @@ export interface RadarIdentity {
   accountId: string;
   name: string | null;
   branch: { id: string; name: string; code: string } | null;
+  /**
+   * The person's theme and language from their platform account (SCRUM-653);
+   * null from a platform that does not answer them yet.
+   */
+  preferences: UiPreferences | null;
 }
 
 export type IdentityAnswer =
@@ -298,6 +304,7 @@ async function ask(apiUrl: string, token: string): Promise<IdentityAnswer> {
       accountId: me.account?.id ?? "",
       name: me.employee?.nickname || me.employee?.name || null,
       branch: me.branch ?? null,
+      preferences: readUiPreferences(me),
     };
     return holdsRadarAccess(perms) ? { kind: "ok", identity } : { kind: "no_access", identity };
   } catch (err) {
@@ -317,6 +324,37 @@ export function resolveIdentity(apiUrl: string, token: string): Promise<Identity
     if (now - c.at >= IDENTITY_TTL_MS) identities.delete(k);
   });
   return answer;
+}
+
+// --- Writing the person's preferences back (SCRUM-653) ---------------------------
+
+/**
+ * `PUT /me/preferences` at the platform, as the person: their own token, so
+ * the platform writes their own account and records it under their name.
+ * Answers the platform's status and body, or 503 when it could not be reached.
+ */
+export async function putPlatformPreferences(
+  apiUrl: string,
+  token: string,
+  body: Partial<UiPreferences>,
+  idempotencyKey: string | null,
+): Promise<{ status: number; body: unknown }> {
+  try {
+    const res = await fetch(`${apiUrl}/me/preferences`, {
+      method: "PUT",
+      headers: {
+        cookie: `${PLATFORM_SESSION_COOKIE}=${token}`,
+        "content-type": "application/json",
+        ...(idempotencyKey ? { "idempotency-key": idempotencyKey } : {}),
+      },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(IDENTITY_TIMEOUT_MS),
+    });
+    return { status: res.status, body: await res.json().catch(() => null) };
+  } catch (err) {
+    console.warn("[auth] could not reach the platform api to save preferences:", (err as Error)?.message);
+    return { status: 503, body: { reason: "platform_unavailable", message: "The platform did not answer. Try again in a moment." } };
+  }
 }
 
 // --- The guard -----------------------------------------------------------------

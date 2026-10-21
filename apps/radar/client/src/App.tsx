@@ -1,4 +1,4 @@
-import { Suspense, lazy, type ReactNode } from "react";
+import { Suspense, lazy, useEffect, type ReactNode } from "react";
 import { Route, Switch } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
@@ -6,7 +6,7 @@ import OpenFromLauncherPage from "@/pages/open-from-launcher";
 import { launcherUrlFrom } from "@/lib/launcher";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { ThemeProvider } from "@/components/theme-provider";
+import { ThemeProvider, useTheme } from "@/components/theme-provider";
 import { Loader2 } from "lucide-react";
 
 const IntelligenceDashboard = lazy(() => import("@/pages/funtopia-dashboard"));
@@ -42,6 +42,12 @@ function SignedIn({ children }: { children: ReactNode }) {
     },
     staleTime: 60_000,
   });
+  // SCRUM-653 — the person's theme from their platform account, once the
+  // platform has said who they are.
+  const { adoptPlatformTheme } = useTheme();
+  useEffect(() => {
+    if (me.data?.status === 200) adoptPlatformTheme(me.data.body);
+  }, [me.data, adoptPlatformTheme]);
   if (me.isLoading) return <PageLoader />;
   if (me.data?.status === 200) return <>{children}</>;
   const refusal = me.data?.body as { reason?: string; message?: string } | null | undefined;
