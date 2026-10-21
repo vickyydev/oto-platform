@@ -575,6 +575,58 @@ export interface paths {
         };
         trace?: never;
     };
+    "/me/preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Set the caller's own theme and language, shown by every staff app */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        theme?: "system" | "light" | "dark";
+                        /** @enum {string} */
+                        language?: "en" | "th";
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            preferences: {
+                                /** @enum {string} */
+                                theme: "system" | "light" | "dark";
+                                /** @enum {string} */
+                                language: "en" | "th";
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me/permissions": {
         parameters: {
             query?: never;

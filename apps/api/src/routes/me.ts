@@ -1,13 +1,29 @@
 import { z } from 'zod';
 import { and, desc, eq, ne } from 'drizzle-orm';
 import { account, branch, employee, fileObject, session as sessionTable } from '@oto/db';
-import { normalizePhone } from '@oto/shared';
+import {
+  THEME_PREFERENCES,
+  UI_LANGUAGES,
+  normalizePhone,
+  uiPreferencesUpdateSchema,
+  type UiPreferences,
+} from '@oto/shared';
 import type { App } from '../app';
 import { errors } from '../lib/errors';
 import { holdsGrantAt, outOfBranchScope } from '../services/access-control';
 import { audit } from '../services/audit';
 import { isPlatformWide } from '../services/permissions';
 import { opCtx, withTx } from '../services/tx';
+
+/** What `GET /me` and `PUT /me/preferences` answer as `preferences` (SCRUM-653). */
+const PreferencesShape = z.object({
+  theme: z.enum(THEME_PREFERENCES),
+  language: z.enum(UI_LANGUAGES),
+});
+
+function preferencesOf(row: { uiTheme: UiPreferences['theme']; uiLanguage: UiPreferences['language'] }): UiPreferences {
+  return { theme: row.uiTheme, language: row.uiLanguage };
+}
 
 export async function meRoutes(app: App): Promise<void> {
   // SCRUM-25 / SCRUM-19 — who am I: account, employee, branch, permissions.
@@ -43,8 +59,64 @@ export async function meRoutes(app: App): Promise<void> {
       // So a reload inside a locked session comes back LOCKED rather than
       // opening the till (S2-01a).
       sessionLocked: auth.lockedAt !== null,
+      // SCRUM-653 — how every staff app looks for this person, applied by
+      // each app as it reads this answer at sign-in.
+      preferences: preferencesOf(acc),
     };
   });
+
+  /**
+   * SCRUM-653 — the person's own theme and language, written back from any
+   * staff app's toggle. Either field alone, so one app's theme change cannot
+   * carry a stale language over another's. Only the caller's own account:
+   * there is no id in the path to name anybody else's. Setting a value to
+   * what it already is still answers 200 and still records a row, so a
+   * retried write and the first are indistinguishable to the app.
+   */
+  app.put(
+    '/preferences',
+    {
+      config: { auth: 'session' },
+      schema: {
+        description: "Set the caller's own theme and language, shown by every staff app",
+        body: uiPreferencesUpdateSchema,
+        response: { 200: z.object({ preferences: PreferencesShape }) },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      // The transaction's value IS the stored answer a retried key replays
+      // (services/tx.ts), so it returns the whole response.
+      return withTx(app.db, opCtx(req), 'account.preferences', async (tx) => {
+        const [before] = await tx
+          .select({ uiTheme: account.uiTheme, uiLanguage: account.uiLanguage })
+          .from(account)
+          .where(eq(account.id, auth.accountId))
+          .limit(1)
+          .for('update');
+        if (!before) throw errors.unauthorized();
+        const patch: Partial<typeof account.$inferInsert> = {};
+        if (req.body.theme !== undefined) patch.uiTheme = req.body.theme;
+        if (req.body.language !== undefined) patch.uiLanguage = req.body.language;
+        const [after] = await tx
+          .update(account)
+          .set(patch)
+          .where(eq(account.id, auth.accountId))
+          .returning({ uiTheme: account.uiTheme, uiLanguage: account.uiLanguage });
+        await audit.record(tx, {
+          actorAccountId: auth.accountId,
+          operatorId: auth.operatorId,
+          action: 'account.preferences',
+          entityType: 'account',
+          entityId: auth.accountId,
+          before: preferencesOf(before),
+          after: preferencesOf(after!),
+          requestId: req.id,
+        });
+        return { preferences: preferencesOf(after!) };
+      });
+    },
+  );
 
   // SCRUM-13 — effective permissions with scopes.
   app.get('/permissions', { config: { auth: 'session' }, schema: { description: 'Effective permissions with scopes' } }, async (req) => {

@@ -421,6 +421,82 @@
         }
       }
     },
+    "/me/preferences": {
+      "put": {
+        "description": "Set the caller's own theme and language, shown by every staff app",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "theme": {
+                    "type": "string",
+                    "enum": [
+                      "system",
+                      "light",
+                      "dark"
+                    ]
+                  },
+                  "language": {
+                    "type": "string",
+                    "enum": [
+                      "en",
+                      "th"
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "preferences": {
+                      "type": "object",
+                      "properties": {
+                        "theme": {
+                          "type": "string",
+                          "enum": [
+                            "system",
+                            "light",
+                            "dark"
+                          ]
+                        },
+                        "language": {
+                          "type": "string",
+                          "enum": [
+                            "en",
+                            "th"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "theme",
+                        "language"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "preferences"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/me/permissions": {
       "get": {
         "description": "Effective permissions with scopes",

@@ -11,6 +11,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 import { archivedAt, core, idPk, timestamps } from './helpers';
+import type { ThemePreference, UiLanguage } from '@oto/shared';
 
 // --- Tenancy (schema `core`) -----------------------------------------------
 // Row-scoped multi-tenancy (CLAUDE.md §3): "operator" here is the TENANT
@@ -152,6 +153,14 @@ export const account = core.table(
     phoneVerifiedAt: timestamp('phone_verified_at', { withTimezone: true, mode: 'date' }),
     status: text('status').$type<AccountStatus>().notNull().default('invited'),
     mustChangePassword: boolean('must_change_password').notNull().default(false),
+    /**
+     * How every staff app looks for this person (SCRUM-653): 'system' follows
+     * the device's own light/dark setting. Read by `GET /me`, written by
+     * `PUT /me/preferences`; the values are `@oto/shared`'s ui-preferences.
+     */
+    uiTheme: text('ui_theme').$type<ThemePreference>().notNull().default('system'),
+    /** The staff-side language. Customer-facing screens keep their own choice. */
+    uiLanguage: text('ui_language').$type<UiLanguage>().notNull().default('en'),
     ...timestamps,
   },
   (t) => [
@@ -159,6 +168,8 @@ export const account = core.table(
     index('account_operator_idx').on(t.operatorId),
     index('account_employee_idx').on(t.employeeId),
     check('account_status_check', sql`${t.status} in ('invited','active','inactive')`),
+    check('account_ui_theme_check', sql`${t.uiTheme} in ('system','light','dark')`),
+    check('account_ui_language_check', sql`${t.uiLanguage} in ('en','th')`),
   ],
 );
 
