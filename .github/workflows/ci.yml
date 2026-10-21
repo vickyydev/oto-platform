@@ -585,6 +585,12 @@ jobs:
       - name: The app's record deletion checks
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/record-deletion.check.ts
+      # SCRUM-600: a camp day staff cancelled is not offered on the public
+      # sign-up form and a new pick of one is refused; adding dates still works
+      # when an old saved day was cancelled later.
+      - name: The app's camp cancelled-day checks
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/camp-cancelled-days.check.ts
       # SCRUM-559: an employee's pay is a payroll role's — withheld from
       # manager and staff on the list, the employee, the change history and the
       # probation review; a pay field in their edit or new employee refused;

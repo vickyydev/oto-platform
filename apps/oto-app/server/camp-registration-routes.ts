@@ -216,7 +216,7 @@ export function registerCampRegistrationRoutes(app: Express, dependencies: Depen
 
       // Verify the event exists and is a camp
       const event = await db
-        .select({ id: coreEventsTable.id, tenantId: coreEventsTable.tenantId, branchId: coreEventsTable.branchId, eventType: coreEventsTable.eventType, status: coreEventsTable.status })
+        .select({ id: coreEventsTable.id, tenantId: coreEventsTable.tenantId, branchId: coreEventsTable.branchId, eventType: coreEventsTable.eventType, status: coreEventsTable.status, campCancelledDays: coreEventsTable.campCancelledDays })
         .from(coreEventsTable)
         .where(and(eq(coreEventsTable.id, eventId), eq(coreEventsTable.eventType, "camp")))
         .limit(1);
@@ -303,6 +303,15 @@ export function registerCampRegistrationRoutes(app: Express, dependencies: Depen
           .limit(1);
         if (found.length) existingReg = found[0];
       }
+
+      // A day staff cancelled is not offered to parents; refuse a newly chosen
+      // one (a stale form). Days already saved on this registration are left
+      // alone for staff to review, so adding dates never fails because of them.
+      const cancelledDays: unknown[] = Array.isArray(event[0].campCancelledDays) ? event[0].campCancelledDays : [];
+      const savedValue = existingReg?.attendanceDays;
+      const savedDays: string[] = Array.isArray(savedValue) ? savedValue : [];
+      if (newDays.some(day => !savedDays.includes(day) && cancelledDays.includes(day)))
+        return { status: 409, data: { message: "One of the chosen days has been cancelled. Please refresh and choose again." } };
 
       // Helper to append to agreement history without duplicating the same second
       const buildHistory = (existing: string[] | null): string[] => {

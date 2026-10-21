@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { campDaysForParents } from "@/lib/camp-days";
 
 interface FormValues {
   authorizedPickupPersons: string;
@@ -961,16 +962,13 @@ export default function CampRegisterPage() {
         {/* ── Children (one card per child) ─────────────── */}
         <div ref={childFormRef} />
         {children.map((child, idx) => {
-          const cancelledDays: string[] = Array.isArray((campEvent as any)?.campCancelledDays)
-            ? (campEvent as any).campCancelledDays
-            : [];
-          // In add-dates mode: only show dates NOT already registered
-          const availableDays = child.alreadyRegistered
-            ? campDays.filter(d => {
-                const dateStr = format(d, "yyyy-MM-dd");
-                return !child.registeredDates.includes(dateStr) && !cancelledDays.includes(dateStr);
-              })
-            : campDays;
+          // Cancelled days are never offered to parents; in add-dates mode the
+          // days already registered are left out too.
+          const { open: openDays, available: availableDays } = campDaysForParents(
+            campDays,
+            (campEvent as any)?.campCancelledDays,
+            child.alreadyRegistered ? child.registeredDates : [],
+          );
 
           return (
             <Card key={child.id} className="shadow-sm border-0 rounded-2xl">
@@ -1054,7 +1052,7 @@ export default function CampRegisterPage() {
                 />
 
                 {/* Attendance days (per child) */}
-                {campDays.length > 1 && (
+                {campDays.length > 1 && openDays.length > 0 && (
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">
                       {child.alreadyRegistered ? "Additional Attendance Days" : "Attendance Days"}
@@ -1096,26 +1094,6 @@ export default function CampRegisterPage() {
                             {format(date, "EEEE, d MMMM yyyy")}
                           </span>
                         </label>
-                      );
-                    })}
-                    {/* Show cancelled days only for non-add-dates mode (already registered doesn't need to see them) */}
-                    {!child.alreadyRegistered && campDays.map(date => {
-                      const dateStr = format(date, "yyyy-MM-dd");
-                      const isCancelled = cancelledDays.includes(dateStr);
-                      if (!isCancelled) return null;
-                      return (
-                        <div
-                          key={`cancelled-${dateStr}`}
-                          className="flex items-center gap-3 p-3 rounded-xl border-2 border-gray-100 bg-gray-50 opacity-60 cursor-not-allowed"
-                        >
-                          <div className="flex-shrink-0 w-4 h-4 rounded-sm border-2 border-gray-300 bg-white" />
-                          <div className="flex-1 min-w-0">
-                            <span className="text-sm font-medium text-gray-500 line-through">
-                              {format(date, "EEEE, d MMMM yyyy")}
-                            </span>
-                            <span className="ml-2 text-xs text-red-500 font-medium">Cancelled</span>
-                          </div>
-                        </div>
                       );
                     })}
                   </div>
