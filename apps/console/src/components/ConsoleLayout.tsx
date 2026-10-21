@@ -3,7 +3,7 @@ import { Link, useLocation } from 'wouter';
 import { ExternalLink, LayoutGrid, LogOut, Menu, Moon, Sun, X } from 'lucide-react';
 import { Backdrop } from '@/components/Backdrop';
 import { StatusMark, type Tone } from '@/components/Status';
-import { consoleNav, findSection, type ConsoleSection } from '@/components/consoleSections';
+import { sectionForPath, visibleNavigation, type ConsoleSection } from '@/components/consoleSections';
 import { CommandBar, placeName } from '@/components/redesign/CommandBar';
 import { CountBadge } from '@/components/redesign/chips';
 import { useFailureCount } from '@/components/redesign/useFailureCount';
@@ -28,12 +28,12 @@ const PHASE_TWO = new Set<string>();
 /**
  * The console shell, as the approved design draws it (SCRUM-474,
  * Shell.dc.html): one sidebar holding everything that used to be split between
- * a header and a rail — the brand, the four labelled groups of pages, and a
+ * a header and a rail — the brand, the ten areas and their pages, and a
  * foot with the way back to the launcher and the signed-in person.
  *
- * What did NOT change is what the nav may show. Every entry is still filtered
- * by its own permission from `consoleSections`, and a group whose every entry
- * is hidden disappears whole rather than leaving a heading over nothing. On a
+ * Each area follows its section gate; its page links are also filtered by
+ * their existing permissions. An area without a lifted panel yet opens its
+ * current-home guidance rather than offering an unavailable form. On a
  * phone the same sidebar is the slide-over drawer it always was, opened from a
  * slim bar that carries only the menu button and the brand.
  */
@@ -71,8 +71,8 @@ export function ConsoleLayout({ children }: { children: ReactNode }) {
     return undefined;
   };
 
-  const activeId = location.replace(/^\//, '').split('/')[0] || '';
-  const section = findSection(activeId);
+  const section = sectionForPath(location);
+  const activeId = section?.id ?? location.replace(/^\//, '').split('/')[0] ?? '';
   const phaseTwo = section ? PHASE_TWO.has(section.id) : false;
 
   // The drawer is a navigation, not a place: going somewhere closes it.
@@ -167,7 +167,7 @@ function Brand({ compact = false }: { compact?: boolean }) {
   return (
     <Link
       href="/"
-      aria-label="Console home"
+      aria-label="Admin home"
       className={cn('flex min-w-0 items-center gap-[11px]', !compact && 'px-2')}
     >
       <span
@@ -177,7 +177,7 @@ function Brand({ compact = false }: { compact?: boolean }) {
         O
       </span>
       <span className="min-w-0">
-        <span className="block text-[15px] font-extrabold tracking-[-0.01em]">OTO Console</span>
+        <span className="block text-[15px] font-extrabold tracking-[-0.01em]">OTO Admin</span>
         {!compact && me?.branch?.name && (
           <span className="block truncate text-[11.5px] text-muted-foreground" title={me.branch.name}>
             {placeName(me.branch.name)}
@@ -201,20 +201,23 @@ function Sidebar({
   const { me, has, signOut } = useSession();
   const [theme, setTheme] = useTheme();
 
-  const visible = consoleNav
-    .map((group) => ({ ...group, sections: group.sections.filter((s) => has(s.permission)) }))
-    .filter((group) => group.sections.length > 0);
+  const visible = visibleNavigation(has, me?.isPlatformAdmin ?? false);
 
   return (
     <div className="flex min-h-full flex-col gap-[22px] px-4 py-6">
       <Brand />
 
-      <nav aria-label="Console" className="flex flex-col gap-[22px]">
+      <nav aria-label="Admin" className="flex flex-col gap-4">
         {visible.map((group) => (
           <div key={group.id} className="flex flex-col gap-[3px]">
-            <span className="px-2.5 pb-1.5 text-[10.5px] font-bold uppercase tracking-[0.1em] text-muted-foreground/75">
+            <Link href={`/${group.id}`}
+              aria-current={activeId === group.id && !sectionForPath(`/${activeId}`) ? 'page' : undefined}
+              className={cn('flex items-center gap-2 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.06em]',
+                activeId === group.id || group.sections.some((page) => page.id === activeId)
+                  ? 'text-primary-ink' : 'text-muted-foreground hover:text-foreground')}>
+              <group.icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
               {group.label}
-            </span>
+            </Link>
             {group.sections.map((s) => (
               <NavItem
                 key={s.id}
@@ -240,9 +243,7 @@ function Sidebar({
         )}
 
         {/*
-          The Sprint 1 back-office panels live in the till's own /admin this
-          sprint. Naming that plainly, with one link, is better than a second
-          copy of the catalogue screens that would drift from the first.
+          Back-office panels stay available in the POS while they move here.
         */}
         {POS_URL && (
           <a
@@ -250,7 +251,7 @@ function Sidebar({
             className="flex items-center gap-[11px] rounded-[12px] px-2.5 py-2 text-[13px] font-semibold text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground"
           >
             <ExternalLink className="w-4 h-4 shrink-0" aria-hidden="true" />
-            <span className="min-w-0 flex-1">Catalogue, tax and accounts</span>
+            <span className="min-w-0 flex-1">POS Admin</span>
           </a>
         )}
 
@@ -323,7 +324,7 @@ function NavItem({
   const describedBy = mark ? markId : undefined;
   return (
     <Link
-      href={`/${section.id}`}
+      href={section.path}
       aria-current={active ? 'page' : undefined}
       aria-describedby={describedBy}
       className={cn(

@@ -11,6 +11,8 @@
  */
 
 export const PERMISSIONS = [
+  // Super Admin Console home (SCRUM-609).
+  'console:overview:read',
   // Admin console — accounts & access
   'admin:account:create',
   'admin:account:read',
@@ -447,6 +449,7 @@ export const ROLE_BUNDLES: Record<SystemRole, Permission[]> = {
   platform_admin: ALL,
   operator_admin: ALL,
   branch_manager: [
+    'console:overview:read',
     ...READ_COUNTER,
     ...SELL,
     'admin:account:create',

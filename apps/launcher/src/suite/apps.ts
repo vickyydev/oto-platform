@@ -75,14 +75,14 @@ export const SUITE_APPS: SuiteApp[] = [
   },
   {
     key: 'console',
-    name: 'Console',
+    name: 'Admin',
     purpose: 'Accounts and access, branches, the catalogue, activity and health.',
     icon: Settings,
     permission: 'app:console:access',
     origin: readOrigin(env.VITE_CONSOLE_URL),
     milestone: 'M0 — front door',
     arriving:
-      'Console v1 arrives with the observability work: activity, failures, health and integrations, then devices and stations. Until then the back-office screens live inside the POS at /admin.',
+      'Admin brings people, the catalogue, devices, reports and platform health together. If this shell opened instead, its address is not set on this build.',
   },
   {
     key: 'oto_app',

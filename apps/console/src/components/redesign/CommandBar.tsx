@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { consoleNav, findSection } from '@/components/consoleSections';
+import { consoleNav, findArea, findSection } from '@/components/consoleSections';
 import { cn } from '@/lib/utils';
 
 /**
@@ -27,7 +27,7 @@ export function CommandBar({
   actions?: ReactNode;
   className?: string;
 }) {
-  const section = findSection(sectionId);
+  const section = findSection(sectionId) ?? findArea(sectionId);
   const group = consoleNav.find((g) => g.sections.some((s) => s.id === sectionId));
   if (!section) return null;
   const Icon = section.icon;
@@ -42,7 +42,7 @@ export function CommandBar({
     >
       <div className="flex min-w-0 flex-col gap-2">
         <p className="text-[13px] font-medium text-muted-foreground">
-          Console · {(place && placeName(place)) || group?.label || 'OTO'}
+          Admin · {(place && placeName(place)) || group?.label || 'OTO'}
         </p>
         <div className="flex min-w-0 flex-wrap items-center gap-x-3.5 gap-y-2">
           <span

@@ -28,10 +28,11 @@ export async function signIn(page: Page, password: string = OPERATOR_ADMIN.passw
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 }
 
-/** Sign in and wait for the console to open on Health, its default section. */
+/** Sign in on Overview, then open Health for the existing operational checks. */
 export async function signInAndWait(page: Page): Promise<void> {
   await signIn(page);
-  await page.waitForURL(/\/health$/, { timeout: 60_000 });
+  await page.waitForURL(/\/overview$/, { timeout: 60_000 });
+  await openSection(page, 'Health');
   await expect(page.getByRole('heading', { name: 'Health', exact: true })).toBeVisible();
 }
 
@@ -40,7 +41,10 @@ export async function signInAndWait(page: Page): Promise<void> {
  * by address, which would not notice a nav that had stopped rendering it.
  */
 export async function openSection(page: Page, label: string): Promise<void> {
-  await page.getByRole('link', { name: label, exact: true }).click();
+  const menu = page.getByRole('button', { name: 'Open navigation', exact: true });
+  if (await menu.isVisible()) await menu.click();
+  await page.getByRole('navigation', { name: 'Admin', exact: true })
+    .getByRole('link', { name: label, exact: true }).click();
   await expect(page.getByRole('heading', { name: label, exact: true }).first()).toBeVisible({
     timeout: 20_000,
   });

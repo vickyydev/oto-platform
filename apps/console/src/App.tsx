@@ -8,7 +8,7 @@ import { ConsoleLayout } from '@/components/ConsoleLayout';
 import { LockedPanel } from '@/components/LockedPanel';
 import { SignInPanel } from '@/components/SignInPanel';
 import { PermissionRequired } from '@/components/Panel';
-import { DEFAULT_SECTION, findSection } from '@/components/consoleSections';
+import { CONSOLE_SECTIONS, consoleNav, DEFAULT_SECTION, findSection } from '@/components/consoleSections';
 import { SessionProvider, useSession, displayName } from '@/auth/SessionContext';
 import { PlatformStatusProvider } from '@/lib/platformStatus';
 import { useTheme } from '@/lib/theme';
@@ -23,6 +23,7 @@ import { Health } from '@/pages/Health';
 import { Integrations } from '@/pages/Integrations';
 import { Vouchers } from '@/pages/Vouchers';
 import { VoucherTypes } from '@/pages/VoucherTypes';
+import { AreaLanding } from '@/pages/AreaLanding';
 
 const LAUNCHER_URL = import.meta.env.VITE_LAUNCHER_URL?.trim();
 
@@ -115,11 +116,18 @@ function NotFound() {
     <div className="rounded-2xl border border-dashed p-10 text-center">
       <p className="font-semibold">That page is not part of the console</p>
       <Button variant="outline" className="mt-4" onClick={() => navigate(`/${DEFAULT_SECTION}`)}>
-        Go to Health
+        Go to Overview
       </Button>
     </div>
   );
 }
+
+const pageElements: Record<string, ReactElement> = {
+  health: <Health />, failures: <Failures />, activity: <Activity />,
+  devices: <Devices />, branches: <Branches />, bookings: <Bookings />,
+  booths: <Booths />, 'booth-report': <BoothReport />, vouchers: <Vouchers />,
+  'voucher-types': <VoucherTypes />, integrations: <Integrations />,
+};
 
 function Routes() {
   return (
@@ -127,57 +135,13 @@ function Routes() {
       <Route path="/">
         <Redirect to={`/${DEFAULT_SECTION}`} />
       </Route>
-      <Route path="/health">
-        <Section id="health">
-          <Health />
-        </Section>
-      </Route>
-      <Route path="/failures">
-        <Section id="failures">
-          <Failures />
-        </Section>
-      </Route>
-      <Route path="/activity">
-        <Section id="activity">
-          <Activity />
-        </Section>
-      </Route>
-      <Route path="/devices">
-        <Section id="devices">
-          <Devices />
-        </Section>
-      </Route>
-      <Route path="/branches">
-        <Section id="branches">
-          <Branches />
-        </Section>
-      </Route>
-      <Route path="/bookings">
-        <Section id="bookings">
-          <Bookings />
-        </Section>
-      </Route>
-      <Route path="/booths">
-        <Section id="booths">
-          <Booths />
-        </Section>
-      </Route>
-      <Route path="/booth-report">
-        <Section id="booth-report">
-          <BoothReport />
-        </Section>
-      </Route>
-      <Route path="/vouchers"><Section id="vouchers"><Vouchers /></Section></Route>
-      <Route path="/voucher-types">
-        <Section id="voucher-types">
-          <VoucherTypes />
-        </Section>
-      </Route>
-      <Route path="/integrations">
-        <Section id="integrations">
-          <Integrations />
-        </Section>
-      </Route>
+      {CONSOLE_SECTIONS.flatMap((page) => [...new Set([page.path, `/${page.id}`])].map((path) => (
+        <Route key={path} path={path}>
+          <Section id={page.id}>{pageElements[page.id] ?? <NotFound />}</Section>
+        </Route>
+      )))}
+      {consoleNav.filter((area) => !CONSOLE_SECTIONS.some((page) => page.path === `/${area.id}`))
+        .map((area) => <Route key={area.id} path={`/${area.id}`}><AreaLanding id={area.id} /></Route>)}
       <Route component={NotFound} />
     </Switch>
   );
