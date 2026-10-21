@@ -88,6 +88,8 @@ function AccessStatusSection({ employeeId, personId, employee, forceOpen }: { em
   const { toast } = useToast();
   const isAdmin = user?.role === "admin" || user?.role === "global_admin" || user?.role === "operator_admin";
   const isManager = user?.role === "manager" || isAdmin;
+  // SCRUM-650: "All Branches" is offered only to a caller who reaches every branch.
+  const canGrantAllBranches = !!user?.hasAllBranchesAccess;
   const [isOpen, setIsOpen] = useState(false);
   
   useEffect(() => {
@@ -755,7 +757,7 @@ function AccessStatusSection({ employeeId, personId, employee, forceOpen }: { em
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="SELECTED">Selected Branches</SelectItem>
-                      <SelectItem value="ALL">All Branches</SelectItem>
+                      {canGrantAllBranches && <SelectItem value="ALL">All Branches</SelectItem>}
                     </SelectContent>
                   </Select>
                 </div>

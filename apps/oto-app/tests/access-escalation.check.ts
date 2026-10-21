@@ -22,6 +22,10 @@
 //      staff or a manager opens nothing: POST /api/settings (requireModule)
 //      refuses, and /api/permissions/me shows the module closed; an operator
 //      admin still passes the module gate.
+//   5. SCRUM-650: a grant's branch scope stays within the caller's reach, on
+//      both doors. An operator admin reaching six branches cannot grant all
+//      branches; a subset of their six passes; a branch outside their reach
+//      is refused, with nothing written. A global admin still grants all.
 //
 // Usage, from apps/oto-app, with DATABASE_URL naming a database whose otoapp
 // schema the app's migrator has built (CI's OTO App job runs exactly this):
@@ -66,7 +70,7 @@ await q(
   [branch, tenant, operator, `ZZ TEST esc ${run}`],
 );
 
-async function user(role: string, label: string, opts: { operatorId?: string } = {}): Promise<{ id: string; email: string }> {
+async function user(role: string, label: string, opts: { operatorId?: string; branchId?: string } = {}): Promise<{ id: string; email: string }> {
   const id = randomUUID();
   const email = `zz-esc-${label.toLowerCase()}-${run}@example.com`;
   await q(
@@ -77,13 +81,13 @@ async function user(role: string, label: string, opts: { operatorId?: string } =
   await q("insert into user_branch_access (tenant_id, user_id, branch_id, access_scope) values ($1, $2, $3, 'selected_branches')", [
     tenant,
     id,
-    branch,
+    opts.branchId ?? branch,
   ]);
   return { id, email };
 }
 
 /** A person with an employee record, optionally with a login of `role` linked to both. */
-async function person(label: string, role: string | null, opts: { operatorId?: string } = {}) {
+async function person(label: string, role: string | null, opts: { operatorId?: string; branchId?: string } = {}) {
   const email = `zz-esc-p-${label.toLowerCase()}-${run}@example.com`;
   const personId = randomUUID();
   await q("insert into people (id, tenant_id, full_name, email, person_type) values ($1, $2, $3, $4, 'EMPLOYEE')", [
@@ -103,26 +107,26 @@ async function person(label: string, role: string | null, opts: { operatorId?: s
     await q("insert into user_branch_access (tenant_id, user_id, branch_id, access_scope) values ($1, $2, $3, 'selected_branches')", [
       tenant,
       userId,
-      branch,
+      opts.branchId ?? branch,
     ]);
   }
   const employeeId = randomUUID();
   await q(
     `insert into employees (id, tenant_id, branch_id, user_id, person_id, full_name, nickname, email, status)
      values ($1, $2, $3, $4, $5, $6, $7, $8, 'active')`,
-    [employeeId, tenant, branch, userId, personId, `ZZ TEST ${label} ${run}`, label, email],
+    [employeeId, tenant, opts.branchId ?? branch, userId, personId, `ZZ TEST ${label} ${run}`, label, email],
   );
   return { personId, userId, employeeId, email };
 }
 
 /** An employee with no person and no login, for the login dialog. */
-async function bareEmployee(label: string) {
+async function bareEmployee(label: string, branchId: string = branch) {
   const employeeId = randomUUID();
   const email = `zz-esc-e-${label.toLowerCase()}-${run}@example.com`;
   await q(
     `insert into employees (id, tenant_id, branch_id, full_name, nickname, email, status)
      values ($1, $2, $3, $4, $5, $6, 'active')`,
-    [employeeId, tenant, branch, `ZZ TEST ${label} ${run}`, label, email],
+    [employeeId, tenant, branchId, `ZZ TEST ${label} ${run}`, label, email],
   );
   return { employeeId, email };
 }
@@ -158,6 +162,26 @@ await q("insert into people (id, tenant_id, full_name, email, person_type) value
   `ZZ TEST Advisor ${run}`,
   advisorEmail,
 ]);
+
+// SCRUM-650: a second operator of the park group with six branches, and its
+// operator admin, who reaches those six (by the operator) and not `branch`.
+const operatorSix = randomUUID();
+await q("insert into operators (id, tenant_id, name) values ($1, $2, $3)", [operatorSix, tenant, `ZZ TEST esc six ${run}`]);
+const sixBranches: string[] = [];
+for (let i = 1; i <= 6; i += 1) {
+  const id = randomUUID();
+  await q(
+    "insert into branches (id, tenant_id, operator_id, name, address, timezone) values ($1, $2, $3, $4, 'ZZ TEST', 'Asia/Bangkok')",
+    [id, tenant, operatorSix, `ZZ TEST esc six ${i} ${run}`],
+  );
+  sixBranches.push(id);
+}
+const opAdminSix = await user("operator_admin", "OpAdminSix", { operatorId: operatorSix, branchId: sixBranches[0] });
+const loginAllBySix = await bareEmployee("SixAll", sixBranches[0]);
+const loginSubsetBySix = await bareEmployee("SixSubset", sixBranches[0]);
+const loginOutsideBySix = await bareEmployee("SixOutside", sixBranches[0]);
+const sixTarget = await person("SixTarget", "staff", { branchId: sixBranches[0] });
+const gmAllTarget = await person("GmAll", "staff");
 
 const roleOf = async (id: string) => (await q<{ role: string }>("select role from users where id = $1", [id]))[0]?.role;
 const operatorOf = async (id: string) =>
@@ -253,14 +277,15 @@ const check = async (name: string, fn: () => void | Promise<void>) => {
 };
 
 /** What the Permissions page sends (client/src/pages/permissions-page.tsx). */
-const accessBody = (accessLevel: string) => ({
+type Scope = { branchScope: "ALL" | "SELECTED"; branchIds: string[] };
+const ownBranch: Scope = { branchScope: "SELECTED", branchIds: [branch] };
+const accessBody = (accessLevel: string, scope: Scope = ownBranch) => ({
   accessLevel,
   modules: { core: true, hr: true, studio: false, events: false, ops: false, setup: false },
-  branchScope: "SELECTED",
-  branchIds: [branch],
+  ...scope,
 });
 /** What the employee editor's login dialog sends (client/src/pages/employee-editor-page.tsx). */
-const loginBody = (email: string, accessLevel: string) => ({
+const loginBody = (email: string, accessLevel: string, scope: Scope = ownBranch) => ({
   email,
   password: "zz-temp-pass",
   accessLevel,
@@ -270,8 +295,7 @@ const loginBody = (email: string, accessLevel: string) => ({
   enableEventsModule: false,
   enableOpsModule: false,
   enableSetupModule: false,
-  branchScope: "SELECTED",
-  branchIds: [branch],
+  ...scope,
 });
 
 try {
@@ -281,6 +305,7 @@ try {
     opAdmin: await signIn(opAdmin.email),
     staffOverride: await signIn(staffOverride.email),
     managerOverride: await signIn(managerOverride.email),
+    opAdminSix: await signIn(opAdminSix.email),
   };
 
   // ─── 1. A manager cannot grant ADMIN ──────────────────────────────────────
@@ -428,6 +453,76 @@ try {
   await check("an operator admin still passes the settings module gate", async () => {
     const res = await call("POST", "/api/settings", { cookie: cookie.opAdmin, body: {} });
     assert.equal(res.status, 400, show(res));
+  });
+
+  // ─── 5. A grant's branch scope stays within the caller's reach ────────────
+
+  const branchAccessOf = async (userId: string) =>
+    q<{ access_scope: string; branch_id: string | null }>(
+      "select access_scope, branch_id from user_branch_access where user_id = $1 order by branch_id",
+      [userId],
+    );
+  const ALL: Scope = { branchScope: "ALL", branchIds: [] };
+  const subset: Scope = { branchScope: "SELECTED", branchIds: sixBranches.slice(0, 3) };
+  const outside: Scope = { branchScope: "SELECTED", branchIds: [sixBranches[0], branch] };
+
+  await check("an operator admin reaching six branches cannot create an all-branches login; no login is made", async () => {
+    const res = await call("POST", `/api/employees/${loginAllBySix.employeeId}/enable-login`, {
+      cookie: cookie.opAdminSix,
+      body: loginBody(loginAllBySix.email, "MANAGER", ALL),
+    });
+    assert.equal(res.status, 403, show(res));
+    assert.match(res.body.message, /all branches/, show(res));
+    assert.equal(await loginFor(loginAllBySix.email), undefined);
+  });
+
+  await check("nor give all branches on the access page; the login and its branches are unchanged", async () => {
+    const res = await call("PUT", `/api/people/${sixTarget.personId}/access`, { cookie: cookie.opAdminSix, body: accessBody("MANAGER", ALL) });
+    assert.equal(res.status, 403, show(res));
+    assert.equal(await roleOf(sixTarget.userId!), "staff");
+    assert.deepEqual(await branchAccessOf(sixTarget.userId!), [{ access_scope: "selected_branches", branch_id: sixBranches[0] }]);
+    const policy = await q("select 1 from access_policies where person_id = $1", [sixTarget.personId]);
+    assert.equal(policy.length, 0, "the refused save wrote an access policy");
+  });
+
+  await check("a subset of their six passes on both doors, with exactly those branches", async () => {
+    const res = await call("POST", `/api/employees/${loginSubsetBySix.employeeId}/enable-login`, {
+      cookie: cookie.opAdminSix,
+      body: loginBody(loginSubsetBySix.email, "MANAGER", subset),
+    });
+    assert.equal(res.status, 200, show(res));
+    const login = await loginFor(loginSubsetBySix.email);
+    assert.equal(login?.role, "manager");
+    const sorted = [...subset.branchIds].sort();
+    assert.deepEqual(
+      (await branchAccessOf(login!.id)).map((r) => [r.access_scope, r.branch_id]),
+      sorted.map((id) => ["selected_branches", id]),
+    );
+    const put = await call("PUT", `/api/people/${sixTarget.personId}/access`, { cookie: cookie.opAdminSix, body: accessBody("MANAGER", subset) });
+    assert.equal(put.status, 200, show(put));
+    assert.equal(await roleOf(sixTarget.userId!), "manager");
+    assert.deepEqual((await branchAccessOf(sixTarget.userId!)).map((r) => r.branch_id), sorted);
+  });
+
+  await check("a branch outside their reach is refused on both doors, with nothing written", async () => {
+    const res = await call("POST", `/api/employees/${loginOutsideBySix.employeeId}/enable-login`, {
+      cookie: cookie.opAdminSix,
+      body: loginBody(loginOutsideBySix.email, "MANAGER", outside),
+    });
+    assert.equal(res.status, 403, show(res));
+    assert.equal(await loginFor(loginOutsideBySix.email), undefined);
+    const before = await branchAccessOf(sixTarget.userId!);
+    const put = await call("PUT", `/api/people/${sixTarget.personId}/access`, { cookie: cookie.opAdminSix, body: accessBody("STAFF", outside) });
+    assert.equal(put.status, 403, show(put));
+    assert.equal(await roleOf(sixTarget.userId!), "manager");
+    assert.deepEqual(await branchAccessOf(sixTarget.userId!), before);
+  });
+
+  await check("a global admin still gives all branches on the access page", async () => {
+    const gm = await signIn(theGm.email);
+    const res = await call("PUT", `/api/people/${gmAllTarget.personId}/access`, { cookie: gm, body: accessBody("MANAGER", ALL) });
+    assert.equal(res.status, 200, show(res));
+    assert.deepEqual(await branchAccessOf(gmAllTarget.userId!), [{ access_scope: "all_branches", branch_id: null }]);
   });
 
   console.log(`access-escalation.check: ${checks} checks passed`);

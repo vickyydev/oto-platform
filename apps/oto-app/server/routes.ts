@@ -985,6 +985,19 @@ export async function registerRoutes(
     return selected.length === ids.length ? ids : null;
   };
 
+  // SCRUM-650: a login's branch scope stays within the caller's own reach.
+  // "All branches" is a caller with all-branch access's to give; selected
+  // branches must be branches the caller reaches. Null when the grant fits,
+  // otherwise the refusal to answer 403 with, decided before anything is written.
+  const branchGrantRefusal = (req: Request, scope: unknown, ids: string[]): string | null => {
+    const reach = req.userWithAccess;
+    if (!reach) return "Your branch access could not be read";
+    if (reach.hasAllBranchesAccess) return null;
+    if (scope === "ALL") return "Only a login with access to all branches can grant all branches";
+    const allowed = new Set(reach.allowedBranchIds);
+    return ids.every(id => allowed.has(id)) ? null : "You can only grant branches you have access to";
+  };
+
   app.get("/api/users", requireGlobalAdmin, async (req, res, next) => {
     try {
       const tenantId = await userManagementTenant(req);
@@ -4307,6 +4320,8 @@ export async function registerRoutes(
       if (branchScope === "ALL" && !callerIsAdmin) {
         return res.status(403).json({ message: "Only administrators can grant access to all branches" });
       }
+      const loginBranchRefusal = branchGrantRefusal(req, branchScope, selectedLoginBranches);
+      if (loginBranchRefusal) return res.status(403).json({ message: loginBranchRefusal });
       
       // Validate password
       // SCRUM-539: no password while this app's own sign-in is closed; the
@@ -14786,6 +14801,8 @@ OTO Company Limited`,
       if (!selectedPolicyBranches) {
         return res.status(403).json({ message: "Selected branches are not available" });
       }
+      const policyBranchRefusal = branchGrantRefusal(req, validatedData.branchScope, selectedPolicyBranches);
+      if (policyBranchRefusal) return res.status(403).json({ message: policyBranchRefusal });
       
       const existingPolicy = await storage.getAccessPolicy(id);
       const personEmployees = await storage.getEmployeesByPersonId(id);
