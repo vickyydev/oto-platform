@@ -140,7 +140,7 @@ Proofs: one screenshot per ticket on staging; the P1 demo is an admin managing o
 
 Acceptance: a price, a tender and a tax rule changed only in the console show on the till; the demo is the catalogue and money round trip.
 
-Note from P0 (2026-10-21): operator-wide settings (tiers, tenders, menu categories, modifier groups, discount codes, voucher types, wheel designs, branch creation) now require operator-wide rights. In P2-3/P2-5 the lifted screens hide those panels, or show them read-only, for a branch-scoped manager, and the POS admin does the same until P2-9 removes it. Two P0 leftovers for Codex to close in the same tickets: the menu import still creates operator-wide categories under a branch-scoped ;  still has no target.
+Note from P0 (2026-10-21): operator-wide settings (tiers, tenders, menu categories, modifier groups, discount codes, voucher types, wheel designs, branch creation) now require operator-wide rights. In P2-3/P2-5 the lifted screens hide those panels, or show them read-only, for a branch-scoped manager, and the POS admin does the same until P2-9 removes it. Two P0 leftovers for Codex to close in the same tickets: the menu import still creates  operator-wide categories under a branch-scoped `catalog:menu:import`;  still has no target.
 
 ## 9. P3 — OTO App alignment (Codex)
 
