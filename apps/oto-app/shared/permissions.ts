@@ -91,6 +91,52 @@ export function getAppModeForModule(moduleKey: ModuleKey): AppModeKey | null {
 
 export type PermissionRole = "staff" | "manager" | "admin" | "operator_admin" | "global_admin";
 
+/**
+ * Every role the server's requireAdmin admits (SCRUM-605). A screen that shows
+ * an admin-only control asks this, never `role === "admin"` alone, so the GM
+ * (global_admin) and an operator admin see what the server lets them do.
+ */
+export const ADMIN_ROLES = ["global_admin", "operator_admin", "admin"] as const;
+export function isAdminRole(role: string | null | undefined): boolean {
+  return !!role && (ADMIN_ROLES as readonly string[]).includes(role);
+}
+
+// ============================================
+// GRANTING ACCESS (SCRUM-604)
+// ============================================
+
+/**
+ * How far a role reaches when it grants access to someone else. A caller may
+ * grant at most their own rank: a manager grants STAFF or MANAGER; every admin
+ * role grants ADMIN, which is written as `admin` within the caller's own park
+ * group. `global_admin` is above every grantable level: no access page or
+ * login dialog writes it (the data admin, a global admin's own tool, does).
+ * An unknown or raw "advisor" value ranks as staff.
+ */
+const ROLE_RANK: Record<string, number> = {
+  staff: 0,
+  manager: 1,
+  admin: 2,
+  operator_admin: 2,
+  global_admin: 3,
+};
+export function roleRank(role: string | null | undefined): number {
+  return typeof role === "string" && Object.hasOwn(ROLE_RANK, role) ? ROLE_RANK[role] : 0;
+}
+
+export const ACCESS_LEVEL_ROLES = { STAFF: "staff", MANAGER: "manager", ADMIN: "admin" } as const;
+export type AccessLevel = keyof typeof ACCESS_LEVEL_ROLES;
+
+/** The `users.role` an access level writes; anything unrecognised is staff. */
+export function roleForAccessLevel(level: string | null | undefined): "staff" | "manager" | "admin" {
+  return typeof level === "string" && Object.hasOwn(ACCESS_LEVEL_ROLES, level) ? ACCESS_LEVEL_ROLES[level as AccessLevel] : "staff";
+}
+
+/** Whether a caller of `callerRole` may grant `level` (at most their own rank). */
+export function canGrantAccessLevel(callerRole: string | null | undefined, level: string | null | undefined): boolean {
+  return roleRank(callerRole) >= roleRank(roleForAccessLevel(level));
+}
+
 // ============================================
 // ADVISOR ROLE NORMALISATION
 // ============================================
@@ -282,6 +328,19 @@ export function canAccessModule(
       reason: "Admin: full access",
       source: "admin_bypass",
       effectiveBranchScope: "ALL",
+      effectiveBranchIds: [],
+    };
+  }
+
+  // An admin-only module stays closed to every role below admin whatever its
+  // overrides say (SCRUM-604): an override narrows or widens the ordinary
+  // modules, it never opens an admin-only one.
+  if (moduleDef.adminOnly && normCtx.role !== "operator_admin") {
+    return {
+      allowed: false,
+      reason: `Denied: ${moduleDef.label} is admin-only`,
+      source: "role_default",
+      effectiveBranchScope: getRoleDefaultBranchScope(normCtx.role),
       effectiveBranchIds: [],
     };
   }

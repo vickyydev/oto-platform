@@ -42,8 +42,10 @@ export default function OperatorsPage() {
     queryKey: ["/api/branches"],
   });
 
+  // SCRUM-604: the park group's logins come from GET /api/users (the same
+  // global-admin gate as this page); there is no /api/admin/users route.
   const { data: allUsers = [] } = useQuery<User[]>({
-    queryKey: ["/api/admin/users"],
+    queryKey: ["/api/users"],
   });
 
   const adminUsers = allUsers.filter(u => 
@@ -73,7 +75,7 @@ export default function OperatorsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/operators"] });
       queryClient.invalidateQueries({ queryKey: ["/api/branches"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       setCreateOpen(false);
       setFormData({ name: "", status: "active", branchIds: [], userIds: [] });
       toast({ title: "Operator created successfully" });
@@ -99,7 +101,7 @@ export default function OperatorsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/operators"] });
       queryClient.invalidateQueries({ queryKey: ["/api/branches"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       setEditingOperator(null);
       toast({ title: "Operator updated successfully" });
     },

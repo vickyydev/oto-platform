@@ -30,7 +30,7 @@ import Handlebars from "handlebars";
 import { z } from "zod";
 import { format, addDays as _addDays } from "date-fns";
 import { insertTemplateSchema, insertEmployeeSchema, insertBranchSchema, mergeDataSchema as _mergeDataSchema, MergeData as _MergeData, activityTypes, type ActivityType, attentionTypes, type AttentionType, insertEmployeeDocumentSchema as _insertEmployeeDocumentSchema, documentTypes, insertTemplateAssignmentSchema, insertUserSchema as _insertUserSchema, insertDepartmentSchema, insertRoleSchema, insertPersonSchema, insertOperatorSchema, insertStatutoryRuleSetSchema, insertKbArticleSchema, type ContractInstance, type EnrollmentSession, type FixReport, type UserWithBranchAccess, DEFAULT_TENANT_SLUG } from "@shared/schema";
-import { getEffectivePermissions, resolveAdvisorRole, type PermissionUserContext } from "../shared/permissions";
+import { getEffectivePermissions, resolveAdvisorRole, canGrantAccessLevel, roleForAccessLevel, roleRank, isAdminRole, ACCESS_LEVEL_ROLES, type PermissionUserContext } from "../shared/permissions";
 import { canViewHrSalary, containsHrPayFields, hrPayResponse, isHrPayKey, preserveHrMergePay } from "../shared/hr-salary-permission";
 import { birthdaySchema } from "../shared/birthday";
 import { findBirthdayEmployee, getPersonBirthdays } from "./person-birthdays";
@@ -4270,9 +4270,14 @@ export async function registerRoutes(
       
       // Only admin can set ADMIN access level. An administrator is every role
       // the screen counts as one (SCRUM-543): admin, global_admin, operator_admin.
+      // SCRUM-604: one rule with the access page — a caller grants at most
+      // their own rank, and the level is one of the three the dialog offers.
       const effectiveCallerRole = req.userWithAccess?.role ?? req.user.role;
-      const callerIsAdmin = ["admin", "global_admin", "operator_admin"].includes(effectiveCallerRole);
-      if (accessLevel === "ADMIN" && !callerIsAdmin) {
+      const callerIsAdmin = isAdminRole(effectiveCallerRole);
+      if (accessLevel !== undefined && accessLevel !== null && !(typeof accessLevel === "string" && Object.hasOwn(ACCESS_LEVEL_ROLES, accessLevel))) {
+        return res.status(400).json({ message: "Access level must be STAFF, MANAGER or ADMIN" });
+      }
+      if (!canGrantAccessLevel(effectiveCallerRole, accessLevel)) {
         return res.status(403).json({ message: "Only administrators can grant ADMIN access level" });
       }
 
@@ -4359,7 +4364,7 @@ export async function registerRoutes(
       
       // Create user account
       const hashedPassword = passwordless ? await unusablePassword() : await hashPassword(password);
-      const userRole = accessLevel?.toLowerCase() as "admin" | "manager" | "staff" || "staff";
+      const userRole = roleForAccessLevel(accessLevel);
       const user = await storage.createUser({
         email: loginEmail,
         password: hashedPassword,
@@ -14751,6 +14756,18 @@ OTO Company Limited`,
       for (const employee of personEmployees) {
         if (employee.userId && (await managedUserTenant(employee.userId)) !== resolvedTenantId) return res.status(404).json({ message: "User not found" });
       }
+      // SCRUM-604: a caller grants at most their own rank, and never changes a
+      // login that outranks them. Decided before anything is written.
+      const callerRole = req.userWithAccess?.role ?? req.user?.role;
+      if (!canGrantAccessLevel(callerRole, validatedData.accessLevel)) {
+        return res.status(403).json({ message: "You cannot grant an access level above your own" });
+      }
+      const linkedUser = personEmployees.length > 0 && personEmployees[0].userId
+        ? await storage.getUser(personEmployees[0].userId)
+        : undefined;
+      if (linkedUser && roleRank(linkedUser.role) > roleRank(callerRole)) {
+        return res.status(403).json({ message: "This account is managed by a higher administrator" });
+      }
       let policy;
       if (existingPolicy) {
         policy = await storage.updateAccessPolicy(id, validatedData);
@@ -14762,15 +14779,15 @@ OTO Company Limited`,
       const employees = personEmployees;
       if (employees.length > 0 && employees[0].userId) {
         const userId = employees[0].userId;
-        const user = await storage.getUser(userId);
+        const user = linkedUser;
         if (user) {
-          // Map access level to user role
-          const roleMap: Record<string, string> = {
-            'ADMIN': 'global_admin',
-            'MANAGER': 'manager',
-            'STAFF': 'staff',
-          };
-          const newRole = roleMap[validatedData.accessLevel] || 'staff';
+          // Map access level to user role (SCRUM-604): ADMIN is `admin`, never
+          // `global_admin`. A login already at an admin role above `admin`
+          // (operator_admin, global_admin) keeps it when saved as ADMIN, which
+          // is how the page shows it.
+          const newRole = validatedData.accessLevel === "ADMIN" && roleRank(user.role) >= roleRank("admin")
+            ? user.role
+            : roleForAccessLevel(validatedData.accessLevel);
           
           // Update user role
           await storage.updateUser(userId, { role: newRole as any });

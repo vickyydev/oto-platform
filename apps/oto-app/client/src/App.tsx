@@ -311,7 +311,8 @@ type UserRole = "global_admin" | "operator_admin" | "admin" | "manager" | "staff
 
 function userHasAccess(userRole: string | undefined, requiredRoles: UserRole[]): boolean {
   if (!userRole) return false;
-  // The data editor is backed by a global-admin-only API, unlike ordinary admin pages.
+  // The data editor, Operators and Users are backed by global-admin-only APIs
+  // (requireGlobalAdmin), unlike ordinary admin pages.
   if (requiredRoles.length === 1 && requiredRoles[0] === "global_admin") {
     return userRole === "global_admin" || userRole === "admin";
   }
@@ -689,7 +690,8 @@ function Router() {
       <ProtectedRoute path="/settings/permissions-debug" component={() => <HRProtectedLayout component={PermissionsDebugPage} />} requiredRole="admin" />
       <ProtectedRoute path="/settings" component={() => <HRProtectedLayout component={SettingsPage} />} requiredRole="admin" />
       <ProtectedRoute path="/settings/supplier-tokens" component={() => <HRProtectedLayout component={SupplierTokensPage} />} requiredRole="admin" />
-      <ProtectedRoute path="/operators" component={() => <HRProtectedLayout component={OperatorsPage} />} requiredRole={["global_admin", "admin"]} />
+      {/* SCRUM-604: /operators and /users gate exactly as their api does (requireGlobalAdmin: global_admin and legacy admin). */}
+      <ProtectedRoute path="/operators" component={() => <HRProtectedLayout component={OperatorsPage} />} requiredRole="global_admin" />
       <ProtectedRoute path="/payroll" component={PayrollHome} requiredRole={["staff", "manager", "operator_admin", "global_admin", "admin"]} />
       {OLD_PAYROLL_REDIRECTS.map((r) => <ProtectedRoute key={r.from} path={r.from} component={() => <OldPayrollRedirect redirect={r} />} requiredRole={["staff", "manager", "operator_admin", "global_admin", "admin"]} />)}
       <ProtectedRoute path="/payroll/setup" component={() => <HRProtectedLayout component={PayrollSetupPage} />} requiredRole={["global_admin", "operator_admin", "admin"]} />
@@ -704,7 +706,7 @@ function Router() {
       <ProtectedRoute path="/attention" component={() => <HRProtectedLayout component={AttentionPage} />} requiredRole={["manager", "admin"]} />
       <ProtectedRoute path="/reviews" component={() => <Redirect to="/attention?tab=probation" />} requiredRole={["manager", "admin"]} />
       <ProtectedRoute path="/staff-movements" component={() => <HRProtectedLayout component={StaffMovementsPage} />} requiredRole={["manager", "admin"]} />
-      <ProtectedRoute path="/users" component={() => <HRProtectedLayout component={UsersPage} />} requiredRole="admin" />
+      <ProtectedRoute path="/users" component={() => <HRProtectedLayout component={UsersPage} />} requiredRole="global_admin" />
       <ProtectedRoute path="/policies" component={() => <HRProtectedLayout component={PoliciesPage} />} requiredRole="admin" />
       <ProtectedRoute path="/policies/:id/preview" component={() => <HRProtectedLayout component={PolicyPreviewPage} />} requiredRole="admin" />
       <ProtectedRoute path="/policies/:id" component={() => <HRProtectedLayout component={PolicyEditorPage} />} requiredRole="admin" />
