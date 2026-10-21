@@ -82,6 +82,7 @@ export function ConversationList({
   onMore: () => void;
 }) {
   const filterCount = activeFilterCount(filters);
+  const hasStrip = strip !== undefined && strip !== null;
   const pills = filterPills(filters, me.teams);
   return (
     <>
@@ -112,7 +113,7 @@ export function ConversationList({
             );
           })}
         </div>
-        {strip !== undefined && strip !== null && <div className="mb-2 lg:hidden">{strip}</div>}
+        {hasStrip && <div className="mb-2 lg:hidden">{strip}</div>}
         <div className="flex items-center gap-2">
           <div className="relative min-w-0 flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
@@ -120,7 +121,7 @@ export function ConversationList({
               value={search}
               onChange={(e) => onSearch(e.target.value)}
               aria-label="Search"
-              placeholder="Search customers, intents, content…"
+              placeholder="Search customers, intents…"
               className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-8 pr-3 text-[13px] placeholder:text-slate-400 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200"
             />
           </div>
@@ -167,13 +168,16 @@ export function ConversationList({
           </span>
           {/* The unanswered toggle. The prototype's is the dashboard card
               (:1367-1375), which stays; this one is for a reader without the
-              dashboard, and on a phone, where the card is far above. */}
+              dashboard, and on a phone, where the card is far above. When the
+              phone strip (F3) renders, its rose chip is the phone's toggle,
+              so this pill steps back to lg and up (SCRUM-652 polish): one
+              unanswered control per width. */}
           {tab !== 'handled' && (
             <button
               type="button"
               aria-pressed={filters.unanswered}
               onClick={() => onFilters({ unanswered: !filters.unanswered })}
-              className={`rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 transition ${
+              className={`${hasStrip ? 'hidden lg:inline-flex ' : ''}rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 transition ${
                 filters.unanswered ? 'bg-rose-50 text-rose-700 ring-rose-200' : 'bg-white text-slate-500 ring-slate-200 hover:bg-slate-50'
               }`}
             >

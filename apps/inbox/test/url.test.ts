@@ -98,10 +98,10 @@ describe('the settings pages and the archive filters in the address (test night 
   });
 });
 
-describe("the assistant page's tab in the address (owner UI round 2026-10-22, F2)", () => {
-  it('writes the tab only on the assistant page, reusing tab=', () => {
+describe("the assistant page's tab in the address (owner UI round 2026-10-22, F2; its own section= since the SCRUM-652 polish)", () => {
+  it('writes the tab only on the assistant page, as section=', () => {
     expect(inboxSearch({ tab: 'team', unanswered: false, selectedId: null, settings: 'assistant', assistantTab: 'knowledge' }, 'team')).toBe(
-      '?tab=knowledge&settings=assistant',
+      '?settings=assistant&section=knowledge',
     );
     // The default tab (null) writes nothing, like the other defaults.
     expect(inboxSearch({ tab: 'team', unanswered: false, selectedId: null, settings: 'assistant', assistantTab: null }, 'team')).toBe(
@@ -111,26 +111,48 @@ describe("the assistant page's tab in the address (owner UI round 2026-10-22, F2
     expect(inboxSearch({ tab: 'team', unanswered: false, selectedId: null, settings: 'templates', assistantTab: 'examples' }, 'team')).toBe(
       '?settings=templates',
     );
+    // The inbox tab keeps tab= to itself and rides alongside the page.
+    expect(
+      inboxSearch({ tab: 'handled', unanswered: false, selectedId: null, settings: 'assistant', assistantTab: 'knowledge' }, 'team'),
+    ).toBe('?tab=handled&settings=assistant&section=knowledge');
   });
 
   it('reads it back on the assistant page only, dropping anything malformed', () => {
-    expect(viewFromUrl('?settings=assistant&tab=numbers', AGENT, 'team').assistantTab).toBe('numbers');
-    expect(viewFromUrl('?settings=assistant&tab=examples', AGENT, 'team').assistantTab).toBe('examples');
+    expect(viewFromUrl('?settings=assistant&section=numbers', AGENT, 'team').assistantTab).toBe('numbers');
+    expect(viewFromUrl('?settings=assistant&section=examples', AGENT, 'team').assistantTab).toBe('examples');
     expect(viewFromUrl('?settings=assistant', AGENT, 'team').assistantTab).toBeNull();
-    expect(viewFromUrl('?settings=assistant&tab=nonsense', AGENT, 'team').assistantTab).toBeNull();
-    expect(viewFromUrl('?tab=knowledge', AGENT, 'team').assistantTab).toBeNull();
+    expect(viewFromUrl('?settings=assistant&section=nonsense', AGENT, 'team').assistantTab).toBeNull();
+    // section= off the assistant page says nothing.
+    expect(viewFromUrl('?section=knowledge', AGENT, 'team').assistantTab).toBeNull();
     // A viewer who may not open the page gets neither the page nor its tab.
-    expect(viewFromUrl('?settings=assistant&tab=numbers', AGENT, 'team', { templates: true, assistant: false })).toMatchObject({
+    expect(viewFromUrl('?settings=assistant&section=numbers', AGENT, 'team', { templates: true, assistant: false })).toMatchObject({
       settings: null,
       assistantTab: null,
     });
-    // The assistant tab never collides with the inbox tabs: the inbox tab falls back.
+  });
+
+  it('still honours the old spelling, tab=, under settings=assistant (saved links; one release)', () => {
+    expect(viewFromUrl('?settings=assistant&tab=knowledge', AGENT, 'team').assistantTab).toBe('knowledge');
+    expect(viewFromUrl('?settings=assistant&tab=numbers', AGENT, 'team').assistantTab).toBe('numbers');
+    // ... only there: a plain tab= stays the inbox tab's namespace.
+    expect(viewFromUrl('?tab=knowledge', AGENT, 'team').assistantTab).toBeNull();
+    // section= wins when a link carries both.
+    expect(viewFromUrl('?settings=assistant&tab=numbers&section=examples', AGENT, 'team').assistantTab).toBe('examples');
+    // A legacy link never names an inbox tab, so the inbox tab falls back.
     expect(viewFromUrl('?settings=assistant&tab=knowledge', AGENT, 'team').tab).toBe('team');
   });
 
-  it('round-trips', () => {
+  it('keeps the inbox tab alongside the page, so Back off the page lands on it', () => {
+    const view = viewFromUrl('?tab=handled&settings=assistant&section=knowledge', AGENT, 'team');
+    expect(view.settings).toBe('assistant');
+    expect(view.assistantTab).toBe('knowledge');
+    expect(view.tab).toBe('handled');
+  });
+
+  it('round-trips through section=', () => {
     for (const assistantTab of ['numbers', 'knowledge', 'examples'] as const) {
       const search = inboxSearch({ tab: 'team', unanswered: false, selectedId: null, settings: 'assistant', assistantTab }, 'team');
+      expect(search).toContain(`section=${assistantTab}`);
       const back = viewFromUrl(search, AGENT, 'team');
       expect(back.settings).toBe('assistant');
       expect(back.assistantTab).toBe(assistantTab);

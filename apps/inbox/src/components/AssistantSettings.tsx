@@ -93,7 +93,7 @@ export function assistantSections(caps: { ai: boolean; kb: boolean }): [Assistan
  *    language, drafted, approved, archived;
  *  - Examples: the corrections staff proposed, edited and approved only with
  *    the approver's "contains no personal data" tick.
- * The tab lives in the URL (`?settings=assistant&tab=…`, UI round 2026-10-22,
+ * The tab lives in the URL (`?settings=assistant&section=…`, UI round 2026-10-22,
  * F2); null is the default, the first tab the viewer may see.
  * The prototype has no settings; this page is in the template page's design
  * language (the eyebrow header card, bordered cards, the house Dialog).

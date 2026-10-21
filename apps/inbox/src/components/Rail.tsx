@@ -13,7 +13,9 @@ export const TAB_ICON: Record<InboxTab, LucideIcon> = { mine: Inbox, team: Users
  * only what they are put on.
  */
 export function viewerRoleLabel(me: Pick<InboxMe, 'roles' | 'teams'>): string {
-  if (me.roles.includes('owner')) return 'Owner';
+  // 'Owner view' names the view, not the person (SCRUM-652 polish): the GM
+  // reads under it too.
+  if (me.roles.includes('owner')) return 'Owner view';
   const teams = me.teams.filter((t) => t.member).map((t) => t.name);
   return teams.length > 0 ? teams.join(' · ') : 'Staff';
 }

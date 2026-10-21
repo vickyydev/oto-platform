@@ -14,7 +14,10 @@ import { ARCHIVE_RANGES, type ArchiveRange } from './view';
  *   /?unanswered=1               the unanswered queue: the list's unanswered toggle on
  *   /?tab=handled&range=7d&by=ai the archive's filters (test night 2026-10-21, U11)
  *   /?settings=templates|assistant  a settings page, in place of the workspace (U11)
- *   /?settings=assistant&tab=numbers|knowledge|examples  that assistant tab (UI round 2026-10-22, F2)
+ *   /?settings=assistant&section=numbers|knowledge|examples  that assistant tab
+ *       (UI round 2026-10-22, F2; its own param since the SCRUM-652 polish — the
+ *       first release spelt it `tab=`, which is still read under
+ *       settings=assistant for one release so saved links keep working)
  *
  * The plan's own spelling of the queue, `/?tab=unanswered`, is read too, as the
  * same thing: unanswered is a filter on the list, not a fourth tab.
@@ -24,7 +27,7 @@ import { ARCHIVE_RANGES, type ArchiveRange } from './view';
  * conversation", "this queue" or "this page", not a saved screen.
  */
 export type SettingsPage = 'templates' | 'assistant';
-/** The assistant page's tabs (owner UI round 2026-10-22, F2): `?settings=assistant&tab=…`. */
+/** The assistant page's tabs (owner UI round 2026-10-22, F2): `?settings=assistant&section=…`. */
 export type AssistantTab = 'numbers' | 'knowledge' | 'examples';
 export type ResolvedBy = 'ai' | 'human';
 
@@ -33,7 +36,7 @@ export interface InboxUrlState {
   conversationId: string | null;
   unanswered: boolean;
   settings: SettingsPage | null;
-  /** `tab=` doubles as the assistant page's tab; the two value sets never meet. */
+  /** The assistant page's tab, from `section=` (legacy links spelt it `tab=`; read for one release). */
   assistantTab: AssistantTab | null;
   archiveRange: ArchiveRange | null;
   resolvedBy: ResolvedBy | null;
@@ -55,6 +58,7 @@ export function readInboxUrl(search: string): InboxUrlState {
   const rawId = q.get('c');
   const rawUnanswered = q.get('unanswered');
   const rawSettings = q.get('settings');
+  const rawSection = q.get('section');
   const rawRange = q.get('range');
   const rawBy = q.get('by');
   return {
@@ -62,7 +66,14 @@ export function readInboxUrl(search: string): InboxUrlState {
     conversationId: rawId !== null && UUID.test(rawId) ? rawId.toLowerCase() : null,
     unanswered: rawTab === 'unanswered' || rawUnanswered === '1' || rawUnanswered === 'true',
     settings: isSettings(rawSettings) ? rawSettings : null,
-    assistantTab: isAssistantTab(rawTab) ? rawTab : null,
+    // `section=` is the assistant tab's own param (SCRUM-652 polish). The old
+    // spelling reused `tab=`; it is read for one release, and only under
+    // settings=assistant, so a plain `tab=` stays the inbox tab's.
+    assistantTab: isAssistantTab(rawSection)
+      ? rawSection
+      : rawSettings === 'assistant' && isAssistantTab(rawTab)
+        ? rawTab
+        : null,
     archiveRange: isRange(rawRange) ? rawRange : null,
     resolvedBy: isResolvedBy(rawBy) ? rawBy : null,
   };
@@ -134,7 +145,7 @@ export interface InboxUrlInput {
   unanswered: boolean;
   selectedId: string | null;
   settings?: SettingsPage | null;
-  /** Written only with `settings: 'assistant'`, and only off the viewer's default tab. */
+  /** Written as `section=`, only with `settings: 'assistant'`; null (the page's default tab) writes nothing. */
   assistantTab?: AssistantTab | null;
   /** Written only on the archive, and only off its default (30 days). */
   archiveRange?: ArchiveRange;
@@ -151,10 +162,7 @@ export const DEFAULT_ARCHIVE_RANGE: ArchiveRange = '30d';
  */
 export function inboxSearch(view: InboxUrlInput, fallback: InboxTab): string {
   const q = new URLSearchParams();
-  // On the assistant page `tab=` names the page's own tab; the inbox tab
-  // returns with the list (Back leaves the page before the tab matters).
-  if (view.settings === 'assistant' && view.assistantTab) q.set('tab', view.assistantTab);
-  else if (view.tab !== fallback) q.set('tab', view.tab);
+  if (view.tab !== fallback) q.set('tab', view.tab);
   if (view.tab === 'handled') {
     if (view.archiveRange && view.archiveRange !== DEFAULT_ARCHIVE_RANGE) q.set('range', view.archiveRange);
     if (view.resolvedBy) q.set('by', view.resolvedBy);
@@ -162,6 +170,9 @@ export function inboxSearch(view: InboxUrlInput, fallback: InboxTab): string {
   if (view.unanswered && view.tab !== 'handled') q.set('unanswered', '1');
   if (view.selectedId) q.set('c', view.selectedId);
   if (view.settings) q.set('settings', view.settings);
+  // The assistant page's tab has its own param (SCRUM-652 polish), so the
+  // inbox tab keeps `tab=` and survives Back off the page.
+  if (view.settings === 'assistant' && view.assistantTab) q.set('section', view.assistantTab);
   const s = q.toString();
   return s ? `?${s}` : '';
 }
