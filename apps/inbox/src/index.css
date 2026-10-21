@@ -9,6 +9,11 @@
   --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
 
+/* Dark mode by class, not by media query (SCRUM-653): `lib/theme.ts` puts
+   `dark` on <html> from the account's saved preference, so `dark:` variants
+   follow the person, and "system" is mapped there via matchMedia. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 html,
 body {
   min-height: 100%;
@@ -23,6 +28,18 @@ body {
   -webkit-font-smoothing: antialiased;
   /* Phone width (plan §4.1): nothing on this page scrolls sideways. */
   overflow-x: hidden;
+}
+
+/* The same page inverted (SCRUM-653): near-black slate grounds, light ink.
+   `color-scheme` keeps native widgets (selects, scrollbars) dark with it. */
+html.dark {
+  color-scheme: dark;
+}
+
+html.dark body {
+  color: var(--color-slate-100);
+  background: linear-gradient(to bottom, var(--color-slate-950), var(--color-slate-900));
+  background-attachment: fixed;
 }
 
 h1,

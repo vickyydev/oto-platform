@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Archive, Bot, FileText, FlaskConical, LogOut, MessageSquare, Settings as SettingsGear, Sparkles } from 'lucide-react';
+import { Archive, Bot, FileText, FlaskConical, LogOut, MessageSquare, Monitor, Moon, Settings as SettingsGear, Sparkles, Sun } from 'lucide-react';
 import type { InboxTab } from '@oto/shared/inbox';
 import { ApiError } from '@/api/client';
 import { assistantCapabilities } from '@/api/assistant';
@@ -17,6 +17,7 @@ import { Rail, viewerRoleLabel } from '@/components/Rail';
 import { SimulatorDialog } from '@/components/Simulator';
 import { TemplateSettings } from '@/components/TemplateSettings';
 import { EMPTY_FILTERS, listQuery, type Filters } from '@/lib/query';
+import { nextTheme, themeTitle, useTheme, type Theme } from '@/lib/theme';
 import { inboxSearch, readInboxUrl, viewFromUrl, type AssistantTab, type SettingsPage } from '@/lib/url';
 import { defaultTab, landingTab, writeMode } from '@/lib/view';
 
@@ -99,6 +100,28 @@ export function SettingsMenuItems({ me, onChoose }: { me: InboxMe; onChoose: (ke
   );
 }
 
+const THEME_ICON: Record<Theme, typeof Sun> = { light: Sun, dark: Moon, system: Monitor };
+
+/**
+ * The theme switch (SCRUM-653): one compact control beside Settings, for every
+ * signed-in viewer — a sun, moon or monitor cycling light → dark → system,
+ * the title naming what is set and what one press does.
+ */
+export function ThemeToggle({ theme, onTheme }: { theme: Theme; onTheme: (t: Theme) => void }) {
+  const Icon = THEME_ICON[theme];
+  return (
+    <button
+      type="button"
+      onClick={() => onTheme(nextTheme(theme))}
+      title={themeTitle(theme)}
+      aria-label={themeTitle(theme)}
+      className="inline-flex items-center rounded-xl border border-slate-200 bg-white p-2 text-slate-600 transition hover:border-slate-300 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:text-slate-100"
+    >
+      <Icon className="h-4 w-4" />
+    </button>
+  );
+}
+
 /**
  * The header's one Settings control (owner UI round 2026-10-22, F2): a gear
  * with the visible word, opening a small menu of what the viewer's
@@ -149,6 +172,7 @@ function SettingsMenu({ me, active, onChoose }: { me: InboxMe; active: SettingsP
  */
 export function Workspace({ me }: { me: InboxMe }) {
   const { signOut, reload } = useSession();
+  const { theme, setTheme } = useTheme();
   const desktop = useIsDesktop();
   const [now, setNow] = useState(() => new Date());
 
@@ -557,6 +581,7 @@ export function Workspace({ me }: { me: InboxMe }) {
               active={settings}
               onChoose={(key) => (key === 'simulator' ? setSimulatorOpen(true) : chooseSettings(key))}
             />
+            <ThemeToggle theme={theme} onTheme={setTheme} />
             {LAUNCHER_URL && (
               <a
                 href={LAUNCHER_URL}
