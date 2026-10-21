@@ -480,6 +480,15 @@ const EnvSchema = z.object({
 
   /** `2c2p` or `simulator` — which `QrPayment` is live. See `assertProductionSafe`. */
   PGW_PROVIDER: z.enum(['2c2p', 'simulator']).default('simulator'),
+  /**
+   * SCRUM-607 — `on` serves the simulated gateway's HOSTED pages
+   * (`GET`/`POST /webhooks/2c2p/hosted/:attemptId`), the pay / fail page a
+   * booking guest sees in place of 2C2P's. Anything else answers 404 there,
+   * whatever the gateway: a public page that settles a payment by a button
+   * press is a thing a deployment switches on deliberately, not one it has by
+   * default. Local, CI and staging set it; a live park never does.
+   */
+  PAYMENTS_SIMULATOR: z.enum(['on', 'off']).default('off'),
   /** `sandbox` or `production`: picks the hosts and marks every record. */
   PGW_ENV: z.enum(['sandbox', 'production']).default('sandbox'),
   /** Payment API host. Empty means the one `PGW_ENV` names. */

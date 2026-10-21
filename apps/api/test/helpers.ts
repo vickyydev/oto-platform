@@ -79,7 +79,9 @@ export async function createTestContext(
 
   const build = async (): Promise<App> => {
     const env = await setupStep('load the test env', () =>
-      loadEnv({ NODE_ENV: 'test', DATABASE_URL: url, ...opts.env }),
+      // The hosted gateway page is on in the suite, as on local and staging
+      // (SCRUM-607); the test that pins the gate passes `off`.
+      loadEnv({ NODE_ENV: 'test', DATABASE_URL: url, PAYMENTS_SIMULATOR: 'on', ...opts.env }),
     );
     const app = await setupStep(`build the api on ${dbName} (buildApp)`, () =>
       buildApp({

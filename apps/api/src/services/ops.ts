@@ -3008,16 +3008,22 @@ export async function runsForFingerprint(
  * filed under the CALLER's operator for somebody else's sweep, which corrupts
  * the one record meant to settle who did what.
  *
- * `operator_id is null` is kept in reach deliberately, and it is the same
- * clause `failureGroups` and `runsForFingerprint` use: a scheduled sweep
- * belongs to the platform rather than to a tenant, and the Failures page that
- * offers the retry button is reading exactly those rows.
+ * SCRUM-607 — `operator_id is null` is a run that belongs to the PLATFORM (a
+ * scheduled sweep), not to a tenant, so only a platform-wide caller acts on
+ * it. It used to be in every operator's reach, and an operator administrator
+ * could re-run the platform's sweep for everybody. An operator-scoped caller
+ * gets 404 on it, the answer for anything outside their reach.
  */
-export async function findRun(db: Db, id: string, operatorId: string) {
+export async function findRun(db: Db, id: string, operatorId: string, platformWide: boolean) {
   const [row] = await db
     .select()
     .from(opsRun)
-    .where(and(eq(opsRun.id, id), or(isNull(opsRun.operatorId), eq(opsRun.operatorId, operatorId))))
+    .where(
+      and(
+        eq(opsRun.id, id),
+        platformWide ? or(isNull(opsRun.operatorId), eq(opsRun.operatorId, operatorId)) : eq(opsRun.operatorId, operatorId),
+      ),
+    )
     .limit(1);
   return row ?? null;
 }
@@ -3027,18 +3033,24 @@ export async function findRun(db: Db, id: string, operatorId: string) {
  * (SCRUM-281).
  *
  * The acknowledge route had no load at all, so it acted on an id and an id
- * alone. Same reach as `findRun`: this operator's alerts, plus the
- * platform-wide ones the Health page shows everybody.
+ * alone. Same reach as `findRun`: this operator's alerts, plus — for a
+ * platform-wide caller only (SCRUM-607) — the platform's own.
  */
 export async function findAlert(
   db: Db,
   id: string,
   operatorId: string,
+  platformWide: boolean,
 ): Promise<{ id: string; key: string; branchId: string | null } | null> {
   const [row] = await db
     .select({ id: alert.id, key: alert.key, branchId: alert.branchId })
     .from(alert)
-    .where(and(eq(alert.id, id), or(isNull(alert.operatorId), eq(alert.operatorId, operatorId))))
+    .where(
+      and(
+        eq(alert.id, id),
+        platformWide ? or(isNull(alert.operatorId), eq(alert.operatorId, operatorId)) : eq(alert.operatorId, operatorId),
+      ),
+    )
     .limit(1);
   return row ?? null;
 }

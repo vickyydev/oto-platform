@@ -6,6 +6,7 @@ import type { App } from '../app';
 import { errors } from '../lib/errors';
 import {
   accessErrors,
+  assertAccountInScope,
   assertDominatesAccount,
   branchReach,
   loadTargetAccount,
@@ -197,6 +198,15 @@ export async function appIdentityRoutes(app: App): Promise<void> {
       let employeeName: string | null = null;
       if (req.body.accountId) {
         const existing = await loadTargetAccount(app.db, auth.operatorId, req.body.accountId);
+        // SCRUM-607 — the branch tie first, as `accounts.ts` does (SCRUM-266):
+        // dominance alone walks an empty list for a roleless account.
+        await assertAccountInScope(
+          app.db,
+          await req.effectivePermissions(),
+          auth.operatorId,
+          existing.id,
+          'admin:role:assign',
+        );
         await assertDominatesAccount(
           app.db,
           await req.effectivePermissions(),
@@ -222,6 +232,13 @@ export async function appIdentityRoutes(app: App): Promise<void> {
           .where(and(eq(account.operatorId, auth.operatorId), eq(account.phone, phone)))
           .limit(1);
         if (existing) {
+          await assertAccountInScope(
+            app.db,
+            await req.effectivePermissions(),
+            auth.operatorId,
+            existing.id,
+            'admin:role:assign',
+          );
           await assertDominatesAccount(
             app.db,
             await req.effectivePermissions(),
@@ -562,7 +579,14 @@ export async function appIdentityRoutes(app: App): Promise<void> {
       const auth = req.requireAuth();
       await loadTargetAccount(app.db, auth.operatorId, req.params.accountId);
       // What an account can reach is a permissions read, and those carry the
-      // same dominance rule as `GET /accounts/:id/permissions`.
+      // same branch tie and dominance rule as `GET /accounts/:id/permissions`.
+      await assertAccountInScope(
+        app.db,
+        await req.effectivePermissions(),
+        auth.operatorId,
+        req.params.accountId,
+        'admin:role:read',
+      );
       await assertDominatesAccount(
         app.db,
         await req.effectivePermissions(),
@@ -652,6 +676,7 @@ export async function appIdentityRoutes(app: App): Promise<void> {
       await loadTargetAccount(app.db, auth.operatorId, accountId);
       const effective = await req.effectivePermissions();
       assertMayGrant(effective, auth.operatorId, 'oto_app');
+      await assertAccountInScope(app.db, effective, auth.operatorId, accountId, 'admin:role:assign');
       await assertDominatesAccount(app.db, effective, auth.operatorId, accountId);
       if (branchIds) assertMayScopeTo(effective, auth.operatorId, branchIds);
 
@@ -710,6 +735,13 @@ export async function appIdentityRoutes(app: App): Promise<void> {
       const target = req.params.app;
       await loadTargetAccount(app.db, auth.operatorId, req.params.accountId);
       assertMayGrant(await req.effectivePermissions(), auth.operatorId, target);
+      await assertAccountInScope(
+        app.db,
+        await req.effectivePermissions(),
+        auth.operatorId,
+        req.params.accountId,
+        'admin:role:assign',
+      );
       await assertDominatesAccount(
         app.db,
         await req.effectivePermissions(),

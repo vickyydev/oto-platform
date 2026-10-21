@@ -41115,7 +41115,7 @@
     },
     "/webhooks/2c2p/hosted/{attemptId}": {
       "get": {
-        "description": "The simulated gateway's hosted payment page for a booking: pay or fail. Only while no PGW_* credentials are set; 404 otherwise.",
+        "description": "The simulated gateway's hosted payment page for a booking: pay or fail. Only while PAYMENTS_SIMULATOR=on and no PGW_* credentials are set; 404 otherwise.",
         "parameters": [
           {
             "schema": {
@@ -41134,7 +41134,7 @@
         }
       },
       "post": {
-        "description": "A press on the simulated hosted page. Pay or fail moves the simulated gateway's record and sends a SIGNED notification through the real webhook handler; the browser then goes back through /public/bookings/return. Only while no PGW_* credentials are set.",
+        "description": "A press on the simulated hosted page. Pay or fail moves the simulated gateway's record and sends a SIGNED notification through the real webhook handler; the browser then goes back through /public/bookings/return. Only while PAYMENTS_SIMULATOR=on and no PGW_* credentials are set; 404 otherwise.",
         "requestBody": {
           "required": true,
           "content": {

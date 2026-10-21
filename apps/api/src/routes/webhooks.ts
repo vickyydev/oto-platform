@@ -249,11 +249,13 @@ export function webhookRoutes(app: App): Promise<void> {
       config: { public: true, ...ipLimited },
       schema: {
         description:
-          "The simulated gateway's hosted payment page for a booking: pay or fail. Only while no PGW_* credentials are set; 404 otherwise.",
+          "The simulated gateway's hosted payment page for a booking: pay or fail. Only while PAYMENTS_SIMULATOR=on and no PGW_* credentials are set; 404 otherwise.",
         params: z.object({ attemptId: z.string().uuid() }),
       },
     },
     async (req, reply) => {
+      // SCRUM-607 — only where the simulator is switched on by name.
+      if (app.env.PAYMENTS_SIMULATOR !== 'on') throw errors.notFound('No such payment page');
       const page = await simulatorHostedPage(app.db, app.env, req.params.attemptId);
       if (!page) throw errors.notFound('No such payment page');
       const open = page.state === 'pending';
@@ -279,12 +281,13 @@ export function webhookRoutes(app: App): Promise<void> {
       config: { public: true, rateLimit: { max: 30, timeWindow: 60_000 } },
       schema: {
         description:
-          "A press on the simulated hosted page. Pay or fail moves the simulated gateway's record and sends a SIGNED notification through the real webhook handler; the browser then goes back through /public/bookings/return. Only while no PGW_* credentials are set.",
+          "A press on the simulated hosted page. Pay or fail moves the simulated gateway's record and sends a SIGNED notification through the real webhook handler; the browser then goes back through /public/bookings/return. Only while PAYMENTS_SIMULATOR=on and no PGW_* credentials are set; 404 otherwise.",
         params: z.object({ attemptId: z.string().uuid() }),
         body: z.object({ action: z.enum(['pay', 'fail', 'return']) }).passthrough(),
       },
     },
     async (req, reply) => {
+      if (app.env.PAYMENTS_SIMULATOR !== 'on') throw errors.notFound('No such payment page');
       const pressed = await pressSimulatorHostedPage(app.db, app.env, req.log, {
         attemptId: req.params.attemptId,
         action: req.body.action === 'pay' ? 'pay' : 'fail',

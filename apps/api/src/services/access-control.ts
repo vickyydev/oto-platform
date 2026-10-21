@@ -1,8 +1,9 @@
-import { and, eq, inArray, isNull, or } from 'drizzle-orm';
+import { and, eq, inArray, isNull, or, type SQL } from 'drizzle-orm';
 import {
   account,
   branch,
   department,
+  employee,
   role,
   roleAssignment,
   rolePermission,
@@ -10,6 +11,8 @@ import {
 } from '@oto/db';
 import type { Permission, ScopeType } from '@oto/shared';
 import { AppError } from '../lib/errors';
+import { atBranch } from '../lib/staff-scope';
+import type { Exec } from './tx';
 import {
   hasPermission,
   isPlatformWide,
@@ -622,4 +625,83 @@ export async function branchScopeRefusal(
     .limit(1);
   if (!row) return null;
   return outOfBranchScope(`You hold ${permission}, but not at ${row.name}`);
+}
+
+/**
+ * SCRUM-249 — WHICH PEOPLE ARE THIS CALLER'S TO LOOK AT.
+ *
+ * An account has no branch column, so "who works at this branch" has no single
+ * answer in the schema. Rather than invent a second one here, this reuses
+ * `atBranch` — the same predicate the fleet's station picker and the box's
+ * offline password cache already use: somebody whose employee record says they
+ * work here, somebody granted a role scoped here, or somebody who administers
+ * the whole operator.
+ *
+ * A null `filter` with `empty` false means no filter at all — an operator
+ * administrator goes on seeing every account. `empty` means the caller holds
+ * the permission at no branch, so the answer is nothing rather than everything.
+ *
+ * SCRUM-266 takes the permission as an argument rather than assuming
+ * `admin:account:read`. Reading a colleague's list and taking their account
+ * over are different grants, and the reach has to be the reach of the one the
+ * route is actually exercising: an account may be read at a branch where it
+ * may not be rewritten.
+ */
+export function accountScopeFilter(
+  effective: EffectivePermission[],
+  operatorId: string,
+  permission: Permission,
+): { filter: SQL | null; empty: boolean } {
+  const reach = branchReach(effective, permission, operatorId);
+  if (reach.kind === 'operator') return { filter: null, empty: false };
+  if (reach.branchIds.length === 0) return { filter: null, empty: true };
+  // `or` over one clause returns that clause, so the single-branch manager —
+  // which is every branch manager today — gets exactly `atBranch(theirs)`.
+  return { filter: or(...reach.branchIds.map((id) => atBranch(id)))!, empty: false };
+}
+
+/**
+ * The same question asked about ONE account, for the routes that take an id
+ * (`accounts.ts`; SCRUM-607 adds `/admin/apps/*` and the account-owner path
+ * of `/files`).
+ * The join is the one `atBranch` reads `employee.branch_id` through; without
+ * it the predicate is a SQL error rather than a quietly wrong answer.
+ *
+ * **SCRUM-266 — why this is on the write surface and not only on the reads.**
+ *
+ * Every by-id route here was fenced by `assertDominatesAccount` alone, which
+ * walks the roles the TARGET holds and refuses if the caller does not hold
+ * each of them at a covering scope. Against a colleague with a role it is a
+ * strong check. Against a new hire who has an account and no role yet it
+ * walks an empty list and returns — there is nothing to fail on — so a
+ * manager at one park could issue that hire a working temporary password at
+ * the other, change their phone, deactivate them, end their sessions and
+ * then grant them a role at their own branch. Dominance answers "is the
+ * target above you"; it was never asked "is the target yours", and for a
+ * roleless target those are not the same question.
+ *
+ * So both, in this order: the branch tie first, because it is the one that
+ * holds when the target has no roles, then dominance, because it is the one
+ * that holds when the target has too many.
+ */
+export async function assertAccountInScope(
+  db: Exec,
+  effective: EffectivePermission[],
+  operatorId: string,
+  accountId: string,
+  permission: Permission,
+): Promise<void> {
+  const { filter, empty } = accountScopeFilter(effective, operatorId, permission);
+  if (!filter && !empty) return;
+  const rows = empty
+    ? []
+    : await db
+        .select({ id: account.id })
+        .from(account)
+        .leftJoin(employee, eq(account.employeeId, employee.id))
+        .where(and(eq(account.id, accountId), eq(account.operatorId, operatorId), filter!))
+        .limit(1);
+  if (rows.length === 0) {
+    throw outOfBranchScope('That account is not at a branch you manage');
+  }
 }

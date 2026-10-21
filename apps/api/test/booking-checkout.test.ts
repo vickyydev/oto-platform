@@ -457,6 +457,25 @@ describe('checkout opens one station-less payment on the WEB segment', () => {
 
 // --- Paid only by the gateway -------------------------------------------------------
 
+describe('the hosted simulator page is served only where PAYMENTS_SIMULATOR=on (SCRUM-607)', () => {
+  it('answers 404 to the page and to a press while it is off, and moves nothing', async () => {
+    const opened = await checkoutOk((await bookOk()).id);
+    const page = () => ctx.app.inject({ method: 'GET', url: `/webhooks/2c2p/hosted/${opened.attemptId}` });
+    expect((await page()).statusCode).toBe(200);
+
+    const env = ctx.app.env as { PAYMENTS_SIMULATOR: 'on' | 'off' };
+    env.PAYMENTS_SIMULATOR = 'off';
+    try {
+      expect((await page()).statusCode).toBe(404);
+      expect((await press(opened.attemptId, 'pay')).statusCode).toBe(404);
+      expect((await attemptRow(opened.attemptId)).status).toBe('sent_to_terminal');
+    } finally {
+      env.PAYMENTS_SIMULATOR = 'on';
+    }
+    expect((await page()).statusCode).toBe(200);
+  });
+});
+
 describe('a booking is paid only by the notification and its inquiry, or by the poller', () => {
   it('pay on the hosted page: signed notification → inquiry → paid, with a signed QR', async () => {
     const made = await bookOk();

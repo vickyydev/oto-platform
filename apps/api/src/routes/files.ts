@@ -3,6 +3,7 @@ import { and, eq } from 'drizzle-orm';
 import { account, checkin, child, fileObject, guardian, member, registration, release, type Db } from '@oto/db';
 import type { App } from '../app';
 import { AppError, errors } from '../lib/errors';
+import { assertAccountInScope, loadTargetAccount } from '../services/access-control';
 import { audit } from '../services/audit';
 import { ClientIdSchema, REPLAY_HEADER, claimClientId } from '../services/client-id';
 import { storageFailureReason } from '../services/files';
@@ -58,9 +59,15 @@ async function checkOwnerAccess(
 ): Promise<string | null> {
   switch (ownerEntityType) {
     case 'account': {
-      // Your own profile photo — or admin access to any account's.
+      // Your own profile photo — or admin access to an account you manage.
       if (ownerEntityId === auth.accountId) return null;
-      await req.requirePermission(mode === 'read' ? 'admin:account:read' : 'admin:account:update');
+      const permission = mode === 'read' ? 'admin:account:read' : 'admin:account:update';
+      await req.requirePermission(permission);
+      // SCRUM-607 — and the account has to be one this caller manages, as on
+      // `/accounts/:id` (SCRUM-266): a grant at one park is not a key to the
+      // other park's staff photos. Another operator's account is 404.
+      await loadTargetAccount(db, auth.operatorId, ownerEntityId);
+      await assertAccountInScope(db, await req.effectivePermissions(), auth.operatorId, ownerEntityId, permission);
       return null;
     }
     case 'member':

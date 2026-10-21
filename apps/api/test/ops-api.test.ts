@@ -622,11 +622,21 @@ describe('S2-03 — who may read any of this', () => {
      * the way the quarantine pair does, so an id nobody owns answers 404
      * whoever sends it; a case built on `newId()` would pass on the absence of
      * a row rather than on the absence of a permission.
+     *
+     * The alert is the caller's operator's: a platform alert (no operator) is
+     * a platform-wide caller's alone and answers 404 to anyone else
+     * (SCRUM-607), which would again not be the permission answering.
      */
+    const [central] = await ctx.db
+      .select({ operatorId: branch.operatorId })
+      .from(branch)
+      .where(eq(branch.code, 'hkt-central'))
+      .limit(1);
     const [open] = await ctx.db
       .insert(alert)
       .values({
         id: newId(),
+        operatorId: central!.operatorId,
         key: 'ops.missing:job:permission-case',
         category: 'ops.missing',
         severity: 'warning',

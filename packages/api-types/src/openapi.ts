@@ -18030,7 +18030,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description The simulated gateway's hosted payment page for a booking: pay or fail. Only while no PGW_* credentials are set; 404 otherwise. */
+        /** @description The simulated gateway's hosted payment page for a booking: pay or fail. Only while PAYMENTS_SIMULATOR=on and no PGW_* credentials are set; 404 otherwise. */
         get: {
             parameters: {
                 query?: never;
@@ -18052,7 +18052,7 @@ export interface paths {
             };
         };
         put?: never;
-        /** @description A press on the simulated hosted page. Pay or fail moves the simulated gateway's record and sends a SIGNED notification through the real webhook handler; the browser then goes back through /public/bookings/return. Only while no PGW_* credentials are set. */
+        /** @description A press on the simulated hosted page. Pay or fail moves the simulated gateway's record and sends a SIGNED notification through the real webhook handler; the browser then goes back through /public/bookings/return. Only while PAYMENTS_SIMULATOR=on and no PGW_* credentials are set; 404 otherwise. */
         post: {
             parameters: {
                 query?: never;

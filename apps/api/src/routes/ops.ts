@@ -211,7 +211,13 @@ export async function opsRoutes(app: App): Promise<void> {
        * operator acknowledged another's alert — 200, row taken, and the trail
        * filed under the wrong park.
        */
-      const row = await findAlert(app.db, req.params.alertId, auth.operatorId);
+      // SCRUM-607 — the platform's own alerts are a platform-wide caller's.
+      const row = await findAlert(
+        app.db,
+        req.params.alertId,
+        auth.operatorId,
+        isPlatformWide(await req.effectivePermissions()),
+      );
       if (!row) throw errors.notFound('That alert is not open and unacknowledged');
       await requireOpsScope(req, row.branchId);
 
@@ -304,7 +310,13 @@ export async function opsRoutes(app: App): Promise<void> {
     async (req) => {
       const auth = req.requireAuth();
       // SCRUM-281 — inside the caller's operator, and at the run's own branch.
-      const run = await findRun(app.db, req.params.runId, auth.operatorId);
+      // SCRUM-607 — and a platform run (no operator) is a platform-wide caller's.
+      const run = await findRun(
+        app.db,
+        req.params.runId,
+        auth.operatorId,
+        isPlatformWide(await req.effectivePermissions()),
+      );
       if (!run) throw errors.notFound('No such run');
       await requireOpsScope(req, run.branchId);
       /**

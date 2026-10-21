@@ -4,6 +4,7 @@ import { AppError } from '../lib/errors';
 import {
   assertDominatesAccount,
   branchReach,
+  holdsGrantAt,
   loadTargetAccount,
 } from '../services/access-control';
 import { audit } from '../services/audit';
@@ -105,6 +106,15 @@ export async function staffTokenRoutes(app: App): Promise<void> {
       // same 404 the picker gives; the token would otherwise be minted for a
       // station the caller cannot see.
       const row = await loadStationRow(app.db, auth.operatorId, auth.stationId);
+      /**
+       * SCRUM-607 — the grant is asked again, of the STATION's branch, as
+       * `pickStation` asks it. A session keeps its seat after the grant that
+       * put it there is taken away, and a token minted then would go on
+       * unlocking that park's till offline for the rest of the shift.
+       */
+      if (!holdsGrantAt(await req.effectivePermissions(), auth.operatorId, row.branchId)) {
+        throw new AppError(403, 'STATION_OTHER_BRANCH', 'That station is at a branch you do not work at');
+      }
       /**
        * SCRUM-284 — the mint is one operation, so it is one transaction.
        *
