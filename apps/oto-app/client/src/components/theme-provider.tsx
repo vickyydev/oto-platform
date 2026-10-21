@@ -16,6 +16,7 @@ interface ThemeContextValue {
 }
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
+// useThemeOptional below reads this context tolerantly for providers above the theme tree.
 
 const PREFERS_DARK = "(prefers-color-scheme: dark)";
 
@@ -81,6 +82,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       {children}
     </ThemeContext.Provider>
   );
+}
+
+/** The context when a ThemeProvider is above, else null - for providers (auth)
+ * that must work in harnesses mounted without the theme tree. */
+export function useThemeOptional() {
+  return useContext(ThemeContext);
 }
 
 export function useTheme() {

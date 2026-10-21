@@ -9,7 +9,7 @@ import { User as SelectUser, InsertUser, UserWithBranchAccess } from "@shared/sc
 import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { readSignInOptions, withSignOutMarker, type SignInOptions } from "@/lib/sign-in-options";
-import { useTheme } from "@/components/theme-provider";
+import { useThemeOptional } from "@/components/theme-provider";
 
 type AuthContextType = {
   user: UserWithBranchAccess | null;
@@ -41,9 +41,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // SCRUM-653 — a session opened from the launcher carries the person's theme
   // from their suite account; the app paints it and its toggles write back.
-  const { adoptPlatformTheme } = useTheme();
+  const adoptPlatformTheme = useThemeOptional()?.adoptPlatformTheme;
   useEffect(() => {
-    if (user) adoptPlatformTheme(user);
+    if (user && adoptPlatformTheme) adoptPlatformTheme(user);
   }, [user, adoptPlatformTheme]);
 
   const loginMutation = useMutation({
