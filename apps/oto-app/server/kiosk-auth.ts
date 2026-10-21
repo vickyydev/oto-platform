@@ -16,12 +16,30 @@ export const kioskPermissions = [
 
 export type KioskPermission = typeof kioskPermissions[number];
 
+/**
+ * What a kiosk session may do, by the kind of device it belongs to (SCRUM-605).
+ * A reception kiosk reads and updates check-ins and reads a guest's minimal
+ * record; a face-recognition kiosk clocks staff with its device secret and
+ * holds none of these. A device of a kind not named here holds nothing.
+ */
+const KIOSK_TYPE_PERMISSIONS: Record<string, readonly KioskPermission[]> = {
+  reception: kioskPermissions,
+  face_recognition: [],
+};
+
+export function kioskPermissionsFor(kioskType: string | null | undefined): KioskPermission[] {
+  const granted = kioskType && Object.hasOwn(KIOSK_TYPE_PERMISSIONS, kioskType) ? KIOSK_TYPE_PERMISSIONS[kioskType] : [];
+  return [...granted];
+}
+
 interface KioskSessionData {
   sessionId: string;
   deviceId: string;
   tenantId: string;
   branchId: string;
   kioskType: string;
+  /** The session's own permission set, from its device's kind. */
+  permissions: KioskPermission[];
 }
 
 declare global {
@@ -101,12 +119,14 @@ export async function validateKioskSession(tokenHash: string): Promise<KioskSess
     .set({ lastSeenAt: now })
     .where(eq(kioskDevices.id, session.deviceId));
 
+  const kioskType = session.kioskType || "reception";
   return {
     sessionId: session.sessionId,
     deviceId: session.deviceId,
     tenantId: session.tenantId,
     branchId: session.branchId,
-    kioskType: session.kioskType || "reception",
+    kioskType,
+    permissions: kioskPermissionsFor(kioskType),
   };
 }
 
@@ -140,7 +160,10 @@ export function requireKioskPermission(...permissions: KioskPermission[]) {
       return res.status(401).json({ error: "Kiosk session required" });
     }
 
-    const hasPermission = permissions.every((p) => kioskPermissions.includes(p));
+    // The session's own permissions (SCRUM-605), not the list of every
+    // permission a kiosk could ever hold, which every key is a member of.
+    const granted = req.kioskSession.permissions ?? [];
+    const hasPermission = permissions.every((p) => granted.includes(p));
     
     if (!hasPermission) {
       return res.status(403).json({ error: "Permission denied" });

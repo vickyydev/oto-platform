@@ -7,7 +7,7 @@ import { db } from "./db";
 import { storage, type DbExecutor } from "./storage";
 import { requireAuth } from "./auth";
 import { canUserAccessBranch, requireManager } from "./auth-middleware";
-import { canViewHrSalary, hrPayResponse } from "../shared/hr-salary-permission";
+import { canEditHrSalary, hrPayResponse } from "../shared/hr-salary-permission";
 
 type Result = { status: number; body: unknown };
 type Action = (req: Request, employee: Employee, tx: DbExecutor) => Promise<Result>;
@@ -93,10 +93,11 @@ export function registerEmployeeActionRoutes(app: Express, options: {
       if (!["salary_adjustment", "title_change", "incentive_change", "branch_transfer"].includes(changeType)) return failure(400, "Invalid change type");
       // Pay changes are a payroll role's (SCRUM-559); below one, a pay value
       // riding on another kind of change is not recorded either.
-      const seesPay = canViewHrSalary(payRole(req));
-      if (!seesPay && PAY_CHANGE_TYPES.includes(changeType)) return failure(403, "Pay changes require hr.view_salary.");
-      const newSalary = seesPay ? req.body.newSalary : undefined;
-      const newIncentiveClause = seesPay ? req.body.newIncentiveClause : undefined;
+      // Writing pay is hr.edit_salary's (SCRUM-605).
+      const writesPay = canEditHrSalary(payRole(req));
+      if (!writesPay && PAY_CHANGE_TYPES.includes(changeType)) return failure(403, "Pay changes require hr.view_salary.");
+      const newSalary = writesPay ? req.body.newSalary : undefined;
+      const newIncentiveClause = writesPay ? req.body.newIncentiveClause : undefined;
       if (!effectiveDate) return failure(400, "Effective date is required");
       if (!Number.isFinite(new Date(effectiveDate).getTime())) return failure(400, "Invalid effective date");
       if (changeType === "salary_adjustment" && (newSalary === undefined || newSalary === null || typeof newSalary !== "number")) return failure(400, "New salary is required for salary adjustments");
@@ -149,7 +150,7 @@ export function registerEmployeeActionRoutes(app: Express, options: {
         if (!employee) return failure(404, "Employee not found");
         const [change] = await tx.select().from(employeeChanges).where(and(eq(employeeChanges.id, req.params.changeId), eq(employeeChanges.employeeId, employee.id))).for("update");
         if (!change) return failure(404, "Change not found");
-        if (PAY_CHANGE_TYPES.includes(change.changeType) && !canViewHrSalary(payRole(req))) return failure(403, "Pay changes require hr.view_salary.");
+        if (PAY_CHANGE_TYPES.includes(change.changeType) && !canEditHrSalary(payRole(req))) return failure(403, "Pay changes require hr.view_salary.");
         if (parsed.data.contractInstanceId) {
           const [contract] = await tx.select().from(contractInstances).where(and(eq(contractInstances.id, parsed.data.contractInstanceId), eq(contractInstances.employeeId, employee.id)));
           if (!contract) return failure(404, "Contract not found");

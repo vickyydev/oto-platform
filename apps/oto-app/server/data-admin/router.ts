@@ -12,6 +12,7 @@ import { users } from '../../shared/schema';
 import attentionAdmin from './models/attentionItem';
 import { register, getAdmin, getAllAdmins, getAdminMap } from './registry';
 import { SettingsWriteRefusedError } from '../lib/parkGroupSettings';
+import { requireAction } from '../auth-middleware';
 import tenantAdmin from './models/tenant';
 import operatorAdmin from './models/operator';
 import branchAdmin from './models/branch';
@@ -367,7 +368,8 @@ router.put('/:model/:id', async (req: Request, res: Response) => {
 
 // ─── DELETE /api/data-admin/:model/:id ───────────────────────────────────────
 
-router.delete('/:model/:id', async (req: Request, res: Response) => {
+// Deleting a record is settings.delete_data (SCRUM-605).
+router.delete('/:model/:id', requireAction('settings.delete_data', 'settings'), async (req: Request, res: Response) => {
   const admin = getAdmin(req.params.model);
   if (!admin) return res.status(404).json({ error: 'Model not found' });
 

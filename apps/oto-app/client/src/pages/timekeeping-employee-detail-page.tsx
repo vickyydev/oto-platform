@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { DatePicker } from "@/components/ui/date-picker";
 import { ClickableEmployeeAvatar } from "@/components/clickable-employee-avatar";
+import { isAdminRole } from "@shared/permissions";
 
 interface TimekeepingSession {
   id: string;
@@ -330,7 +331,7 @@ export default function TimekeepingEmployeeDetailPage() {
     ? `/timekeeping-review?tab=issues&date=${encodeURIComponent(selectedDate)}`
     : "/timekeeping-review";
   const { user } = useAuth();
-  const isAdmin = user?.role === "admin";
+  const isAdmin = isAdminRole(user?.role);
 
   const [startDate, setStartDate] = useState(() => {
     if (selectedDate && /^\d{4}-\d{2}-\d{2}$/.test(selectedDate)) return selectedDate;

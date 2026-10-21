@@ -31,6 +31,22 @@ export function canViewHrSalary(role: string | null | undefined): boolean {
   ).allowed;
 }
 
+export const HR_EDIT_SALARY_ACTION = "hr.edit_salary";
+
+/**
+ * Who may write pay (SCRUM-605): `hr.edit_salary`, an admin-only action, on
+ * top of seeing it. Today the same roles as canViewHrSalary; checked by its
+ * own name wherever pay is written.
+ */
+export function canEditHrSalary(role: string | null | undefined): boolean {
+  if (!role || !canViewHrSalary(role)) return false;
+  return canPerformAction(
+    { userId: "", role: role as PermissionRole, homeBranchId: null, overrides: [] },
+    HR_EDIT_SALARY_ACTION,
+    "hr",
+  ).allowed;
+}
+
 /** Compared lower-cased, wherever the key sits in the JSON. */
 const PAY_KEYS = new Set([
   "salary", "salarythb", "monthlysalary", "basesalary", "monthlypay", "fixedfee",

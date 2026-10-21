@@ -503,6 +503,22 @@ export function canPerformAction(
   return moduleResult;
 }
 
+/**
+ * A named right decided on the effective role alone (SCRUM-605), as
+ * canViewHrSalary decides `hr.view_salary`: overrides do not enter, since no
+ * override grants an admin-only action. For an ADMIN_ONLY_ACTIONS key that is
+ * admin and global_admin (bypass) and operator_admin; manager and staff are
+ * refused. An unknown role or a raw "advisor" falls to staff.
+ */
+export function roleCanPerformAction(
+  role: string | null | undefined,
+  actionKey: AdminOnlyAction,
+  moduleKey: ModuleKey,
+): boolean {
+  if (!role) return false;
+  return canPerformAction({ userId: "", role: role as PermissionRole, homeBranchId: null, overrides: [] }, actionKey, moduleKey).allowed;
+}
+
 // ============================================
 // COMPUTE EFFECTIVE PERMISSIONS
 // ============================================

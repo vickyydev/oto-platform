@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { storage } from "./storage";
 import type { UserWithBranchAccess, Branch } from "@shared/schema";
-import { getEffectivePermissions, type ModuleKey, type PermissionUserContext, type PermissionRole } from "../shared/permissions";
+import { getEffectivePermissions, roleCanPerformAction, type AdminOnlyAction, type ModuleKey, type PermissionUserContext, type PermissionRole } from "../shared/permissions";
 
 // Extended role system with operator support
 export type UserRole = "global_admin" | "operator_admin" | "admin" | "manager" | "staff";
@@ -297,6 +297,24 @@ export function requireModule(...moduleKeys: ModuleKey[]) {
       console.error("Permission check error:", error);
       next(error);
     }
+  };
+}
+
+/**
+ * A named admin-only right, checked where its name says (SCRUM-605): the
+ * route answers 403 unless the caller's effective role holds `actionKey`
+ * (roleCanPerformAction). Place it after requireAuth and the role gate.
+ */
+export function requireAction(actionKey: AdminOnlyAction, moduleKey: ModuleKey) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    const role = req.userWithAccess?.role ?? req.user.role;
+    if (!roleCanPerformAction(role, actionKey, moduleKey)) {
+      return res.status(403).json({ error: "Insufficient permissions", message: `This needs the ${actionKey} right`, required: actionKey });
+    }
+    next();
   };
 }
 

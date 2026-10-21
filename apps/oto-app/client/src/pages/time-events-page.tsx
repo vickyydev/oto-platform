@@ -40,6 +40,7 @@ import { Clock, Filter, Plus, User, Trash2, Loader2, ArrowUpRight, ArrowDownRigh
 import { DatePicker } from "@/components/ui/date-picker";
 import { ClickableEmployeeAvatar } from "@/components/clickable-employee-avatar";
 import type { Employee, Branch } from "@shared/schema";
+import { isAdminRole } from "@shared/permissions";
 
 type OverrideAdvisor = {
   id: string;
@@ -94,7 +95,7 @@ export default function TimeEventsPage({ embedded = false }: { embedded?: boolea
   const { toast } = useToast();
   const { selectedBranchId: selectedBranch } = useBranchContext();
   const { user } = useAuth();
-  const isAdmin = user?.role === "admin";
+  const isAdmin = isAdminRole(user?.role);
   const canViewEvents = !!user;
 
   const [filterAuthMethod, setFilterAuthMethod] = useState<string>("all");

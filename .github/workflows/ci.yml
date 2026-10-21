@@ -645,6 +645,13 @@ jobs:
       - name: The app's access escalation checks
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/access-escalation.check.ts
+      # SCRUM-605: the checks that did nothing decide — a kiosk session's own
+      # permission set, hr.terminate_employee (a manager records a resignation,
+      # not a termination), the contract template gate still open to admins,
+      # and the employee PIN salted, branch-checked and migrated from sha256.
+      - name: The app's named rights checks
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/named-rights.check.ts
       # SCRUM-561: staff birthdays (migration 0019) and the sidebar's saved
       # sections (0020) — birthday validation and the February 29 rule, My
       # Account both ways, the birthday list fenced to the park group and

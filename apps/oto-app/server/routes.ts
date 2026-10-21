@@ -14,7 +14,7 @@ import { storage, assertScheduleDeleteScope, resolveFixReportStatusFilter, type 
 import { registerSopRoutes, canReadSopArticle } from "./sop-routes";
 import { registerCampRegistrationRoutes } from "./camp-registration-routes";
 import { setupAuth, requireAuth, hashPassword } from "./auth";
-import { loadUserWithAccess, requireRole, requireAdmin, requireManager, requireGlobalAdmin, isGlobalAdmin, filterByUserBranches as _filterByUserBranches, canUserAccessBranch, directoryApiRateLimit, getAllowedOperatorAndBranchIds, requireModule } from "./auth-middleware";
+import { loadUserWithAccess, requireRole, requireAdmin, requireManager, requireGlobalAdmin, requireAction, isGlobalAdmin, filterByUserBranches as _filterByUserBranches, canUserAccessBranch, directoryApiRateLimit, getAllowedOperatorAndBranchIds, requireModule } from "./auth-middleware";
 import { generatePdf, generateSignedPdf, generateSignedLetterPdf, wrapContentInDocument } from "./pdf";
 import { uploadFinalizedPdf, uploadSignedPdf, uploadSignedLetterPdf, presignedPdfUrl, streamSignedPdf, isObjectStoragePath } from "./pdf-storage";
 import { readFixDepartmentMembers, registerFixRecipientPreview } from "./fix-recipient-preview";
@@ -30,8 +30,8 @@ import Handlebars from "handlebars";
 import { z } from "zod";
 import { format, addDays as _addDays } from "date-fns";
 import { insertTemplateSchema, insertEmployeeSchema, insertBranchSchema, mergeDataSchema as _mergeDataSchema, MergeData as _MergeData, activityTypes, type ActivityType, attentionTypes, type AttentionType, insertEmployeeDocumentSchema as _insertEmployeeDocumentSchema, documentTypes, insertTemplateAssignmentSchema, insertUserSchema as _insertUserSchema, insertDepartmentSchema, insertRoleSchema, insertPersonSchema, insertOperatorSchema, insertStatutoryRuleSetSchema, insertKbArticleSchema, type ContractInstance, type EnrollmentSession, type FixReport, type UserWithBranchAccess, DEFAULT_TENANT_SLUG } from "@shared/schema";
-import { getEffectivePermissions, resolveAdvisorRole, canGrantAccessLevel, roleForAccessLevel, roleRank, isAdminRole, ACCESS_LEVEL_ROLES, type PermissionUserContext } from "../shared/permissions";
-import { canViewHrSalary, containsHrPayFields, hrPayResponse, isHrPayKey, preserveHrMergePay } from "../shared/hr-salary-permission";
+import { getEffectivePermissions, resolveAdvisorRole, canGrantAccessLevel, roleForAccessLevel, roleRank, isAdminRole, roleCanPerformAction, ACCESS_LEVEL_ROLES, type PermissionUserContext } from "../shared/permissions";
+import { canEditHrSalary, canViewHrSalary, containsHrPayFields, hrPayResponse, isHrPayKey, preserveHrMergePay } from "../shared/hr-salary-permission";
 import { birthdaySchema } from "../shared/birthday";
 import { findBirthdayEmployee, getPersonBirthdays } from "./person-birthdays";
 import { computeSidebarBadges } from "./sidebar-badges";
@@ -162,6 +162,7 @@ import { directoryEventRouter } from "./directory/eventRoutes";
 import { directoryJobRouter } from "./directory/jobRoutes";
 import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, employeeAssets, employeeOffboarding, offboardingChecklist, eventStatuses, insertEventStatusSchema, branches, departments, operators, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, timekeepingIssues, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, leavePolicies, sickLeavePolicies, type LeaveType, scheduleAuditLog, activityLog, roles, roleBranchAssignments, employeeRoles, payrollEmployeeSummaries, payrollLineItems, payrollDayReconciliations, payrollExceptions, statutoryCalculationResults, employeePayrollProfiles, payslips, accessPolicies, accessItems, userPreferences, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections, kioskAuthAttempts } from "@shared/schema";
 import { hashSessionToken, validateKioskSession } from "./kiosk-auth";
+import { hashPin, verifyEmployeePin } from "./pin-utils";
 import { DEACTIVATE_INSTEAD, deleteManagedUser } from "./lib/userDeletion";
 import { deleteBranchWhole, deleteEmployeeWhole, deletePersonWhole } from "./lib/recordDeletion";
 import { FACE_CLOCK_OFF_REFUSAL, FACE_ENROLMENT_OFF_REFUSAL, FACE_OFF_NO_MATCH, faceClockInOn } from "./lib/faceOff";
@@ -1045,6 +1046,10 @@ export async function registerRoutes(
       if (!["admin", "manager", "staff"].includes(nextRole)) {
         return res.status(400).json({ message: "Role is not available here" });
       }
+      // Choosing a login's role is settings.manage_roles (SCRUM-605).
+      if (role !== undefined && !roleCanPerformAction(req.userWithAccess?.role ?? req.user?.role, "settings.manage_roles", "settings")) {
+        return res.status(403).json({ message: "Choosing a role needs the settings.manage_roles right" });
+      }
       const nextScope = nextRole === "admin" ? "all_branches" : (accessScope ?? "selected_branches");
       if (nextScope !== "all_branches" && nextScope !== "selected_branches") {
         return res.status(400).json({ message: "Invalid branch access scope" });
@@ -1122,6 +1127,10 @@ export async function registerRoutes(
       const nextRole = role ?? targetUser.role;
       if (!["admin", "manager", "staff"].includes(nextRole)) {
         return res.status(400).json({ message: "Role is not available here" });
+      }
+      // Changing a login's role is settings.manage_roles (SCRUM-605).
+      if (nextRole !== targetUser.role && !roleCanPerformAction(req.userWithAccess?.role ?? req.user?.role, "settings.manage_roles", "settings")) {
+        return res.status(403).json({ message: "Changing a role needs the settings.manage_roles right" });
       }
       if (email !== undefined && (typeof email !== "string" || !email.trim())) {
         return res.status(400).json({ message: "Invalid email" });
@@ -1597,7 +1606,7 @@ export async function registerRoutes(
     }
   });
 
-  app.delete("/api/users/:id", requireGlobalAdmin, async (req, res, next) => {
+  app.delete("/api/users/:id", requireGlobalAdmin, requireAction("settings.delete_data", "settings"), async (req, res, next) => {
     try {
       const tenantId = await userManagementTenant(req);
       if (!tenantId) return res.status(403).json({ message: "Access denied" });
@@ -1880,7 +1889,7 @@ export async function registerRoutes(
     }
   });
 
-  app.delete("/api/branches/:id", requireAdmin, async (req, res, next) => {
+  app.delete("/api/branches/:id", requireAdmin, requireAction("settings.delete_data", "settings"), async (req, res, next) => {
     try {
       const branch = await storage.getBranch(req.params.id);
       if (!branch || !(await canAccessBranchRecord(req.userWithAccess, branch))) {
@@ -3158,7 +3167,7 @@ export async function registerRoutes(
   });
 
   // Add assignment for a template: the park group's own template, to one of its own branches.
-  app.post("/api/templates/:id/assignments", requireAdmin, async (req, res, next) => {
+  app.post("/api/templates/:id/assignments", requireAdmin, requireAction("hr.edit_contract_templates", "hr"), async (req, res, next) => {
     try {
       const tenantId = documentParkGroup(req, res);
       if (!tenantId) return;
@@ -3185,7 +3194,7 @@ export async function registerRoutes(
 
   // Remove assignment for a template: another park group's template is left
   // as it is, and the answer is the one a missing assignment gets.
-  app.delete("/api/templates/:id/assignments/:branchId", requireAdmin, async (req, res, next) => {
+  app.delete("/api/templates/:id/assignments/:branchId", requireAdmin, requireAction("hr.edit_contract_templates", "hr"), async (req, res, next) => {
     try {
       const tenantId = documentParkGroup(req, res);
       if (!tenantId) return;
@@ -3198,7 +3207,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/templates", requireAdmin, async (req, res, next) => {
+  app.post("/api/templates", requireAdmin, requireAction("hr.edit_contract_templates", "hr"), async (req, res, next) => {
     try {
       // Add tenantId from authenticated user with fallbacks. The app named the
       // tenant here before the column existed (zod dropped it); from round 6
@@ -3222,7 +3231,7 @@ export async function registerRoutes(
     }
   });
 
-  app.patch("/api/templates/:id", requireAdmin, async (req, res, next) => {
+  app.patch("/api/templates/:id", requireAdmin, requireAction("hr.edit_contract_templates", "hr"), async (req, res, next) => {
     try {
       const tenantId = documentParkGroup(req, res);
       if (!tenantId) return;
@@ -3243,7 +3252,7 @@ export async function registerRoutes(
     }
   });
 
-  app.delete("/api/templates/:id", requireAdmin, async (req, res, next) => {
+  app.delete("/api/templates/:id", requireAdmin, requireAction("hr.edit_contract_templates", "hr"), async (req, res, next) => {
     try {
       const tenantId = documentParkGroup(req, res);
       if (!tenantId) return;
@@ -3280,7 +3289,7 @@ export async function registerRoutes(
 
   // Fork template for a specific branch: the park group's own template, for
   // one of its own branches; the fork is the park group's too.
-  app.post("/api/templates/:id/fork", requireAdmin, async (req, res, next) => {
+  app.post("/api/templates/:id/fork", requireAdmin, requireAction("hr.edit_contract_templates", "hr"), async (req, res, next) => {
     try {
       const tenantId = documentParkGroup(req, res);
       if (!tenantId) return;
@@ -3333,7 +3342,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/template-assignments", requireAdmin, async (req, res, next) => {
+  app.post("/api/template-assignments", requireAdmin, requireAction("hr.edit_contract_templates", "hr"), async (req, res, next) => {
     try {
       const tenantId = documentParkGroup(req, res);
       if (!tenantId) return;
@@ -3358,7 +3367,7 @@ export async function registerRoutes(
     }
   });
 
-  app.delete("/api/template-assignments/:templateId/:branchId", requireAdmin, async (req, res, next) => {
+  app.delete("/api/template-assignments/:templateId/:branchId", requireAdmin, requireAction("hr.edit_contract_templates", "hr"), async (req, res, next) => {
     try {
       const tenantId = documentParkGroup(req, res);
       if (!tenantId) return;
@@ -3894,7 +3903,7 @@ export async function registerRoutes(
     try {
       // Pay is set by a payroll role (SCRUM-559), on a new employee as on an
       // existing one; the form below one sends none.
-      if (!canViewHrSalary(req.userWithAccess?.role ?? req.user?.role) && containsHrPayFields(req.body)) {
+      if (!canEditHrSalary(req.userWithAccess?.role ?? req.user?.role) && containsHrPayFields(req.body)) {
         return res.status(403).json({ message: "Pay fields require hr.view_salary. Ask an admin to set pay." });
       }
       // Convert date strings to Date objects or undefined for optional date fields
@@ -4039,12 +4048,17 @@ export async function registerRoutes(
     try {
       // Pay is a payroll role's to change (SCRUM-559). The body alone decides
       // this, so it answers before any record is looked up.
-      if (!canViewHrSalary(req.userWithAccess?.role ?? req.user?.role) && containsHrPayFields(req.body)) {
+      if (!canEditHrSalary(req.userWithAccess?.role ?? req.user?.role) && containsHrPayFields(req.body)) {
         return res.status(403).json({ message: "Pay fields require hr.view_salary. Ask an admin to change pay." });
       }
       const oldEmployee = await employeeOfParkGroup(req, req.params.id);
       if (!oldEmployee) {
         return res.status(404).json({ message: "Employee not found" });
+      }
+      // Marking an employee terminated is terminating (SCRUM-605).
+      if (req.body?.status === "terminated" && oldEmployee.status !== "terminated" &&
+          !roleCanPerformAction(req.userWithAccess?.role ?? req.user?.role, "hr.terminate_employee", "hr")) {
+        return res.status(403).json({ message: "Terminating an employee needs the hr.terminate_employee right" });
       }
 
       // Check branch access
@@ -4640,7 +4654,7 @@ export async function registerRoutes(
   });
 
 
-  app.delete("/api/employees/:id", requireAuth, requireAdmin, async (req, res, next) => {
+  app.delete("/api/employees/:id", requireAuth, requireAdmin, requireAction("settings.delete_data", "settings"), async (req, res, next) => {
     try {
       // The caller's own park group, by the app's strict rule, as the users
       // door places its caller (S2-17b round 2, pin 3): another park group's
@@ -5077,7 +5091,8 @@ export async function registerRoutes(
       
       // Get all existing employees for matching
       const allEmployees = (await storage.getEmployees()).filter(e => ofParkGroup(e.tenantId));
-      const seesPay = canViewHrSalary(req.userWithAccess?.role ?? req.user?.role);
+      // Writing pay is hr.edit_salary's (SCRUM-605).
+      const writesPay = canEditHrSalary(req.userWithAccess?.role ?? req.user?.role);
       
       const previewRows: any[] = [];
       
@@ -5113,7 +5128,7 @@ export async function registerRoutes(
         
         // Pay in an upload is a payroll role's (SCRUM-559): refused, as the
         // edit refuses it, rather than silently dropped.
-        if (!seesPay && bulkRowCarriesPay(rowData)) {
+        if (!writesPay && bulkRowCarriesPay(rowData)) {
           return res.status(403).json({ message: BULK_PAY_REFUSAL });
         }
 
@@ -5231,7 +5246,7 @@ export async function registerRoutes(
       }
 
       // The whole upload is refused before any row is written (SCRUM-559).
-      if (!canViewHrSalary(req.userWithAccess?.role ?? req.user?.role) && rows.some((row: { data?: unknown }) => bulkRowCarriesPay(row?.data))) {
+      if (!canEditHrSalary(req.userWithAccess?.role ?? req.user?.role) && rows.some((row: { data?: unknown }) => bulkRowCarriesPay(row?.data))) {
         return res.status(403).json({ message: BULK_PAY_REFUSAL });
       }
       
@@ -8033,6 +8048,13 @@ OTO Company Limited`,
         });
       }
       const validatedData = validationResult.data;
+
+      // A termination needs hr.terminate_employee (SCRUM-605), an admin-only
+      // right; a resignation stays with the managers who record it today.
+      if (validatedData.offboardingType === "termination" &&
+          !roleCanPerformAction(req.userWithAccess?.role ?? req.user?.role, "hr.terminate_employee", "hr")) {
+        return res.status(403).json({ message: "Terminating an employee needs the hr.terminate_employee right" });
+      }
       
       const employee = await authorizedOffboardingEmployee(req, employeeId);
       if (!employee) {
@@ -8230,6 +8252,11 @@ OTO Company Limited`,
 
       const offboarding = await storage.getEmployeeOffboarding(employeeId);
       if (!offboarding) return res.status(404).json({ message: "No offboarding record found" });
+      // Editing a termination is terminating (SCRUM-605): hr.terminate_employee.
+      if (String(offboarding.offboardingType ?? "").toLowerCase() === "termination" &&
+          !roleCanPerformAction(req.userWithAccess?.role ?? req.user?.role, "hr.terminate_employee", "hr")) {
+        return res.status(403).json({ message: "Terminating an employee needs the hr.terminate_employee right" });
+      }
 
       const updateSchema = z.object({
         lastWorkingDay: z.string().optional(),
@@ -9473,15 +9500,6 @@ OTO Company Limited`,
     if (expiresAt < Date.now() || expiresAt > Date.now() + PIN_PHOTO_CLAIM_MS) return null;
     const expected = Buffer.from(kioskPinPhotoSignature(url, device, expiresAt), "hex");
     return crypto.timingSafeEqual(Buffer.from(signature, "hex"), expected) ? url : null;
-  }
-
-  // Compares two hex digests without leaking, through how long the comparison
-  // runs, how many leading characters matched.
-  function timingSafeEqualHex(a: string, b: string): boolean {
-    const left = Buffer.from(a, "utf8");
-    const right = Buffer.from(b, "utf8");
-    if (left.length !== right.length) return false;
-    return crypto.timingSafeEqual(left, right);
   }
 
   // One refusal for every reason a kiosk endpoint declines to act on a person:
@@ -11174,10 +11192,9 @@ OTO Company Limited`,
   // A PIN is checked against a named employee. It used to be looked up: the
   // digest of whatever PIN arrived was matched across the whole employee table,
   // so any PIN that anybody had clocked in whoever held it, and four digits span
-  // ten thousand values. The digest stored in timeclock_pin_hash is still an
-  // unsalted sha256 over that short numeric space — naming the employee stops
-  // the lookup, it does not make the stored digest expensive to search offline,
-  // and two employees who pick the same PIN still share a digest.
+  // ten thousand values. The PIN is stored as a salted scrypt hash since
+  // SCRUM-605 (an old unsalted sha256 is re-hashed at its next good use), so
+  // two employees who pick the same PIN no longer share a digest.
   app.post("/api/kiosk/clock-pin", async (req, res, next) => {
     try {
       const pinSchema = z.object({
@@ -11222,11 +11239,16 @@ OTO Company Limited`,
       // device cannot check a PIN against, or clock, somebody another park
       // employs — the attempt reads the same as a wrong PIN.
       const named = await storage.getEmployeeInTenant(employeeId, device.tenantId);
-      const pinHash = crypto.createHash('sha256').update(pin).digest('hex');
-      const employee =
-        named && named.timeclockPinHash && timingSafeEqualHex(pinHash, named.timeclockPinHash)
-          ? named
-          : undefined;
+      // A salted scrypt hash since SCRUM-605; a PIN stored as the old unsalted
+      // sha256 is checked that way once and re-hashed on that success, only
+      // if nothing replaced it meanwhile. The PIN's set date is left alone.
+      const pinCheck = await verifyEmployeePin(pin, named?.timeclockPinHash);
+      const employee = named && pinCheck.ok ? named : undefined;
+      if (employee && pinCheck.rehash && employee.timeclockPinHash) {
+        await db.update(employees)
+          .set({ timeclockPinHash: await hashPin(pin) })
+          .where(and(eq(employees.id, employee.id), eq(employees.timeclockPinHash, employee.timeclockPinHash)));
+      }
 
       if (!employee) {
         await storage.createKioskAuthAttempt({
@@ -12430,9 +12452,13 @@ OTO Company Limited`,
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
+      // The employee's branch must be the caller's (SCRUM-605).
+      if (!canUserAccessBranch(req.userWithAccess!, employee.branchId ?? null)) {
+        return res.status(403).json({ message: "Access denied to this employee" });
+      }
 
-      // Hash the PIN
-      const pinHash = crypto.createHash('sha256').update(pin).digest('hex');
+      // Hash the PIN: salted scrypt (SCRUM-605), as pin-utils hashes a person's PIN.
+      const pinHash = await hashPin(pin);
       
       await storage.updateEmployeePin(employeeId, pinHash);
 
@@ -12459,6 +12485,10 @@ OTO Company Limited`,
       const employee = await employeeOfParkGroup(req, employeeId);
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
+      }
+      // The employee's branch must be the caller's (SCRUM-605).
+      if (!canUserAccessBranch(req.userWithAccess!, employee.branchId ?? null)) {
+        return res.status(403).json({ message: "Access denied to this employee" });
       }
 
       // Set pin hash to empty to clear it
@@ -14729,7 +14759,7 @@ OTO Company Limited`,
   });
 
   // Create or update access policy (admin only)
-  app.put("/api/people/:id/access", requireAuth, requireAdmin, async (req, res, next) => {
+  app.put("/api/people/:id/access", requireAuth, requireAdmin, requireAction("settings.manage_access", "settings"), requireAction("settings.manage_roles", "settings"), async (req, res, next) => {
     try {
       const { id } = req.params;
       const person = await storage.getPerson(id);
@@ -27346,7 +27376,7 @@ ${context}`;
   });
 
   // Set module overrides for a specific user (admin only) - replaces all existing overrides
-  app.put("/api/module-overrides/:userId", requireAuth, requireAdmin, async (req, res, next) => {
+  app.put("/api/module-overrides/:userId", requireAuth, requireAdmin, requireAction("settings.manage_access", "settings"), async (req, res, next) => {
     try {
       const { userId } = req.params;
       const parkGroup = await userManagementTenant(req);
@@ -27394,7 +27424,7 @@ ${context}`;
   });
 
   // Delete all module overrides for a user (admin only)
-  app.delete("/api/module-overrides/:userId", requireAuth, requireAdmin, async (req, res, next) => {
+  app.delete("/api/module-overrides/:userId", requireAuth, requireAdmin, requireAction("settings.manage_access", "settings"), async (req, res, next) => {
     try {
       const { userId } = req.params;
       const parkGroup = await userManagementTenant(req);
@@ -27515,7 +27545,7 @@ ${context}`;
   });
 
   // Bulk update module access for multiple people (admin only)
-  app.put("/api/permissions/bulk-update", requireAuth, requireAdmin, async (req, res, next) => {
+  app.put("/api/permissions/bulk-update", requireAuth, requireAdmin, requireAction("settings.manage_access", "settings"), async (req, res, next) => {
     try {
       const schema = z.object({
         personIds: z.array(z.string()).min(1),

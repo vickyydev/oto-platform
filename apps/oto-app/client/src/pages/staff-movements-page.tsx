@@ -34,6 +34,7 @@ import { formatDate } from "@/lib/format-utils";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { isAdminRole } from "@shared/permissions";
 
 const activityTypeLabels: Record<string, string> = {
   promotion: "Promotion",
@@ -212,7 +213,7 @@ export default function StaffMovementsPage() {
             {isAllBranches ? "Activity across all branches (last 30 days)" : "Activity for selected branch (last 30 days)"}
           </p>
         </div>
-        {user?.role === "admin" && (
+        {isAdminRole(user?.role) && (
           <Button
             variant="outline"
             size="sm"

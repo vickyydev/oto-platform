@@ -43,6 +43,7 @@ import { Progress } from "@/components/ui/progress";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { ActivityPreviewTooltip } from "@/components/activity-preview-tooltip";
+import { isAdminRole } from "@shared/permissions";
 
 function ContractsTableSkeleton() {
   return (
@@ -131,7 +132,7 @@ export default function ContractsPage() {
   
   // Staff role has read-only access
   const canEdit = user?.role !== "staff";
-  const isAdmin = user?.role === "admin";
+  const isAdmin = isAdminRole(user?.role);
   
   // Clear selection when filter changes
   useEffect(() => {
