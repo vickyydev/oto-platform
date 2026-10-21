@@ -371,16 +371,19 @@ describe('gate (3): the close', () => {
   let pClosed: EndOfDayRecord;
   let gClosed: EndOfDayRecord;
 
-  it('a staff-role account (every role that opens Today) may close; float default; audited', async () => {
-    const res = await closeDay(staffCookie, { date: P, countedSatang: 6_000_00 + 300_00, floatLeftSatang: 4_321_00 });
+  it('a staff-role account reads the day and may not close it (SCRUM-606); reception closes; float default; audited', async () => {
+    expect((await getDay(staffCookie, P)).statusCode).toBe(200);
+    const refused = await closeDay(staffCookie, { date: P, countedSatang: 6_000_00 + 300_00, floatLeftSatang: 4_321_00 });
+    expect(refused.statusCode, refused.body).toBe(403);
+    const res = await closeDay(receptionCookie, { date: P, countedSatang: 6_000_00 + 300_00, floatLeftSatang: 4_321_00 });
     expect(res.statusCode, res.body).toBe(200);
     pClosed = res.json() as EndOfDayRecord;
-    expect(pClosed.closedBy!.accountId).toBe(staffId);
+    expect(pClosed.closedBy!.accountId).toBe(receptionId);
     expect(pClosed.cashCount.floatSatang).toBe(DEFAULT_FLOAT);
     expect(pClosed.floatFromDate).toBeNull();
     const audits = await ctx.db.select().from(schema.auditLog).where(and(eq(schema.auditLog.action, 'end_of_day.close'), eq(schema.auditLog.entityId, pClosed.id)));
     expect(audits).toHaveLength(1);
-    expect(audits[0]!.actorAccountId).toBe(staffId);
+    expect(audits[0]!.actorAccountId).toBe(receptionId);
     expect(audits[0]!.branchId).toBe(central);
   });
 
@@ -423,7 +426,7 @@ describe('gate (3): the close', () => {
   });
 
   it('a second close is refused 409 DAY_CLOSED, whoever presses it', async () => {
-    for (const cookie of [managerCookie, staffCookie]) {
+    for (const cookie of [managerCookie, receptionCookie]) {
       const res = await closeDay(cookie, { date: G, countedSatang: 1, floatLeftSatang: 1 });
       expect(res.statusCode).toBe(409);
       expect(res.json().error.code).toBe('DAY_CLOSED');

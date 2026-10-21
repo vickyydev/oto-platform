@@ -111,7 +111,7 @@ export async function catalogRoutes(app: App): Promise<void> {
   app.post(
     '/tiers',
     {
-      config: { permission: 'catalog:package:create' },
+      config: { permission: 'catalog:package:create', target: { operator: true } },
       schema: {
         description: 'Create a customer tier',
         body: TierBody.extend({ code: z.string().min(1).max(64).regex(/^[a-z0-9_]+$/) }),
@@ -173,7 +173,7 @@ export async function catalogRoutes(app: App): Promise<void> {
   app.patch(
     '/tiers/:code',
     {
-      config: { permission: 'catalog:package:update' },
+      config: { permission: 'catalog:package:update', target: { operator: true } },
       schema: {
         description: 'Rename or re-rank a customer tier',
         params: TierCodeParams,
@@ -241,7 +241,7 @@ export async function catalogRoutes(app: App): Promise<void> {
   app.delete(
     '/tiers/:code',
     {
-      config: { permission: 'catalog:package:update' },
+      config: { permission: 'catalog:package:update', target: { operator: true } },
       schema: {
         description: 'Archive a customer tier (refused while it prices anyone)',
         params: TierCodeParams,
@@ -337,7 +337,7 @@ export async function catalogRoutes(app: App): Promise<void> {
   app.post(
     '/payment-methods',
     {
-      config: { permission: 'catalog:menu:manage' },
+      config: { permission: 'catalog:menu:manage', target: { operator: true } },
       schema: {
         description: 'Add a tender (refused for a kind the ledger has no word for)',
         body: z.object({
@@ -374,7 +374,7 @@ export async function catalogRoutes(app: App): Promise<void> {
   app.patch(
     '/payment-methods/:code',
     {
-      config: { permission: 'catalog:menu:manage' },
+      config: { permission: 'catalog:menu:manage', target: { operator: true } },
       schema: {
         description: 'Rename a tender, change its kind, or tick it on and off',
         params: MethodCodeParams,
@@ -403,7 +403,7 @@ export async function catalogRoutes(app: App): Promise<void> {
   app.post(
     '/payment-methods/:code/move',
     {
-      config: { permission: 'catalog:menu:manage' },
+      config: { permission: 'catalog:menu:manage', target: { operator: true } },
       schema: {
         description: 'Move a tender one place up or down the till’s method grid',
         params: MethodCodeParams,
@@ -427,7 +427,7 @@ export async function catalogRoutes(app: App): Promise<void> {
   app.delete(
     '/payment-methods/:code',
     {
-      config: { permission: 'catalog:menu:manage' },
+      config: { permission: 'catalog:menu:manage', target: { operator: true } },
       schema: {
         description: 'Remove a tender; refused once money has been taken in it',
         params: MethodCodeParams,

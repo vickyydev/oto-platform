@@ -58,13 +58,28 @@ export async function loadMenuCategory(
   return row;
 }
 
-export async function loadMenuItem(db: Exec, operatorId: string, id: string): Promise<ItemRow> {
+/**
+ * `atBranch` (SCRUM-606): the item routes hang off `/branches/:branchId/…` and
+ * the guard checks the caller's grant at THAT branch, so an item belonging to
+ * another park is not found here — answered like any other row outside the
+ * caller's reach. An item with no branch is shared by every park and passes;
+ * the route then asks for the permission at operator scope.
+ */
+export async function loadMenuItem(
+  db: Exec,
+  operatorId: string,
+  id: string,
+  atBranch?: string,
+): Promise<ItemRow> {
   const [row] = await db
     .select()
     .from(product)
     .where(and(eq(product.id, id), eq(product.operatorId, operatorId)))
     .limit(1);
   if (!row) throw errors.notFound('Menu item not found');
+  if (atBranch !== undefined && row.branchId !== null && row.branchId !== atBranch) {
+    throw errors.notFound('Menu item not found');
+  }
   return row;
 }
 

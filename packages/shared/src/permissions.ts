@@ -586,12 +586,13 @@ export const ROLE_BUNDLES: Record<SystemRole, Permission[]> = {
     'booth:staff:sign_in',
     'assistant:ask:use',
   ],
-  // `pos:cash:day_close` (S2-15a): `staff` opens the Today screen too, and the
-  // prototype lets anybody who can open End of Day close it.
+  // `pos:cash:day_close` is NOT here (SCRUM-606): `staff` is the read-mostly
+  // bundle, and closing the day locks the books for the whole park. `staff`
+  // still opens and reads End of Day through `pos:cash:read`; reception and
+  // above close it.
   // `pos:benefit:apply` (S2-21): the plan gives it to reception and staff alike.
   staff: [
     ...READ_COUNTER,
-    'pos:cash:day_close',
     'pos:benefit:apply',
     'app:pos:access',
     'app:booth:access',

@@ -43,6 +43,17 @@ describe('permission resolver — scope combinations (SCRUM-13)', () => {
     expect(grantCovers(g('record', 'r1'), { operatorId: OP })).toBe(false);
   });
 
+  it('an operator-only target is covered by an operator-scoped grant alone (SCRUM-606)', () => {
+    const T = { operatorId: OP, operatorOnly: true } as const;
+    expect(grantCovers(g('operator', OP), T)).toBe(true);
+    expect(grantCovers(g('operator', null), T)).toBe(true);
+    expect(grantCovers(g('operator', 'other'), T)).toBe(false);
+    // Even when a branch id rides along, a grant at one park is not the operator.
+    expect(grantCovers(g('branch', BR), { ...T, branchId: BR })).toBe(false);
+    expect(grantCovers(g('department', 'd1'), { ...T, departmentId: 'd1' })).toBe(false);
+    expect(grantCovers(g('record', 'r1'), { ...T, recordId: 'r1' })).toBe(false);
+  });
+
   it('effective permissions are a union — any covering grant allows', () => {
     const effective = [g('branch', 'b-other'), g('operator', OP)];
     expect(hasPermission(effective, 'pos:member:read', { operatorId: OP, branchId: BR })).toBe(true);

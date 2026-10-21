@@ -135,11 +135,15 @@ describe('countsAsTillTakings — the one gate', () => {
 });
 
 describe('who opens and closes End of Day', () => {
-  it('every role with the Today screen reads it and closes it, reception included', () => {
+  it('every role with the Today screen reads it; reception and above close it', () => {
     for (const role of ['staff', 'reception', 'branch_manager', 'operator_admin', 'platform_admin'] as const) {
       expect(ROLE_BUNDLES[role], role).toContain('pos:cash:read');
+    }
+    for (const role of ['reception', 'branch_manager', 'operator_admin', 'platform_admin'] as const) {
       expect(ROLE_BUNDLES[role], role).toContain('pos:cash:day_close');
     }
+    // SCRUM-606: the read-mostly bundle reads the day and does not close it.
+    expect(ROLE_BUNDLES.staff).not.toContain('pos:cash:day_close');
     // Approving a paid-out stays a manager's.
     expect(ROLE_BUNDLES.reception).not.toContain('pos:cash:approve');
     expect(ROLE_BUNDLES.branch_manager).toContain('pos:cash:approve');

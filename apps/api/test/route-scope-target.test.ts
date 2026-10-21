@@ -113,6 +113,80 @@ const NO_TARGET_NEEDED = new Set([
   'POST /ops/test-controls/:key',
 ]);
 
+/**
+ * SCRUM-606 — a setting the whole operator shares is changed at OPERATOR
+ * scope. These routes used to declare no target, so the guard fell back to the
+ * session's branch, and a manager's grant at one park passed for a tier, a
+ * tender or a menu category every park uses. `target: { operator: true }`
+ * makes the plugin ask with no branch at all and `grantCovers` accept only an
+ * operator-scoped grant. The reads beside them keep their gates.
+ */
+const OPERATOR_WIDE_WRITES = [
+  'POST /tiers',
+  'PATCH /tiers/:code',
+  'DELETE /tiers/:code',
+  'POST /payment-methods',
+  'PATCH /payment-methods/:code',
+  'POST /payment-methods/:code/move',
+  'DELETE /payment-methods/:code',
+  'POST /menu/categories',
+  'PATCH /menu/categories/:id',
+  'DELETE /menu/categories/:id',
+  'POST /menu/modifier-groups',
+  'PATCH /menu/modifier-groups/:id',
+  'DELETE /menu/modifier-groups/:id',
+  'POST /menu/discounts',
+  'PATCH /menu/discounts/:id',
+  'DELETE /menu/discounts/:id',
+  'POST /voucher-definitions',
+  'PATCH /voucher-definitions/:id',
+  'DELETE /voucher-definitions/:id',
+  'POST /voucher-definitions/:id/restore',
+  'POST /booth-layouts',
+  'PATCH /booth-layouts/:id',
+  'POST /branches',
+];
+
+describe('operator-wide settings are changed at operator scope (SCRUM-606)', () => {
+  it('every operator-wide write declares the operator target, and nothing else', () => {
+    const wrong = OPERATOR_WIDE_WRITES.filter((key) => {
+      const config = configs.get(key);
+      return !config?.permission || JSON.stringify(config.target) !== JSON.stringify({ operator: true });
+    });
+    expect(wrong, 'expected `target: { operator: true }` and a named permission').toEqual([]);
+  });
+
+  it('the operator target is only on these routes, so adding one is a decision', () => {
+    const declared = app.routeRegistry
+      .filter((r) => r.config.target?.operator === true)
+      .map((r) => `${r.method} ${r.url}`)
+      .sort();
+    expect(declared).toEqual([...OPERATOR_WIDE_WRITES].sort());
+  });
+
+  it('the reads beside them keep their gates', () => {
+    for (const key of ['GET /tiers', 'GET /payment-methods', 'GET /menu/discounts', 'GET /voucher-definitions', 'GET /booth-layouts', 'GET /branches']) {
+      const config = configs.get(key);
+      expect(config?.permission, key).toBeTruthy();
+      expect(config?.target, key).toBeUndefined();
+    }
+  });
+
+  it('a voucher’s product at one park is checked at that park', () => {
+    expect(configs.get('PUT /voucher-definitions/:id/park-products/:branchId')?.target).toEqual({
+      branchId: 'params.branchId',
+    });
+  });
+
+  it('a menu item is changed at the branch in its path, and loaded against it', () => {
+    for (const key of ['PATCH /branches/:branchId/menu/products/:id', 'DELETE /branches/:branchId/menu/products/:id']) {
+      expect(configs.get(key)?.target, key).toEqual({ branchId: 'params.branchId' });
+      const route = routes.find((r) => `${r.method} ${r.path}` === key);
+      expect(route?.handlerText, key).toContain('loadMenuItem(app.db, auth.operatorId, req.params.id, req.params.branchId)');
+    }
+  });
+});
+
 describe('by-id routes (SCRUM-290)', () => {
   it('the source walk found every route the app registered', () => {
     // Everything below reads the handler out of the source, so a file this

@@ -178,7 +178,7 @@ export async function menuRoutes(app: App): Promise<void> {
   app.post(
     '/menu/categories',
     {
-      config: { permission: 'catalog:menu:manage' },
+      config: { permission: 'catalog:menu:manage', target: { operator: true } },
       schema: { description: 'Create a menu category', body: MenuCategoryBodySchema },
     },
     async (req) => {
@@ -218,7 +218,7 @@ export async function menuRoutes(app: App): Promise<void> {
   app.patch(
     '/menu/categories/:id',
     {
-      config: { permission: 'catalog:menu:manage' },
+      config: { permission: 'catalog:menu:manage', target: { operator: true } },
       schema: {
         description: 'Update a menu category',
         params: IdParams,
@@ -278,7 +278,7 @@ export async function menuRoutes(app: App): Promise<void> {
   app.delete(
     '/menu/categories/:id',
     {
-      config: { permission: 'catalog:menu:manage' },
+      config: { permission: 'catalog:menu:manage', target: { operator: true } },
       schema: {
         description: 'Withdraw a menu category (refused while items still sit in it)',
         params: IdParams,
@@ -403,7 +403,11 @@ export async function menuRoutes(app: App): Promise<void> {
     async (req) => {
       const auth = req.requireAuth();
       await loadMenuBranch(app, req.params.branchId, auth.operatorId);
-      const before = await loadMenuItem(app.db, auth.operatorId, req.params.id);
+      const before = await loadMenuItem(app.db, auth.operatorId, req.params.id, req.params.branchId);
+      // SCRUM-606 — an item with no branch is on every park's menu.
+      if (before.branchId === null) {
+        await req.requirePermission('catalog:menu:manage', { operatorOnly: true });
+      }
       const body = req.body;
       // The same rule as the create: an item may be MOVED between categories,
       // never emptied out of one, because an item in no category is on no tab.
@@ -506,7 +510,11 @@ export async function menuRoutes(app: App): Promise<void> {
     async (req) => {
       const auth = req.requireAuth();
       await loadMenuBranch(app, req.params.branchId, auth.operatorId);
-      const before = await loadMenuItem(app.db, auth.operatorId, req.params.id);
+      const before = await loadMenuItem(app.db, auth.operatorId, req.params.id, req.params.branchId);
+      // SCRUM-606 — an item with no branch is on every park's menu.
+      if (before.branchId === null) {
+        await req.requirePermission('catalog:menu:manage', { operatorOnly: true });
+      }
       return withTx(app.db, opCtx(req), 'menu_item.archive', async (tx) => {
         await tx
           .update(product)
@@ -531,7 +539,7 @@ export async function menuRoutes(app: App): Promise<void> {
   app.post(
     '/menu/modifier-groups',
     {
-      config: { permission: 'catalog:menu:manage' },
+      config: { permission: 'catalog:menu:manage', target: { operator: true } },
       schema: {
         description: 'Create a modifier group and its options',
         body: ModifierGroupBodySchema,
@@ -574,7 +582,7 @@ export async function menuRoutes(app: App): Promise<void> {
   app.patch(
     '/menu/modifier-groups/:id',
     {
-      config: { permission: 'catalog:menu:manage' },
+      config: { permission: 'catalog:menu:manage', target: { operator: true } },
       schema: {
         description: 'Update a modifier group; `options` replaces the whole answer list',
         params: IdParams,
@@ -619,7 +627,7 @@ export async function menuRoutes(app: App): Promise<void> {
   app.delete(
     '/menu/modifier-groups/:id',
     {
-      config: { permission: 'catalog:menu:manage' },
+      config: { permission: 'catalog:menu:manage', target: { operator: true } },
       schema: { description: 'Withdraw a modifier group', params: IdParams },
     },
     async (req) => {
@@ -702,7 +710,7 @@ export async function menuRoutes(app: App): Promise<void> {
   app.post(
     '/menu/discounts',
     {
-      config: { permission: 'catalog:menu:manage' },
+      config: { permission: 'catalog:menu:manage', target: { operator: true } },
       schema: { description: 'Create a discount code', body: DiscountDefinitionBodySchema },
     },
     async (req) => {
@@ -748,7 +756,7 @@ export async function menuRoutes(app: App): Promise<void> {
   app.patch(
     '/menu/discounts/:id',
     {
-      config: { permission: 'catalog:menu:manage' },
+      config: { permission: 'catalog:menu:manage', target: { operator: true } },
       schema: {
         description: 'Update a discount code',
         params: IdParams,
@@ -801,7 +809,7 @@ export async function menuRoutes(app: App): Promise<void> {
   app.delete(
     '/menu/discounts/:id',
     {
-      config: { permission: 'catalog:menu:manage' },
+      config: { permission: 'catalog:menu:manage', target: { operator: true } },
       schema: { description: 'Withdraw a discount code', params: IdParams },
     },
     async (req) => {

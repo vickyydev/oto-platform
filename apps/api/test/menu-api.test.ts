@@ -501,12 +501,22 @@ describe('who may do what', () => {
     expect(res.statusCode).toBe(403);
   });
 
-  it('a branch manager manages and imports', async () => {
+  it('a branch manager manages their own park’s items', async () => {
+    const res = await makeItem({ code: 'T-MGR', name: 'Manager made this', priceSatang: 100 }, manager);
+    expect(res.statusCode).toBe(200);
+    const edit = await call('PATCH', `/branches/${branchId}/menu/products/${res.body.id as unknown as string}`, {
+      cookie: manager,
+      payload: { name: 'Manager renamed this' },
+    });
+    expect(edit.statusCode).toBe(200);
+  });
+
+  it('the categories every park shares are an operator administrator’s (SCRUM-606)', async () => {
     const res = await call('POST', '/menu/categories', {
       cookie: manager,
-      payload: { code: 'T-MGR', name: 'Manager made this', taxableCategory: 'fnb', defaultPrepStation: 'none', sortOrder: 8 },
+      payload: { code: 'T-MGR-CAT', name: 'Manager made this', taxableCategory: 'fnb', defaultPrepStation: 'none', sortOrder: 8 },
     });
-    expect(res.statusCode).toBe(200);
+    expect(res.statusCode).toBe(403);
   });
 });
 

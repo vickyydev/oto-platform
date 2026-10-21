@@ -214,12 +214,16 @@ export const sessionPlugin = fp(async (app: FastifyInstance) => {
     req.requirePermission = async (permission, target = {}) => {
       const auth = req.requireAuth();
       const effective = await req.effectivePermissions();
-      const fullTarget: ScopeTarget = {
-        operatorId: target.operatorId ?? auth.operatorId,
-        branchId: target.branchId ?? auth.branchId ?? undefined,
-        departmentId: target.departmentId,
-        recordId: target.recordId,
-      };
+      // SCRUM-606 — an operator-wide target names no branch, and must not
+      // inherit the session's: that is what let a grant at one park pass.
+      const fullTarget: ScopeTarget = target.operatorOnly
+        ? { operatorId: target.operatorId ?? auth.operatorId, operatorOnly: true }
+        : {
+            operatorId: target.operatorId ?? auth.operatorId,
+            branchId: target.branchId ?? auth.branchId ?? undefined,
+            departmentId: target.departmentId,
+            recordId: target.recordId,
+          };
       if (!hasPermission(effective, permission, fullTarget)) {
         /**
          * SCRUM-300 — "you do not have this" and "not here" are different

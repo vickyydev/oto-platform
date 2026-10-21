@@ -245,7 +245,7 @@ export async function voucherDefinitionRoutes(app: App): Promise<void> {
   app.post(
     '/voucher-definitions',
     {
-      config: { permission: 'admin:booth:manage' },
+      config: { permission: 'admin:booth:manage', target: { operator: true } },
       schema: {
         description:
           'Create a voucher type. Refused unless it is whole: an amount off needs an amount above zero, a percentage off a percentage above zero, a free product one of this operator’s products, and a 1+1 kids ticket one of its ticket packages. Answers 201; a replay of the same Idempotency-Key answers 200 with the same body.',
@@ -268,7 +268,7 @@ export async function voucherDefinitionRoutes(app: App): Promise<void> {
   app.patch(
     '/voucher-definitions/:id',
     {
-      config: { permission: 'admin:booth:manage' },
+      config: { permission: 'admin:booth:manage', target: { operator: true } },
       schema: {
         description:
           'Edit a voucher type. Checked as it will be after the edit, by the same rules as create, and the fields its kind does not read are cleared. Switching one off is refused at publish for any active prize pointing at it. An archived type is refused (409 VOUCHER_DEFINITION_ARCHIVED) until it is restored. A body naming no field is refused (400, "Nothing to change") and writes nothing, like the booth settings route.',
@@ -297,7 +297,7 @@ export async function voucherDefinitionRoutes(app: App): Promise<void> {
   app.delete(
     '/voucher-definitions/:id',
     {
-      config: { permission: 'admin:booth:manage' },
+      config: { permission: 'admin:booth:manage', target: { operator: true } },
       schema: {
         description:
           'Archive a voucher type — never deleted, because its vouchers point at it and the ones in families’ hands are still honoured. A booth prize pointing at it cannot be published afterwards; the booths keep what they are running until then. Archiving one already archived answers with it and records nothing.',
@@ -320,7 +320,7 @@ export async function voucherDefinitionRoutes(app: App): Promise<void> {
   app.put(
     '/voucher-definitions/:id/park-products/:branchId',
     {
-      config: { permission: 'admin:booth:manage' },
+      config: { permission: 'admin:booth:manage', target: { branchId: 'params.branchId' } },
       schema: {
         description:
           'SCRUM-405 — the product a free-product voucher hands over at one park. At that park the voucher gives this product, when it is on sale there; at a park with none linked it gives the definition’s own product where that is on sale, and is refused elsewhere. `productId` null clears the park’s link. The product must be this operator’s and on sale at that park (400 VOUCHER_PARK_PRODUCT_NOT_ON_SALE otherwise); only a free-product voucher takes one (400 VOUCHER_PARK_PRODUCT_KIND). Audited when it changes anything.',
@@ -346,7 +346,7 @@ export async function voucherDefinitionRoutes(app: App): Promise<void> {
   app.post(
     '/voucher-definitions/:id/restore',
     {
-      config: { permission: 'admin:booth:manage' },
+      config: { permission: 'admin:booth:manage', target: { operator: true } },
       schema: {
         description:
           'Bring an archived voucher type back, switched on. One that is not archived answers with itself and records nothing.',

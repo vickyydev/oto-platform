@@ -1432,7 +1432,7 @@ export async function boothRoutes(app: App): Promise<void> {
   app.post(
     '/booth-layouts',
     {
-      config: { permission: 'admin:booth:manage' },
+      config: { permission: 'admin:booth:manage', target: { operator: true } },
       schema: { description: 'Create a wheel design.', body: LayoutBody },
     },
     async (req, reply) => {
@@ -1450,7 +1450,7 @@ export async function boothRoutes(app: App): Promise<void> {
   app.patch(
     '/booth-layouts/:id',
     {
-      config: { permission: 'admin:booth:manage' },
+      config: { permission: 'admin:booth:manage', target: { operator: true } },
       schema: {
         description:
           'Edit a wheel design. Its `version` moves whenever the design or the asset manifest does — a rename is not a new wheel — so a published bundle can name the design it took. A layout is shared, so this changes what every booth using it WOULD publish and nothing any of them is running.',

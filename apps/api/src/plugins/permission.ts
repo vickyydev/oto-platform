@@ -28,6 +28,14 @@ export interface PermissionConfig {
     branchId?: TargetPath;
     departmentId?: TargetPath;
     recordId?: TargetPath;
+    /**
+     * SCRUM-606 — the route changes something the WHOLE operator shares (a
+     * tier, a tender, a menu category, a voucher definition, a booth layout, a
+     * new branch), so the permission must be held at operator scope. Without
+     * it the guard falls back to the session's branch, and a manager's grant
+     * at one park would pass for a setting every park uses.
+     */
+    operator?: true;
   };
   /**
    * Deliberately open: no session needed. Only the health probes, the OpenAPI
@@ -171,8 +179,13 @@ export async function requireRoutePermission(
   config: PermissionConfig,
 ): Promise<void> {
   if (!config.permission) return;
+  const { operator: operatorWide, ...paths } = config.target ?? {};
+  if (operatorWide) {
+    await req.requirePermission(config.permission, { operatorOnly: true });
+    return;
+  }
   const target: Record<string, string | undefined> = {};
-  for (const [key, path] of Object.entries(config.target ?? {})) {
+  for (const [key, path] of Object.entries(paths)) {
     target[key] = readPath(req, path as TargetPath);
   }
   await req.requirePermission(config.permission, target);

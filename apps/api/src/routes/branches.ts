@@ -66,7 +66,7 @@ export async function branchRoutes(app: App): Promise<void> {
   app.post(
     '/',
     {
-      config: { permission: 'admin:branch:create' },
+      config: { permission: 'admin:branch:create', target: { operator: true } },
       schema: {
         description:
           'Create a branch. An optional body id names it (SCRUM-270): the same id again answers ' +

@@ -23,6 +23,13 @@ export interface ScopeTarget {
   branchId?: string;
   departmentId?: string;
   recordId?: string;
+  /**
+   * SCRUM-606 — the thing acted on belongs to the whole operator (a tier, a
+   * tender, a menu category), so only an OPERATOR-scoped grant may cover it.
+   * Without this the session plugin fills `branchId` from the session's
+   * branch, and a grant held at that one park would pass for every park.
+   */
+  operatorOnly?: true;
 }
 
 export async function resolveEffectivePermissions(
@@ -54,6 +61,7 @@ export async function resolveEffectivePermissions(
  * scoped to the caller's operator; passing the guard is not that check.
  */
 export function grantCovers(grant: EffectivePermission, target: ScopeTarget): boolean {
+  if (target.operatorOnly && grant.scopeType !== 'operator') return false;
   switch (grant.scopeType) {
     case 'operator':
       return grant.scopeId === null || grant.scopeId === target.operatorId;
