@@ -982,15 +982,16 @@ describe('S2-04 — boxes on Health and the fleet watchdog', () => {
   });
 
   it('paper out and a device that did not answer raise per device, and stop when the box does', async () => {
+    const boxId = (await theBox()).id;
     const [printer] = await ctx.db
       .select()
       .from(device)
-      .where(eq(device.label, 'Receipt Printer 1'))
+      .where(and(eq(device.boxId, boxId), eq(device.label, 'Receipt Printer 1')))
       .limit(1);
     const [scanner] = await ctx.db
       .select()
       .from(device)
-      .where(eq(device.label, 'Scanner 1'))
+      .where(and(eq(device.boxId, boxId), eq(device.label, 'Scanner 1')))
       .limit(1);
     await ctx.db.update(device).set({ paperStatus: 'out' }).where(eq(device.id, printer!.id));
     await ctx.db
@@ -1033,15 +1034,16 @@ describe('S2-04 — boxes on Health and the fleet watchdog', () => {
    * assertion: the two rules disagree on purpose.
    */
   it('paper out is raised with the park shut; a device that did not answer is not', async () => {
+    const boxId = (await theBox()).id;
     const [printer] = await ctx.db
       .select()
       .from(device)
-      .where(eq(device.label, 'Receipt Printer 1'))
+      .where(and(eq(device.boxId, boxId), eq(device.label, 'Receipt Printer 1')))
       .limit(1);
     const [scanner] = await ctx.db
       .select()
       .from(device)
-      .where(eq(device.label, 'Scanner 1'))
+      .where(and(eq(device.boxId, boxId), eq(device.label, 'Scanner 1')))
       .limit(1);
     await setHours(ALWAYS_SHUT);
     await callingHome();
