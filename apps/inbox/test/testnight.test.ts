@@ -9,6 +9,7 @@ import { describe, expect, it } from 'vitest';
 import type { Assignee, ConversationDetail, ConversationRow, Dashboard as DashboardData, InboxEvent, InboxMe, Message } from '@/api/inbox';
 import { TranslationNote } from '@/components/atoms';
 import { ChatPanel, type Thread } from '@/components/ChatPanel';
+import { newDraftId } from '@/components/Composer';
 import { PrimaryMoveConfirm, TeamMoveConfirm } from '@/components/confirms';
 import { Dashboard } from '@/components/Dashboard';
 import { DetailsDialog, MANAGERS_ADD_SUPPORT, type DetailsActions } from '@/components/dialogs';
@@ -173,6 +174,21 @@ function panel(me: InboxMe, r: ConversationRow, d: ConversationDetail | null, de
     }),
   );
 }
+
+describe('the ids the Inbox mints (customer-AI test night, CR6)', () => {
+  // RFC 9562 layout: the version nibble is the 13th hex digit, the variant's
+  // top bits the 17th. A v7 id carries the clock in its first 48 bits, so two
+  // minted in a row sort in the order they were minted; a v4 is random.
+  const V7 = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+
+  it('the composer’s message id is a UUIDv7, so the api’s order of a thread holds for it', () => {
+    const first = newDraftId();
+    const second = newDraftId();
+    expect(first).toMatch(V7);
+    expect(second).toMatch(V7);
+    expect(first < second).toBe(true);
+  });
+});
 
 describe('the assistant’s state on a thread (U5)', () => {
   const r = row();

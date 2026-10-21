@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { and, desc, eq, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { EPISODE_WINDOW_CAP, PERSONA_VERSION } from '@oto/assistant';
@@ -987,6 +988,82 @@ describe('Resume brings the assistant back (test night 2026-10-21, W4b)', () => 
     // The number's switch outranks everything.
     const off = await customer(w, (await simAccount(w, { branchId: w.central, aiMode: 'off' })), nextPhone(), 'hello');
     expect(await detailState(adminCookie, off.id)).toBe('off');
+  });
+});
+
+describe('the episode is ordered by time, never by id (test night 2026-10-21, CR6)', () => {
+  const socks = () =>
+    w.fake.push({ kind: 'decision', decision: decision({ intent: 'socks', grounding: ['socks'], bubbles: [`Yes, grip socks please 😊 ${SENTINEL}`] }) });
+  /**
+   * A v4 id as a browser mints one (`crypto.randomUUID()`, the Inbox
+   * composer's until this fix), its first nibble pinned high so it sorts
+   * after every v7 id the api minted in this run — as `559a…` did on
+   * staging, where it hid every customer line that followed it.
+   */
+  const lateV4 = () => `f${randomUUID().slice(1)}`;
+  const agentOf = async (phone: string, name: string) => {
+    const reception = await teamOf(w, 'reception', w.central);
+    const [, cookie] = await staff(w, phone, name, 'inbox_agent', { scopeType: 'department', scopeId: reception.departmentId! });
+    return cookie;
+  };
+  const personReplies = async (cookie: string, conversationId: string, id: string) => {
+    const reply = await w.ctx.app.inject({
+      method: 'POST',
+      url: `/inbox/conversations/${conversationId}/messages`,
+      headers: { cookie, 'idempotency-key': newId() },
+      payload: { id, text: `Hi, Som here, happy to help ${SENTINEL}` },
+    });
+    expect(reply.statusCode, reply.body).toBe(200);
+    const resumed = await call(w, cookie, 'POST', `/inbox/conversations/${conversationId}/ai-resume`);
+    expect(resumed.status, JSON.stringify(resumed.body)).toBe(200);
+  };
+
+  it('a person’s reply carrying a random v4 id cannot hide the customer’s next line: after Resume it is answered', async () => {
+    await drain();
+    const cookie = await agentOf('+66810008301', 'AI Test Orderer');
+    const phone = nextPhone();
+    const conv = await customer(w, central, phone, `hello, do kids need socks? ${SENTINEL}`);
+    await personReplies(cookie, conv.id, lateV4());
+
+    await customer(w, central, phone, `and socks?? ${SENTINEL}`);
+    expect((await turnsOf(w, conv.id)).filter((t) => t.state === 'pending')).toHaveLength(1);
+    socks();
+    const sweep = await tick(w, later(25_000));
+    expect(sweep.answered, JSON.stringify(sweep)).toBe(1);
+    // The first turn, the person's reply cancelled; the second answered — not silent, not NO_TEXT.
+    expect((await turnsOf(w, conv.id)).map((t) => t.state)).toEqual(['cancelled', 'answered']);
+  });
+
+  it('a line the provider stamped before the person’s reply but delivered after it (a webhook in flight) is still the turn’s to answer', async () => {
+    await drain();
+    const cookie = await agentOf('+66810008302', 'AI Test Stamper');
+    const phone = nextPhone();
+    const conv = await customer(w, central, phone, `hello ${SENTINEL}`, { at: new Date(Date.now() - 10_000) });
+    await personReplies(cookie, conv.id, newId());
+
+    // Stamped a second before the reply above was written, received after it:
+    // by time alone it sorts before the park's last line; it is the trigger.
+    await customer(w, central, phone, `and socks? ${SENTINEL}`, { at: new Date(Date.now() - 1_000) });
+    expect((await turnsOf(w, conv.id)).filter((t) => t.state === 'pending')).toHaveLength(1);
+    socks();
+    const sweep = await tick(w, later(25_000));
+    expect(sweep.answered, JSON.stringify(sweep)).toBe(1);
+  });
+
+  it('a late-arriving older bubble, stamped before the trigger and delivered after it, is answered with the trigger, not a supersede', async () => {
+    await drain();
+    const phone = nextPhone();
+    const conv = await customer(w, central, phone, `do we need socks? ${SENTINEL}`);
+    // The provider stamps the second bubble two seconds EARLIER (a webhook in
+    // flight behind the first); the api minted its id later. The trigger stays
+    // the first; the turn is extended, not replaced.
+    await customer(w, central, phone, `for a 3 year old ${SENTINEL}`, { at: new Date(Date.now() - 2_000) });
+    const turns = await turnsOf(w, conv.id);
+    expect(turns.filter((t) => t.state === 'pending')).toHaveLength(1);
+    socks();
+    const sweep = await tick(w, later(25_000));
+    expect(sweep.superseded, JSON.stringify(sweep)).toBe(0);
+    expect(sweep.answered).toBe(1);
   });
 });
 

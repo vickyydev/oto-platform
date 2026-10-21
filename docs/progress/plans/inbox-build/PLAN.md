@@ -158,7 +158,11 @@ one is fixed in `docs/features/inbox.md` in the commit that lands I1.
 - **Columns every table carries.**
   - `operator_id uuid NOT NULL REFERENCES core.operator`.
   - `created_at` and `updated_at` (the `timestamps` helper).
-  - UUIDv7 ids generated in the application.
+  - UUIDv7 ids generated in the application. **A reader never orders by
+    id: `created_at`, then `id`** — the id breaks a tie, it is never the
+    order. An id is minted by its caller (OD-12) on the caller's clock, and a
+    browser's `crypto.randomUUID()` is a v4 that sorts after every v7
+    (customer-AI test night 2026-10-21, CR6, in the assistant plan).
   - Enumerations as `text` with a CHECK constraint, never a pg enum, so that
     adding a channel takes no DDL lock (`members.ts:52-56`).
 - **Tenant fence on child tables.** `conversation` carries a unique

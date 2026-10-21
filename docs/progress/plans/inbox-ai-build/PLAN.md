@@ -1120,6 +1120,46 @@ two ceilings are environment settings, `INBOX_AI_FIRST_BUBBLE_MS` (default
 its ceiling. The park decides. *Pins:* `pacing.test.ts` "the two knobs",
 `inbox-ai-engine.test.ts` "defaults" and "the pacing knobs reach the lines".
 
+**CR6 — after a person's reply and Resume, the assistant never answered
+again.** The customer re-check after the day's deploy
+(`docs/qa/test-night-2026-10-21/customer-recheck/results.jsonl`, check 6;
+`cr-06*.png`): a reply from the Inbox composer, then Resume (header "AI on"),
+then every customer message got `ai_silent` `NO_TEXT` and the "AI left this
+one for the team" pill, while Mark handled plus a new message still worked.
+*Cause, verified in the code:* `loadEpisode` (`ai-engine.ts`) ordered the
+episode by `message.id` alone, which is arrival order only for the UUIDv7
+ids the api mints; the composer minted each staff message's id with
+`crypto.randomUUID()` — a random v4, `559a…` on staging — which sorts after
+every `01a1…` v7 id, so the staff line read as the thread's newest and
+`burstOf` (the customer lines after the park's last line) was empty for the
+rest of the episode. *Change, both sides:* the engine orders the episode by
+`created_at`, then `id`. The burst always runs from the turn's trigger (the
+turn exists for it, and nothing of the park's answers a line after it is
+written: a person's reply cancels the turn, a newer line supersedes it),
+which keeps a line the provider stamped in the same second as, or in flight
+behind, the park's last line — a customer line's `created_at` is the
+provider's whole-second stamp (`ingest.ts` `capped`), the case the id order
+had been chosen for. The commit's "newer customer line" check compares
+`(created_at, id)` with the trigger's instead of `id` or `created_at` (by id,
+a bubble stamped earlier but delivered later read as newer and superseded
+the answer it was part of — silence, with no turn left to retry). The
+composer mints UUIDv7 with `@oto/shared` `newId` (`apps/inbox`
+`Composer.tsx` `newDraftId`), as do the knowledge entry and the correction
+(`AssistantSettings.tsx`, `CorrectAssistant.tsx`); the Idempotency-Key stays
+random, a key and not an id, as the till's is. *The rule, for every reader
+of a thread:* **never order by id; `created_at`, then `id`.** An id is
+minted by its caller by design (OD-12), on the caller's clock. What the
+platform does not store is a line's arrival: the residual — a customer line
+delivered seconds behind its stamp, after the park's reply, sits before that
+reply in the prompt's transcript, as it did before — belongs to a
+`received_at` column written by every path, for the rails to take when
+`message` is next migrated. *Pins:* `inbox-ai-engine.test.ts` "the episode
+is ordered by time, never by id": a person's reply with a random v4 id →
+Resume → the next line is answered (red before the fix); a line stamped
+before the reply but delivered after it is still answered; a late older
+bubble is answered with the trigger, not superseded (red before);
+`apps/inbox/test/testnight.test.ts` "the composer's message id is a UUIDv7".
+
 **Goldens.** The persona and the fixture knowledge changed, so G1–G9 were
 re-recorded and G17/G18 recorded; the replay suite names a stale or missing
 recording with its command (`pnpm --filter @oto/api ai:eval --record --only

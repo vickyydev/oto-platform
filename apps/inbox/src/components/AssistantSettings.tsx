@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Archive, BookOpen, Bot, CheckCircle2, Loader2, Pencil, Plus, Radio, ShieldCheck, Trash2, Undo2, X } from 'lucide-react';
+import { newId } from '@oto/shared/ids';
 import { ApiError } from '@/api/client';
 import {
   NOT_ON_YOUR_ACCESS,
@@ -480,7 +481,7 @@ function KbEditor({
         });
       else
         await assistantApi.createKb({
-          id: crypto.randomUUID(),
+          id: newId(),
           branchId: branchId || null,
           topic,
           key,

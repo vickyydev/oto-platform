@@ -223,15 +223,22 @@ async function circuitOpen(db: Exec, operatorId: string, now: Date): Promise<boo
   );
 }
 
+/** A line of the episode as the engine reads it: the prompt's shape, and the row's id (the burst's anchor). */
+type EpisodeRow = EpisodeMessage & { id: string };
+
 /**
- * The episode as data for the prompt: its messages in ARRIVAL order (the ids
- * are UUIDv7, minted as each row is written), never a withdrawn line. Not by
- * `created_at`: a provider's timestamp is whole seconds, so a customer line
- * can carry a time before an assistant line written a moment earlier.
+ * The episode as data for the prompt: its messages by the time each was
+ * written, then by id — NEVER BY ID ALONE (test night 2026-10-21, CR6). A
+ * staff line sent from the Inbox carried a random v4 id, which sorts after
+ * every v7 id the api mints, so by id it was the thread's newest line and the
+ * customer's lines after it were hidden: silence, `NO_TEXT`, for the rest of
+ * the episode. A customer line's `created_at` is the provider's stamp, in
+ * whole seconds, so within one second it can sit before a park line written
+ * a moment earlier; `burstOf` allows for that. Never a withdrawn line.
  */
-async function loadEpisode(db: Exec, conv: ConversationRow, episodeStart: Date): Promise<EpisodeMessage[]> {
+async function loadEpisode(db: Exec, conv: ConversationRow, episodeStart: Date): Promise<EpisodeRow[]> {
   const rows = await db
-    .select({ authorKind: message.authorKind, body: message.body, createdAt: message.createdAt })
+    .select({ id: message.id, authorKind: message.authorKind, body: message.body, createdAt: message.createdAt })
     .from(message)
     .where(
       and(
@@ -244,23 +251,34 @@ async function loadEpisode(db: Exec, conv: ConversationRow, episodeStart: Date):
         sql`coalesce(${message.providerStatus}, '') not in ('withdrawn', 'shadow')`,
       ),
     )
-    .orderBy(desc(message.id))
+    .orderBy(desc(message.createdAt), desc(message.id))
     .limit(40);
   return rows.reverse().map((r) => ({
+    id: r.id,
     from: r.authorKind,
     at: r.createdAt,
     text: r.body !== null && r.body.trim() !== '' ? r.body : null,
   }));
 }
 
-/** The customer's latest burst: the customer lines after the last line anyone else wrote. */
-function burstOf(episode: EpisodeMessage[]): EpisodeMessage[] {
-  const out: EpisodeMessage[] = [];
-  for (let i = episode.length - 1; i >= 0; i -= 1) {
-    if (episode[i]!.from !== 'customer') break;
-    out.unshift(episode[i]!);
+/**
+ * The customer's latest burst: the customer lines after the last line anyone
+ * else wrote — and always from the turn's trigger onward. The turn exists for
+ * its trigger, and nothing of the park's answers a line after it is written
+ * (a person's reply cancels the turn; a newer line supersedes it), so the
+ * trigger is open whatever its stamp says: a provider stamps a line when the
+ * customer sent it, in whole seconds, so a line sent in the same second as
+ * the park's last line, or in flight behind it, sorts before that line.
+ */
+function burstOf(episode: readonly EpisodeRow[], triggerMessageId: string): EpisodeRow[] {
+  let lastPark = -1;
+  let trigger = -1;
+  for (let i = 0; i < episode.length; i += 1) {
+    if (episode[i]!.from !== 'customer') lastPark = i;
+    if (episode[i]!.id === triggerMessageId) trigger = i;
   }
-  return out;
+  const from = trigger === -1 ? lastPark + 1 : Math.min(lastPark + 1, trigger);
+  return episode.slice(from).filter((m) => m.from === 'customer');
 }
 
 interface EpisodeFacts {
@@ -413,7 +431,7 @@ async function decideTurn(db: Db, deps: AiEngineDeps, turn: TurnRow, now: Date):
   if (await circuitOpen(db, turn.operatorId, now)) return { conv, silence: 'CIRCUIT_OPEN' };
 
   const episode = await loadEpisode(db, conv, eligible.episodeStart);
-  const burst = burstOf(episode);
+  const burst = burstOf(episode, turn.triggerMessageId);
   // X8: a voice note, an image or a sticker with no words is a person's to pick up.
   if (burst.length === 0 || burst.every((m) => m.text === null)) return { conv, silence: 'NO_TEXT' };
 
@@ -924,14 +942,19 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
         await closeTurn(tx, turn, conv, 'cancelled', eligible.reason satisfies IneligibleReason, r, at);
         return 'cancelled';
       }
+      // A customer line newer than the trigger — by its time, then its id,
+      // never by id alone (test night 2026-10-21, CR6: by id, a bubble the
+      // provider stamped EARLIER but delivered later read as newer and
+      // superseded the answer it was part of) — or a pending turn another
+      // line opened while this one was deciding.
       const [newer] = (
         await tx.execute<{ newer: boolean }>(sql`
           select exists (
                    select 1 from inbox.message m
+                     join inbox.message t on t.operator_id = m.operator_id and t.id = ${turn.triggerMessageId}
                     where m.operator_id = ${conv.operatorId} and m.conversation_id = ${conv.id}
                       and m.direction = 'inbound'
-                      and (m.id > ${turn.triggerMessageId}
-                           or m.created_at > (select t.created_at from inbox.message t where t.id = ${turn.triggerMessageId})))
+                      and (m.created_at, m.id) > (t.created_at, t.id))
               or exists (
                    select 1 from inbox.ai_turn p
                     where p.operator_id = ${conv.operatorId} and p.conversation_id = ${conv.id}

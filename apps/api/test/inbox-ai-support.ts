@@ -132,16 +132,23 @@ export function nextPhone(): string {
   return `6689${String(phoneSeq).padStart(7, '0')}`;
 }
 
-/** A customer writes in through the real webhook; answers their thread on that account. */
+/**
+ * A customer writes in through the real webhook; answers their thread on that
+ * account. `at` is the provider's stamp on the line (whole seconds, as a
+ * provider sends it): a test stamps a line earlier than the moment it arrives
+ * to play a webhook that was in flight.
+ */
 export async function customer(
   w: AiWorld,
   accountId: string,
   from: string,
   text: string | { image: true },
+  opts: { at?: Date } = {},
 ) {
   const channel = await sim(w, accountId);
+  const stamp = opts.at ? { at: opts.at } : {};
   const played = channel.inbound(
-    typeof text === 'string' ? { from, name: 'AI Test Guest', text } : { from, name: 'AI Test Guest', image: {} },
+    typeof text === 'string' ? { from, name: 'AI Test Guest', text, ...stamp } : { from, name: 'AI Test Guest', image: {}, ...stamp },
   );
   const res = await w.ctx.app.inject({
     method: 'POST',

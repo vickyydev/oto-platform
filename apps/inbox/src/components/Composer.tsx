@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { AlertTriangle, FileText, Loader2, Paperclip, Send, Smile, X, type LucideIcon } from 'lucide-react';
+import { newId } from '@oto/shared/ids';
 import { renderTemplate, templateVariables } from '@oto/shared/inbox-reply';
 import { ApiError } from '@/api/client';
 import { inboxApi, type ConversationRow, type InboxMe, type QualifyingTemplate, type ReplyRefusalDetails } from '@/api/inbox';
@@ -30,7 +31,14 @@ interface Refused {
   details: ReplyRefusalDetails | null;
 }
 
-const newDraftId = (): string => crypto.randomUUID();
+/**
+ * The id of a draft, and of the message it becomes: the platform's UUIDv7
+ * (`@oto/shared` `newId`), never the browser's random v4. The api orders a
+ * thread by time and then by id, and a random id sorted after every id the
+ * api had minted — it read as the thread's newest line, and the assistant
+ * never saw a customer line after it (customer-AI test night 2026-10-21, CR6).
+ */
+export const newDraftId = (): string => newId();
 
 /**
  * The composer (WhatsAppDemo.tsx :2036-2058), live (I3b). Free text, or a

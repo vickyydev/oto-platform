@@ -1,5 +1,6 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { CheckCircle2, Loader2, PenLine } from 'lucide-react';
+import { newId } from '@oto/shared/ids';
 import type { InboxCategoryKey } from '@oto/shared/inbox';
 import { ApiError } from '@/api/client';
 import { assistantApi, type ExampleVerdict } from '@/api/assistant';
@@ -94,7 +95,7 @@ export function CorrectAssistant({
     setError(null);
     try {
       await assistantApi.createExample({
-        id: crypto.randomUUID(),
+        id: newId(),
         messageId: sourceMessageId,
         intent: exIntent || undefined,
         language: exLanguage ? exampleLanguage(exLanguage) : undefined,
