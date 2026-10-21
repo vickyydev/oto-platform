@@ -29,29 +29,29 @@ export function Dashboard({
   onToggleUnanswered: () => void;
 }) {
   if (error) {
-    return <p className="mt-5 rounded-lg bg-rose-50 px-3 py-2 text-[12.5px] text-rose-700 ring-1 ring-rose-200">{error}</p>;
+    return <p className="mt-5 rounded-lg bg-rose-50 dark:bg-rose-500/15 px-3 py-2 text-[12.5px] text-rose-700 dark:text-rose-300 ring-1 ring-rose-200 dark:ring-rose-500/30">{error}</p>;
   }
   // Whose average it is (test night U9): the api's `scope`; an api without one leaves the card as before.
   const scope = data ? responseScopeLabel(data.scope) : null;
   return (
     <div className="mt-5 hidden grid-cols-2 gap-3 sm:grid-cols-3 lg:grid" aria-busy={data === null}>
-      <MetricCard icon={MessageSquare} label="New today" value={v(data?.newToday)} tint="text-blue-600 bg-blue-50" />
+      <MetricCard icon={MessageSquare} label="New today" value={v(data?.newToday)} tint="text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/15" />
       <MetricCard
         icon={MessageSquareWarning}
         label="Unanswered"
         value={v(data?.unanswered)}
-        tint="text-rose-600 bg-rose-50"
+        tint="text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/15"
         active={unansweredOnly}
         onClick={onToggleUnanswered}
         hint={unansweredOnly ? 'Click to clear filter' : 'Click to filter list'}
       />
-      <MetricCard icon={Activity} label="Active" value={v(data?.active)} tint="text-blue-600 bg-blue-50" />
-      <MetricCard icon={CheckCircle2} label="Handled today" value={v(data?.handledToday)} tint="text-emerald-600 bg-emerald-50" />
+      <MetricCard icon={Activity} label="Active" value={v(data?.active)} tint="text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/15" />
+      <MetricCard icon={CheckCircle2} label="Handled today" value={v(data?.handledToday)} tint="text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/15" />
       <MetricCard
         icon={Clock3}
         label="Avg response"
         value={data ? durationLabel(data.averageFirstResponseSeconds) : '—'}
-        tint="text-slate-700 bg-slate-100"
+        tint="text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800"
         hint={scope ?? undefined}
       />
       <CategoryMixCard data={data?.byCategory ?? { birthdays: 0, general: 0, marketing: 0 }} />
@@ -79,25 +79,25 @@ export function DashboardStrip({
 }) {
   if (error) return null;
   return (
-    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-500 lg:hidden" aria-busy={data === null}>
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-500 dark:text-slate-400 lg:hidden" aria-busy={data === null}>
       <button
         type="button"
         onClick={onToggleUnanswered}
         aria-pressed={unansweredOnly}
         title={unansweredOnly ? 'Showing unanswered only — tap to clear' : 'Tap to show unanswered only'}
         className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-medium ring-1 transition ${
-          unansweredOnly ? 'bg-rose-600 text-white ring-rose-600' : 'bg-rose-50 text-rose-700 ring-rose-200 hover:bg-rose-100'
+          unansweredOnly ? 'bg-rose-600 text-white ring-rose-600' : 'bg-rose-50 dark:bg-rose-500/15 text-rose-700 dark:text-rose-300 ring-rose-200 dark:ring-rose-500/30 hover:bg-rose-100 dark:hover:bg-rose-500/25'
         }`}
       >
         <MessageSquareWarning className="h-3 w-3" />
         Unanswered {v(data?.unanswered)}
       </button>
       <span>
-        Active <span className="font-semibold text-slate-700">{v(data?.active)}</span>
+        Active <span className="font-semibold text-slate-700 dark:text-slate-200">{v(data?.active)}</span>
       </span>
       <span aria-hidden>·</span>
       <span>
-        Avg response <span className="font-semibold text-slate-700">{data ? durationLabel(data.averageFirstResponseSeconds) : '—'}</span>
+        Avg response <span className="font-semibold text-slate-700 dark:text-slate-200">{data ? durationLabel(data.averageFirstResponseSeconds) : '—'}</span>
       </span>
     </div>
   );

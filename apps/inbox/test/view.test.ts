@@ -202,10 +202,10 @@ describe('chips and names', () => {
     expect(tintFor(ALINA)).toBe(tintFor(ALINA));
   });
   it('paints the GM slate, a team in its colour, the AI indigo', () => {
-    expect(assigneeChip(assignee({ accountId: GM }), me).tint).toBe('bg-slate-800 text-white');
+    expect(assigneeChip(assignee({ accountId: GM }), me).tint).toBe('bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900');
     expect(assigneeChip(assignee({ assigneeKind: 'team', accountId: null, teamId: T_CENTRAL }), me)).toMatchObject({
       name: 'Reception · Central',
-      tint: 'bg-sky-100 text-sky-700',
+      tint: 'bg-sky-100 dark:bg-sky-500/25 text-sky-700 dark:text-sky-300',
     });
     expect(assigneeChip(assignee({ assigneeKind: 'ai', accountId: null }), me).name).toBe('AI Assistant');
   });

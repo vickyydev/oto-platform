@@ -51,9 +51,9 @@ export function aiModeOption(mode: AiMode): AiModeOption {
 }
 
 export const AI_MODE_TINT: Record<AiMode, string> = {
-  off: 'bg-slate-100 text-slate-600 ring-slate-200',
-  shadow: 'bg-amber-50 text-amber-700 ring-amber-200',
-  live: 'bg-indigo-50 text-indigo-700 ring-indigo-200',
+  off: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 ring-slate-200 dark:ring-slate-700',
+  shadow: 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 ring-amber-200 dark:ring-amber-500/30',
+  live: 'bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 ring-indigo-200 dark:ring-indigo-500/30',
 };
 
 /** Turning a number live is a decision (§C.2): it always asks first. Any other move does not. */
@@ -94,9 +94,9 @@ export const KB_LANGUAGES: readonly [KbLanguage, string][] = [
 
 export const KB_STATUS_LABEL: Record<KbStatus, string> = { draft: 'Draft', approved: 'Approved', archived: 'Archived' };
 export const KB_STATUS_TINT: Record<KbStatus, string> = {
-  draft: 'bg-amber-50 text-amber-700 ring-amber-200',
-  approved: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
-  archived: 'bg-slate-100 text-slate-500 ring-slate-200',
+  draft: 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 ring-amber-200 dark:ring-amber-500/30',
+  approved: 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 ring-emerald-200 dark:ring-emerald-500/30',
+  archived: 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 ring-slate-200 dark:ring-slate-700',
 };
 
 export interface KbDraft {

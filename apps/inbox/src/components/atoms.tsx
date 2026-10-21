@@ -26,7 +26,7 @@ import {
  */
 export function TranslationNote() {
   return (
-    <span className="rounded-full bg-amber-50 px-1.5 text-[10px] font-medium text-amber-700 ring-1 ring-amber-200">
+    <span className="rounded-full bg-amber-50 dark:bg-amber-500/15 px-1.5 text-[10px] font-medium text-amber-700 dark:text-amber-300 ring-1 ring-amber-200 dark:ring-amber-500/30">
       {TRANSLATION_PENDING}
     </span>
   );
@@ -50,7 +50,7 @@ export function ChipView({ chip, withName = true }: { chip: Chip; withName?: boo
       className={`inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium ${chip.tint}`}
       title={withName ? undefined : chip.name}
     >
-      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-white/70 text-[9px] font-bold text-slate-700">
+      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-white/70 dark:bg-slate-900/60 text-[9px] font-bold text-slate-700 dark:text-slate-200">
         {chip.initials}
       </span>
       {withName && <span className="truncate">{chip.name}</span>}
@@ -75,7 +75,7 @@ export function StatusBadge({
     <span className="relative inline-flex">
       <span
         className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ${STATUS_TINT[status]}${
-          live ? ' cursor-pointer hover:ring-slate-400' : ''
+          live ? ' cursor-pointer hover:ring-slate-400 dark:hover:ring-slate-500' : ''
         }`}
         title={live ? (status === 'handled' ? 'Click to reopen this conversation' : 'Click to mark as handled') : undefined}
       >
@@ -108,7 +108,7 @@ export function CategoryBadge({
     <span className="relative inline-flex">
       <span
         className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ${CATEGORY_TINT[category]}${
-          live ? ' cursor-pointer hover:ring-slate-400' : ''
+          live ? ' cursor-pointer hover:ring-slate-400 dark:hover:ring-slate-500' : ''
         }`}
         title={live ? 'Click to move this conversation to another team' : title}
       >
@@ -124,7 +124,7 @@ export function ChannelDot({ channel }: { channel: InboxChannelKey }) {
   return (
     <span
       title={CHANNEL_LABEL[channel]}
-      className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full ring-2 ring-white ${CHANNEL_TINT[channel]}`}
+      className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full ring-2 ring-white dark:ring-slate-900 ${CHANNEL_TINT[channel]}`}
     />
   );
 }
@@ -153,24 +153,24 @@ export function MetricCard({
       type={clickable ? 'button' : undefined}
       onClick={onClick}
       aria-pressed={clickable ? Boolean(active) : undefined}
-      className={`min-w-0 rounded-xl border bg-white p-3 text-left transition ${
+      className={`min-w-0 rounded-xl border bg-white dark:bg-slate-900 p-3 text-left transition ${
         active
-          ? 'border-rose-300 ring-2 ring-rose-200'
+          ? 'border-rose-300 dark:border-rose-500/50 ring-2 ring-rose-200 dark:ring-rose-500/30'
           : clickable
-            ? 'border-slate-200 hover:border-slate-300 hover:shadow-sm'
-            : 'border-slate-200'
+            ? 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-600 hover:shadow-sm'
+            : 'border-slate-200 dark:border-slate-800'
       }`}
     >
       <div className="flex items-center gap-2">
         <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${tint}`}>
           <Icon className="h-3.5 w-3.5" />
         </span>
-        <div className="min-w-0 text-[10px] font-semibold uppercase leading-snug tracking-[0.16em] text-slate-500">{label}</div>
+        <div className="min-w-0 text-[10px] font-semibold uppercase leading-snug tracking-[0.16em] text-slate-500 dark:text-slate-400">{label}</div>
       </div>
       <div className="mt-2 flex items-baseline justify-between gap-2">
-        <div className="text-xl font-semibold tracking-tight text-slate-900">{value}</div>
+        <div className="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">{value}</div>
         {hint && (
-          <span className={`hidden text-[10px] sm:inline ${active ? 'font-medium text-rose-600' : 'text-slate-400'}`}>
+          <span className={`hidden text-[10px] sm:inline ${active ? 'font-medium text-rose-600 dark:text-rose-400' : 'text-slate-400'}`}>
             {hint}
           </span>
         )}
@@ -185,7 +185,7 @@ const CATEGORY_ICON: Record<InboxCategoryKey, LucideIcon> = {
   marketing: Megaphone,
 };
 const CATEGORY_ICON_INK: Record<InboxCategoryKey, string> = {
-  birthdays: 'text-violet-500',
+  birthdays: 'text-violet-500 dark:text-violet-400',
   general: 'text-sky-500',
   marketing: 'text-pink-500',
 };
@@ -196,15 +196,15 @@ export function CategoryMixCard({ data }: { data: Record<InboxCategoryKey, numbe
   const total = Math.max(1, data.birthdays + data.general + data.marketing);
   const w = (n: number) => `${Math.round((n / total) * 100)}%`;
   return (
-    <div className="min-w-0 rounded-xl border border-slate-200 bg-white p-3">
+    <div className="min-w-0 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3">
       <div className="flex items-center gap-2">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
           <TrendingUp className="h-3.5 w-3.5" />
         </span>
-        <div className="min-w-0 text-[10px] font-semibold uppercase leading-snug tracking-[0.16em] text-slate-500">By category</div>
+        <div className="min-w-0 text-[10px] font-semibold uppercase leading-snug tracking-[0.16em] text-slate-500 dark:text-slate-400">By category</div>
       </div>
       <div
-        className="mt-2 flex h-2 overflow-hidden rounded-full bg-slate-100"
+        className="mt-2 flex h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800"
         role="img"
         aria-label={keys.map((k) => `${CATEGORY_LABEL[k]} ${data[k]}`).join(', ')}
       >
@@ -212,7 +212,7 @@ export function CategoryMixCard({ data }: { data: Record<InboxCategoryKey, numbe
           <div key={k} className={CATEGORY_BAR[k]} style={{ width: w(data[k]) }} />
         ))}
       </div>
-      <div className="mt-1.5 flex items-center justify-between text-[10px] text-slate-500">
+      <div className="mt-1.5 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
         {keys.map((k) => {
           const Icon = CATEGORY_ICON[k];
           return (
@@ -247,7 +247,7 @@ export function FilterSelect({
         value={value}
         aria-label={label}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full appearance-none rounded-lg border border-slate-200 bg-white py-1.5 pl-8 pr-7 text-[12.5px] text-slate-700 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200"
+        className="w-full appearance-none rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-1.5 pl-8 pr-7 text-[12.5px] text-slate-700 dark:text-slate-200 focus:border-slate-300 dark:focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200 dark:focus:ring-slate-600"
       >
         {options.map(([v, l]) => (
           <option key={v} value={v}>
@@ -263,11 +263,11 @@ export function FilterSelect({
 export function EmptyState({ icon: Icon, title, subtitle }: { icon: LucideIcon; title: string; subtitle: string }) {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-2 p-8 text-center">
-      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400">
         <Icon className="h-5 w-5" />
       </div>
-      <div className="text-[14px] font-semibold text-slate-700">{title}</div>
-      <div className="max-w-xs text-[12.5px] text-slate-500">{subtitle}</div>
+      <div className="text-[14px] font-semibold text-slate-700 dark:text-slate-200">{title}</div>
+      <div className="max-w-xs text-[12.5px] text-slate-500 dark:text-slate-400">{subtitle}</div>
     </div>
   );
 }

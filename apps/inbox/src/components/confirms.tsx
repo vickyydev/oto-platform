@@ -4,7 +4,7 @@ import { Dialog } from '@/components/Dialog';
 import { CATEGORY_LABEL } from '@/lib/view';
 
 const CANCEL =
-  'rounded-lg border border-slate-200 px-3 py-1.5 text-[13px] font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60';
+  'rounded-lg border border-slate-200 dark:border-slate-800 px-3 py-1.5 text-[13px] font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60';
 
 /**
  * "Mark as handled for everyone?" — the prototype's confirmation (:1734-1764),
@@ -30,7 +30,7 @@ export function HandleConfirm({
       open={open}
       onClose={onCancel}
       icon={CheckCircle2}
-      iconTint="bg-emerald-50 text-emerald-600"
+      iconTint="bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
       title="Mark as handled for everyone?"
       footer={
         <>
@@ -49,7 +49,7 @@ export function HandleConfirm({
         </>
       }
     >
-      <p className="text-[12.5px] text-slate-500">
+      <p className="text-[12.5px] text-slate-500 dark:text-slate-400">
         This conversation will leave Active Messages for the whole team and move to the Handled tab. It returns
         automatically only if the customer sends a new message — or a manager reopens it.
       </p>
@@ -94,7 +94,7 @@ export function PrimaryMoveConfirm({
       open={pending !== null}
       onClose={onCancel}
       icon={ShieldAlert}
-      iconTint="bg-amber-50 text-amber-600"
+      iconTint="bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400"
       title="Change primary owner?"
       footer={
         <>
@@ -105,7 +105,7 @@ export function PrimaryMoveConfirm({
             type="button"
             onClick={onConfirm}
             disabled={busy}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-[13px] font-medium text-white hover:bg-slate-800 disabled:opacity-60"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-[13px] font-medium text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white disabled:opacity-60"
           >
             {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
             Yes, move to {to}
@@ -114,7 +114,7 @@ export function PrimaryMoveConfirm({
       }
     >
       {pending && (
-        <p className="text-[12.5px] text-slate-700">
+        <p className="text-[12.5px] text-slate-700 dark:text-slate-200">
           Setting <strong>{pending.name}</strong> as primary will move this conversation
           {pending.fromCategory && (
             <>
@@ -161,7 +161,7 @@ export function TeamMoveConfirm({
       open={pending !== null}
       onClose={onCancel}
       icon={ArrowRightLeft}
-      iconTint="bg-amber-50 text-amber-600"
+      iconTint="bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400"
       title="Move to another team?"
       footer={
         <>
@@ -172,7 +172,7 @@ export function TeamMoveConfirm({
             type="button"
             onClick={onConfirm}
             disabled={busy}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-[13px] font-medium text-white hover:bg-slate-800 disabled:opacity-60"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-[13px] font-medium text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white disabled:opacity-60"
           >
             {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
             Yes, move to {pending?.toTeamName ?? 'the team'}
@@ -181,7 +181,7 @@ export function TeamMoveConfirm({
       }
     >
       {pending && (
-        <p className="text-[12.5px] text-slate-700">
+        <p className="text-[12.5px] text-slate-700 dark:text-slate-200">
           Moving this conversation
           {pending.fromTeamName && (
             <>
@@ -204,7 +204,7 @@ export function Refusal({ text, tone = 'rose' }: { text: string; tone?: 'rose' |
     <p
       role="alert"
       className={`mt-3 break-words rounded-lg px-3 py-2 text-[12.5px] ring-1 ${
-        tone === 'rose' ? 'bg-rose-50 text-rose-700 ring-rose-200' : 'bg-amber-50 text-amber-800 ring-amber-200'
+        tone === 'rose' ? 'bg-rose-50 dark:bg-rose-500/15 text-rose-700 dark:text-rose-300 ring-rose-200 dark:ring-rose-500/30' : 'bg-amber-50 dark:bg-amber-500/15 text-amber-800 dark:text-amber-200 ring-amber-200 dark:ring-amber-500/30'
       }`}
     >
       {text}

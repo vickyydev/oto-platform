@@ -79,7 +79,7 @@ export function SettingsMenuItems({ me, onChoose }: { me: InboxMe; onChoose: (ke
     <div
       role="menu"
       aria-label="Settings"
-      className="absolute right-0 top-full z-20 mt-1 w-48 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-[0_12px_40px_-16px_rgba(15,23,42,0.28)]"
+      className="absolute right-0 top-full z-20 mt-1 w-48 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-1 shadow-[0_12px_40px_-16px_rgba(15,23,42,0.28)]"
     >
       {settingsMenuEntries(me).map(({ key, label }) => {
         const Icon = ENTRY_ICON[key];
@@ -89,7 +89,7 @@ export function SettingsMenuItems({ me, onChoose }: { me: InboxMe; onChoose: (ke
             type="button"
             role="menuitem"
             onClick={() => onChoose(key)}
-            className="flex w-full items-center gap-2 px-3 py-2 text-left text-[12.5px] font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+            className="flex w-full items-center gap-2 px-3 py-2 text-left text-[12.5px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100"
           >
             <Icon className="h-3.5 w-3.5 text-slate-400" />
             {label}
@@ -115,7 +115,7 @@ export function ThemeToggle({ theme, onTheme }: { theme: Theme; onTheme: (t: The
       onClick={() => onTheme(nextTheme(theme))}
       title={themeTitle(theme)}
       aria-label={themeTitle(theme)}
-      className="inline-flex items-center rounded-xl border border-slate-200 bg-white p-2 text-slate-600 transition hover:border-slate-300 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:text-slate-100"
+      className="inline-flex items-center rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-2 text-slate-600 dark:text-slate-300 transition hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-900 dark:hover:text-slate-100"
     >
       <Icon className="h-4 w-4" />
     </button>
@@ -140,8 +140,8 @@ function SettingsMenu({ me, active, onChoose }: { me: InboxMe; active: SettingsP
         aria-expanded={open}
         className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-[12px] font-medium transition ${
           active !== null
-            ? 'border-slate-900 bg-slate-900 text-white shadow-sm'
-            : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900'
+            ? 'border-slate-900 bg-slate-900 text-white shadow-sm dark:border-slate-100 dark:bg-slate-100 dark:text-slate-900'
+            : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-900 dark:hover:text-slate-100'
         }`}
       >
         <SettingsGear className="h-3.5 w-3.5" />
@@ -547,16 +547,16 @@ export function Workspace({ me }: { me: InboxMe }) {
   return (
     <div className="mx-auto max-w-[1400px] space-y-5 px-4 py-5 sm:px-6">
       {/* HEADER */}
-      <header className="rounded-2xl border border-slate-200 bg-white p-5">
+      <header className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
-            <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
+            <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
               <Sparkles className="h-3.5 w-3.5" />
               Unified Customer Inbox
             </div>
             {/* Below lg the eyebrow is the whole title line (F3): the list must be on screen. */}
-            <h1 className="mt-1 hidden text-xl font-semibold tracking-tight text-slate-900 lg:block">All channels, one queue, role-based access</h1>
-            <p className="mt-1 hidden text-[13px] text-slate-500 lg:block">
+            <h1 className="mt-1 hidden text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 lg:block">All channels, one queue, role-based access</h1>
+            <p className="mt-1 hidden text-[13px] text-slate-500 dark:text-slate-400 lg:block">
               WhatsApp · Instagram · Facebook, routed to the right team. {me.name ?? 'You'} · {viewerRoleLabel(me)}
             </p>
           </div>
@@ -568,8 +568,8 @@ export function Workspace({ me }: { me: InboxMe }) {
                 aria-pressed={tab === 'handled'}
                 className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-[12px] font-medium transition ${
                   tab === 'handled'
-                    ? 'border-slate-900 bg-slate-900 text-white shadow-sm'
-                    : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900'
+                    ? 'border-slate-900 bg-slate-900 text-white shadow-sm dark:border-slate-100 dark:bg-slate-100 dark:text-slate-900'
+                    : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-900 dark:hover:text-slate-100'
                 }`}
               >
                 <Archive className="h-3.5 w-3.5" />
@@ -585,7 +585,7 @@ export function Workspace({ me }: { me: InboxMe }) {
             {LAUNCHER_URL && (
               <a
                 href={LAUNCHER_URL}
-                className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-[12px] font-medium text-slate-600 hover:border-slate-300 hover:text-slate-900"
+                className="inline-flex items-center rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-[12px] font-medium text-slate-600 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-900 dark:hover:text-slate-100"
               >
                 Back to the suite
               </a>
@@ -593,7 +593,7 @@ export function Workspace({ me }: { me: InboxMe }) {
             <button
               type="button"
               onClick={() => void signOut()}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[12px] font-medium text-slate-600 hover:border-slate-300 hover:text-slate-900"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-[12px] font-medium text-slate-600 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-900 dark:hover:text-slate-100"
             >
               <LogOut className="h-3.5 w-3.5" />
               Sign out
@@ -611,12 +611,12 @@ export function Workspace({ me }: { me: InboxMe }) {
       )}
 
       {/* WORKSPACE */}
-      <div className={`${settings !== null ? 'hidden ' : ''}overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_40px_-16px_rgba(15,23,42,0.18)]`}>
+      <div className={`${settings !== null ? 'hidden ' : ''}overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-[0_12px_40px_-16px_rgba(15,23,42,0.18)]`}>
         <div className="grid h-[calc(100dvh-2rem)] min-h-[520px] grid-cols-1 lg:h-[min(82vh,860px)] lg:grid-cols-[220px_360px_minmax(0,1fr)]">
           <Rail me={me} tab={tab} counts={page?.tabCounts ?? null} filters={filters} onTab={chooseTab} onFilters={patchFilters} />
 
           <section
-            className={`min-h-0 min-w-0 flex-col border-r border-slate-200 ${showChatMobile ? 'hidden lg:flex' : 'flex'}`}
+            className={`min-h-0 min-w-0 flex-col border-r border-slate-200 dark:border-slate-800 ${showChatMobile ? 'hidden lg:flex' : 'flex'}`}
             aria-label="Conversations"
           >
             <ConversationList
@@ -652,7 +652,7 @@ export function Workspace({ me }: { me: InboxMe }) {
           </section>
 
           <section
-            className={`min-h-0 min-w-0 flex-col bg-slate-50/40 ${showChatMobile ? 'flex' : 'hidden lg:flex'}`}
+            className={`min-h-0 min-w-0 flex-col bg-slate-50/40 dark:bg-slate-950/40 ${showChatMobile ? 'flex' : 'hidden lg:flex'}`}
             aria-label="Conversation"
           >
             {selected ? (

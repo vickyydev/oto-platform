@@ -35,17 +35,17 @@ export function SlotPicker({
     <span className="relative inline-flex max-w-full">
       {current ? (
         <span
-          className={`inline-flex max-w-full items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-transparent ${current.tint} cursor-pointer hover:ring-slate-300`}
+          className={`inline-flex max-w-full items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-transparent ${current.tint} cursor-pointer hover:ring-slate-300 dark:hover:ring-slate-500`}
           title={`Click to change or remove ${slotLabel}`}
         >
-          <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-white/60 text-[9px] font-semibold">
+          <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-white/60 dark:bg-slate-900/60 text-[9px] font-semibold">
             {current.initials}
           </span>
           <span className="truncate">{current.name}</span>
           <ChevronDown className="h-3 w-3 shrink-0 opacity-60" />
         </span>
       ) : (
-        <span className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-dashed border-slate-300 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-500 hover:border-slate-400 hover:text-slate-800">
+        <span className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-dashed border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-2 py-0.5 text-[11px] font-medium text-slate-500 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-500 hover:text-slate-800 dark:hover:text-slate-200">
           <Plus className="h-3 w-3" />
           {emptyLabel}
         </span>

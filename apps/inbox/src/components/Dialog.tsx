@@ -17,7 +17,7 @@ export function Dialog({
   open,
   onClose,
   icon: Icon,
-  iconTint = 'bg-slate-100 text-slate-600',
+  iconTint = 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300',
   title,
   subtitle,
   footer,
@@ -53,32 +53,32 @@ export function Dialog({
 
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 dark:bg-slate-950/60" onClick={onClose}>
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         onClick={(e) => e.stopPropagation()}
-        className={`flex max-h-[calc(100dvh-2rem)] w-full flex-col overflow-hidden rounded-2xl bg-white shadow-xl ${
+        className={`flex max-h-[calc(100dvh-2rem)] w-full flex-col overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-xl ${
           wide ? 'max-w-2xl' : 'max-w-md'
         }`}
       >
-        <div className="flex shrink-0 items-start gap-3 border-b border-slate-100 px-5 py-4">
+        <div className="flex shrink-0 items-start gap-3 border-b border-slate-100 dark:border-slate-800 px-5 py-4">
           <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${iconTint}`}>
             <Icon className="h-5 w-5" />
           </div>
           <div className="min-w-0 flex-1">
-            <h3 id={titleId} className="text-[15px] font-semibold text-slate-900">
+            <h3 id={titleId} className="text-[15px] font-semibold text-slate-900 dark:text-slate-100">
               {title}
             </h3>
-            {subtitle && <p className="mt-0.5 text-[12.5px] text-slate-500">{subtitle}</p>}
+            {subtitle && <p className="mt-0.5 text-[12.5px] text-slate-500 dark:text-slate-400">{subtitle}</p>}
           </div>
           <button
             ref={closeRef}
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200"
           >
             <X className="h-4 w-4" />
           </button>
@@ -86,7 +86,7 @@ export function Dialog({
         {/* DialogBody: the one part that scrolls. */}
         <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-5 py-4">{children}</div>
         {footer && (
-          <div className="flex shrink-0 justify-end gap-2 border-t border-slate-100 px-5 py-3">{footer}</div>
+          <div className="flex shrink-0 justify-end gap-2 border-t border-slate-100 dark:border-slate-800 px-5 py-3">{footer}</div>
         )}
       </div>
     </div>

@@ -39,9 +39,9 @@ export const CATEGORY_LABEL: Record<InboxCategoryKey, string> = {
 
 /** violet = Birthdays & Events, sky = General / reception, pink = Marketing. */
 export const CATEGORY_TINT: Record<InboxCategoryKey, string> = {
-  birthdays: 'bg-violet-50 text-violet-700 ring-violet-200',
-  general: 'bg-sky-50 text-sky-700 ring-sky-200',
-  marketing: 'bg-pink-50 text-pink-700 ring-pink-200',
+  birthdays: 'bg-violet-50 dark:bg-violet-500/15 text-violet-700 dark:text-violet-300 ring-violet-200 dark:ring-violet-500/30',
+  general: 'bg-sky-50 dark:bg-sky-500/15 text-sky-700 dark:text-sky-300 ring-sky-200 dark:ring-sky-500/30',
+  marketing: 'bg-pink-50 dark:bg-pink-500/15 text-pink-700 dark:text-pink-300 ring-pink-200 dark:ring-pink-500/30',
 };
 
 /** The stacked bar's segments (`CategoryMixCard`, :1825-1827). */
@@ -54,8 +54,8 @@ export const CATEGORY_BAR: Record<InboxCategoryKey, string> = {
 /** The IT Brief's two statuses; the prototype stores Active as "new". */
 export const STATUS_LABEL: Record<InboxStatusKey, string> = { active: 'Active', handled: 'Handled' };
 export const STATUS_TINT: Record<InboxStatusKey, string> = {
-  active: 'bg-blue-50 text-blue-700 ring-blue-200',
-  handled: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+  active: 'bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 ring-blue-200 dark:ring-blue-500/30',
+  handled: 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 ring-emerald-200 dark:ring-emerald-500/30',
 };
 export const STATUS_DOT: Record<InboxStatusKey, string> = { active: 'bg-blue-500', handled: 'bg-emerald-500' };
 
@@ -124,16 +124,16 @@ export function initialsOf(name: string | null | undefined): string {
  * same person is the same colour on every screen and every day.
  */
 export const PASTELS = [
-  'bg-violet-100 text-violet-700',
-  'bg-teal-100 text-teal-700',
-  'bg-emerald-100 text-emerald-700',
-  'bg-lime-100 text-lime-700',
-  'bg-orange-100 text-orange-700',
-  'bg-pink-100 text-pink-700',
-  'bg-amber-100 text-amber-700',
-  'bg-fuchsia-100 text-fuchsia-700',
-  'bg-rose-100 text-rose-700',
-  'bg-cyan-100 text-cyan-700',
+  'bg-violet-100 dark:bg-violet-500/25 text-violet-700 dark:text-violet-300',
+  'bg-teal-100 dark:bg-teal-500/25 text-teal-700 dark:text-teal-300',
+  'bg-emerald-100 dark:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300',
+  'bg-lime-100 dark:bg-lime-500/25 text-lime-700 dark:text-lime-300',
+  'bg-orange-100 dark:bg-orange-500/25 text-orange-700 dark:text-orange-300',
+  'bg-pink-100 dark:bg-pink-500/25 text-pink-700 dark:text-pink-300',
+  'bg-amber-100 dark:bg-amber-500/25 text-amber-700 dark:text-amber-300',
+  'bg-fuchsia-100 dark:bg-fuchsia-500/25 text-fuchsia-700 dark:text-fuchsia-300',
+  'bg-rose-100 dark:bg-rose-500/25 text-rose-700 dark:text-rose-300',
+  'bg-cyan-100 dark:bg-cyan-500/25 text-cyan-700 dark:text-cyan-300',
 ] as const;
 
 export function tintFor(id: string): string {
@@ -144,9 +144,9 @@ export function tintFor(id: string): string {
 
 /** A team's chip, in its own colour (`team.colour`: violet, sky, pink). */
 const TEAM_TINT: Record<string, string> = {
-  violet: 'bg-violet-100 text-violet-700',
-  sky: 'bg-sky-100 text-sky-700',
-  pink: 'bg-pink-100 text-pink-700',
+  violet: 'bg-violet-100 dark:bg-violet-500/25 text-violet-700 dark:text-violet-300',
+  sky: 'bg-sky-100 dark:bg-sky-500/25 text-sky-700 dark:text-sky-300',
+  pink: 'bg-pink-100 dark:bg-pink-500/25 text-pink-700 dark:text-pink-300',
 };
 
 export interface Chip {
@@ -164,12 +164,12 @@ export interface Chip {
  */
 export function assigneeChip(a: Assignee, me: Pick<InboxMe, 'people' | 'teams'>): Chip {
   if (a.assigneeKind === 'ai') {
-    return { key: a.assignmentId, name: 'AI Assistant', initials: 'AI', tint: 'bg-indigo-100 text-indigo-700' };
+    return { key: a.assignmentId, name: 'AI Assistant', initials: 'AI', tint: 'bg-indigo-100 dark:bg-indigo-500/25 text-indigo-700 dark:text-indigo-300' };
   }
   if (a.assigneeKind === 'team') {
     const team = me.teams.find((t) => t.id === a.teamId);
     const name = a.name ?? team?.name ?? 'Team';
-    return { key: a.assignmentId, name, initials: initialsOf(name), tint: TEAM_TINT[team?.colour ?? ''] ?? 'bg-slate-100 text-slate-700' };
+    return { key: a.assignmentId, name, initials: initialsOf(name), tint: TEAM_TINT[team?.colour ?? ''] ?? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200' };
   }
   return personChip(a.assignmentId, a.accountId, a.name, me);
 }
@@ -192,7 +192,7 @@ export function personChip(
     key,
     name: shown,
     initials: initialsOf(shown),
-    tint: manager ? 'bg-slate-800 text-white' : tintFor(accountId ?? key),
+    tint: manager ? 'bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900' : tintFor(accountId ?? key),
   };
 }
 

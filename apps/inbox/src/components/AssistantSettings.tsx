@@ -52,10 +52,10 @@ import {
 import { CHANNEL_LABEL, branchLabel, branchOptions, langLabel } from '@/lib/view';
 
 const BUTTON =
-  'inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 disabled:opacity-60';
+  'inline-flex items-center gap-1 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100 disabled:opacity-60';
 const PRIMARY =
-  'inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-[13px] font-medium text-white hover:bg-slate-800 disabled:opacity-60';
-const CANCEL = 'rounded-lg border border-slate-200 px-3 py-1.5 text-[13px] font-medium text-slate-700 hover:bg-slate-50';
+  'inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-[13px] font-medium text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white disabled:opacity-60';
+const CANCEL = 'rounded-lg border border-slate-200 dark:border-slate-800 px-3 py-1.5 text-[13px] font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800';
 
 /**
  * A part of the page the viewer's grant does not reach (a 403: the examples
@@ -114,21 +114,21 @@ export function AssistantSettings({
   const section: AssistantTab = tab !== null && sections.some(([s]) => s === tab) ? tab : (sections[0]?.[0] ?? 'knowledge');
 
   return (
-    <div className="min-w-0 rounded-2xl border border-slate-200 bg-white p-5">
+    <div className="min-w-0 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
+          <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
             <Bot className="h-3.5 w-3.5" />
             Settings · Assistant
           </div>
-          <p className="mt-1 text-[13px] text-slate-500">
+          <p className="mt-1 text-[13px] text-slate-500 dark:text-slate-400">
             The assistant answers simple questions from the approved knowledge base and hands everything else to the team.
             A person replying always takes over.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <BackToInbox onBack={onBack} />
-          <div role="tablist" aria-label="Assistant settings" className="flex flex-wrap gap-1 rounded-xl bg-slate-100 p-1">
+          <div role="tablist" aria-label="Assistant settings" className="flex flex-wrap gap-1 rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
             {sections.map(([s, label]) => (
               <button
                 key={s}
@@ -137,7 +137,7 @@ export function AssistantSettings({
                 aria-selected={section === s}
                 onClick={() => onTab(s)}
                 className={`rounded-lg px-2.5 py-1 text-[12px] font-medium transition ${
-                  section === s ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200' : 'text-slate-600 hover:text-slate-900'
+                  section === s ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm ring-1 ring-slate-200 dark:ring-slate-700' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100'
                 }`}
               >
                 {label}
@@ -148,7 +148,7 @@ export function AssistantSettings({
       </div>
 
       {sections.length === 0 && (
-        <p className="mt-4 text-[12.5px] text-slate-500">You do not manage the assistant.</p>
+        <p className="mt-4 text-[12.5px] text-slate-500 dark:text-slate-400">You do not manage the assistant.</p>
       )}
       {section === 'numbers' && caps.ai && <ChannelModes me={me} />}
       {section === 'knowledge' && caps.kb && <KnowledgeBase me={me} />}
@@ -199,35 +199,35 @@ function ChannelModes({ me }: { me: InboxMe }) {
 
   return (
     <div className="mt-4 space-y-3">
-      <div className="rounded-xl bg-indigo-50 px-3 py-2 text-[12.5px] text-indigo-800 ring-1 ring-indigo-100">
+      <div className="rounded-xl bg-indigo-50 dark:bg-indigo-500/15 px-3 py-2 text-[12.5px] text-indigo-800 dark:text-indigo-200 ring-1 ring-indigo-100 dark:ring-indigo-500/25">
         <span className="font-semibold">Live means customers hear it.</span> Run a number in Shadow first: the assistant
         records what it would have said, and nobody sees it.
       </div>
       <dl className="grid grid-cols-1 gap-2 sm:grid-cols-3">
         {AI_MODE_OPTIONS.map((o) => (
-          <div key={o.value} className="min-w-0 rounded-xl border border-slate-200 p-3">
+          <div key={o.value} className="min-w-0 rounded-xl border border-slate-200 dark:border-slate-800 p-3">
             <dt>
               <span className={`rounded-full px-1.5 text-[10px] font-semibold ring-1 ${AI_MODE_TINT[o.value]}`}>{o.label}</span>
             </dt>
-            <dd className="mt-1.5 text-[12px] text-slate-600">{o.description}</dd>
+            <dd className="mt-1.5 text-[12px] text-slate-600 dark:text-slate-300">{o.description}</dd>
           </div>
         ))}
       </dl>
 
       {error && <Refusal text={error} tone={error === NOT_ON_YOUR_ACCESS ? 'amber' : 'rose'} />}
       {!error && accounts === null && <Spinner />}
-      {accounts?.length === 0 && <p className="text-[12.5px] text-slate-500">No channel numbers yet.</p>}
+      {accounts?.length === 0 && <p className="text-[12.5px] text-slate-500 dark:text-slate-400">No channel numbers yet.</p>}
       <ul className="space-y-2">
         {accounts?.map((a) => (
-          <li key={a.id} className="min-w-0 rounded-xl border border-slate-200 p-3">
+          <li key={a.id} className="min-w-0 rounded-xl border border-slate-200 dark:border-slate-800 p-3">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
-                <div className="truncate text-[13px] font-semibold text-slate-900">{a.displayName}</div>
-                <div className="text-[11px] text-slate-500">
+                <div className="truncate text-[13px] font-semibold text-slate-900 dark:text-slate-100">{a.displayName}</div>
+                <div className="text-[11px] text-slate-500 dark:text-slate-400">
                   {CHANNEL_LABEL[a.channel]} · {a.branchId ? branchLabel(a.branchId, me.teams) : 'Both parks'}
                 </div>
               </div>
-              <div role="radiogroup" aria-label={`Assistant mode for ${a.displayName}`} className="flex shrink-0 gap-1 rounded-xl bg-slate-100 p-1">
+              <div role="radiogroup" aria-label={`Assistant mode for ${a.displayName}`} className="flex shrink-0 gap-1 rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
                 {AI_MODE_OPTIONS.map((o) => (
                   <button
                     key={o.value}
@@ -240,8 +240,8 @@ function ChannelModes({ me }: { me: InboxMe }) {
                       a.aiMode === o.value
                         ? o.value === 'live'
                           ? 'bg-indigo-600 text-white shadow-sm'
-                          : 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200'
-                        : 'text-slate-600 hover:text-slate-900'
+                          : 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm ring-1 ring-slate-200 dark:ring-slate-700'
+                        : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100'
                     }`}
                   >
                     {o.label}
@@ -249,7 +249,7 @@ function ChannelModes({ me }: { me: InboxMe }) {
                 ))}
               </div>
             </div>
-            <p className="mt-1.5 flex items-start gap-1.5 text-[11.5px] text-slate-500">
+            <p className="mt-1.5 flex items-start gap-1.5 text-[11.5px] text-slate-500 dark:text-slate-400">
               {busyId === a.id && <Loader2 className="mt-0.5 h-3 w-3 shrink-0 animate-spin" />}
               <span className="min-w-0">{aiModeOption(a.aiMode).description}</span>
             </p>
@@ -262,7 +262,7 @@ function ChannelModes({ me }: { me: InboxMe }) {
         open={confirm !== null}
         onClose={() => setConfirm(null)}
         icon={Radio}
-        iconTint="bg-indigo-50 text-indigo-600"
+        iconTint="bg-indigo-50 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-400"
         title="Put the assistant live on this number?"
         subtitle={confirm ? `${confirm.account.displayName} · ${CHANNEL_LABEL[confirm.account.channel]}` : undefined}
         footer={
@@ -282,8 +282,8 @@ function ChannelModes({ me }: { me: InboxMe }) {
           </>
         }
       >
-        <p className="text-[12.5px] text-slate-600">{aiModeOption('live').description}</p>
-        <p className="mt-2 text-[12.5px] text-slate-500">You can switch it back to Shadow or Off at any time.</p>
+        <p className="text-[12.5px] text-slate-600 dark:text-slate-300">{aiModeOption('live').description}</p>
+        <p className="mt-2 text-[12.5px] text-slate-500 dark:text-slate-400">You can switch it back to Shadow or Off at any time.</p>
       </Dialog>
     </div>
   );
@@ -332,20 +332,20 @@ function KnowledgeBase({ me }: { me: InboxMe }) {
   return (
     <div className="mt-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <p className="min-w-0 text-[12.5px] text-slate-500">
+        <p className="min-w-0 text-[12.5px] text-slate-500 dark:text-slate-400">
           Only approved entries reach the assistant. Opening hours, addresses and ticket prices come from the platform
           itself; write notes beside them here, never the numbers. An approved entry is not edited: archive it and draft
           a new one with the same key.
         </p>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
-          <label className="inline-flex items-center gap-1.5 text-[12px] text-slate-600">
+          <label className="inline-flex items-center gap-1.5 text-[12px] text-slate-600 dark:text-slate-300">
             <input type="checkbox" checked={archived} onChange={(e) => setArchived(e.target.checked)} />
             Show archived
           </label>
           <button
             type="button"
             onClick={() => setEditing('new')}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3 py-2 text-[12px] font-medium text-white hover:bg-slate-800"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3 py-2 text-[12px] font-medium text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
           >
             <Plus className="h-3.5 w-3.5" />
             New entry
@@ -355,7 +355,7 @@ function KnowledgeBase({ me }: { me: InboxMe }) {
 
       {error && <Refusal text={error} tone={error === NOT_ON_YOUR_ACCESS ? 'amber' : 'rose'} />}
       {!error && entries === null && <Spinner />}
-      {entries?.length === 0 && <p className="mt-4 text-[12.5px] text-slate-500">No entries yet.</p>}
+      {entries?.length === 0 && <p className="mt-4 text-[12.5px] text-slate-500 dark:text-slate-400">No entries yet.</p>}
 
       <div className="mt-4 space-y-5">
         {kbGroups(entries ?? []).map((g) => (
@@ -363,22 +363,22 @@ function KnowledgeBase({ me }: { me: InboxMe }) {
             <Eyebrow className="mb-2">{topicLabel(g.topic)}</Eyebrow>
             <ul className="grid grid-cols-1 gap-2 lg:grid-cols-2">
               {g.entries.map((e) => (
-                <li key={e.id} className={`min-w-0 rounded-xl border border-slate-200 p-3 ${e.status === 'archived' ? 'opacity-60' : ''}`}>
+                <li key={e.id} className={`min-w-0 rounded-xl border border-slate-200 dark:border-slate-800 p-3 ${e.status === 'archived' ? 'opacity-60' : ''}`}>
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="min-w-0 break-all font-mono text-[11px] text-slate-700">{e.key}</span>
-                    <span className="rounded-full bg-slate-100 px-1.5 text-[10px] font-semibold text-slate-600">{langLabel(e.language)}</span>
-                    <span className="text-[11px] text-slate-500">{e.branchId ? branchLabel(e.branchId, me.teams) : 'Both parks'}</span>
+                    <span className="min-w-0 break-all font-mono text-[11px] text-slate-700 dark:text-slate-200">{e.key}</span>
+                    <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-1.5 text-[10px] font-semibold text-slate-600 dark:text-slate-300">{langLabel(e.language)}</span>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400">{e.branchId ? branchLabel(e.branchId, me.teams) : 'Both parks'}</span>
                     <span className={`rounded-full px-1.5 text-[10px] font-medium ring-1 ${KB_STATUS_TINT[e.status]}`}>
                       {KB_STATUS_LABEL[e.status]}
                     </span>
                     {e.needsTranslation && (
-                      <span className="rounded-full bg-amber-50 px-1.5 text-[10px] font-medium text-amber-700 ring-1 ring-amber-200">
+                      <span className="rounded-full bg-amber-50 dark:bg-amber-500/15 px-1.5 text-[10px] font-medium text-amber-700 dark:text-amber-300 ring-1 ring-amber-200 dark:ring-amber-500/30">
                         English source, to translate
                       </span>
                     )}
                   </div>
-                  <p className="mt-1.5 break-words text-[12.5px] font-medium text-slate-800">{e.question}</p>
-                  <p className="mt-1 line-clamp-4 whitespace-pre-line break-words text-[12.5px] text-slate-600">{e.body}</p>
+                  <p className="mt-1.5 break-words text-[12.5px] font-medium text-slate-800 dark:text-slate-200">{e.question}</p>
+                  <p className="mt-1 line-clamp-4 whitespace-pre-line break-words text-[12.5px] text-slate-600 dark:text-slate-300">{e.body}</p>
                   {e.status !== 'archived' && e.canManage && (
                     <div className="mt-2 flex flex-wrap items-center gap-1.5">
                       {e.status === 'draft' && (
@@ -433,7 +433,7 @@ function KnowledgeBase({ me }: { me: InboxMe }) {
         open={acting !== null}
         onClose={() => setActing(null)}
         icon={acting?.what === 'approve' ? CheckCircle2 : Archive}
-        iconTint={acting?.what === 'approve' ? 'bg-emerald-50 text-emerald-600' : undefined}
+        iconTint={acting?.what === 'approve' ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : undefined}
         title={acting?.what === 'approve' ? 'Approve this entry?' : 'Archive this entry?'}
         subtitle={acting ? `${acting.entry.key} · ${langLabel(acting.entry.language)}` : undefined}
         footer={
@@ -448,13 +448,13 @@ function KnowledgeBase({ me }: { me: InboxMe }) {
           </>
         }
       >
-        <p className="text-[12.5px] text-slate-500">
+        <p className="text-[12.5px] text-slate-500 dark:text-slate-400">
           {acting?.what === 'approve'
             ? 'The assistant may answer customers from these words from now on, on every number that is live. You are recorded as the approver.'
             : 'The assistant stops using it, and its key is free for a new entry.'}
         </p>
         {acting?.what === 'approve' && (
-          <p className="mt-2 whitespace-pre-line break-words rounded-lg bg-slate-50 px-3 py-2 text-[12.5px] text-slate-700">
+          <p className="mt-2 whitespace-pre-line break-words rounded-lg bg-slate-50 dark:bg-slate-950/60 px-3 py-2 text-[12.5px] text-slate-700 dark:text-slate-200">
             {acting.entry.body}
           </p>
         )}
@@ -528,7 +528,7 @@ function KbEditor({
       open
       onClose={onClose}
       icon={BookOpen}
-      iconTint="bg-indigo-50 text-indigo-600"
+      iconTint="bg-indigo-50 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-400"
       title={entry ? 'Edit entry' : 'New entry'}
       subtitle={
         entry
@@ -600,11 +600,11 @@ function KbEditor({
         <Field label={`The answer · ${body.length}/${KB_BODY_MAX}`} wide>
           <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={6} maxLength={KB_BODY_MAX} className={`${FIELD} resize-y`} />
         </Field>
-        <label className="inline-flex items-center gap-1.5 text-[12px] text-slate-600 sm:col-span-2">
+        <label className="inline-flex items-center gap-1.5 text-[12px] text-slate-600 dark:text-slate-300 sm:col-span-2">
           <input type="checkbox" checked={needsTranslation} onChange={(e) => setNeedsTranslation(e.target.checked)} />
           English source, to translate (the assistant uses the English entry until this one is translated)
         </label>
-        {problem && (key || question || body) && <p className="text-[11.5px] text-slate-500 sm:col-span-2">{problem}</p>}
+        {problem && (key || question || body) && <p className="text-[11.5px] text-slate-500 dark:text-slate-400 sm:col-span-2">{problem}</p>}
       </form>
       {error && <Refusal text={error} tone={error === NOT_ON_YOUR_ACCESS ? 'amber' : 'rose'} />}
     </Dialog>
@@ -662,11 +662,11 @@ function ExamplesQueue({ me }: { me: InboxMe }) {
   return (
     <div className="mt-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <p className="min-w-0 text-[12.5px] text-slate-500">
+        <p className="min-w-0 text-[12.5px] text-slate-500 dark:text-slate-400">
           Corrections staff proposed from the conversations. An approved example is what the assistant answers from next;
           approve only once it holds no names, numbers or children’s details.
         </p>
-        <div className="flex shrink-0 gap-1 rounded-xl bg-slate-100 p-1">
+        <div className="flex shrink-0 gap-1 rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
           {EXAMPLE_TABS.map(([s, label]) => (
             <button
               key={s}
@@ -674,7 +674,7 @@ function ExamplesQueue({ me }: { me: InboxMe }) {
               aria-pressed={status === s}
               onClick={() => setStatus(s)}
               className={`rounded-lg px-2.5 py-1 text-[12px] font-medium ${
-                status === s ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200' : 'text-slate-600 hover:text-slate-900'
+                status === s ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm ring-1 ring-slate-200 dark:ring-slate-700' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100'
               }`}
             >
               {label}
@@ -685,7 +685,7 @@ function ExamplesQueue({ me }: { me: InboxMe }) {
 
       {error && <Refusal text={error} tone={error === NOT_ON_YOUR_ACCESS ? 'amber' : 'rose'} />}
       {!error && examples === null && <Spinner />}
-      {examples?.length === 0 && <p className="mt-4 text-[12.5px] text-slate-500">Nothing here.</p>}
+      {examples?.length === 0 && <p className="mt-4 text-[12.5px] text-slate-500 dark:text-slate-400">Nothing here.</p>}
       <ul className="mt-4 grid grid-cols-1 gap-2 lg:grid-cols-2">
         {examples?.map((x) => (
           <ExampleCard
@@ -739,18 +739,18 @@ export function ExampleCard({
   onWithdraw: () => void;
 }) {
   return (
-    <li className="min-w-0 rounded-xl border border-slate-200 p-3">
+    <li className="min-w-0 rounded-xl border border-slate-200 dark:border-slate-800 p-3">
       <div className="flex flex-wrap items-center gap-1.5">
-        <span className="rounded-full bg-slate-100 px-1.5 text-[10px] font-semibold text-slate-600">{langLabel(x.language)}</span>
-        <span className="text-[11px] text-slate-500">{intentLabel(x.intent)}</span>
-        <span className="rounded-full bg-indigo-50 px-1.5 text-[10px] font-medium text-indigo-700 ring-1 ring-indigo-200">
+        <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-1.5 text-[10px] font-semibold text-slate-600 dark:text-slate-300">{langLabel(x.language)}</span>
+        <span className="text-[11px] text-slate-500 dark:text-slate-400">{intentLabel(x.intent)}</span>
+        <span className="rounded-full bg-indigo-50 dark:bg-indigo-500/15 px-1.5 text-[10px] font-medium text-indigo-700 dark:text-indigo-300 ring-1 ring-indigo-200 dark:ring-indigo-500/30">
           {VERDICT_LABEL[x.verdict]}
         </span>
         {proposer && <span className="text-[11px] text-slate-400">by {proposer}</span>}
       </div>
-      <p className="mt-1.5 line-clamp-3 whitespace-pre-line break-words text-[12.5px] text-slate-800">{x.customerText}</p>
+      <p className="mt-1.5 line-clamp-3 whitespace-pre-line break-words text-[12.5px] text-slate-800 dark:text-slate-200">{x.customerText}</p>
       {x.goodReply && (
-        <p className="mt-1 line-clamp-3 whitespace-pre-line break-words rounded-lg bg-indigo-50/60 px-2 py-1 text-[12.5px] text-indigo-900">
+        <p className="mt-1 line-clamp-3 whitespace-pre-line break-words rounded-lg bg-indigo-50/60 dark:bg-indigo-500/10 px-2 py-1 text-[12.5px] text-indigo-900 dark:text-indigo-200">
           {x.goodReply}
         </p>
       )}
@@ -793,7 +793,7 @@ export function WithdrawExampleConfirm({
       open={example !== null}
       onClose={onCancel}
       icon={Undo2}
-      iconTint="bg-amber-50 text-amber-600"
+      iconTint="bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400"
       title="Withdraw this example?"
       subtitle={example ? `${intentLabel(example.intent)} · ${langLabel(example.language)}` : undefined}
       footer={
@@ -808,10 +808,10 @@ export function WithdrawExampleConfirm({
         </>
       }
     >
-      <p className="text-[12.5px] text-slate-700">{WITHDRAW_EXAMPLE_LINE}</p>
-      <p className="mt-2 text-[12.5px] text-slate-500">It moves to Rejected and stays there; propose a new one to replace it.</p>
+      <p className="text-[12.5px] text-slate-700 dark:text-slate-200">{WITHDRAW_EXAMPLE_LINE}</p>
+      <p className="mt-2 text-[12.5px] text-slate-500 dark:text-slate-400">It moves to Rejected and stays there; propose a new one to replace it.</p>
       {example && (
-        <p className="mt-2 line-clamp-4 whitespace-pre-line break-words rounded-lg bg-slate-50 px-3 py-2 text-[12.5px] text-slate-700">
+        <p className="mt-2 line-clamp-4 whitespace-pre-line break-words rounded-lg bg-slate-50 dark:bg-slate-950/60 px-3 py-2 text-[12.5px] text-slate-700 dark:text-slate-200">
           {example.customerText}
         </p>
       )}
@@ -887,7 +887,7 @@ export function ExampleReview({
       open
       onClose={onClose}
       icon={ShieldCheck}
-      iconTint="bg-indigo-50 text-indigo-600"
+      iconTint="bg-indigo-50 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-400"
       title="Review the example"
       subtitle="Edit it until it holds no personal data, then approve it."
       wide
@@ -897,7 +897,7 @@ export function ExampleReview({
             type="button"
             onClick={() => void run('reject')}
             disabled={busy !== null}
-            className="mr-auto inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-[13px] font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-60"
+            className="mr-auto inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-[13px] font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/15 disabled:opacity-60"
           >
             {busy === 'reject' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <X className="h-3.5 w-3.5" />}
             Reject
@@ -907,7 +907,7 @@ export function ExampleReview({
             onClick={() => void run('delete')}
             disabled={busy !== null}
             title="Remove it for good: a proposal may still hold the conversation’s words"
-            className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-[13px] font-medium text-slate-500 hover:bg-slate-50 disabled:opacity-60"
+            className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-[13px] font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60"
           >
             {busy === 'delete' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
             Delete
@@ -973,8 +973,8 @@ export function ExampleReview({
             ))}
           </select>
         </Field>
-        {problem && <p className="text-[11.5px] text-slate-500 sm:col-span-2">{problem}</p>}
-        <label className="flex items-start gap-2 rounded-lg bg-amber-50 px-3 py-2 text-[12.5px] text-amber-900 ring-1 ring-amber-200 sm:col-span-2">
+        {problem && <p className="text-[11.5px] text-slate-500 dark:text-slate-400 sm:col-span-2">{problem}</p>}
+        <label className="flex items-start gap-2 rounded-lg bg-amber-50 dark:bg-amber-500/15 px-3 py-2 text-[12.5px] text-amber-900 dark:text-amber-200 ring-1 ring-amber-200 dark:ring-amber-500/30 sm:col-span-2">
           <input
             type="checkbox"
             checked={deidentified}

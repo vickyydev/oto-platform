@@ -83,18 +83,18 @@ export function Rail({
 }) {
   const name = me.name ?? 'You';
   return (
-    <aside className="hidden min-h-0 flex-col border-r border-slate-200 bg-slate-50/60 lg:flex">
-      <div className="border-b border-slate-200 px-4 py-3">
+    <aside className="hidden min-h-0 flex-col border-r border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/40 lg:flex">
+      <div className="border-b border-slate-200 dark:border-slate-800 px-4 py-3">
         <Eyebrow>Viewing as</Eyebrow>
         <div className="mt-1 flex items-center gap-2">
           <Avatar
             initials={initialsOf(name)}
-            tint={me.roles.includes('owner') ? 'bg-slate-900 text-white' : tintFor(me.accountId)}
+            tint={me.roles.includes('owner') ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900' : tintFor(me.accountId)}
             size={28}
           />
           <div className="min-w-0">
-            <div className="truncate text-[13px] font-semibold text-slate-900">{name}</div>
-            <div className="truncate text-[11px] text-slate-500">{viewerRoleLabel(me)}</div>
+            <div className="truncate text-[13px] font-semibold text-slate-900 dark:text-slate-100">{name}</div>
+            <div className="truncate text-[11px] text-slate-500 dark:text-slate-400">{viewerRoleLabel(me)}</div>
           </div>
         </div>
       </div>
@@ -109,18 +109,18 @@ export function Rail({
               onClick={() => onTab(t)}
               aria-current={active ? 'page' : undefined}
               className={`mb-0.5 flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left text-[13px] transition ${
-                active ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200' : 'text-slate-600 hover:bg-white/70'
+                active ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm ring-1 ring-slate-200 dark:ring-slate-700' : 'text-slate-600 dark:text-slate-300 hover:bg-white/70 dark:hover:bg-slate-800/70'
               }`}
             >
               <span className="flex items-center gap-2">
-                <Icon className={`h-4 w-4 ${active ? 'text-slate-900' : 'text-slate-400'}`} />
+                <Icon className={`h-4 w-4 ${active ? 'text-slate-900 dark:text-slate-100' : 'text-slate-400'}`} />
                 {TAB_LABEL[t]}
               </span>
               {/* The prototype counts the working tabs, not the archive (:1434). */}
               {t !== 'handled' && counts?.[t] !== undefined && (
                 <span
                   className={`rounded-full px-1.5 text-[10px] font-semibold ${
-                    active ? 'bg-slate-900 text-white' : 'bg-slate-200 text-slate-600'
+                    active ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
                   }`}
                 >
                   {counts[t]}
@@ -130,7 +130,7 @@ export function Rail({
           );
         })}
       </nav>
-      <div className="border-t border-slate-200 p-3">
+      <div className="border-t border-slate-200 dark:border-slate-800 p-3">
         <div className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
           <Filter className="h-3 w-3" /> Filters
         </div>

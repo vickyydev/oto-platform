@@ -8,9 +8,9 @@ import { Dialog } from '@/components/Dialog';
 import { CATEGORY_LABEL, CHANNEL_LABEL, LANGUAGE_OPTIONS } from '@/lib/view';
 
 const FIELD =
-  'w-full min-w-0 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[12.5px] text-slate-800 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200';
+  'w-full min-w-0 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2.5 py-1.5 text-[12.5px] text-slate-800 dark:text-slate-200 focus:border-slate-300 dark:focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200 dark:focus:ring-slate-600';
 const PRIMARY_BUTTON =
-  'inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-[12.5px] font-medium text-white hover:bg-slate-800 disabled:opacity-60';
+  'inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-[12.5px] font-medium text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white disabled:opacity-60';
 
 type Category = NonNullable<NonNullable<SimulatedInbound['hint']>['category']>;
 
@@ -134,14 +134,14 @@ export function SimulatorDialog({
       open={open}
       onClose={onClose}
       icon={FlaskConical}
-      iconTint="bg-indigo-50 text-indigo-600"
+      iconTint="bg-indigo-50 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-400"
       title="Simulator"
       subtitle="Pretend customers, through the real webhook. Local and staging only — nothing reaches a real customer."
       wide
     >
       <div className="space-y-5">
         <Section title="Demo conversations">
-          <p className="text-[12.5px] text-slate-500">
+          <p className="text-[12.5px] text-slate-500 dark:text-slate-400">
             Plays the ten demo threads, the six demo staff and the four simulator channel accounts. Playing it again
             writes nothing.
           </p>
@@ -153,7 +153,7 @@ export function SimulatorDialog({
 
         <Section title="A customer writes">
           {accounts.length === 0 ? (
-            <p className="text-[12.5px] text-slate-500">No simulator channel account yet — play the demo first.</p>
+            <p className="text-[12.5px] text-slate-500 dark:text-slate-400">No simulator channel account yet — play the demo first.</p>
           ) : (
             <form onSubmit={sendInbound} className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <Field label="Channel account" wide>
@@ -206,10 +206,10 @@ export function SimulatorDialog({
 
         <Section title="Delivery receipts">
           {accounts.length === 0 ? (
-            <p className="text-[12.5px] text-slate-500">No simulator channel account yet — play the demo first.</p>
+            <p className="text-[12.5px] text-slate-500 dark:text-slate-400">No simulator channel account yet — play the demo first.</p>
           ) : (
             <>
-              <p className="text-[12.5px] text-slate-500">
+              <p className="text-[12.5px] text-slate-500 dark:text-slate-400">
                 Marks the replies sent on {account ? accountLabel(account) : 'the account'} delivered, then read.
               </p>
               <button type="button" onClick={pushReceipts} disabled={busy !== null} className={`mt-2 ${PRIMARY_BUTTON}`}>
@@ -221,7 +221,7 @@ export function SimulatorDialog({
         </Section>
 
         {done && (
-          <p role="status" className="rounded-lg bg-emerald-50 px-3 py-2 text-[12.5px] text-emerald-700 ring-1 ring-emerald-200">
+          <p role="status" className="rounded-lg bg-emerald-50 dark:bg-emerald-500/15 px-3 py-2 text-[12.5px] text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-200 dark:ring-emerald-500/30">
             {done}
           </p>
         )}
@@ -242,7 +242,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 
 function Field({ label, wide = false, children }: { label: string; wide?: boolean; children: ReactNode }) {
   return (
-    <label className={`flex min-w-0 flex-col gap-1 text-[11px] font-medium text-slate-500 ${wide ? 'sm:col-span-2' : ''}`}>
+    <label className={`flex min-w-0 flex-col gap-1 text-[11px] font-medium text-slate-500 dark:text-slate-400 ${wide ? 'sm:col-span-2' : ''}`}>
       {label}
       {children}
     </label>

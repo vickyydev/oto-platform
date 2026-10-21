@@ -316,12 +316,12 @@ export function ChatPanel({
   return (
     <>
       {/* Header */}
-      <header className="flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-3">
+      <header className="flex items-center gap-3 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3">
         <button
           type="button"
           onClick={onBack}
           aria-label="Back to the conversations"
-          className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 lg:hidden"
+          className="rounded-lg p-1.5 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 lg:hidden"
         >
           <ArrowLeft className="h-4 w-4" />
         </button>
@@ -331,11 +331,11 @@ export function ChatPanel({
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 items-center gap-2">
-            <div className="truncate text-[14px] font-semibold text-slate-900">{name}</div>
+            <div className="truncate text-[14px] font-semibold text-slate-900 dark:text-slate-100">{name}</div>
             <span className="text-[11px] text-slate-400">·</span>
-            <span className="shrink-0 text-[11px] text-slate-500">{CHANNEL_LABEL[conv.channel]}</span>
+            <span className="shrink-0 text-[11px] text-slate-500 dark:text-slate-400">{CHANNEL_LABEL[conv.channel]}</span>
           </div>
-          <div className="mt-0.5 flex min-w-0 items-center gap-2 text-[11px] text-slate-500">
+          <div className="mt-0.5 flex min-w-0 items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
             <span className="truncate">{idLabel ? `${idLabel} ${conv.contact.handle}` : conv.contact.handle}</span>
             {conv.intent && (
               <>
@@ -405,16 +405,16 @@ export function ChatPanel({
           onClick={onOpenDetails}
           aria-label="Conversation details"
           title="Conversation details"
-          className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"
+          className="rounded-lg p-1.5 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
         >
           <MoreHorizontal className="h-4 w-4" />
         </button>
       </header>
 
       {/* Assignment strip */}
-      <div className="border-b border-slate-200 bg-white/70 px-4 py-2">
+      <div className="border-b border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 px-4 py-2">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Primary</span>
+          <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Primary</span>
           {live && mayAssign ? (
             <SlotPicker
               slotLabel="primary"
@@ -433,7 +433,7 @@ export function ChatPanel({
               <ChipView chip={assigneeChip(primary, me)} />
             )
           ) : (
-            <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700 ring-1 ring-amber-200">
+            <span className="inline-flex items-center rounded-full bg-amber-50 dark:bg-amber-500/15 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-300 ring-1 ring-amber-200 dark:ring-amber-500/30">
               Unassigned
             </span>
           )}
@@ -443,7 +443,7 @@ export function ChatPanel({
             <span
               title={SUPPORT_FULL_HINT}
               aria-label={`${supportCap} — ${SUPPORT_FULL_HINT}`}
-              className="inline-flex items-center gap-1 rounded-full border border-dashed border-slate-300 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-500"
+              className="inline-flex items-center gap-1 rounded-full border border-dashed border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-2 py-0.5 text-[11px] font-medium text-slate-500 dark:text-slate-400"
             >
               {supportCap}
             </span>
@@ -465,7 +465,7 @@ export function ChatPanel({
               <PendingControl
                 reason={WRITES_PENDING_REASON}
                 label="Add support"
-                className="inline-flex items-center gap-1 rounded-full border border-dashed border-slate-300 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-500"
+                className="inline-flex items-center gap-1 rounded-full border border-dashed border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-2 py-0.5 text-[11px] font-medium text-slate-500 dark:text-slate-400"
               >
                 <Plus className="h-3 w-3" />
                 Add support
@@ -473,8 +473,8 @@ export function ChatPanel({
             ))}
           {supports.length > 0 && (
             <>
-              <span className="mx-1 h-4 w-px bg-slate-200" />
-              <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Support</span>
+              <span className="mx-1 h-4 w-px bg-slate-200 dark:bg-slate-700" />
+              <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Support</span>
               {supports.map((s) =>
                 live && me.capabilities.assign ? (
                   <SlotPicker
@@ -515,7 +515,7 @@ export function ChatPanel({
               <PendingControl
                 reason={WRITES_PENDING_REASON}
                 label="Divert to the backup"
-                className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-0.5 text-[11px] font-medium text-slate-600 ring-1 ring-slate-200"
+                className="inline-flex items-center gap-1 rounded-full bg-white dark:bg-slate-900 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:text-slate-300 ring-1 ring-slate-200 dark:ring-slate-700"
               >
                 <Repeat className="h-3 w-3" />
                 Divert
@@ -528,7 +528,7 @@ export function ChatPanel({
                   onClick={() => void run('divert', () => inboxApi.divert(conv.id), 'The conversation could not be diverted.')}
                   title={`Divert to ${divertTo.name ?? 'the backup'}`}
                   aria-label={`Divert to ${divertTo.name ?? 'the backup'}`}
-                  className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-0.5 text-[11px] font-medium text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 hover:text-slate-900 disabled:opacity-60"
+                  className="inline-flex items-center gap-1 rounded-full bg-white dark:bg-slate-900 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:text-slate-300 ring-1 ring-slate-200 dark:ring-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100 disabled:opacity-60"
                 >
                   {busy === 'divert' ? <Loader2 className="h-3 w-3 animate-spin" /> : <Repeat className="h-3 w-3" />}
                   Divert
@@ -539,7 +539,7 @@ export function ChatPanel({
             {mayPauseAi && aiLine?.kind === 'label' && (
               <span
                 data-ai-state={detail?.aiMode}
-                className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500 ring-1 ring-slate-200"
+                className="inline-flex items-center gap-1 rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[11px] font-medium text-slate-500 dark:text-slate-400 ring-1 ring-slate-200 dark:ring-slate-700"
               >
                 <Bot className="h-3 w-3" />
                 {aiLine.text}
@@ -566,8 +566,8 @@ export function ChatPanel({
                 }
                 className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 disabled:opacity-60 ${
                   aiPaused
-                    ? 'bg-amber-50 text-amber-700 ring-amber-200 hover:bg-amber-100'
-                    : 'bg-indigo-50 text-indigo-700 ring-indigo-200 hover:bg-indigo-100'
+                    ? 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 ring-amber-200 dark:ring-amber-500/30 hover:bg-amber-100 dark:hover:bg-amber-500/25'
+                    : 'bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 ring-indigo-200 dark:ring-indigo-500/30 hover:bg-indigo-100 dark:hover:bg-indigo-500/25'
                 }`}
               >
                 {busy === 'ai' ? (
@@ -581,7 +581,7 @@ export function ChatPanel({
               </button>
             )}
             {me.capabilities.assign && live ? (
-              <label className="flex items-center gap-1.5 text-[11px] text-slate-500">
+              <label className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
                 <MapPin className="h-3 w-3" />
                 <span className="relative">
                   <select
@@ -592,7 +592,7 @@ export function ChatPanel({
                       if (next !== conv.branchId) void setBranch(next);
                     }}
                     aria-label="Conversation branch"
-                    className="appearance-none rounded-md border border-slate-200 bg-white py-0.5 pl-2 pr-6 text-[11px] capitalize text-slate-700 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                    className="appearance-none rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-0.5 pl-2 pr-6 text-[11px] capitalize text-slate-700 dark:text-slate-200 focus:border-slate-300 dark:focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200 dark:focus:ring-slate-600"
                   >
                     {branchSelectOptions(me.teams).map((b) => (
                       <option key={b.value} value={b.value}>
@@ -607,13 +607,13 @@ export function ChatPanel({
               <PendingControl
                 reason={WRITES_PENDING_REASON}
                 label="Change the branch"
-                className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white py-0.5 pl-2 pr-2 text-[11px] text-slate-700"
+                className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-0.5 pl-2 pr-2 text-[11px] text-slate-700 dark:text-slate-200"
               >
-                <MapPin className="h-3 w-3 text-slate-500" />
+                <MapPin className="h-3 w-3 text-slate-500 dark:text-slate-400" />
                 {branchLabel(conv.branchId, me.teams)}
               </PendingControl>
             ) : (
-              <span className="inline-flex items-center gap-1.5 text-[11px] text-slate-500">
+              <span className="inline-flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
                 <MapPin className="h-3 w-3" />
                 {branchLabel(branchValue || null, me.teams)}
               </span>
@@ -669,7 +669,7 @@ export function ChatPanel({
           <Loader2 className="mt-1.5 h-3.5 w-3.5 animate-spin text-slate-400" />
         )}
         {error && (
-          <div role="alert" className="mt-2 flex items-start gap-2 rounded-lg bg-rose-50 px-3 py-1.5 text-[12px] text-rose-700 ring-1 ring-rose-200">
+          <div role="alert" className="mt-2 flex items-start gap-2 rounded-lg bg-rose-50 dark:bg-rose-500/15 px-3 py-1.5 text-[12px] text-rose-700 dark:text-rose-300 ring-1 ring-rose-200 dark:ring-rose-500/30">
             <span className="min-w-0 flex-1 break-words">{error}</span>
             <button type="button" onClick={() => setError(null)} aria-label="Dismiss" className="shrink-0 opacity-70 hover:opacity-100">
               <X className="h-3.5 w-3.5" />
@@ -679,7 +679,7 @@ export function ChatPanel({
         {note && (
           <div
             role="status"
-            className="mt-2 flex items-start gap-2 rounded-lg bg-emerald-50 px-3 py-1.5 text-[12px] text-emerald-800 ring-1 ring-emerald-200"
+            className="mt-2 flex items-start gap-2 rounded-lg bg-emerald-50 dark:bg-emerald-500/15 px-3 py-1.5 text-[12px] text-emerald-800 dark:text-emerald-200 ring-1 ring-emerald-200 dark:ring-emerald-500/30"
           >
             <span className="min-w-0 flex-1 break-words">{note}</span>
             <button type="button" onClick={() => setNote(null)} aria-label="Dismiss" className="shrink-0 opacity-70 hover:opacity-100">
@@ -695,7 +695,7 @@ export function ChatPanel({
       </div>
 
       {/* Timeline */}
-      <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-slate-50/40 px-4 py-4">
+      <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-slate-50/40 dark:bg-slate-950/40 px-4 py-4">
         <div className="mx-auto flex max-w-2xl flex-col gap-2">
           {thread.olderCursor !== null && (
             <div className="flex justify-center">
@@ -703,7 +703,7 @@ export function ChatPanel({
                 type="button"
                 onClick={onLoadOlder}
                 disabled={thread.loadingOlder}
-                className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-[11px] font-medium text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50"
+                className="inline-flex items-center gap-1.5 rounded-full bg-white dark:bg-slate-900 px-3 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-300 ring-1 ring-slate-200 dark:ring-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
               >
                 {thread.loadingOlder && <Loader2 className="h-3 w-3 animate-spin" />}
                 Earlier messages
@@ -716,7 +716,7 @@ export function ChatPanel({
             </div>
           )}
           {thread.error && (
-            <div className="rounded-lg bg-rose-50 px-3 py-2 text-[12.5px] text-rose-700 ring-1 ring-rose-200">
+            <div className="rounded-lg bg-rose-50 dark:bg-rose-500/15 px-3 py-2 text-[12.5px] text-rose-700 dark:text-rose-300 ring-1 ring-rose-200 dark:ring-rose-500/30">
               {thread.error}
             </div>
           )}
@@ -726,7 +726,7 @@ export function ChatPanel({
             ) : it.kind === 'group' ? (
               // One moment's pills in one line (customer-AI test night, W7), the pills under it on a press.
               <details key={it.id} className="my-1 flex flex-col items-center gap-1" data-pill-group={it.pills.length}>
-                <summary className="inline-flex max-w-full cursor-pointer list-none items-center gap-1.5 rounded-full bg-slate-200/70 px-2.5 py-1 text-center text-[11px] font-medium text-slate-600 hover:bg-slate-300/60">
+                <summary className="inline-flex max-w-full cursor-pointer list-none items-center gap-1.5 rounded-full bg-slate-200/70 dark:bg-slate-700/70 px-2.5 py-1 text-center text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-300/60 dark:hover:bg-slate-600/60">
                   <Bot className="h-3 w-3 shrink-0" />
                   <span className="min-w-0">{it.summary}</span>
                   <ChevronDown className="h-3 w-3 shrink-0 opacity-60" />
@@ -744,7 +744,7 @@ export function ChatPanel({
                   <button
                     type="button"
                     onClick={() => setCorrecting({ at: it.at })}
-                    className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[11px] font-medium text-indigo-500 hover:bg-indigo-50 hover:text-indigo-700"
+                    className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[11px] font-medium text-indigo-500 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/15 hover:text-indigo-700 dark:hover:text-indigo-300"
                   >
                     <PenLine className="h-3 w-3" />
                     Correct the assistant
@@ -765,7 +765,7 @@ export function ChatPanel({
           )}
           {conv.status === 'handled' && (
             <div className="mt-2 flex justify-center">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-medium text-emerald-700">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 dark:bg-emerald-500/25 px-3 py-1 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
                 <Archive className="h-3 w-3" /> Conversation closed · Will reopen if customer replies
               </span>
             </div>
@@ -831,7 +831,7 @@ export function ChatPanel({
 /** A system event's grey pill (:2019-2023). */
 function Pill({ text }: { text: string }) {
   return (
-    <span className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-slate-200/70 px-2.5 py-1 text-center text-[11px] font-medium text-slate-600">
+    <span className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-slate-200/70 dark:bg-slate-700/70 px-2.5 py-1 text-center text-[11px] font-medium text-slate-600 dark:text-slate-300">
       <Bot className="h-3 w-3 shrink-0" />
       <span className="min-w-0">{text}</span>
     </span>
@@ -849,16 +849,16 @@ function PendingComposer({
   onOpenTemplates: () => void;
 }) {
   return (
-    <div className="border-t border-slate-200 bg-white px-4 py-3">
+    <div className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3">
       {!conv.canReply ? (
-        <div className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-[12.5px] text-slate-500">
+        <div className="flex items-center gap-2 rounded-lg bg-slate-50 dark:bg-slate-950/60 px-3 py-2 text-[12.5px] text-slate-500 dark:text-slate-400">
           Notices from the till — this thread cannot take a reply.
         </div>
       ) : conv.status === 'handled' ? (
-        <div className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2 text-[12.5px] text-slate-500">
+        <div className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 dark:bg-slate-950/60 px-3 py-2 text-[12.5px] text-slate-500 dark:text-slate-400">
           <span>Handled — composer disabled</span>
           {me.capabilities.reopen ? (
-            <PendingControl reason={WRITES_PENDING_REASON} label="Reopen" className="text-[12px] font-medium text-slate-700">
+            <PendingControl reason={WRITES_PENDING_REASON} label="Reopen" className="text-[12px] font-medium text-slate-700 dark:text-slate-200">
               Reopen
             </PendingControl>
           ) : (
@@ -866,13 +866,13 @@ function PendingComposer({
           )}
         </div>
       ) : (
-        <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+        <div className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 px-3 py-2">
           <button
             type="button"
             onClick={onOpenTemplates}
             aria-label="Templates"
             title="Templates"
-            className="text-slate-400 hover:text-slate-600"
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
           >
             <FileText className="h-4 w-4" />
           </button>

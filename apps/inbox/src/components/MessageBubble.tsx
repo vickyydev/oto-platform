@@ -48,7 +48,7 @@ export function AttachmentChip({ attachment: a, muted }: { attachment: Attachmen
             href={opened.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex shrink-0 items-center gap-1 rounded-md bg-white/80 px-1.5 py-0.5 text-[11px] font-medium text-slate-700 ring-1 ring-slate-200 hover:bg-white"
+            className="inline-flex shrink-0 items-center gap-1 rounded-md bg-white/80 dark:bg-slate-900/80 px-1.5 py-0.5 text-[11px] font-medium text-slate-700 dark:text-slate-200 ring-1 ring-slate-200 dark:ring-slate-700 hover:bg-white dark:hover:bg-slate-800"
           >
             <ExternalLink className="h-3 w-3" /> Open
           </a>
@@ -58,7 +58,7 @@ export function AttachmentChip({ attachment: a, muted }: { attachment: Attachmen
             onClick={() => void open()}
             disabled={busy}
             aria-label={`Open ${name}`}
-            className="inline-flex shrink-0 items-center gap-1 rounded-md bg-white/80 px-1.5 py-0.5 text-[11px] font-medium text-slate-700 ring-1 ring-slate-200 hover:bg-white disabled:opacity-60"
+            className="inline-flex shrink-0 items-center gap-1 rounded-md bg-white/80 dark:bg-slate-900/80 px-1.5 py-0.5 text-[11px] font-medium text-slate-700 dark:text-slate-200 ring-1 ring-slate-200 dark:ring-slate-700 hover:bg-white dark:hover:bg-slate-800 disabled:opacity-60"
           >
             {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <ExternalLink className="h-3 w-3" />} Open
           </button>
@@ -66,10 +66,10 @@ export function AttachmentChip({ attachment: a, muted }: { attachment: Attachmen
       </div>
       {image && opened && (
         <a href={opened.url} target="_blank" rel="noopener noreferrer">
-          <img src={opened.url} alt={name} className="max-h-48 max-w-full rounded-lg ring-1 ring-slate-200" />
+          <img src={opened.url} alt={name} className="max-h-48 max-w-full rounded-lg ring-1 ring-slate-200 dark:ring-slate-700" />
         </a>
       )}
-      {error && <span className="text-[11px] text-rose-600">{error}</span>}
+      {error && <span className="text-[11px] text-rose-600 dark:text-rose-400">{error}</span>}
     </div>
   );
 }
@@ -83,15 +83,15 @@ export function ShadowBubble({ text, at, now }: { text: string; at: string; now:
   return (
     <div className="flex justify-end" data-shadow="true">
       <div className="flex min-w-0 max-w-[80%] flex-col items-end gap-1">
-        <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-          <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-1.5 py-0.5 text-indigo-600 ring-1 ring-indigo-200">
+        <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+          <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 dark:bg-indigo-500/15 px-1.5 py-0.5 text-indigo-600 dark:text-indigo-400 ring-1 ring-indigo-200 dark:ring-indigo-500/30">
             <Bot className="h-2.5 w-2.5" /> AI Assistant
           </span>
           <span className="inline-flex items-center gap-1 normal-case tracking-normal text-slate-400">
             <EyeOff className="h-3 w-3" /> {SHADOW_LABEL}
           </span>
         </div>
-        <div className="max-w-full whitespace-pre-line break-words rounded-2xl rounded-tr-sm border border-dashed border-indigo-200 bg-indigo-50/40 px-3.5 py-2 text-[13.5px] leading-relaxed text-indigo-900/70">
+        <div className="max-w-full whitespace-pre-line break-words rounded-2xl rounded-tr-sm border border-dashed border-indigo-200 dark:border-indigo-500/40 bg-indigo-50/40 dark:bg-indigo-500/10 px-3.5 py-2 text-[13.5px] leading-relaxed text-indigo-900/70 dark:text-indigo-200/70">
           {text}
           <div className="mt-1 flex items-center justify-end gap-1 text-[10px] text-indigo-300">
             <span>{bubbleTime(at, now)}</span>
@@ -161,27 +161,27 @@ export function MessageBubble({
   const withdrawn = m.providerStatus === 'withdrawn' || withdrawnNote !== undefined;
 
   const bubble = isCustomer
-    ? 'rounded-tl-sm bg-white text-slate-800 ring-1 ring-slate-200'
+    ? 'rounded-tl-sm bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 ring-1 ring-slate-200 dark:ring-slate-700'
     : withdrawn
-      ? 'rounded-tr-sm border border-dashed border-slate-300 bg-slate-50 text-slate-400'
+      ? 'rounded-tr-sm border border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-950/60 text-slate-400'
       : isAi
-        ? 'rounded-tr-sm bg-indigo-50 text-indigo-900 ring-1 ring-indigo-100'
+        ? 'rounded-tr-sm bg-indigo-50 dark:bg-indigo-500/15 text-indigo-900 dark:text-indigo-200 ring-1 ring-indigo-100 dark:ring-indigo-500/25'
         : isSystem
-          ? 'rounded-tr-sm bg-slate-100 text-slate-700 ring-1 ring-slate-200'
-          : 'rounded-tr-sm bg-slate-900 text-white';
+          ? 'rounded-tr-sm bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 ring-1 ring-slate-200 dark:ring-slate-700'
+          : 'rounded-tr-sm bg-slate-900 text-white dark:bg-slate-700 dark:text-slate-50';
   const meta = isCustomer || withdrawn ? 'text-slate-400' : isAi ? 'text-indigo-400' : isSystem ? 'text-slate-400' : 'text-slate-300';
 
   return (
     <div className={`flex ${isCustomer ? 'justify-start' : 'justify-end'}`} data-withdrawn={withdrawn ? 'true' : undefined}>
       <div className={`flex min-w-0 max-w-[80%] flex-col gap-1 ${isCustomer ? 'items-start' : 'items-end'}`}>
         {!isCustomer && (
-          <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+          <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
             {isAi ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-1.5 py-0.5 text-indigo-600 ring-1 ring-indigo-200">
+              <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 dark:bg-indigo-500/15 px-1.5 py-0.5 text-indigo-600 dark:text-indigo-400 ring-1 ring-indigo-200 dark:ring-indigo-500/30">
                 <Bot className="h-2.5 w-2.5" /> AI Assistant
               </span>
             ) : isSystem ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-1.5 py-0.5 text-slate-600 ring-1 ring-slate-200">
+              <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 text-slate-600 dark:text-slate-300 ring-1 ring-slate-200 dark:ring-slate-700">
                 <Bot className="h-2.5 w-2.5" /> Automatic
               </span>
             ) : (
@@ -200,7 +200,7 @@ export function MessageBubble({
             <span className="italic opacity-70">No text</span>
           ) : null}
           {m.translatedBody && (
-            <div className={`mt-1.5 border-t pt-1.5 text-[12.5px] ${isCustomer ? 'border-slate-100' : 'border-white/15'}`}>
+            <div className={`mt-1.5 border-t pt-1.5 text-[12.5px] ${isCustomer ? 'border-slate-100 dark:border-slate-800' : 'border-white/15'}`}>
               <span className={`mr-1 inline-flex items-center gap-1 text-[10px] uppercase tracking-wide ${meta}`}>
                 <Languages className="h-3 w-3" /> {langLabel(m.translatedTo)}
               </span>
@@ -216,7 +216,7 @@ export function MessageBubble({
           </div>
         </div>
         {withdrawn && (
-          <div className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500">
+          <div className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 dark:text-slate-400">
             <Ban className="h-3 w-3" />
             {withdrawnNote ?? 'Not sent: a person replied'}
           </div>
@@ -225,7 +225,7 @@ export function MessageBubble({
           <button
             type="button"
             onClick={onCorrect}
-            className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[11px] font-medium text-indigo-500 hover:bg-indigo-50 hover:text-indigo-700"
+            className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[11px] font-medium text-indigo-500 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/15 hover:text-indigo-700 dark:hover:text-indigo-300"
           >
             <PenLine className="h-3 w-3" />
             Correct the assistant
