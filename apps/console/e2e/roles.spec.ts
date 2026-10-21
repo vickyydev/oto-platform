@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { PERMISSION_WORDS } from '@oto/shared/permissions';
 import { pressLandsOn } from './console';
 
 const SOM = '01900000-0000-7000-8000-000000000010';
@@ -96,6 +97,39 @@ test('the role catalogue speaks in sentences and reverse lookup shows the server
   await expect(holders).toContainText('ZZ TEST Som');
   await page.screenshot({ path: testInfo.outputPath('roles-phone.png'), fullPage: true, animations: 'disabled' });
   expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
+});
+
+test('the full permission catalogue and long park scopes remain usable on a phone', async ({ page }, testInfo) => {
+  await fixture(page);
+  const permissions = Object.entries(PERMISSION_WORDS).map(([permission, words]) => ({ permission, words }));
+  const longest = permissions.reduce((held, entry) => entry.words.length > held.words.length ? entry : held);
+  const scopeName = 'ZZ TEST Chalong Family Adventure and Evening Operations Park — Reception and guest services team';
+  await page.route('**/api/roles', (route) => route.fulfill({ json: {
+    permissions,
+    roles: [{ id: 'operator_admin', name: 'operator_admin', description: 'The existing operator administrator role.', system: true, permissions }],
+  } }));
+  await page.route('**/api/roles/holders*', (route) => route.fulfill({ json: {
+    permission: new URL(route.request().url()).searchParams.get('permission'), words: longest.words,
+    holders: [{ accountId: SOM, phone: account().phone, status: 'active', employee: account().employee,
+      assignments: [{ id: ASSIGNMENT, roleName: 'branch_manager', scopeType: 'branch', scopeId: BRANCH, scopeName }] }],
+  } }));
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/people/roles');
+  const picker = page.getByRole('combobox', { name: 'Permission', exact: true });
+  await expect(picker.getByRole('option')).toHaveCount(137);
+  await picker.selectOption(longest.permission);
+  await expect(picker).toHaveValue(longest.permission);
+  await expect(page.getByRole('list', { name: 'Permission holders', exact: true })).toContainText(scopeName);
+  await page.locator('summary').filter({ hasText: 'operator_admin' }).click();
+  await expect(page.getByText(longest.words, { exact: true }).first()).toBeVisible();
+  expect(await page.evaluate(() => ({ width: innerWidth, contentWidth: document.documentElement.scrollWidth })))
+    .toEqual({ width: 390, contentWidth: 390 });
+  const box = await picker.boundingBox();
+  expect(box).not.toBeNull();
+  expect(box!.x).toBeGreaterThanOrEqual(0);
+  expect(box!.x + box!.width).toBeLessThanOrEqual(390);
+  await picker.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: testInfo.outputPath('roles-full-catalogue-phone.png'), animations: 'disabled' });
 });
 
 test('the lifted branch grant and removal both require canonical previews before writing', async ({ page }, testInfo) => {

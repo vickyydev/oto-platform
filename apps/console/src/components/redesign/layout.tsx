@@ -117,7 +117,7 @@ export function CardShell({
             {badge}
             {note && <span className="text-[12.5px] text-muted-foreground min-w-0">{note}</span>}
           </div>
-          {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+          {actions && <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2">{actions}</div>}
         </div>
       )}
       {children !== undefined && <div className={cn('flex min-w-0 flex-col gap-3', bodyClassName)}>{children}</div>}

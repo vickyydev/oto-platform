@@ -1,0 +1,14 @@
+{
+  "filename": "SCRUM-612-05-phone-overflow-before-fix.png",
+  "capturedAt": "2026-10-21T22:11:09.196Z",
+  "sha": "a25b539b44ab45770b22128d39339857ffbd1544",
+  "viewport": 390,
+  "pageWidth": 662,
+  "redactions": [
+    "Account holder rows"
+  ],
+  "sha256": "bfe6aac66c86ccfb54aa1bfaa1f9713bfaaad8bfc269d43bc7063b9699cada78",
+  "readOnly": true,
+  "reviewedAt": "2026-10-21T22:15:36.454Z",
+  "review": "Visually inspected: clipped phone picker is visible; unrelated account rows are redacted."
+}

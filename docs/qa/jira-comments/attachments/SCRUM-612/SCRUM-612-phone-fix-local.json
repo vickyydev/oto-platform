@@ -1,0 +1,50 @@
+{
+  "ticket": "SCRUM-612",
+  "recordedAt": "2026-10-21T22:16:06.108Z",
+  "baseline": "a25b539b44ab45770b22128d39339857ffbd1544",
+  "verifiedSourceAndConfigFiles": 3292,
+  "sourceFiles": [
+    {
+      "path": "apps/console/src/components/redesign/layout.tsx",
+      "sha256": "3874ff2ba6bb0a609b60c145ccca2a96107eea2f76cb69389aa51e7c6baeb6f9"
+    },
+    {
+      "path": "apps/console/e2e/roles.spec.ts",
+      "sha256": "05ed27e81e6a62b734dd19cf3ee0630c6f1e65a585d6908bb8b67d35d9aad110"
+    }
+  ],
+  "backendAndSharedUnchanged": true,
+  "redBefore": {
+    "viewport": 390,
+    "pageWidth": 656
+  },
+  "greenAfter": {
+    "viewport": 390,
+    "pageWidth": 390
+  },
+  "checks": {
+    "workspaceOwnTypechecks": "pass; no API compiler diagnostics",
+    "fullLint": "pass; same three inherited warnings",
+    "build": "pass",
+    "apiTypes": "pass",
+    "console": {
+      "passed": 174,
+      "todo": 3
+    },
+    "seamWalker": 8,
+    "fullBuiltBrowser": 54
+  },
+  "independentReview": "No findings; only these two Console files differ from the complete original release snapshot.",
+  "logs": [
+    {
+      "name": "checks",
+      "sha256": "1beb19a14452c7adbcd8f06dbe2d7a24829c6a7a367855b4dd434aa5df1f90c5",
+      "bytes": 16116
+    },
+    {
+      "name": "browser",
+      "sha256": "b3feb9ac298fedb807e85cacd479a9eab46148a763859c577a4792b5de0ec3ac",
+      "bytes": 11053
+    }
+  ]
+}
