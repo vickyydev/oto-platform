@@ -28,7 +28,7 @@ import { ChangePasswordScreen } from "@/components/auth/ChangePasswordScreen";
 import { InactivityWarning } from "@/components/auth/InactivityWarning";
 import { MobileShell } from "@/components/mobile/MobileShell";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useStaffTheme } from "@/lib/themePref";
+import { staffThemeController } from "@/lib/themePref";
 import { LanguageProvider } from "@/i18n/LanguageContext";
 import { ServiceWorkerUpdater } from "@/pwa/ServiceWorkerUpdater";
 import { Loader2 } from "lucide-react";
@@ -156,12 +156,9 @@ function StaffApp() {
   // The staff theme drives the document root so every staff surface AND every
   // portaled overlay (dialogs, popovers, toasts attach to <body>) follows it.
   // The customer display(s) override locally with their own .dark/.light wrapper.
-  const [staffTheme] = useStaffTheme();
-  useEffect(() => {
-    const el = document.documentElement;
-    el.classList.toggle("dark", staffTheme === "dark");
-    el.classList.toggle("light", staffTheme === "light");
-  }, [staffTheme]);
+  // The controller paints the account's choice (SCRUM-653) and follows the
+  // device while it is 'system'.
+  useEffect(() => staffThemeController.start(), []);
 
   return (
     <QueryClientProvider client={queryClient}>

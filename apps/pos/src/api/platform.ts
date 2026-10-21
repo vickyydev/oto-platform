@@ -1,4 +1,4 @@
-import type { ApiResponse } from '@oto/api-types';
+import type { ApiBody, ApiResponse } from '@oto/api-types';
 import type {
   BookingEventPass,
   BookingEventPassInput,
@@ -10,6 +10,7 @@ import type {
 // satang integers and the prototype UI's whole-baht numbers done in mappers.ts.
 import { newId as newRecordId } from '@oto/shared';
 import { PERMISSIONS, type Permission } from '@oto/shared/permissions';
+import type { UiPreferences } from '@oto/shared/ui-preferences';
 import type { AddOn, StationCapability, TaxableCategory, TaxConfig } from '@/types';
 import { api, idemKey } from './client';
 import { bridgeApi } from './bridge';
@@ -40,7 +41,18 @@ export interface MeResponse {
   photoFileId: string | null;
   /** True when this session is locked on inactivity (S2-01a). */
   sessionLocked: boolean;
+  /**
+   * How every staff app looks for this person (SCRUM-653). Optional because an
+   * api from before the column answers without it.
+   */
+  preferences?: UiPreferences;
 }
+
+/** SCRUM-653 — the caller's own theme and language, either alone. */
+export const preferencesApi = {
+  put: (body: ApiBody<'/me/preferences', 'put'>, idempotencyKey: string) =>
+    api.put<ApiResponse<'/me/preferences', 'put'>>('/me/preferences', body, { idempotencyKey }),
+};
 
 export const authApi = {
   signIn: (phone: string, password: string) =>

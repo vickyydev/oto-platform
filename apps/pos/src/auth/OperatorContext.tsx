@@ -12,7 +12,8 @@ import { landingUrl, readHandoffTarget } from '@oto/shared/handoff-target';
 import { Operator } from '@/types';
 import { getOperatorThemePref } from '@/mockApi';
 import { INACTIVITY_TIMEOUT_MS, INACTIVITY_WARNING_MS } from '@/auth/timings';
-import { useStaffTheme, useCustomerTheme } from '@/lib/themePref';
+import { staffThemeController, useCustomerTheme } from '@/lib/themePref';
+import { useLanguage } from '@/i18n/LanguageContext';
 import { authApi } from '@/api/platform';
 import { ApiError } from '@/api/client';
 import { bridgeApi, setBridgeStaffName } from '@/api/bridge';
@@ -197,8 +198,8 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
   const [handoffError, setHandoffError] = useState<string | null>(null);
   const [mustChangePassword, setMustChangePassword] = useState(false);
 
-  const [, setStaffTheme] = useStaffTheme();
   const [, setCustomerTheme] = useCustomerTheme();
+  const { setLang } = useLanguage();
 
   const warnTimer = useRef<number | null>(null);
   const logoutTimer = useRef<number | null>(null);
@@ -227,6 +228,9 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
     setHeld(new Set());
     setMustChangePassword(false);
     setOfflineUnlock(null);
+    // The next person's theme arrives with their sign-in; nothing is written
+    // to this one's account after the shift ends.
+    staffThemeController.release();
     /**
      * And the shift token (S2-06). The server revokes it too — that is what
      * puts it on every box's deny-list — but this device must not keep a
@@ -268,17 +272,16 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
   }, [clearTimers]);
 
   const applyThemePrefs = useCallback(
-    (operatorId: string) => {
-      const savedPref = getOperatorThemePref(operatorId);
-      if (savedPref) {
-        setStaffTheme(savedPref.staff);
-        setCustomerTheme(savedPref.customer);
-      } else {
-        setStaffTheme('light');
-        setCustomerTheme('light');
-      }
+    (operatorId: string, me: Awaited<ReturnType<typeof authApi.me>>) => {
+      // SCRUM-653 — the staff theme is the person's own, from their account;
+      // the display's stays this device's, remembered per operator in memory.
+      staffThemeController.adopt(me.preferences);
+      setCustomerTheme(getOperatorThemePref(operatorId)?.customer ?? 'light');
+      // The staff-side language starts at the account's. Customer-facing
+      // screens with their own provider (/display, /kiosk) keep their own.
+      if (me.preferences) setLang(me.preferences.language);
     },
-    [setStaffTheme, setCustomerTheme],
+    [setCustomerTheme, setLang],
   );
 
   /**
@@ -308,7 +311,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
     setHeld(new Set(permissions.map((p) => p.permission)));
     setMustChangePassword(me.account.mustChangePassword);
     setOperator(op);
-    applyThemePrefs(op.id);
+    applyThemePrefs(op.id, me);
     return { operator: op, sessionLocked: me.sessionLocked };
   }, [applyThemePrefs]);
 

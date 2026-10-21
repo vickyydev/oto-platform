@@ -1,4 +1,5 @@
 import { SunMoon } from 'lucide-react';
+import { nextThemePreference } from '@oto/shared/ui-preferences';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import {
   DropdownMenu,
@@ -24,22 +25,23 @@ interface ThemeMenuProps {
  * a narrow phone so the Lock button always stays on screen.
  */
 export function ThemeMenuItems() {
-  // Independent manual theme switches: one for the staff screens, one for the
-  // customer-facing display. Both default to light and reset on reload.
-  const [staffTheme, setStaffTheme] = useStaffTheme();
+  // Independent theme switches: one for the staff screens, one for the
+  // customer-facing display. The staff one is the signed-in person's own and
+  // is kept on their account (SCRUM-653); the display one is this device's
+  // and resets on reload.
+  const staff = useStaffTheme();
   const [customerTheme, setCustomerTheme] = useCustomerTheme();
   const { operator } = useOperator();
+  const staffNext = nextThemePreference(staff.preference);
+  const customerNext = customerTheme === 'dark' ? 'light' : 'dark';
 
   const handleStaffToggle = () => {
-    const next = staffTheme === 'dark' ? 'light' : 'dark';
-    setStaffTheme(next);
-    if (operator) setOperatorThemePref(operator.id, next, customerTheme);
+    staff.setPreference(staffNext);
   };
 
   const handleCustomerToggle = () => {
-    const next = customerTheme === 'dark' ? 'light' : 'dark';
-    setCustomerTheme(next);
-    if (operator) setOperatorThemePref(operator.id, staffTheme, next);
+    setCustomerTheme(customerNext);
+    if (operator) setOperatorThemePref(operator.id, staff.resolved, customerNext);
   };
 
   return (
@@ -52,7 +54,8 @@ export function ThemeMenuItems() {
         className="p-0 focus:bg-transparent"
       >
         <ThemeToggle
-          theme={staffTheme}
+          theme={staff.preference}
+          next={staffNext}
           onToggle={handleStaffToggle}
           label="Staff"
           className="w-full justify-start"
@@ -64,16 +67,18 @@ export function ThemeMenuItems() {
       >
         <ThemeToggle
           theme={customerTheme}
+          next={customerNext}
           onToggle={handleCustomerToggle}
           label="Display"
           className="w-full justify-start"
         />
       </DropdownMenuItem>
-      {/* SCRUM-238: `setOperatorThemePref` writes an in-memory map and no
-          route stores it, so the choice cannot outlive the tab. Said here
-          rather than left for staff to discover on the next reload. */}
+      {/* SCRUM-238 / SCRUM-653: the Staff choice is kept on the person's
+          account and follows them to the launcher and the console; the
+          Display choice is an in-memory map no route stores, so it cannot
+          outlive the tab. Said here rather than left for staff to discover. */}
       <p className="px-2 py-1.5 text-[11px] leading-snug text-muted-foreground">
-        This device only, until reload (SCRUM-238).
+        Staff follows your account. Display: this device only, until reload.
       </p>
     </>
   );
