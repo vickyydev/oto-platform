@@ -127,6 +127,8 @@ Proofs: one screenshot per ticket on staging; the P1 demo is an admin managing o
 
 SCRUM-611 evidence ruling (owner, 2026-10-22): prove the reception invitation locally with a captured SMS adapter, then prove account-management controls on an existing demo person in staging. Never send a real staging SMS. Restore the demo's original phone, active status and working password, and verify the read-back; avoid a person linked or stamped into the OTO App so deactivation has no app-side effect. The existing invitation behaviour is unchanged.
 
+Owner question Q1 (2026-10-22, SCRUM-611; default unchanged): the inherited Sessions view includes historical revoked entries although its caption says "signed in". Should a later screen distinguish current sessions from history? The lift preserves the approved list and caption; actual eviction is verified separately by a session returning 401. This question does not block the lift.
+
 ## 8. P2 — organisation, catalogue, reports (Codex)
 
 | Ticket | Deliverable |

@@ -1,0 +1,245 @@
+{
+  "ticket": "SCRUM-611",
+  "sourceSha": "0face89c836504f12e7a16b40bca21057d9cd399",
+  "recordedAt": "2026-10-21T20:34:34.168Z",
+  "scope": "Local release checks only; this receipt does not claim staging acceptance",
+  "ownerRuling": "2026-10-22: Use local invite proof and demo staging controls",
+  "invitation": {
+    "environment": "Isolated local test database",
+    "testFile": "apps/api/test/accounts-console.test.ts",
+    "name": "invites reception once, captures its SMS locally, then issues a temporary password and deactivates it with audit",
+    "employeeName": "ZZ TEST Admin Accounts reception",
+    "realProviderRequests": 0,
+    "capturingAdapterDeliveries": 1,
+    "verified": [
+      "Reception role at the chosen branch",
+      "One account, employee, grant, code and create audit",
+      "Same-key replay creates no second record or delivery",
+      "Changed replay payload refused409",
+      "Temporary password activates invitation and forces password change",
+      "Temporary password excluded from replay store and audit",
+      "Deactivation evicts session and writes audit",
+      "Other-branch403, other-operator404 and unauthorized invite403"
+    ]
+  },
+  "api": {
+    "passed": 4592,
+    "inheritedSkipped": 401,
+    "todo": 5,
+    "files": 319,
+    "shards": [
+      {
+        "shard": 1,
+        "passed": 1585,
+        "skipped": 106,
+        "todo": 0,
+        "files": 107,
+        "exitCode": 0,
+        "logModifiedAt": "2026-10-21T20:24:23.374Z",
+        "logSha256": "7d75c9edb590bfe025c8b371dd3abec990e221e30141b96ca06ee0a8ecdf220b"
+      },
+      {
+        "shard": 2,
+        "passed": 1572,
+        "skipped": 174,
+        "todo": 4,
+        "files": 107,
+        "exitCode": 0,
+        "logModifiedAt": "2026-10-21T20:24:00.268Z",
+        "logSha256": "444137c3d19ff8508ae412e8eb0830dd74fca8e3a54cf01388e7a239a3edc8dd"
+      },
+      {
+        "shard": 3,
+        "passed": 1435,
+        "skipped": 121,
+        "todo": 1,
+        "files": 105,
+        "exitCode": 0,
+        "logModifiedAt": "2026-10-21T20:24:48.619Z",
+        "logSha256": "5afeee212a53476e11e67fd526774f64ab34540ed54925125e0e172fd018f9ca"
+      }
+    ]
+  },
+  "otherGates": {
+    "pos": 1413,
+    "database": 305,
+    "shared": 754,
+    "boxAgent": 749,
+    "launcher": 65,
+    "inbox": 157,
+    "assistant": 434,
+    "print": 271,
+    "messaging": 78,
+    "payments": 81,
+    "telemetry": 36,
+    "booth": 33,
+    "consoleUnitMarkup": 170,
+    "consoleInheritedTodo": 3,
+    "adminScreens": 3,
+    "consoleBuiltBrowser": 45,
+    "accountsFocusedBrowser": 8,
+    "seamWalker": 8,
+    "postRebaseContractReviewConformance": 58,
+    "packageTypechecks": "passed with zero diagnostics",
+    "apiCompilerDiagnostics": 0,
+    "workspaceLintErrors": 0,
+    "workspaceInheritedLintWarnings": 3,
+    "workspaceBuild": "passed",
+    "generatedApiTypes": "match"
+  },
+  "excludedAttempts": [
+    "Docker Desktop interruption; partial API runs excluded",
+    "Broad negative package filter included root Turbo and filtered test database environment; affected tests rerun directly",
+    "Unchanged printer socket case missed replies under concurrent load; complete isolated749-case rerun passed"
+  ],
+  "sourceFiles": [
+    {
+      "path": "apps/api/test/accounts-console.test.ts",
+      "sha256": "e12739ff246e75db1b28ad0b74f28f9e977f286ca0026c8be436c3380f8316e4"
+    },
+    {
+      "path": "apps/api/test/s611-accounts-review.test.ts",
+      "sha256": "eb3d60024195a7782891eee54b38701d79974d58c5b2b656022a4228988393f5"
+    },
+    {
+      "path": "apps/console/e2e/accounts.spec.ts",
+      "sha256": "f65b325a5d1d608ff80477d0c46ab25be42ccdaa8f2255a84eac6d93aff2239b"
+    },
+    {
+      "path": "apps/console/src/pages/Accounts.tsx",
+      "sha256": "bdf490eb30134c991bd5325f87e49042e1572f5539553d7e8150cea92d78d91a"
+    },
+    {
+      "path": "apps/console/test/accounts-markup.test.ts",
+      "sha256": "650dc0b030cd8f20cb50aecadf235abc16c655d6de6983aaa6e0c1b6dfa98dae"
+    },
+    {
+      "path": "packages/admin-screens/package.json",
+      "sha256": "dae9e11ae502ed670156eaf8012ac400b66221db139c0fb0df91679b970ea6a9"
+    },
+    {
+      "path": "packages/admin-screens/src/accounts/LoginUsersPanel.tsx",
+      "sha256": "99edca3e325ccf255b4a04bd76b08863d5a5e931c52a214a79412795dca9c64f"
+    },
+    {
+      "path": "packages/admin-screens/src/accounts/PhoneInput.tsx",
+      "sha256": "ae8ffe6aa8d95f05aa86e1446e728384a19784fe4034c874778e6e6240e2bd60"
+    },
+    {
+      "path": "packages/admin-screens/src/accounts/staff-token-words.ts",
+      "sha256": "c133a4474fd9dd25e94419a6f15bbec3ada19739eaa765b5b3ecef55a95522bd"
+    },
+    {
+      "path": "packages/admin-screens/src/api/accounts.ts",
+      "sha256": "ca4df04feba713aca7d962010a0bcf20811d5b84c3e5a15eb8af9589a7f59d93"
+    },
+    {
+      "path": "packages/admin-screens/src/api/admin-api.ts",
+      "sha256": "36ecc043de23bfa5cad021d516425a0519f861fe240dc9f26e15a3e894b220f5"
+    },
+    {
+      "path": "packages/admin-screens/src/data/countries.ts",
+      "sha256": "3dd26b9df95703fc555600cdeceedfa1b2a55495d3f910ebfd9dd69a21abb870"
+    },
+    {
+      "path": "packages/admin-screens/src/hooks/use-toast.ts",
+      "sha256": "433574f84d85936c27d882b9bfeba3207401d2e9c3bbfcd467764a6d20314ae4"
+    },
+    {
+      "path": "packages/admin-screens/src/index.ts",
+      "sha256": "93fa74644fd663a65981d93d6fdb89bc4aa4cea158b55ead691b48e82a8d6571"
+    },
+    {
+      "path": "packages/admin-screens/src/lib/phone-utils.ts",
+      "sha256": "fb48d112d092f1c130b1e093e588ed4936ff89079502c752a8138e0ebdf71b57"
+    },
+    {
+      "path": "packages/admin-screens/src/lib/utils.ts",
+      "sha256": "7c8c3dfc0cdd370d44932828eb067ef771c8fe7996693221d5d4b90af6d54f2d"
+    },
+    {
+      "path": "packages/admin-screens/src/ui/alert-dialog.tsx",
+      "sha256": "e4ef577db1a7582984ad97398341feba83e4440733ce8981d07c2a0be67fb2a8"
+    },
+    {
+      "path": "packages/admin-screens/src/ui/button.tsx",
+      "sha256": "03cf386edf8ad585dfa9c2a7ec3b651d6cf7212a039de4532037f327a8c3a07a"
+    },
+    {
+      "path": "packages/admin-screens/src/ui/dialog.tsx",
+      "sha256": "add4a7b42871fc901655529740e2bf42bd768108db6eb51d5745dc62763a419f"
+    },
+    {
+      "path": "packages/admin-screens/src/ui/table.tsx",
+      "sha256": "7593951c766ff0fa0853b097e0f974d7db655930f70af1d475aacb86e7a6c417"
+    },
+    {
+      "path": "packages/admin-screens/src/ui/toast.tsx",
+      "sha256": "2b80072f9fc13250bf55ba194e33aa6549c020ca5f09f932e9105ac760baeab4"
+    },
+    {
+      "path": "packages/admin-screens/src/ui/toaster.tsx",
+      "sha256": "148e73491e32cd2b5c26300ab522733ab115abc7fa65d9deec09a01cdf287382"
+    },
+    {
+      "path": "packages/admin-screens/test/accounts-data.test.ts",
+      "sha256": "571c8c936813cedb13dc0f3ca7260ea7f0718b33f25f9e4eb6a226cb715c25f8"
+    },
+    {
+      "path": "packages/admin-screens/tsconfig.json",
+      "sha256": "90bca73ce13a4bdecda83e200d7173d3476a33cabee60a808b349ac6d3b06a71"
+    },
+    {
+      "path": "apps/api/src/routes/accounts.ts",
+      "sha256": "efdc2de4188313bbf97789eee82affc9afb2292a7845c92884cd13c6594d7108"
+    },
+    {
+      "path": "apps/console/package.json",
+      "sha256": "098e1beba7e035d47fde0ea075f783fc4a8337ac6921d93f10b0b528238ee478"
+    },
+    {
+      "path": "apps/console/src/App.tsx",
+      "sha256": "e71005865a3a9a05f727105860ffb80a1306fed44e044d4107da6a034dc2064f"
+    },
+    {
+      "path": "apps/console/src/components/consoleSections.tsx",
+      "sha256": "08e244fc31ca5d512c0df6e0d8efed20e3530322a25a8714078097e895d7cfbb"
+    },
+    {
+      "path": "apps/console/src/index.css",
+      "sha256": "418cb0a19dea450dd4c88acd10da909be1aaf2e3950929d30f41fcd38dae6f88"
+    },
+    {
+      "path": "eslint.config.mjs",
+      "sha256": "e8b581999e0d8243b661be1c86473cfa85c0ecb0846ac4736d20b4bf3ebcf0c2"
+    },
+    {
+      "path": "packages/api-types/openapi.json",
+      "sha256": "da6416a1da6338f66c9ff5ccf224dc9c539ec238cc4270b5b6dea0554341a7cf"
+    },
+    {
+      "path": "packages/api-types/src/openapi.ts",
+      "sha256": "dc9288426942ba5e871fbce0c5fce511bc64c9dca9102d44c5be6ec051a93256"
+    },
+    {
+      "path": "packages/api-types/test/seams.ts",
+      "sha256": "c54924ba3d121bcd89367b18f2771fd9409b419814edf424e5d152259007da01"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "sha256": "9648bdadd14c16d389f329ae77da67a6db090168892680633d20f1e2ed97107a"
+    },
+    {
+      "path": "turbo.json",
+      "sha256": "7efef5b8336a202cee6f25719656abb12856e049232a690b490b0fde994cc8bb"
+    }
+  ],
+  "mainCi": {
+    "runId": 39670829878,
+    "headSha": "0face89c836504f12e7a16b40bca21057d9cd399",
+    "conclusion": "success",
+    "allSixJobs": "success",
+    "verifiedAt": "2026-10-21T20:47:54.782Z",
+    "url": "https://github.com/vickyydev/oto-platform/actions/runs/39670829878"
+  }
+}

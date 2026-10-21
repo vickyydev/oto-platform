@@ -1,0 +1,168 @@
+{
+  "ticket": "SCRUM-611",
+  "sha": "0face89c836504f12e7a16b40bca21057d9cd399",
+  "invitationEvidence": "Local captured-SMS test, expressly approved by the owner",
+  "createdBusinessRecords": false,
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "sha": "0face89c836504f12e7a16b40bca21057d9cd399",
+      "deployId": "dep-dbci9fnavr4c73c6thg0",
+      "finishedAt": "2026-10-21T20:50:14.238957Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "sha": "0face89c836504f12e7a16b40bca21057d9cd399",
+      "deployId": "dep-dbci9fnavr4c73c6tiqg",
+      "finishedAt": "2026-10-21T20:47:36.742761Z"
+    }
+  ],
+  "checks": [
+    {
+      "name": "Real account search narrows the lifted table to the unlinked seeded demo manager",
+      "passed": true,
+      "at": "2026-10-21T20:54:40.343Z"
+    },
+    {
+      "name": "Phone correction saved through Accounts and the original demo number was restored without SMS",
+      "passed": true,
+      "at": "2026-10-21T20:54:43.954Z"
+    },
+    {
+      "name": "Temporary password works, forces a change and is masked then cleared from the page",
+      "passed": true,
+      "at": "2026-10-21T20:54:45.888Z"
+    },
+    {
+      "name": "Sessions and shift tokens load; Sign out everywhere evicts the actual demo session",
+      "passed": true,
+      "at": "2026-10-21T20:54:48.876Z"
+    },
+    {
+      "name": "Deactivation ends the session and refuses sign-in; Activate restores the demo account",
+      "passed": true,
+      "at": "2026-10-21T20:54:57.146Z"
+    },
+    {
+      "name": "Fresh audit rows record phone/status changes, temporary password and forced sign-out",
+      "passed": true,
+      "at": "2026-10-21T20:54:59.505Z"
+    },
+    {
+      "name": "Phone table scroll reaches Sessions; its real dialog opens with no page overflow",
+      "passed": true,
+      "at": "2026-10-21T20:55:06.368Z"
+    }
+  ],
+  "screenshots": [
+    {
+      "filename": "SCRUM-611-01-accounts-search.png",
+      "label": "SCRUM-611: lifted Accounts, real seeded demo search",
+      "capturedAt": "2026-10-21T20:54:40.521Z",
+      "redactions": [
+        "Unrelated refusal request details"
+      ],
+      "sha256": "e591e06428c2563dc25cfd947b5e906f79363e059058f9386a1f1b600897c7ec"
+    },
+    {
+      "filename": "SCRUM-611-02-temporary-password-masked.png",
+      "label": "SCRUM-611: temporary password issued, masked by default",
+      "capturedAt": "2026-10-21T20:54:45.334Z",
+      "redactions": [
+        "Unrelated refusal request details"
+      ],
+      "sha256": "7e45cb1dfe4892b921dd412f6183e2a4b02f9f030c140d2818467531808b8332"
+    },
+    {
+      "filename": "SCRUM-611-03-deactivated-account.png",
+      "label": "SCRUM-611: demo deactivated; real session and sign-in refused",
+      "capturedAt": "2026-10-21T20:54:55.732Z",
+      "redactions": [
+        "Unrelated refusal request details"
+      ],
+      "sha256": "658bb4fb23c3cb63e80a19a84665073d8f575ae63e001c2117921e4867739fdb"
+    },
+    {
+      "filename": "SCRUM-611-04-accounts-phone.png",
+      "label": "SCRUM-611: Accounts on a 390-pixel phone; demo state restored",
+      "capturedAt": "2026-10-21T20:56:27.555Z",
+      "redactions": [
+        "Unrelated refusal request details"
+      ],
+      "sha256": "3020a5fe862940b4caf05c92d0899c05d46c1a5bf825ee7a11746fbfe5868017",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      }
+    }
+  ],
+  "otoAppStampCensus": {
+    "jobId": "job-dbcib9cs728c73evfea0",
+    "readOnly": true,
+    "targetAccountId": "01a0c9ae-539f-7a52-987e-69d1c1a7a3cf",
+    "otoAppStampedUsers": 0,
+    "checkedAt": "2026-10-21T20:51:26.532Z"
+  },
+  "demoAccountId": "01a0c9ae-539f-7a52-987e-69d1c1a7a3cf",
+  "demoName": "Khun Dao (Manager)",
+  "demoRestored": true,
+  "audit": [
+    {
+      "id": "01a1603e-e93a-755f-ba44-cc42759fd547",
+      "action": "account.update",
+      "createdAt": "2026-10-21T20:54:58.105Z",
+      "requestId": "519bdb13-fad3-4a80-8d33-db1180b2f9cc"
+    },
+    {
+      "id": "01a1603e-e68d-795e-8508-e10325639bcb",
+      "action": "auth.sign_in_failed",
+      "createdAt": "2026-10-21T20:54:57.422Z",
+      "requestId": "25418cdc-1aaa-4bf9-a181-6a4c1b7655db"
+    },
+    {
+      "id": "01a1603e-de34-7751-a8b8-f2bd8e3b4e54",
+      "action": "account.update",
+      "createdAt": "2026-10-21T20:54:55.279Z",
+      "requestId": "6e13c419-d20a-415c-be8c-e5cc371de55b"
+    },
+    {
+      "id": "01a1603e-cff8-7a2c-a828-ccf15678e9c4",
+      "action": "auth.password_change",
+      "createdAt": "2026-10-21T20:54:51.626Z",
+      "requestId": "8903be53-7169-48e5-a13b-e33a6dec7b57"
+    },
+    {
+      "id": "01a1603e-c963-7e3d-8a5e-a4680fdbef94",
+      "action": "session.force_sign_out",
+      "createdAt": "2026-10-21T20:54:49.953Z",
+      "requestId": "0995a67c-788d-40d6-8ce4-c7114d9c9c7b"
+    },
+    {
+      "id": "01a1603e-bde1-71f2-ae52-90791a67fa16",
+      "action": "account.temp_password",
+      "createdAt": "2026-10-21T20:54:47.006Z",
+      "requestId": "164693ef-f042-46bd-a792-1625c6da3e4e"
+    },
+    {
+      "id": "01a1603e-b5ba-7907-af3b-dd1a18d2fcd3",
+      "action": "account.update",
+      "createdAt": "2026-10-21T20:54:44.920Z",
+      "requestId": "f66e722b-18fd-41b7-8930-2cb830328a7f"
+    },
+    {
+      "id": "01a1603e-b08e-7beb-983a-970ff39b1528",
+      "action": "account.update",
+      "createdAt": "2026-10-21T20:54:43.597Z",
+      "requestId": "190bb8c3-552b-47c0-9672-9ca9f2ed3551"
+    }
+  ],
+  "realSmsRequests": 0,
+  "completedAt": "2026-10-21T20:55:06.368Z",
+  "phoneReadOnlyRecapture": {
+    "at": "2026-10-21T20:56:27.555Z",
+    "sessionReadStatus": 200,
+    "reason": "Use the phone viewport so unrelated redacted history does not add a long blank area"
+  },
+  "reviewedAt": "2026-10-21T20:56:43.309Z",
+  "proofRunnerNote": "The first runner stopped while moving from Sessions to deactivation, restored the demo and was excluded. Explicit dialog-close waits completed the next pass. No product code changed."
+}
