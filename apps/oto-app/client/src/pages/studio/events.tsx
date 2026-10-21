@@ -3257,68 +3257,73 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
             </div>
 
             {/* Start Date / End Date — inline calendars (no popup/OS picker) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label>Start Date <span className="text-destructive">*</span></Label>
-                <button
-                  type="button"
-                  className="w-full flex items-center gap-2 px-3 py-2 rounded-md border border-input bg-background text-sm hover:bg-accent transition-colors"
-                  onClick={() => { setShowCampStartCal(v => !v); setShowCampEndCal(false); }}
-                  data-testid="input-camp-start-date"
-                >
-                  <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                  <span>{campFormData.eventDate ? format(parseISO(campFormData.eventDate), "dd MMM yyyy") : "Pick date"}</span>
-                </button>
-                {showCampStartCal && (
-                  <div className="border rounded-md min-w-[280px] w-fit">
-                    <CalendarComponent
-                      mode="single"
-                      selected={campFormData.eventDate ? parseISO(campFormData.eventDate) : undefined}
-                      onSelect={(date) => {
-                        if (date) {
-                          const ds = format(date, "yyyy-MM-dd");
-                          setCampFormData(prev => ({
-                            ...prev,
-                            eventDate: ds,
-                            campEndDate: prev.campEndDate < ds ? ds : prev.campEndDate,
-                          }));
-                          setShowCampStartCal(false);
-                        }
-                      }}
-                      initialFocus={false}
-                    />
-                  </div>
-                )}
+            {/* SCRUM-599: whichever calendar is open sits full width under both date
+                buttons; inside a half-width column the End Date one ran past the
+                panel edge and Friday/Saturday were clipped. */}
+            <div className="space-y-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label>Start Date <span className="text-destructive">*</span></Label>
+                  <button
+                    type="button"
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-md border border-input bg-background text-sm hover:bg-accent transition-colors"
+                    onClick={() => { setShowCampStartCal(v => !v); setShowCampEndCal(false); }}
+                    data-testid="input-camp-start-date"
+                  >
+                    <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <span>{campFormData.eventDate ? format(parseISO(campFormData.eventDate), "dd MMM yyyy") : "Pick date"}</span>
+                  </button>
+                </div>
+                <div className="space-y-1">
+                  <Label>End Date <span className="text-destructive">*</span></Label>
+                  <button
+                    type="button"
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-md border border-input bg-background text-sm hover:bg-accent transition-colors"
+                    onClick={() => { setShowCampEndCal(v => !v); setShowCampStartCal(false); }}
+                    data-testid="input-camp-end-date"
+                  >
+                    <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <span>{campFormData.campEndDate ? format(parseISO(campFormData.campEndDate), "dd MMM yyyy") : "Pick date"}</span>
+                  </button>
+                </div>
               </div>
-              <div className="space-y-1">
-                <Label>End Date <span className="text-destructive">*</span></Label>
-                <button
-                  type="button"
-                  className="w-full flex items-center gap-2 px-3 py-2 rounded-md border border-input bg-background text-sm hover:bg-accent transition-colors"
-                  onClick={() => { setShowCampEndCal(v => !v); setShowCampStartCal(false); }}
-                  data-testid="input-camp-end-date"
-                >
-                  <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                  <span>{campFormData.campEndDate ? format(parseISO(campFormData.campEndDate), "dd MMM yyyy") : "Pick date"}</span>
-                </button>
-                {showCampEndCal && (
-                  <div className="border rounded-md min-w-[280px] w-fit">
-                    <CalendarComponent
-                      mode="single"
-                      selected={campFormData.campEndDate ? parseISO(campFormData.campEndDate) : undefined}
-                      defaultMonth={campFormData.campEndDate ? parseISO(campFormData.campEndDate) : undefined}
-                      disabled={(date) => campFormData.eventDate ? date < parseISO(campFormData.eventDate) : false}
-                      onSelect={(date) => {
-                        if (date) {
-                          setCampFormData(prev => ({ ...prev, campEndDate: format(date, "yyyy-MM-dd") }));
-                          setShowCampEndCal(false);
-                        }
-                      }}
-                      initialFocus={false}
-                    />
-                  </div>
-                )}
-              </div>
+              {showCampStartCal && (
+                <div className="border rounded-md w-fit max-w-full mx-auto">
+                  <CalendarComponent
+                    mode="single"
+                    selected={campFormData.eventDate ? parseISO(campFormData.eventDate) : undefined}
+                    onSelect={(date) => {
+                      if (date) {
+                        const ds = format(date, "yyyy-MM-dd");
+                        setCampFormData(prev => ({
+                          ...prev,
+                          eventDate: ds,
+                          campEndDate: prev.campEndDate < ds ? ds : prev.campEndDate,
+                        }));
+                        setShowCampStartCal(false);
+                      }
+                    }}
+                    initialFocus={false}
+                  />
+                </div>
+              )}
+              {showCampEndCal && (
+                <div className="border rounded-md w-fit max-w-full mx-auto">
+                  <CalendarComponent
+                    mode="single"
+                    selected={campFormData.campEndDate ? parseISO(campFormData.campEndDate) : undefined}
+                    defaultMonth={campFormData.campEndDate ? parseISO(campFormData.campEndDate) : undefined}
+                    disabled={(date) => campFormData.eventDate ? date < parseISO(campFormData.eventDate) : false}
+                    onSelect={(date) => {
+                      if (date) {
+                        setCampFormData(prev => ({ ...prev, campEndDate: format(date, "yyyy-MM-dd") }));
+                        setShowCampEndCal(false);
+                      }
+                    }}
+                    initialFocus={false}
+                  />
+                </div>
+              )}
             </div>
 
             {/* Daily Times */}
