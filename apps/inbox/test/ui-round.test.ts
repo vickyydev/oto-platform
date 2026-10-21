@@ -7,8 +7,11 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import type { InboxMe } from '@/api/inbox';
+import { AssistantSettings, assistantSections } from '@/components/AssistantSettings';
 import { ConversationList } from '@/components/ConversationList';
+import { SettingsMenuItems, settingsMenuEntries } from '@/components/Workspace';
 import { EMPTY_FILTERS, filterPills, type Filters } from '@/lib/query';
+import type { AssistantTab } from '@/lib/url';
 
 const CENTRAL = '00000000-0000-7000-8000-00000000000c';
 const CHALONG = '00000000-0000-7000-8000-0000000000c2';
@@ -118,5 +121,69 @@ describe('F1 — the applied filters as removable pills under the search line', 
         expect(next[other.key]).toBe(applied[other.key]);
       }
     }
+  });
+});
+
+describe('F2 — one Settings control, listing only what the viewer may open', () => {
+  const simulator: InboxMe['simulator'] = { channelAccounts: [] };
+
+  it('offers each entry only on its capability, the simulator marked test-only', () => {
+    expect(settingsMenuEntries({ ...hana, simulator }).map((e) => e.label)).toEqual([
+      'Templates',
+      'Assistant',
+      'Simulator · test only',
+    ]);
+    expect(settingsMenuEntries({ ...hana, capabilities: caps({ templates: true }) }).map((e) => e.key)).toEqual(['templates']);
+    expect(settingsMenuEntries({ ...hana, capabilities: caps({ kb: true }) }).map((e) => e.key)).toEqual(['assistant']);
+    expect(settingsMenuEntries({ ...hana, capabilities: caps({ ai: true }) }).map((e) => e.key)).toEqual(['assistant']);
+    expect(settingsMenuEntries({ ...hana, capabilities: caps() })).toEqual([]);
+    expect(settingsMenuEntries({ ...hana, capabilities: caps(), simulator }).map((e) => e.key)).toEqual(['simulator']);
+  });
+
+  it('renders the permitted entries as a menu, and nothing it may not', () => {
+    const html = renderToStaticMarkup(createElement(SettingsMenuItems, { me: { ...hana, simulator }, onChoose: noop }));
+    expect(html).toContain('role="menu"');
+    for (const label of ['Templates', 'Assistant', 'Simulator · test only']) expect(html).toContain(label);
+
+    const kbOnly = renderToStaticMarkup(
+      createElement(SettingsMenuItems, { me: { ...hana, capabilities: caps({ kb: true }) }, onChoose: noop }),
+    );
+    expect(kbOnly).toContain('Assistant');
+    expect(kbOnly).not.toContain('Templates');
+    expect(kbOnly).not.toContain('Simulator');
+  });
+});
+
+describe("F2 — the assistant page's three tabs", () => {
+  function assistant(me: InboxMe, tab: AssistantTab | null): string {
+    return renderToStaticMarkup(createElement(AssistantSettings, { me, tab, onBack: noop, onTab: noop }));
+  }
+  const selected = (html: string, label: string) =>
+    new RegExp(`aria-selected="true"[^>]*>${label}<`).test(html);
+
+  it('offers Numbers on inbox:ai:manage, Knowledge and Examples on inbox:kb:manage, in that order', () => {
+    expect(assistantSections({ ai: true, kb: true }).map(([, l]) => l)).toEqual(['Numbers', 'Knowledge', 'Examples']);
+    expect(assistantSections({ ai: false, kb: true }).map(([s]) => s)).toEqual(['knowledge', 'examples']);
+    expect(assistantSections({ ai: true, kb: false }).map(([s]) => s)).toEqual(['numbers']);
+    expect(assistantSections({ ai: false, kb: false })).toEqual([]);
+  });
+
+  it('renders the named tab as selected, one section at a time', () => {
+    const knowledge = assistant(hana, 'knowledge');
+    expect(selected(knowledge, 'Knowledge')).toBe(true);
+    expect(selected(knowledge, 'Numbers')).toBe(false);
+    const examples = assistant(hana, 'examples');
+    expect(selected(examples, 'Examples')).toBe(true);
+    expect(selected(examples, 'Knowledge')).toBe(false);
+  });
+
+  it('defaults to the first tab the viewer may see, and clamps a tab they may not', () => {
+    // hana holds both rights: the default is Numbers.
+    expect(selected(assistant(hana, null), 'Numbers')).toBe(true);
+    // A kb-only viewer defaults to Knowledge, and ?tab=numbers clamps there.
+    const kbOnly: InboxMe = { ...hana, capabilities: caps({ kb: true }) };
+    expect(selected(assistant(kbOnly, null), 'Knowledge')).toBe(true);
+    expect(selected(assistant(kbOnly, 'numbers'), 'Knowledge')).toBe(true);
+    expect(assistant(kbOnly, null)).not.toContain('Numbers');
   });
 });

@@ -15,7 +15,7 @@ const ID = '0192f0a0-1234-7abc-8def-0123456789ab';
 const AGENT: InboxTab[] = ['mine', 'team', 'handled'];
 const RECEPTION: InboxTab[] = ['team', 'handled'];
 /** What a view carries when the address names no settings page, no archive filter, and is not a plain landing. */
-const REST = { settings: null, archiveRange: null, resolvedBy: null, plain: false } as const;
+const REST = { settings: null, assistantTab: null, archiveRange: null, resolvedBy: null, plain: false } as const;
 
 describe('reflecting the view into the URL', () => {
   it('writes nothing for the plain home', () => {
@@ -73,6 +73,7 @@ describe('the settings pages and the archive filters in the address (test night 
       selectedId: null,
       showChat: false,
       settings: null,
+      assistantTab: null,
       archiveRange: '7d',
       resolvedBy: 'human',
       plain: false,
@@ -89,10 +90,51 @@ describe('the settings pages and the archive filters in the address (test night 
       selectedId: ID,
       showChat: true,
       settings: null,
+      assistantTab: null,
       archiveRange: '90d',
       resolvedBy: 'ai',
       plain: false,
     });
+  });
+});
+
+describe("the assistant page's tab in the address (owner UI round 2026-10-22, F2)", () => {
+  it('writes the tab only on the assistant page, reusing tab=', () => {
+    expect(inboxSearch({ tab: 'team', unanswered: false, selectedId: null, settings: 'assistant', assistantTab: 'knowledge' }, 'team')).toBe(
+      '?tab=knowledge&settings=assistant',
+    );
+    // The default tab (null) writes nothing, like the other defaults.
+    expect(inboxSearch({ tab: 'team', unanswered: false, selectedId: null, settings: 'assistant', assistantTab: null }, 'team')).toBe(
+      '?settings=assistant',
+    );
+    // Off the assistant page the assistant tab is not written.
+    expect(inboxSearch({ tab: 'team', unanswered: false, selectedId: null, settings: 'templates', assistantTab: 'examples' }, 'team')).toBe(
+      '?settings=templates',
+    );
+  });
+
+  it('reads it back on the assistant page only, dropping anything malformed', () => {
+    expect(viewFromUrl('?settings=assistant&tab=numbers', AGENT, 'team').assistantTab).toBe('numbers');
+    expect(viewFromUrl('?settings=assistant&tab=examples', AGENT, 'team').assistantTab).toBe('examples');
+    expect(viewFromUrl('?settings=assistant', AGENT, 'team').assistantTab).toBeNull();
+    expect(viewFromUrl('?settings=assistant&tab=nonsense', AGENT, 'team').assistantTab).toBeNull();
+    expect(viewFromUrl('?tab=knowledge', AGENT, 'team').assistantTab).toBeNull();
+    // A viewer who may not open the page gets neither the page nor its tab.
+    expect(viewFromUrl('?settings=assistant&tab=numbers', AGENT, 'team', { templates: true, assistant: false })).toMatchObject({
+      settings: null,
+      assistantTab: null,
+    });
+    // The assistant tab never collides with the inbox tabs: the inbox tab falls back.
+    expect(viewFromUrl('?settings=assistant&tab=knowledge', AGENT, 'team').tab).toBe('team');
+  });
+
+  it('round-trips', () => {
+    for (const assistantTab of ['numbers', 'knowledge', 'examples'] as const) {
+      const search = inboxSearch({ tab: 'team', unanswered: false, selectedId: null, settings: 'assistant', assistantTab }, 'team');
+      const back = viewFromUrl(search, AGENT, 'team');
+      expect(back.settings).toBe('assistant');
+      expect(back.assistantTab).toBe(assistantTab);
+    }
   });
 });
 

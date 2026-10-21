@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Archive, Bot, FileText, FlaskConical, LogOut, MessageSquare, Sparkles } from 'lucide-react';
+import { Archive, Bot, FileText, FlaskConical, LogOut, MessageSquare, Settings as SettingsGear, Sparkles } from 'lucide-react';
 import type { InboxTab } from '@oto/shared/inbox';
 import { ApiError } from '@/api/client';
 import { assistantCapabilities } from '@/api/assistant';
@@ -17,7 +17,7 @@ import { Rail, viewerRoleLabel } from '@/components/Rail';
 import { SimulatorDialog } from '@/components/Simulator';
 import { TemplateSettings } from '@/components/TemplateSettings';
 import { EMPTY_FILTERS, listQuery, type Filters } from '@/lib/query';
-import { inboxSearch, readInboxUrl, viewFromUrl, type SettingsPage } from '@/lib/url';
+import { inboxSearch, readInboxUrl, viewFromUrl, type AssistantTab, type SettingsPage } from '@/lib/url';
 import { defaultTab, landingTab, writeMode } from '@/lib/view';
 
 const LAUNCHER_URL = import.meta.env.VITE_LAUNCHER_URL?.trim();
@@ -56,6 +56,88 @@ function mergeNewest(loaded: Message[], newest: Message[], loadedCursor: string 
   const at = first ? loaded.findIndex((m) => m.id === first.id) : -1;
   if (at < 0) return { messages: newest, olderCursor: newestCursor };
   return { messages: [...loaded.slice(0, at), ...newest], olderCursor: loadedCursor };
+}
+
+/** What the one Settings control offers this viewer (owner UI round 2026-10-22, F2). */
+export type SettingsEntryKey = SettingsPage | 'simulator';
+
+export function settingsMenuEntries(me: InboxMe): { key: SettingsEntryKey; label: string }[] {
+  const caps = assistantCapabilities(me);
+  return [
+    ...(me.capabilities.templates ? [{ key: 'templates' as const, label: 'Templates' }] : []),
+    ...(caps.kb || caps.ai ? [{ key: 'assistant' as const, label: 'Assistant' }] : []),
+    ...(me.simulator ? [{ key: 'simulator' as const, label: 'Simulator · test only' }] : []),
+  ];
+}
+
+const ENTRY_ICON: Record<SettingsEntryKey, typeof FileText> = { templates: FileText, assistant: Bot, simulator: FlaskConical };
+
+/** The menu's list, on its own so the markup tests read it opened. */
+export function SettingsMenuItems({ me, onChoose }: { me: InboxMe; onChoose: (key: SettingsEntryKey) => void }) {
+  return (
+    <div
+      role="menu"
+      aria-label="Settings"
+      className="absolute right-0 top-full z-20 mt-1 w-48 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-[0_12px_40px_-16px_rgba(15,23,42,0.28)]"
+    >
+      {settingsMenuEntries(me).map(({ key, label }) => {
+        const Icon = ENTRY_ICON[key];
+        return (
+          <button
+            key={key}
+            type="button"
+            role="menuitem"
+            onClick={() => onChoose(key)}
+            className="flex w-full items-center gap-2 px-3 py-2 text-left text-[12.5px] font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+          >
+            <Icon className="h-3.5 w-3.5 text-slate-400" />
+            {label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * The header's one Settings control (owner UI round 2026-10-22, F2): a gear
+ * with the visible word, opening a small menu of what the viewer's
+ * capabilities allow — Templates, Assistant, the Simulator. Each entry routes
+ * exactly where the three separate buttons did.
+ */
+function SettingsMenu({ me, active, onChoose }: { me: InboxMe; active: SettingsPage | null; onChoose: (key: SettingsEntryKey) => void }) {
+  const [open, setOpen] = useState(false);
+  if (settingsMenuEntries(me).length === 0) return null;
+  return (
+    <div className="relative" onKeyDown={(e) => e.key === 'Escape' && setOpen(false)}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-[12px] font-medium transition ${
+          active !== null
+            ? 'border-slate-900 bg-slate-900 text-white shadow-sm'
+            : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900'
+        }`}
+      >
+        <SettingsGear className="h-3.5 w-3.5" />
+        Settings
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" aria-hidden onClick={() => setOpen(false)} />
+          <SettingsMenuItems
+            me={me}
+            onChoose={(key) => {
+              setOpen(false);
+              onChoose(key);
+            }}
+          />
+        </>
+      )}
+    </div>
+  );
 }
 
 /**
@@ -120,6 +202,8 @@ export function Workspace({ me }: { me: InboxMe }) {
   const [simulatorOpen, setSimulatorOpen] = useState(false);
   /** The settings page in place of the workspace card: templates (I3b) or the assistant (SCRUM-590 A3); in the URL as `?settings=` (U11). */
   const [settings, setSettings] = useState<SettingsPage | null>(arrival.settings);
+  /** The assistant page's tab; null is its default, the first the viewer may see (F2). */
+  const [assistantTab, setAssistantTab] = useState<AssistantTab | null>(arrival.assistantTab);
   const [inserted, setInserted] = useState<InsertedTemplate | null>(null);
 
   // "Mark as handled for everyone?", from the chat or a list row.
@@ -338,6 +422,7 @@ export function Workspace({ me }: { me: InboxMe }) {
           unanswered: filters.unanswered,
           selectedId,
           settings,
+          assistantTab,
           archiveRange: filters.archiveRange,
           resolvedBy: filters.resolvedBy,
         },
@@ -348,7 +433,7 @@ export function Workspace({ me }: { me: InboxMe }) {
     if (next === window.location.pathname + window.location.search) return;
     if (mode === 'push') window.history.pushState({ otoInbox: true }, '', next);
     else window.history.replaceState(window.history.state, '', next);
-  }, [tab, filters.unanswered, filters.archiveRange, filters.resolvedBy, selectedId, settings, homeTab]);
+  }, [tab, filters.unanswered, filters.archiveRange, filters.resolvedBy, selectedId, settings, assistantTab, homeTab]);
 
   // Back and forward: the address into state.
   const allowTemplates = me.capabilities.templates;
@@ -366,6 +451,7 @@ export function Workspace({ me }: { me: InboxMe }) {
       setSelectedId(view.selectedId);
       setShowChatMobile(view.showChat);
       setSettings(view.settings);
+      setAssistantTab(view.assistantTab);
       if (view.selectedId && !latest.current.rows.some((c) => c.id === view.selectedId)) void pin(view.selectedId);
     };
     window.addEventListener('popstate', onPop);
@@ -376,6 +462,8 @@ export function Workspace({ me }: { me: InboxMe }) {
   const chooseSettings = (page: SettingsPage | null) => {
     historyMode.current = 'push';
     setSettings((v) => (v === page ? null : page));
+    // A page freshly opened, or left, starts over on its default tab.
+    setAssistantTab(null);
   };
 
   const select = (id: string) => {
@@ -457,46 +545,11 @@ export function Workspace({ me }: { me: InboxMe }) {
                 Handled
               </button>
             )}
-            {me.capabilities.templates && (
-              <button
-                type="button"
-                onClick={() => chooseSettings('templates')}
-                aria-pressed={settings === 'templates'}
-                className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-[12px] font-medium transition ${
-                  settings === 'templates'
-                    ? 'border-slate-900 bg-slate-900 text-white shadow-sm'
-                    : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900'
-                }`}
-              >
-                <FileText className="h-3.5 w-3.5" />
-                Templates
-              </button>
-            )}
-            {(assistantCaps.kb || assistantCaps.ai) && (
-              <button
-                type="button"
-                onClick={() => chooseSettings('assistant')}
-                aria-pressed={settings === 'assistant'}
-                className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-[12px] font-medium transition ${
-                  settings === 'assistant'
-                    ? 'border-slate-900 bg-slate-900 text-white shadow-sm'
-                    : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900'
-                }`}
-              >
-                <Bot className="h-3.5 w-3.5" />
-                Assistant
-              </button>
-            )}
-            {me.simulator && (
-              <button
-                type="button"
-                onClick={() => setSimulatorOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-[12px] font-medium text-indigo-700 hover:border-indigo-300"
-              >
-                <FlaskConical className="h-3.5 w-3.5" />
-                Simulator
-              </button>
-            )}
+            <SettingsMenu
+              me={me}
+              active={settings}
+              onChoose={(key) => (key === 'simulator' ? setSimulatorOpen(true) : chooseSettings(key))}
+            />
             {LAUNCHER_URL && (
               <a
                 href={LAUNCHER_URL}
@@ -529,7 +582,9 @@ export function Workspace({ me }: { me: InboxMe }) {
       </header>
 
       {settings === 'templates' && <TemplateSettings me={me} onBack={() => chooseSettings(null)} />}
-      {settings === 'assistant' && <AssistantSettings me={me} onBack={() => chooseSettings(null)} />}
+      {settings === 'assistant' && (
+        <AssistantSettings me={me} tab={assistantTab} onBack={() => chooseSettings(null)} onTab={setAssistantTab} />
+      )}
 
       {/* WORKSPACE */}
       <div className={`${settings !== null ? 'hidden ' : ''}overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_40px_-16px_rgba(15,23,42,0.18)]`}>

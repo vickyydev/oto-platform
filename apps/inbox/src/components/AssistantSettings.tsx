@@ -17,6 +17,7 @@ import {
   type KbTopic,
 } from '@/api/assistant';
 import type { InboxMe } from '@/api/inbox';
+import type { AssistantTab } from '@/lib/url';
 import { Eyebrow } from '@/components/atoms';
 import { Refusal } from '@/components/confirms';
 import { FIELD, Field } from '@/components/CorrectAssistant';
@@ -67,27 +68,50 @@ function said(err: unknown, fallback: string): string {
   return err instanceof ApiError ? err.message : fallback;
 }
 
-type Section = 'channels' | 'kb' | 'examples';
+/**
+ * The page's tabs, by the viewer's rights (owner UI round 2026-10-22, F2):
+ * Numbers (inbox:ai:manage), Knowledge and Examples (inbox:kb:manage). Pure,
+ * so the tests read the real thing; the first is the default tab.
+ */
+export function assistantSections(caps: { ai: boolean; kb: boolean }): [AssistantTab, string][] {
+  return [
+    ...(caps.ai ? ([['numbers', 'Numbers']] as [AssistantTab, string][]) : []),
+    ...(caps.kb
+      ? ([
+          ['knowledge', 'Knowledge'],
+          ['examples', 'Examples'],
+        ] as [AssistantTab, string][])
+      : []),
+  ];
+}
 
 /**
  * The Assistant page (plan §C.2, §E; R7): beside the template settings, for
  * the people who run the assistant —
- *  - Channels (inbox:ai:manage): each number's mode, off / shadow / live;
- *  - Knowledge base (inbox:kb:manage): the facts it speaks from, by topic and
+ *  - Numbers (inbox:ai:manage): each number's mode, off / shadow / live;
+ *  - Knowledge (inbox:kb:manage): the facts it speaks from, by topic and
  *    language, drafted, approved, archived;
  *  - Examples: the corrections staff proposed, edited and approved only with
  *    the approver's "contains no personal data" tick.
+ * The tab lives in the URL (`?settings=assistant&tab=…`, UI round 2026-10-22,
+ * F2); null is the default, the first tab the viewer may see.
  * The prototype has no settings; this page is in the template page's design
  * language (the eyebrow header card, bordered cards, the house Dialog).
  */
-export function AssistantSettings({ me, onBack }: { me: InboxMe; onBack: () => void }) {
+export function AssistantSettings({
+  me,
+  tab,
+  onBack,
+  onTab,
+}: {
+  me: InboxMe;
+  tab: AssistantTab | null;
+  onBack: () => void;
+  onTab: (t: AssistantTab) => void;
+}) {
   const caps = assistantCapabilities(me);
-  const sections: [Section, string][] = [
-    ...(caps.ai ? ([['channels', 'Channels']] as [Section, string][]) : []),
-    ...(caps.kb ? ([['kb', 'Knowledge base']] as [Section, string][]) : []),
-    ...(caps.kb ? ([['examples', 'Examples']] as [Section, string][]) : []),
-  ];
-  const [section, setSection] = useState<Section>(sections[0]?.[0] ?? 'kb');
+  const sections = assistantSections(caps);
+  const section: AssistantTab = tab !== null && sections.some(([s]) => s === tab) ? tab : (sections[0]?.[0] ?? 'knowledge');
 
   return (
     <div className="min-w-0 rounded-2xl border border-slate-200 bg-white p-5">
@@ -111,7 +135,7 @@ export function AssistantSettings({ me, onBack }: { me: InboxMe; onBack: () => v
                 type="button"
                 role="tab"
                 aria-selected={section === s}
-                onClick={() => setSection(s)}
+                onClick={() => onTab(s)}
                 className={`rounded-lg px-2.5 py-1 text-[12px] font-medium transition ${
                   section === s ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200' : 'text-slate-600 hover:text-slate-900'
                 }`}
@@ -126,8 +150,8 @@ export function AssistantSettings({ me, onBack }: { me: InboxMe; onBack: () => v
       {sections.length === 0 && (
         <p className="mt-4 text-[12.5px] text-slate-500">You do not manage the assistant.</p>
       )}
-      {section === 'channels' && caps.ai && <ChannelModes me={me} />}
-      {section === 'kb' && caps.kb && <KnowledgeBase me={me} />}
+      {section === 'numbers' && caps.ai && <ChannelModes me={me} />}
+      {section === 'knowledge' && caps.kb && <KnowledgeBase me={me} />}
       {section === 'examples' && caps.kb && <ExamplesQueue me={me} />}
     </div>
   );
