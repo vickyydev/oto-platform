@@ -15,7 +15,7 @@ not a generator.
    wins over anything else, this file included.
 3. `docs/progress/OPEN_ITEMS.md` — the verified open-defect register, the owner's ruling
    queue, and the fix block (the owner has ruled it comes before any new story).
-4. `docs/progress/plans/otoapp-lift/PLAN.md` — the open story's plan: rounds, hazards,
+4. `docs/progress/plans/super-admin-console/PLAN.md` — the open story (approved 2026-10-21): decisions, ownership, routes, phases P0–P4 with their Jira keys. Then `docs/progress/plans/otoapp-lift/PLAN.md` — the earlier story's plan: rounds, hazards,
    owner questions Q1–Q54 (the app's or as-built behaviour is every default).
 5. `CLAUDE.md` — the original brief; its header says which sections still rule.
    `CONTRIBUTING.md` — commit format.

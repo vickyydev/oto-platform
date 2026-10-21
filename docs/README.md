@@ -14,3 +14,5 @@ Related, outside `docs/`:
 
 - [`/imports/`](../imports/) — raw Replit exports, production dump drop zone, vendor device documents. Reference input only; never built or deployed.
 - [`/CLAUDE.md`](../CLAUDE.md) — working agreement and the Sprint 1 brief.
+
+- `docs/progress/plans/super-admin-console/` — the Super Admin Console: `PROPOSAL.md` (approved 2026-10-21), `PLAN.md` (the build plan Codex follows, with the Jira keys), the three inventories it rests on.

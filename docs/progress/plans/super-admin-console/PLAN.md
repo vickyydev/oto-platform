@@ -1,0 +1,187 @@
+# Super Admin Console — the build plan (approved)
+
+Approved by the owner on 2026-10-21 ("I approve the console plan"), with every decision in `PROPOSAL.md` §11 taken as recommended. This file is the plan the builder follows; `PROPOSAL.md` is the reasoning behind it; the three `inventory-*.md` files are the evidence. The owner's words on any conflict: `docs/briefs/OWNER_DIRECTION.md`, then `docs/progress/STATUS.md`.
+
+Builder: the Codex agent (phases P1–P4). The coding agent that wrote this plan owns P0 and keeps the QA lane. Jira: the epic's stories and subtasks are listed in §9 with their keys once created (the key list is appended by the planner after creation).
+
+## 1. Decisions in force
+
+1. The existing `apps/console` becomes the Super Admin Console, named **Admin** on the launcher. No new app.
+2. The POS `/admin` panels (catalogue, money, reports, access) move into it as components; the POS keeps Station Setup and till-side settings; the POS `/admin` address redirects to the console for one release.
+3. Departments stay mastered in the OTO App and are mirrored to `core.department`; the console shows them read-only.
+4. OTO App roles are derived from platform grants (operator_admin → admin, branch_manager → manager, everyone else → staff); `hr.view_salary` becomes the platform permission `hr:salary:view`; the OTO App's user, permission and operator pages become read-only with a "Manage in Admin" link; provisioning happens only from the console.
+5. Branch managers get the Overview and their branch's people, catalogue, devices and reports.
+6. Radar stays the deep-analysis tool; the console shows headline figures and a Radar tile.
+7. The P0 access-hole fixes land first, by the planner, before P1 starts.
+8. The assistant's caps and pacing become console settings in P4.
+
+## 2. Who owns what (two builders, no overlap)
+
+| Area | Owner | Notes |
+|---|---|---|
+| `apps/console/**` | Codex | the console is Codex's; the planner does not edit it during P1–P4 |
+| `packages/admin-screens/**` (new, §4.2) | Codex | the lifted POS admin components and their api modules |
+| `apps/api/src/routes/{console,roles,employees,departments,access-review,aggregates,assistant-settings,platform}.ts` and their services | Codex | new console-facing routes; names below |
+| `apps/api/src/routes/accounts.ts`, `app-identities.ts`, `operators.ts`, `branches.ts`, `catalog.ts`, `menu.ts`, `fleet.ts`, `ops.ts`, `files.ts`, `staff-token.ts`, `vouchers*.ts`, `end-of-day.ts` | planner during P0 (guards only); Codex after P0 for console needs, additively | P0 changes are guard targets and scope checks; no behaviour change for honest users |
+| `apps/oto-app/**` | planner during P0; Codex in P3 for the read-only pages, the role mapping consumer and the provisioning call | the OTO App keeps its own npm tree and ratchet |
+| `apps/pos/**` | Codex for the redirect and the Login Users link; otherwise untouched | the POS admin components move out, they are not rewritten |
+| `apps/inbox/**`, `packages/assistant/**`, `apps/api/src/services/inbox/**`, `apps/api/src/services/assistant/**` | planner | the Inbox story; Codex links to its settings pages, does not edit them |
+| `packages/db/**` migrations | Codex for the console's additions (§4.4), numbered on top of main at landing; the planner for P0 if any | one migration per ticket, expand-only, `verify-schema` green |
+| `docs/progress/plans/super-admin-console/**`, `docs/progress/STATUS.md` | both; the newest STATUS block always wins | Codex writes its resume note in `docs/handover/CODEX_HANDOVER.md` as today |
+
+Worktrees: Codex works in `C:/w/<lane>` worktrees on `lane/<topic>` branches as the lanes do today; one coordinator lands on `main` with CI watched by SHA. Never push a red gate.
+
+## 3. Navigation and permissions (the contract the screens follow)
+
+| Section | Route prefix | Gate to see the section | Pages |
+|---|---|---|---|
+| Overview | `/overview` | `admin:console:overview` (new; in `branch_manager`, `operator_admin`, `platform_admin`) | Today across parks, park filter |
+| People & access | `/people` | `admin:account:read` | Accounts, Roles & scopes, App access, Employees, Departments, Access review |
+| Organisation | `/organisation` | `admin:branch:read` | Operators (platform-wide only), Branches, Holidays |
+| Catalogue & money | `/catalogue` | `catalog:package:read` or `catalog:menu:read` | Tickets, Tiers, Add-ons, Menu, Categories, Modifiers, Merch, Discounts, Tenders, Tax, Voucher types, Voucher campaigns, Event pricing, Drop-off & supervision, Print templates, Staff benefits |
+| Devices & places | `/devices` | `admin:station:read` | Boxes, Stations, Devices, Paired screens, Kiosks, Booths (existing pages) |
+| Channels & assistant | `/channels` | `inbox:channel:manage` or `inbox:kb:manage` or `inbox:ai:manage` | Numbers, Templates, Knowledge base, Examples (linked to the Inbox settings until lifted), Teams & routing (new), Assistant settings (P4) |
+| Staff & HR | `/staff` | `app:oto_app:access` + `admin:account:read` | Today's staff summary (read-only), links into the OTO App |
+| Reports | `/reports` | `analytics:read` | Sales, Profitability, Discounts & comps, Tax & VAT, Wallet & promo, Booth report, Radar tile |
+| Watch | `/watch` | `admin:health:read` or `admin:audit:read` | Health, Failures, Integrations, Activity (existing) |
+| Platform | `/platform` | a platform-wide assignment (`isPlatformAdmin`) | Operators, System roles, Platform alerts & jobs, Environment, Test controls, Operator switch (P4) |
+
+Every page keeps the permission its lifted panel or existing page carries; the section gate only hides navigation. The client never decides; the api does (the console's `has()` ignores scope today — keep it as the offer, never the authority).
+
+New permission strings (add to `packages/shared/src/permissions.ts`, bundles updated, `platformSync` converges them): `admin:console:overview`, `hr:salary:view`, `platform:operator:switch`. `inbox:routing:manage` exists and gets its screen.
+
+## 4. Architecture additions
+
+### 4.1 Api routes (all zod-typed, audited, idempotent where mutating, covered by `routes-guarded`, `route-write-conformance`, `id-conformance`, `route-scope-target` tests)
+
+| Route | Permission (target) | Purpose | Phase |
+|---|---|---|---|
+| `GET /roles` | `admin:role:read` | the system and operator roles with their permission lists and plain-words labels (`packages/shared` gains `PERMISSION_WORDS`: one plain sentence per permission) | P1 |
+| `GET /employees` | `admin:account:read` (reach-filtered) | `core.employee` list with source, branch, department, linked account, last sign-in | P1 |
+| `GET /departments` | `admin:account:read` | `core.department` list with branch and member count (from the mirror) | P1 |
+| `GET /access-review` | `admin:role:read` | operator-wide holders, platform-wide holders, accounts with no employee, employees with no account, accounts never signed in, temp passwords outstanding | P1 |
+| `GET /overview` | `admin:console:overview` (reach-filtered) | one call that fans out to the existing summaries for the park filter: revenue/guests (analytics summary), occupancy, bookings today, inbox dashboard, open alerts, boxes offline | P1 (v1), P4 (v2 adds §4.1 aggregates) |
+| `PATCH /branches/:id` | `admin:branch:update` (params.id) | already exists; the console adds the edit screen (name, timezone, opening hours, business day start, archive) | P2 |
+| `GET/POST/PATCH/DELETE /inbox/teams`, `/inbox/routing-rules` | `inbox:routing:manage` (branch target where the rule has one) | the teams and routing editor; the router keeps its evaluation order | P2 |
+| `GET /aggregates/members`, `/aggregates/bookings`, `/aggregates/assistant-usage`, `/aggregates/inbox-ai-usage`, `/aggregates/fleet` | `admin:console:overview` (reach-filtered) | per day and park counts and sums | P4 |
+| `GET/PUT /assistant-settings` | `inbox:ai:manage` (operator) | caps and pacing in a `core.setting` row per operator; the engines read the row with the env value as fallback | P4 |
+| `GET /platform/alerts`, `/platform/jobs`, `/platform/environment` | platform-wide | the rows with `operator_id IS NULL` that operator admins must not reach (P0 closes that reach) | P4 |
+| `PUT /me/session/operator` | `platform:operator:switch` | sets `session.operator_override` for a platform-wide account; every read and write uses it as `auth.operatorId`; audited `session.operator_switch` | P4 |
+
+### 4.2 The lifted screens
+
+Create `packages/admin-screens` (React, no app code): move the POS admin components under `apps/pos/src/components/admin/**` and the api modules they use (`apps/pos/src/api/catalogBridge.ts`, the admin parts of `apps/pos/src/api/platform.ts`, `api/menu.ts`, `api/analyticsReports.ts`, `api/benefits*.ts`) into it, parameterised by an `AdminApi` interface the host app implements (the console's `api/client.ts` and the POS's `client.ts` both satisfy it). The POS imports the package until its `/admin` redirects; then the POS dependency is removed in the same release as the redirect. The catalogue store (`CatalogStoreContext`) stays in the POS: the lifted panels read through the `AdminApi` and re-read after a save, as the console's pages do. No visual change.
+
+### 4.3 The OTO App alignment (P3)
+
+- Role mapping: `apps/api/src/services/oto-app-users.ts` gains `roleFor(grants)`; `POST /admin/apps/oto_app/users` and the employee copy job write `otoapp.users.role` from it; the hand-off exchange returns the mapped role and the OTO App's `platformSignOn.ts` applies it on every sign-on. Flag: `otoapp.operators.platform_roles_enabled` per operator; off = today's behaviour.
+- `hr:salary:view`: the OTO App's `canViewHrSalary` reads the platform permission from the hand-off claim when the flag is on.
+- Departments mirror: `job:otoapp.employee_sync` also upserts `core.department` from `otoapp.departments` (name, branch via `core_branch_id`, external id, archived), keeping ids stable; the Inbox's seeded departments are matched by name once and then by external id.
+- Read-only pages: `/users`, `/permissions`, `/operators` in the OTO App render their lists with a banner "Managed in Admin" and no write controls when the flag is on; their write routes answer 409 `managed_in_admin`.
+- Provisioning: the employee editor's "Create Login" calls the platform's suite-sign-in route (it already can); the legacy `generate-login` and `reset-password` paths stay behind `OTOAPP_LEGACY_LOGIN`.
+
+### 4.4 Schema additions (expand-only migrations)
+
+- `core.setting` (operator_id, key, value jsonb, updated_by, updated_at) for assistant settings and any later console setting.
+- `core.session.operator_override uuid null`.
+- `core.department.external_id text null`, `archived_at` (if missing), unique (operator_id, external_id).
+- `otoapp.operators.platform_roles_enabled boolean default false` (OTO App migration, its own numbering).
+
+## 5. Conventions (unchanged, restated for the builder)
+
+- Per-ticket recipe: read the plan row → schema (if any) → service → route (zod, permission with target, audit, idempotency) → screen → tests (unit for resolvers, integration for the route's happy path and main failure, markup test for the screen) → staging proof (a screenshot named `<ticket>-NN-<what>.png` under `docs/qa/jira-comments/attachments/<ticket>/`, timestamped after the deploy) → Jira walk with the proof attached and ONE plain-words comment → STATUS block → commit → push.
+- Gates, unpiped, `set -eo pipefail`: the package's own `typecheck` script; its tests; `pnpm api-types:check` from the root whenever a route changes; `routes-guarded`, `route-write-conformance`, `id-conformance`, `route-scope-target`; `packages/shared` tests whenever shared changes; eslint over changed files; `verify-schema` whenever a migration lands. For the OTO App: `npm ci --ignore-scripts`, `npm run check:ratchet`, the relevant `tests/*.check.ts`.
+- Commits per `CONTRIBUTING.md`; no attribution lines; `Refs:` footers; never commit `imports/` or `.env`.
+- Staging: records named `ZZ TEST …`; never payments, `otoapp.*_checkins`, SMS, the FWBooth1 box; the Inbox channel modes untouched; demo people and the admin logins as the handover lists them.
+- Deploys: Render auto-deploys on green; read `node scripts/agent/render.mjs deploys <service>` before triggering by hand; the OTO App service deploys only on `apps/oto-app` changes; the Inbox and Radar sites are not in `deploy all`.
+- Jira: same-turn status and comment on every push; Deployed requires the screenshot; the owner reads every comment, so write for a person, not a log.
+
+## 6. P0 — fix first (planner, Opus lanes; each pinned; one ticket each)
+
+**P0-1 OTO App access: no escalation, overrides honour admin-only, client matches server.** `PUT /api/people/:id/access` and `enable-login` may grant at most the caller's own rank and never write `global_admin`; `requireModule` applies the admin-only rule before overrides; `App.tsx` gates for `/users` and `/operators` match `requireGlobalAdmin`; `operators-page` stops calling the missing `/api/admin/users`.
+
+**P0-2 OTO App checks that do nothing.** `requireKioskPermission` checks the session's real permissions; `hr.terminate_employee`, `hr.edit_contract_templates`, `hr.edit_salary` and the three `settings.*` keys are checked where their names say; the admin-only client checks accept every admin role value; the employee PIN is hashed with a salt (and the route checks branch access).
+
+**P0-3 Api guard targets.** `menu.ts` item PATCH/DELETE compare the item's branch to the path; the operator-wide catalogue routes (tiers, tenders, categories, modifier groups, discount codes, voucher definitions, booth layouts, `POST /branches`) require the permission at operator scope, not the session branch; `PUT /voucher-definitions/:id/park-products/:branchId` targets `params.branchId`; `pos:cash:day_close` leaves the `staff` bundle (reception keeps it); `route-scope-target` pins each.
+
+**P0-4 Api reach.** `/admin/apps/*` and the account-owner path of `/files` use `assertAccountInScope`; `findRun`/`findAlert` exclude `operator_id IS NULL` rows for operator-scoped callers (platform-wide keeps them); the hosted 2C2P simulator pages require `PAYMENTS_SIMULATOR=on` and are refused elsewhere; `POST /me/staff-token` re-checks the grant at the seated station's branch.
+
+Acceptance for P0: every pin red before and green after; the branch-isolation register re-run for the touched routes; no change for honest users on staging (the test night's flows still pass).
+
+## 7. P1 — console foundation (Codex)
+
+| Ticket | Deliverable | Accepted when |
+|---|---|---|
+| P1-1 | "Admin" on the launcher; the ten-section navigation shell with section gates; `/overview` default; the Console's existing pages placed under Devices & places and Watch | the launcher tile says Admin; every section hides without its gate; old Console addresses still open their pages |
+| P1-2 | Overview v1: `GET /overview` over existing summaries; the page with the park filter; each figure links to its screen | an admin sees today's revenue, guests, in park now, bookings, Inbox unanswered, open alerts, boxes offline for the parks they reach |
+| P1-3 | People → Accounts: the Login Users panel lifted (search, invite, temp password, sessions, sign out everywhere, activate/deactivate, phone) | a reception account is invited, given a temp password and deactivated from the console; audit rows present |
+| P1-4 | People → Roles & scopes: grant/remove lifted; `GET /roles` and the plain-words view | the role list reads in sentences; a branch-scoped grant is added and removed |
+| P1-5 | People → App access: the Apps dialog, OTO App branches and unlinked users lifted | an account is linked to an OTO App user from the console |
+| P1-6 | People → Employees: `GET /employees` and the read-only page with the account link state and "open in OTO App" | the list shows source, branch, department, linked login |
+| P1-7 | People → Departments: `GET /departments` and the read-only page | the list shows the mirror with branch and member count |
+| P1-8 | People → Access review: `GET /access-review` and the page | the six lists render for the operator |
+| P1-9 | POS Login Users panel becomes a link to Admin → People | the POS panel shows the link and no form |
+
+Proofs: one screenshot per ticket on staging; the P1 demo is an admin managing one person end to end.
+
+## 8. P2 — organisation, catalogue, reports (Codex)
+
+| Ticket | Deliverable |
+|---|---|
+| P2-1 | `packages/admin-screens` created; the POS imports it; no visual change (gate: the POS admin still works) |
+| P2-2 | Organisation: Operators (platform-wide), Branches with the edit screen and the OTO App mapping merged in, Holidays |
+| P2-3 | Catalogue: Tickets, Tiers, Add-ons |
+| P2-4 | Catalogue: Menu, Categories, Modifiers, Merch, import/export |
+| P2-5 | Money: Discounts, Tenders, Tax, Voucher types and campaigns, Event pricing |
+| P2-6 | Care and print: Drop-off & supervision pricing, Print templates, Staff benefits |
+| P2-7 | Reports: the five panels, Wallet & promo, Booth report, the Radar tile |
+| P2-8 | Channels → Teams & routing editor (routes + screen); Numbers/Templates/KB/Examples linked to the Inbox settings |
+| P2-9 | POS `/admin` redirects to Admin; the POS mock Devices panel and dead admin code removed; the POS dependency on `admin-screens` dropped |
+
+Acceptance: a price, a tender and a tax rule changed only in the console show on the till; the demo is the catalogue and money round trip.
+
+## 9. P3 — OTO App alignment (Codex)
+
+| Ticket | Deliverable |
+|---|---|
+| P3-1 | Role mapping behind the per-operator flag; the hand-off carries the mapped role and `hr:salary:view`; the OTO App applies it |
+| P3-2 | `hr:salary:view` as a platform permission; bundles; the OTO App reads it when the flag is on |
+| P3-3 | Departments mirror in the copy job; `core.department.external_id`; the console page wired |
+| P3-4 | OTO App Users, Permissions, Operators pages read-only with "Managed in Admin" when the flag is on; their write routes answer 409 |
+| P3-5 | Provisioning only from the console; the employee editor's Create Login calls the platform |
+| P3-6 | Staff & HR summary page (on shift, attendance issues, leave today, payroll month status) with links |
+
+Acceptance: a person granted in the console opens the OTO App with the right role on staging with the flag on; nothing can be granted inside the OTO App.
+
+## 10. P4 — analytics and platform (Codex)
+
+| Ticket | Deliverable |
+|---|---|
+| P4-1 | The five aggregates |
+| P4-2 | Overview v2 with them |
+| P4-3 | Assistant settings: `core.setting`, routes, screen; the engines read the row |
+| P4-4 | Platform section: operators, system roles, platform alerts and jobs, environment, test controls |
+| P4-5 | Operator switch: `session.operator_override`, the route, the picker, the audit, every read and write honouring it |
+
+Acceptance: the owner opens one page and sees the park's day; a second operator can be entered and left, audited.
+
+## 11. Risks held
+
+- Lifting volume: P2 is per panel group; the POS keeps working until P2-9.
+- Role mapping touches HR gates: the flag defaults off; every role is proven on staging before it is turned on for the park.
+- Two builders: the ownership table in §2; the planner never edits `apps/console`; Codex never edits the Inbox or assistant code.
+- Tenancy: the operator switch is last (P4-5) and audited; until then the platform owner works as today.
+
+## 12. Jira keys
+
+Appended by the planner after creation (epic, stories P0–P4, subtasks).
+
+Created 2026-10-21 in the active sprint (epic SCRUM-181):
+
+| Phase | Story | Subtasks |
+|---|---|---|
+| P0 (planner) | SCRUM-603 | SCRUM-604 OTO App access; SCRUM-605 OTO App checks that did nothing; SCRUM-606 api guard targets; SCRUM-607 api reach |
+| P1 | SCRUM-608 | SCRUM-609 navigation shell; SCRUM-610 Overview v1; SCRUM-611 Accounts; SCRUM-612 Roles & scopes; SCRUM-613 App access; SCRUM-614 Employees; SCRUM-615 Departments; SCRUM-616 Access review; SCRUM-617 POS Login Users link |
+| P2 | SCRUM-618 | SCRUM-619 admin-screens package; SCRUM-620 Organisation; SCRUM-621 Tickets/Tiers/Add-ons; SCRUM-622 Menu group; SCRUM-623 Money group; SCRUM-624 Care and print; SCRUM-625 Reports; SCRUM-626 Teams & routing; SCRUM-627 POS redirect |
+| P3 | SCRUM-628 | SCRUM-629 role mapping; SCRUM-630 hr:salary:view; SCRUM-631 departments mirror; SCRUM-632 OTO App pages read-only; SCRUM-633 provisioning; SCRUM-634 Staff & HR summary |
+| P4 | SCRUM-635 | SCRUM-636 aggregates; SCRUM-637 Overview v2; SCRUM-638 assistant settings; SCRUM-639 Platform section; SCRUM-640 operator switch |
