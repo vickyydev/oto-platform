@@ -187,6 +187,7 @@ Created 2026-10-21 in the active sprint (epic SCRUM-181):
 | P2 | SCRUM-618 | SCRUM-619 admin-screens package; SCRUM-620 Organisation; SCRUM-621 Tickets/Tiers/Add-ons; SCRUM-622 Menu group; SCRUM-623 Money group; SCRUM-624 Care and print; SCRUM-625 Reports; SCRUM-626 Teams & routing; SCRUM-627 POS redirect |
 | P3 | SCRUM-628 | SCRUM-629 role mapping; SCRUM-630 hr:salary:view; SCRUM-631 departments mirror; SCRUM-632 OTO App pages read-only; SCRUM-633 provisioning; SCRUM-634 Staff & HR summary |
 | P4 | SCRUM-635 | SCRUM-636 aggregates; SCRUM-637 Overview v2; SCRUM-638 assistant settings; SCRUM-639 Platform section; SCRUM-640 operator switch |
+| P5 (after P4) | SCRUM-642 | SCRUM-643 app registry, flags and kill switches, releases; SCRUM-644 activity and failures extensions; SCRUM-645 health and integrations extensions; SCRUM-646 analytics and sources, configuration index; SCRUM-647 money oversight; SCRUM-648 support tools; SCRUM-649 data tools |
 
 ## 13. Relation to S2-23 (SCRUM-221), the Sprint 2 Console design
 
