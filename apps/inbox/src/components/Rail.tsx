@@ -3,7 +3,7 @@ import type { InboxTab } from '@oto/shared/inbox';
 import type { ConversationList, InboxMe } from '@/api/inbox';
 import { Avatar, Eyebrow, FilterSelect } from '@/components/atoms';
 import type { Filters } from '@/lib/query';
-import { LANGUAGE_OPTIONS, TAB_LABEL, branchOptions, initialsOf, tintFor } from '@/lib/view';
+import { CATEGORY_OPTIONS, LANGUAGE_OPTIONS, STATUS_OPTIONS, TAB_LABEL, branchOptions, initialsOf, tintFor } from '@/lib/view';
 
 export const TAB_ICON: Record<InboxTab, LucideIcon> = { mine: Inbox, team: Users, handled: Archive };
 
@@ -35,12 +35,7 @@ export function FilterFields({
         label="Category"
         value={filters.category}
         onChange={(v) => onChange({ category: v as Filters['category'] })}
-        options={[
-          ['', 'All categories'],
-          ['birthdays', 'Birthdays & Events'],
-          ['general', 'General'],
-          ['marketing', 'Marketing'],
-        ]}
+        options={[['', 'All categories'], ...CATEGORY_OPTIONS]}
       />
       {/* "Filter by branch", not "Branch": the strip's branch select is "Conversation branch" (test night U12). */}
       <FilterSelect
@@ -55,11 +50,7 @@ export function FilterFields({
         label="Status"
         value={filters.status}
         onChange={(v) => onChange({ status: v as Filters['status'] })}
-        options={[
-          ['', 'All statuses'],
-          ['active', 'Active'],
-          ['handled', 'Handled'],
-        ]}
+        options={[['', 'All statuses'], ...STATUS_OPTIONS]}
       />
       <FilterSelect
         icon={Globe2}

@@ -1,6 +1,6 @@
 import type { InboxCategoryKey, InboxStatusKey, InboxTab } from '@oto/shared/inbox';
-import type { ListQuery } from '@/api/inbox';
-import { archiveFrom, type ArchiveRange } from './view';
+import type { ListQuery, Team } from '@/api/inbox';
+import { archiveFrom, branchLabel, CATEGORY_OPTIONS, LANGUAGE_OPTIONS, STATUS_OPTIONS, type ArchiveRange } from './view';
 
 /**
  * The list's filters as the rail and the list header hold them — the
@@ -37,6 +37,29 @@ export const EMPTY_FILTERS: Filters = {
 /** How many filters differ from the empty set — the phone's filter button shows it. */
 export function activeFilterCount(f: Filters): number {
   return [f.category, f.branchId, f.status, f.language].filter((v) => v !== '').length;
+}
+
+/** One applied filter as a removable pill: its label, and the patch that clears it — exactly that one. */
+export interface FilterPill {
+  key: 'category' | 'branchId' | 'status' | 'language';
+  label: string;
+  clear: Partial<Filters>;
+}
+
+/**
+ * The applied filters as removable pills under the search line (UI round
+ * 2026-10-22, F1): at phone width the selects live behind the Filters button,
+ * so what is applied must say so on the list itself. The labels are the same
+ * option tables `FilterFields` offers.
+ */
+export function filterPills(f: Filters, teams: readonly Team[]): FilterPill[] {
+  const label = (options: readonly [string, string][], v: string) => options.find(([k]) => k === v)?.[1] ?? v;
+  const out: FilterPill[] = [];
+  if (f.category !== '') out.push({ key: 'category', label: label(CATEGORY_OPTIONS, f.category), clear: { category: '' } });
+  if (f.branchId !== '') out.push({ key: 'branchId', label: branchLabel(f.branchId, teams), clear: { branchId: '' } });
+  if (f.status !== '') out.push({ key: 'status', label: label(STATUS_OPTIONS, f.status), clear: { status: '' } });
+  if (f.language !== '') out.push({ key: 'language', label: label(LANGUAGE_OPTIONS, f.language), clear: { language: '' } });
+  return out;
 }
 
 /**

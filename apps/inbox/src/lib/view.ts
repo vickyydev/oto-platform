@@ -84,6 +84,14 @@ export const LANGUAGE_OPTIONS: [string, string][] = [
   ['th', 'Thai'],
 ];
 
+/** The filter's categories and statuses (`FilterSelect` options, :1447-1455), from the colour code's labels. */
+export const CATEGORY_OPTIONS: [InboxCategoryKey, string][] = (['birthdays', 'general', 'marketing'] as const).map(
+  (k): [InboxCategoryKey, string] => [k, CATEGORY_LABEL[k]],
+);
+export const STATUS_OPTIONS: [InboxStatusKey, string][] = (['active', 'handled'] as const).map(
+  (k): [InboxStatusKey, string] => [k, STATUS_LABEL[k]],
+);
+
 /** `LANG_LABEL` (:207): the code, upper case. */
 export function langLabel(code: string | null | undefined): string {
   return code ? code.toUpperCase() : '—';
