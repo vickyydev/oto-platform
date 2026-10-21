@@ -30,7 +30,7 @@ import Handlebars from "handlebars";
 import { z } from "zod";
 import { format, addDays as _addDays } from "date-fns";
 import { insertTemplateSchema, insertEmployeeSchema, insertBranchSchema, mergeDataSchema as _mergeDataSchema, MergeData as _MergeData, activityTypes, type ActivityType, attentionTypes, type AttentionType, insertEmployeeDocumentSchema as _insertEmployeeDocumentSchema, documentTypes, insertTemplateAssignmentSchema, insertUserSchema as _insertUserSchema, insertDepartmentSchema, insertRoleSchema, insertPersonSchema, insertOperatorSchema, insertStatutoryRuleSetSchema, insertKbArticleSchema, type ContractInstance, type EnrollmentSession, type FixReport, type UserWithBranchAccess, DEFAULT_TENANT_SLUG } from "@shared/schema";
-import { getEffectivePermissions, resolveAdvisorRole, canGrantAccessLevel, roleForAccessLevel, roleRank, isAdminRole, roleCanPerformAction, ACCESS_LEVEL_ROLES, type PermissionUserContext } from "../shared/permissions";
+import { getEffectivePermissions, resolveAdvisorRole, grantedRoleFor, isAccessLevel, isAdminLevelRole, roleRank, isAdminRole, roleCanPerformAction, type PermissionUserContext } from "../shared/permissions";
 import { canEditHrSalary, canViewHrSalary, containsHrPayFields, hrPayResponse, isHrPayKey, preserveHrMergePay } from "../shared/hr-salary-permission";
 import { birthdaySchema } from "../shared/birthday";
 import { findBirthdayEmployee, getPersonBirthdays } from "./person-birthdays";
@@ -4284,15 +4284,23 @@ export async function registerRoutes(
       
       // Only admin can set ADMIN access level. An administrator is every role
       // the screen counts as one (SCRUM-543): admin, global_admin, operator_admin.
-      // SCRUM-604: one rule with the access page — a caller grants at most
-      // their own rank, and the level is one of the three the dialog offers.
+      // SCRUM-604: one rule with the access page (grantedRoleFor) — a caller
+      // grants at most their own rank, and the level is one of the three the
+      // dialog offers. ADMIN from an operator admin or a legacy admin is an
+      // operator_admin of the caller's own operator; only a global admin's
+      // ADMIN is `admin`.
       const effectiveCallerRole = req.userWithAccess?.role ?? req.user.role;
       const callerIsAdmin = isAdminRole(effectiveCallerRole);
-      if (accessLevel !== undefined && accessLevel !== null && !(typeof accessLevel === "string" && Object.hasOwn(ACCESS_LEVEL_ROLES, accessLevel))) {
+      if (accessLevel !== undefined && accessLevel !== null && !isAccessLevel(accessLevel)) {
         return res.status(400).json({ message: "Access level must be STAFF, MANAGER or ADMIN" });
       }
-      if (!canGrantAccessLevel(effectiveCallerRole, accessLevel)) {
+      const userRole = grantedRoleFor(effectiveCallerRole, accessLevel);
+      if (!userRole) {
         return res.status(403).json({ message: "Only administrators can grant ADMIN access level" });
+      }
+      const grantedOperatorId = userRole === "operator_admin" ? (req.userWithAccess?.operatorId ?? null) : null;
+      if (userRole === "operator_admin" && !grantedOperatorId) {
+        return res.status(403).json({ message: "Your login has no operator, so it cannot grant ADMIN. Ask a global admin." });
       }
 
       // Only admin can grant ALL branches
@@ -4378,7 +4386,6 @@ export async function registerRoutes(
       
       // Create user account
       const hashedPassword = passwordless ? await unusablePassword() : await hashPassword(password);
-      const userRole = roleForAccessLevel(accessLevel);
       const user = await storage.createUser({
         email: loginEmail,
         password: hashedPassword,
@@ -4388,6 +4395,9 @@ export async function registerRoutes(
         mustChangePassword: !passwordless,
         createdBy: req.user.id,
       }, resolvedTenantId);
+      if (grantedOperatorId) {
+        await db.update(users).set({ operatorId: grantedOperatorId, updatedAt: new Date() }).where(eq(users.id, user.id));
+      }
       
       // Set branch access (pass tenantId since users table doesn't have it)
       if (finalBranchScope === "ALL") {
@@ -14789,7 +14799,8 @@ OTO Company Limited`,
       // SCRUM-604: a caller grants at most their own rank, and never changes a
       // login that outranks them. Decided before anything is written.
       const callerRole = req.userWithAccess?.role ?? req.user?.role;
-      if (!canGrantAccessLevel(callerRole, validatedData.accessLevel)) {
+      const grantedRole = grantedRoleFor(callerRole, validatedData.accessLevel);
+      if (!grantedRole) {
         return res.status(403).json({ message: "You cannot grant an access level above your own" });
       }
       const linkedUser = personEmployees.length > 0 && personEmployees[0].userId
@@ -14797,6 +14808,26 @@ OTO Company Limited`,
         : undefined;
       if (linkedUser && roleRank(linkedUser.role) > roleRank(callerRole)) {
         return res.status(403).json({ message: "This account is managed by a higher administrator" });
+      }
+      // An advisor has no employee record: their role is read from this policy
+      // at sign-in (getUserWithBranchAccess), where ADMIN is a legacy admin. So
+      // ADMIN for an advisor is a global admin's to give, and an advisor
+      // already at ADMIN is managed above an operator admin.
+      if (personEmployees.length === 0 && person.personType === "ADVISOR") {
+        if (existingPolicy && roleRank(resolveAdvisorRole("advisor", existingPolicy.accessLevel)) > roleRank(callerRole)) {
+          return res.status(403).json({ message: "This account is managed by a higher administrator" });
+        }
+        if (validatedData.accessLevel === "ADMIN" && grantedRole !== "admin" && existingPolicy?.accessLevel !== "ADMIN") {
+          return res.status(403).json({ message: "Only a global admin can give an advisor ADMIN access" });
+        }
+      }
+      // A login already shown as ADMIN keeps its role on an ADMIN save;
+      // otherwise the role is the one the caller may grant. An operator_admin
+      // made here belongs to the caller's own operator.
+      const keepsRole = !!linkedUser && validatedData.accessLevel === "ADMIN" && isAdminLevelRole(linkedUser.role);
+      const grantedOperatorId = !keepsRole && grantedRole === "operator_admin" ? (req.userWithAccess?.operatorId ?? null) : null;
+      if (linkedUser && !keepsRole && grantedRole === "operator_admin" && !grantedOperatorId) {
+        return res.status(403).json({ message: "Your login has no operator, so it cannot grant ADMIN. Ask a global admin." });
       }
       let policy;
       if (existingPolicy) {
@@ -14811,16 +14842,15 @@ OTO Company Limited`,
         const userId = employees[0].userId;
         const user = linkedUser;
         if (user) {
-          // Map access level to user role (SCRUM-604): ADMIN is `admin`, never
-          // `global_admin`. A login already at an admin role above `admin`
-          // (operator_admin, global_admin) keeps it when saved as ADMIN, which
-          // is how the page shows it.
-          const newRole = validatedData.accessLevel === "ADMIN" && roleRank(user.role) >= roleRank("admin")
-            ? user.role
-            : roleForAccessLevel(validatedData.accessLevel);
+          // Map access level to user role (SCRUM-604): grantedRoleFor, never
+          // `global_admin`; a login already shown as ADMIN keeps its role.
+          const newRole = keepsRole ? user.role : grantedRole;
           
           // Update user role
           await storage.updateUser(userId, { role: newRole as any });
+          if (grantedOperatorId) {
+            await db.update(users).set({ operatorId: grantedOperatorId, updatedAt: new Date() }).where(eq(users.id, userId));
+          }
           
           // Update user branch access
           if (validatedData.branchScope === 'ALL') {

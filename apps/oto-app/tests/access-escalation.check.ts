@@ -10,9 +10,13 @@
 //      nor in the login dialog (POST /api/employees/:id/enable-login); a level
 //      the dialog does not offer (GLOBAL_ADMIN) is refused, not lower-cased
 //      into a role.
-//   2. An operator admin granting ADMIN writes `admin`, never `global_admin`,
-//      on both doors; a login above them (global_admin) is not theirs to
-//      change, and an operator admin saved as ADMIN keeps their role.
+//   2. The rank holds on the server: an operator admin granting ADMIN writes
+//      `operator_admin` of the caller's own operator on both doors, never
+//      `admin` (which passes requireGlobalAdmin) or `global_admin`, and that
+//      login is refused Users, Operators and the data admin; a global admin's
+//      ADMIN is `admin`, kept on an unchanged save; a login above the caller
+//      is not theirs to change; an operator admin saved as ADMIN keeps their
+//      role; an advisor's ADMIN (read as a legacy admin) is a global admin's.
 //   3. The honest paths are unchanged: a manager still makes a MANAGER login.
 //   4. An override that enables an admin-only module (settings, hr_admin) for
 //      staff or a manager opens nothing: POST /api/settings (requireModule)
@@ -144,9 +148,22 @@ const loginByManagerAdmin = await bareEmployee("MgrAdmin");
 const loginByManagerGlobal = await bareEmployee("MgrGlobal");
 const loginByManagerManager = await bareEmployee("MgrManager");
 const loginByOpAdmin = await bareEmployee("OpAdminLogin");
+const gmTarget = await person("GmTarget", "staff");
+/** An advisor: a person with no employee record, whose role the access policy decides. */
+const advisorEmail = `zz-esc-p-advisor-${run}@example.com`;
+const advisorPerson = randomUUID();
+await q("insert into people (id, tenant_id, full_name, email, person_type) values ($1, $2, $3, $4, 'ADVISOR')", [
+  advisorPerson,
+  tenant,
+  `ZZ TEST Advisor ${run}`,
+  advisorEmail,
+]);
 
 const roleOf = async (id: string) => (await q<{ role: string }>("select role from users where id = $1", [id]))[0]?.role;
-const loginFor = async (email: string) => (await q<{ role: string }>("select role from users where lower(email) = lower($1)", [email]))[0];
+const operatorOf = async (id: string) =>
+  (await q<{ operator_id: string | null }>("select operator_id from users where id = $1", [id]))[0]?.operator_id;
+const loginFor = async (email: string) =>
+  (await q<{ id: string; role: string; operator_id: string | null }>("select id, role, operator_id from users where lower(email) = lower($1)", [email]))[0];
 
 // ─── The server ──────────────────────────────────────────────────────────────
 
@@ -292,21 +309,62 @@ try {
     assert.equal(await loginFor(loginByManagerGlobal.email), undefined);
   });
 
-  // ─── 2. An operator admin's ADMIN is `admin` ──────────────────────────────
+  // ─── 2. The rank holds on the server ──────────────────────────────────────
 
-  await check("an operator admin granting ADMIN on the access page writes admin, never global_admin", async () => {
+  await check("an operator admin granting ADMIN on the access page writes operator_admin of their own operator", async () => {
     const res = await call("PUT", `/api/people/${target.personId}/access`, { cookie: cookie.opAdmin, body: accessBody("ADMIN") });
     assert.equal(res.status, 200, show(res));
-    assert.equal(await roleOf(target.userId!), "admin");
+    assert.equal(await roleOf(target.userId!), "operator_admin");
+    assert.equal(await operatorOf(target.userId!), operator);
   });
 
-  await check("an operator admin granting ADMIN in the login dialog makes an admin login", async () => {
+  await check("an operator admin granting ADMIN in the login dialog makes an operator_admin login of their operator", async () => {
     const res = await call("POST", `/api/employees/${loginByOpAdmin.employeeId}/enable-login`, {
       cookie: cookie.opAdmin,
       body: loginBody(loginByOpAdmin.email, "ADMIN"),
     });
     assert.equal(res.status, 200, show(res));
-    assert.equal((await loginFor(loginByOpAdmin.email))?.role, "admin");
+    const login = await loginFor(loginByOpAdmin.email);
+    assert.equal(login?.role, "operator_admin");
+    assert.equal(login?.operator_id, operator);
+  });
+
+  await check("the logins an operator admin made are refused Users, Operators and the data admin", async () => {
+    // The dialog's login must change its password first; that is not what is tested here.
+    await q("update users set must_change_password = false where lower(email) = lower($1)", [loginByOpAdmin.email]);
+    await q("update users set password = $2 where lower(email) = lower($1)", [loginByOpAdmin.email, hash(PASSWORD)]);
+    for (const email of [target.email, loginByOpAdmin.email]) {
+      const made = await signIn(email);
+      for (const path of ["/api/users", "/api/admin/operators", "/api/data-admin/models"]) {
+        const res = await call("GET", path, { cookie: made });
+        assert.equal(res.status, 403, `${email} ${path}: ${show(res)}`);
+      }
+    }
+  });
+
+  await check("a global admin granting ADMIN writes admin, and an unchanged save keeps it", async () => {
+    const gm = await signIn(theGm.email);
+    const res = await call("PUT", `/api/people/${gmTarget.personId}/access`, { cookie: gm, body: accessBody("ADMIN") });
+    assert.equal(res.status, 200, show(res));
+    assert.equal(await roleOf(gmTarget.userId!), "admin");
+    const again = await call("PUT", `/api/people/${gmTarget.personId}/access`, { cookie: gm, body: accessBody("ADMIN") });
+    assert.equal(again.status, 200, show(again));
+    assert.equal(await roleOf(gmTarget.userId!), "admin");
+  });
+
+  await check("an admin login is above an operator admin: not theirs to change", async () => {
+    const res = await call("PUT", `/api/people/${gmTarget.personId}/access`, { cookie: cookie.opAdmin, body: accessBody("ADMIN") });
+    assert.equal(res.status, 403, show(res));
+    assert.equal(await roleOf(gmTarget.userId!), "admin");
+  });
+
+  await check("an operator admin cannot give an advisor ADMIN (an advisor's ADMIN is read as a legacy admin)", async () => {
+    const res = await call("PUT", `/api/people/${advisorPerson}/access`, { cookie: cookie.opAdmin, body: accessBody("ADMIN") });
+    assert.equal(res.status, 403, show(res));
+    const policy = await q("select 1 from access_policies where person_id = $1", [advisorPerson]);
+    assert.equal(policy.length, 0, "the refused save wrote an access policy");
+    const manager = await call("PUT", `/api/people/${advisorPerson}/access`, { cookie: cookie.opAdmin, body: accessBody("MANAGER") });
+    assert.equal(manager.status, 200, show(manager));
   });
 
   await check("a global admin's login is not an operator admin's to change", async () => {

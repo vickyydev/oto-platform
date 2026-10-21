@@ -106,35 +106,62 @@ export function isAdminRole(role: string | null | undefined): boolean {
 // ============================================
 
 /**
- * How far a role reaches when it grants access to someone else. A caller may
- * grant at most their own rank: a manager grants STAFF or MANAGER; every admin
- * role grants ADMIN, which is written as `admin` within the caller's own park
- * group. `global_admin` is above every grantable level: no access page or
- * login dialog writes it (the data admin, a global admin's own tool, does).
- * An unknown or raw "advisor" value ranks as staff.
+ * How far a role reaches. Legacy `admin` passes requireGlobalAdmin (Users,
+ * Operators, the data admin), so it ranks above operator_admin and only a
+ * global_admin is above it. An unknown or raw "advisor" value ranks as staff.
  */
 const ROLE_RANK: Record<string, number> = {
   staff: 0,
   manager: 1,
-  admin: 2,
   operator_admin: 2,
-  global_admin: 3,
+  admin: 3,
+  global_admin: 4,
 };
 export function roleRank(role: string | null | undefined): number {
   return typeof role === "string" && Object.hasOwn(ROLE_RANK, role) ? ROLE_RANK[role] : 0;
 }
 
-export const ACCESS_LEVEL_ROLES = { STAFF: "staff", MANAGER: "manager", ADMIN: "admin" } as const;
-export type AccessLevel = keyof typeof ACCESS_LEVEL_ROLES;
-
-/** The `users.role` an access level writes; anything unrecognised is staff. */
-export function roleForAccessLevel(level: string | null | undefined): "staff" | "manager" | "admin" {
-  return typeof level === "string" && Object.hasOwn(ACCESS_LEVEL_ROLES, level) ? ACCESS_LEVEL_ROLES[level as AccessLevel] : "staff";
+export const ACCESS_LEVELS = ["STAFF", "MANAGER", "ADMIN"] as const;
+export type AccessLevel = typeof ACCESS_LEVELS[number];
+export function isAccessLevel(level: unknown): level is AccessLevel {
+  return typeof level === "string" && (ACCESS_LEVELS as readonly string[]).includes(level);
 }
 
-/** Whether a caller of `callerRole` may grant `level` (at most their own rank). */
+/** A login's role that the page shows as ADMIN. */
+export function isAdminLevelRole(role: string | null | undefined): boolean {
+  return role === "operator_admin" || role === "admin" || role === "global_admin";
+}
+
+/**
+ * The `users.role` a caller writes when granting `level`, or null when the
+ * caller may not grant it (SCRUM-604). A caller grants at most their own
+ * rank, and the rank holds on the server: STAFF is staff; MANAGER is manager,
+ * for a manager or any admin; ADMIN is `admin` only from a global_admin, and
+ * from an operator_admin or a legacy admin it is `operator_admin`, scoped to
+ * the caller's own operator (the route writes the caller's operator_id).
+ * Nothing here ever writes `global_admin`.
+ */
+export function grantedRoleFor(
+  callerRole: string | null | undefined,
+  level: string | null | undefined,
+): "staff" | "manager" | "operator_admin" | "admin" | null {
+  const wanted = level ?? "STAFF";
+  if (!isAccessLevel(wanted)) return null;
+  const rank = roleRank(callerRole);
+  switch (wanted) {
+    case "STAFF":
+      return "staff";
+    case "MANAGER":
+      return rank >= roleRank("manager") ? "manager" : null;
+    case "ADMIN":
+      if (callerRole === "global_admin") return "admin";
+      return rank >= roleRank("operator_admin") ? "operator_admin" : null;
+  }
+}
+
+/** Whether a caller of `callerRole` may grant `level` at all. */
 export function canGrantAccessLevel(callerRole: string | null | undefined, level: string | null | undefined): boolean {
-  return roleRank(callerRole) >= roleRank(roleForAccessLevel(level));
+  return grantedRoleFor(callerRole, level) !== null;
 }
 
 // ============================================

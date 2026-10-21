@@ -639,9 +639,11 @@ jobs:
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/leave-balance-reach.check.ts
       # SCRUM-604: no escalation through the access page or the login dialog
-      # (a caller grants at most their own rank; ADMIN is written as admin,
-      # never global_admin; a login above the caller is not theirs to change),
-      # and a module override never opens an admin-only module.
+      # (a caller grants at most their own rank; ADMIN from an operator admin
+      # is an operator_admin of their operator, refused Users, Operators and
+      # the data admin; only a global admin's ADMIN is admin; never
+      # global_admin; a login above the caller is not theirs to change), and
+      # a module override never opens an admin-only module.
       - name: The app's access escalation checks
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/access-escalation.check.ts
