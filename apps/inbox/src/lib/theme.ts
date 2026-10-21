@@ -6,6 +6,7 @@
 // starting from light, so this lane and the preferences lane land in either
 // order.
 import { useEffect, useState } from 'react';
+import type { ApiResponse } from '@oto/api-types';
 import { ApiError, api } from '@/api/client';
 
 export type Theme = 'light' | 'dark' | 'system';
@@ -54,7 +55,7 @@ export interface ThemeEnv {
   /** `GET /me` — the profile, with `preferences.theme` once that lane lands. */
   readMe(): Promise<unknown>;
   /** `PUT /me/preferences` — absent until that lane lands (404). */
-  writePreference(theme: Theme): Promise<void>;
+  writePreference(theme: Theme): Promise<unknown>;
 }
 
 export interface ThemeController {
@@ -123,8 +124,10 @@ function browserEnv(): ThemeEnv {
   return {
     root: document.documentElement,
     media: window.matchMedia('(prefers-color-scheme: dark)'),
-    readMe: () => api.get<unknown>('/me'),
-    writePreference: (theme: Theme) => api.put<void>('/me/preferences', { theme }),
+    // GET /me declares no response schema yet, so the walker forbids ApiResponse here;
+    // themeFromMe reads the payload defensively instead.
+    readMe: () => api.get('/me'),
+    writePreference: (theme: Theme) => api.put<ApiResponse<'/me/preferences', 'put'>>('/me/preferences', { theme }),
   };
 }
 
