@@ -1,0 +1,151 @@
+{
+  "ticket": "SCRUM-609",
+  "sha": "3b079e01930a196b278a1987f588dc203f51020a",
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "sha": "3b079e01930a196b278a1987f588dc203f51020a",
+      "deployId": "dep-dbcfmtajnfac73bsv81g",
+      "finishedAt": "2026-10-21T17:54:04.61223Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "sha": "3b079e01930a196b278a1987f588dc203f51020a",
+      "deployId": "dep-dbcfmtajnfac73bsv980",
+      "finishedAt": "2026-10-21T17:51:27.421592Z"
+    },
+    {
+      "name": "oto-launcher-staging",
+      "sha": "3b079e01930a196b278a1987f588dc203f51020a",
+      "deployId": "dep-dbcfmtajnfac73bsv9eg",
+      "finishedAt": "2026-10-21T17:51:25.366376Z"
+    }
+  ],
+  "checks": [
+    {
+      "name": "Launcher tile is Admin with the existing console sign-on",
+      "passed": true,
+      "at": "2026-10-21T17:55:21.566Z"
+    },
+    {
+      "name": "Launcher hand-off lands on Overview; ten section links are offered to the platform administrator",
+      "passed": true,
+      "at": "2026-10-21T17:55:25.660Z"
+    },
+    {
+      "name": "All ten section links open their area and survive a reload",
+      "passed": true,
+      "at": "2026-10-21T17:55:44.344Z"
+    },
+    {
+      "name": "The new /watch/health address survives a reload",
+      "passed": true,
+      "at": "2026-10-21T17:55:46.115Z"
+    },
+    {
+      "name": "Old address /health opens Health",
+      "passed": true,
+      "at": "2026-10-21T17:55:47.869Z"
+    },
+    {
+      "name": "Old address /failures opens Failures",
+      "passed": true,
+      "at": "2026-10-21T17:55:50.629Z"
+    },
+    {
+      "name": "Old address /activity opens Activity",
+      "passed": true,
+      "at": "2026-10-21T17:55:52.856Z"
+    },
+    {
+      "name": "Old address /devices opens Devices",
+      "passed": true,
+      "at": "2026-10-21T17:55:54.368Z"
+    },
+    {
+      "name": "Old address /booths opens Booths",
+      "passed": true,
+      "at": "2026-10-21T17:55:56.103Z"
+    },
+    {
+      "name": "Old address /branches opens Branches",
+      "passed": true,
+      "at": "2026-10-21T17:55:57.834Z"
+    },
+    {
+      "name": "Old address /bookings opens Bookings",
+      "passed": true,
+      "at": "2026-10-21T17:56:00.063Z"
+    },
+    {
+      "name": "Old address /booth-report opens Booth report",
+      "passed": true,
+      "at": "2026-10-21T17:56:01.786Z"
+    },
+    {
+      "name": "Old address /vouchers opens Vouchers",
+      "passed": true,
+      "at": "2026-10-21T17:56:03.513Z"
+    },
+    {
+      "name": "Old address /voucher-types opens Voucher types",
+      "passed": true,
+      "at": "2026-10-21T17:56:05.252Z"
+    },
+    {
+      "name": "Old address /integrations opens Integrations",
+      "passed": true,
+      "at": "2026-10-21T17:56:06.996Z"
+    },
+    {
+      "name": "Phone menu reaches Platform and People, closes after navigation and has no horizontal overflow",
+      "passed": true,
+      "at": "2026-10-21T17:56:09.708Z"
+    },
+    {
+      "name": "Seeded manager opens Overview and cannot open Platform",
+      "passed": true,
+      "at": "2026-10-21T17:56:15.131Z"
+    },
+    {
+      "name": "Old Health address completes its real read before the screenshot",
+      "passed": true,
+      "at": "2026-10-21T17:58:41.032Z",
+      "httpStatus": 200
+    }
+  ],
+  "screenshots": [
+    {
+      "filename": "SCRUM-609-01-admin-launcher.png",
+      "label": "SCRUM-609: launcher Admin tile",
+      "capturedAt": "2026-10-21T17:55:22.019Z",
+      "path": "/"
+    },
+    {
+      "filename": "SCRUM-609-02-overview-navigation.png",
+      "label": "SCRUM-609: Overview and ten areas",
+      "capturedAt": "2026-10-21T17:55:26.124Z",
+      "path": "/overview"
+    },
+    {
+      "filename": "SCRUM-609-03-old-health-address.png",
+      "label": "SCRUM-609: old /health, completed reads",
+      "capturedAt": "2026-10-21T17:58:41.032Z",
+      "path": "/health"
+    },
+    {
+      "filename": "SCRUM-609-04-phone-navigation.png",
+      "label": "SCRUM-609: phone navigation, 390 pixels",
+      "capturedAt": "2026-10-21T17:56:09.678Z",
+      "path": "/platform"
+    },
+    {
+      "filename": "SCRUM-609-05-manager-navigation.png",
+      "label": "SCRUM-609: manager Overview, Platform hidden",
+      "capturedAt": "2026-10-21T17:56:13.606Z",
+      "path": "/overview"
+    }
+  ],
+  "createdBusinessRecords": false,
+  "completedAt": "2026-10-21T17:58:41.484Z"
+}
