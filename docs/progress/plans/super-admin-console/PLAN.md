@@ -48,7 +48,7 @@ Worktrees: Codex works in `C:/w/<lane>` worktrees on `lane/<topic>` branches as 
 
 Every page keeps the permission its lifted panel or existing page carries; the section gate only hides navigation. The client never decides; the api does (the console's `has()` ignores scope today — keep it as the offer, never the authority).
 
-New permission strings (add to `packages/shared/src/permissions.ts`, bundles updated, `platformSync` converges them): `admin:console:overview`, `hr:salary:view`, `platform:operator:switch`. `inbox:routing:manage` exists and gets its screen.
+New permission strings (add to `packages/shared/src/permissions.ts`, bundles updated, `platformSync` converges them): S2-23's `console:*` vocabulary for the console-own pages (§13), `hr:salary:view`, `platform:operator:switch`. `inbox:routing:manage` exists and gets its screen. The Overview gate in the table above is `console:overview:read`.
 
 ## 4. Architecture additions
 
@@ -187,3 +187,28 @@ Created 2026-10-21 in the active sprint (epic SCRUM-181):
 | P2 | SCRUM-618 | SCRUM-619 admin-screens package; SCRUM-620 Organisation; SCRUM-621 Tickets/Tiers/Add-ons; SCRUM-622 Menu group; SCRUM-623 Money group; SCRUM-624 Care and print; SCRUM-625 Reports; SCRUM-626 Teams & routing; SCRUM-627 POS redirect |
 | P3 | SCRUM-628 | SCRUM-629 role mapping; SCRUM-630 hr:salary:view; SCRUM-631 departments mirror; SCRUM-632 OTO App pages read-only; SCRUM-633 provisioning; SCRUM-634 Staff & HR summary |
 | P4 | SCRUM-635 | SCRUM-636 aggregates; SCRUM-637 Overview v2; SCRUM-638 assistant settings; SCRUM-639 Platform section; SCRUM-640 operator switch |
+
+## 13. Relation to S2-23 (SCRUM-221), the Sprint 2 Console design
+
+`docs/progress/SPRINT_2_PLAN.md` ("S2-23 — Console: the owner's super-admin control surface") already specifies the console's own pages in detail: Suite overview, Tenancy and organisation, People and access across every app (with provisioning into an app in one action, a reverse permission lookup and an effective-permission diff), App registry with maintenance mode, Activity with a data-access log and audited export, Failures with alert recipients and muting, Health, Devices, Integrations with test buttons and an expiry watch, Analytics and sources, Configuration and content with a cross-app drift check, Money oversight with an integrity panel, Support tools (cross-app lookup, the one-action trace, audited time-boxed impersonation under dual control), Data tools (demo reset, retention, PDPA erasure requests, backup status, migration rehearsal), Release controls (feature flags and kill switches with expiry and blast-radius preview), eight tables (`app_registry`, `feature_flag`, `impersonation_session`, `setting_registry`, `retention_policy`, `erasure_request`, `alert_recipient`, `deploy_event`), the `console:*` permission vocabulary and the danger rules (typed confirmation, mandatory reason, expiry, audit with `target_app`).
+
+What this plan takes from it, and what the 2026-10-21 approval changes:
+
+- **Adopted as the specification** for every console-own page: S2-23's pages, tables, permission vocabulary and danger rules. The permission strings in §3 are therefore S2-23's `console:*` names (`console:overview:read` for the Overview, `console:org:*`, `console:people:*`, and so on); `platform:operator:switch` is the one addition; lifted panels keep the permissions they carry today.
+- **Changed by the owner's approval:** S2-23 kept the POS catalogue, tiers and tax in the POS admin and the OTO App's identity pages in the OTO App (the 2026-09-20 ruling). The 2026-10-21 decisions move the catalogue, money, report and access panels into the console (P2) and make the OTO App's user, permission and operator pages read-only mirrors (P3). S2-23's rule that **the console never writes another app's tables directly** stands: the OTO App role and branch access are written only through the identity seam the platform already owns (`app_identity`, `otoapp.users.platform_user_id`, the provisioning service) and its departments are mirrored by the copy job, not edited.
+- **Phase map:** S2-23 Suite overview → P1-2 (v1) and P4-2 (v2, with the "needs a decision" tiles and the morning digest); Tenancy and organisation → P2-2 (per-branch feature flags → P5-1); People → P1-3 to P1-8, plus the one-action provisioning, the reverse permission lookup and the effective-permission diff as acceptance lines of P1-4 and P1-5; Devices, Health, Failures, Integrations, Activity → the existing pages, extended in P5; everything else S2-23 names → P5 below.
+- **SCRUM-221** stays open as the design reference and is linked to this epic's stories; it closes when P5 lands.
+
+## 14. P5 — the suite controls from S2-23 (Codex, after P4)
+
+| Ticket | Deliverable |
+|---|---|
+| P5-1 | App registry and maintenance mode (`core.app_registry`; the launcher reads it); feature flags and kill switches with expiry, blast-radius preview and auto-revert (`core.feature_flag`); Release controls page with `core.deploy_event` |
+| P5-2 | Activity extensions: app column and target-app filter (`audit_log.target_app`), the data-access log preset, the denials preset, audited export; Failures: alert recipients (`core.alert_recipient`), mute with a bounded window |
+| P5-3 | Health and Integrations extensions: the full `/ready` picture, job runner view, per-box devices and sync lag; integration test buttons recorded as `ops_run`, the credential and certificate expiry watch |
+| P5-4 | Analytics and sources page (source switch with preview, formula versions, dirty dates, re-run rollup); Configuration index from `core.setting_registry` with the cross-app drift check |
+| P5-5 | Money oversight (read-only, audited reads) with the money integrity panel |
+| P5-6 | Support tools: cross-app lookup (every lookup a `data_access` audit row), the one-action trace, audited time-boxed impersonation under dual control (`core.impersonation_session`, refused for platform admins and console holders, the banner in every app) |
+| P5-7 | Data tools: demo reset with preview, seed profiles, retention policies with the five-year floor (`core.retention_policy`), PDPA erasure requests (`core.erasure_request`), backup status, migration rehearsal |
+
+Acceptance for P5: each page answers "what is true now" and "what can I change from here"; every dangerous control carries typed confirmation, a reason, an expiry where S2-23 says so, and an audit row with `target_app`; nothing on Money oversight writes.
