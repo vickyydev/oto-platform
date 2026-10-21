@@ -20,6 +20,7 @@ Builder: the Codex agent (phases P1–P4). The coding agent that wrote this plan
 | Area | Owner | Notes |
 |---|---|---|
 | `apps/console/**` | Codex | the console is Codex's; the planner does not edit it during P1–P4 |
+| `apps/launcher/src/suite/apps.ts` (the tile table) and, additively, `packages/shared/src/permissions.ts` (the `console:*` strings and bundle lines) | Codex | the Admin tile name and address, and the permission vocabulary the console pages need; the launcher's assistant popup files stay the planner's |
 | `packages/admin-screens/**` (new, §4.2) | Codex | the lifted POS admin components and their api modules |
 | `apps/api/src/routes/{console,roles,employees,departments,access-review,aggregates,assistant-settings,platform}.ts` and their services | Codex | new console-facing routes; names below |
 | `apps/api/src/routes/accounts.ts`, `app-identities.ts`, `operators.ts`, `branches.ts`, `catalog.ts`, `menu.ts`, `fleet.ts`, `ops.ts`, `files.ts`, `staff-token.ts`, `vouchers*.ts`, `end-of-day.ts` | planner during P0 (guards only); Codex after P0 for console needs, additively | P0 changes are guard targets and scope checks; no behaviour change for honest users |
