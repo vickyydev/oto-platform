@@ -9206,11 +9206,23 @@ OTO Company Limited`,
         return res.status(400).json({ message: "Validation failed", errors: validationResult.error.errors });
       }
 
+      // SCRUM-651: the device belongs to its branch's park group (the caller's
+      // where the branch has none). Without one, the kiosk's session refresh
+      // answered "Device not found or inactive". Another park group's branch is
+      // the same 404 as one that does not exist.
+      const callerTenantId = req.userWithAccess?.tenantId ?? null;
+      const deviceBranch = await storage.getBranch(validationResult.data.branchId);
+      const deviceTenantId = deviceBranch ? (deviceBranch.tenantId ?? callerTenantId) : null;
+      if (!deviceBranch || !deviceTenantId || deviceTenantId !== callerTenantId) {
+        return res.status(404).json({ message: "Branch not found" });
+      }
+
       // Generate a device secret
       const deviceSecret = crypto.randomBytes(32).toString('hex');
       const deviceSecretHash = crypto.createHash('sha256').update(deviceSecret).digest('hex');
 
       const device = await storage.createKioskDevice({
+        tenantId: deviceTenantId,
         branchId: validationResult.data.branchId,
         name: validationResult.data.name,
         deviceSecretHash,
