@@ -27,6 +27,21 @@ const person = (who) => ({
   password: need(`STAGING_${who.toUpperCase()}_PASSWORD`),
 });
 
+/**
+ * What to type for a stored full number (+66...). The lock screen's phone
+ * field now shows a country prefix (+66) beside it, so the full number would
+ * double the prefix: where a prefix shows, the number is typed in local form
+ * (+66 becomes a leading 0); otherwise as stored.
+ */
+const typedPhone = async (field, phone) => {
+  const prefix = await field
+    .evaluate((el) => /\+(\d{1,4})/.exec(el.parentElement?.textContent ?? '')?.[1] ?? null)
+    .catch(() => null);
+  if (!prefix || !phone.startsWith(`+${prefix}`)) return phone;
+  const national = phone.slice(prefix.length + 1);
+  return prefix === '66' ? `0${national}` : national;
+};
+
 const locked = (page) =>
   page.evaluate(() => Array.from(document.querySelectorAll('input[type="password"]')).some((i) => i.offsetParent !== null));
 
@@ -39,7 +54,8 @@ export async function posSignIn(browser, who, { width = 1600, height = 1100 } = 
     await page.goto(POS, { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(2500);
     if (!(await locked(page))) break;
-    await page.locator('input[type="tel"], input[inputmode="tel"]').last().fill(p.phone).catch(() => {});
+    const phoneField = page.locator('input[type="tel"], input[inputmode="tel"]').last();
+    await phoneField.fill(await typedPhone(phoneField, p.phone)).catch(() => {});
     await page.locator('input[type="password"]').last().fill(p.password).catch(() => {});
     await page.getByRole('button', { name: /^sign in$/i }).click().catch(() => {});
     await page.waitForTimeout(6000);
