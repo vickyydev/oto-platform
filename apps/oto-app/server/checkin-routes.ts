@@ -14,7 +14,7 @@ import path from "path";
 import fs from "fs";
 import { uploadToObjectStorage, getFileFromObjectStorage } from "./file-storage";
 import { getEmployeeDisplayName } from "./lib/employeeDisplayName";
-import { hashSessionToken, validateKioskSession } from "./kiosk-auth";
+import { hashSessionToken, requireKioskPermissionIfKiosk, validateKioskSession } from "./kiosk-auth";
 
 async function requireAuthOrKiosk(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
@@ -215,9 +215,9 @@ async function serveDropoffSignature(req: Request, res: Response, folder: string
   }
 }
 
-router.get("/api/files/dropoff-signatures/:filename", requireAuthOrKiosk,
+router.get("/api/files/dropoff-signatures/:filename", requireAuthOrKiosk, requireKioskPermissionIfKiosk("core.checkin.read"),
   (req, res) => serveDropoffSignature(req, res, "dropoff-signatures"));
-router.get("/api/files/dropoff-signatures-private/:filename", requireAuthOrKiosk,
+router.get("/api/files/dropoff-signatures-private/:filename", requireAuthOrKiosk, requireKioskPermissionIfKiosk("core.checkin.read"),
   (req, res) => serveDropoffSignature(req, res, PRIVATE_DROPOFF_SIGNATURES));
 
 // Checkout photos share a storage folder with checklist evidence. Only a photo
@@ -259,8 +259,8 @@ async function serveCheckoutPhoto(req: Request, res: Response, next: NextFunctio
   }
 }
 
-router.get("/api/files/checkin-photos/:filename", requireAuthOrKiosk, serveCheckoutPhoto);
-router.get("/uploads/checkin-photos/:filename", requireAuthOrKiosk, serveCheckoutPhoto);
+router.get("/api/files/checkin-photos/:filename", requireAuthOrKiosk, requireKioskPermissionIfKiosk("core.checkin.read"), serveCheckoutPhoto);
+router.get("/uploads/checkin-photos/:filename", requireAuthOrKiosk, requireKioskPermissionIfKiosk("core.checkin.read"), serveCheckoutPhoto);
 
 const publicCheckinSchema = z.object({
   branchId: z.string(),
@@ -609,7 +609,7 @@ router.post("/api/public/dropoff-checkin", async (req: Request, res: Response) =
   }
 });
 
-router.get("/api/core/checkins", requireAuthOrKiosk, async (req: Request, res: Response) => {
+router.get("/api/core/checkins", requireAuthOrKiosk, requireKioskPermissionIfKiosk("core.checkin.read"), async (req: Request, res: Response) => {
   try {
     const tenantId = req.kioskSession?.tenantId ?? (req.user as UserWithBranchAccess | undefined)?.tenantId;
     if (!tenantId) return res.status(403).json({ message: "Tenant access required" });
@@ -670,7 +670,7 @@ router.get("/api/core/checkins", requireAuthOrKiosk, async (req: Request, res: R
   }
 });
 
-router.patch("/api/core/checkins/:id/status", requireAuthOrKiosk, requireCheckinBranch, async (req: Request, res: Response) => {
+router.patch("/api/core/checkins/:id/status", requireAuthOrKiosk, requireKioskPermissionIfKiosk("core.checkin.update"), requireCheckinBranch, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -708,7 +708,7 @@ router.patch("/api/core/checkins/:id/status", requireAuthOrKiosk, requireCheckin
 });
 
 // Checkout with photo - releases nanny reservation
-router.post("/api/core/checkins/:id/checkout", requireAuthOrKiosk, requireCheckinBranch, async (req: Request, res: Response) => {
+router.post("/api/core/checkins/:id/checkout", requireAuthOrKiosk, requireKioskPermissionIfKiosk("core.checkin.update"), requireCheckinBranch, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { outPhotoData } = req.body;
@@ -786,7 +786,7 @@ router.post("/api/core/checkins/:id/checkout", requireAuthOrKiosk, requireChecki
 });
 
 // Revert checkout - put child back in park
-router.post("/api/core/checkins/:id/revert-checkout", requireAuthOrKiosk, requireCheckinBranch, async (req: Request, res: Response) => {
+router.post("/api/core/checkins/:id/revert-checkout", requireAuthOrKiosk, requireKioskPermissionIfKiosk("core.checkin.update"), requireCheckinBranch, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const tenantId = getRequestTenantId(req);
@@ -838,7 +838,7 @@ router.post("/api/core/checkins/:id/revert-checkout", requireAuthOrKiosk, requir
   }
 });
 
-router.get("/api/core/nannies/available", requireAuthOrKiosk, async (req: Request, res: Response) => {
+router.get("/api/core/nannies/available", requireAuthOrKiosk, requireKioskPermissionIfKiosk("core.checkin.read"), async (req: Request, res: Response) => {
   try {
     const { branchId } = req.query;
     const tenantId = getRequestTenantId(req);
@@ -984,7 +984,7 @@ router.get("/api/core/nannies/available", requireAuthOrKiosk, async (req: Reques
   }
 });
 
-router.post("/api/core/checkins/:id/assign-nanny", requireAuthOrKiosk, requireCheckinBranch, async (req: Request, res: Response) => {
+router.post("/api/core/checkins/:id/assign-nanny", requireAuthOrKiosk, requireKioskPermissionIfKiosk("core.checkin.update"), requireCheckinBranch, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { nannyEmployeeId } = req.body;
@@ -1109,7 +1109,7 @@ router.post("/api/core/checkins/:id/assign-nanny", requireAuthOrKiosk, requireCh
 });
 
 // Update service type and duration
-router.patch("/api/core/checkins/:id/service", requireAuthOrKiosk, requireCheckinBranch, async (req: Request, res: Response) => {
+router.patch("/api/core/checkins/:id/service", requireAuthOrKiosk, requireKioskPermissionIfKiosk("core.checkin.update"), requireCheckinBranch, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { serviceType, durationHours, startTime } = req.body;
@@ -1301,7 +1301,7 @@ router.patch("/api/core/checkins/:id/service", requireAuthOrKiosk, requireChecki
 });
 
 // Extend time for in_park children
-router.post("/api/core/checkins/:id/extend-time", requireAuthOrKiosk, requireCheckinBranch, async (req: Request, res: Response) => {
+router.post("/api/core/checkins/:id/extend-time", requireAuthOrKiosk, requireKioskPermissionIfKiosk("core.checkin.update"), requireCheckinBranch, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { additionalMinutes } = req.body;
@@ -1368,7 +1368,7 @@ router.post("/api/core/checkins/:id/extend-time", requireAuthOrKiosk, requireChe
 });
 
 // Enter park - start the service
-router.post("/api/core/checkins/:id/enter-park", requireAuthOrKiosk, requireCheckinBranch, async (req: Request, res: Response) => {
+router.post("/api/core/checkins/:id/enter-park", requireAuthOrKiosk, requireKioskPermissionIfKiosk("core.checkin.update"), requireCheckinBranch, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const userId = (req.user as any)?.id;
@@ -1426,7 +1426,7 @@ router.post("/api/core/checkins/:id/enter-park", requireAuthOrKiosk, requireChec
 });
 
 // Get checkin details
-router.get("/api/core/checkins/:id", requireAuthOrKiosk, requireCheckinBranch, async (req: Request, res: Response) => {
+router.get("/api/core/checkins/:id", requireAuthOrKiosk, requireKioskPermissionIfKiosk("core.checkin.read"), requireCheckinBranch, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const tenantId = getRequestTenantId(req);
@@ -1450,7 +1450,7 @@ router.get("/api/core/checkins/:id", requireAuthOrKiosk, requireCheckinBranch, a
 // ============================================
 
 // Get today's nanny schedule with reservations and availability
-router.get("/api/core/nanny-schedule", requireAuthOrKiosk, async (req: Request, res: Response) => {
+router.get("/api/core/nanny-schedule", requireAuthOrKiosk, requireKioskPermissionIfKiosk("core.checkin.read"), async (req: Request, res: Response) => {
   try {
     const { branchId, date } = req.query;
     const tenantId = getRequestTenantId(req);
@@ -1663,7 +1663,7 @@ router.get("/api/core/nanny-schedule", requireAuthOrKiosk, async (req: Request, 
 });
 
 // Create a nanny reservation
-router.post("/api/core/nanny-reservations", requireAuthOrKiosk, async (req: Request, res: Response) => {
+router.post("/api/core/nanny-reservations", requireAuthOrKiosk, requireKioskPermissionIfKiosk("core.checkin.update"), async (req: Request, res: Response) => {
   try {
     const tenantId = getRequestTenantId(req);
     const { 
@@ -1846,7 +1846,7 @@ router.post("/api/core/nanny-reservations", requireAuthOrKiosk, async (req: Requ
 });
 
 // Update reservation status
-router.patch("/api/core/nanny-reservations/:id", requireAuthOrKiosk, async (req: Request, res: Response) => {
+router.patch("/api/core/nanny-reservations/:id", requireAuthOrKiosk, requireKioskPermissionIfKiosk("core.checkin.update"), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { status, cancellationReason } = req.body;
@@ -2000,7 +2000,7 @@ const adminToggleAvailabilitySchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 });
 
-router.post("/api/core/nanny-availability/toggle", requireAuthOrKiosk, async (req: Request, res: Response) => {
+router.post("/api/core/nanny-availability/toggle", requireAuthOrKiosk, requireKioskPermissionIfKiosk("core.checkin.update"), async (req: Request, res: Response) => {
   try {
     const tenantId = getRequestTenantId(req);
     

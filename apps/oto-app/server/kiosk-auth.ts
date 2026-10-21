@@ -173,6 +173,19 @@ export function requireKioskPermission(...permissions: KioskPermission[]) {
   };
 }
 
+/**
+ * For a route that a signed-in user or a kiosk may call (requireAuthOrKiosk):
+ * a kiosk session must hold `permissions` (requireKioskPermission); a
+ * signed-in user is decided by the route's own checks, as before (SCRUM-605).
+ */
+export function requireKioskPermissionIfKiosk(...permissions: KioskPermission[]) {
+  const kioskGate = requireKioskPermission(...permissions);
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.kioskSession) return next();
+    return kioskGate(req, res, next);
+  };
+}
+
 const KIOSK_CODE_EXPIRY_SECONDS_DEFAULT = 600; // 10 minutes
 
 /** The park group's kiosk code lifetime (S2-17b round 4a), the default park group's where it has none. */

@@ -648,7 +648,8 @@ jobs:
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/access-escalation.check.ts
       # SCRUM-605: the checks that did nothing decide — a kiosk session's own
-      # permission set, hr.terminate_employee (a manager records a resignation,
+      # permission set (a face kiosk refused the reception and check-in
+      # routes), hr.terminate_employee (a manager records a resignation,
       # not a termination), the contract template gate still open to admins,
       # and the employee PIN salted, branch-checked and migrated from sha256.
       - name: The app's named rights checks

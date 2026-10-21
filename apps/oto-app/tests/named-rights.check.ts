@@ -6,8 +6,10 @@
 //
 //   1. requireKioskPermission reads the session's own permission set (from its
 //      device's kind): a face-recognition kiosk's session is refused a
-//      check-in key, a reception kiosk's passes. Driven in this process on
-//      sessions validated against the database, as the routes validate them.
+//      check-in key, a reception kiosk's passes — in this process on sessions
+//      validated against the database, and over HTTP on the routes it now
+//      guards (the reception kiosk's reads, the check-in and camp check-in
+//      reads), where a signed-in manager still reads as before.
 //   2. hr.terminate_employee: a manager is refused a termination (the
 //      offboarding create and edit, and marking the employee terminated) and
 //      still records a resignation; an operator admin terminates.
@@ -272,6 +274,46 @@ try {
     manager: await signIn(manager.email),
     opAdmin: await signIn(opAdmin.email),
   };
+
+  const asKiosk = async (token: string, path: string) => {
+    const res = await fetch(`${ORIGIN}${path}`, { headers: { authorization: `Bearer ${token}` } });
+    return { status: res.status, body: await res.text() };
+  };
+  const KIOSK_READS = [
+    "/api/kiosk-reception/session",
+    "/api/kiosk-reception/branch",
+    "/api/kiosk-reception/checkins",
+    `/api/core/checkins?branchId=${branch}`,
+    `/api/core/camp-checkins/today?branchId=${branch}`,
+  ];
+
+  await check("a face kiosk's session is refused the reception and check-in reads (403)", async () => {
+    for (const path of KIOSK_READS) {
+      const res = await asKiosk(faceToken, path);
+      assert.equal(res.status, 403, `${path}: ${res.status} ${res.body}`);
+    }
+  });
+
+  await check("a reception kiosk's session reads them", async () => {
+    for (const path of KIOSK_READS) {
+      const res = await asKiosk(receptionToken, path);
+      assert.equal(res.status, 200, `${path}: ${res.status} ${res.body}`);
+    }
+  });
+
+  await check("a face kiosk's session is refused a check-in write (403 before the route looks)", async () => {
+    const res = await fetch(`${ORIGIN}/api/core/checkins/${randomUUID()}/checkout`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${faceToken}`, "content-type": "application/json" },
+      body: "{}",
+    });
+    assert.equal(res.status, 403, `${res.status} ${await res.text()}`);
+  });
+
+  await check("a signed-in manager still reads check-ins", async () => {
+    const res = await call("GET", `/api/core/checkins?branchId=${branch}`, { cookie: cookie.manager });
+    assert.equal(res.status, 200, show(res));
+  });
 
   // ─── 2. hr.terminate_employee ───────────────────────────────────────────
 

@@ -161,7 +161,7 @@ import {
 import { directoryEventRouter } from "./directory/eventRoutes";
 import { directoryJobRouter } from "./directory/jobRoutes";
 import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, employeeAssets, employeeOffboarding, offboardingChecklist, eventStatuses, insertEventStatusSchema, branches, departments, operators, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, timekeepingIssues, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, leavePolicies, sickLeavePolicies, type LeaveType, scheduleAuditLog, activityLog, roles, roleBranchAssignments, employeeRoles, payrollEmployeeSummaries, payrollLineItems, payrollDayReconciliations, payrollExceptions, statutoryCalculationResults, employeePayrollProfiles, payslips, accessPolicies, accessItems, userPreferences, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections, kioskAuthAttempts } from "@shared/schema";
-import { hashSessionToken, validateKioskSession } from "./kiosk-auth";
+import { hashSessionToken, requireKioskPermission, requireKioskPermissionIfKiosk, requireKioskSession, validateKioskSession } from "./kiosk-auth";
 import { hashPin, verifyEmployeePin } from "./pin-utils";
 import { DEACTIVATE_INSTEAD, deleteManagedUser } from "./lib/userDeletion";
 import { deleteBranchWhole, deleteEmployeeWhole, deletePersonWhole } from "./lib/recordDeletion";
@@ -9606,7 +9606,7 @@ OTO Company Limited`,
   });
 
   // Get kiosk session info (requires kiosk session)
-  app.get("/api/kiosk-reception/session", async (req, res, next) => {
+  app.get("/api/kiosk-reception/session", requireKioskSession, requireKioskPermission("core.checkin.read"), async (req, res, next) => {
     try {
       const { requireKioskSession, hashSessionToken, validateKioskSession } = await import("./kiosk-auth");
     void requireKioskSession;
@@ -9639,7 +9639,7 @@ OTO Company Limited`,
   });
 
   // Get branch info for reception kiosk (minimal public info)
-  app.get("/api/kiosk-reception/branch", async (req, res, next) => {
+  app.get("/api/kiosk-reception/branch", requireKioskSession, requireKioskPermission("core.checkin.read"), async (req, res, next) => {
     try {
       const { hashSessionToken, validateKioskSession } = await import("./kiosk-auth");
       
@@ -9675,7 +9675,7 @@ OTO Company Limited`,
   });
 
   // Get guest check-ins for reception kiosk (branch-scoped via session)
-  app.get("/api/kiosk-reception/checkins", async (req, res, next) => {
+  app.get("/api/kiosk-reception/checkins", requireKioskSession, requireKioskPermission("core.checkin.read"), async (req, res, next) => {
     try {
       const { hashSessionToken, validateKioskSession } = await import("./kiosk-auth");
       
@@ -18127,10 +18127,11 @@ OTO Company Limited`,
       next(error);
     }
   };
-  app.get("/api/files/camp-photos/:filename", requireAuthOrKiosk, serveCampPhoto("camp-photos"));
-  app.get("/uploads/camp-photos/:filename", requireAuthOrKiosk, serveCampPhoto("camp-photos"));
+  app.get("/api/files/camp-photos/:filename", requireAuthOrKiosk, requireKioskPermissionIfKiosk("core.checkin.read"), serveCampPhoto("camp-photos"));
+  app.get("/uploads/camp-photos/:filename", requireAuthOrKiosk, requireKioskPermissionIfKiosk("core.checkin.read"), serveCampPhoto("camp-photos"));
   const campPrivateAuth = (req: Request, res: Response, next: NextFunction) =>
-    typeof req.query.claim === "string" ? next() : requireAuthOrKiosk(req, res, next);
+    typeof req.query.claim === "string" ? next() : requireAuthOrKiosk(req, res, (err?: unknown) =>
+      err ? next(err) : requireKioskPermissionIfKiosk("core.checkin.read")(req, res, next));
   app.get("/api/files/camp-photos-private/:filename", campPrivateAuth, serveCampPhoto("camp-photos-private"));
   app.get("/uploads/camp-photos-private/:filename", campPrivateAuth, serveCampPhoto("camp-photos-private"));
   app.get("/api/public/camp-photo/:registrationId/:field", async (req, res, next) => {
@@ -19219,7 +19220,7 @@ OTO Company Limited`,
   // ============================================
 
   // Get today's camp registrations (children attending today's active camp)
-  app.get("/api/core/camp-checkins/today", requireAuthOrKiosk, async (req, res, next) => {
+  app.get("/api/core/camp-checkins/today", requireAuthOrKiosk, requireKioskPermissionIfKiosk("core.checkin.read"), async (req, res, next) => {
     try {
       const user = req.user as UserWithBranchAccess | undefined;
       const tenantId = req.kioskSession?.tenantId || await resolveTenantId(user?.tenantId);
@@ -19347,7 +19348,7 @@ OTO Company Limited`,
   };
 
   // Check in a camp child (writes to daily attendance row for today)
-  app.post("/api/core/camp-checkins/:id/check-in", requireAuthOrKiosk, async (req, res, next) => {
+  app.post("/api/core/camp-checkins/:id/check-in", requireAuthOrKiosk, requireKioskPermissionIfKiosk("core.checkin.update"), async (req, res, next) => {
     try {
       const { id } = req.params;
       const target = await campRegistrationForCaller(req, id);
@@ -19393,7 +19394,7 @@ OTO Company Limited`,
   });
 
   // Check out a camp child (writes to daily attendance row for today)
-  app.post("/api/core/camp-checkins/:id/check-out", requireAuthOrKiosk, async (req, res, next) => {
+  app.post("/api/core/camp-checkins/:id/check-out", requireAuthOrKiosk, requireKioskPermissionIfKiosk("core.checkin.update"), async (req, res, next) => {
     try {
       const { id } = req.params;
       const target = await campRegistrationForCaller(req, id);
@@ -19465,7 +19466,7 @@ OTO Company Limited`,
   });
 
   // Undo check-in (revert today's attendance row to waiting)
-  app.post("/api/core/camp-checkins/:id/undo-check-in", requireAuthOrKiosk, async (req, res, next) => {
+  app.post("/api/core/camp-checkins/:id/undo-check-in", requireAuthOrKiosk, requireKioskPermissionIfKiosk("core.checkin.update"), async (req, res, next) => {
     try {
       const { id } = req.params;
       const target = await campRegistrationForCaller(req, id);
@@ -19500,7 +19501,7 @@ OTO Company Limited`,
   });
 
   // Undo check-out (revert today's attendance row to checked_in)
-  app.post("/api/core/camp-checkins/:id/undo-check-out", requireAuthOrKiosk, async (req, res, next) => {
+  app.post("/api/core/camp-checkins/:id/undo-check-out", requireAuthOrKiosk, requireKioskPermissionIfKiosk("core.checkin.update"), async (req, res, next) => {
     try {
       const { id } = req.params;
       const target = await campRegistrationForCaller(req, id);
