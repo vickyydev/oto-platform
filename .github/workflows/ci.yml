@@ -617,6 +617,14 @@ jobs:
       - name: The app's task assignees in Today checks
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/task-assignees-today.check.ts
+      # SCRUM-597: the checklists in Today find the person the way Tasks Today
+      # and My Account do (login, then email, then phone, in their own park
+      # group) — department and by-name checklists reach a record with no
+      # login attached; another group's record or another login's is not
+      # taken; no record still means Everyone only; staff never see checkers.
+      - name: The app's checklist assignees in Today checks
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/checklist-assignees-today.check.ts
       # SCRUM-595: the leave balance reads keep the original app's branch
       # rule — sick-leave balances (per employee and per branch) refused for a
       # branch out of reach, a no-branch employee's balance refused without

@@ -191,6 +191,7 @@ import { tasks, taskQuestions, taskAssignments, taskAttachments, checklistRuns, 
 import { eq, desc, and, asc, or, ne, isNull, isNotNull, inArray, gte, lte, sql } from "drizzle-orm";
 import { generateInstanceForDefinition } from "./core/taskGeneration";
 import { personFence, fenceAllows, fenceRows, EMPLOYEE_DENIED } from "./core/personScope";
+import { resolveSelfEmployeeId } from "./core/selfEmployee";
 
 async function requireAuthOrKiosk(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
@@ -20754,8 +20755,16 @@ OTO Company Limited`,
         ? enrichedTemplates 
         : enrichedTemplates.filter((t: any) => t.checklistType !== 'checker');
       
-      // Always enforce personal-workspace filter for all users in Today view
-      const linkedEmployee = await storage.getEmployeeByUserId(user.id);
+      // Always enforce personal-workspace filter for all users in Today view.
+      // The signed-in person's employee record is resolved the way My Account
+      // and Tasks Today resolve it (SCRUM-597): by login, then email, then
+      // phone, within their own park group.
+      const selfEmployeeId = await resolveSelfEmployeeId(user.id, tenantId);
+      const [linkedEmployee] = selfEmployeeId
+        ? await db.select().from(employees)
+            .where(and(eq(employees.id, selfEmployeeId), eq(employees.tenantId, tenantId)))
+            .limit(1)
+        : [];
       const employeeId = linkedEmployee?.id || null;
       const employeeDepartmentId = linkedEmployee?.primaryDepartmentId || (linkedEmployee as any)?.departmentId || null;
       
