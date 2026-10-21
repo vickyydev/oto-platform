@@ -428,8 +428,8 @@ describe('the test night’s rules (SCRUM-591, 2026-10-21; plan "Test night 2026
   });
 
   it('S10: smallTalk travels in both answer modes and is optional on the wire', () => {
-    expect(INTERNAL_OUTPUT_CONTRACT).toContain('smallTalk: true only for a social message');
-    expect(INTERNAL_OUTPUT_CONTRACT_TRAILING).toContain('smallTalk: true only for a social message');
+    expect(INTERNAL_OUTPUT_CONTRACT).toContain('smallTalk: true for a social message that needed no tool (thanks, hello) and for a question back with no figure and no link');
+    expect(INTERNAL_OUTPUT_CONTRACT_TRAILING).toContain('smallTalk: true for a social message that needed no tool (thanks, hello) and for a question back with no figure and no link');
     const social = answer({ answer: 'ยินดีค่ะ', language: 'th', smallTalk: true });
     expect(InternalAnswerSchema.safeParse(social).success).toBe(true);
     expect(InternalAnswerSchema.safeParse(answer()).success).toBe(true);

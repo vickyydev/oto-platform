@@ -141,7 +141,7 @@ export const INTERNAL_OUTPUT_CONTRACT_TRAILING = [
   '{"links":[{"key":"<a key from the link list>","params":[{"name":"<param>","value":"<value>"}]}],"language":"<th|en|ru>","smallTalk":false}',
   'links: at most 3, only keys from the link list, params as name/value pairs; [] when no screen fits.',
   'language: th, en or ru: the language of the question.',
-  'smallTalk: true only for a social message that needed no tool (thanks, hello); false otherwise.',
+  'smallTalk: true for a social message that needed no tool (thanks, hello) and for a question back with no figure and no link; false otherwise.',
   'Put no JSON, code fence or URL anywhere else in the reply.',
   'Every number and date in the answer must appear in a tool result from this conversation.',
 ].join('\n');
@@ -152,7 +152,7 @@ export const INTERNAL_OUTPUT_CONTRACT = [
   "answer: the reply in the asker's language, at most 1200 characters. Short lists are allowed when the answer is a list (shifts, names).",
   'links: at most 3, each a key from the link list with its parameters as name/value pairs. Only keys from the list; an empty list when no screen fits.',
   'language: th, en or ru: the language of the question.',
-  'smallTalk: true only for a social message that needed no tool (thanks, hello); false otherwise.',
+  'smallTalk: true for a social message that needed no tool (thanks, hello) and for a question back with no figure and no link; false otherwise.',
   'Every number and date in answer must appear in a tool result from this conversation.',
 ].join('\n');
 
