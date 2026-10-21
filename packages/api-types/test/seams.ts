@@ -43,6 +43,8 @@ export const FRONT_ENDS = [
   // The Inbox shell (S2-19 I3a, SCRUM-587): its reads go through its own
   // `api` wrapper in src/api/client.ts, read like the Console's.
   'apps/inbox/src',
+  // Lifted admin panels use the host's authenticated AdminApi transport.
+  'packages/admin-screens/src',
 ];
 
 /** Generated or vendored: never authored call sites. */

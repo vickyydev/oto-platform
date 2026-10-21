@@ -12,6 +12,7 @@
     "e2e": "node e2e/run.mjs"
   },
   "devDependencies": {
+    "@oto/admin-screens": "workspace:*",
     "@oto/api-types": "workspace:*",
     "@oto/shared": "workspace:*",
     "@playwright/test": "^1.63.0",

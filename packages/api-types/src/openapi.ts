@@ -674,7 +674,23 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            accounts: {
+                                /** Format: uuid */
+                                id: string;
+                                phone: string;
+                                /** @enum {string} */
+                                status: "invited" | "active" | "inactive";
+                                mustChangePassword: boolean;
+                                employee: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                } | null;
+                            }[];
+                        };
+                    };
                 };
             };
         };
@@ -713,7 +729,19 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            /** @enum {string} */
+                            status: "invited" | "active" | "inactive";
+                            codeSent?: boolean;
+                            warning?: {
+                                code: string;
+                                message: string;
+                            };
+                        };
+                    };
                 };
             };
         };
@@ -882,7 +910,12 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            ok: true;
+                        };
+                    };
                 };
             };
         };
@@ -914,7 +947,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            temporaryPassword: string;
+                        };
+                    };
                 };
             };
         };
@@ -948,7 +985,26 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            sessions: {
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                branchId: string | null;
+                                /** Format: uuid */
+                                stationId: string | null;
+                                /** Format: date-time */
+                                lockedAt: string | null;
+                                /** Format: date-time */
+                                lastSeenAt: string;
+                                /** Format: date-time */
+                                expiresAt: string;
+                                /** Format: date-time */
+                                createdAt: string;
+                            }[];
+                        };
+                    };
                 };
             };
         };
@@ -986,7 +1042,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            sessionsEnded: number;
+                        };
+                    };
                 };
             };
         };

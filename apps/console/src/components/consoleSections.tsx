@@ -34,6 +34,11 @@ export interface ConsoleNavGroup {
 /** Existing pages keep their permissions and their old addresses. */
 export const CONSOLE_SECTIONS: ConsoleSection[] = [
   {
+    id: 'accounts', path: '/people/accounts', label: 'Accounts', icon: Users,
+    description: 'Staff sign-in accounts, invitations, phones, passwords and signed-in devices.',
+    permission: 'admin:account:read',
+  },
+  {
     id: 'health',
     path: '/watch/health',
     label: 'Health',
@@ -169,7 +174,7 @@ export const consoleNav: ConsoleNavGroup[] = [
   {
     id: 'people', label: 'People & access', icon: Users,
     description: 'Accounts, roles, app access, employees and departments.',
-    gate: { any: ['admin:account:read'] }, sections: [],
+    gate: { any: ['admin:account:read'] }, sections: pages('accounts'),
     currentHome: { app: 'pos', path: '/admin?panel=login-users', label: 'Open Login Users in POS Admin' },
   },
   {

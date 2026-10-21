@@ -47,6 +47,7 @@
         "$TURBO_ROOT$/apps/launcher/src/**",
         "$TURBO_ROOT$/apps/booth/src/**",
         "$TURBO_ROOT$/apps/inbox/src/**",
+        "$TURBO_ROOT$/packages/admin-screens/src/**",
         "$TURBO_ROOT$/packages/shared/src/**"
       ]
     },

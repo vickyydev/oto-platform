@@ -89,7 +89,7 @@ export default tseslint.config(
     // Compiler checks, which this code was never written against. The Inbox
     // shell (S2-19 I3a) is held to the same two from its first commit, and
     // the launcher from the assistant's chat popup (SCRUM-591).
-    files: ['apps/pos/**/*.{ts,tsx}', 'apps/inbox/**/*.{ts,tsx}', 'apps/launcher/**/*.{ts,tsx}'],
+    files: ['apps/pos/**/*.{ts,tsx}', 'apps/inbox/**/*.{ts,tsx}', 'apps/launcher/**/*.{ts,tsx}', 'packages/admin-screens/**/*.{ts,tsx}'],
     plugins: { 'react-hooks': reactHooks },
     rules: {
       'react-hooks/rules-of-hooks': 'error',

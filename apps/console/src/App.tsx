@@ -25,6 +25,7 @@ import { Vouchers } from '@/pages/Vouchers';
 import { VoucherTypes } from '@/pages/VoucherTypes';
 import { AreaLanding } from '@/pages/AreaLanding';
 import { Overview } from '@/pages/Overview';
+import { Accounts } from '@/pages/Accounts';
 
 const LAUNCHER_URL = import.meta.env.VITE_LAUNCHER_URL?.trim();
 
@@ -124,6 +125,7 @@ function NotFound() {
 }
 
 const pageElements: Record<string, ReactElement> = {
+  accounts: <Accounts />,
   health: <Health />, failures: <Failures />, activity: <Activity />,
   devices: <Devices />, branches: <Branches />, bookings: <Bookings />,
   booths: <Booths />, 'booth-report': <BoothReport />, vouchers: <Vouchers />,

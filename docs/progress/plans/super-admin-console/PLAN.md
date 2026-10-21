@@ -125,6 +125,8 @@ Acceptance for P0: every pin red before and green after; the branch-isolation re
 
 Proofs: one screenshot per ticket on staging; the P1 demo is an admin managing one person end to end.
 
+SCRUM-611 evidence ruling (owner, 2026-10-22): prove the reception invitation locally with a captured SMS adapter, then prove account-management controls on an existing demo person in staging. Never send a real staging SMS. Restore the demo's original phone, active status and working password, and verify the read-back; avoid a person linked or stamped into the OTO App so deactivation has no app-side effect. The existing invitation behaviour is unchanged.
+
 ## 8. P2 — organisation, catalogue, reports (Codex)
 
 | Ticket | Deliverable |

@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { randomBytes } from 'node:crypto';
 import { hash } from '@node-rs/argon2';
 import { and, desc, eq, type SQL } from 'drizzle-orm';
-import { account, employee, role, roleAssignment, session } from '@oto/db';
+import { ACCOUNT_STATUSES, account, employee, role, roleAssignment, session } from '@oto/db';
 import { newId, normalizePhone, type Permission } from '@oto/shared';
 import type { App } from '../app';
 import { errors } from '../lib/errors';
@@ -29,6 +29,34 @@ const RoleAssignmentInput = z.object({
   scopeId: z.string().uuid().nullable(),
 });
 
+const AccountSummary = z.object({
+  id: z.string().uuid(),
+  phone: z.string(),
+  status: z.enum(ACCOUNT_STATUSES),
+  mustChangePassword: z.boolean(),
+  employee: z.object({ id: z.string().uuid(), name: z.string() }).nullable(),
+});
+
+const CreatedAccount = z.object({
+  id: z.string().uuid(),
+  status: z.enum(ACCOUNT_STATUSES),
+  // Replays answer the stored account result without attempting delivery.
+  codeSent: z.boolean().optional(),
+  warning: z.object({ code: z.string(), message: z.string() }).optional(),
+});
+
+const AccountSessions = z.object({
+  sessions: z.array(z.object({
+    id: z.string().uuid(),
+    branchId: z.string().uuid().nullable(),
+    stationId: z.string().uuid().nullable(),
+    lockedAt: z.string().datetime().nullable(),
+    lastSeenAt: z.string().datetime(),
+    expiresAt: z.string().datetime(),
+    createdAt: z.string().datetime(),
+  })),
+});
+
 export async function accountRoutes(app: App): Promise<void> {
   // SCRUM-266 / SCRUM-607 — the account-by-id fence lives in
   // services/access-control.ts, shared with /admin/apps and /files.
@@ -47,6 +75,7 @@ export async function accountRoutes(app: App): Promise<void> {
       schema: {
         description: 'List/search accounts the caller may see (branch-scoped unless operator-wide)',
         querystring: z.object({ q: z.string().optional() }),
+        response: { 200: z.object({ accounts: z.array(AccountSummary) }) },
       },
     },
     async (req) => {
@@ -106,6 +135,7 @@ export async function accountRoutes(app: App): Promise<void> {
           employeeName: z.string().min(1).optional(),
           roles: z.array(RoleAssignmentInput).default([]),
         }),
+        response: { 200: CreatedAccount },
       },
     },
     async (req, reply) => {
@@ -381,6 +411,7 @@ export async function accountRoutes(app: App): Promise<void> {
         body: z
           .object({ status: z.enum(['active', 'inactive']).optional(), phone: z.string().optional() })
           .strict(),
+        response: { 200: z.object({ ok: z.literal(true) }) },
       },
     },
     async (req) => {
@@ -443,7 +474,11 @@ export async function accountRoutes(app: App): Promise<void> {
       // The answer is a working password for somebody else's account, so it
       // never enters the replay store — it was being kept there for a day.
       config: { permission: 'admin:account:update', secretResponse: true },
-      schema: { description: 'Issue a temporary password', params: z.object({ id: z.string().uuid() }) },
+      schema: {
+        description: 'Issue a temporary password',
+        params: z.object({ id: z.string().uuid() }),
+        response: { 200: z.object({ temporaryPassword: z.string() }) },
+      },
     },
     async (req) => {
       const auth = req.requireAuth();
@@ -489,7 +524,14 @@ export async function accountRoutes(app: App): Promise<void> {
   // S2-01a — the sessions an account currently holds, for the Login Users panel.
   app.get(
     '/:id/sessions',
-    { config: { permission: 'admin:account:read' }, schema: { description: 'Sessions held by an account', params: z.object({ id: z.string().uuid() }) } },
+    {
+      config: { permission: 'admin:account:read' },
+      schema: {
+        description: 'Sessions held by an account',
+        params: z.object({ id: z.string().uuid() }),
+        response: { 200: AccountSessions },
+      },
+    },
     async (req) => {
       const auth = req.requireAuth();
       await loadTargetAccount(app.db, auth.operatorId, req.params.id);
@@ -515,10 +557,10 @@ export async function accountRoutes(app: App): Promise<void> {
           id: s.id,
           branchId: s.branchId,
           stationId: s.stationId,
-          lockedAt: s.lockedAt,
-          lastSeenAt: s.lastSeenAt,
-          expiresAt: s.expiresAt,
-          createdAt: s.createdAt,
+          lockedAt: s.lockedAt?.toISOString() ?? null,
+          lastSeenAt: s.lastSeenAt.toISOString(),
+          expiresAt: s.expiresAt.toISOString(),
+          createdAt: s.createdAt.toISOString(),
         })),
       };
     },
@@ -534,6 +576,7 @@ export async function accountRoutes(app: App): Promise<void> {
       schema: {
         description: 'Force sign-out: end every session this account holds',
         params: z.object({ id: z.string().uuid() }),
+        response: { 200: z.object({ sessionsEnded: z.number().int().nonnegative() }) },
       },
     },
     async (req) => {
