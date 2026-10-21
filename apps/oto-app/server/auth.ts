@@ -194,7 +194,14 @@ export function setupAuth(app: Express) {
      * guards nothing here.
      */
     if (req.session?.platform || !legacyLoginEnabled()) {
-      return res.json({ ...safeUser, mustChangePassword: false, phoneVerified: true });
+      return res.json({
+        ...safeUser,
+        mustChangePassword: false,
+        phoneVerified: true,
+        // SCRUM-653 — the person's theme and language from their suite
+        // account, read at sign-on; the client's ThemeProvider adopts it.
+        platformPreferences: req.session?.platform?.preferences ?? null,
+      });
     }
     res.json(safeUser);
   });

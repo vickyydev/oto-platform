@@ -460,6 +460,11 @@ jobs:
       - name: The payroll engine checks
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/payroll-engine.check.ts
+      # SCRUM-653: the theme a launcher session carries, 'system' resolved
+      # against the device, and the toggle's write-back with one retry.
+      - name: The suite theme checks
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/platform-theme.check.ts
       # The rehearsal uses disposable databases on this job's scratch server.
       # It dumps the baseline sample from public, restores and renames it,
       # imports after every platform migration, then runs the app migrator

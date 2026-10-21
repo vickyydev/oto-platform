@@ -3,6 +3,7 @@ import type { Express, NextFunction, Request, Response } from "express";
 import "express-session";
 import { storage } from "../storage";
 import { log } from "../lib/logger";
+import { readPreferencesUpdate, readUiPreferences, type UiPreferences } from "@shared/uiPreferences";
 import {
   PLATFORM_SESSION_COOKIE,
   REFUSAL_FALLBACK,
@@ -70,6 +71,12 @@ interface PlatformLink {
   accountId: string;
   /** The platform session's own token, sealed — see `lib/platformSession.ts`. */
   sealedToken: string;
+  /**
+   * SCRUM-653 — the person's theme and language from their platform account,
+   * read once at sign-on and refreshed by `PUT /api/platform/preferences`.
+   * The client reads it on `/api/user`. Null when the platform did not say.
+   */
+  preferences?: UiPreferences | null;
 }
 
 declare module "express-session" {
@@ -279,6 +286,37 @@ async function exchange(
   return { ok: true, accountId, sessionToken };
 }
 
+// --- The person's preferences (SCRUM-653) ------------------------------------
+
+/**
+ * Ask the platform once, at sign-on, for the person's theme and language.
+ * Best effort: a sign-on never fails over a colour, so anything but a clean
+ * answer is null and the app keeps its own fast-start theme.
+ */
+async function readPlatformPreferences(
+  config: PlatformSignOnConfig,
+  token: string,
+  requestId: string | undefined,
+): Promise<UiPreferences | null> {
+  try {
+    const res = await fetch(`${config.apiUrl}/me`, {
+      headers: {
+        cookie: `${PLATFORM_SESSION_COOKIE}=${token}`,
+        ...(requestId ? { "x-request-id": requestId } : {}),
+      },
+      signal: AbortSignal.timeout(LIVENESS_TIMEOUT_MS),
+    });
+    if (!res.ok) {
+      await res.body?.cancel().catch(() => undefined);
+      return null;
+    }
+    return readUiPreferences(await res.json().catch(() => null));
+  } catch (err) {
+    log().warn({ err }, "could not read the person's preferences from the platform; keeping the app's own");
+    return null;
+  }
+}
+
 // --- The back-channel -------------------------------------------------------
 
 interface CachedAnswer {
@@ -443,6 +481,9 @@ export function registerPlatformSignOn(app: Express): void {
         });
       }
 
+      // SCRUM-653 — the person's theme, so the first screen already shows it.
+      const preferences = await readPlatformPreferences(config, exchanged.sessionToken, req.requestId);
+
       req.login(user, (err) => {
         if (err) return next(err);
         /**
@@ -453,6 +494,7 @@ export function registerPlatformSignOn(app: Express): void {
         req.session.platform = {
           accountId: exchanged.accountId,
           sealedToken: sealPlatformToken(SEALING_SECRET, req.sessionID, exchanged.sessionToken),
+          preferences,
         };
         req.session.save((saveErr) => {
           if (saveErr) return next(saveErr);
@@ -491,5 +533,61 @@ export function registerPlatformSignOn(app: Express): void {
       // to use this browser.
       req.logout(() => next());
     });
+  });
+
+  /**
+   * SCRUM-653 — the app's theme toggle writes the person's choice back to
+   * their platform account, so the launcher, the till and the console show it
+   * too. After the liveness check above, so a session ended on the platform
+   * never gets this far. Only a session that came from the launcher has a
+   * platform account to write to; a legacy-login session keeps its theme in
+   * this browser alone and is told so.
+   */
+  app.put("/api/platform/preferences", (req: Request, res: Response, next: NextFunction) => {
+    void (async () => {
+      const platform = req.session?.platform;
+      if (!platform || !config) {
+        return res.status(409).json({
+          reason: "not_platform_session",
+          message: "This session was not opened from the OTO launcher, so there is no suite account to save to.",
+        });
+      }
+      const body = readPreferencesUpdate(req.body);
+      if (!body) {
+        return res.status(400).json({
+          reason: "bad_preferences",
+          message: "Send a theme (system, light or dark), a language (en or th), or both.",
+        });
+      }
+      const token = openPlatformToken(SEALING_SECRET, req.sessionID, platform.sealedToken);
+      if (!token) return res.status(401).json({ reason: "signed_out", message: REFUSAL_FALLBACK });
+
+      const key = req.get("idempotency-key");
+      let answer: Response_;
+      try {
+        answer = await fetch(`${config.apiUrl}/me/preferences`, {
+          method: "PUT",
+          headers: {
+            cookie: `${PLATFORM_SESSION_COOKIE}=${token}`,
+            "content-type": "application/json",
+            ...(key && key.length <= 200 ? { "idempotency-key": key } : {}),
+            ...(req.requestId ? { "x-request-id": req.requestId } : {}),
+          },
+          body: JSON.stringify(body),
+          signal: AbortSignal.timeout(LIVENESS_TIMEOUT_MS),
+        });
+      } catch (err) {
+        log().warn({ err }, "could not reach the platform api to save preferences");
+        return res.status(503).json({ reason: "platform_unreachable", message: "The platform did not answer. Try again in a moment." });
+      }
+      const answered = await answer.json().catch(() => null);
+      if (!answer.ok) return res.status(answer.status).json(answered);
+      const preferences = readUiPreferences(answered);
+      req.session.platform = { ...platform, preferences };
+      req.session.save((saveErr) => {
+        if (saveErr) return next(saveErr);
+        res.json({ preferences });
+      });
+    })().catch(next);
   });
 }
