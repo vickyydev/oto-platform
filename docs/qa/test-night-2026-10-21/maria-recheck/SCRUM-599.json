@@ -1,0 +1,20 @@
+{
+  "ticket": "SCRUM-599",
+  "verdict": "WORKS",
+  "at": "2026-10-21T07:56:23Z",
+  "who": "The admin demo login, signed in through the launcher; nothing saved (every write to the OTO App was blocked in the browser)",
+  "stepsFollowed": [
+    "Sign in as the admin through the launcher and open the OTO App.",
+    "Go to Events and press Create, then Camp.",
+    "Type a camp name (ZZ TEST camp layout (not saved)).",
+    "Open Start Date: all seven days Su to Sa show inside the panel. Pick Saturday 24 Oct.",
+    "Open End Date: all seven days Su to Sa show inside the panel. Pick Saturday 31 Oct; the End Date box shows 31 Oct 2026.",
+    "Close the panel without pressing Create Camp.",
+    "Repeat on a phone-sized screen (390 px wide)."
+  ],
+  "observed": "Laptop (1432x781): the panel runs from 984 to 1432 px; both calendars sit at 1071 to 1347 px, fully inside, with Su Mo Tu We Th Fr Sa headings; Saturday 24 and Saturday 31 Oct could be picked. Phone (390x844): the panel is 0 to 390 px, both calendars at 58 to 334 px, fully inside; Saturday 24 and 31 Oct picked. Before the fix the End Date calendar ran to 1480 px, past the panel edge (verify-01.png). No camp was saved.",
+  "pngs": [
+    "docs/qa/jira-comments/attachments/SCRUM-599/fixed-01.png",
+    "docs/qa/jira-comments/attachments/SCRUM-599/fixed-02.png"
+  ]
+}

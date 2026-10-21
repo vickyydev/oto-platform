@@ -1,0 +1,18 @@
+{
+  "ticket": "SCRUM-602",
+  "verdict": "NOT VERIFIED (partial: the setting and the routing work; the Maintenance-member view could not be checked)",
+  "at": "2026-10-21T08:04:49Z",
+  "who": "Admin demo login (setting saved 08:01:06Z), Som (Fix report sent 08:03:58Z); no Maintenance member login is available",
+  "stepsFollowed": [
+    "As the admin, open Setup (or Settings) and find Fix Department.",
+    "Choose \"Maintanance\" (spelled that way on staging). The preview shows \"Staff in this department: 1 - Yaroslav\". Press Save. The screen says \"Fix Department saved\" and \"Current: Maintanance\".",
+    "Sign in as Som, open Fix, add a photo, type the title \"ZZ TEST Fix report SCRUM-602 recheck\", leave priority Normal and press Submit Fix Report.",
+    "As the admin, open the Fix Board: the report shows as Pending, Normal, with the Maintanance department.",
+    "Sign in as a Maintenance member (Yaroslav) and open Today: NOT DONE - there is no demo login for Yaroslav or any other Maintenance member."
+  ],
+  "observed": "The setting was saved: Fix Department = Maintanance (52bc1714...). Som's new report was saved with the Maintanance department and appears on the Fix Board as Pending / Normal / Maintanance with Yaroslav's initial. The only member of Maintanance is Yaroslav, and none of the three demo logins (Som, Lek, admin) is in Maintanance: the app reports \"not a Fix Department member\" for all three, so their Today does not show Fix reports and their Fix page has no \"View Fix Inbox\" button (the admin and Lek reach the Fix Board as managers). Whether the report appears in a Maintenance member's Today was therefore not checked. Note: \"Stage light\" (High, about 2 hours old) was reported before the setting and has no department, so it will not go into Maintanance's Today; only reports made from 08:01Z onwards are routed.",
+  "pngs": [
+    "docs/qa/jira-comments/attachments/SCRUM-602/fixed-01.png",
+    "docs/qa/jira-comments/attachments/SCRUM-602/fixed-02.png"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "ticket": "SCRUM-597",
+  "verdict": "WORKS",
+  "at": "2026-10-21T07:54:42Z",
+  "who": "Som (Reception staff demo login), signed in through the launcher",
+  "stepsFollowed": [
+    "Open the launcher on staging and sign in as Som.",
+    "Press \"Open OTO App\".",
+    "The app opens on Today. Scroll down to Checklists."
+  ],
+  "observed": "Checklists shows three cards: \"ZZ TEST Wave1 Everyone\" (Everyone), \"Test for department\" (Reception) and \"Test Central and Robinson\" (Reception). Tasks still shows \"Test task 12 oct\" with Anan, Lek, Som. Before the fix (verify-01.png) only the Everyone checklist showed. The checklist list the page loads returned the same three checklists.",
+  "pngs": [
+    "docs/qa/jira-comments/attachments/SCRUM-597/fixed-01.png"
+  ]
+}

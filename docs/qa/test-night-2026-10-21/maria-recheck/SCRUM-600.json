@@ -1,0 +1,18 @@
+{
+  "ticket": "SCRUM-600",
+  "verdict": "WORKS",
+  "at": "2026-10-21T07:59:48Z",
+  "who": "The admin demo login (camp created 07:58:28Z, Sunday cancelled 07:58:38Z); the parents' form opened signed out, with every write blocked",
+  "stepsFollowed": [
+    "As the admin, Events > Create > Camp: branch Oto Play Park, Central Floresta, name \"ZZ TEST camp cancelled day SCRUM-600\", Start Date Fri 6 Nov 2026, End Date Mon 9 Nov 2026 (times left at 10:00 to 15:00), press Create Camp.",
+    "Open the camp in Events. Under Camp Days press \"Cancel Day\" on Sunday, 8 November 2026. It turns red and says Cancelled.",
+    "Open the camp's Registration Link (the parents' sign-up form) in a browser where you are not signed in.",
+    "Scroll to Attendance Days under Child Information."
+  ],
+  "observed": "Attendance Days lists Friday 6, Saturday 7 and Monday 9 November 2026, each once. Sunday 8 November (cancelled) is not on the form at all, and there is no struck-through \"Cancelled\" list underneath. The \"Submit Registration\" button is disabled on an empty form, so no submission was tried and no child was registered. Maria's original camp (\"Halloween camp\", 24 and 25 Oct cancelled) was also checked on the parents' form: it now lists 19 to 23 and 26 to 30 Oct, each once, without 24 or 25 (fixed-03.png). The ZZ TEST camp is left in place with 8 Nov cancelled (camp id d403f5ce-50a8-449f-8c2b-f79e4c081faa).",
+  "pngs": [
+    "docs/qa/jira-comments/attachments/SCRUM-600/fixed-01.png",
+    "docs/qa/jira-comments/attachments/SCRUM-600/fixed-02.png",
+    "docs/qa/jira-comments/attachments/SCRUM-600/fixed-03.png"
+  ]
+}
