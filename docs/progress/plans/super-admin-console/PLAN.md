@@ -155,6 +155,8 @@ Note from P0 (2026-10-21): operator-wide settings (tiers, tenders, menu categori
 
 Acceptance: a person granted in the console opens the OTO App with the right role on staging with the flag on; nothing can be granted inside the OTO App.
 
+Also in P3 (from the OTO App inventory): the two lifecycle gaps close in P3-5 - reactivating a platform account switches its OTO App user back on, and an OTO App-side switch-off (including the 03:00 leaver run) deactivates the platform account through the identity seam; and the OTO App pages that call routes which do not exist (the core dashboard and the troubleshooting flows) either get their routes or lose their links.
+
 ## 10. P4 — analytics and platform (Codex)
 
 | Ticket | Deliverable |
