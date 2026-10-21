@@ -1,0 +1,737 @@
+{
+  "ticket": "SCRUM-610",
+  "sha": "0e08817c5961a00eddb112ec391b5e0209c149ef",
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "sha": "0e08817c5961a00eddb112ec391b5e0209c149ef",
+      "deployId": "dep-dbcglmajnfac73cjce00",
+      "finishedAt": "2026-10-21T18:59:47.174781Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "sha": "0e08817c5961a00eddb112ec391b5e0209c149ef",
+      "deployId": "dep-dbcglmajnfac73cjcfp0",
+      "finishedAt": "2026-10-21T18:57:15.532416Z"
+    }
+  ],
+  "checks": [
+    {
+      "name": "Real administrator sees seven figures matching the selected park totals and business dates",
+      "passed": true,
+      "at": "2026-10-21T19:04:44.155Z"
+    },
+    {
+      "name": "Park picker narrows every figure to its selected park and shows its source freshness",
+      "passed": true,
+      "at": "2026-10-21T19:04:44.839Z"
+    },
+    {
+      "name": "The 390-pixel page shows the figures and park picker without horizontal overflow",
+      "passed": true,
+      "at": "2026-10-21T19:04:44.956Z"
+    },
+    {
+      "name": "Revenue today opens its existing signed-in source screen",
+      "passed": true,
+      "at": "2026-10-21T19:04:46.903Z"
+    },
+    {
+      "name": "Inbox unanswered opens its existing signed-in source screen",
+      "passed": true,
+      "at": "2026-10-21T19:04:50.753Z"
+    },
+    {
+      "name": "Bookings today opens its existing source page",
+      "passed": true,
+      "at": "2026-10-21T19:04:52.483Z"
+    },
+    {
+      "name": "Open alerts opens its existing source page",
+      "passed": true,
+      "at": "2026-10-21T19:04:54.132Z"
+    },
+    {
+      "name": "Boxes offline opens its existing source page",
+      "passed": true,
+      "at": "2026-10-21T19:04:55.768Z"
+    },
+    {
+      "name": "Seeded manager receives only their park; a direct filter for the other park is refused403",
+      "passed": true,
+      "at": "2026-10-21T19:05:02.736Z"
+    }
+  ],
+  "screenshots": [
+    {
+      "filename": "SCRUM-610-01-overview-all-parks.png",
+      "label": "SCRUM-610: Overview v1, all reachable parks",
+      "capturedAt": "2026-10-21T19:04:44.276Z",
+      "path": "/overview",
+      "sha256": "89236f37433f809fe9122b5062f09beb0611d5c8ca5fd1a5ae4f2c51bcc29bc3"
+    },
+    {
+      "filename": "SCRUM-610-02-overview-one-park.png",
+      "label": "SCRUM-610: one park and reporting freshness",
+      "capturedAt": "2026-10-21T19:04:44.936Z",
+      "path": "/overview",
+      "sha256": "5dcc325d9835e392b269b8957ac7b8c0fbde6c5371cfd460a40499fdc7ac0f77"
+    },
+    {
+      "filename": "SCRUM-610-03-overview-phone.png",
+      "label": "SCRUM-610: phone Overview, 390 pixels",
+      "capturedAt": "2026-10-21T19:04:45.032Z",
+      "path": "/overview",
+      "sha256": "e0638366111344f7a9fe43b17caf5c45595aa55855930e188221110ec085d549"
+    },
+    {
+      "filename": "SCRUM-610-04-overview-manager.png",
+      "label": "SCRUM-610: manager park only; other park refused (HTTP 403)",
+      "capturedAt": "2026-10-21T19:05:02.841Z",
+      "path": "/overview",
+      "sha256": "e0a30a1a24df5a088dc433458364286aa9c6ba8602bfa167f848ee218986ad51"
+    }
+  ],
+  "snapshots": [
+    {
+      "generatedAt": "2026-10-21T19:04:45.303Z",
+      "branches": [
+        {
+          "id": "01a113f2-e706-728a-a547-2e1a5d467035",
+          "name": "Demo Branch 2",
+          "timezone": "Asia/Bangkok",
+          "businessDayStart": "05:00",
+          "businessDate": "2026-10-21"
+        },
+        {
+          "id": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "name": "Oto Play Park, Central Floresta",
+          "timezone": "Asia/Bangkok",
+          "businessDayStart": "05:00",
+          "businessDate": "2026-10-21"
+        },
+        {
+          "id": "01a0c9ae-52cf-7aa1-baca-fc55e449148e",
+          "name": "Oto Play Park, Robinson Chalong",
+          "timezone": "Asia/Bangkok",
+          "businessDayStart": "05:00",
+          "businessDate": "2026-10-21"
+        }
+      ],
+      "selectedBranchIds": [
+        "01a113f2-e706-728a-a547-2e1a5d467035",
+        "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "01a0c9ae-52cf-7aa1-baca-fc55e449148e"
+      ],
+      "totals": {
+        "revenueSatang": 0,
+        "guests": 0,
+        "inParkNow": 0,
+        "bookingsToday": 2,
+        "inboxUnanswered": 13,
+        "openAlerts": 7,
+        "boxesOffline": 6
+      },
+      "parks": [
+        {
+          "revenueSatang": 0,
+          "guests": 0,
+          "inParkNow": 0,
+          "bookingsToday": 0,
+          "inboxUnanswered": 0,
+          "openAlerts": 0,
+          "boxesOffline": 1,
+          "branchId": "01a113f2-e706-728a-a547-2e1a5d467035",
+          "businessDate": "2026-10-21",
+          "analyticsSource": "oto_pos",
+          "provisional": true,
+          "lastRolledUpAt": "2026-10-21T19:04:44.659Z",
+          "occupancyAsOf": null,
+          "occupancyStale": true
+        },
+        {
+          "revenueSatang": 0,
+          "guests": 0,
+          "inParkNow": 0,
+          "bookingsToday": 2,
+          "inboxUnanswered": 9,
+          "openAlerts": 7,
+          "boxesOffline": 5,
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "businessDate": "2026-10-21",
+          "analyticsSource": "oto_pos",
+          "provisional": true,
+          "lastRolledUpAt": "2026-10-21T19:04:44.659Z",
+          "occupancyAsOf": null,
+          "occupancyStale": true
+        },
+        {
+          "revenueSatang": 0,
+          "guests": 0,
+          "inParkNow": 0,
+          "bookingsToday": 0,
+          "inboxUnanswered": 4,
+          "openAlerts": 0,
+          "boxesOffline": 0,
+          "branchId": "01a0c9ae-52cf-7aa1-baca-fc55e449148e",
+          "businessDate": "2026-10-21",
+          "analyticsSource": "oto_pos",
+          "provisional": true,
+          "lastRolledUpAt": "2026-10-21T19:04:44.659Z",
+          "occupancyAsOf": null,
+          "occupancyStale": true
+        }
+      ]
+    },
+    {
+      "generatedAt": "2026-10-21T19:04:46.106Z",
+      "branches": [
+        {
+          "id": "01a113f2-e706-728a-a547-2e1a5d467035",
+          "name": "Demo Branch 2",
+          "timezone": "Asia/Bangkok",
+          "businessDayStart": "05:00",
+          "businessDate": "2026-10-21"
+        },
+        {
+          "id": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "name": "Oto Play Park, Central Floresta",
+          "timezone": "Asia/Bangkok",
+          "businessDayStart": "05:00",
+          "businessDate": "2026-10-21"
+        },
+        {
+          "id": "01a0c9ae-52cf-7aa1-baca-fc55e449148e",
+          "name": "Oto Play Park, Robinson Chalong",
+          "timezone": "Asia/Bangkok",
+          "businessDayStart": "05:00",
+          "businessDate": "2026-10-21"
+        }
+      ],
+      "selectedBranchIds": [
+        "01a113f2-e706-728a-a547-2e1a5d467035"
+      ],
+      "totals": {
+        "revenueSatang": 0,
+        "guests": 0,
+        "inParkNow": 0,
+        "bookingsToday": 0,
+        "inboxUnanswered": 0,
+        "openAlerts": 0,
+        "boxesOffline": 1
+      },
+      "parks": [
+        {
+          "revenueSatang": 0,
+          "guests": 0,
+          "inParkNow": 0,
+          "bookingsToday": 0,
+          "inboxUnanswered": 0,
+          "openAlerts": 0,
+          "boxesOffline": 1,
+          "branchId": "01a113f2-e706-728a-a547-2e1a5d467035",
+          "businessDate": "2026-10-21",
+          "analyticsSource": "oto_pos",
+          "provisional": true,
+          "lastRolledUpAt": "2026-10-21T19:04:44.659Z",
+          "occupancyAsOf": null,
+          "occupancyStale": true
+        }
+      ]
+    },
+    {
+      "generatedAt": "2026-10-21T19:04:49.752Z",
+      "branches": [
+        {
+          "id": "01a113f2-e706-728a-a547-2e1a5d467035",
+          "name": "Demo Branch 2",
+          "timezone": "Asia/Bangkok",
+          "businessDayStart": "05:00",
+          "businessDate": "2026-10-21"
+        },
+        {
+          "id": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "name": "Oto Play Park, Central Floresta",
+          "timezone": "Asia/Bangkok",
+          "businessDayStart": "05:00",
+          "businessDate": "2026-10-21"
+        },
+        {
+          "id": "01a0c9ae-52cf-7aa1-baca-fc55e449148e",
+          "name": "Oto Play Park, Robinson Chalong",
+          "timezone": "Asia/Bangkok",
+          "businessDayStart": "05:00",
+          "businessDate": "2026-10-21"
+        }
+      ],
+      "selectedBranchIds": [
+        "01a113f2-e706-728a-a547-2e1a5d467035",
+        "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "01a0c9ae-52cf-7aa1-baca-fc55e449148e"
+      ],
+      "totals": {
+        "revenueSatang": 0,
+        "guests": 0,
+        "inParkNow": 0,
+        "bookingsToday": 2,
+        "inboxUnanswered": 13,
+        "openAlerts": 7,
+        "boxesOffline": 6
+      },
+      "parks": [
+        {
+          "revenueSatang": 0,
+          "guests": 0,
+          "inParkNow": 0,
+          "bookingsToday": 0,
+          "inboxUnanswered": 0,
+          "openAlerts": 0,
+          "boxesOffline": 1,
+          "branchId": "01a113f2-e706-728a-a547-2e1a5d467035",
+          "businessDate": "2026-10-21",
+          "analyticsSource": "oto_pos",
+          "provisional": true,
+          "lastRolledUpAt": "2026-10-21T19:04:44.659Z",
+          "occupancyAsOf": null,
+          "occupancyStale": true
+        },
+        {
+          "revenueSatang": 0,
+          "guests": 0,
+          "inParkNow": 0,
+          "bookingsToday": 2,
+          "inboxUnanswered": 9,
+          "openAlerts": 7,
+          "boxesOffline": 5,
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "businessDate": "2026-10-21",
+          "analyticsSource": "oto_pos",
+          "provisional": true,
+          "lastRolledUpAt": "2026-10-21T19:04:44.659Z",
+          "occupancyAsOf": null,
+          "occupancyStale": true
+        },
+        {
+          "revenueSatang": 0,
+          "guests": 0,
+          "inParkNow": 0,
+          "bookingsToday": 0,
+          "inboxUnanswered": 4,
+          "openAlerts": 0,
+          "boxesOffline": 0,
+          "branchId": "01a0c9ae-52cf-7aa1-baca-fc55e449148e",
+          "businessDate": "2026-10-21",
+          "analyticsSource": "oto_pos",
+          "provisional": true,
+          "lastRolledUpAt": "2026-10-21T19:04:44.659Z",
+          "occupancyAsOf": null,
+          "occupancyStale": true
+        }
+      ]
+    },
+    {
+      "generatedAt": "2026-10-21T19:04:53.621Z",
+      "branches": [
+        {
+          "id": "01a113f2-e706-728a-a547-2e1a5d467035",
+          "name": "Demo Branch 2",
+          "timezone": "Asia/Bangkok",
+          "businessDayStart": "05:00",
+          "businessDate": "2026-10-21"
+        },
+        {
+          "id": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "name": "Oto Play Park, Central Floresta",
+          "timezone": "Asia/Bangkok",
+          "businessDayStart": "05:00",
+          "businessDate": "2026-10-21"
+        },
+        {
+          "id": "01a0c9ae-52cf-7aa1-baca-fc55e449148e",
+          "name": "Oto Play Park, Robinson Chalong",
+          "timezone": "Asia/Bangkok",
+          "businessDayStart": "05:00",
+          "businessDate": "2026-10-21"
+        }
+      ],
+      "selectedBranchIds": [
+        "01a113f2-e706-728a-a547-2e1a5d467035",
+        "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "01a0c9ae-52cf-7aa1-baca-fc55e449148e"
+      ],
+      "totals": {
+        "revenueSatang": 0,
+        "guests": 0,
+        "inParkNow": 0,
+        "bookingsToday": 2,
+        "inboxUnanswered": 13,
+        "openAlerts": 7,
+        "boxesOffline": 6
+      },
+      "parks": [
+        {
+          "revenueSatang": 0,
+          "guests": 0,
+          "inParkNow": 0,
+          "bookingsToday": 0,
+          "inboxUnanswered": 0,
+          "openAlerts": 0,
+          "boxesOffline": 1,
+          "branchId": "01a113f2-e706-728a-a547-2e1a5d467035",
+          "businessDate": "2026-10-21",
+          "analyticsSource": "oto_pos",
+          "provisional": true,
+          "lastRolledUpAt": "2026-10-21T19:04:44.659Z",
+          "occupancyAsOf": null,
+          "occupancyStale": true
+        },
+        {
+          "revenueSatang": 0,
+          "guests": 0,
+          "inParkNow": 0,
+          "bookingsToday": 2,
+          "inboxUnanswered": 9,
+          "openAlerts": 7,
+          "boxesOffline": 5,
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "businessDate": "2026-10-21",
+          "analyticsSource": "oto_pos",
+          "provisional": true,
+          "lastRolledUpAt": "2026-10-21T19:04:44.659Z",
+          "occupancyAsOf": null,
+          "occupancyStale": true
+        },
+        {
+          "revenueSatang": 0,
+          "guests": 0,
+          "inParkNow": 0,
+          "bookingsToday": 0,
+          "inboxUnanswered": 4,
+          "openAlerts": 0,
+          "boxesOffline": 0,
+          "branchId": "01a0c9ae-52cf-7aa1-baca-fc55e449148e",
+          "businessDate": "2026-10-21",
+          "analyticsSource": "oto_pos",
+          "provisional": true,
+          "lastRolledUpAt": "2026-10-21T19:04:44.659Z",
+          "occupancyAsOf": null,
+          "occupancyStale": true
+        }
+      ]
+    },
+    {
+      "generatedAt": "2026-10-21T19:04:55.305Z",
+      "branches": [
+        {
+          "id": "01a113f2-e706-728a-a547-2e1a5d467035",
+          "name": "Demo Branch 2",
+          "timezone": "Asia/Bangkok",
+          "businessDayStart": "05:00",
+          "businessDate": "2026-10-21"
+        },
+        {
+          "id": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "name": "Oto Play Park, Central Floresta",
+          "timezone": "Asia/Bangkok",
+          "businessDayStart": "05:00",
+          "businessDate": "2026-10-21"
+        },
+        {
+          "id": "01a0c9ae-52cf-7aa1-baca-fc55e449148e",
+          "name": "Oto Play Park, Robinson Chalong",
+          "timezone": "Asia/Bangkok",
+          "businessDayStart": "05:00",
+          "businessDate": "2026-10-21"
+        }
+      ],
+      "selectedBranchIds": [
+        "01a113f2-e706-728a-a547-2e1a5d467035",
+        "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "01a0c9ae-52cf-7aa1-baca-fc55e449148e"
+      ],
+      "totals": {
+        "revenueSatang": 0,
+        "guests": 0,
+        "inParkNow": 0,
+        "bookingsToday": 2,
+        "inboxUnanswered": 13,
+        "openAlerts": 7,
+        "boxesOffline": 6
+      },
+      "parks": [
+        {
+          "revenueSatang": 0,
+          "guests": 0,
+          "inParkNow": 0,
+          "bookingsToday": 0,
+          "inboxUnanswered": 0,
+          "openAlerts": 0,
+          "boxesOffline": 1,
+          "branchId": "01a113f2-e706-728a-a547-2e1a5d467035",
+          "businessDate": "2026-10-21",
+          "analyticsSource": "oto_pos",
+          "provisional": true,
+          "lastRolledUpAt": "2026-10-21T19:04:44.659Z",
+          "occupancyAsOf": null,
+          "occupancyStale": true
+        },
+        {
+          "revenueSatang": 0,
+          "guests": 0,
+          "inParkNow": 0,
+          "bookingsToday": 2,
+          "inboxUnanswered": 9,
+          "openAlerts": 7,
+          "boxesOffline": 5,
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "businessDate": "2026-10-21",
+          "analyticsSource": "oto_pos",
+          "provisional": true,
+          "lastRolledUpAt": "2026-10-21T19:04:44.659Z",
+          "occupancyAsOf": null,
+          "occupancyStale": true
+        },
+        {
+          "revenueSatang": 0,
+          "guests": 0,
+          "inParkNow": 0,
+          "bookingsToday": 0,
+          "inboxUnanswered": 4,
+          "openAlerts": 0,
+          "boxesOffline": 0,
+          "branchId": "01a0c9ae-52cf-7aa1-baca-fc55e449148e",
+          "businessDate": "2026-10-21",
+          "analyticsSource": "oto_pos",
+          "provisional": true,
+          "lastRolledUpAt": "2026-10-21T19:04:44.659Z",
+          "occupancyAsOf": null,
+          "occupancyStale": true
+        }
+      ]
+    },
+    {
+      "generatedAt": "2026-10-21T19:04:56.960Z",
+      "branches": [
+        {
+          "id": "01a113f2-e706-728a-a547-2e1a5d467035",
+          "name": "Demo Branch 2",
+          "timezone": "Asia/Bangkok",
+          "businessDayStart": "05:00",
+          "businessDate": "2026-10-21"
+        },
+        {
+          "id": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "name": "Oto Play Park, Central Floresta",
+          "timezone": "Asia/Bangkok",
+          "businessDayStart": "05:00",
+          "businessDate": "2026-10-21"
+        },
+        {
+          "id": "01a0c9ae-52cf-7aa1-baca-fc55e449148e",
+          "name": "Oto Play Park, Robinson Chalong",
+          "timezone": "Asia/Bangkok",
+          "businessDayStart": "05:00",
+          "businessDate": "2026-10-21"
+        }
+      ],
+      "selectedBranchIds": [
+        "01a113f2-e706-728a-a547-2e1a5d467035",
+        "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "01a0c9ae-52cf-7aa1-baca-fc55e449148e"
+      ],
+      "totals": {
+        "revenueSatang": 0,
+        "guests": 0,
+        "inParkNow": 0,
+        "bookingsToday": 2,
+        "inboxUnanswered": 13,
+        "openAlerts": 7,
+        "boxesOffline": 6
+      },
+      "parks": [
+        {
+          "revenueSatang": 0,
+          "guests": 0,
+          "inParkNow": 0,
+          "bookingsToday": 0,
+          "inboxUnanswered": 0,
+          "openAlerts": 0,
+          "boxesOffline": 1,
+          "branchId": "01a113f2-e706-728a-a547-2e1a5d467035",
+          "businessDate": "2026-10-21",
+          "analyticsSource": "oto_pos",
+          "provisional": true,
+          "lastRolledUpAt": "2026-10-21T19:04:44.659Z",
+          "occupancyAsOf": null,
+          "occupancyStale": true
+        },
+        {
+          "revenueSatang": 0,
+          "guests": 0,
+          "inParkNow": 0,
+          "bookingsToday": 2,
+          "inboxUnanswered": 9,
+          "openAlerts": 7,
+          "boxesOffline": 5,
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "businessDate": "2026-10-21",
+          "analyticsSource": "oto_pos",
+          "provisional": true,
+          "lastRolledUpAt": "2026-10-21T19:04:44.659Z",
+          "occupancyAsOf": null,
+          "occupancyStale": true
+        },
+        {
+          "revenueSatang": 0,
+          "guests": 0,
+          "inParkNow": 0,
+          "bookingsToday": 0,
+          "inboxUnanswered": 4,
+          "openAlerts": 0,
+          "boxesOffline": 0,
+          "branchId": "01a0c9ae-52cf-7aa1-baca-fc55e449148e",
+          "businessDate": "2026-10-21",
+          "analyticsSource": "oto_pos",
+          "provisional": true,
+          "lastRolledUpAt": "2026-10-21T19:04:44.659Z",
+          "occupancyAsOf": null,
+          "occupancyStale": true
+        }
+      ]
+    },
+    {
+      "generatedAt": "2026-10-21T19:04:58.613Z",
+      "branches": [
+        {
+          "id": "01a113f2-e706-728a-a547-2e1a5d467035",
+          "name": "Demo Branch 2",
+          "timezone": "Asia/Bangkok",
+          "businessDayStart": "05:00",
+          "businessDate": "2026-10-21"
+        },
+        {
+          "id": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "name": "Oto Play Park, Central Floresta",
+          "timezone": "Asia/Bangkok",
+          "businessDayStart": "05:00",
+          "businessDate": "2026-10-21"
+        },
+        {
+          "id": "01a0c9ae-52cf-7aa1-baca-fc55e449148e",
+          "name": "Oto Play Park, Robinson Chalong",
+          "timezone": "Asia/Bangkok",
+          "businessDayStart": "05:00",
+          "businessDate": "2026-10-21"
+        }
+      ],
+      "selectedBranchIds": [
+        "01a113f2-e706-728a-a547-2e1a5d467035",
+        "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "01a0c9ae-52cf-7aa1-baca-fc55e449148e"
+      ],
+      "totals": {
+        "revenueSatang": 0,
+        "guests": 0,
+        "inParkNow": 0,
+        "bookingsToday": 2,
+        "inboxUnanswered": 13,
+        "openAlerts": 7,
+        "boxesOffline": 6
+      },
+      "parks": [
+        {
+          "revenueSatang": 0,
+          "guests": 0,
+          "inParkNow": 0,
+          "bookingsToday": 0,
+          "inboxUnanswered": 0,
+          "openAlerts": 0,
+          "boxesOffline": 1,
+          "branchId": "01a113f2-e706-728a-a547-2e1a5d467035",
+          "businessDate": "2026-10-21",
+          "analyticsSource": "oto_pos",
+          "provisional": true,
+          "lastRolledUpAt": "2026-10-21T19:04:44.659Z",
+          "occupancyAsOf": null,
+          "occupancyStale": true
+        },
+        {
+          "revenueSatang": 0,
+          "guests": 0,
+          "inParkNow": 0,
+          "bookingsToday": 2,
+          "inboxUnanswered": 9,
+          "openAlerts": 7,
+          "boxesOffline": 5,
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "businessDate": "2026-10-21",
+          "analyticsSource": "oto_pos",
+          "provisional": true,
+          "lastRolledUpAt": "2026-10-21T19:04:44.659Z",
+          "occupancyAsOf": null,
+          "occupancyStale": true
+        },
+        {
+          "revenueSatang": 0,
+          "guests": 0,
+          "inParkNow": 0,
+          "bookingsToday": 0,
+          "inboxUnanswered": 4,
+          "openAlerts": 0,
+          "boxesOffline": 0,
+          "branchId": "01a0c9ae-52cf-7aa1-baca-fc55e449148e",
+          "businessDate": "2026-10-21",
+          "analyticsSource": "oto_pos",
+          "provisional": true,
+          "lastRolledUpAt": "2026-10-21T19:04:44.659Z",
+          "occupancyAsOf": null,
+          "occupancyStale": true
+        }
+      ]
+    },
+    {
+      "generatedAt": "2026-10-21T19:05:03.397Z",
+      "branches": [
+        {
+          "id": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "name": "Oto Play Park, Central Floresta",
+          "timezone": "Asia/Bangkok",
+          "businessDayStart": "05:00",
+          "businessDate": "2026-10-21"
+        }
+      ],
+      "selectedBranchIds": [
+        "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+      ],
+      "totals": {
+        "revenueSatang": 0,
+        "guests": 0,
+        "inParkNow": 0,
+        "bookingsToday": 2,
+        "inboxUnanswered": 9,
+        "openAlerts": 7,
+        "boxesOffline": 5
+      },
+      "parks": [
+        {
+          "revenueSatang": 0,
+          "guests": 0,
+          "inParkNow": 0,
+          "bookingsToday": 2,
+          "inboxUnanswered": 9,
+          "openAlerts": 7,
+          "boxesOffline": 5,
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "businessDate": "2026-10-21",
+          "analyticsSource": "oto_pos",
+          "provisional": true,
+          "lastRolledUpAt": "2026-10-21T19:04:44.659Z",
+          "occupancyAsOf": null,
+          "occupancyStale": true
+        }
+      ]
+    }
+  ],
+  "createdBusinessRecords": false,
+  "reviewedAt": "2026-10-21T19:06:21.765Z"
+}
