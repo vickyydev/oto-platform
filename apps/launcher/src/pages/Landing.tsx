@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Loader2, Moon, Radar, Settings, Store, Sun } from 'lucide-react';
+import { Loader2, Radar, Settings, Store } from 'lucide-react';
 import { Backdrop } from '@/components/Backdrop';
 import { BrandMark } from '@/components/BrandMark';
 import { SignInPanel } from '@/components/SignInPanel';
@@ -8,11 +8,10 @@ import { ChangePasswordPanel } from '@/components/ChangePasswordPanel';
 import { SuiteHeader } from '@/components/SuiteHeader';
 import { AppTile } from '@/components/AppTile';
 import { SignOutNote } from '@/components/SignOutNote';
-import { Button } from '@/components/ui/button';
+import { ThemeCycleButton } from '@/components/ThemeCycleButton';
 import { SUITE_APPS, tilesFor } from '@/suite/apps';
 import { useSession, displayName } from '@/auth/SessionContext';
 import { greeting, inWords } from '@/lib/greeting';
-import { useTheme } from '@/lib/theme';
 
 function Splash() {
   return (
@@ -41,22 +40,12 @@ const PROMISES = [
 ];
 
 function SignedOut() {
-  const [theme, setTheme] = useTheme();
   return (
     <div className="min-h-[100dvh] flex flex-col">
       <Backdrop />
       <div className="flex items-center justify-between px-4 sm:px-6 h-16 shrink-0">
         <BrandMark />
-        <Button
-          variant="outline"
-          size="icon"
-          className="h-9 w-9"
-          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-          title={theme === 'dark' ? 'Switch to light' : 'Switch to dark'}
-          aria-label={theme === 'dark' ? 'Switch to light' : 'Switch to dark'}
-        >
-          {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-        </Button>
+        <ThemeCycleButton />
       </div>
 
       <main className="flex-1 flex items-center justify-center px-4 sm:px-6 py-6">

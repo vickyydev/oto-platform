@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { BrandMark } from '@/components/BrandMark';
 import { SuiteAssistant } from '@/components/assistant/AssistantDock';
 import { SessionProvider, useSession } from '@/auth/SessionContext';
-import { useTheme } from '@/lib/theme';
+import { accountTheme } from '@/lib/accountTheme';
 
 function NotFound() {
   const [, navigate] = useLocation();
@@ -63,13 +63,10 @@ function Routes() {
 
 export default function App() {
   // The theme drives the document root, so anything portaled to <body> follows
-  // it — the same arrangement the POS uses.
-  const [theme] = useTheme();
-  useEffect(() => {
-    const el = document.documentElement;
-    el.classList.toggle('dark', theme === 'dark');
-    el.classList.toggle('light', theme === 'light');
-  }, [theme]);
+  // it — the same arrangement the POS uses. The account's choice (SCRUM-653)
+  // is adopted by SessionContext; this paints it and follows the device while
+  // it is 'system'.
+  useEffect(() => accountTheme.start(), []);
 
   return (
     <SessionProvider>

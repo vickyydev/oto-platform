@@ -9,6 +9,7 @@ import {
 } from 'react';
 import type { Permission } from '@oto/shared/permissions';
 import { authApi, type EffectivePermission, type MeResponse } from '@/api/platform';
+import { accountTheme } from '@/lib/accountTheme';
 
 type SessionState = 'loading' | 'signed-out' | 'signed-in';
 
@@ -46,6 +47,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     const { permissions: effective } = await authApi.permissions();
     setMe(account);
     setPermissions(effective);
+    // SCRUM-653 — the person's own theme, from the same answer.
+    accountTheme.adopt(account.preferences);
     setState('signed-in');
   }, []);
 
@@ -55,6 +58,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     } catch {
       setMe(null);
       setPermissions([]);
+      accountTheme.release();
       setState('signed-out');
     }
   }, [load]);
@@ -70,6 +74,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     const onUnauthorized = () => {
       setMe(null);
       setPermissions([]);
+      accountTheme.release();
       setState('signed-out');
     };
     window.addEventListener('oto:unauthorized', onUnauthorized);
@@ -104,6 +109,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     setMe(null);
     setPermissions([]);
+    accountTheme.release();
     setState('signed-out');
     await authApi.signOut().catch(() => {
       // Already gone (expiry, revoked elsewhere) — signed out either way.

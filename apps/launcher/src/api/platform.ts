@@ -1,6 +1,8 @@
 // The slice of the platform API the launcher speaks to. Shapes match
 // apps/pos/src/api/platform.ts where the two call the same route, so a change
 // to a response is felt in one place per app rather than being re-guessed.
+import type { ApiBody, ApiResponse } from '@oto/api-types';
+import type { UiPreferences } from '@oto/shared/ui-preferences';
 import { api } from './client';
 import type { SuiteAppKey } from '@/suite/apps';
 
@@ -18,6 +20,12 @@ export interface MeResponse {
   photoFileId: string | null;
   /** True when this session is locked on inactivity (S2-01a). */
   sessionLocked: boolean;
+  /**
+   * How every staff app looks for this person (SCRUM-653). Optional because an
+   * api from before the column answers without it, and that reads as "keep
+   * what is painted".
+   */
+  preferences?: UiPreferences;
 }
 
 export interface EffectivePermission {
@@ -25,6 +33,12 @@ export interface EffectivePermission {
   scopeType: string;
   scopeId: string | null;
 }
+
+/** SCRUM-653 — the caller's own theme and language, either alone. */
+export const preferencesApi = {
+  put: (body: ApiBody<'/me/preferences', 'put'>, idempotencyKey: string) =>
+    api.put<ApiResponse<'/me/preferences', 'put'>>('/me/preferences', body, { idempotencyKey }),
+};
 
 export const authApi = {
   signIn: (phone: string, password: string) =>
