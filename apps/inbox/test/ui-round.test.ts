@@ -6,9 +6,10 @@
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import type { InboxMe } from '@/api/inbox';
+import type { Dashboard as DashboardData, InboxMe } from '@/api/inbox';
 import { AssistantSettings, assistantSections } from '@/components/AssistantSettings';
 import { ConversationList } from '@/components/ConversationList';
+import { Dashboard, DashboardStrip } from '@/components/Dashboard';
 import { SettingsMenuItems, settingsMenuEntries } from '@/components/Workspace';
 import { EMPTY_FILTERS, filterPills, type Filters } from '@/lib/query';
 import type { AssistantTab } from '@/lib/url';
@@ -185,5 +186,89 @@ describe("F2 — the assistant page's three tabs", () => {
     expect(selected(assistant(kbOnly, null), 'Knowledge')).toBe(true);
     expect(selected(assistant(kbOnly, 'numbers'), 'Knowledge')).toBe(true);
     expect(assistant(kbOnly, null)).not.toContain('Numbers');
+  });
+});
+
+describe('F3 — the phone shows the list first', () => {
+  const data: DashboardData = {
+    scope: 'all',
+    newToday: 4,
+    unanswered: 3,
+    handledToday: 5,
+    active: 12,
+    averageFirstResponseSeconds: 754,
+    population: 'active',
+    byCategory: { birthdays: 5, general: 4, marketing: 3 },
+    day: '2026-10-22',
+  };
+
+  function grid(unansweredOnly = false): string {
+    return renderToStaticMarkup(
+      createElement(Dashboard, { data, error: null, unansweredOnly, onToggleUnanswered: noop }),
+    );
+  }
+  function strip(unansweredOnly = false): string {
+    return renderToStaticMarkup(
+      createElement(DashboardStrip, { data, error: null, unansweredOnly, onToggleUnanswered: noop }),
+    );
+  }
+
+  it('keeps the card grid for lg and up, unchanged, and off the phone', () => {
+    const html = grid();
+    // The grid renders only at lg: `hidden` below, `lg:grid` above.
+    expect(/class="[^"]*\bhidden\b[^"]*\blg:grid\b[^"]*"/.test(html)).toBe(true);
+    // The lg cards are all still there, with their figures.
+    for (const label of ['New today', 'Unanswered', 'Active', 'Handled today', 'Avg response', 'By category']) {
+      expect(html).toContain(label);
+    }
+    expect(html).toContain('12m 34s');
+    expect(grid(true)).toContain('aria-pressed="true"');
+  });
+
+  it('gives the phone one compact line: the unanswered chip, active, avg response', () => {
+    const html = strip();
+    expect(html).toContain('lg:hidden');
+    expect(html).toContain('Unanswered 3');
+    expect(html).toContain('Active');
+    expect(html).toContain('>12<');
+    expect(html).toContain('Avg response');
+    expect(html).toContain('12m 34s');
+    // The chip toggles the unanswered filter, like the card.
+    expect(html).toContain('aria-pressed="false"');
+    expect(strip(true)).toContain('aria-pressed="true"');
+    // It is the compact line, not the card grid.
+    expect(html).not.toContain('New today');
+    expect(html).not.toContain('By category');
+  });
+
+  it('renders the strip inside the list header, above the search line', () => {
+    const el = createElement(DashboardStrip, { data, error: null, unansweredOnly: false, onToggleUnanswered: noop });
+    const html = renderToStaticMarkup(
+      createElement(ConversationList, {
+        me: hana,
+        tab: 'team',
+        strip: el,
+        page: null,
+        rows: [],
+        loading: false,
+        loadingMore: false,
+        error: null,
+        filters: EMPTY_FILTERS,
+        search: '',
+        selectedId: null,
+        now: new Date('2026-10-22T03:00:00.000Z'),
+        onSearch: noop,
+        onFilters: noop,
+        onTab: noop,
+        onOpenFilters: noop,
+        onSelect: noop,
+        onAskHandle: noop,
+        onMore: noop,
+      }),
+    );
+    expect(html).toContain('Unanswered 3');
+    expect(html.indexOf('Unanswered 3')).toBeLessThan(html.indexOf('aria-label="Search"'));
+    // The card grid stays out of the list.
+    expect(html).not.toContain('New today');
   });
 });

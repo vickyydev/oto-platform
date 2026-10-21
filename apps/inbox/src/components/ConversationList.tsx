@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Archive, CalendarRange, CheckCircle2, Download, Filter, Inbox, Loader2, Search, X } from 'lucide-react';
 import type { InboxTab } from '@oto/shared/inbox';
 import type { ConversationList as ListPage, ConversationRow, InboxMe } from '@/api/inbox';
@@ -40,6 +41,7 @@ const PILL_OFF = 'bg-white text-slate-600 ring-slate-200 hover:bg-slate-100';
 export function ConversationList({
   me,
   tab,
+  strip,
   page,
   rows,
   loading,
@@ -59,6 +61,8 @@ export function ConversationList({
 }: {
   me: InboxMe;
   tab: InboxTab;
+  /** The phone's compact dashboard line (F3), rendered under the tabs; the lg dashboard is the header's card grid. */
+  strip?: ReactNode;
   page: ListPage | null;
   rows: ConversationRow[];
   loading: boolean;
@@ -108,6 +112,7 @@ export function ConversationList({
             );
           })}
         </div>
+        {strip !== undefined && strip !== null && <div className="mb-2 lg:hidden">{strip}</div>}
         <div className="flex items-center gap-2">
           <div className="relative min-w-0 flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />

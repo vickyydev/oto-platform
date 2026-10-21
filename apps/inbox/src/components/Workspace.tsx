@@ -11,7 +11,7 @@ import { ChatPanel, type Thread } from '@/components/ChatPanel';
 import { composerTemplate, type InsertedTemplate } from '@/components/Composer';
 import { HandleConfirm } from '@/components/confirms';
 import { ConversationList } from '@/components/ConversationList';
-import { Dashboard } from '@/components/Dashboard';
+import { Dashboard, DashboardStrip } from '@/components/Dashboard';
 import { FiltersDialog, TemplatesDialog } from '@/components/dialogs';
 import { Rail, viewerRoleLabel } from '@/components/Rail';
 import { SimulatorDialog } from '@/components/Simulator';
@@ -514,6 +514,12 @@ export function Workspace({ me }: { me: InboxMe }) {
   const toggleHandled = () =>
     chooseTab(tab === 'handled' ? (me.tabs.find((t) => t !== 'handled') ?? 'team') : 'handled');
 
+  // The Unanswered card's toggle (:1367-1375), shared with the phone strip (F3).
+  const toggleUnanswered = () => {
+    if (tab === 'handled') chooseTab(defaultTab(me.tabs.filter((t) => t !== 'handled')));
+    patchFilters({ unanswered: !filters.unanswered });
+  };
+
   return (
     <div className="mx-auto max-w-[1400px] space-y-5 px-4 py-5 sm:px-6">
       {/* HEADER */}
@@ -524,8 +530,9 @@ export function Workspace({ me }: { me: InboxMe }) {
               <Sparkles className="h-3.5 w-3.5" />
               Unified Customer Inbox
             </div>
-            <h1 className="mt-1 text-xl font-semibold tracking-tight text-slate-900">All channels, one queue, role-based access</h1>
-            <p className="mt-1 text-[13px] text-slate-500">
+            {/* Below lg the eyebrow is the whole title line (F3): the list must be on screen. */}
+            <h1 className="mt-1 hidden text-xl font-semibold tracking-tight text-slate-900 lg:block">All channels, one queue, role-based access</h1>
+            <p className="mt-1 hidden text-[13px] text-slate-500 lg:block">
               WhatsApp · Instagram · Facebook, routed to the right team. {me.name ?? 'You'} · {viewerRoleLabel(me)}
             </p>
           </div>
@@ -569,15 +576,7 @@ export function Workspace({ me }: { me: InboxMe }) {
           </div>
         </div>
         {me.capabilities.dashboard && (
-          <Dashboard
-            data={dashboard}
-            error={dashboardError}
-            unansweredOnly={filters.unanswered}
-            onToggleUnanswered={() => {
-              if (tab === 'handled') chooseTab(defaultTab(me.tabs.filter((t) => t !== 'handled')));
-              patchFilters({ unanswered: !filters.unanswered });
-            }}
-          />
+          <Dashboard data={dashboard} error={dashboardError} unansweredOnly={filters.unanswered} onToggleUnanswered={toggleUnanswered} />
         )}
       </header>
 
@@ -598,6 +597,16 @@ export function Workspace({ me }: { me: InboxMe }) {
             <ConversationList
               me={me}
               tab={tab}
+              strip={
+                me.capabilities.dashboard ? (
+                  <DashboardStrip
+                    data={dashboard}
+                    error={dashboardError}
+                    unansweredOnly={filters.unanswered}
+                    onToggleUnanswered={toggleUnanswered}
+                  />
+                ) : undefined
+              }
               page={page}
               rows={rows}
               loading={listLoading}
