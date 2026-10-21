@@ -24362,6 +24362,85 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Today at the live parks within console:overview:read reach, independent of the session seat. The optional branchId selects one reachable park. Revenue and guests use each park’s business date, selected analytics source and stored rollup, with its provisional and freshness marks. Bookings count every state for that visit date. Inbox unanswered reuses its existing rule; alerts are unresolved. These park counts exclude branchless Inbox conversations and operator/platform alerts. Offline boxes use their reported offline status at any hour; alerting hours are unchanged. Summary-only authority: linked screens retain their own permissions. Foreign, absent or archived park: 404; own unreachable park: 403. */
+        get: {
+            parameters: {
+                query?: {
+                    branchId?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: date-time */
+                            generatedAt: string;
+                            branches: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                                timezone: string;
+                                businessDayStart: string;
+                                businessDate: string;
+                            }[];
+                            selectedBranchIds: string[];
+                            totals: {
+                                revenueSatang: number;
+                                guests: number;
+                                inParkNow: number;
+                                bookingsToday: number;
+                                inboxUnanswered: number;
+                                openAlerts: number;
+                                boxesOffline: number;
+                            };
+                            parks: {
+                                revenueSatang: number;
+                                guests: number;
+                                inParkNow: number;
+                                bookingsToday: number;
+                                inboxUnanswered: number;
+                                openAlerts: number;
+                                boxesOffline: number;
+                                /** Format: uuid */
+                                branchId: string;
+                                businessDate: string;
+                                /** @enum {string} */
+                                analyticsSource: "oto_pos" | "pisell" | "papaya";
+                                provisional: boolean;
+                                /** Format: date-time */
+                                lastRolledUpAt: string | null;
+                                /** Format: date-time */
+                                occupancyAsOf: string | null;
+                                occupancyStale: boolean;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ops/health": {
         parameters: {
             query?: never;

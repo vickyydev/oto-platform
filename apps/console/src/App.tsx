@@ -24,6 +24,7 @@ import { Integrations } from '@/pages/Integrations';
 import { Vouchers } from '@/pages/Vouchers';
 import { VoucherTypes } from '@/pages/VoucherTypes';
 import { AreaLanding } from '@/pages/AreaLanding';
+import { Overview } from '@/pages/Overview';
 
 const LAUNCHER_URL = import.meta.env.VITE_LAUNCHER_URL?.trim();
 
@@ -141,7 +142,9 @@ function Routes() {
         </Route>
       )))}
       {consoleNav.filter((area) => !CONSOLE_SECTIONS.some((page) => page.path === `/${area.id}`))
-        .map((area) => <Route key={area.id} path={`/${area.id}`}><AreaLanding id={area.id} /></Route>)}
+        .map((area) => <Route key={area.id} path={`/${area.id}`}>
+          {area.id === 'overview' ? <Overview /> : <AreaLanding id={area.id} />}
+        </Route>)}
       <Route component={NotFound} />
     </Switch>
   );

@@ -58205,6 +58205,214 @@
         }
       }
     },
+    "/overview": {
+      "get": {
+        "description": "Today at the live parks within console:overview:read reach, independent of the session seat. The optional branchId selects one reachable park. Revenue and guests use each park’s business date, selected analytics source and stored rollup, with its provisional and freshness marks. Bookings count every state for that visit date. Inbox unanswered reuses its existing rule; alerts are unresolved. These park counts exclude branchless Inbox conversations and operator/platform alerts. Offline boxes use their reported offline status at any hour; alerting hours are unchanged. Summary-only authority: linked screens retain their own permissions. Foreign, absent or archived park: 404; own unreachable park: 403.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "query",
+            "name": "branchId",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "generatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "branches": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "timezone": {
+                            "type": "string"
+                          },
+                          "businessDayStart": {
+                            "type": "string"
+                          },
+                          "businessDate": {
+                            "type": "string",
+                            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "timezone",
+                          "businessDayStart",
+                          "businessDate"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "selectedBranchIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "format": "uuid"
+                      }
+                    },
+                    "totals": {
+                      "type": "object",
+                      "properties": {
+                        "revenueSatang": {
+                          "type": "integer"
+                        },
+                        "guests": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "inParkNow": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "bookingsToday": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "inboxUnanswered": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "openAlerts": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "boxesOffline": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "revenueSatang",
+                        "guests",
+                        "inParkNow",
+                        "bookingsToday",
+                        "inboxUnanswered",
+                        "openAlerts",
+                        "boxesOffline"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "parks": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "revenueSatang": {
+                            "type": "integer"
+                          },
+                          "guests": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "inParkNow": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "bookingsToday": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "inboxUnanswered": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "openAlerts": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "boxesOffline": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "branchId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "businessDate": {
+                            "type": "string",
+                            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                          },
+                          "analyticsSource": {
+                            "type": "string",
+                            "enum": [
+                              "oto_pos",
+                              "pisell",
+                              "papaya"
+                            ]
+                          },
+                          "provisional": {
+                            "type": "boolean"
+                          },
+                          "lastRolledUpAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          },
+                          "occupancyAsOf": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          },
+                          "occupancyStale": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "revenueSatang",
+                          "guests",
+                          "inParkNow",
+                          "bookingsToday",
+                          "inboxUnanswered",
+                          "openAlerts",
+                          "boxesOffline",
+                          "branchId",
+                          "businessDate",
+                          "analyticsSource",
+                          "provisional",
+                          "lastRolledUpAt",
+                          "occupancyAsOf",
+                          "occupancyStale"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "generatedAt",
+                    "branches",
+                    "selectedBranchIds",
+                    "totals",
+                    "parks"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/ops/health": {
       "get": {
         "description": "Dependency checks, the job register, every box with its devices, and open alerts — read from the database, not from this process",

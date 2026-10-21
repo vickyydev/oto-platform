@@ -56,6 +56,7 @@ import { partyRoutes } from './routes/parties';
 import { publicRoutes } from './routes/public';
 import { opsRoutes } from './routes/ops';
 import { analyticsRoutes } from './routes/analytics';
+import { consoleRoutes } from './routes/console';
 import { boxRoutes } from './routes/box';
 import { fleetRoutes } from './routes/fleet';
 import { stationSessionRoutes } from './routes/stations';
@@ -518,6 +519,7 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   await app.register((await import('./routes/settlement')).settlementRoutes);
   // S2-15b round 3 — the stored trading days Today > Performance and Radar read.
   await app.register(analyticsRoutes, { prefix: '/analytics' });
+  await app.register(consoleRoutes);
   await app.register(opsRoutes, { prefix: '/ops' });
   // S2-19 I2b — the Inbox's reads: list, thread, dashboard, the viewer, templates.
   await app.register(inboxReadRoutes, { prefix: '/inbox' });
