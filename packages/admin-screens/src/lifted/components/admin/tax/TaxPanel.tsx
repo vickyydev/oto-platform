@@ -1,5 +1,5 @@
 import { useAdminScreenRuntime } from '../../../runtime/AdminScreenRuntime';
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Info, Check, Plus, Trash2, AlertTriangle } from "lucide-react";
 import { type CategoryTaxRule, type TaxableCategory, type TaxConfig, type TaxMode, type TaxRate } from "../../../model/types";
 import { useCatalogStore } from "../../../runtime/AdminScreenRuntime";
@@ -10,6 +10,7 @@ import { Input } from "../../ui/input";
 import { Label } from "../../ui/label";
 import { Switch } from "../../ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/select";
+import { useMoneyCapabilities, type TaxPanelPorts } from '../../../runtime/money';
 
 // Human labels for each taxable area. 'stored_value' is intentionally omitted
 // from the editor — credit loads are never taxed at load (taxed on spend).
@@ -54,6 +55,15 @@ const serviceDraftFrom = (rules: CategoryTaxRule[]): ServiceDraft =>
 
 const NO_RATE = '__none__';
 
+// JSONB does not retain object-key order; compare the saved configuration by value.
+const configKey = (value: unknown): string => {
+  if (Array.isArray(value)) return '[' + value.map(configKey).join(',') + ']';
+  if (typeof value === 'object' && value !== null) return '{' + Object.entries(value)
+    .filter(([, entry]) => entry !== undefined).sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, entry]) => JSON.stringify(key) + ':' + configKey(entry)).join(',') + '}';
+  return JSON.stringify(value) ?? 'undefined';
+};
+
 /**
  * Admin editing screen for the tax configuration. Reads the live shared catalog
  * store and writes back through `updateTaxConfig`, so changes flow to the tax
@@ -63,11 +73,15 @@ const NO_RATE = '__none__';
  */
 export function TaxPanel() {
   const runtime = useAdminScreenRuntime();
-  const breakdownToBaht = runtime.domain.cartWire.breakdownToBaht;
-  const engineTaxConfig = runtime.domain.cartWire.engineTaxConfig;
-  const toSatang = runtime.domain.cartWire.toSatang;
-
   const { taxConfig, mutators } = useCatalogStore();
+  const scope = useMoneyCapabilities(runtime.transport, runtime.session.operator?.id, Boolean(runtime.branch.branch.apiId), runtime.session.operator, runtime.branch.branch.apiId);
+  return <TaxPanelWithPorts ports={{ taxConfig, taxEngine: runtime.domain.cartWire, updateTaxConfig: mutators.updateTaxConfig, canManage: scope.canManageTax, authorityMessage: scope.authorityMessage }} />;
+}
+
+export function TaxPanelWithPorts({ ports }: { ports: TaxPanelPorts }) {
+  const { breakdownToBaht, engineTaxConfig, toSatang } = ports.taxEngine;
+  const { taxConfig } = ports;
+  const mutators = ports;
 
   const editableRules = useMemo(
     () => taxConfig.categoryRules.filter((r) => r.category !== 'stored_value'),
@@ -82,6 +96,15 @@ export function TaxPanel() {
     taxConfig.discountPlacement
   );
   const [saved, setSaved] = useState(false);
+  const canManage = ports.canManage !== false;
+  const manageRef = useRef(canManage);
+  manageRef.current = canManage;
+  const [saving, setSaving] = useState(false);
+  const busyRef = useRef(false);
+  const [writeError, setWriteError] = useState<string | null>(null);
+  const confirmedConfig = useRef<TaxConfig | null>(null);
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
 
   // New-rate form
   const [newRateName, setNewRateName] = useState('');
@@ -100,8 +123,8 @@ export function TaxPanel() {
     setRules(editableRules);
     setService(serviceDraftFrom(editableRules));
     setDiscountPlacement(taxConfig.discountPlacement);
-    setSaved(false);
-  }, [editableRules, taxConfig.rates, taxConfig.discountPlacement]);
+    setSaved(confirmedConfig.current !== null && configKey(confirmedConfig.current) === configKey(taxConfig));
+  }, [editableRules, taxConfig]);
 
   // ── derived: which categories reference a given rate ────────────────────
   const rateUsers = useMemo(() => {
@@ -204,7 +227,8 @@ export function TaxPanel() {
   };
 
   // ── save ──────────────────────────────────────────────────────────────────
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (busyRef.current || !manageRef.current) return;
     const mergedEditable = rules.map((r) => {
       const raw = service[r.category];
       const num = Number(raw);
@@ -214,19 +238,36 @@ export function TaxPanel() {
     const untouched = taxConfig.categoryRules.filter(
       (r) => !mergedEditable.some((m) => m.category === r.category)
     );
-    mutators.updateTaxConfig({
-      rates,
-      categoryRules: [...mergedEditable, ...untouched],
-      discountPlacement,
-    });
-    setSaved(true);
+    const submitted: TaxConfig = { rates, categoryRules: [...mergedEditable, ...untouched], discountPlacement };
+    busyRef.current = true;
+    confirmedConfig.current = null;
+    setSaving(true);
+    setWriteError(null);
+    try {
+      await mutators.updateTaxConfig(submitted);
+      if (mounted.current && manageRef.current) {
+        confirmedConfig.current = submitted;
+        setSaved(true);
+      }
+    } catch (err) {
+      if (mounted.current) {
+        confirmedConfig.current = null;
+        setSaved(false);
+        setWriteError(err instanceof Error ? err.message : 'The tax settings were not saved.');
+      }
+    } finally {
+      busyRef.current = false;
+      if (mounted.current) setSaving(false);
+    }
   };
 
   return (
     <div className="flex flex-col gap-6">
+      {ports.authorityMessage && <p className="text-sm text-foreground/60">{ports.authorityMessage}</p>}
+      {writeError && <p role="alert" className="text-sm text-destructive">{writeError}</p>}
 
       {/* ── 1. Global rates ──────────────────────────────────────────────── */}
-      <div className="rounded-2xl border border-foreground/10 bg-foreground/[0.02] p-5">
+      <fieldset disabled={!canManage || saving} className="min-w-0 rounded-2xl border border-foreground/10 bg-foreground/[0.02] p-5">
         <h2 className="text-base font-bold">Global tax rates</h2>
         <p className="mt-1 text-sm text-foreground/50">
           Named rates that per-category rules reference. Each rate has a name (e.g. "VAT") and a
@@ -355,10 +396,10 @@ export function TaxPanel() {
             {newRateError && <p className="text-xs text-destructive">{newRateError}</p>}
           </div>
         </div>
-      </div>
+      </fieldset>
 
       {/* ── 2. Tax per area ───────────────────────────────────────────────── */}
-      <div className="rounded-2xl border border-foreground/10 bg-foreground/[0.02] p-5">
+      <fieldset disabled={!canManage || saving} className="min-w-0 rounded-2xl border border-foreground/10 bg-foreground/[0.02] p-5">
         <h2 className="text-base font-bold">Tax per area</h2>
         <p className="mt-1 text-sm text-foreground/50">
           Set how each part of the business is taxed and service-charged. Retail / merch is its own
@@ -540,10 +581,10 @@ export function TaxPanel() {
             </div>
           ))}
         </div>
-      </div>
+      </fieldset>
 
       {/* ── 3. Discount placement ─────────────────────────────────────────── */}
-      <div className="rounded-2xl border border-foreground/10 bg-foreground/[0.02] p-5">
+      <fieldset disabled={!canManage || saving} className="min-w-0 rounded-2xl border border-foreground/10 bg-foreground/[0.02] p-5">
         <h2 className="text-base font-bold">Discount placement</h2>
         <p className="mt-1 text-sm text-foreground/50">
           Whether manual discounts apply before or after tax is computed.
@@ -565,7 +606,7 @@ export function TaxPanel() {
             </SelectContent>
           </Select>
         </div>
-      </div>
+      </fieldset>
 
       {/* ── 4. Live example ───────────────────────────────────────────────── */}
       <div className="rounded-2xl border border-foreground/10 bg-foreground/[0.02] p-5">
@@ -614,7 +655,7 @@ export function TaxPanel() {
 
       {/* ── Save ─────────────────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-center gap-3">
-        <Button onClick={handleSave}>
+        <Button onClick={() => void handleSave()} disabled={!canManage || saving}>
           <Check className="w-4 h-4" />
           Save changes
         </Button>

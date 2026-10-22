@@ -15,7 +15,7 @@ export interface AdminScreenApis {
   };
   // The original POS bridge exposes hydration writes; Console composes the
   // separate confirmed-write helper without adding a POS module export.
-  menu: Omit<ReturnType<typeof import('../api/menu').createMenuApi>, 'saveMenuItem'>;
+  menu: Omit<ReturnType<typeof import('../api/menu').createMenuApi>, 'saveMenuItem' | 'saveDiscount'>;
   catalogBridge: ReturnType<typeof import('../api/catalogBridge').createCatalogBridge>;
   analyticsReports: ReturnType<typeof import('../api/analyticsReports').createAnalyticsReportsApi>;
   benefits: ReturnType<typeof import('../api/benefits').createBenefitsAdminApi>;

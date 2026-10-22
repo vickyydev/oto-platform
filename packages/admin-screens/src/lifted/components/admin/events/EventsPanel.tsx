@@ -1,5 +1,5 @@
 import { useAdminScreenRuntime } from '../../../runtime/AdminScreenRuntime';
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Check } from "lucide-react";
 import { bahtFromSatang, satangFromBaht, type EventDropInPricing } from "@oto/shared";
 import { type WeekdayWeekendPrice } from "../../../model/types";
@@ -9,6 +9,7 @@ import { type WeekdayWeekendPrice } from "../../../model/types";
 import { Button } from "../../ui/button";
 import { WeekdayWeekendPriceInput } from "../../shared/WeekdayWeekendPriceInput";
 import { AdminNoticeBanner } from "../NotSavedNotice";
+import { useMoneyCapabilities, type EventsPanelPorts } from '../../../runtime/money';
 
 /**
  * S2-20 E2 — THE ADMIN EVENTS PANEL: the branch's walk-up prices.
@@ -73,58 +74,87 @@ export function EventsPanel() {
   const eventsApi = runtime.api.events.eventsApi;
 
   const platformId = apiBranchIdForSlug(getActiveBranch().id);
+  const scope = useMoneyCapabilities(runtime.transport, runtime.session?.operator?.id, Boolean(platformId), runtime.session?.operator, platformId ?? undefined);
+  const [answer, setAnswer] = useState<{ branchId: string; pricing: EventDropInPricing | null; error?: string } | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    if (!platformId) return;
+    let live = true;
+    void eventsApi.dropInPricing(platformId).then(result => {
+      if (live) setAnswer({ branchId: platformId, pricing: result.pricing });
+    }).catch((err: unknown) => {
+      if (live) setAnswer({ branchId: platformId, pricing: null, error: err instanceof Error ? err.message : 'Could not load the prices.' });
+    });
+    return () => { live = false; };
+  }, [platformId, eventsApi, attempt]);
+  const current = answer?.branchId === platformId ? answer : null;
+  return <EventsPanelWithPorts key={`${runtime.session?.operator?.id ?? ''}:${platformId ?? ''}`} ports={{ pricing: current?.pricing ?? null, loading: Boolean(platformId) && !current, error: platformId ? current?.error : EVENTS_NOT_LINKED, onRetry: () => { setAnswer(null); setAttempt(value => value + 1); }, canManage: scope.canManageEvents, authorityMessage: scope.authorityMessage, savePricing: async pricing => {
+    if (!platformId) throw new Error(EVENTS_NOT_LINKED);
+    return (await eventsApi.saveDropInPricing(platformId, pricing)).pricing;
+  } }} />;
+}
+
+export function EventsPanelWithPorts({ ports }: { ports: EventsPanelPorts }) {
   const [saved, setSaved] = useState<Prices>(ZERO);
   const [prices, setPrices] = useState<Prices>(ZERO);
-  const [loaded, setLoaded] = useState(false);
-  const [error, setError] = useState<string | null>(platformId ? null : EVENTS_NOT_LINKED);
+  const loaded = ports.pricing !== null;
+  const canManage = ports.canManage !== false;
+  const [writeError, setError] = useState<string | null>(null);
+  const error = writeError ?? ports.error;
   const [saving, setSaving] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
+  const busyRef = useRef(false);
+  const manageRef = useRef(canManage);
+  manageRef.current = canManage;
+  const draftEpoch = useRef(0);
+  const pricesRef = useRef(prices);
+  pricesRef.current = prices;
+  const savedRef = useRef(saved);
+  savedRef.current = saved;
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
 
   useEffect(() => {
-    if (!platformId) {
-      setError(EVENTS_NOT_LINKED);
-      return;
-    }
-    let live = true;
-    eventsApi
-      .dropInPricing(platformId)
-      .then((answer) => {
-        if (!live) return;
-        const baht = toBaht(answer.pricing);
-        setSaved(baht);
-        setPrices(baht);
-        setLoaded(true);
-      })
-      .catch((err: unknown) => live && setError(err instanceof Error ? err.message : 'Could not load the prices.'));
-    return () => {
-      live = false;
-    };
-  }, [platformId, EVENTS_NOT_LINKED, eventsApi]);
+    if (!ports.pricing) return;
+    const baht = toBaht(ports.pricing);
+    const untouched = same(pricesRef.current, savedRef.current);
+    setSaved(baht);
+    if (untouched) setPrices(baht);
+  }, [ports.pricing]);
 
   const dirty = useMemo(() => !same(prices, saved), [prices, saved]);
   const invalid = FIELDS.some((f) => prices[f.key].weekday < 0 || prices[f.key].weekend < 0);
 
   const setField = (key: Key, next: WeekdayWeekendPrice) => {
+    draftEpoch.current++;
     setPrices((p) => ({ ...p, [key]: next }));
     setJustSaved(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!platformId || invalid) return;
+    if (!loaded || invalid || busyRef.current || !manageRef.current || !mounted.current) return;
+    const epoch = draftEpoch.current;
+    busyRef.current = true;
     setSaving(true);
     setError(null);
     try {
-      const answer = await eventsApi.saveDropInPricing(platformId, toSatang(prices));
-      const baht = toBaht(answer.pricing);
+      const answer = await ports.savePricing(toSatang(prices));
+      if (!mounted.current || !manageRef.current) return;
+      const baht = toBaht(answer);
       setSaved(baht);
-      setPrices(baht);
-      setJustSaved(true);
+      if (draftEpoch.current === epoch) {
+        setPrices(baht);
+        setJustSaved(true);
+      } else setJustSaved(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not save.');
-      setJustSaved(false);
+      if (mounted.current) {
+        setError(err instanceof Error ? err.message : 'Could not save.');
+        setJustSaved(false);
+      }
     } finally {
-      setSaving(false);
+      busyRef.current = false;
+      if (mounted.current) setSaving(false);
     }
   };
 
@@ -140,10 +170,13 @@ export function EventsPanel() {
           {error && (
             <div className="mt-4">
               <AdminNoticeBanner>{error}</AdminNoticeBanner>
+              {ports.onRetry && <Button type="button" variant="outline" onClick={ports.onRetry}>Retry</Button>}
             </div>
           )}
+          {ports.loading && <p role="status" className="mt-4 text-sm text-foreground/60">Loading prices…</p>}
+          {ports.authorityMessage && <p className="mt-4 text-sm text-foreground/60">{ports.authorityMessage}</p>}
 
-          <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <fieldset disabled={!canManage || !loaded} className="mt-5 grid min-w-0 grid-cols-1 gap-5 sm:grid-cols-2">
             {FIELDS.map((f) => (
               <WeekdayWeekendPriceInput
                 key={f.key}
@@ -154,11 +187,11 @@ export function EventsPanel() {
                 error={prices[f.key].weekday < 0 || prices[f.key].weekend < 0 ? 'Must be 0 or more.' : undefined}
               />
             ))}
-          </div>
+          </fieldset>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <Button type="submit" disabled={!dirty || invalid || saving || !platformId || !loaded}>
+          <Button type="submit" disabled={!canManage || !dirty || invalid || saving || !loaded}>
             <Check className="w-4 h-4" />
             Save changes
           </Button>
@@ -167,6 +200,7 @@ export function EventsPanel() {
               type="button"
               variant="outline"
               onClick={() => {
+                draftEpoch.current++;
                 setPrices(saved);
                 setJustSaved(false);
               }}

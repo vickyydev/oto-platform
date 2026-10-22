@@ -137,15 +137,7 @@ export interface ApiCloneResult {
 export type ApiTicketPackage = ApiResponse<'/branches/{branchId}/ticket-packages', 'get'>['packages'][number];
 
 
-export interface ApiPaymentMethod {
-  /** The tender's code — the token stored on a sale, and the store's `id`. */
-  id: string;
-  label: string;
-  kind: 'cash' | 'card' | 'qr' | 'other';
-  enabled: boolean;
-  sortOrder: number;
-  attempts: number;
-}
+export type ApiPaymentMethod = ApiResponse<'/payment-methods', 'get'>['methods'][number];
 
 
 /**
@@ -301,9 +293,9 @@ const catalogApi = {
       `/branches/${branchId}/pricing-mode${date ? `?date=${date}` : ''}`,
     ),
   ...holidaysApi,
-  taxConfig: (branchId: string) => api.get<{ config: unknown | null }>(`/branches/${branchId}/tax-config`),
+  taxConfig: (branchId: string) => api.get<ApiResponse<'/branches/{branchId}/tax-config', 'get'>>(`/branches/${branchId}/tax-config`),
   putTaxConfig: (branchId: string, config: unknown) =>
-    api.put<{ ok: true }>(`/branches/${branchId}/tax-config`, config),
+    api.put<ApiResponse<'/branches/{branchId}/tax-config', 'put'>>(`/branches/${branchId}/tax-config`, config, { idempotencyKey: idemKey() }),
 
   /**
    * The tenders the park takes money in (SCRUM-206).
@@ -314,30 +306,29 @@ const catalogApi = {
    * tender's CODE, which is the token a sale carries and the id the store
    * keys by.
    *
-   * `attempts` is how many money rows name it. The panel needs it before it
-   * offers a delete: the platform refuses one that has taken money, and a
-   * screen that cannot see the count can only discover that by being refused.
+   * `attempts` is how many money rows name it. The native panel warns before
+   * archiving a used method; its history retains that tender code.
    */
-  paymentMethods: () => api.get<{ methods: ApiPaymentMethod[] }>('/payment-methods'),
+  paymentMethods: () => api.get<ApiResponse<'/payment-methods', 'get'>>('/payment-methods'),
   createPaymentMethod: (body: {
     code: string;
     label: string;
     kind: ApiPaymentMethod['kind'];
     sortOrder?: number;
-  }) => api.post<{ id: string }>('/payment-methods', body, { idempotencyKey: idemKey() }),
+  }) => api.post<ApiResponse<'/payment-methods', 'post'>>('/payment-methods', body, { idempotencyKey: idemKey() }),
   updatePaymentMethod: (
     code: string,
     patch: Partial<{ label: string; kind: ApiPaymentMethod['kind']; enabled: boolean; sortOrder: number }>,
-  ) => api.patch<{ ok: true }>(`/payment-methods/${encodeURIComponent(code)}`, patch),
+  ) => api.patch<ApiResponse<'/payment-methods/{code}', 'patch'>>(`/payment-methods/${encodeURIComponent(code)}`, patch, { idempotencyKey: idemKey() }),
   /** One place up or down — the prototype's swap of two sort orders, done atomically. */
   movePaymentMethod: (code: string, direction: 'up' | 'down') =>
-    api.post<{ ok: true; moved: boolean }>(
+    api.post<ApiResponse<'/payment-methods/{code}/move', 'post'>>(
       `/payment-methods/${encodeURIComponent(code)}/move`,
       { direction },
       { idempotencyKey: idemKey() },
     ),
   deletePaymentMethod: (code: string) =>
-    api.delete<{ ok: true }>(`/payment-methods/${encodeURIComponent(code)}`),
+    api.delete<ApiResponse<'/payment-methods/{code}', 'delete'>>(`/payment-methods/${encodeURIComponent(code)}`, { idempotencyKey: idemKey() }),
 };
 
 return catalogApi;

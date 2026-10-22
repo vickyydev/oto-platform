@@ -1,6 +1,7 @@
 import { useAdminScreenRuntime } from '../../../runtime/AdminScreenRuntime';
 import { type DiscountTarget } from "../../../model/types";
 import { useCatalogStore } from "../../../runtime/AdminScreenRuntime";
+import type { DiscountTargetPickerPorts, DiscountTargetPickerProps } from '../../../runtime/money';
 
 import { Field, SelectInput } from "./fields";
 
@@ -24,17 +25,14 @@ function tokenOf(t: DiscountTarget): ScopeToken {
   return t.kind === 'ticketGroup' ? t.group : t.kind;
 }
 
-export function DiscountTargetPicker({
-  value,
-  onChange,
-}: {
-  value: DiscountTarget;
-  onChange: (t: DiscountTarget) => void;
-}) {
+export function DiscountTargetPicker(props: DiscountTargetPickerProps) {
   const runtime = useAdminScreenRuntime();
-  const formatWWPrice = runtime.domain.pricingMode.formatWWPrice;
-
   const { ticketTypes, addOns, menuItems, menuCategories } = useCatalogStore();
+  return <DiscountTargetPickerWithPorts {...props} ports={{ ticketTypes, addOns, menuItems, menuCategories, formatWWPrice: runtime.domain.pricingMode.formatWWPrice }} />;
+}
+
+export function DiscountTargetPickerWithPorts({ value, onChange, ports }: DiscountTargetPickerProps & { ports: DiscountTargetPickerPorts }) {
+  const { ticketTypes, addOns, menuItems, menuCategories, formatWWPrice } = ports;
   const orderedCategories = [...menuCategories].sort(
     (a, b) => a.sortOrder - b.sortOrder
   );

@@ -5,7 +5,7 @@ import type { CatalogReaders } from '../model/ports';
 
 export type RefundMode = 'auto' | 'manual';
 /** Original domain rules, bound to this host's explicit data ports. */
-export function createPaymentsHelpers(deps: { catalog: CatalogReaders }) {
+export function createPaymentsHelpers(deps: { catalog: Pick<CatalogReaders, 'getPaymentMethods'> }) {
 const { getPaymentMethods } = deps.catalog;
 
 

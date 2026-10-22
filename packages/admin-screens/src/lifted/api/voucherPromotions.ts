@@ -1,3 +1,4 @@
+import type { AdminApi } from '../../api/admin-api';
 import type { ApiResponse } from '@oto/api-types';
 import type {VoucherTarget} from '@oto/shared';
 import type { LiftedAdminApi } from '../../api/lifted-api';
@@ -44,30 +45,21 @@ export interface VoucherPromoPatch {
   validUntil?: string | null;
 }
 
-export interface VoucherCampaignRow {
-  id: string;
-  name: string;
-  branchId: string;
-  definitionId: string;
-  definitionCode: string;
-  quantity: number;
-  redeemed: number;
-  createdAt: string;
-}
+export type VoucherCampaignRow = ApiResponse<'/voucher-campaigns', 'get'>['campaigns'][number];
 
-export function createVoucherPromotionsApi(api: LiftedAdminApi) {
+export function createVoucherPromotionsApi(api: AdminApi & Pick<LiftedAdminApi, 'href'>) {
   return {
   definitions: () => api.get<ApiResponse<'/voucher-definitions', 'get'>>('/voucher-definitions'),
   saveRules: (id: string, patch: VoucherPromoPatch) =>
     api.patch<ApiResponse<'/voucher-definitions/{id}', 'patch'>>(`/voucher-definitions/${encodeURIComponent(id)}`, patch, {
       idempotencyKey: idemKey(),
     }),
-  campaigns: () => api.get<{ campaigns: VoucherCampaignRow[] }>('/voucher-campaigns'),
+  campaigns: () => api.get<ApiResponse<'/voucher-campaigns', 'get'>>('/voucher-campaigns'),
   /** One key per press: a retried press is the same batch, never a second. */
   mintCampaign: (
     body: { definitionId: string; branchId: string; name: string; quantity: number },
     idempotencyKey: string = idemKey(),
-  ) => api.post<{ campaign: VoucherCampaignRow }>('/voucher-campaigns', body, { idempotencyKey }),
+  ) => api.post<ApiResponse<'/voucher-campaigns', 'post'>>('/voucher-campaigns', body, { idempotencyKey }),
   /** Where the browser downloads a campaign's codes (a GET with the session cookie). */
   codesHref: (campaignId: string) => api.href(`/voucher-campaigns/${encodeURIComponent(campaignId)}/codes`),
   report: (params: { branchApiId?: string | null; from: string; to: string }) => {

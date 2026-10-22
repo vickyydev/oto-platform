@@ -1,12 +1,13 @@
 import { useAdminScreenRuntime } from '../../../runtime/AdminScreenRuntime';
 import type { ApiResponse } from '@oto/api-types';
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Download, Megaphone, Pencil, Save, X } from "lucide-react";
 import { type VoucherTarget } from "@oto/shared";
 
 import { type ApiMenuCategory } from "../../../api/menu";
 import { type VoucherCampaignRow, type VoucherDefinitionRow } from "../../../api/voucherPromotions";
-import { useOperator } from "../../../runtime/AdminScreenRuntime";
+import { useMoneyCapabilities, type VoucherLinkOptions, type VoucherPromotionsPanelPorts } from "../../../runtime/money";
+import { idemKey } from '../../../api/client';
 
 
 import { Badge } from "../../ui/badge";
@@ -44,10 +45,6 @@ const TARGET_LABEL: Record<TargetKind, string> = {
   merch: 'The shop',
 };
 
-interface LinkOptions {
-  products: Array<{ id: string; name: string; kind: string; branchName: string | null }>;
-  packages: Array<{ id: string; name: string; branchName: string }>;
-}
 
 function valueText(d: VoucherDefinitionRow): string {
   if (d.kind === 'wallet_credit') return `${thbFromSatang(d.valueSatang ?? 0)} credit`;
@@ -118,92 +115,129 @@ const selectClass =
 
 export function VoucherPromotionsPanel() {
   const runtime = useAdminScreenRuntime();
-  const api = runtime.transport;
-  const menuApi = runtime.api.menu.menuApi;
   const voucherPromotionsApi = runtime.api.voucherPromotions;
+  const menuApi = runtime.api.menu.menuApi;
   const getBranches = runtime.reads.getBranches;
-  const toast = runtime.toast;
+  const branches = useMemo(() => getBranches().filter(b => b.apiId), [getBranches]);
+  const owner = runtime.session.operator;
+  const ownerRef = useRef(owner);
+  ownerRef.current = owner;
+  const scope = useMoneyCapabilities(runtime.transport, owner?.id, Boolean(runtime.branch.branch.apiId), owner, runtime.branch.branch.apiId);
+  const [snapshot, setSnapshot] = useState<{ owner: typeof owner; definitions: VoucherDefinitionRow[]; campaigns: VoucherCampaignRow[]; links: VoucherLinkOptions; categories: ApiMenuCategory[] } | null>(null);
+  const [failure, setFailure] = useState<{ owner: typeof owner; message: string } | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  useEffect(() => {
+    let live = true;
+    const first = branches[0]?.apiId;
+    let metadata: { definitions: VoucherDefinitionRow[]; campaigns: VoucherCampaignRow[] } | null = null;
+    let links: VoucherLinkOptions = { products: [], packages: [] };
+    let categories: ApiMenuCategory[] = [];
+    const publish = () => { if (live && metadata) setSnapshot({ owner, ...metadata, links, categories }); };
+    void Promise.all([voucherPromotionsApi.definitions(), voucherPromotionsApi.campaigns()]).then(([definitions, campaigns]) => {
+      if (live) { metadata = { definitions: definitions.definitions, campaigns: campaigns.campaigns }; publish(); setFailure(null); }
+    }).catch((err: unknown) => {
+      if (live) setFailure({ owner, message: err instanceof Error ? err.message : 'The vouchers could not be loaded.' });
+    });
+    void runtime.transport.get<ApiResponse<'/voucher-definitions/link-options', 'get'>>('/voucher-definitions/link-options').then(value => {
+      links = value;
+      publish();
+    }).catch(() => undefined);
+    if (first) void menuApi.load(first).then(menu => {
+      categories = menu.categories.filter(c => !c.archivedAt);
+      publish();
+    }).catch(() => undefined);
+    return () => { live = false; };
+  }, [voucherPromotionsApi, runtime.transport, menuApi, branches, owner, attempt]);
+  const current = snapshot?.owner === owner ? snapshot : null;
+  const localAccess = Boolean(runtime.branch.branch.apiId) || runtime.session.can('admin:booth:manage');
+  return <VoucherPromotionsPanelWithPorts key={owner?.id ?? ''} ports={{
+    definitions: current?.definitions ?? [], campaigns: current?.campaigns ?? [], links: current?.links ?? { products: [], packages: [] }, categories: current?.categories ?? [], branches,
+    loading: !current && failure?.owner !== owner, loadError: failure?.owner === owner ? failure.message : null,
+    onRetry: () => { setSnapshot(null); setFailure(null); setAttempt(value => value + 1); },
+    canManageRules: localAccess && scope.canManageRules, canMintCampaign: branchId => localAccess && scope.canMintCampaign(branchId), canDownloadCodes: campaign => localAccess && scope.canDownloadCodes(campaign), authorityMessage: scope.authorityMessage,
+    codesHref: voucherPromotionsApi.codesHref, toast: runtime.toast,
+    saveRules: async (id, patch) => {
+      const result = await voucherPromotionsApi.saveRules(id, patch);
+      if (mounted.current && ownerRef.current === owner) setSnapshot(value => value?.owner === owner ? { ...value, definitions: value.definitions.map(d => d.id === id ? { ...d, ...result.definition } : d) } : value);
+    },
+    mintCampaign: async (input, key) => {
+      const result = await voucherPromotionsApi.mintCampaign(input, key);
+      if (mounted.current && ownerRef.current === owner) setSnapshot(value => value?.owner === owner ? { ...value, campaigns: [result.campaign, ...value.campaigns] } : value);
+    },
+  }} />;
+}
 
-  const { can } = useOperator();
-  const canManage = can('admin:booth:manage');
-  const [defs, setDefs] = useState<VoucherDefinitionRow[]>([]);
-  const [campaigns, setCampaigns] = useState<VoucherCampaignRow[]>([]);
-  const [links, setLinks] = useState<LinkOptions>({ products: [], packages: [] });
-  const [categories, setCategories] = useState<ApiMenuCategory[]>([]);
-  const [loadError, setLoadError] = useState<string | null>(null);
+export function VoucherPromotionsPanelWithPorts({ ports }: { ports: VoucherPromotionsPanelPorts }) {
+  const { definitions: defs, campaigns, links, categories, branches, loadError, toast, canManageRules } = ports;
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [saving, setSaving] = useState(false);
   const [campaign, setCampaign] = useState({ definitionId: '', branchId: '', name: '', quantity: '100' });
   const [minting, setMinting] = useState(false);
-
-  const branches = useMemo(() => getBranches().filter((b) => b.apiId), [getBranches]);
-
-  const reload = useCallback(async () => {
-    setLoadError(null);
-    try {
-      const [d, c] = await Promise.all([voucherPromotionsApi.definitions(), voucherPromotionsApi.campaigns()]);
-      setDefs(d.definitions);
-      setCampaigns(c.campaigns);
-    } catch (err) {
-      setLoadError(err instanceof Error ? err.message : 'The vouchers could not be loaded.');
-    }
-  }, [voucherPromotionsApi]);
-
-  useEffect(() => {
-    void reload();
-    void api
-      .get<ApiResponse<'/voucher-definitions/link-options', 'get'>>('/voucher-definitions/link-options')
-      .then(setLinks)
-      .catch(() => undefined);
-    const first = branches[0]?.apiId;
-    if (first) {
-      void menuApi
-        .load(first)
-        .then((m) => setCategories(m.categories.filter((c) => !c.archivedAt)))
-        .catch(() => undefined);
-    }
-  }, [reload, branches, api, menuApi]);
+  const savingRef = useRef(false);
+  const mintingRef = useRef(false);
+  const manageRef = useRef(canManageRules);
+  manageRef.current = canManageRules;
+  const draftRef = useRef(draft);
+  draftRef.current = draft;
+  const editingRef = useRef(editing);
+  editingRef.current = editing;
+  const campaignRef = useRef(campaign);
+  campaignRef.current = campaign;
+  const mintKeyRef = useRef<{ fingerprint: string; key: string } | null>(null);
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
 
   const save = async (d: VoucherDefinitionRow) => {
-    if (!draft || saving) return;
+    if (!draft || savingRef.current || !manageRef.current || !mounted.current) return;
+    const ownedDraft = draft;
+    savingRef.current = true;
     setSaving(true);
     try {
-      const answer = await voucherPromotionsApi.saveRules(d.id, {
+      await ports.saveRules(d.id, {
         ...(d.kind === 'discount' ? { target: targetOf(draft) } : {}),
         usageLimit: limitOf(draft.usageLimit),
         perCustomerLimit: limitOf(draft.perCustomerLimit),
         validFrom: draft.validFrom || null,
         validUntil: draft.validUntil || null,
       });
-      setDefs((rows) => rows.map((r) => (r.id === d.id ? { ...r, ...answer.definition } : r)));
-      setEditing(null);
-      toast({ title: 'Promotion saved', description: d.nameEn });
+      if (mounted.current && manageRef.current && editingRef.current === d.id && draftRef.current === ownedDraft) {
+        setEditing(null);
+        toast({ title: 'Promotion saved', description: d.nameEn });
+      }
     } catch (err) {
-      toast({ title: 'Not saved', description: err instanceof Error ? err.message : 'The rules were not saved.', variant: 'destructive' });
+      if (mounted.current && editingRef.current === d.id && draftRef.current === ownedDraft)
+        toast({ title: 'Not saved', description: err instanceof Error ? err.message : 'The rules were not saved.', variant: 'destructive' });
     } finally {
-      setSaving(false);
+      savingRef.current = false;
+      if (mounted.current) setSaving(false);
     }
   };
 
   const mint = async () => {
     const quantity = Number(campaign.quantity);
-    if (minting || !campaign.definitionId || !campaign.branchId || !campaign.name.trim() || !Number.isInteger(quantity)) return;
+    if (mintingRef.current || !mounted.current || !ports.canMintCampaign(campaign.branchId) || !campaign.definitionId || !campaign.branchId || !campaign.name.trim() || !Number.isInteger(quantity)) return;
+    const ownedCampaign = campaign;
+    const body = { definitionId: campaign.definitionId, branchId: campaign.branchId, name: campaign.name.trim(), quantity };
+    const fingerprint = JSON.stringify(body);
+    if (mintKeyRef.current?.fingerprint !== fingerprint) mintKeyRef.current = { fingerprint, key: idemKey() };
+    const key = mintKeyRef.current.key;
+    mintingRef.current = true;
     setMinting(true);
     try {
-      const answer = await voucherPromotionsApi.mintCampaign({
-        definitionId: campaign.definitionId,
-        branchId: campaign.branchId,
-        name: campaign.name.trim(),
-        quantity,
-      });
-      setCampaigns((rows) => [answer.campaign, ...rows]);
-      setCampaign((c) => ({ ...c, name: '' }));
-      toast({ title: 'Campaign minted', description: `${answer.campaign.quantity} codes — download them below.` });
+      await ports.mintCampaign(body, key);
+      if (mintKeyRef.current?.key === key) mintKeyRef.current = null;
+      if (mounted.current) {
+        if (campaignRef.current === ownedCampaign) setCampaign((c) => c === ownedCampaign ? { ...c, name: '' } : c);
+        toast({ title: 'Campaign minted', description: `${quantity} codes — download them below.` });
+      }
     } catch (err) {
-      toast({ title: 'Not minted', description: err instanceof Error ? err.message : 'The campaign was not minted.', variant: 'destructive' });
+      if (mounted.current) toast({ title: 'Not minted', description: err instanceof Error ? err.message : 'The campaign was not minted.', variant: 'destructive' });
     } finally {
-      setMinting(false);
+      mintingRef.current = false;
+      if (mounted.current) setMinting(false);
     }
   };
 
@@ -218,7 +252,9 @@ export function VoucherPromotionsPanel() {
 
   return (
     <div className="flex flex-col gap-5">
-      {loadError && <ShellBanner>The vouchers could not be loaded from the platform — {loadError}</ShellBanner>}
+      {loadError && <ShellBanner>The vouchers could not be loaded from the platform — {loadError}{ports.onRetry && <Button variant="outline" size="sm" onClick={ports.onRetry}>Retry</Button>}</ShellBanner>}
+      {ports.loading && <p role="status" className="text-sm text-foreground/60">Loading vouchers…</p>}
+      {ports.authorityMessage && <p className="text-sm text-foreground/60">{ports.authorityMessage}</p>}
 
       <ReportCard title="Voucher definitions — promotional rules">
         <Table>
@@ -234,9 +270,9 @@ export function VoucherPromotionsPanel() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {live.length === 0 && <EmptyRow colSpan={7} label="No voucher definitions yet." />}
+            {!ports.loading && !loadError && live.length === 0 && <EmptyRow colSpan={7} label="No voucher definitions yet." />}
             {live.map((d) =>
-              editing === d.id && draft ? (
+              editing === d.id && draft && canManageRules ? (
                 <TableRow key={d.id}>
                   <TableCell colSpan={7}>
                     <div className="flex flex-col gap-2" data-testid="voucher-rules-editor">
@@ -326,7 +362,7 @@ export function VoucherPromotionsPanel() {
                   <TableCell className="text-right tabular-nums">{d.perCustomerLimit ?? '—'}</TableCell>
                   <TableCell className="text-xs text-foreground/70">{windowText(d)}</TableCell>
                   <TableCell className="text-right">
-                    {canManage && (
+                    {canManageRules && (
                       <Button
                         size="sm"
                         variant="ghost"
@@ -348,7 +384,7 @@ export function VoucherPromotionsPanel() {
       </ReportCard>
 
       <ReportCard title="Campaigns">
-        {canManage && (
+        {branches.some(b => b.apiId && ports.canMintCampaign(b.apiId)) && (
           <div className="mb-3 flex flex-wrap items-center gap-2" data-testid="voucher-campaign-form">
             <select className={selectClass} aria-label="Voucher type" value={campaign.definitionId} onChange={(e) => setCampaign({ ...campaign, definitionId: e.target.value })}>
               <option value="">Voucher type…</option>
@@ -360,7 +396,7 @@ export function VoucherPromotionsPanel() {
             </select>
             <select className={selectClass} aria-label="Park" value={campaign.branchId} onChange={(e) => setCampaign({ ...campaign, branchId: e.target.value })}>
               <option value="">Park…</option>
-              {branches.map((b) => (
+              {branches.filter(b => b.apiId && ports.canMintCampaign(b.apiId)).map((b) => (
                 <option key={b.id} value={b.apiId!}>
                   {b.name}
                 </option>
@@ -368,7 +404,7 @@ export function VoucherPromotionsPanel() {
             </select>
             <Input className="w-48" placeholder="Campaign name" aria-label="Campaign name" value={campaign.name} onChange={(e) => setCampaign({ ...campaign, name: e.target.value })} />
             <Input className="w-28" type="number" min={1} max={5000} aria-label="How many codes" value={campaign.quantity} onChange={(e) => setCampaign({ ...campaign, quantity: e.target.value })} />
-            <Button size="sm" disabled={minting} onClick={() => void mint()}>
+            <Button size="sm" disabled={minting || !ports.canMintCampaign(campaign.branchId)} onClick={() => void mint()}>
               <Megaphone className="w-3.5 h-3.5 mr-1" />
               {minting ? 'Minting…' : 'Mint codes'}
             </Button>
@@ -386,7 +422,7 @@ export function VoucherPromotionsPanel() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {campaigns.length === 0 && <EmptyRow colSpan={6} label="No campaigns minted yet." />}
+            {!ports.loading && !loadError && campaigns.length === 0 && <EmptyRow colSpan={6} label="No campaigns minted yet." />}
             {campaigns.map((c) => (
               <TableRow key={c.id}>
                 <TableCell className="font-medium">{c.name}</TableCell>
@@ -395,10 +431,10 @@ export function VoucherPromotionsPanel() {
                 <TableCell className="text-right tabular-nums">{c.redeemed}</TableCell>
                 <TableCell className="text-xs text-foreground/60">{new Date(c.createdAt).toLocaleString()}</TableCell>
                 <TableCell className="text-right">
-                  {canManage && (
+                  {ports.canDownloadCodes(c) && (
                     <a
                       className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                      href={voucherPromotionsApi.codesHref(c.id)}
+                      href={ports.codesHref(c.id)}
                       download
                     >
                       <Download className="w-3.5 h-3.5" />

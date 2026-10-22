@@ -837,6 +837,7 @@ export async function campaignCodesCsv(
   db: Db,
   operatorId: string,
   campaignId: string,
+  authorizeBranch: (branchId: string) => Promise<void>,
 ): Promise<{ filename: string; csv: string }> {
   const [c] = await db
     .select()
@@ -844,10 +845,13 @@ export async function campaignCodesCsv(
     .where(and(eq(voucherCampaign.id, campaignId), eq(voucherCampaign.operatorId, operatorId)))
     .limit(1);
   if (!c) throw new AppError(404, 'NOT_FOUND', 'Campaign not found');
+  // Resolve ownership first; permission is checked at this campaign's park
+  // before any bearer codes are read, irrespective of the session's seat.
+  await authorizeBranch(c.branchId);
   const rows = await db
     .select({ code: voucher.code, status: voucher.status, expiresAt: voucher.expiresAt })
     .from(voucher)
-    .where(eq(voucher.campaignId, c.id))
+    .where(and(eq(voucher.campaignId, c.id), eq(voucher.operatorId, operatorId), eq(voucher.branchId, c.branchId)))
     .orderBy(asc(voucher.code));
   const lines = ['code,status,expires_at'];
   for (const r of rows) {

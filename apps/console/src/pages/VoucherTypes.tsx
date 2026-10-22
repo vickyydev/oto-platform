@@ -53,8 +53,24 @@ import { expiryText, isWorded, notSetUp, worthOf } from '@/components/booth/vouc
  * it — and the rules every booth voucher obeys whatever its type.
  */
 export function VoucherTypes() {
-  const { has } = useSession();
-  const canManage = has('admin:booth:manage');
+  const { me, permissions } = useSession();
+  const operatorId = me?.account.operatorId;
+  const manageGrants = permissions.filter(grant => grant.permission === 'admin:booth:manage');
+  const canManage = Boolean(operatorId) && manageGrants.some(grant =>
+    grant.scopeType === 'operator' && (grant.scopeId === null || grant.scopeId === operatorId));
+  const authorityKey = `${me?.account.id ?? ''}:${operatorId ?? ''}:${manageGrants.map(grant => `${grant.scopeType}:${grant.scopeId ?? ''}`).sort().join(',')}`;
+  const authority = useRef(authorityKey);
+  const authorityEpoch = useRef(0);
+  if (authority.current !== authorityKey) {
+    authority.current = authorityKey;
+    authorityEpoch.current++;
+  }
+  const mounted = useRef(false);
+  const manageRef = useRef(canManage);
+  manageRef.current = canManage;
+  const busyRef = useRef(false);
+  const editorEpoch = useRef(0);
+  const readEpoch = useRef(0);
 
   const [showArchived, setShowArchived] = useState(false);
   const [list, setList] = useState<Read<VoucherDefinitionRow[]>>(() =>
@@ -66,20 +82,47 @@ export function VoucherTypes() {
   const [open, setOpen] = useState<VoucherDefinitionRow | 'new' | null>(null);
   const [busy, setBusy] = useState(false);
   const [writeError, setWriteError] = useState<string | null>(null);
+  const showArchivedRef = useRef(showArchived);
+  showArchivedRef.current = showArchived;
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; readEpoch.current++; authorityEpoch.current++; };
+  }, []);
+
+  const selectEditor = useCallback((next: VoucherDefinitionRow | 'new' | null) => {
+    editorEpoch.current++;
+    setWriteError(null);
+    setOpen(next);
+  }, []);
+
+  useEffect(() => {
+    editorEpoch.current++;
+    busyRef.current = false;
+    setBusy(false);
+    setOpen(null);
+    setWriteError(null);
+    setList(unread<VoucherDefinitionRow[]>([]));
+    setLinkOptions(null);
+    setLinkOptionsFailed(null);
+  }, [authorityKey]);
 
   const load = useCallback(async (includeArchived: boolean) => {
+    if (!mounted.current) return;
+    const request = ++readEpoch.current;
+    const ownsRead = () => mounted.current && authority.current === authorityKey && readEpoch.current === request;
     setList((held) => reading(held));
     try {
       const answer = await boothApi.voucherDefinitions(includeArchived);
-      setList(readOk(answer.definitions));
+      if (ownsRead()) setList(readOk(answer.definitions));
     } catch (reason) {
-      setList((held) =>
+      if (ownsRead()) setList((held) =>
         isMissingRoute(reason)
           ? readAbsent<VoucherDefinitionRow[]>([])
           : readFailed(held, readFailureMessage(reason), []),
       );
     }
-  }, []);
+  }, [authorityKey]);
 
   useEffect(() => {
     void load(showArchived);
@@ -99,19 +142,25 @@ export function VoucherTypes() {
     if (!id || list.state !== 'read') return;
     askedFor.current = null;
     const row = list.value.find((r) => r.id === id);
-    if (row) setOpen(row);
-  }, [list]);
+    if (row) selectEditor(row);
+  }, [list, selectEditor]);
 
-  /** The pickers' contents, read once: the operator's products and packages. */
+  /** The pickers' contents belong to the current account and authority. */
   useEffect(() => {
+    let current = true;
     void boothApi
       .voucherLinkOptions()
       .then((options) => {
-        setLinkOptions(options);
-        setLinkOptionsFailed(null);
+        if (current && mounted.current && authority.current === authorityKey) {
+          setLinkOptions(options);
+          setLinkOptionsFailed(null);
+        }
       })
-      .catch((reason: unknown) => setLinkOptionsFailed(readFailureMessage(reason)));
-  }, []);
+      .catch((reason: unknown) => {
+        if (current && mounted.current && authority.current === authorityKey) setLinkOptionsFailed(readFailureMessage(reason));
+      });
+    return () => { current = false; };
+  }, [authorityKey]);
 
   /**
    * Every write ends the same way: the list is read again rather than patched,
@@ -119,25 +168,34 @@ export function VoucherTypes() {
    * cleared by a kind change, blank words stored as not written.
    */
   const write = async (action: () => Promise<unknown>) => {
+    if (!mounted.current || !manageRef.current || busyRef.current) return;
+    const owner = authorityEpoch.current, editor = editorEpoch.current;
+    busyRef.current = true;
     setBusy(true);
     setWriteError(null);
     try {
       await action();
-      setOpen(null);
-      await load(showArchived);
+      if (!mounted.current || !manageRef.current || authorityEpoch.current !== owner) return;
+      if (editorEpoch.current === editor) selectEditor(null);
+      await load(showArchivedRef.current);
     } catch (reason) {
-      setWriteError(readFailureMessage(reason));
+      if (mounted.current && manageRef.current && authorityEpoch.current === owner && editorEpoch.current === editor) setWriteError(readFailureMessage(reason));
     } finally {
-      setBusy(false);
+      if (authorityEpoch.current === owner) {
+        busyRef.current = false;
+        if (mounted.current) setBusy(false);
+      }
     }
   };
 
-  const save = (input: VoucherDefinitionInput) =>
+  const save = (input: VoucherDefinitionInput) => {
+    if (open === null) return;
     void write(() =>
-      open === 'new' || open === null
+      open === 'new'
         ? boothApi.createDefinition(input)
         : boothApi.saveDefinition(open.id, input),
     );
+  };
 
   /**
    * SCRUM-405 — a park's own product for a free-product voucher. Saved at once
@@ -145,16 +203,23 @@ export function VoucherTypes() {
    * on the answer so the next park can be set.
    */
   const setParkProduct = async (row: VoucherDefinitionRow, branchId: string, productId: string | null) => {
+    if (!mounted.current || !manageRef.current || busyRef.current) return;
+    const owner = authorityEpoch.current, editor = editorEpoch.current;
+    busyRef.current = true;
     setBusy(true);
     setWriteError(null);
     try {
       const answer = await boothApi.setParkProduct(row.id, branchId, productId);
-      setOpen(answer.definition);
-      await load(showArchived);
+      if (!mounted.current || !manageRef.current || authorityEpoch.current !== owner) return;
+      if (editorEpoch.current === editor) selectEditor(answer.definition);
+      await load(showArchivedRef.current);
     } catch (reason) {
-      setWriteError(readFailureMessage(reason));
+      if (mounted.current && manageRef.current && authorityEpoch.current === owner && editorEpoch.current === editor) setWriteError(readFailureMessage(reason));
     } finally {
-      setBusy(false);
+      if (authorityEpoch.current === owner) {
+        busyRef.current = false;
+        if (mounted.current) setBusy(false);
+      }
     }
   };
 
@@ -164,7 +229,7 @@ export function VoucherTypes() {
       className="h-9 gap-2 rounded-full px-4 font-bold"
       onClick={() => {
         setWriteError(null);
-        setOpen('new');
+        selectEditor('new');
       }}
     >
       <Plus className="w-4 h-4" />
@@ -276,7 +341,7 @@ export function VoucherTypes() {
                         type="button"
                         onClick={() => {
                           setWriteError(null);
-                          setOpen(row);
+                          selectEditor(row);
                         }}
                         className="flex w-full min-w-0 flex-wrap gap-x-3.5 gap-y-1 rounded-[12px] px-3 py-[11px] text-left text-[13.5px] hover-elevate @xl:grid @xl:grid-cols-[minmax(0,2fr)_minmax(0,1.1fr)_84px_minmax(0,1fr)_92px] @xl:items-start"
                       >
@@ -361,7 +426,7 @@ export function VoucherTypes() {
                   className="mt-auto self-start rounded-full border-primary px-4 font-bold text-primary-ink"
                   onClick={() => {
                     setWriteError(null);
-                    setOpen(worded);
+                    selectEditor(worded);
                   }}
                 >
                   {canManage ? 'Edit wording' : 'Open its wording'}
@@ -408,7 +473,7 @@ export function VoucherTypes() {
           onArchive={(row) => void write(() => boothApi.archiveDefinition(row.id))}
           onRestore={(row) => void write(() => boothApi.restoreDefinition(row.id))}
           onSetParkProduct={(row, branchId, productId) => void setParkProduct(row, branchId, productId)}
-          onClose={() => setOpen(null)}
+          onClose={() => selectEditor(null)}
         />
       )}
     </>

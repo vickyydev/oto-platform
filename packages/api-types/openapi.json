@@ -9058,7 +9058,62 @@
         "description": "The operator’s configured tenders, in till order",
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "methods": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "cash",
+                              "card",
+                              "qr",
+                              "other"
+                            ]
+                          },
+                          "enabled": {
+                            "type": "boolean"
+                          },
+                          "sortOrder": {
+                            "type": "integer"
+                          },
+                          "attempts": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "label",
+                          "kind",
+                          "enabled",
+                          "sortOrder",
+                          "attempts"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "methods"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       },
@@ -9108,7 +9163,24 @@
         },
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "required": [
+                    "id"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -9164,7 +9236,26 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       },
@@ -9184,7 +9275,26 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -9229,7 +9339,30 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "moved": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "moved"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -10366,7 +10499,124 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "config": {
+                      "type": "object",
+                      "properties": {
+                        "rates": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "percent": {
+                                "type": "number"
+                              },
+                              "defaultMode": {
+                                "type": "string",
+                                "enum": [
+                                  "inclusive",
+                                  "exclusive",
+                                  "none"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "percent"
+                            ],
+                            "additionalProperties": true
+                          }
+                        },
+                        "categoryRules": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "category": {
+                                "type": "string",
+                                "enum": [
+                                  "tickets",
+                                  "fnb",
+                                  "bar",
+                                  "drop_off",
+                                  "parties",
+                                  "addons",
+                                  "merch",
+                                  "stored_value"
+                                ]
+                              },
+                              "taxRateId": {
+                                "type": "string"
+                              },
+                              "taxMode": {
+                                "type": "string",
+                                "enum": [
+                                  "inclusive",
+                                  "exclusive",
+                                  "none"
+                                ]
+                              },
+                              "serviceChargePercent": {
+                                "type": "number"
+                              },
+                              "taxOnServiceCharge": {
+                                "type": "boolean"
+                              },
+                              "secondaryTaxRateId": {
+                                "type": "string"
+                              },
+                              "secondaryTaxMode": {
+                                "type": "string",
+                                "enum": [
+                                  "inclusive",
+                                  "exclusive",
+                                  "none"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "category",
+                              "taxMode"
+                            ],
+                            "additionalProperties": true
+                          }
+                        },
+                        "discountPlacement": {
+                          "type": "string",
+                          "enum": [
+                            "before_tax",
+                            "after_tax"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "rates",
+                        "categoryRules",
+                        "discountPlacement"
+                      ],
+                      "additionalProperties": true,
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "config"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       },
@@ -10497,7 +10747,26 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -12332,7 +12601,132 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "discounts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "operatorId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "branchId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "percent",
+                              "fixed",
+                              "free_item"
+                            ]
+                          },
+                          "valueBp": {
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "valueSatang": {
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "freeProductId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "target": {
+                            "nullable": true
+                          },
+                          "validFrom": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "validUntil": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "usageLimit": {
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "perCustomerLimit": {
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "stackable": {
+                            "type": "boolean"
+                          },
+                          "active": {
+                            "type": "boolean"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "archivedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          },
+                          "usedCount": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "operatorId",
+                          "branchId",
+                          "code",
+                          "label",
+                          "kind",
+                          "valueBp",
+                          "valueSatang",
+                          "freeProductId",
+                          "validFrom",
+                          "validUntil",
+                          "usageLimit",
+                          "perCustomerLimit",
+                          "stackable",
+                          "active",
+                          "createdAt",
+                          "updatedAt",
+                          "archivedAt",
+                          "usedCount"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "discounts"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       },
@@ -12462,7 +12856,24 @@
         },
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "required": [
+                    "id"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -12605,7 +13016,26 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       },
@@ -12624,7 +13054,26 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -30492,7 +30941,74 @@
         "description": "The operator’s voucher campaigns, newest first: name, definition, branch, how many codes were minted and how many have been used. Never the codes — those are read through the export.",
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "campaigns": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "branchId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "definitionId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "definitionCode": {
+                            "type": "string"
+                          },
+                          "quantity": {
+                            "type": "integer"
+                          },
+                          "redeemed": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "createdByAccountId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "branchId",
+                          "definitionId",
+                          "definitionCode",
+                          "quantity",
+                          "redeemed",
+                          "createdAt",
+                          "createdByAccountId"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "campaigns"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       },
@@ -30536,7 +31052,71 @@
         },
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "campaign": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "branchId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "definitionId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "definitionCode": {
+                          "type": "string"
+                        },
+                        "quantity": {
+                          "type": "integer"
+                        },
+                        "redeemed": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "createdByAccountId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "branchId",
+                        "definitionId",
+                        "definitionCode",
+                        "quantity",
+                        "redeemed",
+                        "createdAt",
+                        "createdByAccountId"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "campaign"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }

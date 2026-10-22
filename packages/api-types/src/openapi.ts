@@ -4773,7 +4773,19 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            methods: {
+                                id: string;
+                                label: string;
+                                /** @enum {string} */
+                                kind: "cash" | "card" | "qr" | "other";
+                                enabled: boolean;
+                                sortOrder: number;
+                                attempts: number;
+                            }[];
+                        };
+                    };
                 };
             };
         };
@@ -4803,7 +4815,12 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                        };
+                    };
                 };
             };
         };
@@ -4840,7 +4857,12 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            ok: true;
+                        };
+                    };
                 };
             };
         };
@@ -4873,7 +4895,12 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            ok: true;
+                        };
+                    };
                 };
             };
         };
@@ -4912,7 +4939,13 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            ok: true;
+                            moved: boolean;
+                        };
+                    };
                 };
             };
         };
@@ -5465,7 +5498,39 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            config: ({
+                                rates: ({
+                                    id: string;
+                                    name: string;
+                                    percent: number;
+                                    /** @enum {string} */
+                                    defaultMode?: "inclusive" | "exclusive" | "none";
+                                } & {
+                                    [key: string]: unknown;
+                                })[];
+                                categoryRules: ({
+                                    /** @enum {string} */
+                                    category: "tickets" | "fnb" | "bar" | "drop_off" | "parties" | "addons" | "merch" | "stored_value";
+                                    taxRateId?: string;
+                                    /** @enum {string} */
+                                    taxMode: "inclusive" | "exclusive" | "none";
+                                    serviceChargePercent?: number;
+                                    taxOnServiceCharge?: boolean;
+                                    secondaryTaxRateId?: string;
+                                    /** @enum {string} */
+                                    secondaryTaxMode?: "inclusive" | "exclusive" | "none";
+                                } & {
+                                    [key: string]: unknown;
+                                })[];
+                                /** @enum {string} */
+                                discountPlacement: "before_tax" | "after_tax";
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                        };
+                    };
                 };
             };
         };
@@ -5512,7 +5577,12 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            ok: true;
+                        };
+                    };
                 };
             };
         };
@@ -6474,7 +6544,40 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            discounts: {
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                operatorId: string;
+                                /** Format: uuid */
+                                branchId: string | null;
+                                code: string;
+                                label: string;
+                                /** @enum {string} */
+                                kind: "percent" | "fixed" | "free_item";
+                                valueBp: number | null;
+                                valueSatang: number | null;
+                                /** Format: uuid */
+                                freeProductId: string | null;
+                                target?: unknown;
+                                validFrom: string | null;
+                                validUntil: string | null;
+                                usageLimit: number | null;
+                                perCustomerLimit: number | null;
+                                stackable: boolean;
+                                active: boolean;
+                                /** Format: date-time */
+                                createdAt: string;
+                                /** Format: date-time */
+                                updatedAt: string;
+                                /** Format: date-time */
+                                archivedAt: string | null;
+                                usedCount: number;
+                            }[];
+                        };
+                    };
                 };
             };
         };
@@ -6523,7 +6626,12 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                        };
+                    };
                 };
             };
         };
@@ -6560,7 +6668,12 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            ok: true;
+                        };
+                    };
                 };
             };
         };
@@ -6612,7 +6725,12 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            ok: true;
+                        };
+                    };
                 };
             };
         };
@@ -15036,7 +15154,26 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            campaigns: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                                /** Format: uuid */
+                                branchId: string;
+                                /** Format: uuid */
+                                definitionId: string;
+                                definitionCode: string;
+                                quantity: number;
+                                redeemed: number;
+                                /** Format: date-time */
+                                createdAt: string;
+                                /** Format: uuid */
+                                createdByAccountId: string | null;
+                            }[];
+                        };
+                    };
                 };
             };
         };
@@ -15067,7 +15204,26 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            campaign: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                                /** Format: uuid */
+                                branchId: string;
+                                /** Format: uuid */
+                                definitionId: string;
+                                definitionCode: string;
+                                quantity: number;
+                                redeemed: number;
+                                /** Format: date-time */
+                                createdAt: string;
+                                /** Format: uuid */
+                                createdByAccountId: string | null;
+                            };
+                        };
+                    };
                 };
             };
         };

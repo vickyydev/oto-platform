@@ -1,6 +1,7 @@
+import { toSatang, breakdownToBaht, engineTaxConfig as taxConfigToEngine } from './taxPresentation';
 import { type CartLine, type Discount, type FnbOrderLine, type ManualDiscount, type MenuCategoryDef, type MenuItem, type MerchItem, type MerchOrderLine, type SelectedModifier, type TaxConfig, type TaxableCategory, type TaxMode, type TicketType, type WeekdayWeekendPrice } from "../model/types";
 import { type RateMode } from "./pricingMode";
-import { computeTicketCartTotals, findStaleLines, itemCartLine, itemCategoryWalk, itemLineTotal, itemTaxCategory, itemUnitPrice, newId, satangFromBaht, summarizeTax, type AppliedPromo, type CartAddOn, type CartPromo, type ManualDiscount as EngineManualDiscount, type PackagePricingShape, type PricingContext, type PromoDiscount, type TaxBreakdown as EngineTaxBreakdown, type TaxConfigShape, type TicketCartLine, type TicketCartTotals, type WWPrice } from "@oto/shared";
+import { computeTicketCartTotals, findStaleLines, itemCartLine, itemCategoryWalk, itemLineTotal, itemTaxCategory, itemUnitPrice, newId, summarizeTax, type AppliedPromo, type CartAddOn, type CartPromo, type ManualDiscount as EngineManualDiscount, type PackagePricingShape, type PricingContext, type PromoDiscount, type TaxBreakdown as EngineTaxBreakdown, type TaxConfigShape, type TicketCartLine, type TicketCartTotals, type WWPrice } from "@oto/shared";
 import type { CatalogReaders } from '../model/ports';
 import type { MenuHelpers } from './menu';
 import type { PricingModeHelpers } from './pricingMode';
@@ -248,7 +249,7 @@ const { resolveRate, todayRateMode } = deps.pricingMode;
  */
 
 /** ฿ → satang, the one conversion point for a cart. */
-const toSatang = (baht: number): number => satangFromBaht(baht);
+
 
 
 const UUID_SHAPE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -520,7 +521,7 @@ function engineManualDiscount(discount: ManualDiscount): EngineManualDiscount {
  * `TaxConfig` straight from the platform's `TaxConfigShape` payload.
  */
 function engineTaxConfig(config: TaxConfig = getTaxConfig()): TaxConfigShape {
-  return config as TaxConfigShape;
+  return taxConfigToEngine(config);
 }
 
 
@@ -663,34 +664,7 @@ function itemCart(
 
 
 /** The engine's breakdown, in baht. */
-function breakdownToBaht(breakdown: EngineTaxBreakdown): TaxBreakdownBaht {
-  const categories: CategoryTaxLineBaht[] = breakdown.categories.map((category) => ({
-    category: category.category,
-    base: toBaht(category.base),
-    taxMode: category.taxMode,
-    ...(category.taxRateId ? { taxRateId: category.taxRateId } : {}),
-    ...(category.taxName ? { taxName: category.taxName } : {}),
-    taxPercent: category.taxPercent,
-    serviceCharge: toBaht(category.serviceCharge),
-    tax: toBaht(category.tax),
-    ...(category.secondaryTaxRateId ? { secondaryTaxRateId: category.secondaryTaxRateId } : {}),
-    ...(category.secondaryTaxName ? { secondaryTaxName: category.secondaryTaxName } : {}),
-    secondaryTaxMode: category.secondaryTaxMode,
-    secondaryTaxPercent: category.secondaryTaxPercent,
-    secondaryTax: toBaht(category.secondaryTax),
-    gross: toBaht(category.gross),
-  }));
-  return {
-    netSubtotal: toBaht(breakdown.netSubtotal),
-    discountTotal: toBaht(breakdown.discountTotal),
-    serviceChargeTotal: toBaht(breakdown.serviceChargeTotal),
-    exclusiveTaxTotal: toBaht(breakdown.exclusiveTaxTotal),
-    inclusiveTaxTotal: toBaht(breakdown.inclusiveTaxTotal),
-    taxTotal: toBaht(breakdown.taxTotal),
-    categories,
-    grandTotal: toBaht(breakdown.grandTotal),
-  };
-}
+
 
 
 /**

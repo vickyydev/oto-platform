@@ -5,12 +5,18 @@ import { Button } from "../../ui/button";
 import { useCatalogStore } from "../../../runtime/AdminScreenRuntime";
 import { NotSavedNotice } from "../NotSavedNotice";
 import { TextInput } from "./fields";
+import type { DiscountReasonsSectionPorts } from '../../../runtime/money';
 
 export function DiscountReasonsSection() {
   const { discountReasons, mutators } = useCatalogStore();
+  return <DiscountReasonsSectionWithPorts ports={{ discountReasons, setDiscountReasons: mutators.setDiscountReasons }} />;
+}
+
+export function DiscountReasonsSectionWithPorts({ ports }: { ports: DiscountReasonsSectionPorts }) {
+  const { discountReasons } = ports;
   const [newReason, setNewReason] = useState('');
 
-  const commit = (next: string[]) => mutators.setDiscountReasons(next);
+  const commit = (next: string[]) => ports.setDiscountReasons(next);
 
   const add = () => {
     const r = newReason.trim();

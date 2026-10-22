@@ -5,7 +5,7 @@ import type { CatalogReaders } from '../model/ports';
 /** Original domain rules, bound to this host's explicit data ports. */
 export function createDiscountTargetHelpers(deps: { pricing: PricingHelpers; catalog: CatalogReaders }) {
 const { computeLineBreakdown } = deps.pricing;
-const { getTicketTypes, getAddOns, getMenuItems, getMenuCategories } = deps.catalog;
+
 
 
 const SOCKS_ID = 'a-socks';
@@ -88,7 +88,7 @@ function rowMatches(
 function menuItemMatchesTarget(
   item: MenuItem,
   target: DiscountTarget,
-  categories: MenuCategoryDef[] = getMenuCategories()
+  categories: MenuCategoryDef[] = deps.catalog.getMenuCategories()
 ): boolean {
   switch (target.kind) {
     case 'everything':
@@ -114,6 +114,14 @@ function menuItemMatchesTarget(
 
 
 /** Short human label for a discount target, e.g. "Only kids tickets", "Free: Ice Cream". */
+const formatDiscountTargetLabel = createDiscountTargetLabel(deps.catalog);
+return { discountTargetBase, menuItemMatchesTarget, formatDiscountTargetLabel };
+}
+export type DiscountTargetHelpers = ReturnType<typeof createDiscountTargetHelpers>;
+
+/** The original label resolver needs only the visible catalogue options. */
+export function createDiscountTargetLabel(catalog: Pick<CatalogReaders, 'getTicketTypes' | 'getAddOns' | 'getMenuItems' | 'getMenuCategories'>) {
+const {getTicketTypes,getAddOns,getMenuItems,getMenuCategories}=catalog;
 function formatDiscountTargetLabel(target?: DiscountTarget): string {
   if (!target || target.kind === 'everything') return 'Whole order';
   switch (target.kind) {
@@ -153,6 +161,5 @@ function formatDiscountTargetLabel(target?: DiscountTarget): string {
       return 'Event passes';
   }
 }
-return { discountTargetBase, menuItemMatchesTarget, formatDiscountTargetLabel };
+return formatDiscountTargetLabel;
 }
-export type DiscountTargetHelpers = ReturnType<typeof createDiscountTargetHelpers>;

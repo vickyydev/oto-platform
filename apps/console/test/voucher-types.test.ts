@@ -1,4 +1,10 @@
-import { describe, expect, it, test } from 'vitest';
+import * as React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { readFileSync } from 'node:fs';
+import { runInNewContext } from 'node:vm';
+import ts from 'typescript';
+import { beforeEach, describe, expect, it, test, vi } from 'vitest';
+import { VoucherTypes } from '@/pages/VoucherTypes';
 import type { VoucherDefinitionRow } from '@/components/booth/boothApi';
 import {
   blankForm,
@@ -15,6 +21,89 @@ import {
   type VoucherForm,
   type Worth,
 } from '@/components/booth/voucherTypes';
+
+const voucherSession = vi.hoisted(() => ({ scopeType: 'operator', scopeId: 'zz-operator' as string | null }));
+vi.mock('@/auth/SessionContext', () => ({ useSession: () => ({
+  me: { account: { id: 'zz-account', operatorId: 'zz-operator' } },
+  has: () => true,
+  permissions: [{ permission: 'admin:booth:manage', scopeType: voucherSession.scopeType, scopeId: voucherSession.scopeId }],
+}) }));
+vi.mock('wouter', async original => ({ ...await original<typeof import('wouter')>(), useSearch: () => '' }));
+vi.mock('@/components/redesign/CommandBar', () => ({ CommandBar: ({ actions }: { actions?: React.ReactNode }) => React.createElement('header', null, actions) }));
+
+function voucherCallback(name: string) {
+  const source = readFileSync(new URL('../src/pages/VoucherTypes.tsx', import.meta.url), 'utf8');
+  const ast = ts.createSourceFile('VoucherTypes.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  let callback: string | undefined;
+  const visit = (node: ts.Node) => {
+    if (ts.isVariableDeclaration(node) && node.name.getText(ast) === name) callback = node.initializer?.getText(ast);
+    ts.forEachChild(node, visit);
+  };
+  visit(ast);
+  if (!callback) throw new Error('Voucher callback missing: ' + name);
+  return ts.transpileModule('(' + callback + ')', { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } }).outputText.trim().replace(/;$/, '');
+}
+
+function voucherPending() {
+  let release!: () => void;
+  const promise = new Promise<void>(resolve => { release = resolve; });
+  return { promise, release };
+}
+
+function voucherLifecycle() {
+  const editorEpoch = { current: 1 }, authorityEpoch = { current: 1 };
+  const setOpen = vi.fn(), load = vi.fn(async () => {});
+  const context = {
+    mounted: { current: true }, manageRef: { current: true }, busyRef: { current: false }, editorEpoch, authorityEpoch,
+    showArchived: false, showArchivedRef: { current: false }, setOpen, setBusy: vi.fn(), setWriteError: vi.fn(), load,
+    selectEditor: (next: unknown) => { editorEpoch.current++; setOpen(next); },
+    readFailureMessage: (reason: unknown) => reason instanceof Error ? reason.message : 'Not saved',
+  };
+  return context;
+}
+
+describe('voucher type shared authority and editor lifecycle', () => {
+  beforeEach(() => { vi.stubGlobal('React', React); });
+
+  it.each([
+    ['branch', 'zz-park', false], ['operator', 'foreign-operator', false], ['operator', 'zz-operator', true], ['operator', null, true],
+  ] as const)('offers shared writes only for matching operator reach (%s / %s)', (scopeType, scopeId, expected) => {
+    voucherSession.scopeType = scopeType; voucherSession.scopeId = scopeId;
+    const html = renderToStaticMarkup(React.createElement(VoucherTypes));
+    expect(html.includes('New voucher type')).toBe(expected);
+    expect(html.includes('You can read the voucher types but not change them.')).toBe(!expected);
+  });
+
+  it.each(['editor', 'actor', 'unmount'] as const)('a confirmed old action cannot close or change the %s lifecycle', async changed => {
+    const pending = voucherPending(), context = voucherLifecycle();
+    const write = runInNewContext(voucherCallback('write'), context) as (action: () => Promise<void>) => Promise<void>;
+    const outcome = write(() => pending.promise);
+    if (changed === 'editor') context.editorEpoch.current++;
+    if (changed === 'actor') context.authorityEpoch.current++;
+    if (changed === 'unmount') context.mounted.current = false;
+    pending.release(); await outcome;
+    expect(context.setOpen).not.toHaveBeenCalled();
+    if (changed !== 'editor') expect(context.load).not.toHaveBeenCalled();
+  });
+
+  it('a current confirmed action closes its own drawer and reads back the current archived filter', async () => {
+    const context = voucherLifecycle();
+    const write = runInNewContext(voucherCallback('write'), context) as (action: () => Promise<void>) => Promise<void>;
+    await write(async () => {});
+    expect(context.setOpen).toHaveBeenCalledWith(null); expect(context.load).toHaveBeenCalledWith(false);
+  });
+
+  it('a late park-product response cannot reopen the previous voucher drawer', async () => {
+    const pending = voucherPending(), context = voucherLifecycle();
+    const old = row({ id: 'zz-old-type' });
+    const setParkProduct = runInNewContext(voucherCallback('setParkProduct'), {
+      ...context, boothApi: { setParkProduct: async () => { await pending.promise; return { definition: old }; } },
+    }) as (definition: VoucherDefinitionRow, branchId: string, productId: string | null) => Promise<void>;
+    const outcome = setParkProduct(old, 'zz-park', 'zz-product');
+    context.editorEpoch.current++; pending.release(); await outcome;
+    expect(context.setOpen).not.toHaveBeenCalled();
+  });
+});
 
 it('keeps a current-POS QR exact and allows clearing it without changing code mode', () => {
   const form = { ...blankForm(), nameEn: 'QR sample', amountText: '100', legacyQrPayload: 'https://example.invalid/Claim?Prize=100&Code=Ab%2Bc' };

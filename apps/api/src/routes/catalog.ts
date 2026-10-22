@@ -114,6 +114,26 @@ const TicketPackageListResponseSchema = z.object({ packages: z.array(z.object({
   createdAt: CatalogueTimestampSchema, updatedAt: CatalogueTimestampSchema, archivedAt: CatalogueTimestampSchema.nullable(),
 }).passthrough()) }).passthrough();
 const CatalogueOkResponseSchema = z.object({ ok: z.literal(true) });
+const PaymentMethodListResponseSchema = z.object({ methods: z.array(z.object({
+  id: z.string(), label: z.string(), kind: z.enum(PAYMENT_METHOD_KINDS),
+  enabled: z.boolean(), sortOrder: z.number().int(), attempts: z.number().int().nonnegative(),
+})) });
+const PaymentMethodCreatedResponseSchema = z.object({ id: z.string().uuid() });
+const PaymentMethodMoveResponseSchema = z.object({ ok: z.literal(true), moved: z.boolean() });
+// Reads retain fields from older/newer JSON writers without applying write defaults.
+const TaxReadModeSchema = z.enum(['inclusive', 'exclusive', 'none']);
+const TaxConfigResponseSchema = z.object({ config: z.object({
+  rates: z.array(z.object({
+    id: z.string(), name: z.string(), percent: z.number(), defaultMode: TaxReadModeSchema.optional(),
+  }).passthrough()),
+  categoryRules: z.array(z.object({
+    category: z.enum(['tickets', 'fnb', 'bar', 'drop_off', 'parties', 'addons', 'merch', 'stored_value']),
+    taxRateId: z.string().optional(), taxMode: TaxReadModeSchema,
+    serviceChargePercent: z.number().optional(), taxOnServiceCharge: z.boolean().optional(),
+    secondaryTaxRateId: z.string().optional(), secondaryTaxMode: TaxReadModeSchema.optional(),
+  }).passthrough()),
+  discountPlacement: z.enum(['before_tax', 'after_tax']),
+}).passthrough().nullable() });
 
 export async function catalogRoutes(app: App): Promise<void> {
   // Tiers (read path — SCRUM-35 packages reference them; writes below, SCRUM-228).
@@ -363,7 +383,7 @@ export async function catalogRoutes(app: App): Promise<void> {
     '/payment-methods',
     {
       config: { permission: 'catalog:menu:read' },
-      schema: { description: 'The operator’s configured tenders, in till order' },
+      schema: { description: 'The operator’s configured tenders, in till order', response: { 200: PaymentMethodListResponseSchema } },
     },
     async (req) => {
       const auth = req.requireAuth();
@@ -389,6 +409,7 @@ export async function catalogRoutes(app: App): Promise<void> {
           kind: MethodKind,
           sortOrder: z.number().int().min(0).optional(),
         }),
+        response: { 200: PaymentMethodCreatedResponseSchema },
       },
     },
     async (req) => {
@@ -421,6 +442,7 @@ export async function catalogRoutes(app: App): Promise<void> {
           enabled: z.boolean().optional(),
           sortOrder: z.number().int().min(0).optional(),
         }),
+        response: { 200: CatalogueOkResponseSchema },
       },
     },
     async (req) => {
@@ -445,6 +467,7 @@ export async function catalogRoutes(app: App): Promise<void> {
         description: 'Move a tender one place up or down the till’s method grid',
         params: MethodCodeParams,
         body: z.object({ direction: z.enum(['up', 'down']) }),
+        response: { 200: PaymentMethodMoveResponseSchema },
       },
     },
     async (req) => {
@@ -468,6 +491,7 @@ export async function catalogRoutes(app: App): Promise<void> {
       schema: {
         description: 'Remove a tender; refused once money has been taken in it',
         params: MethodCodeParams,
+        response: { 200: CatalogueOkResponseSchema },
       },
     },
     async (req) => {
@@ -955,7 +979,7 @@ export async function catalogRoutes(app: App): Promise<void> {
   // --- SCRUM-37: tax config + overrides + resolver -------------------------
   app.get(
     '/branches/:branchId/tax-config',
-    { config: { permission: 'catalog:tax:read', target: { branchId: 'params.branchId' } }, schema: { description: 'Branch tax configuration', params: BranchParams } },
+    { config: { permission: 'catalog:tax:read', target: { branchId: 'params.branchId' } }, schema: { description: 'Branch tax configuration', params: BranchParams, response: { 200: TaxConfigResponseSchema } } },
     async (req) => {
       const auth = req.requireAuth();
       await loadBranch(app, req.params.branchId, auth.operatorId);
@@ -970,7 +994,7 @@ export async function catalogRoutes(app: App): Promise<void> {
 
   app.put(
     '/branches/:branchId/tax-config',
-    { config: { permission: 'catalog:tax:manage', target: { branchId: 'params.branchId' } }, schema: { description: 'Replace the branch tax configuration', params: BranchParams, body: TaxConfigSchema } },
+    { config: { permission: 'catalog:tax:manage', target: { branchId: 'params.branchId' } }, schema: { description: 'Replace the branch tax configuration', params: BranchParams, body: TaxConfigSchema, response: { 200: CatalogueOkResponseSchema } } },
     async (req) => {
       const auth = req.requireAuth();
       await loadBranch(app, req.params.branchId, auth.operatorId);
@@ -1002,7 +1026,7 @@ export async function catalogRoutes(app: App): Promise<void> {
           after: req.body,
           requestId: req.id,
         });
-        return { ok: true };
+        return { ok: true as const };
       });
     },
   );

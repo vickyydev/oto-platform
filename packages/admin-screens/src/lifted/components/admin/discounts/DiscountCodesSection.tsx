@@ -1,5 +1,5 @@
 import { useAdminScreenRuntime } from '../../../runtime/AdminScreenRuntime';
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Plus, Pencil, Trash2, X, Check, Percent, Banknote, Download, Gift, ToggleLeft, ToggleRight, Users } from "lucide-react";
 import { Button } from "../../ui/button";
 import { QrCode } from "../../till/QrCode";
@@ -9,8 +9,9 @@ import { useCatalogStore } from "../../../runtime/AdminScreenRuntime";
 
 import { Field, TextInput, SelectInput } from "./fields";
 import { AdminNoticeBanner } from "../NotSavedNotice";
-import { DiscountTargetPicker } from "./DiscountTargetPicker";
 import { downloadDiscountQr } from "./qrDownload";
+import { useMoneyCapabilities, type DiscountCodesSectionPorts } from '../../../runtime/money';
+import { DiscountTargetPickerWithPorts } from './DiscountTargetPicker';
 
 interface DraftState {
   originalCode: string | null;
@@ -59,12 +60,34 @@ function typeIcon(d: Discount) {
 
 export function DiscountCodesSection() {
   const runtime = useAdminScreenRuntime();
-  const formatDiscountTargetLabel = runtime.domain.discountTarget.formatDiscountTargetLabel;
-  const formatWWPrice = runtime.domain.pricingMode.formatWWPrice;
+  const { discounts, menuItems, merchItems, ticketTypes, addOns, menuCategories, mutators } = useCatalogStore();
+  const scope = useMoneyCapabilities(runtime.transport, runtime.session.operator?.id, Boolean(runtime.branch.branch.apiId), runtime.session.operator, runtime.branch.branch.apiId);
+  const upsertDiscount = (payload: Discount, originalCode?: string) => {
+    if (originalCode && originalCode.toUpperCase() !== payload.code.toUpperCase()) mutators.deleteDiscount(originalCode);
+    return mutators.upsertDiscount(payload);
+  };
+  return <DiscountCodesSectionWithPorts ports={{ discounts, menuItems, merchItems, targetOptions: { ticketTypes, addOns, menuItems, menuCategories }, formatDiscountTargetLabel: runtime.domain.discountTarget.formatDiscountTargetLabel, formatWWPrice: runtime.domain.pricingMode.formatWWPrice, deleteDiscount: mutators.deleteDiscount, upsertDiscount, canManage: scope.canManageDiscounts, authorityMessage: scope.authorityMessage }} />;
+}
 
-  const { discounts, menuItems, merchItems, mutators } = useCatalogStore();
+export function DiscountCodesSectionWithPorts({ ports }: { ports: DiscountCodesSectionPorts }) {
+  const { discounts, menuItems, merchItems, formatDiscountTargetLabel, formatWWPrice } = ports;
+  const mutators = ports;
   const [draft, setDraft] = useState<DraftState | null>(null);
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+  const canManage = ports.canManage !== false;
+  const manageRef = useRef(canManage);
+  manageRef.current = canManage;
+  const editRef = useRef(ports.canEditDiscount);
+  editRef.current = ports.canEditDiscount;
+  const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
+  const [writeError, setWriteError] = useState<string | null>(null);
+  const draftRef = useRef(draft);
+  draftRef.current = draft;
+  const deleteRef = useRef(pendingDelete);
+  deleteRef.current = pendingDelete;
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
 
   const startAdd = () => setDraft({ ...emptyDraft });
   const startEdit = (d: Discount) =>
@@ -130,14 +153,9 @@ export function DiscountCodesSection() {
     !codeError && !labelError && !valueError && !freeItemError &&
     !usageLimitError && !perCustLimitError && !dateError;
 
-  const save = () => {
-    if (!draft || !canSave) return;
-    if (
-      draft.originalCode &&
-      draft.originalCode.toUpperCase() !== trimmedCode
-    ) {
-      mutators.deleteDiscount(draft.originalCode);
-    }
+  const save = async () => {
+    if (!draft || !canSave || busyRef.current || !manageRef.current) return;
+    const ownedDraft = draft;
 
     // Preserve usage counters from the existing discount so an admin edit
     // does not reset usedCount or per-customer usage history.
@@ -146,6 +164,10 @@ export function DiscountCodesSection() {
     ) ?? (draft.originalCode
       ? discounts.find((d) => d.code.toUpperCase() === draft.originalCode!.toUpperCase())
       : undefined);
+    if (draft.originalCode && (!existing || editRef.current?.(existing) === false)) {
+      setWriteError('The original discount product details must be read before this code can be edited.');
+      return;
+    }
 
     const payload: Discount = {
       code: trimmedCode,
@@ -177,13 +199,34 @@ export function DiscountCodesSection() {
         ? { perCustomerUsage: existing.perCustomerUsage }
         : {}),
     };
-    mutators.upsertDiscount(payload);
-    setDraft(null);
+    busyRef.current = true;
+    setBusy(true);
+    setWriteError(null);
+    try {
+      await mutators.upsertDiscount(payload, draft.originalCode ?? undefined);
+      if (mounted.current && manageRef.current && draftRef.current === ownedDraft) setDraft(null);
+    } catch (err) {
+      if (mounted.current) setWriteError(err instanceof Error ? err.message : 'The discount code was not saved.');
+    } finally {
+      busyRef.current = false;
+      if (mounted.current) setBusy(false);
+    }
   };
 
-  const confirmDelete = (code: string) => {
-    mutators.deleteDiscount(code);
-    setPendingDelete(null);
+  const confirmDelete = async (code: string) => {
+    if (busyRef.current || !manageRef.current) return;
+    busyRef.current = true;
+    setBusy(true);
+    setWriteError(null);
+    try {
+      await mutators.deleteDiscount(code);
+      if (mounted.current && deleteRef.current === code) setPendingDelete(null);
+    } catch (err) {
+      if (mounted.current) setWriteError(err instanceof Error ? err.message : 'The discount code was not deleted.');
+    } finally {
+      busyRef.current = false;
+      if (mounted.current) setBusy(false);
+    }
   };
 
   const activeMenuItems = menuItems;
@@ -215,16 +258,18 @@ export function DiscountCodesSection() {
             usage caps, and per-customer limits. Each code has a downloadable QR.
           </p>
         </div>
-        {!draft && (
+        {!draft && canManage && (
           <Button onClick={startAdd} size="sm">
             <Plus className="w-4 h-4" />
             Add code
           </Button>
         )}
       </div>
+      {ports.authorityMessage && <p className="mt-3 text-sm text-foreground/60">{ports.authorityMessage}</p>}
+      {writeError && <p role="alert" className="mt-3 text-sm text-destructive">{writeError}</p>}
 
       {/* Add / edit form */}
-      {draft && (
+      {draft && canManage && (
         <div className="mt-5 rounded-2xl border border-primary/30 bg-primary/[0.06] p-4 sm:p-5 space-y-4">
 
           {/* Row 1: Code + Label */}
@@ -389,7 +434,8 @@ export function DiscountCodesSection() {
           {/* Scope / target (hidden for free_item — auto-derived from the item) */}
           {!isFreeItem && (
             <div className="border-t border-foreground/10 pt-4">
-              <DiscountTargetPicker
+              <DiscountTargetPickerWithPorts
+                ports={{ ...ports.targetOptions, formatWWPrice }}
                 value={draft.target}
                 onChange={(target) => setDraft({ ...draft, target })}
               />
@@ -442,7 +488,7 @@ export function DiscountCodesSection() {
               <X className="w-4 h-4" />
               Cancel
             </Button>
-            <Button size="sm" onClick={save} disabled={!canSave}>
+            <Button size="sm" onClick={() => void save()} disabled={!canSave || busy}>
               <Check className="w-4 h-4" />
               {draft.originalCode ? 'Save changes' : 'Add code'}
             </Button>
@@ -535,13 +581,14 @@ export function DiscountCodesSection() {
                 </div>
               </div>
 
-              {pendingDelete === d.code ? (
+              {canManage && pendingDelete === d.code ? (
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-foreground/60">Delete?</span>
                   <Button
                     variant="destructive"
                     size="sm"
-                    onClick={() => confirmDelete(d.code)}
+                    onClick={() => void confirmDelete(d.code)}
+                    disabled={busy}
                   >
                     Yes
                   </Button>
@@ -565,22 +612,23 @@ export function DiscountCodesSection() {
                   >
                     <Download className="w-4 h-4" />
                   </Button>
-                  <Button
+                  {canManage && <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => startEdit(d)}
+                    disabled={ports.canEditDiscount?.(d) === false}
                     aria-label={`Edit ${d.code}`}
                   >
                     <Pencil className="w-4 h-4" />
-                  </Button>
-                  <Button
+                  </Button>}
+                  {canManage && <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => setPendingDelete(d.code)}
                     aria-label={`Delete ${d.code}`}
                   >
                     <Trash2 className="w-4 h-4 text-destructive" />
-                  </Button>
+                  </Button>}
                 </div>
               )}
             </div>

@@ -1,5 +1,5 @@
 import { useAdminScreenRuntime } from '../../../runtime/AdminScreenRuntime';
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Plus, Trash2, ChevronUp, ChevronDown, GripVertical } from "lucide-react";
 import { Button } from "../../ui/button";
 import { useCatalogStore } from "../../../runtime/AdminScreenRuntime";
@@ -7,6 +7,7 @@ import { useCatalogStore } from "../../../runtime/AdminScreenRuntime";
 import { type PaymentMethod, type PaymentMethodKind } from "../../../model/types";
 
 import { TextInput } from "../discounts/fields";
+import { useMoneyCapabilities, type PaymentMethodsSectionPorts } from '../../../runtime/money';
 
 const KIND_OPTIONS: { value: PaymentMethodKind; label: string }[] = [
   { value: 'cash', label: 'Cash' },
@@ -35,11 +36,14 @@ function makeId(label: string, taken: Set<string>, normalizePaymentMethod: (labe
 
 export function PaymentMethodsSection() {
   const runtime = useAdminScreenRuntime();
-  const paymentMethodUsage = runtime.api.catalogBridge.paymentMethodUsage;
-  const normalizePaymentMethod = runtime.domain.payments.normalizePaymentMethod;
-  const paymentMethodIcon = runtime.domain.payments.paymentMethodIcon;
-
   const { paymentMethods, mutators } = useCatalogStore();
+  const scope = useMoneyCapabilities(runtime.transport, runtime.session.operator?.id, Boolean(runtime.branch.branch.apiId), runtime.session.operator, runtime.branch.branch.apiId);
+  return <PaymentMethodsSectionWithPorts ports={{ paymentMethods, paymentMethodUsage: runtime.api.catalogBridge.paymentMethodUsage, normalizePaymentMethod: runtime.domain.payments.normalizePaymentMethod, paymentMethodIcon: runtime.domain.payments.paymentMethodIcon, ...mutators, canManage: scope.canManageTenders, authorityMessage: scope.authorityMessage }} />;
+}
+
+export function PaymentMethodsSectionWithPorts({ ports }: { ports: PaymentMethodsSectionPorts }) {
+  const { paymentMethods, paymentMethodUsage, normalizePaymentMethod, paymentMethodIcon } = ports;
+  const mutators = ports;
   const [newLabel, setNewLabel] = useState('');
   /**
    * The label being typed, held here until the field is left.
@@ -53,28 +57,61 @@ export function PaymentMethodsSection() {
    */
   const [draft, setDraft] = useState<{ id: string; label: string } | null>(null);
   const [newKind, setNewKind] = useState<PaymentMethodKind>('other');
+  const canManage = ports.canManage !== false;
+  const manageRef = useRef(canManage);
+  manageRef.current = canManage;
+  const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
+  const [writeError, setWriteError] = useState<string | null>(null);
+  const draftEpoch = useRef(0);
+  const draftRef = useRef(draft);
+  draftRef.current = draft;
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+
+  const write = async (work: () => void | Promise<void>, accepted?: () => void) => {
+    if (!manageRef.current || busyRef.current) return;
+    busyRef.current = true;
+    setBusy(true);
+    setWriteError(null);
+    try {
+      await work();
+      if (mounted.current && manageRef.current) accepted?.();
+    } catch (err) {
+      if (mounted.current) setWriteError(err instanceof Error ? err.message : 'The payment method was not saved.');
+    } finally {
+      busyRef.current = false;
+      if (mounted.current) setBusy(false);
+    }
+  };
 
   const sorted = [...paymentMethods].sort((a, b) => a.sortOrder - b.sortOrder);
 
-  const add = () => {
+  const add = async () => {
     const label = newLabel.trim();
     if (!label) return;
     const taken = new Set(paymentMethods.map((m) => m.id));
     const id = makeId(label, taken, normalizePaymentMethod);
     const sortOrder = sorted.length ? sorted[sorted.length - 1]!.sortOrder + 1 : 0;
-    mutators.upsertPaymentMethod({ id, label, kind: newKind, enabled: true, sortOrder });
-    setNewLabel('');
-    setNewKind('other');
+    const epoch = draftEpoch.current;
+    await write(() => mutators.upsertPaymentMethod({ id, label, kind: newKind, enabled: true, sortOrder }), () => {
+      if (draftEpoch.current !== epoch) return;
+      setNewLabel('');
+      setNewKind('other');
+    });
   };
 
   const patch = (m: PaymentMethod, fields: Partial<PaymentMethod>) =>
-    mutators.upsertPaymentMethod({ ...m, ...fields });
+    write(() => mutators.upsertPaymentMethod({ ...m, ...fields }));
 
   /** Commit the label being typed, if it changed and is not empty. */
-  const commitLabel = (m: PaymentMethod) => {
+  const commitLabel = async (m: PaymentMethod) => {
     const label = draft?.id === m.id ? draft.label.trim() : null;
-    setDraft(null);
-    if (label && label !== m.label) patch(m, { label });
+    const ownedDraft = draft;
+    if (!label || label === m.label) { setDraft(null); return; }
+    await write(() => mutators.upsertPaymentMethod({ ...m, label }), () => {
+      if (draftRef.current === ownedDraft) setDraft(null);
+    });
   };
 
   const changeKind = (m: PaymentMethod, kind: PaymentMethodKind) => {
@@ -101,7 +138,7 @@ export function PaymentMethodsSection() {
       );
       if (!ok) return;
     }
-    mutators.deletePaymentMethod(m.id);
+    void write(() => mutators.deletePaymentMethod(m.id));
   };
 
   // Reorder is a swap of two sort orders, and the swap is one write: the store
@@ -110,7 +147,7 @@ export function PaymentMethodsSection() {
   const move = (index: number, dir: -1 | 1) => {
     const target = index + dir;
     if (target < 0 || target >= sorted.length) return;
-    mutators.movePaymentMethod(sorted[index]!.id, dir === -1 ? 'up' : 'down');
+    void write(() => mutators.movePaymentMethod(sorted[index]!.id, dir === -1 ? 'up' : 'down'));
   };
 
   return (
@@ -123,24 +160,28 @@ export function PaymentMethodsSection() {
           checkout while keeping its history in reports.
         </p>
       </div>
+      {ports.authorityMessage && <p className="mt-3 text-sm text-foreground/60">{ports.authorityMessage}</p>}
+      {writeError && <p role="alert" className="mt-3 text-sm text-destructive">{writeError}</p>}
 
       {/* Add row */}
       <div className="mt-5 flex flex-col gap-2 sm:flex-row">
         <TextInput
           value={newLabel}
           placeholder="New method (e.g. Bank transfer)"
-          onChange={(e) => setNewLabel(e.target.value)}
+          disabled={!canManage}
+          onChange={(e) => { draftEpoch.current++; setNewLabel(e.target.value); }}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               e.preventDefault();
-              add();
+              void add();
             }
           }}
           className="flex-1"
         />
         <select
           value={newKind}
-          onChange={(e) => setNewKind(e.target.value as PaymentMethodKind)}
+          disabled={!canManage}
+          onChange={(e) => { draftEpoch.current++; setNewKind(e.target.value as PaymentMethodKind); }}
           className="h-10 shrink-0 rounded-xl border border-foreground/10 bg-foreground/5 px-3 text-sm text-foreground/90 outline-none focus:border-foreground/30"
           aria-label="New method kind"
         >
@@ -151,8 +192,8 @@ export function PaymentMethodsSection() {
           ))}
         </select>
         <Button
-          onClick={add}
-          disabled={!newLabel.trim()}
+          onClick={() => void add()}
+          disabled={!canManage || busy || !newLabel.trim()}
           className="shrink-0"
         >
           <Plus className="w-4 h-4" />
@@ -180,8 +221,9 @@ export function PaymentMethodsSection() {
               <Icon className="w-4 h-4 shrink-0 text-foreground/50" />
               <TextInput
                 value={draft?.id === m.id ? draft.label : m.label}
+                disabled={!canManage}
                 onChange={(e) => setDraft({ id: m.id, label: e.target.value })}
-                onBlur={() => commitLabel(m)}
+                onBlur={() => void commitLabel(m)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') e.currentTarget.blur();
                 }}
@@ -189,6 +231,7 @@ export function PaymentMethodsSection() {
               />
               <select
                 value={m.kind}
+                disabled={!canManage || busy}
                 onChange={(e) => changeKind(m, e.target.value as PaymentMethodKind)}
                 className="h-10 shrink-0 rounded-xl border border-foreground/10 bg-foreground/5 px-2 text-sm text-foreground/90 outline-none focus:border-foreground/30"
                 aria-label={`${m.label} kind`}
@@ -202,6 +245,7 @@ export function PaymentMethodsSection() {
               <Button
                 variant={m.enabled ? 'outline' : 'ghost'}
                 size="sm"
+                disabled={!canManage || busy}
                 onClick={() => patch(m, { enabled: !m.enabled })}
                 className="shrink-0"
               >
@@ -212,7 +256,7 @@ export function PaymentMethodsSection() {
                   variant="ghost"
                   size="sm"
                   onClick={() => move(i, -1)}
-                  disabled={i === 0}
+                  disabled={!canManage || busy || i === 0}
                   aria-label="Move up"
                 >
                   <ChevronUp className="w-4 h-4" />
@@ -221,7 +265,7 @@ export function PaymentMethodsSection() {
                   variant="ghost"
                   size="sm"
                   onClick={() => move(i, 1)}
-                  disabled={i === sorted.length - 1}
+                  disabled={!canManage || busy || i === sorted.length - 1}
                   aria-label="Move down"
                 >
                   <ChevronDown className="w-4 h-4" />
@@ -230,6 +274,7 @@ export function PaymentMethodsSection() {
                   variant="ghost"
                   size="sm"
                   onClick={() => remove(m)}
+                  disabled={!canManage || busy}
                   aria-label="Remove method"
                 >
                   <Trash2 className="w-4 h-4 text-destructive" />

@@ -71,6 +71,11 @@ import {
  */
 
 const SaleParams = z.object({ id: z.string().uuid() });
+const VoucherCampaignResponseSchema = z.object({
+  id: z.string().uuid(), name: z.string(), branchId: z.string().uuid(),
+  definitionId: z.string().uuid(), definitionCode: z.string(), quantity: z.number().int(),
+  redeemed: z.number().int().nonnegative(), createdAt: z.string().datetime(), createdByAccountId: z.string().uuid().nullable(),
+});
 
 /**
  * What a till says when a voucher is tried on a station that is offline. The
@@ -444,6 +449,7 @@ export async function voucherRoutes(app: App): Promise<void> {
         description:
           'The operator’s voucher campaigns, newest first: name, definition, branch, how many codes were minted and ' +
           'how many have been used. Never the codes — those are read through the export.',
+        response: { 200: z.object({ campaigns: z.array(VoucherCampaignResponseSchema) }) },
       },
     },
     async (req) => {
@@ -463,6 +469,7 @@ export async function voucherRoutes(app: App): Promise<void> {
           'audit row record the batch; the answer never carries the codes (each is a bearer credential) — read them ' +
           'with GET /voucher-campaigns/:id/codes. Refused for a switched-off definition and an ended promotion.',
         body: VoucherCampaignBodySchema,
+        response: { 200: z.object({ campaign: VoucherCampaignResponseSchema }) },
       },
     },
     async (req) => {
@@ -480,7 +487,7 @@ export async function voucherRoutes(app: App): Promise<void> {
   app.get(
     '/voucher-campaigns/:id/codes',
     {
-      config: { permission: 'admin:booth:manage' },
+      config: { dynamicPermission: true },
       schema: {
         description:
           'A campaign’s codes as a CSV file — code, status, expiry — for the manager to hand out. The one place the ' +
@@ -490,7 +497,9 @@ export async function voucherRoutes(app: App): Promise<void> {
     },
     async (req, reply) => {
       const auth = req.requireAuth();
-      const { filename, csv } = await campaignCodesCsv(app.db, auth.operatorId, req.params.id);
+      const { filename, csv } = await campaignCodesCsv(app.db, auth.operatorId, req.params.id, async (branchId) => {
+        await req.requirePermission('admin:booth:manage', { branchId });
+      });
       return reply
         .header('content-type', 'text/csv; charset=utf-8')
         .header('content-disposition', `attachment; filename="${filename}"`)

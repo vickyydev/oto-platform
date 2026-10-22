@@ -35,6 +35,7 @@ import { Operators } from '@/pages/Operators';
 import { Holidays } from '@/pages/Holidays';
 import { Catalogue } from '@/pages/Catalogue';
 import { MenuCatalogue } from '@/pages/MenuCatalogue';
+import { Money } from '@/pages/Money';
 
 const LAUNCHER_URL = import.meta.env.VITE_LAUNCHER_URL?.trim();
 
@@ -135,6 +136,11 @@ function NotFound() {
 }
 
 const pageElements: Record<string, ReactElement> = {
+  discounts: <Money page="discounts" />,
+  tenders: <Money page="tenders" />,
+  tax: <Money page="tax" />,
+  'voucher-campaigns': <Money page="voucher-campaigns" />,
+  'event-pricing': <Money page="event-pricing" />,
   menu: <MenuCatalogue page="menu" />,
   categories: <MenuCatalogue page="categories" />,
   modifiers: <MenuCatalogue page="modifiers" />,

@@ -103,33 +103,9 @@ export interface ApiMenu {
  * in BASIS POINTS — 1000 is ten per cent — and both are turned into the
  * prototype's whole numbers in the mappers below.
  */
-export interface ApiDiscount {
-  id: string;
-  branchId: string | null;
-  code: string;
-  label: string;
-  kind: 'percent' | 'fixed' | 'free_item';
-  /** Basis points, `percent` only. */
-  valueBp: number | null;
-  /** Satang, `fixed` only. */
-  valueSatang: number | null;
-  freeProductId: string | null;
-  /** The prototype's `DiscountTarget`. Null = the whole order. */
-  target: unknown | null;
-  validFrom: string | null;
-  validUntil: string | null;
-  usageLimit: number | null;
-  perCustomerLimit: number | null;
-  stackable: boolean;
-  active: boolean;
-  archivedAt: string | null;
-  /**
-   * Finalised sales that carried the code since the definition was created —
-   * the count its usage limit is held to (S2-15b round 6). Read-only: never
-   * sent back. Optional: an older platform answers without it.
-   */
-  usedCount?: number;
-}
+type DiscountRead = ApiResponse<'/menu/discounts', 'get'>['discounts'][number];
+export type ApiDiscount = Omit<DiscountRead, 'usedCount' | 'operatorId' | 'createdAt' | 'updatedAt'> &
+  Partial<Pick<DiscountRead, 'usedCount' | 'operatorId' | 'createdAt' | 'updatedAt'>>;
 
 
 // --- Import -----------------------------------------------------------------
@@ -168,6 +144,7 @@ export type {
  * can send back unchanged the columns its form has no field for.
  */
 interface ServerFields {
+  kind: ProductKind;
   /** Missing on older reads; live write offers fail closed for an unknown owner. */
   branchId: string | null | undefined;
   code: string | null;
@@ -228,12 +205,12 @@ const menuApi = {
    * items and the modifier library, and a discount belongs to no branch — so
    * they are fetched alongside it.
    */
-  discounts: () => api.get<{ discounts: ApiDiscount[] }>('/menu/discounts'),
+  discounts: () => api.get<ApiResponse<'/menu/discounts', 'get'>>('/menu/discounts'),
   createDiscount: (body: Partial<ApiDiscount> & { code: string; label: string }) =>
-    api.post<{ id: string }>('/menu/discounts', body, { idempotencyKey: idemKey() }),
+    api.post<ApiResponse<'/menu/discounts', 'post'>>('/menu/discounts', body, { idempotencyKey: idemKey() }),
   updateDiscount: (id: string, body: Partial<ApiDiscount>) =>
-    api.patch<{ ok: true }>(`/menu/discounts/${id}`, body),
-  archiveDiscount: (id: string) => api.delete<{ ok: true }>(`/menu/discounts/${id}`),
+    api.patch<ApiResponse<'/menu/discounts/{id}', 'patch'>>(`/menu/discounts/${id}`, body, { idempotencyKey: idemKey() }),
+  archiveDiscount: (id: string) => api.delete<ApiResponse<'/menu/discounts/{id}', 'delete'>>(`/menu/discounts/${id}`, { idempotencyKey: idemKey() }),
 
   /**
    * Parse and validate; write nothing.
@@ -722,7 +699,7 @@ function apiDiscountToDiscount(d: ApiDiscount): Discount {
         : d.kind === 'fixed'
           ? baht(d.valueSatang ?? 0)
           : 0,
-    ...(d.freeProductId ? { freeItemId: d.freeProductId } : {}),
+    ...(d.freeProductId ? { freeItemId: d.freeProductId, freeItemKind: serverFields.get(d.freeProductId)?.kind === 'merch' ? 'merch' as const : 'menu' as const } : {}),
     ...(d.target ? { target: d.target as DiscountTarget } : {}),
     ...(d.validFrom ? { validFrom: d.validFrom } : {}),
     ...(d.validUntil ? { validUntil: d.validUntil } : {}),
@@ -812,6 +789,7 @@ function mapMenu(menu: ApiMenu): MappedMenu {
   }
   for (const p of menu.products) {
     serverFields.set(p.id, {
+      kind: p.kind,
       branchId: p.branchId,
       code: p.code,
       sku: p.sku,
@@ -986,6 +964,22 @@ async function archiveModifierGroupInApi(
  * deleting the old one and upserting a new, and the platform's row is addressed
  * by id, so the map is the only thing that knows the two are one campaign.
  */
+async function saveDiscount(discount: Discount, originalCode?: string): Promise<void> {
+  const body = discountToApiBody(discount);
+  const held = discountIdByCode.get(originalCode ?? discount.code);
+  if (originalCode && !held) {
+    throw new Error('The original discount is no longer in the loaded catalogue. Reload before editing.');
+  }
+  if (held) {
+    await menuApi.updateDiscount(held, body);
+    if (originalCode) discountIdByCode.delete(originalCode);
+    discountIdByCode.set(discount.code, held);
+  } else {
+    const answer = await menuApi.createDiscount(body);
+    discountIdByCode.set(discount.code, answer.id);
+  }
+}
+
 async function saveDiscountToApi(
   branchId: string,
   branchSlug: string,
@@ -1168,7 +1162,7 @@ async function archiveMenuCategoryInApi(
     await reloadMenuInto(branchId, branchSlug);
   });
 }
-return { menuApi, catalogueSizesOf, isSocksAddOnId, serverFieldsFor, menuIsServerBacked, apiCategoryToDef, apiGroupToGroup, apiProductToMenuItem, menuItemToApiBody, categoryToApiBody, apiProductToMerchItem, merchItemToApiBody, apiProductToAddOn, addOnToApiBody, modifierGroupToApiBody, apiDiscountToDiscount, discountToApiBody, mapDiscounts, mapMenu, reloadMenuInto, saveMerchItemToApi, archiveMerchItemInApi, saveAddOnToApi, archiveAddOnInApi, saveModifierGroupToApi, archiveModifierGroupInApi, saveDiscountToApi, archiveDiscountInApi, saveMenuItem, saveMenuItemToApi, archiveMenuItemInApi, saveMenuCategoryToApi, archiveMenuCategoryInApi };
+return { menuApi, catalogueSizesOf, isSocksAddOnId, serverFieldsFor, menuIsServerBacked, apiCategoryToDef, apiGroupToGroup, apiProductToMenuItem, menuItemToApiBody, categoryToApiBody, apiProductToMerchItem, merchItemToApiBody, apiProductToAddOn, addOnToApiBody, modifierGroupToApiBody, apiDiscountToDiscount, discountToApiBody, mapDiscounts, mapMenu, reloadMenuInto, saveDiscount, saveMerchItemToApi, archiveMerchItemInApi, saveAddOnToApi, archiveAddOnInApi, saveModifierGroupToApi, archiveModifierGroupInApi, saveDiscountToApi, archiveDiscountInApi, saveMenuItem, saveMenuItemToApi, archiveMenuItemInApi, saveMenuCategoryToApi, archiveMenuCategoryInApi };
 }
 
 /** POS keeps its file download capability beside the shared catalogue ports. */

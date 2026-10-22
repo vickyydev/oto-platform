@@ -120,6 +120,17 @@ const MenuResponseSchema = z.object({
 }).passthrough();
 const MenuOkResponseSchema = z.object({ ok: z.literal(true) });
 const MenuCreatedResponseSchema = z.object({ id: z.string().uuid() });
+const DiscountListResponseSchema = z.object({ discounts: z.array(z.object({
+  id: z.string().uuid(), operatorId: z.string().uuid(), branchId: z.string().uuid().nullable(),
+  code: z.string(), label: z.string(), kind: z.enum(['percent', 'fixed', 'free_item']),
+  valueBp: z.number().int().nullable(), valueSatang: z.number().int().nullable(),
+  freeProductId: z.string().uuid().nullable(),
+  // This JSONB read is not reparsed through the stricter discount write shape.
+  target: z.unknown().nullable(), validFrom: z.string().nullable(), validUntil: z.string().nullable(),
+  usageLimit: z.number().int().nullable(), perCustomerLimit: z.number().int().nullable(),
+  stackable: z.boolean(), active: z.boolean(), createdAt: MenuTimestampSchema, updatedAt: MenuTimestampSchema,
+  archivedAt: MenuTimestampSchema.nullable(), usedCount: z.number().int().nonnegative(),
+})) });
 const MenuImportCountsResponseSchema = z.object({
   create: z.number().int().nonnegative(), update: z.number().int().nonnegative(),
   archive: z.number().int().nonnegative(), unchanged: z.number().int().nonnegative(),
@@ -750,6 +761,7 @@ export async function menuRoutes(app: App): Promise<void> {
           'Discount code definitions, each with `usedCount`: the finalised sales that carried the code since the ' +
           'definition was created — the count its usage limit is held to.',
         querystring: z.object({ includeArchived: z.coerce.boolean().default(false) }),
+        response: { 200: DiscountListResponseSchema },
       },
     },
     async (req) => {
@@ -788,7 +800,7 @@ export async function menuRoutes(app: App): Promise<void> {
     '/menu/discounts',
     {
       config: { permission: 'catalog:menu:manage', target: { operator: true } },
-      schema: { description: 'Create a discount code', body: DiscountDefinitionBodySchema },
+      schema: { description: 'Create a discount code', body: DiscountDefinitionBodySchema, response: { 200: MenuCreatedResponseSchema } },
     },
     async (req) => {
       const auth = req.requireAuth();
@@ -838,6 +850,7 @@ export async function menuRoutes(app: App): Promise<void> {
         description: 'Update a discount code',
         params: IdParams,
         body: DiscountDefinitionBodySchema,
+        response: { 200: MenuOkResponseSchema },
       },
     },
     async (req) => {
@@ -887,7 +900,7 @@ export async function menuRoutes(app: App): Promise<void> {
     '/menu/discounts/:id',
     {
       config: { permission: 'catalog:menu:manage', target: { operator: true } },
-      schema: { description: 'Withdraw a discount code', params: IdParams },
+      schema: { description: 'Withdraw a discount code', params: IdParams, response: { 200: MenuOkResponseSchema } },
     },
     async (req) => {
       const auth = req.requireAuth();

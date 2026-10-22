@@ -35,6 +35,16 @@ export interface ConsoleNavGroup {
 
 /** Existing pages keep their permissions and their old addresses. */
 export const CONSOLE_SECTIONS: ConsoleSection[] = [
+  { id: 'discounts', path: '/catalogue/discounts', label: 'Discounts', icon: Ticket,
+    description: 'Discount codes and the existing local manual-discount reasons.', permission: 'catalog:menu:manage' },
+  { id: 'tenders', path: '/catalogue/tenders', label: 'Tenders', icon: Ticket,
+    description: 'Shared payment methods, availability and ordering.', permission: 'catalog:menu:manage' },
+  { id: 'tax', path: '/catalogue/tax', label: 'Tax', icon: Ticket,
+    description: 'Park tax rates, category rules and service charges.', permission: 'catalog:tax:manage' },
+  { id: 'voucher-campaigns', path: '/catalogue/voucher-campaigns', label: 'Voucher campaigns', icon: Ticket,
+    description: 'Promotional rules, campaign batches and their code downloads.', permission: 'admin:booth:read' },
+  { id: 'event-pricing', path: '/catalogue/event-pricing', label: 'Event pricing', icon: Ticket,
+    description: 'Walk-up camp, event and party prices for a park.', permission: 'admin:event_pricing:manage' },
   { id: 'menu', path: '/catalogue/menu', label: 'Menu', icon: Ticket,
     description: 'Menu items, prices, preparation, tax and workbook import and export.', permission: 'catalog:menu:read' },
   { id: 'categories', path: '/catalogue/categories', label: 'Categories', icon: Ticket,
@@ -219,9 +229,9 @@ export const consoleNav: ConsoleNavGroup[] = [
   },
   {
     id: 'catalogue', label: 'Catalogue & money', icon: Ticket,
-    description: 'Tickets, tiers, add-ons, menu items, categories, modifiers, merch and vouchers.',
+    description: 'Tickets, menu, discounts, tenders, tax, vouchers and event pricing.',
     gate: { any: ['catalog:package:read', 'catalog:menu:read'] },
-    sections: pages('tickets', 'tiers', 'add-ons', 'menu', 'categories', 'modifiers', 'merch', 'voucher-types', 'vouchers'),
+    sections: pages('tickets', 'tiers', 'add-ons', 'menu', 'categories', 'modifiers', 'merch', 'discounts', 'tenders', 'tax', 'voucher-types', 'voucher-campaigns', 'vouchers', 'event-pricing'),
     currentHome: { app: 'pos', path: '/admin', label: 'Open catalogue and pricing in POS Admin' },
   },
   {
