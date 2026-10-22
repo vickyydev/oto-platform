@@ -1,0 +1,232 @@
+{
+  "ticket": "SCRUM-654",
+  "releaseSha": "e84a6fc9ba6e6fe31d00d0e338c2a32ea3c1ad8b",
+  "startedAt": "2026-10-22T05:38:11.047Z",
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "sourceSha": "e84a6fc9ba6e6fe31d00d0e338c2a32ea3c1ad8b",
+      "deployId": "dep-dbcpusjncjis73b4kcrg",
+      "finishedAt": "2026-10-22T05:33:47.768837Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "sourceSha": "e84a6fc9ba6e6fe31d00d0e338c2a32ea3c1ad8b",
+      "deployId": "dep-dbcpusjncjis73b4kej0",
+      "finishedAt": "2026-10-22T05:31:36.497572Z"
+    }
+  ],
+  "checks": [
+    {
+      "code": "ACCOUNT_LIGHT_ADOPTED_WITHOUT_WRITE",
+      "passed": true,
+      "at": "2026-10-22T05:38:20.908Z"
+    },
+    {
+      "code": "NATIVE_DARK_CYCLE_THEME_ONLY_WRITE_AND_READBACK",
+      "passed": true,
+      "at": "2026-10-22T05:38:27.811Z"
+    },
+    {
+      "code": "SYSTEM_FOLLOWS_DEVICE_WITHOUT_WRITE",
+      "passed": true,
+      "at": "2026-10-22T05:38:30.761Z"
+    },
+    {
+      "code": "NATIVE_SYSTEM_PHONE390_SIDEBAR",
+      "passed": true,
+      "at": "2026-10-22T05:38:33.911Z"
+    },
+    {
+      "code": "RELOAD_ADOPTS_SYSTEM_FROM_ACCOUNT",
+      "passed": true,
+      "at": "2026-10-22T05:38:39.249Z"
+    },
+    {
+      "code": "EXACT_ORIGINAL_PREFERENCES_RESTORED_WITH_OWN_AUDITS",
+      "passed": true,
+      "at": "2026-10-22T05:38:44.166Z"
+    },
+    {
+      "code": "RELEASE_AND_NEXT_ACTOR_ACTUAL_PREFERENCE_ADOPTION",
+      "passed": true,
+      "at": "2026-10-22T05:38:51.081Z"
+    }
+  ],
+  "screenshots": [
+    {
+      "filename": "SCRUM-654-01-native-dark.png",
+      "capturedAt": "2026-10-22T05:38:26.106Z",
+      "capturedAfterDeploy": true,
+      "preference": "dark",
+      "resolved": "dark",
+      "bounds": {
+        "buttonInViewport": true,
+        "width": 32,
+        "height": 32,
+        "preference": "dark"
+      },
+      "layout": {
+        "viewport": 1440,
+        "page": 1440
+      },
+      "sha256": "3a0ee5fda1fb08d4c10759961fbd525e992560c1a934fd8a4e2c733d820f43b8"
+    },
+    {
+      "filename": "SCRUM-654-02-system-phone.png",
+      "capturedAt": "2026-10-22T05:38:32.434Z",
+      "capturedAfterDeploy": true,
+      "preference": "system",
+      "resolved": "dark",
+      "bounds": {
+        "buttonInViewport": true,
+        "width": 32,
+        "height": 32,
+        "preference": "system"
+      },
+      "layout": {
+        "viewport": 390,
+        "page": 390
+      },
+      "sha256": "9413d79feb75fbf3e4b8a41be87c6de394ea6567a8afe3996bdc0ba57cc096bf"
+    },
+    {
+      "filename": "SCRUM-654-03-system-after-reload.png",
+      "capturedAt": "2026-10-22T05:38:37.471Z",
+      "capturedAfterDeploy": true,
+      "preference": "system",
+      "resolved": "dark",
+      "bounds": {
+        "buttonInViewport": true,
+        "width": 32,
+        "height": 32,
+        "preference": "system"
+      },
+      "layout": {
+        "viewport": 1440,
+        "page": 1440
+      },
+      "sha256": "2dbaa66b6a5bc807db3b1a993909ec807f6dc11d90c1cf1cba1e10e533f15526"
+    }
+  ],
+  "operations": [
+    {
+      "label": "THEME_DARK",
+      "theme": "dark",
+      "keySha256": "b91dc3a7b439b55191d4f802cc342dedeac60d0f54bddd44c76939950c6ed7cc",
+      "attempts": 1,
+      "settled": true,
+      "status": 200
+    },
+    {
+      "label": "THEME_SYSTEM",
+      "theme": "system",
+      "keySha256": "08eb976930c4323821ade97b4480ebf4c07f7090e3af15530254b0a3c50a0837",
+      "attempts": 1,
+      "settled": true,
+      "status": 200
+    },
+    {
+      "label": "THEME_LIGHT",
+      "theme": "light",
+      "keySha256": "599c3b514ac19ed2d169dbbd000cb3747df5bcb2b30dea6e0a4e31c23e33f2be",
+      "attempts": 1,
+      "settled": true,
+      "status": 200
+    }
+  ],
+  "counts": {
+    "smsRequests": 0,
+    "fixturesCreated": 0,
+    "otherBusinessWrites": 0,
+    "blockedWrites": 0,
+    "blockedReads": 0,
+    "signIns": 2,
+    "signOuts": 2,
+    "preferenceAttempts": 3,
+    "publicAssetReads": 6
+  },
+  "blockedRequests": [],
+  "browserErrorKinds": [],
+  "originalPreferencesRestored": true,
+  "complete": true,
+  "limitations": [
+    "Only the seeded administrator theme is changed. The seeded manager is read-only; language and every other account field stay unchanged.",
+    "Each actor is checked against its own actual account preference. Different persisted values across people are covered by automated tests if both seeded accounts have the same value."
+  ],
+  "actor": {
+    "id": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+    "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75"
+  },
+  "originalPreferences": {
+    "theme": "light",
+    "language": "en"
+  },
+  "preferenceAudits": [
+    {
+      "id": "01a1621e-6217-7a4e-89f3-30d0542e463b",
+      "actorAccountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "entityId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "before": {
+        "theme": "system",
+        "language": "en"
+      },
+      "after": {
+        "theme": "light",
+        "language": "en"
+      },
+      "createdAt": "2026-10-22T05:38:40.788Z"
+    },
+    {
+      "id": "01a1621e-35fc-7c43-9788-897b6373b24d",
+      "actorAccountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "entityId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "before": {
+        "theme": "dark",
+        "language": "en"
+      },
+      "after": {
+        "theme": "system",
+        "language": "en"
+      },
+      "createdAt": "2026-10-22T05:38:29.498Z"
+    },
+    {
+      "id": "01a1621e-1cdd-7bb1-b80f-efbfef6ac69d",
+      "actorAccountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "entityId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "before": {
+        "theme": "light",
+        "language": "en"
+      },
+      "after": {
+        "theme": "dark",
+        "language": "en"
+      },
+      "createdAt": "2026-10-22T05:38:23.067Z"
+    }
+  ],
+  "restoredPreferences": {
+    "theme": "light",
+    "language": "en"
+  },
+  "adminSignOut": {
+    "signOutStatus": 200,
+    "meStatus": 401,
+    "releasedWithoutPreferenceWrite": true
+  },
+  "manager": {
+    "id": "01a0c9ae-5377-7b34-a9ab-22bf8086f5f7",
+    "preferences": {
+      "theme": "light",
+      "language": "en"
+    },
+    "samePersistedThemeAsAdmin": true
+  },
+  "managerSignOut": {
+    "signOutStatus": 200,
+    "meStatus": 401,
+    "releasedWithoutPreferenceWrite": true
+  },
+  "completedAt": "2026-10-22T05:38:53.221Z"
+}

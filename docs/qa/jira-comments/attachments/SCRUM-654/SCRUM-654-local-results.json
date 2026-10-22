@@ -1,0 +1,1317 @@
+{
+  "ticket": "SCRUM-654",
+  "candidateSha": "e84a6fc9ba6e6fe31d00d0e338c2a32ea3c1ad8b",
+  "localReleaseChecksPassed": true,
+  "coordinatorExitCodesVerified": true,
+  "sourceLandedOnMain": true,
+  "ciVerified": true,
+  "deploymentVerified": true,
+  "stagingAcceptanceClaimed": true,
+  "status": "LOCAL RELEASE CHECKS, EXACT-SHA CI, AUTOMATIC DEPLOYMENTS AND STAGING ACCEPTANCE PASSED",
+  "assembledAt": "2026-10-22T05:12:53.813Z",
+  "provenance": {
+    "sourceConfigFiles": 3349,
+    "backendInputs": 1004,
+    "frozen": {
+      "path": "C:\\w\\admin654-linux\\frozen-source-manifest.json",
+      "sha256": "c6cb7588d4822f31a7f33c99807667aa596c29b56659ec86b0380ac328fad764",
+      "bytes": 499844
+    },
+    "tested": {
+      "path": "C:\\w\\admin654-linux\\api-tested-source-manifest.json",
+      "sha256": "c6cb7588d4822f31a7f33c99807667aa596c29b56659ec86b0380ac328fad764",
+      "bytes": 499844
+    },
+    "final": {
+      "path": "C:\\w\\admin654-linux\\source-manifest.json",
+      "sha256": "41302d0ecbec66eeb59d538e82fd41db33521800a1063a7a3a480ed0ef08c4ab",
+      "bytes": 499844
+    }
+  },
+  "apiTotals": {
+    "passed": 4680,
+    "skipped": 401,
+    "todo": 5,
+    "files": 331
+  },
+  "gates": {
+    "checks": {
+      "path": "C:\\w\\admin654-linux\\checks.log",
+      "sha256": "bc7e1129cb6bf87e7dcb1988409d1ddca9bcf2a2fdaa512050f921221ef45668",
+      "bytes": 14115
+    },
+    "focused": {
+      "log": {
+        "path": "C:\\w\\admin654-linux\\review.log",
+        "sha256": "b67a23de6a28e48981158c410dbb8b184ce32a5910542fac8175bbac2f049662",
+        "bytes": 4520
+      },
+      "suites": [
+        {
+          "suite": "@oto/api focused",
+          "format": "vitest",
+          "files": 6,
+          "passed": 71,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        }
+      ]
+    },
+    "units": {
+      "log": {
+        "path": "C:\\w\\admin654-linux\\units.log",
+        "sha256": "e127226eb5170e1f3baf27cb458703949bbfc07d104c05b2588e009c8386f038",
+        "bytes": 1833
+      },
+      "suites": [
+        {
+          "suite": "@oto/console",
+          "format": "vitest",
+          "files": 24,
+          "passed": 192,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 3
+        },
+        {
+          "suite": "@oto/api-types",
+          "format": "vitest",
+          "files": 1,
+          "passed": 8,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        }
+      ]
+    },
+    "remaining": {
+      "log": {
+        "path": "C:\\w\\admin654-linux\\remaining.log",
+        "sha256": "9dd9d574b608bbfd12bed56e2eeda561c2344a520a77494cf7bf453d5724bfdc",
+        "bytes": 41505
+      },
+      "suites": [
+        {
+          "suite": "@oto/shared",
+          "format": "vitest",
+          "files": 50,
+          "passed": 769,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        {
+          "suite": "@oto/db",
+          "format": "vitest",
+          "files": 43,
+          "passed": 305,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        {
+          "suite": "@oto/pos",
+          "format": "vitest",
+          "files": 100,
+          "passed": 1429,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        {
+          "suite": "@oto/booth",
+          "format": "node-tap",
+          "files": null,
+          "passed": 33,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "cancelled": 0,
+          "durationMs": 654.477701
+        },
+        {
+          "suite": "@oto/launcher",
+          "format": "vitest",
+          "files": 5,
+          "passed": 72,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        {
+          "suite": "@oto/inbox",
+          "format": "vitest",
+          "files": 8,
+          "passed": 176,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        {
+          "suite": "@oto/assistant",
+          "format": "vitest",
+          "files": 8,
+          "passed": 434,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        {
+          "suite": "@oto/print",
+          "format": "vitest",
+          "files": 11,
+          "passed": 271,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        {
+          "suite": "@oto/messaging",
+          "format": "vitest",
+          "files": 6,
+          "passed": 78,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        {
+          "suite": "@oto/payments-2c2p",
+          "format": "vitest",
+          "files": 6,
+          "passed": 81,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        {
+          "suite": "@oto/telemetry",
+          "format": "vitest",
+          "files": 4,
+          "passed": 36,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        {
+          "suite": "@oto/admin-screens",
+          "format": "vitest",
+          "files": 2,
+          "passed": 5,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        }
+      ]
+    },
+    "box": {
+      "log": {
+        "path": "C:\\w\\admin654-linux\\box.log",
+        "sha256": "c0abaa25f2f72ca55719e3ffa9560a0661173d54e36564d9ac89e8e6321babee",
+        "bytes": 178545
+      },
+      "suites": [
+        {
+          "suite": "@oto/box-agent",
+          "format": "node-tap",
+          "files": null,
+          "passed": 749,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "cancelled": 0,
+          "durationMs": 16686.823054
+        }
+      ]
+    },
+    "api": [
+      {
+        "log": {
+          "path": "C:\\w\\admin654-linux\\api1.log",
+          "sha256": "d76b97d9b764a5c4350b44a4d55f79c505a51e9f4a039c319d4be5559873fe0f",
+          "bytes": 117561
+        },
+        "suites": [
+          {
+            "suite": "@oto/api shard 1",
+            "format": "vitest",
+            "files": 111,
+            "passed": 1619,
+            "failed": 0,
+            "skipped": 106,
+            "todo": 0
+          }
+        ]
+      },
+      {
+        "log": {
+          "path": "C:\\w\\admin654-linux\\api2.log",
+          "sha256": "a22050359ea314e00e7218850574c52d6b72968d0790325c528014d58e0100c7",
+          "bytes": 120313
+        },
+        "suites": [
+          {
+            "suite": "@oto/api shard 2",
+            "format": "vitest",
+            "files": 111,
+            "passed": 1628,
+            "failed": 0,
+            "skipped": 174,
+            "todo": 4
+          }
+        ]
+      },
+      {
+        "log": {
+          "path": "C:\\w\\admin654-linux\\api3.log",
+          "sha256": "486634670f91dc811eaf3bc9240dd18b80e22d85f590db95600aa37b6782c357",
+          "bytes": 132479
+        },
+        "suites": [
+          {
+            "suite": "@oto/api shard 3",
+            "format": "vitest",
+            "files": 109,
+            "passed": 1433,
+            "failed": 0,
+            "skipped": 121,
+            "todo": 1
+          }
+        ]
+      }
+    ],
+    "affected": {
+      "path": "C:\\w\\admin654-linux\\affected.log",
+      "sha256": "552e62a1a45417a8c1458eb1bb0961a92d5a97abf9ff93d29cf44202d036f358",
+      "bytes": 787
+    },
+    "post": {
+      "path": "C:\\w\\admin654-linux\\post.log",
+      "sha256": "a3a81a3ff7c5bf917ab503f5f3236a8d6dd48129ad2626695d6bb5970b016d57",
+      "bytes": 7129
+    },
+    "changedLint": {
+      "path": "C:\\w\\admin654-linux\\lint.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "browser": {
+      "passed": 95,
+      "log": {
+        "path": "C:\\w\\admin654-linux\\browser.log",
+        "sha256": "a2ba789160c88a5dad6218d0d7a305fe9473629c2c6a4dd37e55732a08da18d6",
+        "bytes": 17019
+      }
+    },
+    "target": {
+      "passed": 7,
+      "log": {
+        "path": "C:\\w\\admin654-linux\\target.log",
+        "sha256": "d6116c53be06d6a606cd06a6675aa97be289884d27e90e6a304129c58a52894c",
+        "bytes": 4408
+      }
+    }
+  },
+  "observedFailures": [
+    {
+      "failed": 1,
+      "passed": 0,
+      "explanation": "Old bundle ignored the persisted dark account preference.",
+      "log": {
+        "path": "C:\\w\\admin654-linux\\browser-red.log",
+        "sha256": "fca607f50dc7ac7c1b74c72b837d6d05f722cc6d53368005b78b43e5cdf315ca",
+        "bytes": 5551
+      }
+    },
+    {
+      "failed": 4,
+      "passed": 0,
+      "explanation": "The old theme module lacked the account-bound controller; assertions failed without an import error.",
+      "log": {
+        "path": "C:\\w\\admin654-linux\\house-red.log",
+        "sha256": "f63e2d34479cfccf93ee2ee6bcdd5ab173a87868bd2223a313f551ad53270c4d",
+        "bytes": 4928
+      }
+    },
+    {
+      "failed": 3,
+      "passed": 0,
+      "explanation": "Existing sign-in markup lacked the three-state labels and icons.",
+      "log": {
+        "path": "C:\\w\\admin654-linux\\unit-red.log",
+        "sha256": "02b3446457cb5197ab53f10ceac5c42f5b69fafc79151ac5a016e1c5f3c454ac",
+        "bytes": 18493
+      }
+    },
+    {
+      "failed": 1,
+      "passed": 5,
+      "explanation": "A late permission reply rebound a session after an unauthorized event; the request fence corrected it.",
+      "log": {
+        "path": "C:\\w\\admin654-linux\\race-red.log",
+        "sha256": "e931742ce995492701bf34f06563992e35772cb9ef4043e0bc81e58f881fc697",
+        "bytes": 6370
+      }
+    },
+    {
+      "failed": 1,
+      "passed": 6,
+      "explanation": "The request fence initially hid the expired-handoff explanation; the known notice is now preserved.",
+      "log": {
+        "path": "C:\\w\\admin654-linux\\handoff-red.log",
+        "sha256": "5313eb86c61e45ff378845929d8d92cb07310005ff3da4c946185e7278c173c6",
+        "bytes": 6979
+      }
+    }
+  ],
+  "proofPreparation": {
+    "helper": {
+      "path": "C:/w/admin654-evidence.mjs",
+      "sha256": "0816b4019907d1c361c39ba8a6c65e7f9f338f7e3e0260a28afc955c4bf1b706",
+      "bytes": 26414
+    },
+    "scopePredicate": {
+      "helperSha256": "0816b4019907d1c361c39ba8a6c65e7f9f338f7e3e0260a28afc955c4bf1b706",
+      "passed": true,
+      "oldPredicate": {
+        "passed": 5,
+        "failed": 1,
+        "cases": [
+          {
+            "name": "platform-wide own-audit reader",
+            "passed": false
+          },
+          {
+            "name": "operator-wide implicit own target",
+            "passed": true
+          },
+          {
+            "name": "operator-wide explicit own target",
+            "passed": true
+          },
+          {
+            "name": "foreign operator refused",
+            "passed": true
+          },
+          {
+            "name": "branch-only reader refused",
+            "passed": true
+          },
+          {
+            "name": "different permission refused",
+            "passed": true
+          }
+        ]
+      },
+      "correctedPredicate": {
+        "passed": 6,
+        "failed": 0,
+        "cases": [
+          {
+            "name": "platform-wide own-audit reader",
+            "passed": true
+          },
+          {
+            "name": "operator-wide implicit own target",
+            "passed": true
+          },
+          {
+            "name": "operator-wide explicit own target",
+            "passed": true
+          },
+          {
+            "name": "foreign operator refused",
+            "passed": true
+          },
+          {
+            "name": "branch-only reader refused",
+            "passed": true
+          },
+          {
+            "name": "different permission refused",
+            "passed": true
+          }
+        ]
+      },
+      "classification": "Proof preflight only; operator-wide reach includes a platform grant, while foreign and branch grants stay refused.",
+      "sourceProductChanged": false,
+      "executedAt": "2026-10-22T05:37:17.685Z"
+    },
+    "captionLayoutRegression": {
+      "passed": true,
+      "mode": "Local synthetic DOM using source-extracted caption and bounds functions only; no helper imports, environment, network or staging.",
+      "beforeHelperSha256": "3f574297480d091e150340fde338a377fa6c7957dfd26957547fbd8ac88850eb",
+      "helperSha256": "0816b4019907d1c361c39ba8a6c65e7f9f338f7e3e0260a28afc955c4bf1b706",
+      "checkedAt": "2026-10-22T05:36:53.501Z",
+      "checks": [
+        {
+          "name": "old390 native footer refused and overlapped",
+          "passed": true,
+          "helperSha256": "3f574297480d091e150340fde338a377fa6c7957dfd26957547fbd8ac88850eb",
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "expectedButtonInViewport": false,
+          "bounds": {
+            "buttonInViewport": false,
+            "width": 32,
+            "height": 32,
+            "preference": "system"
+          },
+          "geometry": {
+            "button": {
+              "left": 200,
+              "right": 232,
+              "top": 780,
+              "bottom": 812,
+              "width": 32,
+              "height": 32
+            },
+            "caption": {
+              "left": 4,
+              "right": 388.390625,
+              "top": 804,
+              "bottom": 840,
+              "width": 384.390625,
+              "height": 36
+            },
+            "intersection": true
+          }
+        },
+        {
+          "name": "corrected390 native footer clear",
+          "passed": true,
+          "helperSha256": "0816b4019907d1c361c39ba8a6c65e7f9f338f7e3e0260a28afc955c4bf1b706",
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "expectedButtonInViewport": true,
+          "bounds": {
+            "buttonInViewport": true,
+            "width": 32,
+            "height": 32,
+            "preference": "system"
+          },
+          "geometry": {
+            "button": {
+              "left": 200,
+              "right": 232,
+              "top": 780,
+              "bottom": 812,
+              "width": 32,
+              "height": 32
+            },
+            "caption": {
+              "left": 266,
+              "right": 386,
+              "top": 4,
+              "bottom": 118,
+              "width": 120,
+              "height": 114
+            },
+            "intersection": false
+          }
+        },
+        {
+          "name": "old1440 native footer already clear",
+          "passed": true,
+          "helperSha256": "3f574297480d091e150340fde338a377fa6c7957dfd26957547fbd8ac88850eb",
+          "viewport": {
+            "width": 1440,
+            "height": 1100
+          },
+          "expectedButtonInViewport": true,
+          "bounds": {
+            "buttonInViewport": true,
+            "width": 32,
+            "height": 32,
+            "preference": "system"
+          },
+          "geometry": {
+            "button": {
+              "left": 200,
+              "right": 232,
+              "top": 1036,
+              "bottom": 1068,
+              "width": 32,
+              "height": 32
+            },
+            "caption": {
+              "left": 4,
+              "right": 733.703125,
+              "top": 1073,
+              "bottom": 1096,
+              "width": 729.703125,
+              "height": 23
+            },
+            "intersection": false
+          }
+        },
+        {
+          "name": "corrected1440 native footer clear",
+          "passed": true,
+          "helperSha256": "0816b4019907d1c361c39ba8a6c65e7f9f338f7e3e0260a28afc955c4bf1b706",
+          "viewport": {
+            "width": 1440,
+            "height": 1100
+          },
+          "expectedButtonInViewport": true,
+          "bounds": {
+            "buttonInViewport": true,
+            "width": 32,
+            "height": 32,
+            "preference": "system"
+          },
+          "geometry": {
+            "button": {
+              "left": 200,
+              "right": 232,
+              "top": 1036,
+              "bottom": 1068,
+              "width": 32,
+              "height": 32
+            },
+            "caption": {
+              "left": 706.296875,
+              "right": 1436,
+              "top": 4,
+              "bottom": 27,
+              "width": 729.703125,
+              "height": 23
+            },
+            "intersection": false
+          }
+        },
+        {
+          "name": "corrected390 genuine caption intersection refused",
+          "passed": true,
+          "helperSha256": "0816b4019907d1c361c39ba8a6c65e7f9f338f7e3e0260a28afc955c4bf1b706",
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "expectedButtonInViewport": false,
+          "bounds": {
+            "buttonInViewport": false,
+            "width": 32,
+            "height": 32,
+            "preference": "system"
+          },
+          "geometry": {
+            "button": {
+              "left": 270,
+              "right": 302,
+              "top": 8,
+              "bottom": 40,
+              "width": 32,
+              "height": 32
+            },
+            "caption": {
+              "left": 266,
+              "right": 386,
+              "top": 4,
+              "bottom": 118,
+              "width": 120,
+              "height": 114
+            },
+            "intersection": true
+          }
+        },
+        {
+          "name": "corrected1440 genuine caption intersection refused",
+          "passed": true,
+          "helperSha256": "0816b4019907d1c361c39ba8a6c65e7f9f338f7e3e0260a28afc955c4bf1b706",
+          "viewport": {
+            "width": 1440,
+            "height": 1100
+          },
+          "expectedButtonInViewport": false,
+          "bounds": {
+            "buttonInViewport": false,
+            "width": 32,
+            "height": 32,
+            "preference": "system"
+          },
+          "geometry": {
+            "button": {
+              "left": 710.296875,
+              "right": 742.296875,
+              "top": 8,
+              "bottom": 40,
+              "width": 32,
+              "height": 32
+            },
+            "caption": {
+              "left": 706.296875,
+              "right": 1436,
+              "top": 4,
+              "bottom": 27,
+              "width": 729.703125,
+              "height": 23
+            },
+            "intersection": true
+          }
+        },
+        {
+          "name": "old reloaded long-sidebar footer remains outside viewport",
+          "passed": true,
+          "helperSha256": "d717e1b60b53b38a02e9be06b373dd9e02735d214cb250f822f271471b9614e9",
+          "expectedButtonInViewport": false,
+          "bounds": {
+            "buttonInViewport": false,
+            "width": 32,
+            "height": 32,
+            "preference": "system"
+          },
+          "geometry": {
+            "top": 1736,
+            "bottom": 1768,
+            "viewport": 1100,
+            "sidebarScrollTop": 0
+          }
+        },
+        {
+          "name": "universal extracted native scroll makes reloaded long-sidebar footer capturable",
+          "passed": true,
+          "helperSha256": "0816b4019907d1c361c39ba8a6c65e7f9f338f7e3e0260a28afc955c4bf1b706",
+          "expectedButtonInViewport": true,
+          "bounds": {
+            "buttonInViewport": true,
+            "width": 32,
+            "height": 32,
+            "preference": "system"
+          },
+          "geometry": {
+            "top": 1036,
+            "bottom": 1068,
+            "viewport": 1100,
+            "sidebarScrollTop": 700
+          }
+        }
+      ],
+      "blockedNetwork": 0,
+      "harnessSetupCorrection": "The first extraction run needed an argument-presence check before the TypeScript arrow-function predicate. Only the local extractor was corrected; helper bytes were unchanged."
+    },
+    "previousReview": {
+      "helper": {
+        "path": "C:/w/admin654-evidence.mjs",
+        "sha256": "d717e1b60b53b38a02e9be06b373dd9e02735d214cb250f822f271471b9614e9",
+        "bytes": 26373
+      },
+      "scopePredicate": {
+        "helperSha256": "d717e1b60b53b38a02e9be06b373dd9e02735d214cb250f822f271471b9614e9",
+        "passed": true,
+        "oldPredicate": {
+          "passed": 5,
+          "failed": 1,
+          "cases": [
+            {
+              "name": "platform-wide own-audit reader",
+              "passed": false
+            },
+            {
+              "name": "operator-wide implicit own target",
+              "passed": true
+            },
+            {
+              "name": "operator-wide explicit own target",
+              "passed": true
+            },
+            {
+              "name": "foreign operator refused",
+              "passed": true
+            },
+            {
+              "name": "branch-only reader refused",
+              "passed": true
+            },
+            {
+              "name": "different permission refused",
+              "passed": true
+            }
+          ]
+        },
+        "correctedPredicate": {
+          "passed": 6,
+          "failed": 0,
+          "cases": [
+            {
+              "name": "platform-wide own-audit reader",
+              "passed": true
+            },
+            {
+              "name": "operator-wide implicit own target",
+              "passed": true
+            },
+            {
+              "name": "operator-wide explicit own target",
+              "passed": true
+            },
+            {
+              "name": "foreign operator refused",
+              "passed": true
+            },
+            {
+              "name": "branch-only reader refused",
+              "passed": true
+            },
+            {
+              "name": "different permission refused",
+              "passed": true
+            }
+          ]
+        },
+        "classification": "Proof preflight only; operator-wide reach includes a platform grant, while foreign and branch grants stay refused.",
+        "sourceProductChanged": false,
+        "executedAt": "2026-10-22T05:26:32.086Z"
+      },
+      "captionLayoutRegression": {
+        "passed": true,
+        "mode": "Local synthetic DOM using source-extracted caption and bounds functions only; no helper imports, environment, network or staging.",
+        "beforeHelperSha256": "3f574297480d091e150340fde338a377fa6c7957dfd26957547fbd8ac88850eb",
+        "helperSha256": "d717e1b60b53b38a02e9be06b373dd9e02735d214cb250f822f271471b9614e9",
+        "checkedAt": "2026-10-22T05:25:57.336Z",
+        "checks": [
+          {
+            "name": "old390 native footer refused and overlapped",
+            "passed": true,
+            "helperSha256": "3f574297480d091e150340fde338a377fa6c7957dfd26957547fbd8ac88850eb",
+            "viewport": {
+              "width": 390,
+              "height": 844
+            },
+            "expectedButtonInViewport": false,
+            "bounds": {
+              "buttonInViewport": false,
+              "width": 32,
+              "height": 32,
+              "preference": "system"
+            },
+            "geometry": {
+              "button": {
+                "left": 200,
+                "right": 232,
+                "top": 780,
+                "bottom": 812,
+                "width": 32,
+                "height": 32
+              },
+              "caption": {
+                "left": 4,
+                "right": 388.390625,
+                "top": 804,
+                "bottom": 840,
+                "width": 384.390625,
+                "height": 36
+              },
+              "intersection": true
+            }
+          },
+          {
+            "name": "corrected390 native footer clear",
+            "passed": true,
+            "helperSha256": "d717e1b60b53b38a02e9be06b373dd9e02735d214cb250f822f271471b9614e9",
+            "viewport": {
+              "width": 390,
+              "height": 844
+            },
+            "expectedButtonInViewport": true,
+            "bounds": {
+              "buttonInViewport": true,
+              "width": 32,
+              "height": 32,
+              "preference": "system"
+            },
+            "geometry": {
+              "button": {
+                "left": 200,
+                "right": 232,
+                "top": 780,
+                "bottom": 812,
+                "width": 32,
+                "height": 32
+              },
+              "caption": {
+                "left": 266,
+                "right": 386,
+                "top": 4,
+                "bottom": 118,
+                "width": 120,
+                "height": 114
+              },
+              "intersection": false
+            }
+          },
+          {
+            "name": "old1440 native footer already clear",
+            "passed": true,
+            "helperSha256": "3f574297480d091e150340fde338a377fa6c7957dfd26957547fbd8ac88850eb",
+            "viewport": {
+              "width": 1440,
+              "height": 1100
+            },
+            "expectedButtonInViewport": true,
+            "bounds": {
+              "buttonInViewport": true,
+              "width": 32,
+              "height": 32,
+              "preference": "system"
+            },
+            "geometry": {
+              "button": {
+                "left": 200,
+                "right": 232,
+                "top": 1036,
+                "bottom": 1068,
+                "width": 32,
+                "height": 32
+              },
+              "caption": {
+                "left": 4,
+                "right": 733.703125,
+                "top": 1073,
+                "bottom": 1096,
+                "width": 729.703125,
+                "height": 23
+              },
+              "intersection": false
+            }
+          },
+          {
+            "name": "corrected1440 native footer clear",
+            "passed": true,
+            "helperSha256": "d717e1b60b53b38a02e9be06b373dd9e02735d214cb250f822f271471b9614e9",
+            "viewport": {
+              "width": 1440,
+              "height": 1100
+            },
+            "expectedButtonInViewport": true,
+            "bounds": {
+              "buttonInViewport": true,
+              "width": 32,
+              "height": 32,
+              "preference": "system"
+            },
+            "geometry": {
+              "button": {
+                "left": 200,
+                "right": 232,
+                "top": 1036,
+                "bottom": 1068,
+                "width": 32,
+                "height": 32
+              },
+              "caption": {
+                "left": 706.296875,
+                "right": 1436,
+                "top": 4,
+                "bottom": 27,
+                "width": 729.703125,
+                "height": 23
+              },
+              "intersection": false
+            }
+          },
+          {
+            "name": "corrected390 genuine caption intersection refused",
+            "passed": true,
+            "helperSha256": "d717e1b60b53b38a02e9be06b373dd9e02735d214cb250f822f271471b9614e9",
+            "viewport": {
+              "width": 390,
+              "height": 844
+            },
+            "expectedButtonInViewport": false,
+            "bounds": {
+              "buttonInViewport": false,
+              "width": 32,
+              "height": 32,
+              "preference": "system"
+            },
+            "geometry": {
+              "button": {
+                "left": 270,
+                "right": 302,
+                "top": 8,
+                "bottom": 40,
+                "width": 32,
+                "height": 32
+              },
+              "caption": {
+                "left": 266,
+                "right": 386,
+                "top": 4,
+                "bottom": 118,
+                "width": 120,
+                "height": 114
+              },
+              "intersection": true
+            }
+          },
+          {
+            "name": "corrected1440 genuine caption intersection refused",
+            "passed": true,
+            "helperSha256": "d717e1b60b53b38a02e9be06b373dd9e02735d214cb250f822f271471b9614e9",
+            "viewport": {
+              "width": 1440,
+              "height": 1100
+            },
+            "expectedButtonInViewport": false,
+            "bounds": {
+              "buttonInViewport": false,
+              "width": 32,
+              "height": 32,
+              "preference": "system"
+            },
+            "geometry": {
+              "button": {
+                "left": 710.296875,
+                "right": 742.296875,
+                "top": 8,
+                "bottom": 40,
+                "width": 32,
+                "height": 32
+              },
+              "caption": {
+                "left": 706.296875,
+                "right": 1436,
+                "top": 4,
+                "bottom": 27,
+                "width": 729.703125,
+                "height": 23
+              },
+              "intersection": true
+            }
+          }
+        ],
+        "blockedNetwork": 0,
+        "harnessSetupCorrection": "The first extraction run needed an argument-presence check before the TypeScript arrow-function predicate. Only the local extractor was corrected; helper bytes were unchanged."
+      },
+      "previousReview": {
+        "helper": {
+          "path": "C:\\w\\admin654-evidence.mjs",
+          "sha256": "3f574297480d091e150340fde338a377fa6c7957dfd26957547fbd8ac88850eb",
+          "bytes": 26211
+        },
+        "scopePredicate": {
+          "helperSha256": "3f574297480d091e150340fde338a377fa6c7957dfd26957547fbd8ac88850eb",
+          "passed": true,
+          "oldPredicate": {
+            "passed": 5,
+            "failed": 1,
+            "cases": [
+              {
+                "name": "platform-wide own-audit reader",
+                "passed": false
+              },
+              {
+                "name": "operator-wide implicit own target",
+                "passed": true
+              },
+              {
+                "name": "operator-wide explicit own target",
+                "passed": true
+              },
+              {
+                "name": "foreign operator refused",
+                "passed": true
+              },
+              {
+                "name": "branch-only reader refused",
+                "passed": true
+              },
+              {
+                "name": "different permission refused",
+                "passed": true
+              }
+            ]
+          },
+          "correctedPredicate": {
+            "passed": 6,
+            "failed": 0,
+            "cases": [
+              {
+                "name": "platform-wide own-audit reader",
+                "passed": true
+              },
+              {
+                "name": "operator-wide implicit own target",
+                "passed": true
+              },
+              {
+                "name": "operator-wide explicit own target",
+                "passed": true
+              },
+              {
+                "name": "foreign operator refused",
+                "passed": true
+              },
+              {
+                "name": "branch-only reader refused",
+                "passed": true
+              },
+              {
+                "name": "different permission refused",
+                "passed": true
+              }
+            ]
+          },
+          "classification": "Proof preflight only; operator-wide reach includes a platform grant, while foreign and branch grants stay refused.",
+          "sourceProductChanged": false,
+          "executedAt": "2026-10-22T04:52:54.381Z"
+        },
+        "requestAndRestorationReview": "Coordinator and independent source inspection; helper not executed. The six executable cases cover audit preflight reach only."
+      },
+      "requestAndRestorationReview": "Coordinator and independent source inspection of the complete helper and caption-only diff. Authentication, request guards, journal and restoration unchanged. Six audit-reach and six synthetic caption cases are narrow helper checks; staging remains unexecuted."
+    },
+    "preExecutionReview": "Coordinator and independent source inspection of complete helper and caption/scroll-only diffs. Request, auth, journal and restoration unchanged. Six audit-reach cases and eight synthetic capture cases pass; these are narrow helper checks. First actual staging attempt incomplete with exact preferences restored and successful sign-out; raw public evidence committed9f1aaab8. No final acceptance claimed.",
+    "executed": true
+  },
+  "limitations": [
+    "Only the seeded administrator theme is changed. The seeded manager is read-only; language and every other account field stay unchanged.",
+    "Each actor is checked against its own actual account preference. Different persisted values across people are covered by automated tests if both seeded accounts have the same value.",
+    "Browser error tags and actual write-attempt counts are retained without an error-free browser claim.",
+    "The two seeded actors had the same persisted theme; different-value and actor-isolation negatives remain automated coverage."
+  ],
+  "fullReleasePassed": true,
+  "sourceCi": {
+    "runId": 39726748380,
+    "observedAt": "2026-10-22T05:30:28.380Z",
+    "sha": "e84a6fc9ba6e6fe31d00d0e338c2a32ea3c1ad8b",
+    "status": "completed",
+    "conclusion": "success",
+    "jobs": [
+      {
+        "id": 119652284290,
+        "name": "ci",
+        "status": "completed",
+        "conclusion": "success",
+        "failedSteps": []
+      },
+      {
+        "id": 119652284377,
+        "name": "api-tests (3)",
+        "status": "completed",
+        "conclusion": "success",
+        "failedSteps": []
+      },
+      {
+        "id": 119652284436,
+        "name": "api-tests (1)",
+        "status": "completed",
+        "conclusion": "success",
+        "failedSteps": []
+      },
+      {
+        "id": 119652284516,
+        "name": "pos-tests",
+        "status": "completed",
+        "conclusion": "success",
+        "failedSteps": []
+      },
+      {
+        "id": 119652284570,
+        "name": "oto-app",
+        "status": "completed",
+        "conclusion": "success",
+        "failedSteps": []
+      },
+      {
+        "id": 119652284632,
+        "name": "api-tests (2)",
+        "status": "completed",
+        "conclusion": "success",
+        "failedSteps": []
+      }
+    ]
+  },
+  "deploymentObservation": {
+    "observedAt": "2026-10-22T05:39:01.493Z",
+    "sourceSha": "e84a6fc9ba6e6fe31d00d0e338c2a32ea3c1ad8b",
+    "allLive": true,
+    "services": [
+      {
+        "name": "oto-api-staging",
+        "latest": {
+          "id": "dep-dbcpusjncjis73b4kcrg",
+          "status": "live",
+          "sha": "e84a6fc9ba6e6fe31d00d0e338c2a32ea3c1ad8b",
+          "createdAt": "2026-10-22T05:30:26.51456Z",
+          "finishedAt": "2026-10-22T05:33:47.768837Z"
+        },
+        "live": {
+          "id": "dep-dbcpusjncjis73b4kcrg",
+          "status": "live",
+          "sha": "e84a6fc9ba6e6fe31d00d0e338c2a32ea3c1ad8b",
+          "createdAt": "2026-10-22T05:30:26.51456Z",
+          "finishedAt": "2026-10-22T05:33:47.768837Z"
+        }
+      },
+      {
+        "name": "oto-console-staging",
+        "latest": {
+          "id": "dep-dbcpusjncjis73b4kej0",
+          "status": "live",
+          "sha": "e84a6fc9ba6e6fe31d00d0e338c2a32ea3c1ad8b",
+          "createdAt": "2026-10-22T05:30:26.685145Z",
+          "finishedAt": "2026-10-22T05:31:36.497572Z"
+        },
+        "live": {
+          "id": "dep-dbcpusjncjis73b4kej0",
+          "status": "live",
+          "sha": "e84a6fc9ba6e6fe31d00d0e338c2a32ea3c1ad8b",
+          "createdAt": "2026-10-22T05:30:26.685145Z",
+          "finishedAt": "2026-10-22T05:31:36.497572Z"
+        }
+      }
+    ]
+  },
+  "stagingAcceptance": {
+    "receipt": {
+      "path": "C:\\w\\admin-preferences\\docs\\qa\\jira-comments\\attachments\\SCRUM-654\\SCRUM-654-staging-results.json",
+      "sha256": "299c6ad6078d4bb5136180fba640dead61329867f00503215d3d8e11fa593046",
+      "bytes": 6323
+    },
+    "complete": true,
+    "checks": 7,
+    "screenshots": [
+      {
+        "filename": "SCRUM-654-01-native-dark.png",
+        "sha256": "3a0ee5fda1fb08d4c10759961fbd525e992560c1a934fd8a4e2c733d820f43b8",
+        "jiraAttachmentId": "11938",
+        "inspectedForPrivacyAndContent": true
+      },
+      {
+        "filename": "SCRUM-654-02-system-phone.png",
+        "sha256": "9413d79feb75fbf3e4b8a41be87c6de394ea6567a8afe3996bdc0ba57cc096bf",
+        "jiraAttachmentId": "11939",
+        "inspectedForPrivacyAndContent": true
+      },
+      {
+        "filename": "SCRUM-654-03-system-after-reload.png",
+        "sha256": "2dbaa66b6a5bc807db3b1a993909ec807f6dc11d90c1cf1cba1e10e533f15526",
+        "jiraAttachmentId": "11940",
+        "inspectedForPrivacyAndContent": true
+      }
+    ],
+    "originalPreferencesRestored": true,
+    "originalPreferences": {
+      "theme": "light",
+      "language": "en"
+    },
+    "restoredPreferences": {
+      "theme": "light",
+      "language": "en"
+    },
+    "operations": [
+      {
+        "label": "THEME_DARK",
+        "theme": "dark",
+        "keySha256": "b91dc3a7b439b55191d4f802cc342dedeac60d0f54bddd44c76939950c6ed7cc",
+        "attempts": 1,
+        "settled": true,
+        "status": 200
+      },
+      {
+        "label": "THEME_SYSTEM",
+        "theme": "system",
+        "keySha256": "08eb976930c4323821ade97b4480ebf4c07f7090e3af15530254b0a3c50a0837",
+        "attempts": 1,
+        "settled": true,
+        "status": 200
+      },
+      {
+        "label": "THEME_LIGHT",
+        "theme": "light",
+        "keySha256": "599c3b514ac19ed2d169dbbd000cb3747df5bcb2b30dea6e0a4e31c23e33f2be",
+        "attempts": 1,
+        "settled": true,
+        "status": 200
+      }
+    ],
+    "preferenceAudits": [
+      {
+        "id": "01a1621e-6217-7a4e-89f3-30d0542e463b",
+        "actorAccountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+        "entityId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+        "before": {
+          "theme": "system",
+          "language": "en"
+        },
+        "after": {
+          "theme": "light",
+          "language": "en"
+        },
+        "createdAt": "2026-10-22T05:38:40.788Z"
+      },
+      {
+        "id": "01a1621e-35fc-7c43-9788-897b6373b24d",
+        "actorAccountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+        "entityId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+        "before": {
+          "theme": "dark",
+          "language": "en"
+        },
+        "after": {
+          "theme": "system",
+          "language": "en"
+        },
+        "createdAt": "2026-10-22T05:38:29.498Z"
+      },
+      {
+        "id": "01a1621e-1cdd-7bb1-b80f-efbfef6ac69d",
+        "actorAccountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+        "entityId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+        "before": {
+          "theme": "light",
+          "language": "en"
+        },
+        "after": {
+          "theme": "dark",
+          "language": "en"
+        },
+        "createdAt": "2026-10-22T05:38:23.067Z"
+      }
+    ],
+    "manager": {
+      "id": "01a0c9ae-5377-7b34-a9ab-22bf8086f5f7",
+      "preferences": {
+        "theme": "light",
+        "language": "en"
+      },
+      "samePersistedThemeAsAdmin": true
+    },
+    "adminSignOut": {
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "releasedWithoutPreferenceWrite": true
+    },
+    "managerSignOut": {
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "releasedWithoutPreferenceWrite": true
+    },
+    "counts": {
+      "smsRequests": 0,
+      "fixturesCreated": 0,
+      "otherBusinessWrites": 0,
+      "blockedWrites": 0,
+      "blockedReads": 0,
+      "signIns": 2,
+      "signOuts": 2,
+      "preferenceAttempts": 3,
+      "publicAssetReads": 6
+    },
+    "browserErrorKinds": [],
+    "partialReceipts": [
+      {
+        "path": "C:\\w\\admin-preferences\\docs\\qa\\jira-comments\\attachments\\SCRUM-654\\SCRUM-654-first-attempt-results.json",
+        "sha256": "156d388b03c17cffacd6fe234bf68811b55ffd2aef5f7884f735efa51ae533fd",
+        "bytes": 5157
+      }
+    ]
+  },
+  "coordinatorReviewedImages": true,
+  "acceptedAt": "2026-10-22T05:39:28.789Z"
+}
