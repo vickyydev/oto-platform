@@ -1,0 +1,88 @@
+{
+  "ticket": "SCRUM-623",
+  "kind": "Independent second public partial-outcome safety audit",
+  "passed": true,
+  "fullAcceptance": false,
+  "checkedAt": "2026-10-22T23:15:43.417466+07:00",
+  "sourceSha": "5ddb61408a0d931802fd2f86f307ab058878dd34",
+  "helperSha256": "74149ed0d040120b2725b6f1e737a7c69a366256c6c249bef8ddde2d82627710",
+  "proof": {
+    "path": "C:\\w\\admin623-staging-final-results.json",
+    "sha256": "51ef9fd5a9d8f434d6aaab14abd6398cebfb88c527a7dc5589f187db9d50cf28"
+  },
+  "envelope": {
+    "path": "C:\\w\\admin623-stage-final-envelope.json",
+    "sha256": "6dd2d5e973f8c92cc99f9f4fd32adcdbef6d38b1e0202a1d0fdc402e0644f28c"
+  },
+  "checks": [
+    {
+      "name": "Exact V3 source/helper and raw proof binding",
+      "passed": true
+    },
+    {
+      "name": "Partial Type-setup timeout/exit1 retained",
+      "passed": true
+    },
+    {
+      "name": "Three exact-source deployment observations stable",
+      "passed": true
+    },
+    {
+      "name": "Attempt/checks after maximum declared deploy finish",
+      "passed": true
+    },
+    {
+      "name": "Exactly two actual safety checks",
+      "passed": true
+    },
+    {
+      "name": "Zero business operations/attempts/fixtures/images/audits",
+      "passed": true
+    },
+    {
+      "name": "Zero blocked/browser/forbidden activity",
+      "passed": true
+    },
+    {
+      "name": "Recorded baseline restored exactly",
+      "passed": true
+    },
+    {
+      "name": "One fresh session confirmed logout200/me401",
+      "passed": true
+    },
+    {
+      "name": "Prior V2 safety prerequisite retained",
+      "passed": true
+    },
+    {
+      "name": "Event skip and zero images remain honest",
+      "passed": true
+    }
+  ],
+  "metrics": {
+    "auditPins": 11,
+    "safetyChecks": 2,
+    "operations": 0,
+    "businessAttempts": 0,
+    "fixtureCreates": 0,
+    "images": 0,
+    "businessAuditRows": 0,
+    "blockedRequests": 0,
+    "browserErrorKinds": 0,
+    "signIns": 1,
+    "signOuts": 1,
+    "signOutStatus": 200,
+    "signedOutMeStatus": 401,
+    "eventWriteSkips": 1,
+    "plannedNotPerformedLogicalOperations": 12,
+    "resourcesRestored": true,
+    "stableDeclaredDeployments": 3
+  },
+  "limits": [
+    "Public result/envelope only; no private journal/auth/network or new source access.",
+    "No feature or PNG acceptance; observed deployment bindings only, no independent live query.",
+    "Tax/Event and all other business writes are zero; combined event skip reason does not identify configuration versus authority.",
+    "Recorded catalogue baseline equality does not claim Till, station, campaign mint/export or complete historical usage."
+  ]
+}
