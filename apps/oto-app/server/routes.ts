@@ -23993,6 +23993,15 @@ ${context}`;
     return new Set(canonical).size === canonical.length ? canonical : null;
   };
 
+  /**
+   * SCRUM-657: Fix reports are seen by branch reach — a login reads only the
+   * reports of branches its access names; all-branch access (and so every
+   * admin with it) reads them all. A report always has a branch (branch_id
+   * is NOT NULL and creation requires one), so there is no branchless case.
+   */
+  const fixReportReach = (user: UserWithBranchAccess) =>
+    user.hasAllBranchesAccess ? undefined : user.allowedBranchIds;
+
   // List fix reports for current branch
   app.get("/api/fix-reports", requireAuth, async (req, res, next) => {
     try {
@@ -24085,6 +24094,8 @@ ${context}`;
           eq(fixReports.tenantId, tenantId),
           inArray(fixReports.assignedDepartmentId as any, userDeptIds),
         ];
+        const reach = fixReportReach(user);
+        if (reach) conditions.push(reach.length ? inArray(fixReports.branchId, reach) : sql`false`);
         if (status) conditions.push(inArray(fixReports.status, resolveFixReportStatusFilter(status) as any));
         if (completedFrom) conditions.push(gte(sql`COALESCE(${fixReports.closedAt}, ${fixReports.updatedAt})`, completedFrom));
         if (completedTo) conditions.push(lte(sql`COALESCE(${fixReports.closedAt}, ${fixReports.updatedAt})`, completedTo));
@@ -24134,6 +24145,7 @@ ${context}`;
 
       const rawMain = await storage.getFixReports(tenantId, {
         branchId: isGlobalAdmin(user) ? requestedBranchId : branchId,
+        branchIds: fixReportReach(user),
         status,
         completedFrom,
         completedTo,

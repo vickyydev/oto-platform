@@ -15,6 +15,17 @@
 //      Fix Board with the report's id, and that id opens the report for the
 //      member who was told.
 //
+// SCRUM-657 — reports are seen by branch reach, on the server:
+//   5. With a report at each of two branches, a Fix Department member who
+//      reaches one branch reads only that branch's report in the Fix Board's
+//      list (GET /api/fix-reports) and in My Queue, which is also what the
+//      Today fix cards read (GET /api/fix-reports?myQueue=true); a manager
+//      reaching one branch likewise on the board; the other branch's report
+//      itself is refused.
+//   6. A member with all-branch access, and an admin, read both.
+//   7. An urgent report at the branch a member does not reach does not
+//      alert that member (they could not open it); an all-branch member is.
+//
 // Usage, from apps/oto-app, with DATABASE_URL naming a database whose otoapp
 // schema the app's migrator has built:
 //   npx tsx tests/fix-module.check.ts
@@ -114,6 +125,8 @@ const author = await login("Author", "staff", otherDept, [branchA.id, branchB.id
 const fixerAll = await login("FixerAll", "staff", fixDept, "all");
 const fixerA = await login("FixerA", "staff", fixDept, [branchA.id]);
 const outsider = await login("Outsider", "staff", otherDept, [branchA.id, branchB.id]);
+const managerA = await login("ManagerA", "manager", null, [branchA.id]);
+const admin = await login("Admin", "admin", null, "all");
 
 // ─── The server ──────────────────────────────────────────────────────────────
 
@@ -206,7 +219,7 @@ const check = async (name: string, fn: () => void | Promise<void>) => {
 try {
   ORIGIN = await serve();
   const cookie: Record<string, string> = {};
-  for (const who of [author, fixerAll, fixerA, outsider]) cookie[who.label] = await signIn(who.email);
+  for (const who of [author, fixerAll, fixerA, outsider, managerA, admin]) cookie[who.label] = await signIn(who.email);
 
   /** What the Fix page sends (client/src/pages/core/fix.tsx): the photo first, then the report. */
   const report = async (who: Login, title: string, priority: string, branchId: string) => {
@@ -277,6 +290,51 @@ try {
     assert.ok(routes.includes('path="/core/fix-board"'), "no /core/fix-board route");
     const board = readFileSync(join(APP_DIR, "client", "src", "pages", "core", "fix-board.tsx"), "utf8");
     assert.ok(board.includes(".get('reportId')"), "the Fix Board does not read ?reportId=");
+  });
+
+  // ─── SCRUM-657 ─────────────────────────────────────────────────────────────
+
+  const atA = await report(author, `ZZ TEST at A ${run}`, "normal", branchA.id);
+  const atB = await report(author, `ZZ TEST at B ${run}`, "normal", branchB.id);
+  const listed = async (who: Login, path: string) => {
+    const res = await call("GET", path, { cookie: cookie[who.label] });
+    assert.equal(res.status, 200, `${who.label} ${path}: ${show(res)}`);
+    const ids = (res.body as Array<{ id: string }>).map((r) => r.id);
+    return { a: ids.includes(atA.id), b: ids.includes(atB.id) };
+  };
+
+  await check("657: a one-branch member reads only that branch's report on the Fix Board", async () => {
+    assert.deepEqual(await listed(fixerA, "/api/fix-reports"), { a: true, b: false });
+  });
+
+  await check("657: and only that branch's report in My Queue (the Today fix cards' read)", async () => {
+    assert.deepEqual(await listed(fixerA, "/api/fix-reports?myQueue=true"), { a: true, b: false });
+  });
+
+  await check("657: a one-branch manager reads only that branch's report on the Fix Board", async () => {
+    assert.deepEqual(await listed(managerA, "/api/fix-reports"), { a: true, b: false });
+  });
+
+  await check("657: the other branch's report is refused to them, by list filter and by id", async () => {
+    const filtered = await call("GET", `/api/fix-reports?branchId=${branchB.id}`, { cookie: cookie[fixerA.label] });
+    assert.equal(filtered.status, 403, show(filtered));
+    const byId = await call("GET", `/api/fix-reports/${atB.id}/details`, { cookie: cookie[fixerA.label] });
+    assert.equal(byId.status, 403, show(byId));
+  });
+
+  await check("657: an all-branch member reads both, on the board and in My Queue", async () => {
+    assert.deepEqual(await listed(fixerAll, "/api/fix-reports"), { a: true, b: true });
+    assert.deepEqual(await listed(fixerAll, "/api/fix-reports?myQueue=true"), { a: true, b: true });
+  });
+
+  await check("657: an admin reads both on the board", async () => {
+    assert.deepEqual(await listed(admin, "/api/fix-reports"), { a: true, b: true });
+  });
+
+  await check("657: an urgent report alerts only the members who reach its branch", async () => {
+    const urgentB = await report(author, `ZZ TEST urgent at B ${run}`, "urgent", branchB.id);
+    assert.deepEqual(await inbox(fixerA, urgentB.id), []);
+    assert.equal((await inbox(fixerAll, urgentB.id)).length, 1);
   });
 
   console.log(`fix-module.check: ${checks} checks passed`);

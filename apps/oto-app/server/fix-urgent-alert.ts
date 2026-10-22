@@ -1,7 +1,9 @@
 import { and, eq, inArray, isNotNull } from "drizzle-orm";
 import { accessPolicies, branches, employees, people, users } from "../shared/schema";
+import { canUserAccessBranch } from "./auth-middleware";
 import { db } from "./db";
 import { createFixReportUrgentNotification } from "./notification-service";
+import { storage } from "./storage";
 
 /**
  * SCRUM-656: the logins of a Fix Department's members, counted the three ways
@@ -41,7 +43,8 @@ export async function readFixDepartmentLogins(tenantId: string, departmentId: st
 /**
  * SCRUM-656: a Fix report created with the highest priority ("urgent") tells
  * every member of the Fix Department it was assigned to, in the app's own
- * notification inbox. Never SMS or email. A failure here is logged and never
+ * notification inbox. Never SMS or email. SCRUM-657: only the members whose
+ * branch access reaches the report's branch — the others could not open it. A failure here is logged and never
  * fails the report, which is already saved.
  */
 export async function alertUrgentFixReport(report: {
@@ -57,7 +60,12 @@ export async function alertUrgentFixReport(report: {
   try {
     const [branch] = await db.select({ name: branches.name }).from(branches)
       .where(and(eq(branches.id, report.branchId), eq(branches.tenantId, report.tenantId))).limit(1);
-    const recipientUserIds = await readFixDepartmentLogins(report.tenantId, report.assignedDepartmentId);
+    const members = await readFixDepartmentLogins(report.tenantId, report.assignedDepartmentId);
+    const recipientUserIds: string[] = [];
+    for (const id of members) {
+      const member = await storage.getUserWithBranchAccess(id);
+      if (member && canUserAccessBranch(member, report.branchId)) recipientUserIds.push(id);
+    }
     await createFixReportUrgentNotification({
       tenantId: report.tenantId,
       reportId: report.id,

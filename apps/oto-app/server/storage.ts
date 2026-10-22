@@ -1664,6 +1664,8 @@ export interface IStorage {
                 tenantId: string,
                 filters?: {
                         branchId?: string;
+                        /** SCRUM-657: only these branches (none = no rows). */
+                        branchIds?: string[];
                         status?: string;
                         reportedBy?: string;
                         priority?: string;
@@ -11454,6 +11456,8 @@ export class DatabaseStorage implements IStorage {
                 tenantId: string,
                 filters?: {
                         branchId?: string;
+                        /** SCRUM-657: only these branches (none = no rows). */
+                        branchIds?: string[];
                         status?: string;
                         reportedBy?: string;
                         priority?: string;
@@ -11468,6 +11472,9 @@ export class DatabaseStorage implements IStorage {
 
                 if (filters?.branchId) {
                         conditions.push(eq(fixReports.branchId, filters.branchId));
+                }
+                if (filters?.branchIds) {
+                        conditions.push(filters.branchIds.length ? inArray(fixReports.branchId, filters.branchIds) : sql`false`);
                 }
                 if (filters?.status) {
                         conditions.push(inArray(fixReports.status, resolveFixReportStatusFilter(filters.status) as any));
