@@ -342,6 +342,10 @@ try {
   console.error("fix-module.check FAILED:", err);
   process.exitCode = 1;
 } finally {
+  // The job shares one database across the app checks; the tenant-ownership
+  // check later re-adds the baseline one-row-per-key unique on settings for a
+  // staged simulation, so this check must not leave its park group's rows behind.
+  await q("delete from settings where tenant_id = $1", [tenant]).catch(() => {});
   for (const child of children) child.kill();
   await pool.end();
 }
