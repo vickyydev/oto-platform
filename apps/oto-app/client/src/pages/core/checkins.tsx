@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Loader2, Search, Phone, Clock, AlertTriangle, User, Baby, CheckCircle, MessageCircle, LogOut, Users, Camera, UserPlus, Play, Square, AlertCircle, Edit, Timer, Calendar, RotateCcw, X, Plus, Copy, Send, RefreshCw, Tent, UserCheck, UserX } from "lucide-react";
@@ -347,6 +347,15 @@ type CampReg = {
   attendanceCheckedOutAt: string | null;
   authorizedPickupPersons?: string | null;
   childPhotoUrl: string | null;
+  // Held on the registration and already in the today answer; shown in the
+  // child's quick details (SCRUM-601) when present.
+  allergies?: string | null;
+  allergiesNotes?: string | null;
+  foodRestrictions?: string | null;
+  behavioralNotes?: string | null;
+  specialNotes?: string | null;
+  primaryLanguage?: string | null;
+  parentContacts?: Array<{ name: string; phone: string }> | null;
 };
 
 type CampEvent = {
@@ -357,7 +366,7 @@ type CampEvent = {
   branchId?: string;
 };
 
-function CampCheckins({ activeBranchId, fetchWithAuth }: { activeBranchId?: string | null; fetchWithAuth: (url: string, options?: RequestInit) => Promise<Response> }) {
+export function CampCheckins({ activeBranchId, fetchWithAuth }: { activeBranchId?: string | null; fetchWithAuth: (url: string, options?: RequestInit) => Promise<Response> }) {
   const { toast } = useToast();
   const [campSearch, setCampSearch] = useState("");
   const [campStatusFilter, setCampStatusFilter] = useState<"all" | "not_checked_in" | "checked_in" | "checked_out">("all");
@@ -370,6 +379,11 @@ function CampCheckins({ activeBranchId, fetchWithAuth }: { activeBranchId?: stri
   // Check-out dialog state
   const [checkOutDialog, setCheckOutDialog] = useState<{ open: boolean; regId: string | null; authorizedPickup: string | null; childName: string | null; childPhotoUrl: string | null }>({ open: false, regId: null, authorizedPickup: null, childName: null, childPhotoUrl: null });
   const [checkOutPickUp, setCheckOutPickUp] = useState("");
+
+  // The child's quick details (SCRUM-601): which card was tapped, and whether
+  // its photo is open full size.
+  const [detailsRegId, setDetailsRegId] = useState<string | null>(null);
+  const [photoFullSize, setPhotoFullSize] = useState(false);
 
   const { data, isLoading } = useQuery<{ camps: CampEvent[]; registrations: CampReg[] }>({
     queryKey: ["/api/core/camp-checkins/today", activeBranchId],
@@ -483,6 +497,111 @@ function CampCheckins({ activeBranchId, fetchWithAuth }: { activeBranchId?: stri
     try { return differenceInYears(new Date(), parseISO(dob)); } catch { return null; }
   };
 
+  const isPending = checkInMutation.isPending || checkOutMutation.isPending ||
+    undoCheckInMutation.isPending || undoCheckOutMutation.isPending;
+
+  const openCheckIn = (reg: CampReg) => {
+    setCheckInPayment("");
+    setCheckInDropOff("");
+    setCheckInDialog({ open: true, regId: reg.id, authorizedPickup: reg.authorizedPickupPersons ?? null });
+  };
+
+  const openCheckOut = (reg: CampReg) => {
+    setCheckOutPickUp("");
+    setCheckOutDialog({ open: true, regId: reg.id, authorizedPickup: reg.authorizedPickupPersons ?? null, childName: reg.childFullName, childPhotoUrl: reg.childPhotoUrl ?? null });
+  };
+
+  const attendanceBadge = (reg: CampReg) =>
+    reg.attendanceStatus === "checked_out" ? (
+      <Badge className="gap-1 bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800">
+        <LogOut className="h-3 w-3" />
+        Left {reg.attendanceCheckedOutAt ? format(new Date(reg.attendanceCheckedOutAt), "HH:mm") : ""}
+      </Badge>
+    ) : reg.attendanceStatus === "checked_in" ? (
+      <Badge className="gap-1 bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800">
+        <CheckCircle className="h-3 w-3" />
+        In {reg.attendanceCheckedInAt ? format(new Date(reg.attendanceCheckedInAt), "HH:mm") : ""}
+      </Badge>
+    ) : (
+      <Badge variant="outline" className="gap-1 text-muted-foreground">
+        <Clock className="h-3 w-3" />
+        Waiting to check in
+      </Badge>
+    );
+
+  /**
+   * The check-in and check-out buttons, the same on the card and in the
+   * child's details. `where` only names them for tests; from the details the
+   * view closes first so the check-in or check-out dialog stands alone.
+   */
+  const attendanceActions = (reg: CampReg, where: "card" | "details") => {
+    const leaveDetails = () => { if (where === "details") setDetailsRegId(null); };
+    return reg.attendanceStatus === "checked_out" ? (
+      <Button
+        size="sm"
+        variant="outline"
+        className="gap-1 text-xs"
+        onClick={() => undoCheckOutMutation.mutate(reg.id)}
+        disabled={isPending}
+        data-testid={`camp-${where}-undo-out`}
+      >
+        <RotateCcw className="h-3 w-3" />
+        Undo Out
+      </Button>
+    ) : reg.attendanceStatus === "checked_in" ? (
+      <>
+        <Button
+          size="sm"
+          className="gap-1 text-xs bg-orange-500 hover:bg-orange-600 text-white"
+          onClick={() => { leaveDetails(); openCheckOut(reg); }}
+          disabled={isPending}
+          data-testid={`camp-${where}-check-out`}
+        >
+          <LogOut className="h-3 w-3" />
+          Check Out
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          className="gap-1 text-xs"
+          onClick={() => undoCheckInMutation.mutate(reg.id)}
+          disabled={isPending}
+          data-testid={`camp-${where}-undo-in`}
+        >
+          <RotateCcw className="h-3 w-3" />
+          Undo In
+        </Button>
+      </>
+    ) : (
+      <Button
+        size="sm"
+        className="gap-1 text-xs bg-green-600 hover:bg-green-700 text-white"
+        onClick={() => { leaveDetails(); openCheckIn(reg); }}
+        disabled={isPending}
+        data-testid={`camp-${where}-check-in`}
+      >
+        <UserCheck className="h-3 w-3" />
+        Check In
+      </Button>
+    );
+  };
+
+  const detailsReg = detailsRegId ? registrations.find((r) => r.id === detailsRegId) ?? null : null;
+  const detailsCamp = detailsReg ? camps.find((c) => c.id === detailsReg.eventId) : undefined;
+  const formatDay = (value: string | undefined | null) => {
+    if (!value) return null;
+    try { return format(parseISO(value), "d MMM yyyy"); } catch { return null; }
+  };
+  const detailsNotes = detailsReg
+    ? ([
+        ["Allergies", detailsReg.allergies],
+        ["Allergy / medical notes", detailsReg.allergiesNotes],
+        ["Food restrictions", detailsReg.foodRestrictions],
+        ["Behaviour notes", detailsReg.behavioralNotes],
+        ["Special notes", detailsReg.specialNotes],
+      ] as const).filter(([, value]) => !!value?.trim())
+    : [];
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-16">
@@ -566,17 +685,30 @@ function CampCheckins({ activeBranchId, fetchWithAuth }: { activeBranchId?: stri
             const age = getAge(reg.dateOfBirth);
             const isCheckedIn = reg.attendanceStatus === "checked_in";
             const isCheckedOut = reg.attendanceStatus === "checked_out";
-            const isPending = checkInMutation.isPending || checkOutMutation.isPending ||
-              undoCheckInMutation.isPending || undoCheckOutMutation.isPending;
 
             return (
-              <Card key={reg.id} className={
-                isCheckedOut
-                  ? "border-orange-200 dark:border-orange-900/40"
-                  : isCheckedIn
-                    ? "border-green-200 dark:border-green-900/40"
-                    : ""
-              }>
+              <Card
+                key={reg.id}
+                className={`cursor-pointer ${
+                  isCheckedOut
+                    ? "border-orange-200 dark:border-orange-900/40"
+                    : isCheckedIn
+                      ? "border-green-200 dark:border-green-900/40"
+                      : ""
+                }`}
+                role="button"
+                tabIndex={0}
+                aria-label={`${reg.childFullName}: details`}
+                onClick={() => { setPhotoFullSize(false); setDetailsRegId(reg.id); }}
+                onKeyDown={(e) => {
+                  if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) {
+                    e.preventDefault();
+                    setPhotoFullSize(false);
+                    setDetailsRegId(reg.id);
+                  }
+                }}
+                data-testid={`camp-card-${reg.id}`}
+              >
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-3">
                     {/* Child photo */}
@@ -614,78 +746,13 @@ function CampCheckins({ activeBranchId, fetchWithAuth }: { activeBranchId?: stri
                         </p>
                       </div>
                       <div className="mt-2 flex gap-2 flex-wrap">
-                        {isCheckedOut ? (
-                          <Badge className="gap-1 bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800">
-                            <LogOut className="h-3 w-3" />
-                            Left {reg.attendanceCheckedOutAt ? format(new Date(reg.attendanceCheckedOutAt), "HH:mm") : ""}
-                          </Badge>
-                        ) : isCheckedIn ? (
-                          <Badge className="gap-1 bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800">
-                            <CheckCircle className="h-3 w-3" />
-                            In {reg.attendanceCheckedInAt ? format(new Date(reg.attendanceCheckedInAt), "HH:mm") : ""}
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="gap-1 text-muted-foreground">
-                            <Clock className="h-3 w-3" />
-                            Waiting to check in
-                          </Badge>
-                        )}
+                        {attendanceBadge(reg)}
                       </div>
                     </div>
 
-                    {/* Action buttons */}
-                    <div className="flex flex-col gap-2 flex-shrink-0">
-                      {isCheckedOut ? (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="gap-1 text-xs"
-                          onClick={() => undoCheckOutMutation.mutate(reg.id)}
-                          disabled={isPending}
-                        >
-                          <RotateCcw className="h-3 w-3" />
-                          Undo Out
-                        </Button>
-                      ) : isCheckedIn ? (
-                        <>
-                          <Button
-                            size="sm"
-                            className="gap-1 text-xs bg-orange-500 hover:bg-orange-600 text-white"
-                            onClick={() => {
-                              setCheckOutPickUp("");
-                              setCheckOutDialog({ open: true, regId: reg.id, authorizedPickup: reg.authorizedPickupPersons ?? null, childName: reg.childFullName, childPhotoUrl: reg.childPhotoUrl ?? null });
-                            }}
-                            disabled={isPending}
-                          >
-                            <LogOut className="h-3 w-3" />
-                            Check Out
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="gap-1 text-xs"
-                            onClick={() => undoCheckInMutation.mutate(reg.id)}
-                            disabled={isPending}
-                          >
-                            <RotateCcw className="h-3 w-3" />
-                            Undo In
-                          </Button>
-                        </>
-                      ) : (
-                        <Button
-                          size="sm"
-                          className="gap-1 text-xs bg-green-600 hover:bg-green-700 text-white"
-                          onClick={() => {
-                            setCheckInPayment("");
-                            setCheckInDropOff("");
-                            setCheckInDialog({ open: true, regId: reg.id, authorizedPickup: reg.authorizedPickupPersons ?? null });
-                          }}
-                          disabled={isPending}
-                        >
-                          <UserCheck className="h-3 w-3" />
-                          Check In
-                        </Button>
-                      )}
+                    {/* Action buttons: their own action, never the card's */}
+                    <div className="flex flex-col gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                      {attendanceActions(reg, "card")}
                     </div>
                   </div>
                 </CardContent>
@@ -694,6 +761,130 @@ function CampCheckins({ activeBranchId, fetchWithAuth }: { activeBranchId?: stri
           })}
         </div>
       )}
+
+      {/* The child's quick details (SCRUM-601): a large photo to recognise the
+          child at drop-off and pick-up, what the registration holds, today's
+          state, and the same check-in and check-out as the card. */}
+      <Dialog
+        open={!!detailsReg}
+        onOpenChange={(o) => { if (!o) { setDetailsRegId(null); setPhotoFullSize(false); } }}
+      >
+        {detailsReg && (
+          <DialogContent className="max-w-sm" data-testid="camp-child-details">
+            <DialogHeader>
+              <DialogTitle>{detailsReg.childFullName}</DialogTitle>
+              <DialogDescription>
+                {[detailsCamp?.title, format(new Date(), "EEE d MMM")].filter(Boolean).join(" · ")}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogBody className="space-y-4">
+              {detailsReg.childPhotoUrl ? (
+                <button
+                  type="button"
+                  className="block w-full rounded-lg overflow-hidden"
+                  onClick={() => setPhotoFullSize(true)}
+                  aria-label={`View ${detailsReg.childFullName}'s photo full size`}
+                  data-testid="camp-child-details-photo"
+                >
+                  <img
+                    src={detailsReg.childPhotoUrl}
+                    alt={detailsReg.childFullName}
+                    className="w-full aspect-square object-cover"
+                  />
+                </button>
+              ) : (
+                <div className="w-full aspect-[4/3] rounded-lg bg-muted flex items-center justify-center">
+                  <Baby className="h-12 w-12 text-muted-foreground" />
+                </div>
+              )}
+
+              <div className="flex items-center gap-2 flex-wrap">
+                {getAge(detailsReg.dateOfBirth) !== null && (
+                  <Badge variant="secondary" className="text-xs">{getAge(detailsReg.dateOfBirth)}y</Badge>
+                )}
+                {formatDay(detailsReg.dateOfBirth) && (
+                  <span className="text-sm text-muted-foreground flex items-center gap-1" data-testid="camp-child-details-birthday">
+                    <Calendar className="h-3 w-3" />
+                    {formatDay(detailsReg.dateOfBirth)}
+                  </span>
+                )}
+                <span data-testid="camp-child-details-state">{attendanceBadge(detailsReg)}</span>
+              </div>
+
+              {detailsCamp && (
+                <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-teal-500/10 border border-teal-500/20">
+                  <Tent className="h-4 w-4 text-teal-500 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm">
+                    <p className="font-medium text-teal-700 dark:text-teal-400">{detailsCamp.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {[formatDay(detailsCamp.eventDate), formatDay(detailsCamp.campEndDate)].filter(Boolean).join(" – ")}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-1">
+                <Label className="text-sm font-medium text-muted-foreground">Parent / Guardian</Label>
+                <p className="text-sm flex items-center gap-1">
+                  <User className="h-3 w-3 text-muted-foreground" />
+                  {detailsReg.parentGuardianName}
+                </p>
+                {detailsReg.emergencyContactNumber && (
+                  <a href={`tel:${detailsReg.emergencyContactNumber}`} className="text-sm flex items-center gap-1 text-muted-foreground hover:text-primary">
+                    <Phone className="h-3 w-3" />
+                    {detailsReg.emergencyContactNumber}
+                  </a>
+                )}
+                {(detailsReg.parentContacts ?? [])
+                  .filter((c) => c?.name || c?.phone)
+                  .map((c, i) => (
+                    <p key={i} className="text-sm text-muted-foreground flex items-center gap-1">
+                      <Phone className="h-3 w-3" />
+                      {[c.name, c.phone].filter(Boolean).join(" · ")}
+                    </p>
+                  ))}
+                {detailsReg.authorizedPickupPersons && (
+                  <p className="text-xs text-muted-foreground">Authorized: {detailsReg.authorizedPickupPersons}</p>
+                )}
+                {detailsReg.primaryLanguage && (
+                  <p className="text-xs text-muted-foreground">Language: {detailsReg.primaryLanguage}</p>
+                )}
+              </div>
+
+              {detailsNotes.length > 0 && (
+                <div className="space-y-3" data-testid="camp-child-details-notes">
+                  {detailsNotes.map(([label, value]) => (
+                    <div key={label}>
+                      <Label className="text-sm font-medium text-amber-600 flex items-center gap-1">
+                        <AlertTriangle className="h-3 w-3" />
+                        {label}
+                      </Label>
+                      <p className="mt-1 text-sm whitespace-pre-wrap">{value}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </DialogBody>
+            <div className="flex gap-2 justify-end flex-wrap shrink-0">
+              {attendanceActions(detailsReg, "details")}
+            </div>
+
+            {/* The photo full size: tap the large photo above */}
+            <Dialog open={photoFullSize} onOpenChange={setPhotoFullSize}>
+              <DialogContent className="max-w-[95vw] sm:max-w-3xl p-2" aria-describedby={undefined} data-testid="camp-child-photo-full">
+                <DialogTitle className="sr-only">{detailsReg.childFullName}</DialogTitle>
+                {detailsReg.childPhotoUrl && (
+                  <img
+                    src={detailsReg.childPhotoUrl}
+                    alt={detailsReg.childFullName}
+                    className="w-full h-auto max-h-[calc(100dvh-4rem)] object-contain rounded"
+                  />
+                )}
+              </DialogContent>
+            </Dialog>
+          </DialogContent>
+        )}
+      </Dialog>
 
       {/* Check-In Dialog */}
       <Dialog
