@@ -731,7 +731,7 @@
   },
   "stagingAcceptance": {
     "receipt": "SCRUM-613-staging-results.json",
-    "sha256": "c915b4ea3f6d1eb9ac3ab94ca768f0789aea54ed5b302b773fa9a0adca096386",
+    "sha256": "6dbfa1eadbb6a31ce4a217adc4b66ea312fbad266d4e541a237d8a26e4ce6b40",
     "checks": 8,
     "operations": 6,
     "freshAuditRows": 6,

@@ -59,7 +59,7 @@
       "at": "2026-10-22T00:23:02.560Z"
     },
     {
-      "name": "App access and the retained named fixture fit a 390-pixel phone after exact demo restoration",
+      "name": "App access has 390-pixel phone bounds after exact demo restoration; the retained fixture is verified in the DOM",
       "passed": true,
       "at": "2026-10-22T00:23:05.840Z"
     }
@@ -127,7 +127,7 @@
     },
     {
       "filename": "SCRUM-613-05-phone-restored.png",
-      "label": "SCRUM-613: named unlinked fixture at 390px, seeded demo exactly restored",
+      "label": "SCRUM-613: restored seeded account and App access page at 390 pixels",
       "capturedAt": "2026-10-22T00:23:05.817Z",
       "capturedAfterDeploy": true,
       "sha256": "48dba8fb3ed6639bda9215e31e403b49010ef2c31e3d3f8dc47c39beb80022c8",
@@ -139,7 +139,8 @@
       "jiraAttachmentId": "11922",
       "reviewedAt": "2026-10-22T00:24:07.411Z",
       "inspectedForPrivacyAndContent": true,
-      "inspectionNote": "Shows the restored seeded account, App access navigation and Unlinked heading at 390 pixels. The retained fixture was verified in the DOM and read-back but is outside this image viewport; image03 shows the fixture."
+      "inspectionNote": "Shows the restored seeded account, App access navigation and Unlinked heading at 390 pixels. The retained fixture was verified in the DOM and read-back but is outside this image viewport; image03 shows the fixture.",
+      "captureCaption": "SCRUM-613: named unlinked fixture at 390px, seeded demo exactly restored"
     }
   ],
   "operations": [
@@ -341,5 +342,14 @@
     "reportSha256": "9f0e6e10d796c33b08450ef31586e6c1dfbd92c9eab66c0fa92977362c5c923c",
     "harnessSha256": "6fc105012625c64974d735af916bbf17d609e34eaa7c74cf28af287b1f0a9940",
     "privacyRegressionSha256": "5e4a9f123e5c5d873192a6cc9f7453d352e4ebe90d46fa59c5f56f843cc042ec"
+  },
+  "independentPublicReceiptReview": {
+    "passed": true,
+    "checks": 8,
+    "operations": 6,
+    "audits": 6,
+    "imageHashesAndTimes": 5,
+    "exactRestorationFingerprints": 3,
+    "reviewedAt": "2026-10-22T00:25:47.087Z"
   }
 }
