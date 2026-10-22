@@ -1,0 +1,145 @@
+{
+  "ticket": "SCRUM-614",
+  "diagnosticOnly": true,
+  "parentHelperSha256": "bf5f5a90b87f3a5b6b8d06c2c40a9abd0917a11865cb6acaf430ac3190de7701",
+  "releaseSha": "b259fb9d804e9042f2cdcb5df2fe89ba17b2e578",
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "sourceSha": "b259fb9d804e9042f2cdcb5df2fe89ba17b2e578",
+      "deployId": "dep-dbcm3lbncjis73b0v5g0",
+      "finishedAt": "2026-10-22T01:10:52.621644Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "sourceSha": "b259fb9d804e9042f2cdcb5df2fe89ba17b2e578",
+      "deployId": "dep-dbcm3lbncjis73b0v6o0",
+      "finishedAt": "2026-10-22T01:08:13.180333Z"
+    }
+  ],
+  "checks": [
+    {
+      "code": "SEEDED_DIRECTORY_AND_LINK_STATE",
+      "passed": true,
+      "at": "2026-10-22T01:17:08.133Z"
+    },
+    {
+      "code": "SOURCE_HANDOFF_AND_GUARDED_EMPLOYEE",
+      "passed": true,
+      "at": "2026-10-22T01:17:14.326Z"
+    },
+    {
+      "code": "MANAGER_REACH_AND_PHONE",
+      "passed": true,
+      "at": "2026-10-22T01:17:26.222Z"
+    }
+  ],
+  "screenshots": [
+    {
+      "filename": "SCRUM-614-04-diagnostic-directory-linked-login.png",
+      "capturedAt": "2026-10-22T01:17:06.858Z",
+      "capturedAfterDeploy": true,
+      "employeeId": "01a0c9ae-52f1-7a09-b767-9b139ca29e9d",
+      "content": {
+        "headingInViewport": true,
+        "factGroupsInViewport": 4,
+        "allFactGroups": 4,
+        "wholeRowInViewport": true
+      },
+      "sha256": "7370bec5fdffb8465f1bf72a13bf59be8ac4eac8ca59d9dcfa963e8b7c268d2b",
+      "reviewedAt": "2026-10-22T01:22:14.127Z",
+      "inspectedForPrivacyAndContent": true
+    },
+    {
+      "filename": "SCRUM-614-05-diagnostic-mirrored-source.png",
+      "capturedAt": "2026-10-22T01:17:10.796Z",
+      "capturedAfterDeploy": true,
+      "employeeId": "01a15e60-0376-773f-991e-d6ff83a0941e",
+      "content": {
+        "headingInViewport": true,
+        "factGroupsInViewport": 4,
+        "allFactGroups": 4,
+        "wholeRowInViewport": true
+      },
+      "sha256": "044ff5e526ef1b2de3c42b6b36de07b21e76e729b3b8adcb987fa055cf6786a7",
+      "reviewedAt": "2026-10-22T01:22:14.128Z",
+      "inspectedForPrivacyAndContent": true
+    },
+    {
+      "filename": "SCRUM-614-06-diagnostic-manager-phone.png",
+      "capturedAt": "2026-10-22T01:17:24.668Z",
+      "capturedAfterDeploy": true,
+      "employeeId": "01a0bbdc-8c62-724c-a414-10f33d78c161",
+      "content": {
+        "headingInViewport": true,
+        "factGroupsInViewport": 4,
+        "allFactGroups": 4,
+        "wholeRowInViewport": true
+      },
+      "sha256": "eb2f4ac7fd4d5d48a45e1e37a1a486314eb3044f1278d1f8abd7f189b34f5a0b",
+      "reviewedAt": "2026-10-22T01:22:14.128Z",
+      "inspectedForPrivacyAndContent": true
+    }
+  ],
+  "blockedRequests": [
+    {
+      "originKind": "source",
+      "method": "POST",
+      "staticPath": "/api/avatar-status/batch"
+    }
+  ],
+  "counts": {
+    "blockedWrites": 1,
+    "omittedAuditReads": 1,
+    "handoffRequests": 1,
+    "exchanges": 1,
+    "businessWrites": 0,
+    "smsRequests": 0,
+    "adminEmployees": 46,
+    "mirroredEmployees": 19,
+    "activeMirroredEmployees": 17,
+    "managerEmployees": 15
+  },
+  "fingerprints": {
+    "demoDirectoryRow": "7c2d44a2f8bb2996f69773310961fee750616e0fe73e6d71bd087efe38d7bc4b",
+    "handoffKey": "1ef182dfae340670bc1db75d9547e9724315800e5e403945ca3b21d5aae8c2e3",
+    "managerDirectory": "14102ea199f93456c5284908aab7d9a461405d531d4f9980c150a41dc7bd5350"
+  },
+  "limitations": [],
+  "source": {
+    "attempted": true,
+    "employeeId": "01a15e60-0376-773f-991e-d6ff83a0941e",
+    "issueStatus": 200,
+    "exchangeStatus": 200,
+    "employeeReadStatus": 200,
+    "navigationVerified": true
+  },
+  "complete": false,
+  "managerEmployeeId": "01a0bbdc-8c62-724c-a414-10f33d78c161",
+  "managerAccountId": "01a0c9ae-5377-7b34-a9ab-22bf8086f5f7",
+  "demoEmployeeId": "01a0c9ae-52f1-7a09-b767-9b139ca29e9d",
+  "phoneLayout": {
+    "viewport": 390,
+    "page": 390
+  },
+  "diagnostic": "UNEXPECTED_WRITE_BLOCKED",
+  "signOutStatus": 200,
+  "sourceSignOutStatus": 200,
+  "completedAt": "2026-10-22T01:17:27.071Z",
+  "helperSha256": "c94cdb0072282b9e7ac7bc1a035f6f0bc97ab694b4e38743d962cf172437af24",
+  "blockedRequestClassification": {
+    "observedAt": "2026-10-22T01:20:42.914Z",
+    "sourceAppLiveSha": "dd3fb3086c785ab8911864d715a72a844740b9be",
+    "sourceAppDeployId": "dep-dbcka6bbc2fs738hs8fg",
+    "sourceAppFinishedAt": "2026-10-21T23:08:57.14407Z",
+    "method": "POST",
+    "path": "/api/avatar-status/batch",
+    "sourceFile": "apps/oto-app/server/routes.ts",
+    "handlerStartLine": 27326,
+    "liveHandlerMatchesMain": true,
+    "handlerSha256": "c1502936f7c634d11e19b8787b24ebf4a222b977fffaa41a32100a647a7a2d04",
+    "classification": "Read-only avatar work-status lookup: three SELECT queries over time entries, schedules and time off; no table write or message delivery.",
+    "selectQueries": 3
+  },
+  "review": "The three controls pass. The unchanged guard safely blocked the source app avatar status reader because it uses POST. Its live handler matches the repository and performs only three SELECT queries. No product defect or business mutation is demonstrated; this diagnostic remains marked incomplete."
+}

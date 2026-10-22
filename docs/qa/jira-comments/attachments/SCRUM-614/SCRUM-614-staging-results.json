@@ -1,0 +1,183 @@
+{
+  "ticket": "SCRUM-614",
+  "finalAttempt": true,
+  "parentHelperSha256": "bf5f5a90b87f3a5b6b8d06c2c40a9abd0917a11865cb6acaf430ac3190de7701",
+  "diagnosticParentSha256": "c94cdb0072282b9e7ac7bc1a035f6f0bc97ab694b4e38743d962cf172437af24",
+  "releaseSha": "b259fb9d804e9042f2cdcb5df2fe89ba17b2e578",
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "sourceSha": "b259fb9d804e9042f2cdcb5df2fe89ba17b2e578",
+      "deployId": "dep-dbcm3lbncjis73b0v5g0",
+      "finishedAt": "2026-10-22T01:10:52.621644Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "sourceSha": "b259fb9d804e9042f2cdcb5df2fe89ba17b2e578",
+      "deployId": "dep-dbcm3lbncjis73b0v6o0",
+      "finishedAt": "2026-10-22T01:08:13.180333Z"
+    }
+  ],
+  "checks": [
+    {
+      "code": "SEEDED_DIRECTORY_AND_LINK_STATE",
+      "passed": true,
+      "at": "2026-10-22T01:22:57.099Z"
+    },
+    {
+      "code": "SOURCE_HANDOFF_AND_GUARDED_EMPLOYEE",
+      "passed": true,
+      "at": "2026-10-22T01:23:03.453Z"
+    },
+    {
+      "code": "SOURCE_READ_ONLY_AVATAR_POST_200",
+      "passed": true,
+      "at": "2026-10-22T01:23:03.454Z"
+    },
+    {
+      "code": "MANAGER_REACH_AND_PHONE",
+      "passed": true,
+      "at": "2026-10-22T01:23:15.101Z"
+    }
+  ],
+  "screenshots": [
+    {
+      "filename": "SCRUM-614-07-final-directory-linked-login.png",
+      "capturedAt": "2026-10-22T01:22:55.868Z",
+      "capturedAfterDeploy": true,
+      "employeeId": "01a0c9ae-52f1-7a09-b767-9b139ca29e9d",
+      "content": {
+        "headingInViewport": true,
+        "factGroupsInViewport": 4,
+        "allFactGroups": 4,
+        "wholeRowInViewport": true
+      },
+      "sha256": "b0e0695dfaf483ca06b862347298492ea98c65f8ef5807afac8b66913828fb07",
+      "inspectedForPrivacyAndContent": true,
+      "jiraAttachmentId": "11926"
+    },
+    {
+      "filename": "SCRUM-614-08-final-mirrored-source.png",
+      "capturedAt": "2026-10-22T01:22:59.174Z",
+      "capturedAfterDeploy": true,
+      "employeeId": "01a15e60-0376-773f-991e-d6ff83a0941e",
+      "content": {
+        "headingInViewport": true,
+        "factGroupsInViewport": 4,
+        "allFactGroups": 4,
+        "wholeRowInViewport": true
+      },
+      "sha256": "7217491f99883fccd78472cf07d32f2f7d71e800d0381e4973f78fe78eeeb988",
+      "inspectedForPrivacyAndContent": true,
+      "jiraAttachmentId": "11927"
+    },
+    {
+      "filename": "SCRUM-614-09-final-manager-phone.png",
+      "capturedAt": "2026-10-22T01:23:13.910Z",
+      "capturedAfterDeploy": true,
+      "employeeId": "01a0bbdc-8c62-724c-a414-10f33d78c161",
+      "content": {
+        "headingInViewport": true,
+        "factGroupsInViewport": 4,
+        "allFactGroups": 4,
+        "wholeRowInViewport": true
+      },
+      "sha256": "e4aebd3732e56cc49f61aea99e2abfbe53e6ff782674d38b43f46b6c06f99b4b",
+      "inspectedForPrivacyAndContent": true,
+      "jiraAttachmentId": "11928"
+    }
+  ],
+  "blockedRequests": [],
+  "readOnlyPostResponses": [
+    {
+      "status": 200,
+      "at": "2026-10-22T01:23:03.154Z"
+    }
+  ],
+  "readOnlyPostClassification": {
+    "method": "POST",
+    "staticPath": "/api/avatar-status/batch",
+    "handler": "apps/oto-app/server/routes.ts:27326-27422",
+    "reason": "Existing read-only lookup: three SELECT queries over clock-ins, schedule and time off; no business data writes."
+  },
+  "counts": {
+    "blockedWrites": 0,
+    "readOnlyPostRequests": 1,
+    "omittedAuditReads": 1,
+    "handoffRequests": 1,
+    "exchanges": 1,
+    "businessWrites": 0,
+    "smsRequests": 0,
+    "adminEmployees": 46,
+    "mirroredEmployees": 19,
+    "activeMirroredEmployees": 17,
+    "managerEmployees": 15
+  },
+  "fingerprints": {
+    "demoDirectoryRow": "7c2d44a2f8bb2996f69773310961fee750616e0fe73e6d71bd087efe38d7bc4b",
+    "handoffKey": "02d9fec526d130c4e3fae9eed876f2c54427c03b8680747eb0a6c26cdf2a5333",
+    "managerDirectory": "7eebfe4830ebd6c9d9dbb3decf603f2b0426ea1fbaaa9d68be9536ca095bea4c"
+  },
+  "limitations": [],
+  "source": {
+    "attempted": true,
+    "employeeId": "01a15e60-0376-773f-991e-d6ff83a0941e",
+    "issueStatus": 200,
+    "exchangeStatus": 200,
+    "employeeReadStatus": 200,
+    "navigationVerified": true
+  },
+  "complete": true,
+  "managerEmployeeId": "01a0bbdc-8c62-724c-a414-10f33d78c161",
+  "managerAccountId": "01a0c9ae-5377-7b34-a9ab-22bf8086f5f7",
+  "demoEmployeeId": "01a0c9ae-52f1-7a09-b767-9b139ca29e9d",
+  "phoneLayout": {
+    "viewport": 390,
+    "page": 390
+  },
+  "signOutStatus": 200,
+  "sourceSignOutStatus": 200,
+  "completedAt": "2026-10-22T01:23:17.109Z",
+  "reviewedAt": "2026-10-22T01:27:08.767Z",
+  "review": {
+    "coordinatorInspectedAllFinalImages": true,
+    "independentPublicReceiptAudit": "PASS: image hashes and timestamps, deployment pair, four checks, source responses, zero writes/SMS, phone and sign-outs verified.",
+    "helper": {
+      "path": "C:/w/admin614-evidence-final.mjs",
+      "sha256": "29ce0cd9ed11526f54516e133f90a2ee35926e81e5f20e8d7733d183ce59fa50",
+      "bytes": 24855
+    },
+    "guardReview": {
+      "path": "C:/w/admin614-proof-final-review-results.json",
+      "sha256": "a33d7402de3c076b575a419539ba5d1b83472506e49ae92bc9ebf53ed509d856",
+      "bytes": 6558
+    },
+    "localGuardChecks": 70
+  },
+  "sourceLiveReadClassification": {
+    "observedAt": "2026-10-22T01:20:42.914Z",
+    "sourceAppLiveSha": "dd3fb3086c785ab8911864d715a72a844740b9be",
+    "sourceAppDeployId": "dep-dbcka6bbc2fs738hs8fg",
+    "sourceAppFinishedAt": "2026-10-21T23:08:57.14407Z",
+    "method": "POST",
+    "path": "/api/avatar-status/batch",
+    "sourceFile": "apps/oto-app/server/routes.ts",
+    "handlerStartLine": 27326,
+    "liveHandlerMatchesMain": true,
+    "handlerSha256": "c1502936f7c634d11e19b8787b24ebf4a222b977fffaa41a32100a647a7a2d04",
+    "classification": "Read-only avatar work-status lookup: three SELECT queries over time entries, schedules and time off; no table write or message delivery.",
+    "selectQueries": 3
+  },
+  "priorAttempts": [
+    {
+      "filename": "SCRUM-614-first-attempt.json",
+      "sha256": "9253faed4a36ab6bb9bd979faee3d8eed687fcb5e7467f31fa00edf2a2f23a6b",
+      "complete": false
+    },
+    {
+      "filename": "SCRUM-614-staging-diagnostic-results.json",
+      "sha256": "8f1ee9ee4d9cdbeaced49b0743adbae070c5fc7abaad6dc1dd5337162889209b",
+      "complete": false
+    }
+  ]
+}
