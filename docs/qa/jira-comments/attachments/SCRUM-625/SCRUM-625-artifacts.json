@@ -1,0 +1,72 @@
+{
+  "ticket": "SCRUM-625",
+  "sourceSha": "448dd0d6e6247a7656dd245eee7cc5aef0e14014",
+  "generatedAt": "2026-10-22T23:09:27.709Z",
+  "files": [
+    {
+      "filename": "SCRUM-625-local-results.json",
+      "sha256": "87b697cb7b59223aa9509b2a6d28b97949b7292f23aa1a647a7574e9636d80fb",
+      "repositoryBlobOid": "76c3cc8fc995e6ccc0293fcff7b322b32af8c0ff"
+    },
+    {
+      "filename": "SCRUM-625-staging-results.json",
+      "sha256": "83e183490bfb3b602c9884c0b96ee1c27b6dd4143a768e235c46ff62ae59ceb5",
+      "repositoryBlobOid": "85df41a2121dc401b8fb9d0a719fef853a4cc031"
+    },
+    {
+      "filename": "SCRUM-625-image-review.json",
+      "sha256": "e7cc278a4e9519e2df2243560378e702aacf18a86db152447a817c3e7c4aba94",
+      "repositoryBlobOid": "437fadb7f84c0cc0656811c186f4ca3a8c3317db"
+    },
+    {
+      "filename": "SCRUM-625-release.json",
+      "sha256": "c82f44b5e1bc7b3c0d92b7fe8f12dc8a639e64d9b1589ef35ac2ac3ebc90dc01",
+      "repositoryBlobOid": "42c0066e6242f612447a3859b8d93e0e665bacda"
+    },
+    {
+      "filename": "SCRUM-625-source-review.json",
+      "sha256": "b0ab1feec9e2f2a6fe9c1c349538083b42c228b9b1f3d0aae71a279c75d263c9",
+      "repositoryBlobOid": "116c02e7e3eecd66cb074d6a2d9290bcb87e4adb"
+    },
+    {
+      "filename": "README.md",
+      "sha256": "c027d49bc4d8b341706a6fdd0db5bcde64ec89951d739eb6f560ed17dde16b3d",
+      "repositoryBlobOid": "1f6558453620b14720b371dd8c0d623796ab4e57"
+    },
+    {
+      "filename": "SCRUM-625-01-sales-phone390.png",
+      "sha256": "e18be69f06a27a4c0ec6c5d3c9fa97d5e8050b48f8694de329f600a7f35bd83a",
+      "repositoryBlobOid": "b7532f97d5f1caa5e4ea5e89d4f5dcda28a2b750"
+    },
+    {
+      "filename": "SCRUM-625-02-profitability.png",
+      "sha256": "18792938674ef07362bb3becf2dd5ba8fed5bf7be543ef7a767752955c95dd46",
+      "repositoryBlobOid": "6dfaf80546a58436468aa6afd69c9c439172acb2"
+    },
+    {
+      "filename": "SCRUM-625-03-discounts.png",
+      "sha256": "410c9e25be6e13137484059b23546c214fbf5c511c4bc0efa2496289b95d177f",
+      "repositoryBlobOid": "2a26718ee82cdf504fca8ebcd158de599efd54b0"
+    },
+    {
+      "filename": "SCRUM-625-04-tax-vat.png",
+      "sha256": "a11d011bccac7c7c8e6382c5211c6c3808cffe68c2c33d122e58642c08f043d9",
+      "repositoryBlobOid": "877054773106ee1acca90496e8e60a1daf95551e"
+    },
+    {
+      "filename": "SCRUM-625-05-wallet-promo.png",
+      "sha256": "2aabb22136b05d10ec8344d729d6ea5597bd7c862667af610a1dfe9dd14e9abc",
+      "repositoryBlobOid": "151d131e2828286459fff992f6419ed22d026237"
+    },
+    {
+      "filename": "SCRUM-625-06-booth-report-oldalias.png",
+      "sha256": "947eb00010e9dc9a6e4476e8935eac2930174c06d114b9808c139176f0cc3385",
+      "repositoryBlobOid": "9c14ac3a0c38c95302da1e0783f6b20179b14143"
+    },
+    {
+      "filename": "SCRUM-625-07-radar-tile.png",
+      "sha256": "f874fa3e29ef47cf9133e9b074613ad719d319731f82453b272a6008a71669dc",
+      "repositoryBlobOid": "89d3946fde7acb5dc99ee4a26b9357a455772900"
+    }
+  ]
+}

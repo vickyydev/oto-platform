@@ -1,0 +1,761 @@
+{
+  "ticket": "SCRUM-625",
+  "localReleaseChecksPassed": true,
+  "sourceManifestSha256": "5192473014080b655db48682852596d80d15d20db67d5d66eb41b60cb8199138",
+  "imageId": "sha256:5775b7591af564fc51d50a66a41914c9d1a192d9eb336f7d965329ba7b3af5ce",
+  "sourceFiles": 3578,
+  "ownedFiles": 24,
+  "api": {
+    "receiptCount": 3,
+    "expectedReceipts": 3,
+    "totalsAreFinal": true,
+    "finalizedTests": {
+      "passed": 4761,
+      "failed": 0,
+      "skipped": 401,
+      "todo": 5,
+      "total": 5167
+    },
+    "observedFailedFiles": []
+  },
+  "gates": [
+    {
+      "tag": "checks",
+      "state": "complete",
+      "pending": false,
+      "receipt": true,
+      "log": true,
+      "exitCode": 0,
+      "startedAt": "2026-10-22T22:09:06.560Z",
+      "finishedAt": "2026-10-22T22:11:43.741Z",
+      "logSha256": "08703a9edf38aab4823e7aeae91336701d5c81f3445e086c7e5f9330edcf0822",
+      "bindings": {
+        "logSha256": true,
+        "sourceManifest": true,
+        "imageId": true,
+        "sourceFiles": true,
+        "tag": true,
+        "mode": true,
+        "localOnly": true,
+        "timestamps": true
+      },
+      "sourceVerificationCount": 2,
+      "observedFailure": false,
+      "summary": {
+        "framework": "unfinalized",
+        "tests": null,
+        "files": null,
+        "observedFiles": 0,
+        "failedFiles": []
+      },
+      "packages": [],
+      "issues": [],
+      "quality": {
+        "compilerTasks": {
+          "successful": 16,
+          "total": 16
+        },
+        "compilerDiagnostics": 0,
+        "lint": {
+          "problems": 8,
+          "errors": 0,
+          "warnings": 8
+        },
+        "buildTasks": {
+          "successful": 5,
+          "total": 5
+        },
+        "generatedApiMatches": true,
+        "mockMemberGuardPassed": true,
+        "telemetrySyncPassed": true
+      }
+    },
+    {
+      "tag": "other",
+      "state": "complete",
+      "pending": false,
+      "receipt": true,
+      "log": true,
+      "exitCode": 0,
+      "startedAt": "2026-10-22T22:12:25.929Z",
+      "finishedAt": "2026-10-22T22:19:01.509Z",
+      "logSha256": "d47f64f26f27f328e11d4881c332fb81d0aac633fcba5a7c672fa6a7e0b2cafc",
+      "bindings": {
+        "logSha256": true,
+        "sourceManifest": true,
+        "imageId": true,
+        "sourceFiles": true,
+        "tag": true,
+        "mode": true,
+        "localOnly": true,
+        "timestamps": true
+      },
+      "sourceVerificationCount": 2,
+      "observedFailure": false,
+      "summary": {
+        "framework": "multiple-packages",
+        "tests": {
+          "passed": 2609,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 3,
+          "total": 2612
+        },
+        "files": null,
+        "observedFiles": null,
+        "failedFiles": []
+      },
+      "packages": [
+        {
+          "package": "@oto/console",
+          "framework": "vitest",
+          "tests": {
+            "passed": 227,
+            "failed": 0,
+            "skipped": 0,
+            "todo": 3,
+            "total": 230
+          },
+          "files": {
+            "passed": 29,
+            "failed": 0,
+            "skipped": 0,
+            "todo": 0,
+            "total": 29
+          },
+          "observedFiles": 29,
+          "failedFiles": []
+        },
+        {
+          "package": "@oto/api-types",
+          "framework": "vitest",
+          "tests": {
+            "passed": 10,
+            "failed": 0,
+            "skipped": 0,
+            "todo": 0,
+            "total": 10
+          },
+          "files": {
+            "passed": 1,
+            "failed": 0,
+            "skipped": 0,
+            "todo": 0,
+            "total": 1
+          },
+          "observedFiles": 1,
+          "failedFiles": []
+        },
+        {
+          "package": "@oto/admin-screens",
+          "framework": "vitest",
+          "tests": {
+            "passed": 117,
+            "failed": 0,
+            "skipped": 0,
+            "todo": 0,
+            "total": 117
+          },
+          "files": {
+            "passed": 15,
+            "failed": 0,
+            "skipped": 0,
+            "todo": 0,
+            "total": 15
+          },
+          "observedFiles": 15,
+          "failedFiles": []
+        },
+        {
+          "package": "@oto/shared",
+          "framework": "vitest",
+          "tests": {
+            "passed": 769,
+            "failed": 0,
+            "skipped": 0,
+            "todo": 0,
+            "total": 769
+          },
+          "files": {
+            "passed": 50,
+            "failed": 0,
+            "skipped": 0,
+            "todo": 0,
+            "total": 50
+          },
+          "observedFiles": 50,
+          "failedFiles": []
+        },
+        {
+          "package": "@oto/db",
+          "framework": "vitest",
+          "tests": {
+            "passed": 305,
+            "failed": 0,
+            "skipped": 0,
+            "todo": 0,
+            "total": 305
+          },
+          "files": {
+            "passed": 43,
+            "failed": 0,
+            "skipped": 0,
+            "todo": 0,
+            "total": 43
+          },
+          "observedFiles": 43,
+          "failedFiles": []
+        },
+        {
+          "package": "@oto/booth",
+          "framework": "node-test",
+          "tests": {
+            "passed": 33,
+            "failed": 0,
+            "skipped": 0,
+            "todo": 0,
+            "total": 33
+          },
+          "files": null,
+          "observedFiles": 0,
+          "failedFiles": []
+        },
+        {
+          "package": "@oto/launcher",
+          "framework": "vitest",
+          "tests": {
+            "passed": 72,
+            "failed": 0,
+            "skipped": 0,
+            "todo": 0,
+            "total": 72
+          },
+          "files": {
+            "passed": 5,
+            "failed": 0,
+            "skipped": 0,
+            "todo": 0,
+            "total": 5
+          },
+          "observedFiles": 2,
+          "failedFiles": []
+        },
+        {
+          "package": "@oto/inbox",
+          "framework": "vitest",
+          "tests": {
+            "passed": 176,
+            "failed": 0,
+            "skipped": 0,
+            "todo": 0,
+            "total": 176
+          },
+          "files": {
+            "passed": 8,
+            "failed": 0,
+            "skipped": 0,
+            "todo": 0,
+            "total": 8
+          },
+          "observedFiles": 8,
+          "failedFiles": []
+        },
+        {
+          "package": "@oto/assistant",
+          "framework": "vitest",
+          "tests": {
+            "passed": 434,
+            "failed": 0,
+            "skipped": 0,
+            "todo": 0,
+            "total": 434
+          },
+          "files": {
+            "passed": 8,
+            "failed": 0,
+            "skipped": 0,
+            "todo": 0,
+            "total": 8
+          },
+          "observedFiles": 8,
+          "failedFiles": []
+        },
+        {
+          "package": "@oto/print",
+          "framework": "vitest",
+          "tests": {
+            "passed": 271,
+            "failed": 0,
+            "skipped": 0,
+            "todo": 0,
+            "total": 271
+          },
+          "files": {
+            "passed": 11,
+            "failed": 0,
+            "skipped": 0,
+            "todo": 0,
+            "total": 11
+          },
+          "observedFiles": 11,
+          "failedFiles": []
+        },
+        {
+          "package": "@oto/messaging",
+          "framework": "vitest",
+          "tests": {
+            "passed": 78,
+            "failed": 0,
+            "skipped": 0,
+            "todo": 0,
+            "total": 78
+          },
+          "files": {
+            "passed": 6,
+            "failed": 0,
+            "skipped": 0,
+            "todo": 0,
+            "total": 6
+          },
+          "observedFiles": 6,
+          "failedFiles": []
+        },
+        {
+          "package": "@oto/payments-2c2p",
+          "framework": "vitest",
+          "tests": {
+            "passed": 81,
+            "failed": 0,
+            "skipped": 0,
+            "todo": 0,
+            "total": 81
+          },
+          "files": {
+            "passed": 6,
+            "failed": 0,
+            "skipped": 0,
+            "todo": 0,
+            "total": 6
+          },
+          "observedFiles": 6,
+          "failedFiles": []
+        },
+        {
+          "package": "@oto/telemetry",
+          "framework": "vitest",
+          "tests": {
+            "passed": 36,
+            "failed": 0,
+            "skipped": 0,
+            "todo": 0,
+            "total": 36
+          },
+          "files": {
+            "passed": 4,
+            "failed": 0,
+            "skipped": 0,
+            "todo": 0,
+            "total": 4
+          },
+          "observedFiles": 3,
+          "failedFiles": []
+        }
+      ],
+      "issues": []
+    },
+    {
+      "tag": "pos",
+      "state": "complete",
+      "pending": false,
+      "receipt": true,
+      "log": true,
+      "exitCode": 0,
+      "startedAt": "2026-10-22T22:12:25.920Z",
+      "finishedAt": "2026-10-22T22:14:39.171Z",
+      "logSha256": "871e3845a8b523cf168b7bddabc778954a68648031b44185cf696d197e5ebcbb",
+      "bindings": {
+        "logSha256": true,
+        "sourceManifest": true,
+        "imageId": true,
+        "sourceFiles": true,
+        "tag": true,
+        "mode": true,
+        "localOnly": true,
+        "timestamps": true
+      },
+      "sourceVerificationCount": 2,
+      "observedFailure": false,
+      "summary": {
+        "framework": "vitest",
+        "tests": {
+          "passed": 1433,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "total": 1433
+        },
+        "files": {
+          "passed": 101,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "total": 101
+        },
+        "observedFiles": 101,
+        "failedFiles": []
+      },
+      "packages": [],
+      "issues": []
+    },
+    {
+      "tag": "browser",
+      "state": "complete",
+      "pending": false,
+      "receipt": true,
+      "log": true,
+      "exitCode": 0,
+      "startedAt": "2026-10-22T22:12:25.937Z",
+      "finishedAt": "2026-10-22T22:16:48.172Z",
+      "logSha256": "a5a17451bc58bf1838705450e38d1f9e7bf6351dcb5cd35cf82df6593b0e8c53",
+      "bindings": {
+        "logSha256": true,
+        "sourceManifest": true,
+        "imageId": true,
+        "sourceFiles": true,
+        "tag": true,
+        "mode": true,
+        "localOnly": true,
+        "timestamps": true
+      },
+      "sourceVerificationCount": 2,
+      "observedFailure": false,
+      "summary": {
+        "framework": "playwright",
+        "tests": {
+          "passed": 165,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "total": 165
+        },
+        "files": null,
+        "observedFiles": null,
+        "failedFiles": []
+      },
+      "packages": [],
+      "issues": []
+    },
+    {
+      "tag": "api1-recovery",
+      "state": "complete",
+      "pending": false,
+      "receipt": true,
+      "log": true,
+      "exitCode": 0,
+      "startedAt": "2026-10-22T22:28:25.547Z",
+      "finishedAt": "2026-10-22T22:39:12.772Z",
+      "logSha256": "ce900e0ef560c361b4db73217d6b979d8e32daf83efa7f6c4907d4449722edb9",
+      "bindings": {
+        "logSha256": true,
+        "sourceManifest": true,
+        "imageId": true,
+        "sourceFiles": true,
+        "tag": true,
+        "mode": true,
+        "localOnly": true,
+        "timestamps": true
+      },
+      "sourceVerificationCount": 2,
+      "observedFailure": false,
+      "summary": {
+        "framework": "vitest",
+        "tests": {
+          "passed": 1649,
+          "failed": 0,
+          "skipped": 106,
+          "todo": 0,
+          "total": 1755
+        },
+        "files": {
+          "passed": 113,
+          "failed": 0,
+          "skipped": 2,
+          "todo": 0,
+          "total": 115
+        },
+        "observedFiles": 115,
+        "failedFiles": []
+      },
+      "packages": [],
+      "issues": []
+    },
+    {
+      "tag": "api2-recovery",
+      "state": "complete",
+      "pending": false,
+      "receipt": true,
+      "log": true,
+      "exitCode": 0,
+      "startedAt": "2026-10-22T22:28:25.561Z",
+      "finishedAt": "2026-10-22T22:39:07.979Z",
+      "logSha256": "9d2dc8db3a49ee2924cab358b8e452c961870a1aa862179a3571083a257fbe04",
+      "bindings": {
+        "logSha256": true,
+        "sourceManifest": true,
+        "imageId": true,
+        "sourceFiles": true,
+        "tag": true,
+        "mode": true,
+        "localOnly": true,
+        "timestamps": true
+      },
+      "sourceVerificationCount": 2,
+      "observedFailure": false,
+      "summary": {
+        "framework": "vitest",
+        "tests": {
+          "passed": 1654,
+          "failed": 0,
+          "skipped": 174,
+          "todo": 4,
+          "total": 1832
+        },
+        "files": {
+          "passed": 111,
+          "failed": 0,
+          "skipped": 4,
+          "todo": 0,
+          "total": 115
+        },
+        "observedFiles": 115,
+        "failedFiles": []
+      },
+      "packages": [],
+      "issues": []
+    },
+    {
+      "tag": "api3-recovery",
+      "state": "complete",
+      "pending": false,
+      "receipt": true,
+      "log": true,
+      "exitCode": 0,
+      "startedAt": "2026-10-22T22:28:25.547Z",
+      "finishedAt": "2026-10-22T22:39:49.383Z",
+      "logSha256": "35b3b1ef9dd12f25e3a8d4685c9c6f5acfdd4e7d8504e3f8cd14c1c958929f2a",
+      "bindings": {
+        "logSha256": true,
+        "sourceManifest": true,
+        "imageId": true,
+        "sourceFiles": true,
+        "tag": true,
+        "mode": true,
+        "localOnly": true,
+        "timestamps": true
+      },
+      "sourceVerificationCount": 2,
+      "observedFailure": false,
+      "summary": {
+        "framework": "vitest",
+        "tests": {
+          "passed": 1458,
+          "failed": 0,
+          "skipped": 121,
+          "todo": 1,
+          "total": 1580
+        },
+        "files": {
+          "passed": 111,
+          "failed": 0,
+          "skipped": 2,
+          "todo": 0,
+          "total": 113
+        },
+        "observedFiles": 113,
+        "failedFiles": []
+      },
+      "packages": [],
+      "issues": []
+    },
+    {
+      "tag": "box",
+      "state": "complete",
+      "pending": false,
+      "receipt": true,
+      "log": true,
+      "exitCode": 0,
+      "startedAt": "2026-10-22T22:40:10.808Z",
+      "finishedAt": "2026-10-22T22:41:35.685Z",
+      "logSha256": "5293cdb4710054253ca489359caeecafb82867c9360eef2a2b53bde78d3dfaa1",
+      "bindings": {
+        "logSha256": true,
+        "sourceManifest": true,
+        "imageId": true,
+        "sourceFiles": true,
+        "tag": true,
+        "mode": true,
+        "localOnly": true,
+        "timestamps": true
+      },
+      "sourceVerificationCount": 2,
+      "observedFailure": false,
+      "summary": {
+        "framework": "node-test",
+        "tests": {
+          "passed": 749,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "total": 749
+        },
+        "files": null,
+        "observedFiles": 0,
+        "failedFiles": []
+      },
+      "packages": [],
+      "issues": []
+    }
+  ],
+  "historicalIncompleteRuns": [
+    {
+      "tag": "api1",
+      "state": "incomplete",
+      "pending": true,
+      "receipt": false,
+      "log": true,
+      "exitCode": null,
+      "startedAt": null,
+      "finishedAt": null,
+      "logSha256": "9801f1ddfb57561cb7f5f34651629b3def53bc52b285026562ef7888a99822eb",
+      "bindings": null,
+      "sourceVerificationCount": 1,
+      "observedFailure": true,
+      "summary": {
+        "framework": "unfinalized",
+        "tests": null,
+        "files": null,
+        "observedFiles": 82,
+        "failedFiles": [
+          "test/booth-admin.test.ts"
+        ]
+      },
+      "packages": [],
+      "issues": []
+    },
+    {
+      "tag": "api2",
+      "state": "incomplete",
+      "pending": true,
+      "receipt": false,
+      "log": true,
+      "exitCode": null,
+      "startedAt": null,
+      "finishedAt": null,
+      "logSha256": "87eaa09ec670244a0cd97044e50c52dad6955baa751293d2abf6ce9cdfa8719b",
+      "bindings": null,
+      "sourceVerificationCount": 1,
+      "observedFailure": false,
+      "summary": {
+        "framework": "unfinalized",
+        "tests": null,
+        "files": null,
+        "observedFiles": 85,
+        "failedFiles": []
+      },
+      "packages": [],
+      "issues": []
+    },
+    {
+      "tag": "api3",
+      "state": "incomplete",
+      "pending": true,
+      "receipt": false,
+      "log": true,
+      "exitCode": null,
+      "startedAt": null,
+      "finishedAt": null,
+      "logSha256": "09282804dece9e6b1f27f0ed210f581b9b9df3c151c287de5fb472c83431708a",
+      "bindings": null,
+      "sourceVerificationCount": 1,
+      "observedFailure": false,
+      "summary": {
+        "framework": "unfinalized",
+        "tests": null,
+        "files": null,
+        "observedFiles": 79,
+        "failedFiles": []
+      },
+      "packages": [],
+      "issues": []
+    }
+  ],
+  "separateRechecks": [
+    {
+      "tag": "booth-recheck",
+      "state": "complete",
+      "pending": false,
+      "receipt": true,
+      "log": true,
+      "exitCode": 0,
+      "startedAt": "2026-10-22T22:28:09.687Z",
+      "finishedAt": "2026-10-22T22:28:20.447Z",
+      "logSha256": "101b62e8e93988b5def7e7dce66f4bdf5c2a5ec77f5c9868e051b0e935404887",
+      "bindings": {
+        "logSha256": true,
+        "sourceManifest": true,
+        "imageId": true,
+        "sourceFiles": true,
+        "tag": true,
+        "mode": true,
+        "localOnly": true,
+        "timestamps": true
+      },
+      "sourceVerificationCount": 2,
+      "observedFailure": false,
+      "summary": {
+        "framework": "vitest",
+        "tests": {
+          "passed": 39,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "total": 39
+        },
+        "files": {
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "total": 1
+        },
+        "observedFiles": 1,
+        "failedFiles": []
+      },
+      "packages": [],
+      "issues": []
+    }
+  ],
+  "independentReview": {
+    "sha256": "358bf250230d2613519c4041f15a64bda1bfb792a0af75fb66e9304bc7a3ec1a",
+    "passed": true
+  },
+  "postRebase": {
+    "startedAt": "2026-10-22T22:42:23.270Z",
+    "finishedAt": "2026-10-22T22:44:04.898Z",
+    "exitCode": 0,
+    "signal": null,
+    "tag": "post-rebase",
+    "mode": "post",
+    "logSha256": "d0c729e82589b1d3b93a1f6aa302be82727f9e4b72356e5abc9d191c617faff6",
+    "sourceManifestSha256": "5192473014080b655db48682852596d80d15d20db67d5d66eb41b60cb8199138",
+    "imageId": "sha256:5775b7591af564fc51d50a66a41914c9d1a192d9eb336f7d965329ba7b3af5ce",
+    "sourceFiles": 3578,
+    "staging": false,
+    "durable": true
+  },
+  "retainedHistory": "Original API collectors were interrupted without final receipts. API1 had one unchanged Booth failure; the separate whole 39-case recheck passed. Full durable recovery shards below are the current gate. Original product regressions and two partial fixture attempts remain distinct.",
+  "limits": [
+    "Local immutable-source tests do not establish a deployed version.",
+    "Earlier complete product regressions and incomplete fixture attempts are retained separately."
+  ]
+}

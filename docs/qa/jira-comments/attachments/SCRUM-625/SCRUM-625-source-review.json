@@ -1,0 +1,315 @@
+{
+  "schemaVersion": 1,
+  "ticket": "SCRUM-625",
+  "passed": true,
+  "createdAt": "2026-10-22T22:21:51.948Z",
+  "sha256": "358bf250230d2613519c4041f15a64bda1bfb792a0af75fb66e9304bc7a3ec1a",
+  "source": {
+    "baseHead": "2e965c92b0c91d3f1beb5cadb3e7734d2ee611c0",
+    "observedHead": "cb41ad4b62d4d12d4af2297f059c22337d2570f8",
+    "imageId": "sha256:5775b7591af564fc51d50a66a41914c9d1a192d9eb336f7d965329ba7b3af5ce",
+    "manifest": {
+      "path": "C:/w/admin625-release/source-manifest.json",
+      "sha256": "5192473014080b655db48682852596d80d15d20db67d5d66eb41b60cb8199138",
+      "inputs": 3578
+    },
+    "ownedPaths": [
+      {
+        "path": "apps/api/src/services/analytics-booth.ts",
+        "sha256": "a7befc81905c6296b0fdef2805a30898c1bff9024654550e6510d7f10a77b587"
+      },
+      {
+        "path": "apps/api/src/services/analytics-reports.ts",
+        "sha256": "9cd3b5642eb1dfbefb4bb05b49722cd464339ea9bf4aae56afb6a3b580cffb0c"
+      },
+      {
+        "path": "apps/api/test/s625-reports-review.test.ts",
+        "sha256": "40e4ec4090bc890cb05dd6690079a932ab4c26301c03ace4795e5c8bfdf5dff9"
+      },
+      {
+        "path": "apps/console/e2e/reports.spec.ts",
+        "sha256": "0b73bb722adb499cba20a10c0c051478fdbfa7c1e0c0479954fef3a09d738b83"
+      },
+      {
+        "path": "apps/console/src/App.tsx",
+        "sha256": "aa825b889f6a2d92dbf5d2eea54a977883596992da7c8ae126405527a0d16bab"
+      },
+      {
+        "path": "apps/console/src/api/analytics.ts",
+        "sha256": "b24a2253b16d9a1fd429e283fa7a07a9a4ea732a453cb7a26b0f7e7724adf594"
+      },
+      {
+        "path": "apps/console/src/api/reports.ts",
+        "sha256": "fc20393863fc88cb600e437d98e9bcecfa2555ad96eec0a8bcebd73906c2a5c0"
+      },
+      {
+        "path": "apps/console/src/components/consoleSections.tsx",
+        "sha256": "29c6a1861f04b972a0e0bc4e1c6801a1fa0fed63dabf607d6e5b8416a661a09d"
+      },
+      {
+        "path": "apps/console/src/pages/BoothReport.tsx",
+        "sha256": "e30f0dc46d651914cece3c907b0924f473a19d4205c418c867f1d224f25d42c6"
+      },
+      {
+        "path": "apps/console/src/pages/Reports.tsx",
+        "sha256": "6daad0269b08a0edb71278a88f15d19b63b342b45212b279b8f82ac157739918"
+      },
+      {
+        "path": "apps/console/test/booth-report-lifetime.test.ts",
+        "sha256": "634145a6920ecb5457107d9a1bb6d17dd6854823685428f614f7cd52603860c1"
+      },
+      {
+        "path": "apps/console/test/reports-api.test.ts",
+        "sha256": "2cd2bebb3ed0b5c97ee94d2875e23528e5ee32ca22cf5cc967fc07ad8c59135b"
+      },
+      {
+        "path": "packages/admin-screens/package.json",
+        "sha256": "047b7a736b22596d1ce2932597c9cd52ad9ed566a9f6670a3e05f11adb907ff2"
+      },
+      {
+        "path": "packages/admin-screens/src/lifted/components/admin/reports/DiscountCompReportPanel.tsx",
+        "sha256": "a985057f71ebd0466fdb8212ef7acc8f06f18a653a91e0b237e68570e4187124"
+      },
+      {
+        "path": "packages/admin-screens/src/lifted/components/admin/reports/ProfitabilityReportPanel.tsx",
+        "sha256": "e06096b8d745ea1ce55576a61716d10bfdd1f8841ae4565771690faf1202fc14"
+      },
+      {
+        "path": "packages/admin-screens/src/lifted/components/admin/reports/SalesReportPanel.tsx",
+        "sha256": "7d19e6cbb0dda48a071610b495eb420d10bc9188655187d9d44a5900ec8f7135"
+      },
+      {
+        "path": "packages/admin-screens/src/lifted/components/admin/reports/TaxVatReportPanel.tsx",
+        "sha256": "35bfe6ca256f147a04942de8173c7226784279e1ff226d2f83b5f555e07d4137"
+      },
+      {
+        "path": "packages/admin-screens/src/lifted/components/admin/reports/WalletPromoReportPanel.tsx",
+        "sha256": "efed4557685ca2012c4dac87ecb0bbd3abda4cbea00fd9545abc5215e418e9de"
+      },
+      {
+        "path": "packages/admin-screens/src/lifted/components/admin/reports/shared.tsx",
+        "sha256": "de4e551eba3a760054e51ece7846bc2c6b2be5687068f5bb2b97e695a23e4cbc"
+      },
+      {
+        "path": "packages/admin-screens/src/lifted/lib/reporting.ts",
+        "sha256": "6eddbf7f6389844b844240bd4d0a7fa68480badf00cb5aad949b1a6e7a2cfe75"
+      },
+      {
+        "path": "packages/admin-screens/src/lifted/runtime/reports.ts",
+        "sha256": "0dc2c89a8034132e3810d5dba4f38a61f28f7f36f19668211b4bf0271dc5d86d"
+      },
+      {
+        "path": "packages/admin-screens/src/lifted/runtime/wallet-report.ts",
+        "sha256": "847cac99811b67b3936b9e8bc9c4d66a577f2efbac0bf23b6d4c438a611718a6"
+      },
+      {
+        "path": "packages/admin-screens/test/report-ports.test.ts",
+        "sha256": "bc1967487125d5b3e181b7add07775f58014a673cb873982837bc8d4e859982f"
+      },
+      {
+        "path": "packages/admin-screens/test/wallet-report-ports.test.ts",
+        "sha256": "6d7266c1d4914c2141403c4a27bbc7e0ac6824df8e33df80a5dd85438543a904"
+      }
+    ]
+  },
+  "checks": [
+    {
+      "id": "freeze-manifest-binding",
+      "passed": true
+    },
+    {
+      "id": "all-24-owned-current-bytes-frozen",
+      "passed": true
+    },
+    {
+      "id": "actual-source-diff-equals-approved-24",
+      "passed": true,
+      "detail": {
+        "actual": 24
+      }
+    },
+    {
+      "id": "only-q9-api-services-and-house",
+      "passed": true
+    },
+    {
+      "id": "no-forbidden-lane-route-schema-migration-shared-edits",
+      "passed": true
+    },
+    {
+      "id": "native-pure-mapper-filter-formatter-bodies-exact",
+      "passed": true,
+      "detail": [
+        {
+          "path": "packages/admin-screens/src/lifted/lib/reporting.ts",
+          "name": "promoUsageSummaryOf",
+          "equal": true
+        },
+        {
+          "path": "packages/admin-screens/src/lifted/lib/reporting.ts",
+          "name": "platformWalletCreditReport",
+          "equal": true
+        },
+        {
+          "path": "packages/admin-screens/src/lifted/components/admin/reports/shared.tsx",
+          "name": "thbFromSatang",
+          "equal": true
+        },
+        {
+          "path": "packages/admin-screens/src/lifted/components/admin/reports/shared.tsx",
+          "name": "csvBaht",
+          "equal": true
+        },
+        {
+          "path": "packages/admin-screens/src/lifted/components/admin/reports/shared.tsx",
+          "name": "categoryLabel",
+          "equal": true
+        },
+        {
+          "path": "packages/admin-screens/src/lifted/components/admin/reports/TaxVatReportPanel.tsx",
+          "name": "filterTaxReceipts",
+          "equal": true
+        },
+        {
+          "path": "packages/admin-screens/src/lifted/components/admin/reports/TaxVatReportPanel.tsx",
+          "name": "taxReceiptPaymentMethodsOf",
+          "equal": true
+        }
+      ]
+    },
+    {
+      "id": "all-19-native-csv-mappings-exact",
+      "passed": true,
+      "detail": [
+        {
+          "path": "packages/admin-screens/src/lifted/components/admin/reports/SalesReportPanel.tsx",
+          "before": 9,
+          "after": 9,
+          "equal": true
+        },
+        {
+          "path": "packages/admin-screens/src/lifted/components/admin/reports/ProfitabilityReportPanel.tsx",
+          "before": 1,
+          "after": 1,
+          "equal": true
+        },
+        {
+          "path": "packages/admin-screens/src/lifted/components/admin/reports/DiscountCompReportPanel.tsx",
+          "before": 4,
+          "after": 4,
+          "equal": true
+        },
+        {
+          "path": "packages/admin-screens/src/lifted/components/admin/reports/TaxVatReportPanel.tsx",
+          "before": 2,
+          "after": 2,
+          "equal": true
+        },
+        {
+          "path": "packages/admin-screens/src/lifted/components/admin/reports/WalletPromoReportPanel.tsx",
+          "before": 3,
+          "after": 3,
+          "equal": true
+        }
+      ]
+    },
+    {
+      "id": "server-sql-aggregate-expressions-unchanged",
+      "passed": true,
+      "detail": [
+        {
+          "path": "apps/api/src/services/analytics-reports.ts",
+          "expressions": 38,
+          "equal": true
+        },
+        {
+          "path": "apps/api/src/services/analytics-booth.ts",
+          "expressions": 5,
+          "equal": true
+        }
+      ]
+    },
+    {
+      "id": "canonical-generated-summary-clock-no-directory-prerequisite",
+      "passed": true
+    },
+    {
+      "id": "exact-analytics-filter-no-readable-parks-fails-closed",
+      "passed": true
+    },
+    {
+      "id": "actor-operator-seat-grants-page-own-host",
+      "passed": true
+    },
+    {
+      "id": "context-query-group-response-lifetimes",
+      "passed": true
+    },
+    {
+      "id": "awaited-wallet-export-owner-guard",
+      "passed": true
+    },
+    {
+      "id": "booth-directory-and-export-owner-guards",
+      "passed": true
+    },
+    {
+      "id": "radar-click-owner-and-generic-error",
+      "passed": true
+    },
+    {
+      "id": "same-operator-cross-park-voucher-preserved",
+      "passed": true
+    },
+    {
+      "id": "receipt-final-focused",
+      "passed": true,
+      "detail": {
+        "exitCode": 0,
+        "logSha256": "a67a9c9a2f0ee6aedf086205083312f6b0e359e5fd5caf22fd8fe83f14d568e9"
+      }
+    },
+    {
+      "id": "receipt-host-extended-after",
+      "passed": true,
+      "detail": {
+        "exitCode": 0,
+        "logSha256": "3a7defae3dff97c3ef97d85500c776256ced99acc83baa5103f586e9631514f3"
+      }
+    },
+    {
+      "id": "receipt-host-extended-before",
+      "passed": true,
+      "detail": {
+        "exitCode": 1,
+        "logSha256": "a05a16985ccb53de004a0feea38add3b3b2cca7d239ee7324fb096b084cde5d2"
+      }
+    },
+    {
+      "id": "receipt-api-extended-before-v3",
+      "passed": true,
+      "detail": {
+        "exitCode": 1,
+        "logSha256": "2d1d8d0509372ad3e157fb609119723e5a72c8889d8f752193272f3c638ccf6a"
+      }
+    },
+    {
+      "id": "observed-focused105-panels117-console227todo3-pos7",
+      "passed": true
+    },
+    {
+      "id": "observed-browser12-after-two-host-failures",
+      "passed": true
+    },
+    {
+      "id": "expanded-api-red-retained",
+      "passed": true
+    }
+  ],
+  "limits": [
+    "Manifest hash/count and all24 owned bytes independently checked; whole3578 container verification belongs to release gate receipts.",
+    "Full frozen battery remains separate; no source landing, CI, deployment or staging acceptance is claimed.",
+    "Five new panels use canonical summary day; existing Booth default-calendar behavior is not redefined.",
+    "No Till/payment, operational action, fixtures or complete-history proof is established."
+  ]
+}

@@ -1,0 +1,536 @@
+{
+  "ticket": "SCRUM-625",
+  "helperFilename": "admin625-evidence.mjs",
+  "helperSha256": "3d5f65a58d290144df2639186f98d6d7ece0e09e191676a90b9dbdc7b353a870",
+  "sourceSha": "448dd0d6e6247a7656dd245eee7cc5aef0e14014",
+  "startedAt": "2026-10-22T23:06:35.005Z",
+  "complete": true,
+  "controlsComplete": true,
+  "unchangedReadback": true,
+  "checks": [
+    {
+      "name": "EXACT_ACTIVE_SEEDED_ACTOR_AND_ORIGINAL_BRANCH_PREFERENCES",
+      "passed": true,
+      "at": "2026-10-22T23:06:51.845Z"
+    },
+    {
+      "name": "NATIVE_SALES_READ_ONLY",
+      "passed": true,
+      "at": "2026-10-22T23:07:04.063Z"
+    },
+    {
+      "name": "NATIVE_PROFITABILITY_READ_ONLY",
+      "passed": true,
+      "at": "2026-10-22T23:07:11.133Z"
+    },
+    {
+      "name": "NATIVE_DISCOUNTS_READ_ONLY",
+      "passed": true,
+      "at": "2026-10-22T23:07:18.614Z"
+    },
+    {
+      "name": "NATIVE_TAX-VAT_READ_ONLY",
+      "passed": true,
+      "at": "2026-10-22T23:07:26.346Z"
+    },
+    {
+      "name": "NATIVE_WALLET-PROMO_READ_ONLY",
+      "passed": true,
+      "at": "2026-10-22T23:07:34.071Z"
+    },
+    {
+      "name": "NATIVE_OLD_BOOTH_REPORT_ADDRESS",
+      "passed": true,
+      "at": "2026-10-22T23:07:40.647Z"
+    },
+    {
+      "name": "NATIVE_RADAR_OFFER_ONLY",
+      "passed": true,
+      "at": "2026-10-22T23:07:46.580Z"
+    },
+    {
+      "name": "ORIGINAL_BRANCH_AND_PREFERENCES_UNCHANGED",
+      "passed": true,
+      "at": "2026-10-22T23:07:47.035Z"
+    },
+    {
+      "name": "SIGNOUT200_AND_ME401",
+      "passed": true,
+      "at": "2026-10-22T23:07:47.908Z"
+    }
+  ],
+  "screenshots": [
+    {
+      "filename": "SCRUM-625-01-sales-phone390.png",
+      "label": "native Sales with current canonical trading dates",
+      "capturedAt": "2026-10-22T23:07:02.283Z",
+      "bounds": [
+        {
+          "name": "route heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "first native report heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "native export control; not clicked",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 390,
+        "document": 390
+      },
+      "captionClear": true,
+      "sha256": "e18be69f06a27a4c0ec6c5d3c9fa97d5e8050b48f8694de329f600a7f35bd83a"
+    },
+    {
+      "filename": "SCRUM-625-02-profitability.png",
+      "label": "native profitability without changing cost rules",
+      "capturedAt": "2026-10-22T23:07:09.332Z",
+      "bounds": [
+        {
+          "name": "route heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "first native report heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "native export control; not clicked",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "captionClear": true,
+      "sha256": "18792938674ef07362bb3becf2dd5ba8fed5bf7be543ef7a767752955c95dd46"
+    },
+    {
+      "filename": "SCRUM-625-03-discounts.png",
+      "label": "native discount and comp totals",
+      "capturedAt": "2026-10-22T23:07:16.849Z",
+      "bounds": [
+        {
+          "name": "route heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "first native report heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "native export control; not clicked",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "captionClear": true,
+      "sha256": "410c9e25be6e13137484059b23546c214fbf5c511c4bc0efa2496289b95d177f"
+    },
+    {
+      "filename": "SCRUM-625-04-tax-vat.png",
+      "label": "native VAT summary; receipt detail hidden",
+      "capturedAt": "2026-10-22T23:07:24.547Z",
+      "bounds": [
+        {
+          "name": "route heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "first native report heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "native export control; not clicked",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "captionClear": true,
+      "sha256": "a11d011bccac7c7c8e6382c5211c6c3808cffe68c2c33d122e58642c08f043d9"
+    },
+    {
+      "filename": "SCRUM-625-05-wallet-promo.png",
+      "label": "native wallet and promo totals; all detail keys hidden",
+      "capturedAt": "2026-10-22T23:07:32.306Z",
+      "bounds": [
+        {
+          "name": "route heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "first native report heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "native export control; not clicked",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "captionClear": true,
+      "sha256": "2aabb22136b05d10ec8344d729d6ea5597bd7c862667af610a1dfe9dd14e9abc"
+    },
+    {
+      "filename": "SCRUM-625-06-booth-report-oldalias.png",
+      "label": "native old Booth report address and trading-day filters",
+      "capturedAt": "2026-10-22T23:07:38.888Z",
+      "bounds": [
+        {
+          "name": "route heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "native from-day control",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "native CSV control; not clicked",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "captionClear": true,
+      "sha256": "947eb00010e9dc9a6e4476e8935eac2930174c06d114b9808c139176f0cc3385"
+    },
+    {
+      "filename": "SCRUM-625-07-radar-tile.png",
+      "label": "native Radar offer; no handoff issued",
+      "capturedAt": "2026-10-22T23:07:44.811Z",
+      "bounds": [
+        {
+          "name": "native Radar heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "native Open Radar control; not clicked",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "captionClear": true,
+      "sha256": "f874fa3e29ef47cf9133e9b074613ad719d319731f82453b272a6008a71669dc"
+    }
+  ],
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "sourceSha": "448dd0d6e6247a7656dd245eee7cc5aef0e14014",
+      "deployId": "dep-dbd9btmk1f9s73f087vg",
+      "finishedAt": "2026-10-22T23:05:58.931579Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "sourceSha": "448dd0d6e6247a7656dd245eee7cc5aef0e14014",
+      "deployId": "dep-dbd9btek1f9s73f087l0",
+      "finishedAt": "2026-10-22T23:02:58.286016Z"
+    },
+    {
+      "name": "oto-pos-staging",
+      "sourceSha": "448dd0d6e6247a7656dd245eee7cc5aef0e14014",
+      "deployId": "dep-dbd9btmk1f9s73f08a00",
+      "finishedAt": "2026-10-22T23:03:03.33746Z"
+    }
+  ],
+  "reportReads": [
+    {
+      "kind": "analytics/summary",
+      "status": 200,
+      "at": "2026-10-22T23:06:51.397Z",
+      "bodySha256": "223aba14e7642d0cd04a43009360e710e60849160220e1f670d6aed0a3be4787",
+      "counts": {
+        "branches": 3,
+        "omitted": 0
+      }
+    },
+    {
+      "kind": "reports/sales",
+      "status": 200,
+      "at": "2026-10-22T23:06:52.312Z",
+      "bodySha256": "eb5688cede5858f69dd82ae21adf052b023fb8428ecd7e0cd98fffabe4450a3c",
+      "counts": {
+        "branches": 3,
+        "omitted": 0,
+        "categories": 4,
+        "payments": 5,
+        "tiers": 3,
+        "ticketTypes": 4,
+        "weekdayWeekend": 1,
+        "dropOffNanny": 1,
+        "fnbItems": 4,
+        "merchItems": 0
+      }
+    },
+    {
+      "kind": "analytics/summary",
+      "status": 200,
+      "at": "2026-10-22T23:06:59.887Z",
+      "bodySha256": "223aba14e7642d0cd04a43009360e710e60849160220e1f670d6aed0a3be4787",
+      "counts": {
+        "branches": 3,
+        "omitted": 0
+      }
+    },
+    {
+      "kind": "reports/sales",
+      "status": 200,
+      "at": "2026-10-22T23:07:00.412Z",
+      "bodySha256": "eb5688cede5858f69dd82ae21adf052b023fb8428ecd7e0cd98fffabe4450a3c",
+      "counts": {
+        "branches": 3,
+        "omitted": 0,
+        "categories": 4,
+        "payments": 5,
+        "tiers": 3,
+        "ticketTypes": 4,
+        "weekdayWeekend": 1,
+        "dropOffNanny": 1,
+        "fnbItems": 4,
+        "merchItems": 0
+      }
+    },
+    {
+      "kind": "analytics/summary",
+      "status": 200,
+      "at": "2026-10-22T23:07:06.966Z",
+      "bodySha256": "223aba14e7642d0cd04a43009360e710e60849160220e1f670d6aed0a3be4787",
+      "counts": {
+        "branches": 3,
+        "omitted": 0
+      }
+    },
+    {
+      "kind": "reports/profitability",
+      "status": 200,
+      "at": "2026-10-22T23:07:07.477Z",
+      "bodySha256": "2387d28ad7493fb2d8f414905d6dafbd9ae8c3aabb82c9ac0dfb0c694e3fbf83",
+      "counts": {
+        "branches": 3,
+        "omitted": 0,
+        "fnb": 4,
+        "merch": 0
+      }
+    },
+    {
+      "kind": "analytics/summary",
+      "status": 200,
+      "at": "2026-10-22T23:07:14.029Z",
+      "bodySha256": "223aba14e7642d0cd04a43009360e710e60849160220e1f670d6aed0a3be4787",
+      "counts": {
+        "branches": 3,
+        "omitted": 0
+      }
+    },
+    {
+      "kind": "discounts/transactions",
+      "status": 200,
+      "at": "2026-10-22T23:07:14.511Z",
+      "bodySha256": "5fc703688964e9b45f4c16983f26038803986a6594c85b5e4304756cd8ac07eb",
+      "counts": {
+        "branches": 3,
+        "omitted": 0,
+        "rows": 2,
+        "promoRows": 4
+      }
+    },
+    {
+      "kind": "reports/discounts",
+      "status": 200,
+      "at": "2026-10-22T23:07:14.666Z",
+      "bodySha256": "eedfc71ea60066683571ef897573efa81d16ea0b2280361a79301e06b5450ef5",
+      "counts": {
+        "branches": 3,
+        "omitted": 0,
+        "byOperator": 2,
+        "promoByType": 3
+      }
+    },
+    {
+      "kind": "analytics/summary",
+      "status": 200,
+      "at": "2026-10-22T23:07:21.255Z",
+      "bodySha256": "223aba14e7642d0cd04a43009360e710e60849160220e1f670d6aed0a3be4787",
+      "counts": {
+        "branches": 3,
+        "omitted": 0
+      }
+    },
+    {
+      "kind": "tax/vat",
+      "status": 200,
+      "at": "2026-10-22T23:07:21.833Z",
+      "bodySha256": "d5272a3e13b016c0ddc8aab3e2e2112a1844a882c375e69676ffa01835db5588",
+      "counts": {
+        "branches": 3,
+        "omitted": 0,
+        "rows": 4
+      }
+    },
+    {
+      "kind": "tax/receipts",
+      "status": 200,
+      "at": "2026-10-22T23:07:22.298Z",
+      "bodySha256": "d83b6f602c2dc07abf1f9e87262d1a0f837b0cb4b74fec07f9ccb53ac3eda072",
+      "counts": {
+        "branches": 3,
+        "omitted": 0,
+        "rows": 72
+      }
+    },
+    {
+      "kind": "analytics/summary",
+      "status": 200,
+      "at": "2026-10-22T23:07:28.542Z",
+      "bodySha256": "223aba14e7642d0cd04a43009360e710e60849160220e1f670d6aed0a3be4787",
+      "counts": {
+        "branches": 3,
+        "omitted": 0
+      }
+    },
+    {
+      "kind": "discounts/transactions",
+      "status": 200,
+      "at": "2026-10-22T23:07:29.014Z",
+      "bodySha256": "5fc703688964e9b45f4c16983f26038803986a6594c85b5e4304756cd8ac07eb",
+      "counts": {
+        "branches": 3,
+        "omitted": 0,
+        "rows": 2,
+        "promoRows": 4
+      }
+    },
+    {
+      "kind": "promotions/report",
+      "status": 200,
+      "at": "2026-10-22T23:07:29.082Z",
+      "bodySha256": "a0ae49c79d7d3737c69511a76930c2ec33a864e6efaa4cd8a3f75f0c27853bad",
+      "counts": {
+        "rows": 2
+      }
+    },
+    {
+      "kind": "wallets/report",
+      "status": 200,
+      "at": "2026-10-22T23:07:30.118Z",
+      "bodySha256": "903b467e07b9e44417973aa057f4884661c66fef04b3c7926c625c265df814e5",
+      "counts": {
+        "rows": 39
+      }
+    },
+    {
+      "kind": "analytics/booths",
+      "status": 200,
+      "at": "2026-10-22T23:07:36.854Z",
+      "bodySha256": "677e0a62b7a014d241347537fd4711dc168abdfe33f46386b19e39690535bb93",
+      "counts": {
+        "branches": 1,
+        "omitted": 0,
+        "booths": 1,
+        "prizes": 6,
+        "staff": 1,
+        "days": 5
+      }
+    }
+  ],
+  "blockedRequests": [],
+  "browserErrorKinds": [],
+  "requestFailureKinds": [],
+  "readErrors": [],
+  "counts": {
+    "signIns": 1,
+    "signOuts": 1,
+    "reads": 69,
+    "reportReads": 17,
+    "publicAssetReads": 16,
+    "blockedReads": 0,
+    "blockedWrites": 0,
+    "businessWrites": 0,
+    "smsRequests": 0,
+    "fixturesCreated": 0,
+    "csvDownloads": 0,
+    "handoffPosts": 0
+  },
+  "limitations": [
+    "Native read-only Console reports and Radar offer only; Radar handoff/arrival, Till behavior, negative permissions and all CSV downloads remain automated coverage.",
+    "Detail cells and signed-in identity/navigation are hidden, including late report rows. No raw report body, ledger key, customer/staff name, receipt, voucher/discount code or CSV is persisted.",
+    "Report values may change with live trading and rollups; hashes/counts are observations at read time, not a claim that report values remain fixed.",
+    "Only named native controls must fit the capture; the complete long report is not claimed. GET /me omits station state; no station/session-context mutation is made."
+  ],
+  "binding": {
+    "path": "C:/w/admin625-landed.json",
+    "sha256": "0c842eb7702a68a5f129ad0ed0c95db4fe8be23060b5b452f9d780d15d44db19",
+    "sourceManifestSha256": "5192473014080b655db48682852596d80d15d20db67d5d66eb41b60cb8199138",
+    "imageId": "sha256:5775b7591af564fc51d50a66a41914c9d1a192d9eb336f7d965329ba7b3af5ce"
+  },
+  "ci": {
+    "runId": "39867146335",
+    "sourceSha": "448dd0d6e6247a7656dd245eee7cc5aef0e14014",
+    "completed": true,
+    "successfulJobs": 6
+  },
+  "signInStatus": 200,
+  "actor": {
+    "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+    "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+  },
+  "initial": {
+    "branchSha256": "ff1408f7b8cf4f693cbd2f6e6a82a0e79e347415fdeb0f1886ea0d49d4ded535",
+    "preferencesSha256": "00df943c543d230f9e93ceca1038b659220a9779f4d70ae1b114715829458881"
+  },
+  "final": {
+    "branchSha256": "ff1408f7b8cf4f693cbd2f6e6a82a0e79e347415fdeb0f1886ea0d49d4ded535",
+    "preferencesSha256": "00df943c543d230f9e93ceca1038b659220a9779f4d70ae1b114715829458881"
+  },
+  "authCleanup": {
+    "signOutStatus": 200,
+    "meStatus": 401,
+    "confirmed": true
+  },
+  "authState": {
+    "signInAttempted": true,
+    "authUncertain": false,
+    "pendingAuth": 0
+  },
+  "completedAt": "2026-10-22T23:07:49.648Z"
+}

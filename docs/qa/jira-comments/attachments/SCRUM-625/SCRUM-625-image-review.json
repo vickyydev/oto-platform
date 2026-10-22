@@ -1,0 +1,80 @@
+{
+  "ticket": "SCRUM-625",
+  "sourceSha": "448dd0d6e6247a7656dd245eee7cc5aef0e14014",
+  "createdAt": "2026-10-22T23:08:47.569Z",
+  "passed": true,
+  "proofSha256": "83e183490bfb3b602c9884c0b96ee1c27b6dd4143a768e235c46ff62ae59ceb5",
+  "images": [
+    {
+      "filename": "SCRUM-625-01-sales-phone390.png",
+      "sha256": "e18be69f06a27a4c0ec6c5d3c9fa97d5e8050b48f8694de329f600a7f35bd83a",
+      "visuallyInspected": true,
+      "privacyClear": true,
+      "nativeControlsClear": true,
+      "notes": "Sales at 390px: route heading, first native report heading and Export CSV are clear; identity and detail cells are hidden. The native inner report table scrolls horizontally; the full long report is not claimed."
+    },
+    {
+      "filename": "SCRUM-625-02-profitability.png",
+      "sha256": "18792938674ef07362bb3becf2dd5ba8fed5bf7be543ef7a767752955c95dd46",
+      "visuallyInspected": true,
+      "privacyClear": true,
+      "nativeControlsClear": true,
+      "captionSourceTimestampVisible": true,
+      "notes": [
+        "Visually inspected the rendered image: Profitability heading, date/branch controls, Refresh and both Export CSV buttons are clear.",
+        "The top-right read-only caption shows the capture timestamp and source 448dd0d6e624, with detail rows and identity hidden.",
+        "Native cost warning and aggregate revenue/COGS/margin remain visible; item detail cells are blank and no account identity, credentials, QR or codes are visible."
+      ]
+    },
+    {
+      "filename": "SCRUM-625-03-discounts.png",
+      "sha256": "410c9e25be6e13137484059b23546c214fbf5c511c4bc0efa2496289b95d177f",
+      "visuallyInspected": true,
+      "privacyClear": true,
+      "nativeControlsClear": true,
+      "captionSourceTimestampVisible": true,
+      "notes": [
+        "Visually inspected the rendered image: Discounts & comps heading, date/branch controls, Refresh, summary cards and three visible Export CSV buttons are clear.",
+        "The top-right read-only caption shows the capture timestamp and source 448dd0d6e624, with detail rows and identity hidden.",
+        "Promo, operator and transaction/code detail rows are blank; no person identity, credentials, benefit QR or actual promo code is visible. The lowest report card continues below the viewport."
+      ]
+    },
+    {
+      "filename": "SCRUM-625-04-tax-vat.png",
+      "sha256": "a11d011bccac7c7c8e6382c5211c6c3808cffe68c2c33d122e58642c08f043d9",
+      "visuallyInspected": true,
+      "privacyClear": true,
+      "nativeControlsClear": true,
+      "captionSourceTimestampVisible": true,
+      "notes": [
+        "Visually inspected the rendered image: Tax & VAT heading, date/branch controls, Refresh, Whole range grouping, Export CSV and Export all receipts controls are clear.",
+        "The top-right read-only caption shows the capture timestamp and source 448dd0d6e624, with receipt detail and identity hidden.",
+        "VAT totals and transaction count remain visible; VAT categories and receipt transaction/operator/payment detail cells are blank. No credentials, person identity, QR or codes are visible."
+      ]
+    },
+    {
+      "filename": "SCRUM-625-05-wallet-promo.png",
+      "notes": "Actual native Wallet & promo heading, date and All branches filters, Refresh, aggregate cards, wallet-ledger heading and Export CSV are clear. Ledger detail cells are hidden; the Customer/Wristband column headings reveal no data. Top-right caption visibly identifies SCRUM-625, UTC capture time, short source SHA and read-only/detail-hidden limits. The long report below the viewport is not claimed.",
+      "sha256": "2aabb22136b05d10ec8344d729d6ea5597bd7c862667af610a1dfe9dd14e9abc",
+      "visuallyInspected": true,
+      "privacyClear": true,
+      "nativeControlsClear": true
+    },
+    {
+      "filename": "SCRUM-625-06-booth-report-oldalias.png",
+      "notes": "Actual native Booth report heading, branch picker, Refresh, Download CSV and trading-day filters are clear. Aggregate cards and grouped table headings remain visible; booth/prize detail rows are hidden. Top-right caption states the old Booth report address/trading-day check, UTC capture time, short source SHA and read-only limits. Branch identity is the park label; no signed-in person, secret, QR or voucher code is visible.",
+      "sha256": "947eb00010e9dc9a6e4476e8935eac2930174c06d114b9808c139176f0cc3385",
+      "visuallyInspected": true,
+      "privacyClear": true,
+      "nativeControlsClear": true
+    },
+    {
+      "filename": "SCRUM-625-07-radar-tile.png",
+      "notes": "Actual Reports landing displays five report links, Booth and Bookings, plus the Radar description and Open Radar button clearly. Top-right caption visibly states Radar offer only/no handoff issued, UTC capture time, short source SHA and read-only/detail-hidden limits. No person, detail record, destination URL, token, QR or code is visible. This verifies the offer, not actual Radar arrival.",
+      "sha256": "f874fa3e29ef47cf9133e9b074613ad719d319731f82453b272a6008a71669dc",
+      "visuallyInspected": true,
+      "privacyClear": true,
+      "nativeControlsClear": true
+    }
+  ]
+}

@@ -1,0 +1,135 @@
+{
+  "ticket": "SCRUM-625",
+  "sourceSha": "448dd0d6e6247a7656dd245eee7cc5aef0e14014",
+  "parentSha": "358151bd0fbdb6943076844335d1b8fed6d6bd57",
+  "landedAt": "2026-10-22T22:44:43.681Z",
+  "sourceManifestSha256": "5192473014080b655db48682852596d80d15d20db67d5d66eb41b60cb8199138",
+  "imageId": "sha256:5775b7591af564fc51d50a66a41914c9d1a192d9eb336f7d965329ba7b3af5ce",
+  "sourceFiles": 3578,
+  "ownedFiles": 24,
+  "ci": {
+    "runId": "39867146335",
+    "headSha": "448dd0d6e6247a7656dd245eee7cc5aef0e14014",
+    "status": "completed",
+    "conclusion": "success",
+    "jobs": [
+      {
+        "name": "ci",
+        "status": "completed",
+        "conclusion": "success",
+        "startedAt": "2026-10-22T22:44:47Z",
+        "completedAt": "2026-10-22T22:58:43Z"
+      },
+      {
+        "name": "pos-tests",
+        "status": "completed",
+        "conclusion": "success",
+        "startedAt": "2026-10-22T22:44:48Z",
+        "completedAt": "2026-10-22T22:47:17Z"
+      },
+      {
+        "name": "api-tests (1)",
+        "status": "completed",
+        "conclusion": "success",
+        "startedAt": "2026-10-22T22:44:47Z",
+        "completedAt": "2026-10-22T22:59:43Z"
+      },
+      {
+        "name": "api-tests (3)",
+        "status": "completed",
+        "conclusion": "success",
+        "startedAt": "2026-10-22T22:44:48Z",
+        "completedAt": "2026-10-22T23:00:42Z"
+      },
+      {
+        "name": "oto-app",
+        "status": "completed",
+        "conclusion": "success",
+        "startedAt": "2026-10-22T22:44:48Z",
+        "completedAt": "2026-10-22T22:45:23Z"
+      },
+      {
+        "name": "api-tests (2)",
+        "status": "completed",
+        "conclusion": "success",
+        "startedAt": "2026-10-22T22:44:48Z",
+        "completedAt": "2026-10-22T23:02:10Z"
+      }
+    ]
+  },
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "sourceSha": "448dd0d6e6247a7656dd245eee7cc5aef0e14014",
+      "deployId": "dep-dbd9btmk1f9s73f087vg",
+      "finishedAt": "2026-10-22T23:05:58.931579Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "sourceSha": "448dd0d6e6247a7656dd245eee7cc5aef0e14014",
+      "deployId": "dep-dbd9btek1f9s73f087l0",
+      "finishedAt": "2026-10-22T23:02:58.286016Z"
+    },
+    {
+      "name": "oto-pos-staging",
+      "sourceSha": "448dd0d6e6247a7656dd245eee7cc5aef0e14014",
+      "deployId": "dep-dbd9btmk1f9s73f08a00",
+      "finishedAt": "2026-10-22T23:03:03.33746Z"
+    }
+  ],
+  "jira": {
+    "ticket": "SCRUM-625",
+    "status": "Deployed",
+    "sourceSha": "448dd0d6e6247a7656dd245eee7cc5aef0e14014",
+    "commentId": "12520",
+    "files": [
+      {
+        "id": "11978",
+        "filename": "SCRUM-625-01-sales-phone390.png",
+        "sha256": "e18be69f06a27a4c0ec6c5d3c9fa97d5e8050b48f8694de329f600a7f35bd83a",
+        "capturedAt": "2026-10-22T23:07:02.283Z"
+      },
+      {
+        "id": "11979",
+        "filename": "SCRUM-625-02-profitability.png",
+        "sha256": "18792938674ef07362bb3becf2dd5ba8fed5bf7be543ef7a767752955c95dd46",
+        "capturedAt": "2026-10-22T23:07:09.332Z"
+      },
+      {
+        "id": "11980",
+        "filename": "SCRUM-625-03-discounts.png",
+        "sha256": "410c9e25be6e13137484059b23546c214fbf5c511c4bc0efa2496289b95d177f",
+        "capturedAt": "2026-10-22T23:07:16.849Z"
+      },
+      {
+        "id": "11981",
+        "filename": "SCRUM-625-04-tax-vat.png",
+        "sha256": "a11d011bccac7c7c8e6382c5211c6c3808cffe68c2c33d122e58642c08f043d9",
+        "capturedAt": "2026-10-22T23:07:24.547Z"
+      },
+      {
+        "id": "11982",
+        "filename": "SCRUM-625-05-wallet-promo.png",
+        "sha256": "2aabb22136b05d10ec8344d729d6ea5597bd7c862667af610a1dfe9dd14e9abc",
+        "capturedAt": "2026-10-22T23:07:32.306Z"
+      },
+      {
+        "id": "11983",
+        "filename": "SCRUM-625-06-booth-report-oldalias.png",
+        "sha256": "947eb00010e9dc9a6e4476e8935eac2930174c06d114b9808c139176f0cc3385",
+        "capturedAt": "2026-10-22T23:07:38.888Z"
+      },
+      {
+        "id": "11984",
+        "filename": "SCRUM-625-07-radar-tile.png",
+        "sha256": "f874fa3e29ef47cf9133e9b074613ad719d319731f82453b272a6008a71669dc",
+        "capturedAt": "2026-10-22T23:07:44.811Z"
+      }
+    ],
+    "parentStatus": "In Progress",
+    "plainOutcomeReadBack": true,
+    "ownerRetainsDone": true,
+    "checkedAt": "2026-10-22T23:09:00.846Z",
+    "proofSha256": "83e183490bfb3b602c9884c0b96ee1c27b6dd4143a768e235c46ff62ae59ceb5"
+  }
+}
