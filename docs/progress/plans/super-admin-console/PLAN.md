@@ -133,6 +133,8 @@ Owner question Q1 (2026-10-22, SCRUM-611; default unchanged): the inherited Sess
 
 SCRUM-620 owner rulings (2026-10-22): Q2 is resolved: implement S2-23's typed archive confirmation and dependency safeguards alongside the approved branch edit fields. Q4 defines those dependencies as **active boxes and stations only**; retain the existing branch cash model, with no drawer-session table or unclosed-trading-day blocker. Archived historical fleet records remain history. Q3 authorizes exactly the success response schema on the existing `PUT /me/session/branch` in `apps/api/src/routes/me.ts`, plus a type-only literal annotation if its compiler requires one; no other change to that file is authorized by this exception. Equipment creation and archive must share parent locks so a concurrent creation cannot pass the dependency check and then appear under an archived branch/operator.
 
+Owner question Q5 (2026-10-22, SCRUM-621; default unchanged): the inherited Ticket hours input offers half-hour steps, while the existing API and database accept integer hours only. Should a later change permit fractional ticket hours? This lift retains both controls and validation and uses a two-hour acceptance fixture; no fractional-hours rule is changed.
+
 ## 8. P2 — organisation, catalogue, reports (Codex)
 
 | Ticket | Deliverable |
