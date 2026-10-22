@@ -51,6 +51,7 @@ const TABLE_WORDS: Record<string, string> = {
   attention_items: "attention items",
   beo_party_host_assignments: "party host assignments",
   checklist_templates: "checklist templates",
+  checklist_template_assignees: "checklist assignments",
   checklist_runs: "checklist runs",
   contract_instances: "contracts",
   core_events: "events",

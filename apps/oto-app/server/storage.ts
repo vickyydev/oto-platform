@@ -349,6 +349,7 @@ import {
         settingsWritableBy,
 } from "./lib/parkGroupSettings";
 import { retiredShiftEndDate } from "./lib/shiftGroupRequired";
+import { setChecklistAssignees, withChecklistAssignees } from "./core/checklistAssignees";
 
 /**
  * The database, or a transaction on it: the storage methods an offboarding
@@ -1758,6 +1759,8 @@ export interface IStorage {
                         scheduleTime4?: string | null;
                         scheduleTime5?: string | null;
                         assignedEmployeeId?: string | null;
+                        /** Every employee the template names (SCRUM-658); the column above is set to the first. */
+                        assignedEmployeeIds?: string[];
                         assignedRoleId?: string | null;
                         assignedDepartmentId?: string | null;
                         allowedCheckerRoles?: string[];
@@ -11776,7 +11779,7 @@ export class DatabaseStorage implements IStorage {
                         .from(checklistTemplates)
                         .where(and(...conditions))
                         .orderBy(desc(checklistTemplates.createdAt));
-                return templates;
+                return withChecklistAssignees(templates);
         }
 
         async getChecklistTemplateWithItems(
@@ -11807,7 +11810,8 @@ export class DatabaseStorage implements IStorage {
                         }))
                         : items;
 
-                return { ...template, items: normalizedItems };
+                const [withAssignees] = await withChecklistAssignees([template]);
+                return { ...withAssignees, items: normalizedItems };
         }
 
         async createChecklistTemplate(
@@ -11827,6 +11831,8 @@ export class DatabaseStorage implements IStorage {
                         scheduleTime4?: string | null;
                         scheduleTime5?: string | null;
                         assignedEmployeeId?: string | null;
+                        /** Every employee the template names (SCRUM-658); the column above is set to the first. */
+                        assignedEmployeeIds?: string[];
                         assignedRoleId?: string | null;
                         assignedDepartmentId?: string | null;
                         allowedCheckerRoles?: string[];
@@ -11867,7 +11873,9 @@ export class DatabaseStorage implements IStorage {
                                 scheduleTime3: template.scheduleTime3,
                                 scheduleTime4: template.scheduleTime4,
                                 scheduleTime5: template.scheduleTime5,
-                                assignedEmployeeId: template.assignedEmployeeId,
+                                assignedEmployeeId: template.assignedEmployeeIds?.length
+                                        ? template.assignedEmployeeIds[0]
+                                        : template.assignedEmployeeId,
                                 assignedRoleId: template.assignedRoleId,
                                 assignedDepartmentId: template.assignedDepartmentId,
                                 allowedCheckerRoles: template.allowedCheckerRoles || [],
@@ -11879,6 +11887,12 @@ export class DatabaseStorage implements IStorage {
                                 createdBy: template.createdBy,
                         })
                         .returning();
+
+                const assignees = template.assignedEmployeeIds
+                        ?? (template.assignedEmployeeId ? [template.assignedEmployeeId] : []);
+                if (assignees.length > 0) {
+                        await setChecklistAssignees(template.tenantId, created.id, assignees);
+                }
 
                 if (items.length > 0) {
                         await db.insert(checklistTemplateItems).values(

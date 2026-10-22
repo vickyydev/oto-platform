@@ -19,6 +19,20 @@
 //   5. Staff never read checker checklists, even for their own department; a
 //      manager still does.
 //
+// SCRUM-658 — a checklist can name several employees (checklist_template_assignees,
+// migration 0027; the template's assigned_employee_id stays the first of them):
+//
+//   6. A checklist the editor's route (POST /api/checklists/templates) saves
+//      for two people shows in the Today of both — one resolved by login, one
+//      by email — and not in the Today of a person it does not name; Today's
+//      label names both. The column holds the first, the join table both.
+//   7. Re-saving it (PATCH) for a third person moves it: the two leave, the
+//      third (resolved by phone) arrives; the column follows.
+//   8. A checklist written before the join table — its one employee in the
+//      column alone, no join rows — still shows to that person (the
+//      For Linked / ByEmail / ByPhone checklists above are written that way).
+//      Department and Everyone checklists are unchanged (checks 1-5).
+//
 // Usage, from apps/oto-app, with DATABASE_URL naming a database whose otoapp
 // schema the app's migrator has built (CI's OTO App job runs exactly this):
 //   npx tsx tests/checklist-assignees-today.check.ts
@@ -218,7 +232,9 @@ const T = {
   checkerReception: await template("Checker Reception", { type: "checker", dept: reception }),
   checkerEveryone: await template("Checker Everyone", { type: "checker" }),
 };
-const ALL = Object.values(T);
+const ALL: string[] = Object.values(T);
+/** The checklist the editor saves for several people (check 6), made once the server is up. */
+let multiNamed = "";
 
 // ─── The server ──────────────────────────────────────────────────────────────
 
@@ -301,18 +317,52 @@ try {
     const ids = (JSON.parse(text) as Array<{ id: string }>).map((t) => t.id);
     return ALL.filter((id) => ids.includes(id));
   };
-  const nameOf = (id: string) => Object.entries(T).find(([, v]) => v === id)?.[0] ?? id;
+  const nameOf = (id: string) => (id === multiNamed ? "multiNamed" : Object.entries(T).find(([, v]) => v === id)?.[0] ?? id);
   const expectExactly = async (who: keyof typeof cookie, expected: string[]) => {
     const got = (await todayFor(who)).map(nameOf).sort();
     assert.deepEqual(got, expected.map(nameOf).sort(), `${who}'s Today lists the wrong checklists`);
   };
 
+  // SCRUM-658: saved through the editor's own route, for two people.
+  {
+    const res = await fetch(`${ORIGIN}/api/checklists/templates`, {
+      method: "POST",
+      headers: { "content-type": "application/json", cookie: cookie.Manager },
+      body: JSON.stringify({
+        name: `ZZ TEST Linked and ByEmail ${run}`,
+        branchIds: [branch],
+        recurrence: "daily",
+        items: [{ title: "ZZ TEST item" }],
+        assignedEmployeeIds: [linkedEmployee, byEmailEmployee],
+      }),
+    });
+    const text = await res.text();
+    assert.equal(res.status, 201, `saving a checklist for two people: ${res.status} ${text}`);
+    multiNamed = (JSON.parse(text) as { id: string }).id;
+    ALL.push(multiNamed);
+  }
+  const namedOf = async (templateId: string) => ({
+    column: (await q<{ e: string | null }>("select assigned_employee_id as e from checklist_templates where id = $1", [templateId]))[0]?.e ?? null,
+    rows: (await q<{ e: string }>("select employee_id as e from checklist_template_assignees where template_id = $1", [templateId]))
+      .map((r) => r.e)
+      .sort(),
+  });
+
+  await check("a checklist saved for two people keeps the first in the column and both in the join table", async () => {
+    const named = await namedOf(multiNamed);
+    assert.equal(named.column, linkedEmployee, "the column does not hold the first person named");
+    assert.deepEqual(named.rows, [linkedEmployee, byEmailEmployee].sort(), "the join table does not hold both people");
+    const res = await fetch(`${ORIGIN}/api/checklists/templates/${multiNamed}`, { headers: { cookie: cookie.Manager } });
+    const body = (await res.json()) as { assignedEmployeeIds?: string[] };
+    assert.deepEqual(body.assignedEmployeeIds, [linkedEmployee, byEmailEmployee], "the editor's read does not name both, in order");
+  });
+
   await check("a login with its employee record attached reads Everyone, its department's and its own checklists", async () => {
-    await expectExactly("Linked", [T.everyone, T.floorDept, T.forLinked]);
+    await expectExactly("Linked", [T.everyone, T.floorDept, T.forLinked, multiNamed]);
   });
 
   await check("a record with no login but the login's email reads its department's and its own checklists", async () => {
-    await expectExactly("ByEmail", [T.everyone, T.receptionDept, T.legacyReception, T.forByEmail]);
+    await expectExactly("ByEmail", [T.everyone, T.receptionDept, T.legacyReception, T.forByEmail, multiNamed]);
   });
 
   await check("a record matched by phone alone reads its department's and its own checklists", async () => {
@@ -329,6 +379,44 @@ try {
 
   await check("a login with no employee record still reads only the Everyone checklists", async () => {
     await expectExactly("Lone", [T.everyone]);
+  });
+
+  await check("a checklist named for two people shows to both (by login and by email), not to a person it does not name", async () => {
+    assert.ok((await todayFor("Linked")).includes(multiNamed), "Linked (by login) does not see the checklist naming them");
+    assert.ok((await todayFor("ByEmail")).includes(multiNamed), "ByEmail (by email) does not see the checklist naming them");
+    assert.ok(!(await todayFor("ByPhone")).includes(multiNamed), "ByPhone sees a checklist that does not name them");
+    assert.ok(!(await todayFor("Lone")).includes(multiNamed), "Lone sees a checklist that does not name them");
+    const res = await fetch(`${ORIGIN}/api/checklists/today?branchId=${branch}`, { headers: { cookie: cookie.Linked } });
+    const row = ((await res.json()) as Array<{ id: string; assignedEmployeeName: string | null }>).find((t) => t.id === multiNamed);
+    assert.equal(row?.assignedEmployeeName, "Linked, ByEmail", "Today's label does not name both people");
+  });
+
+  await check("a checklist written before the join table (its one employee in the column alone) still shows to that person", async () => {
+    for (const [who, templateId, employeeId] of [
+      ["Linked", T.forLinked, linkedEmployee],
+      ["ByEmail", T.forByEmail, byEmailEmployee],
+      ["ByPhone", T.forByPhone, byPhoneEmployee],
+    ] as const) {
+      const named = await namedOf(templateId);
+      assert.equal(named.column, employeeId);
+      assert.deepEqual(named.rows, [], `${nameOf(templateId)} has join rows; it is meant to be a column-only checklist`);
+      assert.ok((await todayFor(who)).includes(templateId), `${who} no longer sees the checklist naming them in the column alone`);
+    }
+  });
+
+  await check("re-saving the checklist for someone else moves it: the two leave, the third arrives", async () => {
+    const res = await fetch(`${ORIGIN}/api/checklists/templates/${multiNamed}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json", cookie: cookie.Manager },
+      body: JSON.stringify({ assignedEmployeeIds: [byPhoneEmployee], assignedRoleId: null, assignedDepartmentId: null }),
+    });
+    assert.equal(res.status, 200, `re-saving: ${res.status} ${await res.text()}`);
+    const named = await namedOf(multiNamed);
+    assert.equal(named.column, byPhoneEmployee, "the column does not follow the new first person");
+    assert.deepEqual(named.rows, [byPhoneEmployee], "the join table still holds the people taken off");
+    assert.ok(!(await todayFor("Linked")).includes(multiNamed), "Linked still sees a checklist that no longer names them");
+    assert.ok(!(await todayFor("ByEmail")).includes(multiNamed), "ByEmail still sees a checklist that no longer names them");
+    assert.ok((await todayFor("ByPhone")).includes(multiNamed), "ByPhone (by phone) does not see the checklist now naming them");
   });
 
   await check("staff never read checker checklists, even for their own department; a manager does", async () => {

@@ -368,6 +368,28 @@ export const checklistTemplates = pgTable(
   ]
 );
 
+/**
+ * The employees a checklist template names (SCRUM-658). `assignedEmployeeId`
+ * on the template stays the first of them, written alongside, so a reader that
+ * knows only the one column still finds a named person; readers take the union.
+ */
+export const checklistTemplateAssignees = pgTable(
+  "checklist_template_assignees",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+    templateId: uuid("template_id")
+      .references(() => checklistTemplates.id, { onDelete: "cascade" })
+      .notNull(),
+    employeeId: varchar("employee_id").references(() => employees.id).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => [
+    uniqueIndex("checklist_template_assignees_template_employee_unique").on(t.templateId, t.employeeId),
+    index("idx_checklist_template_assignees_employee").on(t.employeeId),
+    index("idx_checklist_template_assignees_tenant").on(t.tenantId),
+  ]
+);
 export const checklistTemplateItems = pgTable(
   "checklist_template_items",
   {

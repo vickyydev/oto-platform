@@ -194,6 +194,7 @@ import { eq, desc, and, asc, or, ne, isNull, isNotNull, inArray, gte, lte, sql }
 import { generateInstanceForDefinition } from "./core/taskGeneration";
 import { personFence, fenceAllows, fenceRows, EMPLOYEE_DENIED } from "./core/personScope";
 import { resolveSelfEmployeeId } from "./core/selfEmployee";
+import { requestedChecklistAssignees, setChecklistAssignees, withChecklistAssignees } from "./core/checklistAssignees";
 
 async function requireAuthOrKiosk(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
@@ -316,11 +317,23 @@ function getChecklistPeriod(
   };
 }
 
+/** The names of every employee a checklist template names, joined for one label (SCRUM-658). */
+function namedEmployeesLabel(
+  template: { assignedEmployeeId?: string | null; assignedEmployeeIds?: string[] | null },
+  nameById: Map<string, string>,
+): string | null {
+  const ids = template.assignedEmployeeIds ?? (template.assignedEmployeeId ? [template.assignedEmployeeId] : []);
+  const names = ids.map((id) => nameById.get(id)).filter((name): name is string => !!name);
+  return names.length > 0 ? names.join(", ") : null;
+}
+
 async function getChecklistResponsibleStaff(
   tenantId: string,
   branchId: string,
   template: {
     assignedEmployeeId?: string | null;
+    /** Every employee the template names (SCRUM-658), when the caller has read them. */
+    assignedEmployeeIds?: string[] | null;
     assignedRoleId?: string | null;
     assignedDepartmentId?: string | null;
     departmentId?: string | null;
@@ -368,7 +381,10 @@ async function getChecklistResponsibleStaff(
   const filtered = assignments.filter((assignment) => {
     if (!assignment.employeeId) return false;
     if (!inScheduledWindow(assignment.startTime, assignment.endTime)) return false;
-    if (template.assignedEmployeeId) return assignment.employeeId === template.assignedEmployeeId;
+    const named = template.assignedEmployeeIds?.length
+      ? template.assignedEmployeeIds
+      : template.assignedEmployeeId ? [template.assignedEmployeeId] : [];
+    if (named.length > 0) return named.includes(assignment.employeeId);
     if (template.assignedRoleId) return assignment.roleId === template.assignedRoleId;
     const departmentId = template.assignedDepartmentId || template.departmentId;
     if (departmentId) {
@@ -20775,9 +20791,9 @@ OTO Company Limited`,
       
       const templates = await storage.getChecklistTemplates(tenantId, effectiveBranchId);
       
-      // Fetch assignment names for display
+      // Fetch assignment names for display (every employee a template names, SCRUM-658)
       const assignmentIds = {
-        employeeIds: [...new Set(templates.map((t: any) => t.assignedEmployeeId).filter(Boolean))],
+        employeeIds: [...new Set(templates.flatMap((t: any) => t.assignedEmployeeIds ?? [t.assignedEmployeeId]).filter(Boolean))],
         roleIds: [...new Set(templates.map((t: any) => t.assignedRoleId).filter(Boolean))],
         deptIds: [...new Set(templates.map((t: any) => t.assignedDepartmentId).filter(Boolean))],
       };
@@ -20845,7 +20861,7 @@ OTO Company Limited`,
         
         return {
           ...template,
-          assignedEmployeeName: template.assignedEmployeeId ? employeeNameMap.get(template.assignedEmployeeId) || null : null,
+          assignedEmployeeName: namedEmployeesLabel(template, employeeNameMap),
           assignedRoleName: template.assignedRoleId ? roleNameMap.get(template.assignedRoleId) || null : null,
           assignedDepartmentName: template.assignedDepartmentId ? deptNameMap.get(template.assignedDepartmentId) || null : null,
           assignedEmployeeDepartmentId: template.assignedEmployeeId ? employeeDeptMap.get(template.assignedEmployeeId) || null : null,
@@ -20885,12 +20901,16 @@ OTO Company Limited`,
       }
       
       const filteredTemplates = finalTemplates.filter((template: any) => {
-        const hasDirectEmployee = !!template.assignedEmployeeId;
+        // Every employee the template names: the join rows and the legacy
+        // column, read as one list (SCRUM-658).
+        const namedEmployeeIds: string[] = template.assignedEmployeeIds
+          ?? (template.assignedEmployeeId ? [template.assignedEmployeeId] : []);
+        const hasDirectEmployee = namedEmployeeIds.length > 0;
         const hasRole = !!template.assignedRoleId;
         const hasDept = !!template.assignedDepartmentId;
 
-        // (a) Directly assigned to this employee
-        if (hasDirectEmployee && template.assignedEmployeeId === employeeId) return true;
+        // (a) Directly assigned to this employee, alone or among others
+        if (hasDirectEmployee && !!employeeId && namedEmployeeIds.includes(employeeId)) return true;
 
         // (b) No assignment fields set at all. A legacy department-bound template
         //     (departmentId set) stays visible only when it matches the actor's
@@ -21025,7 +21045,7 @@ OTO Company Limited`,
       
       // Fetch assignment names for display
       const assignmentIds = {
-        employeeIds: [...new Set(filteredByDate.map((t: any) => t.assignedEmployeeId).filter(Boolean))],
+        employeeIds: [...new Set(filteredByDate.flatMap((t: any) => t.assignedEmployeeIds ?? [t.assignedEmployeeId]).filter(Boolean))],
         roleIds: [...new Set(filteredByDate.map((t: any) => t.assignedRoleId).filter(Boolean))],
         deptIds: [...new Set(filteredByDate.map((t: any) => t.assignedDepartmentId).filter(Boolean))],
         locationIds: [...new Set(filteredByDate.map((t: any) => t.locationId).filter(Boolean))],
@@ -21079,7 +21099,7 @@ OTO Company Limited`,
         
         return {
           ...template,
-          assignedEmployeeName: template.assignedEmployeeId ? employeeNameMap.get(template.assignedEmployeeId) || null : null,
+          assignedEmployeeName: namedEmployeesLabel(template, employeeNameMap),
           assignedRoleName: template.assignedRoleId ? roleNameMap.get(template.assignedRoleId) || null : null,
           assignedDepartmentName: template.assignedDepartmentId ? deptNameMap.get(template.assignedDepartmentId) || null : null,
           locationName: template.locationId ? locationNameMap.get(template.locationId) || null : null,
@@ -21101,7 +21121,7 @@ OTO Company Limited`,
       const tenantId = await resolveTenantId(user.tenantId);
       const { 
         name, description, branchId, branchIds, departmentId, recurrence, scheduledTime, 
-        items, assignedEmployeeId, assignedRoleId, assignedDepartmentId,
+        items, assignedRoleId, assignedDepartmentId,
         locationId, requiresPhotoEvidence, referenceMediaUrls, weeklyDays, monthlyDay,
         // Checker-specific fields
         checklistType, checkerRounds, scheduleTime1, scheduleTime2, scheduleTime3, scheduleTime4, scheduleTime5, allowedCheckerRoles
@@ -21110,6 +21130,9 @@ OTO Company Limited`,
       if (!name) {
         return res.status(400).json({ message: "Name is required" });
       }
+      // The employees it names: `assignedEmployeeIds`, or the older single
+      // `assignedEmployeeId` (SCRUM-658).
+      const assignedEmployeeIds = requestedChecklistAssignees(req.body) ?? [];
       
       // Handle branchIds array (new multi-select) or legacy branchId
       const selectedBranchIds: string[] = branchIds && branchIds.length > 0 ? branchIds : (branchId ? [branchId] : []);
@@ -21194,7 +21217,8 @@ OTO Company Limited`,
           scheduleTime3: scheduleTime3 || null,
           scheduleTime4: scheduleTime4 || null,
           scheduleTime5: scheduleTime5 || null,
-          assignedEmployeeId: assignedEmployeeId || null,
+          assignedEmployeeId: assignedEmployeeIds[0] ?? null,
+          assignedEmployeeIds,
           assignedRoleId: assignedRoleId || null,
           assignedDepartmentId: assignedDepartmentId || null,
           allowedCheckerRoles: allowedCheckerRoles || [],
@@ -21263,7 +21287,7 @@ OTO Company Limited`,
       }
       
       const { name, description, branchId, branchIds, recurrence, scheduledTime, items, 
-              assignedEmployeeId, assignedRoleId, assignedDepartmentId, locationId,
+              assignedRoleId, assignedDepartmentId, locationId,
               requiresPhotoEvidence, referenceMediaUrls, isActive, weeklyDays, monthlyDay,
               // Checker-specific fields
               checklistType, checkerRounds, scheduleTime1, scheduleTime2, scheduleTime3, scheduleTime4, scheduleTime5, allowedCheckerRoles } = req.body;
@@ -21318,7 +21342,9 @@ OTO Company Limited`,
       if (branchIds !== undefined) updateData.branchIds = branchIds;
       if (recurrence !== undefined) updateData.recurrence = recurrence;
       if (scheduledTime !== undefined) updateData.scheduledTime = scheduledTime;
-      if (assignedEmployeeId !== undefined) updateData.assignedEmployeeId = assignedEmployeeId;
+      // The employees it names (SCRUM-658): the column keeps the first.
+      const assignedEmployeeIds = requestedChecklistAssignees(req.body);
+      if (assignedEmployeeIds !== undefined) updateData.assignedEmployeeId = assignedEmployeeIds[0] ?? null;
       if (assignedRoleId !== undefined) updateData.assignedRoleId = assignedRoleId;
       if (assignedDepartmentId !== undefined) updateData.assignedDepartmentId = assignedDepartmentId;
       if (locationId !== undefined) updateData.locationId = locationId;
@@ -21343,6 +21369,9 @@ OTO Company Limited`,
       await db.update(checklistTemplates)
         .set(updateData)
         .where(eq(checklistTemplates.id, id));
+      if (assignedEmployeeIds !== undefined) {
+        await setChecklistAssignees(tenantId, id, assignedEmployeeIds);
+      }
       
       const newTemplateItemIds: string[] = [];
       
@@ -21574,13 +21603,14 @@ OTO Company Limited`,
               : inArray(branches.id, user.allowedBranchIds),
         ));
       const accessibleBranchMap = new Map(accessibleBranches.map((branch) => [branch.id, branch]));
-      const recurringTemplates = await db.select()
+      // With every employee each names (SCRUM-658), for the responsible staff below.
+      const recurringTemplates = await withChecklistAssignees(await db.select()
         .from(checklistTemplates)
         .where(and(
           eq(checklistTemplates.tenantId, tenantId),
           eq(checklistTemplates.isActive, true),
           inArray(checklistTemplates.recurrence, ["daily", "weekly", "monthly"]),
-        ));
+        )));
       const now = new Date();
 
       for (const template of recurringTemplates) {
@@ -21946,6 +21976,10 @@ OTO Company Limited`,
         // id from another group narrows to nothing rather than reaching across.
         conditions.push(sql`(
           ${checklistTemplates.assignedEmployeeId} = ${employeeId}
+          OR EXISTS (
+            SELECT 1 FROM checklist_template_assignees cta
+            WHERE cta.template_id = ${checklistTemplates.id} AND cta.employee_id = ${employeeId}
+          )
           OR ${checklistRuns.responsibleStaff} @> jsonb_build_array(jsonb_build_object('employeeId', ${employeeId}::text))
           OR EXISTS (
             SELECT 1 FROM employees e WHERE e.id = ${employeeId} AND e.tenant_id = ${tenantId}::uuid

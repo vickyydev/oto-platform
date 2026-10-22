@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ChecklistEmployeePicker } from "@/components/checklist-employee-picker";
 import { Plus, Trash2, ChevronDown, ChevronUp, Camera, MapPin, User, Users, ClipboardCheck, GripVertical, Wrench } from "lucide-react";
 import { DndContext, DragEndEvent, PointerSensor, TouchSensor, useSensor, useSensors, closestCenter } from "@dnd-kit/core";
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
@@ -71,7 +72,7 @@ interface CreateFormValues {
   monthlyDay: number | null;
   scheduledTime: string;
   assignmentType: "everyone" | "employee" | "role" | "department";
-  assignedEmployeeId: string;
+  assignedEmployeeIds: string[];
   assignedRoleId: string;
   assignedDepartmentId: string;
   locationId: string;
@@ -142,7 +143,7 @@ export function CreateChecklistDialog({ open, onOpenChange }: CreateChecklistDia
       monthlyDay: null,
       scheduledTime: "09:00",
       assignmentType: "everyone",
-      assignedEmployeeId: "",
+      assignedEmployeeIds: [],
       assignedRoleId: "",
       assignedDepartmentId: "",
       locationId: "",
@@ -204,7 +205,7 @@ export function CreateChecklistDialog({ open, onOpenChange }: CreateChecklistDia
     } else {
       form.setValue("branchIds", [...current, branchId]);
     }
-    form.setValue("assignedEmployeeId", "");
+    form.setValue("assignedEmployeeIds", []);
   };
 
   const toggleAllBranches = () => {
@@ -215,7 +216,7 @@ export function CreateChecklistDialog({ open, onOpenChange }: CreateChecklistDia
     } else {
       form.setValue("branchIds", allBranchIds);
     }
-    form.setValue("assignedEmployeeId", "");
+    form.setValue("assignedEmployeeIds", []);
   };
 
   const addItem = () => {
@@ -299,8 +300,8 @@ export function CreateChecklistDialog({ open, onOpenChange }: CreateChecklistDia
       if (data.branchIds.length > 0) {
         payload.branchIds = data.branchIds;
       }
-      if (data.assignmentType === "employee" && data.assignedEmployeeId) {
-        payload.assignedEmployeeId = data.assignedEmployeeId;
+      if (data.assignmentType === "employee" && data.assignedEmployeeIds.length > 0) {
+        payload.assignedEmployeeIds = data.assignedEmployeeIds;
       }
       if (data.assignmentType === "role" && data.assignedRoleId) {
         payload.assignedRoleId = data.assignedRoleId;
@@ -343,8 +344,8 @@ export function CreateChecklistDialog({ open, onOpenChange }: CreateChecklistDia
       toast({ title: `"${invalidPhotoItem.title}" requires a photo. Enable Camera or Gallery.`, variant: "destructive" });
       return;
     }
-    if (data.assignmentType === "employee" && !data.assignedEmployeeId) {
-      toast({ title: "Please select an employee", variant: "destructive" });
+    if (data.assignmentType === "employee" && data.assignedEmployeeIds.length === 0) {
+      toast({ title: "Please select at least one employee", variant: "destructive" });
       return;
     }
     if (data.assignmentType === "role" && !data.assignedRoleId) {
@@ -720,7 +721,7 @@ export function CreateChecklistDialog({ open, onOpenChange }: CreateChecklistDia
                     value={field.value}
                     onValueChange={(val) => {
                       field.onChange(val);
-                      form.setValue("assignedEmployeeId", "");
+                      form.setValue("assignedEmployeeIds", []);
                       form.setValue("assignedRoleId", "");
                       form.setValue("assignedDepartmentId", "");
                     }}
@@ -740,7 +741,7 @@ export function CreateChecklistDialog({ open, onOpenChange }: CreateChecklistDia
                       <SelectItem value="employee">
                         <span className="flex items-center gap-2">
                           <User className="h-4 w-4" />
-                          Specific Employee
+                          Specific Employees
                         </span>
                       </SelectItem>
                       <SelectItem value="role">
@@ -764,33 +765,21 @@ export function CreateChecklistDialog({ open, onOpenChange }: CreateChecklistDia
             {assignmentType === "employee" && (
               <FormField
                 control={form.control}
-                name="assignedEmployeeId"
+                name="assignedEmployeeIds"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Select Employee</FormLabel>
+                    <FormLabel>Select Employees</FormLabel>
                     {selectedBranchIds.length === 1 && (
                       <p className="text-xs text-muted-foreground">
                         Showing employees from: {branches.find(b => b.id === selectedBranchIds[0])?.name}
                       </p>
                     )}
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <FormControl>
-                        <SelectTrigger data-testid="ops-cl-select-assigned-employee">
-                          <SelectValue placeholder="Choose an employee..." />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {filteredEmployees.length === 0 ? (
-                          <SelectItem value="__no_employees__" disabled>No employees found</SelectItem>
-                        ) : (
-                          filteredEmployees.map((emp) => (
-                            <SelectItem key={emp.id} value={emp.id}>
-                              {emp.nickname || emp.fullName}
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
+                    <ChecklistEmployeePicker
+                      employees={filteredEmployees}
+                      value={field.value}
+                      onChange={field.onChange}
+                      testId="ops-cl-select-assigned-employee"
+                    />
                   </FormItem>
                 )}
               />

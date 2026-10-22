@@ -190,6 +190,13 @@
       "when": 1792652552993,
       "tag": "0027_fix_report_urgent_notification",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1792652525763,
+      "tag": "0028_checklist_template_assignees",
+      "breakpoints": true
     }
   ]
 }

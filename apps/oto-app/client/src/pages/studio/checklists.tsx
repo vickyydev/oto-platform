@@ -10,6 +10,7 @@ import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle, DialogFoo
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ChecklistEmployeePicker } from "@/components/checklist-employee-picker";
 import { ClipboardList, Lock, Plus, Trash2, Clock, User, Users, Building2, MapPin, Camera, Image, ChevronDown, ChevronUp, Pencil, Upload, ClipboardCheck, GripVertical, Wrench } from "lucide-react";
 import { DndContext, DragEndEvent, PointerSensor, TouchSensor, useSensor, useSensors, closestCenter } from "@dnd-kit/core";
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
@@ -60,6 +61,8 @@ interface ChecklistTemplate {
   recurrence: string | null;
   scheduledTime: string | null;
   assignedEmployeeId: string | null;
+  /** Every employee the checklist names (SCRUM-658); the column above is the first. */
+  assignedEmployeeIds?: string[] | null;
   assignedRoleId: string | null;
   isActive: boolean;
   createdAt: string;
@@ -90,7 +93,7 @@ interface CreateFormValues {
   monthlyDay: number | null;
   scheduledTime: string;
   assignmentType: "everyone" | "employee" | "role" | "department";
-  assignedEmployeeId: string;
+  assignedEmployeeIds: string[];
   assignedRoleId: string;
   assignedDepartmentId: string;
   locationId: string;
@@ -207,7 +210,7 @@ export default function StudioChecklistsPage() {
       monthlyDay: null,
       scheduledTime: "09:00",
       assignmentType: "everyone",
-      assignedEmployeeId: "",
+      assignedEmployeeIds: [],
       assignedRoleId: "",
       assignedDepartmentId: "",
       locationId: "",
@@ -231,10 +234,10 @@ export default function StudioChecklistsPage() {
     const current = form.getValues("branchIds");
     if (current.includes(branchId)) {
       form.setValue("branchIds", current.filter(id => id !== branchId));
-      form.setValue("assignedEmployeeId", ""); // Reset employee when changing branches
+      form.setValue("assignedEmployeeIds", []); // Reset employee when changing branches
     } else {
       form.setValue("branchIds", [...current, branchId]);
-      form.setValue("assignedEmployeeId", ""); // Reset employee when changing branches
+      form.setValue("assignedEmployeeIds", []); // Reset employee when changing branches
     }
   };
 
@@ -248,7 +251,7 @@ export default function StudioChecklistsPage() {
       // Select all
       form.setValue("branchIds", allBranchIds);
     }
-    form.setValue("assignedEmployeeId", ""); // Reset employee when changing branches
+    form.setValue("assignedEmployeeIds", []); // Reset employee when changing branches
   };
 
   const { data: checklists, isLoading } = useQuery<ChecklistTemplate[]>({
@@ -351,8 +354,8 @@ export default function StudioChecklistsPage() {
       if (data.branchIds.length > 0) {
         payload.branchIds = data.branchIds;
       }
-      if (data.assignmentType === "employee" && data.assignedEmployeeId) {
-        payload.assignedEmployeeId = data.assignedEmployeeId;
+      if (data.assignmentType === "employee" && data.assignedEmployeeIds.length > 0) {
+        payload.assignedEmployeeIds = data.assignedEmployeeIds;
       }
       if (data.assignmentType === "role" && data.assignedRoleId) {
         payload.assignedRoleId = data.assignedRoleId;
@@ -451,22 +454,22 @@ export default function StudioChecklistsPage() {
       }
       switch (data.assignmentType) {
         case "employee":
-          payload.assignedEmployeeId = data.assignedEmployeeId;
+          payload.assignedEmployeeIds = data.assignedEmployeeIds;
           payload.assignedRoleId = null;
           payload.assignedDepartmentId = null;
           break;
         case "role":
           payload.assignedRoleId = data.assignedRoleId;
-          payload.assignedEmployeeId = null;
+          payload.assignedEmployeeIds = [];
           payload.assignedDepartmentId = null;
           break;
         case "department":
           payload.assignedDepartmentId = data.assignedDepartmentId;
-          payload.assignedEmployeeId = null;
+          payload.assignedEmployeeIds = [];
           payload.assignedRoleId = null;
           break;
         default:
-          payload.assignedEmployeeId = null;
+          payload.assignedEmployeeIds = [];
           payload.assignedRoleId = null;
           payload.assignedDepartmentId = null;
       }
@@ -574,7 +577,10 @@ export default function StudioChecklistsPage() {
     
     // Determine assignment type
     let assignmentType: "everyone" | "employee" | "role" | "department" = "everyone";
-    if ((checklist as any).assignedEmployeeId) assignmentType = "employee";
+    const namedEmployeeIds = checklist.assignedEmployeeIds?.length
+      ? checklist.assignedEmployeeIds
+      : checklist.assignedEmployeeId ? [checklist.assignedEmployeeId] : [];
+    if (namedEmployeeIds.length > 0) assignmentType = "employee";
     else if ((checklist as any).assignedRoleId) assignmentType = "role";
     else if ((checklist as any).assignedDepartmentId) assignmentType = "department";
     
@@ -587,7 +593,7 @@ export default function StudioChecklistsPage() {
       monthlyDay: (checklist as any).monthlyDay || null,
       scheduledTime: checklist.scheduledTime || "09:00",
       assignmentType,
-      assignedEmployeeId: (checklist as any).assignedEmployeeId || "",
+      assignedEmployeeIds: namedEmployeeIds,
       assignedRoleId: (checklist as any).assignedRoleId || "",
       assignedDepartmentId: (checklist as any).assignedDepartmentId || "",
       locationId: (checklist as any).locationId || "",
@@ -629,6 +635,10 @@ export default function StudioChecklistsPage() {
     );
     if (invalidPhotoItem) {
       toast({ title: `"${invalidPhotoItem.title}" requires a photo. Enable Camera or Gallery.`, variant: "destructive" });
+      return;
+    }
+    if (data.assignmentType === "employee" && data.assignedEmployeeIds.length === 0) {
+      toast({ title: "Please select at least one employee", variant: "destructive" });
       return;
     }
     updateMutation.mutate({ id: editingChecklist.id, data });
@@ -690,8 +700,8 @@ export default function StudioChecklistsPage() {
       toast({ title: `"${invalidPhotoItem.title}" requires a photo. Enable Camera or Gallery.`, variant: "destructive" });
       return;
     }
-    if (data.assignmentType === "employee" && !data.assignedEmployeeId) {
-      toast({ title: "Please select an employee", variant: "destructive" });
+    if (data.assignmentType === "employee" && data.assignedEmployeeIds.length === 0) {
+      toast({ title: "Please select at least one employee", variant: "destructive" });
       return;
     }
     if (data.assignmentType === "role" && !data.assignedRoleId) {
@@ -729,9 +739,16 @@ export default function StudioChecklistsPage() {
   };
 
   const getAssignmentLabel = (checklist: ChecklistTemplate) => {
-    if (checklist.assignedEmployeeId) {
-      const emp = employees?.find(e => e.id === checklist.assignedEmployeeId);
-      return emp ? (emp.nickname || emp.fullName) : "Specific employee";
+    const namedEmployeeIds = checklist.assignedEmployeeIds?.length
+      ? checklist.assignedEmployeeIds
+      : checklist.assignedEmployeeId ? [checklist.assignedEmployeeId] : [];
+    if (namedEmployeeIds.length > 0) {
+      const names = namedEmployeeIds
+        .map(id => employees?.find(e => e.id === id))
+        .filter((emp): emp is Employee => !!emp)
+        .map(emp => emp.nickname || emp.fullName);
+      if (names.length === 0) return namedEmployeeIds.length === 1 ? "Specific employee" : `${namedEmployeeIds.length} employees`;
+      return names.join(", ");
     }
     if (checklist.assignedRoleId) {
       const role = roles?.find(r => r.id === checklist.assignedRoleId);
@@ -851,7 +868,7 @@ export default function StudioChecklistsPage() {
                               : branches.find(b => b.id === checklist.branchId)?.name || "Branch"}
                           </Badge>
                         )}
-                        {(checklist.assignedEmployeeId || checklist.assignedRoleId) && (
+                        {(checklist.assignedEmployeeIds?.length || checklist.assignedEmployeeId || checklist.assignedRoleId) && (
                           <Badge variant="secondary" className="text-xs flex items-center gap-1">
                             <User className="h-3 w-3" />
                             {getAssignmentLabel(checklist) || "Assigned"}
@@ -1425,7 +1442,7 @@ export default function StudioChecklistsPage() {
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="everyone">Everyone</SelectItem>
-                        <SelectItem value="employee">Specific Employee</SelectItem>
+                        <SelectItem value="employee">Specific Employees</SelectItem>
                         <SelectItem value="role">Role</SelectItem>
                         <SelectItem value="department">Department</SelectItem>
                       </SelectContent>
@@ -1437,33 +1454,21 @@ export default function StudioChecklistsPage() {
               {assignmentType === "employee" && (
                 <FormField
                   control={form.control}
-                  name="assignedEmployeeId"
+                  name="assignedEmployeeIds"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Select Employee</FormLabel>
+                      <FormLabel>Select Employees</FormLabel>
                       {selectedBranchIds.length === 1 && (
                         <p className="text-xs text-muted-foreground">
                           Showing employees from: {branches.find(b => b.id === selectedBranchIds[0])?.name}
                         </p>
                       )}
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger data-testid="select-edit-employee">
-                            <SelectValue placeholder="Select employee" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {filteredEmployees.length === 0 ? (
-                            <SelectItem value="__no_employees__" disabled>No employees found</SelectItem>
-                          ) : (
-                            filteredEmployees.map((emp) => (
-                              <SelectItem key={emp.id} value={emp.id}>
-                                {emp.nickname || emp.fullName}
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
+                      <ChecklistEmployeePicker
+                        employees={filteredEmployees}
+                        value={field.value}
+                        onChange={field.onChange}
+                        testId="select-edit-employee"
+                      />
                     </FormItem>
                   )}
                 />
@@ -1929,7 +1934,7 @@ export default function StudioChecklistsPage() {
                       value={field.value}
                       onValueChange={(val) => {
                         field.onChange(val);
-                        form.setValue("assignedEmployeeId", "");
+                        form.setValue("assignedEmployeeIds", []);
                         form.setValue("assignedRoleId", "");
                         form.setValue("assignedDepartmentId", "");
                       }}
@@ -1949,7 +1954,7 @@ export default function StudioChecklistsPage() {
                         <SelectItem value="employee">
                           <span className="flex items-center gap-2">
                             <User className="h-4 w-4" />
-                            Specific Employee
+                            Specific Employees
                           </span>
                         </SelectItem>
                         <SelectItem value="role">
@@ -1973,36 +1978,21 @@ export default function StudioChecklistsPage() {
               {assignmentType === "employee" && (
                 <FormField
                   control={form.control}
-                  name="assignedEmployeeId"
+                  name="assignedEmployeeIds"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Select Employee</FormLabel>
+                      <FormLabel>Select Employees</FormLabel>
                       {selectedBranchIds.length === 1 && (
                         <p className="text-xs text-muted-foreground">
                           Showing employees from: {branches.find(b => b.id === selectedBranchIds[0])?.name}
                         </p>
                       )}
-                      <Select
+                      <ChecklistEmployeePicker
+                        employees={filteredEmployees}
                         value={field.value}
-                        onValueChange={field.onChange}
-                      >
-                        <FormControl>
-                          <SelectTrigger data-testid="select-assigned-employee">
-                            <SelectValue placeholder="Choose an employee..." />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {filteredEmployees.length === 0 ? (
-                            <SelectItem value="__no_employees__" disabled>No employees found</SelectItem>
-                          ) : (
-                            filteredEmployees.map((emp) => (
-                              <SelectItem key={emp.id} value={emp.id}>
-                                {emp.nickname || emp.fullName}
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
+                        onChange={field.onChange}
+                        testId="select-assigned-employee"
+                      />
                     </FormItem>
                   )}
                 />
