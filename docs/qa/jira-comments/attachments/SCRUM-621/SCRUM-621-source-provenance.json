@@ -1,0 +1,26 @@
+{
+  "frozenAt": "2026-10-22T10:49:59.553Z",
+  "files": 3538,
+  "ownedFiles": 30,
+  "apiPackageImage": "sha256:d83d1a0320378d5a418cca84a8acdc7e6816b6a694e53a6bdefff9d354fd5a05",
+  "deltaFromApiPackageFreeze": [
+    "apps/console/e2e/catalogue.spec.ts",
+    "apps/console/src/pages/Catalogue.tsx",
+    "packages/admin-screens/src/lifted/api/menu.ts",
+    "packages/admin-screens/src/lifted/api/platform.ts",
+    "packages/admin-screens/src/lifted/runtime/catalogue.ts"
+  ],
+  "unchangedInputs": 3533,
+  "initialInheritedLabel": {
+    "backendAndOtherPackageInputsUnchanged": true,
+    "correction": "The original helper label grouped backend and frontend package inputs. Five explicit deltas include shared frontend declarations/binding cleanup, so that combined label is inaccurate."
+  },
+  "backendInputsUnchanged": true,
+  "otherPackageInputsUnchanged": false,
+  "sharedFrontendDeltas": [
+    "packages/admin-screens/src/lifted/runtime/catalogue.ts: honest unknown input; emitted JavaScript identical, separate proof retained",
+    "packages/admin-screens/src/lifted/api/menu.ts: unused type imports removed",
+    "packages/admin-screens/src/lifted/api/platform.ts: unused holidays binding removed; paths/bodies/cache behavior unchanged"
+  ],
+  "remainingValidation": "Final full checks, Console/API-types/AdminScreens units, full browser and affected POS/compiler checks cover these final frontend bytes. Full backend source is unchanged."
+}

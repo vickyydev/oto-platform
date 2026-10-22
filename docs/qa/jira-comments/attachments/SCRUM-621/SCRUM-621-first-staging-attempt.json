@@ -1,0 +1,178 @@
+{
+  "ticket": "SCRUM-621",
+  "releaseSha": "e2d3488812fd3a7b316df2676b847c72cb3ebcc3",
+  "helperSha256": "da8a950f985a9fbb9cba3bd94045fc7e8505c7ad3673d4b9e2b31f5b9494a08a",
+  "helperFilename": "admin621-evidence-v2.mjs",
+  "startedAt": "2026-10-22T12:02:18.812Z",
+  "complete": false,
+  "checks": [
+    {
+      "label": "NATIVE_UNUSED_NONDEFAULT_TIER_CREATE_AND_EDIT",
+      "passed": true,
+      "at": "2026-10-22T12:02:39.232Z"
+    },
+    {
+      "label": "SIGNOUT200_AND_ME401",
+      "passed": true,
+      "at": "2026-10-22T12:03:12.086Z"
+    }
+  ],
+  "screenshots": [
+    {
+      "filename": "SCRUM-621-01-tiers-desktop.png",
+      "capturedAt": "2026-10-22T12:02:37.846Z",
+      "bounds": [
+        {
+          "name": "heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "fixture tier",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "native name",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "captionClear": true,
+      "sha256": "3fe6d646170c5d8c6f376ca825a43692ba4d618a0e0fa382f019fb7701d2df20"
+    }
+  ],
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "deployId": "dep-dbcvkonavr4c73d3vs70",
+      "sourceSha": "e2d3488812fd3a7b316df2676b847c72cb3ebcc3",
+      "finishedAt": "2026-10-22T12:01:25.861621Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "deployId": "dep-dbcvkonavr4c73d3vtd0",
+      "sourceSha": "e2d3488812fd3a7b316df2676b847c72cb3ebcc3",
+      "finishedAt": "2026-10-22T11:59:19.045142Z"
+    }
+  ],
+  "operations": [
+    {
+      "label": "tier-create",
+      "method": "POST",
+      "pathSha256": "ee69951587c9e05d86bf757bbbb3f4ed293dd3fbaed1cc76ca33a1d23712d061",
+      "bodySha256": "ae053cdbf4a3a9f3c01b0f692ce9398355dc753e36d5bd6784c048ff8b21ed2f",
+      "keySha256": "c8852bda88e5707bb432da2bee0fb605949c15db12712a820f46e311cfcca911",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": "zz_test_621_tier_20261022120218810"
+    },
+    {
+      "label": "tier-edit",
+      "method": "PATCH",
+      "pathSha256": "6073fce2548dd603e6e0c798f492e2c1e6857208796e2af4c53c4b099daf4e65",
+      "bodySha256": "9fa0cb283d061e59d0f9207da89fd9aa231e67b14a8566d90bff25acbba97fba",
+      "keySha256": "82e54f4decc7d0016591d75c24d0f3516981c7c7ae6336b0061ac3b64755f3d2",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "ticket-create",
+      "method": "POST",
+      "pathSha256": "f13c6110cb9bfd4e17ed1c91b401ef91d49847d0b7f0f57a412e13e960435af4",
+      "bodySha256": "5706eb889876c18eb813c7eaf67d1c14302acf915d222f50cc36be37ae1a6da2",
+      "keySha256": "4b7e683f3f88970c6d1b5af6e46912cbe5a2f8423a41249283fffda882bb84aa",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": "01a1637e-01af-77da-ba1b-254e61e70db4"
+    },
+    {
+      "label": "ticket-edit",
+      "method": "PATCH",
+      "pathSha256": "832260270c856e8ff7ec9495a68f021a1ac9cfb13426c62ac30054cf57fab2e2",
+      "bodySha256": "1f3110560c36212aa879113c74cfdd5ccba98e69b175312e6c17de2b7843abe6",
+      "keySha256": "9fd97ec5f38615d69a12b59db69ce3b4d5d8249bbd9b8ab88daddcad79a5a2f4",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "ticket-delete",
+      "method": "DELETE",
+      "pathSha256": "832260270c856e8ff7ec9495a68f021a1ac9cfb13426c62ac30054cf57fab2e2",
+      "bodySha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "keySha256": "039894d9a03c5ece8580e981eedc56d8c5260976af84b420c842bf4b97dde8dc",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "tier-delete",
+      "method": "DELETE",
+      "pathSha256": "6073fce2548dd603e6e0c798f492e2c1e6857208796e2af4c53c4b099daf4e65",
+      "bodySha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "keySha256": "c309ac93294fbdfeb31b7cb5cd48ec7eece234d06ccb87497b0f0eb81d73fb67",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    }
+  ],
+  "blockedRequests": [],
+  "browserErrorKinds": [],
+  "counts": {
+    "signIns": 1,
+    "signOuts": 1,
+    "fixtureCreates": 2,
+    "businessAttempts": 6,
+    "blockedReads": 0,
+    "blockedWrites": 0,
+    "otherBusinessWrites": 0,
+    "smsRequests": 0,
+    "equipmentWrites": 0,
+    "publicAssetReads": 8
+  },
+  "resourcesRestored": true,
+  "limitations": [
+    "This draft proves Console catalogue screens and current-park canonical data only; it does not claim an actual Till or sale flow. GET /me omits stationId, so no station value is observed or claimed restored. No station-selection write is permitted.",
+    "Only the fresh unused nondefault tier, two-hour ticket and untracked add-on are changed. Archived ticket/add-on rows and the archived tier are retained by the approved APIs.",
+    "Permission negatives, uncertain readback and asynchronous cross-page cases are automated proof; live proof never changes an existing catalogue record, default, tier order, proof requirement, stock, member, station or payment.",
+    "Unrelated catalogue rows, navigation labels and signed-in person details are hidden for proof privacy; the fixture controls remain native.",
+    "Browser error kinds and partial attempts are retained. Passing the stated controls does not claim an error-free browser."
+  ],
+  "actor": {
+    "id": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+    "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+  },
+  "freshStorage": true,
+  "diagnostic": "ASSERTION_OR_RUNTIME_FAILED",
+  "failedPhase": "CAPTURE_2",
+  "baselineRestored": {
+    "original": "38ca1e7f722b34fa20a84e61b05905666c99ade6be7ec5ce4105da9a2ec82871",
+    "after": "38ca1e7f722b34fa20a84e61b05905666c99ade6be7ec5ce4105da9a2ec82871",
+    "preferences": "00df943c543d230f9e93ceca1038b659220a9779f4d70ae1b114715829458881",
+    "branch": "ff1408f7b8cf4f693cbd2f6e6a82a0e79e347415fdeb0f1886ea0d49d4ded535"
+  },
+  "authCleanup": {
+    "signOutStatus": 200,
+    "meStatus": 401,
+    "confirmed": true
+  },
+  "authState": {
+    "signInAttempted": true,
+    "authUncertain": false,
+    "pendingAuth": 0
+  },
+  "completedAt": "2026-10-22T12:03:13.611Z"
+}

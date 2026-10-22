@@ -1,0 +1,51 @@
+{
+  "ticket": "SCRUM-621",
+  "createdAt": "2026-10-22T11:06:35.347Z",
+  "kind": "proof-metadata-only-amendment",
+  "original": {
+    "path": "C:/w/admin621-evidence.mjs",
+    "sha256": "c332953f7fbfe9c3342d7abccd80f4fc04af8a91df35cc7e6a1529033f960cae"
+  },
+  "amended": {
+    "path": "C:/w/admin621-evidence-v2.mjs",
+    "sha256": "da8a950f985a9fbb9cba3bd94045fc7e8505c7ad3673d4b9e2b31f5b9494a08a"
+  },
+  "replacements": [
+    {
+      "before": "helperFilename: 'admin621-evidence.mjs'",
+      "after": "helperFilename: 'admin621-evidence-v2.mjs'",
+      "occurrences": 1
+    },
+    {
+      "before": "EXACT_CURRENT_PARK_PREFS_AND_SEAT_RESTORED",
+      "after": "EXACT_CURRENT_PARK_AND_PREFERENCES_RESTORED",
+      "occurrences": 1
+    },
+    {
+      "before": "ORIGINAL_SEAT_AND_PREFERENCES_REQUIRED",
+      "after": "ORIGINAL_BRANCH_AND_PREFERENCES_REQUIRED",
+      "occurrences": 1
+    },
+    {
+      "before": "This draft proves Console catalogue screens and current-park canonical data only; it does not claim an actual Till or sale flow.",
+      "after": "This draft proves Console catalogue screens and current-park canonical data only; it does not claim an actual Till or sale flow. GET /me omits stationId, so no station value is observed or claimed restored. No station-selection write is permitted.",
+      "occurrences": 1
+    }
+  ],
+  "preserves": "All request paths, bodies, selectors, auth, journal, recovery, capture guards and completion predicates are byte-identical after applying only these four literal replacements.",
+  "limitation": "GET /me provides branch/preferences but no stationId. No station write is permitted or performed by this unexecuted preparation.",
+  "localReview": {
+    "path": "C:/w/admin621-proof-review-v2.json",
+    "sha256": "740826de9905e1b1467abf7f49cf8d45d193887a8f710344d46aff596bd0ecd8",
+    "exitCode": 0,
+    "checks": 9,
+    "networkRequests": 0,
+    "originalReview": {
+      "path": "C:/w/admin621-proof-review.json",
+      "sha256": "efd33b0880b0395531d7895cf170de65673383262b9a45f7fb680d37d6cb76b1"
+    },
+    "harnessChanges": "Copied original nine-check harness with helper input and output filenames changed only."
+  },
+  "syntaxCheckExitCode": 0,
+  "executedAgainstStaging": false
+}

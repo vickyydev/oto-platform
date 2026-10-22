@@ -1,0 +1,64 @@
+{
+  "ticket": "SCRUM-621",
+  "sourceSha": "e2d3488812fd3a7b316df2676b847c72cb3ebcc3",
+  "recordedAt": "2026-10-22T11:59:14.074Z",
+  "passed": true,
+  "runId": 39772377485,
+  "url": "https://github.com/vickyydev/oto-platform/actions/runs/39772377485",
+  "attempt": 1,
+  "status": "completed",
+  "conclusion": "success",
+  "jobs": [
+    {
+      "databaseId": 119802835501,
+      "name": "oto-app",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-22T11:40:43Z",
+      "completedAt": "2026-10-22T11:41:21Z"
+    },
+    {
+      "databaseId": 119802835614,
+      "name": "ci",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-22T11:40:42Z",
+      "completedAt": "2026-10-22T11:52:24Z"
+    },
+    {
+      "databaseId": 119802835651,
+      "name": "api-tests (1)",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-22T11:40:42Z",
+      "completedAt": "2026-10-22T11:58:22Z"
+    },
+    {
+      "databaseId": 119802835800,
+      "name": "pos-tests",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-22T11:40:43Z",
+      "completedAt": "2026-10-22T11:42:56Z"
+    },
+    {
+      "databaseId": 119802835860,
+      "name": "api-tests (2)",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-22T11:40:43Z",
+      "completedAt": "2026-10-22T11:57:40Z"
+    },
+    {
+      "databaseId": 119802835880,
+      "name": "api-tests (3)",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-22T11:40:43Z",
+      "completedAt": "2026-10-22T11:58:10Z"
+    }
+  ],
+  "localReceiptSha256": "242af2e44d45743bc97ea75f8526e174a6ea12a4726cbb46f072942d4bf87ee0",
+  "sourceVerificationSha256": "fcf038a736b1d7916ddc5e775d3fbabebcf14bb187a29fb8397b753c18df0188",
+  "limits": "Observed GitHub CI only. Render and native staging proof are separate."
+}

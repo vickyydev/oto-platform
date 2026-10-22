@@ -1,0 +1,79 @@
+{
+  "sourceSha": "e2d3488812fd3a7b316df2676b847c72cb3ebcc3",
+  "helperSha256": "cea51c2cb7ebd515d9d4380d74b7f8f8fc569b50eab8ce0fba2864a20529305e",
+  "startedAt": "2026-10-22T12:15:01.004Z",
+  "finishedAt": "2026-10-22T12:16:24.811Z",
+  "complete": true,
+  "ciRunId": 39772377485,
+  "jobs": [
+    {
+      "name": "oto-app",
+      "conclusion": "success"
+    },
+    {
+      "name": "ci",
+      "conclusion": "success"
+    },
+    {
+      "name": "api-tests (1)",
+      "conclusion": "success"
+    },
+    {
+      "name": "pos-tests",
+      "conclusion": "success"
+    },
+    {
+      "name": "api-tests (2)",
+      "conclusion": "success"
+    },
+    {
+      "name": "api-tests (3)",
+      "conclusion": "success"
+    }
+  ],
+  "before": [
+    {
+      "name": "oto-api-staging",
+      "id": "dep-dbcvkonavr4c73d3vs70",
+      "sourceSha": "e2d3488812fd3a7b316df2676b847c72cb3ebcc3",
+      "finishedAt": "2026-10-22T12:01:25.861621Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "id": "dep-dbcvkonavr4c73d3vtd0",
+      "sourceSha": "e2d3488812fd3a7b316df2676b847c72cb3ebcc3",
+      "finishedAt": "2026-10-22T11:59:19.045142Z"
+    },
+    {
+      "name": "oto-pos-staging",
+      "id": "dep-dbcvkonavr4c73d3vt5g",
+      "sourceSha": "e2d3488812fd3a7b316df2676b847c72cb3ebcc3",
+      "finishedAt": "2026-10-22T11:59:11.114564Z"
+    }
+  ],
+  "after": [
+    {
+      "name": "oto-api-staging",
+      "id": "dep-dbcvkonavr4c73d3vs70",
+      "sourceSha": "e2d3488812fd3a7b316df2676b847c72cb3ebcc3",
+      "finishedAt": "2026-10-22T12:01:25.861621Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "id": "dep-dbcvkonavr4c73d3vtd0",
+      "sourceSha": "e2d3488812fd3a7b316df2676b847c72cb3ebcc3",
+      "finishedAt": "2026-10-22T11:59:19.045142Z"
+    },
+    {
+      "name": "oto-pos-staging",
+      "id": "dep-dbcvkonavr4c73d3vt5g",
+      "sourceSha": "e2d3488812fd3a7b316df2676b847c72cb3ebcc3",
+      "finishedAt": "2026-10-22T11:59:11.114564Z"
+    }
+  ],
+  "stable": true,
+  "freshAfterAllThreeDeploys": true,
+  "proofExitCode": 0,
+  "proofReceiptSha256": "a6a2e08eef72ca3a06d00494dd211ad3d7031f33e8a0116c15ea87c6630779bb",
+  "limits": "Native captures exercise Console only. POS deployment is verified, not an actual Till demonstration."
+}

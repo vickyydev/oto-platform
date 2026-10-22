@@ -1,0 +1,68 @@
+{
+  "ticket": "SCRUM-621",
+  "checkedAt": "2026-10-22T12:10:08.537Z",
+  "mode": "actual-frozen-TicketsPanelWithPorts-SSR-offline-native-Playwright-DOM",
+  "passed": true,
+  "harnessSha256": "ded2596b4b4314d804a14babbdf0274735b6c58c7b5f00d0e2578aa0418e7bf0",
+  "sourceHashes": [
+    {
+      "path": "packages/admin-screens/src/lifted/components/admin/tickets/TicketsPanel.tsx",
+      "sha256": "44ed39d428a91cf4738a9f8047b9bdc121a960a0d0ef002560486c40f6657f0c"
+    },
+    {
+      "path": "packages/admin-screens/src/lifted/components/ui/table.tsx",
+      "sha256": "ca2bf8659300434482ef6ff9e6f074d24cfdacfc6225f118998e9af7ae0cd728"
+    },
+    {
+      "path": "packages/admin-screens/src/lifted/components/admin/tickets/ticketPricing.ts",
+      "sha256": "36d822f8fe5dcd5e6c0ce2cb9210388388749b027e7afa9abff915c419b9834e"
+    },
+    {
+      "path": "packages/admin-screens/src/lifted/lib/membership.ts",
+      "sha256": "e8ac7a001be4da22b9094e8ca6bdb7a29766742850b0bc68925d59f4f4bff739"
+    }
+  ],
+  "nativeSsrExitCode": 0,
+  "nativeSsrNetworkRequests": 0,
+  "nativeSsrMutationCalls": 0,
+  "runs": [
+    {
+      "mode": "old",
+      "counts": {
+        "gateOld": 0,
+        "gateCorrected": 1,
+        "plainOld": 1,
+        "plainCorrected": 1,
+        "gateEditInsideRow": 1
+      },
+      "networkRequests": 0,
+      "expectedFixtureRows": 1,
+      "passed": false,
+      "exitCode": 1
+    },
+    {
+      "mode": "corrected",
+      "counts": {
+        "gateOld": 0,
+        "gateCorrected": 1,
+        "plainOld": 1,
+        "plainCorrected": 1,
+        "gateEditInsideRow": 1
+      },
+      "networkRequests": 0,
+      "expectedFixtureRows": 1,
+      "passed": true,
+      "exitCode": 0
+    }
+  ],
+  "networkRequests": 0,
+  "setupAttempt": {
+    "exitCode": 2,
+    "classification": "Initial temporary-container SSR command used sh; its dash shell rejected pipefail before tsx or any component executed. Changed only the external harness command to Bash; not a product or selector failure."
+  },
+  "finding": "The native gate-access chip is a descendant of the same ticket-name table cell. Exact text matching of that whole cell does not select the gate-access fixture row. The row containing the exact native Edit button identifies it without relying on chip-free cell text.",
+  "limitations": [
+    "Actual component SSR and Playwright DOM selector behavior only; no staging, authentication, API call, stylesheet, font, capture geometry or visible-layout claim.",
+    "Only an external harness and one explicitly named /tmp container script were created. No repository source, original proof helper, proof receipt, screenshot or private journal was changed."
+  ]
+}

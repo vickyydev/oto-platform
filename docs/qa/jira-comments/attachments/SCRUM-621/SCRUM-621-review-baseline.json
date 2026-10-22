@@ -1,0 +1,221 @@
+{
+  "ticket": "SCRUM-621",
+  "recordedAt": "2026-10-22T10:43:21.460Z",
+  "mode": "local-baselines-only-no-CI-or-staging-claim",
+  "attribution": "API and built-browser executions below were actually run and observed by coordinator /root in isolated oto-admin621-workspace. Initial development-run stdout remains in tool outputs, not standalone log files. This subagent personally ran only its strict changed-test lint and local no-network native price DOM check.",
+  "commands": {
+    "house": "node C:/w/admin621-dev.mjs run 'pnpm --filter @oto/api exec vitest run --pool=forks test/s621-catalogue-review.test.ts'",
+    "contracts": "node C:/w/admin621-dev.mjs run 'pnpm --filter @oto/api exec vitest run --pool=forks test/s621-catalogue-contracts.test.ts'",
+    "browser": "node C:/w/admin621-dev.mjs run 'CONSOLE_E2E_BUILT=1 pnpm --filter @oto/console e2e -- e2e/catalogue.spec.ts'",
+    "focusedApi": "node C:/w/admin621-dev.mjs run 'pnpm --filter @oto/api exec vitest run --pool=forks test/s621-catalogue-contracts.test.ts test/s621-catalogue-review.test.ts'",
+    "lint": "set -eo pipefail; pnpm exec eslint apps/api/test/s621-catalogue-review.test.ts apps/console/e2e/catalogue.spec.ts"
+  },
+  "strictExecution": "Coordinator container commands use Bash set -eo pipefail, unpiped, full serial files, no -t.",
+  "preservedParents": [
+    {
+      "path": "C:/w/admin621-baselines.json",
+      "sha256": "66fcb3b00d24a8624b936882621d1a4a66d823455818e969a40a798588e74d03"
+    },
+    {
+      "path": "C:/w/admin621-package-baseline.json",
+      "sha256": "e37a7ba5e058909987e2eb6a760e39ec9a215bd1d1dbd934c4f0316a1f0307c5"
+    }
+  ],
+  "observations": [
+    {
+      "surface": "house-initial",
+      "exitCode": 1,
+      "passed": 2,
+      "failed": 4,
+      "featureFailures": [
+        "Missing reconcile operator target"
+      ],
+      "setupFailures": [
+        "Two fractional-hours schema rejections and one PostgreSQL integer-hours fixture insert failure"
+      ],
+      "correction": "Only fixtures changed to approved two-hour integer values; half-hour UI/API behavior remains an owner question."
+    },
+    {
+      "surface": "house-corrected-hours",
+      "exitCode": 1,
+      "passed": 3,
+      "failed": 3,
+      "featureFailures": [
+        "Missing reconcile operator target",
+        "Foreign operator ticket attached to an owned branch leaked in list, accepted explicit-ID replay, update and archive, with wrong audit writes (seven soft assertions)"
+      ],
+      "setupFailures": [
+        "Category fixture code failed existing uppercase/length schema"
+      ],
+      "correction": "Only category fixture code changed to valid uppercase ZZ- prefix plus twenty hexadecimal characters."
+    },
+    {
+      "surface": "contract-initial-setup",
+      "exitCode": 1,
+      "passed": 0,
+      "failed": 3,
+      "setupFailures": [
+        "Swagger called before app.ready"
+      ],
+      "correction": "Await app.ready in test only."
+    },
+    {
+      "surface": "contract-baseline",
+      "exitCode": 1,
+      "passed": 0,
+      "failed": 3,
+      "featureFailures": [
+        "Absent runtime output contracts for existing tiers, tickets and menu routes"
+      ]
+    },
+    {
+      "surface": "browser-missing-pages",
+      "exitCode": 1,
+      "failed": 2,
+      "featureFailures": [
+        "Missing native Catalogue headings"
+      ],
+      "limitation": "This proves absent Console pages, not separately scoped tier offers."
+    },
+    {
+      "surface": "shared-tier-offers",
+      "exitCode": 1,
+      "passed": 1,
+      "failed": 1,
+      "featureFailures": [
+        "Server-backed branch-scoped panel offered operator-wide tier writes"
+      ],
+      "retainedBehavior": "Unbacked local POS controls remained visible."
+    },
+    {
+      "surface": "browser-eight-first",
+      "exitCode": 1,
+      "passed": 4,
+      "failed": 4,
+      "featureFailures": [
+        "Existing valid fractional satang prices failed native integer-baht step validation before submit in four cases"
+      ],
+      "limitation": "These four stops did not yet establish translation or async failures."
+    },
+    {
+      "surface": "browser-nine-after-price-fix",
+      "exitCode": 1,
+      "passed": 7,
+      "failed": 2,
+      "featureFailures": [
+        "Exact satang saved but existing ticket translations became null",
+        "A previous Tickets write caused an old Tickets GET after navigating to Add-ons"
+      ]
+    },
+    {
+      "surface": "browser-ten",
+      "exitCode": 1,
+      "passed": 8,
+      "failed": 2,
+      "featureFailures": [
+        "Operator-wide manager could not edit/delete shared add-on despite existing API authority",
+        "Confirmed create followed by failed canonical GET left a writable create draft, permitting duplicate creation"
+      ]
+    },
+    {
+      "surface": "browser-eleven-epoch",
+      "exitCode": 1,
+      "passed": 10,
+      "failed": 1,
+      "featureFailures": [
+        "Old postcommit GET500 cleared newer successful data after a Park A to B to A round trip"
+      ]
+    },
+    {
+      "surface": "focused-api-final-reported",
+      "exitCode": 0,
+      "passed": 12,
+      "files": 2,
+      "source": "Coordinator actual command/result message; contracts6 plus house6"
+    },
+    {
+      "surface": "local-native-price-DOM",
+      "exitCode": 0,
+      "passed": true,
+      "oldInvalidInputs": 2,
+      "currentValidInputs": 2,
+      "networkRequests": 0,
+      "path": "C:/w/admin621-price-validity-regression.json",
+      "sha256": "6c6bd8ecab149427e36a78ffaabcd232b1a3569e1925900f772373ce6262ef4c",
+      "limitation": "Old no-step props reconstructed from directly observed source; current step0.01 attributes extracted from actual shared source."
+    },
+    {
+      "surface": "own-test-lint",
+      "exitCode": 0,
+      "stdoutLines": 0,
+      "limitation": "Observed before final case11 changes; final own lint rerun still required."
+    },
+    {
+      "surface": "contract-expanded-fixture-correction",
+      "source": "Coordinator actual report",
+      "setupFailures": [
+        "Modifier-option fixture used negative price rejected by the existing database constraint"
+      ],
+      "correction": "Only fixture changed; no catalogue constraint or output guard weakened.",
+      "limitation": "No exact pass/fail count recorded for this intermediate attempt."
+    },
+    {
+      "surface": "shared-catalogue-api",
+      "source": "Coordinator actual report",
+      "command": "pnpm --filter @oto/admin-screens test test/lifted-catalogue-api.test.ts",
+      "before": {
+        "exitCode": 1,
+        "passed": 4,
+        "failed": 1
+      },
+      "after": {
+        "exitCode": 0,
+        "passed": 5
+      },
+      "limitation": "Original stdout retained in coordinator tool outputs."
+    },
+    {
+      "surface": "browser-eleven-final",
+      "source": "Coordinator actual full built-browser command/result",
+      "exitCode": 0,
+      "passed": 11,
+      "failed": 0
+    },
+    {
+      "surface": "own-final-test-lint",
+      "source": "Personally executed strict unpiped Git Bash invocation",
+      "exitCode": 0,
+      "stdoutLines": 0
+    }
+  ],
+  "tests": {
+    "houseCases": 6,
+    "browserCases": 11,
+    "housePath": "apps/api/test/s621-catalogue-review.test.ts",
+    "browserPath": "apps/console/e2e/catalogue.spec.ts"
+  },
+  "finalBrowserStatus": "Coordinator observed full eleven-case built-browser run exit0: 11 passed.",
+  "sourceFilesChangedByThisWorkflow": [
+    "apps/api/test/s621-catalogue-review.test.ts",
+    "apps/console/e2e/catalogue.spec.ts"
+  ],
+  "ci": "NOT_OBSERVED",
+  "staging": "NOT_EXECUTED_BY_THIS_WORKFLOW",
+  "preservedInitial": {
+    "path": "C:/w/admin621-review-baseline-initial.json",
+    "sha256": "88a256e6363c012f41dc735cc2f726fcae08c90d0572dcca86efbae0da5b1841"
+  },
+  "frozenTests": [
+    {
+      "path": "apps/api/test/s621-catalogue-review.test.ts",
+      "sha256": "17b2823a63d8e4c0a37f6c81cad822238a1a3225446afe573b586f70c8151ff5",
+      "cases": 6
+    },
+    {
+      "path": "apps/console/e2e/catalogue.spec.ts",
+      "sha256": "7fc8924cb42ba72ca8370b820fd355221d10a41e0f0ce1b86e608f4ac754a72b",
+      "cases": 11
+    }
+  ],
+  "updatedAt": "2026-10-22T10:45:27.726Z"
+}

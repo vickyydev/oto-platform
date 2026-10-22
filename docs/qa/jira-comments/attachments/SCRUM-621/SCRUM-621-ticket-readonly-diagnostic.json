@@ -1,0 +1,171 @@
+{
+  "ticket": "SCRUM-621",
+  "kind": "read-only-existing-ticket-selector-diagnostic",
+  "sourceSha": "e2d3488812fd3a7b316df2676b847c72cb3ebcc3",
+  "reviewedHelperSha256": "da8a950f985a9fbb9cba3bd94045fc7e8505c7ad3673d4b9e2b31f5b9494a08a",
+  "helperSha256": "f63bc7e625385367e13ba100199cc4512546b57fed074d245db0a21f15786df3",
+  "startedAt": "2026-10-22T12:09:48.870Z",
+  "complete": true,
+  "businessWritesDispatched": 0,
+  "signIns": 1,
+  "signOuts": 1,
+  "blockedRequests": [],
+  "browserErrorKinds": [],
+  "limits": [
+    "Only existing current-park records are read. No catalogue, preference, station, equipment, payment or SMS mutation is allowed.",
+    "No screenshot, raw person/catalogue name, phone, request body, cookie, token, URL or query is recorded.",
+    "The diagnostic temporarily hides unrelated native rows and sidebar person details for layout measurements; it does not change record content.",
+    "GET /me does not expose stationId. No station value or actual Till flow is observed or claimed."
+  ],
+  "ci": {
+    "runId": 39772377485,
+    "sourceSha": "e2d3488812fd3a7b316df2676b847c72cb3ebcc3",
+    "jobs": [
+      {
+        "name": "oto-app",
+        "conclusion": "success"
+      },
+      {
+        "name": "ci",
+        "conclusion": "success"
+      },
+      {
+        "name": "api-tests (1)",
+        "conclusion": "success"
+      },
+      {
+        "name": "pos-tests",
+        "conclusion": "success"
+      },
+      {
+        "name": "api-tests (2)",
+        "conclusion": "success"
+      },
+      {
+        "name": "api-tests (3)",
+        "conclusion": "success"
+      }
+    ]
+  },
+  "deploymentsBefore": [
+    {
+      "name": "oto-api-staging",
+      "id": "dep-dbcvkonavr4c73d3vs70",
+      "sourceSha": "e2d3488812fd3a7b316df2676b847c72cb3ebcc3",
+      "finishedAt": "2026-10-22T12:01:25.861621Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "id": "dep-dbcvkonavr4c73d3vtd0",
+      "sourceSha": "e2d3488812fd3a7b316df2676b847c72cb3ebcc3",
+      "finishedAt": "2026-10-22T11:59:19.045142Z"
+    },
+    {
+      "name": "oto-pos-staging",
+      "id": "dep-dbcvkonavr4c73d3vt5g",
+      "sourceSha": "e2d3488812fd3a7b316df2676b847c72cb3ebcc3",
+      "finishedAt": "2026-10-22T11:59:11.114564Z"
+    }
+  ],
+  "signInStatus": 200,
+  "selection": {
+    "recordCount": 4,
+    "ticketIdSha256": "1b3c13301580e0c4329abe6aff0f3bfbc1913c6525c0110f58ae94418431d229",
+    "branchIdSha256": "e8d371f7fc830f990f10803223b16682ecc2b74e4ba1d66d71b7218655a1ffae",
+    "gateAccess": true,
+    "uniqueName": true
+  },
+  "selectorsBeforePrivacy": {
+    "exactTextMatchesIncludingHidden": 1,
+    "oldExactTextRows": 0,
+    "nativeEditButtons": 1,
+    "nativeEditRows": 1
+  },
+  "selectorsAfterPrivacy": {
+    "oldExactTextRows": 0,
+    "nativeEditButtons": 1,
+    "nativeEditRows": 1,
+    "headingVisible": true,
+    "editVisible": true
+  },
+  "geometry": {
+    "observedAt": "2026-10-22T12:10:04.178Z",
+    "heading": {
+      "left": 370,
+      "top": 75.25,
+      "right": 476.046875,
+      "bottom": 112.75,
+      "width": 106.046875,
+      "height": 37.5,
+      "wholeInViewport": true,
+      "clearOfCaption": true
+    },
+    "nativeRow": {
+      "left": 313,
+      "top": 231,
+      "right": 1391,
+      "bottom": 293.703125,
+      "width": 1078,
+      "height": 62.703125,
+      "wholeInViewport": true,
+      "clearOfCaption": true
+    },
+    "edit": {
+      "left": 1307,
+      "top": 239.5,
+      "right": 1343,
+      "bottom": 275.5,
+      "width": 36,
+      "height": 36,
+      "wholeInViewport": true,
+      "clearOfCaption": true
+    },
+    "layout": {
+      "viewport": 1440,
+      "viewportHeight": 1000,
+      "document": 1440
+    },
+    "caption": {
+      "left": 8,
+      "top": 160,
+      "right": 256,
+      "bottom": 198,
+      "width": 248,
+      "height": 38
+    },
+    "captionClearOfAllVisibleControls": true
+  },
+  "selectorMismatchObserved": true,
+  "authCleanup": {
+    "signOutStatus": 200,
+    "meStatus": 401,
+    "confirmed": true
+  },
+  "deploymentsAfter": [
+    {
+      "name": "oto-api-staging",
+      "id": "dep-dbcvkonavr4c73d3vs70",
+      "sourceSha": "e2d3488812fd3a7b316df2676b847c72cb3ebcc3",
+      "finishedAt": "2026-10-22T12:01:25.861621Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "id": "dep-dbcvkonavr4c73d3vtd0",
+      "sourceSha": "e2d3488812fd3a7b316df2676b847c72cb3ebcc3",
+      "finishedAt": "2026-10-22T11:59:19.045142Z"
+    },
+    {
+      "name": "oto-pos-staging",
+      "id": "dep-dbcvkonavr4c73d3vt5g",
+      "sourceSha": "e2d3488812fd3a7b316df2676b847c72cb3ebcc3",
+      "finishedAt": "2026-10-22T11:59:11.114564Z"
+    }
+  ],
+  "deploymentsStable": true,
+  "authState": {
+    "signInAttempted": true,
+    "authUncertain": false,
+    "pendingAuth": 0
+  },
+  "completedAt": "2026-10-22T12:10:08.849Z"
+}

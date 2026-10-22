@@ -1,0 +1,47 @@
+{
+  "ticket": "SCRUM-621",
+  "checkedAt": "2026-10-22T10:26:20.183Z",
+  "mode": "local-native-DOM-no-network",
+  "passed": true,
+  "sourcePath": "packages/admin-screens/src/lifted/components/shared/WeekdayWeekendPriceInput.tsx",
+  "sourceSha256": "cea6299ffe887ca88a6a6363ab075ab6d8ca5e3a509b85fde8ac212fcf2f18e0",
+  "networkRequests": 0,
+  "observations": [
+    {
+      "label": "before_no_step",
+      "inputs": [
+        {
+          "value": "123.45",
+          "stepAttribute": null,
+          "stepMismatch": true,
+          "valid": false
+        },
+        {
+          "value": "167.89",
+          "stepAttribute": null,
+          "stepMismatch": true,
+          "valid": false
+        }
+      ]
+    },
+    {
+      "label": "current_source",
+      "inputs": [
+        {
+          "value": "123.45",
+          "stepAttribute": "0.01",
+          "stepMismatch": false,
+          "valid": true
+        },
+        {
+          "value": "167.89",
+          "stepAttribute": "0.01",
+          "stepMismatch": false,
+          "valid": true
+        }
+      ]
+    }
+  ],
+  "classification": "Existing valid API satang prices were blocked by implicit native integer-baht step validation. Current source adds only step=0.01; API integer-satang rules and min=0 are preserved.",
+  "limitation": "Old input props reconstructed from directly observed source and browser validity; full Console fractional fixture remains the integration regression."
+}

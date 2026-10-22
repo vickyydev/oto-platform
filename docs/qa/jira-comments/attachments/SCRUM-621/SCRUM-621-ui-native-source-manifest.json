@@ -1,0 +1,76 @@
+{
+  "ticket": "SCRUM-621",
+  "frozenAt": "2026-10-22T10:28:27.167Z",
+  "scope": "Shared UI workflow only; Console/API/helper source is separately owned",
+  "fileCount": 10,
+  "digest": "49fd11f5ebe5f445d205654615d91bb209056e2be73a46c95a3a99e2ee8fabf8",
+  "files": [
+    {
+      "path": "packages/admin-screens/package.json",
+      "sha256": "233919394f06879afa034109c14fdcd14363ad00d7e9509dd6bb54e97c270743"
+    },
+    {
+      "path": "packages/admin-screens/src/lifted/runtime/catalogue.ts",
+      "sha256": "b2c3d891003b2ef272a44582cbdce1722975cc353628957d8b3211185718457b"
+    },
+    {
+      "path": "packages/admin-screens/src/lifted/components/admin/tickets/TicketsPanel.tsx",
+      "sha256": "44ed39d428a91cf4738a9f8047b9bdc121a960a0d0ef002560486c40f6657f0c"
+    },
+    {
+      "path": "packages/admin-screens/src/lifted/components/admin/tickets/TicketTypeForm.tsx",
+      "sha256": "e536408e3348a47306191e1fa5a9bb2517b27a245daba549aa367f17f972b1db"
+    },
+    {
+      "path": "packages/admin-screens/src/lifted/components/admin/tickets/ticketPricing.ts",
+      "sha256": "36d822f8fe5dcd5e6c0ce2cb9210388388749b027e7afa9abff915c419b9834e"
+    },
+    {
+      "path": "packages/admin-screens/src/lifted/components/admin/markets-tiers/MarketsTiersSection.tsx",
+      "sha256": "194e68db3e60b87c220882c8e5e594cd02bd3a82e59b23a4d6422a149779a1d9"
+    },
+    {
+      "path": "packages/admin-screens/src/lifted/components/admin/addons/AddOnsPanel.tsx",
+      "sha256": "3f4881f52e507a630c47636f88d7e6fc9d045990ec154775726366efe48733e5"
+    },
+    {
+      "path": "packages/admin-screens/src/lifted/components/admin/addons/AddOnFormDialog.tsx",
+      "sha256": "dd7533b8b6acf907d48acc8f1581addc93059d5c6029217d47fb6d91f5f34c86"
+    },
+    {
+      "path": "packages/admin-screens/src/lifted/components/shared/WeekdayWeekendPriceInput.tsx",
+      "sha256": "cea6299ffe887ca88a6a6363ab075ab6d8ca5e3a509b85fde8ac212fcf2f18e0"
+    },
+    {
+      "path": "packages/admin-screens/test/catalogue-ports.test.ts",
+      "sha256": "a7d9f66465974c5675de7c77e7a154953e59667a8439c42ffef3ee660ad78084"
+    }
+  ],
+  "checks": {
+    "packageTests": {
+      "passed": 26,
+      "files": 6,
+      "exitCode": 0
+    },
+    "ownLint": {
+      "files": 9,
+      "exitCode": 0,
+      "diagnostics": 0
+    },
+    "posCompilerEarlier": {
+      "exitCode": 0,
+      "note": "Before final step attributes and one ticket translation field; root final affected gates cover final bytes."
+    },
+    "packageCompiler": {
+      "exitCode": 0,
+      "diagnostics": 0
+    }
+  },
+  "observedRedEvidence": {
+    "tierAuthority": "C:/w/admin621-package-baseline.json",
+    "tierContinuation": "C:/w/admin621-tier-continuation-red.json",
+    "priceValidity": "C:/w/admin621-price-validity-regression.json",
+    "ticketTranslations": "Root actual post-step built browser case3 red; final browser run remains root-owned"
+  },
+  "repositoryCommitsByThisWorkflow": 0
+}

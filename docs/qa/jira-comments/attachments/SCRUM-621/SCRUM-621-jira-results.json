@@ -1,0 +1,26 @@
+{
+  "ticket": "SCRUM-621",
+  "sourceSha": "e2d3488812fd3a7b316df2676b847c72cb3ebcc3",
+  "status": "Deployed",
+  "recordedAt": "2026-10-22T12:17:47.084Z",
+  "commentId": "12479",
+  "attachments": [
+    {
+      "id": "11958",
+      "filename": "SCRUM-621-04-final-tiers-desktop.png",
+      "sha256": "669389a12d16c260c841c9ed7b13aefad6bce3308da1749989e0e141db8ca539"
+    },
+    {
+      "id": "11959",
+      "filename": "SCRUM-621-05-final-tickets-desktop.png",
+      "sha256": "7e46148b5d632a978b5298909d76c754da42076410994045c0e7b3bf979021ca"
+    },
+    {
+      "id": "11960",
+      "filename": "SCRUM-621-06-final-add-ons-phone.png",
+      "sha256": "e355f21b5801379b690e555fa09776fd323bdde0e3fdcc432e3c203f844f70ec"
+    }
+  ],
+  "stagingReceiptSha256": "a6a2e08eef72ca3a06d00494dd211ad3d7031f33e8a0116c15ea87c6630779bb",
+  "retainedAuditSha256": "dd370b8de672ee02bc9b06ede7dfd990ab2315ceb1ff791c99ed262d7a73e0e0"
+}

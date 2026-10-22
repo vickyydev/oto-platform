@@ -1,0 +1,348 @@
+{
+  "ticket": "SCRUM-621",
+  "releaseSha": "e2d3488812fd3a7b316df2676b847c72cb3ebcc3",
+  "helperSha256": "cea51c2cb7ebd515d9d4380d74b7f8f8fc569b50eab8ce0fba2864a20529305e",
+  "helperFilename": "admin621-evidence-v3.mjs",
+  "startedAt": "2026-10-22T12:15:01.683Z",
+  "complete": true,
+  "checks": [
+    {
+      "label": "NATIVE_UNUSED_NONDEFAULT_TIER_CREATE_AND_EDIT",
+      "passed": true,
+      "at": "2026-10-22T12:15:22.895Z"
+    },
+    {
+      "label": "NATIVE_TWO_HOUR_TICKET_AND_EXACT_SATANG",
+      "passed": true,
+      "at": "2026-10-22T12:15:35.587Z"
+    },
+    {
+      "label": "NATIVE_UNTRACKED_ADDON_AND_PHONE390",
+      "passed": true,
+      "at": "2026-10-22T12:15:48.163Z"
+    },
+    {
+      "label": "EXACT_CURRENT_PARK_AND_PREFERENCES_RESTORED",
+      "passed": true,
+      "at": "2026-10-22T12:16:12.116Z"
+    },
+    {
+      "label": "NINE_FRESH_OWN_FIXTURE_AUDITS",
+      "passed": true,
+      "at": "2026-10-22T12:16:17.521Z"
+    },
+    {
+      "label": "SIGNOUT200_AND_ME401",
+      "passed": true,
+      "at": "2026-10-22T12:16:20.786Z"
+    }
+  ],
+  "screenshots": [
+    {
+      "filename": "SCRUM-621-04-final-tiers-desktop.png",
+      "capturedAt": "2026-10-22T12:15:21.450Z",
+      "bounds": [
+        {
+          "name": "heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "fixture tier",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "native name",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "captionClear": true,
+      "sha256": "669389a12d16c260c841c9ed7b13aefad6bce3308da1749989e0e141db8ca539"
+    },
+    {
+      "filename": "SCRUM-621-05-final-tickets-desktop.png",
+      "capturedAt": "2026-10-22T12:15:34.199Z",
+      "bounds": [
+        {
+          "name": "heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "fixture row",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "edit",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "captionClear": true,
+      "sha256": "7e46148b5d632a978b5298909d76c754da42076410994045c0e7b3bf979021ca"
+    },
+    {
+      "filename": "SCRUM-621-06-final-add-ons-phone.png",
+      "capturedAt": "2026-10-22T12:15:46.743Z",
+      "bounds": [
+        {
+          "name": "heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "fixture card",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "edit",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 390,
+        "document": 390
+      },
+      "captionClear": true,
+      "sha256": "e355f21b5801379b690e555fa09776fd323bdde0e3fdcc432e3c203f844f70ec"
+    }
+  ],
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "deployId": "dep-dbcvkonavr4c73d3vs70",
+      "sourceSha": "e2d3488812fd3a7b316df2676b847c72cb3ebcc3",
+      "finishedAt": "2026-10-22T12:01:25.861621Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "deployId": "dep-dbcvkonavr4c73d3vtd0",
+      "sourceSha": "e2d3488812fd3a7b316df2676b847c72cb3ebcc3",
+      "finishedAt": "2026-10-22T11:59:19.045142Z"
+    }
+  ],
+  "operations": [
+    {
+      "label": "tier-create",
+      "method": "POST",
+      "pathSha256": "ee69951587c9e05d86bf757bbbb3f4ed293dd3fbaed1cc76ca33a1d23712d061",
+      "bodySha256": "64b4ca2c68261492feb1f56241d70ee7ff625ff110396e16e1dd0616c3533dd5",
+      "keySha256": "ed0dcc64067209e5ae105d01edec8c951f4a72d4817c203ddf762a383eba035d",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": "zz_test_621_tier_20261022121501680"
+    },
+    {
+      "label": "tier-edit",
+      "method": "PATCH",
+      "pathSha256": "173e06aa1d7b29b4c32cf13b678bb7456e6866024465a9dfb6a070f93cb73022",
+      "bodySha256": "d4144f72e1bfe15ad4407f78b5ae0d67906b2aca95031ef4a9efeb660f6465b4",
+      "keySha256": "baf9a4661ba4e8d109545b084228d0254c6e9e4c9a422551ea6615f2069d38d9",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "ticket-create",
+      "method": "POST",
+      "pathSha256": "f13c6110cb9bfd4e17ed1c91b401ef91d49847d0b7f0f57a412e13e960435af4",
+      "bodySha256": "c67c67c65f8e73aab018d3241939cff923b3b7167980aeed6e8888deeb5dda38",
+      "keySha256": "880904d8272a1ccb669cd5639182afd5ea28c9993900e3b1eb342abbff245b67",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": "01a16389-a897-7190-b00b-f83173825b36"
+    },
+    {
+      "label": "ticket-edit",
+      "method": "PATCH",
+      "pathSha256": "06a7528dd7b5659335c97d86848582d0bd0a213ca721393465adc3cb93c87d40",
+      "bodySha256": "38f176c928664d302ede2281e0520933b42e6a1ef24d7268e32f9d5611dfb95e",
+      "keySha256": "a9ac583a64c66266a14c5c180e1e1a852092a8839691117c1948151745c38290",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "addon-create",
+      "method": "POST",
+      "pathSha256": "850133294e6b7f6d1a7fd2f547fb7ca29e5559e8f29dbb9bc91b833f045b1fc7",
+      "bodySha256": "fd44eff19416ac39bf5c3e312f823b6e914f52d350fc64c11a74951245937cf3",
+      "keySha256": "06b618fdc96f12f97c2ab349a73951059652328fd40d72402c8f30d6375dfbf2",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": "01a16389-d891-765a-a89c-74ddad3bfa4c"
+    },
+    {
+      "label": "addon-edit",
+      "method": "PATCH",
+      "pathSha256": "b44e356cd3b664d594f7b27679afd479d6080d75f2b2355350c433d40adcbe12",
+      "bodySha256": "dc65c7c6eefedfa56590b5fc338d3d70eb21ae684fa16d2ab2b3792a024b0fe2",
+      "keySha256": "9c3eca1a56afa267181929ac90b726526d0f6c30a4f3b3234db6faa15e9da2dd",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "ticket-delete",
+      "method": "DELETE",
+      "pathSha256": "06a7528dd7b5659335c97d86848582d0bd0a213ca721393465adc3cb93c87d40",
+      "bodySha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "keySha256": "73541df42858cda4dee47183a7f051405843ad227fa3efaaadadfaae53d5bcae",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "addon-delete",
+      "method": "DELETE",
+      "pathSha256": "b44e356cd3b664d594f7b27679afd479d6080d75f2b2355350c433d40adcbe12",
+      "bodySha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "keySha256": "2e0226de4cae8c3be85a2246b972b308d593f427de7504f1d915eeda94338f47",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "tier-delete",
+      "method": "DELETE",
+      "pathSha256": "173e06aa1d7b29b4c32cf13b678bb7456e6866024465a9dfb6a070f93cb73022",
+      "bodySha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "keySha256": "ed170ecfe9c9d49fd59ade76e5533165362e6e905b1b355f30817855976202b2",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    }
+  ],
+  "blockedRequests": [],
+  "browserErrorKinds": [],
+  "counts": {
+    "signIns": 1,
+    "signOuts": 1,
+    "fixtureCreates": 3,
+    "businessAttempts": 9,
+    "blockedReads": 0,
+    "blockedWrites": 0,
+    "otherBusinessWrites": 0,
+    "smsRequests": 0,
+    "equipmentWrites": 0,
+    "publicAssetReads": 14
+  },
+  "resourcesRestored": true,
+  "limitations": [
+    "This draft proves Console catalogue screens and current-park canonical data only; it does not claim an actual Till or sale flow. GET /me omits stationId, so no station value is observed or claimed restored. No station-selection write is permitted.",
+    "Only the fresh unused nondefault tier, two-hour ticket and untracked add-on are changed. Archived ticket/add-on rows and the archived tier are retained by the approved APIs.",
+    "Permission negatives, uncertain readback and asynchronous cross-page cases are automated proof; live proof never changes an existing catalogue record, default, tier order, proof requirement, stock, member, station or payment.",
+    "Unrelated catalogue rows, navigation labels and signed-in person details are hidden for proof privacy; the fixture controls remain native.",
+    "Browser error kinds and partial attempts are retained. Passing the stated controls does not claim an error-free browser."
+  ],
+  "priorAttempt": {
+    "path": "C:/w/admin621-staging-results.json",
+    "sha256": "8905a364580a6794ff6da57c71759999d80b2aa4ff3a5b85c6ee8c055833ac2a",
+    "complete": false,
+    "resourcesRestored": true,
+    "settledOperations": 6,
+    "authCleanupConfirmed": true
+  },
+  "actor": {
+    "id": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+    "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+  },
+  "freshStorage": true,
+  "baselineRestored": {
+    "original": "38ca1e7f722b34fa20a84e61b05905666c99ade6be7ec5ce4105da9a2ec82871",
+    "after": "38ca1e7f722b34fa20a84e61b05905666c99ade6be7ec5ce4105da9a2ec82871",
+    "preferences": "00df943c543d230f9e93ceca1038b659220a9779f4d70ae1b114715829458881",
+    "branch": "ff1408f7b8cf4f693cbd2f6e6a82a0e79e347415fdeb0f1886ea0d49d4ded535"
+  },
+  "audits": [
+    {
+      "action": "tier.create",
+      "entityId": "01a16389-7ca0-7a46-8859-e26f5cff576e",
+      "count": 1,
+      "timestamp": "2026-10-22T12:15:17.153Z"
+    },
+    {
+      "action": "tier.update",
+      "entityId": "01a16389-7ca0-7a46-8859-e26f5cff576e",
+      "count": 1,
+      "timestamp": "2026-10-22T12:15:19.773Z"
+    },
+    {
+      "action": "tier.archive",
+      "entityId": "01a16389-7ca0-7a46-8859-e26f5cff576e",
+      "count": 1,
+      "timestamp": "2026-10-22T12:16:09.845Z"
+    },
+    {
+      "action": "ticket_package.create",
+      "entityId": "01a16389-a897-7190-b00b-f83173825b36",
+      "count": 1,
+      "timestamp": "2026-10-22T12:15:28.407Z"
+    },
+    {
+      "action": "ticket_package.update",
+      "entityId": "01a16389-a897-7190-b00b-f83173825b36",
+      "count": 1,
+      "timestamp": "2026-10-22T12:15:31.445Z"
+    },
+    {
+      "action": "ticket_package.archive",
+      "entityId": "01a16389-a897-7190-b00b-f83173825b36",
+      "count": 1,
+      "timestamp": "2026-10-22T12:15:52.998Z"
+    },
+    {
+      "action": "menu_item.create",
+      "entityId": "01a16389-d891-765a-a89c-74ddad3bfa4c",
+      "count": 1,
+      "timestamp": "2026-10-22T12:15:40.689Z"
+    },
+    {
+      "action": "menu_item.update",
+      "entityId": "01a16389-d891-765a-a89c-74ddad3bfa4c",
+      "count": 1,
+      "timestamp": "2026-10-22T12:15:43.139Z"
+    },
+    {
+      "action": "menu_item.archive",
+      "entityId": "01a16389-d891-765a-a89c-74ddad3bfa4c",
+      "count": 1,
+      "timestamp": "2026-10-22T12:15:58.503Z"
+    }
+  ],
+  "controlsComplete": true,
+  "authCleanup": {
+    "signOutStatus": 200,
+    "meStatus": 401,
+    "confirmed": true
+  },
+  "authState": {
+    "signInAttempted": true,
+    "authUncertain": false,
+    "pendingAuth": 0
+  },
+  "completedAt": "2026-10-22T12:16:22.364Z"
+}

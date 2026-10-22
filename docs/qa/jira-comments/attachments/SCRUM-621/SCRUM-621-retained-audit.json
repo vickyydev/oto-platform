@@ -1,0 +1,323 @@
+{
+  "ticket": "SCRUM-621",
+  "passed": true,
+  "candidateSha": "e2d3488812fd3a7b316df2676b847c72cb3ebcc3",
+  "checkedAt": "2026-10-22T12:16:53.443Z",
+  "mode": "retained-public-artifact-audit-no-network-no-helper-execution",
+  "checks": [
+    {
+      "name": "frozen helper and independently reviewed stage envelope match exact approved bytes",
+      "passed": true
+    },
+    {
+      "name": "complete public proof is bound to this source and its unchanged retained receipt",
+      "passed": true
+    },
+    {
+      "name": "frozen envelope observed all six successful CI jobs for the exact supplied source",
+      "passed": true
+    },
+    {
+      "name": "all three exact-source latest-live deployments stayed identical before and after proof",
+      "passed": true
+    },
+    {
+      "name": "proof and all six control timestamps follow deployment and precede final envelope completion",
+      "passed": true
+    },
+    {
+      "name": "only the approved active demo actor and original current park supplied proof",
+      "passed": true
+    },
+    {
+      "name": "exactly three captured labelled fixtures and nine successful settled operations are retained",
+      "passed": true
+    },
+    {
+      "name": "public operation fingerprints target only the captured tier and own-park ticket/add-on",
+      "passed": true
+    },
+    {
+      "name": "all nine fresh audit events match captured fixtures and the frozen helper ownership checks",
+      "passed": true
+    },
+    {
+      "name": "current-park catalogue, original branch and preferences were verified restored before sign-out",
+      "passed": true
+    },
+    {
+      "name": "no refused request, SMS, equipment or unrelated business write is hidden",
+      "passed": true
+    },
+    {
+      "name": "three exact native PNGs retain their hashes, dimensions, clear controls and post-deployment times",
+      "passed": true
+    }
+  ],
+  "source": {
+    "helper": {
+      "path": "C:/w/admin621-evidence-v3.mjs",
+      "sha256": "cea51c2cb7ebd515d9d4380d74b7f8f8fc569b50eab8ce0fba2864a20529305e"
+    },
+    "envelopeScript": {
+      "path": "C:/w/admin621-stage-envelope-v2.mjs",
+      "sha256": "4139d91e77cc391e7e36fb0b6e73a74c3217c62793dc4cb925f1d6d30a54e4b6"
+    },
+    "proofReceipt": {
+      "path": "C:/w/admin621-final-staging-results.json",
+      "sha256": "a6a2e08eef72ca3a06d00494dd211ad3d7031f33e8a0116c15ea87c6630779bb"
+    },
+    "stageEnvelope": {
+      "path": "C:/w/admin621-final-stage-envelope.json",
+      "sha256": "fa873d5f29136bdaa47e79d12976007d78575e3da07a224ef507c44c113ae902"
+    }
+  },
+  "history": {
+    "captureAmendment": {
+      "path": "C:/w/admin621-proof-capture-amendment-v3.json",
+      "sha256": "e4ed55db117f25c6401968cdb988d970c6e16fa13aa8f8a09504aef88afd5736"
+    },
+    "originalAttempt": {
+      "complete": false,
+      "resourcesRestored": true,
+      "settledOperations": 6,
+      "receipt": {
+        "path": "C:/w/admin621-staging-results.json",
+        "sha256": "8905a364580a6794ff6da57c71759999d80b2aa4ff3a5b85c6ee8c055833ac2a"
+      },
+      "envelope": {
+        "path": "C:/w/admin621-stage-envelope.json",
+        "sha256": "80482f644fda8870dd42c68b2dfbf6e791c32fca3515a8e485325db177e7e52a"
+      },
+      "firstImage": {
+        "path": "C:/w/admin-catalogue/docs/qa/jira-comments/attachments/SCRUM-621/SCRUM-621-01-tiers-desktop.png",
+        "sha256": "3fe6d646170c5d8c6f376ca825a43692ba4d618a0e0fa382f019fb7701d2df20"
+      },
+      "helper": {
+        "path": "C:/w/admin621-evidence-v2.mjs",
+        "sha256": "da8a950f985a9fbb9cba3bd94045fc7e8505c7ad3673d4b9e2b31f5b9494a08a"
+      }
+    },
+    "readOnlyDiagnosis": {
+      "path": "C:/w/admin621-ticket-readonly-diagnostic.json",
+      "sha256": "e3ff91c959a1e02b902cf3d0ef9f89484fb48af1e464619b2412b01d411af8bb"
+    },
+    "offlineSelectorRegression": {
+      "path": "C:/w/admin621-ticket-selector-regression.json",
+      "sha256": "8d77427f9dec0a9dd067a0a2e244255f8e39071697605544dfc4f7cfb056467a"
+    },
+    "finalGuardReview": {
+      "path": "C:/w/admin621-proof-review-v3.json",
+      "sha256": "8f36bb17bf097cae0bb97cb0a7c44b3812cebbfd3c454037f4b2679ead324131"
+    },
+    "note": "The old incomplete proof remains incomplete. The original local-only receipt and V2 preparation metadata are historical and unchanged."
+  },
+  "ci": {
+    "runId": 39772377485,
+    "successfulJobs": [
+      {
+        "name": "oto-app",
+        "conclusion": "success"
+      },
+      {
+        "name": "ci",
+        "conclusion": "success"
+      },
+      {
+        "name": "api-tests (1)",
+        "conclusion": "success"
+      },
+      {
+        "name": "pos-tests",
+        "conclusion": "success"
+      },
+      {
+        "name": "api-tests (2)",
+        "conclusion": "success"
+      },
+      {
+        "name": "api-tests (3)",
+        "conclusion": "success"
+      }
+    ],
+    "verificationSource": "Exact-SHA CI status and six completed successful jobs were enforced by the frozen stage envelope."
+  },
+  "deployments": {
+    "before": [
+      {
+        "name": "oto-api-staging",
+        "id": "dep-dbcvkonavr4c73d3vs70",
+        "sourceSha": "e2d3488812fd3a7b316df2676b847c72cb3ebcc3",
+        "finishedAt": "2026-10-22T12:01:25.861621Z"
+      },
+      {
+        "name": "oto-console-staging",
+        "id": "dep-dbcvkonavr4c73d3vtd0",
+        "sourceSha": "e2d3488812fd3a7b316df2676b847c72cb3ebcc3",
+        "finishedAt": "2026-10-22T11:59:19.045142Z"
+      },
+      {
+        "name": "oto-pos-staging",
+        "id": "dep-dbcvkonavr4c73d3vt5g",
+        "sourceSha": "e2d3488812fd3a7b316df2676b847c72cb3ebcc3",
+        "finishedAt": "2026-10-22T11:59:11.114564Z"
+      }
+    ],
+    "after": [
+      {
+        "name": "oto-api-staging",
+        "id": "dep-dbcvkonavr4c73d3vs70",
+        "sourceSha": "e2d3488812fd3a7b316df2676b847c72cb3ebcc3",
+        "finishedAt": "2026-10-22T12:01:25.861621Z"
+      },
+      {
+        "name": "oto-console-staging",
+        "id": "dep-dbcvkonavr4c73d3vtd0",
+        "sourceSha": "e2d3488812fd3a7b316df2676b847c72cb3ebcc3",
+        "finishedAt": "2026-10-22T11:59:19.045142Z"
+      },
+      {
+        "name": "oto-pos-staging",
+        "id": "dep-dbcvkonavr4c73d3vt5g",
+        "sourceSha": "e2d3488812fd3a7b316df2676b847c72cb3ebcc3",
+        "finishedAt": "2026-10-22T11:59:11.114564Z"
+      }
+    ],
+    "stable": true
+  },
+  "metrics": {
+    "nativeControls": 6,
+    "settledFixtureOperations": 9,
+    "fixtureCreates": 3,
+    "ownAuditRows": 9,
+    "screenshots": 3,
+    "signIns": 1,
+    "signOuts": 1,
+    "blockedRequests": 0
+  },
+  "images": [
+    {
+      "filename": "SCRUM-621-04-final-tiers-desktop.png",
+      "sha256": "669389a12d16c260c841c9ed7b13aefad6bce3308da1749989e0e141db8ca539",
+      "width": 1440,
+      "height": 1000,
+      "capturedAt": "2026-10-22T12:15:21.450Z",
+      "retainedFileModifiedAt": "2026-10-22T12:15:21.633Z",
+      "bounds": [
+        {
+          "name": "heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "fixture tier",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "native name",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "captionClear": true
+    },
+    {
+      "filename": "SCRUM-621-05-final-tickets-desktop.png",
+      "sha256": "7e46148b5d632a978b5298909d76c754da42076410994045c0e7b3bf979021ca",
+      "width": 1440,
+      "height": 1000,
+      "capturedAt": "2026-10-22T12:15:34.199Z",
+      "retainedFileModifiedAt": "2026-10-22T12:15:34.358Z",
+      "bounds": [
+        {
+          "name": "heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "fixture row",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "edit",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "captionClear": true
+    },
+    {
+      "filename": "SCRUM-621-06-final-add-ons-phone.png",
+      "sha256": "e355f21b5801379b690e555fa09776fd323bdde0e3fdcc432e3c203f844f70ec",
+      "width": 390,
+      "height": 844,
+      "capturedAt": "2026-10-22T12:15:46.743Z",
+      "retainedFileModifiedAt": "2026-10-22T12:15:46.880Z",
+      "bounds": [
+        {
+          "name": "heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "fixture card",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "edit",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 390,
+        "document": 390
+      },
+      "captionClear": true
+    }
+  ],
+  "actor": {
+    "id": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+    "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+  },
+  "baselineRestored": {
+    "original": "38ca1e7f722b34fa20a84e61b05905666c99ade6be7ec5ce4105da9a2ec82871",
+    "after": "38ca1e7f722b34fa20a84e61b05905666c99ade6be7ec5ce4105da9a2ec82871",
+    "preferences": "00df943c543d230f9e93ceca1038b659220a9779f4d70ae1b114715829458881",
+    "branch": "ff1408f7b8cf4f693cbd2f6e6a82a0e79e347415fdeb0f1886ea0d49d4ded535"
+  },
+  "authCleanup": {
+    "signOutStatus": 200,
+    "meStatus": 401,
+    "confirmed": true
+  },
+  "browserErrorKinds": [],
+  "reviewedImagesByCoordinator": true,
+  "limitations": [
+    "The public audit rows retain entity/action/time; the frozen helper filters and checks the current actor before recording them. No unmasked audit payload or secret is copied.",
+    "Only the current park catalogue and operator tiers were compared before/after. Archived labelled ticket/add-on/tier fixtures remain under the approved APIs; no existing record, default or tier order was changed.",
+    "GET /me omits stationId. No station value was observed or claimed restored, and no station-selection write occurred. POS deployment was verified; no actual Till, sale or payment flow was exercised.",
+    "The native tier UI checks current local ticket references only; the existing API active-member refusal and soft archive remain. Complete historical usage coverage is not claimed.",
+    "Browser error kinds are retained without a causal diagnosis. Passing these six controls does not claim an error-free browser.",
+    "This audit writes a new external artifact only; original proof, envelope, images, histories and private journals remain unchanged."
+  ],
+  "stagingLimitations": [
+    "This draft proves Console catalogue screens and current-park canonical data only; it does not claim an actual Till or sale flow. GET /me omits stationId, so no station value is observed or claimed restored. No station-selection write is permitted.",
+    "Only the fresh unused nondefault tier, two-hour ticket and untracked add-on are changed. Archived ticket/add-on rows and the archived tier are retained by the approved APIs.",
+    "Permission negatives, uncertain readback and asynchronous cross-page cases are automated proof; live proof never changes an existing catalogue record, default, tier order, proof requirement, stock, member, station or payment.",
+    "Unrelated catalogue rows, navigation labels and signed-in person details are hidden for proof privacy; the fixture controls remain native.",
+    "Browser error kinds and partial attempts are retained. Passing the stated controls does not claim an error-free browser."
+  ]
+}

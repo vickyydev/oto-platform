@@ -1,0 +1,114 @@
+{
+  "ticket": "SCRUM-621",
+  "passed": true,
+  "candidateSha": "e2d3488812fd3a7b316df2676b847c72cb3ebcc3",
+  "auditedAt": "2026-10-22T11:46:19.664Z",
+  "receipt": {
+    "path": "C:/w/admin621-local-results.json",
+    "sha256": "242af2e44d45743bc97ea75f8526e174a6ea12a4726cbb46f072942d4bf87ee0"
+  },
+  "checks": [
+    {
+      "name": "immutable local receipt and V3 generator bytes",
+      "passed": true,
+      "observed": {
+        "artifactHashes": 50
+      }
+    },
+    {
+      "name": "current frozen source, backend equality and declared frontend delta",
+      "passed": true,
+      "observed": {
+        "rawMatched": 3538,
+        "backendCount": 1011,
+        "unchangedInputs": 3533,
+        "changedFrontendInputs": 5,
+        "ownedCount": 30,
+        "candidatePaths": 33
+      }
+    },
+    {
+      "name": "complete API shard adoption excludes preceding targeted preflight",
+      "passed": true,
+      "observed": {
+        "passed": 4719,
+        "skipped": 401,
+        "todo": 5,
+        "files": 337
+      }
+    },
+    {
+      "name": "both Box failures, targeted ten-case preflight and explicit serial full pass remain distinct",
+      "passed": true,
+      "observed": {
+        "initial": "746/3",
+        "targetedPreflight": "10/0",
+        "retry": "748/1",
+        "serial": "749/0",
+        "fileSchedulingConcurrency": 1,
+        "causeEstablished": false
+      }
+    },
+    {
+      "name": "final checks, package replacements, browser and post-rebase summaries match actual logs",
+      "passed": true,
+      "observed": {
+        "typecheckTasks": 16,
+        "builds": 5,
+        "lintErrors": 0,
+        "inheritedWarnings": 3,
+        "units": [
+          200,
+          10,
+          27
+        ],
+        "pos": 1433,
+        "browser": 124,
+        "otherPackageScripts": 12,
+        "post": [
+          71,
+          200,
+          10,
+          27,
+          1433
+        ]
+      }
+    },
+    {
+      "name": "Box ordering and local-only limits remain honest",
+      "passed": true,
+      "observed": {
+        "sourceCandidateBound": true,
+        "ciObservedByAudit": false,
+        "deploymentObservedByAudit": false,
+        "stagingExecutedByAudit": false
+      }
+    }
+  ],
+  "metrics": {
+    "rawFrozenInputs": 3538,
+    "backendInputsUnchanged": 1011,
+    "changedFrontendInputs": 5,
+    "ownedSourcePaths": 30,
+    "candidateCommitPaths": 33,
+    "artifactHashesVerified": 50,
+    "apiPassed": 4719,
+    "apiSkipped": 401,
+    "apiTodo": 5,
+    "apiFiles": 337,
+    "browserPassed": 124,
+    "serialBoxPassed": 749,
+    "postPassed": [
+      71,
+      200,
+      10,
+      27,
+      1433
+    ]
+  },
+  "limits": [
+    "Read-only source/Git and retained public artifact checks only; no test, proof, CI, Render or network command was executed.",
+    "The adopted Box run changes file scheduling to --test-concurrency=1. Both earlier failures remain failures; their cause is unestablished.",
+    "This audit confirms the local receipt and source candidate only. It makes no CI, deployment, staging, Till, payment, station restoration or complete usage-history acceptance claim."
+  ]
+}

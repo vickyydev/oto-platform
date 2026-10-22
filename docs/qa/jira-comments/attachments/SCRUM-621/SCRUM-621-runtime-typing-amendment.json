@@ -1,0 +1,15 @@
+{
+  "at": "2026-10-22T10:48:12.635Z",
+  "path": "packages/admin-screens/src/lifted/runtime/catalogue.ts",
+  "beforeSha256": "b2c3d891003b2ef272a44582cbdce1722975cc353628957d8b3211185718457b",
+  "afterSha256": "183cc382013d9bcdbbf2021efcf85ac300a60f7b88604fd2c607a1caa42e74d8",
+  "emittedJavaScriptSha256": "9ddc9196d0fe38d31db55462733d81bf1bcb3b69195b236852260971c8f7033b",
+  "emittedJavaScriptIdentical": true,
+  "typescriptVersion": "5.9.3",
+  "reason": "GET me has no response schema; use honest unknown transport data with existing defensive account/operator checks. No DTO or guard exemption added.",
+  "initialSeamResult": {
+    "failed": 1,
+    "passed": 9
+  },
+  "limits": "Type erasure proof is separate from compiler, seam, package and browser tests; those gates must still pass."
+}

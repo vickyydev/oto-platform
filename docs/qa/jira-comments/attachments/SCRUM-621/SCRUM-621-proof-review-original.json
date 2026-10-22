@@ -1,0 +1,51 @@
+{
+  "ticket": "SCRUM-621",
+  "checkedAt": "2026-10-22T10:42:33.422Z",
+  "mode": "local-source-extracted-functions-no-helper-import-no-network",
+  "helperSha256": "c332953f7fbfe9c3342d7abccd80f4fc04af8a91df35cc7e6a1529033f960cae",
+  "passed": true,
+  "checks": [
+    {
+      "name": "all nine exact native fixture operations checkpoint unrestored state before dispatch",
+      "passed": true
+    },
+    {
+      "name": "wrong names, foreign paths, verb changes and missing fresh keys refuse before checkpoint",
+      "passed": true
+    },
+    {
+      "name": "one unsettled earlier write and different-body replay cannot admit another operation",
+      "passed": true
+    },
+    {
+      "name": "read allowlist admits current-park catalogue and refuses sensitive, sibling, query and origin alternatives",
+      "passed": true
+    },
+    {
+      "name": "seed actor, original preferences and original branch are exact requirements",
+      "passed": true
+    },
+    {
+      "name": "public font allowance stays exact and never accepts credentials or unexpected query",
+      "passed": true
+    },
+    {
+      "name": "server, in-flight, refused replay and unparseable success never prove settlement",
+      "passed": true,
+      "scenarios": 8
+    },
+    {
+      "name": "exact successful create replay retains one fixture identity and one create count",
+      "passed": true
+    },
+    {
+      "name": "cold start and request ordering remain explicit in the reviewed helper source",
+      "passed": true
+    }
+  ],
+  "networkRequests": 0,
+  "limitations": [
+    "Pure recovery/request-boundary pins and static dispatch ordering; native geometry and integration remain independently reviewed and enforced by live capture guards.",
+    "No credentials, private journal, staging service, proof helper imports or real browser authentication were accessed."
+  ]
+}

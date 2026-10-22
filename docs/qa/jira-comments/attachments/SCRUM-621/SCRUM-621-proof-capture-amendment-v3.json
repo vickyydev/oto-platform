@@ -1,0 +1,80 @@
+{
+  "ticket": "SCRUM-621",
+  "recordedAt": "2026-10-22T12:13:42.034Z",
+  "sourceSha": "e2d3488812fd3a7b316df2676b847c72cb3ebcc3",
+  "productSourceChanged": false,
+  "ciAndDeploymentsUnchanged": true,
+  "executedAgainstStaging": false,
+  "originalAttempt": {
+    "receipt": {
+      "path": "C:/w/admin621-staging-results.json",
+      "sha256": "8905a364580a6794ff6da57c71759999d80b2aa4ff3a5b85c6ee8c055833ac2a"
+    },
+    "envelope": {
+      "path": "C:/w/admin621-stage-envelope.json",
+      "sha256": "80482f644fda8870dd42c68b2dfbf6e791c32fca3515a8e485325db177e7e52a"
+    },
+    "helper": {
+      "path": "C:/w/admin621-evidence-v2.mjs",
+      "sha256": "da8a950f985a9fbb9cba3bd94045fc7e8505c7ad3673d4b9e2b31f5b9494a08a"
+    },
+    "image": {
+      "path": "C:/w/admin-catalogue/docs/qa/jira-comments/attachments/SCRUM-621/SCRUM-621-01-tiers-desktop.png",
+      "sha256": "3fe6d646170c5d8c6f376ca825a43692ba4d618a0e0fa382f019fb7701d2df20"
+    },
+    "complete": false,
+    "resourcesRestored": true,
+    "settledOperations": 6,
+    "authCleanupConfirmed": true
+  },
+  "diagnosis": {
+    "readOnly": {
+      "path": "C:/w/admin621-ticket-readonly-diagnostic.json",
+      "sha256": "e3ff91c959a1e02b902cf3d0ef9f89484fb48af1e464619b2412b01d411af8bb"
+    },
+    "liveOldExactTextRows": 0,
+    "liveNativeEditRows": 1,
+    "businessWrites": 0,
+    "signOutConfirmed": true,
+    "regression": {
+      "path": "C:/w/admin621-ticket-selector-regression.json",
+      "sha256": "8d77427f9dec0a9dd067a0a2e244255f8e39071697605544dfc4f7cfb056467a"
+    },
+    "actualRedExit": 1,
+    "actualGreenExit": 0,
+    "networkRequests": 0,
+    "limit": "Read-only geometry is an existing owned row; final fixture geometry must still pass the unchanged live capture assertions."
+  },
+  "amendedPreparation": {
+    "helper": {
+      "path": "C:/w/admin621-evidence-v3.mjs",
+      "sha256": "cea51c2cb7ebd515d9d4380d74b7f8f8fc569b50eab8ce0fba2864a20529305e"
+    },
+    "envelope": {
+      "path": "C:/w/admin621-stage-envelope-v2.mjs",
+      "sha256": "4139d91e77cc391e7e36fb0b6e73a74c3217c62793dc4cb925f1d6d30a54e4b6"
+    },
+    "guardReview": {
+      "path": "C:/w/admin621-proof-review-v3.json",
+      "sha256": "8f36bb17bf097cae0bb97cb0a7c44b3812cebbfd3c454037f4b2679ead324131"
+    },
+    "actualGuardChecks": 9
+  },
+  "changes": [
+    "Anchor the native ticket row to its exact Edit button; the ticket name shares a cell with an Opens gate chip.",
+    "Record only bounded capture-control name/count and generic error-name enum for future diagnostics.",
+    "Use new final receipt/journal and04/05/06 screenshot names; preserve every original artifact.",
+    "Before any fresh session, pin the exact prior incomplete receipt and its six settled operations, restored hashes and confirmed sign-out.",
+    "The outer envelope also requires the frozen live diagnosis, offline red/green regression and nine passing V3 guard checks."
+  ],
+  "unchanged": [
+    "Every business/read/auth/request guard and exact native write body/key/recovery rule.",
+    "Fixture limits, privacy, viewport and caption bounds, audit ownership and completion requirements.",
+    "All product source bytes, local release gates, exact-SHA CI and automatic deployments."
+  ],
+  "limits": [
+    "This is preparation/diagnosis metadata, not a successful fresh native proof.",
+    "The immutable local-only receipt describes earlier unexecuted V2 preparation as it stood then and is not rewritten.",
+    "No actual Till, station restoration, stock setup or complete tier-history coverage is claimed."
+  ]
+}

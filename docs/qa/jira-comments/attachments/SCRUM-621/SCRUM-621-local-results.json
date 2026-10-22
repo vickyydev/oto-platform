@@ -1,0 +1,755 @@
+{
+  "ticket": "SCRUM-621",
+  "status": "LOCAL_ONLY",
+  "passed": true,
+  "candidateSha": "e2d3488812fd3a7b316df2676b847c72cb3ebcc3",
+  "recordedAt": "2026-10-22T11:40:21.520Z",
+  "generator": {
+    "current": {
+      "path": "C:\\w\\admin621-local-results-v3.mjs",
+      "sha256": "e9fcb837d47b8773c9142a84ecb3be4d13b70a58b27425716a72b6d0d609b780"
+    },
+    "originalPreserved": {
+      "path": "C:/w/admin621-local-results.mjs",
+      "sha256": "5f441afae04400ca2643e0eb4f1e7d9c384a35aca9abcf74b2b225b49e003b48"
+    },
+    "amendment": "Adopt only actual whole Box serial-file run, preserve initial 746/3 and retry 748/1 plus targeted 10/10. Only --test-concurrency=1 file scheduling changes; no source or test changes."
+  },
+  "source": {
+    "final": {
+      "path": "C:/w/admin621-final2-linux/source-manifest.json",
+      "sha256": "34f9072b3fd64e45cb3b07a9374be677eae7729705d454e7e951fcf5c6ee9068",
+      "files": 3538,
+      "rawSha256Matches": 3538
+    },
+    "apiTested": {
+      "path": "C:/w/admin621-api-release/source-manifest.json",
+      "sha256": "bd0106e6d055727307f823f0eac8cd3bec8a9269bc9b6b8b11a2dae80fb6f642"
+    },
+    "owned": {
+      "path": "C:/w/admin621-final2-linux/owned-files.txt",
+      "sha256": "c6ba8125c09dd4e19ca420e650bec1212e54f12b9a0a8edd0ca07a26e6fb7e83",
+      "count": 30
+    },
+    "plannedUnitDocumentationFiles": 3,
+    "provenance": {
+      "path": "C:/w/admin621-final2-linux/provenance.json",
+      "sha256": "7a5cb316a163806b63531b1a331067d3055880b1350a8d9af1dae7e073c0bab6"
+    },
+    "changedAfterApiFreeze": [
+      "apps/console/e2e/catalogue.spec.ts",
+      "apps/console/src/pages/Catalogue.tsx",
+      "packages/admin-screens/src/lifted/api/menu.ts",
+      "packages/admin-screens/src/lifted/api/platform.ts",
+      "packages/admin-screens/src/lifted/runtime/catalogue.ts"
+    ],
+    "unchangedInputs": 3533,
+    "backendInputs": {
+      "files": 1011,
+      "unchanged": true,
+      "selector": "apps/api/** plus packages/{db,shared,api-types}/**"
+    },
+    "noMigration": true
+  },
+  "gates": {
+    "checks": {
+      "name": "checks",
+      "exitCode": 0,
+      "startedAt": "2026-10-22T10:50:29.723Z",
+      "finishedAt": "2026-10-22T10:53:26.744Z",
+      "log": {
+        "path": "C:/w/admin621-final2-linux/checks.log",
+        "sha256": "7efd37fc3a663fb218e27edb8776d42f236e2bb6ec7245dc8ba7b4399ce9fdba"
+      },
+      "exitReceipt": {
+        "path": "C:/w/admin621-final2-linux/checks-exit.json",
+        "sha256": "b09a8442c9450e161b6b7b6c7ca45667215b875381e59702f9f38136e1a4d43b"
+      },
+      "sourceFiles": 3538,
+      "typecheckTasks": 16,
+      "builds": 5,
+      "lintErrors": 0,
+      "inheritedLintWarnings": 3,
+      "apiCompilerDiagnosticLines": 0,
+      "generatedMatch": true
+    },
+    "units": {
+      "name": "units",
+      "exitCode": 0,
+      "startedAt": "2026-10-22T10:50:29.717Z",
+      "finishedAt": "2026-10-22T10:51:08.783Z",
+      "log": {
+        "path": "C:/w/admin621-final2-linux/units.log",
+        "sha256": "cb2bce1bcb64f18c37d56f841eed8e626ec08c0e6becb3b928d378fb9419969b"
+      },
+      "exitReceipt": {
+        "path": "C:/w/admin621-final2-linux/units-exit.json",
+        "sha256": "2ce162c579da302675b5d24f5fb34dca2fada6d26e6187b43ff1a807f9b56469"
+      },
+      "sourceFiles": 3538,
+      "packages": [
+        {
+          "package": "@oto/console",
+          "script": "test",
+          "files": 26,
+          "failedFiles": 0,
+          "skippedFiles": 0,
+          "passed": 200,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 3
+        },
+        {
+          "package": "@oto/api-types",
+          "script": "test",
+          "files": 1,
+          "failedFiles": 0,
+          "skippedFiles": 0,
+          "passed": 10,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        {
+          "package": "@oto/admin-screens",
+          "script": "test",
+          "files": 6,
+          "failedFiles": 0,
+          "skippedFiles": 0,
+          "passed": 27,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        }
+      ]
+    },
+    "browser": {
+      "name": "browser",
+      "exitCode": 0,
+      "startedAt": "2026-10-22T10:54:08.697Z",
+      "finishedAt": "2026-10-22T10:58:38.933Z",
+      "log": {
+        "path": "C:/w/admin621-final2-linux/browser.log",
+        "sha256": "ebb792af1facb4ff29590e7f2e4401d63631a2216df1c4a37758a9c63d808c8b"
+      },
+      "exitReceipt": {
+        "path": "C:/w/admin621-final2-linux/browser-exit.json",
+        "sha256": "6a0b18fb6e3813cb26f347284ea41293d04550ea2505c2b31f095792888e88ba"
+      },
+      "sourceFiles": 3538,
+      "passed": 124
+    },
+    "pos": {
+      "name": "pos",
+      "exitCode": 0,
+      "startedAt": "2026-10-22T10:59:24.385Z",
+      "finishedAt": "2026-10-22T11:02:15.473Z",
+      "log": {
+        "path": "C:/w/admin621-final2-linux/pos.log",
+        "sha256": "96ed6a76f4b4158d1f39b01ed9cd4664b910d3be0d5e8ca908d434782ee55c27"
+      },
+      "exitReceipt": {
+        "path": "C:/w/admin621-final2-linux/pos-exit.json",
+        "sha256": "aa950fea4e81e18a755a47dd628b646924c34c5e7a962808b921c6ea81f80a3e"
+      },
+      "sourceFiles": 3538,
+      "files": 101,
+      "failedFiles": 0,
+      "skippedFiles": 0,
+      "passed": 1433,
+      "failed": 0,
+      "skipped": 0,
+      "todo": 0
+    },
+    "api": {
+      "parts": [
+        {
+          "name": "api1",
+          "exitCode": 0,
+          "startedAt": "2026-10-22T10:33:02.280Z",
+          "finishedAt": "2026-10-22T11:04:34.771Z",
+          "log": {
+            "path": "C:/w/admin621-api-release/api1.log",
+            "sha256": "82f6fec907024e46f0737067e522a9d80e5f3a0baae1edc54c15d7e2885dfa19"
+          },
+          "exitReceipt": {
+            "path": "C:/w/admin621-api-release/api1-exit.json",
+            "sha256": "fe1d5dc1232b1aae98c9d05facebdaddc91e470f3fc1130481dd9e234f497d5d"
+          },
+          "files": 113,
+          "failedFiles": 0,
+          "skippedFiles": 2,
+          "passed": 1654,
+          "failed": 0,
+          "skipped": 106,
+          "todo": 0,
+          "passedFiles": 111
+        },
+        {
+          "name": "api2-retry",
+          "exitCode": 0,
+          "startedAt": "2026-10-22T10:56:54.892Z",
+          "finishedAt": "2026-10-22T11:24:06.926Z",
+          "log": {
+            "path": "C:/w/admin621-api-release/api2-retry.log",
+            "sha256": "39a3cd931ca08671628e1d133112a70c909b3a999810631ce5638590eb10307a"
+          },
+          "exitReceipt": {
+            "path": "C:/w/admin621-api-release/api2-retry-exit.json",
+            "sha256": "f4207adc18787d45dea82d670c30bf07a21243b9794f1da12dea44070de153da"
+          },
+          "files": 113,
+          "failedFiles": 0,
+          "skippedFiles": 4,
+          "passed": 1622,
+          "failed": 0,
+          "skipped": 174,
+          "todo": 4,
+          "passedFiles": 109,
+          "precedingTargetedChecks": [
+            {
+              "files": 1,
+              "failedFiles": 0,
+              "skippedFiles": 0,
+              "passed": 18,
+              "failed": 0,
+              "skipped": 0,
+              "todo": 0
+            }
+          ]
+        },
+        {
+          "name": "api3",
+          "exitCode": 0,
+          "startedAt": "2026-10-22T10:33:02.280Z",
+          "finishedAt": "2026-10-22T11:04:46.632Z",
+          "log": {
+            "path": "C:/w/admin621-api-release/api3.log",
+            "sha256": "cc8ec099497f3ca6512bb750ff3a9c31178c8e2b1776ee8560c556d63ccfa987"
+          },
+          "exitReceipt": {
+            "path": "C:/w/admin621-api-release/api3-exit.json",
+            "sha256": "0cc2001a79163d77a6ec59b9065ce3ea1f6421dbe6ee5f951c7c50509024b1e2"
+          },
+          "files": 111,
+          "failedFiles": 0,
+          "skippedFiles": 2,
+          "passed": 1443,
+          "failed": 0,
+          "skipped": 121,
+          "todo": 1,
+          "passedFiles": 109
+        }
+      ],
+      "totals": {
+        "passed": 4719,
+        "skipped": 401,
+        "todo": 5,
+        "files": 337
+      }
+    },
+    "remaining": {
+      "initialRun": {
+        "name": "other",
+        "exitCode": 1,
+        "startedAt": "2026-10-22T10:38:13.717Z",
+        "finishedAt": "2026-10-22T10:52:12.675Z",
+        "log": {
+          "path": "C:/w/admin621-api-release/other.log",
+          "sha256": "7362effbf562b0f9216253f32b6dd5c6434576457ee0f24e743492647957d1ca"
+        },
+        "exitReceipt": {
+          "path": "C:/w/admin621-api-release/other-exit.json",
+          "sha256": "34bcc15b1d0fd3394b6285c113d152425e20d4857b32003828bf2c83bb45e878"
+        }
+      },
+      "packageScriptsPassed": [
+        {
+          "package": "@oto/shared",
+          "script": "test",
+          "files": 50,
+          "failedFiles": 0,
+          "skippedFiles": 0,
+          "passed": 769,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        {
+          "package": "@oto/db",
+          "script": "test",
+          "files": 43,
+          "failedFiles": 0,
+          "skippedFiles": 0,
+          "passed": 305,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        {
+          "package": "@oto/pos",
+          "script": "test",
+          "files": 101,
+          "failedFiles": 0,
+          "skippedFiles": 0,
+          "passed": 1433,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        {
+          "package": "@oto/booth",
+          "script": "test",
+          "tests": 33,
+          "passed": 33,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "durationMs": 1424.2257
+        },
+        {
+          "package": "@oto/launcher",
+          "script": "test",
+          "files": 5,
+          "failedFiles": 0,
+          "skippedFiles": 0,
+          "passed": 72,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        {
+          "package": "@oto/inbox",
+          "script": "test",
+          "files": 8,
+          "failedFiles": 0,
+          "skippedFiles": 0,
+          "passed": 176,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        {
+          "package": "@oto/assistant",
+          "script": "test",
+          "files": 8,
+          "failedFiles": 0,
+          "skippedFiles": 0,
+          "passed": 434,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        {
+          "package": "@oto/print",
+          "script": "test",
+          "files": 11,
+          "failedFiles": 0,
+          "skippedFiles": 0,
+          "passed": 271,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        {
+          "package": "@oto/messaging",
+          "script": "test",
+          "files": 6,
+          "failedFiles": 0,
+          "skippedFiles": 0,
+          "passed": 78,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        {
+          "package": "@oto/payments-2c2p",
+          "script": "test",
+          "files": 6,
+          "failedFiles": 0,
+          "skippedFiles": 0,
+          "passed": 81,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        {
+          "package": "@oto/telemetry",
+          "script": "test",
+          "files": 4,
+          "failedFiles": 0,
+          "skippedFiles": 0,
+          "passed": 36,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        {
+          "package": "@oto/admin-screens",
+          "script": "test",
+          "files": 6,
+          "failedFiles": 0,
+          "skippedFiles": 0,
+          "passed": 27,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        }
+      ],
+      "initialRunFullyGreen": false,
+      "adoptedCorrections": [
+        "Full final2 API-types seam 10/10 replaces the failed final seam step.",
+        "Full final2 POS 1433/101, AdminScreens 27/6 and compilers cover final shared frontend bytes."
+      ],
+      "runtimeTypeErasure": {
+        "path": "C:/w/admin621-runtime-typing-amendment.json",
+        "sha256": "2773f565b499eef077e8e7c9b205b3dbf7f8fcb75624364865d582421078f05a"
+      }
+    },
+    "box": {
+      "name": "box-serial",
+      "exitCode": 0,
+      "startedAt": "2026-10-22T11:29:18.245Z",
+      "finishedAt": "2026-10-22T11:31:57.308Z",
+      "log": {
+        "path": "C:/w/admin621-final2-linux/box-serial.log",
+        "sha256": "325cbf17c91946ee3f208f265d72578d464ac4b3bd8294883af5b17df5319867"
+      },
+      "exitReceipt": {
+        "path": "C:/w/admin621-final2-linux/box-serial-exit.json",
+        "sha256": "8328424af7a03347705b4d38209c3a8981a99cf584f81c6ac4095ec3a528d6c2"
+      },
+      "sourceFiles": 3538,
+      "command": "pnpm --filter @oto/box-agent test --test-concurrency=1",
+      "tests": 749,
+      "passed": 749,
+      "failed": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 156942.80233,
+      "precedingTargetedPreflights": [],
+      "adoption": "Same frozen source; the full own Box script adds --test-concurrency=1 for file scheduling only. All 749 cases, nested concurrency, assertions, guards and thresholds remain unchanged. This successful run replaces the two retained failed full runs without proving their cause."
+    },
+    "post": {
+      "name": "post",
+      "exitCode": 0,
+      "startedAt": "2026-10-22T11:32:54.301Z",
+      "finishedAt": "2026-10-22T11:39:41.707Z",
+      "log": {
+        "path": "C:/w/admin621-final2-linux/post.log",
+        "sha256": "c8f304eabbfbb41c628ac7520f4c0b61116af60637597995258264a195ec8260"
+      },
+      "exitReceipt": {
+        "path": "C:/w/admin621-final2-linux/post-exit.json",
+        "sha256": "6b2ff331a034076036eae7db0493e69f885d96686bb95cf3cd3f3c5c1740ea4c"
+      },
+      "sourceFiles": 3538,
+      "summaries": [
+        {
+          "files": 6,
+          "failedFiles": 0,
+          "skippedFiles": 0,
+          "passed": 71,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        {
+          "files": 26,
+          "failedFiles": 0,
+          "skippedFiles": 0,
+          "passed": 200,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 3
+        },
+        {
+          "files": 1,
+          "failedFiles": 0,
+          "skippedFiles": 0,
+          "passed": 10,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        {
+          "files": 6,
+          "failedFiles": 0,
+          "skippedFiles": 0,
+          "passed": 27,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        {
+          "files": 101,
+          "failedFiles": 0,
+          "skippedFiles": 0,
+          "passed": 1433,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        }
+      ],
+      "generatedMatch": true
+    }
+  },
+  "metrics": {
+    "sourceConfigFiles": 3538,
+    "backendFiles": 1011,
+    "ownedSourceFiles": 30,
+    "apiTotals": {
+      "passed": 4719,
+      "skipped": 401,
+      "todo": 5,
+      "files": 337
+    },
+    "consolePassed": 200,
+    "consoleTodo": 3,
+    "seamPassed": 10,
+    "adminScreensPassed": 27,
+    "posPassed": 1433,
+    "browserPassed": 124,
+    "boxPassed": 749,
+    "remainingPackageScripts": 12
+  },
+  "ordering": {
+    "fullBatteryCompletedBeforeAllBoxAttempts": true,
+    "postRebaseAfterSuccessfulSerialBox": true
+  },
+  "attempts": {
+    "boxRetryFailure": {
+      "name": "box-retry",
+      "exitCode": 1,
+      "startedAt": "2026-10-22T11:27:17.268Z",
+      "finishedAt": "2026-10-22T11:28:04.282Z",
+      "log": {
+        "path": "C:/w/admin621-final2-linux/box-retry.log",
+        "sha256": "ae793a3e65c62ee6c4511f94d9eff03fe49ce1bec14f631fb0ef868b172b7c77"
+      },
+      "exitReceipt": {
+        "path": "C:/w/admin621-final2-linux/box-retry-exit.json",
+        "sha256": "047a11e12898c718d2475f2357c689aeaf109c2821e92a002b14025b233d7a02"
+      },
+      "sourceFiles": 3538,
+      "tests": 749,
+      "passed": 748,
+      "failed": 1,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 32165.528865,
+      "precedingTargetedPreflights": [
+        {
+          "tests": 10,
+          "pass": 10,
+          "fail": 0,
+          "skipped": 0,
+          "todo": 0,
+          "duration_ms": 11750.903639
+        }
+      ],
+      "classification": "Standalone complete print-channel file passed all 10; the unchanged full suite then passed 748 of 749, with the normal-printer status-query array assertion failing. No environment cause is proven. This failed retry is not adopted as green."
+    },
+    "boxInitialFailure": {
+      "name": "box",
+      "exitCode": 1,
+      "startedAt": "2026-10-22T11:24:25.245Z",
+      "finishedAt": "2026-10-22T11:25:06.673Z",
+      "log": {
+        "path": "C:/w/admin621-final2-linux/box.log",
+        "sha256": "b5ee06804a8921738db8fa2d73acc47b2e44eeb03f29005631697b015fa714bc"
+      },
+      "exitReceipt": {
+        "path": "C:/w/admin621-final2-linux/box-exit.json",
+        "sha256": "836ce0884e016b317db04e09d63e0d0020462732167465f270c5f71589a7ec3a"
+      },
+      "sourceFiles": 3538,
+      "tests": 749,
+      "passed": 746,
+      "failed": 3,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 35970.736934,
+      "classification": "Initial whole Box suite retained 746 passed and 3 failed print-channel assertions: four-query before/after mismatch, write bound observed 8157ms, query bound observed 2740ms. No cause is proven. No source, test, guard, timeout or concurrency setting was changed for the first targeted preflight and full-suite retry. The later adopted full run explicitly changes only file scheduling with --test-concurrency=1."
+    },
+    "api2InitialFailure": {
+      "name": "api2",
+      "exitCode": 1,
+      "startedAt": "2026-10-22T10:33:02.279Z",
+      "finishedAt": "2026-10-22T11:04:08.288Z",
+      "log": {
+        "path": "C:/w/admin621-api-release/api2.log",
+        "sha256": "b8844265da0bfe62ffc6ba63f7e5ede6229cf3508403b8c994dfe03e3ad5f8fc"
+      },
+      "exitReceipt": {
+        "path": "C:/w/admin621-api-release/api2-exit.json",
+        "sha256": "bf444eb3d8d8e262bd7a6aa4418b9cceafa8aa783bada773d5c7f9f17e25f174"
+      },
+      "files": 108,
+      "failedFiles": 1,
+      "skippedFiles": 4,
+      "passed": 1621,
+      "failed": 1,
+      "skipped": 174,
+      "todo": 4,
+      "classification": "Initial whole shard failed one booth-duty timeout after 30000ms; unchanged whole shard retry is adopted only from its separately verified exit0 receipt. The timeout is retained, not erased or classified as a proven environment cause."
+    },
+    "otherInitialSeamFailure": {
+      "name": "other",
+      "exitCode": 1,
+      "startedAt": "2026-10-22T10:38:13.717Z",
+      "finishedAt": "2026-10-22T10:52:12.675Z",
+      "log": {
+        "path": "C:/w/admin621-api-release/other.log",
+        "sha256": "7362effbf562b0f9216253f32b6dd5c6434576457ee0f24e743492647957d1ca"
+      },
+      "exitReceipt": {
+        "path": "C:/w/admin621-api-release/other-exit.json",
+        "sha256": "34bcc15b1d0fd3394b6285c113d152425e20d4857b32003828bf2c83bb45e878"
+      },
+      "files": 0,
+      "failedFiles": 1,
+      "skippedFiles": 0,
+      "passed": 9,
+      "failed": 1,
+      "skipped": 0,
+      "todo": 0,
+      "classification": "Package scripts completed; the final seam reported an undescribed hand-typed GET/me reader. The runtime transport input became honest unknown; final compiler, seam, POS and AdminScreens gates cover the amended bytes."
+    },
+    "finalInitialLint": {
+      "name": "checks",
+      "exitCode": 1,
+      "startedAt": "2026-10-22T10:43:19.683Z",
+      "finishedAt": "2026-10-22T10:48:19.099Z",
+      "log": {
+        "path": "C:/w/admin621-final-linux/checks.log",
+        "sha256": "2657472b658b275a6131edd7bea26165a2e163703d24252f1162f15dbc3e582b"
+      },
+      "exitReceipt": {
+        "path": "C:/w/admin621-final-linux/checks-exit.json",
+        "sha256": "34752cb78a24b8ad8bb466b8b9f643b781331f4a1aa0a635fd0526b5a9c9ed1b"
+      },
+      "sourceFiles": 3538,
+      "lintErrors": 3,
+      "inheritedWarnings": 3,
+      "classification": "Unused PrepStation and Translations type imports and unused holidaysApi binding were removed. Final complete lint/compiler/build/generated checks cover the corrected bytes."
+    },
+    "finalInitialUnits": {
+      "name": "units",
+      "exitCode": 1,
+      "startedAt": "2026-10-22T10:43:19.684Z",
+      "finishedAt": "2026-10-22T10:44:19.091Z",
+      "log": {
+        "path": "C:/w/admin621-final-linux/units.log",
+        "sha256": "fbe6898a1d2415d0f17abdfc84a0e9f3a7fed1dbaaf4974c55efa0c37b9da779"
+      },
+      "exitReceipt": {
+        "path": "C:/w/admin621-final-linux/units-exit.json",
+        "sha256": "69253746644cd95fad3fb6b577a85adc89e0c3fd7aaa80eb2882bada9c6eb51a"
+      },
+      "sourceFiles": 3538,
+      "summaries": [
+        {
+          "files": 26,
+          "failedFiles": 0,
+          "skippedFiles": 0,
+          "passed": 200,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 3
+        },
+        {
+          "files": 0,
+          "failedFiles": 1,
+          "skippedFiles": 0,
+          "passed": 9,
+          "failed": 1,
+          "skipped": 0,
+          "todo": 0
+        }
+      ],
+      "classification": "Console units passed before the initial seam failed; final full Console/seam/AdminScreens unit run replaces this interrupted combined gate."
+    },
+    "nativeApiInitial": {
+      "path": "C:/w/admin621-api-own-checks-exit.json",
+      "sha256": "bf6e47ec713da5ebdbcefc13800df352e543162fe0e8ce2281df02f74b3c55ae",
+      "exitCode": 2,
+      "log": {
+        "path": "C:/w/admin621-api-own-checks.log",
+        "sha256": "893ad33a8c696fd46a5c694e1c6f214e4c01bf5e5f8dd0979e6ec5669177b153"
+      },
+      "classification": "Earlier integration typing errors; native final own check and all final compilers pass."
+    }
+  },
+  "reviews": {
+    "baseline": {
+      "path": "C:/w/admin621-review-baseline.json",
+      "sha256": "fa8cf6454b14648537a59e8b3b7909e9c0313688a7e6010a83e98585a9f4d482"
+    },
+    "uiNative": {
+      "path": "C:/w/admin621-ui-source-manifest.json",
+      "sha256": "aca63dd99e1b2e9aff2edef5c2867bb12dd155c45c6275bc81f987bbe9f6311e"
+    },
+    "apiNativeFinal": {
+      "path": "C:/w/admin621-api-own-checks-final-exit.json",
+      "sha256": "c2f04d94d3777a8dc6044404c8731ca0138040800a82063940f138d522cb5dfe",
+      "exitCode": 0,
+      "log": {
+        "path": "C:/w/admin621-api-own-checks-final.log",
+        "sha256": "dafab3a3b6aee5dda4cd25d4fa7ff3a28d6dcfd0b9c28459e4e98b9e44f09b44"
+      }
+    },
+    "priceValidity": {
+      "path": "C:/w/admin621-price-validity-regression.json",
+      "sha256": "6c6bd8ecab149427e36a78ffaabcd232b1a3569e1925900f772373ce6262ef4c"
+    },
+    "tierContinuationRed": {
+      "path": "C:/w/admin621-tier-continuation-red.json",
+      "sha256": "6f3741a709c1e3bdf31968a4cfed58f0dd934414849230b0b8ddda4a03c0f915"
+    }
+  },
+  "proofPreparation": {
+    "executed": false,
+    "helper": {
+      "path": "C:/w/admin621-evidence-v2.mjs",
+      "sha256": "da8a950f985a9fbb9cba3bd94045fc7e8505c7ad3673d4b9e2b31f5b9494a08a"
+    },
+    "review": {
+      "path": "C:/w/admin621-proof-review-v2.json",
+      "sha256": "740826de9905e1b1467abf7f49cf8d45d193887a8f710344d46aff596bd0ecd8"
+    },
+    "localGuardChecks": 9,
+    "metadataAmendment": {
+      "path": "C:/w/admin621-proof-metadata-amendment-v2.json",
+      "sha256": "db0daf148e2661e2bd0cfe17cd7af876e5f5c2337e4d1058fb57437f497b55f5"
+    },
+    "originalHelper": {
+      "path": "C:/w/admin621-evidence.mjs",
+      "sha256": "c332953f7fbfe9c3342d7abccd80f4fc04af8a91df35cc7e6a1529033f960cae"
+    },
+    "originalReview": {
+      "path": "C:/w/admin621-proof-review.json",
+      "sha256": "efd33b0880b0395531d7895cf170de65673383262b9a45f7fb680d37d6cb76b1"
+    },
+    "independentDeltaReview": "overview_ui confirmed exactly four approved metadata literals changed; no business/read/auth/journal/recovery/capture/completion change.",
+    "stagingAcceptance": false
+  },
+  "limitations": [
+    "This receipt records local gates only. Landing, exact-SHA CI, Render deployments, screenshots and staged acceptance need separate observed receipts; this file is never rewritten to claim them.",
+    "The initial API2 and other-run failures remain explicit. Successful final gates are composed from the recorded source manifests and replacements; no all-green other exit is invented.",
+    "The original tier-use UI checks current local ticket references only. Existing API active-member refusal and soft archive are preserved; no claim of complete usage-history coverage is made.",
+    "Staging proof preparation is unexecuted and current-park Console catalogue only; actual Till proof is outside this receipt."
+  ],
+  "ci": {
+    "status": "pending"
+  },
+  "deployment": {
+    "status": "pending"
+  },
+  "staging": {
+    "status": "pending"
+  },
+  "landing": {
+    "status": "separate receipt required"
+  }
+}

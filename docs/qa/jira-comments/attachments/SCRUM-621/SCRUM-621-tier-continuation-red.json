@@ -1,0 +1,14 @@
+{
+  "command": "pnpm --filter @oto/admin-screens test -- test/catalogue-ports.test.ts",
+  "observed": "native tier reorder continuation red before fix",
+  "completion": {
+    "status": "fulfilled",
+    "value": {
+      "chunk_id": "8f6968",
+      "wall_time_seconds": 0.0000208,
+      "exit_code": 1,
+      "original_token_count": 613,
+      "output": " ❯ test/catalogue-ports.test.ts (10 tests | 1 failed) 416ms\n   ✓ Catalogue native panel ports > offers no operator tier writes before a server-backed branch manager has canonical operator-scope authority 27ms\n   ✓ Catalogue native panel ports > keeps the original unbacked prototype tier controls and performs no request during render 29ms\n   ✓ Catalogue native panel ports > renders the native ticket table/cards and pricing chips from explicit snapshots without an app provider 150ms\n   ✓ Catalogue native panel ports > keeps read-only ticket and tier values while withholding their native write offers 14ms\n   ✓ Catalogue native panel ports > renders add-on stock wording and native values while keeping a global read-only row free of write controls 13ms\n   ✓ Catalogue native panel ports > does not invent a baseline or crash a ticket form while no tier exists 2ms\n   ✓ Catalogue native panel ports > does not promote a branch permission or a different operator into operator-wide tier authority 3ms\n   ✓ Catalogue native panel ports > keeps create and update capabilities distinct and accepts a canonical platform-wide assignment 1ms\n   ✓ Catalogue native panel ports > refuses a replaced actor and malformed scope payload instead of reusing another account authority 1ms\n   × Catalogue native panel ports > does not continue the native two-tier reorder after its panel has unmounted 173ms\n     → expected [ Array(2) ] to have a length of 1 but got 2\n\n⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯\n\n FAIL  test/catalogue-ports.test.ts > Catalogue native panel ports > does not continue the native two-tier reorder after its panel has unmounted\nAssertionError: expected [ Array(2) ] to have a length of 1 but got 2\n\n- Expected\n+ Received\n\n- 1\n+ 2\n\n ❯ test/catalogue-ports.test.ts:179:19\n    177|     release();\n    178|     await Promise.all(pending);\n    179|     expect(calls).toHaveLength(1);\n       |                   ^\n    180|   });\n    181| });\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯\n\n\n Test Files  1 failed (1)\n      Tests  1 failed | 9 passed (10)\n   Start at  17:21:56\n   Duration  7.58s (transform 2.27s, setup 0ms, collect 5.85s, tests 416ms, environment 0ms, prepare 404ms)\n\nC:\\w\\admin-catalogue\\packages\\admin-screens:\r\n ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @oto/admin-screens@0.1.0 test: `vitest run \"test/catalogue-ports.test.ts\"`\nExit status 1\n"
+    }
+  }
+}
