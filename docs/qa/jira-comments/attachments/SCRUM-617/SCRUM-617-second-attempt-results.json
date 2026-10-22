@@ -1,0 +1,68 @@
+{
+  "ticket": "SCRUM-617",
+  "releaseSha": "fbd75bba8a3e39397799a63ef4f2898909422787",
+  "startedAt": "2026-10-22T04:23:15.676Z",
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "sourceSha": "fbd75bba8a3e39397799a63ef4f2898909422787",
+      "deployId": "dep-dbcor67avr4c73csajpg",
+      "finishedAt": "2026-10-22T04:17:37.938297Z"
+    },
+    {
+      "name": "oto-pos-staging",
+      "sourceSha": "fbd75bba8a3e39397799a63ef4f2898909422787",
+      "deployId": "dep-dbcor6favr4c73csakr0",
+      "finishedAt": "2026-10-22T04:15:01.605628Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "sourceSha": "fbd75bba8a3e39397799a63ef4f2898909422787",
+      "deployId": "dep-dbcor6favr4c73csaku0",
+      "finishedAt": "2026-10-22T04:14:57.508103Z"
+    }
+  ],
+  "checks": [],
+  "screenshots": [],
+  "counts": {
+    "businessWrites": 0,
+    "smsRequests": 0,
+    "fixturesCreated": 0,
+    "blockedWrites": 0,
+    "blockedReads": 0,
+    "browserSignIns": 1,
+    "handoffIssues": 0,
+    "handoffExchanges": 0,
+    "directSignOuts": 2,
+    "publicAssetReads": 0
+  },
+  "blockedRequests": [],
+  "complete": false,
+  "limitations": [
+    "Permission withholding and direct-address refusal are covered by automated tests; this staging proof uses the existing seeded administrator only.",
+    "The read-only payment-methods request is the existing POS tender catalogue bootstrap; no payment operation is allowed.",
+    "Unknown auth transport outcomes fail the proof and leave cleanup explicitly unconfirmed; no business operation or fixture recovery is attempted."
+  ],
+  "actor": {
+    "id": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+    "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+    "active": true,
+    "accountRead": true,
+    "consoleAccess": true
+  },
+  "diagnostic": "BROWSER_OR_TRANSPORT_DETAILS_WITHHELD",
+  "authCleanup": [
+    {
+      "originKind": "pos",
+      "signOutStatus": 200,
+      "meStatus": 401
+    },
+    {
+      "originKind": "console",
+      "signOutStatus": 200,
+      "meStatus": 401
+    }
+  ],
+  "authCleanupConfirmed": true,
+  "completedAt": "2026-10-22T04:23:42.159Z"
+}

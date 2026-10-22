@@ -1,0 +1,365 @@
+{
+  "ticket": "SCRUM-617",
+  "releaseSha": "fbd75bba8a3e39397799a63ef4f2898909422787",
+  "startedAt": "2026-10-22T04:27:27.433Z",
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "sourceSha": "fbd75bba8a3e39397799a63ef4f2898909422787",
+      "deployId": "dep-dbcor67avr4c73csajpg",
+      "finishedAt": "2026-10-22T04:17:37.938297Z"
+    },
+    {
+      "name": "oto-pos-staging",
+      "sourceSha": "fbd75bba8a3e39397799a63ef4f2898909422787",
+      "deployId": "dep-dbcor6favr4c73csakr0",
+      "finishedAt": "2026-10-22T04:15:01.605628Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "sourceSha": "fbd75bba8a3e39397799a63ef4f2898909422787",
+      "deployId": "dep-dbcor6favr4c73csaku0",
+      "finishedAt": "2026-10-22T04:14:57.508103Z"
+    }
+  ],
+  "checks": [
+    {
+      "code": "POS_DESKTOP_ORIGINAL_PANEL_ENTRY_NO_FORM_NO_AUTO_HANDOFF",
+      "passed": true,
+      "at": "2026-10-22T04:27:42.655Z"
+    },
+    {
+      "code": "POS_PHONE390_NATIVE_ENTRY_NO_FORM",
+      "passed": true,
+      "at": "2026-10-22T04:27:46.204Z"
+    },
+    {
+      "code": "EXPLICIT_CONFIGURED_CONSOLE_HANDOFF_SAME_ACTOR_NATIVE_ACCOUNTS",
+      "passed": true,
+      "at": "2026-10-22T04:27:59.183Z"
+    },
+    {
+      "code": "BOTH_APP_ORIGIN_SESSIONS_SIGNED_OUT_AND_ME401",
+      "passed": true,
+      "at": "2026-10-22T04:28:01.063Z"
+    }
+  ],
+  "screenshots": [
+    {
+      "filename": "SCRUM-617-01-pos-admin-entry.png",
+      "capturedAt": "2026-10-22T04:27:40.838Z",
+      "capturedAfterDeploy": true,
+      "surface": "pos",
+      "bounds": [
+        {
+          "selector": "main h1",
+          "count": 1,
+          "visibleInViewport": true
+        },
+        {
+          "selector": "section[aria-label=\"Account administration\"]",
+          "count": 1,
+          "visibleInViewport": true
+        },
+        {
+          "selector": "section[aria-label=\"Account administration\"] h2",
+          "count": 1,
+          "visibleInViewport": true
+        },
+        {
+          "selector": "section[aria-label=\"Account administration\"] button",
+          "count": 1,
+          "visibleInViewport": true
+        }
+      ],
+      "sha256": "a313cba184d14194ffccb0992376255ac70ac9394b84df58ffdcf0ebddb5fbd5",
+      "inspectedForPrivacyAndContent": true,
+      "jiraAttachmentId": "11935"
+    },
+    {
+      "filename": "SCRUM-617-02-pos-phone-entry.png",
+      "capturedAt": "2026-10-22T04:27:44.455Z",
+      "capturedAfterDeploy": true,
+      "surface": "pos",
+      "bounds": [
+        {
+          "selector": "main h1",
+          "count": 1,
+          "visibleInViewport": true
+        },
+        {
+          "selector": "section[aria-label=\"Account administration\"]",
+          "count": 1,
+          "visibleInViewport": true
+        },
+        {
+          "selector": "section[aria-label=\"Account administration\"] h2",
+          "count": 1,
+          "visibleInViewport": true
+        },
+        {
+          "selector": "section[aria-label=\"Account administration\"] button",
+          "count": 1,
+          "visibleInViewport": true
+        }
+      ],
+      "sha256": "c874f9b536e23c9ddf078826b3188cbb22458b8daa3bd8d15fd92537e79c6bc1",
+      "inspectedForPrivacyAndContent": true,
+      "jiraAttachmentId": "11936"
+    },
+    {
+      "filename": "SCRUM-617-03-console-accounts-landing.png",
+      "capturedAt": "2026-10-22T04:27:57.344Z",
+      "capturedAfterDeploy": true,
+      "surface": "console",
+      "bounds": [
+        {
+          "selector": "main h1",
+          "count": 1,
+          "visibleInViewport": true
+        },
+        {
+          "selector": "tbody>tr[data-proof-demo]",
+          "count": 1,
+          "visibleInViewport": true
+        }
+      ],
+      "sha256": "61c395b55a0d1a82f8a949487dead0c4e86ee6f00582f7e37048e348108e03fd",
+      "inspectedForPrivacyAndContent": true,
+      "jiraAttachmentId": "11937"
+    }
+  ],
+  "counts": {
+    "businessWrites": 0,
+    "smsRequests": 0,
+    "fixturesCreated": 0,
+    "blockedWrites": 0,
+    "blockedReads": 0,
+    "browserSignIns": 1,
+    "handoffIssues": 1,
+    "handoffExchanges": 1,
+    "directSignOuts": 2,
+    "publicAssetReads": 2
+  },
+  "blockedRequests": [],
+  "complete": true,
+  "limitations": [
+    "The seeded administrator proves the existing POS address, desktop and390px entry, explicit configured Console handoff, same actor, native Accounts landing and both-origin sign-out.",
+    "Account-read navigation/direct-address refusal and missing Console-access withholding are covered by automated tests; staging does not claim those negative actor checks.",
+    "Public Inter stylesheet/font assets and the read-only tender catalogue are allowed by the reviewed proof guard. No payment operation, fixture, SMS or business write was allowed or observed.",
+    "Two partial proof attempts are preserved: the first was blocked before sign-in dispatch; the second stopped before capture after one sign-in, with both-origin sign-out and401 checks confirmed. Its assertion-failure cause was not established.",
+    "The successful run recorded one unclassified TYPE_ERROR browser tag without private details. The four stated controls passed; this is not an error-free browser claim."
+  ],
+  "browserErrorKinds": [
+    "TYPE_ERROR"
+  ],
+  "actor": {
+    "id": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+    "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+    "active": true,
+    "accountRead": true,
+    "consoleAccess": true
+  },
+  "phoneLayout": {
+    "viewport": 390,
+    "page": 390
+  },
+  "handoff": {
+    "app": "console",
+    "freshUuidIdempotencyKey": true,
+    "keySha256": "faa39aefce8ea19b508f0019cfc28c84ccf6db965fe2cefc1be930d15431fca4",
+    "configuredDestination": true,
+    "destinationFingerprint": "98e95687e29a67a9bb0c4d5e27b6e5e1b68bb01d24d7bb265dc65ffe04e72916",
+    "sameIssuedTokenExchanged": true,
+    "consoleAccountsLanded": true,
+    "fragmentStripped": true,
+    "sameActorAtBothOrigins": true
+  },
+  "selectedDemo": {
+    "id": "01a0c9ae-539f-7a52-987e-69d1c1a7a3cf",
+    "name": "Khun Dao (Manager)",
+    "status": "active",
+    "phoneMasked": true
+  },
+  "authCleanup": [
+    {
+      "originKind": "pos",
+      "signOutStatus": 200,
+      "meStatus": 401
+    },
+    {
+      "originKind": "console",
+      "signOutStatus": 200,
+      "meStatus": 401
+    }
+  ],
+  "authCleanupConfirmed": true,
+  "completedAt": "2026-10-22T04:28:03.133Z",
+  "reviewedAt": "2026-10-22T04:33:47.971Z",
+  "review": {
+    "coordinatorInspectedAllImages": true,
+    "coordinatorVerifiedStaging": true,
+    "inputReceipt": {
+      "path": "C:\\w\\admin-login-users\\docs\\qa\\jira-comments\\attachments\\SCRUM-617\\SCRUM-617-staging-results.json",
+      "sha256": "7f474aa469fc8c1f9f48d6a9e540430330a75e587d06214118950bae1ce2e8ee",
+      "bytes": 5578
+    },
+    "helper": {
+      "path": "C:/w/admin617-evidence.mjs",
+      "sha256": "cb9d0bf98cde433446035461ab63caa0e724ece9fc2afc3b402e60d039167f71",
+      "bytes": 26982
+    },
+    "guardReview": {
+      "path": "C:/w/admin617-proof-review-phone-results.json",
+      "sha256": "52b28836cc25c5db66e6c83ab03bd6534125e6a476a0ffade7bbaafc8ddf11fb",
+      "bytes": 16592,
+      "passed": true,
+      "localGuards": 124,
+      "historicalReview": {
+        "helper": {
+          "path": "C:/w/admin617-evidence-before-phone-fix.mjs",
+          "sha256": "9041cc71c299cac9a388e72ad5f928138f13e8a8177c1f1c19d75acbc47af669",
+          "bytes": 25940
+        },
+        "guardReview": {
+          "path": "C:/w/admin617-proof-review-before-phone-fix-results.json",
+          "sha256": "76ec875e7533cceb97d658c2cb61398eb367423f419efb70e98fc1dafe254bba",
+          "bytes": 13982
+        },
+        "localGuards": 122,
+        "harnessCorrections": [
+          {
+            "classification": "review-mock-only",
+            "helperChanged": false,
+            "initialChecks": 122,
+            "initialPassed": 121,
+            "initialFailed": 1,
+            "name": "allow exact Console read /api/accounts",
+            "cause": "The offline VM omitted the helper demoName constant used by its exact search-query allowlist. The mock was corrected; helper bytes and assertions were unchanged.",
+            "receipt": {
+              "path": "C:/w/admin617-proof-review-red-results.json",
+              "sha256": "a3c3e68ad670fcb48548d224c5a7ef12fa3daeac29ce004db178f9f6a745a4e4",
+              "bytes": 13712
+            }
+          }
+        ]
+      },
+      "helperRevisions": [
+        {
+          "helper": {
+            "path": "C:/w/admin617-evidence-before-diagnostics.mjs",
+            "sha256": "48486165b91e8dab50046adb9915abd1a0fa7aa5e231de7ea7fe39bd396c001a",
+            "bytes": 25934
+          },
+          "guardReview": {
+            "path": "C:/w/admin617-proof-review-before-diagnostics-results.json",
+            "sha256": "02d7e8eb865ec9e995ad18a1cb83e797ff55f0feb74431be852f5ac1513fc384",
+            "bytes": 16592
+          },
+          "localGuards": 124,
+          "change": "National-only phone fill"
+        },
+        {
+          "helper": {
+            "path": "C:/w/admin617-evidence-before-readiness-wait.mjs",
+            "sha256": "e3b90de6e0ec30305a3e58c773015067fe6d49616e63ce2b52305785e53e5798",
+            "bytes": 26963
+          },
+          "guardReview": {
+            "path": "C:/w/admin617-proof-review-before-readiness-wait-results.json",
+            "sha256": "6a01d8d5c029a3d20be28c535bca7cf3bf0dfd1943cae9bb946c95b4d4c6034d",
+            "bytes": 16592
+          },
+          "localGuards": 124,
+          "change": "Static diagnostic metadata"
+        }
+      ],
+      "finalHelperChange": "Same native heading visibility condition with a30s bound; fixed diagnostic metadata only; guard criteria unchanged.",
+      "phoneReviewSetup": {
+        "classification": "review-extractor-only",
+        "helperChanged": false,
+        "receipt": {
+          "path": "C:/w/admin617-proof-review-phone-harness-initial-results.json",
+          "sha256": "4aa03df7a3bef1014ea9475fca5b105d2f8c564b866ac638d8a38fd7fb90e583",
+          "bytes": 14733
+        },
+        "checks": 123,
+        "passed": 122,
+        "failed": 1,
+        "cause": "The isolated worktree has no host TypeScript installation; the offline extractor now resolves the existing repository TypeScript dependency. No helper or product change was needed."
+      },
+      "phoneInputRegression": {
+        "classification": "external-proof-helper-only",
+        "sourceProductChanged": false,
+        "fillOnlyChanged": true,
+        "before": {
+          "helper": {
+            "path": "C:/w/admin617-evidence-before-phone-fix.mjs",
+            "sha256": "9041cc71c299cac9a388e72ad5f928138f13e8a8177c1f1c19d75acbc47af669",
+            "bytes": 25940
+          },
+          "review": {
+            "path": "C:/w/admin617-proof-review-phone-red-results.json",
+            "sha256": "8b0479f0eb4563fd882a88ad015b4e4ce67a7c6024f92c1ea28623e39f7850ef",
+            "bytes": 16728
+          },
+          "checks": 124,
+          "passed": 122,
+          "failed": 2
+        },
+        "corrected": {
+          "helper": {
+            "path": "C:/w/admin617-evidence.mjs",
+            "sha256": "cb9d0bf98cde433446035461ab63caa0e724ece9fc2afc3b402e60d039167f71",
+            "bytes": 26982
+          },
+          "checks": 124,
+          "passed": 124,
+          "failed": 0
+        }
+      },
+      "blockedSignInAttempt": {
+        "receipt": {
+          "path": "C:\\w\\admin-login-users\\docs\\qa\\jira-comments\\attachments\\SCRUM-617\\SCRUM-617-first-attempt-results.json",
+          "sha256": "98e59cf9604d9e5b530f8d87a8d3b72b077dfba8f35e14ad1a5f00c8914cc165",
+          "bytes": 1826
+        },
+        "diagnostic": "ONLY_KNOWN_SEEDED_SIGNIN_ALLOWED",
+        "dispatchedSignIns": 0,
+        "sessionNeverIssued": true,
+        "checks": 0,
+        "images": 0,
+        "blockedWrites": 1
+      },
+      "secondAttempt": {
+        "receipt": {
+          "path": "C:\\w\\admin-login-users\\docs\\qa\\jira-comments\\attachments\\SCRUM-617\\SCRUM-617-second-attempt-results.json",
+          "sha256": "fd906f80af1b3743924bbbb0ba4a9bd3ace30c84909369688b8135aca0d35eae",
+          "bytes": 2114
+        },
+        "complete": false,
+        "checks": 0,
+        "images": 0,
+        "signIns": 1,
+        "handoffs": 0,
+        "authCleanupConfirmed": true,
+        "causeEstablished": false
+      },
+      "originalLocalResults": {
+        "path": "C:/w/admin617-local-before-phone-fix-results.json",
+        "sha256": "35ae4972018e08664bb35182c059471f0181f05426b0bdb1c175f96c5fbc2144",
+        "bytes": 13586
+      },
+      "originalLocalAudit": {
+        "path": "C:/w/admin617-local-before-phone-fix-audit-results.json",
+        "sha256": "f6e0bd5fe5f60c418ae75b68d362affcdb773a4be30162eb2d8ffc3c92b29f5b",
+        "bytes": 16995
+      }
+    },
+    "independentAudit": {
+      "path": "C:/w/admin617-local-audit-results.json",
+      "sha256": "14062486cd8171951a62639d9015930487ec04c1d5d9fdf1d0dc3c2ddfe740c3",
+      "bytes": 21265
+    }
+  }
+}
