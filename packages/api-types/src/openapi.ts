@@ -1259,6 +1259,147 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/access-review/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Six read-only current core-data lists. Existing seated role-read authorization and accountScopeFilter apply: branch readers inherit its inactive-account exclusion; operator readers retain all statuses. Employee reach independently follows role-read branch grants, includes archived records and excludes foreign or malformed park references. Actual owned links establish presence even when their projection or account is hidden; foreign links do not. A null employee projection never establishes absence. Wide rows describe actual valid own/system operator-scoped role assignments, including empty roles, at readable and dominated own-operator or platform-null scopes; account tenancy is never widened. Last sign-in is the latest successful same-operator auth.sign_in session audit, independent of live/revoked/expired sessions. Password review reads only mustChangePassword; no credential data is read or returned. No source-app or mutation operation is performed. */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            operatorWideHolders: {
+                                /** Format: uuid */
+                                id: string;
+                                phone: string;
+                                /** @enum {string} */
+                                status: "invited" | "active" | "inactive";
+                                employee: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                } | null;
+                                /** Format: date-time */
+                                lastSignInAt: string | null;
+                                mustChangePassword: boolean;
+                                assignments: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    roleName: string;
+                                    /** Format: uuid */
+                                    scopeId: string | null;
+                                }[];
+                            }[];
+                            platformWideHolders: {
+                                /** Format: uuid */
+                                id: string;
+                                phone: string;
+                                /** @enum {string} */
+                                status: "invited" | "active" | "inactive";
+                                employee: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                } | null;
+                                /** Format: date-time */
+                                lastSignInAt: string | null;
+                                mustChangePassword: boolean;
+                                assignments: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    roleName: string;
+                                    /** Format: uuid */
+                                    scopeId: string | null;
+                                }[];
+                            }[];
+                            accountsWithoutEmployee: {
+                                /** Format: uuid */
+                                id: string;
+                                phone: string;
+                                /** @enum {string} */
+                                status: "invited" | "active" | "inactive";
+                                employee: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                } | null;
+                                /** Format: date-time */
+                                lastSignInAt: string | null;
+                                mustChangePassword: boolean;
+                            }[];
+                            employeesWithoutAccount: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                                nickname: string | null;
+                                /** @enum {string} */
+                                source: "platform" | "otoapp";
+                                /** Format: date-time */
+                                archivedAt: string | null;
+                                branch: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                } | null;
+                            }[];
+                            accountsNeverSignedIn: {
+                                /** Format: uuid */
+                                id: string;
+                                phone: string;
+                                /** @enum {string} */
+                                status: "invited" | "active" | "inactive";
+                                employee: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                } | null;
+                                /** Format: date-time */
+                                lastSignInAt: string | null;
+                                mustChangePassword: boolean;
+                            }[];
+                            temporaryPasswordsOutstanding: {
+                                /** Format: uuid */
+                                id: string;
+                                phone: string;
+                                /** @enum {string} */
+                                status: "invited" | "active" | "inactive";
+                                employee: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                } | null;
+                                /** Format: date-time */
+                                lastSignInAt: string | null;
+                                mustChangePassword: boolean;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/roles/": {
         parameters: {
             query?: never;

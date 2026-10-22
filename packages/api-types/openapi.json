@@ -1425,6 +1425,436 @@
         }
       }
     },
+    "/access-review/": {
+      "get": {
+        "description": "Six read-only current core-data lists. Existing seated role-read authorization and accountScopeFilter apply: branch readers inherit its inactive-account exclusion; operator readers retain all statuses. Employee reach independently follows role-read branch grants, includes archived records and excludes foreign or malformed park references. Actual owned links establish presence even when their projection or account is hidden; foreign links do not. A null employee projection never establishes absence. Wide rows describe actual valid own/system operator-scoped role assignments, including empty roles, at readable and dominated own-operator or platform-null scopes; account tenancy is never widened. Last sign-in is the latest successful same-operator auth.sign_in session audit, independent of live/revoked/expired sessions. Password review reads only mustChangePassword; no credential data is read or returned. No source-app or mutation operation is performed.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "operatorWideHolders": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "phone": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "invited",
+                              "active",
+                              "inactive"
+                            ]
+                          },
+                          "employee": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ],
+                            "additionalProperties": false,
+                            "nullable": true
+                          },
+                          "lastSignInAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          },
+                          "mustChangePassword": {
+                            "type": "boolean"
+                          },
+                          "assignments": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "roleName": {
+                                  "type": "string"
+                                },
+                                "scopeId": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "nullable": true
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "roleName",
+                                "scopeId"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "phone",
+                          "status",
+                          "employee",
+                          "lastSignInAt",
+                          "mustChangePassword",
+                          "assignments"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "platformWideHolders": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "phone": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "invited",
+                              "active",
+                              "inactive"
+                            ]
+                          },
+                          "employee": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ],
+                            "additionalProperties": false,
+                            "nullable": true
+                          },
+                          "lastSignInAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          },
+                          "mustChangePassword": {
+                            "type": "boolean"
+                          },
+                          "assignments": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "roleName": {
+                                  "type": "string"
+                                },
+                                "scopeId": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "nullable": true
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "roleName",
+                                "scopeId"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "phone",
+                          "status",
+                          "employee",
+                          "lastSignInAt",
+                          "mustChangePassword",
+                          "assignments"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "accountsWithoutEmployee": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "phone": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "invited",
+                              "active",
+                              "inactive"
+                            ]
+                          },
+                          "employee": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ],
+                            "additionalProperties": false,
+                            "nullable": true
+                          },
+                          "lastSignInAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          },
+                          "mustChangePassword": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "phone",
+                          "status",
+                          "employee",
+                          "lastSignInAt",
+                          "mustChangePassword"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "employeesWithoutAccount": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "nickname": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "source": {
+                            "type": "string",
+                            "enum": [
+                              "platform",
+                              "otoapp"
+                            ]
+                          },
+                          "archivedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          },
+                          "branch": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ],
+                            "additionalProperties": false,
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "nickname",
+                          "source",
+                          "archivedAt",
+                          "branch"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "accountsNeverSignedIn": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "phone": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "invited",
+                              "active",
+                              "inactive"
+                            ]
+                          },
+                          "employee": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ],
+                            "additionalProperties": false,
+                            "nullable": true
+                          },
+                          "lastSignInAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          },
+                          "mustChangePassword": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "phone",
+                          "status",
+                          "employee",
+                          "lastSignInAt",
+                          "mustChangePassword"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "temporaryPasswordsOutstanding": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "phone": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "invited",
+                              "active",
+                              "inactive"
+                            ]
+                          },
+                          "employee": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ],
+                            "additionalProperties": false,
+                            "nullable": true
+                          },
+                          "lastSignInAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          },
+                          "mustChangePassword": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "phone",
+                          "status",
+                          "employee",
+                          "lastSignInAt",
+                          "mustChangePassword"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "operatorWideHolders",
+                    "platformWideHolders",
+                    "accountsWithoutEmployee",
+                    "employeesWithoutAccount",
+                    "accountsNeverSignedIn",
+                    "temporaryPasswordsOutstanding"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/roles/": {
       "get": {
         "description": "System roles and this operator’s role catalogue, with permission sentences. Read-only; no role editor.",
