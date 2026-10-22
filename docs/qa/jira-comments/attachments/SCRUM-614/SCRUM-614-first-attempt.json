@@ -1,0 +1,122 @@
+{
+  "ticket": "SCRUM-614",
+  "releaseSha": "b259fb9d804e9042f2cdcb5df2fe89ba17b2e578",
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "sourceSha": "b259fb9d804e9042f2cdcb5df2fe89ba17b2e578",
+      "deployId": "dep-dbcm3lbncjis73b0v5g0",
+      "finishedAt": "2026-10-22T01:10:52.621644Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "sourceSha": "b259fb9d804e9042f2cdcb5df2fe89ba17b2e578",
+      "deployId": "dep-dbcm3lbncjis73b0v6o0",
+      "finishedAt": "2026-10-22T01:08:13.180333Z"
+    }
+  ],
+  "checks": [
+    {
+      "code": "SEEDED_DIRECTORY_AND_LINK_STATE",
+      "passed": true,
+      "at": "2026-10-22T01:12:08.964Z"
+    },
+    {
+      "code": "SOURCE_HANDOFF_AND_GUARDED_EMPLOYEE",
+      "passed": true,
+      "at": "2026-10-22T01:12:14.474Z"
+    },
+    {
+      "code": "MANAGER_REACH_AND_PHONE",
+      "passed": true,
+      "at": "2026-10-22T01:12:25.831Z"
+    }
+  ],
+  "screenshots": [
+    {
+      "filename": "SCRUM-614-01-directory-linked-login.png",
+      "capturedAt": "2026-10-22T01:12:07.698Z",
+      "capturedAfterDeploy": true,
+      "employeeId": "01a0c9ae-52f1-7a09-b767-9b139ca29e9d",
+      "content": {
+        "headingInViewport": true,
+        "factGroupsInViewport": 4,
+        "allFactGroups": 4,
+        "wholeRowInViewport": true
+      },
+      "sha256": "c357b9593c3b5f2e5e466b7674b48950a94bac160a095449396318710cf473ba",
+      "reviewedAt": "2026-10-22T01:15:21.672Z",
+      "inspectedForPrivacyAndContent": true
+    },
+    {
+      "filename": "SCRUM-614-02-mirrored-source.png",
+      "capturedAt": "2026-10-22T01:12:11.081Z",
+      "capturedAfterDeploy": true,
+      "employeeId": "01a15e60-0376-773f-991e-d6ff83a0941e",
+      "content": {
+        "headingInViewport": true,
+        "factGroupsInViewport": 4,
+        "allFactGroups": 4,
+        "wholeRowInViewport": true
+      },
+      "sha256": "18a2a6289828c0fc4f967cf48da28916b805b1cd23a8572e6c923b9b08578bef",
+      "reviewedAt": "2026-10-22T01:15:21.673Z",
+      "inspectedForPrivacyAndContent": true
+    },
+    {
+      "filename": "SCRUM-614-03-manager-phone.png",
+      "capturedAt": "2026-10-22T01:12:24.614Z",
+      "capturedAfterDeploy": true,
+      "employeeId": "01a0bbdc-8c62-724c-a414-10f33d78c161",
+      "content": {
+        "headingInViewport": true,
+        "factGroupsInViewport": 4,
+        "allFactGroups": 4,
+        "wholeRowInViewport": true
+      },
+      "sha256": "840dc3f49b551e9069480d1aee2789e63a2b725a7557f373442b2c27544dbb55",
+      "reviewedAt": "2026-10-22T01:15:21.673Z",
+      "inspectedForPrivacyAndContent": true
+    }
+  ],
+  "counts": {
+    "blockedWrites": 1,
+    "omittedAuditReads": 1,
+    "handoffRequests": 1,
+    "exchanges": 1,
+    "businessWrites": 0,
+    "smsRequests": 0,
+    "adminEmployees": 46,
+    "mirroredEmployees": 19,
+    "activeMirroredEmployees": 17,
+    "managerEmployees": 15
+  },
+  "fingerprints": {
+    "demoDirectoryRow": "7c2d44a2f8bb2996f69773310961fee750616e0fe73e6d71bd087efe38d7bc4b",
+    "handoffKey": "0d815974b2ff9c8de797d380c9739c1ac8556fca5542265f07ee85b127e3f0ad",
+    "managerDirectory": "44559effc2c0c0847b309231368452fbf9159026ee49f6bb113a858a9dd46800"
+  },
+  "limitations": [],
+  "source": {
+    "attempted": true,
+    "employeeId": "01a15e60-0376-773f-991e-d6ff83a0941e",
+    "issueStatus": 200,
+    "exchangeStatus": 200,
+    "employeeReadStatus": 200,
+    "navigationVerified": true
+  },
+  "complete": false,
+  "managerEmployeeId": "01a0bbdc-8c62-724c-a414-10f33d78c161",
+  "managerAccountId": "01a0c9ae-5377-7b34-a9ab-22bf8086f5f7",
+  "demoEmployeeId": "01a0c9ae-52f1-7a09-b767-9b139ca29e9d",
+  "phoneLayout": {
+    "viewport": 390,
+    "page": 390
+  },
+  "diagnostic": "UNEXPECTED_WRITE_BLOCKED",
+  "signOutStatus": 200,
+  "sourceSignOutStatus": 200,
+  "completedAt": "2026-10-22T01:12:26.720Z",
+  "helperSha256": "bf5f5a90b87f3a5b6b8d06c2c40a9abd0917a11865cb6acaf430ac3190de7701",
+  "review": "All three control checks and images passed; acceptance is incomplete because one unknown browser write was safely blocked. Both auth sign-outs returned200. Product defect is not established."
+}
