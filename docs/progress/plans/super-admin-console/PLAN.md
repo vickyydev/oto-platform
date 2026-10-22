@@ -141,6 +141,8 @@ Owner question Q7 (2026-10-22, SCRUM-624; defaults unchanged and production edit
 
 SCRUM-624 owner rulings (2026-10-23): Q6 authorizes exactly the four existing Care response schemas in apps/api/src/routes/checkin.ts, generated client types and retirement of the four matching legacy allowances; inputs and behavior stay unchanged. Q7 authorizes scoped fixes in apps/api/src/routes/benefits.ts and its service: operator-wide template/profile management, employee-park credential targets (operator reach for an unassigned employee), and the foreign-park join fence if its regression confirms the leak. Existing operator-wide metadata lists and all benefit rules stay unchanged. These are explicit ownership extensions for SCRUM-624 only.
 
+Owner question Q8 (2026-10-23, SCRUM-624; no POS edit): may only apps/pos/test/s221-r2-benefit-qr.test.ts update its source-inspection permission/wiring assertions from the former seated-park call and dialog to the authorized employee-park capability hook and lifted dialog? The full POS suite currently has1,432 passes and this one stale source assertion. All API transport, native wording and real-QR assertions stay unchanged. PLAN2 limits POS edits to619/627; either an explicit scoped authorization or the planning lane's equivalent landing is required. No runtime behavior or guard weakening is proposed.
+
 ## 8. P2 — organisation, catalogue, reports (Codex)
 
 | Ticket | Deliverable |
