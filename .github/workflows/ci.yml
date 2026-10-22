@@ -599,6 +599,13 @@ jobs:
       - name: The app's camp cancelled-day checks
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/camp-cancelled-days.check.ts
+      # SCRUM-655: a camp created with Skip weekends or unticked days saves
+      # them as cancelled days, so the public form leaves them out and a pick
+      # of one is refused; Cancel Day and the edit panel still change the days
+      # after creation.
+      - name: The app's camp creation day-exclusion checks
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/camp-creation-exclusions.check.ts
       # SCRUM-559: an employee's pay is a payroll role's — withheld from
       # manager and staff on the list, the employee, the change history and the
       # probation review; a pay field in their edit or new employee refused;

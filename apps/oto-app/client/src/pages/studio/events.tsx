@@ -61,13 +61,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, differenceInDays, addDays } from "date-fns";
+import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, differenceInDays, addDays, isWeekend } from "date-fns";
 import { useAuth } from "@/lib/auth";
 import { EVENT_TYPE_LABELS, EVENT_TYPE_LABELS_SHORT, ONE_OFF_EVENT_COLOR_OPTIONS, DEFAULT_ONE_OFF_EVENT_COLOR, OTHER_EVENT_LEGEND_COLORS, getEventCalendarColor } from "@/lib/event-types";
 import { useLocation, useRoute } from "wouter";
 import { useBranchContext } from "@/hooks/use-branch-context";
 import { useIsMobile } from "@/hooks/use-is-mobile";
 import { cn } from "@/lib/utils";
+import { campCreationExcludedDays } from "@/lib/camp-days";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { format, parseISO } from "date-fns";
@@ -368,6 +369,8 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
     numChildren: null as number | null,
     branchId: activeBranchId as string | null,
     campDayHosts: {} as Record<string, string>,
+    skipWeekends: false,
+    untickedDays: [] as string[],
   });
   
   // Viewing/managing studio event state
@@ -1056,6 +1059,8 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
       numChildren: null,
       branchId: activeBranchId,
       campDayHosts: {},
+      skipWeekends: false,
+      untickedDays: [],
     });
     setEditingCampEvent(null);
   };
@@ -1072,10 +1077,18 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
       specialRequests: event.specialRequests || "",
       numChildren: event.numChildren || null,
       branchId: event.branchId,
+      skipWeekends: false,
+      untickedDays: [],
     });
     setEditingCampEvent(event);
     setShowCampSheet(true);
   };
+
+  // SCRUM-655: days left out while creating a camp, saved as its cancelled
+  // days. A saved camp changes its days through Cancel Day on its page.
+  const campExcludedDays = editingCampEvent
+    ? []
+    : campCreationExcludedDays(campFormData.eventDate, campFormData.campEndDate, campFormData.skipWeekends, campFormData.untickedDays);
 
   const resetInfoFieldForm = () => {
     setInfoFieldTitle("");
@@ -3326,6 +3339,67 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
               )}
             </div>
 
+            {/* SCRUM-655: leave out weekends or chosen days while creating. */}
+            {!editingCampEvent && (() => {
+              let rangeDays: Date[] = [];
+              try {
+                rangeDays = eachDayOfInterval({ start: parseISO(campFormData.eventDate), end: parseISO(campFormData.campEndDate) });
+              } catch {
+                rangeDays = [];
+              }
+              if (rangeDays.length === 0) return null;
+              return (
+                <div className="space-y-2" data-testid="camp-day-exclusions">
+                  <div className="flex items-center justify-between gap-3">
+                    <Label htmlFor="camp-skip-weekends">Skip weekends</Label>
+                    <Switch
+                      id="camp-skip-weekends"
+                      checked={campFormData.skipWeekends}
+                      onCheckedChange={(checked) => setCampFormData(prev => ({ ...prev, skipWeekends: checked }))}
+                      data-testid="switch-camp-skip-weekends"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">Tap a day to leave it out. Days left out are cancelled days: parents cannot pick them.</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {rangeDays.map((day) => {
+                      const dateKey = format(day, "yyyy-MM-dd");
+                      const isOut = campExcludedDays.includes(dateKey);
+                      const skippedWeekend = campFormData.skipWeekends && isWeekend(day);
+                      return (
+                        <button
+                          key={dateKey}
+                          type="button"
+                          aria-pressed={!isOut}
+                          disabled={skippedWeekend}
+                          title={skippedWeekend ? "Turn off Skip weekends to include this day" : undefined}
+                          onClick={() => setCampFormData(prev => ({
+                            ...prev,
+                            untickedDays: prev.untickedDays.includes(dateKey)
+                              ? prev.untickedDays.filter(d => d !== dateKey)
+                              : [...prev.untickedDays, dateKey],
+                          }))}
+                          className={cn(
+                            "inline-flex items-center gap-1 px-2 py-1 rounded-md border text-xs whitespace-nowrap transition-colors",
+                            isOut
+                              ? "border-dashed bg-muted text-muted-foreground line-through"
+                              : "border-input bg-background hover:bg-accent",
+                            skippedWeekend && "cursor-not-allowed",
+                          )}
+                          data-testid={`camp-day-${dateKey}`}
+                        >
+                          {!isOut && <Check className="h-3 w-3" />}
+                          {format(day, "EEE d MMM")}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-xs text-muted-foreground" data-testid="camp-day-count">
+                    {rangeDays.length - campExcludedDays.length} of {rangeDays.length} {rangeDays.length === 1 ? "day" : "days"} open
+                  </p>
+                </div>
+              );
+            })()}
+
             {/* Daily Times */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-2">
@@ -3360,7 +3434,7 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
                   });
                   return (
                     <div className="space-y-2">
-                      {days.map((day) => {
+                      {days.filter((day) => !campExcludedDays.includes(format(day, "yyyy-MM-dd"))).map((day) => {
                         const dateKey = format(day, "yyyy-MM-dd");
                         const dayLabel = format(day, "EEE, d MMM");
                         return (
@@ -3428,7 +3502,10 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
               Cancel
             </Button>
             <Button
-              disabled={!campFormData.title.trim() || !campFormData.eventDate || !campFormData.campEndDate}
+              disabled={
+                !campFormData.title.trim() || !campFormData.eventDate || !campFormData.campEndDate
+                || (!editingCampEvent && campExcludedDays.length > differenceInDays(parseISO(campFormData.campEndDate), parseISO(campFormData.eventDate)))
+              }
               data-testid="button-create-camp-event"
               onClick={async () => {
                 try {
@@ -3449,7 +3526,16 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
                     await apiRequest("PATCH", `/api/admin/events/${editingCampEvent.id}`, payload);
                     toast({ title: "Camp event updated" });
                   } else {
-                    await apiRequest("POST", "/api/admin/events", { ...payload, status: "upcoming" });
+                    // SCRUM-655: left-out days are saved as cancelled days, with no host.
+                    const campDayHosts = Object.fromEntries(
+                      Object.entries(payload.campDayHosts).filter(([day]) => !campExcludedDays.includes(day)),
+                    );
+                    await apiRequest("POST", "/api/admin/events", {
+                      ...payload,
+                      campDayHosts,
+                      ...(campExcludedDays.length > 0 ? { campCancelledDays: campExcludedDays } : {}),
+                      status: "upcoming",
+                    });
                     toast({ title: "Camp event created" });
                   }
                   queryClient.invalidateQueries({ predicate: (query) =>
