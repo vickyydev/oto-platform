@@ -1,0 +1,173 @@
+{
+  "ticket": "SCRUM-613",
+  "releaseSha": "8cb0a2546a681e5ee6986b217b175a1f3f4a7e09",
+  "demoAccountId": "01a0c9ae-539f-7a52-987e-69d1c1a7a3cf",
+  "demoName": "Khun Dao (Manager)",
+  "fixture": {
+    "name": "ZZ TEST SCRUM-613 App access 20261022000604",
+    "email": "zz-test-scrum-613-20261022000604-174260e7@example.invalid",
+    "id": "01a160ee-2d2b-7aaa-90f2-eceea25e85a4"
+  },
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "sourceSha": "8cb0a2546a681e5ee6986b217b175a1f3f4a7e09",
+      "deployId": "dep-dbcl548u01pc73bf5ks0",
+      "finishedAt": "2026-10-22T00:05:37.63542Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "sourceSha": "8cb0a2546a681e5ee6986b217b175a1f3f4a7e09",
+      "deployId": "dep-dbcl548u01pc73bf5ltg",
+      "finishedAt": "2026-10-22T00:03:03.58801Z"
+    }
+  ],
+  "checks": [
+    {
+      "name": "Existing seeded demo, empty OTO identity and dedicated grant, and reachable mapped park checked before mutation",
+      "passed": true,
+      "at": "2026-10-22T00:06:17.210Z"
+    },
+    {
+      "name": "One action creates the named app user for the existing account; exact replay returns the same identity and app user",
+      "passed": true,
+      "at": "2026-10-22T00:06:39.582Z"
+    },
+    {
+      "name": "The lifted branch editor saves the same explicit demo park, with two-sided read-back and a single replayable edit",
+      "passed": true,
+      "at": "2026-10-22T00:06:41.116Z"
+    },
+    {
+      "name": "Native unlink removes only the link and dedicated access; the named app user remains available to link",
+      "passed": true,
+      "at": "2026-10-22T00:07:03.883Z"
+    }
+  ],
+  "screenshots": [
+    {
+      "filename": "SCRUM-613-01-create-app-user.png",
+      "label": "SCRUM-613: existing demo account, Staff app role and one chosen park",
+      "capturedAt": "2026-10-22T00:06:21.773Z",
+      "capturedAfterDeploy": true,
+      "sha256": "1246c51a61ff7b8f28b7bceec567d89d82dda5454cc963ab5aaf8ecee15e1d4b",
+      "redactions": [
+        "All unrelated account rows and captions",
+        "All unrelated list rows, including late arrivals",
+        "Refusal details and alerts"
+      ],
+      "reviewedAt": "2026-10-22T00:13:30.053Z",
+      "inspectedForPrivacyAndContent": true
+    },
+    {
+      "filename": "SCRUM-613-02-linked-park.png",
+      "label": "SCRUM-613: app user and identity created together, chosen park read back",
+      "capturedAt": "2026-10-22T00:06:39.536Z",
+      "capturedAfterDeploy": true,
+      "sha256": "77dcd76cc2bdf2cd1f4e3d8af2e0a68be7c5438d0ca67f58b5a432453c40c7e4",
+      "redactions": [
+        "All unrelated account rows and captions",
+        "All unrelated list rows, including late arrivals",
+        "Refusal details and alerts"
+      ],
+      "reviewedAt": "2026-10-22T00:13:30.054Z",
+      "inspectedForPrivacyAndContent": true
+    },
+    {
+      "filename": "SCRUM-613-03-unlinked-fixture.png",
+      "label": "SCRUM-613: owned unlink retains the named app user in the unlinked list",
+      "capturedAt": "2026-10-22T00:07:03.845Z",
+      "capturedAfterDeploy": true,
+      "sha256": "2fac14dceacec65f09c34d153d31598a2df44b80a5b50eba43455bfcb3145383",
+      "redactions": [
+        "All unrelated account rows and captions",
+        "All unrelated list rows, including late arrivals",
+        "Refusal details and alerts"
+      ],
+      "reviewedAt": "2026-10-22T00:13:30.054Z",
+      "inspectedForPrivacyAndContent": true
+    }
+  ],
+  "operations": [
+    {
+      "phase": "create",
+      "method": "POST",
+      "path": "/admin/apps/oto_app/users",
+      "submittedAt": "2026-10-22T00:06:21.842Z",
+      "keyFingerprint": "7d71fb3576d77ba3cb83b8bfda8cbebf0c0e9d068648267827ce00680225b65d",
+      "settled": true,
+      "successful": true,
+      "consumed": true,
+      "bodyFingerprint": "aeb97fbf4ac519ffa00a4e04fde79826148257fff003504494d0754f59a1cf22",
+      "lastDispatchCheckpointAt": "2026-10-22T00:06:22.317Z",
+      "lastResponseAt": "2026-10-22T00:06:22.314Z",
+      "lastResponseStatus": 200,
+      "identityId": "01a160ee-2d28-7ca7-9d15-bfcfb8e42762",
+      "externalUserId": "01a160ee-2d2b-7aaa-90f2-eceea25e85a4",
+      "replayedAt": "2026-10-22T00:06:22.846Z"
+    },
+    {
+      "phase": "branches-first",
+      "method": "PUT",
+      "path": "/admin/apps/oto_app/users/01a0c9ae-539f-7a52-987e-69d1c1a7a3cf/branches",
+      "submittedAt": "2026-10-22T00:06:39.628Z",
+      "keyFingerprint": "6c1664faa7d336c7cf448b97ef01a477dd192d9a0182163ea35ad15b831284c6",
+      "settled": true,
+      "successful": true,
+      "consumed": false,
+      "bodyFingerprint": "b8bddfa9b528ef83afc2ccfa20702d18027bfd6379b0847bcc83221f2a7c387f",
+      "lastDispatchCheckpointAt": "2026-10-22T00:06:40.121Z",
+      "lastResponseAt": "2026-10-22T00:06:40.119Z",
+      "lastResponseStatus": 200,
+      "replayedAt": "2026-10-22T00:06:40.602Z"
+    },
+    {
+      "phase": "unlink-first",
+      "method": "DELETE",
+      "path": "/admin/apps/oto_app/users/01a0c9ae-539f-7a52-987e-69d1c1a7a3cf",
+      "submittedAt": "2026-10-22T00:06:41.968Z",
+      "keyFingerprint": "b447ecc4c8d238867410a57fdfbaa147cfbecf1d42a7b3f847fd673b88a55d5a",
+      "settled": true,
+      "successful": true,
+      "consumed": false,
+      "bodyFingerprint": null,
+      "lastDispatchCheckpointAt": "2026-10-22T00:06:42.869Z",
+      "lastResponseAt": "2026-10-22T00:06:42.867Z",
+      "lastResponseStatus": 200,
+      "replayedAt": "2026-10-22T00:06:43.712Z"
+    }
+  ],
+  "audits": [],
+  "demoRestored": true,
+  "retainedNamedFixture": true,
+  "blockedBrowserWrites": [],
+  "realSmsRequests": 0,
+  "newPlatformAccounts": 0,
+  "privateRecoverySidecar": "C:/w/admin613-staging-recovery.private.json",
+  "startedAt": "2026-10-22T00:06:05.846Z",
+  "scope": {
+    "type": "branch",
+    "id": "01a0c9ae-52cf-7aa1-baca-fc55e449148e",
+    "name": "Oto Play Park, Robinson Chalong"
+  },
+  "originalIdentitiesFingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "originalAssignmentsFingerprint": "d4658a3f98eb17e54c7ce3ddeb05af4c74bbbcc99ec4271e86250306716489c3",
+  "originalCoverageFingerprint": "47653cc14eb045017c858ee619d9da281a4b581b339c7ec97673fe9652d35139",
+  "checkpointAt": "2026-10-22T00:07:22.157Z",
+  "failedStep": "native Unlinked form re-link",
+  "diagnostic": {
+    "kind": "BrowserOrTransportError",
+    "code": "DETAILS_WITHHELD"
+  },
+  "restoredIdentitiesFingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "restoredAssignmentsFingerprint": "d4658a3f98eb17e54c7ce3ddeb05af4c74bbbcc99ec4271e86250306716489c3",
+  "restoredCoverageFingerprint": "47653cc14eb045017c858ee619d9da281a4b581b339c7ec97673fe9652d35139",
+  "restoredAt": "2026-10-22T00:07:22.155Z",
+  "proofInterruption": {
+    "productDefectDemonstrated": false,
+    "cause": "The proof privacy CSS hid the correctly matched demo radio because its hide selector was more specific than its allow selector.",
+    "diagnosticSha256": "b76cf0dd20ba457b59fdfda1ab780ea1ff57d1789d1c01f0b9ba82993f09bdae",
+    "businessWritesDuringDiagnosis": 0
+  },
+  "initialHelperSha256": "1fbb5bf826fbdc6bacca0a3b9eefcd8cd07096ec457cd18a4a1286c1d525cd22"
+}
