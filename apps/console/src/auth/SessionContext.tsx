@@ -4,12 +4,15 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
 import type { Permission } from '@oto/shared/permissions';
+import { readUiPreferences } from '@oto/shared/ui-preferences';
 import { authApi, type EffectivePermission, type MeResponse } from '@/api/platform';
 import { handoffArrival } from '@/auth/handoff';
+import { accountTheme } from '@/lib/theme';
 
 type SessionState = 'loading' | 'signed-out' | 'signed-in';
 
@@ -43,13 +46,27 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [me, setMe] = useState<MeResponse | null>(null);
   const [permissions, setPermissions] = useState<EffectivePermission[]>([]);
   const [handoffError, setHandoffError] = useState<string | null>(null);
+  const sessionRequest = useRef(0);
 
   const load = useCallback(async () => {
-    const account = await authApi.me();
-    const { permissions: effective } = await authApi.permissions();
-    setMe(account);
-    setPermissions(effective);
-    setState('signed-in');
+    const request = ++sessionRequest.current;
+    try {
+      const account = await authApi.me();
+      if (request !== sessionRequest.current) return;
+      const { permissions: effective } = await authApi.permissions();
+      // A sign-out, expiry or newer read may have replaced this session while
+      // either request was pending. Its old account must not bind writes again.
+      if (request !== sessionRequest.current) return;
+      setMe(account);
+      setPermissions(effective);
+      accountTheme.adopt(readUiPreferences(account));
+      setHandoffError(null);
+      setState('signed-in');
+    } catch (error) {
+      if (request !== sessionRequest.current) return;
+      accountTheme.release();
+      throw error;
+    }
   }, []);
 
   // On mount, resume a still-valid session. Someone arriving from the launcher
@@ -63,6 +80,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     void (async () => {
       const refusal = handoffArrival ? await handoffArrival : null;
       if (cancelled) return;
+      if (refusal) setHandoffError(refusal);
       try {
         await load();
       } catch {
@@ -70,11 +88,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         setMe(null);
         setPermissions([]);
         setState('signed-out');
-        if (refusal) setHandoffError(refusal);
       }
     })();
     return () => {
       cancelled = true;
+      sessionRequest.current++;
+      accountTheme.release();
     };
   }, [load]);
 
@@ -82,8 +101,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   // out from another app.
   useEffect(() => {
     const onUnauthorized = () => {
+      sessionRequest.current++;
       setMe(null);
       setPermissions([]);
+      accountTheme.release();
       setState('signed-out');
     };
     window.addEventListener('oto:unauthorized', onUnauthorized);
@@ -123,8 +144,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   );
 
   const signOut = useCallback(async () => {
+    sessionRequest.current++;
     setMe(null);
     setPermissions([]);
+    accountTheme.release();
     setState('signed-out');
     await authApi.signOut().catch(() => {
       // Already gone (expiry, revoked elsewhere) — signed out either way.

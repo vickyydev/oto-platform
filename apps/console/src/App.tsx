@@ -11,7 +11,7 @@ import { PermissionRequired } from '@/components/Panel';
 import { CONSOLE_SECTIONS, consoleNav, DEFAULT_SECTION, findSection } from '@/components/consoleSections';
 import { SessionProvider, useSession, displayName } from '@/auth/SessionContext';
 import { PlatformStatusProvider } from '@/lib/platformStatus';
-import { useTheme } from '@/lib/theme';
+import { accountTheme } from '@/lib/theme';
 import { Activity } from '@/pages/Activity';
 import { Bookings } from '@/pages/Bookings';
 import { Booths } from '@/pages/Booths';
@@ -185,13 +185,9 @@ function Shell() {
 
 export default function App() {
   // The theme drives the document root, so anything portaled to <body> follows
-  // it — the same arrangement the POS and the launcher use.
-  const [theme] = useTheme();
-  useEffect(() => {
-    const el = document.documentElement;
-    el.classList.toggle('dark', theme === 'dark');
-    el.classList.toggle('light', theme === 'light');
-  }, [theme]);
+  // it. The shared controller follows the device while the account's choice
+  // is 'system'; SessionContext adopts the choice after sign-in.
+  useEffect(() => accountTheme.start(), []);
 
   return (
     <SessionProvider>

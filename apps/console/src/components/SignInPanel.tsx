@@ -4,8 +4,7 @@ import { Backdrop } from '@/components/Backdrop';
 import { BrandMark } from '@/components/BrandMark';
 import { Button } from '@/components/ui/button';
 import { useSession } from '@/auth/SessionContext';
-import { useTheme } from '@/lib/theme';
-import { Moon, Sun } from 'lucide-react';
+import { ThemeCycleButton } from '@/components/ThemeCycleButton';
 
 const LAUNCHER_URL = import.meta.env.VITE_LAUNCHER_URL?.trim();
 
@@ -31,7 +30,6 @@ function FieldLabel({ icon: Icon, children }: { icon: LucideIcon; children: stri
  */
 export function SignInPanel() {
   const { signIn, handoffError } = useSession();
-  const [theme, setTheme] = useTheme();
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
@@ -56,16 +54,7 @@ export function SignInPanel() {
       <Backdrop />
       <div className="flex items-center justify-between px-4 sm:px-6 h-16 shrink-0">
         <BrandMark />
-        <Button
-          variant="outline"
-          size="icon"
-          className="h-9 w-9"
-          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-          title={theme === 'dark' ? 'Switch to light' : 'Switch to dark'}
-          aria-label={theme === 'dark' ? 'Switch to light' : 'Switch to dark'}
-        >
-          {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-        </Button>
+        <ThemeCycleButton />
       </div>
 
       <main className="flex-1 flex items-center justify-center px-4 sm:px-6 py-6">

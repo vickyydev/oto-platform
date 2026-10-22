@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'wouter';
-import { ExternalLink, LayoutGrid, LogOut, Menu, Moon, Sun, X } from 'lucide-react';
+import { ExternalLink, LayoutGrid, LogOut, Menu, X } from 'lucide-react';
 import { Backdrop } from '@/components/Backdrop';
 import { StatusMark, type Tone } from '@/components/Status';
 import { sectionForPath, visibleNavigation, type ConsoleSection } from '@/components/consoleSections';
@@ -9,7 +9,7 @@ import { CountBadge } from '@/components/redesign/chips';
 import { useFailureCount } from '@/components/redesign/useFailureCount';
 import { useSession, displayName } from '@/auth/SessionContext';
 import type { MeResponse } from '@/api/platform';
-import { useTheme } from '@/lib/theme';
+import { ThemeCycleButton } from '@/components/ThemeCycleButton';
 import { unacknowledgedAlerts, usePlatformStatus } from '@/lib/platformStatus';
 import { cn } from '@/lib/utils';
 
@@ -199,7 +199,6 @@ function Sidebar({
   idPrefix: string;
 }) {
   const { me, has, signOut } = useSession();
-  const [theme, setTheme] = useTheme();
 
   const visible = visibleNavigation(has, me?.isPlatformAdmin ?? false);
 
@@ -268,15 +267,10 @@ function Sidebar({
               <div className="truncate text-[11px] text-muted-foreground">{roleLine(me)}</div>
             )}
           </div>
-          <button
-            type="button"
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground"
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            title={theme === 'dark' ? 'Switch to light' : 'Switch to dark'}
-            aria-label={theme === 'dark' ? 'Switch to light' : 'Switch to dark'}
-          >
-            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </button>
+          <ThemeCycleButton
+            variant="ghost"
+            className="h-8 w-8 shrink-0 rounded-[10px] border-0 text-muted-foreground hover:bg-foreground/5 hover:text-foreground"
+          />
           <button
             type="button"
             className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground"
