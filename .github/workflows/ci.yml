@@ -502,6 +502,9 @@ jobs:
       - name: The app's route checks
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/route-fences.check.ts
+      - name: The app's fix module checks
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/fix-module.check.ts
       # S2-17b round 3: the night batches as the platform's runner asks for
       # them — the jobs:run key, the OTOAPP_JOBS switch both ways, each batch
       # for one park group, one clock-out per stale clock-in, swallowed errors
