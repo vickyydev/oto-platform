@@ -145,6 +145,7 @@ const OPERATOR_WIDE_WRITES = [
   'POST /booth-layouts',
   'PATCH /booth-layouts/:id',
   'POST /branches',
+  'POST /branches/oto-app/reconcile',
 ];
 
 describe('operator-wide settings are changed at operator scope (SCRUM-606)', () => {

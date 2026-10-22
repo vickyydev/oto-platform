@@ -33,6 +33,7 @@ import { Departments } from '@/pages/Departments';
 import { AccessReview } from '@/pages/AccessReview';
 import { Operators } from '@/pages/Operators';
 import { Holidays } from '@/pages/Holidays';
+import { Catalogue } from '@/pages/Catalogue';
 
 const LAUNCHER_URL = import.meta.env.VITE_LAUNCHER_URL?.trim();
 
@@ -133,6 +134,9 @@ function NotFound() {
 }
 
 const pageElements: Record<string, ReactElement> = {
+  tickets: <Catalogue page="tickets" />,
+  tiers: <Catalogue page="tiers" />,
+  'add-ons': <Catalogue page="add-ons" />,
   operators: <Operators />,
   holidays: <Holidays />,
   accounts: <Accounts />,

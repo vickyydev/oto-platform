@@ -1,5 +1,6 @@
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { AddOnsPanelPorts } from '../../../runtime/catalogue';
 import { Pencil, Trash2, Plus } from "lucide-react";
 import { type AddOn, INVENTORY_DEFAULT_VARIANT_ID } from "../../../model/types";
 
@@ -17,16 +18,25 @@ import { AddOnFormDialog } from "./AddOnFormDialog";
  */
 export function AddOnsPanel() {
   const runtime = useAdminScreenRuntime();
-  const formatWWPrice = runtime.domain.pricingMode.formatWWPrice;
-
-
-const formatPrice = formatWWPrice;
-
   const { addOns, mutators } = useCatalogStore();
+  return <AddOnsPanelWithPorts ports={{ addOns, formatWWPrice: runtime.domain.pricingMode.formatWWPrice, upsertAddOn: mutators.upsertAddOn, deleteAddOn: mutators.deleteAddOn, upsertInventoryItem: mutators.upsertInventoryItem, deleteInventoryItem: mutators.deleteInventoryItem }} />;
+}
+
+export function AddOnsPanelWithPorts({ ports }: { ports: AddOnsPanelPorts }) {
+  const { addOns } = ports;
+  const formatPrice = ports.formatWWPrice;
+  const canManage = (addOn: AddOn) => ports.canManage !== false && (ports.canManageAddOn?.(addOn) ?? true);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<AddOn | null>(null);
   const [pendingDelete, setPendingDelete] = useState<AddOn | null>(null);
+  const [writeError, setWriteError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const deletingRef = useRef(false);
+  const deleteTarget = useRef(pendingDelete);
+  deleteTarget.current = pendingDelete;
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
 
   const openAdd = () => {
     setEditing(null);
@@ -38,9 +48,18 @@ const formatPrice = formatWWPrice;
     setFormOpen(true);
   };
 
-  const confirmDelete = () => {
-    if (pendingDelete) mutators.deleteAddOn(pendingDelete.id);
-    setPendingDelete(null);
+  const confirmDelete = async () => {
+    if (!pendingDelete || deletingRef.current || !canManage(pendingDelete)) return;
+    const target = pendingDelete;
+    deletingRef.current = true;
+    setDeleting(true);
+    setWriteError(null);
+    try {
+      await ports.deleteAddOn(target.id);
+      if (mounted.current && deleteTarget.current === target) setPendingDelete(null);
+    } catch (failure) {
+      if (mounted.current) setWriteError(failure instanceof Error ? failure.message : 'The add-on could not be deleted.');
+    } finally { deletingRef.current = false; if (mounted.current) setDeleting(false); }
   };
 
   return (
@@ -54,12 +73,13 @@ const formatPrice = formatWWPrice;
         <p className="text-sm text-foreground/50">
           {addOns.length} {addOns.length === 1 ? 'add-on' : 'add-ons'}
         </p>
-        <Button onClick={openAdd}>
+        {ports.canManage !== false && <Button onClick={openAdd}>
           <Plus className="w-4 h-4" />
           Add add-on
-        </Button>
+        </Button>}
       </div>
 
+      {writeError && !pendingDelete && <p role="alert" className="text-sm text-destructive">{writeError}</p>}
       {addOns.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-foreground/15 bg-foreground/[0.02] px-6 py-12 text-center text-sm text-foreground/50">
           No add-ons yet. Use “Add add-on” to create one.
@@ -85,22 +105,22 @@ const formatPrice = formatWWPrice;
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-2">
-                        <Button
+                        {canManage(addOn) && <Button
                           variant="outline"
                           size="icon"
                           onClick={() => openEdit(addOn)}
                           aria-label={`Edit ${addOn.name}`}
                         >
                           <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button
+                        </Button>}
+                        {canManage(addOn) && <Button
                           variant="outline"
                           size="icon"
                           onClick={() => setPendingDelete(addOn)}
                           aria-label={`Delete ${addOn.name}`}
                         >
                           <Trash2 className="w-4 h-4 text-destructive" />
-                        </Button>
+                        </Button>}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -123,22 +143,22 @@ const formatPrice = formatWWPrice;
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
-                  <Button
+                    {canManage(addOn) && <Button
                     variant="outline"
                     size="icon"
                     onClick={() => openEdit(addOn)}
                     aria-label={`Edit ${addOn.name}`}
                   >
                     <Pencil className="w-4 h-4" />
-                  </Button>
-                  <Button
+                    </Button>}
+                    {canManage(addOn) && <Button
                     variant="outline"
                     size="icon"
                     onClick={() => setPendingDelete(addOn)}
                     aria-label={`Delete ${addOn.name}`}
                   >
                     <Trash2 className="w-4 h-4 text-destructive" />
-                  </Button>
+                    </Button>}
                 </div>
               </div>
             ))}
@@ -147,11 +167,13 @@ const formatPrice = formatWWPrice;
       )}
 
 
-      <AddOnFormDialog
+      {formOpen && <AddOnFormDialog
+        key={editing?.id ?? 'add'}
         open={formOpen}
         addOn={editing}
         onOpenChange={setFormOpen}
-        onSave={(addOn, trackStock) => {
+        onSave={async (addOn, trackStock) => {
+          if (ports.canManage === false || (editing && !canManage(editing))) throw new Error('This add-on is read-only with the current access.');
           // Reconcile the inventory link to match the "Track stock" toggle.
           // Non-stocked add-ons stay non-stocked by design (lockers, digital
           // extras); only create a linked inventory item when the admin opts in.
@@ -159,7 +181,7 @@ const formatPrice = formatWWPrice;
           const hasLink = !!addOn.inventoryItemId;
           if (trackStock && !hasLink) {
             const invId = `inv-${addOn.id}`;
-            mutators.upsertInventoryItem({
+            await ports.upsertInventoryItem({
               id: invId,
               name: addOn.name,
               linkedKind: 'addon',
@@ -170,12 +192,12 @@ const formatPrice = formatWWPrice;
             });
             next = { ...addOn, inventoryItemId: invId };
           } else if (!trackStock && hasLink) {
-            mutators.deleteInventoryItem(addOn.inventoryItemId!);
+            await ports.deleteInventoryItem(addOn.inventoryItemId!);
             next = { ...addOn, inventoryItemId: undefined };
           }
-          mutators.upsertAddOn(next);
+          await ports.upsertAddOn(next);
         }}
-      />
+      />}
 
       <AlertDialog
         open={pendingDelete !== null}
@@ -190,10 +212,12 @@ const formatPrice = formatWWPrice;
                 : ''}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {writeError && <p role="alert" className="text-sm text-destructive">{writeError}</p>}
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={confirmDelete}
+              disabled={deleting}
+              onClick={(event) => { event.preventDefault(); void confirmDelete(); }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Delete

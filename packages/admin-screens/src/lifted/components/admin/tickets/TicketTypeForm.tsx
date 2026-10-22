@@ -1,5 +1,6 @@
 import { useAdminScreenRuntime } from '../../../runtime/AdminScreenRuntime';
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { TicketTypeFormPorts } from '../../../runtime/catalogue';
 import { Plus, Trash2 } from "lucide-react";
 import { type AddOn, type CustomerTier, type TicketCreditRule, type TicketFreebie, type TicketFreebieKind, type TicketType, type TierAdultRule, type TierPriceMode, type TierPriceRule, type WeekdayWeekendPrice } from "../../../model/types";
 import { WeekdayWeekendPriceInput } from "../../shared/WeekdayWeekendPriceInput";
@@ -42,7 +43,7 @@ interface TicketTypeFormProps {
   ticket: TicketType | null;
   addOns: AddOn[];
   onClose: () => void;
-  onSave: (ticket: TicketType) => void;
+  onSave: (ticket: TicketType) => void | Promise<void>;
 }
 
 // A derived tier in the form: `manual` is the absolute weekday/weekend price
@@ -146,18 +147,28 @@ const slugId = (name: string): string =>
 const randomId = (prefix: string) =>
   `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
 
-export function TicketTypeForm({
+export function TicketTypeForm(props: TicketTypeFormProps) {
+  const runtime = useAdminScreenRuntime();
+  return <TicketTypeFormWithPorts {...props} ports={{ tiers: runtime.reads.getTiers(), defaultTier: runtime.reads.getDefaultTier(), ticketPricing: runtime.domain.ticketPricing, tierLabel: runtime.domain.membership.tierLabel }} />;
+}
+
+export function TicketTypeFormWithPorts(props: TicketTypeFormProps & { ports: TicketTypeFormPorts }) {
+  if (!props.ports.defaultTier) return null;
+  return <TicketTypeFormFields {...props} />;
+}
+
+function TicketTypeFormFields({
   open,
   ticket,
   addOns,
   onClose,
   onSave,
-}: TicketTypeFormProps) {
-  const runtime = useAdminScreenRuntime();
-  const computeTierPrice = runtime.domain.ticketPricing.computeTierPrice;
-  const getTiers = runtime.reads.getTiers;
-  const tierLabel = runtime.domain.membership.tierLabel;
-  const getDefaultTier = runtime.reads.getDefaultTier;
+  ports,
+}: TicketTypeFormProps & { ports: TicketTypeFormPorts }) {
+  const computeTierPrice = ports.ticketPricing.computeTierPrice;
+  const getTiers = useMemo(() => () => ports.tiers, [ports.tiers]);
+  const tierLabel = ports.tierLabel;
+  const getDefaultTier = useMemo(() => () => ports.defaultTier, [ports.defaultTier]);
 
 
 
@@ -217,6 +228,15 @@ const fromTicket = (t: TicketType): FormState => ({
 
   const [form, setForm] = useState<FormState>(blankState);
   const [errors, setErrors] = useState<FormErrors>({});
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const savingRef = useRef(false);
+  const formRef = useRef(form);
+  formRef.current = form;
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  const initializers = useRef({ blankState, fromTicket });
+  initializers.current = { blankState, fromTicket };
 
   const derivedTiers = derivedTierDefs();
   const allTiers = getTiers();
@@ -234,9 +254,10 @@ const fromTicket = (t: TicketType): FormState => ({
   // cancel followed by reopening the same ticket always reloads fresh values.
   useEffect(() => {
     if (!open) return;
-    setForm(ticket ? fromTicket(ticket) : blankState());
+    setForm(ticket ? initializers.current.fromTicket(ticket) : initializers.current.blankState());
     setErrors({});
-  }, [open, ticket, blankState, fromTicket]);
+    setSaveError(null);
+  }, [open, ticket]);
 
   // Live resolved price for a derived tier given the current base + mode/value.
   const resolveTier = (field: TierField): WeekdayWeekendPrice | null => {
@@ -437,13 +458,25 @@ const fromTicket = (t: TicketType): FormState => ({
       ...(Object.keys(adultRules).length ? { adultRules } : {}),
       ...(creditRule ? { creditRule } : {}),
       gateAccess: form.gateAccess,
+      ...(ticket?.translations !== undefined ? { translations: ticket.translations } : {}),
     };
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (savingRef.current) return;
     const result = validate();
-    if (result) onSave(result);
+    if (!result) return;
+    const submittedForm = form;
+    savingRef.current = true;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await onSave(result);
+      if (mounted.current && formRef.current === submittedForm) onClose();
+    } catch (failure) {
+      if (mounted.current) setSaveError(failure instanceof Error ? failure.message : 'The ticket type could not be saved.');
+    } finally { savingRef.current = false; if (mounted.current) setSaving(false); }
   };
 
   const derivedNames = derivedTiers.map((t) => tierLabel(t.id)).join(' and ');
@@ -909,11 +942,12 @@ const fromTicket = (t: TicketType): FormState => ({
             )}
           </div>
 
+          {saveError && <p role="alert" className="text-sm text-destructive">{saveError}</p>}
           <DialogFooter className="gap-2 sm:gap-2">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit">
+            <Button type="submit" disabled={saving}>
               {ticket ? 'Save changes' : 'Add ticket type'}
             </Button>
           </DialogFooter>

@@ -8828,7 +8828,51 @@
         "description": "Operator tier definitions",
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "tiers": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "isDefault": {
+                            "type": "boolean"
+                          },
+                          "requiresVerification": {
+                            "type": "boolean"
+                          },
+                          "sortOrder": {
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "isDefault",
+                          "requiresVerification",
+                          "sortOrder"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "tiers"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       },
@@ -8877,7 +8921,23 @@
         },
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -8930,7 +8990,26 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       },
@@ -8950,7 +9029,26 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -9161,7 +9259,214 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "packages": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "operatorId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "branchId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "durationLabel": {
+                            "type": "string"
+                          },
+                          "hours": {
+                            "type": "integer"
+                          },
+                          "prices": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "object",
+                              "properties": {
+                                "weekday": {
+                                  "type": "integer"
+                                },
+                                "weekend": {
+                                  "type": "integer"
+                                }
+                              },
+                              "required": [
+                                "weekday",
+                                "weekend"
+                              ],
+                              "additionalProperties": true
+                            }
+                          },
+                          "tierPricing": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "object",
+                              "properties": {
+                                "mode": {
+                                  "type": "string"
+                                },
+                                "value": {
+                                  "type": "number"
+                                }
+                              },
+                              "required": [
+                                "mode",
+                                "value"
+                              ],
+                              "additionalProperties": true
+                            },
+                            "nullable": true
+                          },
+                          "adultRules": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "object",
+                              "properties": {
+                                "kind": {
+                                  "type": "string"
+                                },
+                                "price": {
+                                  "type": "object",
+                                  "properties": {
+                                    "weekday": {
+                                      "type": "integer"
+                                    },
+                                    "weekend": {
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "weekday",
+                                    "weekend"
+                                  ],
+                                  "additionalProperties": true
+                                },
+                                "freeAdults": {
+                                  "type": "integer"
+                                },
+                                "overflow": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "kind"
+                              ],
+                              "additionalProperties": true
+                            },
+                            "nullable": true
+                          },
+                          "freebies": {
+                            "type": "array",
+                            "items": {},
+                            "nullable": true
+                          },
+                          "creditRule": {
+                            "type": "object",
+                            "properties": {
+                              "appliesTo": {
+                                "type": "string"
+                              },
+                              "basis": {
+                                "type": "string"
+                              },
+                              "value": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "appliesTo",
+                              "basis"
+                            ],
+                            "additionalProperties": true,
+                            "nullable": true
+                          },
+                          "gateAccess": {
+                            "type": "boolean"
+                          },
+                          "translations": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "type": "string"
+                                },
+                                "description": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "name"
+                              ],
+                              "additionalProperties": true
+                            },
+                            "nullable": true
+                          },
+                          "active": {
+                            "type": "boolean"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "archivedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "operatorId",
+                          "branchId",
+                          "name",
+                          "description",
+                          "durationLabel",
+                          "hours",
+                          "prices",
+                          "tierPricing",
+                          "adultRules",
+                          "freebies",
+                          "creditRule",
+                          "gateAccess",
+                          "translations",
+                          "active",
+                          "createdAt",
+                          "updatedAt",
+                          "archivedAt"
+                        ],
+                        "additionalProperties": true
+                      }
+                    }
+                  },
+                  "required": [
+                    "packages"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
           }
         }
       },
@@ -9415,7 +9720,24 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "required": [
+                    "id"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -9670,7 +9992,26 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       },
@@ -9698,7 +10039,26 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -10375,7 +10735,472 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "categories": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "code": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "parentId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "taxableCategory": {
+                            "type": "string",
+                            "enum": [
+                              "tickets",
+                              "fnb",
+                              "bar",
+                              "drop_off",
+                              "parties",
+                              "addons",
+                              "merch",
+                              "stored_value"
+                            ],
+                            "nullable": true
+                          },
+                          "defaultPrepStation": {
+                            "type": "string",
+                            "enum": [
+                              "kitchen",
+                              "bar",
+                              "none"
+                            ],
+                            "nullable": true
+                          },
+                          "effectiveTaxCategory": {
+                            "type": "string",
+                            "enum": [
+                              "tickets",
+                              "fnb",
+                              "bar",
+                              "drop_off",
+                              "parties",
+                              "addons",
+                              "merch",
+                              "stored_value"
+                            ],
+                            "nullable": true
+                          },
+                          "effectivePrepStation": {
+                            "type": "string",
+                            "enum": [
+                              "kitchen",
+                              "bar",
+                              "none"
+                            ],
+                            "nullable": true
+                          },
+                          "sortOrder": {
+                            "type": "integer"
+                          },
+                          "translations": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "type": "string"
+                                },
+                                "description": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": true
+                            },
+                            "nullable": true
+                          },
+                          "archivedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "code",
+                          "name",
+                          "parentId",
+                          "taxableCategory",
+                          "defaultPrepStation",
+                          "effectiveTaxCategory",
+                          "effectivePrepStation",
+                          "sortOrder",
+                          "translations",
+                          "archivedAt"
+                        ],
+                        "additionalProperties": true
+                      }
+                    },
+                    "modifierGroups": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "productId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "required": {
+                            "type": "boolean"
+                          },
+                          "selectionType": {
+                            "type": "string",
+                            "enum": [
+                              "single",
+                              "multi"
+                            ]
+                          },
+                          "minSelect": {
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "maxSelect": {
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "sortOrder": {
+                            "type": "integer"
+                          },
+                          "translations": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "type": "string"
+                                },
+                                "description": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": true
+                            },
+                            "nullable": true
+                          },
+                          "options": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "priceSatang": {
+                                  "type": "integer"
+                                },
+                                "priceWeekendSatang": {
+                                  "type": "integer",
+                                  "nullable": true
+                                },
+                                "costSatang": {
+                                  "type": "integer",
+                                  "nullable": true
+                                },
+                                "sortOrder": {
+                                  "type": "integer"
+                                },
+                                "translations": {
+                                  "type": "object",
+                                  "additionalProperties": {
+                                    "type": "object",
+                                    "properties": {
+                                      "name": {
+                                        "type": "string"
+                                      },
+                                      "description": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "additionalProperties": true
+                                  },
+                                  "nullable": true
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name",
+                                "priceSatang",
+                                "priceWeekendSatang",
+                                "costSatang",
+                                "sortOrder",
+                                "translations"
+                              ],
+                              "additionalProperties": true
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "productId",
+                          "name",
+                          "required",
+                          "selectionType",
+                          "minSelect",
+                          "maxSelect",
+                          "sortOrder",
+                          "translations",
+                          "options"
+                        ],
+                        "additionalProperties": true
+                      }
+                    },
+                    "products": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "menu",
+                              "merch",
+                              "addon"
+                            ]
+                          },
+                          "code": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "categoryId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "branchId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "priceSatang": {
+                            "type": "integer"
+                          },
+                          "priceWeekendSatang": {
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "effectiveWeekendSatang": {
+                            "type": "integer"
+                          },
+                          "costSatang": {
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "prepStationOverride": {
+                            "type": "string",
+                            "enum": [
+                              "kitchen",
+                              "bar",
+                              "none"
+                            ],
+                            "nullable": true
+                          },
+                          "taxCategoryOverride": {
+                            "type": "string",
+                            "enum": [
+                              "tickets",
+                              "fnb",
+                              "bar",
+                              "drop_off",
+                              "parties",
+                              "addons",
+                              "merch",
+                              "stored_value"
+                            ],
+                            "nullable": true
+                          },
+                          "effectivePrepStation": {
+                            "type": "string",
+                            "enum": [
+                              "kitchen",
+                              "bar",
+                              "none"
+                            ]
+                          },
+                          "effectiveTaxCategory": {
+                            "type": "string",
+                            "enum": [
+                              "tickets",
+                              "fnb",
+                              "bar",
+                              "drop_off",
+                              "parties",
+                              "addons",
+                              "merch",
+                              "stored_value"
+                            ]
+                          },
+                          "sku": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "variants": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "label": {
+                                  "type": "string"
+                                },
+                                "sku": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "barcode": {
+                                  "type": "string",
+                                  "nullable": true
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "label"
+                              ],
+                              "additionalProperties": true
+                            }
+                          },
+                          "stockItemId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "sortOrder": {
+                            "type": "integer"
+                          },
+                          "active": {
+                            "type": "boolean"
+                          },
+                          "translations": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "type": "string"
+                                },
+                                "description": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": true
+                            },
+                            "nullable": true
+                          },
+                          "archivedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          },
+                          "linkedModifierGroupIds": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "format": "uuid"
+                            }
+                          },
+                          "stockLinks": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "variantId": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "stockItemId": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                }
+                              },
+                              "required": [
+                                "variantId",
+                                "stockItemId"
+                              ],
+                              "additionalProperties": true
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "kind",
+                          "code",
+                          "name",
+                          "description",
+                          "categoryId",
+                          "branchId",
+                          "priceSatang",
+                          "priceWeekendSatang",
+                          "effectiveWeekendSatang",
+                          "costSatang",
+                          "prepStationOverride",
+                          "taxCategoryOverride",
+                          "effectivePrepStation",
+                          "effectiveTaxCategory",
+                          "sku",
+                          "variants",
+                          "stockItemId",
+                          "sortOrder",
+                          "active",
+                          "translations",
+                          "archivedAt",
+                          "linkedModifierGroupIds",
+                          "stockLinks"
+                        ],
+                        "additionalProperties": true
+                      }
+                    }
+                  },
+                  "required": [
+                    "categories",
+                    "modifierGroups",
+                    "products"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
           }
         }
       }
@@ -10782,7 +11607,24 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "required": [
+                    "id"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -10993,7 +11835,26 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       },
@@ -11021,7 +11882,26 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }

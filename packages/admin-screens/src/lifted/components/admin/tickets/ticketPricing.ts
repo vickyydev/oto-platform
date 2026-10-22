@@ -4,7 +4,7 @@ import type { MembershipHelpers } from '../../../lib/membership';
 import type { PricingModeHelpers } from '../../../lib/pricingMode';
 
 /** Original domain rules, bound to this host's explicit data ports. */
-export function createTicketPricingHelpers(deps: { catalog: CatalogReaders; membership: MembershipHelpers; pricingMode: PricingModeHelpers }) {
+export function createTicketPricingHelpers(deps: { catalog: Pick<CatalogReaders, 'getTiers'>; membership: Pick<MembershipHelpers, 'tierLabel'>; pricingMode: Pick<PricingModeHelpers, 'formatWWPrice'> }) {
 const { getTiers } = deps.catalog;
 const { tierLabel } = deps.membership;
 const { formatWWPrice } = deps.pricingMode;

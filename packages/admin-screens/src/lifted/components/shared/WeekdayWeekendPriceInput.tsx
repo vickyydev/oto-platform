@@ -36,6 +36,7 @@ export function WeekdayWeekendPriceInput({
           <Input
             type="number"
             min={0}
+            step={0.01}
             disabled={disabled}
             value={value.weekday}
             onChange={(e) => {
@@ -49,6 +50,7 @@ export function WeekdayWeekendPriceInput({
           <Input
             type="number"
             min={0}
+            step={0.01}
             disabled={disabled}
             value={value.weekend}
             onChange={(e) => {

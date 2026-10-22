@@ -25,6 +25,16 @@ export interface BranchRateModeAnswer extends RateModeResult {
   /** The branch's trading date the answer was computed for (yyyy-mm-dd). */
   date: string;
 }
+/**
+ * Human-readable ฿ display for an admin list row: a single figure when
+ * weekday and weekend match, otherwise both ("฿100 / ฿150 wknd").
+ */
+export function formatWWPrice(price: WeekdayWeekendPrice | undefined): string {
+  if (!price) return '฿0';
+  if (price.weekday === price.weekend) return `฿${price.weekday.toLocaleString()}`;
+  return `฿${price.weekday.toLocaleString()} / ฿${price.weekend.toLocaleString()} wknd`;
+}
+
 /** Original domain rules, bound to this host's explicit data ports. */
 export function createPricingModeHelpers(deps: { catalog: CatalogReaders }) {
 const { getPricingOverrides } = deps.catalog;
@@ -308,15 +318,7 @@ function resolveRateToday(price: WeekdayWeekendPrice | undefined): number {
 }
 
 
-/**
- * Human-readable ฿ display for an admin list row: a single figure when
- * weekday and weekend match, otherwise both ("฿100 / ฿150 wknd").
- */
-function formatWWPrice(price: WeekdayWeekendPrice | undefined): string {
-  if (!price) return '฿0';
-  if (price.weekday === price.weekend) return `฿${price.weekday.toLocaleString()}`;
-  return `฿${price.weekday.toLocaleString()} / ฿${price.weekend.toLocaleString()} wknd`;
-}
+
 return { setBranchTimezone, getBranchTimezone, setBranchDayStart, branchTradingDate, setBranchRateMode, serverTradingDate, getRateModeForDate, setPricingDate, getPricingDate, todayRateMode, resolveRate, resolveRateToday, formatWWPrice };
 }
 export type PricingModeHelpers = ReturnType<typeof createPricingModeHelpers>;

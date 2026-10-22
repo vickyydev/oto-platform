@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { LiftedAdminApi, LiftedRequestOptions } from '../src/api/lifted-api';
-import { createMenuApi, type ApiMenu, type ApiProduct } from '../src/lifted/api/menu';
+import { createMenuApi, createMenuCatalogueApi, type ApiMenu, type ApiProduct } from '../src/lifted/api/menu';
+import { createCatalogueAdminApi } from '../src/lifted/api/platform';
 import { createCatalogBridge } from '../src/lifted/api/catalogBridge';
 import type { CatalogHydration } from '../src/lifted/model/catalog';
 import type { TicketType } from '../src/lifted/model/types';
@@ -48,6 +49,20 @@ function hostFor(menu: ApiMenu) {
   return { api, calls, state };
 }
 const flush = async () => { for (let step = 0; step < 8; step++) await Promise.resolve(); };
+
+it('gives each Console catalogue edit and withdrawal an idempotency key', async () => {
+  const { api, calls } = hostFor(menuFor('A'));
+  const catalogue = createCatalogueAdminApi(api);
+  const menu = createMenuCatalogueApi(api);
+  await catalogue.updateTier('student', { name: 'ZZ TEST renamed tier' });
+  await catalogue.deleteTier('student');
+  await catalogue.updatePackage('park', 'ticket', { name: 'ZZ TEST renamed ticket' });
+  await catalogue.archivePackage('park', 'ticket');
+  await menu.menuApi.updateProduct('park', 'addon', { name: 'ZZ TEST renamed add-on' });
+  await menu.menuApi.archiveProduct('park', 'addon');
+  expect(calls).toHaveLength(6);
+  for (const call of calls) expect(call.options?.idempotencyKey).toMatch(/^[a-f0-9-]{36}$/i);
+});
 
 describe('the lifted catalogue adapters use their own host and canonical state', () => {
   it('keeps two menu caches independent and carries hidden server fields through an edit', () => {

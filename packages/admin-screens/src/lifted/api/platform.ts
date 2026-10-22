@@ -134,24 +134,7 @@ export interface ApiCloneResult {
 }
 
 
-export interface ApiTicketPackage {
-  id: string;
-  name: string;
-  description: string | null;
-  durationLabel: string;
-  hours: number;
-  prices: Record<string, { weekday: number; weekend: number }>;
-  tierPricing: Record<string, { mode: string; value: number }> | null;
-  adultRules: Record<
-    string,
-    { kind: string; price?: { weekday: number; weekend: number }; freeAdults?: number; overflow?: string }
-  > | null;
-  freebies: unknown[] | null;
-  creditRule: { appliesTo: string; basis: string; value?: number } | null;
-  gateAccess: boolean;
-  translations: Record<string, { name: string; description?: string }> | null;
-  active: boolean;
-}
+export type ApiTicketPackage = ApiResponse<'/branches/{branchId}/ticket-packages', 'get'>['packages'][number];
 
 
 export interface ApiPaymentMethod {
@@ -286,18 +269,12 @@ const holidaysApi = {
 return { branchesApi, adminApi, opsApi, holidaysApi };
 }
 
-export function createPlatformAdminApi(api: LiftedAdminApi) {
-const { branchesApi, adminApi, opsApi, holidaysApi } = createOrganisationAdminApi(api);
-
-
-
-
-
+/** Catalogue calls shared by hosts without the POS file and device ports. */
+export function createCatalogueAdminApi(api: AdminApi) {
+const { holidaysApi } = createOrganisationAdminApi(api);
 const catalogApi = {
   tiers: () =>
-    api.get<{
-      tiers: Array<{ id: string; name: string; isDefault: boolean; requiresVerification: boolean; sortOrder: number }>;
-    }>('/tiers'),
+    api.get<ApiResponse<'/tiers', 'get'>>('/tiers'),
   /** The tier's `id` in the POS store is its `code` on the platform (SCRUM-228). */
   createTier: (body: {
     code: string;
@@ -305,20 +282,20 @@ const catalogApi = {
     isDefault: boolean;
     requiresVerification: boolean;
     sortOrder: number;
-  }) => api.post<{ id: string }>('/tiers', body, { idempotencyKey: idemKey() }),
+  }) => api.post<ApiResponse<'/tiers', 'post'>>('/tiers', body, { idempotencyKey: idemKey() }),
   updateTier: (
     code: string,
     patch: Partial<{ name: string; isDefault: boolean; requiresVerification: boolean; sortOrder: number }>,
-  ) => api.patch<{ ok: true }>(`/tiers/${encodeURIComponent(code)}`, patch),
-  deleteTier: (code: string) => api.delete<{ ok: true }>(`/tiers/${encodeURIComponent(code)}`),
+  ) => api.patch<ApiResponse<'/tiers/{code}', 'patch'>>(`/tiers/${encodeURIComponent(code)}`, patch, { idempotencyKey: idemKey() }),
+  deleteTier: (code: string) => api.delete<ApiResponse<'/tiers/{code}', 'delete'>>(`/tiers/${encodeURIComponent(code)}`, { idempotencyKey: idemKey() }),
   packages: (branchId: string) =>
-    api.get<{ packages: ApiTicketPackage[] }>(`/branches/${branchId}/ticket-packages`),
+    api.get<ApiResponse<'/branches/{branchId}/ticket-packages', 'get'>>(`/branches/${branchId}/ticket-packages`),
   createPackage: (branchId: string, body: Record<string, unknown>) =>
-    api.post<{ id: string }>(`/branches/${branchId}/ticket-packages`, body, { idempotencyKey: idemKey() }),
+    api.post<ApiResponse<'/branches/{branchId}/ticket-packages', 'post'>>(`/branches/${branchId}/ticket-packages`, body, { idempotencyKey: idemKey() }),
   updatePackage: (branchId: string, id: string, body: Record<string, unknown>) =>
-    api.patch<{ ok: true }>(`/branches/${branchId}/ticket-packages/${id}`, body),
+    api.patch<ApiResponse<'/branches/{branchId}/ticket-packages/{id}', 'patch'>>(`/branches/${branchId}/ticket-packages/${id}`, body, { idempotencyKey: idemKey() }),
   archivePackage: (branchId: string, id: string) =>
-    api.delete<{ ok: true }>(`/branches/${branchId}/ticket-packages/${id}`),
+    api.delete<ApiResponse<'/branches/{branchId}/ticket-packages/{id}', 'delete'>>(`/branches/${branchId}/ticket-packages/${id}`, { idempotencyKey: idemKey() }),
   pricingMode: (branchId: string, date?: string) =>
     api.get<{ date: string; mode: 'weekday' | 'weekend'; reason: string; overrideName?: string }>(
       `/branches/${branchId}/pricing-mode${date ? `?date=${date}` : ''}`,
@@ -362,6 +339,18 @@ const catalogApi = {
   deletePaymentMethod: (code: string) =>
     api.delete<{ ok: true }>(`/payment-methods/${encodeURIComponent(code)}`),
 };
+
+return catalogApi;
+}
+
+export function createPlatformAdminApi(api: LiftedAdminApi) {
+const { branchesApi, adminApi, opsApi } = createOrganisationAdminApi(api);
+
+
+
+
+
+const catalogApi = createCatalogueAdminApi(api);
 
 
 const printApi = {

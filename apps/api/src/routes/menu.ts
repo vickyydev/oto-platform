@@ -14,6 +14,10 @@ import {
   MenuCategoryBodySchema,
   MenuItemBodySchema,
   ModifierGroupBodySchema,
+  ModifierSelectionTypeSchema,
+  PrepStationSchema,
+  ProductKindSchema,
+  TaxableCategorySchema,
   newId,
 } from '@oto/shared';
 import type { App } from '../app';
@@ -72,6 +76,49 @@ import { opCtx, withTx } from '../services/tx';
 
 const BranchParams = z.object({ branchId: z.string().uuid() });
 const IdParams = z.object({ id: z.string().uuid() });
+
+// This is the existing read projection, not the write schema: stored language
+// and variant metadata must survive serialization without trims or defaults.
+const MenuTimestampSchema = z.preprocess(
+  (value) => value instanceof Date ? value.toISOString() : value,
+  z.string().datetime(),
+);
+const MenuReadTranslationsSchema = z.record(z.string(), z.object({
+  name: z.string().optional(), description: z.string().optional(),
+}).passthrough());
+const MenuResponseSchema = z.object({
+  categories: z.array(z.object({
+    id: z.string().uuid(), code: z.string().nullable(), name: z.string(), parentId: z.string().uuid().nullable(),
+    taxableCategory: TaxableCategorySchema.nullable(), defaultPrepStation: PrepStationSchema.nullable(),
+    effectiveTaxCategory: TaxableCategorySchema.nullable(), effectivePrepStation: PrepStationSchema.nullable(),
+    sortOrder: z.number().int(), translations: MenuReadTranslationsSchema.nullable(), archivedAt: MenuTimestampSchema.nullable(),
+  }).passthrough()),
+  modifierGroups: z.array(z.object({
+    id: z.string().uuid(), productId: z.string().uuid().nullable(), name: z.string(), required: z.boolean(),
+    selectionType: ModifierSelectionTypeSchema, minSelect: z.number().int().nullable(), maxSelect: z.number().int().nullable(),
+    sortOrder: z.number().int(), translations: MenuReadTranslationsSchema.nullable(),
+    options: z.array(z.object({
+      id: z.string().uuid(), name: z.string(), priceSatang: z.number().int(), priceWeekendSatang: z.number().int().nullable(),
+      costSatang: z.number().int().nullable(), sortOrder: z.number().int(), translations: MenuReadTranslationsSchema.nullable(),
+    }).passthrough()),
+  }).passthrough()),
+  products: z.array(z.object({
+    id: z.string().uuid(), kind: ProductKindSchema, code: z.string().nullable(), name: z.string(),
+    description: z.string().nullable(), categoryId: z.string().uuid().nullable(), branchId: z.string().uuid().nullable(),
+    priceSatang: z.number().int(), priceWeekendSatang: z.number().int().nullable(), effectiveWeekendSatang: z.number().int(),
+    costSatang: z.number().int().nullable(), prepStationOverride: PrepStationSchema.nullable(),
+    taxCategoryOverride: TaxableCategorySchema.nullable(), effectivePrepStation: PrepStationSchema,
+    effectiveTaxCategory: TaxableCategorySchema, sku: z.string().nullable(),
+    variants: z.array(z.object({
+      id: z.string(), label: z.string(), sku: z.string().nullish(), barcode: z.string().nullish(),
+    }).passthrough()),
+    stockItemId: z.string().uuid().nullable(), sortOrder: z.number().int(), active: z.boolean(),
+    translations: MenuReadTranslationsSchema.nullable(), archivedAt: MenuTimestampSchema.nullable(),
+    linkedModifierGroupIds: z.array(z.string().uuid()),
+    stockLinks: z.array(z.object({ variantId: z.string().nullable(), stockItemId: z.string().uuid() }).passthrough()),
+  }).passthrough()),
+}).passthrough();
+const MenuOkResponseSchema = z.object({ ok: z.literal(true) });
 
 /** A workbook of a few hundred rows, base64, with room to spare. */
 const IMPORT_MAX_BYTES = 8 * 1024 * 1024;
@@ -149,6 +196,7 @@ export async function menuRoutes(app: App): Promise<void> {
         description: 'The branch menu: categories, items and the modifier library',
         params: BranchParams,
         querystring: z.object({ includeArchived: z.coerce.boolean().default(false) }),
+        response: { 200: MenuResponseSchema },
       },
     },
     async (req) => {
@@ -167,10 +215,10 @@ export async function menuRoutes(app: App): Promise<void> {
         req.params.branchId,
         menu.products.map((p) => p.id),
       );
-      return {
+      return MenuResponseSchema.parse({
         ...menu,
         products: menu.products.map((p) => ({ ...p, stockLinks: links.get(p.id) ?? [] })),
-      };
+      });
     },
   );
 
@@ -325,6 +373,7 @@ export async function menuRoutes(app: App): Promise<void> {
         description: 'Create a menu item, shop item or ticket add-on',
         params: BranchParams,
         body: MenuItemBodySchema,
+        response: { 200: z.object({ id: z.string().uuid() }) },
       },
     },
     async (req) => {
@@ -398,6 +447,7 @@ export async function menuRoutes(app: App): Promise<void> {
         description: 'Update a menu item',
         params: BranchParams.extend({ id: z.string().uuid() }),
         body: MenuItemBodySchema.partial(),
+        response: { 200: MenuOkResponseSchema },
       },
     },
     async (req) => {
@@ -505,6 +555,7 @@ export async function menuRoutes(app: App): Promise<void> {
       schema: {
         description: 'Withdraw a menu item — it stays readable by the orders that sold it',
         params: BranchParams.extend({ id: z.string().uuid() }),
+        response: { 200: MenuOkResponseSchema },
       },
     },
     async (req) => {

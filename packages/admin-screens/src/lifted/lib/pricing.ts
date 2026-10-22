@@ -53,6 +53,27 @@ export interface LineBreakdownItem {
   quantity: number;
   subtotal: number;
 }
+/**
+ * The weekday/weekend pair this ticket charges a tier, or null when nobody has
+ * set one — the tier was added in Admin and this ticket was never given a price
+ * for it. A pair missing either half is not half-priced, it is unpriced.
+ */
+function pricedPair(ticket: TicketType, tier: CustomerTier): WeekdayWeekendPrice | null {
+  const p = ticket.prices[tier];
+  return p && Number.isFinite(p.weekday) && Number.isFinite(p.weekend) ? p : null;
+}
+
+/**
+ * Whether this ticket carries a kid price for this tier at all.
+ *
+ * A missing entry is not "free" — it is a tier nobody has priced on this
+ * ticket. Every path that takes money asks this first (SCRUM-228). An explicit
+ * 0 is a real price and passes.
+ */
+export function isTierPriced(ticket: TicketType, tier: CustomerTier): boolean {
+  return pricedPair(ticket, tier) !== null;
+}
+
 /** Original domain rules, bound to this host's explicit data ports. */
 export function createPricingHelpers(deps: { membership: MembershipHelpers; catalog: CatalogReaders; pricingMode: PricingModeHelpers }) {
 const { tierLabel } = deps.membership;
@@ -63,15 +84,7 @@ const { resolveRate, todayRateMode } = deps.pricingMode;
 const SOCKS_ID = 'a-socks';
 
 
-/**
- * The weekday/weekend pair this ticket charges a tier, or null when nobody has
- * set one — the tier was added in Admin and this ticket was never given a price
- * for it. A pair missing either half is not half-priced, it is unpriced.
- */
-function pricedPair(ticket: TicketType, tier: CustomerTier): WeekdayWeekendPrice | null {
-  const p = ticket.prices[tier];
-  return p && Number.isFinite(p.weekday) && Number.isFinite(p.weekend) ? p : null;
-}
+
 
 
 /**
@@ -112,16 +125,7 @@ function priceForTier(
 }
 
 
-/**
- * Whether this ticket carries a kid price for this tier at all.
- *
- * A missing entry is not "free" — it is a tier nobody has priced on this
- * ticket. Every path that takes money asks this first (SCRUM-228). An explicit
- * 0 is a real price and passes.
- */
-function isTierPriced(ticket: TicketType, tier: CustomerTier): boolean {
-  return pricedPair(ticket, tier) !== null;
-}
+
 
 
 /** Whether the adult rule that charges for this tier carries the price it charges. */

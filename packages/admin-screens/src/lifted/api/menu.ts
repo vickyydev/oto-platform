@@ -1,3 +1,4 @@
+import type { ApiBody, ApiResponse } from '@oto/api-types';
 // The menu, the shop, the ticket add-ons and the discount codes — the half of
 // the catalogue that `product`, `product_category`, `modifier_group`,
 // `modifier_option`, `product_modifier_group` and `discount_definition` hold
@@ -17,9 +18,9 @@
 
 import { idemKey } from './client';
 import type { LiftedAdminApi } from '../../api/lifted-api';
+import type { AdminApi } from '../../api/admin-api';
 import type { CatalogHydration } from '../model/catalog';
 import type { MenuImportPreview, MenuImportResult } from '@oto/shared';
-import type { SupportedLang } from '../model/language';
 import type {
   AddOn,
   Discount,
@@ -30,117 +31,47 @@ import type {
   MerchVariant,
   ModifierGroup,
   ModifierOption,
-  PrepStation,
   TaxableCategory,
 } from '../model/types';
 
 
-type Translations = Partial<Record<SupportedLang, { name: string; description?: string }>>;
 
 
 /** `pos.product.kind` — one table, three things it can be. */
 export type ProductKind = 'menu' | 'merch' | 'addon';
 
 
-export interface ApiMenuCategory {
-  id: string;
-  /** The stable key sheet 2 of the import workbook carries. Null on rows made before it existed. */
-  code: string | null;
-  name: string;
-  /** Null = a top-level tab. Set = a sub-category of it. Two levels only. */
-  parentId: string | null;
-  /** Null only on a sub-category, which inherits its parent's. */
-  taxableCategory: TaxableCategory | null;
-  /** Null anywhere in the chain resolves to `kitchen`. */
-  defaultPrepStation: PrepStation | null;
-  sortOrder: number;
-  translations: Translations | null;
-  archivedAt: string | null;
-}
+type MenuRead = ApiResponse<'/branches/{branchId}/menu', 'get'>;
+// The native consumers also accept older catalogue answers without resolved fields.
+// Actual HTTP calls below use the complete generated response contract.
+export type ApiMenuCategory = Pick<MenuRead['categories'][number],
+  'id' | 'code' | 'name' | 'parentId' | 'taxableCategory' | 'defaultPrepStation' | 'sortOrder' | 'translations' | 'archivedAt'> &
+  Partial<Pick<MenuRead['categories'][number], 'effectiveTaxCategory' | 'effectivePrepStation'>>;
 
 
-export interface ApiModifierOption {
-  id: string;
-  name: string;
-  priceSatang: number;
-  /** Null = the same as `priceSatang`. */
-  priceWeekendSatang: number | null;
-  costSatang: number | null;
-  sortOrder: number;
-}
+export type ApiModifierOption = Pick<MenuRead['modifierGroups'][number]['options'][number],
+  'id' | 'name' | 'priceSatang' | 'priceWeekendSatang' | 'costSatang' | 'sortOrder'> &
+  Partial<Pick<MenuRead['modifierGroups'][number]['options'][number], 'translations'>>;
 
 
-export interface ApiModifierGroup {
-  id: string;
-  /** Set = inline to that item. Null = a shared library group any item may link. */
-  productId: string | null;
-  name: string;
-  required: boolean;
-  selectionType: 'single' | 'multi';
-  /** Only meaningful on a `multi` group. */
-  minSelect: number | null;
-  maxSelect: number | null;
-  sortOrder: number;
-  options: ApiModifierOption[];
-}
+export type ApiModifierGroup = Pick<MenuRead['modifierGroups'][number],
+  'id' | 'productId' | 'name' | 'required' | 'selectionType' | 'minSelect' | 'maxSelect' | 'sortOrder'> &
+  { options: ApiModifierOption[] } & Partial<Pick<MenuRead['modifierGroups'][number], 'translations'>>;
 
 
-export interface ApiProduct {
-  id: string;
-  kind: ProductKind;
-  code: string | null;
-  categoryId: string | null;
-  name: string;
-  description: string | null;
-  priceSatang: number;
-  /** Null = the same as `priceSatang`. */
-  priceWeekendSatang: number | null;
-  costSatang: number | null;
-  /** Null = inherit the category's. */
-  prepStationOverride: PrepStation | null;
-  /** Null = inherit the category's. */
-  taxCategoryOverride: TaxableCategory | null;
-  translations: Translations | null;
-  /** Merch only. The whole item's code. */
-  sku: string | null;
-  /**
-   * The sizes it is sold in (`pos.product.variants`, S2-09b); `[]` for one
-   * size. Optional because an api older than the column does not send it.
-   */
-  variants?: ApiProductVariant[];
-  /**
-   * Set = stock-tracked (the prototype's `inventoryItemId`): the platform's
-   * marker, one of the item's stock items.
-   */
-  stockItemId: string | null;
-  /**
-   * S2-14b — the stock items that stock this item at the branch, one per size
-   * (`variantId` null for an item sold in one size). Optional because an api
-   * older than the stock ledger does not send it.
-   */
-  stockLinks?: ApiProductStockLink[];
-  sortOrder: number;
-  active: boolean;
-  archivedAt: string | null;
-  /** `product_modifier_group` — the shared groups this item asks, in order. */
-  linkedModifierGroupIds: string[];
-}
+export type ApiProduct = Pick<MenuRead['products'][number],
+  'id' | 'kind' | 'code' | 'categoryId' | 'name' | 'description' | 'priceSatang' | 'priceWeekendSatang' | 'costSatang' |
+  'prepStationOverride' | 'taxCategoryOverride' | 'translations' | 'sku' | 'stockItemId' | 'sortOrder' | 'active' |
+  'archivedAt' | 'linkedModifierGroupIds'> & Partial<Pick<MenuRead['products'][number],
+  'branchId' | 'effectiveWeekendSatang' | 'effectivePrepStation' | 'effectiveTaxCategory' | 'variants' | 'stockLinks'>>;
 
 
 /** S2-14b — one size's stock item at the branch (`ProductStockLink` in `@oto/shared`). */
-export interface ApiProductStockLink {
-  variantId: string | null;
-  stockItemId: string;
-}
+export type ApiProductStockLink = MenuRead['products'][number]['stockLinks'][number];
 
 
 /** One size, as the platform stores it — `ProductVariant` in `@oto/shared`. */
-export interface ApiProductVariant {
-  id: string;
-  label: string;
-  sku?: string;
-  barcode?: string;
-}
+export type ApiProductVariant = MenuRead['products'][number]['variants'][number];
 
 
 /**
@@ -153,16 +84,12 @@ export interface ApiProductVariant {
  * which is how an item could be linked to a group on screen and to nothing in
  * the database.
  */
-export type ApiProductBody = Partial<ApiProduct> & {
-  name: string;
-  kind: ProductKind;
-  modifierGroupIds?: string[];
-};
+export type ApiProductBody = ApiBody<'/branches/{branchId}/menu/products', 'post'>;
+export type ApiModifierGroupBody = ApiBody<'/menu/modifier-groups', 'post'>;
 
 
 export interface ApiMenu {
   categories: ApiMenuCategory[];
-  /** The shared library AND every item's inline groups; `productId` tells them apart. */
   modifierGroups: ApiModifierGroup[];
   products: ApiProduct[];
 }
@@ -263,14 +190,14 @@ export interface MappedMenu {
 }
 export interface MenuHydrationPort { hydrateFromApi: (snapshot: CatalogHydration) => void; }
 
-export function createMenuApi(api: LiftedAdminApi, {hydrateFromApi}: MenuHydrationPort) {
+export function createMenuCatalogueApi(api: AdminApi, ports?: MenuHydrationPort) {
 
 
 // --- The routes -------------------------------------------------------------
 
 const menuApi = {
   /** Everything the admin catalogue screens read, in one round trip. */
-  load: (branchId: string) => api.get<ApiMenu>(`/branches/${branchId}/menu`),
+  load: (branchId: string) => api.get<ApiResponse<'/branches/{branchId}/menu', 'get'>>(`/branches/${branchId}/menu`),
 
   createCategory: (body: Partial<ApiMenuCategory> & { name: string }) =>
     api.post<{ id: string }>('/menu/categories', body, { idempotencyKey: idemKey() }),
@@ -279,17 +206,17 @@ const menuApi = {
   archiveCategory: (id: string) => api.delete<{ ok: true }>(`/menu/categories/${id}`),
 
   createProduct: (branchId: string, body: ApiProductBody) =>
-    api.post<{ id: string }>(`/branches/${branchId}/menu/products`, body, {
+    api.post<ApiResponse<'/branches/{branchId}/menu/products', 'post'>>(`/branches/${branchId}/menu/products`, body, {
       idempotencyKey: idemKey(),
     }),
   updateProduct: (branchId: string, id: string, body: Partial<ApiProductBody>) =>
-    api.patch<{ ok: true }>(`/branches/${branchId}/menu/products/${id}`, body),
+    api.patch<ApiResponse<'/branches/{branchId}/menu/products/{id}', 'patch'>>(`/branches/${branchId}/menu/products/${id}`, body, { idempotencyKey: idemKey() }),
   archiveProduct: (branchId: string, id: string) =>
-    api.delete<{ ok: true }>(`/branches/${branchId}/menu/products/${id}`),
+    api.delete<ApiResponse<'/branches/{branchId}/menu/products/{id}', 'delete'>>(`/branches/${branchId}/menu/products/${id}`, { idempotencyKey: idemKey() }),
 
-  createModifierGroup: (body: Partial<ApiModifierGroup> & { name: string }) =>
+  createModifierGroup: (body: ApiModifierGroupBody) =>
     api.post<{ id: string }>('/menu/modifier-groups', body, { idempotencyKey: idemKey() }),
-  updateModifierGroup: (id: string, body: Partial<ApiModifierGroup>) =>
+  updateModifierGroup: (id: string, body: Partial<ApiModifierGroupBody>) =>
     api.patch<{ ok: true }>(`/menu/modifier-groups/${id}`, body),
   archiveModifierGroup: (id: string) => api.delete<{ ok: true }>(`/menu/modifier-groups/${id}`),
 
@@ -337,10 +264,8 @@ const menuApi = {
       idempotencyKey: idemKey(),
     }),
 
-  /** The menu as the workbook Import reads back. See `fetchMenuWorkbook`. */
-  exportWorkbook: (branchId: string) => fetchMenuWorkbook(branchId),
 };
-async function fetchMenuWorkbook(branchId: string): Promise<{blob: Blob;filename: string}> { const file = await api.getFile(`/branches/${branchId}/menu/export.xlsx`); return {blob:file.blob,filename:file.filename ?? 'oto-menu.xlsx'}; }
+
 
 
 // --- Mapping to the prototype's shapes --------------------------------------
@@ -660,7 +585,7 @@ function apiVariantToVariant(v: ApiProductVariant): MerchVariant {
 
 function merchItemToApiBody(
   item: MerchItem,
-): Partial<ApiProduct> & { name: string; kind: ProductKind } {
+): ApiProductBody {
   const held = serverFields.get(item.id);
   return {
     kind: 'merch',
@@ -722,7 +647,7 @@ function apiProductToAddOn(p: ApiProduct): AddOn {
 
 function addOnToApiBody(
   addOn: AddOn,
-): Partial<ApiProduct> & { name: string; kind: ProductKind } {
+): ApiProductBody {
   const held = serverFields.get(addOn.id);
   // The stock link: `stockLinksBody`, for the reason written there.
   return {
@@ -753,7 +678,7 @@ function addOnToApiBody(
 function modifierGroupToApiBody(
   group: ModifierGroup,
   sortOrder = 0,
-): Partial<ApiModifierGroup> & { name: string } {
+): ApiModifierGroupBody {
   return {
     name: group.name,
     required: group.required ?? false,
@@ -944,9 +869,10 @@ function mapMenu(menu: ApiMenu): MappedMenu {
  * together rather than left to drift apart.
  */
 async function reloadMenuInto(branchId: string, branchSlug: string): Promise<void> {
+  if (!ports) throw new Error('Catalogue hydration is not available in this host.');
   const [menu, discountRows] = await Promise.all([menuApi.load(branchId), menuApi.discounts()]);
   const mapped = mapMenu(menu);
-  hydrateFromApi({
+  ports.hydrateFromApi({
     perBranch: {
       [branchSlug]: {
         menuCategories: mapped.categories,
@@ -1197,5 +1123,12 @@ async function archiveMenuCategoryInApi(
     await reloadMenuInto(branchId, branchSlug);
   });
 }
-return { menuApi, fetchMenuWorkbook, catalogueSizesOf, isSocksAddOnId, serverFieldsFor, menuIsServerBacked, apiCategoryToDef, apiGroupToGroup, apiProductToMenuItem, menuItemToApiBody, categoryToApiBody, apiProductToMerchItem, merchItemToApiBody, apiProductToAddOn, addOnToApiBody, modifierGroupToApiBody, apiDiscountToDiscount, discountToApiBody, mapDiscounts, mapMenu, reloadMenuInto, saveMerchItemToApi, archiveMerchItemInApi, saveAddOnToApi, archiveAddOnInApi, saveModifierGroupToApi, archiveModifierGroupInApi, saveDiscountToApi, archiveDiscountInApi, saveMenuItemToApi, archiveMenuItemInApi, saveMenuCategoryToApi, archiveMenuCategoryInApi };
+return { menuApi, catalogueSizesOf, isSocksAddOnId, serverFieldsFor, menuIsServerBacked, apiCategoryToDef, apiGroupToGroup, apiProductToMenuItem, menuItemToApiBody, categoryToApiBody, apiProductToMerchItem, merchItemToApiBody, apiProductToAddOn, addOnToApiBody, modifierGroupToApiBody, apiDiscountToDiscount, discountToApiBody, mapDiscounts, mapMenu, reloadMenuInto, saveMerchItemToApi, archiveMerchItemInApi, saveAddOnToApi, archiveAddOnInApi, saveModifierGroupToApi, archiveModifierGroupInApi, saveDiscountToApi, archiveDiscountInApi, saveMenuItemToApi, archiveMenuItemInApi, saveMenuCategoryToApi, archiveMenuCategoryInApi };
+}
+
+/** POS keeps its file download capability beside the shared catalogue ports. */
+export function createMenuApi(api: AdminApi & Pick<LiftedAdminApi, 'getFile'>, ports: MenuHydrationPort) {
+async function fetchMenuWorkbook(branchId: string): Promise<{blob: Blob;filename: string}> { const file = await api.getFile(`/branches/${branchId}/menu/export.xlsx`); return {blob:file.blob,filename:file.filename ?? 'oto-menu.xlsx'}; }
+const catalogue = createMenuCatalogueApi(api, ports);
+return { ...catalogue, menuApi: { ...catalogue.menuApi, exportWorkbook: fetchMenuWorkbook }, fetchMenuWorkbook };
 }

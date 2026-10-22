@@ -35,6 +35,12 @@ export interface ConsoleNavGroup {
 
 /** Existing pages keep their permissions and their old addresses. */
 export const CONSOLE_SECTIONS: ConsoleSection[] = [
+  { id: 'tickets', path: '/catalogue/tickets', label: 'Tickets', icon: Ticket,
+    description: 'Ticket types, weekday and weekend prices, adult rules and included items.', permission: 'catalog:package:read' },
+  { id: 'tiers', path: '/catalogue/tiers', label: 'Tiers', icon: Users,
+    description: 'Customer tiers, their default and proof requirements.', permission: 'catalog:package:read' },
+  { id: 'add-ons', path: '/catalogue/add-ons', label: 'Add-ons', icon: Ticket,
+    description: 'Ticket extras and their weekday and weekend prices.', permission: 'catalog:menu:read' },
   { id: 'operators', path: '/organisation/operators', label: 'Operators', icon: Building2,
     description: 'Platform operators and their administrators.', permission: 'admin:operator:read', platformWide: true },
   { id: 'holidays', path: '/organisation/holidays', label: 'Holidays', icon: CalendarCheck,
@@ -205,9 +211,9 @@ export const consoleNav: ConsoleNavGroup[] = [
   },
   {
     id: 'catalogue', label: 'Catalogue & money', icon: Ticket,
-    description: 'Voucher types and issued vouchers. Catalogue and pricing panels are moving here.',
+    description: 'Tickets, customer tiers, add-ons, voucher types and issued vouchers.',
     gate: { any: ['catalog:package:read', 'catalog:menu:read'] },
-    sections: pages('voucher-types', 'vouchers'),
+    sections: pages('tickets', 'tiers', 'add-ons', 'voucher-types', 'vouchers'),
     currentHome: { app: 'pos', path: '/admin', label: 'Open catalogue and pricing in POS Admin' },
   },
   {

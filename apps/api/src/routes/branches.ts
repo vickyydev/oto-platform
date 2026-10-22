@@ -224,7 +224,7 @@ export async function branchRoutes(app: App): Promise<void> {
   app.post(
     '/oto-app/reconcile',
     {
-      config: { permission: 'admin:branch:update' },
+      config: { permission: 'admin:branch:update', target: { operator: true } },
       schema: {
         description:
           'Join the OTO App branch rows that already exist to this operator\'s branches (SCRUM-268). Idempotent: a second run writes nothing.',

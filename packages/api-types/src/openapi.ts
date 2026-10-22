@@ -4616,7 +4616,17 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            tiers: {
+                                id: string;
+                                name: string;
+                                isDefault: boolean;
+                                requiresVerification: boolean;
+                                sortOrder: number;
+                            }[];
+                        };
+                    };
                 };
             };
         };
@@ -4649,7 +4659,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            id: string;
+                        };
+                    };
                 };
             };
         };
@@ -4686,7 +4700,12 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            ok: true;
+                        };
+                    };
                 };
             };
         };
@@ -4721,7 +4740,12 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            ok: true;
+                        };
+                    };
                 };
             };
         };
@@ -4924,7 +4948,81 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            packages: ({
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                operatorId: string;
+                                /** Format: uuid */
+                                branchId: string;
+                                name: string;
+                                description: string | null;
+                                durationLabel: string;
+                                hours: number;
+                                prices: {
+                                    [key: string]: {
+                                        weekday: number;
+                                        weekend: number;
+                                    } & {
+                                        [key: string]: unknown;
+                                    };
+                                };
+                                tierPricing: {
+                                    [key: string]: {
+                                        mode: string;
+                                        value: number;
+                                    } & {
+                                        [key: string]: unknown;
+                                    };
+                                } | null;
+                                adultRules: {
+                                    [key: string]: {
+                                        kind: string;
+                                        price?: {
+                                            weekday: number;
+                                            weekend: number;
+                                        } & {
+                                            [key: string]: unknown;
+                                        };
+                                        freeAdults?: number;
+                                        overflow?: string;
+                                    } & {
+                                        [key: string]: unknown;
+                                    };
+                                } | null;
+                                freebies: unknown[] | null;
+                                creditRule: ({
+                                    appliesTo: string;
+                                    basis: string;
+                                    value?: number;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                gateAccess: boolean;
+                                translations: {
+                                    [key: string]: {
+                                        name: string;
+                                        description?: string;
+                                    } & {
+                                        [key: string]: unknown;
+                                    };
+                                } | null;
+                                active: boolean;
+                                /** Format: date-time */
+                                createdAt: string;
+                                /** Format: date-time */
+                                updatedAt: string;
+                                /** Format: date-time */
+                                archivedAt: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            })[];
+                        } & {
+                            [key: string]: unknown;
+                        };
+                    };
                 };
             };
         };
@@ -5006,7 +5104,12 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                        };
+                    };
                 };
             };
         };
@@ -5044,7 +5147,12 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            ok: true;
+                        };
+                    };
                 };
             };
         };
@@ -5126,7 +5234,12 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            ok: true;
+                        };
+                    };
                 };
             };
         };
@@ -5660,7 +5773,141 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            categories: ({
+                                /** Format: uuid */
+                                id: string;
+                                code: string | null;
+                                name: string;
+                                /** Format: uuid */
+                                parentId: string | null;
+                                /** @enum {string|null} */
+                                taxableCategory: "tickets" | "fnb" | "bar" | "drop_off" | "parties" | "addons" | "merch" | "stored_value" | null;
+                                /** @enum {string|null} */
+                                defaultPrepStation: "kitchen" | "bar" | "none" | null;
+                                /** @enum {string|null} */
+                                effectiveTaxCategory: "tickets" | "fnb" | "bar" | "drop_off" | "parties" | "addons" | "merch" | "stored_value" | null;
+                                /** @enum {string|null} */
+                                effectivePrepStation: "kitchen" | "bar" | "none" | null;
+                                sortOrder: number;
+                                translations: {
+                                    [key: string]: {
+                                        name?: string;
+                                        description?: string;
+                                    } & {
+                                        [key: string]: unknown;
+                                    };
+                                } | null;
+                                /** Format: date-time */
+                                archivedAt: string | null;
+                            } & {
+                                [key: string]: unknown;
+                            })[];
+                            modifierGroups: ({
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                productId: string | null;
+                                name: string;
+                                required: boolean;
+                                /** @enum {string} */
+                                selectionType: "single" | "multi";
+                                minSelect: number | null;
+                                maxSelect: number | null;
+                                sortOrder: number;
+                                translations: {
+                                    [key: string]: {
+                                        name?: string;
+                                        description?: string;
+                                    } & {
+                                        [key: string]: unknown;
+                                    };
+                                } | null;
+                                options: ({
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                    priceSatang: number;
+                                    priceWeekendSatang: number | null;
+                                    costSatang: number | null;
+                                    sortOrder: number;
+                                    translations: {
+                                        [key: string]: {
+                                            name?: string;
+                                            description?: string;
+                                        } & {
+                                            [key: string]: unknown;
+                                        };
+                                    } | null;
+                                } & {
+                                    [key: string]: unknown;
+                                })[];
+                            } & {
+                                [key: string]: unknown;
+                            })[];
+                            products: ({
+                                /** Format: uuid */
+                                id: string;
+                                /** @enum {string} */
+                                kind: "menu" | "merch" | "addon";
+                                code: string | null;
+                                name: string;
+                                description: string | null;
+                                /** Format: uuid */
+                                categoryId: string | null;
+                                /** Format: uuid */
+                                branchId: string | null;
+                                priceSatang: number;
+                                priceWeekendSatang: number | null;
+                                effectiveWeekendSatang: number;
+                                costSatang: number | null;
+                                /** @enum {string|null} */
+                                prepStationOverride: "kitchen" | "bar" | "none" | null;
+                                /** @enum {string|null} */
+                                taxCategoryOverride: "tickets" | "fnb" | "bar" | "drop_off" | "parties" | "addons" | "merch" | "stored_value" | null;
+                                /** @enum {string} */
+                                effectivePrepStation: "kitchen" | "bar" | "none";
+                                /** @enum {string} */
+                                effectiveTaxCategory: "tickets" | "fnb" | "bar" | "drop_off" | "parties" | "addons" | "merch" | "stored_value";
+                                sku: string | null;
+                                variants: ({
+                                    id: string;
+                                    label: string;
+                                    sku?: string | null;
+                                    barcode?: string | null;
+                                } & {
+                                    [key: string]: unknown;
+                                })[];
+                                /** Format: uuid */
+                                stockItemId: string | null;
+                                sortOrder: number;
+                                active: boolean;
+                                translations: {
+                                    [key: string]: {
+                                        name?: string;
+                                        description?: string;
+                                    } & {
+                                        [key: string]: unknown;
+                                    };
+                                } | null;
+                                /** Format: date-time */
+                                archivedAt: string | null;
+                                linkedModifierGroupIds: string[];
+                                stockLinks: ({
+                                    variantId: string | null;
+                                    /** Format: uuid */
+                                    stockItemId: string;
+                                } & {
+                                    [key: string]: unknown;
+                                })[];
+                            } & {
+                                [key: string]: unknown;
+                            })[];
+                        } & {
+                            [key: string]: unknown;
+                        };
+                    };
                 };
             };
         };
@@ -5875,7 +6122,12 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                        };
+                    };
                 };
             };
         };
@@ -5913,7 +6165,12 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            ok: true;
+                        };
+                    };
                 };
             };
         };
@@ -5982,7 +6239,12 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            ok: true;
+                        };
+                    };
                 };
             };
         };

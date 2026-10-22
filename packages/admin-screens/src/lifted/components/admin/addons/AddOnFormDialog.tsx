@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { type AddOn, type TaxableCategory, type WeekdayWeekendPrice } from "../../../model/types";
 import { WeekdayWeekendPriceInput } from "../../shared/WeekdayWeekendPriceInput";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../../ui/dialog";
@@ -31,7 +31,7 @@ interface AddOnFormDialogProps {
    * `trackStock` tells the panel whether this add-on should be linked to a
    * unified inventory item (create the link when true, drop it when false).
    */
-  onSave: (addOn: AddOn, trackStock: boolean) => void;
+  onSave: (addOn: AddOn, trackStock: boolean) => void | Promise<void>;
 }
 
 interface FormErrors {
@@ -54,6 +54,14 @@ export function AddOnFormDialog({
   const [trackStock, setTrackStock] = useState(false);
   const [taxCategoryOverride, setTaxCategoryOverride] = useState<string>(USE_DEFAULT);
   const [errors, setErrors] = useState<FormErrors>({});
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const draft = JSON.stringify([name, price, trackStock, taxCategoryOverride]);
+  const draftRef = useRef(draft);
+  draftRef.current = draft;
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
 
   // Reset the fields whenever the dialog opens (for add) or the target changes.
   useEffect(() => {
@@ -65,11 +73,13 @@ export function AddOnFormDialog({
       setTrackStock(!!addOn?.inventoryItemId);
       setTaxCategoryOverride(addOn?.taxCategoryOverride ?? USE_DEFAULT);
       setErrors({});
+      setSaveError(null);
     }
   }, [open, addOn]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (savingRef.current) return;
     const trimmedName = name.trim();
     const nextErrors: FormErrors = {};
 
@@ -83,7 +93,11 @@ export function AddOnFormDialog({
       return;
     }
 
-    onSave(
+    savingRef.current = true;
+    setSaving(true);
+    setSaveError(null);
+    try {
+    await onSave(
       {
         // Spread the existing addOn first so optional fields (inventoryItemId, etc.)
         // are preserved on edit; then override only the fields this form controls.
@@ -97,7 +111,10 @@ export function AddOnFormDialog({
       },
       trackStock,
     );
-    onOpenChange(false);
+    if (mounted.current && draftRef.current === draft) onOpenChange(false);
+    } catch (failure) {
+      if (mounted.current) setSaveError(failure instanceof Error ? failure.message : 'The add-on could not be saved.');
+    } finally { savingRef.current = false; if (mounted.current) setSaving(false); }
   };
 
   return (
@@ -177,6 +194,7 @@ export function AddOnFormDialog({
             </p>
           </div>
 
+          {saveError && <p role="alert" className="text-sm text-destructive">{saveError}</p>}
           <DialogFooter>
             <Button
               type="button"
@@ -185,7 +203,7 @@ export function AddOnFormDialog({
             >
               Cancel
             </Button>
-            <Button type="submit">{addOn ? 'Save changes' : 'Add add-on'}</Button>
+            <Button type="submit" disabled={saving}>{addOn ? 'Save changes' : 'Add add-on'}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

@@ -1,5 +1,6 @@
 import { useAdminScreenRuntime } from '../../../runtime/AdminScreenRuntime';
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { TicketsPanelPorts } from '../../../runtime/catalogue';
 import { Pencil, Trash2, Plus, Info, Gift, DoorOpen } from "lucide-react";
 import { type CustomerTier, type TicketType } from "../../../model/types";
 import { useCatalogStore } from "../../../runtime/AdminScreenRuntime";
@@ -9,42 +10,45 @@ import { useCatalogStore } from "../../../runtime/AdminScreenRuntime";
 import { Button } from "../../ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../../ui/alert-dialog";
-import { TicketTypeForm } from "./TicketTypeForm";
+import { TicketTypeFormWithPorts } from "./TicketTypeForm";
 
 type FormTarget = { mode: 'add' } | { mode: 'edit'; ticket: TicketType } | null;
 
 export function TicketsPanel() {
   const runtime = useAdminScreenRuntime();
-  const getTiers = runtime.reads.getTiers;
-  const isDefaultTier = runtime.domain.membership.isDefaultTier;
-  const adultRuleSummary = runtime.domain.ticketPricing.adultRuleSummary;
-  const creditRuleSummary = runtime.domain.ticketPricing.creditRuleSummary;
-  const freebieLabel = runtime.domain.ticketPricing.freebieLabel;
-  const freebieTierSuffix = runtime.domain.ticketPricing.freebieTierSuffix;
-  const ruleBadge = runtime.domain.ticketPricing.ruleBadge;
-  const formatWWPrice = runtime.domain.pricingMode.formatWWPrice;
-
-
-
-const baht = formatWWPrice;
-
-
   const { ticketTypes, addOns, mutators } = useCatalogStore();
-  const tiers = getTiers();
+  return <TicketsPanelWithPorts ports={{ ticketTypes, addOns, tiers: runtime.reads.getTiers(), defaultTier: runtime.reads.getDefaultTier(), ticketPricing: runtime.domain.ticketPricing, formatWWPrice: runtime.domain.pricingMode.formatWWPrice, isDefaultTier: runtime.domain.membership.isDefaultTier, tierLabel: runtime.domain.membership.tierLabel, upsertTicketType: mutators.upsertTicketType, deleteTicketType: mutators.deleteTicketType }} />;
+}
+
+export function TicketsPanelWithPorts({ ports }: { ports: TicketsPanelPorts }) {
+  const { ticketTypes, addOns, tiers, isDefaultTier, upsertTicketType, deleteTicketType } = ports;
+  const { adultRuleSummary, creditRuleSummary, freebieLabel, freebieTierSuffix, ruleBadge } = ports.ticketPricing;
+  const baht = ports.formatWWPrice;
   const [formTarget, setFormTarget] = useState<FormTarget>(null);
   const [pendingDelete, setPendingDelete] = useState<TicketType | null>(null);
+  const [writeError, setWriteError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const deletingRef = useRef(false);
+  const deleteTarget = useRef(pendingDelete);
+  deleteTarget.current = pendingDelete;
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
 
   const formOpen = formTarget !== null;
   const editing = formTarget?.mode === 'edit' ? formTarget.ticket : null;
 
-  const handleSave = (ticket: TicketType) => {
-    mutators.upsertTicketType(ticket);
-    setFormTarget(null);
-  };
-
-  const confirmDelete = () => {
-    if (pendingDelete) mutators.deleteTicketType(pendingDelete.id);
-    setPendingDelete(null);
+  const confirmDelete = async () => {
+    if (!pendingDelete || deletingRef.current || ports.canUpdate === false) return;
+    const target = pendingDelete;
+    deletingRef.current = true;
+    setDeleting(true);
+    setWriteError(null);
+    try {
+      await deleteTicketType(target.id);
+      if (mounted.current && deleteTarget.current === target) setPendingDelete(null);
+    } catch (failure) {
+      if (mounted.current) setWriteError(failure instanceof Error ? failure.message : 'The ticket type could not be deleted.');
+    } finally { deletingRef.current = false; if (mounted.current) setDeleting(false); }
   };
 
   const tierCell = (t: TicketType, tier: CustomerTier) => {
@@ -110,15 +114,15 @@ const baht = formatWWPrice;
 
   const rowActions = (t: TicketType) => (
     <div className="flex justify-end gap-1">
-      <Button
+      {ports.canUpdate !== false && <Button
         variant="ghost"
         size="icon"
         aria-label={`Edit ${t.name}`}
         onClick={() => setFormTarget({ mode: 'edit', ticket: t })}
       >
         <Pencil className="h-4 w-4" />
-      </Button>
-      <Button
+      </Button>}
+      {ports.canUpdate !== false && <Button
         variant="ghost"
         size="icon"
         aria-label={`Delete ${t.name}`}
@@ -126,7 +130,7 @@ const baht = formatWWPrice;
         onClick={() => setPendingDelete(t)}
       >
         <Trash2 className="h-4 w-4" />
-      </Button>
+      </Button>}
     </div>
   );
 
@@ -136,12 +140,13 @@ const baht = formatWWPrice;
         <p className="text-sm text-foreground/50">
           {ticketTypes.length} ticket type{ticketTypes.length === 1 ? '' : 's'}
         </p>
-        <Button onClick={() => setFormTarget({ mode: 'add' })}>
+        {ports.canCreate !== false && <Button disabled={!ports.defaultTier} onClick={() => { setWriteError(null); setFormTarget({ mode: 'add' }); }}>
           <Plus className="h-4 w-4" />
           Add ticket type
-        </Button>
+        </Button>}
       </div>
 
+      {writeError && !pendingDelete && <p role="alert" className="text-sm text-destructive">{writeError}</p>}
       {ticketTypes.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-foreground/15 bg-foreground/[0.02] px-6 py-12 text-center text-sm text-foreground/50">
           No ticket types yet. Add one to make it selectable in the POS.
@@ -249,13 +254,15 @@ const baht = formatWWPrice;
         Edits save to the branch catalog in the database.
       </p>
 
-      <TicketTypeForm
+      {formTarget && <TicketTypeFormWithPorts
+        key={editing?.id ?? 'add'}
+        ports={ports}
         open={formOpen}
         ticket={editing}
         addOns={addOns}
         onClose={() => setFormTarget(null)}
-        onSave={handleSave}
-      />
+        onSave={upsertTicketType}
+      />}
 
       <AlertDialog
         open={pendingDelete !== null}
@@ -270,10 +277,12 @@ const baht = formatWWPrice;
                 : ''}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {writeError && <p role="alert" className="text-sm text-destructive">{writeError}</p>}
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={confirmDelete}
+              disabled={deleting}
+              onClick={(event) => { event.preventDefault(); void confirmDelete(); }}
               className="bg-destructive text-destructive-foreground"
             >
               Delete

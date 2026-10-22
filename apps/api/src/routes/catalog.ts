@@ -85,9 +85,39 @@ const TierBody = z.object({
   sortOrder: z.number().int().min(0).default(0),
 });
 
+// Read contracts preserve the stored JSON, including fields introduced by an
+// older or newer writer. Input refinements/defaults must not rewrite a read.
+const CatalogueTimestampSchema = z.preprocess(
+  (value) => value instanceof Date ? value.toISOString() : value,
+  z.string().datetime(),
+);
+const CataloguePriceSchema = z.object({ weekday: z.number().int(), weekend: z.number().int() }).passthrough();
+const CatalogueTranslationsSchema = z.record(z.string(), z.object({
+  name: z.string(), description: z.string().optional(),
+}).passthrough());
+const TierListResponseSchema = z.object({ tiers: z.array(z.object({
+  id: z.string(), name: z.string(), isDefault: z.boolean(),
+  requiresVerification: z.boolean(), sortOrder: z.number().int(),
+})) });
+const TicketPackageListResponseSchema = z.object({ packages: z.array(z.object({
+  id: z.string().uuid(), operatorId: z.string().uuid(), branchId: z.string().uuid(),
+  name: z.string(), description: z.string().nullable(), durationLabel: z.string(), hours: z.number().int(),
+  prices: z.record(z.string(), CataloguePriceSchema),
+  tierPricing: z.record(z.string(), z.object({ mode: z.string(), value: z.number() }).passthrough()).nullable(),
+  adultRules: z.record(z.string(), z.object({
+    kind: z.string(), price: CataloguePriceSchema.optional(), freeAdults: z.number().int().optional(),
+    overflow: z.string().optional(),
+  }).passthrough()).nullable(),
+  freebies: z.array(z.unknown()).nullable(),
+  creditRule: z.object({ appliesTo: z.string(), basis: z.string(), value: z.number().optional() }).passthrough().nullable(),
+  gateAccess: z.boolean(), translations: CatalogueTranslationsSchema.nullable(), active: z.boolean(),
+  createdAt: CatalogueTimestampSchema, updatedAt: CatalogueTimestampSchema, archivedAt: CatalogueTimestampSchema.nullable(),
+}).passthrough()) }).passthrough();
+const CatalogueOkResponseSchema = z.object({ ok: z.literal(true) });
+
 export async function catalogRoutes(app: App): Promise<void> {
   // Tiers (read path — SCRUM-35 packages reference them; writes below, SCRUM-228).
-  app.get('/tiers', { config: { permission: 'catalog:package:read' }, schema: { description: 'Operator tier definitions' } }, async (req) => {
+  app.get('/tiers', { config: { permission: 'catalog:package:read' }, schema: { description: 'Operator tier definitions', response: { 200: TierListResponseSchema } } }, async (req) => {
     const auth = req.requireAuth();
     const rows = await app.db
       .select()
@@ -119,6 +149,7 @@ export async function catalogRoutes(app: App): Promise<void> {
       schema: {
         description: 'Create a customer tier',
         body: TierBody.extend({ code: z.string().min(1).max(64).regex(/^[a-z0-9_]+$/) }),
+        response: { 200: z.object({ id: z.string() }) },
       },
     },
     async (req) => {
@@ -182,6 +213,7 @@ export async function catalogRoutes(app: App): Promise<void> {
         description: 'Rename or re-rank a customer tier',
         params: TierCodeParams,
         body: TierBody.partial(),
+        response: { 200: CatalogueOkResponseSchema },
       },
     },
     async (req) => {
@@ -249,6 +281,7 @@ export async function catalogRoutes(app: App): Promise<void> {
       schema: {
         description: 'Archive a customer tier (refused while it prices anyone)',
         params: TierCodeParams,
+        response: { 200: CatalogueOkResponseSchema },
       },
     },
     async (req) => {
@@ -460,16 +493,19 @@ export async function catalogRoutes(app: App): Promise<void> {
         description: 'Ticket packages for a branch',
         params: BranchParams,
         querystring: z.object({ includeArchived: z.coerce.boolean().default(false) }),
+        response: { 200: TicketPackageListResponseSchema },
       },
     },
     async (req) => {
       const auth = req.requireAuth();
       await loadBranch(app, req.params.branchId, auth.operatorId);
-      const where = req.query.includeArchived
-        ? eq(ticketPackage.branchId, req.params.branchId)
-        : and(eq(ticketPackage.branchId, req.params.branchId), isNull(ticketPackage.archivedAt));
+      const where = and(
+        eq(ticketPackage.operatorId, auth.operatorId),
+        eq(ticketPackage.branchId, req.params.branchId),
+        req.query.includeArchived ? undefined : isNull(ticketPackage.archivedAt),
+      );
       const rows = await app.db.select().from(ticketPackage).where(where).orderBy(asc(ticketPackage.createdAt));
-      return { packages: rows };
+      return TicketPackageListResponseSchema.parse({ packages: rows });
     },
   );
 
@@ -487,6 +523,7 @@ export async function catalogRoutes(app: App): Promise<void> {
           /** Optional, client-minted (OD-12). Absent, the platform mints one as before. */
           id: ClientIdSchema.optional(),
         }),
+        response: { 200: z.object({ id: z.string().uuid() }) },
       },
     },
     async (req, reply) => {
@@ -499,7 +536,7 @@ export async function catalogRoutes(app: App): Promise<void> {
         sentId,
         async (id) =>
           (await app.db.select().from(ticketPackage).where(eq(ticketPackage.id, id)).limit(1))[0],
-        (row) => row.branchId === req.params.branchId,
+        (row) => row.operatorId === auth.operatorId && row.branchId === req.params.branchId,
       );
       if (claim.replay) {
         reply.header(REPLAY_HEADER, 'true');
@@ -541,6 +578,7 @@ export async function catalogRoutes(app: App): Promise<void> {
         description: 'Update a ticket package',
         params: BranchParams.extend({ id: z.string().uuid() }),
         body: TicketPackageBodySchema.partial(),
+        response: { 200: CatalogueOkResponseSchema },
       },
     },
     async (req) => {
@@ -549,7 +587,7 @@ export async function catalogRoutes(app: App): Promise<void> {
       const [before] = await app.db
         .select()
         .from(ticketPackage)
-        .where(and(eq(ticketPackage.id, req.params.id), eq(ticketPackage.branchId, req.params.branchId)))
+        .where(and(eq(ticketPackage.id, req.params.id), eq(ticketPackage.operatorId, auth.operatorId), eq(ticketPackage.branchId, req.params.branchId)))
         .limit(1);
       if (!before) throw errors.notFound('Ticket package not found');
       return withTx(app.db, opCtx(req), 'ticket_package.update', async (tx) => {
@@ -569,7 +607,7 @@ export async function catalogRoutes(app: App): Promise<void> {
           after,
           requestId: req.id,
         });
-        return { ok: true };
+        return { ok: true as const };
       });
     },
   );
@@ -581,6 +619,7 @@ export async function catalogRoutes(app: App): Promise<void> {
       schema: {
         description: 'Archive a ticket package (soft delete)',
         params: BranchParams.extend({ id: z.string().uuid() }),
+        response: { 200: CatalogueOkResponseSchema },
       },
     },
     async (req) => {
@@ -589,7 +628,7 @@ export async function catalogRoutes(app: App): Promise<void> {
       const [before] = await app.db
         .select()
         .from(ticketPackage)
-        .where(and(eq(ticketPackage.id, req.params.id), eq(ticketPackage.branchId, req.params.branchId)))
+        .where(and(eq(ticketPackage.id, req.params.id), eq(ticketPackage.operatorId, auth.operatorId), eq(ticketPackage.branchId, req.params.branchId)))
         .limit(1);
       if (!before) throw errors.notFound('Ticket package not found');
       return withTx(app.db, opCtx(req), 'ticket_package.archive', async (tx) => {
@@ -607,7 +646,7 @@ export async function catalogRoutes(app: App): Promise<void> {
           before,
           requestId: req.id,
         });
-        return { ok: true };
+        return { ok: true as const };
       });
     },
   );

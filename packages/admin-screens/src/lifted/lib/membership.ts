@@ -2,7 +2,7 @@ import { type CustomerTier, type Member, type TierVerification } from "../model/
 import type { CatalogReaders } from '../model/ports';
 
 /** Original domain rules, bound to this host's explicit data ports. */
-export function createMembershipHelpers(deps: { catalog: CatalogReaders }) {
+export function createMembershipHelpers(deps: { catalog: Pick<CatalogReaders, 'getTier' | 'getDefaultTier'> }) {
 const { getTier, getDefaultTier } = deps.catalog;
 
 
