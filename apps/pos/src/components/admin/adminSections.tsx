@@ -337,8 +337,8 @@ export const adminNav: AdminNavEntry[] = [
         label: 'Login Users',
         icon: ShieldCheck,
         description:
-          'Invite staff accounts, assign scoped roles, link the suite apps they use, and review effective permissions.',
-        // `GET /accounts`, the first thing the panel loads.
+          'Open Admin → People → Accounts to manage sign-in accounts, roles and app access.',
+        // The existing account-read gate remains on this entry.
         permission: 'admin:account:read',
       },
       {
