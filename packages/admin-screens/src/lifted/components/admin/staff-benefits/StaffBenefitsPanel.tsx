@@ -1,5 +1,5 @@
 import { useAdminScreenRuntime } from '../../../runtime/AdminScreenRuntime';
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ClipboardList, History, QrCode as QrCodeIcon, Save, Settings2, ShieldCheck } from "lucide-react";
 import { type BenefitRole } from "@oto/shared";
 import { type BenefitProfile } from "../../../model/types";
@@ -11,11 +11,13 @@ import { type BenefitApplicationLogRow, inForceOn, profileFromApi, profileToApi,
 import { Button } from "../../ui/button";
 import { Input } from "../../ui/input";
 import { Label } from "../../ui/label";
-import { BenefitProfileFields } from "./BenefitProfileFields";
-import { OperatorOverrideDialog } from "./OperatorOverrideDialog";
-import { BenefitQrDialog } from "./BenefitQrDialog";
+import { BenefitProfileFieldsWithPorts } from "./BenefitProfileFields";
+import { OperatorOverrideDialogWithPorts } from "./OperatorOverrideDialog";
+import { BenefitQrDialogWithPorts } from "./BenefitQrDialog";
 import { BenefitHistoryList, type BenefitHistoryEntry } from "./BenefitHistoryList";
 import { StaffSourceChip } from "./StaffSourceChip";
+import { useBenefitIdentity, useBenefitsCapabilities, type StaffBenefitsPanelPorts } from '../../../runtime/benefits';
+import { idemKey } from '../../../api/client';
 
 
 const ROLE_ORDER: BenefitRole[] = ['owner', 'manager', 'staff'];
@@ -76,9 +78,19 @@ const auditEntryOf = (row: BenefitApplicationLogRow): BenefitAuditEntry & { refu
  */
 export function StaffBenefitsPanel() {
   const runtime = useAdminScreenRuntime();
-  const benefitsApi = runtime.api.benefits;
-  const toast = runtime.toast;
-  const summarizeProfile = runtime.domain.benefitSummary.summarizeProfile;
+  const { menuCategories } = useCatalogStore();
+  const { operator } = useOperator();
+  const scope = useBenefitsCapabilities(runtime.transport, operator?.id, operator, runtime.branch.branch.apiId);
+  return <StaffBenefitsPanelWithPorts ports={{ contextKey: scope.contextKey, api: runtime.api.benefits, categories: menuCategories, menu: runtime.domain.menu, summarizeProfile: runtime.domain.benefitSummary.summarizeProfile, toast: runtime.toast, canManage: scope.canManage, canIssueQr: scope.canIssueQr }} />;
+}
+export function StaffBenefitsPanelWithPorts({ ports }: { ports: StaffBenefitsPanelPorts }) {
+  const benefitsApi = ports.api, toast = ports.toast, summarizeProfile = ports.summarizeProfile, menuCategories = ports.categories, canManage = ports.canManage;
+  const identity = useBenefitIdentity(ports.contextKey), contextRef = useRef(identity), mounted = useRef(true), readEpoch = useRef(0), historyEpoch = useRef(0), manageRef = useRef(canManage);
+  contextRef.current = identity; manageRef.current = canManage;
+  const baseDraftsRef = useRef<Partial<Record<BenefitRole, BenefitProfile>>>({}), baseDatesRef = useRef<Partial<Record<BenefitRole, string>>>({});
+  const templateBusyRef = useRef(new Set<BenefitRole>());
+  const intentsRef = useRef<Partial<Record<BenefitRole, { context: string; bodyKey: string; key: string; confirmed: boolean; changed?: boolean }>>>({});
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; readEpoch.current++; historyEpoch.current++; }; }, []);
 
 
 
@@ -89,21 +101,22 @@ const templateEntry = useCallback((v: BenefitTemplateVersion): BenefitHistoryEnt
 }), [summarizeProfile]);
 
 
-  const { menuCategories } = useCatalogStore();
-  const { can } = useOperator();
-  const canManage = can('admin:benefit:manage');
-  const canIssueQr = can('admin:benefit:credential_issue');
-
-  const [today, setToday] = useState<string>('');
-  const [templates, setTemplates] = useState<BenefitTemplateRow[]>([]);
-  const [staff, setStaff] = useState<StaffBenefitRow[]>([]);
+  const [heldToday, setToday] = useState<string>('');
+  const [heldTemplates, setTemplates] = useState<BenefitTemplateRow[]>([]);
+  const [heldStaff, setStaff] = useState<StaffBenefitRow[]>([]);
+  const [dataIdentity, setDataIdentity] = useState('');
+  const today = dataIdentity === identity ? heldToday : '', templates = dataIdentity === identity ? heldTemplates : [], staff = dataIdentity === identity ? heldStaff : [];
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
   /** The editor's draft of each template and the day a save would start. */
   const [drafts, setDrafts] = useState<Partial<Record<BenefitRole, BenefitProfile>>>({});
   const [dates, setDates] = useState<Partial<Record<BenefitRole, string>>>({});
-  const [saving, setSaving] = useState<BenefitRole | null>(null);
+  const draftsRef = useRef(drafts), datesRef = useRef(dates);
+  draftsRef.current = drafts; datesRef.current = dates;
+  const [saving, setSaving] = useState<ReadonlySet<BenefitRole>>(new Set());
   const [historyOpen, setHistoryOpen] = useState<BenefitRole | null>(null);
+  const historyOpenRef = useRef(historyOpen);
+  historyOpenRef.current = historyOpen;
   const [history, setHistory] = useState<{
     entries: BenefitHistoryEntry[];
     loading: boolean;
@@ -116,47 +129,78 @@ const templateEntry = useCallback((v: BenefitTemplateVersion): BenefitHistoryEnt
   // a fresh read on panel mount/navigation is enough for this admin view.
   // S2-21 round 3 — read from the platform: every benefit applied to a
   // recorded order, the prototype's entry fields (`auditEntryOf`).
-  const [auditLog, setAuditLog] = useState<Array<BenefitAuditEntry & { refundedTHB: number }>>([]);
+  const [heldAuditLog, setAuditLog] = useState<Array<BenefitAuditEntry & { refundedTHB: number }>>([]);
+  const auditLog = dataIdentity === identity ? heldAuditLog : [];
 
-  const reload = useCallback(async () => {
+  const reload = useCallback(async (adopt?: { role: BenefitRole; draft: BenefitProfile; date: string }) => {
+    const request = ++readEpoch.current, context = contextRef.current;
+    const owns = () => mounted.current && readEpoch.current === request && contextRef.current === context;
     setLoadError(null);
+    let loadedCurrent = false;
     try {
       const [t, s] = await Promise.all([benefitsApi.templates(), benefitsApi.staff()]);
+      if (!owns()) return false;
       setToday(t.today);
       setTemplates(t.templates);
       setStaff(s.staff);
-      setDrafts(
-        Object.fromEntries(
-          t.templates.map((row) => [row.role, profileFromApi(row.current?.profile ?? {})]),
-        ),
-      );
-      setDates(Object.fromEntries(t.templates.map((row) => [row.role, t.today])));
+      setDataIdentity(context);
+      const canonicalDrafts = Object.fromEntries(t.templates.map(row => [row.role, profileFromApi(row.current?.profile ?? {})]));
+      const previousDrafts = baseDraftsRef.current, previousDates = baseDatesRef.current;
+      setDrafts(current => Object.fromEntries(t.templates.map(row => {
+        const draft = current[row.role], previous = previousDrafts[row.role];
+        return [row.role,
+          !draft || draft === previous || previous && sameProfile(profileToApi(draft), profileToApi(previous)) || adopt?.role === row.role && draft === adopt.draft
+            ? canonicalDrafts[row.role] : draft,
+        ];
+      })));
+      setDates(current => Object.fromEntries(t.templates.map(row => [row.role,
+        !current[row.role] || current[row.role] === previousDates[row.role] || adopt?.role === row.role && current[row.role] === adopt.date
+          ? t.today : current[row.role],
+      ])));
+      baseDraftsRef.current = canonicalDrafts;
+      baseDatesRef.current = Object.fromEntries(t.templates.map(row => [row.role, t.today]));
+      for (const row of t.templates) {
+        const intent = intentsRef.current[row.role];
+        if (!intent?.confirmed || intent.context !== context) continue;
+        const body = JSON.parse(intent.bodyKey) as { profile: Parameters<typeof sameProfile>[0]; effectiveFrom: string };
+        const version = inForceOn(row.current ? [row.current, ...row.upcoming] : row.upcoming, body.effectiveFrom);
+        if (version && sameProfile(version.profile, body.profile)) delete intentsRef.current[row.role];
+      }
+      loadedCurrent = true;
     } catch (err) {
-      setLoadError(err instanceof Error ? err.message : 'Could not load staff benefits');
+      if (owns()) setLoadError(adopt ? 'Saved, but current staff benefits could not be read. Try again to refresh without another change.' : err instanceof Error ? err.message : 'Could not load staff benefits');
     } finally {
-      setLoaded(true);
+      if (owns()) setLoaded(true);
     }
     // The log is read on its own: a deployment that cannot answer it still
     // shows the templates and the staff, with the log empty.
+    if (!owns()) return false;
     try {
       const log = await benefitsApi.applications();
-      setAuditLog(log.applications.map(auditEntryOf));
+      if (owns()) setAuditLog(log.applications.map(auditEntryOf));
     } catch {
-      setAuditLog([]);
+      if (owns()) setAuditLog([]);
     }
+    return loadedCurrent && owns();
   }, [benefitsApi]);
 
   useEffect(() => {
+    readEpoch.current++; historyEpoch.current++;
+    draftsRef.current = {}; datesRef.current = {}; baseDraftsRef.current = {}; baseDatesRef.current = {};
+    intentsRef.current = {}; templateBusyRef.current.clear();
+    setDrafts({}); setDates({}); setSaving(new Set()); setLoaded(false); setOverrideOperator(null); setQrOperator(null); setHistoryOpen(null); historyOpenRef.current = null;
     void reload();
-  }, [reload]);
+  }, [reload, identity]);
 
   const loadHistory = useCallback(async (role: BenefitRole) => {
+    const request = ++historyEpoch.current, context = contextRef.current;
+    const owns = () => mounted.current && historyEpoch.current === request && contextRef.current === context && historyOpenRef.current === role;
     setHistory({ entries: [], loading: true, error: null });
     try {
       const res = await benefitsApi.templateHistory(role);
-      setHistory({ entries: res.versions.map(templateEntry), loading: false, error: null });
+      if (owns()) setHistory({ entries: res.versions.map(templateEntry), loading: false, error: null });
     } catch (err) {
-      setHistory({
+      if (owns()) setHistory({
         entries: [],
         loading: false,
         error: err instanceof Error ? err.message : 'Could not load history',
@@ -166,41 +210,52 @@ const templateEntry = useCallback((v: BenefitTemplateVersion): BenefitHistoryEnt
 
   const toggleHistory = (role: BenefitRole) => {
     if (historyOpen === role) {
+      historyEpoch.current++; historyOpenRef.current = null;
       setHistoryOpen(null);
       return;
     }
     setHistoryOpen(role);
+    historyOpenRef.current = role;
     void loadHistory(role);
   };
 
   const saveTemplate = async (template: BenefitTemplateRow) => {
     const draft = drafts[template.role];
     const effectiveFrom = dates[template.role] || today;
-    if (!draft) return;
-    setSaving(template.role);
+    if (!draft || templateBusyRef.current.has(template.role) || !manageRef.current || !mounted.current || contextRef.current !== identity) return;
+    const context = identity, body = { profile: profileToApi(draft), effectiveFrom }, bodyKey = JSON.stringify(body);
+    const owns = () => mounted.current && contextRef.current === context && manageRef.current;
+    if (intentsRef.current[template.role]?.context !== context || intentsRef.current[template.role]?.bodyKey !== bodyKey)
+      intentsRef.current[template.role] = { context, bodyKey, key: idemKey(), confirmed: false };
+    const intent = intentsRef.current[template.role]!;
+    templateBusyRef.current.add(template.role); setSaving(new Set(templateBusyRef.current));
     try {
-      const res = await benefitsApi.saveTemplate(template.role, {
-        profile: profileToApi(draft),
-        effectiveFrom,
-      });
+      if (!intent.confirmed) {
+        const res = await benefitsApi.saveTemplate(template.role, body, intent.key);
+        intent.confirmed = true; intent.changed = res.changed;
+      }
+      if (!owns()) return;
       toast({
-        title: res.changed ? `${template.name} template saved` : 'Nothing to change',
-        description: res.changed
+        title: intent.changed ? `${template.name} template saved` : 'Nothing to change',
+        description: intent.changed
           ? effectiveFrom === today
             ? 'In force from today.'
             : `Takes effect on ${effectiveFrom}; today is unchanged.`
           : undefined,
       });
-      await reload();
-      if (historyOpen === template.role) void loadHistory(template.role);
+      if (await reload({ role: template.role, draft, date: effectiveFrom }) && owns()) {
+        if (intentsRef.current[template.role] === intent) delete intentsRef.current[template.role];
+        if (historyOpenRef.current === template.role) void loadHistory(template.role);
+      }
     } catch (err) {
+      if (!owns()) return;
       toast({
         title: 'Not saved',
         description: err instanceof Error ? err.message : 'The template could not be saved',
         variant: 'destructive',
       });
     } finally {
-      setSaving(null);
+      if (owns()) { templateBusyRef.current.delete(template.role); setSaving(new Set(templateBusyRef.current)); }
     }
   };
 
@@ -211,6 +266,7 @@ const templateEntry = useCallback((v: BenefitTemplateVersion): BenefitHistoryEnt
       {loadError && (
         <p className="rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
           {loadError}
+          <Button variant="outline" size="sm" onClick={() => void reload()}>Try again</Button>
         </p>
       )}
 
@@ -261,13 +317,14 @@ const templateEntry = useCallback((v: BenefitTemplateVersion): BenefitHistoryEnt
                   </div>
                 ))}
                 <fieldset
-                  disabled={!canManage || saving === role}
+                  disabled={!canManage || saving.has(role)}
                   className="m-0 min-w-0 border-0 p-0"
                 >
-                  <BenefitProfileFields
+                  <BenefitProfileFieldsWithPorts
                     profile={draft}
                     categories={menuCategories}
                     onChange={(next) => setDrafts((d) => ({ ...d, [role]: next }))}
+                    ports={{ menu: ports.menu }}
                   />
                   {canManage && (
                     <div className="mt-4 flex flex-wrap items-end justify-end gap-3 border-t border-foreground/10 pt-4">
@@ -289,7 +346,7 @@ const templateEntry = useCallback((v: BenefitTemplateVersion): BenefitHistoryEnt
                       </div>
                       <Button
                         onClick={() => void saveTemplate(template)}
-                        disabled={!dirty || saving === role}
+                        disabled={!dirty || saving.has(role)}
                       >
                         <Save className="w-4 h-4" />
                         Save
@@ -415,13 +472,14 @@ const templateEntry = useCallback((v: BenefitTemplateVersion): BenefitHistoryEnt
         )}
       </section>
 
-      <BenefitQrDialog
+      <BenefitQrDialogWithPorts
         staff={qrOperator}
-        canIssue={canIssueQr}
+        canIssue={qrOperator ? ports.canIssueQr(qrOperator) : false}
         open={qrOperator !== null}
         onOpenChange={(open) => !open && setQrOperator(null)}
+        ports={{ contextKey: identity, api: benefitsApi }}
       />
-      <OperatorOverrideDialog
+      <OperatorOverrideDialogWithPorts
         staff={overrideOperator}
         templates={templates}
         today={today}
@@ -429,7 +487,8 @@ const templateEntry = useCallback((v: BenefitTemplateVersion): BenefitHistoryEnt
         categories={menuCategories}
         open={overrideOperator !== null}
         onOpenChange={(open) => !open && setOverrideOperator(null)}
-        onSaved={() => void reload()}
+        onSaved={async () => { if (!await reload()) throw new Error('Current staff benefits could not be read'); }}
+        ports={{ contextKey: identity, api: benefitsApi, menu: ports.menu, summarizeProfile, toast }}
       />
     </div>
   );

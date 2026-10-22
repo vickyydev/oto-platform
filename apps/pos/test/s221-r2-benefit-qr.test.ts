@@ -92,8 +92,11 @@ describe('the dialog and the panel, as written', () => {
   });
 
   it('is opened by the QR button, and printing is gated on the issue permission', () => {
-    expect(panel).toContain("can('admin:benefit:credential_issue')");
+    const capabilities = readFileSync(join(dir, '..', '..', '..', 'runtime', 'benefits.ts'), 'utf8');
+    expect(panel).toContain('useBenefitsCapabilities(runtime.transport, operator?.id, operator, runtime.branch.branch.apiId)');
+    expect(panel).toContain('canIssueQr: scope.canIssueQr');
+    expect(capabilities).toContain("held('admin:benefit:credential_issue', staff.branchId ?? undefined)");
+    expect(capabilities).toContain("branchId !== undefined && row.scopeType === 'branch' && row.scopeId === branchId");
     expect(panel).toContain('onClick={() => setQrOperator(op)}');
-    expect(panel).toMatch(/<BenefitQrDialog[\s\S]*canIssue=\{canIssueQr\}/);
-  });
-});
+    expect(panel).toMatch(/<BenefitQrDialogWithPorts[\s\S]*canIssue=\{qrOperator \? ports.canIssueQr\(qrOperator\) : false\}/);
+  });});

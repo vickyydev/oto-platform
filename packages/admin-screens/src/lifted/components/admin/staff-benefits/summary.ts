@@ -3,7 +3,7 @@ import type { BenefitsHelpers } from '../../../lib/benefits';
 import type { DiscountTargetHelpers } from '../../../lib/discountTarget';
 
 /** Original domain rules, bound to this host's explicit data ports. */
-export function createBenefitSummaryHelpers(deps: { benefits: BenefitsHelpers; discountTarget: DiscountTargetHelpers }) {
+export function createBenefitSummaryHelpers(deps: { benefits: Pick<BenefitsHelpers, 'isEmptyBenefitProfile'>; discountTarget: Pick<DiscountTargetHelpers, 'formatDiscountTargetLabel'> }) {
 const { isEmptyBenefitProfile } = deps.benefits;
 const { formatDiscountTargetLabel } = deps.discountTarget;
 

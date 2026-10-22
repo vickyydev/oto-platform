@@ -4,6 +4,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { readRoutes } from './route-source';
 import { encodeBenefitCredential } from '@oto/box-agent';
 import { account, employee, opsRun } from '@oto/db';
 import { benefitQrKeyOf } from '@oto/db/seed';
@@ -272,12 +273,27 @@ afterAll(async () => {
 
 describe('the closing audit — every benefits route is guarded', () => {
   it('each /benefits route and each sale’s benefit route names its permission; the reports decide per branch', () => {
+    const credentialRoutes = new Set(['POST /benefits/credentials', 'GET /benefits/credentials/:credentialId/qr', 'POST /benefits/credentials/:credentialId/revoke']);
+    const sourceRoutes = readRoutes();
+    for (const registered of ctx.app.routeRegistry.filter(r => credentialRoutes.has(`${r.method} ${r.url}`))) {
+      const key = `${registered.method} ${registered.url}`;
+      expect(registered.config.dynamicPermission, key).toBe(true);
+      expect(registered.config.permission, key).toBeUndefined();
+      const handler = sourceRoutes.find(r => `${r.method} ${r.path}` === key)?.handlerText;
+      const ownedLoad = key === 'POST /benefits/credentials'
+        ? 'loadEmployee(app.db, auth.operatorId, req.body.employeeId)'
+        : 'loadCredentialEmployee(app, auth.operatorId, req.params.credentialId)';
+      expect(handler, key).toContain(ownedLoad);
+      expect(handler, key).toContain("await req.requirePermission('admin:benefit:credential_issue', person.branchId ? { branchId: person.branchId } : { operatorOnly: true })");
+      expect(handler!.indexOf(ownedLoad), key).toBeLessThan(handler!.indexOf("req.requirePermission('admin:benefit:credential_issue'"));
+    }
     const routes = ctx.app.routeRegistry
       .filter((r) => r.method !== 'HEAD' && /\/benefits?\b|\/benefit\//.test(r.url))
       .map((r) => ({
         route: `${r.method} ${r.url}`,
-        guard:
-          r.config.permission ??
+        guard: credentialRoutes.has(`${r.method} ${r.url}`) && r.config.dynamicPermission
+          ? 'admin:benefit:credential_issue at owned employee scope'
+          : r.config.permission ??
           (r.config.dynamicPermission
             ? 'per branch, in the handler'
             : r.config.credential
@@ -296,7 +312,9 @@ describe('the closing audit — every benefits route is guarded', () => {
       'GET /benefits/applications': 'admin:benefit:read',
       'PUT /benefits/templates/:role': 'admin:benefit:manage',
       'PUT /benefits/profiles/:employeeId': 'admin:benefit:manage',
-      'POST /benefits/credentials': 'admin:benefit:credential_issue',
+      'POST /benefits/credentials': 'admin:benefit:credential_issue at owned employee scope',
+      'GET /benefits/credentials/:credentialId/qr': 'admin:benefit:credential_issue at owned employee scope',
+      'POST /benefits/credentials/:credentialId/revoke': 'admin:benefit:credential_issue at owned employee scope',
       'POST /benefits/resolve': 'pos:benefit:apply',
       'GET /analytics/reports/benefits': 'per branch, in the handler',
       'GET /analytics/reports/benefits/transactions': 'per branch, in the handler',

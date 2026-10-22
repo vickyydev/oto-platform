@@ -464,13 +464,13 @@ async function employeesOf(
       id: employee.id,
       name: employee.name,
       nickname: employee.nickname,
-      branchId: employee.branchId,
+      branchId: branch.id,
       branchName: branch.name,
       source: employee.source,
       archivedAt: employee.archivedAt,
     })
     .from(employee)
-    .leftJoin(branch, eq(branch.id, employee.branchId))
+    .leftJoin(branch, and(eq(branch.id, employee.branchId), eq(branch.operatorId, employee.operatorId)))
     .where(
       and(
         eq(employee.operatorId, operatorId),

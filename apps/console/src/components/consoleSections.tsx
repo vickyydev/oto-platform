@@ -35,6 +35,12 @@ export interface ConsoleNavGroup {
 
 /** Existing pages keep their permissions and their old addresses. */
 export const CONSOLE_SECTIONS: ConsoleSection[] = [
+  { id: 'care', path: '/catalogue/care', label: 'Drop-off & supervision', icon: Shield,
+    description: 'Park drop-off and nanny prices, age bands, sibling waiver and consent checklist.', permission: 'pos:checkin:read' },
+  { id: 'print-templates', path: '/catalogue/print-templates', label: 'Print templates', icon: Ticket,
+    description: 'Saved print layouts, draft previews and separately authorized test prints.', permission: 'pos:print:read' },
+  { id: 'staff-benefits', path: '/catalogue/staff-benefits', label: 'Staff benefits', icon: Users,
+    description: 'Role templates, per-person overrides, benefit credentials and application history.', permission: 'admin:benefit:read' },
   { id: 'discounts', path: '/catalogue/discounts', label: 'Discounts', icon: Ticket,
     description: 'Discount codes and the existing local manual-discount reasons.', permission: 'catalog:menu:manage' },
   { id: 'tenders', path: '/catalogue/tenders', label: 'Tenders', icon: Ticket,
@@ -231,7 +237,7 @@ export const consoleNav: ConsoleNavGroup[] = [
     id: 'catalogue', label: 'Catalogue & money', icon: Ticket,
     description: 'Tickets, menu, discounts, tenders, tax, vouchers and event pricing.',
     gate: { any: ['catalog:package:read', 'catalog:menu:read'] },
-    sections: pages('tickets', 'tiers', 'add-ons', 'menu', 'categories', 'modifiers', 'merch', 'discounts', 'tenders', 'tax', 'voucher-types', 'voucher-campaigns', 'vouchers', 'event-pricing'),
+    sections: pages('tickets', 'tiers', 'add-ons', 'menu', 'categories', 'modifiers', 'merch', 'discounts', 'tenders', 'tax', 'voucher-types', 'voucher-campaigns', 'vouchers', 'event-pricing', 'care', 'print-templates', 'staff-benefits'),
     currentHome: { app: 'pos', path: '/admin', label: 'Open catalogue and pricing in POS Admin' },
   },
   {

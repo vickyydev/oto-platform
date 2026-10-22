@@ -1,5 +1,5 @@
 import { useAdminScreenRuntime } from '../../../runtime/AdminScreenRuntime';
-import type { MenuHelpers } from '../../../lib/menu';
+import type { BenefitMenu, BenefitProfileFieldsPorts } from '../../../runtime/benefits';
 
 import { Plus, Trash2 } from "lucide-react";
 import { type BenefitProfile, type FreeItemsBenefit, type MenuCategoryDef } from "../../../model/types";
@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 
 
 /** Flat, indented list of F&B categories for a target picker. */
-function categoryOptions(categories: MenuCategoryDef[], menu: MenuHelpers) {
+function categoryOptions(categories: MenuCategoryDef[], menu: BenefitMenu) {
   const { topLevelCategories, subCategoriesOf } = menu;
   const opts: { id: string; label: string }[] = [];
   for (const top of topLevelCategories(categories)) {
@@ -41,7 +41,16 @@ export function BenefitProfileFields({
   onChange: (next: BenefitProfile) => void;
 }) {
   const { domain } = useAdminScreenRuntime();
-  const catOptions = categoryOptions(categories, domain.menu);
+  return <BenefitProfileFieldsWithPorts profile={profile} categories={categories} onChange={onChange} ports={{ menu: domain.menu }} />;
+}
+
+export function BenefitProfileFieldsWithPorts({ profile, categories, onChange, ports }: {
+  profile: BenefitProfile;
+  categories: MenuCategoryDef[];
+  onChange: (next: BenefitProfile) => void;
+  ports: BenefitProfileFieldsPorts;
+}) {
+  const catOptions = categoryOptions(categories, ports.menu);
 
   const addFreeItem = () => {
     const first = catOptions[0];

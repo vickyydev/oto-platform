@@ -16,6 +16,8 @@
     "./lifted/catalogue": "./src/lifted/runtime/catalogue.ts",
     "./lifted/menu": "./src/lifted/runtime/menu.ts",
     "./lifted/money": "./src/lifted/runtime/money.ts",
+    "./lifted/care": "./src/lifted/runtime/care.ts",
+    "./lifted/benefits": "./src/lifted/runtime/benefits.ts",
     "./lifted/lib/*": "./src/lifted/lib/*.ts"
   },
   "scripts": {

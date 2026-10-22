@@ -69,9 +69,7 @@ async function request<T>(
   return data as T;
 }
 
-export const api = {
-  get: <T>(path: string) => request<T>('GET', path),
-  getFile: async (path: string, signal?: AbortSignal) => {
+async function requestFile(path: string, signal?: AbortSignal) {
     const res = await fetch(`${API_PREFIX}${path}`, { credentials: 'same-origin', signal });
     if (!res.ok) {
       const data = await res.json().catch(() => null) as { error?: { code: string; message: string; details?: unknown } } | null;
@@ -84,7 +82,23 @@ export const api = {
     const disposition = res.headers.get('content-disposition');
     const filename = disposition ? (/filename="([^"]+)"/.exec(disposition)?.[1] ?? /filename=([^;]+)/.exec(disposition)?.[1]?.trim() ?? null) : null;
     return { blob: await res.blob(), filename, contentType: res.headers.get('content-type') };
+}
+
+export const api = {
+  get: <T>(path: string) => request<T>('GET', path),
+  getBlob: async (path: string, signal?: AbortSignal) => (await requestFile(path, signal)).blob,
+  postBlob: async (path: string, body?: unknown, signal?: AbortSignal) => {
+    const response = await fetch(`${API_PREFIX}${path}`, { method: 'POST', credentials: 'same-origin', signal,
+      headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    if (!response.ok) {
+      if (response.status === 401) window.dispatchEvent(new CustomEvent('oto:unauthorized'));
+      if (response.status === 423) window.dispatchEvent(new CustomEvent('oto:session-locked'));
+      const answer = await response.json().catch(() => null) as { error?: { code: string; message: string } } | null;
+      throw new ApiError(response.status, answer?.error?.code ?? 'UNKNOWN', answer?.error?.message ?? response.statusText);
+    }
+    return response.blob();
   },
+  getFile: requestFile,
   post: <T>(path: string, body?: unknown, opts?: { idempotencyKey?: string }) =>
     request<T>('POST', path, body, opts),
   patch: <T>(path: string, body?: unknown, opts?: { idempotencyKey?: string }) =>
@@ -97,6 +111,8 @@ export const api = {
   // write carries a key: the api's idempotency plugin covers all four methods.
   delete: <T>(path: string, opts?: { idempotencyKey?: string }) =>
     request<T>('DELETE', path, undefined, opts),
+  deleteWithBody: <T>(path: string, body?: unknown, opts?: { idempotencyKey?: string }) =>
+    request<T>('DELETE', path, body, opts),
 };
 
 /**

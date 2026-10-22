@@ -1,5 +1,5 @@
 import { useAdminScreenRuntime } from '../../../runtime/AdminScreenRuntime';
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useSearch } from "../../../runtime/AdminScreenRuntime";
 import { Pencil, AlertTriangle } from "lucide-react";
 import { type PrintTemplate, type PrintTemplateType } from "../../../model/types";
@@ -9,10 +9,11 @@ import { useStation } from "../../../runtime/AdminScreenRuntime";
 
 
 import { isMissingRoute } from "../../../api/client";
-import { TemplateEditor } from "./TemplateEditor";
-import { PrintTemplateThumbnail } from "./PrintTemplatePreview";
+import { TemplateEditorWithPorts } from "./TemplateEditor";
+import { PrintTemplateThumbnailWithPorts } from "./PrintTemplatePreview";
 import { APPLICABLE_FIELDS, TEMPLATE_TYPE_META } from "./templateFields";
 import { fromApi, paperLabel } from "./templateDraft";
+import { useCareCapabilities, type TemplatePreviewPorts, type TemplatesPanelPorts } from '../../../runtime/care';
 
 // Stable display order for the printout types.
 const TYPE_ORDER: PrintTemplateType[] = [
@@ -44,29 +45,39 @@ export function TemplatesPanel() {
   const apiBranchIdForSlug = runtime.api.catalogBridge.apiBranchIdForSlug;
   const printApi = runtime.api.platform.printApi;
 
-  const { printTemplates: mockTemplates } = useCatalogStore();
+  const { printTemplates: mockTemplates, mutators } = useCatalogStore();
   const { branch } = useBranch();
   const { station } = useStation();
   const stationId = station?.stationId ?? null;
   const branchId = apiBranchIdForSlug(branch.id);
+  const owner = runtime.session?.operator;
+  const contextKey = `${owner?.id ?? ''}:${branchId ?? ''}`;
+  const scope = useCareCapabilities(runtime.transport, owner?.id, Boolean(branchId), owner, branchId ?? undefined);
+  const api = useMemo(() => ({ ...printApi, ...runtime.api.platform.templatesApi }), [printApi, runtime.api.platform.templatesApi]);
+  const mounted = useRef(true);
+  const readEpoch = useRef(0);
+  const ownerRef = useRef(contextKey);
+  ownerRef.current = contextKey;
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; readEpoch.current++; }; }, []);
 
   const [templates, setTemplates] = useState<PrintTemplate[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   /** True once the first read has answered, one way or the other. */
   const [settled, setSettled] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [loadedOwner, setLoadedOwner] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    const request = ++readEpoch.current;
+    const current = () => mounted.current && ownerRef.current === contextKey && readEpoch.current === request;
     if (!branchId) {
-      setTemplates(null);
-      setSettled(true);
+      if (current()) { setTemplates(null); setSettled(true); setLoadedOwner(contextKey); }
       return;
     }
     try {
       const { templates: rows } = await printApi.templates(branchId);
-      setTemplates(rows.map(fromApi));
-      setError(null);
+      if (current()) { setTemplates(rows.map(fromApi)); setError(null); }
     } catch (err) {
+      if (!current()) return;
       setTemplates(null);
       setError(
         isMissingRoute(err)
@@ -74,17 +85,30 @@ export function TemplatesPanel() {
           : 'Could not read this branch’s print templates. Showing the built-in set.',
       );
     } finally {
-      setSettled(true);
+      if (current()) { setSettled(true); setLoadedOwner(contextKey); }
     }
-  }, [branchId, printApi]);
+  }, [branchId, printApi, contextKey]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
   /** Live rows where the API has them, the built-in set where it does not. */
-  const rows = templates ?? mockTemplates;
-  const live = templates !== null;
+  const currentTemplates = loadedOwner === contextKey ? templates : null;
+  const search = useSearch();
+  const [, navigate] = useLocation();
+  return <TemplatesPanelWithPorts key={contextKey} ports={{ templates: currentTemplates ?? mockTemplates,
+    live: currentTemplates !== null, stationId, api, canEdit: scope.canEditTemplates, canTestPrint: scope.canTestPrint,
+    authorityMessage: scope.authorityMessage, updateLocalTemplate: mutators.upsertPrintTemplate,
+    loading: loadedOwner !== contextKey || !settled, error: loadedOwner === contextKey ? error : null,
+    onRetry: () => { void load(); }, onSaved: load, askedType: new URLSearchParams(search).get('template'),
+    onAddressClose: () => navigate('/admin?panel=templates', { replace: true }),
+  }} />;
+}
+
+export function TemplatesPanelWithPorts({ ports }: { ports: TemplatesPanelPorts }) {
+  const { templates: rows, live, stationId, error } = ports;
+  const [editingId, setEditingId] = useState<string | null>(null);
   const editing = rows.find((t) => t.id === editingId) ?? null;
 
   /**
@@ -97,9 +121,8 @@ export function TemplatesPanel() {
    * arrived. Once only, so closing the editor does not reopen it; the address
    * is put back to the list at that point so a reload does not either.
    */
-  const search = useSearch();
-  const [, navigate] = useLocation();
-  const askedType = new URLSearchParams(search).get('template');
+  const askedType = ports.askedType;
+  const settled = !ports.loading;
   const openedFromAddress = useRef(false);
   useEffect(() => {
     if (!settled || !askedType || openedFromAddress.current) return;
@@ -112,7 +135,7 @@ export function TemplatesPanel() {
     setEditingId(null);
     // The panel id is Admin's (`adminSections`): with the editor closed, the
     // address says the list, and a reload shows the list.
-    if (askedType) navigate('/admin?panel=templates', { replace: true });
+    if (askedType) ports.onAddressClose?.();
   };
 
   const ordered = [...rows].sort(
@@ -121,15 +144,14 @@ export function TemplatesPanel() {
 
   if (editing) {
     return (
-      <TemplateEditor
+      <TemplateEditorWithPorts
         // A different template is a different editor: nothing of one draft may
         // carry into the next.
         key={editing.id}
         template={editing}
         live={live}
-        onSaved={() => {
-          void load();
-        }}
+        ports={ports}
+        onSaved={ports.onSaved}
         onClose={closeEditor}
       />
     );
@@ -144,6 +166,9 @@ export function TemplatesPanel() {
           to is set per iPad in Station Setup — templates change content only.
         </p>
       </div>
+      {ports.authorityMessage && <p className="mt-3 text-sm text-foreground/60">{ports.authorityMessage}</p>}
+      {ports.loading && <p className="mt-3 text-sm text-foreground/60">Loading print templates…</p>}
+      {error && ports.onRetry && <button type="button" onClick={ports.onRetry} className="mt-3 text-sm underline">Retry</button>}
 
       {(error || !live) && (
         <div className="mt-4 flex items-start gap-2 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-600 dark:text-amber-400">
@@ -164,6 +189,7 @@ export function TemplatesPanel() {
             template={t}
             live={live}
             stationId={stationId}
+            ports={ports.api}
             onEdit={() => setEditingId(t.id)}
           />
         ))}
@@ -182,11 +208,13 @@ function TemplateCard({
   live,
   stationId,
   onEdit,
+  ports,
 }: {
   template: PrintTemplate;
   live: boolean;
   stationId: string | null;
   onEdit: () => void;
+  ports: TemplatePreviewPorts;
 }) {
   const meta = TEMPLATE_TYPE_META[template.type];
   const [dots, setDots] = useState<number | null>(null);
@@ -195,10 +223,11 @@ function TemplateCard({
 
   return (
     <div className="group relative flex flex-col rounded-2xl border border-foreground/10 bg-foreground/[0.02] p-2 transition-colors focus-within:ring-2 focus-within:ring-primary/50 hover:border-foreground/25">
-      <PrintTemplateThumbnail
+      <PrintTemplateThumbnailWithPorts
         template={template}
         live={live}
         stationId={stationId}
+        ports={ports}
         onDots={setDots}
       />
       <div className="flex items-start gap-3 px-2 pt-3">

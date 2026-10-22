@@ -143,6 +143,8 @@ SCRUM-624 owner rulings (2026-10-23): Q6 authorizes exactly the four existing Ca
 
 Owner question Q8 (2026-10-23, SCRUM-624; no POS edit): may only apps/pos/test/s221-r2-benefit-qr.test.ts update its source-inspection permission/wiring assertions from the former seated-park call and dialog to the authorized employee-park capability hook and lifted dialog? The full POS suite currently has1,432 passes and this one stale source assertion. All API transport, native wording and real-QR assertions stay unchanged. PLAN2 limits POS edits to619/627; either an explicit scoped authorization or the planning lane's equivalent landing is required. No runtime behavior or guard weakening is proposed.
 
+SCRUM-624 owner ruling Q8 (2026-10-23): the owner authorizes only the existing POS source-inspection test in apps/pos/test/s221-r2-benefit-qr.test.ts to check the approved employee-park permission hook and lifted dialog wiring. API, native wording and real-QR assertions stay unchanged; no POS production edit is authorized by this ruling.
+
 ## 8. P2 — organisation, catalogue, reports (Codex)
 
 | Ticket | Deliverable |

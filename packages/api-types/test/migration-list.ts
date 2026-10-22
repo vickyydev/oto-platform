@@ -77,7 +77,6 @@ export const HAND_TYPED: Record<string, number> = {
   'apps/pos/src/api/wallet.ts': 2,
   // SCRUM-619: the same legacy callers moved behind the host API seam.
   // Described outputs migrated; routes without an output schema retain their DTO.
-  'packages/admin-screens/src/lifted/api/checkin.ts': 4,
   'packages/admin-screens/src/lifted/api/platform.ts': 16,
   'packages/admin-screens/src/lifted/api/wallet.ts': 5,
   'apps/pos/src/lib/displaySession.ts': 1,

@@ -1,5 +1,5 @@
 import { useAdminScreenRuntime } from '../../../runtime/AdminScreenRuntime';
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Check } from "lucide-react";
 import { bahtFromSatang, satangFromBaht, type DropOffPricingConfig } from "@oto/shared";
 import { type DropOffPricing, type WeekdayWeekendPrice } from "../../../model/types";
@@ -15,6 +15,7 @@ import { Label } from "../../ui/label";
 import { WeekdayWeekendPriceInput } from "../../shared/WeekdayWeekendPriceInput";
 import { cn } from "../../../lib/utils";
 import { AdminNoticeBanner } from "../NotSavedNotice";
+import { useCareCapabilities, type DropOffPricingPanelPorts } from '../../../runtime/care';
 
 const pairToBaht = (p: { weekday: number; weekend: number }): WeekdayWeekendPrice => ({
   weekday: bahtFromSatang(p.weekday),
@@ -26,7 +27,7 @@ const pairToSatang = (p: WeekdayWeekendPrice): { weekday: number; weekend: numbe
 });
 
 /** The park's platform pricing (satang) as the panel and the till's store hold it (baht). */
-function pricingFromConfig(c: DropOffPricingConfig): DropOffPricing {
+export function pricingFromConfig(c: DropOffPricingConfig): DropOffPricing {
   return {
     oneTimeFeeTHB: pairToBaht(c.oneTimeFee),
     nannyHourlyRateTHB: pairToBaht(c.nannyHourly),
@@ -120,25 +121,72 @@ export function DropOffPricingPanel() {
 
   const { dropOffPricing, mutators } = useCatalogStore();
   const platformId = apiBranchIdForSlug(getActiveBranch().id);
+  const owner = runtime.session?.operator;
+  const contextKey = `${owner?.id ?? ''}:${platformId ?? ''}`;
+  const scope = useCareCapabilities(runtime.transport, owner?.id, Boolean(platformId), owner, platformId ?? undefined);
+  const scopeRef = useRef(scope);
+  scopeRef.current = scope;
+  const ownerRef = useRef(contextKey);
+  ownerRef.current = contextKey;
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   const [saveError, setSaveError] = useState<string | null>(platformId ? null : TILL_NOT_LINKED);
-  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(Boolean(platformId));
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     if (!platformId) {
       setSaveError(TILL_NOT_LINKED);
+      setLoading(false);
       return;
     }
     let live = true;
+    setLoading(true);
     checkinApi
       .config(platformId)
       .then((c) => {
-        if (live) mutators.updateDropOffPricing(pricingFromConfig(c.pricing));
+        if (live && ownerRef.current === contextKey) {
+          mutators.updateDropOffPricing(pricingFromConfig(c.pricing));
+          setSaveError(null);
+        }
       })
-      .catch((err: unknown) => live && setSaveError(err instanceof Error ? err.message : 'Could not load the pricing.'));
+      .catch((err: unknown) => live && setSaveError(err instanceof Error ? err.message : 'Could not load the pricing.'))
+      .finally(() => { if (live && ownerRef.current === contextKey) setLoading(false); });
     return () => {
       live = false;
     };
-  }, [platformId, mutators, TILL_NOT_LINKED, checkinApi]);
+  }, [platformId, mutators, TILL_NOT_LINKED, checkinApi, contextKey, attempt]);
+
+  const savePricing: DropOffPricingPanelPorts['savePricing'] = async body => {
+    if (!platformId || !mounted.current || ownerRef.current !== contextKey || !scopeRef.current.canManageCare)
+      throw new Error('This pricing editor is no longer available.');
+    const after = await boardApi.savePricing(platformId, body);
+    if (!mounted.current || ownerRef.current !== contextKey || !scopeRef.current.canManageCare)
+      throw new Error('This pricing editor is no longer available.');
+    mutators.updateDropOffPricing(pricingFromConfig(after.pricing));
+    return after.pricing;
+  };
+  return <DropOffPricingPanelWithPorts key={contextKey} ports={{ pricing: dropOffPricing, connected: Boolean(platformId),
+    canManage: scope.canManageCare, contextKey, authorityMessage: scope.authorityMessage, loading,
+    error: saveError, onRetry: () => { setAttempt(value => value + 1); }, savePricing,
+    adjacentSections: <><MarketsTiersSection /><PricingOverridesSection /></>,
+  }} />;
+}
+
+export function DropOffPricingPanelWithPorts({ ports }: { ports: DropOffPricingPanelPorts }) {
+  const dropOffPricing = ports.pricing;
+  const canManage = ports.canManage !== false && !ports.loading;
+  const manageRef = useRef(canManage);
+  manageRef.current = canManage;
+  const contextRef = useRef(ports.contextKey);
+  contextRef.current = ports.contextKey;
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const busyRef = useRef(false);
+  const preserveDraft = useRef(false);
+  const draftEpoch = useRef(0);
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
 
   const [values, setValues] = useState<NumericValues>(() => toNumericForm(dropOffPricing));
   const [prices, setPrices] = useState<PriceValues>(() => toPriceForm(dropOffPricing));
@@ -151,6 +199,7 @@ export function DropOffPricingPanel() {
   // Re-seed from the store whenever its values change (e.g. another surface
   // edits them). The form is otherwise the local source of truth while editing.
   useEffect(() => {
+    if (preserveDraft.current) return;
     setValues(toNumericForm(dropOffPricing));
     setPrices(toPriceForm(dropOffPricing));
     setRefundPolicy(dropOffPricing.prepaidFoodRefundPolicy);
@@ -170,12 +219,16 @@ export function DropOffPricingPanel() {
   );
 
   const setField = (key: NumericKey, raw: string) => {
+    draftEpoch.current++;
+    if (busyRef.current) preserveDraft.current = true;
     setValues((v) => ({ ...v, [key]: raw }));
     setSaved(false);
     if (errors[key]) setErrors((e) => ({ ...e, [key]: undefined }));
   };
 
   const setPriceField = (key: PriceKey, next: WeekdayWeekendPrice) => {
+    draftEpoch.current++;
+    if (busyRef.current) preserveDraft.current = true;
     setPrices((p) => ({ ...p, [key]: next }));
     setSaved(false);
   };
@@ -203,11 +256,13 @@ export function DropOffPricingPanel() {
       setSaved(false);
       return;
     }
-    if (!platformId) return;
+    if (!ports.connected || !manageRef.current || busyRef.current) return;
+    const epoch = draftEpoch.current, owner = ports.contextKey;
+    busyRef.current = true;
     setSaving(true);
     setSaveError(null);
     try {
-      const after = await boardApi.savePricing(platformId, {
+      const after = await ports.savePricing({
         oneTimeFee: pairToSatang(prices.oneTimeFeeTHB),
         nannyHourly: pairToSatang(prices.nannyHourlyRateTHB),
         extraHour: pairToSatang(prices.extraHourTHB),
@@ -215,18 +270,29 @@ export function DropOffPricingPanel() {
         nannyRatioSoftMax: Number(values.nannyRatioSoftMax),
         prepaidFoodUnused: refundPolicy,
       });
-      mutators.updateDropOffPricing(pricingFromConfig(after.pricing));
+      if (!mounted.current || !manageRef.current || contextRef.current !== owner) return;
+      if (draftEpoch.current !== epoch) { preserveDraft.current = true; return; }
+      preserveDraft.current = false;
+      const accepted = pricingFromConfig(after);
+      setValues(toNumericForm(accepted));
+      setPrices(toPriceForm(accepted));
+      setRefundPolicy(accepted.prepaidFoodRefundPolicy);
       setErrors({});
       setSaved(true);
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : 'Could not save.');
-      setSaved(false);
+      if (mounted.current && contextRef.current === owner) {
+        setSaveError(err instanceof Error ? err.message : 'Could not save.');
+        setSaved(false);
+      }
     } finally {
-      setSaving(false);
+      busyRef.current = false;
+      if (mounted.current) setSaving(false);
     }
   };
 
   const handleReset = () => {
+    draftEpoch.current++;
+    preserveDraft.current = false;
     setValues(toNumericForm(dropOffPricing));
     setPrices(toPriceForm(dropOffPricing));
     setRefundPolicy(dropOffPricing.prepaidFoodRefundPolicy);
@@ -244,7 +310,11 @@ export function DropOffPricingPanel() {
 
   return (
     <div className="flex flex-col gap-6">
+      {ports.authorityMessage && <p className="text-sm text-foreground/60">{ports.authorityMessage}</p>}
+      {ports.loading && <p className="text-sm text-foreground/60">Loading pricing…</p>}
+      {ports.error && ports.onRetry && <Button type="button" variant="outline" onClick={ports.onRetry}>Retry</Button>}
       <form onSubmit={(e) => void handleSubmit(e)} className="flex flex-col gap-5">
+        <fieldset className="contents" disabled={!canManage}>
         {/* Numeric pricing fields */}
         <div className="rounded-2xl border border-foreground/10 bg-foreground/[0.02] p-5">
           <h2 className="text-base font-bold">Drop-off &amp; nanny pricing</h2>
@@ -255,9 +325,9 @@ export function DropOffPricingPanel() {
           {/* Scoped to this card on purpose. The holiday ranges further down
               this same screen DO save, so a banner at the top of the panel
               would tar them with this one. */}
-          {saveError && (
+          {(saveError || ports.error) && (
             <div className="mt-4">
-              <AdminNoticeBanner>{saveError}</AdminNoticeBanner>
+              <AdminNoticeBanner>{saveError || ports.error}</AdminNoticeBanner>
             </div>
           )}
 
@@ -312,14 +382,14 @@ export function DropOffPricingPanel() {
             <button
               type="button"
               className={policyBtn('refund')}
-              onClick={() => { setRefundPolicy('refund'); setSaved(false); }}
+              onClick={() => { draftEpoch.current++; if (busyRef.current) preserveDraft.current = true; setRefundPolicy('refund'); setSaved(false); }}
             >
               Refund unused amount
             </button>
             <button
               type="button"
               className={policyBtn('forfeit')}
-              onClick={() => { setRefundPolicy('forfeit'); setSaved(false); }}
+              onClick={() => { draftEpoch.current++; if (busyRef.current) preserveDraft.current = true; setRefundPolicy('forfeit'); setSaved(false); }}
             >
               Forfeit unused amount
             </button>
@@ -332,7 +402,7 @@ export function DropOffPricingPanel() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <Button type="submit" disabled={!dirty || saving || !platformId}>
+          <Button type="submit" disabled={!dirty || saving || !ports.connected || !canManage}>
             <Check className="w-4 h-4" />
             Save changes
           </Button>
@@ -348,11 +418,9 @@ export function DropOffPricingPanel() {
             </span>
           )}
         </div>
+        </fieldset>
       </form>
-
-      <MarketsTiersSection />
-
-      <PricingOverridesSection />
+      {ports.adjacentSections}
     </div>
   );
 }

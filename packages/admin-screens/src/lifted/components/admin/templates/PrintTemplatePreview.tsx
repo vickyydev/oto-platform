@@ -6,6 +6,7 @@ import { isApiError } from "../../../api/client";
 
 import { paperLabel, previewRequest } from "./templateDraft";
 import { DEFAULT_PREVIEW_SAMPLE, type PreviewSampleId } from "./previewSamples";
+import type { TemplatePreviewPorts } from '../../../runtime/care';
 
 interface PrintTemplatePreviewProps {
   /** The draft on the editor's left-hand side, saved or not. */
@@ -82,10 +83,8 @@ function usePreviewPicture(
   live: boolean,
   active: boolean,
   debounceMs: number,
+  templatesApi: TemplatePreviewPorts,
 ) {
-  const runtime = useAdminScreenRuntime();
-  const templatesApi = runtime.api.platform.templatesApi;
-
   const [picture, setPicture] = useState<Picture | null>(null);
   const [drawing, setDrawing] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
@@ -150,13 +149,19 @@ function usePreviewPicture(
   return { picture, drawing, failed };
 }
 
-export function PrintTemplatePreview({
+export function PrintTemplatePreview(props: PrintTemplatePreviewProps) {
+  const runtime = useAdminScreenRuntime();
+  return <PrintTemplatePreviewWithPorts {...props} ports={runtime.api.platform.templatesApi} />;
+}
+
+export function PrintTemplatePreviewWithPorts({
   template,
   live,
   stationId,
   sample = DEFAULT_PREVIEW_SAMPLE,
   footer,
-}: PrintTemplatePreviewProps) {
+  ports,
+}: PrintTemplatePreviewProps & { ports: TemplatePreviewPorts }) {
   const [zoom, setZoom] = useState<Zoom>('fit');
   const request = previewRequest(template, stationId ?? null, sample);
   const { picture, drawing, failed } = usePreviewPicture(
@@ -165,6 +170,7 @@ export function PrintTemplatePreview({
     live,
     true,
     DEBOUNCE_MS,
+    ports,
   );
 
   const scale = ZOOMS.find((z) => z.id === zoom)?.scale ?? FIT_SCALE;
@@ -260,17 +266,25 @@ export function PrintTemplatePreview({
  * the renders somebody can see and no more. It reports the picture's width in
  * dots so the card can name the paper.
  */
-export function PrintTemplateThumbnail({
-  template,
-  live,
-  stationId,
-  onDots,
-}: {
+interface PrintTemplateThumbnailProps {
   template: PrintTemplate;
   live: boolean;
   stationId?: string | null;
   onDots?: (dots: number) => void;
-}) {
+}
+
+export function PrintTemplateThumbnail(props: PrintTemplateThumbnailProps) {
+  const runtime = useAdminScreenRuntime();
+  return <PrintTemplateThumbnailWithPorts {...props} ports={runtime.api.platform.templatesApi} />;
+}
+
+export function PrintTemplateThumbnailWithPorts({
+  template,
+  live,
+  stationId,
+  onDots,
+  ports,
+}: PrintTemplateThumbnailProps & { ports: TemplatePreviewPorts }) {
   const box = useRef<HTMLDivElement | null>(null);
   const [seen, setSeen] = useState(false);
 
@@ -295,7 +309,7 @@ export function PrintTemplateThumbnail({
   }, [seen]);
 
   const request = previewRequest(template, stationId ?? null);
-  const { picture, failed } = usePreviewPicture(template.id, request, live, seen, 0);
+  const { picture, failed } = usePreviewPicture(template.id, request, live, seen, 0, ports);
 
   useEffect(() => {
     if (picture) onDots?.(picture.dots);

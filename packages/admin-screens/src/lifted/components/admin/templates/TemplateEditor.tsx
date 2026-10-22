@@ -1,5 +1,5 @@
 import { useAdminScreenRuntime } from '../../../runtime/AdminScreenRuntime';
-import { useEffect, useState, type ComponentType, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ComponentType, type ReactNode } from "react";
 import { ArrowDown, ArrowLeft, Check, ChevronDown, CircleCheck, Eye, EyeOff, FlaskConical, Printer, SlidersHorizontal, Undo2 } from "lucide-react";
 import { Button } from "../../ui/button";
 import { type PrintTemplate } from "../../../model/types";
@@ -9,18 +9,19 @@ import { useStation } from "../../../runtime/AdminScreenRuntime";
 import { isApiError } from "../../../api/client";
 import { NotSavedNotice } from "../NotSavedNotice";
 import { Field, TextInput } from "../discounts/fields";
-import { PrintTemplatePreview } from "./PrintTemplatePreview";
+import { PrintTemplatePreviewWithPorts } from "./PrintTemplatePreview";
 import { CHROME_META, FIELD_META, TEMPLATE_TYPE_META, editorGroups, moreOptions, type EditorGroup, type EditorRow, type TemplateFieldKey } from "./templateFields";
 import { fromApi, isDirty, saveBarView, saveBody, testPrintOutcome, type OutcomeTone } from "./templateDraft";
 import { useUnsavedChangesPrompt } from "./useUnsavedChangesPrompt";
 import { DEFAULT_PREVIEW_SAMPLE, PREVIEW_SAMPLES, type PreviewSampleId } from "./previewSamples";
 import { type TestPrintTarget } from "./templatesApi";
+import { useCareCapabilities, type TemplateEditorPorts } from '../../../runtime/care';
 
 interface TemplateEditorProps {
   template: PrintTemplate;
   /** True when this row came from the platform and can really be saved. */
   live?: boolean;
-  onSaved?: () => void;
+  onSaved?: () => void | Promise<void>;
   onClose: () => void;
 }
 
@@ -43,7 +44,7 @@ type Destination =
  * print names the printer routing chose, so nobody walks to the wrong counter
  * for the paper, but it does not choose it.
  */
-export function TemplateEditor({ template, live = false, onSaved, onClose }: TemplateEditorProps) {
+export function TemplateEditor(props: TemplateEditorProps) {
   const runtime = useAdminScreenRuntime();
   const printApi = runtime.api.platform.printApi;
   const templatesApi = runtime.api.platform.templatesApi;
@@ -51,6 +52,30 @@ export function TemplateEditor({ template, live = false, onSaved, onClose }: Tem
   const { mutators } = useCatalogStore();
   const { station } = useStation();
   const stationId = station?.stationId ?? null;
+  const owner = runtime.session?.operator;
+  const branchId = runtime.branch?.branch?.apiId;
+  const scope = useCareCapabilities(runtime.transport, owner?.id, props.live === true, owner, branchId);
+  const api = useMemo(() => ({ ...printApi, ...templatesApi }), [printApi, templatesApi]);
+  return <TemplateEditorWithPorts {...props} key={`${owner?.id ?? ''}:${branchId ?? ''}:${props.template.id}`} ports={{
+    api, stationId, canEdit: scope.canEditTemplates, canTestPrint: scope.canTestPrint,
+    authorityMessage: scope.authorityMessage, updateLocalTemplate: mutators.upsertPrintTemplate,
+  }} />;
+}
+
+export function TemplateEditorWithPorts({ template, live = false, onSaved, onClose, ports }: TemplateEditorProps & { ports: TemplateEditorPorts }) {
+  const printApi = ports.api;
+  const templatesApi = ports.api;
+  const stationId = ports.stationId;
+  const canEdit = ports.canEdit !== false;
+  const manageRef = useRef(canEdit);
+  manageRef.current = canEdit;
+  const canPrintRef = useRef(ports.canTestPrint === true);
+  canPrintRef.current = ports.canTestPrint === true;
+  const mounted = useRef(true);
+  const busyRef = useRef(false);
+  const printingRef = useRef(false);
+  const draftEpoch = useRef(0);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
 
   /** The template as last loaded or saved — what Discard goes back to. */
   const [loaded, setLoaded] = useState<PrintTemplate>(template);
@@ -123,17 +148,24 @@ export function TemplateEditor({ template, live = false, onSaved, onClose }: Tem
     };
   }, [live, template.id, stationId, templatesApi]);
 
+  const editDraft = (update: (value: PrintTemplate) => PrintTemplate) => {
+    if (!manageRef.current) return;
+    draftEpoch.current++;
+    setDraft(update);
+  };
   const setField = (key: TemplateFieldKey, value: boolean) =>
-    setDraft((d) => ({ ...d, fields: { ...d.fields, [key]: value } }));
+    editDraft((d) => ({ ...d, fields: { ...d.fields, [key]: value } }));
 
   /** Store the draft. True when it was stored; the error is on the bar when not. */
   const persist = async (): Promise<boolean> => {
+    if (!mounted.current || !manageRef.current || busyRef.current) return false;
     if (nameError) {
       setShowMore(true);
       setSaveError(nameError);
       return false;
     }
     const sent = draft;
+    busyRef.current = true;
     setSaving(true);
     setSaveError(null);
     try {
@@ -144,19 +176,29 @@ export function TemplateEditor({ template, live = false, onSaved, onClose }: Tem
       } else {
         // The built-in set, on a deployment whose API does not carry these rows.
         next = { ...draft, name: draft.name.trim() };
-        mutators.upsertPrintTemplate(next);
+        ports.updateLocalTemplate?.(next);
       }
+      if (!mounted.current || !manageRef.current) return false;
       setLoaded(next);
       // Anything typed while the save was in flight stays on screen, unsaved.
       setDraft((current) => (isDirty(sent, current) ? current : next));
       setJustSaved(true);
-      onSaved?.();
+      // A confirmed template write is not repeated because its list refresh failed.
+      try {
+        const refresh = onSaved?.();
+        if (refresh) void refresh.catch(() => {
+          if (mounted.current) setSaveError('The template was saved, but the list could not be refreshed.');
+        });
+      } catch {
+        setSaveError('The template was saved, but the list could not be refreshed.');
+      }
       return true;
     } catch (err) {
-      setSaveError(isApiError(err) ? err.message : 'The template could not be saved.');
+      if (mounted.current) setSaveError(isApiError(err) ? err.message : 'The template could not be saved.');
       return false;
     } finally {
-      setSaving(false);
+      busyRef.current = false;
+      if (mounted.current) setSaving(false);
     }
   };
 
@@ -208,20 +250,24 @@ export function TemplateEditor({ template, live = false, onSaved, onClose }: Tem
    * holds the job and prints it when the roll is changed.
    */
   const testPrint = async () => {
-    if (busy || !live) return;
+    if (busy || busyRef.current || printingRef.current || !live || !mounted.current || !canPrintRef.current || dirty && !manageRef.current) return;
+    const epoch = draftEpoch.current;
+    printingRef.current = true;
     setOutcome(null);
-    if (dirty && !(await persist())) return;
-    setPrinting(true);
     try {
+      if (dirty && !(await persist())) return;
+      if (!mounted.current || !canPrintRef.current || draftEpoch.current !== epoch) return;
+      setPrinting(true);
       const { printJob } = await printApi.testPrint(draft.id, { stationId });
-      setOutcome(testPrintOutcome(printJob, destinationLabel));
+      if (mounted.current && canPrintRef.current) setOutcome(testPrintOutcome(printJob, destinationLabel));
     } catch (err) {
-      setOutcome({
+      if (mounted.current) setOutcome({
         tone: 'error',
         text: isApiError(err) ? err.message : 'The test print could not be sent.',
       });
     } finally {
-      setPrinting(false);
+      printingRef.current = false;
+      if (mounted.current) setPrinting(false);
     }
   };
 
@@ -233,7 +279,7 @@ export function TemplateEditor({ template, live = false, onSaved, onClose }: Tem
           size="sm"
           className="bg-white"
           onClick={() => void testPrint()}
-          disabled={busy || !live || noPrinter}
+          disabled={busy || !live || noPrinter || !ports.canTestPrint || dirty && !canEdit}
           title={
             !live || noPrinter ? destinationText : 'Print the Test print sample on this station’s printer'
           }
@@ -250,6 +296,7 @@ export function TemplateEditor({ template, live = false, onSaved, onClose }: Tem
           {destinationText}
         </span>
       </div>
+      {ports.authorityMessage && <p className="mt-3 text-sm text-foreground/60">{ports.authorityMessage}</p>}
       {outcome && (
         <div
           role="status"
@@ -312,7 +359,7 @@ export function TemplateEditor({ template, live = false, onSaved, onClose }: Tem
           had nor over 460px (SCRUM-470). Below lg the halves stack, controls
           first, with a link down to the preview. */}
       <div className="mt-5 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_clamp(300px,50%,460px)]">
-        <div className="flex flex-col gap-4">
+        <fieldset className="flex flex-col gap-4" disabled={!canEdit}>
           <a
             href="#template-preview"
             className="inline-flex items-center gap-1.5 self-start text-xs font-semibold text-primary lg:hidden"
@@ -328,8 +375,8 @@ export function TemplateEditor({ template, live = false, onSaved, onClose }: Tem
                   key={rowKey(row)}
                   row={row}
                   draft={draft}
-                  onLogo={(v) => setDraft((d) => ({ ...d, showLogo: v }))}
-                  onText={(which, v) => setDraft((d) => ({ ...d, [which]: v || undefined }))}
+                  onLogo={(v) => editDraft((d) => ({ ...d, showLogo: v }))}
+                  onText={(which, v) => editDraft((d) => ({ ...d, [which]: v || undefined }))}
                   onField={setField}
                 />
               ))}
@@ -372,7 +419,7 @@ export function TemplateEditor({ template, live = false, onSaved, onClose }: Tem
                     value={draft.name}
                     invalid={!!nameError}
                     placeholder="Standard receipt"
-                    onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
+                    onChange={(e) => editDraft((d) => ({ ...d, name: e.target.value }))}
                   />
                 </Field>
                 {extras.includes('footerText') && (
@@ -386,7 +433,7 @@ export function TemplateEditor({ template, live = false, onSaved, onClose }: Tem
                       value={draft.footerText ?? ''}
                       placeholder="Thank you · Tax ID…"
                       onChange={(e) =>
-                        setDraft((d) => ({ ...d, footerText: e.target.value || undefined }))
+                        editDraft((d) => ({ ...d, footerText: e.target.value || undefined }))
                       }
                     />
                   </Field>
@@ -394,7 +441,7 @@ export function TemplateEditor({ template, live = false, onSaved, onClose }: Tem
               </div>
             )}
           </div>
-        </div>
+        </fieldset>
 
         {/* Live preview */}
         <div id="template-preview" className="scroll-mt-20 lg:sticky lg:top-20 lg:self-start">
@@ -422,7 +469,8 @@ export function TemplateEditor({ template, live = false, onSaved, onClose }: Tem
               </select>
             </label>
           </div>
-          <PrintTemplatePreview
+          <PrintTemplatePreviewWithPorts
+            ports={ports.api}
             template={draft}
             live={live}
             stationId={stationId}
@@ -463,7 +511,7 @@ export function TemplateEditor({ template, live = false, onSaved, onClose }: Tem
                 <Undo2 className="h-4 w-4" />
                 Discard
               </Button>
-              <Button size="sm" onClick={() => void persist()} disabled={!!nameError || busy}>
+              <Button size="sm" onClick={() => void persist()} disabled={!!nameError || busy || !canEdit}>
                 <Check className="h-4 w-4" />
                 {saving ? 'Saving…' : 'Save changes'}
               </Button>

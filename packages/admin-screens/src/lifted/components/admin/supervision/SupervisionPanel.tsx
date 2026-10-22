@@ -1,5 +1,5 @@
 import { useAdminScreenRuntime } from '../../../runtime/AdminScreenRuntime';
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Plus, Trash2, ShieldCheck, AlertTriangle, Baby, Infinity as InfinityIcon, ClipboardCheck, ArrowUp, ArrowDown, Check } from "lucide-react";
 import { Button } from "../../ui/button";
 import { Checkbox } from "../../ui/checkbox";
@@ -10,6 +10,7 @@ import { useCatalogStore } from "../../../runtime/AdminScreenRuntime";
 import { type SupervisionBand, type SupervisionPolicy, type SupervisionRequirement, type SiblingWaiver, type ConfirmationItem } from "../../../model/types";
 import { AdminNoticeBanner } from "../NotSavedNotice";
 import { TextInput, SelectInput } from "../discounts/fields";
+import { useCareCapabilities, type SupervisionPanelPorts } from '../../../runtime/care';
 
 /** The parts of the policy the platform stores, as one comparable value. */
 const policyKey = (p: SupervisionPolicy): string =>
@@ -119,14 +120,20 @@ export function SupervisionPanel() {
   const TILL_NOT_LINKED = runtime.api.checkin.TILL_NOT_LINKED;
 
   const { supervisionPolicy, mutators } = useCatalogStore();
-  const { bands, siblingWaiver, confirmations } = supervisionPolicy;
-
   // --- The platform's copy: loaded on open, saved on demand ---
   const branchSlug = getActiveBranch().id;
   const platformId = apiBranchIdForSlug(branchSlug);
-  const [savedKey, setSavedKey] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const owner = runtime.session?.operator;
+  const contextKey = `${owner?.id ?? ''}:${platformId ?? ''}`;
+  const ownerRef = useRef(contextKey);
+  ownerRef.current = contextKey;
+  const scope = useCareCapabilities(runtime.transport, owner?.id, Boolean(platformId), owner, platformId ?? undefined);
+  const scopeRef = useRef(scope);
+  scopeRef.current = scope;
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  const [loading, setLoading] = useState(Boolean(platformId));
+  const [attempt, setAttempt] = useState(0);
   const [saveError, setSaveError] = useState<string | null>(platformId ? null : TILL_NOT_LINKED);
 
   const adopt = useCallback(
@@ -136,7 +143,6 @@ export function SupervisionPanel() {
         siblingWaiver: policy.siblingWaiver,
         confirmations: policy.confirmations,
       });
-      setSavedKey(policyKey(policy));
     },
     [mutators],
   );
@@ -144,39 +150,100 @@ export function SupervisionPanel() {
   useEffect(() => {
     if (!platformId) {
       setSaveError(TILL_NOT_LINKED);
+      setLoading(false);
       return;
     }
     let live = true;
+    setLoading(true);
     checkinApi
       .config(platformId)
       .then((c) => {
-        if (live) adopt(c.policy);
+        if (live && ownerRef.current === contextKey) { adopt(c.policy); setSaveError(null); }
       })
-      .catch((err: unknown) => live && setSaveError(err instanceof Error ? err.message : 'Could not load the policy.'));
+      .catch((err: unknown) => live && setSaveError(err instanceof Error ? err.message : 'Could not load the policy.'))
+      .finally(() => { if (live && ownerRef.current === contextKey) setLoading(false); });
     return () => {
       live = false;
     };
-  }, [platformId, adopt, TILL_NOT_LINKED, checkinApi]);
+  }, [platformId, adopt, TILL_NOT_LINKED, checkinApi, contextKey, attempt]);
 
-  const dirty = savedKey !== null && policyKey(supervisionPolicy) !== savedKey;
+  const persistPolicy: SupervisionPanelPorts['savePolicy'] = async (policy, isCurrent = () => true) => {
+    const current = () => Boolean(platformId) && mounted.current && ownerRef.current === contextKey && scopeRef.current.canManageCare && isCurrent();
+    if (!current() || !platformId) throw new Error('This supervision editor is no longer available.');
+    await boardApi.savePolicy(platformId, { bands: policy.bands, siblingWaiver: policy.siblingWaiver });
+    if (!current()) throw new Error('This supervision editor is no longer available.');
+    const after = await boardApi.saveConfirmations(platformId,
+      [...policy.confirmations].sort((a, b) => a.order - b.order).map((c, i) => ({ id: c.id, text: c.text, required: c.required, order: i })),
+    );
+    if (!current()) throw new Error('This supervision editor is no longer available.');
+    adopt(after.policy);
+    return after.policy;
+  };
+  return <SupervisionPanelWithPorts key={contextKey} ports={{ policy: supervisionPolicy, connected: Boolean(platformId),
+    contextKey, canManage: scope.canManageCare, authorityMessage: scope.authorityMessage, loading, error: saveError,
+    onRetry: () => { setAttempt(value => value + 1); }, savePolicy: persistPolicy,
+    onDraftChange: next => mutators.updateSupervisionPolicy(next),
+  }} />;
+}
 
+export function SupervisionPanelWithPorts({ ports }: { ports: SupervisionPanelPorts }) {
+  const [supervisionPolicy, setPolicy] = useState(ports.policy);
+  const policyRef = useRef(supervisionPolicy);
+  policyRef.current = supervisionPolicy;
+  const { bands, siblingWaiver, confirmations } = supervisionPolicy;
+  const [savedKey, setSavedKey] = useState(policyKey(ports.policy));
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const canManage = ports.canManage !== false && !ports.loading;
+  const manageRef = useRef(canManage);
+  manageRef.current = canManage;
+  const contextRef = useRef(ports.contextKey);
+  contextRef.current = ports.contextKey;
+  const mounted = useRef(true);
+  const busyRef = useRef(false);
+  const preserveDraft = useRef(false);
+  const draftEpoch = useRef(0);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  useEffect(() => {
+    if (preserveDraft.current || policyKey(ports.policy) === policyKey(policyRef.current)) return;
+    setPolicy(ports.policy);
+    setSavedKey(policyKey(ports.policy));
+    setSaved(false);
+  }, [ports.policy]);
+  const mutators = {
+    updateSupervisionPolicy: (patch: Partial<SupervisionPolicy>) => {
+      if (!manageRef.current) return;
+      const next = { ...policyRef.current, ...patch };
+      draftEpoch.current++;
+      if (busyRef.current) preserveDraft.current = true;
+      policyRef.current = next;
+      setPolicy(next);
+      setSaved(false);
+      ports.onDraftChange?.(next);
+    },
+  };
+  const dirty = policyKey(supervisionPolicy) !== savedKey;
   const handleSave = async () => {
-    if (!platformId) return;
+    if (!ports.connected || !manageRef.current || busyRef.current) return;
+    const epoch = draftEpoch.current, owner = ports.contextKey;
+    const isCurrent = () => mounted.current && manageRef.current && contextRef.current === owner;
+    busyRef.current = true;
     setSaving(true);
     setSaveError(null);
     try {
-      await boardApi.savePolicy(platformId, { bands, siblingWaiver });
-      const after = await boardApi.saveConfirmations(
-        platformId,
-        sortedConfirmations.map((c, i) => ({ id: c.id, text: c.text, required: c.required, order: i })),
-      );
-      adopt(after.policy);
+      const after = await ports.savePolicy(supervisionPolicy, isCurrent);
+      if (!isCurrent()) return;
+      setSavedKey(policyKey(after));
+      if (draftEpoch.current !== epoch) { preserveDraft.current = true; return; }
+      preserveDraft.current = false;
+      setPolicy(after);
       setSaved(true);
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : 'Could not save.');
-      setSaved(false);
+      if (isCurrent()) { setSaveError(err instanceof Error ? err.message : 'Could not save.'); setSaved(false); }
     } finally {
-      setSaving(false);
+      busyRef.current = false;
+      if (mounted.current) setSaving(false);
     }
   };
   const sortedConfirmations = useMemo(
@@ -263,7 +330,11 @@ export function SupervisionPanel() {
 
   return (
     <div className="flex flex-col gap-6">
-      {saveError && <AdminNoticeBanner>{saveError}</AdminNoticeBanner>}
+      {(saveError || ports.error) && <AdminNoticeBanner>{saveError || ports.error}</AdminNoticeBanner>}
+      {ports.authorityMessage && <p className="text-sm text-foreground/60">{ports.authorityMessage}</p>}
+      {ports.loading && <p className="text-sm text-foreground/60">Loading supervision…</p>}
+      {ports.error && ports.onRetry && <Button type="button" variant="outline" onClick={ports.onRetry}>Retry</Button>}
+      <fieldset className="contents" disabled={!canManage}>
 
       {/* Age bands */}
       <section className="rounded-3xl border border-foreground/10 bg-foreground/[0.02] p-5 sm:p-6">
@@ -384,7 +455,7 @@ export function SupervisionPanel() {
           ))}
         </div>
 
-        <Button onClick={addBand} variant="outline" className="mt-4">
+        <Button onClick={addBand} variant="outline" className="mt-4" disabled={!canManage}>
           <Plus className="w-4 h-4" />
           Add band
         </Button>
@@ -566,7 +637,7 @@ export function SupervisionPanel() {
         <Button
           type="button"
           onClick={() => void handleSave()}
-          disabled={!platformId || !dirty || saving || problems.length > 0}
+          disabled={!ports.connected || !canManage || !dirty || saving || problems.length > 0}
         >
           <Check className="w-4 h-4" />
           Save changes
@@ -578,6 +649,7 @@ export function SupervisionPanel() {
           </span>
         )}
       </div>
+      </fieldset>
     </div>
   );
 }

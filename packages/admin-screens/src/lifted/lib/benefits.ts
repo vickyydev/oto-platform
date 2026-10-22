@@ -25,6 +25,16 @@ export interface BenefitApplyResult {
   /** ฿ drawn from the periodic credit pool by this order — commit via mockApi. */
   creditUsedDelta: number;
 }
+/** True when a profile has nothing configured (no benefit to scan/apply). */
+export function isEmptyBenefitProfile(profile: BenefitProfile): boolean {
+  return (
+    !profile.comp &&
+    (!profile.freeItems || profile.freeItems.length === 0) &&
+    !profile.credit &&
+    !profile.standingDiscount
+  );
+}
+
 /** Original domain rules, bound to this host's explicit data ports. */
 export function createBenefitsHelpers(deps: { discountTarget: DiscountTargetHelpers; catalog: CatalogReaders }) {
 const { menuItemMatchesTarget } = deps.discountTarget;
@@ -71,17 +81,6 @@ function resolveEffectiveBenefitProfile(
     credit: template?.credit,
     standingDiscount: template?.standingDiscount,
   };
-}
-
-
-/** True when a profile has nothing configured (no benefit to scan/apply). */
-function isEmptyBenefitProfile(profile: BenefitProfile): boolean {
-  return (
-    !profile.comp &&
-    (!profile.freeItems || profile.freeItems.length === 0) &&
-    !profile.credit &&
-    !profile.standingDiscount
-  );
 }
 
 

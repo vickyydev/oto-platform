@@ -1,10 +1,12 @@
 import { useAdminScreenRuntime } from '../../../runtime/AdminScreenRuntime';
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import QRCode from 'qrcode';
 import { QrCode as QrCodeIcon, ShieldOff } from "lucide-react";
 import { type BenefitCredential, type BenefitQrPayload, type StaffBenefitRow } from "../../../api/benefits";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../../ui/dialog";
 import { Button } from "../../ui/button";
+import { useBenefitIdentity, type BenefitQrDialogPorts } from '../../../runtime/benefits';
+import { idemKey } from '../../../api/client';
 
 /**
  * Shows a staff member's scannable benefit QR.
@@ -24,23 +26,30 @@ import { Button } from "../../ui/button";
  * only read the screen — a branch manager — sees whether a QR is in use and
  * until when, and never the code: the printed code is the credential.
  */
-export function BenefitQrDialog({
-  staff,
-  open,
-  onOpenChange,
-  canIssue,
-}: {
+interface QrProps {
   staff: StaffBenefitRow | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /** `admin:benefit:credential_issue`: print, issue and revoke. */
   canIssue: boolean;
-}) {
+}
+export function BenefitQrDialog(props: QrProps) {
   const runtime = useAdminScreenRuntime();
-  const benefitsApi = runtime.api.benefits;
+  return <BenefitQrDialogWithPorts {...props} ports={{ contextKey: runtime.session.operator?.id ?? '', api: runtime.api.benefits }} />;
+}
+export function BenefitQrDialogWithPorts({ staff, open, onOpenChange, canIssue, ports }: QrProps & { ports: BenefitQrDialogPorts }) {
+  const benefitsApi = ports.api;
+  const identity = useBenefitIdentity(ports.contextKey + '|' + (staff?.employeeId ?? '') + '|' + open + '|' + canIssue);
+  const identityRef = useRef(identity), staffRef = useRef(staff?.employeeId), openRef = useRef(open), issueRef = useRef(canIssue), mounted = useRef(true), requestEpoch = useRef(0), busyRef = useRef(false);
+  identityRef.current = identity; staffRef.current = staff?.employeeId; openRef.current = open; issueRef.current = canIssue;
+  const credentialOwnerRef = useRef(''), payloadOwnerRef = useRef('');
+  const intentRef = useRef<{ identity: string; action: string; key: string; confirmed: boolean } | null>(null);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; requestEpoch.current++; }; }, []);
 
-  const [credential, setCredential] = useState<BenefitCredential | null>(null);
-  const [payload, setPayload] = useState<BenefitQrPayload | null>(null);
+  const [heldCredential, setCredential] = useState<BenefitCredential | null>(null);
+  const [heldPayload, setPayload] = useState<BenefitQrPayload | null>(null);
+  const credential = credentialOwnerRef.current === identity ? heldCredential : null;
+  const payload = canIssue && payloadOwnerRef.current === identity ? heldPayload : null;
   const [image, setImage] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -49,34 +58,45 @@ export function BenefitQrDialog({
 
   const load = useCallback(
     async (employeeId: string) => {
+      const request = ++requestEpoch.current, requestIdentity = identityRef.current;
+      const owns = () => mounted.current && requestEpoch.current === request && identityRef.current === requestIdentity && staffRef.current === employeeId && openRef.current;
+      if (!owns()) return false;
       setLoading(true);
       setError(null);
       setPayload(null);
+      payloadOwnerRef.current = '';
       setConfirmRevoke(false);
       try {
         const { credentials } = await benefitsApi.credentials(employeeId);
+        if (!owns()) return false;
         const active = credentials.find((c) => c.status === 'active') ?? null;
+        credentialOwnerRef.current = requestIdentity;
         setCredential(active);
-        if (active && canIssue) setPayload(await benefitsApi.credentialQr(active.id));
+        if (active && issueRef.current) {
+          const answer = await benefitsApi.credentialQr(active.id);
+          if (!owns() || !issueRef.current) return false;
+          if (answer.employeeId !== employeeId || answer.credentialId !== active.id) throw new Error('The benefit QR did not match this staff member.');
+          payloadOwnerRef.current = requestIdentity;
+          setPayload(answer);
+        }
+        return true;
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Could not load the benefit QR');
+        if (owns()) setError(err instanceof Error ? err.message : 'Could not load the benefit QR');
+        return false;
       } finally {
-        setLoading(false);
+        if (owns()) setLoading(false);
       }
     },
-    [canIssue, benefitsApi],
+    [benefitsApi],
   );
 
   useEffect(() => {
-    if (!open || !staff) {
-      setCredential(null);
-      setPayload(null);
-      setError(null);
-      setConfirmRevoke(false);
-      return;
-    }
-    void load(staff.employeeId);
-  }, [open, staff, load]);
+    requestEpoch.current++;
+    intentRef.current = null; busyRef.current = false;
+    credentialOwnerRef.current = ''; payloadOwnerRef.current = '';
+    setBusy(false); setCredential(null); setPayload(null); setError(null); setConfirmRevoke(false);
+    if (openRef.current && staffRef.current) void load(staffRef.current);
+  }, [identity, load]);
 
   useEffect(() => {
     let current = true;
@@ -95,38 +115,55 @@ export function BenefitQrDialog({
   }, [payload]);
 
   const issue = async () => {
-    if (!staff) return;
+    if (!staff || busyRef.current || !mounted.current || !openRef.current || !issueRef.current || identityRef.current !== identity || staffRef.current !== staff.employeeId) return;
+    const requestIdentity = identity, employeeId = staff.employeeId;
+    const owns = () => mounted.current && identityRef.current === requestIdentity && staffRef.current === employeeId && openRef.current && issueRef.current;
+    if (intentRef.current?.identity !== requestIdentity || intentRef.current.action !== 'issue') intentRef.current = { identity: requestIdentity, action: 'issue', key: idemKey(), confirmed: false };
+    const intent = intentRef.current;
+    busyRef.current = true;
     setBusy(true);
     setError(null);
     try {
-      await benefitsApi.issueCredential(staff.employeeId);
-      await load(staff.employeeId);
+      if (!intent.confirmed) { await benefitsApi.issueCredential(employeeId, intent.key); intent.confirmed = true; }
+      if (!owns()) return;
+      if (await load(employeeId)) intentRef.current = null;
+      else if (owns()) setError('Issued, but the QR could not be read. Issue QR again to retry the read without issuing another.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'The QR could not be issued');
+      if (owns()) setError(err instanceof Error ? err.message : 'The QR could not be issued');
     } finally {
-      setBusy(false);
+      if (mounted.current && identityRef.current === requestIdentity) { busyRef.current = false; setBusy(false); }
     }
   };
 
   const revoke = async () => {
-    if (!staff || !credential) return;
+    if (!staff || !credential || busyRef.current || !mounted.current || !openRef.current || !issueRef.current || identityRef.current !== identity || staffRef.current !== staff.employeeId) return;
+    const requestIdentity = identity, employeeId = staff.employeeId, credentialId = credential.id;
+    const owns = () => mounted.current && identityRef.current === requestIdentity && staffRef.current === employeeId && openRef.current && issueRef.current;
+    if (intentRef.current?.identity !== requestIdentity || intentRef.current.action !== credentialId) intentRef.current = { identity: requestIdentity, action: credentialId, key: idemKey(), confirmed: false };
+    const intent = intentRef.current;
+    busyRef.current = true;
     setBusy(true);
     setError(null);
     try {
-      await benefitsApi.revokeCredential(credential.id);
-      await load(staff.employeeId);
+      if (!intent.confirmed) { await benefitsApi.revokeCredential(credentialId, intent.key); intent.confirmed = true; }
+      if (!owns()) return;
+      if (await load(employeeId)) intentRef.current = null;
+      else if (owns()) setError('Revoked, but the current QR status could not be read. Revoke QR again to retry the read without another change.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'The QR could not be revoked');
+      if (owns()) setError(err instanceof Error ? err.message : 'The QR could not be revoked');
     } finally {
-      setBusy(false);
-      setConfirmRevoke(false);
+      if (mounted.current && identityRef.current === requestIdentity) { busyRef.current = false; setBusy(false); setConfirmRevoke(false); }
     }
+  };
+  const changeOpen = (next: boolean) => {
+    if (!next) { identityRef.current += '|closed'; openRef.current = false; requestEpoch.current++; setPayload(null); payloadOwnerRef.current = ''; }
+    onOpenChange(next);
   };
 
   const until = credential ? new Date(credential.expiresAt).toLocaleDateString() : null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={changeOpen}>
       <DialogContent className="max-w-xs">
         <DialogHeader>
           <DialogTitle>{payload?.name ?? staff?.name ?? 'Benefit QR'}</DialogTitle>

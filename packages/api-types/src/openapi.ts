@@ -19888,7 +19888,60 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            policy: {
+                                bands: {
+                                    id: string;
+                                    label: string;
+                                    minAge: number;
+                                    maxAge: number | null;
+                                    /** @enum {string} */
+                                    requirement: "none" | "drop_off" | "nanny";
+                                }[];
+                                siblingWaiver: {
+                                    enabled: boolean;
+                                    guardianMinAge: number;
+                                    /** @enum {string} */
+                                    waivableRequirement: "none" | "drop_off" | "nanny";
+                                    staffOnly: boolean;
+                                };
+                                confirmations: {
+                                    id: string;
+                                    text: string;
+                                    required: boolean;
+                                    order: number;
+                                }[];
+                            };
+                            pricing: {
+                                oneTimeFee: {
+                                    weekday: number;
+                                    weekend: number;
+                                };
+                                nannyHourly: {
+                                    weekday: number;
+                                    weekend: number;
+                                };
+                                extraHour: {
+                                    weekday: number;
+                                    weekend: number;
+                                };
+                                fullDayHours: number;
+                                nannyRatioSoftMax: number;
+                                /** @enum {string} */
+                                prepaidFoodUnused: "refund" | "forfeit";
+                            };
+                            photoRetentionDays: number;
+                            nannies: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                                onShift: boolean;
+                                load: number;
+                                coveredNames: string[];
+                            }[];
+                        };
+                    };
                 };
             };
         };
@@ -20693,7 +20746,52 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            policy: {
+                                bands: {
+                                    id: string;
+                                    label: string;
+                                    minAge: number;
+                                    maxAge: number | null;
+                                    /** @enum {string} */
+                                    requirement: "none" | "drop_off" | "nanny";
+                                }[];
+                                siblingWaiver: {
+                                    enabled: boolean;
+                                    guardianMinAge: number;
+                                    /** @enum {string} */
+                                    waivableRequirement: "none" | "drop_off" | "nanny";
+                                    staffOnly: boolean;
+                                };
+                                confirmations: {
+                                    id: string;
+                                    text: string;
+                                    required: boolean;
+                                    order: number;
+                                }[];
+                            };
+                            pricing: {
+                                oneTimeFee: {
+                                    weekday: number;
+                                    weekend: number;
+                                };
+                                nannyHourly: {
+                                    weekday: number;
+                                    weekend: number;
+                                };
+                                extraHour: {
+                                    weekday: number;
+                                    weekend: number;
+                                };
+                                fullDayHours: number;
+                                nannyRatioSoftMax: number;
+                                /** @enum {string} */
+                                prepaidFoodUnused: "refund" | "forfeit";
+                            };
+                            photoRetentionDays: number;
+                        };
+                    };
                 };
             };
         };
@@ -20740,7 +20838,52 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            policy: {
+                                bands: {
+                                    id: string;
+                                    label: string;
+                                    minAge: number;
+                                    maxAge: number | null;
+                                    /** @enum {string} */
+                                    requirement: "none" | "drop_off" | "nanny";
+                                }[];
+                                siblingWaiver: {
+                                    enabled: boolean;
+                                    guardianMinAge: number;
+                                    /** @enum {string} */
+                                    waivableRequirement: "none" | "drop_off" | "nanny";
+                                    staffOnly: boolean;
+                                };
+                                confirmations: {
+                                    id: string;
+                                    text: string;
+                                    required: boolean;
+                                    order: number;
+                                }[];
+                            };
+                            pricing: {
+                                oneTimeFee: {
+                                    weekday: number;
+                                    weekend: number;
+                                };
+                                nannyHourly: {
+                                    weekday: number;
+                                    weekend: number;
+                                };
+                                extraHour: {
+                                    weekday: number;
+                                    weekend: number;
+                                };
+                                fullDayHours: number;
+                                nannyRatioSoftMax: number;
+                                /** @enum {string} */
+                                prepaidFoodUnused: "refund" | "forfeit";
+                            };
+                            photoRetentionDays: number;
+                        };
+                    };
                 };
             };
         };
@@ -20797,7 +20940,52 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            policy: {
+                                bands: {
+                                    id: string;
+                                    label: string;
+                                    minAge: number;
+                                    maxAge: number | null;
+                                    /** @enum {string} */
+                                    requirement: "none" | "drop_off" | "nanny";
+                                }[];
+                                siblingWaiver: {
+                                    enabled: boolean;
+                                    guardianMinAge: number;
+                                    /** @enum {string} */
+                                    waivableRequirement: "none" | "drop_off" | "nanny";
+                                    staffOnly: boolean;
+                                };
+                                confirmations: {
+                                    id: string;
+                                    text: string;
+                                    required: boolean;
+                                    order: number;
+                                }[];
+                            };
+                            pricing: {
+                                oneTimeFee: {
+                                    weekday: number;
+                                    weekend: number;
+                                };
+                                nannyHourly: {
+                                    weekday: number;
+                                    weekend: number;
+                                };
+                                extraHour: {
+                                    weekday: number;
+                                    weekend: number;
+                                };
+                                fullDayHours: number;
+                                nannyRatioSoftMax: number;
+                                /** @enum {string} */
+                                prepaidFoodUnused: "refund" | "forfeit";
+                            };
+                            photoRetentionDays: number;
+                        };
+                    };
                 };
             };
         };

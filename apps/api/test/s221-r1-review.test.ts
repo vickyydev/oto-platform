@@ -1,6 +1,7 @@
 import { hash } from '@node-rs/argon2';
 import { and, eq, gt, inArray } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { readRoutes } from './route-source';
 import {
   account,
   auditLog,
@@ -208,9 +209,23 @@ describe('who may (plan "Permissions")', () => {
   });
 
   it('every /benefits route is guarded, and they are exactly round 1’s seven, round 2’s five and round 3’s one', () => {
+    const credentialRoutes = new Set(['POST /benefits/credentials', 'GET /benefits/credentials/:credentialId/qr', 'POST /benefits/credentials/:credentialId/revoke']);
+    const sourceRoutes = readRoutes();
+    for (const registered of ctx.app.routeRegistry.filter(r => credentialRoutes.has(`${r.method} ${r.url}`))) {
+      const key = `${registered.method} ${registered.url}`;
+      expect(registered.config.dynamicPermission, key).toBe(true);
+      expect(registered.config.permission, key).toBeUndefined();
+      const handler = sourceRoutes.find(r => `${r.method} ${r.path}` === key)?.handlerText;
+      const ownedLoad = key === 'POST /benefits/credentials'
+        ? 'loadEmployee(app.db, auth.operatorId, req.body.employeeId)'
+        : 'loadCredentialEmployee(app, auth.operatorId, req.params.credentialId)';
+      expect(handler, key).toContain(ownedLoad);
+      expect(handler, key).toContain("await req.requirePermission('admin:benefit:credential_issue', person.branchId ? { branchId: person.branchId } : { operatorOnly: true })");
+      expect(handler!.indexOf(ownedLoad), key).toBeLessThan(handler!.indexOf("req.requirePermission('admin:benefit:credential_issue'"));
+    }
     const routes = ctx.app.routeRegistry
       .filter((r) => r.url.startsWith('/benefits') && r.method !== 'HEAD')
-      .map((r) => `${r.method} ${r.url} ${r.config.permission ?? 'UNGUARDED'}`)
+      .map((r) => `${r.method} ${r.url} ${credentialRoutes.has(`${r.method} ${r.url}`) && r.config.dynamicPermission ? 'admin:benefit:credential_issue at owned employee scope' : r.config.permission ?? 'UNGUARDED'}`)
       .sort();
     expect(routes).toEqual(
       [
@@ -221,12 +236,12 @@ describe('who may (plan "Permissions")', () => {
         'GET /benefits/profiles/:employeeId admin:benefit:read',
         'PUT /benefits/profiles/:employeeId admin:benefit:manage',
         'GET /benefits/profiles/:employeeId/effective admin:benefit:read',
-        // Round 2 (the benefit QR): printing, issuing and revoking are the
-        // operator admin's; a branch manager reads; the till resolves.
+        // Round 2 credentials use their separate right at the owned employee's
+        // park (operator reach when unassigned); the till resolves.
         'GET /benefits/credentials admin:benefit:read',
-        'POST /benefits/credentials admin:benefit:credential_issue',
-        'GET /benefits/credentials/:credentialId/qr admin:benefit:credential_issue',
-        'POST /benefits/credentials/:credentialId/revoke admin:benefit:credential_issue',
+        'POST /benefits/credentials admin:benefit:credential_issue at owned employee scope',
+        'GET /benefits/credentials/:credentialId/qr admin:benefit:credential_issue at owned employee scope',
+        'POST /benefits/credentials/:credentialId/revoke admin:benefit:credential_issue at owned employee scope',
         'POST /benefits/resolve pos:benefit:apply',
         // Round 3 (checkout): the Audit log, read by whoever reads the screen.
         'GET /benefits/applications admin:benefit:read',

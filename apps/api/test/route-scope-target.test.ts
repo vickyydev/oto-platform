@@ -146,6 +146,8 @@ const OPERATOR_WIDE_WRITES = [
   'PATCH /booth-layouts/:id',
   'POST /branches',
   'POST /branches/oto-app/reconcile',
+  'PUT /benefits/templates/:role',
+  'PUT /benefits/profiles/:employeeId',
 ];
 
 describe('operator-wide settings are changed at operator scope (SCRUM-606)', () => {
@@ -189,6 +191,18 @@ describe('operator-wide settings are changed at operator scope (SCRUM-606)', () 
 });
 
 describe('by-id routes (SCRUM-290)', () => {
+  it('benefit credential actions resolve the owned employee park and require operator reach when unassigned (SCRUM-624)', () => {
+    for (const key of ['POST /benefits/credentials', 'GET /benefits/credentials/:credentialId/qr', 'POST /benefits/credentials/:credentialId/revoke']) {
+      expect(configs.get(key)?.dynamicPermission, key).toBe(true);
+      expect(configs.get(key)?.permission, key).toBeUndefined();
+      const route = routes.find((r) => `${r.method} ${r.path}` === key);
+      expect(route?.handlerText, key).toContain("requirePermission('admin:benefit:credential_issue'");
+      expect(route?.handlerText, key).toContain('branchId: person.branchId');
+      expect(route?.handlerText, key).toContain('operatorOnly: true');
+      expect(establishesOwnership(route!.handlerText), key).toBe(true);
+    }
+  });
+
   it('Roles reads carry the operator into the catalogue, holder lookup and preview (SCRUM-612)', () => {
     for (const path of ['/roles', '/roles/holders', '/roles/preview']) {
       const route = routes.find((r) => r.method === 'GET' && r.path === path);

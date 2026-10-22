@@ -46459,7 +46459,246 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "policy": {
+                      "type": "object",
+                      "properties": {
+                        "bands": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "label": {
+                                "type": "string"
+                              },
+                              "minAge": {
+                                "type": "number"
+                              },
+                              "maxAge": {
+                                "type": "number",
+                                "nullable": true
+                              },
+                              "requirement": {
+                                "type": "string",
+                                "enum": [
+                                  "none",
+                                  "drop_off",
+                                  "nanny"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "label",
+                              "minAge",
+                              "maxAge",
+                              "requirement"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "siblingWaiver": {
+                          "type": "object",
+                          "properties": {
+                            "enabled": {
+                              "type": "boolean"
+                            },
+                            "guardianMinAge": {
+                              "type": "number"
+                            },
+                            "waivableRequirement": {
+                              "type": "string",
+                              "enum": [
+                                "none",
+                                "drop_off",
+                                "nanny"
+                              ]
+                            },
+                            "staffOnly": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "enabled",
+                            "guardianMinAge",
+                            "waivableRequirement",
+                            "staffOnly"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "confirmations": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "text": {
+                                "type": "string"
+                              },
+                              "required": {
+                                "type": "boolean"
+                              },
+                              "order": {
+                                "type": "integer"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "text",
+                              "required",
+                              "order"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "bands",
+                        "siblingWaiver",
+                        "confirmations"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "pricing": {
+                      "type": "object",
+                      "properties": {
+                        "oneTimeFee": {
+                          "type": "object",
+                          "properties": {
+                            "weekday": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "weekend": {
+                              "type": "integer",
+                              "minimum": 0
+                            }
+                          },
+                          "required": [
+                            "weekday",
+                            "weekend"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "nannyHourly": {
+                          "type": "object",
+                          "properties": {
+                            "weekday": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "weekend": {
+                              "type": "integer",
+                              "minimum": 0
+                            }
+                          },
+                          "required": [
+                            "weekday",
+                            "weekend"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "extraHour": {
+                          "type": "object",
+                          "properties": {
+                            "weekday": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "weekend": {
+                              "type": "integer",
+                              "minimum": 0
+                            }
+                          },
+                          "required": [
+                            "weekday",
+                            "weekend"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "fullDayHours": {
+                          "type": "integer"
+                        },
+                        "nannyRatioSoftMax": {
+                          "type": "integer"
+                        },
+                        "prepaidFoodUnused": {
+                          "type": "string",
+                          "enum": [
+                            "refund",
+                            "forfeit"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "oneTimeFee",
+                        "nannyHourly",
+                        "extraHour",
+                        "fullDayHours",
+                        "nannyRatioSoftMax",
+                        "prepaidFoodUnused"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "photoRetentionDays": {
+                      "type": "integer"
+                    },
+                    "nannies": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "onShift": {
+                            "type": "boolean"
+                          },
+                          "load": {
+                            "type": "integer"
+                          },
+                          "coveredNames": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "onShift",
+                          "load",
+                          "coveredNames"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "policy",
+                    "pricing",
+                    "photoRetentionDays",
+                    "nannies"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -47637,7 +47876,210 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "policy": {
+                      "type": "object",
+                      "properties": {
+                        "bands": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "label": {
+                                "type": "string"
+                              },
+                              "minAge": {
+                                "type": "number"
+                              },
+                              "maxAge": {
+                                "type": "number",
+                                "nullable": true
+                              },
+                              "requirement": {
+                                "type": "string",
+                                "enum": [
+                                  "none",
+                                  "drop_off",
+                                  "nanny"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "label",
+                              "minAge",
+                              "maxAge",
+                              "requirement"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "siblingWaiver": {
+                          "type": "object",
+                          "properties": {
+                            "enabled": {
+                              "type": "boolean"
+                            },
+                            "guardianMinAge": {
+                              "type": "number"
+                            },
+                            "waivableRequirement": {
+                              "type": "string",
+                              "enum": [
+                                "none",
+                                "drop_off",
+                                "nanny"
+                              ]
+                            },
+                            "staffOnly": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "enabled",
+                            "guardianMinAge",
+                            "waivableRequirement",
+                            "staffOnly"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "confirmations": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "text": {
+                                "type": "string"
+                              },
+                              "required": {
+                                "type": "boolean"
+                              },
+                              "order": {
+                                "type": "integer"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "text",
+                              "required",
+                              "order"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "bands",
+                        "siblingWaiver",
+                        "confirmations"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "pricing": {
+                      "type": "object",
+                      "properties": {
+                        "oneTimeFee": {
+                          "type": "object",
+                          "properties": {
+                            "weekday": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "weekend": {
+                              "type": "integer",
+                              "minimum": 0
+                            }
+                          },
+                          "required": [
+                            "weekday",
+                            "weekend"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "nannyHourly": {
+                          "type": "object",
+                          "properties": {
+                            "weekday": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "weekend": {
+                              "type": "integer",
+                              "minimum": 0
+                            }
+                          },
+                          "required": [
+                            "weekday",
+                            "weekend"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "extraHour": {
+                          "type": "object",
+                          "properties": {
+                            "weekday": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "weekend": {
+                              "type": "integer",
+                              "minimum": 0
+                            }
+                          },
+                          "required": [
+                            "weekday",
+                            "weekend"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "fullDayHours": {
+                          "type": "integer"
+                        },
+                        "nannyRatioSoftMax": {
+                          "type": "integer"
+                        },
+                        "prepaidFoodUnused": {
+                          "type": "string",
+                          "enum": [
+                            "refund",
+                            "forfeit"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "oneTimeFee",
+                        "nannyHourly",
+                        "extraHour",
+                        "fullDayHours",
+                        "nannyRatioSoftMax",
+                        "prepaidFoodUnused"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "photoRetentionDays": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "policy",
+                    "pricing",
+                    "photoRetentionDays"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -47707,7 +48149,210 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "policy": {
+                      "type": "object",
+                      "properties": {
+                        "bands": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "label": {
+                                "type": "string"
+                              },
+                              "minAge": {
+                                "type": "number"
+                              },
+                              "maxAge": {
+                                "type": "number",
+                                "nullable": true
+                              },
+                              "requirement": {
+                                "type": "string",
+                                "enum": [
+                                  "none",
+                                  "drop_off",
+                                  "nanny"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "label",
+                              "minAge",
+                              "maxAge",
+                              "requirement"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "siblingWaiver": {
+                          "type": "object",
+                          "properties": {
+                            "enabled": {
+                              "type": "boolean"
+                            },
+                            "guardianMinAge": {
+                              "type": "number"
+                            },
+                            "waivableRequirement": {
+                              "type": "string",
+                              "enum": [
+                                "none",
+                                "drop_off",
+                                "nanny"
+                              ]
+                            },
+                            "staffOnly": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "enabled",
+                            "guardianMinAge",
+                            "waivableRequirement",
+                            "staffOnly"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "confirmations": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "text": {
+                                "type": "string"
+                              },
+                              "required": {
+                                "type": "boolean"
+                              },
+                              "order": {
+                                "type": "integer"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "text",
+                              "required",
+                              "order"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "bands",
+                        "siblingWaiver",
+                        "confirmations"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "pricing": {
+                      "type": "object",
+                      "properties": {
+                        "oneTimeFee": {
+                          "type": "object",
+                          "properties": {
+                            "weekday": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "weekend": {
+                              "type": "integer",
+                              "minimum": 0
+                            }
+                          },
+                          "required": [
+                            "weekday",
+                            "weekend"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "nannyHourly": {
+                          "type": "object",
+                          "properties": {
+                            "weekday": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "weekend": {
+                              "type": "integer",
+                              "minimum": 0
+                            }
+                          },
+                          "required": [
+                            "weekday",
+                            "weekend"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "extraHour": {
+                          "type": "object",
+                          "properties": {
+                            "weekday": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "weekend": {
+                              "type": "integer",
+                              "minimum": 0
+                            }
+                          },
+                          "required": [
+                            "weekday",
+                            "weekend"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "fullDayHours": {
+                          "type": "integer"
+                        },
+                        "nannyRatioSoftMax": {
+                          "type": "integer"
+                        },
+                        "prepaidFoodUnused": {
+                          "type": "string",
+                          "enum": [
+                            "refund",
+                            "forfeit"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "oneTimeFee",
+                        "nannyHourly",
+                        "extraHour",
+                        "fullDayHours",
+                        "nannyRatioSoftMax",
+                        "prepaidFoodUnused"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "photoRetentionDays": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "policy",
+                    "pricing",
+                    "photoRetentionDays"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -47820,7 +48465,210 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "policy": {
+                      "type": "object",
+                      "properties": {
+                        "bands": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "label": {
+                                "type": "string"
+                              },
+                              "minAge": {
+                                "type": "number"
+                              },
+                              "maxAge": {
+                                "type": "number",
+                                "nullable": true
+                              },
+                              "requirement": {
+                                "type": "string",
+                                "enum": [
+                                  "none",
+                                  "drop_off",
+                                  "nanny"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "label",
+                              "minAge",
+                              "maxAge",
+                              "requirement"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "siblingWaiver": {
+                          "type": "object",
+                          "properties": {
+                            "enabled": {
+                              "type": "boolean"
+                            },
+                            "guardianMinAge": {
+                              "type": "number"
+                            },
+                            "waivableRequirement": {
+                              "type": "string",
+                              "enum": [
+                                "none",
+                                "drop_off",
+                                "nanny"
+                              ]
+                            },
+                            "staffOnly": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "enabled",
+                            "guardianMinAge",
+                            "waivableRequirement",
+                            "staffOnly"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "confirmations": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "text": {
+                                "type": "string"
+                              },
+                              "required": {
+                                "type": "boolean"
+                              },
+                              "order": {
+                                "type": "integer"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "text",
+                              "required",
+                              "order"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "bands",
+                        "siblingWaiver",
+                        "confirmations"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "pricing": {
+                      "type": "object",
+                      "properties": {
+                        "oneTimeFee": {
+                          "type": "object",
+                          "properties": {
+                            "weekday": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "weekend": {
+                              "type": "integer",
+                              "minimum": 0
+                            }
+                          },
+                          "required": [
+                            "weekday",
+                            "weekend"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "nannyHourly": {
+                          "type": "object",
+                          "properties": {
+                            "weekday": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "weekend": {
+                              "type": "integer",
+                              "minimum": 0
+                            }
+                          },
+                          "required": [
+                            "weekday",
+                            "weekend"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "extraHour": {
+                          "type": "object",
+                          "properties": {
+                            "weekday": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "weekend": {
+                              "type": "integer",
+                              "minimum": 0
+                            }
+                          },
+                          "required": [
+                            "weekday",
+                            "weekend"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "fullDayHours": {
+                          "type": "integer"
+                        },
+                        "nannyRatioSoftMax": {
+                          "type": "integer"
+                        },
+                        "prepaidFoodUnused": {
+                          "type": "string",
+                          "enum": [
+                            "refund",
+                            "forfeit"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "oneTimeFee",
+                        "nannyHourly",
+                        "extraHour",
+                        "fullDayHours",
+                        "nannyRatioSoftMax",
+                        "prepaidFoodUnused"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "photoRetentionDays": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "policy",
+                    "pricing",
+                    "photoRetentionDays"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }

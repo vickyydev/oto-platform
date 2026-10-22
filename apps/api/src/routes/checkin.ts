@@ -81,6 +81,7 @@ export async function checkinRoutes(app: App): Promise<void> {
       schema: {
         description: "The branch's supervision policy, confirmations, drop-off pricing and nanny roster",
         querystring: z.object({ branchId: z.string().uuid() }),
+        response: { 200: SupervisionConfigSchema.extend({ nannies: z.array(NannyViewSchema) }) },
       },
     },
     async (req) => {
@@ -299,6 +300,21 @@ const EditCheckinSchema = z
 
 const WeekdayWeekend = z.object({ weekday: z.number().int().min(0), weekend: z.number().int().min(0) });
 const BranchQuery = z.object({ branchId: z.string().uuid() });
+const SupervisionConfigSchema = z.object({
+  policy: z.object({
+    bands: z.array(z.object({
+      id: z.string(), label: z.string(), minAge: z.number(), maxAge: z.number().nullable(), requirement: SERVICE,
+    })),
+    siblingWaiver: z.object({ enabled: z.boolean(), guardianMinAge: z.number(), waivableRequirement: SERVICE, staffOnly: z.boolean() }),
+    confirmations: z.array(z.object({ id: z.string(), text: z.string(), required: z.boolean(), order: z.number().int() })),
+  }),
+  pricing: z.object({
+    oneTimeFee: WeekdayWeekend, nannyHourly: WeekdayWeekend, extraHour: WeekdayWeekend,
+    fullDayHours: z.number().int(), nannyRatioSoftMax: z.number().int(), prepaidFoodUnused: z.enum(['refund', 'forfeit']),
+  }),
+  photoRetentionDays: z.number().int(),
+});
+const NannyViewSchema = z.object({ id: z.string().uuid(), name: z.string(), onShift: z.boolean(), load: z.number().int(), coveredNames: z.array(z.string()) });
 
 /**
  * The connection check's sender: the platform's console messaging adapter,
@@ -497,6 +513,7 @@ async function boardRoutes(app: App): Promise<void> {
       schema: {
         description: "Replace the branch's age bands and sibling-waiver rule (audited)",
         querystring: BranchQuery,
+        response: { 200: SupervisionConfigSchema },
         body: z
           .object({
             bands: z
@@ -535,6 +552,7 @@ async function boardRoutes(app: App): Promise<void> {
       schema: {
         description: "Replace the branch's consent confirmations checklist: kept items update, new ones are created, dropped ones are archived (audited)",
         querystring: BranchQuery,
+        response: { 200: SupervisionConfigSchema },
         body: z
           .object({
             items: z
@@ -566,6 +584,7 @@ async function boardRoutes(app: App): Promise<void> {
       schema: {
         description: "Replace the branch's drop-off and nanny pricing, in satang, and the nanny ratio it warns at (audited)",
         querystring: BranchQuery,
+        response: { 200: SupervisionConfigSchema },
         body: z
           .object({
             oneTimeFee: WeekdayWeekend,

@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { EMPLOYEE_SOURCES } from '@oto/db';
+import { and, eq } from 'drizzle-orm';
+import { benefitCredential, EMPLOYEE_SOURCES } from '@oto/db';
 import {
   BENEFIT_ONLINE_ONLY_STAGES,
   BENEFIT_ROLES,
@@ -8,12 +9,14 @@ import {
   BenefitTargetSchema,
 } from '@oto/shared';
 import type { App } from '../app';
+import { AppError } from '../lib/errors';
 import {
   benefitTemplateHistory,
   benefitToday,
   effectiveBenefitOn,
   listBenefitTemplates,
   listStaffBenefits,
+  loadEmployee,
   saveBenefitTemplate,
   saveStaffBenefit,
   staffBenefitHistory,
@@ -37,10 +40,11 @@ import { opCtx } from '../services/tx';
  * `services/benefits.ts`.
  *
  * **Operator-wide, like the prototype's templates** (catalogStore.ts:1150 —
- * "global"). These routes name no branch: the guard checks the permission
- * against the caller's operator and session branch, every by-id route loads
- * the employee inside the caller's operator, and the session's branch decides
- * only which trading day "today" is.
+ * "global"). Metadata reads keep their seated permission gate. Template and
+ * profile writes require operator management; credential actions resolve the
+ * employee's owned park (operator reach when unassigned). Every by-id route
+ * loads inside the caller's operator. The session's branch decides which
+ * trading day "today" is.
  *
  * Two permissions: `admin:benefit:read` to look — a branch manager has it —
  * and `admin:benefit:manage` to change, which only the operator's
@@ -108,6 +112,13 @@ const EffectiveFrom = IsoDay.optional().describe(
 const RoleParams = z.object({ role: Role });
 const EmployeeParams = z.object({ employeeId: z.string().uuid() });
 
+async function loadCredentialEmployee(app: App, operatorId: string, credentialId: string) {
+  const [row] = await app.db.select({ employeeId: benefitCredential.employeeId }).from(benefitCredential)
+    .where(and(eq(benefitCredential.id, credentialId), eq(benefitCredential.operatorId, operatorId))).limit(1);
+  if (!row) throw new AppError(404, 'BENEFIT_CREDENTIAL_NOT_FOUND', 'No such benefit QR');
+  return loadEmployee(app.db, operatorId, row.employeeId);
+}
+
 export async function benefitRoutes(app: App): Promise<void> {
   const todayOf = (req: { requireAuth: () => { operatorId: string; branchId: string | null } }) => {
     const auth = req.requireAuth();
@@ -152,7 +163,7 @@ export async function benefitRoutes(app: App): Promise<void> {
   app.put(
     '/templates/:role',
     {
-      config: { permission: 'admin:benefit:manage' },
+      config: { permission: 'admin:benefit:manage', target: { operator: true } },
       schema: {
         description:
           'Save a role template from a trading day (today when absent). The version in force that day is closed on it and a new one runs from it to wherever the closed one ran — or, with nothing in force that day, to the next version already saved. A change dated tomorrow leaves today unchanged. A save identical to the version in force that day writes nothing (`changed: false`). Every category or menu item the profile names must be this operator’s. Audited `benefit.template_update`.',
@@ -217,7 +228,7 @@ export async function benefitRoutes(app: App): Promise<void> {
   app.put(
     '/profiles/:employeeId',
     {
-      config: { permission: 'admin:benefit:manage' },
+      config: { permission: 'admin:benefit:manage', target: { operator: true } },
       schema: {
         description:
           'Set a staff member’s benefit role (null: no benefit) and override (null: their role’s template as it stands; set: their whole profile while it is on) from a trading day, versioned exactly as a template is. An override needs a role. Someone who has left (archived) is refused. Audited `benefit.profile_update`.',
@@ -372,7 +383,7 @@ export async function benefitRoutes(app: App): Promise<void> {
   app.post(
     '/credentials',
     {
-      config: { permission: 'admin:benefit:credential_issue' },
+      config: { dynamicPermission: true },
       schema: {
         description:
           'Issue a staff member’s benefit QR: an Ed25519-signed `OTO-BEN:v1` credential under the `benefit_qr` key, good for a year. One live QR per person — a second is refused (`BENEFIT_CREDENTIAL_LIVE`) until the first is revoked — and nobody without a benefit role gets one (`BENEFIT_NO_ROLE`). The answer is the credential’s record, never the code, so a retried request replays nothing that can be scanned. 503 `BENEFIT_QR_UNAVAILABLE` when the deployment has no `BENEFIT_QR_PRIVATE_KEY`. Audited `benefit.credential_issue`.',
@@ -382,6 +393,8 @@ export async function benefitRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const auth = req.requireAuth();
+      const person = await loadEmployee(app.db, auth.operatorId, req.body.employeeId);
+      await req.requirePermission('admin:benefit:credential_issue', person.branchId ? { branchId: person.branchId } : { operatorOnly: true });
       return issueBenefitCredential(
         app.db,
         opCtx(req),
@@ -396,7 +409,7 @@ export async function benefitRoutes(app: App): Promise<void> {
   app.get(
     '/credentials/:credentialId/qr',
     {
-      config: { permission: 'admin:benefit:credential_issue' },
+      config: { dynamicPermission: true },
       schema: {
         description:
           'The printable payload behind the Staff Benefits QR dialog: the staff member’s name and the code the QR encodes (and the line printed under it). Re-derived from the record and the key, never stored; refused for a QR that is revoked, expired, or whose holder has left, and for one signed under a key this deployment no longer holds. Not cached.',
@@ -414,6 +427,8 @@ export async function benefitRoutes(app: App): Promise<void> {
     },
     async (req, reply) => {
       const auth = req.requireAuth();
+      const person = await loadCredentialEmployee(app, auth.operatorId, req.params.credentialId);
+      await req.requirePermission('admin:benefit:credential_issue', person.branchId ? { branchId: person.branchId } : { operatorOnly: true });
       const payload = await benefitCredentialQr(
         app.db,
         auth.operatorId,
@@ -428,7 +443,7 @@ export async function benefitRoutes(app: App): Promise<void> {
   app.post(
     '/credentials/:credentialId/revoke',
     {
-      config: { permission: 'admin:benefit:credential_issue' },
+      config: { dynamicPermission: true },
       schema: {
         description:
           'Revoke a benefit QR. The cloud refuses it from this moment ("Benefit revoked"); every box refuses it from its next pull of the `benefits` cache scope, which carries the revocation list — until then, a box that is offline is bounded by the QR’s own expiry. Revoking one already revoked changes nothing (`changed: false`). Audited `benefit.credential_revoke`.',
@@ -438,6 +453,8 @@ export async function benefitRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const auth = req.requireAuth();
+      const person = await loadCredentialEmployee(app, auth.operatorId, req.params.credentialId);
+      await req.requirePermission('admin:benefit:credential_issue', person.branchId ? { branchId: person.branchId } : { operatorOnly: true });
       return revokeBenefitCredential(
         app.db,
         opCtx(req),

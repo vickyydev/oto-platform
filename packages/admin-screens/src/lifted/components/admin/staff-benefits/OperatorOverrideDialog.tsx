@@ -1,5 +1,5 @@
 import { useAdminScreenRuntime } from '../../../runtime/AdminScreenRuntime';
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { type BenefitRole } from "@oto/shared";
 import { type BenefitProfile, type MenuCategoryDef } from "../../../model/types";
 import { profileFromApi, profileToApi, type BenefitTemplateRow, type StaffBenefitRow, type StaffBenefitVersion } from "../../../api/benefits";
@@ -10,8 +10,10 @@ import { Input } from "../../ui/input";
 import { Switch } from "../../ui/switch";
 import { Label } from "../../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/select";
-import { BenefitProfileFields } from "./BenefitProfileFields";
+import { BenefitProfileFieldsWithPorts } from "./BenefitProfileFields";
 import { BenefitHistoryList, type BenefitHistoryEntry } from "./BenefitHistoryList";
+import { useBenefitIdentity, type BenefitDialogPorts } from '../../../runtime/benefits';
+import { idemKey } from '../../../api/client';
 
 
 const NO_ROLE = 'none';
@@ -42,16 +44,7 @@ function staffEntry(v: StaffBenefitVersion, templates: BenefitTemplateRow[], sum
  * offered to change), the day the change counts from, and the history of
  * every change to this person's benefit.
  */
-export function OperatorOverrideDialog({
-  staff,
-  templates,
-  today,
-  canManage,
-  categories,
-  open,
-  onOpenChange,
-  onSaved,
-}: {
+interface OverrideProps {
   staff: StaffBenefitRow | null;
   templates: BenefitTemplateRow[];
   today: string;
@@ -59,18 +52,28 @@ export function OperatorOverrideDialog({
   categories: MenuCategoryDef[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSaved: () => void;
-}) {
+  onSaved: () => void | Promise<void>;
+}
+export function OperatorOverrideDialog(props: OverrideProps) {
   const runtime = useAdminScreenRuntime();
-  const benefitsApi = runtime.api.benefits;
-  const summarizeProfile = runtime.domain.benefitSummary.summarizeProfile;
-  const toast = runtime.toast;
+  return <OperatorOverrideDialogWithPorts {...props} ports={{ contextKey: runtime.session.operator?.id ?? '', api: runtime.api.benefits, menu: runtime.domain.menu, summarizeProfile: runtime.domain.benefitSummary.summarizeProfile, toast: runtime.toast }} />;
+}
+export function OperatorOverrideDialogWithPorts({ staff, templates, today, canManage, categories, open, onOpenChange, onSaved, ports }: OverrideProps & { ports: BenefitDialogPorts }) {
+  const benefitsApi = ports.api, summarizeProfile = ports.summarizeProfile, toast = ports.toast;
+  const identity = useBenefitIdentity(ports.contextKey + '|' + (staff?.employeeId ?? '') + '|' + open);
+  const identityRef = useRef(identity), staffRef = useRef(staff?.employeeId), openRef = useRef(open), manageRef = useRef(canManage), mounted = useRef(true), savingRef = useRef(false);
+  identityRef.current = identity; staffRef.current = staff?.employeeId; openRef.current = open; manageRef.current = canManage;
+  const intentRef = useRef<{ identity: string; bodyKey: string; key: string; confirmed: boolean; changed?: boolean } | null>(null);
+  const inputRef = useRef({ staff, today, templates, summarizeProfile });
+  inputRef.current = { staff, today, templates, summarizeProfile };
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
 
   const [role, setRole] = useState<RoleChoice>(NO_ROLE);
   const [enabled, setEnabled] = useState(false);
   const [profile, setProfile] = useState<BenefitProfile>({});
   const [effectiveFrom, setEffectiveFrom] = useState(today);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<{
     entries: BenefitHistoryEntry[];
     loading: boolean;
@@ -78,7 +81,13 @@ export function OperatorOverrideDialog({
   }>({ entries: [], loading: false, error: null });
 
   useEffect(() => {
+    const { staff, today, templates, summarizeProfile } = inputRef.current;
     if (!staff) return;
+    const requestIdentity = identityRef.current;
+    intentRef.current = null;
+    savingRef.current = false;
+    setSaving(false);
+    setError(null);
     setRole(staff.current?.benefitRole ?? NO_ROLE);
     setEnabled(!!staff.current?.override);
     setProfile(profileFromApi(staff.current?.override ?? staff.effectiveProfile));
@@ -88,7 +97,7 @@ export function OperatorOverrideDialog({
     benefitsApi
       .staffHistory(staff.employeeId)
       .then((res) => {
-        if (live)
+        if (live && mounted.current && identityRef.current === requestIdentity)
           setHistory({
             entries: res.versions.map((v) => staffEntry(v, templates, summarizeProfile)),
             loading: false,
@@ -96,7 +105,7 @@ export function OperatorOverrideDialog({
           });
       })
       .catch((err: unknown) => {
-        if (live) {
+        if (live && mounted.current && identityRef.current === requestIdentity) {
           setHistory({
             entries: [],
             loading: false,
@@ -107,10 +116,8 @@ export function OperatorOverrideDialog({
     return () => {
       live = false;
     };
-    // `templates` only names the roles in the history; a reload of them must
-    // not reset an edit in progress.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [staff, today]);
+    // New catalogue objects only name history; they must not replace a draft.
+  }, [identity, benefitsApi]);
 
   if (!staff) return null;
 
@@ -125,36 +132,55 @@ export function OperatorOverrideDialog({
   };
 
   const save = async () => {
+    if (!staff || savingRef.current || !manageRef.current || !openRef.current || !mounted.current || identityRef.current !== identity || staffRef.current !== staff.employeeId) return;
+    const requestIdentity = identity, employeeId = staff.employeeId;
+    const owns = () => mounted.current && identityRef.current === requestIdentity && staffRef.current === employeeId && openRef.current && manageRef.current;
+    const benefitRole = role === NO_ROLE ? null : role;
+    const body = { benefitRole, override: benefitRole && enabled ? profileToApi(profile) : null, effectiveFrom: effectiveFrom || today };
+    const bodyKey = JSON.stringify(body);
+    if (intentRef.current?.identity !== requestIdentity || intentRef.current.bodyKey !== bodyKey)
+      intentRef.current = { identity: requestIdentity, bodyKey, key: idemKey(), confirmed: false };
+    const intent = intentRef.current;
+    savingRef.current = true;
     setSaving(true);
+    setError(null);
     try {
-      const benefitRole = role === NO_ROLE ? null : role;
-      const res = await benefitsApi.saveStaff(staff.employeeId, {
-        benefitRole,
-        override: benefitRole && enabled ? profileToApi(profile) : null,
-        effectiveFrom: effectiveFrom || today,
-      });
+      if (!intent.confirmed) {
+        const res = await benefitsApi.saveStaff(employeeId, body, intent.key);
+        intent.confirmed = true;
+        intent.changed = res.changed;
+      }
+      if (!owns()) return;
+      await onSaved();
+      if (!owns()) return;
       toast({
-        title: res.changed ? `${staff.name} — benefit saved` : 'Nothing to change',
+        title: intent.changed ? `${staff.name} — benefit saved` : 'Nothing to change',
         description:
-          res.changed && effectiveFrom && effectiveFrom !== today
+          intent.changed && effectiveFrom && effectiveFrom !== today
             ? `Takes effect on ${effectiveFrom}; today is unchanged.`
             : undefined,
       });
-      onSaved();
+      intentRef.current = null;
       onOpenChange(false);
     } catch (err) {
+      if (!owns()) return;
+      if (intent.confirmed) { setError('Saved, but the current benefit could not be read. Save again to retry the read without another change.'); return; }
       toast({
         title: 'Not saved',
         description: err instanceof Error ? err.message : 'The benefit could not be saved',
         variant: 'destructive',
       });
     } finally {
-      setSaving(false);
+      if (identityRef.current === requestIdentity && mounted.current) { savingRef.current = false; setSaving(false); }
     }
+  };
+  const changeOpen = (next: boolean) => {
+    if (!next) { identityRef.current += '|closed'; openRef.current = false; }
+    onOpenChange(next);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={changeOpen}>
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{staff.name} — benefit override</DialogTitle>
@@ -162,6 +188,7 @@ export function OperatorOverrideDialog({
             Overrides replace this staff member's role template entirely while enabled.
           </DialogDescription>
         </DialogHeader>
+        {error && <p className="text-sm text-destructive">{error}</p>}
 
         <fieldset
           disabled={!canManage || saving}
@@ -194,10 +221,11 @@ export function OperatorOverrideDialog({
               </div>
 
               {enabled ? (
-                <BenefitProfileFields
+                <BenefitProfileFieldsWithPorts
                   profile={profile}
                   categories={categories}
                   onChange={setProfile}
+                  ports={{ menu: ports.menu }}
                 />
               ) : (
                 <p className="text-sm text-foreground/50">
@@ -235,7 +263,7 @@ export function OperatorOverrideDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => changeOpen(false)}>
             Cancel
           </Button>
           {canManage && (
