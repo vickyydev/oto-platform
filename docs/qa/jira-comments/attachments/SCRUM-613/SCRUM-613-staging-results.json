@@ -1,0 +1,345 @@
+{
+  "ticket": "SCRUM-613",
+  "releaseSha": "8cb0a2546a681e5ee6986b217b175a1f3f4a7e09",
+  "demoAccountId": "01a0c9ae-539f-7a52-987e-69d1c1a7a3cf",
+  "demoName": "Khun Dao (Manager)",
+  "fixture": {
+    "name": "ZZ TEST SCRUM-613 App access 20261022000604",
+    "email": "zz-test-scrum-613-20261022000604-174260e7@example.invalid",
+    "id": "01a160ee-2d2b-7aaa-90f2-eceea25e85a4"
+  },
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "sourceSha": "8cb0a2546a681e5ee6986b217b175a1f3f4a7e09",
+      "deployId": "dep-dbcl548u01pc73bf5ks0",
+      "finishedAt": "2026-10-22T00:05:37.63542Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "sourceSha": "8cb0a2546a681e5ee6986b217b175a1f3f4a7e09",
+      "deployId": "dep-dbcl548u01pc73bf5ltg",
+      "finishedAt": "2026-10-22T00:03:03.58801Z"
+    }
+  ],
+  "checks": [
+    {
+      "name": "Existing seeded demo, empty OTO identity and dedicated grant, and reachable mapped park checked before mutation",
+      "passed": true,
+      "at": "2026-10-22T00:06:17.210Z"
+    },
+    {
+      "name": "One action creates the named app user for the existing account; exact replay returns the same identity and app user",
+      "passed": true,
+      "at": "2026-10-22T00:06:39.582Z"
+    },
+    {
+      "name": "The lifted branch editor saves the same explicit demo park, with two-sided read-back and a single replayable edit",
+      "passed": true,
+      "at": "2026-10-22T00:06:41.116Z"
+    },
+    {
+      "name": "Native unlink removes only the link and dedicated access; the named app user remains available to link",
+      "passed": true,
+      "at": "2026-10-22T00:07:03.883Z"
+    },
+    {
+      "name": "The original Unlinked form links the same app user without creating another; its approved tile default is immediately narrowed back",
+      "passed": true,
+      "at": "2026-10-22T00:22:57.130Z"
+    },
+    {
+      "name": "Final owned unlink restores every original identity, exposed assignment row and effective permission scope; account status and phone are unchanged",
+      "passed": true,
+      "at": "2026-10-22T00:23:01.130Z"
+    },
+    {
+      "name": "Each link, branch save and unlink has exactly one fresh audit row; exact-key replays add none",
+      "passed": true,
+      "at": "2026-10-22T00:23:02.560Z"
+    },
+    {
+      "name": "App access and the retained named fixture fit a 390-pixel phone after exact demo restoration",
+      "passed": true,
+      "at": "2026-10-22T00:23:05.840Z"
+    }
+  ],
+  "screenshots": [
+    {
+      "filename": "SCRUM-613-01-create-app-user.png",
+      "label": "SCRUM-613: existing demo account, Staff app role and one chosen park",
+      "capturedAt": "2026-10-22T00:06:21.773Z",
+      "capturedAfterDeploy": true,
+      "sha256": "1246c51a61ff7b8f28b7bceec567d89d82dda5454cc963ab5aaf8ecee15e1d4b",
+      "redactions": [
+        "All unrelated account rows and captions",
+        "All unrelated list rows, including late arrivals",
+        "Refusal details and alerts"
+      ],
+      "reviewedAt": "2026-10-22T00:13:30.053Z",
+      "inspectedForPrivacyAndContent": true,
+      "jiraAttachmentId": "11918"
+    },
+    {
+      "filename": "SCRUM-613-02-linked-park.png",
+      "label": "SCRUM-613: app user and identity created together, chosen park read back",
+      "capturedAt": "2026-10-22T00:06:39.536Z",
+      "capturedAfterDeploy": true,
+      "sha256": "77dcd76cc2bdf2cd1f4e3d8af2e0a68be7c5438d0ca67f58b5a432453c40c7e4",
+      "redactions": [
+        "All unrelated account rows and captions",
+        "All unrelated list rows, including late arrivals",
+        "Refusal details and alerts"
+      ],
+      "reviewedAt": "2026-10-22T00:13:30.054Z",
+      "inspectedForPrivacyAndContent": true,
+      "jiraAttachmentId": "11919"
+    },
+    {
+      "filename": "SCRUM-613-03-unlinked-fixture.png",
+      "label": "SCRUM-613: owned unlink retains the named app user in the unlinked list",
+      "capturedAt": "2026-10-22T00:07:03.845Z",
+      "capturedAfterDeploy": true,
+      "sha256": "2fac14dceacec65f09c34d153d31598a2df44b80a5b50eba43455bfcb3145383",
+      "redactions": [
+        "All unrelated account rows and captions",
+        "All unrelated list rows, including late arrivals",
+        "Refusal details and alerts"
+      ],
+      "reviewedAt": "2026-10-22T00:13:30.054Z",
+      "inspectedForPrivacyAndContent": true,
+      "jiraAttachmentId": "11920"
+    },
+    {
+      "filename": "SCRUM-613-04-relinked-existing-user.png",
+      "label": "SCRUM-613: Unlinked form claims the same app user; tile narrowed back to the chosen park",
+      "capturedAt": "2026-10-22T00:22:57.083Z",
+      "capturedAfterDeploy": true,
+      "sha256": "c3e4040e7367c3ad30182b7f1229434c37a2c8fc978c398068ea08d213196826",
+      "redactions": [
+        "All unrelated account rows and captions",
+        "All unrelated list rows, including late arrivals",
+        "Refusal details and alerts"
+      ],
+      "jiraAttachmentId": "11921",
+      "reviewedAt": "2026-10-22T00:24:07.410Z",
+      "inspectedForPrivacyAndContent": true
+    },
+    {
+      "filename": "SCRUM-613-05-phone-restored.png",
+      "label": "SCRUM-613: named unlinked fixture at 390px, seeded demo exactly restored",
+      "capturedAt": "2026-10-22T00:23:05.817Z",
+      "capturedAfterDeploy": true,
+      "sha256": "48dba8fb3ed6639bda9215e31e403b49010ef2c31e3d3f8dc47c39beb80022c8",
+      "redactions": [
+        "All unrelated account rows and captions",
+        "All unrelated list rows, including late arrivals",
+        "Refusal details and alerts"
+      ],
+      "jiraAttachmentId": "11922",
+      "reviewedAt": "2026-10-22T00:24:07.411Z",
+      "inspectedForPrivacyAndContent": true,
+      "inspectionNote": "Shows the restored seeded account, App access navigation and Unlinked heading at 390 pixels. The retained fixture was verified in the DOM and read-back but is outside this image viewport; image03 shows the fixture."
+    }
+  ],
+  "operations": [
+    {
+      "phase": "create",
+      "method": "POST",
+      "path": "/admin/apps/oto_app/users",
+      "submittedAt": "2026-10-22T00:06:21.842Z",
+      "keyFingerprint": "7d71fb3576d77ba3cb83b8bfda8cbebf0c0e9d068648267827ce00680225b65d",
+      "settled": true,
+      "successful": true,
+      "consumed": true,
+      "bodyFingerprint": "aeb97fbf4ac519ffa00a4e04fde79826148257fff003504494d0754f59a1cf22",
+      "lastDispatchCheckpointAt": "2026-10-22T00:06:22.317Z",
+      "lastResponseAt": "2026-10-22T00:06:22.314Z",
+      "lastResponseStatus": 200,
+      "identityId": "01a160ee-2d28-7ca7-9d15-bfcfb8e42762",
+      "externalUserId": "01a160ee-2d2b-7aaa-90f2-eceea25e85a4",
+      "replayedAt": "2026-10-22T00:06:22.846Z"
+    },
+    {
+      "phase": "branches-first",
+      "method": "PUT",
+      "path": "/admin/apps/oto_app/users/01a0c9ae-539f-7a52-987e-69d1c1a7a3cf/branches",
+      "submittedAt": "2026-10-22T00:06:39.628Z",
+      "keyFingerprint": "6c1664faa7d336c7cf448b97ef01a477dd192d9a0182163ea35ad15b831284c6",
+      "settled": true,
+      "successful": true,
+      "consumed": false,
+      "bodyFingerprint": "b8bddfa9b528ef83afc2ccfa20702d18027bfd6379b0847bcc83221f2a7c387f",
+      "lastDispatchCheckpointAt": "2026-10-22T00:06:40.121Z",
+      "lastResponseAt": "2026-10-22T00:06:40.119Z",
+      "lastResponseStatus": 200,
+      "replayedAt": "2026-10-22T00:06:40.602Z"
+    },
+    {
+      "phase": "unlink-first",
+      "method": "DELETE",
+      "path": "/admin/apps/oto_app/users/01a0c9ae-539f-7a52-987e-69d1c1a7a3cf",
+      "submittedAt": "2026-10-22T00:06:41.968Z",
+      "keyFingerprint": "b447ecc4c8d238867410a57fdfbaa147cfbecf1d42a7b3f847fd673b88a55d5a",
+      "settled": true,
+      "successful": true,
+      "consumed": false,
+      "bodyFingerprint": null,
+      "lastDispatchCheckpointAt": "2026-10-22T00:06:42.869Z",
+      "lastResponseAt": "2026-10-22T00:06:42.867Z",
+      "lastResponseStatus": 200,
+      "replayedAt": "2026-10-22T00:06:43.712Z"
+    },
+    {
+      "phase": "relink",
+      "method": "POST",
+      "path": "/admin/apps/oto_app/users",
+      "submittedAt": "2026-10-22T00:22:34.190Z",
+      "keyFingerprint": "ec5c23d710cde0a8ffad5c6337d1f7d52d029d888b5175f599532576ca10352d",
+      "settled": true,
+      "successful": true,
+      "consumed": true,
+      "bodyFingerprint": "1b08239ebd8a51c3c633cfc947e7c7a6fce5eeaece0b9dc12379c88689689939",
+      "lastDispatchCheckpointAt": "2026-10-22T00:22:34.673Z",
+      "lastResponseAt": "2026-10-22T00:22:34.671Z",
+      "lastResponseStatus": 200,
+      "identityId": "01a160fd-037a-7596-8b4e-2edac1f18637",
+      "externalUserId": "01a160ee-2d2b-7aaa-90f2-eceea25e85a4",
+      "replayedAt": "2026-10-22T00:22:35.098Z"
+    },
+    {
+      "phase": "branches-after-relink",
+      "method": "PUT",
+      "path": "/admin/apps/oto_app/users/01a0c9ae-539f-7a52-987e-69d1c1a7a3cf/branches",
+      "submittedAt": "2026-10-22T00:22:35.564Z",
+      "keyFingerprint": "c10b5da869aa1d6e33fbda261a069d1fbe94e1c6a5b62c83eaf1879e6a56299d",
+      "settled": true,
+      "successful": true,
+      "consumed": false,
+      "bodyFingerprint": "b8bddfa9b528ef83afc2ccfa20702d18027bfd6379b0847bcc83221f2a7c387f",
+      "lastDispatchCheckpointAt": "2026-10-22T00:22:36.521Z",
+      "lastResponseAt": "2026-10-22T00:22:36.519Z",
+      "lastResponseStatus": 200,
+      "replayedAt": "2026-10-22T00:22:36.967Z"
+    },
+    {
+      "phase": "unlink-final",
+      "method": "DELETE",
+      "path": "/admin/apps/oto_app/users/01a0c9ae-539f-7a52-987e-69d1c1a7a3cf",
+      "submittedAt": "2026-10-22T00:22:57.728Z",
+      "keyFingerprint": "63f859d9bc202faa8445d75352a1fbeca7f49f1803e136641c0a91c855c5f58c",
+      "settled": true,
+      "successful": true,
+      "consumed": false,
+      "bodyFingerprint": null,
+      "lastDispatchCheckpointAt": "2026-10-22T00:22:58.221Z",
+      "lastResponseAt": "2026-10-22T00:22:58.219Z",
+      "lastResponseStatus": 200,
+      "replayedAt": "2026-10-22T00:22:58.663Z"
+    }
+  ],
+  "audits": [
+    {
+      "identityId": "01a160ee-2d28-7ca7-9d15-bfcfb8e42762",
+      "action": "app_identity.link",
+      "id": "01a160ee-2d34-7666-940f-1431f32bd93d",
+      "createdAt": "2026-10-22T00:06:24.296Z",
+      "requestId": "c8466f5f-039e-4270-bf44-10a78feac2a8"
+    },
+    {
+      "identityId": "01a160ee-2d28-7ca7-9d15-bfcfb8e42762",
+      "action": "app_identity.branches",
+      "id": "01a160ee-72cb-7fc7-93cf-8d536ed78416",
+      "createdAt": "2026-10-22T00:06:42.091Z",
+      "requestId": "4ab5a855-333e-4d9e-aaa9-c021591a4472"
+    },
+    {
+      "identityId": "01a160ee-2d28-7ca7-9d15-bfcfb8e42762",
+      "action": "app_identity.unlink",
+      "id": "01a160ee-7d55-7f30-afe3-4b106b844677",
+      "createdAt": "2026-10-22T00:06:44.815Z",
+      "requestId": "8d1deeab-1a5e-4072-a84b-6605add86d32"
+    },
+    {
+      "identityId": "01a160fd-037a-7596-8b4e-2edac1f18637",
+      "action": "app_identity.link",
+      "id": "01a160fd-0383-7808-a299-f24db2c71dfe",
+      "createdAt": "2026-10-22T00:22:36.667Z",
+      "requestId": "79b0a1c7-70b1-4c1a-862d-ae23c1d4e2ca"
+    },
+    {
+      "identityId": "01a160fd-037a-7596-8b4e-2edac1f18637",
+      "action": "app_identity.branches",
+      "id": "01a160fd-0ac6-7d38-a7aa-116c6cbc3bc0",
+      "createdAt": "2026-10-22T00:22:38.520Z",
+      "requestId": "dcd63ff9-27f3-46f8-a26a-445b555ab130"
+    },
+    {
+      "identityId": "01a160fd-037a-7596-8b4e-2edac1f18637",
+      "action": "app_identity.unlink",
+      "id": "01a160fd-5f8e-7474-9391-7aae3a6b6794",
+      "createdAt": "2026-10-22T00:23:00.234Z",
+      "requestId": "a5e75521-b106-4b9b-aba5-94fbc2c7dc70"
+    }
+  ],
+  "demoRestored": true,
+  "retainedNamedFixture": true,
+  "blockedBrowserWrites": [],
+  "realSmsRequests": 0,
+  "newPlatformAccounts": 0,
+  "privateRecoverySidecar": "C:/w/admin613-staging-resume-recovery.private.json",
+  "startedAt": "2026-10-22T00:06:05.846Z",
+  "scope": {
+    "type": "branch",
+    "id": "01a0c9ae-52cf-7aa1-baca-fc55e449148e",
+    "name": "Oto Play Park, Robinson Chalong"
+  },
+  "originalIdentitiesFingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "originalAssignmentsFingerprint": "d4658a3f98eb17e54c7ce3ddeb05af4c74bbbcc99ec4271e86250306716489c3",
+  "originalCoverageFingerprint": "47653cc14eb045017c858ee619d9da281a4b581b339c7ec97673fe9652d35139",
+  "checkpointAt": "2026-10-22T00:23:07.020Z",
+  "proofInterruption": {
+    "productDefectDemonstrated": false,
+    "cause": "The proof privacy CSS hid the correctly matched demo radio because its hide selector was more specific than its allow selector.",
+    "diagnosticSha256": "b76cf0dd20ba457b59fdfda1ab780ea1ff57d1789d1c01f0b9ba82993f09bdae",
+    "businessWritesDuringDiagnosis": 0
+  },
+  "initialHelperSha256": "1fbb5bf826fbdc6bacca0a3b9eefcd8cd07096ec457cd18a4a1286c1d525cd22",
+  "resumedAt": "2026-10-22T00:22:20.480Z",
+  "continuation": {
+    "parentFile": "SCRUM-613-first-attempt.json",
+    "parentSha256": "306ea8ed3ab62a7d8273f057915d52d42ecce0fa54509aeae85df6589e14fdaf",
+    "mode": "claim the retained fixture only; never repeat creation",
+    "initialStop": "native Unlinked form re-link"
+  },
+  "resumePreflight": {
+    "passed": true,
+    "at": "2026-10-22T00:22:30.141Z",
+    "freshBaselineMatchesInitial": true,
+    "retainedFixtureVerified": true
+  },
+  "unlinkedDefault": {
+    "preserved": true,
+    "dedicatedTileScope": "operator",
+    "appUserBranchesRetained": true,
+    "narrowedImmediatelyBeforeAnyDemoSignIn": true
+  },
+  "restoredIdentitiesFingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "restoredAssignmentsFingerprint": "d4658a3f98eb17e54c7ce3ddeb05af4c74bbbcc99ec4271e86250306716489c3",
+  "restoredCoverageFingerprint": "47653cc14eb045017c858ee619d9da281a4b581b339c7ec97673fe9652d35139",
+  "restoredAt": "2026-10-22T00:23:01.106Z",
+  "phoneLayout": {
+    "viewport": 390,
+    "page": 390
+  },
+  "completedAt": "2026-10-22T00:23:07.020Z",
+  "smsEvidence": "Every provisioning body used the existing accountId and omitted phone; no account or invitation mutation was issued.",
+  "resumeHelperSha256": "5be670b7b1686ec98fe5393759841a8c2cf74ac2b59d145f704213f27554c2dc",
+  "localProofGuards": {
+    "passed": 43,
+    "total": 43,
+    "reportSha256": "9f0e6e10d796c33b08450ef31586e6c1dfbd92c9eab66c0fa92977362c5c923c",
+    "harnessSha256": "6fc105012625c64974d735af916bbf17d609e34eaa7c74cf28af287b1f0a9940",
+    "privacyRegressionSha256": "5e4a9f123e5c5d873192a6cc9f7453d352e4ebe90d46fa59c5f56f843cc042ec"
+  }
+}

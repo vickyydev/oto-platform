@@ -1,0 +1,762 @@
+{
+  "ticket": "SCRUM-613",
+  "draft": false,
+  "assembledAt": "2026-10-21T23:28:56.690Z",
+  "candidateSha": "8cb0a2546a681e5ee6986b217b175a1f3f4a7e09",
+  "status": "LOCAL RELEASE CHECKS, EXACT-SHA SOURCE CI, AUTOMATIC DEPLOYMENTS AND STAGING ACCEPTANCE PASSED",
+  "fullReleasePassed": true,
+  "sourceLandedOnMain": true,
+  "deploymentVerified": true,
+  "stagingAcceptanceClaimed": true,
+  "provenance": {
+    "baselineHead": "f802efdbe9f5ba5bcab58eec413a8d3eb3024319",
+    "apiSnapshot": {
+      "path": "C:/w/admin613-linux/api-source-manifest.json",
+      "sha256": "f8895c2cc6784884443eec203170b13848817d2989039014e40a60eec7f30159",
+      "bytes": 493725,
+      "sourceConfigFiles": 3307
+    },
+    "initialWorkspaceSnapshot": {
+      "path": "C:/w/admin613-linux/initial-source-manifest.json",
+      "sha256": "9da856212f37f8c1bbaf9a845a4f2217de16a31b47d2b998b9352bb4e18453dd",
+      "bytes": 494791,
+      "sourceConfigFiles": 3314
+    },
+    "finalWorkspaceSnapshot": {
+      "path": "C:/w/admin613-linux/source-manifest.json",
+      "sha256": "e42e8629d9631117f8526fe12b88ac148a0bf4803807ced4dcad495794cd8236",
+      "bytes": 495199,
+      "sourceConfigFiles": 3317,
+      "coordinatorVerifiedCurrentContainerAndFinalSourceIdentical": true
+    },
+    "frozenUi": {
+      "path": "C:/w/admin613-ui-frozen-hashes.json",
+      "sha256": "7a29a78a8fd93e94867154d5188f884a56faa8f9a8d56487e5f3482c5676e319",
+      "bytes": 2555,
+      "files": 13,
+      "currentFilesMatch": true
+    },
+    "backendEquivalence": {
+      "files": 990,
+      "unchanged": true,
+      "canonicalSortedApiDigest": "994bc84c1e24ce17d4c057ae4a4f11e1e598b05fabd82709a15fd99e28c224e1",
+      "canonicalSortedFinalDigest": "994bc84c1e24ce17d4c057ae4a4f11e1e598b05fabd82709a15fd99e28c224e1",
+      "rule": "apps/api and packages/db,shared,api-types path prefixes; sort by path; SHA256 of JSON array"
+    },
+    "verificationBasis": "The complete battery covered the retained old3317 manifest. Only apps/inbox/src/lib/theme.ts differs in the final3317 manifest; its own compiler/tests/lint/build, the combined seam8 and generated API check pass after the planner fix. The coordinator verified all3317 final container files; this receipt independently checks manifest equality, the sole delta, all990 backend inputs and all13 UI hashes.",
+    "fullBatteryTestedSnapshot": {
+      "path": "C:/w/admin613-linux/tested-source-manifest.json",
+      "sha256": "62ed36a4d4225f9c6370977f806c1e39d8c38b5ece0f40c3740309596a55bca3",
+      "bytes": 495199,
+      "sourceConfigFiles": 3317
+    },
+    "testedSnapshotAfterInboxFix": {
+      "path": "C:/w/admin613-linux/tested-source-after-inbox-fix.json",
+      "sha256": "e42e8629d9631117f8526fe12b88ac148a0bf4803807ced4dcad495794cd8236",
+      "bytes": 495199,
+      "sourceConfigFiles": 3317,
+      "identicalToFinalManifest": true
+    },
+    "finalSourceDelta": {
+      "changedPaths": [
+        "apps/inbox/src/lib/theme.ts"
+      ],
+      "addedPaths": [],
+      "removedPaths": [],
+      "changedCount": 1,
+      "coveredBy": "workspace-final.log affected checks",
+      "resolvedByCommitPrefix": "608b1fd1"
+    }
+  },
+  "baselineRegression": {
+    "api": {
+      "passed": 4626,
+      "skipped": 401,
+      "todo": 5,
+      "files": 323,
+      "filesPassed": 315,
+      "filesSkipped": 8,
+      "allThreeShardExitsZero": true,
+      "shards": [
+        {
+          "shard": 1,
+          "passed": 1594,
+          "skipped": 106,
+          "todo": 0,
+          "filesPassed": 106,
+          "filesSkipped": 2,
+          "exitCode": 0,
+          "exitEvidence": "Coordinator observed runner exit zero; retained Vitest summary confirms the count",
+          "command": "set -eo pipefail; pnpm --filter @oto/api exec vitest run --pool=forks --shard=1/3",
+          "log": {
+            "path": "C:/w/admin613-linux/api-1.log",
+            "sha256": "4ea7405fe1d2576f225522dd25866607e56d9b080a063a952fef84ee6670a025",
+            "bytes": 114725
+          }
+        },
+        {
+          "shard": 2,
+          "passed": 1584,
+          "skipped": 174,
+          "todo": 4,
+          "filesPassed": 104,
+          "filesSkipped": 4,
+          "exitCode": 0,
+          "exitEvidence": "Coordinator observed runner exit zero; retained Vitest summary confirms the count",
+          "command": "set -eo pipefail; pnpm --filter @oto/api exec vitest run --pool=forks --shard=2/3",
+          "log": {
+            "path": "C:/w/admin613-linux/api-2.log",
+            "sha256": "aaf3efcb60992e900555c8583b82c914b0b140a2429d953058cee79af69899d9",
+            "bytes": 117642
+          }
+        },
+        {
+          "shard": 3,
+          "passed": 1448,
+          "skipped": 121,
+          "todo": 1,
+          "filesPassed": 105,
+          "filesSkipped": 2,
+          "exitCode": 0,
+          "exitEvidence": "Coordinator observed runner exit zero; retained Vitest summary confirms the count",
+          "command": "set -eo pipefail; pnpm --filter @oto/api exec vitest run --pool=forks --shard=3/3",
+          "log": {
+            "path": "C:/w/admin613-linux/api-3.log",
+            "sha256": "3a5f1795d5132f01fc5442184e08889674ed77c9655d7b15d927c57dab7f092d",
+            "bytes": 129406
+          }
+        }
+      ]
+    },
+    "unaffectedPackages": {
+      "passedCounts": {
+        "shared": 769,
+        "db": 305,
+        "pos": 1420,
+        "booth": 33,
+        "launcher": 72,
+        "assistant": 434,
+        "print": 271,
+        "messaging": 78,
+        "payments-2c2p": 81,
+        "telemetry": 36,
+        "box-agent": 749
+      },
+      "commands": [
+        "set -eo pipefail; pnpm --filter @oto/shared test",
+        "set -eo pipefail; for task_package in @oto/db @oto/pos @oto/booth @oto/launcher @oto/inbox @oto/assistant @oto/print @oto/messaging @oto/payments-2c2p @oto/telemetry; do pnpm --fail-if-no-match --filter $task_package test; done",
+        "set -eo pipefail; pnpm --filter @oto/box-agent test"
+      ],
+      "logs": [
+        {
+          "path": "C:/w/admin613-linux/workspace-others.log",
+          "sha256": "6d6d63a3b9e4808a57c025f2bcfa36f5772d01e86b64ce60b42b42eb769b0799",
+          "bytes": 5248
+        },
+        {
+          "path": "C:/w/admin613-linux/workspace-remaining.log",
+          "sha256": "548a971c88f937c60fbe12ced420f67e6ae3bed702b8025d2f4cdb0e20860c1b",
+          "bytes": 36477
+        },
+        {
+          "path": "C:/w/admin613-linux/workspace-box.log",
+          "sha256": "8a58a412fc78070a57975e79845d9e0b871b3a39ad84607ec2110776f0e6a7f2",
+          "bytes": 178535
+        }
+      ],
+      "note": "Completed package results from the earlier workspace snapshot remain valid for unchanged packages. Old Inbox157 is superseded by final Inbox176. Shared769 completed before the later API-types failure in the same runner; that runner is not claimed wholly green. Box749 is an isolated complete run."
+    }
+  },
+  "finalAffectedChecks": {
+    "workspace": {
+      "command": "set -eo pipefail; pnpm typecheck; pnpm lint; pnpm build; pnpm api-types:check",
+      "exitCode": 0,
+      "typecheckTasks": 16,
+      "apiCompilerDiagnosticLines": 0,
+      "lintErrors": 0,
+      "inheritedLintWarnings": 3,
+      "buildTasks": 5,
+      "generatedApiTypesMatch": true,
+      "log": {
+        "path": "C:/w/admin613-linux/workspace-checks.log",
+        "sha256": "f4e4d28aaad03010544bafce6f5c13ca1c82adf7274c4baf536eb73db8c952c3",
+        "bytes": 14593
+      },
+      "inheritedWarningFiles": [
+        "apps/api/test/offline-checkin.test.ts:134",
+        "apps/api/test/vouchers-r5-gate.test.ts:90",
+        "apps/api/test/wallet-r5-closing-audit.test.ts:107"
+      ]
+    },
+    "units": {
+      "command": "set -eo pipefail; pnpm --filter @oto/admin-screens test; pnpm --filter @oto/console test; pnpm --filter @oto/inbox test",
+      "exitCode": 0,
+      "adminScreens": {
+        "passed": 5
+      },
+      "console": {
+        "passed": 176,
+        "todo": 3
+      },
+      "inbox": {
+        "passed": 176,
+        "supersedesOld157": true
+      },
+      "log": {
+        "path": "C:/w/admin613-linux/workspace-units.log",
+        "sha256": "7106c1c9e1a633b096348eacdb3a2f794dc81938ed3d7452775afebd39ce8f52",
+        "bytes": 2317
+      }
+    },
+    "routeAndHouseReview": {
+      "command": "set -eo pipefail; pnpm --filter @oto/api exec vitest run --pool=forks test/app-identities.test.ts test/s613-app-access-review.test.ts test/routes-guarded.test.ts test/route-write-conformance.test.ts test/id-conformance.test.ts test/route-scope-target.test.ts",
+      "exitCode": 0,
+      "passed": 84,
+      "files": 6,
+      "overlapsFullApiBattery": true,
+      "log": {
+        "path": "C:/w/admin613-linux/workspace-review.log",
+        "sha256": "8c9cf8c4fa851d87ea2bce83dee7a2df462f127412ac057d2b475bbb1118c32f",
+        "bytes": 5508,
+        "supersededPriorHash": "74b406171ef80eb0c73d6d80eefb93bf630c30e7ff60605cd6c69b2f9e3efba2",
+        "note": "Superseded by the complete post-rebase rerun, exit zero,84 passed."
+      }
+    },
+    "builtBrowser": {
+      "command": "set -eo pipefail; CONSOLE_E2E_BUILT=1 pnpm --filter @oto/console e2e",
+      "exitCode": 0,
+      "passed": 68,
+      "duration": "1.4m",
+      "includesOriginalAccountsControls": true,
+      "includesNewAppAccessCases": 14,
+      "isolatedDatabaseDropped": true,
+      "log": {
+        "path": "C:/w/admin613-linux/workspace-browser.log",
+        "sha256": "8110833078844fbd398d6b11ba0d095f6dd4ea6cc4b936e27e4f657247b07438",
+        "bytes": 12845
+      }
+    },
+    "nativeOwnedSeam": {
+      "command": "pnpm --filter @oto/api-types test",
+      "passed": 8,
+      "exitCode": 0,
+      "scope": "Historical pre-rebase owned-worktree check after using direct ApiResponse. The final combined seam passes separately in workspace-final.log after608b1fd1."
+    },
+    "focusedUi": {
+      "command": "pnpm --filter @oto/console exec playwright test --config C:/w/admin613-mocked.config.mjs --output C:/w/admin613-ui-final-results",
+      "passed": 14,
+      "exitCode": 0,
+      "overlapsFullBuiltBrowser": true,
+      "log": {
+        "path": "C:/w/admin613-ui-final-browser.log",
+        "sha256": "328f4db23d986ad115491c1cffef762835859053e43c97cf41cf5db256e423ba",
+        "bytes": 2392
+      }
+    },
+    "inboxAfterPlannerFix": {
+      "command": "Inbox own typecheck and176tests; eslint apps/inbox/src/lib/theme.ts; Inbox build; pnpm --filter @oto/api-types test; pnpm api-types:check",
+      "exitCode": 0,
+      "exitEvidence": "Coordinator observed the final affected runner exit zero",
+      "compilerPassed": true,
+      "testsPassed": 176,
+      "lintPassed": true,
+      "buildPassed": true,
+      "seamPassed": 8,
+      "seamFailed": 0,
+      "generatedApiTypesMatch": true,
+      "log": {
+        "path": "C:/w/admin613-linux/workspace-final.log",
+        "sha256": "68f6683bdbea4a8db30dbd5019831c49bb5ca8a17c756fb0f5a3f93855b4ea4f",
+        "bytes": 2237
+      }
+    }
+  },
+  "packagePassedCountsWithoutDoubleCountingRepeatedReviewsOrFocusedBrowser": {
+    "shared": 769,
+    "db": 305,
+    "pos": 1420,
+    "booth": 33,
+    "launcher": 72,
+    "inbox": 176,
+    "assistant": 434,
+    "print": 271,
+    "messaging": 78,
+    "payments-2c2p": 81,
+    "telemetry": 36,
+    "box-agent": 749,
+    "admin-screens": 5,
+    "console": 176
+  },
+  "regressionEvidence": {
+    "staleSourceAndSelection": {
+      "receipt": {
+        "path": "C:/w/admin613-red-results/observed-before-fix.json",
+        "sha256": "ddcb916cf9bb7a0224e8689e4ed27a0c067ae99f9848d2eec98e12bc787f90ec",
+        "bytes": 3166
+      },
+      "observedFailureCount": 7,
+      "evidenceKind": "Observation receipt from actual Playwright failures, not a copied raw runner log",
+      "artifactRetention": "The first run's default output directory was cleared by the focused run. Its assertion observations are retained above; only the focused permission failure image/context were copied before the green run.",
+      "preservedImage": {
+        "path": "C:/w/admin613-red-results/permissions-source-failure-before.png",
+        "sha256": "ccbf1b41e359cf47a63fb094d4430bc1b3fe05a8edd1c452d785b537d4f9814b",
+        "bytes": 144087
+      },
+      "preservedContext": {
+        "path": "C:/w/admin613-red-results/permissions-source-failure-before-context.md",
+        "sha256": "705eb98ecbac7c3cfa8c99a96a87632da741a6d480231218b9746e33c9517642",
+        "bytes": 11227
+      },
+      "fixes": [
+        "Pin identity and permission reads/refreshes to the selected account and latest request",
+        "Clear selected staff account when query changes and ignore older search replies",
+        "Render real source errors instead of successful empty matches or invented app states",
+        "Read canonical remaining grants before describing a removed app link"
+      ]
+    },
+    "missingRoute404": {
+      "preFixModule": {
+        "path": "C:/w/admin613-red-results/app-identities-before-404-correction.ts",
+        "sha256": "a5c2a1c7676bdc69cfc7b4096a2ecb87b00f2d8f07c9d94056f3cffc91ac057d",
+        "bytes": 3083
+      },
+      "unitObservedRed": {
+        "case": "NOT_FOUND must not mean a missing route",
+        "expected": false,
+        "actual": true
+      },
+      "browserBefore": {
+        "failed": 2,
+        "passed": 1,
+        "log": {
+          "path": "C:/w/admin613-red-results/missing-route-browser-before.log",
+          "sha256": "fda58599430ef82285fa6ffbaffb0d4aea4006548d4cb7c62afc02fd64184712",
+          "bytes": 5976
+        },
+        "artifactDirectory": "C:/w/admin613-red-results/missing-route-before",
+        "cases": [
+          "ACCOUNT_NOT_FOUND incorrectly hid the actual account error",
+          "NOT_FOUND incorrectly marked app provisioning unavailable",
+          "UNKNOWN404 already showed the original missing-route fallback"
+        ]
+      },
+      "correction": "Restore original status404 AND codeUNKNOWN classification; named resource errors keep their reason",
+      "browserAfter": "All three cases pass within the 14-case focused and 68-case full built-browser runs"
+    },
+    "responseSeam": {
+      "beforeDiagnostic": "packages/admin-screens/src/api/app-identities.ts: 1 hand-typed, 0 allowed",
+      "beforeLog": {
+        "path": "C:/w/admin613-linux/workspace-others.log",
+        "sha256": "6d6d63a3b9e4808a57c025f2bcfa36f5772d01e86b64ce60b42b42eb769b0799",
+        "bytes": 5248
+      },
+      "correction": "Use direct ApiResponse at api.get for unlinked-users; preserve the exported generated alias for component types",
+      "ownedAfterPassed": 8,
+      "guardOrAllowanceChanged": false
+    }
+  },
+  "logs": {
+    "api-1.log": {
+      "path": "C:/w/admin613-linux/api-1.log",
+      "sha256": "4ea7405fe1d2576f225522dd25866607e56d9b080a063a952fef84ee6670a025",
+      "bytes": 114725
+    },
+    "api-2.log": {
+      "path": "C:/w/admin613-linux/api-2.log",
+      "sha256": "aaf3efcb60992e900555c8583b82c914b0b140a2429d953058cee79af69899d9",
+      "bytes": 117642
+    },
+    "api-3.log": {
+      "path": "C:/w/admin613-linux/api-3.log",
+      "sha256": "3a5f1795d5132f01fc5442184e08889674ed77c9655d7b15d927c57dab7f092d",
+      "bytes": 129406
+    },
+    "workspace-checks.log": {
+      "path": "C:/w/admin613-linux/workspace-checks.log",
+      "sha256": "f4e4d28aaad03010544bafce6f5c13ca1c82adf7274c4baf536eb73db8c952c3",
+      "bytes": 14593
+    },
+    "workspace-units.log": {
+      "path": "C:/w/admin613-linux/workspace-units.log",
+      "sha256": "7106c1c9e1a633b096348eacdb3a2f794dc81938ed3d7452775afebd39ce8f52",
+      "bytes": 2317
+    },
+    "workspace-review.log": {
+      "path": "C:/w/admin613-linux/workspace-review.log",
+      "sha256": "8c9cf8c4fa851d87ea2bce83dee7a2df462f127412ac057d2b475bbb1118c32f",
+      "bytes": 5508,
+      "supersededPriorHash": "74b406171ef80eb0c73d6d80eefb93bf630c30e7ff60605cd6c69b2f9e3efba2",
+      "note": "Superseded by the complete post-rebase rerun, exit zero,84 passed."
+    },
+    "workspace-browser.log": {
+      "path": "C:/w/admin613-linux/workspace-browser.log",
+      "sha256": "8110833078844fbd398d6b11ba0d095f6dd4ea6cc4b936e27e4f657247b07438",
+      "bytes": 12845
+    },
+    "workspace-remaining.log": {
+      "path": "C:/w/admin613-linux/workspace-remaining.log",
+      "sha256": "548a971c88f937c60fbe12ced420f67e6ae3bed702b8025d2f4cdb0e20860c1b",
+      "bytes": 36477
+    },
+    "workspace-box.log": {
+      "path": "C:/w/admin613-linux/workspace-box.log",
+      "sha256": "8a58a412fc78070a57975e79845d9e0b871b3a39ad84607ec2110776f0e6a7f2",
+      "bytes": 178535
+    },
+    "workspace-others.log": {
+      "path": "C:/w/admin613-linux/workspace-others.log",
+      "sha256": "6d6d63a3b9e4808a57c025f2bcfa36f5772d01e86b64ce60b42b42eb769b0799",
+      "bytes": 5248
+    },
+    "workspace-initial-checks.log": {
+      "path": "C:/w/admin613-linux/workspace-initial-checks.log",
+      "sha256": "b6bbc2a13c4e8db48eecdccc137f06c684c5f733c519edc32a195656d1d7e748",
+      "bytes": 14594
+    },
+    "workspace-final.log": {
+      "path": "C:/w/admin613-linux/workspace-final.log",
+      "sha256": "68f6683bdbea4a8db30dbd5019831c49bb5ca8a17c756fb0f5a3f93855b4ea4f",
+      "bytes": 2237
+    }
+  },
+  "finalizationNeeded": "Observe upstream CI39693602774 green, then coordinate source landing/exact-SHA source CI, automatic deployments and staging acceptance. This receipt proves local release checks only.",
+  "finalizedLocalAt": "2026-10-21T23:33:45.714Z",
+  "derivedFromHistoricalDraft": {
+    "path": "C:/w/admin613-local-results-draft.json",
+    "sha256": "6f152cf6c18268d30046d63270ed3716b5dcee5d83d2f65c0a9137c1acc8a158",
+    "bytes": 15859
+  },
+  "localReleaseChecksPassed": true,
+  "ci": {
+    "upstreamInboxFix": {
+      "commitPrefix": "608b1fd1",
+      "run": 39693602774,
+      "status": "pending",
+      "coordinatorObservedJobs": {
+        "successful": 2,
+        "running": 4
+      }
+    },
+    "candidate": {
+      "sha": "1550423401bf79da6441f0cd0fbe614d84e3c514",
+      "status": "not landed; source CI not claimed"
+    }
+  },
+  "historicalCombinedSeamFailure": {
+    "status": "BLOCKED - outside owned files",
+    "ownedFile": "apps/inbox/src/lib/theme.ts",
+    "diagnostic": {
+      "path": "C:/w/admin-main-ci-inbox-diagnostic.json",
+      "sha256": "54d535545bf8ca93384d45ec01e3cf3c8274334e4ea753ef3ac87fe1b096bd3e",
+      "bytes": 1478
+    },
+    "exactMainReproduction": {
+      "sha": "5cbfa5c171425a3f6e86e2bf632537c37eb45c09",
+      "command": "pnpm --filter @oto/api-types test",
+      "passed": 7,
+      "failed": 1,
+      "exitCode": 1,
+      "failure": "apps/inbox/src/lib/theme.ts: 2 hand-typed, 0 allowed",
+      "ciRun": 39691146907,
+      "ciJob": 119537350671
+    },
+    "note": "The combined main gate is not claimed green. The coordinator observed the other five CI jobs successful; no feature push, release or deployment is authorized by this local draft.",
+    "historical": true,
+    "resolution": {
+      "resolved": true,
+      "commitPrefix": "608b1fd1",
+      "passed": 8,
+      "failed": 0,
+      "exitCode": 0,
+      "log": {
+        "path": "C:/w/admin613-linux/workspace-final.log",
+        "sha256": "68f6683bdbea4a8db30dbd5019831c49bb5ca8a17c756fb0f5a3f93855b4ea4f",
+        "bytes": 2237
+      }
+    }
+  },
+  "combinedSeam": {
+    "status": "passed",
+    "passed": 8,
+    "failed": 0,
+    "exitCode": 0,
+    "resolvedByCommitPrefix": "608b1fd1",
+    "log": {
+      "path": "C:/w/admin613-linux/workspace-final.log",
+      "sha256": "68f6683bdbea4a8db30dbd5019831c49bb5ca8a17c756fb0f5a3f93855b4ea4f",
+      "bytes": 2237
+    }
+  },
+  "reviewedRunnerVM": {
+    "results": {
+      "path": "C:/w/admin613-runner-review-results.json",
+      "sha256": "a2f6620ba45dc79721fb1078793b17cf8b56bf1ef6c13d9bdd3ef135e9b136be",
+      "bytes": 4246
+    },
+    "helper": {
+      "path": "C:/w/admin613-evidence.mjs",
+      "sha256": "1fbb5bf826fbdc6bacca0a3b9eefcd8cd07096ec457cd18a4a1286c1d525cd22",
+      "bytes": 35702
+    },
+    "helperMatchesReviewedHash": true,
+    "localOnly": true,
+    "neverImportedOrRanStagingModule": true,
+    "evaluated": "Selected declarations, browser route callback, cold-start guard and narrowing subsection only; all network and checkpoint IO mocked in memory.",
+    "total": 28,
+    "passed": 28,
+    "failed": 0,
+    "checkpointIoGuarantee": "No dispatch before a successful checkpoint. Transient IO may retry; permanent IO remains unresolved.",
+    "stagingProof": false
+  },
+  "preLandingCandidateSha": "1550423401bf79da6441f0cd0fbe614d84e3c514",
+  "sourceCi": {
+    "runId": 39695661376,
+    "observedAt": "2026-10-22T00:03:43.184Z",
+    "sha": "8cb0a2546a681e5ee6986b217b175a1f3f4a7e09",
+    "status": "completed",
+    "conclusion": "success",
+    "jobs": [
+      {
+        "id": 119552285116,
+        "name": "api-tests (1)",
+        "status": "completed",
+        "conclusion": "success",
+        "failedSteps": []
+      },
+      {
+        "id": 119552285491,
+        "name": "pos-tests",
+        "status": "completed",
+        "conclusion": "success",
+        "failedSteps": []
+      },
+      {
+        "id": 119552285492,
+        "name": "api-tests (2)",
+        "status": "completed",
+        "conclusion": "success",
+        "failedSteps": []
+      },
+      {
+        "id": 119552285554,
+        "name": "ci",
+        "status": "completed",
+        "conclusion": "success",
+        "failedSteps": []
+      },
+      {
+        "id": 119552285576,
+        "name": "oto-app",
+        "status": "completed",
+        "conclusion": "success",
+        "failedSteps": []
+      },
+      {
+        "id": 119552285691,
+        "name": "api-tests (3)",
+        "status": "completed",
+        "conclusion": "success",
+        "failedSteps": []
+      }
+    ]
+  },
+  "finalizedAt": "2026-10-21T23:48:13.850Z",
+  "postRebase": {
+    "exitCodes": [
+      0,
+      0,
+      0
+    ],
+    "compilerDiagnosticLines": 0,
+    "touchedLintErrors": 0,
+    "touchedLintWarnings": 0,
+    "reviewPassed": 84,
+    "adminScreensPassed": 5,
+    "consolePassed": 176,
+    "consoleTodo": 3,
+    "seamPassed": 8,
+    "logs": [
+      {
+        "path": "C:/w/admin613-linux/workspace-post.log",
+        "sha256": "40da3a30566dcdb0ac5187fd90a3c560d1db8eb4c92853ac1ac13307c09ca1ec",
+        "bytes": 891
+      },
+      {
+        "path": "C:/w/admin613-linux/workspace-review.log",
+        "sha256": "8c9cf8c4fa851d87ea2bce83dee7a2df462f127412ac057d2b475bbb1118c32f",
+        "bytes": 5508
+      },
+      {
+        "path": "C:/w/admin613-linux/workspace-ui.log",
+        "sha256": "71e2819a4ffa27320ed5e0e02789236d15a2619b1b4c49d1f1bacad1986eb276",
+        "bytes": 2032
+      }
+    ],
+    "sourceHashesUnchanged": 3317,
+    "frozenUiHashesUnchanged": 13
+  },
+  "readOnlyStagingPreflight": {
+    "ticket": "SCRUM-613",
+    "preflightOnly": true,
+    "postDeployAcceptance": false,
+    "startedAt": "2026-10-21T23:35:48.484Z",
+    "apiPreflightPassed": true,
+    "checks": {
+      "exactDemoActive": true,
+      "noOtoIdentity": true,
+      "noDedicatedAppGrant": true,
+      "expectedParkHeldAndLive": true,
+      "expectedParkMapped": true,
+      "appInstalledAndAnchored": true,
+      "noVisibleUnlinkedPhoneCollision": true
+    },
+    "counts": {
+      "exactSeededDemo": 1,
+      "identities": 0,
+      "otoIdentities": 0,
+      "dedicatedAppGrants": 0,
+      "assignments": 1,
+      "effectivePermissionRows": 103,
+      "visibleUnlinkedUsers": 5,
+      "visibleUnlinkedPhoneCollisions": 0
+    },
+    "fingerprints": {
+      "demoAccountId": "7a76f169781746dbd1d053987a12a63f1f60afd0eff02eb6d4c492931990929b",
+      "demoPhone": "46456aea0509f1362e3a31d1c635c2747262517443d4e8509117f1b3ac92851a",
+      "parkId": "75529937dfa8b83a66950902bb91eca7ce258ec6fe15855a5afa70b79d656402",
+      "identities": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "assignments": "d4658a3f98eb17e54c7ce3ddeb05af4c74bbbcc99ec4271e86250306716489c3",
+      "coverage": "47653cc14eb045017c858ee619d9da281a4b581b339c7ec97673fe9652d35139",
+      "parkMapping": "38f9a52c8c0ef6f3e2175e35e2b3de8accaa443ccac5e997a52bca1a5b18e6f7"
+    },
+    "blockedBrowserWrites": [],
+    "omittedBrowserReads": 4,
+    "globalPhoneCollisionAbsenceProven": false,
+    "limitations": [
+      "The phone census covers only unlinked OTO App users visible to this administrator. Linked users and other park groups are outside this API answer; global collision absence is not proven.",
+      "No deployment, screenshot, provisioning, branch update or unlink acceptance is performed."
+    ],
+    "signOutStatus": 200,
+    "completedAt": "2026-10-21T23:35:57.408Z",
+    "receipt": {
+      "path": "C:/w/admin613-preflight-results.json",
+      "sha256": "01e7cd6840424cf63c36fa95c0acf83f2b78c7f03f04b3c00a7ac23c7a1fefe6",
+      "bytes": 1776
+    }
+  },
+  "upstreamCorrectionCi": {
+    "sha": "608b1fd1ae6b95113cb4d353d5a96304bfd1c560",
+    "runId": 39693602774,
+    "conclusion": "success",
+    "jobs": [
+      {
+        "name": "ci",
+        "conclusion": "success"
+      },
+      {
+        "name": "api-tests (2)",
+        "conclusion": "success"
+      },
+      {
+        "name": "api-tests (1)",
+        "conclusion": "success"
+      },
+      {
+        "name": "pos-tests",
+        "conclusion": "success"
+      },
+      {
+        "name": "api-tests (3)",
+        "conclusion": "success"
+      },
+      {
+        "name": "oto-app",
+        "conclusion": "success"
+      }
+    ],
+    "receipt": {
+      "path": "C:/w/admin613-inbox-fix-ci-results.json",
+      "sha256": "2e68a907192545c8f24760a49b14e94e9708636bf9152036d5506d4d697d5f3c",
+      "bytes": 50856
+    }
+  },
+  "deploymentObservation": {
+    "observedAt": "2026-10-22T00:22:15.058Z",
+    "sourceSha": "8cb0a2546a681e5ee6986b217b175a1f3f4a7e09",
+    "allLive": true,
+    "services": [
+      {
+        "name": "oto-api-staging",
+        "latest": {
+          "id": "dep-dbcl548u01pc73bf5ks0",
+          "status": "live",
+          "sha": "8cb0a2546a681e5ee6986b217b175a1f3f4a7e09",
+          "createdAt": "2026-10-22T00:02:25.182295Z",
+          "finishedAt": "2026-10-22T00:05:37.63542Z"
+        },
+        "live": {
+          "id": "dep-dbcl548u01pc73bf5ks0",
+          "status": "live",
+          "sha": "8cb0a2546a681e5ee6986b217b175a1f3f4a7e09",
+          "createdAt": "2026-10-22T00:02:25.182295Z",
+          "finishedAt": "2026-10-22T00:05:37.63542Z"
+        }
+      },
+      {
+        "name": "oto-console-staging",
+        "latest": {
+          "id": "dep-dbcl548u01pc73bf5ltg",
+          "status": "live",
+          "sha": "8cb0a2546a681e5ee6986b217b175a1f3f4a7e09",
+          "createdAt": "2026-10-22T00:02:25.333721Z",
+          "finishedAt": "2026-10-22T00:03:03.58801Z"
+        },
+        "live": {
+          "id": "dep-dbcl548u01pc73bf5ltg",
+          "status": "live",
+          "sha": "8cb0a2546a681e5ee6986b217b175a1f3f4a7e09",
+          "createdAt": "2026-10-22T00:02:25.333721Z",
+          "finishedAt": "2026-10-22T00:03:03.58801Z"
+        }
+      }
+    ]
+  },
+  "firstStagingAttempt": {
+    "receiptSha256": "306ea8ed3ab62a7d8273f057915d52d42ecce0fa54509aeae85df6589e14fdaf",
+    "checks": 4,
+    "operations": 3,
+    "screenshots": 3,
+    "demoRestored": true,
+    "completeAcceptance": false
+  },
+  "stagingAcceptance": {
+    "receipt": "SCRUM-613-staging-results.json",
+    "sha256": "c915b4ea3f6d1eb9ac3ab94ca768f0789aea54ed5b302b773fa9a0adca096386",
+    "checks": 8,
+    "operations": 6,
+    "freshAuditRows": 6,
+    "reviewedAttachedScreenshots": 5,
+    "demoRestored": true,
+    "realSmsRequests": 0,
+    "newPlatformAccounts": 0,
+    "completedAt": "2026-10-22T00:23:07.020Z",
+    "retainedFixture": {
+      "name": "ZZ TEST SCRUM-613 App access 20261022000604",
+      "email": "zz-test-scrum-613-20261022000604-174260e7@example.invalid",
+      "id": "01a160ee-2d2b-7aaa-90f2-eceea25e85a4"
+    },
+    "continuation": {
+      "parentFile": "SCRUM-613-first-attempt.json",
+      "parentSha256": "306ea8ed3ab62a7d8273f057915d52d42ecce0fa54509aeae85df6589e14fdaf",
+      "mode": "claim the retained fixture only; never repeat creation",
+      "initialStop": "native Unlinked form re-link"
+    },
+    "proofGuards": {
+      "passed": 43,
+      "total": 43,
+      "reportSha256": "9f0e6e10d796c33b08450ef31586e6c1dfbd92c9eab66c0fa92977362c5c923c",
+      "harnessSha256": "6fc105012625c64974d735af916bbf17d609e34eaa7c74cf28af287b1f0a9940",
+      "privacyRegressionSha256": "5e4a9f123e5c5d873192a6cc9f7453d352e4ebe90d46fa59c5f56f843cc042ec"
+    }
+  }
+}
