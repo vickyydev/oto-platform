@@ -66,6 +66,11 @@ export function TemplateEditorWithPorts({ template, live = false, onSaved, onClo
   const printApi = ports.api;
   const templatesApi = ports.api;
   const stationId = ports.stationId;
+  const stationTarget = useRef({ id: stationId, epoch: 0 });
+  if (stationTarget.current.id !== stationId) {
+    stationTarget.current = { id: stationId, epoch: stationTarget.current.epoch + 1 };
+  }
+  const destinationEpoch = useRef(-1);
   const canEdit = ports.canEdit !== false;
   const manageRef = useRef(canEdit);
   manageRef.current = canEdit;
@@ -127,7 +132,10 @@ export function TemplateEditorWithPorts({ template, live = false, onSaved, onClo
   // Where a test print from this station would come out — asked once, not on
   // every preview, because it does not depend on the draft.
   useEffect(() => {
+    const targetEpoch = stationTarget.current.epoch;
+    setOutcome(null);
     if (!live) {
+      destinationEpoch.current = targetEpoch;
       setDestination({ state: 'unknown' });
       return;
     }
@@ -136,12 +144,18 @@ export function TemplateEditorWithPorts({ template, live = false, onSaved, onClo
     templatesApi
       .testPrintTarget(template.id, stationId)
       .then((target) => {
-        if (!cancelled) setDestination({ state: 'known', target });
+        if (!cancelled && stationTarget.current.epoch === targetEpoch) {
+          destinationEpoch.current = targetEpoch;
+          setDestination({ state: 'known', target });
+        }
       })
       .catch(() => {
         // A deployment without the route, or a refusal: the button still
         // prints, it just cannot say where in advance.
-        if (!cancelled) setDestination({ state: 'unknown' });
+        if (!cancelled && stationTarget.current.epoch === targetEpoch) {
+          destinationEpoch.current = targetEpoch;
+          setDestination({ state: 'unknown' });
+        }
       });
     return () => {
       cancelled = true;
@@ -216,13 +230,14 @@ export function TemplateEditorWithPorts({ template, live = false, onSaved, onClo
     onClose();
   };
 
-  const known = destination.state === 'known' ? destination.target : null;
+  const destinationLoading = destination.state === 'loading' || destinationEpoch.current !== stationTarget.current.epoch;
+  const known = !destinationLoading && destination.state === 'known' ? destination.target : null;
   const destinationLabel = known?.printer?.label ?? null;
   /** The platform said, before anyone pressed anything, that nothing would print. */
   const noPrinter = !!known && !known.printer;
   const destinationText = !live
     ? 'Needs a connected branch'
-    : destination.state === 'loading'
+    : destinationLoading
       ? 'Finding this station’s printer…'
       : known
         ? known.printer
@@ -252,16 +267,18 @@ export function TemplateEditorWithPorts({ template, live = false, onSaved, onClo
   const testPrint = async () => {
     if (busy || busyRef.current || printingRef.current || !live || !mounted.current || !canPrintRef.current || dirty && !manageRef.current) return;
     const epoch = draftEpoch.current;
+    const targetEpoch = stationTarget.current.epoch;
+    const ownsTarget = () => mounted.current && canPrintRef.current && stationTarget.current.epoch === targetEpoch;
     printingRef.current = true;
     setOutcome(null);
     try {
       if (dirty && !(await persist())) return;
-      if (!mounted.current || !canPrintRef.current || draftEpoch.current !== epoch) return;
+      if (!ownsTarget() || draftEpoch.current !== epoch) return;
       setPrinting(true);
       const { printJob } = await printApi.testPrint(draft.id, { stationId });
-      if (mounted.current && canPrintRef.current) setOutcome(testPrintOutcome(printJob, destinationLabel));
+      if (ownsTarget()) setOutcome(testPrintOutcome(printJob, destinationLabel));
     } catch (err) {
-      if (mounted.current) setOutcome({
+      if (ownsTarget()) setOutcome({
         tone: 'error',
         text: isApiError(err) ? err.message : 'The test print could not be sent.',
       });
@@ -279,7 +296,7 @@ export function TemplateEditorWithPorts({ template, live = false, onSaved, onClo
           size="sm"
           className="bg-white"
           onClick={() => void testPrint()}
-          disabled={busy || !live || noPrinter || !ports.canTestPrint || dirty && !canEdit}
+          disabled={busy || !live || destinationLoading || noPrinter || !ports.canTestPrint || dirty && !canEdit}
           title={
             !live || noPrinter ? destinationText : 'Print the Test print sample on this station’s printer'
           }

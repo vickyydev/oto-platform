@@ -60,6 +60,43 @@ function deferred<T>() {
   const promise = new Promise<T>(accept => { resolve = accept; });
   return { promise, resolve };
 }
+/** Execute the actual editor callbacks across rerenders without running its network effects. */
+function editorHarness(api: { updateTemplate: (...args: unknown[]) => Promise<unknown>; testPrint: (...args: unknown[]) => Promise<unknown> }) {
+  const source = readFileSync(new URL('../src/lifted/components/admin/templates/TemplateEditor.tsx', import.meta.url), 'utf8');
+  const ast = ts.createSourceFile('TemplateEditor.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const component = ast.statements.find((node): node is ts.FunctionDeclaration => ts.isFunctionDeclaration(node) && node.name?.text === 'TemplateEditorWithPorts');
+  if (!component?.body) throw new Error('Actual native editor missing');
+  const statements = component.body.statements;
+  const stop = statements.findIndex(node => ts.isVariableStatement(node) && node.declarationList.declarations.some(declaration => declaration.name.getText(ast) === 'testPrintBar'));
+  if (stop < 0) throw new Error('Actual native editor callbacks missing');
+  const callbacks = ts.transpileModule(`(function ({ template, live = false, onSaved, onClose, ports }) {
+    ${statements.slice(0, stop).map(node => node.getText(ast)).join('\n')}
+    return { testPrint, editDraft, draft, outcome };
+  })`, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } }).outputText.trim().replace(/;$/, '');
+  const slots: unknown[] = [];
+  let cursor = 0;
+  function useState<T>(initial: T | (() => T)) {
+    const slot = cursor++;
+    if (!(slot in slots)) slots[slot] = typeof initial === 'function' ? (initial as () => T)() : initial;
+    return [slots[slot], (next: T | ((previous: T) => T)) => {
+      slots[slot] = typeof next === 'function' ? (next as (previous: T) => T)(slots[slot] as T) : next;
+    }];
+  }
+  const render = runInNewContext(callbacks, {
+    useState,
+    useRef: (initial: unknown) => { const slot = cursor++; if (!(slot in slots)) slots[slot] = { current: initial }; return slots[slot]; },
+    useEffect: () => { cursor++; }, useUnsavedChangesPrompt: () => undefined,
+    TEMPLATE_TYPE_META: { receipt: {} }, editorGroups: () => [], moreOptions: () => [],
+    DEFAULT_PREVIEW_SAMPLE: 'default', saveBarView: () => ({}), fromApi: (value: unknown) => value,
+    isDirty, saveBody, isApiError: () => false, testPrintOutcome: () => ({ tone: 'success', text: 'ZZ TEST queued' }),
+  }) as (props: { template: PrintTemplate; live: boolean; ports: { api: typeof api; stationId: string | null; canEdit: boolean; canTestPrint: boolean } }) => {
+    testPrint: () => Promise<void>; editDraft: (update: (current: PrintTemplate) => PrintTemplate) => void; draft: PrintTemplate; outcome: unknown;
+  };
+  return (stationId: string | null) => {
+    cursor = 0;
+    return render({ template, live: true, ports: { api, stationId, canEdit: true, canTestPrint: true } });
+  };
+}
 beforeEach(() => {
   vi.clearAllMocks();
   host.branch.branch.apiId = '01900000-0000-7000-8000-000000000001';
@@ -173,6 +210,7 @@ describe('native Care and template request ownership', () => {
       busy: false, live: true, dirty: true, persist: () => pending.promise, draft: template, stationId: null,
       mounted, manageRef: { current: true }, canPrintRef: { current: true }, printingRef: { current: false }, busyRef: { current: false },
       draftEpoch: { current: 0 },
+      stationTarget: { current: { id: null, epoch: 0 } },
       printApi: { testPrint: testPrintCall }, setOutcome: vi.fn(), setPrinting: vi.fn(),
       testPrintOutcome: () => ({}), destinationLabel: null, isApiError: () => false,
     }) as () => Promise<void>;
@@ -181,6 +219,51 @@ describe('native Care and template request ownership', () => {
     pending.resolve(true);
     await work;
     expect(testPrintCall).not.toHaveBeenCalled();
+  });
+});
+
+describe('native print station ownership across rerenders', () => {
+  it('does not continue dirty Save and Print after A to B to A, and retains editor text', async () => {
+    const pending = deferred<unknown>();
+    const testPrint = vi.fn(async () => ({ printJob: {} }));
+    const render = editorHarness({ updateTemplate: () => pending.promise, testPrint });
+    render('zz-station-a').editDraft(current => ({ ...current, footerText: 'ZZ TEST saved footer' }));
+    const editor = render('zz-station-a');
+    const work = editor.testPrint();
+    render('zz-station-b');
+    render('zz-station-a');
+    pending.resolve({ template: { ...template, footerText: 'ZZ TEST saved footer' } });
+    await work;
+    expect(testPrint).not.toHaveBeenCalled();
+    expect(render('zz-station-a').draft.footerText).toBe('ZZ TEST saved footer');
+  });
+
+  it('does not publish an old successful print outcome after the target changed', async () => {
+    const pending = deferred<unknown>();
+    const render = editorHarness({ updateTemplate: vi.fn(), testPrint: () => pending.promise });
+    const work = render('zz-station-a').testPrint();
+    render('zz-station-b');
+    pending.resolve({ printJob: {} });
+    await work;
+    expect(render('zz-station-b').outcome).toBeNull();
+  });
+
+  it('does not publish an old print refusal after the target changed', async () => {
+    const pending = deferred<unknown>();
+    const render = editorHarness({ updateTemplate: vi.fn(), testPrint: async () => { await pending.promise; throw new Error('ZZ TEST refused'); } });
+    const work = render('zz-station-a').testPrint();
+    render('zz-station-b');
+    pending.resolve({});
+    await work;
+    expect(render('zz-station-b').outcome).toBeNull();
+  });
+
+  it('still publishes a confirmed print for an unchanged station', async () => {
+    const testPrint = vi.fn(async () => ({ printJob: {} }));
+    const render = editorHarness({ updateTemplate: vi.fn(), testPrint });
+    await render('zz-station-a').testPrint();
+    expect(testPrint).toHaveBeenCalledWith(template.id, { stationId: 'zz-station-a' });
+    expect(render('zz-station-a').outcome).toEqual({ tone: 'success', text: 'ZZ TEST queued' });
   });
 });
 

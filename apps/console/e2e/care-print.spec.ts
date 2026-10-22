@@ -4,12 +4,13 @@ const PARK = '01940000-0000-7000-8000-000000000001', OTHER = '01940000-0000-7000
 const OPERATOR = '01940000-0000-7000-8000-000000000003', ACTOR = '01940000-0000-7000-8000-000000000004';
 const TEMPLATE = '01940000-0000-7000-8000-000000000005', PERSON = '01940000-0000-7000-8000-000000000006';
 const SECOND = '01940000-0000-7000-8000-000000000007', CREDENTIAL = '01940000-0000-7000-8000-000000000008';
-const access = ['app:console:access', 'admin:branch:read', 'catalog:package:read', 'catalog:menu:read', 'pos:checkin:read', 'catalog:package:update', 'pos:print:read', 'admin:branch:update', 'admin:box:command', 'admin:benefit:read', 'admin:benefit:manage', 'admin:benefit:credential_issue'];
+const STATION = '01940000-0000-7000-8000-00000000000a', OTHER_STATION = '01940000-0000-7000-8000-00000000000b';
+const access = ['app:console:access', 'admin:branch:read', 'admin:station:read', 'catalog:package:read', 'catalog:menu:read', 'pos:checkin:read', 'catalog:package:update', 'pos:print:read', 'admin:branch:update', 'admin:box:command', 'admin:benefit:read', 'admin:benefit:manage', 'admin:benefit:credential_issue'];
 const TODAY = '2026-10-23';
 const hold = () => { let release!: () => void; const promise = new Promise<void>(done => { release = done; }); return { promise, release }; };
 const config = (weekday = 12345) => ({ policy: { bands: [{ id: 'zz-band', label: 'ZZ TEST All ages', minAge: 0, maxAge: null, requirement: 'none' }], siblingWaiver: { enabled: false, guardianMinAge: 12, waivableRequirement: 'drop_off', staffOnly: true }, confirmations: [{ id: 'zz-consent', text: 'ZZ TEST Consent', required: true, order: 0 }] }, pricing: { oneTimeFee: { weekday, weekend: 16789 }, nannyHourly: { weekday: 23456, weekend: 27890 }, extraHour: { weekday: 34567, weekend: 38901 }, fullDayHours: 8, nannyRatioSoftMax: 4, prepaidFoodUnused: 'refund' }, photoRetentionDays: 30 });
 type Body = Record<string, unknown>;
-async function fixture(page: Page, options: { branchOnly?: boolean; command?: boolean } = {}) {
+async function fixture(page: Page, options: { branchOnly?: boolean; command?: boolean; stationRead?: boolean } = {}) {
   const calls: Array<{ method: string; path: string; query: string; body: Body | undefined; key: string | undefined }> = [];
   const control = { refused: new Set<string>(), pending: new Map<string, Promise<void>>(), uncertainOnce: new Set<string>(), credentialForFirst: false };
   const parks = [PARK, OTHER].map((id, i) => ({ id, name: i ? 'ZZ TEST Other care park' : 'ZZ TEST Care park', code: 'zz-care-' + i, timezone: 'Asia/Bangkok', country: 'TH', archived: false, address: null, openingHours: null, businessDayStart: '05:00:00' }));
@@ -32,8 +33,10 @@ async function fixture(page: Page, options: { branchOnly?: boolean; command?: bo
     if (control.refused.has(method + ' ' + path)) return route.fulfill({ status: 409, json: { error: { code: 'ZZ_TEST_REFUSED', message: 'ZZ TEST Keep this care draft.' } } });
     if (control.uncertainOnce.delete(method + ' ' + path)) return route.abort('failed');
     if (path === '/me') return route.fulfill({ json: { account: { id: ACTOR, operatorId: OPERATOR, phone: '', status: 'active', mustChangePassword: false }, employee: { id: ACTOR, name: 'ZZ TEST Care administrator', nickname: null }, branch: parks[0], isPlatformAdmin: false, photoFileId: null, sessionLocked: false, preferences: { theme: 'light', language: 'en' } } });
-    if (path === '/me/permissions') return route.fulfill({ json: { permissions: access.filter(permission => options.command !== false || permission !== 'admin:box:command').map(permission => ({ permission, scopeType: options.branchOnly ? 'branch' : 'operator', scopeId: options.branchOnly ? PARK : OPERATOR })) } });
+    if (path === '/me/permissions') return route.fulfill({ json: { permissions: access.filter(permission => (options.command !== false || permission !== 'admin:box:command') && (options.stationRead !== false || permission !== 'admin:station:read')).map(permission => ({ permission, scopeType: options.branchOnly ? 'branch' : 'operator', scopeId: options.branchOnly ? PARK : OPERATOR })) } });
     if (path === '/branches') return route.fulfill({ json: { branches: parks } });
+    const stationList = /^\/branches\/([^/]+)\/stations$/.exec(path);
+    if (stationList && method === 'GET') return route.fulfill({ json: { stations: [PARK, OTHER].includes(stationList[1]!) ? [{ id: stationList[1] === PARK ? STATION : OTHER_STATION, branchId: stationList[1], name: stationList[1] === PARK ? 'ZZ TEST Care station' : 'ZZ TEST Other care station', kind: 'till', capabilities: [], accessScope: 'all_staff', boxId: CREDENTIAL, boxName: 'ZZ TEST Mock box', archived: false }] : [] } });
     if (/^\/branches\/[^/]+\/menu$/.test(path)) return route.fulfill({ json: { branchId: PARK, categories: [], products: [], modifierGroups: [] } });
     if (path.startsWith('/checkin/config')) {
       const current = configurations[url.searchParams.get('branchId') ?? PARK]!;
@@ -49,7 +52,7 @@ async function fixture(page: Page, options: { branchOnly?: boolean; command?: bo
     const template = /^\/print-templates\/([^/]+)(?:\/(preview\.png|test-print-target|test-print))?$/.exec(path);
     if (template) {
       if (template[2] === 'preview.png') return route.fulfill({ contentType: 'image/png', body: png });
-      if (template[2] === 'test-print-target') return route.fulfill({ json: { printer: { deviceId: CREDENTIAL, label: 'ZZ TEST Mock printer' }, note: null, widthDots: 576 } });
+      if (template[2] === 'test-print-target') return route.fulfill({ json: { printer: url.searchParams.get('stationId') === STATION ? { deviceId: CREDENTIAL, label: 'ZZ TEST Mock printer' } : null, note: url.searchParams.get('stationId') === STATION ? null : 'Pick a station first: a test print goes to that station’s printer', widthDots: 576 } });
       if (template[2] === 'test-print') return route.fulfill({ status: 403, json: { error: { code: 'ZZ_TEST_NO_HARDWARE', message: 'ZZ TEST No physical command.' } } });
       const row = templates.find(item => item.id === template[1])!;
       Object.assign(row, body, { version: row.version + 1 }); return route.fulfill({ json: { template: row } });
@@ -92,7 +95,7 @@ test('branch offers retain care and template editing but separate operator benef
   const state = await fixture(page, { branchOnly: true, command: false });
   await page.goto('/catalogue/care'); await expect(page.getByRole('heading', { name: 'Drop-off & nanny pricing', exact: true })).toBeVisible();
   await expect(pricingForm(page).getByRole('spinbutton').first()).toBeEnabled();
-  await page.goto('/catalogue/print-templates'); await page.getByRole('button', { name: 'Edit ZZ TEST Receipt', exact: true }).click();
+  await page.goto('/catalogue/print-templates'); await page.getByRole('combobox', { name: 'Station', exact: true }).selectOption(STATION); await page.getByRole('button', { name: 'Edit ZZ TEST Receipt', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Print test', exact: true })).toBeDisabled();
   await page.goto('/catalogue/staff-benefits'); await expect(page.getByRole('heading', { name: 'Role templates', exact: true })).toBeVisible();
   const section = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Role templates', exact: true }) });
@@ -173,4 +176,57 @@ test('old employee credential metadata cannot start a QR read or populate a newl
   const response = page.waitForResponse(answer => new URL(answer.url()).pathname.endsWith(path) && new URL(answer.url()).searchParams.get('employeeId') === PERSON); held.release(); await (await response).finished();
   await expect(page.getByRole('dialog')).toContainText('ZZ TEST Bea'); await expect(page.getByRole('dialog').getByRole('img')).toHaveCount(0);
   expect(state.calls.filter(call => call.path.endsWith('/qr')).length).toBe(0);
+});
+
+test('print destination requires an explicit owned station and sends that choice without changing the session', async ({ page }) => {
+  const state = await fixture(page);
+  await page.goto('/catalogue/print-templates');
+  await expect(page.getByRole('heading', { name: 'Print templates', level: 2, exact: true })).toBeVisible();
+  const station = page.getByRole('combobox', { name: 'Station', exact: true });
+  await expect(station).toBeVisible(); await expect(station).toHaveValue('');
+  await page.getByRole('button', { name: 'Edit ZZ TEST Receipt', exact: true }).click();
+  await expect(page.getByText('Pick a station first: a test print goes to that station’s printer', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Print test', exact: true })).toBeDisabled();
+  await page.getByRole('button', { name: 'Back to all templates', exact: true }).click();
+  await station.selectOption(STATION);
+  await page.getByRole('button', { name: 'Edit ZZ TEST Receipt', exact: true }).click();
+  await expect(page.getByText('to ZZ TEST Mock printer', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Print test', exact: true })).toBeEnabled();
+  await page.getByRole('button', { name: 'Print test', exact: true }).click();
+  const target = '/print-templates/' + TEMPLATE;
+  await expect.poll(() => state.calls.filter(call => call.method === 'POST' && call.path === target + '/test-print').length).toBe(1);
+  expect(state.calls.some(call => call.method === 'GET' && call.path === '/branches/' + PARK + '/stations')).toBe(true);
+  expect(state.calls.some(call => call.method === 'GET' && call.path === target + '/test-print-target' && new URLSearchParams(call.query).get('stationId') === STATION)).toBe(true);
+  expect(state.calls.find(call => call.method === 'POST' && call.path === target + '/test-print')?.body?.stationId === STATION).toBe(true);
+  expect(state.calls.some(call => call.path.startsWith('/me/session') || call.path === '/me/staff-token')).toBe(false);
+  await expect(page.getByText('ZZ TEST No physical command.', { exact: true })).toBeVisible();
+});
+
+test('a late previous-park station list cannot replace the current park choices or select a station automatically', async ({ page }) => {
+  const state = await fixture(page), held = hold(), firstPath = '/branches/' + PARK + '/stations';
+  state.control.pending.set('GET ' + firstPath, held.promise);
+  await page.goto('/catalogue/print-templates');
+  await expect.poll(() => state.calls.filter(call => call.method === 'GET' && call.path === firstPath).length).toBe(1);
+  await page.getByRole('combobox', { name: 'Park', exact: true }).selectOption(OTHER);
+  const station = page.getByRole('combobox', { name: 'Station', exact: true });
+  await expect(station.locator('option[value="' + OTHER_STATION + '"]')).toHaveCount(1);
+  await expect(station).toHaveValue('');
+  const response = page.waitForResponse(answer => answer.request().method() === 'GET' && new URL(answer.url()).pathname.endsWith(firstPath)); held.release(); await (await response).finished();
+  await expect(station.locator('option[value="' + OTHER_STATION + '"]')).toHaveCount(1);
+  await expect(station.locator('option[value="' + STATION + '"]')).toHaveCount(0);
+  await expect(station).toHaveValue('');
+  expect(state.calls.some(call => call.path.startsWith('/me/session') || call.path === '/me/staff-token' || call.path.endsWith('/test-print'))).toBe(false);
+});
+
+test('print readers without station-read access retain native previews without listing stations or offering a physical print', async ({ page }) => {
+  const state = await fixture(page, { stationRead: false });
+  await page.goto('/catalogue/print-templates');
+  await expect(page.getByRole('heading', { name: 'Print templates', level: 2, exact: true })).toBeVisible();
+  await expect(page.getByRole('combobox', { name: 'Station', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Edit ZZ TEST Receipt', exact: true }).click();
+  await expect(page.getByRole('img', { name: 'ZZ TEST Receipt, as it prints', exact: true })).toBeVisible();
+  await expect(page.getByText('Pick a station first: a test print goes to that station’s printer', { exact: true })).toBeVisible();
+  for (const button of await page.getByRole('button', { name: /^(Print test|Save & print test)$/ }).all()) await expect(button).toBeDisabled();
+  expect(state.calls.some(call => /^\/branches\/[^/]+\/stations$/.test(call.path))).toBe(false);
+  expect(state.calls.some(call => call.path.endsWith('/test-print') || call.path.startsWith('/me/session') || call.path === '/me/staff-token')).toBe(false);
 });
