@@ -1209,6 +1209,56 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/departments/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read-only current core departments, park and visible employee-link count. The existing account-read route gate checks the seated branch; authorized list and member reach come independently from admin:account:read grants. Operator-wide departments and branchless employees need operator-wide reach. Counts include archived employees, as the original department list does, and never widen through linked accounts or roles. Invalid foreign-operator park references are excluded from both departments and counts. Search matches visible department and park names. This read does not query or change the source app, its department mirror or copy job. */
+        get: {
+            parameters: {
+                query?: {
+                    q?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            departments: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                                branch: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                } | null;
+                                memberCount: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/roles/": {
         parameters: {
             query?: never;

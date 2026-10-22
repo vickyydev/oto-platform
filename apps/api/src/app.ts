@@ -27,6 +27,7 @@ import { authRoutes } from './routes/auth';
 import { meRoutes } from './routes/me';
 import { accountRoutes } from './routes/accounts';
 import { employeeRoutes } from './routes/employees';
+import { departmentRoutes } from './routes/departments';
 import { roleRoutes } from './routes/roles';
 import { appIdentityRoutes } from './routes/app-identities';
 import { operatorRoutes } from './routes/operators';
@@ -435,6 +436,7 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   await app.register(meRoutes, { prefix: '/me' });
   await app.register(accountRoutes, { prefix: '/accounts' });
   await app.register(employeeRoutes, { prefix: '/employees' });
+  await app.register(departmentRoutes, { prefix: '/departments' });
   await app.register(roleRoutes, { prefix: '/roles' });
   await app.register(appIdentityRoutes, { prefix: '/admin/apps' });
   await app.register(operatorRoutes, { prefix: '/operators' });
