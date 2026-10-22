@@ -135,6 +135,10 @@ SCRUM-620 owner rulings (2026-10-22): Q2 is resolved: implement S2-23's typed ar
 
 Owner question Q5 (2026-10-22, SCRUM-621; default unchanged): the inherited Ticket hours input offers half-hour steps, while the existing API and database accept integer hours only. Should a later change permit fractional ticket hours? This lift retains both controls and validation and uses a two-hour acceptance fixture; no fractional-hours rule is changed.
 
+Owner question Q6 (2026-10-22, SCRUM-624; production edits parked): may the build add only the four outgoing success schemas for existing GET /checkin/config and PUT /checkin/config/{pricing,policy,confirmations} in apps/api/src/routes/checkin.ts, then generate their client types and retire the four matching legacy allowances? The existing routes have correct branch targets and inputs but no response contracts; PLAN 2 does not assign this file. No check-in behavior, request shape, pricing rule or service change is proposed. The alternative is for the planning lane to land those schemas.
+
+Owner question Q7 (2026-10-22, SCRUM-624; defaults unchanged and production edits parked): inventory-platform 1E111 calls benefit template/profile management operator-wide, but PUT /benefits/templates/:role and PUT /benefits/profiles/:employeeId currently authorize against the seated park. Credential issue, QR read and revoke likewise use the seated park rather than the selected employee. May the build extend ownership to apps/api/src/routes/benefits.ts and its service to require operator-wide management, resolve credential targets to the selected employee's owned park (operator reach for an unassigned employee), and constrain the employee-to-branch join to the same operator if the local corrupt-reference regression confirms the leak? The intentionally operator-wide template/staff/credential metadata lists and all benefit amounts, effective dates, versioning and redemption rules remain as built. The alternative is for the planning lane to land those bounded scope/data fixes.
+
 ## 8. P2 — organisation, catalogue, reports (Codex)
 
 | Ticket | Deliverable |
