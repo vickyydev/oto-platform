@@ -1,0 +1,1300 @@
+{
+  "ticket": "SCRUM-608",
+  "phase": "P1",
+  "draft": false,
+  "assembledAt": "2026-10-22T05:41:23.831Z",
+  "derivedFrom": {
+    "path": "C:/w/admin608-phase-index-draft.json",
+    "sha256": "7ec6e66996b339e69be14acf7ea636aa3b0e7bd66b3f669c351e628489d8937c"
+  },
+  "documentBinding": {
+    "commit": "e84a6fc9ba6e6fe31d00d0e338c2a32ea3c1ad8b",
+    "note": "Historical document headings are bound to this committed source; this is not a claim that its running CI has passed."
+  },
+  "evidenceBase": "docs/qa/jira-comments/attachments",
+  "recordedTotals": {
+    "originalPhaseTickets": 9,
+    "separatePrerequisites": 1,
+    "acceptedTickets": 10,
+    "stagingChecks": 73,
+    "acceptedChildNativeScreenshots": 37
+  },
+  "parentAccepted": true,
+  "phaseAcceptanceClaimed": true,
+  "plan": {
+    "path": "docs/progress/plans/super-admin-console/PLAN.md",
+    "commit": "e84a6fc9ba6e6fe31d00d0e338c2a32ea3c1ad8b",
+    "heading": "7. P1 — console foundation (Codex)",
+    "sha256": "513984b8913662d8778cff21b1d908426e7c3c29b26eace3a2fcf3155ad55e8b"
+  },
+  "records": [
+    {
+      "step": "P1-1",
+      "ticket": "SCRUM-609",
+      "title": "Admin launcher and gated navigation",
+      "recordedStatus": "Deployed",
+      "statusEvidence": {
+        "path": "docs/progress/STATUS.md",
+        "commit": "e84a6fc9ba6e6fe31d00d0e338c2a32ea3c1ad8b",
+        "heading": "22 October 2026, SCRUM-609 DEPLOYED WITH STAGING PROOF"
+      },
+      "sourceSha": "3b079e01930a196b278a1987f588dc203f51020a",
+      "ci": {
+        "run": 39644912622,
+        "sha": "3b079e01930a196b278a1987f588dc203f51020a",
+        "conclusion": "success",
+        "allListedJobsSucceeded": true,
+        "evidence": {
+          "path": "docs/progress/STATUS.md",
+          "commit": "e84a6fc9ba6e6fe31d00d0e338c2a32ea3c1ad8b",
+          "heading": "22 October 2026, SCRUM-609 DEPLOYED WITH STAGING PROOF"
+        }
+      },
+      "deployments": [
+        {
+          "service": "oto-api-staging",
+          "sha": "3b079e01930a196b278a1987f588dc203f51020a",
+          "id": "dep-dbcfmtajnfac73bsv81g",
+          "finishedAt": "2026-10-21T17:54:04.61223Z"
+        },
+        {
+          "service": "oto-console-staging",
+          "sha": "3b079e01930a196b278a1987f588dc203f51020a",
+          "id": "dep-dbcfmtajnfac73bsv980",
+          "finishedAt": "2026-10-21T17:51:27.421592Z"
+        },
+        {
+          "service": "oto-launcher-staging",
+          "sha": "3b079e01930a196b278a1987f588dc203f51020a",
+          "id": "dep-dbcfmtajnfac73bsv9eg",
+          "finishedAt": "2026-10-21T17:51:25.366376Z"
+        }
+      ],
+      "local": {
+        "path": "docs/progress/STATUS.md",
+        "commit": "e84a6fc9ba6e6fe31d00d0e338c2a32ea3c1ad8b",
+        "heading": "22 October 2026, SCRUM-609 LOCAL GATES GREEN; LANDING FOR STAGING ACCEPTANCE"
+      },
+      "staging": {
+        "receipt": {
+          "file": "SCRUM-609-staging-results.json",
+          "sha256": "0c375f8ecdd6486f6ff59451fa35115ae09a66dd0df0fcbbc3557aafff856129"
+        },
+        "passed": 18,
+        "total": 18,
+        "checkRange": [
+          "2026-10-21T17:55:21.566Z",
+          "2026-10-21T17:58:41.032Z"
+        ],
+        "completedAt": "2026-10-21T17:58:41.484Z",
+        "latestCaptureAt": "2026-10-21T17:58:41.032Z"
+      },
+      "screens": [
+        {
+          "file": "SCRUM-609-01-admin-launcher.png",
+          "capturedAt": "2026-10-21T17:55:22.019Z",
+          "sha256": "fc492815410f40b5be07ff4663c127a45984476ca8d77061cb014a0cf194c8df",
+          "attachmentId": null,
+          "afterLatestDeploy": true
+        },
+        {
+          "file": "SCRUM-609-02-overview-navigation.png",
+          "capturedAt": "2026-10-21T17:55:26.124Z",
+          "sha256": "8a56e4b3c9fb849eaaadf45eba08fd1b0b2c4ae3adf19284e460b92ca3c2039f",
+          "attachmentId": null,
+          "afterLatestDeploy": true
+        },
+        {
+          "file": "SCRUM-609-03-old-health-address.png",
+          "capturedAt": "2026-10-21T17:58:41.032Z",
+          "sha256": "fbf4a24b48027d0c9edf43cf343ec7384c241e89d52e7d0eb329f4823a543284",
+          "attachmentId": null,
+          "afterLatestDeploy": true
+        },
+        {
+          "file": "SCRUM-609-04-phone-navigation.png",
+          "capturedAt": "2026-10-21T17:56:09.678Z",
+          "sha256": "40af1d5b4d3a4569ff1f3e9ffb8614f7e240461f9257d561b8ffaff796303b17",
+          "attachmentId": null,
+          "afterLatestDeploy": true
+        },
+        {
+          "file": "SCRUM-609-05-manager-navigation.png",
+          "capturedAt": "2026-10-21T17:56:13.606Z",
+          "sha256": "93d8283b268ee1c6368bf3e1de86c6f0e6a7295efb18f82473b0e7ade73fe437",
+          "attachmentId": null,
+          "afterLatestDeploy": true
+        }
+      ],
+      "attachmentProvenance": {
+        "evidence": {
+          "path": "docs/progress/STATUS.md",
+          "commit": "e84a6fc9ba6e6fe31d00d0e338c2a32ea3c1ad8b",
+          "heading": "22 October 2026, SCRUM-609 DEPLOYED WITH STAGING PROOF"
+        },
+        "note": "All listed native PNGs inspected and attached; numeric attachment IDs not retained in these public files"
+      },
+      "restoration": {
+        "required": false,
+        "reason": "Recorded staging proof is read-only apart from authentication/handoff"
+      },
+      "createdBusinessRecords": false
+    },
+    {
+      "step": "P1-2",
+      "ticket": "SCRUM-610",
+      "title": "Overview figures and park filter",
+      "recordedStatus": "Deployed",
+      "statusEvidence": {
+        "path": "docs/progress/STATUS.md",
+        "commit": "e84a6fc9ba6e6fe31d00d0e338c2a32ea3c1ad8b",
+        "heading": "22 October 2026, SCRUM-610 DEPLOYED WITH STAGING PROOF"
+      },
+      "sourceSha": "0e08817c5961a00eddb112ec391b5e0209c149ef",
+      "ci": {
+        "run": 39654822214,
+        "sha": "0e08817c5961a00eddb112ec391b5e0209c149ef",
+        "conclusion": "success",
+        "allListedJobsSucceeded": true,
+        "evidence": {
+          "path": "docs/progress/STATUS.md",
+          "commit": "e84a6fc9ba6e6fe31d00d0e338c2a32ea3c1ad8b",
+          "heading": "22 October 2026, SCRUM-610 DEPLOYED WITH STAGING PROOF"
+        }
+      },
+      "deployments": [
+        {
+          "service": "oto-api-staging",
+          "sha": "0e08817c5961a00eddb112ec391b5e0209c149ef",
+          "id": "dep-dbcglmajnfac73cjce00",
+          "finishedAt": "2026-10-21T18:59:47.174781Z"
+        },
+        {
+          "service": "oto-console-staging",
+          "sha": "0e08817c5961a00eddb112ec391b5e0209c149ef",
+          "id": "dep-dbcglmajnfac73cjcfp0",
+          "finishedAt": "2026-10-21T18:57:15.532416Z"
+        }
+      ],
+      "local": {
+        "path": "docs/progress/STATUS.md",
+        "commit": "e84a6fc9ba6e6fe31d00d0e338c2a32ea3c1ad8b",
+        "heading": "22 October 2026, SCRUM-610 LOCAL RELEASE CHECKS PASSED; SOURCE LANDING"
+      },
+      "staging": {
+        "receipt": {
+          "file": "SCRUM-610-staging-results.json",
+          "sha256": "54504456b79e200f5e846b93715a0954fce915a1498f35a41cf229c1747c9366"
+        },
+        "passed": 9,
+        "total": 9,
+        "checkRange": [
+          "2026-10-21T19:04:44.155Z",
+          "2026-10-21T19:05:02.736Z"
+        ],
+        "completedAt": null,
+        "latestCaptureAt": "2026-10-21T19:05:02.841Z"
+      },
+      "screens": [
+        {
+          "file": "SCRUM-610-01-overview-all-parks.png",
+          "capturedAt": "2026-10-21T19:04:44.276Z",
+          "sha256": "89236f37433f809fe9122b5062f09beb0611d5c8ca5fd1a5ae4f2c51bcc29bc3",
+          "attachmentId": null,
+          "afterLatestDeploy": true
+        },
+        {
+          "file": "SCRUM-610-02-overview-one-park.png",
+          "capturedAt": "2026-10-21T19:04:44.936Z",
+          "sha256": "5dcc325d9835e392b269b8957ac7b8c0fbde6c5371cfd460a40499fdc7ac0f77",
+          "attachmentId": null,
+          "afterLatestDeploy": true
+        },
+        {
+          "file": "SCRUM-610-03-overview-phone.png",
+          "capturedAt": "2026-10-21T19:04:45.032Z",
+          "sha256": "e0638366111344f7a9fe43b17caf5c45595aa55855930e188221110ec085d549",
+          "attachmentId": null,
+          "afterLatestDeploy": true
+        },
+        {
+          "file": "SCRUM-610-04-overview-manager.png",
+          "capturedAt": "2026-10-21T19:05:02.841Z",
+          "sha256": "e0a30a1a24df5a088dc433458364286aa9c6ba8602bfa167f848ee218986ad51",
+          "attachmentId": null,
+          "afterLatestDeploy": true
+        }
+      ],
+      "attachmentProvenance": {
+        "evidence": {
+          "path": "docs/progress/STATUS.md",
+          "commit": "e84a6fc9ba6e6fe31d00d0e338c2a32ea3c1ad8b",
+          "heading": "22 October 2026, SCRUM-610 DEPLOYED WITH STAGING PROOF"
+        },
+        "note": "All listed native PNGs inspected and attached; numeric attachment IDs not retained in these public files"
+      },
+      "restoration": {
+        "required": false,
+        "reason": "Recorded staging proof is read-only apart from authentication/handoff"
+      },
+      "createdBusinessRecords": false
+    },
+    {
+      "step": "P1-3",
+      "ticket": "SCRUM-611",
+      "title": "Accounts",
+      "recordedStatus": "Deployed",
+      "statusEvidence": {
+        "path": "docs/progress/STATUS.md",
+        "commit": "e84a6fc9ba6e6fe31d00d0e338c2a32ea3c1ad8b",
+        "heading": "22 October 2026, SCRUM-611 DEPLOYED WITH STAGING PROOF"
+      },
+      "sourceSha": "0face89c836504f12e7a16b40bca21057d9cd399",
+      "ci": {
+        "run": 39670829878,
+        "sha": "0face89c836504f12e7a16b40bca21057d9cd399",
+        "conclusion": "success",
+        "allListedJobsSucceeded": true,
+        "evidence": {
+          "file": "SCRUM-611-local-results.json",
+          "sha256": "49a230214c1646c1323fe8835398c942f53efe0600dcaa1dd9d86a69c64b3b63",
+          "pointer": "mainCi"
+        }
+      },
+      "deployments": [
+        {
+          "service": "oto-api-staging",
+          "sha": "0face89c836504f12e7a16b40bca21057d9cd399",
+          "id": "dep-dbci9fnavr4c73c6thg0",
+          "finishedAt": "2026-10-21T20:50:14.238957Z"
+        },
+        {
+          "service": "oto-console-staging",
+          "sha": "0face89c836504f12e7a16b40bca21057d9cd399",
+          "id": "dep-dbci9fnavr4c73c6tiqg",
+          "finishedAt": "2026-10-21T20:47:36.742761Z"
+        }
+      ],
+      "local": {
+        "file": "SCRUM-611-local-results.json",
+        "sha256": "49a230214c1646c1323fe8835398c942f53efe0600dcaa1dd9d86a69c64b3b63",
+        "sourceSha": "0face89c836504f12e7a16b40bca21057d9cd399"
+      },
+      "staging": {
+        "receipt": {
+          "file": "SCRUM-611-staging-results.json",
+          "sha256": "bf309d49ff25fe34cdab26f9b3bbf7ddb04abd58c10a84fbebf59d9cc64ccd2c"
+        },
+        "passed": 7,
+        "total": 7,
+        "checkRange": [
+          "2026-10-21T20:54:40.343Z",
+          "2026-10-21T20:55:06.368Z"
+        ],
+        "completedAt": "2026-10-21T20:55:06.368Z",
+        "latestCaptureAt": "2026-10-21T20:56:27.555Z"
+      },
+      "screens": [
+        {
+          "file": "SCRUM-611-01-accounts-search.png",
+          "capturedAt": "2026-10-21T20:54:40.521Z",
+          "sha256": "e591e06428c2563dc25cfd947b5e906f79363e059058f9386a1f1b600897c7ec",
+          "attachmentId": null,
+          "afterLatestDeploy": true
+        },
+        {
+          "file": "SCRUM-611-02-temporary-password-masked.png",
+          "capturedAt": "2026-10-21T20:54:45.334Z",
+          "sha256": "7e45cb1dfe4892b921dd412f6183e2a4b02f9f030c140d2818467531808b8332",
+          "attachmentId": null,
+          "afterLatestDeploy": true
+        },
+        {
+          "file": "SCRUM-611-03-deactivated-account.png",
+          "capturedAt": "2026-10-21T20:54:55.732Z",
+          "sha256": "658bb4fb23c3cb63e80a19a84665073d8f575ae63e001c2117921e4867739fdb",
+          "attachmentId": null,
+          "afterLatestDeploy": true
+        },
+        {
+          "file": "SCRUM-611-04-accounts-phone.png",
+          "capturedAt": "2026-10-21T20:56:27.555Z",
+          "sha256": "3020a5fe862940b4caf05c92d0899c05d46c1a5bf825ee7a11746fbfe5868017",
+          "attachmentId": null,
+          "afterLatestDeploy": true
+        }
+      ],
+      "attachmentProvenance": {
+        "evidence": {
+          "path": "docs/progress/STATUS.md",
+          "commit": "e84a6fc9ba6e6fe31d00d0e338c2a32ea3c1ad8b",
+          "heading": "22 October 2026, SCRUM-611 DEPLOYED WITH STAGING PROOF"
+        },
+        "ids": [
+          "11898",
+          "11899",
+          "11900",
+          "11901"
+        ],
+        "note": "Committed summary records the four-ID range; no per-filename ID mapping asserted"
+      },
+      "demoRestoration": {
+        "accountId": "01a0c9ae-539f-7a52-987e-69d1c1a7a3cf",
+        "restored": true,
+        "assignmentFingerprintMatched": null,
+        "effectiveCoverageFingerprintMatched": null,
+        "identityFingerprintMatched": null
+      },
+      "noRealSmsReported": true,
+      "createdBusinessRecords": false,
+      "phoneReadOnlyRecapture": {
+        "at": "2026-10-21T20:56:27.555Z",
+        "reason": "Use the phone viewport so unrelated redacted history does not add a long blank area"
+      }
+    },
+    {
+      "step": "P1-4",
+      "ticket": "SCRUM-612",
+      "title": "Roles and scopes",
+      "recordedStatus": "Deployed",
+      "statusEvidence": {
+        "path": "docs/progress/STATUS.md",
+        "commit": "e84a6fc9ba6e6fe31d00d0e338c2a32ea3c1ad8b",
+        "heading": "22 October 2026, SCRUM-612 DEPLOYED WITH STAGING PROOF"
+      },
+      "sourceSha": "803cac2464fe15015ea92be1bb3e1f5e22ad11af",
+      "ci": {
+        "run": 39685293351,
+        "sha": "803cac2464fe15015ea92be1bb3e1f5e22ad11af",
+        "conclusion": "success",
+        "allListedJobsSucceeded": true,
+        "evidence": {
+          "file": "SCRUM-612-phone-fix-ci-results.json",
+          "sha256": "58b5a54f031322c7d86f4f02dcb8c994852769661038ccd3d3283c6e540fe043"
+        }
+      },
+      "deployments": [
+        {
+          "service": "oto-api-staging",
+          "sha": "803cac2464fe15015ea92be1bb3e1f5e22ad11af",
+          "id": "dep-dbcjrlc9v7es73bkjal0",
+          "finishedAt": "2026-10-21T22:37:08.411931Z"
+        },
+        {
+          "service": "oto-console-staging",
+          "sha": "803cac2464fe15015ea92be1bb3e1f5e22ad11af",
+          "id": "dep-dbcjrlc9v7es73bkjbpg",
+          "finishedAt": "2026-10-21T22:34:53.778523Z"
+        }
+      ],
+      "local": {
+        "file": "SCRUM-612-local-results.json",
+        "sha256": "f33854c9386a6506803b57c114f3feabc7e75beb93c0fa4029d80548ad53cd60",
+        "sourceSha": "a25b539b44ab45770b22128d39339857ffbd1544"
+      },
+      "staging": {
+        "receipt": {
+          "file": "SCRUM-612-staging-results.json",
+          "sha256": "83d44306b7c79c0c9cee89f9f0765aabd2341bc04345f0c68c18f70bcfcc6105"
+        },
+        "passed": 7,
+        "total": 7,
+        "checkRange": [
+          "2026-10-21T22:40:39.811Z",
+          "2026-10-21T22:41:01.397Z"
+        ],
+        "completedAt": "2026-10-21T22:41:01.738Z",
+        "latestCaptureAt": "2026-10-21T22:41:01.738Z"
+      },
+      "screens": [
+        {
+          "file": "SCRUM-612-06-final-role-catalogue.png",
+          "capturedAt": "2026-10-21T22:40:40.186Z",
+          "sha256": "c50acc5fb2d19eda96fc564bb43d040ad047ff3d7d70a59c5f439a37668f086e",
+          "attachmentId": "11906",
+          "afterLatestDeploy": true
+        },
+        {
+          "file": "SCRUM-612-07-final-branch-grant-preview.png",
+          "capturedAt": "2026-10-21T22:40:49.226Z",
+          "sha256": "6a23146ccd3dda713601a29b10d25b0d2c147aba0760c5e076ab8dd418fb4090",
+          "attachmentId": "11907",
+          "afterLatestDeploy": true
+        },
+        {
+          "file": "SCRUM-612-08-final-saved-branch-grant.png",
+          "capturedAt": "2026-10-21T22:40:52.672Z",
+          "sha256": "a9b08145bfe01bf80cd2079d54e49f1c0bca7d8d6b040c43179ba33e3dd28213",
+          "attachmentId": "11908",
+          "afterLatestDeploy": true
+        },
+        {
+          "file": "SCRUM-612-09-final-manager-phone.png",
+          "capturedAt": "2026-10-21T22:41:01.738Z",
+          "sha256": "325b7a25e57bb71c5d51d22b9a335af030dce746a1b4c26a15b065b7bc7773ac",
+          "attachmentId": "11909",
+          "afterLatestDeploy": true
+        }
+      ],
+      "localFollowup": {
+        "file": "SCRUM-612-phone-fix-local.json",
+        "sha256": "c88f016b39f8e6252f1f85bb780756edd2362ed01580661ed09bb525f31648e4"
+      },
+      "initialCi": {
+        "file": "SCRUM-612-initial-ci-results.json",
+        "sha256": "43e954c7286aa21361c979f69421129b756d35435fe4f1a8757daf0cf4317781"
+      },
+      "demoRestoration": {
+        "accountId": "01a0c9ae-539f-7a52-987e-69d1c1a7a3cf",
+        "restored": true,
+        "assignmentFingerprintMatched": true,
+        "effectiveCoverageFingerprintMatched": true,
+        "identityFingerprintMatched": null
+      },
+      "noRealSmsReported": true,
+      "priorAttempts": [
+        {
+          "file": "SCRUM-612-initial-staging-attempt.json",
+          "sha256": "b81eabe58959dcea87e23706a70ae15e7be592219cbddf9cea08a8f70a5e4628"
+        },
+        {
+          "file": "SCRUM-612-first-successful-staging.json",
+          "sha256": "973babc83c8602d3e5b3597818ecba151e1b8a2dc06dca5f7220c379ef87cc61"
+        }
+      ]
+    },
+    {
+      "step": "P1-5",
+      "ticket": "SCRUM-613",
+      "title": "App access",
+      "recordedStatus": "Deployed",
+      "statusEvidence": {
+        "path": "docs/progress/STATUS.md",
+        "commit": "e84a6fc9ba6e6fe31d00d0e338c2a32ea3c1ad8b",
+        "heading": "22 October 2026, SCRUM-613 DEPLOYED WITH STAGING PROOF"
+      },
+      "sourceSha": "8cb0a2546a681e5ee6986b217b175a1f3f4a7e09",
+      "ci": {
+        "run": 39695661376,
+        "sha": "8cb0a2546a681e5ee6986b217b175a1f3f4a7e09",
+        "conclusion": "success",
+        "allListedJobsSucceeded": true,
+        "evidence": {
+          "file": "SCRUM-613-ci-results.json",
+          "sha256": "63fe1be814169aa2dfc5bb229993671566493c90515e6d8d33b4189066599617"
+        }
+      },
+      "deployments": [
+        {
+          "service": "oto-api-staging",
+          "sha": "8cb0a2546a681e5ee6986b217b175a1f3f4a7e09",
+          "id": "dep-dbcl548u01pc73bf5ks0",
+          "finishedAt": "2026-10-22T00:05:37.63542Z"
+        },
+        {
+          "service": "oto-console-staging",
+          "sha": "8cb0a2546a681e5ee6986b217b175a1f3f4a7e09",
+          "id": "dep-dbcl548u01pc73bf5ltg",
+          "finishedAt": "2026-10-22T00:03:03.58801Z"
+        }
+      ],
+      "local": {
+        "file": "SCRUM-613-local-results.json",
+        "sha256": "3bc5820ccfb6a9d47536338104fb3b7290b0cf489c4ca8b8b9c26714fbc0452d",
+        "sourceSha": "8cb0a2546a681e5ee6986b217b175a1f3f4a7e09"
+      },
+      "staging": {
+        "receipt": {
+          "file": "SCRUM-613-staging-results.json",
+          "sha256": "6dbfa1eadbb6a31ce4a217adc4b66ea312fbad266d4e541a237d8a26e4ce6b40"
+        },
+        "passed": 8,
+        "total": 8,
+        "checkRange": [
+          "2026-10-22T00:06:17.210Z",
+          "2026-10-22T00:23:05.840Z"
+        ],
+        "completedAt": "2026-10-22T00:23:07.020Z",
+        "latestCaptureAt": "2026-10-22T00:23:05.817Z"
+      },
+      "screens": [
+        {
+          "file": "SCRUM-613-01-create-app-user.png",
+          "capturedAt": "2026-10-22T00:06:21.773Z",
+          "sha256": "1246c51a61ff7b8f28b7bceec567d89d82dda5454cc963ab5aaf8ecee15e1d4b",
+          "attachmentId": "11918",
+          "afterLatestDeploy": true
+        },
+        {
+          "file": "SCRUM-613-02-linked-park.png",
+          "capturedAt": "2026-10-22T00:06:39.536Z",
+          "sha256": "77dcd76cc2bdf2cd1f4e3d8af2e0a68be7c5438d0ca67f58b5a432453c40c7e4",
+          "attachmentId": "11919",
+          "afterLatestDeploy": true
+        },
+        {
+          "file": "SCRUM-613-03-unlinked-fixture.png",
+          "capturedAt": "2026-10-22T00:07:03.845Z",
+          "sha256": "2fac14dceacec65f09c34d153d31598a2df44b80a5b50eba43455bfcb3145383",
+          "attachmentId": "11920",
+          "afterLatestDeploy": true
+        },
+        {
+          "file": "SCRUM-613-04-relinked-existing-user.png",
+          "capturedAt": "2026-10-22T00:22:57.083Z",
+          "sha256": "c3e4040e7367c3ad30182b7f1229434c37a2c8fc978c398068ea08d213196826",
+          "attachmentId": "11921",
+          "afterLatestDeploy": true
+        },
+        {
+          "file": "SCRUM-613-05-phone-restored.png",
+          "capturedAt": "2026-10-22T00:23:05.817Z",
+          "sha256": "48dba8fb3ed6639bda9215e31e403b49010ef2c31e3d3f8dc47c39beb80022c8",
+          "attachmentId": "11922",
+          "afterLatestDeploy": true
+        }
+      ],
+      "demoRestoration": {
+        "accountId": "01a0c9ae-539f-7a52-987e-69d1c1a7a3cf",
+        "restored": true,
+        "assignmentFingerprintMatched": true,
+        "effectiveCoverageFingerprintMatched": true,
+        "identityFingerprintMatched": true
+      },
+      "noRealSmsReported": true,
+      "retainedUnlinkedFixture": {
+        "retained": true,
+        "id": "01a160ee-2d2b-7aaa-90f2-eceea25e85a4",
+        "note": "Named proof app user intentionally retained unlinked; platform demo restored"
+      },
+      "priorAttempts": [
+        {
+          "file": "SCRUM-613-first-attempt.json",
+          "sha256": "306ea8ed3ab62a7d8273f057915d52d42ecce0fa54509aeae85df6589e14fdaf"
+        }
+      ]
+    },
+    {
+      "step": "P1-6",
+      "ticket": "SCRUM-614",
+      "title": "Employees",
+      "recordedStatus": "Deployed",
+      "statusEvidence": {
+        "path": "docs/progress/STATUS.md",
+        "commit": "e84a6fc9ba6e6fe31d00d0e338c2a32ea3c1ad8b",
+        "heading": "22 October 2026, SCRUM-614 DEPLOYED WITH STAGING PROOF"
+      },
+      "sourceSha": "b259fb9d804e9042f2cdcb5df2fe89ba17b2e578",
+      "ci": {
+        "run": 39702094864,
+        "sha": "b259fb9d804e9042f2cdcb5df2fe89ba17b2e578",
+        "conclusion": "success",
+        "allListedJobsSucceeded": true,
+        "evidence": {
+          "file": "SCRUM-614-ci-results.json",
+          "sha256": "a2412f7ccda18c53106d56331043f83b34aa0bceac38d484233b644054cab159"
+        }
+      },
+      "deployments": [
+        {
+          "service": "oto-api-staging",
+          "sha": "b259fb9d804e9042f2cdcb5df2fe89ba17b2e578",
+          "id": "dep-dbcm3lbncjis73b0v5g0",
+          "finishedAt": "2026-10-22T01:10:52.621644Z"
+        },
+        {
+          "service": "oto-console-staging",
+          "sha": "b259fb9d804e9042f2cdcb5df2fe89ba17b2e578",
+          "id": "dep-dbcm3lbncjis73b0v6o0",
+          "finishedAt": "2026-10-22T01:08:13.180333Z"
+        }
+      ],
+      "local": {
+        "file": "SCRUM-614-local-results.json",
+        "sha256": "4a9f1fcfc6a51675b22ea2a13b3f23d211434319a6e925283d10f3c97463c242",
+        "sourceSha": "b259fb9d804e9042f2cdcb5df2fe89ba17b2e578"
+      },
+      "staging": {
+        "receipt": {
+          "file": "SCRUM-614-staging-results.json",
+          "sha256": "d97b145b0a7787712396af72c9bac34594e0406e8bcbc37051956d99b256dd23"
+        },
+        "passed": 4,
+        "total": 4,
+        "checkRange": [
+          "2026-10-22T01:22:57.099Z",
+          "2026-10-22T01:23:15.101Z"
+        ],
+        "completedAt": "2026-10-22T01:23:17.109Z",
+        "latestCaptureAt": "2026-10-22T01:23:13.910Z"
+      },
+      "screens": [
+        {
+          "file": "SCRUM-614-07-final-directory-linked-login.png",
+          "capturedAt": "2026-10-22T01:22:55.868Z",
+          "sha256": "b0e0695dfaf483ca06b862347298492ea98c65f8ef5807afac8b66913828fb07",
+          "attachmentId": "11926",
+          "afterLatestDeploy": true
+        },
+        {
+          "file": "SCRUM-614-08-final-mirrored-source.png",
+          "capturedAt": "2026-10-22T01:22:59.174Z",
+          "sha256": "7217491f99883fccd78472cf07d32f2f7d71e800d0381e4973f78fe78eeeb988",
+          "attachmentId": "11927",
+          "afterLatestDeploy": true
+        },
+        {
+          "file": "SCRUM-614-09-final-manager-phone.png",
+          "capturedAt": "2026-10-22T01:23:13.910Z",
+          "sha256": "e4aebd3732e56cc49f61aea99e2abfbe53e6ff782674d38b43f46b6c06f99b4b",
+          "attachmentId": "11928",
+          "afterLatestDeploy": true
+        }
+      ],
+      "restoration": {
+        "required": false,
+        "reason": "Recorded staging proof is read-only apart from authentication/handoff"
+      },
+      "noRealSmsReported": true,
+      "businessWritesReported": 0
+    },
+    {
+      "step": "P1-7",
+      "ticket": "SCRUM-615",
+      "title": "Departments",
+      "recordedStatus": "Deployed",
+      "statusEvidence": {
+        "path": "docs/progress/STATUS.md",
+        "commit": "e84a6fc9ba6e6fe31d00d0e338c2a32ea3c1ad8b",
+        "heading": "22 October 2026, SCRUM-615 DEPLOYED WITH STAGING PROOF"
+      },
+      "sourceSha": "5246c134ec1c0fbaab6f0fbfec592e2c36c12613",
+      "ci": {
+        "run": 39707904380,
+        "sha": "5246c134ec1c0fbaab6f0fbfec592e2c36c12613",
+        "conclusion": "success",
+        "allListedJobsSucceeded": true,
+        "evidence": {
+          "file": "SCRUM-615-ci-results.json",
+          "sha256": "2d952300d0fb08d2b5c5858821e355570c0d15a1d71a59033c65699f5b8add24"
+        }
+      },
+      "deployments": [
+        {
+          "service": "oto-api-staging",
+          "sha": "5246c134ec1c0fbaab6f0fbfec592e2c36c12613",
+          "id": "dep-dbcmvcuk1f9s73ardhs0",
+          "finishedAt": "2026-10-22T02:09:42.869361Z"
+        },
+        {
+          "service": "oto-console-staging",
+          "sha": "5246c134ec1c0fbaab6f0fbfec592e2c36c12613",
+          "id": "dep-dbcmvcuk1f9s73ardkmg",
+          "finishedAt": "2026-10-22T02:07:32.059483Z"
+        }
+      ],
+      "local": {
+        "file": "SCRUM-615-local-results.json",
+        "sha256": "ff105d9426b0e4a25ff0003e2f52297f696ae183fa350c39d4db3256c601c0cc",
+        "sourceSha": "5246c134ec1c0fbaab6f0fbfec592e2c36c12613"
+      },
+      "staging": {
+        "receipt": {
+          "file": "SCRUM-615-staging-results.json",
+          "sha256": "daa3f4ee433f0e5506bec951cfb20789c16b8b5ec87f3ac6574eaf0c59d45abf"
+        },
+        "passed": 4,
+        "total": 4,
+        "checkRange": [
+          "2026-10-22T02:10:34.755Z",
+          "2026-10-22T02:10:52.781Z"
+        ],
+        "completedAt": "2026-10-22T02:10:54.610Z",
+        "latestCaptureAt": "2026-10-22T02:10:51.306Z"
+      },
+      "screens": [
+        {
+          "file": "SCRUM-615-01-park-member-count.png",
+          "capturedAt": "2026-10-22T02:10:37.604Z",
+          "sha256": "6b0c8ee217c08c93fbeca71ef31b1ebae2528abe1aceaed01334d7b3bf981095",
+          "attachmentId": "11929",
+          "afterLatestDeploy": true
+        },
+        {
+          "file": "SCRUM-615-02-operator-wide-department.png",
+          "capturedAt": "2026-10-22T02:10:41.019Z",
+          "sha256": "eda2574a2f6d206406150ce6424b8854958442d8abd91d0ce2bf0af501940d8f",
+          "attachmentId": "11930",
+          "afterLatestDeploy": true
+        },
+        {
+          "file": "SCRUM-615-03-manager-phone.png",
+          "capturedAt": "2026-10-22T02:10:51.306Z",
+          "sha256": "f9731ff17a4c3a361d2610273d85c425bd3ac40e82cefea833e8d0f1604e07bb",
+          "attachmentId": "11931",
+          "afterLatestDeploy": true
+        }
+      ],
+      "restoration": {
+        "required": false,
+        "reason": "Recorded staging proof is read-only apart from authentication/handoff"
+      },
+      "noRealSmsReported": true,
+      "businessWritesReported": 0,
+      "scopeNote": "Current platform employee links, with park and count. The future OTO App department mirror remains SCRUM-631/P3; no mirror already-live claim."
+    },
+    {
+      "step": "P1-8",
+      "ticket": "SCRUM-616",
+      "title": "Access review",
+      "recordedStatus": "Deployed",
+      "statusEvidence": {
+        "path": "docs/progress/STATUS.md",
+        "commit": "e84a6fc9ba6e6fe31d00d0e338c2a32ea3c1ad8b",
+        "heading": "22 October 2026, SCRUM-616 DEPLOYED WITH STAGING PROOF"
+      },
+      "sourceSha": "38cdea1b2ef69f4d4a42ecdb2246149c011667a8",
+      "ci": {
+        "run": 39713974694,
+        "sha": "38cdea1b2ef69f4d4a42ecdb2246149c011667a8",
+        "conclusion": "success",
+        "allListedJobsSucceeded": true,
+        "evidence": {
+          "file": "SCRUM-616-ci-results.json",
+          "sha256": "f025c7449a48861ed49b1e351ae56b75fbd86e7bd78226789f89ae2fd5a03bd6"
+        }
+      },
+      "deployments": [
+        {
+          "service": "oto-api-staging",
+          "sha": "38cdea1b2ef69f4d4a42ecdb2246149c011667a8",
+          "id": "dep-dbcnuqdg1s2s7388vcmg",
+          "finishedAt": "2026-10-22T03:16:49.974445Z"
+        },
+        {
+          "service": "oto-console-staging",
+          "sha": "38cdea1b2ef69f4d4a42ecdb2246149c011667a8",
+          "id": "dep-dbcnuqdg1s2s7388vdl0",
+          "finishedAt": "2026-10-22T03:14:30.068258Z"
+        }
+      ],
+      "local": {
+        "file": "SCRUM-616-local-results.json",
+        "sha256": "4b147c4b56e295b6b808c12f1b97d6e4a4814d8d84d4fa1ad602d77afaea8e1b",
+        "sourceSha": "38cdea1b2ef69f4d4a42ecdb2246149c011667a8"
+      },
+      "staging": {
+        "receipt": {
+          "file": "SCRUM-616-staging-results.json",
+          "sha256": "05c39bd8c66d436b777232d7e72246fcf37746361f83a43ead1180fe439e2a31"
+        },
+        "passed": 5,
+        "total": 5,
+        "checkRange": [
+          "2026-10-22T03:17:36.700Z",
+          "2026-10-22T03:17:57.882Z"
+        ],
+        "completedAt": "2026-10-22T03:17:59.740Z",
+        "latestCaptureAt": "2026-10-22T03:17:56.742Z"
+      },
+      "screens": [
+        {
+          "file": "SCRUM-616-01-wide-access.png",
+          "capturedAt": "2026-10-22T03:17:37.977Z",
+          "sha256": "6cd3b3b7b13b65ceca085629c1f3103c20619d77a58f9e93d40454d5a4bfcb1b",
+          "attachmentId": "11932",
+          "afterLatestDeploy": true
+        },
+        {
+          "file": "SCRUM-616-02-link-and-sign-in-checks.png",
+          "capturedAt": "2026-10-22T03:17:40.405Z",
+          "sha256": "decbf7a1c519fbedef3b3fb6693658e0344d6e4dba98148bbecf09b1cdeea3d8",
+          "attachmentId": "11933",
+          "afterLatestDeploy": true
+        },
+        {
+          "file": "SCRUM-616-03-manager-phone.png",
+          "capturedAt": "2026-10-22T03:17:56.742Z",
+          "sha256": "d318c0ecfb387ef265bf703bd4bffbc341e9aa95d668563f67d1bb11f9f1b102",
+          "attachmentId": "11934",
+          "afterLatestDeploy": true
+        }
+      ],
+      "restoration": {
+        "required": false,
+        "reason": "Recorded staging proof is read-only apart from authentication/handoff"
+      },
+      "noRealSmsReported": true,
+      "businessWritesReported": 0,
+      "limits": [
+        "Staging independently cross-checks sign-in history through Employees for linked logins only. It checks null review timestamps and exclusion of freshly signed-in actors; unlinked-account history completeness remains covered by API tests.",
+        "8 nonallowlisted browser GETs were blocked by the proof guard. The five stated controls and all three native-card captures completed; their destinations were not retained or independently classified."
+      ]
+    },
+    {
+      "step": "P1-9",
+      "ticket": "SCRUM-617",
+      "title": "POS Accounts entry",
+      "recordedStatus": "Deployed",
+      "statusEvidence": {
+        "path": "docs/progress/STATUS.md",
+        "commit": "e84a6fc9ba6e6fe31d00d0e338c2a32ea3c1ad8b",
+        "heading": "22 October 2026, SCRUM-617 DEPLOYED WITH STAGING PROOF"
+      },
+      "sourceSha": "fbd75bba8a3e39397799a63ef4f2898909422787",
+      "ci": {
+        "run": 39719561070,
+        "sha": "fbd75bba8a3e39397799a63ef4f2898909422787",
+        "conclusion": "success",
+        "allListedJobsSucceeded": true,
+        "evidence": {
+          "file": "SCRUM-617-ci-results.json",
+          "sha256": "1b323f458dee1ce462732c6ee5a15ba4710e43db1899c2641ca5cc3f2a1b2b3e"
+        }
+      },
+      "deployments": [
+        {
+          "service": "oto-api-staging",
+          "sha": "fbd75bba8a3e39397799a63ef4f2898909422787",
+          "id": "dep-dbcor67avr4c73csajpg",
+          "finishedAt": "2026-10-22T04:17:37.938297Z"
+        },
+        {
+          "service": "oto-pos-staging",
+          "sha": "fbd75bba8a3e39397799a63ef4f2898909422787",
+          "id": "dep-dbcor6favr4c73csakr0",
+          "finishedAt": "2026-10-22T04:15:01.605628Z"
+        },
+        {
+          "service": "oto-console-staging",
+          "sha": "fbd75bba8a3e39397799a63ef4f2898909422787",
+          "id": "dep-dbcor6favr4c73csaku0",
+          "finishedAt": "2026-10-22T04:14:57.508103Z"
+        }
+      ],
+      "local": {
+        "file": "SCRUM-617-local-results.json",
+        "sha256": "5828686fbf81b68498e05291401d802bc89f6299d1b7806cec52966c6d0e345a",
+        "sourceSha": "fbd75bba8a3e39397799a63ef4f2898909422787"
+      },
+      "staging": {
+        "receipt": {
+          "file": "SCRUM-617-staging-results.json",
+          "sha256": "5aafa978ba5bdff9115c1d2237f179b0da45368725daf8e6b12dfe6b323fddbc"
+        },
+        "passed": 4,
+        "total": 4,
+        "checkRange": [
+          "2026-10-22T04:27:42.655Z",
+          "2026-10-22T04:28:01.063Z"
+        ],
+        "completedAt": "2026-10-22T04:28:03.133Z",
+        "latestCaptureAt": "2026-10-22T04:27:57.344Z"
+      },
+      "screens": [
+        {
+          "file": "SCRUM-617-01-pos-admin-entry.png",
+          "capturedAt": "2026-10-22T04:27:40.838Z",
+          "sha256": "a313cba184d14194ffccb0992376255ac70ac9394b84df58ffdcf0ebddb5fbd5",
+          "attachmentId": "11935",
+          "afterLatestDeploy": true
+        },
+        {
+          "file": "SCRUM-617-02-pos-phone-entry.png",
+          "capturedAt": "2026-10-22T04:27:44.455Z",
+          "sha256": "c874f9b536e23c9ddf078826b3188cbb22458b8daa3bd8d15fd92537e79c6bc1",
+          "attachmentId": "11936",
+          "afterLatestDeploy": true
+        },
+        {
+          "file": "SCRUM-617-03-console-accounts-landing.png",
+          "capturedAt": "2026-10-22T04:27:57.344Z",
+          "sha256": "61c395b55a0d1a82f8a949487dead0c4e86ee6f00582f7e37048e348108e03fd",
+          "attachmentId": "11937",
+          "afterLatestDeploy": true
+        }
+      ],
+      "restoration": {
+        "required": false,
+        "reason": "Recorded staging proof is read-only apart from authentication/handoff"
+      },
+      "noRealSmsReported": true,
+      "businessWritesReported": 0,
+      "priorAttempts": [
+        {
+          "file": "SCRUM-617-first-attempt-results.json",
+          "sha256": "98e59cf9604d9e5b530f8d87a8d3b72b077dfba8f35e14ad1a5f00c8914cc165"
+        },
+        {
+          "file": "SCRUM-617-second-attempt-results.json",
+          "sha256": "fd906f80af1b3743924bbbb0ba4a9bd3ace30c84909369688b8135aca0d35eae"
+        }
+      ],
+      "limits": [
+        "The seeded administrator proves the existing POS address, desktop and390px entry, explicit configured Console handoff, same actor, native Accounts landing and both-origin sign-out.",
+        "Account-read navigation/direct-address refusal and missing Console-access withholding are covered by automated tests; staging does not claim those negative actor checks.",
+        "Public Inter stylesheet/font assets and the read-only tender catalogue are allowed by the reviewed proof guard. No payment operation, fixture, SMS or business write was allowed or observed.",
+        "Two partial proof attempts are preserved: the first was blocked before sign-in dispatch; the second stopped before capture after one sign-in, with both-origin sign-out and401 checks confirmed. Its assertion-failure cause was not established.",
+        "The successful run recorded one unclassified TYPE_ERROR browser tag without private details. The four stated controls passed; this is not an error-free browser claim."
+      ]
+    }
+  ],
+  "endToEnd": {
+    "evidenceMode": "Three accepted ticket runs use one restored demo person; no single continuous browser session is claimed",
+    "demoAccountId": "01a0c9ae-539f-7a52-987e-69d1c1a7a3cf",
+    "sameAccount": true,
+    "allThreeRestored": true,
+    "zeroRealSmsInEachRun": true,
+    "ownerRuling": {
+      "evidence": {
+        "path": "docs/progress/plans/super-admin-console/PLAN.md",
+        "commit": "e84a6fc9ba6e6fe31d00d0e338c2a32ea3c1ad8b",
+        "heading": "7. P1 — console foundation (Codex)",
+        "paragraph": "SCRUM-611 evidence ruling (owner, 2026-10-22)"
+      },
+      "summary": "Reception invitation is proved locally with a captured SMS adapter; account-management controls use an existing seeded demo in staging, with original phone/status/working password restored. No real staging SMS."
+    },
+    "localInvite": {
+      "ticket": "SCRUM-611",
+      "receipt": {
+        "file": "SCRUM-611-local-results.json",
+        "sha256": "49a230214c1646c1323fe8835398c942f53efe0600dcaa1dd9d86a69c64b3b63"
+      },
+      "pointer": "invitation",
+      "environment": "Isolated local test database",
+      "testFile": "apps/api/test/accounts-console.test.ts",
+      "capturedDeliveries": 1,
+      "realProviderRequests": 0,
+      "verified": [
+        "Reception role at the chosen branch",
+        "One account, employee, grant, code and create audit",
+        "Same-key replay creates no second record or delivery",
+        "Changed replay payload refused409",
+        "Temporary password activates invitation and forces password change",
+        "Temporary password excluded from replay store and audit",
+        "Deactivation evicts session and writes audit",
+        "Other-branch403, other-operator404 and unauthorized invite403"
+      ]
+    },
+    "sequence": [
+      {
+        "ticket": "SCRUM-611",
+        "proof": "Phone edit/restoration, masked temporary password plus forced change, actual session eviction, deactivate/reactivate, audits and original working credentials restored",
+        "restored": true
+      },
+      {
+        "ticket": "SCRUM-612",
+        "proof": "Scoped reception grant, exact replay and removal; exact assignments and effective scope restored",
+        "restored": true
+      },
+      {
+        "ticket": "SCRUM-613",
+        "proof": "One-action provision for existing account, branch edit, unlink and native re-link, final unlink; exact original identities/grants/coverage restored",
+        "restored": true
+      }
+    ]
+  },
+  "additionalAcceptance": {
+    "evidence": {
+      "path": "docs/progress/plans/super-admin-console/PLAN.md",
+      "commit": "e84a6fc9ba6e6fe31d00d0e338c2a32ea3c1ad8b",
+      "heading": "13. Relation to S2-23 (SCRUM-221), the Sprint 2 Console design",
+      "paragraph": "Phase map"
+    },
+    "roles612": {
+      "reversePermissionLookupCheck": {
+        "name": "Reverse lookup identifies the seeded manager and refund approval park scope, and opens the actual permissions drawer",
+        "passed": true,
+        "at": "2026-10-21T22:40:43.265Z"
+      },
+      "effectiveBeforeSavePreviewCheck": {
+        "name": "Before-save preview is read-only and correctly explains the overlapping role as no effective access change",
+        "passed": true,
+        "at": "2026-10-21T22:40:48.855Z"
+      },
+      "removalPreviewCheck": {
+        "name": "Remove previews the surviving access, removes only the new grant and restores the demo’s exact original assignments",
+        "passed": true,
+        "at": "2026-10-21T22:40:55.858Z"
+      },
+      "scopeNote": "Staging uses an overlapping role with no effective access gain; changed-access previews remain covered by the committed local API/browser tests"
+    },
+    "appAccess613": {
+      "oneActionProvisioningCheck": {
+        "name": "One action creates the named app user for the existing account; exact replay returns the same identity and app user",
+        "passed": true,
+        "at": "2026-10-22T00:06:39.582Z"
+      },
+      "nativeExistingUserRelinkCheck": {
+        "name": "The original Unlinked form links the same app user without creating another; its approved tile default is immediately narrowed back",
+        "passed": true,
+        "at": "2026-10-22T00:22:57.130Z"
+      },
+      "realSmsRequests": 0,
+      "newPlatformAccounts": 0
+    }
+  },
+  "verification": {
+    "indexedDeployedTickets": 10,
+    "stagingChecks": 73,
+    "allRecordedStagingChecksPassed": true,
+    "nativeScreenshots": 37,
+    "allScreenshotsAfterTheirLatestListedDeployment": true,
+    "allFinalCiSourceShasMatchStaging": true,
+    "allListedDeploymentsMatchTicketFinalSha": true,
+    "allAvailableRecordedPngHashesMatched": true,
+    "screenshotsWithPriorRecordedHash": 32,
+    "screenshotsWithFreshIndexHash": 37
+  },
+  "limits": {
+    "status": "All ten child Jira statuses observed Deployed at the recorded observation; parent608 walked to Deployed and read back. Historical proof limits remain unchanged.",
+    "legacy609610": "Separate local/CI JSON receipts are not retained; exact committed STATUS release/gate headings carry their evidence. Numeric screenshot attachment IDs are not retained in those files.",
+    "legacy611": "Committed STATUS records attachment IDs11898-11901 as a range; no per-filename mapping is invented."
+  },
+  "prerequisite": {
+    "step": "P1-10",
+    "ticket": "SCRUM-654",
+    "status": "Deployed",
+    "sourceSha": "e84a6fc9ba6e6fe31d00d0e338c2a32ea3c1ad8b",
+    "acceptanceCommit": "3c0a4958de58337776eb056e368e5533da817609",
+    "plan": {
+      "path": "docs/progress/plans/suite-ui-preferences/PLAN.md",
+      "commit": "e84a6fc9ba6e6fe31d00d0e338c2a32ea3c1ad8b",
+      "heading": "Hand-offs",
+      "paragraph": "Console (SCRUM-654, Codex)"
+    },
+    "ci": {
+      "run": 39726748380,
+      "sha": "e84a6fc9ba6e6fe31d00d0e338c2a32ea3c1ad8b",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "id": 119652284290,
+          "name": "ci",
+          "status": "completed",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 119652284377,
+          "name": "api-tests (3)",
+          "status": "completed",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 119652284436,
+          "name": "api-tests (1)",
+          "status": "completed",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 119652284516,
+          "name": "pos-tests",
+          "status": "completed",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 119652284570,
+          "name": "oto-app",
+          "status": "completed",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 119652284632,
+          "name": "api-tests (2)",
+          "status": "completed",
+          "conclusion": "success",
+          "failedSteps": []
+        }
+      ]
+    },
+    "deployments": [
+      {
+        "name": "oto-api-staging",
+        "sourceSha": "e84a6fc9ba6e6fe31d00d0e338c2a32ea3c1ad8b",
+        "deployId": "dep-dbcpusjncjis73b4kcrg",
+        "finishedAt": "2026-10-22T05:33:47.768837Z"
+      },
+      {
+        "name": "oto-console-staging",
+        "sourceSha": "e84a6fc9ba6e6fe31d00d0e338c2a32ea3c1ad8b",
+        "deployId": "dep-dbcpusjncjis73b4kej0",
+        "finishedAt": "2026-10-22T05:31:36.497572Z"
+      }
+    ],
+    "localReceipt": {
+      "file": "SCRUM-654-local-results.json",
+      "sha256": "e382a13bfcd8aeda16ff4f786db732e1349a1ec36aa12a22db306685f37d7993"
+    },
+    "stagingReceipt": {
+      "file": "SCRUM-654-staging-results.json",
+      "sha256": "299c6ad6078d4bb5136180fba640dead61329867f00503215d3d8e11fa593046"
+    },
+    "ciReceipt": {
+      "file": "SCRUM-654-ci-results.json",
+      "sha256": "d09bf2a8cc3a0b1970b313cbe8116dcca983141e24065374ed1da3283f14c855"
+    },
+    "checks": [
+      {
+        "code": "ACCOUNT_LIGHT_ADOPTED_WITHOUT_WRITE",
+        "passed": true,
+        "at": "2026-10-22T05:38:20.908Z"
+      },
+      {
+        "code": "NATIVE_DARK_CYCLE_THEME_ONLY_WRITE_AND_READBACK",
+        "passed": true,
+        "at": "2026-10-22T05:38:27.811Z"
+      },
+      {
+        "code": "SYSTEM_FOLLOWS_DEVICE_WITHOUT_WRITE",
+        "passed": true,
+        "at": "2026-10-22T05:38:30.761Z"
+      },
+      {
+        "code": "NATIVE_SYSTEM_PHONE390_SIDEBAR",
+        "passed": true,
+        "at": "2026-10-22T05:38:33.911Z"
+      },
+      {
+        "code": "RELOAD_ADOPTS_SYSTEM_FROM_ACCOUNT",
+        "passed": true,
+        "at": "2026-10-22T05:38:39.249Z"
+      },
+      {
+        "code": "EXACT_ORIGINAL_PREFERENCES_RESTORED_WITH_OWN_AUDITS",
+        "passed": true,
+        "at": "2026-10-22T05:38:44.166Z"
+      },
+      {
+        "code": "RELEASE_AND_NEXT_ACTOR_ACTUAL_PREFERENCE_ADOPTION",
+        "passed": true,
+        "at": "2026-10-22T05:38:51.081Z"
+      }
+    ],
+    "screens": [
+      {
+        "filename": "SCRUM-654-01-native-dark.png",
+        "sha256": "3a0ee5fda1fb08d4c10759961fbd525e992560c1a934fd8a4e2c733d820f43b8",
+        "jiraAttachmentId": "11938",
+        "inspectedForPrivacyAndContent": true,
+        "capturedAt": "2026-10-22T05:38:26.106Z"
+      },
+      {
+        "filename": "SCRUM-654-02-system-phone.png",
+        "sha256": "9413d79feb75fbf3e4b8a41be87c6de394ea6567a8afe3996bdc0ba57cc096bf",
+        "jiraAttachmentId": "11939",
+        "inspectedForPrivacyAndContent": true,
+        "capturedAt": "2026-10-22T05:38:32.434Z"
+      },
+      {
+        "filename": "SCRUM-654-03-system-after-reload.png",
+        "sha256": "2dbaa66b6a5bc807db3b1a993909ec807f6dc11d90c1cf1cba1e10e533f15526",
+        "jiraAttachmentId": "11940",
+        "inspectedForPrivacyAndContent": true,
+        "capturedAt": "2026-10-22T05:38:37.471Z"
+      }
+    ],
+    "exactOriginalPreferencesRestored": true,
+    "originalPreferences": {
+      "theme": "light",
+      "language": "en"
+    },
+    "managerReadOnly": true,
+    "bothSignOuts200ThenMe401": true,
+    "preferenceAttempts": 3,
+    "ownPreferenceAudits": 3,
+    "browserErrorKinds": [],
+    "limits": [
+      "Only the seeded administrator theme is changed. The seeded manager is read-only; language and every other account field stay unchanged.",
+      "Each actor is checked against its own actual account preference. Different persisted values across people are covered by automated tests if both seeded accounts have the same value.",
+      "Browser error tags and actual write-attempt counts are retained without an error-free browser claim.",
+      "The two seeded actors had the same persisted theme; different-value and actor-isolation negatives remain automated coverage."
+    ],
+    "preservedIncompleteReceipt": {
+      "file": "SCRUM-654-first-attempt-results.json",
+      "sha256": "156d388b03c17cffacd6fe234bf68811b55ffd2aef5f7884f735efa51ae533fd"
+    }
+  },
+  "ownerQuestion": {
+    "evidence": {
+      "path": "docs/progress/plans/super-admin-console/PLAN.md",
+      "commit": "e84a6fc9ba6e6fe31d00d0e338c2a32ea3c1ad8b",
+      "heading": "7. P1 — console foundation (Codex)",
+      "paragraph": "Owner question Q1 (2026-10-22, SCRUM-611)"
+    },
+    "status": "Unchanged and non-blocking; inherited historical-session caption preserved"
+  },
+  "nextStep": "P2 starts with SCRUM-619 only after this phase acceptance checkpoint is pushed; remaining phases stay sequential.",
+  "parentScreenshot": {
+    "filename": "SCRUM-608-01-p1-console-checkpoint.png",
+    "sha256": "2dbaa66b6a5bc807db3b1a993909ec807f6dc11d90c1cf1cba1e10e533f15526",
+    "capturedAt": "2026-10-22T05:38:37.471Z",
+    "sourceTicket": "SCRUM-654",
+    "sourceFilename": "SCRUM-654-03-system-after-reload.png",
+    "unchangedCopy": true,
+    "note": "Latest native Console System/reload capture after the final P1 prerequisite deployment. Counted among the37 child images; this copy is not a new capture.",
+    "jiraAttachmentId": "11941",
+    "coordinatorViewed": true
+  },
+  "parentStatus": "Deployed",
+  "jiraChildStatusObservation": {
+    "observedAt": "2026-10-22T05:41:41.581Z",
+    "tickets": [
+      {
+        "key": "SCRUM-609",
+        "status": "Deployed",
+        "summary": "P1-1 Admin on the launcher and the navigation shell"
+      },
+      {
+        "key": "SCRUM-610",
+        "status": "Deployed",
+        "summary": "P1-2 Overview v1"
+      },
+      {
+        "key": "SCRUM-611",
+        "status": "Deployed",
+        "summary": "P1-3 People: Accounts lifted from the POS Login Users panel"
+      },
+      {
+        "key": "SCRUM-612",
+        "status": "Deployed",
+        "summary": "P1-4 People: Roles and scopes with a plain-words role view"
+      },
+      {
+        "key": "SCRUM-613",
+        "status": "Deployed",
+        "summary": "P1-5 People: App access lifted"
+      },
+      {
+        "key": "SCRUM-614",
+        "status": "Deployed",
+        "summary": "P1-6 People: Employees read-only"
+      },
+      {
+        "key": "SCRUM-615",
+        "status": "Deployed",
+        "summary": "P1-7 People: Departments read-only"
+      },
+      {
+        "key": "SCRUM-616",
+        "status": "Deployed",
+        "summary": "P1-8 People: Access review"
+      },
+      {
+        "key": "SCRUM-617",
+        "status": "Deployed",
+        "summary": "P1-9 POS Login Users becomes a link to Admin"
+      },
+      {
+        "key": "SCRUM-654",
+        "status": "Deployed",
+        "summary": "P1-10 The Console reads and writes the account theme preference"
+      }
+    ]
+  },
+  "parentStatusObservedAt": "2026-10-22T05:42:57.954Z"
+}
