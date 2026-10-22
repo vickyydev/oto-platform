@@ -1,0 +1,332 @@
+{
+  "ticket": "SCRUM-623",
+  "reviewedAt": "2026-10-22T15:31:49.526Z",
+  "worktree": "C:/w/admin-money",
+  "diffBaseSha": "85d81b3fe521ffe7dde60a5315a78e67b18dc8ad",
+  "reviewStatus": "NO_ADDITIONAL_SOURCE_BLOCKER_RETEST_PENDING",
+  "scope": {
+    "approvedOwnedPaths": 38,
+    "groups": {
+      "apiProduction": 4,
+      "apiTests": 2,
+      "console": 7,
+      "adminScreens": 22,
+      "apiTypes": 3
+    },
+    "trackedChangedPaths": 28,
+    "untrackedOwnedPaths": 10,
+    "changedPathsExactlyMatchOwned": true,
+    "outsideOwnedPaths": [],
+    "ownedNotChanged": [],
+    "prohibitedSourceOrMigrationPaths": [],
+    "attributionPaths": []
+  },
+  "byteVerification": {
+    "manifestPath": "C:/w/admin623-final3-linux/source-manifest.json",
+    "manifestSha256": "7fe4d06cab55a60577bdaf4e872c544ef51de57f53cde13ef4d77adfff294335",
+    "manifestEntries": 3556,
+    "allCurrentFilesMatch": true,
+    "mismatchPaths": [],
+    "ownedListPath": "C:/w/admin623-final3-linux/owned-files.txt",
+    "ownedListSha256": "ff019c3cc855f62fb3994178d63f3458c27c88f75cc0da87bcb77201a6f1a5ac",
+    "ownedFiles": [
+      {
+        "path": "apps/api/src/routes/catalog.ts",
+        "sha256": "c1aa693ee673c7015f9377d4d4ab2a8dd0a006245d4accd0f7f815debe15ef60"
+      },
+      {
+        "path": "apps/api/src/routes/menu.ts",
+        "sha256": "ff71d4718ea3be6d3525042171a02a5483c68aeb59ada6f281dcb2d067cdf410"
+      },
+      {
+        "path": "apps/api/src/routes/vouchers.ts",
+        "sha256": "de77992f42a47e214fbfa2db97b433eb9079b0dd30dd5016ded01d4baf7b28a4"
+      },
+      {
+        "path": "apps/api/src/services/voucher-promotions.ts",
+        "sha256": "facd773cce758f8c88c231d4db68d358ea90ca238a4c96ba6d1d45b0cbec1288"
+      },
+      {
+        "path": "apps/api/test/s623-money-contracts.test.ts",
+        "sha256": "10e6c9e9af725a28c85fa93963322fddd5d41ae715384ab41a4a7546d6fdd38d"
+      },
+      {
+        "path": "apps/api/test/s623-money-review.test.ts",
+        "sha256": "39af1e42c7e37a3871020719024798d613b0f5ccdea4afff9b636fff84b4ab85"
+      },
+      {
+        "path": "apps/console/e2e/money.spec.ts",
+        "sha256": "25c7eb36f940509be04567cc9da475a2da5321b614900f614fbf9480e6b165c6"
+      },
+      {
+        "path": "apps/console/src/App.tsx",
+        "sha256": "d68034ec876cb9bafbd100202b4ffd0c68a9b0a83cec9c6b1c2c18ed7f3cbcc4"
+      },
+      {
+        "path": "apps/console/src/api/money.ts",
+        "sha256": "e1c665d457e11d450a5584e594f6cb819726872a911984d4abd225ab16d5d609"
+      },
+      {
+        "path": "apps/console/src/components/consoleSections.tsx",
+        "sha256": "4d74524376bf6d8c82e593fc16deb2bf09be5d8864651c4b934dd27330e0f989"
+      },
+      {
+        "path": "apps/console/src/pages/Money.tsx",
+        "sha256": "f09e93fdaeacaaed5c74dc8b9ea04322779c22372a3f4a7126660598156a5fd5"
+      },
+      {
+        "path": "apps/console/src/pages/VoucherTypes.tsx",
+        "sha256": "67b7a0c94beec93133193f9d4dd594fc0913242eb037da340e5195b4ddac8d1e"
+      },
+      {
+        "path": "apps/console/test/voucher-types.test.ts",
+        "sha256": "f4ddf44739bab96a87fb76611ffd69e7aea304c030757e275d773e5998d06f51"
+      },
+      {
+        "path": "packages/admin-screens/package.json",
+        "sha256": "baacff509b6276ae13437733a3382a5bf57fa8596d0ef335c075024b11259304"
+      },
+      {
+        "path": "packages/admin-screens/src/lifted/api/events.ts",
+        "sha256": "4f8fe1f04e469da7639497cc7ce0915066ffd45703403b62d8cb1dbcad8dd766"
+      },
+      {
+        "path": "packages/admin-screens/src/lifted/api/menu.ts",
+        "sha256": "f0b0f5809eba1f4ab9bd228e53a526db0b04f23e67a90a7243ecd0d6dd522ba6"
+      },
+      {
+        "path": "packages/admin-screens/src/lifted/api/money.ts",
+        "sha256": "598fc7a0b8bb6bb08f296637e82089dfafb8bf78ff67f887d2f4a78c461c9498"
+      },
+      {
+        "path": "packages/admin-screens/src/lifted/api/platform.ts",
+        "sha256": "b66f61b1e61031a274b7022ae613ce80a248ebd6d9be6fce908067bb3db52cbc"
+      },
+      {
+        "path": "packages/admin-screens/src/lifted/api/voucherPromotions.ts",
+        "sha256": "bfd16d815696777f2629aa19396209f1c15d651c05eee90cf8da8b3b6a1d657a"
+      },
+      {
+        "path": "packages/admin-screens/src/lifted/components/admin/discounts/DiscountCodesSection.tsx",
+        "sha256": "b2fab50db1f46cb6a6feac24fbd867066206b015cd1f3ac6ef793252cc9466ec"
+      },
+      {
+        "path": "packages/admin-screens/src/lifted/components/admin/discounts/DiscountReasonsSection.tsx",
+        "sha256": "807576f280ce324afbe638a42cb9393d517f3ab3c25ca087b7d116c8564e9fe5"
+      },
+      {
+        "path": "packages/admin-screens/src/lifted/components/admin/discounts/DiscountTargetPicker.tsx",
+        "sha256": "7ca31e863104d5ab35e4639fe1ef7b39481b9d45bbca2a797fb3c71d7e6038ac"
+      },
+      {
+        "path": "packages/admin-screens/src/lifted/components/admin/discounts/DiscountsScreen.tsx",
+        "sha256": "6b7b6e7489e1280c1c3bad35e785f82165739f349b497233d49165e38d20a8bd"
+      },
+      {
+        "path": "packages/admin-screens/src/lifted/components/admin/events/EventsPanel.tsx",
+        "sha256": "7da50e9446c5edeaae45b427f71e983fce888eab979e116e6ac38238cb1b305e"
+      },
+      {
+        "path": "packages/admin-screens/src/lifted/components/admin/payments/PaymentMethodsSection.tsx",
+        "sha256": "b27b71761d56ae1b4372f335370ce80e242dd8bd29d04d3ede5e37e7f4c2b163"
+      },
+      {
+        "path": "packages/admin-screens/src/lifted/components/admin/tax/TaxPanel.tsx",
+        "sha256": "266ba9c67c8d440d2e883926e1fe19e25fa01f975960e70f89cb3d80fd3cc2b2"
+      },
+      {
+        "path": "packages/admin-screens/src/lifted/components/admin/vouchers/VoucherPromotionsPanel.tsx",
+        "sha256": "263ed8cf4281e822d0515c1220c172c8e47133194ffe80f3472820c0886c1b71"
+      },
+      {
+        "path": "packages/admin-screens/src/lifted/lib/cartWire.ts",
+        "sha256": "cf8aa4f99201a9d5b34a290de508d76bc2a561b34aa442d41f132d2880469db5"
+      },
+      {
+        "path": "packages/admin-screens/src/lifted/lib/discountTarget.ts",
+        "sha256": "eade5070c211e3dfe823f7ac0ec6fa72c3348ce8d2e25d6d58f5247bea68af9c"
+      },
+      {
+        "path": "packages/admin-screens/src/lifted/lib/payments.ts",
+        "sha256": "1b6fe1758d467a9ecb65a9b592a34c710712b0c97d8bcc1862d110f7f3995732"
+      },
+      {
+        "path": "packages/admin-screens/src/lifted/lib/taxPresentation.ts",
+        "sha256": "b0c27efdff3cf2a7b295436bbe0250a94ad0da006d6b2cbbd504efc175e47776"
+      },
+      {
+        "path": "packages/admin-screens/src/lifted/runtime/AdminScreenRuntime.tsx",
+        "sha256": "7cee5615f131b90ca2a773678c33f61705da07ee3592ae564568845a1562b20a"
+      },
+      {
+        "path": "packages/admin-screens/src/lifted/runtime/money.ts",
+        "sha256": "5872989c9de3005cc11153249ae0bdaa7bc9bc0c064e535ae97ba4403edc2894"
+      },
+      {
+        "path": "packages/admin-screens/test/money-ports.test.ts",
+        "sha256": "43762975ee913eb51a10054ac0c880c25283eacd172e01dda896319607510b09"
+      },
+      {
+        "path": "packages/admin-screens/test/money-write-recovery.test.ts",
+        "sha256": "811364d81ec1d265faa52ad4e192d9c2cda54e6d0abde9abc207cf24206171ca"
+      },
+      {
+        "path": "packages/api-types/openapi.json",
+        "sha256": "be67151fa5873977496af3ffc7a363a36e0b2a0767b5f9bbc468aa849d5161cd"
+      },
+      {
+        "path": "packages/api-types/src/openapi.ts",
+        "sha256": "e5416853de77d414c2edbb60d5a10fdca21cc15a9748a0867e1fe2eb581fc27a"
+      },
+      {
+        "path": "packages/api-types/test/migration-list.ts",
+        "sha256": "57a5159425c550b9f67bfa285b907ea3dede38633cb42280995182e3a02d7c81"
+      }
+    ],
+    "previousManifest": {
+      "path": "C:/w/admin623-final2-linux/source-manifest.json",
+      "sha256": "5ea461fba6c7ab9a5b87942a5996cb02589912da02f07aeeafff051f9ce74134",
+      "all3556MatchedBeforeAuthorizedCompatibilityFix": true
+    },
+    "declaredDeltaFromFinal2": [
+      {
+        "path": "packages/admin-screens/src/lifted/components/admin/events/EventsPanel.tsx",
+        "beforeSha256": "4455afa99d62bbf5d48bd207e0e1fbf994f89536dd3f551af0a151a8040b62db",
+        "afterSha256": "7da50e9446c5edeaae45b427f71e983fce888eab979e116e6ac38238cb1b305e"
+      }
+    ],
+    "backendDeltaFromFinal2": 0
+  },
+  "apiReview": {
+    "newJsonResponseContracts": 13,
+    "operations": [
+      {
+        "path": "/payment-methods",
+        "method": "get",
+        "hasJson200Schema": true
+      },
+      {
+        "path": "/payment-methods",
+        "method": "post",
+        "hasJson200Schema": true
+      },
+      {
+        "path": "/payment-methods/{code}",
+        "method": "patch",
+        "hasJson200Schema": true
+      },
+      {
+        "path": "/payment-methods/{code}",
+        "method": "delete",
+        "hasJson200Schema": true
+      },
+      {
+        "path": "/payment-methods/{code}/move",
+        "method": "post",
+        "hasJson200Schema": true
+      },
+      {
+        "path": "/branches/{branchId}/tax-config",
+        "method": "get",
+        "hasJson200Schema": true
+      },
+      {
+        "path": "/branches/{branchId}/tax-config",
+        "method": "put",
+        "hasJson200Schema": true
+      },
+      {
+        "path": "/menu/discounts",
+        "method": "get",
+        "hasJson200Schema": true
+      },
+      {
+        "path": "/menu/discounts",
+        "method": "post",
+        "hasJson200Schema": true
+      },
+      {
+        "path": "/menu/discounts/{id}",
+        "method": "patch",
+        "hasJson200Schema": true
+      },
+      {
+        "path": "/menu/discounts/{id}",
+        "method": "delete",
+        "hasJson200Schema": true
+      },
+      {
+        "path": "/voucher-campaigns",
+        "method": "get",
+        "hasJson200Schema": true
+      },
+      {
+        "path": "/voucher-campaigns",
+        "method": "post",
+        "hasJson200Schema": true
+      }
+    ],
+    "existingWriteInputPermissionTargetsAuditAndIdempotencyRetained": true,
+    "csvBranchAuthorizationBeforeBearerRead": true,
+    "csvAttachedRowsRequireCampaignOperatorAndPark": true,
+    "csvNoStoreRetained": true,
+    "ratchet": {
+      "path": "packages/api-types/test/migration-list.ts",
+      "allowanceDecrease": 13,
+      "allowanceIncrease": 0,
+      "newAllowances": 0
+    },
+    "guardHarnessFilesChanged": false,
+    "noMigrations": true,
+    "storedTaxReadMetadataPassthrough": true,
+    "storedDiscountTargetReadUnknownPreserved": true,
+    "generatedSchemaStructuralDiffInitialBufferFailure": {
+      "code": "ENOBUFS",
+      "inspectionOnly": true,
+      "resolvedUsingLargerCaptureBuffer": true
+    }
+  },
+  "sdkAndHelpers": {
+    "unchangedBodyRetryKeysRetainedPerSnapshot": true,
+    "discountRenameOneExistingIdPatchInConsole": true,
+    "confirmedCreateIdCached": true,
+    "confirmedWriteRefreshFailureDoesNotReopenCreate": true,
+    "readRefreshRetryDoesNotMutate": true,
+    "actorParkPagePermissionAndRequestFencesReviewed": true,
+    "unresolvedFreeItemRestrictsOnlyItsRowEdit": true,
+    "controlledOptionsDoNotEraseRequiredMetadata": true,
+    "taxHelperWhitespaceNormalizedBodyEquality": {
+      "toSatang": true,
+      "toBaht": true,
+      "engineTaxConfig": true,
+      "breakdownToBaht": true
+    },
+    "discountTargetLabelBodyEquality": true,
+    "paymentHelperBodyEquality": true,
+    "blankTaxTemplateMatchesExistingPosStoreShape": true,
+    "packageImportsNoApplicationCode": true
+  },
+  "resolvedDuringReview": [
+    {
+      "path": "packages/admin-screens/src/lifted/components/admin/events/EventsPanel.tsx",
+      "issue": "Existing POS partial-runtime SSR fixture lacks session; direct session.operator reads throw.",
+      "observedBy": "Parent full POS run",
+      "originalLogPath": "C:/w/admin623-final2-linux/pos.log",
+      "originalLogSha256": "618084b734f123636bc0d063ea170d794b2c416122f96ac9ab61e144c56111f1",
+      "originalPasses": 1432,
+      "originalFailures": 1,
+      "authorizedCorrection": "Three optional session reads on two wrapper lines; no synthesized identity and canonical server-backed authority remains fail-closed.",
+      "currentSha256": "7da50e9446c5edeaae45b427f71e983fce888eab979e116e6ac38238cb1b305e",
+      "postFixRuntimeRetest": "PENDING_PARENT_FINAL3"
+    }
+  ],
+  "findings": [],
+  "limits": [
+    "Read-only source/diff/hash review; no tests, builds, runners, network, staging, Git writes or dependency changes executed by reviewer.",
+    "One Events compatibility source amendment was explicitly authorized by the parent during this review; final3 includes only that delta from final2.",
+    "Parent final3 full gates are running; this receipt does not claim CI, deployment, staging acceptance or the actual Till round trip.",
+    "Default POS discount rename adapter consciously retains original delete/upsert behavior; atomic rename reviewed here is the Console path.",
+    "Manual-discount reasons and usage notices retain their declared tab-local behavior.",
+    "Legacy malformed database JSON outside the documented known field shapes was not queried or assessed."
+  ]
+}

@@ -1,0 +1,577 @@
+{
+  "ticket": "SCRUM-623",
+  "kind": "Combined original native public proof plus focused recovery audit",
+  "checkedAt": "2026-10-22T16:40:39.189Z",
+  "passed": true,
+  "fullAcceptance": true,
+  "resourcesRestored": true,
+  "sourceSha": "5ddb61408a0d931802fd2f86f307ab058878dd34",
+  "ciRun": "39807000650",
+  "checks": [
+    {
+      "name": "Original V4 proof, failed envelope and partial audit remain exact immutable bytes",
+      "passed": true
+    },
+    {
+      "name": "Recovery binds those prior receipts and the original private journal fingerprint without reading private bytes",
+      "passed": true
+    },
+    {
+      "name": "Exact reviewed recovery helper and envelope source identities bind the successful public receipts",
+      "passed": true
+    },
+    {
+      "name": "Independent helper R1 closure and envelope review match the held source",
+      "passed": true
+    },
+    {
+      "name": "Both original and focused recovery have exact source and successful certain signout",
+      "passed": true
+    },
+    {
+      "name": "Retained CI receipt proves six completed successful jobs for this exact full source SHA",
+      "passed": true
+    },
+    {
+      "name": "All three services retain exactly the same live deployment observations across V4 and recovery",
+      "passed": true
+    },
+    {
+      "name": "Six original native control checks remain fresh and passing without relabelling the partial run complete",
+      "passed": true
+    },
+    {
+      "name": "Focused recovery has exactly six passing fresh checks and one newly settled existing-discount archive",
+      "passed": true
+    },
+    {
+      "name": "All eleven prior public operation hashes, attempts and latest200 settlement states are unchanged",
+      "passed": true
+    },
+    {
+      "name": "Combined receipt has twelve settled logical operations and thirteen attempts with only the captured discount archive appended",
+      "passed": true
+    },
+    {
+      "name": "Original confirmed restores and the exact201-to200 idempotent voucher-create replay are retained",
+      "passed": true
+    },
+    {
+      "name": "Twelve business audit rows match exactly the captured fixture and original-park entity IDs and fresh original proof window",
+      "passed": true
+    },
+    {
+      "name": "Pinned executed helper enforces seeded actor/operator identity and audit actor/entity checks before recording public summaries",
+      "passed": true
+    },
+    {
+      "name": "Successful helper receipt records equal original/after active catalogue fingerprints and original tax, branch and preferences",
+      "passed": true
+    },
+    {
+      "name": "Five original publication-approved native images and replacement19 form exactly six unique fresh public captures",
+      "passed": true
+    },
+    {
+      "name": "Replacement19 explicitly hides the actual native QR grid and captures the whole card clear of its caption",
+      "passed": true
+    },
+    {
+      "name": "Raw PNG hash and native bounds verified: SCRUM-623-14-v4-tenders-desktop.png",
+      "passed": true
+    },
+    {
+      "name": "Raw PNG hash and native bounds verified: SCRUM-623-15-v4-tax-desktop.png",
+      "passed": true
+    },
+    {
+      "name": "Raw PNG hash and native bounds verified: SCRUM-623-16-v4-voucher-types-desktop.png",
+      "passed": true
+    },
+    {
+      "name": "Raw PNG hash and native bounds verified: SCRUM-623-17-v4-voucher-campaigns-desktop.png",
+      "passed": true
+    },
+    {
+      "name": "Raw PNG hash and native bounds verified: SCRUM-623-18-v4-event-pricing-phone.png",
+      "passed": true
+    },
+    {
+      "name": "Raw PNG hash and native bounds verified: SCRUM-623-19-recovered-discounts-desktop.png",
+      "passed": true
+    },
+    {
+      "name": "Event native phone capture fits390px and all desktop frames retain1440px dimensions",
+      "passed": true
+    },
+    {
+      "name": "Unprotected image13 is absent from public QA and tracked files, with original private-image hash preserved through public audit",
+      "passed": true
+    },
+    {
+      "name": "No blocked, recorded browser error or forbidden-write activity is present in either public proof",
+      "passed": true
+    },
+    {
+      "name": "Recovery envelope confirms childexit0, exact helper and raw proof bytes, stable releases and all six fresh image hashes",
+      "passed": true
+    },
+    {
+      "name": "Event remains an explicit zero-write skip and no campaign mint/export or Till/station claim is introduced",
+      "passed": true
+    }
+  ],
+  "metrics": {
+    "auditPins": 28,
+    "originalRecordedChecks": 8,
+    "recoveryRecordedChecks": 6,
+    "nativeControlChecks": 6,
+    "focusedRecoveryArchives": 1,
+    "publicImages": 6,
+    "logicalOperations": 12,
+    "totalBusinessAttempts": 13,
+    "originalBusinessAttempts": 12,
+    "recoveryBusinessAttempts": 1,
+    "fixtureCreates": 3,
+    "businessAuditRows": 12,
+    "auditGroups": 10,
+    "confirmedSignouts": 2,
+    "stableServices": 3,
+    "eventWriteSkips": 1
+  },
+  "inputs": {
+    "originalPartial": {
+      "path": "C:/w/admin623-staging-v4-results.json",
+      "sha256": "950800052b57fc2124afa8a1d483eceb1580fb079ed3f314d23de5f6dcb79ed6"
+    },
+    "originalEnvelope": {
+      "path": "C:/w/admin623-stage-v4-envelope.json",
+      "sha256": "5d3d064dec14bdccd77f1e7ced6dfff1257975cb706e7eb45b703fbe1320849d"
+    },
+    "originalPartialAudit": {
+      "path": "C:/w/admin623-v4-partial-audit.json",
+      "sha256": "8b319c93ceed78aba3315c70a482be318b931790d68980d758269e3bbe01a25b"
+    },
+    "recovery": {
+      "path": "C:/w/admin623-recovery-results.json",
+      "sha256": "1d31ec1f5da0ec4f8ae2a1c29ca5a3fa730b2ed7a250727bcc98b2b5ee84dfc3"
+    },
+    "recoveryEnvelope": {
+      "path": "C:/w/admin623-recovery-envelope.json",
+      "sha256": "766925bc251d323829c6897c0639f7c99827ee9ad90e701200de7ee658a74138"
+    },
+    "recoveryHelper": {
+      "path": "C:/w/admin623-recovery-evidence-v2.mjs",
+      "sha256": "7caaa6f2c40f0edc424fd451b98094acfeb8c43a153f0436a1c56a0784cec8e6"
+    },
+    "recoveryEnvelopeSource": {
+      "path": "C:/w/admin623-recovery-envelope-v2.mjs",
+      "sha256": "102b533aa7dd3d55702d09686c24b4ac001189d2eaacb2faaed8610e00a1ce93"
+    },
+    "independentRecoveryReview": {
+      "path": "C:/w/admin623-recovery-v2-review.json",
+      "sha256": "99fd14e62bc0eaa5f2faf637abef84deb95ede686d0ad25c4aeb2473c11594fd"
+    },
+    "independentEnvelopeReview": {
+      "path": "C:/w/admin623-recovery-envelope-v2-review.json",
+      "sha256": "e182144a2e187acd4cf7c7c31e7f9db8aa8e24e412121e5437eb10cf7e88380e"
+    },
+    "ci": {
+      "path": "C:/w/admin623-ci-results.json",
+      "sha256": "fa94a7be9b14c664085b2910c5b15140754c26c47810e69248cb8dda62714233"
+    }
+  },
+  "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+  "actorAccountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+  "originalBranchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+  "fixtureIds": {
+    "discountId": "01a16468-d1b8-786e-b9a9-216bb02cbb0a",
+    "tenderId": "01a16469-0afc-7931-93d5-4bcf5409fc77",
+    "typeId": "01a16469-6b89-7df3-8fad-cbc9b0100c78"
+  },
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "deployId": "dep-dbd35049v7es73c6piq0",
+      "sourceSha": "5ddb61408a0d931802fd2f86f307ab058878dd34",
+      "finishedAt": "2026-10-22T16:01:18.61569Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "deployId": "dep-dbd35049v7es73c6pjrg",
+      "sourceSha": "5ddb61408a0d931802fd2f86f307ab058878dd34",
+      "finishedAt": "2026-10-22T15:58:35.150771Z"
+    },
+    {
+      "name": "oto-pos-staging",
+      "deployId": "dep-dbd350c9v7es73c6pk0g",
+      "sourceSha": "5ddb61408a0d931802fd2f86f307ab058878dd34",
+      "finishedAt": "2026-10-22T15:58:40.314539Z"
+    }
+  ],
+  "maxDeploymentFinishedAt": "2026-10-22T16:01:18.615Z",
+  "operations": [
+    {
+      "label": "discount-create",
+      "pathSha256": "aff258fc306fefce17ad607f9ed1c12e70b3555bdcb850ed1f2044ffd9771a77",
+      "bodySha256": "216eac7432fc7c8fc0e1296246a433ec99c7857f2b663a26036d965a65e8cbe5",
+      "keySha256": "a87a1b6ffa15d49796824a3007c8a3259bcecc5b7e690fe3db12d317a60189c3",
+      "attempts": 1,
+      "status": 200,
+      "settled": true,
+      "latestAttemptConfirmed": true
+    },
+    {
+      "label": "discount-edit",
+      "pathSha256": "127abddc9d6b8634ae2bbe81406a00f9fb72442db2b61ac9ee71e3bd828199e0",
+      "bodySha256": "0ceca23036ab9800518cf89b20aae06a5424dc8ec7dc3d6a13c113bbe823e210",
+      "keySha256": "4ff5adccb487f4a34076a84365b899385f05775241289cba7d163f48999d4a3c",
+      "attempts": 1,
+      "status": 200,
+      "settled": true,
+      "latestAttemptConfirmed": true
+    },
+    {
+      "label": "tender-create",
+      "pathSha256": "88352d7b01eda746634f01a813fe1012642ea1217bf35a9e54c03ceafa0e6c33",
+      "bodySha256": "b14b6780d8d8a131c63a8d303c1ec9a2ad9d767bdda34f27667ef6c2f8793d3f",
+      "keySha256": "f131ad163e16a24de0d726658821bf23f582bafd07a61568f2890019ea5bafc5",
+      "attempts": 1,
+      "status": 200,
+      "settled": true,
+      "latestAttemptConfirmed": true
+    },
+    {
+      "label": "tender-edit",
+      "pathSha256": "707becd56ef70db4dd4015f3fb7035d9130728e000221292e3450f53f911ad23",
+      "bodySha256": "900c960db2a70c4aec736dfef48e039684e62a0c01ce90953f281929de8fda9e",
+      "keySha256": "3a70996f956da7b210a89691f197793d51b5609bf5b035a0e8c8836777d90844",
+      "attempts": 1,
+      "status": 200,
+      "settled": true,
+      "latestAttemptConfirmed": true
+    },
+    {
+      "label": "tax-change",
+      "pathSha256": "29cebbb90d0c05c50e5f1932217b0c4999a8519355e5f2fbb2b4ba01d0aa9c8c",
+      "bodySha256": "6e0b0d1fdd29c0b93cb6fa4cb6a6c0183d9a8d7f421d2bb906c845b903c60592",
+      "keySha256": "089da110d5336497b336f963decf2debffb8abc41e1dc64fec82cd9e1763ab88",
+      "attempts": 1,
+      "status": 200,
+      "settled": true,
+      "latestAttemptConfirmed": true
+    },
+    {
+      "label": "tax-restore",
+      "pathSha256": "29cebbb90d0c05c50e5f1932217b0c4999a8519355e5f2fbb2b4ba01d0aa9c8c",
+      "bodySha256": "f406d20c481cfaa35ffca2f3c3443cff85ca20d85ece3721d66bd7516e4f8af5",
+      "keySha256": "cd99d1db22b6c0f7ca30337165e0785610b45653203b5f472fed1fcdabc223fa",
+      "attempts": 1,
+      "status": 200,
+      "settled": true,
+      "latestAttemptConfirmed": true
+    },
+    {
+      "label": "type-create",
+      "pathSha256": "6bcaa8c3f6fa7cc1f9d4f87e044b504e33868193404a4baf216bc2b7819a131d",
+      "bodySha256": "5425a3d267f58452522682993a3651bb4e002dbd1247245316486dbcdf6f528e",
+      "keySha256": "7b3433f7862091850c8ff760a98295b76d9fac598c09dc7a15fbb3fa14de4297",
+      "attempts": 2,
+      "status": 200,
+      "settled": true,
+      "latestAttemptConfirmed": true
+    },
+    {
+      "label": "type-rules-edit",
+      "pathSha256": "953df0d74f31698a616240eed74fd69f089cee88be93dfa141d3b8d7e0eca9ec",
+      "bodySha256": "ed5855eaabd34084c7d72a8be876d6539bbe0bdd6b0a39acc9a6660beef66547",
+      "keySha256": "3de8f141d2898392970652b7dd6dbba589acca1920e84af445147dab087620f2",
+      "attempts": 1,
+      "status": 200,
+      "settled": true,
+      "latestAttemptConfirmed": true
+    },
+    {
+      "label": "type-rules-restore",
+      "pathSha256": "953df0d74f31698a616240eed74fd69f089cee88be93dfa141d3b8d7e0eca9ec",
+      "bodySha256": "1e4eb7d6c47533bdcd2f60a0aa33ad1e96623a77a32353359ff8b9f5e4457092",
+      "keySha256": "2ec2aade722e0f9e0f10fee226990f1b7e5953e582cdfd3e4c55c78fe211fba0",
+      "attempts": 1,
+      "status": 200,
+      "settled": true,
+      "latestAttemptConfirmed": true
+    },
+    {
+      "label": "type-archive",
+      "pathSha256": "953df0d74f31698a616240eed74fd69f089cee88be93dfa141d3b8d7e0eca9ec",
+      "bodySha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "keySha256": "58017426deadd03d866107ee43760bfd9798742c7e99ccf9a63f2e2d80295978",
+      "attempts": 1,
+      "status": 200,
+      "settled": true,
+      "latestAttemptConfirmed": true
+    },
+    {
+      "label": "tender-archive",
+      "pathSha256": "707becd56ef70db4dd4015f3fb7035d9130728e000221292e3450f53f911ad23",
+      "bodySha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "keySha256": "2348c60d53836492e06684589351aa803f748afa0f983259b900be12b2f701a9",
+      "attempts": 1,
+      "status": 200,
+      "settled": true,
+      "latestAttemptConfirmed": true
+    },
+    {
+      "label": "discount-archive",
+      "pathSha256": "127abddc9d6b8634ae2bbe81406a00f9fb72442db2b61ac9ee71e3bd828199e0",
+      "bodySha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "keySha256": "875bec2235900c5be1febc1d443f0eca1a8f360830c73cfab3e213e9190a2c70",
+      "attempts": 1,
+      "status": 200,
+      "settled": true,
+      "latestAttemptConfirmed": true
+    }
+  ],
+  "audits": [
+    {
+      "action": "discount_definition.create",
+      "entityId": "01a16468-d1b8-786e-b9a9-216bb02cbb0a",
+      "count": 1,
+      "timestamps": [
+        "2026-10-22T16:19:13.464Z"
+      ]
+    },
+    {
+      "action": "discount_definition.update",
+      "entityId": "01a16468-d1b8-786e-b9a9-216bb02cbb0a",
+      "count": 1,
+      "timestamps": [
+        "2026-10-22T16:19:18.865Z"
+      ]
+    },
+    {
+      "action": "discount_definition.archive",
+      "entityId": "01a16468-d1b8-786e-b9a9-216bb02cbb0a",
+      "count": 1,
+      "timestamps": [
+        "2026-10-22T16:36:25.172Z"
+      ]
+    },
+    {
+      "action": "payment_method.create",
+      "entityId": "01a16469-0afc-7931-93d5-4bcf5409fc77",
+      "count": 1,
+      "timestamps": [
+        "2026-10-22T16:19:28.123Z"
+      ]
+    },
+    {
+      "action": "payment_method.update",
+      "entityId": "01a16469-0afc-7931-93d5-4bcf5409fc77",
+      "count": 1,
+      "timestamps": [
+        "2026-10-22T16:19:32.081Z"
+      ]
+    },
+    {
+      "action": "payment_method.archive",
+      "entityId": "01a16469-0afc-7931-93d5-4bcf5409fc77",
+      "count": 1,
+      "timestamps": [
+        "2026-10-22T16:20:26.714Z"
+      ]
+    },
+    {
+      "action": "voucher_definition.create",
+      "entityId": "01a16469-6b89-7df3-8fad-cbc9b0100c78",
+      "count": 1,
+      "timestamps": [
+        "2026-10-22T16:19:52.841Z"
+      ]
+    },
+    {
+      "action": "voucher_definition.update",
+      "entityId": "01a16469-6b89-7df3-8fad-cbc9b0100c78",
+      "count": 2,
+      "timestamps": [
+        "2026-10-22T16:20:17.272Z",
+        "2026-10-22T16:20:02.773Z"
+      ]
+    },
+    {
+      "action": "voucher_definition.archive",
+      "entityId": "01a16469-6b89-7df3-8fad-cbc9b0100c78",
+      "count": 1,
+      "timestamps": [
+        "2026-10-22T16:20:21.672Z"
+      ]
+    },
+    {
+      "action": "branch_tax_config.update",
+      "entityId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+      "count": 2,
+      "timestamps": [
+        "2026-10-22T16:19:48.774Z",
+        "2026-10-22T16:19:41.717Z"
+      ]
+    }
+  ],
+  "baselineRestored": {
+    "originalHash": "58c062c99d24fecf6a68d6677111424ec96b005cfcc94def95ba9b295bf20c60",
+    "afterHash": "58c062c99d24fecf6a68d6677111424ec96b005cfcc94def95ba9b295bf20c60",
+    "taxHash": "f406d20c481cfaa35ffca2f3c3443cff85ca20d85ece3721d66bd7516e4f8af5",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "preferencesHash": "00df943c543d230f9e93ceca1038b659220a9779f4d70ae1b114715829458881"
+  },
+  "images": [
+    {
+      "filename": "SCRUM-623-14-v4-tenders-desktop.png",
+      "capturedAt": "2026-10-22T16:19:34.407Z",
+      "label": "native unused other tender rename desktop",
+      "bounds": [
+        {
+          "name": "fixture tender row",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "captionClear": true,
+      "sha256": "c205199c8c10139ba3c535eabd235c88f33547d6011da18d1bc2893cc40e601e",
+      "width": 1440,
+      "height": 1100
+    },
+    {
+      "filename": "SCRUM-623-15-v4-tax-desktop.png",
+      "capturedAt": "2026-10-22T16:19:44.559Z",
+      "label": "native F&B service value; exact restore follows",
+      "bounds": [
+        {
+          "name": "F&B service control",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "captionClear": true,
+      "sha256": "3064e1cffc7845287f7d720b4b4ad7d3811a757944d9b2494e94d796e70b50df",
+      "width": 1440,
+      "height": 1100
+    },
+    {
+      "filename": "SCRUM-623-16-v4-voucher-types-desktop.png",
+      "capturedAt": "2026-10-22T16:19:55.610Z",
+      "label": "unused generated voucher type; no codes issued",
+      "bounds": [
+        {
+          "name": "fixture voucher type row",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "captionClear": true,
+      "sha256": "5dbfe6a69f0883926b802fb77e64b5e04f52ed6b817cbe0539f57f82133c4020",
+      "width": 1440,
+      "height": 1100
+    },
+    {
+      "filename": "SCRUM-623-17-v4-voucher-campaigns-desktop.png",
+      "capturedAt": "2026-10-22T16:20:05.498Z",
+      "label": "unused type rules and campaign controls; no mint or download",
+      "bounds": [
+        {
+          "name": "fixture rules row",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "campaign form",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "captionClear": true,
+      "sha256": "6b53e56986bcde1da1c7d5accc812d328bbe3fa311d3d567802a8d6eb1bbc17b",
+      "width": 1440,
+      "height": 1100
+    },
+    {
+      "filename": "SCRUM-623-18-v4-event-pricing-phone.png",
+      "capturedAt": "2026-10-22T16:20:12.520Z",
+      "label": "native walk-up controls 390px; configuration write skipped",
+      "bounds": [
+        {
+          "name": "first native weekday price",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 390,
+        "document": 390
+      },
+      "captionClear": true,
+      "sha256": "256858b0931632201b7b934ee751dc05de52469e95f5af6eb71eee3e757f8f94",
+      "width": 390,
+      "height": 1100
+    },
+    {
+      "filename": "SCRUM-623-19-recovered-discounts-desktop.png",
+      "capturedAt": "2026-10-22T16:36:13.066Z",
+      "sha256": "800e7e418896d9b4ae2e1582d92f6fb4ffb6fb7f89c6838b837e4c32ea2db034",
+      "bounds": {
+        "wholeInViewport": true,
+        "clearOfCaption": true
+      },
+      "qrHidden": true,
+      "qrGridCount": 1,
+      "replacesExcludedImage": "SCRUM-623-13-v4-discounts-desktop.png",
+      "width": 1440,
+      "height": 1100
+    }
+  ],
+  "excludedEvidence": {
+    "filename": "SCRUM-623-13-v4-discounts-desktop.png",
+    "publicationExcluded": true,
+    "absentFromPublicQa": true,
+    "notTracked": true,
+    "privateOriginalSha256FromPublicAudit": "a241dc50c3ac23a403d568ef74a0647e9adea182e9026c3dacc320fa22a4268e",
+    "privateJournalSha256FromSuccessfulPinnedHelper": "91a77444df7f79d52ddf0587d5035e9b9b53fe6810bbc73158cac2a115f09f50",
+    "privateBytesReadByThisReviewer": false
+  },
+  "authCleanup": {
+    "original": {
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    },
+    "recovery": {
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    }
+  },
+  "outcome": "Six native Money control areas are evidenced by five original approved captures plus fresh QR-hidden discount capture19. The focused native archive completed the remaining cleanup; all three unused fixtures are archived, original active catalogue/tax/branch/preferences are restored, and twelve expected business audit rows are verified. Original failed receipts remain incomplete and immutable.",
+  "limits": [
+    "This audit reads public receipts, source-bound guard descriptions, CI metadata and approved PNG bytes only; no private journal/image, auth, network or fresh staging read was performed.",
+    "Canonical restoration, original private-journal immutability and audit actor checks are outcomes of the exact pinned successfully executed helper, independently bound here through public metadata and source guards.",
+    "Private image13 fingerprint is inherited from the immutable public partial audit; its bytes were not reopened. Image13 must not be committed or attached.",
+    "The coordinator reports viewing all six publication-approved images; this audit verifies raw hashes/dimensions/bounds, not a new visual inspection.",
+    "Event pricing was read-only; no Event write, actual Till/station workflow, campaign mint/export, payment, equipment change, complete ledger or history claim.",
+    "No recorded browser errors is a public receipt fact, not a broader claim that every possible browser path is error-free."
+  ]
+}

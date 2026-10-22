@@ -1,0 +1,188 @@
+{
+  "ticket": "SCRUM-623",
+  "sourceSha": "5ddb61408a0d931802fd2f86f307ab058878dd34",
+  "ciRun": "39807000650",
+  "startedAt": "2026-10-22T16:35:56.892Z",
+  "complete": true,
+  "helperSha256": "7caaa6f2c40f0edc424fd451b98094acfeb8c43a153f0436a1c56a0784cec8e6",
+  "reviewSha256": "99fd14e62bc0eaa5f2faf637abef84deb95ede686d0ad25c4aeb2473c11594fd",
+  "nativeReceiptSha256": "bd1492771894ee6180ba6e66181c404ef5e671ef5a77102befd3e11f8ddc8106",
+  "priorProofSha256": "950800052b57fc2124afa8a1d483eceb1580fb079ed3f314d23de5f6dcb79ed6",
+  "priorEnvelopeSha256": "5d3d064dec14bdccd77f1e7ced6dfff1257975cb706e7eb45b703fbe1320849d",
+  "priorAuditSha256": "8b319c93ceed78aba3315c70a482be318b931790d68980d758269e3bbe01a25b",
+  "before": [
+    {
+      "name": "oto-api-staging",
+      "deployId": "dep-dbd35049v7es73c6piq0",
+      "sourceSha": "5ddb61408a0d931802fd2f86f307ab058878dd34",
+      "finishedAt": "2026-10-22T16:01:18.61569Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "deployId": "dep-dbd35049v7es73c6pjrg",
+      "sourceSha": "5ddb61408a0d931802fd2f86f307ab058878dd34",
+      "finishedAt": "2026-10-22T15:58:35.150771Z"
+    },
+    {
+      "name": "oto-pos-staging",
+      "deployId": "dep-dbd350c9v7es73c6pk0g",
+      "sourceSha": "5ddb61408a0d931802fd2f86f307ab058878dd34",
+      "finishedAt": "2026-10-22T15:58:40.314539Z"
+    }
+  ],
+  "tooling": [
+    {
+      "name": "env.mjs",
+      "sha256": "7ed9e5879adeeeadbda307b375595b9bb801071f3939a6afa24de1ee2693e237"
+    },
+    {
+      "name": "render.mjs",
+      "sha256": "38c0624969c762a5d93de2a0ab0675e98c7a265e8dde750a51c25d1a5a9826b7"
+    }
+  ],
+  "publicationExcluded": [
+    "SCRUM-623-13-v4-discounts-desktop.png"
+  ],
+  "limits": [
+    "Original V4 proof remains incomplete; this envelope can accept only its native controls plus the observed focused recovery.",
+    "Event pricing remains read-only. No Till, station, campaign mint/export or complete-history claim."
+  ],
+  "finishedAt": "2026-10-22T16:36:40.873Z",
+  "proofExitCode": 0,
+  "proofReceiptSha256": "1d31ec1f5da0ec4f8ae2a1c29ca5a3fa730b2ed7a250727bcc98b2b5ee84dfc3",
+  "after": [
+    {
+      "name": "oto-api-staging",
+      "deployId": "dep-dbd35049v7es73c6piq0",
+      "sourceSha": "5ddb61408a0d931802fd2f86f307ab058878dd34",
+      "finishedAt": "2026-10-22T16:01:18.61569Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "deployId": "dep-dbd35049v7es73c6pjrg",
+      "sourceSha": "5ddb61408a0d931802fd2f86f307ab058878dd34",
+      "finishedAt": "2026-10-22T15:58:35.150771Z"
+    },
+    {
+      "name": "oto-pos-staging",
+      "deployId": "dep-dbd350c9v7es73c6pk0g",
+      "sourceSha": "5ddb61408a0d931802fd2f86f307ab058878dd34",
+      "finishedAt": "2026-10-22T15:58:40.314539Z"
+    }
+  ],
+  "stable": true,
+  "freshAfterAllThreeDeploys": true,
+  "imageHashesMatch": true,
+  "helperMatches": true,
+  "resourcesRestored": true,
+  "images": [
+    {
+      "filename": "SCRUM-623-14-v4-tenders-desktop.png",
+      "capturedAt": "2026-10-22T16:19:34.407Z",
+      "label": "native unused other tender rename desktop",
+      "bounds": [
+        {
+          "name": "fixture tender row",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "captionClear": true,
+      "sha256": "c205199c8c10139ba3c535eabd235c88f33547d6011da18d1bc2893cc40e601e"
+    },
+    {
+      "filename": "SCRUM-623-15-v4-tax-desktop.png",
+      "capturedAt": "2026-10-22T16:19:44.559Z",
+      "label": "native F&B service value; exact restore follows",
+      "bounds": [
+        {
+          "name": "F&B service control",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "captionClear": true,
+      "sha256": "3064e1cffc7845287f7d720b4b4ad7d3811a757944d9b2494e94d796e70b50df"
+    },
+    {
+      "filename": "SCRUM-623-16-v4-voucher-types-desktop.png",
+      "capturedAt": "2026-10-22T16:19:55.610Z",
+      "label": "unused generated voucher type; no codes issued",
+      "bounds": [
+        {
+          "name": "fixture voucher type row",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "captionClear": true,
+      "sha256": "5dbfe6a69f0883926b802fb77e64b5e04f52ed6b817cbe0539f57f82133c4020"
+    },
+    {
+      "filename": "SCRUM-623-17-v4-voucher-campaigns-desktop.png",
+      "capturedAt": "2026-10-22T16:20:05.498Z",
+      "label": "unused type rules and campaign controls; no mint or download",
+      "bounds": [
+        {
+          "name": "fixture rules row",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "campaign form",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "captionClear": true,
+      "sha256": "6b53e56986bcde1da1c7d5accc812d328bbe3fa311d3d567802a8d6eb1bbc17b"
+    },
+    {
+      "filename": "SCRUM-623-18-v4-event-pricing-phone.png",
+      "capturedAt": "2026-10-22T16:20:12.520Z",
+      "label": "native walk-up controls 390px; configuration write skipped",
+      "bounds": [
+        {
+          "name": "first native weekday price",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 390,
+        "document": 390
+      },
+      "captionClear": true,
+      "sha256": "256858b0931632201b7b934ee751dc05de52469e95f5af6eb71eee3e757f8f94"
+    },
+    {
+      "filename": "SCRUM-623-19-recovered-discounts-desktop.png",
+      "capturedAt": "2026-10-22T16:36:13.066Z",
+      "sha256": "800e7e418896d9b4ae2e1582d92f6fb4ffb6fb7f89c6838b837e4c32ea2db034",
+      "bounds": {
+        "wholeInViewport": true,
+        "clearOfCaption": true
+      },
+      "qrHidden": true,
+      "qrGridCount": 1,
+      "replacesExcludedImage": "SCRUM-623-13-v4-discounts-desktop.png"
+    }
+  ],
+  "diagnostic": null
+}

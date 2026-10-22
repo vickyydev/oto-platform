@@ -1,0 +1,1260 @@
+{
+  "ticket": "SCRUM-623",
+  "recordedAt": "2026-10-22T16:41:10.040Z",
+  "originalFailuresPreserved": true,
+  "stagingAttempts": [
+    "Original V2 and V3 attempts stop before business writes and remain incomplete.",
+    "V4 confirms native controls but remains incomplete at the missing discount confirmation locator.",
+    "Separate focused recovery archives that existing record and verifies the complete original baseline and business audit."
+  ],
+  "publicationExcluded": [
+    "SCRUM-623-13-v4-discounts-desktop.png"
+  ],
+  "reviews": [
+    {
+      "label": "proof-review",
+      "originalReceiptSha256": "18dcca4afb52d919c98dd1e04d567c5cf230a332cdf24f7843e20e37e5567d81",
+      "passed": false,
+      "helperSha256": "3ca5df8e5b5e80c77d1fd47bebbe90a1ccc6c430e8dac3ac844fc7b484414d29",
+      "findingsClosed": [],
+      "findings": [
+        {
+          "id": "F1",
+          "severity": "high",
+          "classification": "Proof guard/native-body mismatch",
+          "lines": [
+            34,
+            115,
+            122
+          ],
+          "problem": "The exact rules mutation and canonical readback demand target={kind:tickets}. The unchanged native targetOf('tickets') sends null, and the new type initially stores null. A valid native Save rules is refused by the helper before dispatch.",
+          "sourceEvidence": "packages/admin-screens/src/lifted/components/admin/vouchers/VoucherPromotionsPanel.tsx targetOf: tickets returns null",
+          "prescribedFix": "Use target:null in the exact type-rules-edit body and corresponding canonical check. Keep every other field/path/key fence unchanged; cleanup then restores the actual captured null rule baseline."
+        },
+        {
+          "id": "F2",
+          "severity": "medium",
+          "classification": "Proof capture contract mismatch",
+          "lines": [
+            92,
+            96,
+            112,
+            139
+          ],
+          "problem": "editTender opens the default1440 viewport. capture2 passes phone=true but capture never changes viewport, so its mandatory390 assertion fails even before considering the native row's known narrow-layout width.",
+          "prescribedFix": "Make the Tenders capture explicitly desktop, including image name/caption/check metadata. Preserve the native row without responsive redesign. Keep Event pricing as the phone proof only after actual bounds measurement."
+        },
+        {
+          "id": "F3",
+          "severity": "high",
+          "classification": "Failure cleanup reliability",
+          "lines": [
+            48,
+            49,
+            53,
+            144
+          ],
+          "problem": "The finally auth cleanup calls save before POST sign-out. If journalFailed is true, save throws immediately and the catch skips both the safety sign-out and me401 verification, leaving the server session unconfirmed even though logout itself is still safe.",
+          "prescribedFix": "Attempt the exact owned sign-out and me401 check independently of journal persistence failure. Journal/auth markers may be best effort at that point, but preserve journalFailed and complete:false; do not permit any new business mutation."
+        },
+        {
+          "id": "F4",
+          "severity": "medium",
+          "classification": "Evidence status accuracy",
+          "lines": [
+            65,
+            67,
+            89,
+            113
+          ],
+          "problem": "createReplay records originalStatus201 as a constant. A first create may be uncertain and settle through a200 replay before the explicit replay demonstration, so201 was not necessarily observed by the helper.",
+          "prescribedFix": "Retain the actual first confirmed status before the explicit replay and label it accurately; keep uncertain initial outcomes distinct. Do not invent an observed201 or weaken the required explicit replay200/same-ID/key/body checks."
+        },
+        {
+          "id": "F5",
+          "severity": "low",
+          "classification": "Permission vocabulary fidelity",
+          "lines": [
+            133
+          ],
+          "problem": "The helper's wide predicate accepts a platform scope value even though current effective platform-wide grants are operator scope with null scopeId. The actual native scope predicate accepts operator/null-or-own only.",
+          "prescribedFix": "Match the real operator scope predicate rather than accepting an unused extra scope representation. This is a helper-boundary correction, not a new server permission rule."
+        }
+      ]
+    },
+    {
+      "label": "proof-v2-review",
+      "originalReceiptSha256": "3dc03f5aecd7af5a8a422764317b0ee8d738b12390a2932dbdf493706c131f4a",
+      "passed": true,
+      "helperSha256": "dd8495ceaddfcb8da7148ca6323648669bf0c47e552dad70c47d2f757cf6843d",
+      "findingsClosed": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5"
+      ],
+      "findings": []
+    },
+    {
+      "label": "proof-v3-review",
+      "originalReceiptSha256": "fd3cf680fa137c51adbfbeb83f11ab49dca8eb445edf897882a5eb37c961d035",
+      "passed": true,
+      "helperSha256": "74149ed0d040120b2725b6f1e737a7c69a366256c6c249bef8ddde2d82627710",
+      "findingsClosed": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5"
+      ],
+      "findings": []
+    },
+    {
+      "label": "proof-v4-review",
+      "originalReceiptSha256": "b31fb12511b8d375480044614d2452d8a634177e42dade50e9123b1d82d7fce6",
+      "passed": true,
+      "helperSha256": "aacfd3233dec4a5b89817ffb641c33a968796bf91e3578bd1815d8b699f16aeb",
+      "findingsClosed": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5"
+      ],
+      "findings": []
+    },
+    {
+      "label": "recovery-review",
+      "originalReceiptSha256": "d1a56c930dcd6bf9d7f8f11709cc5b1957b71f38e72dfc4f5ab94ea248ff3f7d",
+      "passed": false,
+      "helperSha256": "49a7d6c603f37de2ae65cc6482cf44760ad82d46b0db23ae3a347fecd8b3a1ab",
+      "findingsClosed": [],
+      "findings": [
+        {
+          "id": "R1",
+          "severity": "High",
+          "path": "C:/w/admin623-recovery-evidence.mjs",
+          "line": 41,
+          "function": "originalValues",
+          "finding": "The post-archive verification fingerprints active:false against the prior edit body containing active:true, so a successful archive cannot pass final restoration verification. Conversely, an archived row incorrectly retaining active:true is accepted.",
+          "prescribedFix": "When archived is true, require archivedAt and active:false first, then normalize only the known active transition to the captured edit value for the exact prior-body fingerprint. Keep every other field, usage-zero and pre-delete check unchanged."
+        }
+      ]
+    },
+    {
+      "label": "recovery-v2-review",
+      "originalReceiptSha256": "99fd14e62bc0eaa5f2faf637abef84deb95ede686d0ad25c4aeb2473c11594fd",
+      "passed": true,
+      "helperSha256": "7caaa6f2c40f0edc424fd451b98094acfeb8c43a153f0436a1c56a0784cec8e6",
+      "findingsClosed": [
+        "R1"
+      ],
+      "findings": []
+    },
+    {
+      "label": "envelope-review",
+      "originalReceiptSha256": "086b341bf50eb9fba712971b2fd1d95bc28e159027b5aaca28f535a7136d564a",
+      "passed": false,
+      "envelopeSha256": "c7836e90df931250233267142a80414a77d714dd3d488e757d94ef46e0af951d",
+      "findingsClosed": [],
+      "findings": [
+        {
+          "id": "ENVELOPE-E1",
+          "severity": "high",
+          "phase": "pre-auth",
+          "summary": "The source/tool gate accepts uncommitted product or matching uncommitted lane/imported tool changes.",
+          "evidence": [
+            "git diff(sourceSha, HEAD, productPaths) compares only commits, not staged or unstaged source.",
+            "No untracked-product guard exists.",
+            "Expected env/render hashes derive from current working-tree files rather than committed release bytes.",
+            "Render is statically imported before its imported bytes are checked."
+          ],
+          "prescribedFix": [
+            "Compare tracked working-tree product bytes to sourceSha and reject untracked product files.",
+            "Derive expected imported-tool hashes from raw git-show bytes at sourceSha, preserving trailing newlines.",
+            "Validate tool bytes before importing the Render module."
+          ],
+          "scope": "External pre-auth harness only; the root reports the actual product tree is currently clean."
+        }
+      ]
+    },
+    {
+      "label": "envelope-v2-review",
+      "originalReceiptSha256": "41fcdb6afd34f923ec3366a7f01e5342008ee480c56278c56f1800224504f2ad",
+      "passed": true,
+      "envelopeSha256": "6050d579931e99eca1d0c0ac00a031e79025f854f3d85ee7cfd954d763bc628f",
+      "findingsClosed": [
+        "ENVELOPE-E1"
+      ],
+      "findings": []
+    },
+    {
+      "label": "envelope-v3-review",
+      "originalReceiptSha256": "cd9c36eb146f2158e48b71c9f715a7fd7c43d27582ad64136e3688d12686baae",
+      "passed": true,
+      "helperSha256": "74149ed0d040120b2725b6f1e737a7c69a366256c6c249bef8ddde2d82627710",
+      "envelopeSha256": "157ccd6e5a1d9c13bd221aa5a07bfed7f23157a3f2736de6d28638a3bafa3bf9",
+      "findingsClosed": [],
+      "findings": []
+    },
+    {
+      "label": "envelope-v4-review",
+      "originalReceiptSha256": "8cc984f7cfe956127920ae22cbb74a304c3c380917e44803840da02dd6855390",
+      "passed": true,
+      "helperSha256": "aacfd3233dec4a5b89817ffb641c33a968796bf91e3578bd1815d8b699f16aeb",
+      "envelopeSha256": "a667e2df06b05223e9037ab06d21aea7678b2d555593df257a05c441284abfd7",
+      "findingsClosed": [],
+      "findings": []
+    },
+    {
+      "label": "recovery-envelope-review",
+      "originalReceiptSha256": "62e8f2f7b99fc23cff9d4cd297a8eb86c9142757dc5f391ab8ca49980318b3cc",
+      "passed": true,
+      "helperSha256": "49a7d6c603f37de2ae65cc6482cf44760ad82d46b0db23ae3a347fecd8b3a1ab",
+      "envelopeSha256": "602e6b1c4090088488361a28a6828c1cc98ca02e0b3af0b225847a009aff3877",
+      "findingsClosed": [],
+      "findings": []
+    },
+    {
+      "label": "recovery-envelope-v2-review",
+      "originalReceiptSha256": "e182144a2e187acd4cf7c7c31e7f9db8aa8e24e412121e5437eb10cf7e88380e",
+      "passed": true,
+      "helperSha256": "7caaa6f2c40f0edc424fd451b98094acfeb8c43a153f0436a1c56a0784cec8e6",
+      "envelopeSha256": "102b533aa7dd3d55702d09686c24b4ac001189d2eaacb2faaed8610e00a1ce93",
+      "findingsClosed": [],
+      "findings": []
+    }
+  ],
+  "tests": [
+    {
+      "tag": "proof-original-boundaries",
+      "startedAt": "2026-10-22T15:41:32.622Z",
+      "finishedAt": "2026-10-22T15:41:32.696Z",
+      "exitCode": 1,
+      "logSha256": "8d8419f9256aa141623218b95f3f780ae5efd51d809b7268d44d579c778719c7",
+      "offlineOnly": true,
+      "staging": false,
+      "label": "proof-original-boundaries",
+      "classification": "Original two native-body/logout findings",
+      "originalReceiptSha256": "ef509ab5798bedfe43cdf2a792e925dc38b9aed7482e7d81e51e2d55fabc1bfc"
+    },
+    {
+      "tag": "proof-v2-boundaries",
+      "startedAt": "2026-10-22T15:45:08.003Z",
+      "finishedAt": "2026-10-22T15:45:08.068Z",
+      "exitCode": 0,
+      "logSha256": "58bf2d06eee2883caa4c4ea4b0272b20f545b7f9e72b228972ec64814e052318",
+      "offlineOnly": true,
+      "staging": false,
+      "label": "proof-v2-boundaries",
+      "classification": "Six corrected boundary cases",
+      "originalReceiptSha256": "fb0c148971964995e500ea912c0fc92c72ee5db9747673538ca20732e5f25686"
+    },
+    {
+      "tag": "proof-original-observed-status",
+      "startedAt": "2026-10-22T15:55:52.490Z",
+      "finishedAt": "2026-10-22T15:55:52.548Z",
+      "exitCode": 1,
+      "logSha256": "d9875ae0b69f74a0079730fa26166b403d4bfd3dec999383532b6812c7594dcb",
+      "offlineOnly": true,
+      "staging": false,
+      "label": "proof-original-observed-status",
+      "classification": "Original false observed-create-status claim",
+      "originalReceiptSha256": "65252512384eaa7ea3e96d630be06647fd9a484bf0622328a513b507e42e9ca8"
+    },
+    {
+      "tag": "proof-v2-extra",
+      "startedAt": "2026-10-22T15:55:52.599Z",
+      "finishedAt": "2026-10-22T15:55:52.660Z",
+      "exitCode": 0,
+      "logSha256": "18f45f5c3c18635410104f8e6f5ac5e6f8b03a81ebc7bfbae6c4f5e99e6052b3",
+      "offlineOnly": true,
+      "staging": false,
+      "label": "proof-v2-extra",
+      "classification": "Two corrected observed-status branches",
+      "originalReceiptSha256": "971c574712812263f5068a59e152cd1502c467cc9a073ab78a2b36cd15e75dcc"
+    },
+    {
+      "tag": "envelope-original-bindings",
+      "startedAt": "2026-10-22T15:58:24.921Z",
+      "finishedAt": "2026-10-22T15:58:26.350Z",
+      "exitCode": 1,
+      "logSha256": "daf801e2a909f327cb62eeeb1b81db7df2d947ccc78f26d81eddc83136cf80e7",
+      "offlineOnly": true,
+      "staging": false,
+      "label": "envelope-original-bindings",
+      "classification": "Original dirty-source/tool-byte guard failures",
+      "originalReceiptSha256": "7a236db6e25cf89a62cf485729c89d0f04c087411bceb9f5a1451f3aa9116566"
+    },
+    {
+      "tag": "envelope-v2-bindings",
+      "startedAt": "2026-10-22T15:58:26.391Z",
+      "finishedAt": "2026-10-22T15:58:28.221Z",
+      "exitCode": 0,
+      "logSha256": "d12ac58edfe90e048ac9a9c4f68cba278a4da0aee8b69071eb21a13887537b63",
+      "offlineOnly": true,
+      "staging": false,
+      "label": "envelope-v2-bindings",
+      "classification": "Six corrected release-binding cases",
+      "originalReceiptSha256": "8426758fa75ad406db6f3f96abf5291835804090d2758c1865b9f5dcf0f5a3d9"
+    },
+    {
+      "tag": "discount-locator-red",
+      "startedAt": "2026-10-22T16:10:45.662Z",
+      "finishedAt": "2026-10-22T16:10:45.706Z",
+      "exitCode": 1,
+      "logSha256": "e1bf077bc132a8025538b5a96b6e1e013cee9ad8729be6e16f826422fb6b61db",
+      "offlineOnly": true,
+      "staging": false,
+      "label": "discount-locator-red",
+      "classification": "Dependency setup fault before tests",
+      "originalReceiptSha256": "04641861af7eb6b4498d86344809b0b06fbce7e0d2c06db05f2dd0a3afc9f7c1"
+    },
+    {
+      "tag": "discount-locator-green",
+      "startedAt": "2026-10-22T16:11:23.785Z",
+      "finishedAt": "2026-10-22T16:11:25.124Z",
+      "exitCode": 1,
+      "logSha256": "a53176042f2d6fd6b58cc84ace036387eb69236873f31523b8c75a2feb6b506f",
+      "offlineOnly": true,
+      "staging": false,
+      "label": "discount-locator-green",
+      "classification": "Literal-space test expectation fault; two real selector pins pass",
+      "originalReceiptSha256": "012bf40e90ecbf5e32d5d821acc1f1b0a00435c6a6b7a6699bddc8807a5bf872"
+    },
+    {
+      "tag": "discount-locator-original-final",
+      "startedAt": "2026-10-22T16:11:48.991Z",
+      "finishedAt": "2026-10-22T16:11:50.307Z",
+      "exitCode": 1,
+      "logSha256": "b9c30935feb937328179c519bd1fb2deb379c19a888578fa0c3c940369a04ce7",
+      "offlineOnly": true,
+      "staging": false,
+      "label": "discount-locator-original-final",
+      "classification": "Original Code/Label mismatch with valid native semantic pin",
+      "originalReceiptSha256": "7463f3c0ebf077b53c10b2914925f8dfce5a1d1f37808e935c4ef95a47224879"
+    },
+    {
+      "tag": "discount-locator-final",
+      "startedAt": "2026-10-22T16:11:50.657Z",
+      "finishedAt": "2026-10-22T16:11:51.923Z",
+      "exitCode": 0,
+      "logSha256": "aa26c6d86c0f2de1441eccd301009374c52cd3dcbd16aad64898646ae6c0e008",
+      "offlineOnly": true,
+      "staging": false,
+      "label": "discount-locator-final",
+      "classification": "Corrected Code/Label checks",
+      "originalReceiptSha256": "77fe3b0ecc6d403faed0de465183233f981011d0d30b37307cf53d33e5cd8cb1"
+    },
+    {
+      "tag": "discount-type-original",
+      "startedAt": "2026-10-22T16:16:17.765Z",
+      "finishedAt": "2026-10-22T16:16:19.698Z",
+      "exitCode": 1,
+      "logSha256": "cfd5cc91d28dd96218a758b35d9e0639ac629ef37cfbc71b4d3eefeefc0e3c90",
+      "offlineOnly": true,
+      "staging": false,
+      "label": "discount-type-original",
+      "classification": "Original native Type locator mismatch",
+      "originalReceiptSha256": "80e633ea7b27fb7f0f107760b0c41435c17724999cb293de257d6e5ac3072cc6"
+    },
+    {
+      "tag": "discount-type-green",
+      "startedAt": "2026-10-22T16:16:56.784Z",
+      "finishedAt": "2026-10-22T16:16:58.319Z",
+      "exitCode": 0,
+      "logSha256": "3c0c972db55c4202344bcf5c59df54adbb4d3ba053d5036f15a420856bfe6487",
+      "offlineOnly": true,
+      "staging": false,
+      "label": "discount-type-green",
+      "classification": "All four native form checks",
+      "originalReceiptSha256": "584e86794bc0baa9327545e5f4b79cc4ba4c83634c53004fbe905242072f68c0"
+    },
+    {
+      "tag": "discount-delete-original",
+      "startedAt": "2026-10-22T16:27:01.577Z",
+      "finishedAt": "2026-10-22T16:27:03.652Z",
+      "exitCode": 1,
+      "logSha256": "a5cd4ca2d7f93e7266b1a0e61703016bf458fac3059df385789066b52ad5b053",
+      "offlineOnly": true,
+      "staging": false,
+      "label": "discount-delete-original",
+      "classification": "Original disappearing Delete-root mismatch",
+      "originalReceiptSha256": "c22480f5eb3999b86a579aeef79c0d4538b68c472c1066cf8b7a47d4625ae392"
+    },
+    {
+      "tag": "discount-delete-v2-green",
+      "startedAt": "2026-10-22T16:32:08.222Z",
+      "finishedAt": "2026-10-22T16:32:10.059Z",
+      "exitCode": 0,
+      "logSha256": "a405cb38c09b6f060b0e98e59967f51fb38b4e27377209f66d75c210420e5c12",
+      "offlineOnly": true,
+      "staging": false,
+      "label": "discount-delete-v2-green",
+      "classification": "Corrected stable label-root checks",
+      "originalReceiptSha256": "bd1492771894ee6180ba6e66181c404ef5e671ef5a77102befd3e11f8ddc8106"
+    },
+    {
+      "tag": "recovery-boundaries-red",
+      "startedAt": "2026-10-22T16:34:47.109Z",
+      "finishedAt": "2026-10-22T16:34:47.175Z",
+      "exitCode": 1,
+      "logSha256": "14bbc605789e318f9893cd914a41cb0807f059e632a7648b7841719ce3b8b7c1",
+      "offlineOnly": true,
+      "staging": false,
+      "label": "recovery-boundaries-red",
+      "classification": "Original archive active-state verification faults",
+      "originalReceiptSha256": "2f87543284a7333a948f2f04860b3a46ddbb8c514c8b8dabfa01009fa0b7ba9b"
+    },
+    {
+      "tag": "recovery-boundaries-green",
+      "startedAt": "2026-10-22T16:34:47.510Z",
+      "finishedAt": "2026-10-22T16:34:47.578Z",
+      "exitCode": 0,
+      "logSha256": "80d664842b67b3c762c03dea23d7fa19f5b847bdcc2ff708ae435631f930dff6",
+      "offlineOnly": true,
+      "staging": false,
+      "label": "recovery-boundaries-green",
+      "classification": "Four corrected recovery boundary cases",
+      "originalReceiptSha256": "23a0ae0b6fae348480148f4991693dcd38d6e8fc5ec3459633a75f528937121c"
+    }
+  ],
+  "versions": [
+    {
+      "label": "evidence-v2-manifest",
+      "originalReceiptSha256": "d6555f83f33ef725062f5b325982fb957078b542cbd4f1e730b0a8441db8927a",
+      "manifest": {
+        "ticket": "SCRUM-623",
+        "kind": "Unexecuted reviewed-finding amendments; static source comparison only",
+        "helper": {
+          "path": "C:/w/admin623-evidence-v2.mjs",
+          "sha256": "dd8495ceaddfcb8da7148ca6323648669bf0c47e552dad70c47d2f757cf6843d",
+          "syntaxExitCode": 0,
+          "moduleImported": false,
+          "proofExecuted": false,
+          "authExecuted": false
+        },
+        "preservedInputs": [
+          {
+            "name": "original",
+            "path": "C:/w/admin623-evidence-candidate.mjs",
+            "sha256": "3ca5df8e5b5e80c77d1fd47bebbe90a1ccc6c430e8dac3ac844fc7b484414d29"
+          },
+          {
+            "name": "desktopDraft",
+            "path": "C:/w/admin623-evidence-v2-draft.mjs",
+            "sha256": "fc5329d6ea65e2273d17b40cc117419071f39e67ea1d5a03052e0c880566635f"
+          },
+          {
+            "name": "review",
+            "path": "C:/w/admin623-proof-review.json",
+            "sha256": "18dcca4afb52d919c98dd1e04d567c5cf230a332cdf24f7843e20e37e5567d81"
+          },
+          {
+            "name": "boundaries",
+            "path": "C:/w/admin623-proof-boundaries.mjs",
+            "sha256": "696e109bbc3c9f0a0f07fa625c72554c978cf3f65b8e99c2786e90a295eb53fe"
+          },
+          {
+            "name": "baselineLog",
+            "path": "C:/w/admin623-proof-original-boundaries.log",
+            "sha256": "8d8419f9256aa141623218b95f3f780ae5efd51d809b7268d44d579c778719c7"
+          }
+        ],
+        "findingsApplied": [
+          {
+            "id": "F1",
+            "change": "Native ticket-order target null in exact rules body and canonical readback; all other fields unchanged."
+          },
+          {
+            "id": "F2",
+            "change": "Tenders desktop viewport, image02 name/caption/check; Event pricing remains390 phone with original fail-closed measured geometry."
+          },
+          {
+            "id": "F3",
+            "change": "Best-effort journal logout marker inside original cleanup try; owned sign-out200/me401 still attempted when save fails. journalFailed remains and complete cannot become true."
+          },
+          {
+            "id": "F4",
+            "change": "First actual confirmed status/attempt and per-attempt uncertainty metadata retained before explicit same-key/body/ID replay; no constant original201 claim."
+          },
+          {
+            "id": "F5",
+            "change": "Operator/null-or-own effective grants only; unused platform representation removed."
+          }
+        ],
+        "changedNamedFunctions": [
+          "spec",
+          "save",
+          "recordResponse",
+          "installGuards",
+          "editTender",
+          "createType",
+          "editRules"
+        ],
+        "unchangedNamedFunctions": [
+          {
+            "name": "discountBody",
+            "sha256": "46994c34dc7ad28fea54a61cde02c80f8fbfcffb22aee9918352c9751ae7a6e3"
+          },
+          {
+            "name": "typeBody",
+            "sha256": "cc2f3696559377ae6926830b58003f1defe1f6564f165e85a51db5a7cd9d8f0b"
+          },
+          {
+            "name": "auditSpecs",
+            "sha256": "3728eb7c9a6ebb5aee81720bb03a61e841a7e96c4afbcd44fb6779b28656ac88"
+          },
+          {
+            "name": "auditPath",
+            "sha256": "699a79f31f4c9932daa9992c6290ddb1b7ad2b23226c6634345b1f716b8544ef"
+          },
+          {
+            "name": "readAllowed",
+            "sha256": "9dcdbb4d3e286ac8d0c86e15facc2b31e2256f36948f09d279a2df16eb93c1f8"
+          },
+          {
+            "name": "publicFont",
+            "sha256": "bc27a22d307b835d6c2c8c9bc7863b40f32f450c2d737020d3813e13ad4bd83a"
+          },
+          {
+            "name": "actorIsKnown",
+            "sha256": "d1483247716fbd46f0c36713a3d2d74b105e91282820603e839598c6e0cfc965"
+          },
+          {
+            "name": "read",
+            "sha256": "60ff60547f5b3901b3cc38da058fd3fa922c14cd1ea180fedacc1366a0e60a05"
+          },
+          {
+            "name": "deploymentsUnchanged",
+            "sha256": "d1a9c5e1c40d1afa8337c9b74e3d1ebed6b13f7fa7d9cbd55ab31b0b873db5fd"
+          },
+          {
+            "name": "beginOperation",
+            "sha256": "3aaae67f72e3aca72a383bb710eaba98893a644fc592db962fb35f873fd656aa"
+          },
+          {
+            "name": "unusedType",
+            "sha256": "c8049c2a9f8694f0acec45b7cc1c9a0949351c73956f13b8ad8e850dd551cee8"
+          },
+          {
+            "name": "settle",
+            "sha256": "7e4b236be4a0d1503eac40c44aa2f1940068a712ceba33ec0e8bc03e9d3d34d0"
+          },
+          {
+            "name": "uiWrite",
+            "sha256": "b526bd40b14fb56d9bcfaee1ad5de04439d7772f8d7e4d05504d9c11e7be9365"
+          },
+          {
+            "name": "directWrite",
+            "sha256": "0813d1e23671e1928f86e9386dd248ce1bde6dcaefa9310f79ebb17dc05c373b"
+          },
+          {
+            "name": "panel",
+            "sha256": "2a7a56129392e8f4f567a56e655bb731d24520eeb0dfd513b0915f3672d6bb13"
+          },
+          {
+            "name": "capture",
+            "sha256": "1091c11a303838f1e5e7030a54801997f96beed52c5cb8d8f0f100991fca00a8"
+          },
+          {
+            "name": "taxPreflight",
+            "sha256": "5f47e09d22f01757f47a292d6c616c568993a1ecd12b22d932cbcde408cc0c56"
+          },
+          {
+            "name": "pricingPreflight",
+            "sha256": "8baa4af15f7609dbc9f22475481eb2947e17b3740de9276b6ca028414b777e3b"
+          },
+          {
+            "name": "values",
+            "sha256": "9de27cee18278185dbc54e21174510f517696401d68a6309e0d1d33b1c707c11"
+          },
+          {
+            "name": "requireConfig",
+            "sha256": "d69b5aa569b077c1a08bcd20286ea3d15f44949a79552cee2dbde924b88923bf"
+          },
+          {
+            "name": "currentDiscount",
+            "sha256": "2afd0f1d4fa7c5081afa2231abdf7c3999bf97ab0d1da9c6a639d14dfcddf148"
+          },
+          {
+            "name": "currentTender",
+            "sha256": "cc58052cc8b56ad3277686da05ec077a8982e21fe3d5d249e15813282bc86c34"
+          },
+          {
+            "name": "currentType",
+            "sha256": "953748dc7631f9418d862d88dd4e2207b38e7b0a0cc893621b6222c145bb69b2"
+          },
+          {
+            "name": "editDiscount",
+            "sha256": "0a56276fc3fb41ac16c527569cf47638e2451347f9fac55783306c0bd7022d9d"
+          },
+          {
+            "name": "optionalTax",
+            "sha256": "bcccd5535bee85999f76362de126630c7331352923a7167d3b487c02357da6cd"
+          },
+          {
+            "name": "optionalEvents",
+            "sha256": "49c8de50aac6489d403709318b65f21cd7f053826bcacc67f90ce8a7ac228322"
+          },
+          {
+            "name": "restoreConfig",
+            "sha256": "68a32ac9fc56a45d216ea18b0700ad25c6946fee8b872a80b2577baaa384e91d"
+          },
+          {
+            "name": "restoreFixtures",
+            "sha256": "a95c4fbd3d189b5d2a77c6f9d00a2a8a65c987b3d0c71148c22d1c1f8618c075"
+          },
+          {
+            "name": "verifyAudits",
+            "sha256": "76620c56eed6a1456342b3281627396382a8b87dd83f51f28830661463df853e"
+          }
+        ],
+        "unchangedNamedFunctionCount": 29,
+        "topLevelChanges": [
+          "helperFilename metadata",
+          "desktop Tenders screenshot filename/capture/check",
+          "exact operator-scope predicate",
+          "nested best-effort save in auth cleanup"
+        ],
+        "originalBoundaryOutcome": {
+          "logSha256": "8d8419f9256aa141623218b95f3f780ae5efd51d809b7268d44d579c778719c7",
+          "passed": 4,
+          "failed": 2,
+          "executionOwner": "coordinator",
+          "expectedFailures": [
+            "F1",
+            "F3"
+          ]
+        },
+        "newBoundaries": {
+          "path": "C:/w/admin623-proof-boundaries.mjs",
+          "sha256": "696e109bbc3c9f0a0f07fa625c72554c978cf3f65b8e99c2786e90a295eb53fe",
+          "modified": false,
+          "executedForV2ByAuthor": false
+        },
+        "limits": [
+          "No helper module import/evaluation, authentication, network or staging operation has occurred during authoring.",
+          "No new route, business-rule change or guard relaxation; original journal/config/fixture/restore logic otherwise retained.",
+          "Actual native captures and bounded Event390 geometry remain for coordinator review/execution.",
+          "Concurrent-writer check is an observed read comparison, not atomic server compare-and-swap."
+        ]
+      }
+    },
+    {
+      "label": "evidence-v3-manifest",
+      "originalReceiptSha256": "884e6585a2e47f9e890019e5f9962e5e17327aede21dbbc00a787cb81da71257",
+      "manifest": {
+        "ticket": "SCRUM-623",
+        "kind": "Unexecuted V3 narrow native-locator amendment",
+        "helper": {
+          "path": "C:\\w\\admin623-evidence-v3.mjs",
+          "sha256": "74149ed0d040120b2725b6f1e737a7c69a366256c6c249bef8ddde2d82627710",
+          "syntaxExitCode": 0,
+          "moduleImported": false,
+          "proofExecuted": false,
+          "authenticationExecuted": false,
+          "networkRequests": 0
+        },
+        "parent": {
+          "path": "C:\\w\\admin623-evidence-v2.mjs",
+          "sha256": "dd8495ceaddfcb8da7148ca6323648669bf0c47e552dad70c47d2f757cf6843d",
+          "unchanged": true
+        },
+        "changedNamedFunctions": [
+          "editDiscount"
+        ],
+        "addedNamedFunctions": [
+          "verifyPriorPartial"
+        ],
+        "unchangedNamedFunctionCount": 35,
+        "unchangedNamedFunctions": [
+          {
+            "name": "discountBody",
+            "sha256": "46994c34dc7ad28fea54a61cde02c80f8fbfcffb22aee9918352c9751ae7a6e3"
+          },
+          {
+            "name": "typeBody",
+            "sha256": "cc2f3696559377ae6926830b58003f1defe1f6564f165e85a51db5a7cd9d8f0b"
+          },
+          {
+            "name": "spec",
+            "sha256": "0cf88895cf77d286015135d3e44b5c1dc11bf6f592b307b5c32b9f9264a98d7c"
+          },
+          {
+            "name": "auditSpecs",
+            "sha256": "3728eb7c9a6ebb5aee81720bb03a61e841a7e96c4afbcd44fb6779b28656ac88"
+          },
+          {
+            "name": "auditPath",
+            "sha256": "699a79f31f4c9932daa9992c6290ddb1b7ad2b23226c6634345b1f716b8544ef"
+          },
+          {
+            "name": "readAllowed",
+            "sha256": "9dcdbb4d3e286ac8d0c86e15facc2b31e2256f36948f09d279a2df16eb93c1f8"
+          },
+          {
+            "name": "save",
+            "sha256": "0243d2fbda4839d1026457764f8a4bfb1d2374ce5ba5b52aeec6316127be60f6"
+          },
+          {
+            "name": "publicFont",
+            "sha256": "bc27a22d307b835d6c2c8c9bc7863b40f32f450c2d737020d3813e13ad4bd83a"
+          },
+          {
+            "name": "actorIsKnown",
+            "sha256": "d1483247716fbd46f0c36713a3d2d74b105e91282820603e839598c6e0cfc965"
+          },
+          {
+            "name": "read",
+            "sha256": "60ff60547f5b3901b3cc38da058fd3fa922c14cd1ea180fedacc1366a0e60a05"
+          },
+          {
+            "name": "deploymentsUnchanged",
+            "sha256": "d1a9c5e1c40d1afa8337c9b74e3d1ebed6b13f7fa7d9cbd55ab31b0b873db5fd"
+          },
+          {
+            "name": "beginOperation",
+            "sha256": "3aaae67f72e3aca72a383bb710eaba98893a644fc592db962fb35f873fd656aa"
+          },
+          {
+            "name": "unusedType",
+            "sha256": "c8049c2a9f8694f0acec45b7cc1c9a0949351c73956f13b8ad8e850dd551cee8"
+          },
+          {
+            "name": "recordResponse",
+            "sha256": "e725de0405121bbab98d8d1858dca56a2f6e64d2008a12cdf9a5f2f88f6d4f33"
+          },
+          {
+            "name": "installGuards",
+            "sha256": "8e1a56e2fb008ea449cf738240cba0c33904d5528fc1ae0211c937b0deb38f9b"
+          },
+          {
+            "name": "settle",
+            "sha256": "7e4b236be4a0d1503eac40c44aa2f1940068a712ceba33ec0e8bc03e9d3d34d0"
+          },
+          {
+            "name": "uiWrite",
+            "sha256": "b526bd40b14fb56d9bcfaee1ad5de04439d7772f8d7e4d05504d9c11e7be9365"
+          },
+          {
+            "name": "directWrite",
+            "sha256": "0813d1e23671e1928f86e9386dd248ce1bde6dcaefa9310f79ebb17dc05c373b"
+          },
+          {
+            "name": "panel",
+            "sha256": "2a7a56129392e8f4f567a56e655bb731d24520eeb0dfd513b0915f3672d6bb13"
+          },
+          {
+            "name": "capture",
+            "sha256": "1091c11a303838f1e5e7030a54801997f96beed52c5cb8d8f0f100991fca00a8"
+          },
+          {
+            "name": "taxPreflight",
+            "sha256": "5f47e09d22f01757f47a292d6c616c568993a1ecd12b22d932cbcde408cc0c56"
+          },
+          {
+            "name": "pricingPreflight",
+            "sha256": "8baa4af15f7609dbc9f22475481eb2947e17b3740de9276b6ca028414b777e3b"
+          },
+          {
+            "name": "values",
+            "sha256": "9de27cee18278185dbc54e21174510f517696401d68a6309e0d1d33b1c707c11"
+          },
+          {
+            "name": "requireConfig",
+            "sha256": "d69b5aa569b077c1a08bcd20286ea3d15f44949a79552cee2dbde924b88923bf"
+          },
+          {
+            "name": "currentDiscount",
+            "sha256": "2afd0f1d4fa7c5081afa2231abdf7c3999bf97ab0d1da9c6a639d14dfcddf148"
+          },
+          {
+            "name": "currentTender",
+            "sha256": "cc58052cc8b56ad3277686da05ec077a8982e21fe3d5d249e15813282bc86c34"
+          },
+          {
+            "name": "currentType",
+            "sha256": "953748dc7631f9418d862d88dd4e2207b38e7b0a0cc893621b6222c145bb69b2"
+          },
+          {
+            "name": "editTender",
+            "sha256": "6d5fced5acf125267e417ae7fbe9163d2fdffd6e3c5216b37ff1fe730d24dfe0"
+          },
+          {
+            "name": "createType",
+            "sha256": "2561b47da80a1636396b731aecb03fa3c4d39c41861edd0cb224b7ff3df7a42c"
+          },
+          {
+            "name": "editRules",
+            "sha256": "502c8c0c5eba7510eef90207d7427c490a0b4736c73e17b56f86838f2e8c45c2"
+          },
+          {
+            "name": "optionalTax",
+            "sha256": "bcccd5535bee85999f76362de126630c7331352923a7167d3b487c02357da6cd"
+          },
+          {
+            "name": "optionalEvents",
+            "sha256": "49c8de50aac6489d403709318b65f21cd7f053826bcacc67f90ce8a7ac228322"
+          },
+          {
+            "name": "restoreConfig",
+            "sha256": "68a32ac9fc56a45d216ea18b0700ad25c6946fee8b872a80b2577baaa384e91d"
+          },
+          {
+            "name": "restoreFixtures",
+            "sha256": "a95c4fbd3d189b5d2a77c6f9d00a2a8a65c987b3d0c71148c22d1c1f8618c075"
+          },
+          {
+            "name": "verifyAudits",
+            "sha256": "76620c56eed6a1456342b3281627396382a8b87dd83f51f28830661463df853e"
+          }
+        ],
+        "exactChanges": [
+          "Code and Label native discount setup use existing #disc-code/#disc-label rather than exact labels affected by validation text.",
+          "Safe constant phase breadcrumbs before editor open, Code/Label/Type/Value setup and submit. No raw values/errors added.",
+          "Fresh V3 helperFilename, final result/recovery paths and images07 through12 with the same six surfaces/order.",
+          "Pinned prior partial proof, envelope and independent safety-audit hashes checked before any Render request, credentials, browser or authentication; zero operations/attempts/fixtures/images/blocked, equal restored baseline, confirmed200/401 logout, certain auth and three stable exact-source deployments required."
+        ],
+        "priorPublicPrerequisites": [
+          {
+            "path": "C:/w/admin623-staging-results.json",
+            "sha256": "0c6cd31b0e7ac4852510e119c87da69996c911200047fdc17d28b407bdf3194e"
+          },
+          {
+            "path": "C:/w/admin623-stage-envelope.json",
+            "sha256": "684b8982974c0a7af9d3329d981b1c6f64cea7fbe0691fbe5a6f664417ca9151"
+          },
+          {
+            "path": "C:/w/admin623-partial-audit.json",
+            "sha256": "d7869540616024b16b3aca849387484b09b9b69f8ee2ffabf4f1dd53860a922f"
+          }
+        ],
+        "newArtifacts": {
+          "result": "C:/w/admin623-staging-final-results.json",
+          "privateJournalPathOnly": "C:/w/admin623-recovery-final.private.json",
+          "screenshots": [
+            "SCRUM-623-07-final-discounts-desktop.png",
+            "SCRUM-623-08-final-tenders-desktop.png",
+            "SCRUM-623-09-final-tax-desktop.png",
+            "SCRUM-623-10-final-voucher-types-desktop.png",
+            "SCRUM-623-11-final-voucher-campaigns-desktop.png",
+            "SCRUM-623-12-final-event-pricing-phone.png"
+          ]
+        },
+        "retainedContracts": [
+          "All exact native mutation bodies/paths, permissions, idempotency checkpoint/recovery, first-confirmed-status history and same-key replay.",
+          "All concurrent-config/fixture/usage/restore fences and journal-independent safety logout.",
+          "All read/static/public-font/privacy/capture-bounds/phone390/HUD/deployment/completion guards."
+        ],
+        "limits": [
+          "Static source/hash and syntax checks only. Native DOM regression and unchanged offline boundaries are assigned independently; not claimed here.",
+          "No private journal was opened and no helper module imported/evaluated, network/auth/staging request or repository mutation occurred.",
+          "Till, campaign mint/export, station restoration, complete history and atomic concurrent-writer protection remain unproved."
+        ]
+      }
+    },
+    {
+      "label": "evidence-v4-manifest",
+      "originalReceiptSha256": "50a73a235847f292529e97610c9e122a4b00ded8752899b322fa1c686436044e",
+      "manifest": {
+        "ticket": "SCRUM-623",
+        "kind": "Unexecuted V4 narrow native-Type selector amendment",
+        "helper": {
+          "path": "C:\\w\\admin623-evidence-v4.mjs",
+          "sha256": "aacfd3233dec4a5b89817ffb641c33a968796bf91e3578bd1815d8b699f16aeb",
+          "syntaxExitCode": 0,
+          "moduleImported": false,
+          "proofExecuted": false,
+          "authenticationExecuted": false,
+          "networkRequests": 0
+        },
+        "parent": {
+          "path": "C:\\w\\admin623-evidence-v3.mjs",
+          "sha256": "74149ed0d040120b2725b6f1e737a7c69a366256c6c249bef8ddde2d82627710",
+          "unchanged": true
+        },
+        "changedNamedFunctions": [
+          "editDiscount"
+        ],
+        "addedNamedFunctions": [
+          "verifySecondPartial"
+        ],
+        "unchangedNamedFunctionCount": 36,
+        "unchangedNamedFunctions": [
+          {
+            "name": "discountBody",
+            "sha256": "46994c34dc7ad28fea54a61cde02c80f8fbfcffb22aee9918352c9751ae7a6e3"
+          },
+          {
+            "name": "typeBody",
+            "sha256": "cc2f3696559377ae6926830b58003f1defe1f6564f165e85a51db5a7cd9d8f0b"
+          },
+          {
+            "name": "spec",
+            "sha256": "0cf88895cf77d286015135d3e44b5c1dc11bf6f592b307b5c32b9f9264a98d7c"
+          },
+          {
+            "name": "auditSpecs",
+            "sha256": "3728eb7c9a6ebb5aee81720bb03a61e841a7e96c4afbcd44fb6779b28656ac88"
+          },
+          {
+            "name": "auditPath",
+            "sha256": "699a79f31f4c9932daa9992c6290ddb1b7ad2b23226c6634345b1f716b8544ef"
+          },
+          {
+            "name": "readAllowed",
+            "sha256": "9dcdbb4d3e286ac8d0c86e15facc2b31e2256f36948f09d279a2df16eb93c1f8"
+          },
+          {
+            "name": "save",
+            "sha256": "0243d2fbda4839d1026457764f8a4bfb1d2374ce5ba5b52aeec6316127be60f6"
+          },
+          {
+            "name": "publicFont",
+            "sha256": "bc27a22d307b835d6c2c8c9bc7863b40f32f450c2d737020d3813e13ad4bd83a"
+          },
+          {
+            "name": "actorIsKnown",
+            "sha256": "d1483247716fbd46f0c36713a3d2d74b105e91282820603e839598c6e0cfc965"
+          },
+          {
+            "name": "read",
+            "sha256": "60ff60547f5b3901b3cc38da058fd3fa922c14cd1ea180fedacc1366a0e60a05"
+          },
+          {
+            "name": "deploymentsUnchanged",
+            "sha256": "d1a9c5e1c40d1afa8337c9b74e3d1ebed6b13f7fa7d9cbd55ab31b0b873db5fd"
+          },
+          {
+            "name": "beginOperation",
+            "sha256": "3aaae67f72e3aca72a383bb710eaba98893a644fc592db962fb35f873fd656aa"
+          },
+          {
+            "name": "unusedType",
+            "sha256": "c8049c2a9f8694f0acec45b7cc1c9a0949351c73956f13b8ad8e850dd551cee8"
+          },
+          {
+            "name": "recordResponse",
+            "sha256": "e725de0405121bbab98d8d1858dca56a2f6e64d2008a12cdf9a5f2f88f6d4f33"
+          },
+          {
+            "name": "installGuards",
+            "sha256": "8e1a56e2fb008ea449cf738240cba0c33904d5528fc1ae0211c937b0deb38f9b"
+          },
+          {
+            "name": "settle",
+            "sha256": "7e4b236be4a0d1503eac40c44aa2f1940068a712ceba33ec0e8bc03e9d3d34d0"
+          },
+          {
+            "name": "uiWrite",
+            "sha256": "b526bd40b14fb56d9bcfaee1ad5de04439d7772f8d7e4d05504d9c11e7be9365"
+          },
+          {
+            "name": "directWrite",
+            "sha256": "0813d1e23671e1928f86e9386dd248ce1bde6dcaefa9310f79ebb17dc05c373b"
+          },
+          {
+            "name": "panel",
+            "sha256": "2a7a56129392e8f4f567a56e655bb731d24520eeb0dfd513b0915f3672d6bb13"
+          },
+          {
+            "name": "capture",
+            "sha256": "1091c11a303838f1e5e7030a54801997f96beed52c5cb8d8f0f100991fca00a8"
+          },
+          {
+            "name": "taxPreflight",
+            "sha256": "5f47e09d22f01757f47a292d6c616c568993a1ecd12b22d932cbcde408cc0c56"
+          },
+          {
+            "name": "pricingPreflight",
+            "sha256": "8baa4af15f7609dbc9f22475481eb2947e17b3740de9276b6ca028414b777e3b"
+          },
+          {
+            "name": "values",
+            "sha256": "9de27cee18278185dbc54e21174510f517696401d68a6309e0d1d33b1c707c11"
+          },
+          {
+            "name": "requireConfig",
+            "sha256": "d69b5aa569b077c1a08bcd20286ea3d15f44949a79552cee2dbde924b88923bf"
+          },
+          {
+            "name": "currentDiscount",
+            "sha256": "2afd0f1d4fa7c5081afa2231abdf7c3999bf97ab0d1da9c6a639d14dfcddf148"
+          },
+          {
+            "name": "currentTender",
+            "sha256": "cc58052cc8b56ad3277686da05ec077a8982e21fe3d5d249e15813282bc86c34"
+          },
+          {
+            "name": "currentType",
+            "sha256": "953748dc7631f9418d862d88dd4e2207b38e7b0a0cc893621b6222c145bb69b2"
+          },
+          {
+            "name": "editTender",
+            "sha256": "6d5fced5acf125267e417ae7fbe9163d2fdffd6e3c5216b37ff1fe730d24dfe0"
+          },
+          {
+            "name": "createType",
+            "sha256": "2561b47da80a1636396b731aecb03fa3c4d39c41861edd0cb224b7ff3df7a42c"
+          },
+          {
+            "name": "editRules",
+            "sha256": "502c8c0c5eba7510eef90207d7427c490a0b4736c73e17b56f86838f2e8c45c2"
+          },
+          {
+            "name": "optionalTax",
+            "sha256": "bcccd5535bee85999f76362de126630c7331352923a7167d3b487c02357da6cd"
+          },
+          {
+            "name": "optionalEvents",
+            "sha256": "49c8de50aac6489d403709318b65f21cd7f053826bcacc67f90ce8a7ac228322"
+          },
+          {
+            "name": "restoreConfig",
+            "sha256": "68a32ac9fc56a45d216ea18b0700ad25c6946fee8b872a80b2577baaa384e91d"
+          },
+          {
+            "name": "restoreFixtures",
+            "sha256": "a95c4fbd3d189b5d2a77c6f9d00a2a8a65c987b3d0c71148c22d1c1f8618c075"
+          },
+          {
+            "name": "verifyAudits",
+            "sha256": "76620c56eed6a1456342b3281627396382a8b87dd83f51f28830661463df853e"
+          },
+          {
+            "name": "verifyPriorPartial",
+            "sha256": "b1cbf022274db60bd4b057d1555f6298c2e413aa280fd187fab2eaed1f5d09fe"
+          }
+        ],
+        "exactChanges": [
+          "Only discount Type setup changes from getByLabel Type exact to stable existing #disc-type. Code/Label IDs and safe breadcrumbs retained.",
+          "New helperFilename, V4 public receipt/recovery paths, images13 through18; same six ordered surfaces and geometry.",
+          "Original pinned V2 prerequisite retained byte-identically; additional pinned V3 partial proof/envelope/independent safety audit must establish zero business operations/attempts/fixtures/images/blocked, baseline restoration, confirmed200/401 logout, certain auth and stable exact source before Render/network/browser/auth."
+        ],
+        "secondPartial": {
+          "proof": {
+            "path": "C:/w/admin623-staging-final-results.json",
+            "sha256": "51ef9fd5a9d8f434d6aaab14abd6398cebfb88c527a7dc5589f187db9d50cf28"
+          },
+          "envelope": {
+            "path": "C:/w/admin623-stage-final-envelope.json",
+            "sha256": "6dd2d5e973f8c92cc99f9f4fd32adcdbef6d38b1e0202a1d0fdc402e0644f28c"
+          },
+          "safetyAudit": {
+            "path": "C:/w/admin623-second-partial-audit.json",
+            "sha256": "c74ee4718916551d08df8ef3ef53bdd85d17024683614e5ace92286a6bcdb9c2",
+            "passed": true,
+            "fullAcceptance": false
+          }
+        },
+        "retainedContracts": [
+          "Exact native bodies, paths, permissions, pre-dispatch checkpoint, idempotency/replay/latest-attempt semantics.",
+          "All original reads/public-font/privacy/fixture/configuration restoration/concurrent-writer/HUD/bounds/phone/completion/auth safety guards."
+        ],
+        "limits": [
+          "Syntax and static source comparison only; independent actual native DOM and protocol boundaries assigned to coordinator/reviewer.",
+          "No private journal reads, helper module import/evaluation, network/auth/staging or source/Git mutations.",
+          "No feature acceptance from either zero-write partial; no Till/campaign mint/export/station/full-history claim."
+        ]
+      }
+    },
+    {
+      "label": "recovery-evidence-manifest",
+      "originalReceiptSha256": "2624ff55a3b4ab5eaf8b85912a7a96627fba327d42905a981a2fd92e9549fc8f",
+      "manifest": {
+        "ticket": "SCRUM-623",
+        "kind": "Unexecuted one-operation settlement helper",
+        "helper": {
+          "path": "C:/w/admin623-recovery-evidence.mjs",
+          "sha256": "49a7d6c603f37de2ae65cc6482cf44760ad82d46b0db23ae3a347fecd8b3a1ab",
+          "syntaxExitCode": 0,
+          "moduleImported": false,
+          "proofExecuted": false,
+          "authenticationExecuted": false,
+          "networkRequests": 0
+        },
+        "preservedInputs": [
+          {
+            "path": "C:/w/admin623-evidence-v4.mjs",
+            "sha256": "aacfd3233dec4a5b89817ffb641c33a968796bf91e3578bd1815d8b699f16aeb"
+          },
+          {
+            "path": "C:/w/admin623-staging-v4-results.json",
+            "sha256": "950800052b57fc2124afa8a1d483eceb1580fb079ed3f314d23de5f6dcb79ed6"
+          },
+          {
+            "path": "C:/w/admin623-stage-v4-envelope.json",
+            "sha256": "5d3d064dec14bdccd77f1e7ced6dfff1257975cb706e7eb45b703fbe1320849d"
+          },
+          {
+            "privatePathOnly": "C:/w/admin623-recovery-v4.private.json",
+            "sha256": "91a77444df7f79d52ddf0587d5035e9b9b53fe6810bbc73158cac2a115f09f50",
+            "inspection": "Programmatic schema/count/hash checks only; no key, code, body, credential or configuration value printed. Original file never modified."
+          }
+        ],
+        "newArtifacts": {
+          "result": "C:/w/admin623-recovery-results.json",
+          "privateClonePathOnly": "C:/w/admin623-recovery-settlement.private.json",
+          "image": "SCRUM-623-19-recovered-discounts-desktop.png",
+          "excludedOriginalImage": "SCRUM-623-13-v4-discounts-desktop.png"
+        },
+        "reuse": {
+          "reference": "Held V4 contracts and protocol; no byte-identity or inherited-test-status claim for this new helper.",
+          "adapted": [
+            "Canonical hashing and exact-body/path/key validation.",
+            "Strict seeded ADMIN/operator/current-park/preferences checks and operator/null-or-own authority.",
+            "Exact public Inter and same-origin/static/current-park GET guards; narrowed business fence to only captured discount DELETE.",
+            "Latest exact-source API/Console/POS deployment identity/freshness checks.",
+            "Atomic private checkpoint before dispatch, latest-attempt reset and bounded same-key recovery;401/403/non-inflight409 remain unresolved.",
+            "Safety sign-out200/me401 independent of journal marker persistence failure.",
+            "Original audit action/entity/ID/actor filters and original V4 audit time window."
+          ],
+          "nativeLocatorFix": "archiveRemainingDiscount uses persistent exact fixture label to locate the rounded-2xl card; Delete and then Yes are both read from that stable card. It does not derive the parent card from the Delete button that unmounts.",
+          "privacyFix": "captureRecoveredDiscount identifies the actual native inline grid-template-columns DIV, requires at least one grid, hides it and verifies computed visibility before capturing19. Existing QR-bearing image13 is excluded, not altered."
+        },
+        "prerequisites": [
+          "Exact immutable V4 public proof, envelope and private-journal hashes are checked before Render/network/browser/auth.",
+          "All11 existing logical operations must be settled/latest-confirmed200 and bind public/private key/body/path hashes;12 existing transport attempts include only the observed type-create replay.",
+          "No discount-archive operation may already exist, no operation may be pending, no other business write or blocked request was recorded, and prior auth cleanup must be certain200/401.",
+          "Settlement journal clone and new public receipt are exclusive fresh files. Existing original journal, helper, receipts and images stay immutable.",
+          "Fresh canonical unused own-operator/global discount row must match the captured edited-body hash, UUID, ZZ TEST name and usage0. No new fixture or shared configuration write is permitted.",
+          "Original active catalogue hash, original tax values, prior unused type/rule restore/archive and tender archive/absence must match before the one DELETE.",
+          "Before dispatch, exact captured discount DELETE, no body and fresh UUID key must checkpoint durably. A replay must retain that exact key/path/body; no new-key retry.",
+          "After settlement: all three captured fixtures archived, original active catalogue/tax/branch/preferences restored, all original11 operations unchanged, original private file hash unchanged,12 owned business audit rows in V4's original window with no replay duplicates."
+        ],
+        "counts": {
+          "existingSettledLogicalOperations": 11,
+          "existingTransportAttempts": 12,
+          "allowedNewLogicalOperations": 1,
+          "newFixtureCreations": 0,
+          "expectedCombinedLogicalOperations": 12,
+          "expectedCombinedBusinessAuditRows": 12,
+          "freshRecoveryImages": 1,
+          "plannedRecoveryChecks": 6,
+          "transportAttemptLimit": "One normal native dispatch plus bounded exact-key recovery if its outcome is uncertain; do not invent a fixed actual attempt count."
+        },
+        "limits": [
+          "Helper has not been imported/evaluated or executed. Independent native locator regression and protocol review are pending.",
+          "No new branch/session/station/payment/SMS/voucher/mint/CSV/stock/equipment/source-app action is allowed.",
+          "Archived tender is verified by its retained successful archive ACK and absence from the active list; the read API has no archived-tender list. No direct database access is added.",
+          "Original tax and catalogue comparisons are bounded canonical value checks, not a full ledger or atomic server compare-and-swap.",
+          "A failure leaves the exclusive settlement journal for coordinator inspection. No automatic cold restart or blind request with a new key.",
+          "Only recovery success can establish restoration; the V4 partial remains incomplete and resourcesRestoredfalse as recorded."
+        ]
+      }
+    },
+    {
+      "label": "recovery-evidence-v2-manifest",
+      "originalReceiptSha256": "3e6cf2224f96c7e1b545c916551e2baa5170b5bcfed98f0ea12a365d7c19ac50",
+      "manifest": {
+        "ticket": "SCRUM-623",
+        "kind": "Unexecuted recovery R1 known archive-state correction",
+        "helper": {
+          "path": "C:\\w\\admin623-recovery-evidence-v2.mjs",
+          "sha256": "7caaa6f2c40f0edc424fd451b98094acfeb8c43a153f0436a1c56a0784cec8e6",
+          "syntaxExitCode": 0,
+          "moduleImported": false,
+          "proofExecuted": false,
+          "authExecuted": false,
+          "networkRequests": 0
+        },
+        "preservedOriginal": {
+          "path": "C:\\w\\admin623-recovery-evidence.mjs",
+          "sha256": "49a7d6c603f37de2ae65cc6482cf44760ad82d46b0db23ae3a347fecd8b3a1ab",
+          "unchanged": true
+        },
+        "changedNamedFunctions": [
+          "originalValues"
+        ],
+        "unchangedNamedFunctionCount": 16,
+        "unchangedNamedFunctions": [
+          {
+            "name": "verifyPrior",
+            "sha256": "8b6b22a216fe266f6360edb50b551200e6f4b0aba40117ddbb5d590f034796aa"
+          },
+          {
+            "name": "save",
+            "sha256": "c5626ba43d2c05773ffb0b35b46401df96b9931eff5b5db0aed5cbea4a4df2d6"
+          },
+          {
+            "name": "actorIsKnown",
+            "sha256": "df2ae67118d4a63b7c985e40e89e7f99849a5a1d096d0a57a5ba5bc283e7ab87"
+          },
+          {
+            "name": "auditSpecs",
+            "sha256": "9d0ece2df8153de8fbcb665a8544860947f9d6d7ea16eb684e3539018d6acdbd"
+          },
+          {
+            "name": "auditPath",
+            "sha256": "132aeb2a3b8c3bd175db6197591d53523e924f6eea8ba954523184e40a2be6ab"
+          },
+          {
+            "name": "readAllowed",
+            "sha256": "f308bcb2a27460fdc4e2cea6d1a123985e272ec4df8ddf3abc5cfa2902402faf"
+          },
+          {
+            "name": "read",
+            "sha256": "f602364046d92e970c56607133103024003214b9aa2b595c8be6a14bc7fce8b3"
+          },
+          {
+            "name": "deploymentsUnchanged",
+            "sha256": "e1fd67fc3b62e2632c49f01c15582c3cd9686c9cd5061f3783e37a1a67b95e7e"
+          },
+          {
+            "name": "publicFont",
+            "sha256": "ff39fd3968592af573ff16cbd33b0ef522b2189716f19e672a148fc2af4b4e9b"
+          },
+          {
+            "name": "beginDelete",
+            "sha256": "2a43dcc14f7cd88b4aae35fa486f09fede13d2a5bc527c9fd80dbf4bb8719aeb"
+          },
+          {
+            "name": "recordResponse",
+            "sha256": "e79e0d8e25d92798b3850a4b979cad7755212df951a6f0a91e570ee01a2e3ff6"
+          },
+          {
+            "name": "installGuards",
+            "sha256": "94dc5f1353aca8ff0cddb2b44e0dac0ca7502977664cde026ae7cbf70a66a16e"
+          },
+          {
+            "name": "settle",
+            "sha256": "e27641c9fc213829d4fab422463ab9d21638f4d9db2c02dc7cf2044a3e06163f"
+          },
+          {
+            "name": "archiveRemainingDiscount",
+            "sha256": "8c57c822591ace4933186bf57e07e7bf2fa47f2af30118f65a0e88490fb581b3"
+          },
+          {
+            "name": "captureRecoveredDiscount",
+            "sha256": "82d6f74aabf67860b6f1676369da583179993be7df3178f507ad08ba6f4f92d0"
+          },
+          {
+            "name": "verifyAudits",
+            "sha256": "75f18ca55e4aae9c6ccb7b4bc99f66d1f519e2db256d9c4cd489d865d080a3bf"
+          }
+        ],
+        "exactDiff": [
+          "Archived branch now explicitly requires archivedAt plus active===false.",
+          "Only after that explicit archived-state guard, body.active is reconstructed from the original captured edit solely for comparison to its canonical hash.",
+          "Every other row field, scope/UUID/ZZ TEST name/usage0 check remains exact; before-delete canonical hash is unchanged.",
+          "helperFilename identifies recovery-evidence-v2; same still-unused settlement result/private/image19 paths."
+        ],
+        "retained": [
+          "Exactly one captured DELETE; all request/key/checkpoint/recovery/read/auth/privacy/geometry fences unchanged.",
+          "Persistent label-rooted native card and DIV-grid QR hiding remain unchanged.",
+          "All original baseline/tax/archived-type/tender/12audit/restoration/logout/deployment verification remains unchanged."
+        ],
+        "limits": [
+          "Static syntax/diff only; independent R1 old-fail/new-pass boundary is assigned to reviewer, not claimed here.",
+          "No helper imported/run, no private journal reopened, no auth/network/source/repository edits."
+        ]
+      }
+    }
+  ],
+  "limits": [
+    "The first recovery helper and original envelope were never executed; archive-state review R1 was corrected before authentication.",
+    "Original raw logs, helpers and private journals remain external; only bounded public receipt metadata is published."
+  ]
+}

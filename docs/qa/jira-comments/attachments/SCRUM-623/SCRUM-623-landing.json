@@ -1,0 +1,13 @@
+{
+  "ticket": "SCRUM-623",
+  "sourceSha": "5ddb61408a0d931802fd2f86f307ab058878dd34",
+  "landedAt": "2026-10-22T15:40:13.160Z",
+  "sourceLandedOnMain": true,
+  "previousMain": "85d81b3fe521ffe7dde60a5315a78e67b18dc8ad",
+  "postRebaseExitCode": 0,
+  "postRebaseReceiptSha256": "129e727292226ac157eee7697b05ef9d288a975f702961283c12b5c2a9f9ae79",
+  "priorCiRun": 39789908451,
+  "priorCiJobs": 6,
+  "ciAccepted": false,
+  "stagingAccepted": false
+}

@@ -1,0 +1,46 @@
+{
+  "checkedAt": "2026-10-22T15:57:56.152Z",
+  "runId": 39807000650,
+  "sourceSha": "5ddb61408a0d931802fd2f86f307ab058878dd34",
+  "status": "completed",
+  "conclusion": "success",
+  "jobs": [
+    {
+      "name": "ci",
+      "status": "completed",
+      "conclusion": "success",
+      "runningSteps": []
+    },
+    {
+      "name": "api-tests (2)",
+      "status": "completed",
+      "conclusion": "success",
+      "runningSteps": []
+    },
+    {
+      "name": "pos-tests",
+      "status": "completed",
+      "conclusion": "success",
+      "runningSteps": []
+    },
+    {
+      "name": "api-tests (3)",
+      "status": "completed",
+      "conclusion": "success",
+      "runningSteps": []
+    },
+    {
+      "name": "oto-app",
+      "status": "completed",
+      "conclusion": "success",
+      "runningSteps": []
+    },
+    {
+      "name": "api-tests (1)",
+      "status": "completed",
+      "conclusion": "success",
+      "runningSteps": []
+    }
+  ],
+  "allSixSuccessful": true
+}

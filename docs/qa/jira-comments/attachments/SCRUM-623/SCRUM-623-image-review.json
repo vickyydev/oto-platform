@@ -1,0 +1,62 @@
+{
+  "ticket": "SCRUM-623",
+  "checkedAt": "2026-10-22T16:37:45.474Z",
+  "passed": true,
+  "method": "All six native staging images viewed individually; timestamps, controls, privacy and caption clearance inspected.",
+  "sourceSha": "5ddb61408a0d931802fd2f86f307ab058878dd34",
+  "images": [
+    {
+      "filename": "SCRUM-623-14-v4-tenders-desktop.png",
+      "sha256": "c205199c8c10139ba3c535eabd235c88f33547d6011da18d1bc2893cc40e601e",
+      "capturedAt": "2026-10-22T16:19:34.407Z",
+      "visuallyInspected": true,
+      "accepted": true
+    },
+    {
+      "filename": "SCRUM-623-15-v4-tax-desktop.png",
+      "sha256": "3064e1cffc7845287f7d720b4b4ad7d3811a757944d9b2494e94d796e70b50df",
+      "capturedAt": "2026-10-22T16:19:44.559Z",
+      "visuallyInspected": true,
+      "accepted": true
+    },
+    {
+      "filename": "SCRUM-623-16-v4-voucher-types-desktop.png",
+      "sha256": "5dbfe6a69f0883926b802fb77e64b5e04f52ed6b817cbe0539f57f82133c4020",
+      "capturedAt": "2026-10-22T16:19:55.610Z",
+      "visuallyInspected": true,
+      "accepted": true
+    },
+    {
+      "filename": "SCRUM-623-17-v4-voucher-campaigns-desktop.png",
+      "sha256": "6b53e56986bcde1da1c7d5accc812d328bbe3fa311d3d567802a8d6eb1bbc17b",
+      "capturedAt": "2026-10-22T16:20:05.498Z",
+      "visuallyInspected": true,
+      "accepted": true
+    },
+    {
+      "filename": "SCRUM-623-18-v4-event-pricing-phone.png",
+      "sha256": "256858b0931632201b7b934ee751dc05de52469e95f5af6eb71eee3e757f8f94",
+      "capturedAt": "2026-10-22T16:20:12.520Z",
+      "visuallyInspected": true,
+      "accepted": true
+    },
+    {
+      "filename": "SCRUM-623-19-recovered-discounts-desktop.png",
+      "sha256": "800e7e418896d9b4ae2e1582d92f6fb4ffb6fb7f89c6838b837e4c32ea2db034",
+      "capturedAt": "2026-10-22T16:36:13.066Z",
+      "visuallyInspected": true,
+      "accepted": true
+    }
+  ],
+  "publicationExcluded": [
+    {
+      "filename": "SCRUM-623-13-v4-discounts-desktop.png",
+      "reason": "Visible native QR-style grid; original bytes retained privately and replaced by fresh native image19 with the grid hidden."
+    }
+  ],
+  "notes": [
+    "Event pricing390 has no document overflow; its values were not changed.",
+    "Tax image shows the verified temporary0.25 service value; exact original restore is verified in the recovery receipt.",
+    "No QR value or person detail is visible in the six approved images."
+  ]
+}

@@ -1,0 +1,118 @@
+{
+  "ticket": "SCRUM-623",
+  "recordedAt": "2026-10-22T15:37:16.587Z",
+  "complete": true,
+  "sourceLanded": false,
+  "stagingAccepted": false,
+  "sourceFiles": 3556,
+  "sourceManifestSha256": "7fe4d06cab55a60577bdaf4e872c544ef51de57f53cde13ef4d77adfff294335",
+  "backendInputsUnchanged": true,
+  "backendFiles": 1015,
+  "artifacts": [
+    {
+      "name": "checks",
+      "receiptPath": "C:/w/admin623-final3-linux/checks-exit.json",
+      "receiptSha256": "29455c5f0a338982087ddbe47c24ffb7f91f617cf1f9a0b9d433c9c7b86ed65e",
+      "sha256": "dab07889d40520e925ae2f6b612dae80bb5d6e4bace918fc9eadc2a9b0312049",
+      "exitCode": 0,
+      "startedAt": "2026-10-22T15:28:21.448Z",
+      "finishedAt": "2026-10-22T15:29:14.493Z"
+    },
+    {
+      "name": "units",
+      "receiptPath": "C:/w/admin623-final3-linux/units-exit.json",
+      "receiptSha256": "bd8fbc57fa64bc1ccfec37c005f12d9450f907f41f89ff53b2ebd42c09f366d1",
+      "sha256": "fde5cf0e11110780117cf5b08289703972aadb9a39b2fdfe00130873020a289a",
+      "exitCode": 0,
+      "startedAt": "2026-10-22T15:28:21.451Z",
+      "finishedAt": "2026-10-22T15:28:35.540Z"
+    },
+    {
+      "name": "pos",
+      "receiptPath": "C:/w/admin623-final3-linux/pos-exit.json",
+      "receiptSha256": "27808dc972a581f7a3f3d99552d4d92c21ee73b86c5c872238e5d7f399a4ebcc",
+      "sha256": "3200c17a99982a6429beded2c5c21357597fb98826f7ce71b39817f279dee39e",
+      "exitCode": 0,
+      "startedAt": "2026-10-22T15:28:21.448Z",
+      "finishedAt": "2026-10-22T15:29:39.736Z"
+    },
+    {
+      "name": "other",
+      "receiptPath": "C:/w/admin623-final3-linux/other-exit.json",
+      "receiptSha256": "6739505a3f1cac51cabc443b5e3088bede774438e383653e19fdfa5b286ca060",
+      "sha256": "9e19340f234b5428d0905cc5e1dbe32c319b922ae93d428d0296677b5a61f3fb",
+      "exitCode": 0,
+      "startedAt": "2026-10-22T15:28:21.448Z",
+      "finishedAt": "2026-10-22T15:31:39.864Z"
+    },
+    {
+      "name": "browser",
+      "receiptPath": "C:/w/admin623-final3-linux/browser-exit.json",
+      "receiptSha256": "786fbb26ada8315e5f2490fa7ee35ffcb9334fe7ea5f44e72fa6635308712f76",
+      "sha256": "66b8c5da1f4b51b795e97ccbe235e5c724c212f8a0b0271b724908e9b15a4021",
+      "exitCode": 0,
+      "startedAt": "2026-10-22T15:29:26.288Z",
+      "finishedAt": "2026-10-22T15:32:02.947Z"
+    },
+    {
+      "name": "box",
+      "receiptPath": "C:/w/admin623-final3-linux/box-exit.json",
+      "receiptSha256": "92df6b73a2601e52372d97b8c7d2147ff2d030ef78145170e4d0063ce1744bb0",
+      "sha256": "48f41aad57e9d9562f37db8600fbd5e49715be1f2eb13f8e851426bd9572129d",
+      "exitCode": 0,
+      "startedAt": "2026-10-22T15:33:26.049Z",
+      "finishedAt": "2026-10-22T15:34:51.006Z"
+    },
+    {
+      "name": "api1",
+      "shard": 1,
+      "receiptPath": "C:/w/admin623-api-release/api1-exit.json",
+      "receiptSha256": "38c05606645d7d63d6d9d1f689d758ec66436da48ae09f56aa50fd7fe904caa9",
+      "sha256": "3cefca8d2033ab575e90bb31d9a0bfdee6d52b9a65c46252af9fbbf9a3d3cdff",
+      "exitCode": 0,
+      "startedAt": "2026-10-22T15:08:26.134Z",
+      "finishedAt": "2026-10-22T15:19:16.453Z"
+    },
+    {
+      "name": "api2",
+      "shard": 2,
+      "receiptPath": "C:/w/admin623-api-release/api2-exit.json",
+      "receiptSha256": "57e485e8299f3f858c48181ea5c0485593cccecd5082c7d19ddf2650cd691a53",
+      "sha256": "2d0d1e03160b5c34f259789849080797dd03e0b9dbfe99e9c3435b0117dbc816",
+      "exitCode": 0,
+      "startedAt": "2026-10-22T15:08:26.144Z",
+      "finishedAt": "2026-10-22T15:19:11.764Z"
+    },
+    {
+      "name": "api3",
+      "shard": 3,
+      "receiptPath": "C:/w/admin623-api-release/api3-exit.json",
+      "receiptSha256": "72288241e74fa67a9897835d4106e93772e88fb46d6fabdb87ab2a5302e72125",
+      "sha256": "22e7e5f425cf4201bf032042add9d00b9defc2f1d6638cb9794b90eb5c97f45e",
+      "exitCode": 0,
+      "startedAt": "2026-10-22T15:08:26.133Z",
+      "finishedAt": "2026-10-22T15:19:58.394Z"
+    }
+  ],
+  "counts": {
+    "apiPassed": 4745,
+    "apiSkipped": 401,
+    "apiTodo": 5,
+    "apiFiles": 341,
+    "consolePassed": 209,
+    "consoleTodo": 3,
+    "adminScreensPassed": 65,
+    "apiTypesPassed": 10,
+    "posPassed": 1433,
+    "browserPassed": 142,
+    "boxPassed": 749,
+    "compilerTasks": 16,
+    "buildTasks": 5,
+    "lintErrors": 0,
+    "lintWarnings": 4
+  },
+  "limitations": [
+    "Local release gates only; CI, Render and staging proof remain outstanding.",
+    "Prior failed runs and snapshots remain immutable."
+  ]
+}

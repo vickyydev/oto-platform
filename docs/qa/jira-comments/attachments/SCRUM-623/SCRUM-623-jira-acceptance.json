@@ -1,0 +1,40 @@
+{
+  "ticket": "SCRUM-623",
+  "status": "Deployed",
+  "sourceSha": "5ddb61408a0d931802fd2f86f307ab058878dd34",
+  "checkedAt": "2026-10-22T16:41:09.963Z",
+  "commentId": "12499",
+  "plainOutcomeReadBack": true,
+  "files": [
+    {
+      "id": "11968",
+      "filename": "SCRUM-623-14-v4-tenders-desktop.png"
+    },
+    {
+      "id": "11969",
+      "filename": "SCRUM-623-15-v4-tax-desktop.png"
+    },
+    {
+      "id": "11970",
+      "filename": "SCRUM-623-16-v4-voucher-types-desktop.png"
+    },
+    {
+      "id": "11971",
+      "filename": "SCRUM-623-17-v4-voucher-campaigns-desktop.png"
+    },
+    {
+      "id": "11972",
+      "filename": "SCRUM-623-18-v4-event-pricing-phone.png"
+    },
+    {
+      "id": "11973",
+      "filename": "SCRUM-623-19-recovered-discounts-desktop.png"
+    }
+  ],
+  "parentStatus": "In Progress",
+  "limits": [
+    "Owner retains Done acceptance.",
+    "Event values read-only on this unconfigured park.",
+    "Campaign mint/export and actual Till acceptance are not claimed."
+  ]
+}

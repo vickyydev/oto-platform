@@ -1,0 +1,324 @@
+{
+  "ticket": "SCRUM-623",
+  "helperFilename": "admin623-recovery-evidence-v2.mjs",
+  "helperSha256": "7caaa6f2c40f0edc424fd451b98094acfeb8c43a153f0436a1c56a0784cec8e6",
+  "releaseSha": "5ddb61408a0d931802fd2f86f307ab058878dd34",
+  "startedAt": "2026-10-22T16:35:57.194Z",
+  "complete": true,
+  "resourcesRestored": true,
+  "checks": [
+    {
+      "name": "ORIGINAL_ACTOR_BASELINE_AND_UNUSED_DISCOUNT_VERIFIED",
+      "passed": true,
+      "checkedAt": "2026-10-22T16:36:10.964Z"
+    },
+    {
+      "name": "FRESH_NATIVE_DISCOUNT_CAPTURE_WITH_QR_HIDDEN",
+      "passed": true,
+      "checkedAt": "2026-10-22T16:36:15.037Z"
+    },
+    {
+      "name": "NATIVE_EXISTING_DISCOUNT_ARCHIVE_SETTLED",
+      "passed": true,
+      "checkedAt": "2026-10-22T16:36:24.774Z"
+    },
+    {
+      "name": "ALL_THREE_FIXTURES_ARCHIVED_AND_ORIGINAL_VALUES_RESTORED",
+      "passed": true,
+      "checkedAt": "2026-10-22T16:36:28.456Z"
+    },
+    {
+      "name": "TWELVE_ORIGINAL_WINDOW_BUSINESS_AUDITS_NO_REPLAY_DUPLICATES",
+      "passed": true,
+      "checkedAt": "2026-10-22T16:36:35.587Z"
+    },
+    {
+      "name": "SIGNOUT200_AND_ME401",
+      "passed": true,
+      "checkedAt": "2026-10-22T16:36:36.928Z"
+    }
+  ],
+  "screenshots": [
+    {
+      "filename": "SCRUM-623-19-recovered-discounts-desktop.png",
+      "capturedAt": "2026-10-22T16:36:13.066Z",
+      "sha256": "800e7e418896d9b4ae2e1582d92f6fb4ffb6fb7f89c6838b837e4c32ea2db034",
+      "bounds": {
+        "wholeInViewport": true,
+        "clearOfCaption": true
+      },
+      "qrHidden": true,
+      "qrGridCount": 1,
+      "replacesExcludedImage": "SCRUM-623-13-v4-discounts-desktop.png"
+    }
+  ],
+  "audits": [
+    {
+      "action": "discount_definition.create",
+      "entityId": "01a16468-d1b8-786e-b9a9-216bb02cbb0a",
+      "count": 1,
+      "timestamps": [
+        "2026-10-22T16:19:13.464Z"
+      ]
+    },
+    {
+      "action": "discount_definition.update",
+      "entityId": "01a16468-d1b8-786e-b9a9-216bb02cbb0a",
+      "count": 1,
+      "timestamps": [
+        "2026-10-22T16:19:18.865Z"
+      ]
+    },
+    {
+      "action": "discount_definition.archive",
+      "entityId": "01a16468-d1b8-786e-b9a9-216bb02cbb0a",
+      "count": 1,
+      "timestamps": [
+        "2026-10-22T16:36:25.172Z"
+      ]
+    },
+    {
+      "action": "payment_method.create",
+      "entityId": "01a16469-0afc-7931-93d5-4bcf5409fc77",
+      "count": 1,
+      "timestamps": [
+        "2026-10-22T16:19:28.123Z"
+      ]
+    },
+    {
+      "action": "payment_method.update",
+      "entityId": "01a16469-0afc-7931-93d5-4bcf5409fc77",
+      "count": 1,
+      "timestamps": [
+        "2026-10-22T16:19:32.081Z"
+      ]
+    },
+    {
+      "action": "payment_method.archive",
+      "entityId": "01a16469-0afc-7931-93d5-4bcf5409fc77",
+      "count": 1,
+      "timestamps": [
+        "2026-10-22T16:20:26.714Z"
+      ]
+    },
+    {
+      "action": "voucher_definition.create",
+      "entityId": "01a16469-6b89-7df3-8fad-cbc9b0100c78",
+      "count": 1,
+      "timestamps": [
+        "2026-10-22T16:19:52.841Z"
+      ]
+    },
+    {
+      "action": "voucher_definition.update",
+      "entityId": "01a16469-6b89-7df3-8fad-cbc9b0100c78",
+      "count": 2,
+      "timestamps": [
+        "2026-10-22T16:20:17.272Z",
+        "2026-10-22T16:20:02.773Z"
+      ]
+    },
+    {
+      "action": "voucher_definition.archive",
+      "entityId": "01a16469-6b89-7df3-8fad-cbc9b0100c78",
+      "count": 1,
+      "timestamps": [
+        "2026-10-22T16:20:21.672Z"
+      ]
+    },
+    {
+      "action": "branch_tax_config.update",
+      "entityId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+      "count": 2,
+      "timestamps": [
+        "2026-10-22T16:19:48.774Z",
+        "2026-10-22T16:19:41.717Z"
+      ]
+    }
+  ],
+  "operations": [
+    {
+      "label": "discount-create",
+      "pathSha256": "aff258fc306fefce17ad607f9ed1c12e70b3555bdcb850ed1f2044ffd9771a77",
+      "bodySha256": "216eac7432fc7c8fc0e1296246a433ec99c7857f2b663a26036d965a65e8cbe5",
+      "keySha256": "a87a1b6ffa15d49796824a3007c8a3259bcecc5b7e690fe3db12d317a60189c3",
+      "attempts": 1,
+      "status": 200,
+      "settled": true,
+      "latestAttemptConfirmed": true
+    },
+    {
+      "label": "discount-edit",
+      "pathSha256": "127abddc9d6b8634ae2bbe81406a00f9fb72442db2b61ac9ee71e3bd828199e0",
+      "bodySha256": "0ceca23036ab9800518cf89b20aae06a5424dc8ec7dc3d6a13c113bbe823e210",
+      "keySha256": "4ff5adccb487f4a34076a84365b899385f05775241289cba7d163f48999d4a3c",
+      "attempts": 1,
+      "status": 200,
+      "settled": true,
+      "latestAttemptConfirmed": true
+    },
+    {
+      "label": "tender-create",
+      "pathSha256": "88352d7b01eda746634f01a813fe1012642ea1217bf35a9e54c03ceafa0e6c33",
+      "bodySha256": "b14b6780d8d8a131c63a8d303c1ec9a2ad9d767bdda34f27667ef6c2f8793d3f",
+      "keySha256": "f131ad163e16a24de0d726658821bf23f582bafd07a61568f2890019ea5bafc5",
+      "attempts": 1,
+      "status": 200,
+      "settled": true,
+      "latestAttemptConfirmed": true
+    },
+    {
+      "label": "tender-edit",
+      "pathSha256": "707becd56ef70db4dd4015f3fb7035d9130728e000221292e3450f53f911ad23",
+      "bodySha256": "900c960db2a70c4aec736dfef48e039684e62a0c01ce90953f281929de8fda9e",
+      "keySha256": "3a70996f956da7b210a89691f197793d51b5609bf5b035a0e8c8836777d90844",
+      "attempts": 1,
+      "status": 200,
+      "settled": true,
+      "latestAttemptConfirmed": true
+    },
+    {
+      "label": "tax-change",
+      "pathSha256": "29cebbb90d0c05c50e5f1932217b0c4999a8519355e5f2fbb2b4ba01d0aa9c8c",
+      "bodySha256": "6e0b0d1fdd29c0b93cb6fa4cb6a6c0183d9a8d7f421d2bb906c845b903c60592",
+      "keySha256": "089da110d5336497b336f963decf2debffb8abc41e1dc64fec82cd9e1763ab88",
+      "attempts": 1,
+      "status": 200,
+      "settled": true,
+      "latestAttemptConfirmed": true
+    },
+    {
+      "label": "tax-restore",
+      "pathSha256": "29cebbb90d0c05c50e5f1932217b0c4999a8519355e5f2fbb2b4ba01d0aa9c8c",
+      "bodySha256": "f406d20c481cfaa35ffca2f3c3443cff85ca20d85ece3721d66bd7516e4f8af5",
+      "keySha256": "cd99d1db22b6c0f7ca30337165e0785610b45653203b5f472fed1fcdabc223fa",
+      "attempts": 1,
+      "status": 200,
+      "settled": true,
+      "latestAttemptConfirmed": true
+    },
+    {
+      "label": "type-create",
+      "pathSha256": "6bcaa8c3f6fa7cc1f9d4f87e044b504e33868193404a4baf216bc2b7819a131d",
+      "bodySha256": "5425a3d267f58452522682993a3651bb4e002dbd1247245316486dbcdf6f528e",
+      "keySha256": "7b3433f7862091850c8ff760a98295b76d9fac598c09dc7a15fbb3fa14de4297",
+      "attempts": 2,
+      "status": 200,
+      "settled": true,
+      "latestAttemptConfirmed": true
+    },
+    {
+      "label": "type-rules-edit",
+      "pathSha256": "953df0d74f31698a616240eed74fd69f089cee88be93dfa141d3b8d7e0eca9ec",
+      "bodySha256": "ed5855eaabd34084c7d72a8be876d6539bbe0bdd6b0a39acc9a6660beef66547",
+      "keySha256": "3de8f141d2898392970652b7dd6dbba589acca1920e84af445147dab087620f2",
+      "attempts": 1,
+      "status": 200,
+      "settled": true,
+      "latestAttemptConfirmed": true
+    },
+    {
+      "label": "type-rules-restore",
+      "pathSha256": "953df0d74f31698a616240eed74fd69f089cee88be93dfa141d3b8d7e0eca9ec",
+      "bodySha256": "1e4eb7d6c47533bdcd2f60a0aa33ad1e96623a77a32353359ff8b9f5e4457092",
+      "keySha256": "2ec2aade722e0f9e0f10fee226990f1b7e5953e582cdfd3e4c55c78fe211fba0",
+      "attempts": 1,
+      "status": 200,
+      "settled": true,
+      "latestAttemptConfirmed": true
+    },
+    {
+      "label": "type-archive",
+      "pathSha256": "953df0d74f31698a616240eed74fd69f089cee88be93dfa141d3b8d7e0eca9ec",
+      "bodySha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "keySha256": "58017426deadd03d866107ee43760bfd9798742c7e99ccf9a63f2e2d80295978",
+      "attempts": 1,
+      "status": 200,
+      "settled": true,
+      "latestAttemptConfirmed": true
+    },
+    {
+      "label": "tender-archive",
+      "pathSha256": "707becd56ef70db4dd4015f3fb7035d9130728e000221292e3450f53f911ad23",
+      "bodySha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "keySha256": "2348c60d53836492e06684589351aa803f748afa0f983259b900be12b2f701a9",
+      "attempts": 1,
+      "status": 200,
+      "settled": true,
+      "latestAttemptConfirmed": true
+    },
+    {
+      "label": "discount-archive",
+      "pathSha256": "127abddc9d6b8634ae2bbe81406a00f9fb72442db2b61ac9ee71e3bd828199e0",
+      "bodySha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "keySha256": "875bec2235900c5be1febc1d443f0eca1a8f360830c73cfab3e213e9190a2c70",
+      "attempts": 1,
+      "status": 200,
+      "settled": true,
+      "latestAttemptConfirmed": true
+    }
+  ],
+  "blockedRequests": [],
+  "browserErrorKinds": [],
+  "counts": {
+    "signIns": 1,
+    "signOuts": 1,
+    "businessAttempts": 1,
+    "fixtureCreates": 0,
+    "blockedReads": 0,
+    "blockedWrites": 0,
+    "SMS": 0,
+    "paymentWrites": 0,
+    "equipmentWrites": 0,
+    "otherBusinessWrites": 0
+  },
+  "limits": [
+    "One existing unused discount archive only. No new fixtures or re-execution of the prior native controls.",
+    "V4 image13 contains a native DIV-grid QR and must not be committed/attached; image19 replaces that discount evidence.",
+    "Event pricing remains the recorded read-only skip. No event write, Till, station, campaign mint/export or complete-history claim.",
+    "Original private journal is pinned, never overwritten; settlement clone contains its private keys and safe original configuration for recovery."
+  ],
+  "prior": {
+    "proofSha256": "950800052b57fc2124afa8a1d483eceb1580fb079ed3f314d23de5f6dcb79ed6",
+    "envelopeSha256": "5d3d064dec14bdccd77f1e7ced6dfff1257975cb706e7eb45b703fbe1320849d",
+    "privateJournalSha256": "91a77444df7f79d52ddf0587d5035e9b9b53fe6810bbc73158cac2a115f09f50",
+    "startedAt": "2026-10-22T16:18:55.446Z",
+    "settledOperations": 11,
+    "businessAttempts": 12,
+    "unrestoredFixtureId": "01a16468-d1b8-786e-b9a9-216bb02cbb0a"
+  },
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "deployId": "dep-dbd35049v7es73c6piq0",
+      "sourceSha": "5ddb61408a0d931802fd2f86f307ab058878dd34",
+      "finishedAt": "2026-10-22T16:01:18.61569Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "deployId": "dep-dbd35049v7es73c6pjrg",
+      "sourceSha": "5ddb61408a0d931802fd2f86f307ab058878dd34",
+      "finishedAt": "2026-10-22T15:58:35.150771Z"
+    },
+    {
+      "name": "oto-pos-staging",
+      "deployId": "dep-dbd350c9v7es73c6pk0g",
+      "sourceSha": "5ddb61408a0d931802fd2f86f307ab058878dd34",
+      "finishedAt": "2026-10-22T15:58:40.314539Z"
+    }
+  ],
+  "baselineRestored": {
+    "originalHash": "58c062c99d24fecf6a68d6677111424ec96b005cfcc94def95ba9b295bf20c60",
+    "afterHash": "58c062c99d24fecf6a68d6677111424ec96b005cfcc94def95ba9b295bf20c60",
+    "taxHash": "f406d20c481cfaa35ffca2f3c3443cff85ca20d85ece3721d66bd7516e4f8af5",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "preferencesHash": "00df943c543d230f9e93ceca1038b659220a9779f4d70ae1b114715829458881"
+  },
+  "controlsComplete": true,
+  "authCleanup": {
+    "signOutStatus": 200,
+    "meStatus": 401,
+    "confirmed": true
+  },
+  "completedAt": "2026-10-22T16:36:38.831Z"
+}

@@ -1,0 +1,32 @@
+{
+  "ticket": "SCRUM-623",
+  "checkedAt": "2026-10-22T16:37:47.848Z",
+  "status": "Testing",
+  "files": [
+    {
+      "id": "11968",
+      "filename": "SCRUM-623-14-v4-tenders-desktop.png"
+    },
+    {
+      "id": "11969",
+      "filename": "SCRUM-623-15-v4-tax-desktop.png"
+    },
+    {
+      "id": "11970",
+      "filename": "SCRUM-623-16-v4-voucher-types-desktop.png"
+    },
+    {
+      "id": "11971",
+      "filename": "SCRUM-623-17-v4-voucher-campaigns-desktop.png"
+    },
+    {
+      "id": "11972",
+      "filename": "SCRUM-623-18-v4-event-pricing-phone.png"
+    },
+    {
+      "id": "11973",
+      "filename": "SCRUM-623-19-recovered-discounts-desktop.png"
+    }
+  ],
+  "allSixReadBack": true
+}
