@@ -1,3 +1,6 @@
+import {createWalletAdminApi} from '@oto/admin-screens/lifted/api/wallet';
+import {adminScreenApi} from './admin-screen-api';
+const walletAdmin = createWalletAdminApi(adminScreenApi);
 // Stored value — S2-14a round 1 (plan docs/progress/plans/wallet/PLAN.md §2.2).
 //
 // WHAT THE TILL READS OF A WALLET. The platform grants a sale's credit as it
@@ -41,14 +44,10 @@ export interface ApiWalletRead {
 }
 
 /** The wallet a scanned or typed key names: a voucher `QR-…`, a band's code or short code. */
-export function lookupWallet(key: string): Promise<ApiWalletRead> {
-  return api.get<ApiWalletRead>(`/wallets/lookup?key=${encodeURIComponent(key.trim())}`);
-}
+export function lookupWallet(key: string): Promise<ApiWalletRead> { return walletAdmin.lookupWallet(key); }
 
 /** One wallet by id. */
-export function getWallet(id: string): Promise<ApiWalletRead> {
-  return api.get<ApiWalletRead>(`/wallets/${encodeURIComponent(id)}`);
-}
+export function getWallet(id: string): Promise<ApiWalletRead> { return walletAdmin.getWallet(id); }
 
 /**
  * The grants a sale answer carries — the finalise's or `GET /sales/:id`'s — or
@@ -338,14 +337,10 @@ export interface ApiWalletReactivated extends ApiWalletRead {
  * reason the manager typed. One key per gesture, so a retried press is the
  * same reactivation.
  */
-export function reactivateWallet(walletId: string, reason: string, idempotencyKey: string = idemKey()): Promise<ApiWalletReactivated> {
-  return api.post<ApiWalletReactivated>(`/wallets/${encodeURIComponent(walletId)}/reactivate`, { reason }, { idempotencyKey });
-}
+export function reactivateWallet(walletId: string, reason: string, idempotencyKey: string = idemKey()): Promise<ApiWalletReactivated> { return walletAdmin.reactivateWallet(walletId,reason,idempotencyKey); }
 
 /** The branch's wallet rules (expiry, the offline cap, unused prepaid food). */
-export function getWalletPolicy(branchApiId: string): Promise<WalletPolicyViewDto> {
-  return api.get<WalletPolicyViewDto>(`/wallets/policy?branchId=${encodeURIComponent(branchApiId)}`);
-}
+export function getWalletPolicy(branchApiId: string): Promise<WalletPolicyViewDto> { return walletAdmin.getWalletPolicy(branchApiId); }
 
 export interface ApiWalletReport {
   summary: WalletReportSummary;
@@ -353,11 +348,7 @@ export interface ApiWalletReport {
 }
 
 /** The Wallet & Promo report's credit half, for a business-date range; no branch = every park this account reads. */
-export function getWalletReport(params: { branchApiId?: string | null; from: string; to: string; limit?: number }): Promise<ApiWalletReport> {
-  const q = new URLSearchParams({ from: params.from, to: params.to, limit: String(params.limit ?? 100) });
-  if (params.branchApiId) q.set('branchId', params.branchApiId);
-  return api.get<ApiWalletReport>(`/wallets/report?${q}`);
-}
+export function getWalletReport(params: { branchApiId?: string | null; from: string; to: string; limit?: number }): Promise<ApiWalletReport> { return walletAdmin.getWalletReport(params); }
 
 /** The End of day `credit` line for one business date: counter credit redeemed, net of restores. */
 export function getCreditDay(branchApiId: string, date: string): Promise<WalletCreditDay> {

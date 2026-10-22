@@ -6,6 +6,7 @@ import { benefitsApi } from '@/api/benefits';
 import { buildItemCartPayload, type ItemCartIdentity } from '@/api/sales';
 import { readBenefitScan, type StationScanEvent } from '@/lib/scanChannel';
 import type { FnbOrderLine, ManualDiscount } from '@/types';
+import { LIFTED_SOURCE } from './support/admin-source-path';
 
 /**
  * S2-21 (SCRUM-218) round 3 — the F&B order station's staff benefit on the
@@ -34,7 +35,7 @@ function sourceFiles(dir: string): string[] {
 function mockApiImports(): Array<{ file: string; name: string }> {
   const found: Array<{ file: string; name: string }> = [];
   const pattern = /import\s+(type\s+)?\{([^}]*)\}\s+from\s+['"](?:@\/mockApi|(?:\.\.?\/)+mockApi)['"]/g;
-  for (const file of sourceFiles(SRC)) {
+  for (const file of [...sourceFiles(SRC), ...sourceFiles(LIFTED_SOURCE)]) {
     const text = readFileSync(file, 'utf8');
     for (const match of text.matchAll(pattern)) {
       for (const raw of match[2]!.split(',')) {

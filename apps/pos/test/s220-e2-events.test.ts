@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { adminSourcePath } from './support/admin-source-path';
 import { fileURLToPath } from 'node:url';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { EventAttendeeView, EventAttendeeWriteAnswer, EventView } from '@oto/shared';
@@ -361,7 +362,7 @@ describe("the pass flow keeps the prototype's words and sells on the platform", 
     const operations = adminNav.find((e) => e.kind === 'group' && e.id === 'operations');
     const panel = operations?.kind === 'group' ? operations.panels.find((p) => p.id === 'events') : undefined;
     expect(panel).toMatchObject({ label: 'Events', permission: 'admin:event_pricing:manage' });
-    const src = source('components/admin/events/EventsPanel.tsx');
+    const src = readFileSync(adminSourcePath('components/admin/events/EventsPanel.tsx'), 'utf8');
     for (const words of ['Camp day', 'Event day', 'Party guest', 'Walk-up / drop-in day pricing for camps, one-off events and party additions.']) {
       expect(src, words).toContain(words);
     }

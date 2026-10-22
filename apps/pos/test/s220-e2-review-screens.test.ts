@@ -5,8 +5,11 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { EventAttendeeWriteAnswer } from '@oto/shared';
 import { api, ApiError } from '@/api/client';
-import { eventWriteBlocker, sellOnPlatform } from '@/api/events';
+import { eventWriteBlocker, sellOnPlatform, EVENTS_NOT_LINKED, eventsApi } from '@/api/events';
 import { EventsPanel } from '@/components/admin/events/EventsPanel';
+import { apiBranchIdForSlug } from '@/api/catalogBridge';
+import { getActiveBranch } from '@/store/catalogStore';
+import { AdminScreenProvider, type AdminScreenRuntime } from '../../../packages/admin-screens/src/lifted/runtime/AdminScreenRuntime';
 import type { OtoEvent } from '@/types';
 
 /**
@@ -348,7 +351,13 @@ describe('Q8 — the Admin Events panel shows all three walk-up prices', () => {
     renderToStaticMarkup(el).replace(/&#x27;/g, "'").replace(/&amp;/g, '&').replace(/&quot;/g, '"');
 
   it('Camp day, Event day and Party guest, each a weekday/weekend pair, and only the party guest said to be charged', () => {
-    const page = html(React.createElement(EventsPanel));
+    const runtime = {
+      reads: { getActiveBranch },
+      api: { catalogBridge: { apiBranchIdForSlug }, events: { EVENTS_NOT_LINKED, eventsApi } },
+    } as unknown as AdminScreenRuntime;
+    const page = html(React.createElement(AdminScreenProvider, {
+      value: runtime, children: React.createElement(EventsPanel),
+    }));
     expect(page).toContain('Walk-up prices');
     const at = (words: string) => page.indexOf(words);
     expect(at('Camp day')).toBeGreaterThan(-1);

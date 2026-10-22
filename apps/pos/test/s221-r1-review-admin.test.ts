@@ -4,8 +4,12 @@ import { describe, expect, it } from 'vitest';
 import type { BenefitProfile as PlatformProfile } from '@oto/shared';
 import { inForceOn, profileFromApi, profileToApi, sameProfile } from '@/api/benefits';
 import { adminNav, type AdminPanel } from '@/components/admin/adminSections';
-import { BenefitHistoryList, type BenefitHistoryEntry } from '@/components/admin/staff-benefits/BenefitHistoryList';
-import { summarizeProfile } from '@/components/admin/staff-benefits/summary';
+import { BenefitHistoryList, type BenefitHistoryEntry } from '../../../packages/admin-screens/src/lifted/components/admin/staff-benefits/BenefitHistoryList';
+import { createBenefitSummaryHelpers } from '../../../packages/admin-screens/src/lifted/components/admin/staff-benefits/summary';
+import * as benefitHelpers from '@/lib/benefits';
+import * as discountTarget from '@/lib/discountTarget';
+
+const { summarizeProfile } = createBenefitSummaryHelpers({ benefits: benefitHelpers, discountTarget });
 
 /**
  * SCRUM-218 review of lane I round 1 — Admin > Staff Benefits, the parts of

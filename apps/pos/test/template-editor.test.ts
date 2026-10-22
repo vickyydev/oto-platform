@@ -10,7 +10,7 @@ import {
   saveBarView,
   saveBody,
   testPrintOutcome,
-} from '@/components/admin/templates/templateDraft';
+} from '../../../packages/admin-screens/src/lifted/components/admin/templates/templateDraft';
 import {
   APPLICABLE_FIELDS,
   FIELD_META,
@@ -18,12 +18,12 @@ import {
   isBandType,
   moreOptions,
   type EditorRow,
-} from '@/components/admin/templates/templateFields';
+} from '../../../packages/admin-screens/src/lifted/components/admin/templates/templateFields';
 import {
   DEFAULT_PREVIEW_SAMPLE,
   PREVIEW_SAMPLES,
-} from '@/components/admin/templates/previewSamples';
-import { TemplateEditor } from '@/components/admin/templates/TemplateEditor';
+} from '../../../packages/admin-screens/src/lifted/components/admin/templates/previewSamples';
+import { TemplateEditor } from '../../../packages/admin-screens/src/lifted/components/admin/templates/TemplateEditor';
 
 /**
  * SCRUM-472 — the Print Templates editor redesigned around its preview.
@@ -36,11 +36,10 @@ import { TemplateEditor } from '@/components/admin/templates/TemplateEditor';
  * something changes.
  */
 
-vi.mock('@/store/CatalogStoreContext', () => ({
+vi.mock('../../../packages/admin-screens/src/lifted/runtime/AdminScreenRuntime', () => ({
+  useAdminScreenRuntime: () => ({ api: { platform: { printApi: {}, templatesApi: {} } } }),
   useCatalogStore: () => ({ mutators: { upsertPrintTemplate: () => undefined } }),
   MOCK_MUTATOR_TICKETS: { upsertPrintTemplate: 'S2-06' },
-}));
-vi.mock('@/station/StationContext', () => ({
   useStation: () => ({ station: { stationId: '0192f3a4-5b6c-7d8e-9fa0-b1c2d3e4f506' } }),
 }));
 

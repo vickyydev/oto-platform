@@ -1,3 +1,6 @@
+import {createCheckinAdminApi} from '@oto/admin-screens/lifted/api/checkin';
+import {adminScreenApi} from './admin-screen-api';
+const checkinAdmin = createCheckinAdminApi(adminScreenApi);
 import {
   BRIDGE_CHECKIN_INTENTS,
   OFFLINE_PHOTO_POLICY,
@@ -299,9 +302,7 @@ export const checkinApi = {
   config: async (branchId: string) =>
     viaLane(
       () =>
-        api.get<ApiSupervisionConfig>(
-          `/checkin/config?branchId=${encodeURIComponent(assertPlatformBranchId(branchId))}`,
-        ),
+        checkinAdmin.checkinApi.config(branchId),
       (stationId) => onBox<ApiSupervisionConfig>(stationId, BRIDGE_CHECKIN_INTENTS.config, {}),
     ),
 
@@ -804,20 +805,11 @@ export const boardApi = {
     ),
 
   savePolicy: (branchId: string, body: PolicyBody) =>
-    api.put<ApiSupervisionConfig>(
-      `/checkin/config/policy?branchId=${encodeURIComponent(assertPlatformBranchId(branchId))}`,
-      body,
-    ),
+    checkinAdmin.boardApi.savePolicy(branchId, body),
 
   saveConfirmations: (branchId: string, items: { id: string; text: string; required: boolean; order: number }[]) =>
-    api.put<ApiSupervisionConfig>(
-      `/checkin/config/confirmations?branchId=${encodeURIComponent(assertPlatformBranchId(branchId))}`,
-      { items },
-    ),
+    checkinAdmin.boardApi.saveConfirmations(branchId, items),
 
   savePricing: (branchId: string, body: PricingBody) =>
-    api.put<ApiSupervisionConfig>(
-      `/checkin/config/pricing?branchId=${encodeURIComponent(assertPlatformBranchId(branchId))}`,
-      body,
-    ),
+    checkinAdmin.boardApi.savePricing(branchId, body),
 };

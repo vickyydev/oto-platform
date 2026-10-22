@@ -3,7 +3,7 @@ import { renderHook } from './support/hooks';
 import {
   useUnsavedChangesPrompt,
   type UnloadTarget,
-} from '@/components/admin/templates/useUnsavedChangesPrompt';
+} from '../../../packages/admin-screens/src/lifted/components/admin/templates/useUnsavedChangesPrompt';
 
 vi.mock('react', () => import('./support/hooks'));
 

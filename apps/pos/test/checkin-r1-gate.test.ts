@@ -102,7 +102,8 @@ describe('R1: the gate names the branch the platform knows', () => {
     get.mockResolvedValueOnce({ nannies: [] }).mockResolvedValueOnce({ registrations: [] });
     await checkinApi.config(requirePlatformBranchId(getActiveBranch().id));
     await checkinApi.awaiting(requirePlatformBranchId(getActiveBranch().id));
-    expect(get).toHaveBeenNthCalledWith(1, `/checkin/config?branchId=${HKT_CENTRAL}`);
+    expect(get).toHaveBeenCalledTimes(2);
+    expect(get).toHaveBeenNthCalledWith(1, `/checkin/config?branchId=${HKT_CENTRAL}`, undefined);
     expect(get).toHaveBeenNthCalledWith(2, `/checkin/registrations?branchId=${HKT_CENTRAL}`);
   });
 });

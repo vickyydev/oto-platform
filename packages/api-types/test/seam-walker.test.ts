@@ -60,6 +60,10 @@ function reached(c: Call): Route[] {
  * reaches the route instead. A new one fails until it is named here.
  */
 const DYNAMIC = new Map<string, string>([
+  ...['GET', 'POST', 'PATCH', 'PUT', 'DELETE'].map((method): [string, string] => [
+    `apps/pos/src/api/admin-screen-api.ts ${method} path`,
+    'Typed POS forwarding adapter; endpoint literals remain in package factories and the exact forwarding surface is pinned below.',
+  ]),
   [
     'apps/console/src/components/devices/PrintPanel.tsx GET printout.previewUrl',
     // GET /devices/{id}/printouts/{seq}/preview.png — the api mints the URL.
@@ -184,6 +188,27 @@ describe('every front-end call reaches a route the api describes (SCRUM-293)', (
       .map((c) => `${c.file} ${c.method} ${c.shown}`);
     expect(unread.filter((key) => !DYNAMIC.has(key))).toEqual([]);
     expect([...DYNAMIC.keys()].filter((key) => !unread.includes(key))).toEqual([]);
+  });
+
+  it('reads lifted DELETE bodies, file downloads and native download addresses', () => {
+    const lifted = collectCalls({ path: 'fixtures/lifted.ts', text: `
+      api.deleteWithBody('/members/test/tier-verification', { reason: 'ZZ TEST' });
+      api.getFile('/branches/test/menu/export.xlsx');
+      api.href('/voucher-campaigns/test/codes');
+    ` });
+    expect(lifted.map(call => ({ method: call.method, path: call.path, bodyKeys: call.bodyKeys }))).toEqual([
+      { method: 'DELETE', path: '/members/test/tier-verification', bodyKeys: ['reason'] },
+      { method: 'GET', path: '/branches/test/menu/export.xlsx', bodyKeys: null },
+      { method: 'GET', path: '/voucher-campaigns/test/codes', bodyKeys: null },
+    ]);
+  });
+
+  it('keeps the typed POS forwarding adapter to its declared transport methods', () => {
+    const forwarding = calls.filter(call => call.file === 'apps/pos/src/api/admin-screen-api.ts');
+    expect(forwarding.every(call => call.path === null && call.shown === 'path')).toBe(true);
+    expect(forwarding.map(call => call.method).sort()).toEqual([
+      'DELETE', 'DELETE', 'GET', 'GET', 'GET', 'PATCH', 'POST', 'POST', 'PUT',
+    ]);
   });
 
   it('reaches a route that answers the call’s method', () => {

@@ -138,7 +138,7 @@ describe('there is exactly one path from a layout to dots', () => {
    * be added here, which is a line in a diff rather than a silent second path.
    */
   const PREVIEW_SURFACES = [
-    'apps/pos/src/components/admin/templates/PrintTemplatePreview.tsx',
+    'packages/admin-screens/src/lifted/components/admin/templates/PrintTemplatePreview.tsx',
     'apps/console/src/components/devices/PrintPanel.tsx',
   ];
 

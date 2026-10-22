@@ -5,15 +5,20 @@ import type { DiscountReport, DiscountTransactions, ProfitabilityReport, SalesRe
 import { api } from '@/api/client';
 import { analyticsReportsApi } from '@/api/analyticsReports';
 import { guardCsvFormula, toCsv } from '@/lib/csv';
-import { SalesReportView, EMPTY_SALES_REPORT } from '@/components/admin/reports/SalesReportPanel';
-import { ProfitabilityReportView } from '@/components/admin/reports/ProfitabilityReportPanel';
-import { DiscountCompReportView } from '@/components/admin/reports/DiscountCompReportPanel';
+import { SalesReportView, EMPTY_SALES_REPORT } from '../../../packages/admin-screens/src/lifted/components/admin/reports/SalesReportPanel';
+import { ProfitabilityReportView } from '../../../packages/admin-screens/src/lifted/components/admin/reports/ProfitabilityReportPanel';
+import { DiscountCompReportView } from '../../../packages/admin-screens/src/lifted/components/admin/reports/DiscountCompReportPanel';
 import {
   TaxVatReportView,
   filterTaxReceipts,
   taxReceiptPaymentMethodsOf,
-} from '@/components/admin/reports/TaxVatReportPanel';
+} from '../../../packages/admin-screens/src/lifted/components/admin/reports/TaxVatReportPanel';
 import { adminPanelsById } from '@/components/admin/adminSections';
+
+vi.mock('../../../packages/admin-screens/src/lifted/runtime/AdminScreenRuntime', async () => {
+  const reporting = await import('@/lib/reporting');
+  return { useAdminScreenRuntime: () => ({ domain: { reporting } }) };
+});
 
 /**
  * S2-15b round 4 — Admin > Reports drawn from the platform's answers: the

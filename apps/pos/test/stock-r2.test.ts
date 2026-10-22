@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { adminSourcePath } from './support/admin-source-path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { SellableStock, StockLevels } from '@oto/shared';
 import {
@@ -256,7 +256,6 @@ describe('H2 — a tracked add-on still asks for a size when the counts have not
 });
 
 describe('the stock screens are on the platform: the mock calls are gone from the claimed paths', () => {
-  const SRC = join(import.meta.dirname, '..', 'src');
   const CLAIMED = [
     'components/mobile/stock/MobileStock.tsx',
     'components/mobile/stock/StockOverview.tsx',
@@ -274,7 +273,7 @@ describe('the stock screens are on the platform: the mock calls are gone from th
   ];
 
   it.each(CLAIMED)('%s reads and writes no in-memory stock', (file) => {
-    const src = readFileSync(join(SRC, file), 'utf8');
+    const src = readFileSync(adminSourcePath(file), 'utf8');
     expect(src).not.toMatch(/from '@\/mockApi'/);
     expect(src).not.toMatch(/from '@\/store\/catalogStore'/);
     expect(src).not.toMatch(

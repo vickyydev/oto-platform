@@ -1,3 +1,5 @@
+import {createStockAdminApi} from '@oto/admin-screens/lifted/api/stock';
+import {adminScreenApi} from './admin-screen-api';
 // S2-14b round 1 — what the platform says each shelf holds, for the selling
 // screens (plan docs/progress/plans/stock/PLAN.md §2.2).
 //
@@ -16,23 +18,7 @@
 // till closes.
 
 import { useEffect, useSyncExternalStore } from 'react';
-import type {
-  PurchaseOrderView,
-  SellableStock,
-  SellableStockProduct,
-  StockAdjustResult,
-  StockAttentionView,
-  StockCostOfGoods,
-  StockItemBody,
-  StockLevels,
-  StockLocationView,
-  StockPlaceOpening,
-  StockPlaceOpenings,
-  StockReceiveResult,
-  StockReports,
-  StockTakeResult,
-  StockTransferResult,
-} from '@oto/shared';
+import type {PurchaseOrderView, SellableStock, SellableStockProduct, StockAttentionView, StockCostOfGoods, StockItemBody, StockLevels, StockLocationView, StockPlaceOpening, StockReports} from '@oto/shared';
 import { getInventoryItem, getMerchItems } from '@/store/catalogStore';
 import {
   INVENTORY_DEFAULT_VARIANT_ID,
@@ -42,7 +28,7 @@ import {
   type PurchaseOrder,
   type StockLocation,
 } from '@/types';
-import { api, ApiError, idemKey, isMissingRoute } from './client';
+import {api, ApiError, isMissingRoute} from './client';
 
 let branchId: string | null = null;
 let byProduct = new Map<string, SellableStockProduct>();
@@ -396,76 +382,10 @@ async function writeThenRead<T>(branchId: string, write: () => Promise<T>): Prom
   return result;
 }
 
-const stockBase = (branchId: string) => `/branches/${branchId}/stock`;
-const once = () => ({ idempotencyKey: idemKey() });
 
-/**
- * The stock module's writes. Each refusal is the platform's, in the counter's
- * words (`ApiError.message`; `stockErrorWords` for the screen).
- */
-export const stockApi = {
-  transfer: (branchId: string, body: { fromLocationId: string; toLocationId: string; lines: Array<{ stockItemId: string; quantity: number }> }) =>
-    writeThenRead(branchId, () => api.post<StockTransferResult>(`${stockBase(branchId)}/transfers`, body, once())),
+const stockAdmin = createStockAdminApi(adminScreenApi,{writeThenRead});
+export const stockApi = stockAdmin.stockApi;
 
-  receive: (branchId: string, body: { stockItemId: string; locationId: string; quantity: number; reason: string }) =>
-    writeThenRead(branchId, () => api.post<StockReceiveResult>(`${stockBase(branchId)}/receipts`, body, once())),
-
-  receiveOrderLine: (branchId: string, orderId: string, lineId: string, body: { quantity: number; locationId: string }) =>
-    writeThenRead(branchId, () =>
-      api.post<{ order: PurchaseOrderView; requested: number; received: number }>(
-        `${stockBase(branchId)}/purchase-orders/${orderId}/lines/${lineId}/receive`,
-        body,
-        once(),
-      ),
-    ),
-
-  addToOrders: (branchId: string, lines: Array<{ stockItemId: string; quantity: number }>) =>
-    writeThenRead(branchId, () =>
-      api.post<{ orders: PurchaseOrderView[] }>(`${stockBase(branchId)}/purchase-orders/lines`, { lines }, once()),
-    ),
-
-  setOrderLineQuantity: (branchId: string, orderId: string, lineId: string, quantity: number) =>
-    writeThenRead(branchId, () =>
-      api.patch(`${stockBase(branchId)}/purchase-orders/${orderId}/lines/${lineId}`, { quantity }, once()),
-    ),
-
-  removeOrderLine: (branchId: string, orderId: string, lineId: string) =>
-    writeThenRead(branchId, () =>
-      api.delete(`${stockBase(branchId)}/purchase-orders/${orderId}/lines/${lineId}`, undefined, once()),
-    ),
-
-  markOrdered: (branchId: string, orderId: string, body: { expectedArrivalDate?: string; notes?: string }) =>
-    writeThenRead(branchId, () => api.post(`${stockBase(branchId)}/purchase-orders/${orderId}/ordered`, body, once())),
-
-  commitStockTake: (branchId: string, lines: Array<{ stockItemId: string; locationId: string; countedQuantity: number }>) =>
-    writeThenRead(branchId, () => api.post<StockTakeResult>(`${stockBase(branchId)}/stock-takes`, { lines }, once())),
-
-  adjust: (branchId: string, body: { stockItemId: string; locationId?: string; delta: number; reason: string }) =>
-    writeThenRead(branchId, () => api.post<StockAdjustResult>(`${stockBase(branchId)}/adjustments`, body, once())),
-
-  createLocation: (branchId: string, body: { name: string; type: StockLocation['type'] }) =>
-    writeThenRead(branchId, () => api.post<StockLocationView>(`${stockBase(branchId)}/locations`, body, once())),
-
-  updateLocation: (branchId: string, locationId: string, patch: { name?: string; type?: StockLocation['type']; active?: boolean }) =>
-    writeThenRead(branchId, () =>
-      api.patch<StockLocationView>(`${stockBase(branchId)}/locations/${locationId}`, patch, once()),
-    ),
-
-  setSellPoint: (branchId: string, locationId: string) =>
-    writeThenRead(branchId, () =>
-      api.post<StockLocationView>(`${stockBase(branchId)}/locations/${locationId}/sell-point`, undefined, once()),
-    ),
-
-  saveItem: (branchId: string, groupId: string | null, body: StockItemBody, actionId = idemKey()) =>
-    writeThenRead(branchId, () =>
-      groupId
-        ? api.put<{ groupId: string; stockItemIds: string[] }>(`${stockBase(branchId)}/items/${groupId}`, body, { idempotencyKey: actionId })
-        : api.post<{ groupId: string; stockItemIds: string[] }>(`${stockBase(branchId)}/items`, body, { idempotencyKey: actionId }),
-    ),
-
-  resolveAttention: (branchId: string, attentionId: string) =>
-    writeThenRead(branchId, () => api.post(`${stockBase(branchId)}/attention/${attentionId}/resolve`, undefined, once())),
-};
 
 /**
  * The admin form's item as the platform's body. A size keeps its stock item id
@@ -524,18 +444,10 @@ export function inventoryItemToStockBody(
  * count's review screen asks before the commit, so a place's first count is
  * described as what the platform records it as — its opening, flagging nothing.
  */
-export async function fetchPlaceOpenings(branchId: string): Promise<StockPlaceOpening[]> {
-  return (await api.get<StockPlaceOpenings>(`${stockBase(branchId)}/openings`)).places;
-}
+export async function fetchPlaceOpenings(branchId: string): Promise<StockPlaceOpening[]> { return stockAdmin.fetchPlaceOpenings(branchId); }
 
 /** The five stock reports over inclusive business dates. */
-export function fetchStockReports(branchId: string, from: string, to: string): Promise<StockReports> {
-  const q = new URLSearchParams({ from, to });
-  return api.get<StockReports>(`${stockBase(branchId)}/reports?${q.toString()}`);
-}
+export function fetchStockReports(branchId: string, from: string, to: string): Promise<StockReports> { return stockAdmin.fetchStockReports(branchId,from,to); }
 
 /** Cost of goods per product over inclusive business dates, at the cost frozen on each sale line. */
-export function fetchCostOfGoods(branchId: string, from: string, to: string): Promise<StockCostOfGoods> {
-  const q = new URLSearchParams({ from, to });
-  return api.get<StockCostOfGoods>(`${stockBase(branchId)}/reports/cost-of-goods?${q.toString()}`);
-}
+export function fetchCostOfGoods(branchId: string, from: string, to: string): Promise<StockCostOfGoods> { return stockAdmin.fetchCostOfGoods(branchId,from,to); }

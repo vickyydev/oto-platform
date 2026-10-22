@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import {
   STAFF_SOURCE_LABELS,
   StaffSourceChip,
-} from '@/components/admin/staff-benefits/StaffSourceChip';
+} from '../../../packages/admin-screens/src/lifted/components/admin/staff-benefits/StaffSourceChip';
 
 /**
  * S2-17b round 2 — Admin > Staff Benefits says where each record is kept (a
@@ -42,7 +42,7 @@ describe('S2-17b round 2 — the staff row says where the record is kept', () =>
   it('the panel draws it on every staff row, beside the benefit role', () => {
     const panel = readFileSync(
       fileURLToPath(
-        new URL('../src/components/admin/staff-benefits/StaffBenefitsPanel.tsx', import.meta.url),
+        new URL('../../../packages/admin-screens/src/lifted/components/admin/staff-benefits/StaffBenefitsPanel.tsx', import.meta.url),
       ),
       'utf8',
     );

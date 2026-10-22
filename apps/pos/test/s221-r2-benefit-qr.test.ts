@@ -78,7 +78,7 @@ describe('the QR dialog’s calls', () => {
 
 describe('the dialog and the panel, as written', () => {
   const here = dirname(fileURLToPath(import.meta.url));
-  const dir = join(here, '..', 'src', 'components', 'admin', 'staff-benefits');
+  const dir = join(here, '..', '..', '..', 'packages', 'admin-screens', 'src', 'lifted', 'components', 'admin', 'staff-benefits');
   const dialog = readFileSync(join(dir, 'BenefitQrDialog.tsx'), 'utf8');
   const panel = readFileSync(join(dir, 'StaffBenefitsPanel.tsx'), 'utf8');
 

@@ -24,7 +24,7 @@ import {
   type TestContext,
 } from './helpers';
 // The editor's own list, not a copy of it — the two are held to one spelling.
-import { PREVIEW_SAMPLES } from '../../pos/src/components/admin/templates/previewSamples';
+import { PREVIEW_SAMPLES } from '../../../packages/admin-screens/src/lifted/components/admin/templates/previewSamples';
 
 /**
  * SCRUM-472 — the template editor's scenario switcher and its named Test print.

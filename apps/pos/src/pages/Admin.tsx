@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useLocation, useSearch } from 'wouter';
 import { Construction, ShieldAlert } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
+import { AdminScreenHost } from '@/components/admin/AdminScreenHost';
 import {
   adminPanelsById,
   allAdminPanels,
@@ -73,6 +74,7 @@ export default function Admin() {
   const refusedPermission = panel.permission && !can(panel.permission) ? panel.permission : null;
 
   return (
+    <AdminScreenHost>
     <AdminLayout activeId={activeId} onSelect={selectPanel}>
       <div className="mx-auto max-w-4xl flex flex-col gap-6">
         <div className="flex items-center gap-3">
@@ -146,6 +148,7 @@ export default function Admin() {
         )}
       </div>
     </AdminLayout>
+    </AdminScreenHost>
   );
 }
 

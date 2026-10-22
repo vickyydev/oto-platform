@@ -55,11 +55,17 @@ export class NetworkError extends Error {
   }
 }
 
+export interface ApiRequestOptions {
+  idempotencyKey?: string;
+  headers?: Record<string, string>;
+  signal?: AbortSignal;
+}
+
 async function request<T>(
   method: string,
   path: string,
   body?: unknown,
-  opts: { idempotencyKey?: string; headers?: Record<string, string>; signal?: AbortSignal } = {},
+  opts: ApiRequestOptions = {},
 ): Promise<T> {
   let res: Response;
   const binary = body instanceof Blob;
@@ -111,12 +117,12 @@ async function request<T>(
  * failure still arrives as an error envelope, so the JSON path below is the
  * same one `request` takes.
  */
-async function requestBlob(
+async function requestFile(
   method: string,
   path: string,
   body?: unknown,
   signal?: AbortSignal,
-): Promise<Blob> {
+): Promise<{ blob: Blob; filename: string | null; contentType: string | null }> {
   let res: Response;
   try {
     res = await fetch(`/api${path}`, {
@@ -143,22 +149,39 @@ async function requestBlob(
     }
     throw new ApiError(res.status, err?.code ?? 'UNKNOWN', err?.message ?? res.statusText, err?.details);
   }
-  return res.blob();
+  return {
+    blob: await res.blob(),
+    filename: filenameFrom(res.headers.get('content-disposition')),
+    contentType: res.headers.get('content-type'),
+  };
+}
+
+function filenameFrom(disposition: string | null): string | null {
+  if (!disposition) return null;
+  const quoted = /filename="([^"]+)"/.exec(disposition);
+  if (quoted?.[1]) return quoted[1];
+  const bare = /filename=([^;]+)/.exec(disposition);
+  return bare?.[1]?.trim() || null;
+}
+
+async function requestBlob(method: string, path: string, body?: unknown, signal?: AbortSignal): Promise<Blob> {
+  return (await requestFile(method, path, body, signal)).blob;
 }
 
 export const api = {
-  get: <T>(path: string) => request<T>('GET', path),
-  getBlob: (path: string) => requestBlob('GET', path),
+  get: <T>(path: string, opts?: ApiRequestOptions) => request<T>('GET', path, undefined, opts),
+  getBlob: (path: string, signal?: AbortSignal) => requestBlob('GET', path, undefined, signal),
+  getFile: (path: string, signal?: AbortSignal) => requestFile('GET', path, undefined, signal),
   post: <T>(
     path: string,
     body?: unknown,
-    opts?: { idempotencyKey?: string; headers?: Record<string, string> },
+    opts?: ApiRequestOptions,
   ) => request<T>('POST', path, body, opts),
   postBlob: (path: string, body?: unknown, signal?: AbortSignal) =>
     requestBlob('POST', path, body, signal),
-  put: <T>(path: string, body?: unknown, opts?: { idempotencyKey?: string; headers?: Record<string, string> }) =>
+  put: <T>(path: string, body?: unknown, opts?: ApiRequestOptions) =>
     request<T>('PUT', path, body, opts),
-  patch: <T>(path: string, body?: unknown, opts?: { idempotencyKey?: string; signal?: AbortSignal }) =>
+  patch: <T>(path: string, body?: unknown, opts?: ApiRequestOptions) =>
     request<T>('PATCH', path, body, opts),
   /**
    * A DELETE may carry a body and an idempotency key, and one route needs
@@ -170,7 +193,7 @@ export const api = {
   delete: <T>(
     path: string,
     body?: unknown,
-    opts?: { idempotencyKey?: string; headers?: Record<string, string> },
+    opts?: ApiRequestOptions,
   ) => request<T>('DELETE', path, body, opts),
 };
 

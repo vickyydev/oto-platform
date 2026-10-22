@@ -284,7 +284,7 @@ describe('SCRUM-370 / SCRUM-380 — the refusal’s second line and the clone wa
   });
 
   it('380: the triangle is amber-700 on light, the prototype’s amber-400 behind dark:, and clears 3:1 on its tint', () => {
-    const panel = readFileSync(new URL('../src/components/admin/branches/BranchesPanel.tsx', import.meta.url), 'utf8');
+    const panel = readFileSync(new URL('../../../packages/admin-screens/src/lifted/components/admin/branches/BranchesPanel.tsx', import.meta.url), 'utf8');
     expect(panel).toContain('<AlertTriangle className="w-5 h-5 shrink-0 text-amber-700 dark:text-amber-400 mt-0.5" />');
     const tinted = over(hueOf('amber', 400), token(':root', 'background'), 0.05);
     expect(contrast(hueOf('amber', 700), tinted)).toBeGreaterThanOrEqual(3);

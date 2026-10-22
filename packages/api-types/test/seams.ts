@@ -185,11 +185,14 @@ export interface Call {
 const VERBS: Record<string, Method> = {
   get: 'GET',
   getBlob: 'GET',
+  getFile: 'GET',
+  href: 'GET',
   post: 'POST',
   postBlob: 'POST',
   put: 'PUT',
   patch: 'PATCH',
   delete: 'DELETE',
+  deleteWithBody: 'DELETE',
 };
 
 /**
@@ -461,7 +464,9 @@ export function collectCalls(source: SourceFile): Call[] {
       ) {
         const method = VERBS[callee.name.text]!;
         // The console's delete takes (path, opts): an object there is not a body.
-        const body = method === 'GET' || method === 'DELETE' ? undefined : node.arguments[1];
+        const body = callee.name.text === 'deleteWithBody'
+          ? node.arguments[1]
+          : method === 'GET' || method === 'DELETE' ? undefined : node.arguments[1];
         record(node, method, node.arguments[0], body);
       }
       // A file's own transport: displayRequest(bearer, 'GET', '/session'), …
