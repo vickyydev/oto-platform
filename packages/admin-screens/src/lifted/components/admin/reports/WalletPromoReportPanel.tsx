@@ -1,10 +1,11 @@
 import { useAdminScreenRuntime } from '../../../runtime/AdminScreenRuntime';
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../ui/table";
 import { Badge } from "../../ui/badge";
 import { downloadCsv } from "../../../lib/csv";
-import { type WalletCreditReport } from "../../../lib/reporting";
-import { ReportFilterBar, ReportCard, ExportCsvButton, EmptyRow, ShellBanner, csvBaht, thbFromSatang } from "./shared";
+import { promoUsageSummaryOf, type WalletCreditReport } from "../../../lib/reporting";
+import type { WalletReportPorts } from '../../../runtime/wallet-report';
+import { ReportFilterBarWithPorts, ReportCard, ExportCsvButton, EmptyRow, ShellBanner, csvBaht, thbFromSatang, usePlatformReportWithPorts } from "./shared";
 import { type DiscountTransactions, type PromoVoucherReport } from "@oto/shared";
 
 
@@ -38,30 +39,26 @@ const EMPTY_REPORT: WalletCreditReport = {
  */
 export function WalletPromoReportPanel() {
   const runtime = useAdminScreenRuntime();
-  const defaultReportFilters = runtime.domain.reporting.defaultReportFilters;
-  const platformReportQuery = runtime.domain.reporting.platformReportQuery;
-  const platformWalletCreditReport = runtime.domain.reporting.platformWalletCreditReport;
-  const promoUsageSummaryOf = runtime.domain.reporting.promoUsageSummaryOf;
-  const voucherPromotionsApi = runtime.api.voucherPromotions;
-  const analyticsReportsApi = runtime.api.analyticsReports;
-  const getBranches = runtime.reads.getBranches;
-  const getDiscounts = runtime.reads.getDiscounts;
+  const contextKey = useMemo(() => ({ operator: runtime.session.operator, can: runtime.session.can, branchId: runtime.branch.branch.id }),
+    [runtime.session.operator, runtime.session.can, runtime.branch.branch.id]);
+  return <WalletPromoReportPanelWithPorts ports={{
+    contextKey,
+    defaultFilters: runtime.domain.reporting.defaultReportFilters,
+    branchOptions: runtime.domain.reporting.getBranchOptions(),
+    queryForFilters: runtime.domain.reporting.platformReportQuery,
+    discounts: runtime.reads.getDiscounts(),
+    walletReport: runtime.domain.reporting.platformWalletCreditReport,
+    discountTransactions: runtime.api.analyticsReports.discountTransactions,
+    voucherReport: query => runtime.api.voucherPromotions.report({ branchApiId: query.branches?.[0] ?? null, from: query.from, to: query.to }),
+  }} />;
+}
 
-  const [filters, setFilters] = useState(defaultReportFilters());
-  const [report, setReport] = useState<WalletCreditReport>(EMPTY_REPORT);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  useEffect(() => {
-    let live = true;
-    setLoadError(null);
-    platformWalletCreditReport(filters)
-      .then((next) => { if (live) setReport(next); })
-      .catch((err: unknown) => {
-        if (!live) return;
-        setReport(EMPTY_REPORT);
-        setLoadError(err instanceof Error ? err.message : 'The wallet figures could not be loaded.');
-      });
-    return () => { live = false; };
-  }, [filters, platformWalletCreditReport]);
+/** Native report over explicit canonical reads; the host owns the session and catalogue. */
+export function WalletPromoReportPanelWithPorts({ ports }: { ports: WalletReportPorts }) {
+  const [filters, setFilters] = useState(ports.defaultFilters);
+  const wallet = usePlatformReportWithPorts(filters, () => ports.walletReport(filters), EMPTY_REPORT, ports);
+  const report = wallet.data;
+  const loadError = wallet.error;
   const summary = report.summary;
   const ledger = report.rows;
 
@@ -70,31 +67,11 @@ export function WalletPromoReportPanel() {
    * reads as empty, as every report here does; a refusal empties the card's
    * value column and says why.
    */
-  const [promoRows, setPromoRows] = useState<DiscountTransactions['promoRows']>([]);
-  const [promoError, setPromoError] = useState<string | null>(null);
-  useEffect(() => {
-    let live = true;
-    setPromoError(null);
-    const query = platformReportQuery(filters);
-    if (!query) {
-      setPromoRows([]);
-      return;
-    }
-    analyticsReportsApi
-      .discountTransactions(query)
-      .then((next) => {
-        if (live) setPromoRows(next.promoRows);
-      })
-      .catch((err: unknown) => {
-        if (!live) return;
-        setPromoRows([]);
-        setPromoError(err instanceof Error ? err.message : 'The promo code figures could not be loaded.');
-      });
-    return () => {
-      live = false;
-    };
-  }, [filters, analyticsReportsApi, platformReportQuery]);
-  const promos = useMemo(() => promoUsageSummaryOf(getDiscounts(), promoRows), [promoRows, getDiscounts, promoUsageSummaryOf]);
+  const promo = usePlatformReportWithPorts<DiscountTransactions['promoRows']>(filters,
+    async query => (await ports.discountTransactions(query)).promoRows, [], ports);
+  const promoRows = promo.data;
+  const promoError = promo.error;
+  const promos = useMemo(() => ports.metadataUnavailable ? [] : promoUsageSummaryOf(ports.discounts, promoRows), [ports.discounts, ports.metadataUnavailable, promoRows]);
 
   /**
    * S2-14a round 5 — FOREGONE REVENUE FROM PROMOTIONAL VOUCHERS, its own line,
@@ -102,52 +79,54 @@ export function WalletPromoReportPanel() {
    * that used a voucher did not charge for it, per voucher type, and beside it
    * the credit wallet-credit vouchers loaded (stored value, in the ledger above).
    */
-  const [foregone, setForegone] = useState<PromoVoucherReport | null>(null);
-  const [foregoneError, setForegoneError] = useState<string | null>(null);
-  useEffect(() => {
-    let live = true;
-    setForegoneError(null);
-    const branchApiId =
-      filters.branchId === 'all' ? null : (getBranches().find((b) => b.id === filters.branchId)?.apiId ?? undefined);
-    if (branchApiId === undefined) {
-      setForegone(null);
-      return;
-    }
-    voucherPromotionsApi
-      .report({ branchApiId, from: filters.startDate, to: filters.endDate })
-      .then((next) => {
-        if (live) setForegone(next);
-      })
-      .catch((err: unknown) => {
-        if (!live) return;
-        setForegone(null);
-        setForegoneError(err instanceof Error ? err.message : 'The voucher figures could not be loaded.');
-      });
-    return () => {
-      live = false;
-    };
-  }, [filters, getBranches, voucherPromotionsApi]);
+  const voucher = usePlatformReportWithPorts<PromoVoucherReport | null>(filters, ports.voucherReport, null, ports);
+  const foregone = voucher.data;
+  const foregoneError = voucher.error;
+  const filterKey = JSON.stringify([filters, ports.queryForFilters(filters)]);
+  const owner = useRef({ contextKey: ports.contextKey, filterKey, generation: 0 });
+  if (!Object.is(owner.current.contextKey, ports.contextKey) || owner.current.filterKey !== filterKey) {
+    owner.current = { contextKey: ports.contextKey, filterKey, generation: owner.current.generation + 1 };
+  }
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  const [exportState, setExportState] = useState<{ generation: number; pending: boolean; error: string | null } | null>(null);
+  const exportInFlight = useRef<number | null>(null);
+  const exporting = exportState?.generation === owner.current.generation && exportState.pending;
+  const exportError = exportState?.generation === owner.current.generation ? exportState.error : null;
 
   const exportLedger = async () => {
-    const all = await platformWalletCreditReport(filters, 1000);
-    downloadCsv(
-      `wallet-ledger_${filters.startDate}_${filters.endDate}`,
-      ['Wristband', 'Customer', 'Kind', 'Amount', 'Source', 'At', 'By'],
-      all.rows.map((r) => [
-        r.wristbandCode,
-        r.customerNickname,
-        r.kind,
-        csvBaht(r.amountSatang),
-        r.source,
-        r.at,
-        r.by ?? '',
-      ])
-    );
+    const generation = owner.current.generation;
+    if (exportInFlight.current === generation) return;
+    exportInFlight.current = generation;
+    setExportState({ generation, pending: true, error: null });
+    const active = () => mounted.current && owner.current.generation === generation;
+    try {
+      const all = await ports.walletReport(filters, 1000);
+      if (!active()) return;
+      downloadCsv(
+        `wallet-ledger_${filters.startDate}_${filters.endDate}`,
+        ['Wristband', 'Customer', 'Kind', 'Amount', 'Source', 'At', 'By'],
+        all.rows.map((r) => [
+          r.wristbandCode,
+          r.customerNickname,
+          r.kind,
+          csvBaht(r.amountSatang),
+          r.source,
+          r.at,
+          r.by ?? '',
+        ])
+      );
+    } catch {
+      if (active()) setExportState({ generation, pending: false, error: 'The wallet ledger could not be exported. Please try again.' });
+    } finally {
+      if (exportInFlight.current === generation) exportInFlight.current = null;
+      if (active()) setExportState(held => held?.generation === generation ? { ...held, pending: false } : held);
+    }
   };
 
   return (
     <div className="flex flex-col gap-5">
-      <ReportFilterBar filters={filters} onChange={setFilters} />
+      <ReportFilterBarWithPorts filters={filters} onChange={setFilters} ports={ports} />
 
       {loadError && (
         <ShellBanner>
@@ -181,8 +160,9 @@ export function WalletPromoReportPanel() {
 
       <ReportCard
         title={`Wallet ledger — ${ledger.length} of ${summary.entryCount} entries shown`}
-        action={<ExportCsvButton onExport={() => { void exportLedger(); }} />}
+        action={<ExportCsvButton disabled={wallet.loading || exporting} onExport={() => { void exportLedger(); }} />}
       >
+        {exportError && <ShellBanner>{exportError}</ShellBanner>}
         <Table>
           <TableHeader>
             <TableRow>
@@ -216,6 +196,7 @@ export function WalletPromoReportPanel() {
         title={`Promotional vouchers — foregone revenue ${foregone ? thbFromSatang(foregone.summary.foregoneSatang) : ''}`}
         action={
           <ExportCsvButton
+            disabled={voucher.loading || !!voucher.error}
             onExport={() =>
               downloadCsv(
                 `voucher-foregone-revenue_${filters.startDate}_${filters.endDate}`,
@@ -270,6 +251,7 @@ export function WalletPromoReportPanel() {
         title="Promo code usage"
         action={
           <ExportCsvButton
+            disabled={promo.loading || !!promo.error || !!ports.metadataUnavailable}
             onExport={() =>
               downloadCsv(
                 `promo-code-usage_${filters.startDate}_${filters.endDate}`,
@@ -288,6 +270,7 @@ export function WalletPromoReportPanel() {
           />
         }
       >
+        {ports.metadataUnavailable && <ShellBanner>{ports.metadataUnavailable}</ShellBanner>}
         {promoError && (
           <ShellBanner>
             The promo code figures could not be loaded from the platform — {promoError}

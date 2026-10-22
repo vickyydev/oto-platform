@@ -18,6 +18,8 @@
     "./lifted/money": "./src/lifted/runtime/money.ts",
     "./lifted/care": "./src/lifted/runtime/care.ts",
     "./lifted/benefits": "./src/lifted/runtime/benefits.ts",
+    "./lifted/reports": "./src/lifted/runtime/reports.ts",
+    "./lifted/wallet-report": "./src/lifted/runtime/wallet-report.ts",
     "./lifted/lib/*": "./src/lifted/lib/*.ts"
   },
   "scripts": {

@@ -7,6 +7,7 @@ import { Label } from "../../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/select";
 import { type ReportFilters } from "../../../lib/reporting";
 import { type ReportQuery } from "../../../api/analyticsReports";
+import type { ReportFilterPorts, ReportRequestPorts } from '../../../runtime/reports';
 
 /**
  * ฿ formatting shared by every report table/card — THE SCREEN EDGE. Every
@@ -42,7 +43,15 @@ export function ReportFilterBar({
   const runtime = useAdminScreenRuntime();
   const getBranchOptions = runtime.domain.reporting.getBranchOptions;
 
-  const branches = getBranchOptions();
+  return <ReportFilterBarWithPorts filters={filters} onChange={onChange} ports={{ branchOptions: getBranchOptions() }} />;
+}
+
+export function ReportFilterBarWithPorts({ filters, onChange, ports }: {
+  filters: ReportFilters;
+  onChange: (next: ReportFilters) => void;
+  ports: ReportFilterPorts;
+}) {
+  const branches = ports.branchOptions;
   return (
     <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-foreground/10 bg-foreground/[0.02] p-4">
       <div className="flex flex-col gap-1">
@@ -98,9 +107,9 @@ export function ShellBanner({ children }: { children: ReactNode }) {
   );
 }
 
-export function ExportCsvButton({ onExport, label = 'Export CSV' }: { onExport: () => void; label?: string }) {
+export function ExportCsvButton({ onExport, label = 'Export CSV', disabled = false }: { onExport: () => void; label?: string; disabled?: boolean }) {
   return (
-    <Button variant="outline" size="sm" className="gap-1.5" onClick={onExport}>
+    <Button variant="outline" size="sm" className="gap-1.5" onClick={onExport} disabled={disabled}>
       <Download className="h-3.5 w-3.5" />
       {label}
     </Button>
@@ -173,42 +182,65 @@ export function usePlatformReport<T>(
 ): PlatformReportState<T> {
   const runtime = useAdminScreenRuntime();
   const platformReportQuery = runtime.domain.reporting.platformReportQuery;
+  return usePlatformReportWithPorts(filters, load, empty, { contextKey: runtime.session, queryForFilters: platformReportQuery }, extraKey);
+}
 
-  const [state, setState] = useState<PlatformReportState<T>>({ data: empty, error: null, loading: true });
+export function usePlatformReportWithPorts<T>(
+  filters: ReportFilters,
+  load: (query: ReportQuery) => Promise<T>,
+  empty: T,
+  ports: ReportRequestPorts,
+  extraKey = '',
+): PlatformReportState<T> {
+  const query = ports.queryForFilters(filters);
+  const queryKey = JSON.stringify(query);
+  const owner = useRef({ contextKey: ports.contextKey, queryKey, extraKey, epoch: 0 });
+  if (!Object.is(owner.current.contextKey, ports.contextKey) || owner.current.queryKey !== queryKey || owner.current.extraKey !== extraKey) {
+    owner.current = { contextKey: ports.contextKey, queryKey, extraKey, epoch: owner.current.epoch + 1 };
+  }
+  const epoch = owner.current.epoch;
+  const [state, setState] = useState<{ epoch: number; value: PlatformReportState<T> }>({ epoch, value: { data: empty, error: null, loading: query !== null } });
   const loadRef = useRef(load);
   loadRef.current = load;
   const emptyRef = useRef(empty);
   emptyRef.current = empty;
+  const queryRef = useRef(query);
+  queryRef.current = query;
   useEffect(() => {
+    if (owner.current.epoch !== epoch) return;
     let live = true;
-    const query = platformReportQuery(filters);
-    if (!query) {
-      setState({ data: emptyRef.current, error: null, loading: false });
+    const current = () => live && owner.current.epoch === epoch;
+    const requested = queryRef.current;
+    if (!requested) {
+      setState({ epoch, value: { data: emptyRef.current, error: null, loading: false } });
       return;
     }
-    setState((held) => ({ ...held, error: null, loading: true }));
+    setState({ epoch, value: { data: emptyRef.current, error: null, loading: true } });
     loadRef
-      .current(query)
+      .current(requested)
       .then((data) => {
-        if (live) setState({ data, error: null, loading: false });
+        if (current()) setState({ epoch, value: { data, error: null, loading: false } });
       })
       .catch((err: unknown) => {
-        if (!live) return;
+        if (!current()) return;
         setState({
-          data: emptyRef.current,
-          error: err instanceof Error ? err.message : 'The figures could not be loaded.',
-          loading: false,
+          epoch, value: {
+            data: emptyRef.current,
+            error: err instanceof Error ? err.message : 'The figures could not be loaded.',
+            loading: false,
+          },
         });
       });
     return () => {
       live = false;
     };
-  }, [filters, extraKey, platformReportQuery]);
-  return state;
+  }, [epoch]);
+  return state.epoch === epoch ? state.value : { data: empty, error: null, loading: query !== null };
 }
 
 /** The figures could not be read: the panel stays empty and says why (S2-15b round 4). */
-export function ReportLoadError({ error }: { error: string | null }) {
+export function ReportLoadError({ error, loading = false }: { error: string | null; loading?: boolean }) {
+  if (!error && loading) return <p role="status" className="text-xs text-foreground/50">Loading figures…</p>;
   if (!error) return null;
   return <ShellBanner>The figures could not be loaded from the platform — {error}</ShellBanner>;
 }

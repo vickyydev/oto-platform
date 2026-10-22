@@ -4,9 +4,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Badge } from "../../ui/badge";
 import { type DiscountReport, type DiscountTransactions } from "@oto/shared";
 import { downloadCsv } from "../../../lib/csv";
-import { type ReportFilters } from "../../../lib/reporting";
+import { type BranchOption, type ReportFilters } from "../../../lib/reporting";
+import type { DiscountCompReportPorts } from '../../../runtime/reports';
 
-import { ReportFilterBar, ReportCard, ExportCsvButton, EmptyRow, ReportLoadError, ShellBanner, csvBaht, thbFromSatang, usePlatformReport } from "./shared";
+import { ReportFilterBar, ReportFilterBarWithPorts, ReportCard, ExportCsvButton, EmptyRow, ReportLoadError, ShellBanner, csvBaht, thbFromSatang, usePlatformReportWithPorts } from "./shared";
 
 /** No figures yet, or none for the range. */
 export const EMPTY_DISCOUNT_REPORT: DiscountReport = {
@@ -50,12 +51,20 @@ export const EMPTY_DISCOUNT_TRANSACTIONS: DiscountTransactions = {
  */
 export function DiscountCompReportPanel() {
   const runtime = useAdminScreenRuntime();
-  const defaultReportFilters = runtime.domain.reporting.defaultReportFilters;
   const analyticsReportsApi = runtime.api.analyticsReports;
+  return <DiscountCompReportPanelWithPorts ports={{ contextKey: runtime.session,
+    defaultFilters: runtime.domain.reporting.defaultReportFilters, branchOptions: runtime.domain.reporting.getBranchOptions(),
+    queryForFilters: runtime.domain.reporting.platformReportQuery, api: {
+      discounts: analyticsReportsApi.discounts,
+      discountTransactions: analyticsReportsApi.discountTransactions,
+    },
+  }} />;
+}
 
-  const [filters, setFilters] = useState(defaultReportFilters());
-  const summary = usePlatformReport(filters, analyticsReportsApi.discounts, EMPTY_DISCOUNT_REPORT);
-  const lists = usePlatformReport(filters, analyticsReportsApi.discountTransactions, EMPTY_DISCOUNT_TRANSACTIONS);
+export function DiscountCompReportPanelWithPorts({ ports }: { ports: DiscountCompReportPorts }) {
+  const [filters, setFilters] = useState(ports.defaultFilters);
+  const summary = usePlatformReportWithPorts(filters, ports.api.discounts, EMPTY_DISCOUNT_REPORT, ports);
+  const lists = usePlatformReportWithPorts(filters, ports.api.discountTransactions, EMPTY_DISCOUNT_TRANSACTIONS, ports);
   return (
     <DiscountCompReportView
       filters={filters}
@@ -63,6 +72,8 @@ export function DiscountCompReportPanel() {
       report={summary.data}
       transactions={lists.data}
       error={summary.error ?? lists.error}
+      loading={summary.loading || lists.loading}
+      branchOptions={ports.branchOptions}
     />
   );
 }
@@ -74,12 +85,16 @@ export function DiscountCompReportView({
   report,
   transactions,
   error = null,
+  loading = false,
+  branchOptions,
 }: {
   filters: ReportFilters;
   onFiltersChange: (next: ReportFilters) => void;
   report: DiscountReport;
   transactions: DiscountTransactions;
   error?: string | null;
+  loading?: boolean;
+  branchOptions?: readonly BranchOption[];
 }) {
   const rows = transactions.rows;
   const byOperator = report.byOperator;
@@ -93,8 +108,8 @@ export function DiscountCompReportView({
 
   return (
     <div className="flex flex-col gap-5">
-      <ReportFilterBar filters={filters} onChange={onFiltersChange} />
-      <ReportLoadError error={error} />
+      {branchOptions ? <ReportFilterBarWithPorts filters={filters} onChange={onFiltersChange} ports={{ branchOptions }} /> : <ReportFilterBar filters={filters} onChange={onFiltersChange} />}
+      <ReportLoadError error={error} loading={loading} />
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
         <div className="rounded-2xl border border-foreground/10 bg-foreground/[0.02] p-3">
@@ -123,6 +138,7 @@ export function DiscountCompReportView({
         title="Promo impact by type"
         action={
           <ExportCsvButton
+            disabled={loading || !!error}
             onExport={() =>
               downloadCsv(
                 `promo-impact-by-type_${filters.startDate}_${filters.endDate}`,
@@ -164,6 +180,7 @@ export function DiscountCompReportView({
         title="By operator"
         action={
           <ExportCsvButton
+            disabled={loading || !!error}
             onExport={() =>
               downloadCsv(
                 `discount-comp-by-operator_${filters.startDate}_${filters.endDate}`,
@@ -209,6 +226,7 @@ export function DiscountCompReportView({
         title={`Promo code impact (${promoRows.length})`}
         action={
           <ExportCsvButton
+            disabled={loading || !!error}
             onExport={() =>
               downloadCsv(
                 `promo-discount-impact_${filters.startDate}_${filters.endDate}`,
@@ -264,6 +282,7 @@ export function DiscountCompReportView({
         title={`Transactions (${rows.length})`}
         action={
           <ExportCsvButton
+            disabled={loading || !!error}
             onExport={() =>
               downloadCsv(
                 `discount-comp-transactions_${filters.startDate}_${filters.endDate}`,

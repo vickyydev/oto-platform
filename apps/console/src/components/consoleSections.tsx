@@ -35,6 +35,16 @@ export interface ConsoleNavGroup {
 
 /** Existing pages keep their permissions and their old addresses. */
 export const CONSOLE_SECTIONS: ConsoleSection[] = [
+  { id: 'reports-sales', path: '/reports/sales', label: 'Sales', icon: BarChart3,
+    description: 'Revenue by category, payment method, ticket and item over trading days.', permission: 'analytics:read' },
+  { id: 'reports-profitability', path: '/reports/profitability', label: 'Profitability', icon: BarChart3,
+    description: 'Recorded revenue, cost of goods and margin for food, drinks and merch.', permission: 'analytics:read' },
+  { id: 'reports-discounts', path: '/reports/discounts', label: 'Discounts & comps', icon: BarChart3,
+    description: 'Manual discounts, complimentary items and promo-code use.', permission: 'analytics:read' },
+  { id: 'reports-tax-vat', path: '/reports/tax-vat', label: 'Tax & VAT', icon: BarChart3,
+    description: 'VAT totals and the existing date-bounded receipt exports.', permission: 'analytics:read' },
+  { id: 'reports-wallet-promo', path: '/reports/wallet-promo', label: 'Wallet & promo', icon: BarChart3,
+    description: 'Wallet movements, current outstanding credit and promotional voucher use.', permission: 'analytics:read' },
   { id: 'care', path: '/catalogue/care', label: 'Drop-off & supervision', icon: Shield,
     description: 'Park drop-off and nanny prices, age bands, sibling waiver and consent checklist.', permission: 'pos:checkin:read' },
   { id: 'print-templates', path: '/catalogue/print-templates', label: 'Print templates', icon: Ticket,
@@ -259,9 +269,8 @@ export const consoleNav: ConsoleNavGroup[] = [
   },
   {
     id: 'reports', label: 'Reports', icon: BarChart3,
-    description: 'Booth activity and online bookings, with sales reports currently in POS Admin.',
-    gate: { any: ['analytics:read'] }, sections: pages('booth-report', 'bookings'),
-    currentHome: { app: 'pos', path: '/admin?panel=reports-sales', label: 'Open reports in POS Admin' },
+    description: 'Sales, profitability, discounts, tax, wallet credit, booth activity and online bookings.',
+    gate: { any: ['analytics:read'] }, sections: pages('reports-sales', 'reports-profitability', 'reports-discounts', 'reports-tax-vat', 'reports-wallet-promo', 'booth-report', 'bookings'),
   },
   {
     id: 'watch', label: 'Watch', icon: Activity,

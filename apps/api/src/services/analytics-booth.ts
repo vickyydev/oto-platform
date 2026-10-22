@@ -350,14 +350,15 @@ export async function boothReportFacts(db: Exec, scope: ReportScope): Promise<Bo
     prize_cost_satang: string | number;
   }>(sql`
     select f.business_date::text as business_date, f.branch_id, b.name as branch_name, f.booth_id, st.name as booth_name,
-           f.staff_account_id, coalesce(e.nickname, e.name) as staff_name, f.prize_id, bp.name_en as prize_name,
+           a.id as staff_account_id, coalesce(e.nickname, e.name) as staff_name, bp.id as prize_id, bp.name_en as prize_name,
            f.spins, f.vouchers_issued, f.vouchers_redeemed, f.redemption_lag_sum_s, f.prize_cost_satang
       from analytics.fact_booth_daily f
-      join core.branch b on b.id = f.branch_id
-      join core.station st on st.id = f.booth_id
-      left join booth.booth_prize bp on bp.id = f.prize_id
-      left join core.account a on a.id = f.staff_account_id
-      left join core.employee e on e.id = a.employee_id
+      join core.branch b on b.id = f.branch_id and b.operator_id = f.operator_id
+      join core.station st on st.id = f.booth_id and st.operator_id = f.operator_id and st.branch_id = f.branch_id
+      left join booth.booth_prize bp on bp.id = f.prize_id and bp.operator_id = f.operator_id
+        and bp.branch_id = f.branch_id and bp.station_id = f.booth_id
+      left join core.account a on a.id = f.staff_account_id and a.operator_id = f.operator_id
+      left join core.employee e on e.id = a.employee_id and e.operator_id = a.operator_id
      where f.branch_id in (${ids})
        and f.business_date between ${scope.from}::date and ${scope.to}::date
      order by f.business_date, b.name, st.name, f.booth_id, f.prize_id nulls first, f.staff_account_id nulls first`);

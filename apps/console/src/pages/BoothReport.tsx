@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Download, FerrisWheel, RefreshCw } from 'lucide-react';
 import {
   addDaysToIsoDate,
@@ -35,8 +35,15 @@ import { formatWhen, timeAgo } from '@/lib/time';
  * prize. The `#debug` distribution run is never in it.
  */
 export function BoothReport() {
-  const { me } = useSession();
-  const [branches, setBranches] = useState<BranchRow[]>([]);
+  const { me, permissions } = useSession();
+  const authorityKey = JSON.stringify([me?.account.id, me?.account.operatorId, me?.branch?.id, me?.sessionLocked, permissions]);
+  const authority = useRef({ key: authorityKey, epoch: 0 });
+  if (authority.current.key !== authorityKey) authority.current = { key: authorityKey, epoch: authority.current.epoch + 1 };
+  const authorityEpoch = authority.current.epoch;
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  const [directory, setDirectory] = useState<{ epoch: number; branches: BranchRow[] } | null>(null);
+  const branches = directory?.epoch === authorityEpoch ? directory.branches : [];
   /** '' is every branch this account reads analytics at. */
   const [branchId, setBranchId] = useState(me?.branch?.id ?? '');
   const picked = branches.find((b) => b.id === branchId);
@@ -50,54 +57,63 @@ export function BoothReport() {
   const [from, setFrom] = useState(() => addDaysToIsoDate(today, -6));
   const [to, setTo] = useState(today);
   const [refresh, setRefresh] = useState(0);
-  const [data, setData] = useState<BoothReportAnswer | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [downloading, setDownloading] = useState(false);
+  const queryKey = JSON.stringify([authorityEpoch, branchId, from, to, refresh]);
+  const owner = useRef({ key: queryKey, epoch: 0 });
+  if (owner.current.key !== queryKey) owner.current = { key: queryKey, epoch: owner.current.epoch + 1 };
+  const epoch = owner.current.epoch;
+  const [report, setReport] = useState<{ epoch: number; data: BoothReportAnswer | null; error: string | null } | null>(null);
+  const data = report?.epoch === epoch ? report.data : null;
+  const error = report?.epoch === epoch ? report.error : null;
+  const [exporting, setExporting] = useState<{ epoch: number; pending: boolean } | null>(null);
+  const downloading = exporting?.epoch === epoch && exporting.pending;
+  const exportInFlight = useRef<number | null>(null);
 
   useEffect(() => {
+    let active = true;
+    const current = () => active && mounted.current && authority.current.epoch === authorityEpoch;
     void directoryApi
       .branches()
-      .then((r) => setBranches(r.branches.filter((b) => !b.archived)))
-      .catch(() => setBranches([]));
-  }, []);
+      .then((r) => { if (current()) setDirectory({ epoch: authorityEpoch, branches: r.branches.filter((b) => !b.archived) }); })
+      .catch(() => { if (current()) setDirectory({ epoch: authorityEpoch, branches: [] }); });
+    return () => { active = false; };
+  }, [authorityEpoch]);
 
   useEffect(() => {
     if (!from || !to) return;
     let active = true;
-    setData(null);
-    setError(null);
+    const current = () => active && mounted.current && owner.current.epoch === epoch;
+    setReport({ epoch, data: null, error: null });
     void boothReportApi
       .read({ branchId, from, to })
       .then((answer) => {
-        if (active) setData(answer);
+        if (current()) setReport({ epoch, data: answer, error: null });
       })
       .catch((e: unknown) => {
-        if (active) setError(e instanceof Error ? e.message : 'Could not read the booth report.');
+        if (current()) setReport({ epoch, data: null, error: e instanceof Error ? e.message : 'Could not read the booth report.' });
       });
     return () => {
       active = false;
     };
-  }, [branchId, from, to, refresh]);
+  }, [epoch, branchId, from, to]);
 
   const download = async () => {
-    setDownloading(true);
+    if (exportInFlight.current === epoch) return;
+    exportInFlight.current = epoch;
+    setExporting({ epoch, pending: true });
+    const current = () => mounted.current && owner.current.epoch === epoch;
     try {
-      const response = await fetch(boothReportApi.exportUrl({ branchId, from, to }), { credentials: 'same-origin' });
-      if (!response.ok) {
-        const body = (await response.json().catch(() => null)) as { error?: { message?: string } } | null;
-        throw new Error(body?.error?.message ?? 'The download failed.');
-      }
-      const url = URL.createObjectURL(await response.blob());
+      const file = await boothReportApi.exportFile({ branchId, from, to });
+      if (!current()) return;
+      const url = URL.createObjectURL(file.blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download =
-        response.headers.get('content-disposition')?.match(/filename="([^"]+)"/)?.[1] ?? 'booth-report.csv';
-      link.click();
-      URL.revokeObjectURL(url);
+      link.download = file.filename ?? 'booth-report.csv';
+      try { link.click(); } finally { URL.revokeObjectURL(url); }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'The download failed.');
+      if (current()) setReport(held => ({ epoch, data: held?.epoch === epoch ? held.data : null, error: e instanceof Error ? e.message : 'The download failed.' }));
     } finally {
-      setDownloading(false);
+      if (exportInFlight.current === epoch) exportInFlight.current = null;
+      if (current()) setExporting({ epoch, pending: false });
     }
   };
 

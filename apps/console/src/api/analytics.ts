@@ -18,5 +18,6 @@ const params = (q: BoothReportQuery) => qs({ branches: q.branchId || undefined, 
 
 export const boothReportApi = {
   read: (q: BoothReportQuery) => api.get<BoothReport>('/analytics/booths' + params(q)),
+  exportFile: (q: BoothReportQuery, signal?: AbortSignal) => api.getFile('/analytics/booths/export' + params(q), signal),
   exportUrl: (q: BoothReportQuery) => apiUrl('/analytics/booths/export' + params(q)),
 };

@@ -4,9 +4,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Badge } from "../../ui/badge";
 import { downloadCsv } from "../../../lib/csv";
 import { type ProfitabilityReport } from "@oto/shared";
-import { type ProfitabilityRow, type ReportFilters } from "../../../lib/reporting";
+import { type BranchOption, type ProfitabilityRow, type ReportFilters } from "../../../lib/reporting";
+import type { ProfitabilityReportPorts } from '../../../runtime/reports';
 
-import { ReportFilterBar, ReportCard, ExportCsvButton, EmptyRow, ReportLoadError, ShellBanner, csvBaht, thbFromSatang, usePlatformReport } from "./shared";
+import { ReportFilterBar, ReportFilterBarWithPorts, ReportCard, ExportCsvButton, EmptyRow, ReportLoadError, ShellBanner, csvBaht, thbFromSatang, usePlatformReportWithPorts } from "./shared";
 
 /** No figures yet, or none for the range. */
 export const EMPTY_PROFITABILITY_REPORT: ProfitabilityReport = {
@@ -18,7 +19,7 @@ export const EMPTY_PROFITABILITY_REPORT: ProfitabilityReport = {
   merch: [],
 };
 
-function ProfitabilityTable({ rows, exportName, filters }: { rows: ProfitabilityRow[]; exportName: string; filters: { startDate: string; endDate: string } }) {
+function ProfitabilityTable({ rows, exportName, filters, disabled = false }: { rows: ProfitabilityRow[]; exportName: string; filters: { startDate: string; endDate: string }; disabled?: boolean }) {
   const totalRevenue = rows.reduce((s, r) => s + r.revenueSatang, 0);
   const totalCogs = rows.reduce((s, r) => s + r.cogsSatang, 0);
   const totalMargin = totalRevenue - totalCogs;
@@ -28,6 +29,7 @@ function ProfitabilityTable({ rows, exportName, filters }: { rows: Profitability
       title={`Revenue ${thbFromSatang(totalRevenue)} · COGS ${thbFromSatang(totalCogs)} · Margin ${thbFromSatang(totalMargin)}`}
       action={
         <ExportCsvButton
+          disabled={disabled}
           onExport={() =>
             downloadCsv(
               `${exportName}_${filters.startDate}_${filters.endDate}`,
@@ -94,12 +96,16 @@ function ProfitabilityTable({ rows, exportName, filters }: { rows: Profitability
  */
 export function ProfitabilityReportPanel() {
   const runtime = useAdminScreenRuntime();
-  const defaultReportFilters = runtime.domain.reporting.defaultReportFilters;
-  const analyticsReportsApi = runtime.api.analyticsReports;
+  return <ProfitabilityReportPanelWithPorts ports={{ contextKey: runtime.session,
+    defaultFilters: runtime.domain.reporting.defaultReportFilters, branchOptions: runtime.domain.reporting.getBranchOptions(),
+    queryForFilters: runtime.domain.reporting.platformReportQuery, api: runtime.api.analyticsReports,
+  }} />;
+}
 
-  const [filters, setFilters] = useState(defaultReportFilters());
-  const { data, error } = usePlatformReport(filters, analyticsReportsApi.profitability, EMPTY_PROFITABILITY_REPORT);
-  return <ProfitabilityReportView filters={filters} onFiltersChange={setFilters} report={data} error={error} />;
+export function ProfitabilityReportPanelWithPorts({ ports }: { ports: ProfitabilityReportPorts }) {
+  const [filters, setFilters] = useState(ports.defaultFilters);
+  const { data, error, loading } = usePlatformReportWithPorts(filters, ports.api.profitability, EMPTY_PROFITABILITY_REPORT, ports);
+  return <ProfitabilityReportView filters={filters} onFiltersChange={setFilters} report={data} error={error} loading={loading} branchOptions={ports.branchOptions} />;
 }
 
 /** The panel as drawn from one answer. */
@@ -108,11 +114,15 @@ export function ProfitabilityReportView({
   onFiltersChange,
   report,
   error = null,
+  loading = false,
+  branchOptions,
 }: {
   filters: ReportFilters;
   onFiltersChange: (next: ReportFilters) => void;
   report: ProfitabilityReport;
   error?: string | null;
+  loading?: boolean;
+  branchOptions?: readonly BranchOption[];
 }) {
   const fnbRows: ProfitabilityRow[] = report.fnb;
   const merchRows: ProfitabilityRow[] = report.merch;
@@ -120,8 +130,8 @@ export function ProfitabilityReportView({
 
   return (
     <div className="flex flex-col gap-5">
-      <ReportFilterBar filters={filters} onChange={onFiltersChange} />
-      <ReportLoadError error={error} />
+      {branchOptions ? <ReportFilterBarWithPorts filters={filters} onChange={onFiltersChange} ports={{ branchOptions }} /> : <ReportFilterBar filters={filters} onChange={onFiltersChange} />}
+      <ReportLoadError error={error} loading={loading} />
       {anyUntracked && (
         <ShellBanner>
           Some items sold in this range have no cost-to-park set in the catalog. Their COGS shows
@@ -129,8 +139,8 @@ export function ProfitabilityReportView({
           for an accurate figure.
         </ShellBanner>
       )}
-      <ProfitabilityTable rows={fnbRows} exportName="fnb-profitability" filters={filters} />
-      <ProfitabilityTable rows={merchRows} exportName="merch-profitability" filters={filters} />
+      <ProfitabilityTable rows={fnbRows} exportName="fnb-profitability" filters={filters} disabled={loading || !!error} />
+      <ProfitabilityTable rows={merchRows} exportName="merch-profitability" filters={filters} disabled={loading || !!error} />
     </div>
   );
 }

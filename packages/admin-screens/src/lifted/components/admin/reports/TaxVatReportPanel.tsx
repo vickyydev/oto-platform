@@ -5,10 +5,11 @@ import { Label } from "../../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/select";
 import { type TaxReceipts, type VatReport } from "@oto/shared";
 import { downloadCsv } from "../../../lib/csv";
-import { type ReportFilters, type VatSummaryPeriod } from "../../../lib/reporting";
+import { type BranchOption, type ReportFilters, type VatSummaryPeriod } from "../../../lib/reporting";
+import type { TaxVatReportPorts } from '../../../runtime/reports';
 import { type ReportQuery } from "../../../api/analyticsReports";
 import { type TaxableCategory } from "../../../model/types";
-import { ReportFilterBar, ReportCard, ExportCsvButton, EmptyRow, ReportLoadError, ShellBanner, csvBaht, thbFromSatang, categoryLabel, usePlatformReport } from "./shared";
+import { ReportFilterBar, ReportFilterBarWithPorts, ReportCard, ExportCsvButton, EmptyRow, ReportLoadError, ShellBanner, csvBaht, thbFromSatang, categoryLabel, usePlatformReportWithPorts } from "./shared";
 
 const CATEGORY_OPTIONS: TaxableCategory[] = ['tickets', 'fnb', 'bar', 'drop_off', 'parties', 'addons', 'merch'];
 
@@ -45,14 +46,18 @@ export function taxReceiptPaymentMethodsOf(rows: readonly ReceiptRow[]): string[
  */
 export function TaxVatReportPanel() {
   const runtime = useAdminScreenRuntime();
-  const defaultReportFilters = runtime.domain.reporting.defaultReportFilters;
-  const analyticsReportsApi = runtime.api.analyticsReports;
+  return <TaxVatReportPanelWithPorts ports={{ contextKey: runtime.session,
+    defaultFilters: runtime.domain.reporting.defaultReportFilters, branchOptions: runtime.domain.reporting.getBranchOptions(),
+    queryForFilters: runtime.domain.reporting.platformReportQuery, api: runtime.api.analyticsReports,
+  }} />;
+}
 
-  const [filters, setFilters] = useState(defaultReportFilters());
+export function TaxVatReportPanelWithPorts({ ports }: { ports: TaxVatReportPorts }) {
+  const [filters, setFilters] = useState(ports.defaultFilters);
   const [period, setPeriod] = useState<VatSummaryPeriod>('range');
-  const loadVat = useMemo(() => (query: ReportQuery) => analyticsReportsApi.vat(query, period), [period, analyticsReportsApi]);
-  const vat = usePlatformReport(filters, loadVat, EMPTY_VAT_REPORT, period);
-  const receipts = usePlatformReport(filters, analyticsReportsApi.taxReceipts, EMPTY_TAX_RECEIPTS);
+  const loadVat = useMemo(() => (query: ReportQuery) => ports.api.vat(query, period), [period, ports.api]);
+  const vat = usePlatformReportWithPorts(filters, loadVat, EMPTY_VAT_REPORT, ports, period);
+  const receipts = usePlatformReportWithPorts(filters, ports.api.taxReceipts, EMPTY_TAX_RECEIPTS, ports);
   return (
     <TaxVatReportView
       filters={filters}
@@ -62,6 +67,8 @@ export function TaxVatReportPanel() {
       vat={vat.data}
       receipts={receipts.data}
       error={vat.error ?? receipts.error}
+      loading={vat.loading || receipts.loading}
+      branchOptions={ports.branchOptions}
     />
   );
 }
@@ -75,6 +82,8 @@ export function TaxVatReportView({
   vat: vatReport,
   receipts: receiptReport,
   error = null,
+  loading = false,
+  branchOptions,
 }: {
   filters: ReportFilters;
   onFiltersChange: (next: ReportFilters) => void;
@@ -83,6 +92,8 @@ export function TaxVatReportView({
   vat: VatReport;
   receipts: TaxReceipts;
   error?: string | null;
+  loading?: boolean;
+  branchOptions?: readonly BranchOption[];
 }) {
   const [category, setCategory] = useState<TaxableCategory | 'all'>('all');
   const [paymentMethod, setPaymentMethod] = useState<string>('all');
@@ -100,8 +111,8 @@ export function TaxVatReportView({
 
   return (
     <div className="flex flex-col gap-5">
-      <ReportFilterBar filters={filters} onChange={onFiltersChange} />
-      <ReportLoadError error={error} />
+      {branchOptions ? <ReportFilterBarWithPorts filters={filters} onChange={onFiltersChange} ports={{ branchOptions }} /> : <ReportFilterBar filters={filters} onChange={onFiltersChange} />}
+      <ReportLoadError error={error} loading={loading} />
 
       <ReportCard
         title={`VAT summary — ${thbFromSatang(totalTax)} tax on ${thbFromSatang(totalGross)} gross`}
@@ -121,6 +132,7 @@ export function TaxVatReportView({
               </Select>
             </div>
             <ExportCsvButton
+              disabled={loading || !!error}
               onExport={() =>
                 downloadCsv(
                   `vat-summary_${filters.startDate}_${filters.endDate}`,
@@ -206,6 +218,7 @@ export function TaxVatReportView({
               </Select>
             </div>
             <ExportCsvButton
+              disabled={loading || !!error}
               label="Export all receipts"
               onExport={() =>
                 downloadCsv(

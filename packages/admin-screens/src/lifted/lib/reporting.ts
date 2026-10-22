@@ -307,6 +307,74 @@ export interface VatSummaryRow {
 
 
 export type VatSummaryPeriod = 'range' | 'day' | 'month';
+/** Existing native report row rules, usable without the POS catalogue store. */
+export function promoUsageSummaryOf(
+  discounts: readonly Discount[],
+  promoRows: ReadonlyArray<{ code: string; amountSatang: Satang }>,
+): PromoUsageRow[] {
+  const key = (code: string) => code.trim().toUpperCase();
+  const valueByCode = new Map<string, Satang>();
+  for (const row of promoRows) {
+    valueByCode.set(key(row.code), (valueByCode.get(key(row.code)) ?? 0) + row.amountSatang);
+  }
+  return discounts
+    .filter((d) => (d.usedCount ?? 0) > 0 || d.usageLimit !== undefined)
+    .map((d) => ({
+      code: d.code,
+      label: d.label,
+      type: d.type,
+      usedCount: d.usedCount ?? 0,
+      usageLimit: d.usageLimit,
+      active: d.active !== false,
+      totalDiscountValueSatang: valueByCode.get(key(d.code)) ?? 0,
+    }))
+    .sort((a, b) => b.usedCount - a.usedCount);
+}
+
+export function createWalletReportReader(deps: {
+  getBranches: () => readonly { id: string; apiId?: string | null }[];
+  getWalletReport: ReturnType<typeof import('../api/wallet').createWalletAdminApi>['getWalletReport'];
+}) {
+  const { getBranches, getWalletReport } = deps;
+  async function platformWalletCreditReport(filters: ReportFilters, limit = 100): Promise<WalletCreditReport> {
+  let branchApiId: string | null = null;
+  if (filters.branchId !== 'all') {
+    branchApiId = getBranches().find((b) => b.id === filters.branchId)?.apiId ?? null;
+    if (!branchApiId) {
+      return {
+        summary: { grantedSatang: 0, spentSatang: 0, refundedSatang: 0, expiredSatang: 0, netOutstandingSatang: 0, entryCount: 0 },
+        rows: [],
+        totalEntries: 0,
+      };
+    }
+  }
+  const { summary, rows } = await getWalletReport({ branchApiId, from: filters.startDate, to: filters.endDate, limit });
+  return {
+    summary: {
+      grantedSatang: summary.grantedSatang,
+      spentSatang: summary.spentSatang,
+      refundedSatang: summary.refundedSatang,
+      expiredSatang: summary.expiredSatang,
+      reactivatedSatang: summary.reactivatedSatang,
+      netOutstandingSatang: summary.outstandingSatang,
+      ledgerOutstandingSatang: summary.ledgerOutstandingSatang,
+      entryCount: summary.entryCount,
+    },
+    rows: rows.map((r) => ({
+      wristbandCode: r.keyDisplay,
+      customerNickname: r.holderName ?? 'Guest',
+      kind: r.kind,
+      amountSatang: r.amountSatang,
+      source: r.source,
+      at: r.at,
+      ...(r.by ? { by: r.by } : {}),
+    })),
+    totalEntries: summary.entryCount,
+  };
+}
+  return platformWalletCreditReport;
+}
+
 /** Original domain rules, bound to this host's explicit data ports. */
 export function createReportingHelpers(deps: { legacy: LegacyPorts; catalog: CatalogReaders; cartWire: CartWireHelpers; pricingMode: PricingModeHelpers; wallet: ReturnType<typeof import('../api/wallet').createWalletAdminApi>; stock: ReturnType<typeof import('../api/stock').createStockAdminApi> }) {
 const { getAllSalesForReporting, getAllFnbOrdersForReporting, getAllMerchOrdersForReporting, getAllEventsForReporting, getMockWristbands, getInventory } = deps.legacy;
@@ -811,42 +879,7 @@ function walletLedgerRows(filters: ReportFilters): WalletLedgerRow[] {
 }
 
 
-async function platformWalletCreditReport(filters: ReportFilters, limit = 100): Promise<WalletCreditReport> {
-  let branchApiId: string | null = null;
-  if (filters.branchId !== 'all') {
-    branchApiId = getBranches().find((b) => b.id === filters.branchId)?.apiId ?? null;
-    if (!branchApiId) {
-      return {
-        summary: { grantedSatang: 0, spentSatang: 0, refundedSatang: 0, expiredSatang: 0, netOutstandingSatang: 0, entryCount: 0 },
-        rows: [],
-        totalEntries: 0,
-      };
-    }
-  }
-  const { summary, rows } = await getWalletReport({ branchApiId, from: filters.startDate, to: filters.endDate, limit });
-  return {
-    summary: {
-      grantedSatang: summary.grantedSatang,
-      spentSatang: summary.spentSatang,
-      refundedSatang: summary.refundedSatang,
-      expiredSatang: summary.expiredSatang,
-      reactivatedSatang: summary.reactivatedSatang,
-      netOutstandingSatang: summary.outstandingSatang,
-      ledgerOutstandingSatang: summary.ledgerOutstandingSatang,
-      entryCount: summary.entryCount,
-    },
-    rows: rows.map((r) => ({
-      wristbandCode: r.keyDisplay,
-      customerNickname: r.holderName ?? 'Guest',
-      kind: r.kind,
-      amountSatang: r.amountSatang,
-      source: r.source,
-      at: r.at,
-      ...(r.by ? { by: r.by } : {}),
-    })),
-    totalEntries: summary.entryCount,
-  };
-}
+const platformWalletCreditReport = createWalletReportReader({ getBranches, getWalletReport });
 
 
 /**
@@ -871,28 +904,7 @@ function promoUsageSummary(filters: ReportFilters): PromoUsageRow[] {
  * `promoRows`, the port of `promoDiscountImpact`). A code is matched however
  * it was cased: the platform's definitions are upper case.
  */
-function promoUsageSummaryOf(
-  discounts: readonly Discount[],
-  promoRows: ReadonlyArray<{ code: string; amountSatang: Satang }>,
-): PromoUsageRow[] {
-  const key = (code: string) => code.trim().toUpperCase();
-  const valueByCode = new Map<string, Satang>();
-  for (const row of promoRows) {
-    valueByCode.set(key(row.code), (valueByCode.get(key(row.code)) ?? 0) + row.amountSatang);
-  }
-  return discounts
-    .filter((d) => (d.usedCount ?? 0) > 0 || d.usageLimit !== undefined)
-    .map((d) => ({
-      code: d.code,
-      label: d.label,
-      type: d.type,
-      usedCount: d.usedCount ?? 0,
-      usageLimit: d.usageLimit,
-      active: d.active !== false,
-      totalDiscountValueSatang: valueByCode.get(key(d.code)) ?? 0,
-    }))
-    .sort((a, b) => b.usedCount - a.usedCount);
-}
+
 
 
 /** Every manual discount / comp applied within the filtered range, per transaction. */

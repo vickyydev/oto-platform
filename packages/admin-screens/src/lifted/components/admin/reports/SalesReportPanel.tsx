@@ -3,9 +3,10 @@ import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../ui/table";
 import { type SalesReport } from "@oto/shared";
 import { downloadCsv } from "../../../lib/csv";
-import { type EventCampRevenueRow, type ReportFilters } from "../../../lib/reporting";
+import { type BranchOption, type EventCampRevenueRow, type ReportFilters } from "../../../lib/reporting";
+import type { SalesReportPorts } from '../../../runtime/reports';
 
-import { ReportFilterBar, ReportCard, ExportCsvButton, EmptyRow, ReportLoadError, ShellBanner, csvBaht, thbFromSatang, categoryLabel, usePlatformReport } from "./shared";
+import { ReportFilterBar, ReportFilterBarWithPorts, ReportCard, ExportCsvButton, EmptyRow, ReportLoadError, ShellBanner, csvBaht, thbFromSatang, categoryLabel, usePlatformReportWithPorts } from "./shared";
 
 /** No figures yet, or none for the range. */
 export const EMPTY_SALES_REPORT: SalesReport = {
@@ -41,12 +42,16 @@ const EVENT_CAMP_ROWS: EventCampRevenueRow[] = [];
  */
 export function SalesReportPanel() {
   const runtime = useAdminScreenRuntime();
-  const defaultReportFilters = runtime.domain.reporting.defaultReportFilters;
-  const analyticsReportsApi = runtime.api.analyticsReports;
+  return <SalesReportPanelWithPorts ports={{ contextKey: runtime.session,
+    defaultFilters: runtime.domain.reporting.defaultReportFilters, branchOptions: runtime.domain.reporting.getBranchOptions(),
+    queryForFilters: runtime.domain.reporting.platformReportQuery, api: runtime.api.analyticsReports,
+  }} />;
+}
 
-  const [filters, setFilters] = useState(defaultReportFilters());
-  const { data, error } = usePlatformReport(filters, analyticsReportsApi.sales, EMPTY_SALES_REPORT);
-  return <SalesReportView filters={filters} onFiltersChange={setFilters} report={data} error={error} />;
+export function SalesReportPanelWithPorts({ ports }: { ports: SalesReportPorts }) {
+  const [filters, setFilters] = useState(ports.defaultFilters);
+  const { data, error, loading } = usePlatformReportWithPorts(filters, ports.api.sales, EMPTY_SALES_REPORT, ports);
+  return <SalesReportView filters={filters} onFiltersChange={setFilters} report={data} error={error} loading={loading} branchOptions={ports.branchOptions} />;
 }
 
 /** The panel as drawn from one answer. */
@@ -55,11 +60,15 @@ export function SalesReportView({
   onFiltersChange,
   report,
   error = null,
+  loading = false,
+  branchOptions,
 }: {
   filters: ReportFilters;
   onFiltersChange: (next: ReportFilters) => void;
   report: SalesReport;
   error?: string | null;
+  loading?: boolean;
+  branchOptions?: readonly BranchOption[];
 }) {
   const categories = report.categories;
   const payments = report.payments;
@@ -75,13 +84,14 @@ export function SalesReportView({
 
   return (
     <div className="flex flex-col gap-5">
-      <ReportFilterBar filters={filters} onChange={onFiltersChange} />
-      <ReportLoadError error={error} />
+      {branchOptions ? <ReportFilterBarWithPorts filters={filters} onChange={onFiltersChange} ports={{ branchOptions }} /> : <ReportFilterBar filters={filters} onChange={onFiltersChange} />}
+      <ReportLoadError error={error} loading={loading} />
 
       <ReportCard
         title={`Revenue by category — ${thbFromSatang(totalGross)} total`}
         action={
           <ExportCsvButton
+            disabled={loading || !!error}
             onExport={() =>
               downloadCsv(
                 `sales-by-category_${filters.startDate}_${filters.endDate}`,
@@ -130,6 +140,7 @@ export function SalesReportView({
         title="Payment method mix"
         action={
           <ExportCsvButton
+            disabled={loading || !!error}
             onExport={() =>
               downloadCsv(
                 `payment-mix_${filters.startDate}_${filters.endDate}`,
@@ -165,6 +176,7 @@ export function SalesReportView({
         title="Ticket sales by tier"
         action={
           <ExportCsvButton
+            disabled={loading || !!error}
             onExport={() =>
               downloadCsv(
                 `ticket-sales-by-tier_${filters.startDate}_${filters.endDate}`,
@@ -202,6 +214,7 @@ export function SalesReportView({
         title="Ticket type breakdown"
         action={
           <ExportCsvButton
+            disabled={loading || !!error}
             onExport={() =>
               downloadCsv(
                 `ticket-type-breakdown_${filters.startDate}_${filters.endDate}`,
@@ -242,6 +255,7 @@ export function SalesReportView({
           title="Weekday / weekend split"
           action={
             <ExportCsvButton
+              disabled={loading || !!error}
               onExport={() =>
                 downloadCsv(
                   `weekday-weekend-split_${filters.startDate}_${filters.endDate}`,
@@ -277,6 +291,7 @@ export function SalesReportView({
           title="Drop-off / nanny sessions"
           action={
             <ExportCsvButton
+              disabled={loading || !!error}
               onExport={() =>
                 downloadCsv(
                   `dropoff-nanny_${filters.startDate}_${filters.endDate}`,
@@ -315,6 +330,7 @@ export function SalesReportView({
         title="Event / camp revenue (estimate)"
         action={
           <ExportCsvButton
+            disabled={loading || !!error}
             onExport={() =>
               downloadCsv(
                 `event-camp-revenue_${filters.startDate}_${filters.endDate}`,
@@ -362,6 +378,7 @@ export function SalesReportView({
           title="Top F&B items"
           action={
             <ExportCsvButton
+              disabled={loading || !!error}
               onExport={() =>
                 downloadCsv(
                   `fnb-sales-by-item_${filters.startDate}_${filters.endDate}`,
@@ -397,6 +414,7 @@ export function SalesReportView({
           title="Top merch items"
           action={
             <ExportCsvButton
+              disabled={loading || !!error}
               onExport={() =>
                 downloadCsv(
                   `merch-sales-by-item_${filters.startDate}_${filters.endDate}`,

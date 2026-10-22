@@ -572,11 +572,19 @@ const idsOf = (scope: ReportScope) =>
     sql`, `,
   );
 
+/** Independent operator and park keys on a restored row must name the same owner. */
+function belongsToBranchOwner(alias: string): SQL {
+  const a = sql.raw(alias);
+  return sql`exists (select 1 from core.branch report_branch
+    where report_branch.id = ${a}.branch_id and report_branch.operator_id = ${a}.operator_id)`;
+}
+
 /** The report rows of the scope's branches and dates, as a WHERE over a summary table alias. */
 function within(alias: string, scope: ReportScope): SQL {
   const a = sql.raw(alias);
   return sql`${a}.branch_id in (${idsOf(scope)}) and ${a}.source = ${SOURCE}
-    and ${a}.business_date between ${scope.from}::date and ${scope.to}::date`;
+    and ${a}.business_date between ${scope.from}::date and ${scope.to}::date
+    and ${belongsToBranchOwner(alias)}`;
 }
 
 const head = (scope: ReportScope) => ({
@@ -692,6 +700,7 @@ export async function salesReportOf(db: Exec, scope: ReportScope): Promise<Sales
            sum(t.revenue_satang + t.dropoff_satang)::bigint as revenue
       from analytics.daily_ticket_summary t
       left join analytics.dim_date dd on dd.branch_id = t.branch_id and dd.date = t.business_date
+        and dd.operator_id = t.operator_id
      where ${within('t', scope)} and t.kind = 'tier'
      group by 1`);
   const weekdayWeekend = modeRows
@@ -902,7 +911,7 @@ function refuseLongList(count: number): void {
 /** The counted sales of the scope, as the WHERE of a query over `pos.sale s`. */
 function countedSales(scope: ReportScope): SQL {
   return sql`s.branch_id in (${idsOf(scope)}) and s.business_date between ${scope.from}::date and ${scope.to}::date
-    and s.status in ${COUNTED}`;
+    and s.status in ${COUNTED} and ${belongsToBranchOwner('s')}`;
 }
 
 /** How a report names the staff member who rang a sale up. */
@@ -910,9 +919,12 @@ const operatorName = sql`coalesce(e.nickname, e.name, ${UNNAMED})`;
 
 const lineCounts = sql`
   (select count(*) from pos.sale_line l where l.sale_id = s.id
+     and l.operator_id = s.operator_id and l.branch_id = s.branch_id
      and l.kind in ('kids', 'adults_paid', 'adults_free', 'socks', 'addon', 'service_fee', 'food_provision'))::int as ticket_lines,
-  (select count(*) from pos.sale_line l where l.sale_id = s.id and l.kind = 'fnb_item')::int as fnb_lines,
-  (select count(*) from pos.sale_line l where l.sale_id = s.id and l.kind = 'merch_item')::int as merch_lines`;
+  (select count(*) from pos.sale_line l where l.sale_id = s.id
+     and l.operator_id = s.operator_id and l.branch_id = s.branch_id and l.kind = 'fnb_item')::int as fnb_lines,
+  (select count(*) from pos.sale_line l where l.sale_id = s.id
+     and l.operator_id = s.operator_id and l.branch_id = s.branch_id and l.kind = 'merch_item')::int as merch_lines`;
 
 /**
  * Every manual discount and comp, and every promo that took something, on the
@@ -944,12 +956,16 @@ export async function discountTransactionsOf(db: Exec, scope: ReportScope): Prom
     select s.id as sale_id, s.receipt_number, s.occurred_at, s.sales_channel, ${lineCounts},
            ${operatorName} as operator_name,
            d.kind, d.discount_type, d.code, d.label, d.reason, d.note, d.amount_satang, d.applied_by_name,
-           exists (select 1 from promo.voucher_redemption vr join promo.voucher v on v.id = vr.voucher_id
-                    where vr.sale_id = d.sale_id and v.code = d.code) as voucher
+           exists (select 1 from promo.voucher_redemption vr
+                    join promo.voucher v on v.id = vr.voucher_id and v.operator_id = s.operator_id
+                    join core.branch issued_branch on issued_branch.id = v.branch_id
+                      and issued_branch.operator_id = v.operator_id
+                    where vr.sale_id = d.sale_id and vr.operator_id = s.operator_id
+                      and vr.branch_id = s.branch_id and v.code = d.code) as voucher
       from pos.sale_discount d
-      join pos.sale s on s.id = d.sale_id
-      left join core.account a on a.id = s.created_by_account_id
-      left join core.employee e on e.id = a.employee_id
+      join pos.sale s on s.id = d.sale_id and s.operator_id = d.operator_id and s.branch_id = d.branch_id
+      left join core.account a on a.id = s.created_by_account_id and a.operator_id = s.operator_id
+      left join core.employee e on e.id = a.employee_id and e.operator_id = a.operator_id
      where ${countedSales(scope)} and (d.kind = 'manual' or d.amount_satang > 0)
      order by s.occurred_at desc, s.id desc, d.sequence
      limit ${ANALYTICS_REPORT_LIST_MAX_ROWS + 1}`);
@@ -1013,11 +1029,12 @@ export async function taxReceiptsOf(db: Exec, scope: ReportScope): Promise<TaxRe
            ${operatorName} as operator_name, s.tax_breakdown,
            (select array_agg(distinct coalesce(pa.method_code, pa.method))
               from pos.payment_attempt pa
-             where pa.sale_id = s.id and pa.status in (${taken()}) and pa.amount_satang > 0) as tenders
+             where pa.sale_id = s.id and pa.operator_id = s.operator_id and pa.branch_id = s.branch_id
+               and pa.status in (${taken()}) and pa.amount_satang > 0) as tenders
       from pos.sale s
       join core.branch b on b.id = s.branch_id
-      left join core.account a on a.id = s.created_by_account_id
-      left join core.employee e on e.id = a.employee_id
+      left join core.account a on a.id = s.created_by_account_id and a.operator_id = s.operator_id
+      left join core.employee e on e.id = a.employee_id and e.operator_id = a.operator_id
      where ${countedSales(scope)}
      order by s.occurred_at desc, s.id desc
      limit ${ANALYTICS_REPORT_LIST_MAX_ROWS + 1}`);
