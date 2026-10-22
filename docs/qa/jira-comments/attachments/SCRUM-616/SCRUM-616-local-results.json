@@ -1,0 +1,876 @@
+{
+  "ticket": "SCRUM-616",
+  "draft": false,
+  "status": "LOCAL RELEASE CHECKS, EXACT-SHA CI, AUTOMATIC DEPLOYMENTS AND STAGING ACCEPTANCE PASSED",
+  "assembledAt": "2026-10-22T02:49:44.024Z",
+  "candidateSha": "38cdea1b2ef69f4d4a42ecdb2246149c011667a8",
+  "localGateMarkersPassed": true,
+  "coordinatorExitCodesVerified": true,
+  "sourceLandedOnMain": true,
+  "deploymentVerified": true,
+  "stagingAcceptanceClaimed": true,
+  "provenance": {
+    "initial": {
+      "path": "C:\\w\\admin616-linux\\frozen-source-manifest.json",
+      "sha256": "059e370bdb9e9108f7d6738872969aece574711843f76eba81cf430f9c2301f5",
+      "bytes": 498645,
+      "sourceConfigFiles": 3341
+    },
+    "apiTested": {
+      "path": "C:\\w\\admin616-linux\\api-tested-source-manifest.json",
+      "sha256": "059e370bdb9e9108f7d6738872969aece574711843f76eba81cf430f9c2301f5",
+      "bytes": 498645,
+      "sourceConfigFiles": 3341
+    },
+    "final": {
+      "path": "C:\\w\\admin616-linux\\source-manifest.json",
+      "sha256": "a8656e5616d80a131fc1c8763519b5a6ce8de3f0fb253e03378c97375655dc5d",
+      "bytes": 498645,
+      "sourceConfigFiles": 3341
+    },
+    "changedSourcePaths": [],
+    "backend": {
+      "files": 1002,
+      "unchanged": true,
+      "canonicalSha256": "440a1727a8926976355242cb7f2fe29d2ae67c0d46df59bed5b654b592ff9e2e"
+    },
+    "verification": "Manifest comparison only; the coordinator separately verifies the final container source, command exits, commit SHA and release evidence."
+  },
+  "gates": [
+    {
+      "command": "pnpm typecheck; pnpm lint; pnpm build; pnpm api-types:check",
+      "log": {
+        "path": "C:\\w\\admin616-linux\\checks.log",
+        "sha256": "7207fb0d11451626bc440a2ff365cebf995bd7f6a64e43e6d59e0342bfabdf15",
+        "bytes": 14296
+      },
+      "compilerPackages": 16,
+      "buildPackages": 5,
+      "lintErrors": 0,
+      "inheritedLintWarnings": 3
+    },
+    {
+      "command": "pnpm --filter @oto/api typecheck",
+      "log": {
+        "path": "C:\\w\\admin616-linux\\affected.log",
+        "sha256": "23cbcf63cfb688351317b9a9005b9575bdc727e37455caf251ebdfcd3cee2b85",
+        "bytes": 787
+      },
+      "section": "API compiler block before Console compiler block",
+      "diagnostics": 0
+    },
+    {
+      "command": "pnpm --filter @oto/api exec vitest run --pool=forks <access-review, house review and four conformance files>",
+      "log": {
+        "path": "C:\\w\\admin616-linux\\review.log",
+        "sha256": "01b434d2b71a9f8e6a50a86a7e292ef4b94232c39f290976c30a61be8ed95716",
+        "bytes": 5519
+      },
+      "suites": [
+        {
+          "suite": "@oto/api focused",
+          "format": "vitest",
+          "files": 6,
+          "passed": 73,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        }
+      ]
+    },
+    {
+      "command": "pnpm --filter @oto/console test; pnpm --filter @oto/api-types test",
+      "log": {
+        "path": "C:\\w\\admin616-linux\\units.log",
+        "sha256": "6f5eb14a4f38a0e1e4677f254667fa68ba4e5bd5db1ec3431c8d712bdf228d95",
+        "bytes": 1777
+      },
+      "suites": [
+        {
+          "suite": "@oto/console",
+          "format": "vitest",
+          "files": 23,
+          "passed": 189,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 3
+        },
+        {
+          "suite": "@oto/api-types",
+          "format": "vitest",
+          "files": 1,
+          "passed": 8,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        }
+      ]
+    },
+    {
+      "command": "pnpm --fail-if-no-match --filter <each remaining workspace package> test",
+      "log": {
+        "path": "C:\\w\\admin616-linux\\remaining.log",
+        "sha256": "299cff0bf33cecbb60733f91327b77fb31a5f270d479b29039883b785a63e78c",
+        "bytes": 40618
+      },
+      "suites": [
+        {
+          "suite": "@oto/shared",
+          "format": "vitest",
+          "files": 50,
+          "passed": 769,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        {
+          "suite": "@oto/db",
+          "format": "vitest",
+          "files": 43,
+          "passed": 305,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        {
+          "suite": "@oto/pos",
+          "format": "vitest",
+          "files": 98,
+          "passed": 1420,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        {
+          "suite": "@oto/booth",
+          "format": "node-tap",
+          "files": null,
+          "passed": 33,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "cancelled": 0,
+          "durationMs": 583.758492
+        },
+        {
+          "suite": "@oto/launcher",
+          "format": "vitest",
+          "files": 5,
+          "passed": 72,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        {
+          "suite": "@oto/inbox",
+          "format": "vitest",
+          "files": 8,
+          "passed": 176,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        {
+          "suite": "@oto/assistant",
+          "format": "vitest",
+          "files": 8,
+          "passed": 434,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        {
+          "suite": "@oto/print",
+          "format": "vitest",
+          "files": 11,
+          "passed": 271,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        {
+          "suite": "@oto/messaging",
+          "format": "vitest",
+          "files": 6,
+          "passed": 78,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        {
+          "suite": "@oto/payments-2c2p",
+          "format": "vitest",
+          "files": 6,
+          "passed": 81,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        {
+          "suite": "@oto/telemetry",
+          "format": "vitest",
+          "files": 4,
+          "passed": 36,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        {
+          "suite": "@oto/admin-screens",
+          "format": "vitest",
+          "files": 2,
+          "passed": 5,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        }
+      ]
+    },
+    {
+      "command": "pnpm --filter @oto/box-agent test",
+      "log": {
+        "path": "C:\\w\\admin616-linux\\box.log",
+        "sha256": "6714e48ffe8edbd0777985bfc4ab915759b497f2e5801e5f715c0b0a9a9bc984",
+        "bytes": 178554
+      },
+      "suites": [
+        {
+          "suite": "@oto/box-agent",
+          "format": "node-tap",
+          "files": null,
+          "passed": 749,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "cancelled": 0,
+          "durationMs": 16547.125057
+        }
+      ]
+    },
+    {
+      "command": "pnpm --filter @oto/api exec vitest run --pool=forks --shard=1/3",
+      "log": {
+        "path": "C:\\w\\admin616-linux\\api1.log",
+        "sha256": "8c4fadecd16053ea4e64e4f9bbfdedd0aa1ac368d30c0ebb95f5e39bd29925d3",
+        "bytes": 117386
+      },
+      "suites": [
+        {
+          "suite": "@oto/api shard 1/3",
+          "format": "vitest",
+          "files": 110,
+          "passed": 1613,
+          "failed": 0,
+          "skipped": 106,
+          "todo": 0
+        }
+      ]
+    },
+    {
+      "command": "pnpm --filter @oto/api exec vitest run --pool=forks --shard=2/3",
+      "log": {
+        "path": "C:\\w\\admin616-linux\\api2.log",
+        "sha256": "6097e4b7d7c38010baa2ffe0b57392f1606be8cafa5af98bab3a9b4a6f595670",
+        "bytes": 120054
+      },
+      "suites": [
+        {
+          "suite": "@oto/api shard 2/3",
+          "format": "vitest",
+          "files": 110,
+          "passed": 1596,
+          "failed": 0,
+          "skipped": 174,
+          "todo": 4
+        }
+      ]
+    },
+    {
+      "command": "pnpm --filter @oto/api exec vitest run --pool=forks --shard=3/3",
+      "log": {
+        "path": "C:\\w\\admin616-linux\\api3.log",
+        "sha256": "47e65761c96f1a3acfc70446ffe6482a618fe2913846671fcd1c6aff5b8eabff",
+        "bytes": 131909
+      },
+      "suites": [
+        {
+          "suite": "@oto/api shard 3/3",
+          "format": "vitest",
+          "files": 109,
+          "passed": 1461,
+          "failed": 0,
+          "skipped": 121,
+          "todo": 1
+        }
+      ]
+    },
+    {
+      "command": "pnpm --filter @oto/console e2e (built mode)",
+      "log": {
+        "path": "C:\\w\\admin616-linux\\browser.log",
+        "sha256": "0b6c9e25b79b1da5dd34d35468b245bec33ecacf167113fb46b50ee736dc00e7",
+        "bytes": 15849
+      },
+      "passed": 88
+    },
+    {
+      "command": "Post-rebase API and Console own typechecks; generated types; focused API/conformance73; Console189 plus inherited todo3; seam8; changed-file lint",
+      "passed": true,
+      "apiCompilerDiagnostics": 0,
+      "log": {
+        "path": "C:\\w\\admin616-linux\\post.log",
+        "sha256": "7f46cb7c2ee287c420bd206ff6a814d8cd2ef7388bab1fe7b0aa43be9c2ee07d",
+        "bytes": 8083
+      },
+      "coordinatorExitCodeVerified": true
+    }
+  ],
+  "apiTotals": {
+    "passed": 4670,
+    "skipped": 401,
+    "todo": 5,
+    "files": 329
+  },
+  "observedFailures": [
+    {
+      "failed": 6,
+      "explanation": "All six access-review route cases failed with the route absent; no fixture correction was required.",
+      "log": {
+        "path": "C:\\w\\admin616-linux\\red.log",
+        "sha256": "585f2ec600ff67b7c2f2aecdaa3235346cd3273fa42f28ad21cb05b59bc08503",
+        "bytes": 7315
+      }
+    },
+    {
+      "failed": 8,
+      "explanation": "All eight adversarial cases failed while the access-review route was absent; this records missing-feature proof, not eight independent product defects.",
+      "log": {
+        "path": "C:\\w\\admin616-linux\\house-red.log",
+        "sha256": "b81d14ebad8d49f22f91e23576f3728510859354460961cbc7378464445b53e6",
+        "bytes": 10727
+      }
+    },
+    {
+      "failed": 1,
+      "explanation": "The built browser could not find the Access review heading before the page existed.",
+      "log": {
+        "path": "C:\\w\\admin616-linux\\browser-red.log",
+        "sha256": "1f57dab5e0b23a5e2e522486ab4fb41b3f8936f09d3dd71ba57b2363cfa375e3",
+        "bytes": 5863
+      }
+    },
+    {
+      "compilerDiagnostics": 1,
+      "exitStatus": 2,
+      "explanation": "The first API compiler check found one implicit-any parameter in the access-review test callback. Only an explicit id-field parameter type was added; assertions and product files were unchanged. The later affected log records the clean compiler run.",
+      "log": {
+        "path": "C:\\w\\admin616-linux\\affected-initial.log",
+        "sha256": "5243efba1c213ea927bd64148a51881f28b01b0d00a994fce56dbbf9f4a2b73b",
+        "bytes": 292
+      }
+    }
+  ],
+  "limitations": [
+    "Staging independently cross-checks sign-in history through Employees for linked logins only. It checks null review timestamps and exclusion of freshly signed-in actors; unlinked-account history completeness remains covered by API tests.",
+    "8 nonallowlisted browser GETs were blocked by the proof guard. The five stated controls and all three native-card captures completed; their destinations were not retained or independently classified."
+  ],
+  "localReleaseChecksPassed": true,
+  "fullReleasePassed": true,
+  "ciVerified": true,
+  "finalizedAt": "2026-10-22T02:51:05.761Z",
+  "finalizedFromDraft": {
+    "path": "C:/w/admin616-local-results-draft.json",
+    "sha256": "aae08610b9969ba9bfde59aec8864dd7f7f4517e5116e1aa595097869ef2fc82",
+    "bytes": 8202
+  },
+  "proofPreparation": {
+    "executed": true,
+    "reviewVerified": true,
+    "stagingExecutionVerified": true,
+    "helper": {
+      "path": "C:/w/admin616-evidence.mjs",
+      "sha256": "7782ed5df3df5531dd233804e4c9bbfd8607038d56d4803a80cab3f3c63f2cd8",
+      "bytes": 27265
+    },
+    "guardReview": {
+      "path": "C:/w/admin616-proof-review-results.json",
+      "sha256": "fe3ac3c4e1d49820d05f4f0391126ceb67ed0dd333a8b62ef2fa2d8f8ad83cfe",
+      "bytes": 10344,
+      "passed": true,
+      "localGuards": 78,
+      "redBeforeFix": {
+        "checks": 78,
+        "passed": 75,
+        "failed": 3,
+        "helperSha256": "981ee52d022fd49cd0266782dec2e85d163e398da1b71ac8e6863800194e683f",
+        "receipt": {
+          "path": "C:/w/admin616-proof-review-red-results.json",
+          "sha256": "c9f4779ececf1d129ae900f73a619e3d2e0cff0d1724e98ac739c5a9a19490e2",
+          "bytes": 9784
+        }
+      }
+    },
+    "localGuards": 78
+  },
+  "sourceCi": {
+    "runId": 39713974694,
+    "observedAt": "2026-10-22T03:14:04.920Z",
+    "sha": "38cdea1b2ef69f4d4a42ecdb2246149c011667a8",
+    "status": "completed",
+    "conclusion": "success",
+    "jobs": [
+      {
+        "id": 119611597848,
+        "name": "oto-app",
+        "status": "completed",
+        "conclusion": "success",
+        "failedSteps": []
+      },
+      {
+        "id": 119611597936,
+        "name": "api-tests (1)",
+        "status": "completed",
+        "conclusion": "success",
+        "failedSteps": []
+      },
+      {
+        "id": 119611598093,
+        "name": "ci",
+        "status": "completed",
+        "conclusion": "success",
+        "failedSteps": []
+      },
+      {
+        "id": 119611598129,
+        "name": "api-tests (2)",
+        "status": "completed",
+        "conclusion": "success",
+        "failedSteps": []
+      },
+      {
+        "id": 119611598141,
+        "name": "api-tests (3)",
+        "status": "completed",
+        "conclusion": "success",
+        "failedSteps": []
+      },
+      {
+        "id": 119611598173,
+        "name": "pos-tests",
+        "status": "completed",
+        "conclusion": "success",
+        "failedSteps": []
+      }
+    ]
+  },
+  "deploymentObservation": {
+    "observedAt": "2026-10-22T03:20:15.877Z",
+    "sourceSha": "38cdea1b2ef69f4d4a42ecdb2246149c011667a8",
+    "allLive": true,
+    "services": [
+      {
+        "name": "oto-api-staging",
+        "latest": {
+          "id": "dep-dbcnuqdg1s2s7388vcmg",
+          "status": "live",
+          "sha": "38cdea1b2ef69f4d4a42ecdb2246149c011667a8",
+          "createdAt": "2026-10-22T03:13:45.410018Z",
+          "finishedAt": "2026-10-22T03:16:49.974445Z"
+        },
+        "live": {
+          "id": "dep-dbcnuqdg1s2s7388vcmg",
+          "status": "live",
+          "sha": "38cdea1b2ef69f4d4a42ecdb2246149c011667a8",
+          "createdAt": "2026-10-22T03:13:45.410018Z",
+          "finishedAt": "2026-10-22T03:16:49.974445Z"
+        }
+      },
+      {
+        "name": "oto-console-staging",
+        "latest": {
+          "id": "dep-dbcnuqdg1s2s7388vdl0",
+          "status": "live",
+          "sha": "38cdea1b2ef69f4d4a42ecdb2246149c011667a8",
+          "createdAt": "2026-10-22T03:13:45.491764Z",
+          "finishedAt": "2026-10-22T03:14:30.068258Z"
+        },
+        "live": {
+          "id": "dep-dbcnuqdg1s2s7388vdl0",
+          "status": "live",
+          "sha": "38cdea1b2ef69f4d4a42ecdb2246149c011667a8",
+          "createdAt": "2026-10-22T03:13:45.491764Z",
+          "finishedAt": "2026-10-22T03:14:30.068258Z"
+        }
+      }
+    ]
+  },
+  "stagingAcceptance": {
+    "receipt": "SCRUM-616-staging-results.json",
+    "sha256": "05c39bd8c66d436b777232d7e72246fcf37746361f83a43ead1180fe439e2a31",
+    "checks": 5,
+    "complete": true,
+    "completedAt": "2026-10-22T03:17:59.740Z",
+    "screenshots": [
+      {
+        "filename": "SCRUM-616-01-wide-access.png",
+        "jiraAttachmentId": "11932"
+      },
+      {
+        "filename": "SCRUM-616-02-link-and-sign-in-checks.png",
+        "jiraAttachmentId": "11933"
+      },
+      {
+        "filename": "SCRUM-616-03-manager-phone.png",
+        "jiraAttachmentId": "11934"
+      }
+    ],
+    "businessWrites": 0,
+    "smsRequests": 0,
+    "fixturesCreated": 0,
+    "blockedReads": 8,
+    "bothSessionsSignedOut": true,
+    "historyCoverage": {
+      "admin": {
+        "knownLinkedLogins": 31,
+        "accountsWithoutIndependentHistory": 7
+      },
+      "manager": {
+        "knownLinkedLogins": 3,
+        "accountsWithoutIndependentHistory": 2
+      }
+    }
+  },
+  "independentLocalReceiptAudit": {
+    "passed": true,
+    "candidateSha": "38cdea1b2ef69f4d4a42ecdb2246149c011667a8",
+    "checkedAt": "2026-10-22T02:57:16.880Z",
+    "receipt": {
+      "path": "C:/w/admin616-local-audit-results.json",
+      "sha256": "34de0b84370336e6a1f0a4779cb7f201dbeaa3a637ed52f52b4ff477e8325ebe",
+      "bytes": 15415
+    },
+    "metrics": {
+      "changedFiles": 17,
+      "sourceFiles": 14,
+      "documentationFiles": 3,
+      "sourceConfigFiles": 3341,
+      "backendFiles": 1002,
+      "gitBlobMatches": 3341,
+      "rawSha256Matches": 3341,
+      "apiTotals": {
+        "passed": 4670,
+        "skipped": 401,
+        "todo": 5,
+        "files": 329
+      },
+      "localGuards": 78
+    },
+    "checks": [
+      {
+        "name": "reference frozen-source-manifest.json",
+        "passed": true
+      },
+      {
+        "name": "reference api-tested-source-manifest.json",
+        "passed": true
+      },
+      {
+        "name": "reference source-manifest.json",
+        "passed": true
+      },
+      {
+        "name": "reference checks.log",
+        "passed": true
+      },
+      {
+        "name": "reference affected.log",
+        "passed": true
+      },
+      {
+        "name": "reference review.log",
+        "passed": true
+      },
+      {
+        "name": "reference units.log",
+        "passed": true
+      },
+      {
+        "name": "reference remaining.log",
+        "passed": true
+      },
+      {
+        "name": "reference box.log",
+        "passed": true
+      },
+      {
+        "name": "reference api1.log",
+        "passed": true
+      },
+      {
+        "name": "reference api2.log",
+        "passed": true
+      },
+      {
+        "name": "reference api3.log",
+        "passed": true
+      },
+      {
+        "name": "reference browser.log",
+        "passed": true
+      },
+      {
+        "name": "reference post.log",
+        "passed": true
+      },
+      {
+        "name": "reference red.log",
+        "passed": true
+      },
+      {
+        "name": "reference house-red.log",
+        "passed": true
+      },
+      {
+        "name": "reference browser-red.log",
+        "passed": true
+      },
+      {
+        "name": "reference affected-initial.log",
+        "passed": true
+      },
+      {
+        "name": "reference admin616-local-results-draft.json",
+        "passed": true
+      },
+      {
+        "name": "reference admin616-evidence.mjs",
+        "passed": true
+      },
+      {
+        "name": "reference admin616-proof-review-results.json",
+        "passed": true
+      },
+      {
+        "name": "reference frozen-source-manifest.json",
+        "passed": true
+      },
+      {
+        "name": "reference api-tested-source-manifest.json",
+        "passed": true
+      },
+      {
+        "name": "reference source-manifest.json",
+        "passed": true
+      },
+      {
+        "name": "reference checks.log",
+        "passed": true
+      },
+      {
+        "name": "reference affected.log",
+        "passed": true
+      },
+      {
+        "name": "reference review.log",
+        "passed": true
+      },
+      {
+        "name": "reference units.log",
+        "passed": true
+      },
+      {
+        "name": "reference remaining.log",
+        "passed": true
+      },
+      {
+        "name": "reference box.log",
+        "passed": true
+      },
+      {
+        "name": "reference api1.log",
+        "passed": true
+      },
+      {
+        "name": "reference api2.log",
+        "passed": true
+      },
+      {
+        "name": "reference api3.log",
+        "passed": true
+      },
+      {
+        "name": "reference browser.log",
+        "passed": true
+      },
+      {
+        "name": "reference red.log",
+        "passed": true
+      },
+      {
+        "name": "reference house-red.log",
+        "passed": true
+      },
+      {
+        "name": "reference browser-red.log",
+        "passed": true
+      },
+      {
+        "name": "reference affected-initial.log",
+        "passed": true
+      },
+      {
+        "name": "release receipt candidate and honest pending release flags",
+        "passed": true
+      },
+      {
+        "name": "preserved draft remains local and candidate-unfinalized",
+        "passed": true
+      },
+      {
+        "name": "candidate is current clean worktree HEAD",
+        "passed": true
+      },
+      {
+        "name": "exact fourteen source plus three documentation landing allowlist",
+        "passed": true
+      },
+      {
+        "name": "all three manifests contain identical 3341-path source maps",
+        "passed": true
+      },
+      {
+        "name": "actual raw source bytes match final SHA256 manifest",
+        "passed": true
+      },
+      {
+        "name": "actual raw source bytes match committed Git blob SHA1 without filters",
+        "passed": true
+      },
+      {
+        "name": "1002 backend inputs unchanged and canonical digest matches",
+        "passed": true
+      },
+      {
+        "name": "retained test totals @oto/api focused",
+        "passed": true
+      },
+      {
+        "name": "retained test totals @oto/console",
+        "passed": true
+      },
+      {
+        "name": "retained test totals @oto/api-types",
+        "passed": true
+      },
+      {
+        "name": "retained test totals @oto/shared",
+        "passed": true
+      },
+      {
+        "name": "retained test totals @oto/db",
+        "passed": true
+      },
+      {
+        "name": "retained test totals @oto/pos",
+        "passed": true
+      },
+      {
+        "name": "retained test totals @oto/booth",
+        "passed": true
+      },
+      {
+        "name": "retained test totals @oto/launcher",
+        "passed": true
+      },
+      {
+        "name": "retained test totals @oto/inbox",
+        "passed": true
+      },
+      {
+        "name": "retained test totals @oto/assistant",
+        "passed": true
+      },
+      {
+        "name": "retained test totals @oto/print",
+        "passed": true
+      },
+      {
+        "name": "retained test totals @oto/messaging",
+        "passed": true
+      },
+      {
+        "name": "retained test totals @oto/payments-2c2p",
+        "passed": true
+      },
+      {
+        "name": "retained test totals @oto/telemetry",
+        "passed": true
+      },
+      {
+        "name": "retained test totals @oto/admin-screens",
+        "passed": true
+      },
+      {
+        "name": "retained test totals @oto/box-agent",
+        "passed": true
+      },
+      {
+        "name": "retained test totals @oto/api shard 1/3",
+        "passed": true
+      },
+      {
+        "name": "retained test totals @oto/api shard 2/3",
+        "passed": true
+      },
+      {
+        "name": "retained test totals @oto/api shard 3/3",
+        "passed": true
+      },
+      {
+        "name": "API three shard totals exactly match release receipt",
+        "passed": true
+      },
+      {
+        "name": "six new browser cases and complete 88-case built browser run",
+        "passed": true
+      },
+      {
+        "name": "all 16 own compilers, five builds, inherited lint warnings and generated seam green",
+        "passed": true
+      },
+      {
+        "name": "own API compiler block has zero diagnostics",
+        "passed": true
+      },
+      {
+        "name": "post-rebase exact API73 Console189+todo3 seam8 and no compiler diagnostics",
+        "passed": true
+      },
+      {
+        "name": "route and house missing-feature reds preserved",
+        "passed": true
+      },
+      {
+        "name": "browser missing-feature red and one compiler diagnostic honestly retained",
+        "passed": true
+      },
+      {
+        "name": "reference admin616-proof-review-red-results.json",
+        "passed": true
+      },
+      {
+        "name": "frozen proof helper and all 78 isolated local guards verified",
+        "passed": true
+      },
+      {
+        "name": "original helper 75 passing three failing proof guards preserved honestly",
+        "passed": true
+      },
+      {
+        "name": "worktree remains clean at identical candidate after read-only audit",
+        "passed": true
+      }
+    ]
+  },
+  "acceptedAt": "2026-10-22T03:20:15.926Z"
+}

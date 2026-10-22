@@ -1,0 +1,316 @@
+{
+  "ticket": "SCRUM-616",
+  "releaseSha": "38cdea1b2ef69f4d4a42ecdb2246149c011667a8",
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "sourceSha": "38cdea1b2ef69f4d4a42ecdb2246149c011667a8",
+      "deployId": "dep-dbcnuqdg1s2s7388vcmg",
+      "finishedAt": "2026-10-22T03:16:49.974445Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "sourceSha": "38cdea1b2ef69f4d4a42ecdb2246149c011667a8",
+      "deployId": "dep-dbcnuqdg1s2s7388vdl0",
+      "finishedAt": "2026-10-22T03:14:30.068258Z"
+    }
+  ],
+  "checks": [
+    {
+      "code": "ADMIN_SIX_NATIVE_LISTS_COUNTS_LINK_TRUTH_FLAGS_AND_SIGNIN",
+      "passed": true,
+      "at": "2026-10-22T03:17:36.700Z"
+    },
+    {
+      "code": "WIDE_ASSIGNMENT_SCOPE_AND_CAPTURE",
+      "passed": true,
+      "at": "2026-10-22T03:17:39.190Z"
+    },
+    {
+      "code": "FOUR_NATIVE_LINK_AND_SIGNIN_CARDS",
+      "passed": true,
+      "at": "2026-10-22T03:17:41.618Z"
+    },
+    {
+      "code": "MANAGER_SIX_LISTS_LINK_TRUTH_FLAGS_REACH_AND_SIGNIN",
+      "passed": true,
+      "at": "2026-10-22T03:17:55.483Z"
+    },
+    {
+      "code": "MANAGER_NATIVE_CARD_PHONE390",
+      "passed": true,
+      "at": "2026-10-22T03:17:57.882Z"
+    }
+  ],
+  "actors": {
+    "admin": {
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+      "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+      "permissionScopesFingerprint": "aefd40d67a0697e420feed5362ffedb62dcae3c94d0f734997c32998ff49b600",
+      "counts": {
+        "operatorWideHolders": 10,
+        "platformWideHolders": 1,
+        "accountsWithoutEmployee": 7,
+        "employeesWithoutAccount": 15,
+        "accountsNeverSignedIn": 6,
+        "temporaryPasswordsOutstanding": 2
+      },
+      "fingerprints": {
+        "review": "2466699278b0b18371099fe8623e583c8fa7c9d773a12d9443162a4668b8d1d1",
+        "accounts": "76006f106dafdd50880768349454f5df6e76a1c83dd05dc11839269df4c28917",
+        "employees": "4bc3fbb5d60b54d5454fd0531b3a9e69846743ca78d1630de21969d9c1e8fc33"
+      },
+      "historyCoverage": {
+        "knownLinkedLogins": 31,
+        "accountsWithoutIndependentHistory": 7
+      },
+      "hiddenOwnedLoginsSuppressed": 0,
+      "hiddenOwnedEmployeesSuppressed": 0,
+      "hiddenInactiveOwnedLogins": 0
+    },
+    "manager": {
+      "accountId": "01a0c9ae-5377-7b34-a9ab-22bf8086f5f7",
+      "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+      "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+      "permissionScopesFingerprint": "69f9a78167a97f94e32dc8a9000021b1197fc924b24a1e3251c386c69d58e9ec",
+      "counts": {
+        "operatorWideHolders": 0,
+        "platformWideHolders": 0,
+        "accountsWithoutEmployee": 0,
+        "employeesWithoutAccount": 12,
+        "accountsNeverSignedIn": 1,
+        "temporaryPasswordsOutstanding": 0
+      },
+      "fingerprints": {
+        "review": "0a886abb47b42a9185323d59f952b25d0aaddb5531a37c877cb348ce6b7e6ef3",
+        "accounts": "33f349adb415bcf84d10e1973352541511ecb5332b5f02998a00833f92ebb694",
+        "employees": "de099d1e7520e01ab03f13debf1b0a9c5e64c112aa261e8fb5c36a27a3656388"
+      },
+      "historyCoverage": {
+        "knownLinkedLogins": 3,
+        "accountsWithoutIndependentHistory": 2
+      },
+      "hiddenOwnedLoginsSuppressed": 0,
+      "hiddenOwnedEmployeesSuppressed": 2,
+      "hiddenInactiveOwnedLogins": 0
+    }
+  },
+  "screenshots": [
+    {
+      "filename": "SCRUM-616-01-wide-access.png",
+      "capturedAt": "2026-10-22T03:17:37.977Z",
+      "capturedAfterDeploy": true,
+      "cards": [
+        {
+          "key": "operatorWideHolders",
+          "title": "Operator-wide holders",
+          "count": 10,
+          "selectedId": "01a0c9ae-5377-7b34-a9ab-22bf8086f5f7",
+          "privateDetailsMasked": false,
+          "fingerprint": "70fab5b1a2676afadcd3b82e3ac96935419d85fb5514dcd7210f8a96d79d07c2",
+          "selectedRowFingerprint": "e4cf88149bd020b0db8024851cef13a3619b6aba7fd795e1ea2c9671000aeddd"
+        },
+        {
+          "key": "platformWideHolders",
+          "title": "Platform-wide holders",
+          "count": 1,
+          "selectedId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+          "privateDetailsMasked": true,
+          "fingerprint": "8c3ce17650aa168f00411b3e736c374a4e85e4c0e2e41d52f79d84436f60ef9f",
+          "selectedRowFingerprint": "1c34c079bb6f491a2c0410c4a3eb9e1c273e1c974bc626b7d59228b49bcb3b72"
+        }
+      ],
+      "bounds": [
+        {
+          "title": "Operator-wide holders",
+          "wholeCardInViewport": true,
+          "headingInViewport": true,
+          "selectedRows": 1,
+          "selectedRowsInViewport": true,
+          "privateFieldsMasked": true
+        },
+        {
+          "title": "Platform-wide holders",
+          "wholeCardInViewport": true,
+          "headingInViewport": true,
+          "selectedRows": 1,
+          "selectedRowsInViewport": true,
+          "privateFieldsMasked": true
+        }
+      ],
+      "sha256": "6cd3b3b7b13b65ceca085629c1f3103c20619d77a58f9e93d40454d5a4bfcb1b",
+      "inspectedForPrivacyAndContent": true,
+      "jiraAttachmentId": "11932"
+    },
+    {
+      "filename": "SCRUM-616-02-link-and-sign-in-checks.png",
+      "capturedAt": "2026-10-22T03:17:40.405Z",
+      "capturedAfterDeploy": true,
+      "cards": [
+        {
+          "key": "accountsWithoutEmployee",
+          "title": "Accounts without an employee",
+          "count": 7,
+          "selectedId": "01a0f4bc-16c1-7848-8af1-e3ef3492e154",
+          "privateDetailsMasked": true,
+          "fingerprint": "7dd39d01e89145fb6725c1a723f01b4048c7417f769ba00eee1b22cc58de881b",
+          "selectedRowFingerprint": "37ef89ee33b22446b815c5852ba5de7b22eaed1e43a17481460343e7b7b16955"
+        },
+        {
+          "key": "employeesWithoutAccount",
+          "title": "Employees without an account",
+          "count": 15,
+          "selectedId": "01a13b91-8d60-7647-b31f-2da578da2d9c",
+          "privateDetailsMasked": false,
+          "fingerprint": "5e297128b5b1f0e10d4f03373fca1f0f68a15482467411f5b1b055a203c51daf",
+          "selectedRowFingerprint": "753c406a25add695a44591629c88a8d1f16a74e6d8eefa01d9c656babc8f843a"
+        },
+        {
+          "key": "accountsNeverSignedIn",
+          "title": "Accounts with no recorded sign-in",
+          "count": 6,
+          "selectedId": "01a156bb-6751-7533-8b32-65bca1acdfc1",
+          "privateDetailsMasked": true,
+          "fingerprint": "a12b832c63b536d97b1f89d9a79a21a7f054a5ab3b72551382c65d3fb8ac0f76",
+          "selectedRowFingerprint": "f2809fa37108d08e24e3fc45eec66209c70af05f1e5960c795b245ea08ea466c"
+        },
+        {
+          "key": "temporaryPasswordsOutstanding",
+          "title": "Temporary passwords outstanding",
+          "count": 2,
+          "selectedId": "01a0f27e-58b7-7d5a-a587-57236316e868",
+          "privateDetailsMasked": false,
+          "fingerprint": "0ab4bf3f61f38034cd0839c099237f2f6106f0d28f4c9d5540e9e48ce765dc31",
+          "selectedRowFingerprint": "19a2b228d3cc8f307bf4e3ee4b00586f8f54ac5a6691c6853334763f03df9030"
+        }
+      ],
+      "bounds": [
+        {
+          "title": "Accounts without an employee",
+          "wholeCardInViewport": true,
+          "headingInViewport": true,
+          "selectedRows": 1,
+          "selectedRowsInViewport": true,
+          "privateFieldsMasked": true
+        },
+        {
+          "title": "Employees without an account",
+          "wholeCardInViewport": true,
+          "headingInViewport": true,
+          "selectedRows": 1,
+          "selectedRowsInViewport": true,
+          "privateFieldsMasked": true
+        },
+        {
+          "title": "Accounts with no recorded sign-in",
+          "wholeCardInViewport": true,
+          "headingInViewport": true,
+          "selectedRows": 1,
+          "selectedRowsInViewport": true,
+          "privateFieldsMasked": true
+        },
+        {
+          "title": "Temporary passwords outstanding",
+          "wholeCardInViewport": true,
+          "headingInViewport": true,
+          "selectedRows": 1,
+          "selectedRowsInViewport": true,
+          "privateFieldsMasked": true
+        }
+      ],
+      "sha256": "decbf7a1c519fbedef3b3fb6693658e0344d6e4dba98148bbecf09b1cdeea3d8",
+      "inspectedForPrivacyAndContent": true,
+      "jiraAttachmentId": "11933"
+    },
+    {
+      "filename": "SCRUM-616-03-manager-phone.png",
+      "capturedAt": "2026-10-22T03:17:56.742Z",
+      "capturedAfterDeploy": true,
+      "cards": [
+        {
+          "key": "accountsNeverSignedIn",
+          "title": "Accounts with no recorded sign-in",
+          "count": 1,
+          "selectedId": "01a0cd83-3b9c-7102-b7d7-03b7d6f4fbf3",
+          "privateDetailsMasked": true,
+          "fingerprint": "be227c94975a114ca545743e170b8000de532e430af4ec67b65bc63fbccf0d82",
+          "selectedRowFingerprint": "4c01601199472c20096b689dbc9ac922ee5ce7e3965e4c6ac6f8c4057641c732"
+        }
+      ],
+      "bounds": [
+        {
+          "title": "Accounts with no recorded sign-in",
+          "wholeCardInViewport": true,
+          "headingInViewport": true,
+          "selectedRows": 1,
+          "selectedRowsInViewport": true,
+          "privateFieldsMasked": true
+        }
+      ],
+      "sha256": "d318c0ecfb387ef265bf703bd4bffbc341e9aa95d668563f67d1bb11f9f1b102",
+      "inspectedForPrivacyAndContent": true,
+      "jiraAttachmentId": "11934"
+    }
+  ],
+  "blockedRequests": [],
+  "counts": {
+    "businessWrites": 0,
+    "smsRequests": 0,
+    "fixturesCreated": 0,
+    "blockedWrites": 0,
+    "blockedReads": 8,
+    "omittedAuditReads": 0,
+    "browserAuthPosts": 2
+  },
+  "limitations": [
+    "Staging independently cross-checks sign-in history through Employees for linked logins only. It checks null review timestamps and exclusion of freshly signed-in actors; unlinked-account history completeness remains covered by API tests.",
+    "8 nonallowlisted browser GETs were blocked by the proof guard. The five stated controls and all three native-card captures completed; their destinations were not retained or independently classified."
+  ],
+  "complete": true,
+  "adminSignOutStatus": 200,
+  "phoneLayout": {
+    "viewport": 390,
+    "page": 390
+  },
+  "managerSignOutStatus": 200,
+  "completedAt": "2026-10-22T03:17:59.740Z",
+  "reviewedAt": "2026-10-22T03:20:15.926Z",
+  "review": {
+    "coordinatorInspectedAllImages": true,
+    "coordinatorVerifiedStaging": true,
+    "inputReceipt": {
+      "path": "C:\\w\\admin-access-review\\docs\\qa\\jira-comments\\attachments\\SCRUM-616\\SCRUM-616-staging-results.json",
+      "sha256": "3ff29c97484ef09a0d66730ab7b863f548726c177ba5df247fc1fbeba2d08dd4",
+      "bytes": 9804
+    },
+    "helper": {
+      "path": "C:/w/admin616-evidence.mjs",
+      "sha256": "7782ed5df3df5531dd233804e4c9bbfd8607038d56d4803a80cab3f3c63f2cd8",
+      "bytes": 27265
+    },
+    "guardReview": {
+      "path": "C:/w/admin616-proof-review-results.json",
+      "sha256": "fe3ac3c4e1d49820d05f4f0391126ceb67ed0dd333a8b62ef2fa2d8f8ad83cfe",
+      "bytes": 10344,
+      "passed": true,
+      "localGuards": 78,
+      "redBeforeFix": {
+        "checks": 78,
+        "passed": 75,
+        "failed": 3,
+        "helperSha256": "981ee52d022fd49cd0266782dec2e85d163e398da1b71ac8e6863800194e683f",
+        "receipt": {
+          "path": "C:/w/admin616-proof-review-red-results.json",
+          "sha256": "c9f4779ececf1d129ae900f73a619e3d2e0cff0d1724e98ac739c5a9a19490e2",
+          "bytes": 9784
+        }
+      }
+    },
+    "independentAudit": {
+      "path": "C:/w/admin616-local-audit-results.json",
+      "sha256": "34de0b84370336e6a1f0a4779cb7f201dbeaa3a637ed52f52b4ff477e8325ebe",
+      "bytes": 15415
+    }
+  }
+}
