@@ -119,6 +119,28 @@ const MenuResponseSchema = z.object({
   }).passthrough()),
 }).passthrough();
 const MenuOkResponseSchema = z.object({ ok: z.literal(true) });
+const MenuCreatedResponseSchema = z.object({ id: z.string().uuid() });
+const MenuImportCountsResponseSchema = z.object({
+  create: z.number().int().nonnegative(), update: z.number().int().nonnegative(),
+  archive: z.number().int().nonnegative(), unchanged: z.number().int().nonnegative(),
+});
+const MenuImportPreviewResponseSchema = z.object({
+  previewToken: z.string(), filename: z.string(),
+  counts: MenuImportCountsResponseSchema.extend({ ignored: z.number().int().nonnegative() }),
+  categories: MenuImportCountsResponseSchema,
+  rows: z.array(z.object({
+    sheet: z.string(), row: z.number().int(), code: z.string().nullable(), name: z.string(),
+    action: z.enum(['create', 'update', 'archive', 'unchanged']),
+    changes: z.array(z.object({ field: z.string(), from: z.string().nullable(), to: z.string().nullable() })),
+  })),
+  errors: z.array(z.object({ sheet: z.string(), row: z.number().int(), column: z.string().nullable(), message: z.string() })),
+  notice: z.string(),
+});
+const MenuImportResultResponseSchema = z.object({
+  created: z.number().int().nonnegative(), updated: z.number().int().nonnegative(),
+  archived: z.number().int().nonnegative(), categoriesCreated: z.number().int().nonnegative(),
+  categoriesUpdated: z.number().int().nonnegative(), categoriesArchived: z.number().int().nonnegative(),
+});
 
 /** A workbook of a few hundred rows, base64, with room to spare. */
 const IMPORT_MAX_BYTES = 8 * 1024 * 1024;
@@ -227,7 +249,7 @@ export async function menuRoutes(app: App): Promise<void> {
     '/menu/categories',
     {
       config: { permission: 'catalog:menu:manage', target: { operator: true } },
-      schema: { description: 'Create a menu category', body: MenuCategoryBodySchema },
+      schema: { description: 'Create a menu category', body: MenuCategoryBodySchema, response: { 200: MenuCreatedResponseSchema } },
     },
     async (req) => {
       const auth = req.requireAuth();
@@ -271,6 +293,7 @@ export async function menuRoutes(app: App): Promise<void> {
         description: 'Update a menu category',
         params: IdParams,
         body: MenuCategoryBodySchema.partial(),
+        response: { 200: MenuOkResponseSchema },
       },
     },
     async (req) => {
@@ -330,6 +353,7 @@ export async function menuRoutes(app: App): Promise<void> {
       schema: {
         description: 'Withdraw a menu category (refused while items still sit in it)',
         params: IdParams,
+        response: { 200: MenuOkResponseSchema },
       },
     },
     async (req) => {
@@ -594,6 +618,7 @@ export async function menuRoutes(app: App): Promise<void> {
       schema: {
         description: 'Create a modifier group and its options',
         body: ModifierGroupBodySchema,
+        response: { 200: MenuCreatedResponseSchema },
       },
     },
     async (req) => {
@@ -638,6 +663,7 @@ export async function menuRoutes(app: App): Promise<void> {
         description: 'Update a modifier group; `options` replaces the whole answer list',
         params: IdParams,
         body: ModifierGroupBodySchema,
+        response: { 200: MenuOkResponseSchema },
       },
     },
     async (req) => {
@@ -679,7 +705,7 @@ export async function menuRoutes(app: App): Promise<void> {
     '/menu/modifier-groups/:id',
     {
       config: { permission: 'catalog:menu:manage', target: { operator: true } },
-      schema: { description: 'Withdraw a modifier group', params: IdParams },
+      schema: { description: 'Withdraw a modifier group', params: IdParams, response: { 200: MenuOkResponseSchema } },
     },
     async (req) => {
       const auth = req.requireAuth();
@@ -693,7 +719,7 @@ export async function menuRoutes(app: App): Promise<void> {
         await tx
           .update(modifierOption)
           .set({ archivedAt: now })
-          .where(eq(modifierOption.modifierGroupId, before.id));
+          .where(and(eq(modifierOption.modifierGroupId, before.id), eq(modifierOption.operatorId, auth.operatorId)));
         // The links are configuration rather than a business record, so they go
         // rather than linger pointing at a group no screen will offer. Keyed on
         // the GROUP: `setItemModifierGroups` deletes `where product_id = …`, so
@@ -939,6 +965,7 @@ export async function menuRoutes(app: App): Promise<void> {
         description: 'What this workbook would do to the menu. Writes nothing.',
         params: BranchParams,
         body: ImportBody,
+        response: { 200: MenuImportPreviewResponseSchema },
       },
     },
     async (req) => {
@@ -977,6 +1004,7 @@ export async function menuRoutes(app: App): Promise<void> {
         description: 'Apply a previewed workbook, in one transaction',
         params: BranchParams,
         body: ImportBody.extend({ previewToken: z.string().min(1).max(128) }),
+        response: { 200: MenuImportResultResponseSchema },
       },
     },
     async (req) => {
@@ -997,6 +1025,16 @@ export async function menuRoutes(app: App): Promise<void> {
         );
       }
       assertPreviewStillTrue(req.body.previewToken, plan.preview.previewToken);
+
+      // Categories are shared by every park. The importer also applies an
+      // edited shared item to the path's branch; retain that as-built effect,
+      // but require operator-wide import authority for either shared mutation.
+      // An omitted or unchanged category/shared item adds no write authority.
+      const changesOperatorCatalogue = plan.categories.some(row => row.effect !== 'unchanged') ||
+        plan.items.some(row => row.effect !== 'unchanged' && row.before?.branchId === null);
+      if (changesOperatorCatalogue) {
+        await req.requirePermission('catalog:menu:import', { operatorOnly: true });
+      }
 
       return withTx(app.db, opCtx(req), 'menu.import', async (tx) => {
         // Re-read inside the transaction and check the menu again: between the
@@ -1046,7 +1084,7 @@ async function replaceOptions(
     .update(modifierOption)
     .set({ archivedAt: new Date() })
     .where(
-      and(eq(modifierOption.modifierGroupId, groupId), isNull(modifierOption.archivedAt)),
+      and(eq(modifierOption.modifierGroupId, groupId), eq(modifierOption.operatorId, operatorId), isNull(modifierOption.archivedAt)),
     );
   if (options.length === 0) return;
   await tx.insert(modifierOption).values(

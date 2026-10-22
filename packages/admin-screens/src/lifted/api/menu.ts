@@ -20,7 +20,6 @@ import { idemKey } from './client';
 import type { LiftedAdminApi } from '../../api/lifted-api';
 import type { AdminApi } from '../../api/admin-api';
 import type { CatalogHydration } from '../model/catalog';
-import type { MenuImportPreview, MenuImportResult } from '@oto/shared';
 import type {
   AddOn,
   Discount,
@@ -169,6 +168,8 @@ export type {
  * can send back unchanged the columns its form has no field for.
  */
 interface ServerFields {
+  /** Missing on older reads; live write offers fail closed for an unknown owner. */
+  branchId: string | null | undefined;
   code: string | null;
   sku: string | null;
   active: boolean;
@@ -200,10 +201,10 @@ const menuApi = {
   load: (branchId: string) => api.get<ApiResponse<'/branches/{branchId}/menu', 'get'>>(`/branches/${branchId}/menu`),
 
   createCategory: (body: Partial<ApiMenuCategory> & { name: string }) =>
-    api.post<{ id: string }>('/menu/categories', body, { idempotencyKey: idemKey() }),
+    api.post<ApiResponse<'/menu/categories', 'post'>>('/menu/categories', body, { idempotencyKey: idemKey() }),
   updateCategory: (id: string, body: Partial<ApiMenuCategory>) =>
-    api.patch<{ ok: true }>(`/menu/categories/${id}`, body),
-  archiveCategory: (id: string) => api.delete<{ ok: true }>(`/menu/categories/${id}`),
+    api.patch<ApiResponse<'/menu/categories/{id}', 'patch'>>(`/menu/categories/${id}`, body, { idempotencyKey: idemKey() }),
+  archiveCategory: (id: string) => api.delete<ApiResponse<'/menu/categories/{id}', 'delete'>>(`/menu/categories/${id}`, { idempotencyKey: idemKey() }),
 
   createProduct: (branchId: string, body: ApiProductBody) =>
     api.post<ApiResponse<'/branches/{branchId}/menu/products', 'post'>>(`/branches/${branchId}/menu/products`, body, {
@@ -215,10 +216,10 @@ const menuApi = {
     api.delete<ApiResponse<'/branches/{branchId}/menu/products/{id}', 'delete'>>(`/branches/${branchId}/menu/products/${id}`, { idempotencyKey: idemKey() }),
 
   createModifierGroup: (body: ApiModifierGroupBody) =>
-    api.post<{ id: string }>('/menu/modifier-groups', body, { idempotencyKey: idemKey() }),
+    api.post<ApiResponse<'/menu/modifier-groups', 'post'>>('/menu/modifier-groups', body, { idempotencyKey: idemKey() }),
   updateModifierGroup: (id: string, body: Partial<ApiModifierGroupBody>) =>
-    api.patch<{ ok: true }>(`/menu/modifier-groups/${id}`, body),
-  archiveModifierGroup: (id: string) => api.delete<{ ok: true }>(`/menu/modifier-groups/${id}`),
+    api.patch<ApiResponse<'/menu/modifier-groups/{id}', 'patch'>>(`/menu/modifier-groups/${id}`, body, { idempotencyKey: idemKey() }),
+  archiveModifierGroup: (id: string) => api.delete<ApiResponse<'/menu/modifier-groups/{id}', 'delete'>>(`/menu/modifier-groups/${id}`, { idempotencyKey: idemKey() }),
 
   /**
    * Discount codes, operator-wide.
@@ -244,7 +245,7 @@ const menuApi = {
    * would inherit the bucket's still-open browser permission problem.
    */
   importPreview: (branchId: string, body: { filename: string; contentBase64: string }) =>
-    api.post<MenuImportPreview>(`/branches/${branchId}/menu/import/preview`, body),
+    api.post<ApiResponse<'/branches/{branchId}/menu/import/preview', 'post'>>(`/branches/${branchId}/menu/import/preview`, body),
 
   /**
    * Apply a preview. One transaction, all rows or none.
@@ -260,7 +261,7 @@ const menuApi = {
     branchId: string,
     body: { previewToken: string; filename: string; contentBase64: string },
   ) =>
-    api.post<MenuImportResult>(`/branches/${branchId}/menu/import/commit`, body, {
+    api.post<ApiResponse<'/branches/{branchId}/menu/import/commit', 'post'>>(`/branches/${branchId}/menu/import/commit`, body, {
       idempotencyKey: idemKey(),
     }),
 
@@ -347,6 +348,10 @@ const discountIdByCode = new Map<string, string>();
  * see `saveInlineGroups`.
  */
 const inlineGroupsByProduct = new Map<string, ApiModifierGroup[]>();
+const modifierFields = new Map<string, ApiModifierGroup>();
+// An acknowledged create survives a later group refusal or readback failure.
+const createdItems = new Map<string, string>();
+const completedInlineWrites = new Map<string, Map<string, { id: string; body: string }>>();
 
 
 const nameKey = (name: string): string => name.trim().toLowerCase();
@@ -677,8 +682,9 @@ function addOnToApiBody(
  */
 function modifierGroupToApiBody(
   group: ModifierGroup,
-  sortOrder = 0,
+  sortOrder = modifierFields.get(group.id)?.sortOrder ?? 0,
 ): ApiModifierGroupBody {
+  const held = modifierFields.get(group.id);
   return {
     name: group.name,
     required: group.required ?? false,
@@ -688,6 +694,7 @@ function modifierGroupToApiBody(
     minSelect: group.selectionType === 'multi' ? (group.min ?? null) : null,
     maxSelect: group.selectionType === 'multi' ? (group.max ?? null) : null,
     sortOrder,
+    ...(held?.translations ? { translations: held.translations } : {}),
     options: group.options.map((o, index) => ({
       id: o.id,
       name: o.name,
@@ -696,6 +703,8 @@ function modifierGroupToApiBody(
         o.price.weekend === o.price.weekday ? null : satang(o.price.weekend),
       costSatang: o.cost != null ? satang(o.cost) : null,
       sortOrder: index,
+      ...(held?.options.find(option => option.id === o.id)?.translations
+        ? { translations: held.options.find(option => option.id === o.id)!.translations } : {}),
     })),
   };
 }
@@ -768,6 +777,7 @@ function mapMenu(menu: ApiMenu): MappedMenu {
   serverFields.clear();
   categoryCodes.clear();
   inlineGroupsByProduct.clear();
+  modifierFields.clear();
   categoryIdByArea.clear();
   categoryNameById.clear();
   categoryNamesByArea.clear();
@@ -802,6 +812,7 @@ function mapMenu(menu: ApiMenu): MappedMenu {
   }
   for (const p of menu.products) {
     serverFields.set(p.id, {
+      branchId: p.branchId,
       code: p.code,
       sku: p.sku,
       active: p.active,
@@ -816,6 +827,7 @@ function mapMenu(menu: ApiMenu): MappedMenu {
   const inlineByProduct = new Map<string, ApiModifierGroup[]>();
   const library: ApiModifierGroup[] = [];
   for (const g of menu.modifierGroups) {
+    modifierFields.set(g.id, g);
     if (g.productId) {
       const list = inlineByProduct.get(g.productId) ?? [];
       list.push(g);
@@ -884,6 +896,12 @@ async function reloadMenuInto(branchId: string, branchSlug: string): Promise<voi
       },
     },
   });
+  // Canonical readback finishes these drafts. A later same-name POS item is
+  // a new create even when the prototype gives it the same local slug.
+  for (const [draft, id] of createdItems) {
+    if (draft.startsWith(branchId + ':')) { createdItems.delete(draft); completedInlineWrites.delete(id); }
+  }
+  for (const product of menu.products) completedInlineWrites.delete(product.id);
 }
 
 
@@ -1035,24 +1053,39 @@ function queued<T>(run: () => Promise<T>): Promise<T> {
  * per question the kitchen asks; one the platform holds and the form no longer
  * does is withdrawn.
  */
-async function saveInlineGroups(productId: string, groups: ModifierGroup[]): Promise<void> {
+async function saveInlineGroups(productId: string, groups: ModifierGroup[], isCurrent: () => boolean): Promise<void> {
   const held = inlineGroupsByProduct.get(productId) ?? [];
   const heldById = new Map(held.map((g) => [g.id, g]));
+  const completed = completedInlineWrites.get(productId) ?? new Map<string, { id: string; body: string }>();
+  completedInlineWrites.set(productId, completed);
+  const kept = new Set<string>();
   for (const [index, group] of groups.entries()) {
+    if (!isCurrent()) throw new Error('The catalogue changed. Open the editor again.');
     const body = modifierGroupToApiBody(group, index);
     const before = heldById.get(group.id);
-    if (!before) {
-      await menuApi.createModifierGroup({ ...body, productId });
+    const prior = completed.get(group.id) ?? [...completed.values()].find(value => value.id === group.id);
+    const id = prior?.id ?? group.id;
+    if (!before && !prior) {
+      const answer = await menuApi.createModifierGroup({ ...body, productId });
+      completed.set(group.id, { id: answer.id, body: JSON.stringify(body) });
+      kept.add(answer.id);
       continue;
     }
-    const unchanged =
-      JSON.stringify(modifierGroupToApiBody(apiGroupToGroup(before), before.sortOrder)) ===
-      JSON.stringify(body);
-    if (!unchanged) await menuApi.updateModifierGroup(group.id, body);
+    kept.add(id);
+    const previous = prior?.body ?? JSON.stringify(modifierGroupToApiBody(apiGroupToGroup(before!), index));
+    const moved = before !== undefined && held.findIndex(value => value.id === before.id) !== index;
+    if (moved || previous !== JSON.stringify(body)) {
+      await menuApi.updateModifierGroup(id, body);
+      completed.set(group.id, { id, body: JSON.stringify(body) });
+    }
   }
-  const kept = new Set(groups.map((g) => g.id));
-  for (const g of held) {
-    if (!kept.has(g.id)) await menuApi.archiveModifierGroup(g.id);
+  const removed = new Set([...held.map(group => group.id), ...[...completed.values()].map(value => value.id)]);
+  for (const id of removed) {
+    if (!isCurrent()) throw new Error('The catalogue changed. Open the editor again.');
+    if (!kept.has(id)) {
+      await menuApi.archiveModifierGroup(id);
+      for (const [draftId, value] of completed) if (value.id === id) completed.delete(draftId);
+    }
   }
 }
 
@@ -1072,13 +1105,25 @@ async function saveMenuItemToApi(
   exists: boolean,
 ): Promise<void> {
   return queued(async () => {
-    const body = menuItemToApiBody(item);
-    let id = item.id;
-    if (exists) await menuApi.updateProduct(branchId, item.id, body);
-    else id = (await menuApi.createProduct(branchId, body)).id;
-    await saveInlineGroups(id, item.modifierGroups ?? []);
+    await saveMenuItem(branchId, item, exists);
     await reloadMenuInto(branchId, branchSlug);
   });
+}
+
+/** Confirmed writes only; each host owns its canonical readback and saved-state errors. */
+async function saveMenuItem(branchId: string, item: MenuItem, exists: boolean, isCurrent: () => boolean = () => true): Promise<string> {
+  if (!isCurrent()) throw new Error('The catalogue changed. Open the editor again.');
+  const key = branchId + ':' + item.id;
+  let id = createdItems.get(key) ?? item.id;
+  const body = menuItemToApiBody(item);
+  if (exists || createdItems.has(key)) await menuApi.updateProduct(branchId, id, body);
+  else {
+    id = (await menuApi.createProduct(branchId, body)).id;
+    createdItems.set(key, id);
+  }
+  if (!isCurrent()) throw new Error('The catalogue changed. Open the editor again.');
+  await saveInlineGroups(id, item.modifierGroups ?? [], isCurrent);
+  return id;
 }
 
 
@@ -1123,11 +1168,11 @@ async function archiveMenuCategoryInApi(
     await reloadMenuInto(branchId, branchSlug);
   });
 }
-return { menuApi, catalogueSizesOf, isSocksAddOnId, serverFieldsFor, menuIsServerBacked, apiCategoryToDef, apiGroupToGroup, apiProductToMenuItem, menuItemToApiBody, categoryToApiBody, apiProductToMerchItem, merchItemToApiBody, apiProductToAddOn, addOnToApiBody, modifierGroupToApiBody, apiDiscountToDiscount, discountToApiBody, mapDiscounts, mapMenu, reloadMenuInto, saveMerchItemToApi, archiveMerchItemInApi, saveAddOnToApi, archiveAddOnInApi, saveModifierGroupToApi, archiveModifierGroupInApi, saveDiscountToApi, archiveDiscountInApi, saveMenuItemToApi, archiveMenuItemInApi, saveMenuCategoryToApi, archiveMenuCategoryInApi };
+return { menuApi, catalogueSizesOf, isSocksAddOnId, serverFieldsFor, menuIsServerBacked, apiCategoryToDef, apiGroupToGroup, apiProductToMenuItem, menuItemToApiBody, categoryToApiBody, apiProductToMerchItem, merchItemToApiBody, apiProductToAddOn, addOnToApiBody, modifierGroupToApiBody, apiDiscountToDiscount, discountToApiBody, mapDiscounts, mapMenu, reloadMenuInto, saveMerchItemToApi, archiveMerchItemInApi, saveAddOnToApi, archiveAddOnInApi, saveModifierGroupToApi, archiveModifierGroupInApi, saveDiscountToApi, archiveDiscountInApi, saveMenuItem, saveMenuItemToApi, archiveMenuItemInApi, saveMenuCategoryToApi, archiveMenuCategoryInApi };
 }
 
 /** POS keeps its file download capability beside the shared catalogue ports. */
-export function createMenuApi(api: AdminApi & Pick<LiftedAdminApi, 'getFile'>, ports: MenuHydrationPort) {
+export function createMenuApi(api: AdminApi & Pick<LiftedAdminApi, 'getFile'>, ports?: MenuHydrationPort) {
 async function fetchMenuWorkbook(branchId: string): Promise<{blob: Blob;filename: string}> { const file = await api.getFile(`/branches/${branchId}/menu/export.xlsx`); return {blob:file.blob,filename:file.filename ?? 'oto-menu.xlsx'}; }
 const catalogue = createMenuCatalogueApi(api, ports);
 return { ...catalogue, menuApi: { ...catalogue.menuApi, exportWorkbook: fetchMenuWorkbook }, fetchMenuWorkbook };

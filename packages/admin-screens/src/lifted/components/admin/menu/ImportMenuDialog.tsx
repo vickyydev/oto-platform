@@ -1,5 +1,6 @@
 import { useAdminScreenRuntime } from '../../../runtime/AdminScreenRuntime';
-import { useRef, useState } from "react";
+import type { MenuImportApi } from '../../../runtime/menu';
+import { useCallback, useEffect, useRef, useState } from "react";
 import { FileSpreadsheet, Loader2, Upload } from "lucide-react";
 import { Button } from "../../ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../../ui/dialog";
@@ -12,7 +13,7 @@ interface ImportMenuDialogProps {
   /** Null when this branch has no row on the platform; the dialog then refuses. */
   branchId: string | null;
   /** Re-read the menu after a commit, so the screens show what was written. */
-  onApplied(): void;
+  onApplied(): void | Promise<void>;
 }
 
 const ACTION_LABEL: Record<MenuImportAction, string> = {
@@ -43,9 +44,12 @@ const ACTION_TONE: Record<MenuImportAction, string> = {
  * the dialog closes. Nothing is read from the store here — the diff on screen is
  * the platform's, computed against the rows it is about to write.
  */
-export function ImportMenuDialog({ open, onClose, branchId, onApplied }: ImportMenuDialogProps) {
+export function ImportMenuDialog(props: ImportMenuDialogProps) {
   const runtime = useAdminScreenRuntime();
-  const menuApi = runtime.api.menu.menuApi;
+  return <ImportMenuDialogWithPorts {...props} api={runtime.api.menu.menuApi} />;
+}
+
+export function ImportMenuDialogWithPorts({ open, onClose, branchId, onApplied, api: menuApi }: ImportMenuDialogProps & { api: MenuImportApi }) {
 
   const fileRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -54,15 +58,26 @@ export function ImportMenuDialog({ open, onClose, branchId, onApplied }: ImportM
   const [busy, setBusy] = useState(false);
   const [preview, setPreview] = useState<MenuImportPreview | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
+  const busyRef = useRef(false);
+  const generation = useRef(0);
+  const previewBranch = useRef<string | null>(null);
+  const active = useRef({ open, branchId });
+  active.current = { open, branchId };
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; generation.current++; }; }, []);
 
-  const reset = () => {
+  const reset = useCallback(() => {
+    generation.current++;
+    busyRef.current = false;
+    previewBranch.current = null;
     setFile(null);
     setContent(null);
     setPreview(null);
     setFailure(null);
     setBusy(false);
     if (fileRef.current) fileRef.current.value = '';
-  };
+  }, []);
+  useEffect(() => { reset(); }, [open, branchId, reset]);
 
   const close = () => {
     reset();
@@ -70,6 +85,10 @@ export function ImportMenuDialog({ open, onClose, branchId, onApplied }: ImportM
   };
 
   const read = async (chosen: File) => {
+    if (busyRef.current) return;
+    const request = ++generation.current, targetBranch = branchId;
+    const current = () => mounted.current && request === generation.current && active.current.open && active.current.branchId === targetBranch;
+    busyRef.current = true;
     setBusy(true);
     setFailure(null);
     setPreview(null);
@@ -83,6 +102,7 @@ export function ImportMenuDialog({ open, onClose, branchId, onApplied }: ImportM
         return;
       }
       const bytes = new Uint8Array(await chosen.arrayBuffer());
+      if (!current()) return;
       let binary = '';
       for (const byte of bytes) binary += String.fromCharCode(byte);
       const contentBase64 = btoa(binary);
@@ -90,10 +110,12 @@ export function ImportMenuDialog({ open, onClose, branchId, onApplied }: ImportM
         filename: chosen.name,
         contentBase64,
       });
+      if (!current()) return;
+      previewBranch.current = targetBranch;
       setContent(contentBase64);
       setPreview(result);
     } catch (err) {
-      setFailure(
+      if (current()) setFailure(
         isMissingRoute(err)
           ? 'The menu import is not on this deployment yet.'
           : err instanceof Error
@@ -101,12 +123,16 @@ export function ImportMenuDialog({ open, onClose, branchId, onApplied }: ImportM
             : 'That file could not be read.',
       );
     } finally {
-      setBusy(false);
+      if (current()) { busyRef.current = false; setBusy(false); }
     }
   };
 
   const apply = async () => {
-    if (!preview || !content || !file || !branchId) return;
+    if (!preview || !content || !file || !branchId || busyRef.current || previewBranch.current !== branchId) return;
+    const request = ++generation.current, targetBranch = branchId;
+    const current = () => mounted.current && request === generation.current && active.current.open && active.current.branchId === targetBranch;
+    let committed = false;
+    busyRef.current = true;
     setBusy(true);
     setFailure(null);
     try {
@@ -115,12 +141,17 @@ export function ImportMenuDialog({ open, onClose, branchId, onApplied }: ImportM
         filename: file.name,
         contentBase64: content,
       });
-      onApplied();
-      close();
+      committed = true;
+      if (!current()) return;
+      // A confirmed commit cannot become a second Apply if its readback fails.
+      previewBranch.current = null;
+      setPreview(null);
+      setContent(null);
+      await onApplied();
+      if (current()) close();
     } catch (err) {
-      setFailure(err instanceof Error ? err.message : 'Those changes could not be applied.');
-      setBusy(false);
-    }
+      if (current()) setFailure(committed ? 'Imported, but the screen could not be refreshed. Reload the page to see it.' : err instanceof Error ? err.message : 'Those changes could not be applied.');
+    } finally { if (current()) { busyRef.current = false; setBusy(false); } }
   };
 
   const blocked = !!preview && preview.errors.length > 0;

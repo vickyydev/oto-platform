@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { type ModifierGroup, type ModifierOption, type WeekdayWeekendPrice } from "../../../model/types";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../../ui/dialog";
@@ -15,7 +15,7 @@ interface ModifierGroupFormDialogProps {
   /** The shared group being edited, or null when creating a new one. */
   group: ModifierGroup | null;
   onOpenChange: (open: boolean) => void;
-  onSave: (group: ModifierGroup) => void;
+  onSave: (group: ModifierGroup) => void | Promise<void>;
 }
 
 interface OptionDraft {
@@ -77,11 +77,19 @@ export function ModifierGroupFormDialog({
 }: ModifierGroupFormDialogProps) {
   const [form, setForm] = useState<FormState>(() => blankState());
   const [errors, setErrors] = useState<FormErrors>({});
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const active = useRef({ open, group, form });
+  active.current = { open, group, form };
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
 
   useEffect(() => {
     if (!open) return;
     setForm(group ? fromGroup(group) : blankState());
     setErrors({});
+    setSaveError(null);
   }, [open, group]);
 
   const setField = <K extends keyof FormState>(key: K, value: FormState[K]) =>
@@ -172,13 +180,21 @@ export function ModifierGroupFormDialog({
     return result;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (savingRef.current) return;
     const result = validate();
-    if (result) {
-      onSave(result);
-      onOpenChange(false);
-    }
+    if (!result) return;
+    savingRef.current = true;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await onSave(result);
+      if (mounted.current && active.current.open && active.current.group === group && active.current.form === form) onOpenChange(false);
+    } catch (failure) {
+      if (mounted.current && active.current.open && active.current.group === group)
+        setSaveError(failure instanceof Error ? failure.message : 'The modifier group could not be saved.');
+    } finally { savingRef.current = false; if (mounted.current) setSaving(false); }
   };
 
   return (
@@ -295,7 +311,7 @@ export function ModifierGroupFormDialog({
                       type="number"
                       inputMode="numeric"
                       min={0}
-                      step="1"
+                      step="0.01"
                       className="w-16"
                       value={o.price.weekday}
                       onChange={(e) =>
@@ -313,7 +329,7 @@ export function ModifierGroupFormDialog({
                       type="number"
                       inputMode="numeric"
                       min={0}
-                      step="1"
+                      step="0.01"
                       className="w-16"
                       value={o.price.weekend}
                       onChange={(e) =>
@@ -331,7 +347,7 @@ export function ModifierGroupFormDialog({
                       type="number"
                       inputMode="numeric"
                       min={0}
-                      step="1"
+                      step="0.01"
                       className="w-16"
                       value={o.cost}
                       onChange={(e) =>
@@ -378,6 +394,7 @@ export function ModifierGroupFormDialog({
             </Button>
           </div>
 
+          {saveError && <p role="alert" className="text-sm text-destructive">{saveError}</p>}
           <DialogFooter className="gap-2 sm:gap-2">
             <Button
               type="button"
@@ -386,7 +403,7 @@ export function ModifierGroupFormDialog({
             >
               Cancel
             </Button>
-            <Button type="submit">
+            <Button type="submit" disabled={saving}>
               {group ? 'Save changes' : 'Add group'}
             </Button>
           </DialogFooter>

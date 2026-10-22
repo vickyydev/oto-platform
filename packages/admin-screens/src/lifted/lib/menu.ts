@@ -2,7 +2,7 @@ import { type MenuCategoryDef, type MenuItem, type ModifierGroup, type PrepStati
 import type { CatalogReaders } from '../model/ports';
 
 /** Original domain rules, bound to this host's explicit data ports. */
-export function createMenuHelpers(deps: { catalog: CatalogReaders }) {
+export function createMenuHelpers(deps: { catalog: Pick<CatalogReaders, 'getMenuCategories' | 'getModifierGroups'> }) {
 const { getMenuCategories, getModifierGroups } = deps.catalog;
 
 

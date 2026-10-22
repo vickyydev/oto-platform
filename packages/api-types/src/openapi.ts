@@ -5964,7 +5964,12 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                        };
+                    };
                 };
             };
         };
@@ -6001,7 +6006,12 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            ok: true;
+                        };
+                    };
                 };
             };
         };
@@ -6045,7 +6055,12 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            ok: true;
+                        };
+                    };
                 };
             };
         };
@@ -6314,7 +6329,12 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                        };
+                    };
                 };
             };
         };
@@ -6351,7 +6371,12 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            ok: true;
+                        };
+                    };
                 };
             };
         };
@@ -6414,7 +6439,12 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            ok: true;
+                        };
+                    };
                 };
             };
         };
@@ -6657,7 +6687,45 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            previewToken: string;
+                            filename: string;
+                            counts: {
+                                create: number;
+                                update: number;
+                                archive: number;
+                                unchanged: number;
+                                ignored: number;
+                            };
+                            categories: {
+                                create: number;
+                                update: number;
+                                archive: number;
+                                unchanged: number;
+                            };
+                            rows: {
+                                sheet: string;
+                                row: number;
+                                code: string | null;
+                                name: string;
+                                /** @enum {string} */
+                                action: "create" | "update" | "archive" | "unchanged";
+                                changes: {
+                                    field: string;
+                                    from: string | null;
+                                    to: string | null;
+                                }[];
+                            }[];
+                            errors: {
+                                sheet: string;
+                                row: number;
+                                column: string | null;
+                                message: string;
+                            }[];
+                            notice: string;
+                        };
+                    };
                 };
             };
         };
@@ -6701,7 +6769,16 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            created: number;
+                            updated: number;
+                            archived: number;
+                            categoriesCreated: number;
+                            categoriesUpdated: number;
+                            categoriesArchived: number;
+                        };
+                    };
                 };
             };
         };

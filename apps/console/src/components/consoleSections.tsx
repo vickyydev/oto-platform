@@ -35,6 +35,14 @@ export interface ConsoleNavGroup {
 
 /** Existing pages keep their permissions and their old addresses. */
 export const CONSOLE_SECTIONS: ConsoleSection[] = [
+  { id: 'menu', path: '/catalogue/menu', label: 'Menu', icon: Ticket,
+    description: 'Menu items, prices, preparation, tax and workbook import and export.', permission: 'catalog:menu:read' },
+  { id: 'categories', path: '/catalogue/categories', label: 'Categories', icon: Ticket,
+    description: 'Shared food and drink categories and their inherited defaults.', permission: 'catalog:menu:read' },
+  { id: 'modifiers', path: '/catalogue/modifiers', label: 'Modifiers', icon: Ticket,
+    description: 'Shared modifier questions, choices and prices.', permission: 'catalog:menu:read' },
+  { id: 'merch', path: '/catalogue/merch', label: 'Merch', icon: Ticket,
+    description: 'Shop items, weekday and weekend prices, sizes and barcodes.', permission: 'catalog:menu:read' },
   { id: 'tickets', path: '/catalogue/tickets', label: 'Tickets', icon: Ticket,
     description: 'Ticket types, weekday and weekend prices, adult rules and included items.', permission: 'catalog:package:read' },
   { id: 'tiers', path: '/catalogue/tiers', label: 'Tiers', icon: Users,
@@ -211,9 +219,9 @@ export const consoleNav: ConsoleNavGroup[] = [
   },
   {
     id: 'catalogue', label: 'Catalogue & money', icon: Ticket,
-    description: 'Tickets, customer tiers, add-ons, voucher types and issued vouchers.',
+    description: 'Tickets, tiers, add-ons, menu items, categories, modifiers, merch and vouchers.',
     gate: { any: ['catalog:package:read', 'catalog:menu:read'] },
-    sections: pages('tickets', 'tiers', 'add-ons', 'voucher-types', 'vouchers'),
+    sections: pages('tickets', 'tiers', 'add-ons', 'menu', 'categories', 'modifiers', 'merch', 'voucher-types', 'vouchers'),
     currentHome: { app: 'pos', path: '/admin', label: 'Open catalogue and pricing in POS Admin' },
   },
   {

@@ -387,7 +387,7 @@ export async function readMenu(db: Db, opts: MenuReadOptions): Promise<MenuSnaps
         .select()
         .from(modifierOption)
         .where(
-          and(inArray(modifierOption.modifierGroupId, groupIds), isNull(modifierOption.archivedAt)),
+          and(inArray(modifierOption.modifierGroupId, groupIds), eq(modifierOption.operatorId, opts.operatorId), isNull(modifierOption.archivedAt)),
         )
         .orderBy(asc(modifierOption.sortOrder), asc(modifierOption.name))
     : [];

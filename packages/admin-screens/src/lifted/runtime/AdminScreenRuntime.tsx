@@ -13,7 +13,9 @@ export interface AdminScreenApis {
   platform: Omit<PlatformAdminApis, 'adminApi'> & {
     adminApi: Pick<PlatformAdminApis['adminApi'], 'operators' | 'createOperator' | 'archiveOperator' | 'assignOperatorAdmin'>;
   };
-  menu: ReturnType<typeof import('../api/menu').createMenuApi>;
+  // The original POS bridge exposes hydration writes; Console composes the
+  // separate confirmed-write helper without adding a POS module export.
+  menu: Omit<ReturnType<typeof import('../api/menu').createMenuApi>, 'saveMenuItem'>;
   catalogBridge: ReturnType<typeof import('../api/catalogBridge').createCatalogBridge>;
   analyticsReports: ReturnType<typeof import('../api/analyticsReports').createAnalyticsReportsApi>;
   benefits: ReturnType<typeof import('../api/benefits').createBenefitsAdminApi>;

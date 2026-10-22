@@ -34,6 +34,7 @@ import { AccessReview } from '@/pages/AccessReview';
 import { Operators } from '@/pages/Operators';
 import { Holidays } from '@/pages/Holidays';
 import { Catalogue } from '@/pages/Catalogue';
+import { MenuCatalogue } from '@/pages/MenuCatalogue';
 
 const LAUNCHER_URL = import.meta.env.VITE_LAUNCHER_URL?.trim();
 
@@ -134,6 +135,10 @@ function NotFound() {
 }
 
 const pageElements: Record<string, ReactElement> = {
+  menu: <MenuCatalogue page="menu" />,
+  categories: <MenuCatalogue page="categories" />,
+  modifiers: <MenuCatalogue page="modifiers" />,
+  merch: <MenuCatalogue page="merch" />,
   tickets: <Catalogue page="tickets" />,
   tiers: <Catalogue page="tiers" />,
   'add-ons': <Catalogue page="add-ons" />,

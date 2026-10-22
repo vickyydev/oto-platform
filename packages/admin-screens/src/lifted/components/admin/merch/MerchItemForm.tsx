@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { type MerchItem, type MerchVariant, type TaxableCategory, type WeekdayWeekendPrice } from "../../../model/types";
 import { WeekdayWeekendPriceInput } from "../../shared/WeekdayWeekendPriceInput";
@@ -32,7 +32,7 @@ interface MerchItemFormProps {
    * `trackStock` tells the panel whether this merch item should be linked to a
    * unified inventory item (create the link when true, drop it when false).
    */
-  onSave: (item: MerchItem, trackStock: boolean) => void;
+  onSave: (item: MerchItem, trackStock: boolean) => void | Promise<void>;
 }
 
 /**
@@ -178,11 +178,19 @@ function sizesToVariants(sizes: SizeRow[]): MerchVariant[] {
 export function MerchItemForm({ open, item, onClose, onSave }: MerchItemFormProps) {
   const [form, setForm] = useState<FormState>(() => blankState());
   const [errors, setErrors] = useState<FormErrors>({});
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const active = useRef({ open, item, form });
+  active.current = { open, item, form };
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
 
   useEffect(() => {
     if (!open) return;
     setForm(item ? fromItem(item) : blankState());
     setErrors({});
+    setSaveError(null);
   }, [open, item]);
 
   const setField = <K extends keyof FormState>(key: K, value: FormState[K]) =>
@@ -242,10 +250,21 @@ export function MerchItemForm({ open, item, onClose, onSave }: MerchItemFormProp
     };
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (savingRef.current) return;
     const result = validate();
-    if (result) onSave(result, form.trackStock);
+    if (!result) return;
+    savingRef.current = true;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await onSave(result, form.trackStock);
+      if (mounted.current && active.current.open && active.current.item === item && active.current.form === form) onClose();
+    } catch (failure) {
+      if (mounted.current && active.current.open && active.current.item === item)
+        setSaveError(failure instanceof Error ? failure.message : 'The merch item could not be saved.');
+    } finally { savingRef.current = false; if (mounted.current) setSaving(false); }
   };
 
   return (
@@ -356,7 +375,7 @@ export function MerchItemForm({ open, item, onClose, onSave }: MerchItemFormProp
                 id="mi-cost"
                 type="number"
                 min={0}
-                step={1}
+                step={0.01}
                 placeholder="120"
                 value={form.cost}
                 onChange={(e) => setField('cost', e.target.value)}
@@ -424,11 +443,12 @@ export function MerchItemForm({ open, item, onClose, onSave }: MerchItemFormProp
           </div>
         </form>
 
+        {saveError && <p role="alert" className="text-sm text-destructive">{saveError}</p>}
         <DialogFooter className="mt-4">
           <Button variant="outline" type="button" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" form="merch-item-form">
+          <Button type="submit" form="merch-item-form" disabled={saving}>
             {item ? 'Save changes' : 'Add item'}
           </Button>
         </DialogFooter>

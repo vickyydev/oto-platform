@@ -71,6 +71,20 @@ async function request<T>(
 
 export const api = {
   get: <T>(path: string) => request<T>('GET', path),
+  getFile: async (path: string, signal?: AbortSignal) => {
+    const res = await fetch(`${API_PREFIX}${path}`, { credentials: 'same-origin', signal });
+    if (!res.ok) {
+      const data = await res.json().catch(() => null) as { error?: { code: string; message: string; details?: unknown } } | null;
+      if (res.status === 401 && !path.startsWith('/auth') && !path.startsWith('/public')) {
+        window.dispatchEvent(new CustomEvent('oto:unauthorized'));
+      }
+      if (res.status === 423) window.dispatchEvent(new CustomEvent('oto:session-locked'));
+      throw new ApiError(res.status, data?.error?.code ?? 'UNKNOWN', data?.error?.message ?? res.statusText, data?.error?.details);
+    }
+    const disposition = res.headers.get('content-disposition');
+    const filename = disposition ? (/filename="([^"]+)"/.exec(disposition)?.[1] ?? /filename=([^;]+)/.exec(disposition)?.[1]?.trim() ?? null) : null;
+    return { blob: await res.blob(), filename, contentType: res.headers.get('content-type') };
+  },
   post: <T>(path: string, body?: unknown, opts?: { idempotencyKey?: string }) =>
     request<T>('POST', path, body, opts),
   patch: <T>(path: string, body?: unknown, opts?: { idempotencyKey?: string }) =>

@@ -11287,7 +11287,24 @@
         },
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "required": [
+                    "id"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -11382,7 +11399,26 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       },
@@ -11401,7 +11437,26 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -12036,7 +12091,24 @@
         },
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "required": [
+                    "id"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -12182,7 +12254,26 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       },
@@ -12201,7 +12292,26 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -12582,7 +12692,188 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "previewToken": {
+                      "type": "string"
+                    },
+                    "filename": {
+                      "type": "string"
+                    },
+                    "counts": {
+                      "type": "object",
+                      "properties": {
+                        "create": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "update": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "archive": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "unchanged": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "ignored": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "create",
+                        "update",
+                        "archive",
+                        "unchanged",
+                        "ignored"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "categories": {
+                      "type": "object",
+                      "properties": {
+                        "create": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "update": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "archive": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "unchanged": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "create",
+                        "update",
+                        "archive",
+                        "unchanged"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "rows": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "sheet": {
+                            "type": "string"
+                          },
+                          "row": {
+                            "type": "integer"
+                          },
+                          "code": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "action": {
+                            "type": "string",
+                            "enum": [
+                              "create",
+                              "update",
+                              "archive",
+                              "unchanged"
+                            ]
+                          },
+                          "changes": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "field": {
+                                  "type": "string"
+                                },
+                                "from": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "to": {
+                                  "type": "string",
+                                  "nullable": true
+                                }
+                              },
+                              "required": [
+                                "field",
+                                "from",
+                                "to"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "required": [
+                          "sheet",
+                          "row",
+                          "code",
+                          "name",
+                          "action",
+                          "changes"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "sheet": {
+                            "type": "string"
+                          },
+                          "row": {
+                            "type": "integer"
+                          },
+                          "column": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "sheet",
+                          "row",
+                          "column",
+                          "message"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "notice": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "previewToken",
+                    "filename",
+                    "counts",
+                    "categories",
+                    "rows",
+                    "errors",
+                    "notice"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -12635,7 +12926,49 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "created": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "updated": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "archived": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "categoriesCreated": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "categoriesUpdated": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "categoriesArchived": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "created",
+                    "updated",
+                    "archived",
+                    "categoriesCreated",
+                    "categoriesUpdated",
+                    "categoriesArchived"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }

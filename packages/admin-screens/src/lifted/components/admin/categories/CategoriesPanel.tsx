@@ -1,12 +1,13 @@
 import { useAdminScreenRuntime } from '../../../runtime/AdminScreenRuntime';
-import { useState } from "react";
+import { useOperatorMenuCapability, type CategoriesPanelPorts } from '../../../runtime/menu';
+import { useEffect, useRef, useState } from "react";
 import { Pencil, Trash2, Plus, Tags, ChevronUp, ChevronDown, CornerDownRight } from "lucide-react";
 import { type MenuCategoryDef } from "../../../model/types";
 import { useCatalogStore } from "../../../runtime/AdminScreenRuntime";
 
 import { Button } from "../../ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../../ui/alert-dialog";
-import { CategoryFormDialog } from "./CategoryFormDialog";
+import { CategoryFormDialogWithPorts } from "./CategoryFormDialog";
 import { PREP_STATION_LABELS, TAX_CATEGORY_LABELS } from "./categoryLabels";
 
 /**
@@ -28,12 +29,15 @@ import { PREP_STATION_LABELS, TAX_CATEGORY_LABELS } from "./categoryLabels";
  */
 export function CategoriesPanel() {
   const runtime = useAdminScreenRuntime();
-  const topLevelCategories = runtime.domain.menu.topLevelCategories;
-  const subCategoriesOf = runtime.domain.menu.subCategoriesOf;
-  const categoryPrepStation = runtime.domain.menu.categoryPrepStation;
-  const categoryTaxCategory = runtime.domain.menu.categoryTaxCategory;
-
   const { menuCategories, menuItems, discounts, mutators } = useCatalogStore();
+  const scope = useOperatorMenuCapability(runtime.transport, runtime.session.operator?.id, Boolean(runtime.branch.branch.apiId), runtime.session.operator);
+  return <CategoriesPanelWithPorts ports={{ menuCategories, menuItems, discounts, menuHelpers: runtime.domain.menu, ...mutators, ...scope }} />;
+}
+
+export function CategoriesPanelWithPorts({ ports }: { ports: CategoriesPanelPorts }) {
+  const { topLevelCategories, subCategoriesOf, categoryPrepStation, categoryTaxCategory } = ports.menuHelpers;
+  const { menuCategories, menuItems, discounts } = ports;
+  const mutators = ports;
 
   const topLevels = topLevelCategories(menuCategories);
 
@@ -43,6 +47,18 @@ export function CategoriesPanel() {
   const [pendingDelete, setPendingDelete] = useState<MenuCategoryDef | null>(
     null
   );
+  const canManage = ports.canManage !== false;
+  const manageRef = useRef(canManage);
+  manageRef.current = canManage;
+  const [writeError, setWriteError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const deletingRef = useRef(false);
+  const deleteTarget = useRef(pendingDelete);
+  deleteTarget.current = pendingDelete;
+  const [moving, setMoving] = useState(false);
+  const movingRef = useRef(false);
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
 
   // Count of menu items still pointing directly at a given category.
   const itemCount = (id: string) =>
@@ -86,19 +102,28 @@ export function CategoriesPanel() {
   const pendingReassignCount =
     pendingDelete && isSub(pendingDelete) ? itemCount(pendingDelete.id) : 0;
 
-  const confirmDelete = () => {
-    if (pendingDelete && !isBlocked(pendingDelete)) {
+  const confirmDelete = async () => {
+    if (!pendingDelete || isBlocked(pendingDelete) || deletingRef.current || !manageRef.current) return;
+    const target = pendingDelete;
+    deletingRef.current = true;
+    setDeleting(true);
+    setWriteError(null);
+    try {
       // Re-home a sub-category's items onto its parent before removing it.
-      if (isSub(pendingDelete) && pendingDelete.parentId) {
+      if (isSub(target) && target.parentId) {
         for (const m of menuItems.filter(
-          (i) => i.category === pendingDelete.id
+          (i) => i.category === target.id
         )) {
-          mutators.upsertMenuItem({ ...m, category: pendingDelete.parentId });
+          if (!mounted.current || !manageRef.current || deleteTarget.current !== target) return;
+          await mutators.upsertMenuItem({ ...m, category: target.parentId });
         }
       }
-      mutators.deleteMenuCategory(pendingDelete.id);
-    }
-    setPendingDelete(null);
+      if (!mounted.current || !manageRef.current || deleteTarget.current !== target) return;
+      await mutators.deleteMenuCategory(target.id);
+      if (mounted.current && deleteTarget.current === target) setPendingDelete(null);
+    } catch (failure) {
+      if (mounted.current && deleteTarget.current === target) setWriteError(failure instanceof Error ? failure.message : 'The category could not be deleted.');
+    } finally { deletingRef.current = false; if (mounted.current) setDeleting(false); }
   };
 
   // Human-readable list of what still blocks the pending category.
@@ -117,14 +142,21 @@ export function CategoriesPanel() {
   };
 
   // Swap a sub-category's sortOrder with its neighbour to reorder within parent.
-  const moveSub = (sub: MenuCategoryDef, dir: -1 | 1) => {
-    if (!sub.parentId) return;
+  const moveSub = async (sub: MenuCategoryDef, dir: -1 | 1) => {
+    if (!sub.parentId || movingRef.current || !manageRef.current) return;
     const siblings = subCategoriesOf(sub.parentId, menuCategories);
     const idx = siblings.findIndex((s) => s.id === sub.id);
     const target = siblings[idx + dir];
     if (!target) return;
-    mutators.upsertMenuCategory({ ...sub, sortOrder: target.sortOrder });
-    mutators.upsertMenuCategory({ ...target, sortOrder: sub.sortOrder });
+    movingRef.current = true;
+    setMoving(true);
+    setWriteError(null);
+    try {
+      await mutators.upsertMenuCategory({ ...sub, sortOrder: target.sortOrder });
+      if (mounted.current && manageRef.current) await mutators.upsertMenuCategory({ ...target, sortOrder: sub.sortOrder });
+    } catch (failure) {
+      if (mounted.current) setWriteError(failure instanceof Error ? failure.message : 'The categories could not be reordered.');
+    } finally { movingRef.current = false; if (mounted.current) setMoving(false); }
   };
 
   const prepLabel = (c: MenuCategoryDef) => {
@@ -142,6 +174,8 @@ export function CategoriesPanel() {
 
   return (
     <div className="flex flex-col gap-6">
+      {ports.authorityMessage && <p className="text-sm text-foreground/50">{ports.authorityMessage}</p>}
+      {writeError && !pendingDelete && <p role="alert" className="text-sm text-destructive">{writeError}</p>}
       {/* No notice: since SCRUM-341 everything on this screen — the category,
           its nesting, its prep station and its tax area — is written to
           `pos.product_category` and read back. */}
@@ -152,10 +186,10 @@ export function CategoriesPanel() {
             <h2 className="text-lg font-bold">F&B Categories</h2>
             <span className="text-sm text-foreground/40">({totalCount})</span>
           </div>
-          <Button onClick={openAddTopLevel}>
+          {canManage && <Button onClick={openAddTopLevel}>
             <Plus className="w-4 h-4" />
             Add category
-          </Button>
+          </Button>}
         </div>
 
         {topLevels.length === 0 ? (
@@ -187,7 +221,7 @@ export function CategoriesPanel() {
                           }`}
                       </div>
                     </div>
-                    <div className="flex shrink-0 items-center gap-2">
+                    {canManage && <div className="flex shrink-0 items-center gap-2">
                       <Button
                         variant="outline"
                         size="sm"
@@ -212,7 +246,7 @@ export function CategoriesPanel() {
                       >
                         <Trash2 className="w-4 h-4 text-destructive" />
                       </Button>
-                    </div>
+                    </div>}
                   </div>
 
                   {/* Sub-category rows */}
@@ -238,11 +272,11 @@ export function CategoriesPanel() {
                               </div>
                             </div>
                           </div>
-                          <div className="flex shrink-0 items-center gap-1.5">
+                          {canManage && <div className="flex shrink-0 items-center gap-1.5">
                             <Button
                               variant="outline"
                               size="icon"
-                              disabled={i === 0}
+                              disabled={i === 0 || moving}
                               onClick={() => moveSub(sub, -1)}
                               aria-label={`Move ${sub.name} up`}
                             >
@@ -251,7 +285,7 @@ export function CategoriesPanel() {
                             <Button
                               variant="outline"
                               size="icon"
-                              disabled={i === subs.length - 1}
+                              disabled={i === subs.length - 1 || moving}
                               onClick={() => moveSub(sub, 1)}
                               aria-label={`Move ${sub.name} down`}
                             >
@@ -273,7 +307,7 @@ export function CategoriesPanel() {
                             >
                               <Trash2 className="w-4 h-4 text-destructive" />
                             </Button>
-                          </div>
+                          </div>}
                         </div>
                       ))}
                     </div>
@@ -286,14 +320,15 @@ export function CategoriesPanel() {
       </section>
 
       {/* Form */}
-      <CategoryFormDialog
+      {formOpen && canManage && <CategoryFormDialogWithPorts
+        menuHelpers={ports.menuHelpers}
         open={formOpen}
         category={editing}
         categories={menuCategories}
         defaultParentId={addParentId}
         onOpenChange={setFormOpen}
         onSave={mutators.upsertMenuCategory}
-      />
+      />}
 
       {/* Delete confirmation — blocked while the category is still referenced. */}
       <AlertDialog
@@ -323,13 +358,15 @@ export function CategoriesPanel() {
                     : `“${pendingDelete.name}” will be removed and no longer available when categorising F&B items.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {writeError && <p role="alert" className="text-sm text-destructive">{writeError}</p>}
           <AlertDialogFooter>
             <AlertDialogCancel>
               {pendingBlocked ? 'OK' : 'Cancel'}
             </AlertDialogCancel>
             {!pendingBlocked && (
               <AlertDialogAction
-                onClick={confirmDelete}
+                onClick={event => { event.preventDefault(); void confirmDelete(); }}
+                disabled={deleting || !canManage}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
                 Delete

@@ -1,5 +1,6 @@
 import { useAdminScreenRuntime } from '../../../runtime/AdminScreenRuntime';
-import { useEffect, useMemo, useState } from "react";
+import { useOperatorMenuCapability, type MerchPanelPorts } from '../../../runtime/menu';
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Pencil, Trash2, Plus, Info, AlertTriangle, Eye, EyeOff, Package } from "lucide-react";
 import { type MerchItem } from "../../../model/types";
 import { INVENTORY_DEFAULT_VARIANT_ID } from "../../../model/types";
@@ -26,10 +27,9 @@ export function MerchPanel() {
   const formatWWPrice = runtime.domain.pricingMode.formatWWPrice;
 
   const { merchItems, inventory, mutators } = useCatalogStore();
-
-  const [formOpen, setFormOpen] = useState(false);
-  const [editing, setEditing] = useState<MerchItem | null>(null);
-  const [pendingDelete, setPendingDelete] = useState<MerchItem | null>(null);
+  const branch = runtime.reads.getActiveBranch();
+  const apiBranchId = runtime.api.catalogBridge.apiBranchIdForSlug(branch.id);
+  const scope = useOperatorMenuCapability(runtime.transport, runtime.session.operator?.id, apiBranchId !== null, runtime.session.operator, apiBranchId ?? undefined);
 
   /**
    * SCRUM-379 — THE ROWS ON SCREEN CARRY STOCK, read the way the shop grid
@@ -46,13 +46,33 @@ export function MerchPanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [merchItems, inventory, stockVersion],
   );
-  const rawById = useMemo(() => new Map(merchItems.map((m) => [m.id, m])), [merchItems]);
-  const raw = (item: MerchItem): MerchItem => rawById.get(item.id) ?? item;
-
   // The counts as they stand now, not as they stood at sign-in.
   useEffect(() => {
     void refreshSellableStock();
   }, [refreshSellableStock]);
+
+  return <MerchPanelWithPorts ports={{ merchItems, shownItems, formatWWPrice, ...mutators, canCreate: scope.canManageBranch,
+    canManageItem: item => scope.canManageProduct(runtime.api.menu.serverFieldsFor(item.id)?.branchId) }} />;
+}
+
+export function MerchPanelWithPorts({ ports }: { ports: MerchPanelPorts }) {
+  const { merchItems, shownItems, formatWWPrice } = ports;
+  const mutators = ports;
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<MerchItem | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<MerchItem | null>(null);
+  const [writeError, setWriteError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const deletingRef = useRef(false);
+  const deleteTarget = useRef(pendingDelete);
+  deleteTarget.current = pendingDelete;
+  const [toggling, setToggling] = useState<string | null>(null);
+  const togglingRef = useRef(false);
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  const canManage = (item: MerchItem) => ports.canManageItem?.(item) ?? true;
+  const rawById = useMemo(() => new Map(merchItems.map((m) => [m.id, m])), [merchItems]);
+  const raw = (item: MerchItem): MerchItem => rawById.get(item.id) ?? item;
 
   const lowStock = shownItems.filter((m) => isLowStock(m) || isOutOfStock(m));
 
@@ -66,13 +86,29 @@ export function MerchPanel() {
     setFormOpen(true);
   };
 
-  const confirmDelete = () => {
-    if (pendingDelete) mutators.deleteMerchItem(pendingDelete.id);
-    setPendingDelete(null);
+  const confirmDelete = async () => {
+    if (!pendingDelete || deletingRef.current || !canManage(pendingDelete)) return;
+    const target = pendingDelete;
+    deletingRef.current = true;
+    setDeleting(true);
+    setWriteError(null);
+    try {
+      await mutators.deleteMerchItem(target.id);
+      if (mounted.current && deleteTarget.current === target) setPendingDelete(null);
+    } catch (failure) {
+      if (mounted.current && deleteTarget.current === target) setWriteError(failure instanceof Error ? failure.message : 'The merch item could not be deleted.');
+    } finally { deletingRef.current = false; if (mounted.current) setDeleting(false); }
   };
 
-  const toggleActive = (item: MerchItem) =>
-    mutators.upsertMerchItem({ ...raw(item), active: !item.active });
+  const toggleActive = async (item: MerchItem) => {
+    if (togglingRef.current || !canManage(item)) return;
+    togglingRef.current = true;
+    setToggling(item.id);
+    setWriteError(null);
+    try { await mutators.upsertMerchItem({ ...raw(item), active: !item.active }); }
+    catch (failure) { if (mounted.current) setWriteError(failure instanceof Error ? failure.message : 'The merch item could not be saved.'); }
+    finally { togglingRef.current = false; if (mounted.current) setToggling(null); }
+  };
 
   const stockBadge = (item: MerchItem) => {
     if (isOutOfStock(item)) {
@@ -108,14 +144,16 @@ export function MerchPanel() {
         on here alone does not create that link. Manage stock counts in Inventory.
       </AdminNoticeBanner>
 
+      {writeError && !pendingDelete && <p role="alert" className="text-sm text-destructive">{writeError}</p>}
+
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm text-foreground/50">
           {merchItems.length} {merchItems.length === 1 ? 'item' : 'items'}
         </p>
-        <Button onClick={openAdd}>
+        {ports.canCreate !== false && <Button onClick={openAdd}>
           <Plus className="w-4 h-4" />
           Add item
-        </Button>
+        </Button>}
       </div>
 
       {/* Low-stock / out-of-stock summary — manage stock in the Inventory panel */}
@@ -188,11 +226,12 @@ export function MerchPanel() {
                   )}
                 </div>
               </div>
-              <div className="flex shrink-0 items-center gap-2">
+              {canManage(item) && <div className="flex shrink-0 items-center gap-2">
                 <Button
                   variant="outline"
                   size="icon"
                   onClick={() => toggleActive(item)}
+                  disabled={toggling === item.id}
                   aria-label={item.active ? `Retire ${item.name}` : `Restore ${item.name}`}
                   title={item.active ? 'Retire (hide from shop)' : 'Restore to shop'}
                 >
@@ -214,7 +253,7 @@ export function MerchPanel() {
                 >
                   <Trash2 className="w-4 h-4 text-destructive" />
                 </Button>
-              </div>
+              </div>}
             </div>
           ))}
         </div>
@@ -225,18 +264,18 @@ export function MerchPanel() {
         Stock levels are managed in the Inventory panel.
       </p>
 
-      <MerchItemForm
+      {formOpen && <MerchItemForm
         open={formOpen}
         item={editing}
         onClose={() => setFormOpen(false)}
-        onSave={(savedItem, trackStock) => {
+        onSave={async (savedItem, trackStock) => {
           // Reconcile the inventory link to match the "Track stock" toggle:
           // create+link when turned on, unlink+delete when turned off.
           let item = savedItem;
           const hasLink = !!item.inventoryItemId;
           if (trackStock && !hasLink) {
             const invId = `inv-m-${item.id}`;
-            mutators.upsertInventoryItem({
+            await mutators.upsertInventoryItem({
               id: invId,
               name: item.name,
               linkedKind: 'merch',
@@ -245,13 +284,13 @@ export function MerchPanel() {
             });
             item = { ...item, inventoryItemId: invId };
           } else if (!trackStock && hasLink) {
-            mutators.deleteInventoryItem(item.inventoryItemId!);
+            await mutators.deleteInventoryItem(item.inventoryItemId!);
             item = { ...item, inventoryItemId: undefined };
           }
-          mutators.upsertMerchItem(item);
-          setFormOpen(false);
+          if (!mounted.current) throw new Error('The merch screen changed before the item could be saved.');
+          await mutators.upsertMerchItem(item);
         }}
-      />
+      />}
 
       <AlertDialog
         open={pendingDelete !== null}
@@ -266,10 +305,12 @@ export function MerchPanel() {
                 : ''}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {writeError && <p role="alert" className="text-sm text-destructive">{writeError}</p>}
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={confirmDelete}
+              onClick={event => { event.preventDefault(); void confirmDelete(); }}
+              disabled={deleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Delete

@@ -1,5 +1,6 @@
 import { useAdminScreenRuntime } from '../../../runtime/AdminScreenRuntime';
-import { useEffect, useState } from "react";
+import type { MenuItemFormPorts } from '../../../runtime/menu';
+import { useEffect, useRef, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { type MenuItem, type ModifierGroup, type ModifierOption, type PrepStation, type TaxableCategory, type WeekdayWeekendPrice } from "../../../model/types";
 import { useCatalogStore } from "../../../runtime/AdminScreenRuntime";
@@ -46,7 +47,7 @@ interface MenuItemFormProps {
   /** The menu item being edited, or null when creating a new one. */
   item: MenuItem | null;
   onClose: () => void;
-  onSave: (item: MenuItem, trackStock: boolean) => void;
+  onSave: (item: MenuItem, trackStock: boolean) => void | Promise<void>;
 }
 
 interface OptionDraft {
@@ -133,14 +134,15 @@ const fromItem = (m: MenuItem): FormState => ({
   trackStock: !!m.inventoryItemId,
 });
 
-export function MenuItemForm({ open, item, onClose, onSave }: MenuItemFormProps) {
+export function MenuItemForm(props: MenuItemFormProps) {
   const runtime = useAdminScreenRuntime();
-  const topLevelCategories = runtime.domain.menu.topLevelCategories;
-  const subCategoriesOf = runtime.domain.menu.subCategoriesOf;
-  const categoryPrepStation = runtime.domain.menu.categoryPrepStation;
-  const categoryTaxCategory = runtime.domain.menu.categoryTaxCategory;
-
   const { menuCategories, modifierGroups } = useCatalogStore();
+  return <MenuItemFormWithPorts {...props} ports={{ menuCategories, modifierGroups, menuHelpers: runtime.domain.menu }} />;
+}
+
+export function MenuItemFormWithPorts({ open, item, onClose, onSave, ports }: MenuItemFormProps & { ports: MenuItemFormPorts }) {
+  const { topLevelCategories, subCategoriesOf, categoryPrepStation, categoryTaxCategory } = ports.menuHelpers;
+  const { menuCategories, modifierGroups } = ports;
   const orderedCategories = [...menuCategories].sort(
     (a, b) => a.sortOrder - b.sortOrder
   );
@@ -148,6 +150,13 @@ export function MenuItemForm({ open, item, onClose, onSave }: MenuItemFormProps)
 
   const [form, setForm] = useState<FormState>(() => blankState(fallbackCategory));
   const [errors, setErrors] = useState<FormErrors>({});
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const active = useRef({ open, item, form });
+  active.current = { open, item, form };
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
 
   // The category def the item currently belongs to (top-level OR sub-category) —
   // drives the "default" labels on the override selects so staff see what they'd
@@ -182,6 +191,7 @@ export function MenuItemForm({ open, item, onClose, onSave }: MenuItemFormProps)
     if (!open) return;
     setForm(item ? fromItem(item) : blankState(fallbackCategory));
     setErrors({});
+    setSaveError(null);
     // fallbackCategory only matters on open; categories rarely change mid-dialog.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, item]);
@@ -381,13 +391,25 @@ export function MenuItemForm({ open, item, onClose, onSave }: MenuItemFormProps)
       // Preserve the existing inventory link so the panel's reconcile (which keys
       // off inventoryItemId) sees the true current state on edit.
       ...(item?.inventoryItemId ? { inventoryItemId: item.inventoryItemId } : {}),
+      ...(item?.translations !== undefined ? { translations: item.translations } : {}),
     };
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (savingRef.current) return;
     const result = validate();
-    if (result) onSave(result, form.trackStock);
+    if (!result) return;
+    savingRef.current = true;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await onSave(result, form.trackStock);
+      if (mounted.current && active.current.open && active.current.item === item && active.current.form === form) onClose();
+    } catch (failure) {
+      if (mounted.current && active.current.open && active.current.item === item)
+        setSaveError(failure instanceof Error ? failure.message : 'The menu item could not be saved.');
+    } finally { savingRef.current = false; if (mounted.current) setSaving(false); }
   };
 
   return (
@@ -536,7 +558,7 @@ export function MenuItemForm({ open, item, onClose, onSave }: MenuItemFormProps)
                 type="number"
                 inputMode="numeric"
                 min={0}
-                step="1"
+                step="0.01"
                 value={form.cost}
                 onChange={(e) => setField('cost', e.target.value)}
                 placeholder="Optional"
@@ -612,6 +634,7 @@ export function MenuItemForm({ open, item, onClose, onSave }: MenuItemFormProps)
           </div>
 
           {/* Inline modifier groups (specific to this item) */}
+          <fieldset className="contents" disabled={ports.canManageInlineGroups === false}>
           <div className="flex flex-col gap-3 rounded-2xl border border-foreground/10 bg-foreground/[0.02] p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -771,7 +794,7 @@ export function MenuItemForm({ open, item, onClose, onSave }: MenuItemFormProps)
                                 type="number"
                                 inputMode="numeric"
                                 min={0}
-                                step="1"
+                                step="0.01"
                                 className="w-16"
                                 value={o.price.weekday}
                                 onChange={(e) =>
@@ -789,7 +812,7 @@ export function MenuItemForm({ open, item, onClose, onSave }: MenuItemFormProps)
                                 type="number"
                                 inputMode="numeric"
                                 min={0}
-                                step="1"
+                                step="0.01"
                                 className="w-16"
                                 value={o.price.weekend}
                                 onChange={(e) =>
@@ -807,7 +830,7 @@ export function MenuItemForm({ open, item, onClose, onSave }: MenuItemFormProps)
                                 type="number"
                                 inputMode="numeric"
                                 min={0}
-                                step="1"
+                                step="0.01"
                                 className="w-16"
                                 value={o.cost}
                                 onChange={(e) =>
@@ -861,11 +884,13 @@ export function MenuItemForm({ open, item, onClose, onSave }: MenuItemFormProps)
             )}
           </div>
 
+          </fieldset>
+          {saveError && <p role="alert" className="text-sm text-destructive">{saveError}</p>}
           <DialogFooter className="gap-2 sm:gap-2">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit">
+            <Button type="submit" disabled={saving}>
               {item ? 'Save changes' : 'Add menu item'}
             </Button>
           </DialogFooter>

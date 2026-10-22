@@ -1,5 +1,6 @@
 import { useAdminScreenRuntime } from '../../../runtime/AdminScreenRuntime';
-import { useState } from "react";
+import { useOperatorMenuCapability, type MenuPanelPorts } from '../../../runtime/menu';
+import { useEffect, useRef, useState } from "react";
 import { Download, Pencil, Trash2, Plus, SlidersHorizontal, Upload } from "lucide-react";
 import { type MenuItem, INVENTORY_DEFAULT_VARIANT_ID } from "../../../model/types";
 import { useCatalogStore } from "../../../runtime/AdminScreenRuntime";
@@ -10,8 +11,8 @@ import { useCatalogStore } from "../../../runtime/AdminScreenRuntime";
 import { Button } from "../../ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../../ui/alert-dialog";
 import { AdminNoticeBanner } from "../NotSavedNotice";
-import { MenuItemForm } from "./MenuItemForm";
-import { ImportMenuDialog } from "./ImportMenuDialog";
+import { MenuItemFormWithPorts } from "./MenuItemForm";
+import { ImportMenuDialogWithPorts } from "./ImportMenuDialog";
 import { formatPrice } from "./menuItem";
 
 
@@ -31,14 +32,20 @@ const groupCount = (item: MenuItem) => item.modifierGroups?.length ?? 0;
  */
 export function MenuPanel() {
   const runtime = useAdminScreenRuntime();
-  const getActiveBranch = runtime.reads.getActiveBranch;
-  const apiBranchIdForSlug = runtime.api.catalogBridge.apiBranchIdForSlug;
-  const loadMenuFromApi = runtime.api.catalogBridge.loadMenuFromApi;
-  const menuApi = runtime.api.menu.menuApi;
-  const toast = runtime.toast;
-  const formatWWPrice = runtime.domain.pricingMode.formatWWPrice;
+  const branch = runtime.reads.getActiveBranch();
+  const apiBranchId = runtime.api.catalogBridge.apiBranchIdForSlug(branch.id);
+  const scope = useOperatorMenuCapability(runtime.transport, runtime.session.operator?.id, apiBranchId !== null, runtime.session.operator, apiBranchId ?? undefined);
+  const { menuItems, menuCategories, modifierGroups, mutators } = useCatalogStore();
+  return <MenuPanelWithPorts ports={{ menuItems, menuCategories, modifierGroups, menuHelpers: runtime.domain.menu, branch, apiBranchId,
+    fileApi: runtime.api.menu.menuApi, onImported: async () => { await runtime.api.catalogBridge.loadMenuFromApi(branch.id); }, toast: runtime.toast,
+    formatWWPrice: runtime.domain.pricingMode.formatWWPrice, ...mutators, canManageInlineGroups: scope.canManage,
+    canCreate: scope.canManageBranch, canExport: scope.canManageBranch, canImport: scope.canImport,
+    canManageItem: item => scope.canManageProduct(runtime.api.menu.serverFieldsFor(item.id)?.branchId) }} />;
+}
 
-  const { menuItems, menuCategories, mutators } = useCatalogStore();
+export function MenuPanelWithPorts({ ports }: { ports: MenuPanelPorts }) {
+  const { menuItems, menuCategories, branch, apiBranchId, toast, formatWWPrice, fileApi: menuApi } = ports;
+  const mutators = ports;
   const orderedCategories = [...menuCategories].sort(
     (a, b) => a.sortOrder - b.sortOrder
   );
@@ -48,9 +55,17 @@ export function MenuPanel() {
   const [pendingDelete, setPendingDelete] = useState<MenuItem | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
-
-  const branch = getActiveBranch();
-  const apiBranchId = apiBranchIdForSlug(branch.id);
+  const exportingRef = useRef(false);
+  const [writeError, setWriteError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const deletingRef = useRef(false);
+  const deleteTarget = useRef(pendingDelete);
+  deleteTarget.current = pendingDelete;
+  const currentBranch = useRef(apiBranchId);
+  currentBranch.current = apiBranchId;
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  const canManage = (item: MenuItem) => ports.canManageItem?.(item) ?? true;
 
   /**
    * The export is the platform's, and there is only one writer of this file.
@@ -68,10 +83,13 @@ export function MenuPanel() {
    * own parser skips.
    */
   const exportMenu = async () => {
-    if (!apiBranchId) return;
+    if (!apiBranchId || exportingRef.current || ports.canExport === false) return;
+    const targetBranch = apiBranchId;
+    exportingRef.current = true;
     setExporting(true);
     try {
       const { blob, filename } = await menuApi.exportWorkbook(apiBranchId);
+      if (!mounted.current || currentBranch.current !== targetBranch) return;
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -79,13 +97,14 @@ export function MenuPanel() {
       link.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      toast({
+      if (mounted.current && currentBranch.current === targetBranch) toast({
         title: 'Could not export the menu',
         description: err instanceof Error ? err.message : 'Unknown error',
         variant: 'destructive',
       });
     } finally {
-      setExporting(false);
+      exportingRef.current = false;
+      if (mounted.current) setExporting(false);
     }
   };
 
@@ -99,9 +118,18 @@ export function MenuPanel() {
     setFormOpen(true);
   };
 
-  const confirmDelete = () => {
-    if (pendingDelete) mutators.deleteMenuItem(pendingDelete.id);
-    setPendingDelete(null);
+  const confirmDelete = async () => {
+    if (!pendingDelete || deletingRef.current || !canManage(pendingDelete)) return;
+    const target = pendingDelete;
+    deletingRef.current = true;
+    setDeleting(true);
+    setWriteError(null);
+    try {
+      await mutators.deleteMenuItem(target.id);
+      if (mounted.current && deleteTarget.current === target) setPendingDelete(null);
+    } catch (failure) {
+      if (mounted.current && deleteTarget.current === target) setWriteError(failure instanceof Error ? failure.message : 'The menu item could not be deleted.');
+    } finally { deletingRef.current = false; if (mounted.current) setDeleting(false); }
   };
 
   return (
@@ -128,7 +156,7 @@ export function MenuPanel() {
             variant="outline"
             className="gap-1.5"
             onClick={() => void exportMenu()}
-            disabled={!apiBranchId || exporting}
+            disabled={!apiBranchId || exporting || ports.canExport === false}
           >
             <Download className="w-4 h-4" />
             Export
@@ -137,15 +165,15 @@ export function MenuPanel() {
             variant="outline"
             className="gap-1.5"
             onClick={() => setImportOpen(true)}
-            disabled={!apiBranchId}
+            disabled={!apiBranchId || ports.canImport === false}
           >
             <Upload className="w-4 h-4" />
             Import
           </Button>
-          <Button onClick={openAdd}>
+          {ports.canCreate !== false && <Button onClick={openAdd}>
             <Plus className="w-4 h-4" />
             Add item
-          </Button>
+          </Button>}
         </div>
       </div>
 
@@ -157,7 +185,7 @@ export function MenuPanel() {
             <button
               type="button"
               onClick={() => void exportMenu()}
-              disabled={!apiBranchId || exporting}
+              disabled={!apiBranchId || exporting || ports.canExport === false}
               className="font-medium text-foreground/70 underline underline-offset-4 hover:text-foreground disabled:no-underline disabled:opacity-50"
             >
               Export
@@ -209,7 +237,7 @@ export function MenuPanel() {
                             )}
                           </div>
                         </div>
-                        <div className="flex shrink-0 items-center gap-2">
+                        {canManage(item) && <div className="flex shrink-0 items-center gap-2">
                           <Button
                             variant="outline"
                             size="icon"
@@ -226,7 +254,7 @@ export function MenuPanel() {
                           >
                             <Trash2 className="w-4 h-4 text-destructive" />
                           </Button>
-                        </div>
+                        </div>}
                       </div>
                     );
                   })}
@@ -237,11 +265,12 @@ export function MenuPanel() {
         </div>
       )}
 
-      <MenuItemForm
+      {formOpen && <MenuItemFormWithPorts
+        ports={ports}
         open={formOpen}
         item={editing}
         onClose={() => setFormOpen(false)}
-        onSave={(item, trackStock) => {
+        onSave={async (item, trackStock) => {
           // Reconcile the inventory link to match the "Track stock" toggle. Turning
           // it on links a single Default-variant inventory item (size variants are
           // added in the Inventory panel); turning it off removes the link.
@@ -252,7 +281,7 @@ export function MenuPanel() {
           const hasLink = !!item.inventoryItemId;
           if (trackStock && !hasLink) {
             const invId = `inv-${item.id}`;
-            mutators.upsertInventoryItem({
+            await mutators.upsertInventoryItem({
               id: invId,
               name: item.name,
               linkedKind: 'menu',
@@ -263,31 +292,32 @@ export function MenuPanel() {
             });
             next = { ...item, inventoryItemId: invId };
           } else if (!trackStock && hasLink) {
-            mutators.deleteInventoryItem(item.inventoryItemId!);
+            await mutators.deleteInventoryItem(item.inventoryItemId!);
             next = { ...item, inventoryItemId: undefined };
           }
-          mutators.upsertMenuItem(next);
-          setFormOpen(false);
+          if (!mounted.current) throw new Error('The menu screen changed before the item could be saved.');
+          await mutators.upsertMenuItem(next);
         }}
-      />
+      />}
 
-      <ImportMenuDialog
+      {importOpen && <ImportMenuDialogWithPorts
+        api={menuApi}
         open={importOpen}
         onClose={() => setImportOpen(false)}
         branchId={apiBranchId}
         // The commit wrote to the database; the store still holds what was on
         // screen before it. Re-reading is what puts the new prices on this list
         // and on the F&B grid.
-        onApplied={() => {
-          void loadMenuFromApi(branch.id).catch((err: unknown) => {
-            toast({
+        onApplied={async () => {
+          try { await ports.onImported(); } catch (err: unknown) {
+            if (mounted.current && currentBranch.current === apiBranchId) toast({
               title: 'Imported, but the screen could not be refreshed',
               description: err instanceof Error ? err.message : 'Reload the page to see it.',
               variant: 'destructive',
             });
-          });
+          }
         }}
-      />
+      />}
 
       <AlertDialog
         open={pendingDelete !== null}
@@ -302,10 +332,12 @@ export function MenuPanel() {
                 : ''}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {writeError && <p role="alert" className="text-sm text-destructive">{writeError}</p>}
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={confirmDelete}
+              onClick={event => { event.preventDefault(); void confirmDelete(); }}
+              disabled={deleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Delete

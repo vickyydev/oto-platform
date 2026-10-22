@@ -1,5 +1,6 @@
-
-import { useState } from "react";
+import { useAdminScreenRuntime } from '../../../runtime/AdminScreenRuntime';
+import { useOperatorMenuCapability, type ModifiersPanelPorts } from '../../../runtime/menu';
+import { useEffect, useRef, useState } from "react";
 import { Pencil, Trash2, Plus, SlidersHorizontal } from "lucide-react";
 import { type ModifierGroup } from "../../../model/types";
 import { useCatalogStore } from "../../../runtime/AdminScreenRuntime";
@@ -31,11 +32,27 @@ const ruleLabel = (g: ModifierGroup): string => {
  * stay item-specific. Deletion is blocked while any item still links the group.
  */
 export function ModifiersPanel() {
+  const runtime = useAdminScreenRuntime();
   const { modifierGroups, menuItems, mutators } = useCatalogStore();
+  const scope = useOperatorMenuCapability(runtime.transport, runtime.session.operator?.id, Boolean(runtime.branch.branch.apiId), runtime.session.operator);
+  return <ModifiersPanelWithPorts ports={{ modifierGroups, menuItems, ...mutators, ...scope }} />;
+}
+
+export function ModifiersPanelWithPorts({ ports }: { ports: ModifiersPanelPorts }) {
+  const { modifierGroups, menuItems } = ports;
+  const mutators = ports;
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<ModifierGroup | null>(null);
   const [pendingDelete, setPendingDelete] = useState<ModifierGroup | null>(null);
+  const canManage = ports.canManage !== false;
+  const [writeError, setWriteError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const deletingRef = useRef(false);
+  const deleteTarget = useRef(pendingDelete);
+  deleteTarget.current = pendingDelete;
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
 
   // Count of menu items linking a given shared group (blocks deletion).
   const linkCount = (id: string) =>
@@ -53,15 +70,23 @@ export function ModifiersPanel() {
   const pendingLinks = pendingDelete ? linkCount(pendingDelete.id) : 0;
   const pendingBlocked = pendingLinks > 0;
 
-  const confirmDelete = () => {
-    if (pendingDelete && linkCount(pendingDelete.id) === 0) {
-      mutators.deleteModifierGroup(pendingDelete.id);
-    }
-    setPendingDelete(null);
+  const confirmDelete = async () => {
+    if (!pendingDelete || linkCount(pendingDelete.id) > 0 || deletingRef.current || !canManage) return;
+    const target = pendingDelete;
+    deletingRef.current = true;
+    setDeleting(true);
+    setWriteError(null);
+    try {
+      await mutators.deleteModifierGroup(target.id);
+      if (mounted.current && deleteTarget.current === target) setPendingDelete(null);
+    } catch (failure) {
+      if (mounted.current && deleteTarget.current === target) setWriteError(failure instanceof Error ? failure.message : 'The modifier group could not be deleted.');
+    } finally { deletingRef.current = false; if (mounted.current) setDeleting(false); }
   };
 
   return (
     <div className="flex flex-col gap-6">
+      {ports.authorityMessage && <p className="text-sm text-foreground/50">{ports.authorityMessage}</p>}
       <section className="flex flex-col gap-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
@@ -71,10 +96,10 @@ export function ModifiersPanel() {
               ({modifierGroups.length})
             </span>
           </div>
-          <Button onClick={openAdd}>
+          {canManage && <Button onClick={openAdd}>
             <Plus className="w-4 h-4" />
             Add group
-          </Button>
+          </Button>}
         </div>
 
         {modifierGroups.length === 0 ? (
@@ -111,7 +136,7 @@ export function ModifiersPanel() {
                         {linkCount(group.id) === 1 ? '' : 's'}
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center justify-end gap-2">
+                        {canManage && <div className="flex items-center justify-end gap-2">
                           <Button
                             variant="outline"
                             size="icon"
@@ -128,7 +153,7 @@ export function ModifiersPanel() {
                           >
                             <Trash2 className="w-4 h-4 text-destructive" />
                           </Button>
-                        </div>
+                        </div>}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -154,7 +179,7 @@ export function ModifiersPanel() {
                       {linkCount(group.id) === 1 ? '' : 's'}
                     </div>
                   </div>
-                  <div className="flex shrink-0 items-center gap-2">
+                  {canManage && <div className="flex shrink-0 items-center gap-2">
                     <Button
                       variant="outline"
                       size="icon"
@@ -171,7 +196,7 @@ export function ModifiersPanel() {
                     >
                       <Trash2 className="w-4 h-4 text-destructive" />
                     </Button>
-                  </div>
+                  </div>}
                 </div>
               ))}
             </div>
@@ -180,12 +205,12 @@ export function ModifiersPanel() {
       </section>
 
       {/* Form */}
-      <ModifierGroupFormDialog
+      {formOpen && canManage && <ModifierGroupFormDialog
         open={formOpen}
         group={editing}
         onOpenChange={setFormOpen}
         onSave={mutators.upsertModifierGroup}
-      />
+      />}
 
       {/* Delete confirmation — blocked while any menu item still links it. */}
       <AlertDialog
@@ -207,13 +232,15 @@ export function ModifiersPanel() {
                   : `“${pendingDelete.name}” will be removed and no longer available to attach to menu items.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {writeError && <p role="alert" className="text-sm text-destructive">{writeError}</p>}
           <AlertDialogFooter>
             <AlertDialogCancel>
               {pendingBlocked ? 'OK' : 'Cancel'}
             </AlertDialogCancel>
             {!pendingBlocked && (
               <AlertDialogAction
-                onClick={confirmDelete}
+                onClick={event => { event.preventDefault(); void confirmDelete(); }}
+                disabled={deleting || !canManage}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
                 Delete

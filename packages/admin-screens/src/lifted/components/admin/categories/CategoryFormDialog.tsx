@@ -1,5 +1,6 @@
 import { useAdminScreenRuntime } from '../../../runtime/AdminScreenRuntime';
-import { useEffect, useMemo, useState } from "react";
+import type { MenuDomainPorts } from '../../../runtime/menu';
+import { useEffect, useMemo, useRef, useState } from "react";
 import { type MenuCategoryDef, type PrepStation, type TaxableCategory } from "../../../model/types";
 
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../../ui/dialog";
@@ -23,7 +24,7 @@ interface CategoryFormDialogProps {
   /** Pre-selected parent id when adding a sub-category from a parent's row. */
   defaultParentId?: string;
   onOpenChange: (open: boolean) => void;
-  onSave: (category: MenuCategoryDef) => void;
+  onSave: (category: MenuCategoryDef) => void | Promise<void>;
 }
 
 interface FormErrors {
@@ -37,17 +38,21 @@ interface FormErrors {
  * may instead INHERIT the parent's. The id is generated once on create and
  * preserved across edits so existing menu items keep pointing at it.
  */
-export function CategoryFormDialog({
+export function CategoryFormDialog(props: CategoryFormDialogProps) {
+  const runtime = useAdminScreenRuntime();
+  return <CategoryFormDialogWithPorts {...props} menuHelpers={runtime.domain.menu} />;
+}
+
+export function CategoryFormDialogWithPorts({
   open,
   category,
   categories,
   defaultParentId,
   onOpenChange,
   onSave,
-}: CategoryFormDialogProps) {
-  const runtime = useAdminScreenRuntime();
-  const topLevelCategories = runtime.domain.menu.topLevelCategories;
-  const subCategoriesOf = runtime.domain.menu.subCategoriesOf;
+  menuHelpers,
+}: CategoryFormDialogProps & { menuHelpers: Pick<MenuDomainPorts, 'topLevelCategories' | 'subCategoriesOf'> }) {
+  const { topLevelCategories, subCategoriesOf } = menuHelpers;
 
   const [name, setName] = useState('');
   const [parentId, setParentId] = useState<string>(NO_PARENT);
@@ -58,6 +63,16 @@ export function CategoryFormDialog({
     TaxableCategory | typeof INHERIT
   >('fnb');
   const [errors, setErrors] = useState<FormErrors>({});
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const draft = JSON.stringify([name, parentId, defaultPrepStation, defaultTaxCategory]);
+  const draftRef = useRef(draft);
+  draftRef.current = draft;
+  const targetRef = useRef(category);
+  targetRef.current = category;
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
 
   // A category that already has sub-categories must stay top-level (we only
   // support two levels — it can't become a grand-child).
@@ -85,9 +100,10 @@ export function CategoryFormDialog({
     if (!open) return;
     setName(category?.name ?? '');
     setParentId(category?.parentId ?? defaultParentId ?? NO_PARENT);
-    setDefaultPrepStation(category?.defaultPrepStation ?? 'kitchen');
-    setDefaultTaxCategory(category?.defaultTaxCategory ?? 'fnb');
+    setDefaultPrepStation(category?.defaultPrepStation ?? (category?.parentId ? INHERIT : 'kitchen'));
+    setDefaultTaxCategory(category?.defaultTaxCategory ?? (category?.parentId ? INHERIT : 'fnb'));
     setErrors({});
+    setSaveError(null);
   }, [open, category, defaultParentId]);
 
   // When toggling to a sub-category with no explicit value yet, default the
@@ -104,8 +120,9 @@ export function CategoryFormDialog({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (savingRef.current) return;
     const trimmedName = name.trim();
     const nextErrors: FormErrors = {};
 
@@ -134,9 +151,14 @@ export function CategoryFormDialog({
           : 0;
     }
 
-    onSave({
+    savingRef.current = true;
+    setSaving(true);
+    setSaveError(null);
+    try {
+    await onSave({
       id: category?.id ?? crypto.randomUUID(),
       name: trimmedName,
+      ...(category?.translations !== undefined ? { translations: category.translations } : {}),
       ...(newParentId ? { parentId: newParentId } : {}),
       ...(defaultPrepStation !== INHERIT
         ? { defaultPrepStation: defaultPrepStation }
@@ -146,7 +168,11 @@ export function CategoryFormDialog({
         : {}),
       sortOrder,
     });
-    onOpenChange(false);
+    if (mounted.current && targetRef.current === category && draftRef.current === draft) onOpenChange(false);
+    } catch (failure) {
+      if (mounted.current && targetRef.current === category)
+        setSaveError(failure instanceof Error ? failure.message : 'The category could not be saved.');
+    } finally { savingRef.current = false; if (mounted.current) setSaving(false); }
   };
 
   const inheritedPrepLabel = parent?.defaultPrepStation
@@ -266,6 +292,7 @@ export function CategoryFormDialog({
             </Select>
           </div>
 
+          {saveError && <p role="alert" className="text-sm text-destructive">{saveError}</p>}
           <DialogFooter>
             <Button
               type="button"
@@ -274,7 +301,7 @@ export function CategoryFormDialog({
             >
               Cancel
             </Button>
-            <Button type="submit">
+            <Button type="submit" disabled={saving}>
               {category ? 'Save changes' : 'Add category'}
             </Button>
           </DialogFooter>
