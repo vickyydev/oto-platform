@@ -159,6 +159,8 @@ SCRUM-624 owner ruling Q8 (2026-10-23): the owner authorizes only the existing P
 | P2-8 | Channels → Teams & routing editor (routes + screen); Numbers/Templates/KB/Examples linked to the Inbox settings |
 | P2-9 | POS `/admin` redirects to Admin; the POS mock Devices panel and dead admin code removed; the POS dependency on `admin-screens` dropped |
 
+P2-6 checkpoint (2026-10-23): SCRUM-624 is Deployed on source `4dd7eb94b4af383c40cb512229b2ea1ad9283451`, six green CI jobs and four inspected staging images (attachments11974-11977). The [Care and print evidence](../../../qa/jira-comments/attachments/SCRUM-624/README.md) binds the original partial attempts, focused phone recovery, unchanged readbacks and all local/CI results. Staging controls and previews are read-only; save/refusal/retry and foreign-park cases are tested locally. The explicit station selector restores the existing print-target rule without changing session seating or native forms. Parent SCRUM-618 remains In Progress; its acceptance below is still separate.
+
 Acceptance: a price, a tender and a tax rule changed only in the console show on the till; the demo is the catalogue and money round trip.
 
 Note from P0 (2026-10-21): operator-wide settings (tiers, tenders, menu categories, modifier groups, discount codes, voucher types, wheel designs, branch creation) now require operator-wide rights. In P2-3/P2-5 the lifted screens hide those panels, or show them read-only, for a branch-scoped manager, and the POS admin does the same until P2-9 removes it. Two P0 leftovers for Codex to close in the same tickets: the menu import still creates operator-wide categories under a branch-scoped `catalog:menu:import`; `POST /branches/oto-app/reconcile` still has no target.

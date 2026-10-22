@@ -1,0 +1,157 @@
+{
+  "ticket": "SCRUM-624",
+  "recordedAt": "2026-10-22T21:31:44.928Z",
+  "sourceSha": "4dd7eb94b4af383c40cb512229b2ea1ad9283451",
+  "status": "Deployed",
+  "publicOnly": true,
+  "privateJournalsExcluded": true,
+  "originalPartialFlagsPreserved": true,
+  "gitContentUsesRepositoryFilters": true,
+  "files": [
+    {
+      "filename": "README.md",
+      "workingCopySha256": "46b3fa59e5d2058adaf65801710514efcfaad90f692d39e85d7665ed67e07d3b",
+      "repositoryBlobOid": "1ca902bd8dd66f4347f71ebc6ad9566ad20579a9"
+    },
+    {
+      "filename": "SCRUM-624-05-v2-care-pricing-desktop.png",
+      "workingCopySha256": "be758202ec5990a0049ed85a293994bb736516d9878d785fdd021d6608be8591",
+      "repositoryBlobOid": "f27767377fa2b6e26617280649d57994a2e4266c"
+    },
+    {
+      "filename": "SCRUM-624-06-v2-receipt-preview-desktop.png",
+      "workingCopySha256": "2f0ff17f4a36be50a77257653c652b0684df1d2e2e84b19814a897be77d86af6",
+      "repositoryBlobOid": "74569776dcc159ea94a9f4769d9830836153a4c0"
+    },
+    {
+      "filename": "SCRUM-624-07-v2-benefit-templates-desktop.png",
+      "workingCopySha256": "1567277578fa0bee94ae32cbf5a0791a14f884f9ef2059257eaf731c2f2e3d69",
+      "repositoryBlobOid": "d44353fe9dfce8afc1d1e4ea688546a3b3facab3"
+    },
+    {
+      "filename": "SCRUM-624-09-supervision-phone.png",
+      "workingCopySha256": "d5538ce7b8961b8e768689bafbc0c0736f104d148d27474ce37419b992d1cd73",
+      "repositoryBlobOid": "98aabe6d59ae2e8fd8aa0471a3dc899e49a66f32"
+    },
+    {
+      "filename": "SCRUM-624-ci.json",
+      "workingCopySha256": "e78263ad903f1472ad2bf3016ad81216cf8e3ac4894ca60611a16380b9d9939d",
+      "repositoryBlobOid": "183862fad05b63b39ef24210ed0e81089a2100aa"
+    },
+    {
+      "filename": "SCRUM-624-first-attempt-diagnosis.json",
+      "workingCopySha256": "4ff3e1b59b22da80bebf89cffdf266f8c3c8ed3de225c44be6513909ffa4a203",
+      "repositoryBlobOid": "430b431273a4b5f4b67e5b02172513c5fabf5877"
+    },
+    {
+      "filename": "SCRUM-624-first-partial-audit.json",
+      "workingCopySha256": "d3a2df121fd41147eb346753383deab1eef327264dac1e0684d3ea016a268d18",
+      "repositoryBlobOid": "73fb73b704f505aecc57356cf382fd5a1e6884aa"
+    },
+    {
+      "filename": "SCRUM-624-first-partial-envelope.json",
+      "workingCopySha256": "9cc1094f72167be43fe9ec6cb0a56c0482429e463439d2dc839ce741ee5b045a",
+      "repositoryBlobOid": "0b093b9280f820d6eec422212d792e07ae3b999a"
+    },
+    {
+      "filename": "SCRUM-624-first-partial-jira.json",
+      "workingCopySha256": "a0c9cf64f0c6602690f84006d4b55068e24ac29e7934d1c33a3bb08067a6e718",
+      "repositoryBlobOid": "dc290d3e9d44fbe314a8fc75064f68bb5e49cb3f"
+    },
+    {
+      "filename": "SCRUM-624-first-partial-staging-results.json",
+      "workingCopySha256": "a77e1dd47716a2a8c1d6eb821d5fa7a843834da1bbb84254c9e7a38a6e3369d6",
+      "repositoryBlobOid": "db8798ccea2a2ad963fc0df1d8e7ff6ef415f401"
+    },
+    {
+      "filename": "SCRUM-624-helper-review.json",
+      "workingCopySha256": "b1f352bb7a1a1a0887c4b63a6d998a9213c09b24e7003e84630383bee4a7655a",
+      "repositoryBlobOid": "8edf30599f86370036bafd925ac53aa5df074504"
+    },
+    {
+      "filename": "SCRUM-624-jira-acceptance.json",
+      "workingCopySha256": "87080962468fc9f286eddd9e2d8643261b3087948fe7090a42cd7a2c91432f89",
+      "repositoryBlobOid": "d461db05b1975467337a9f422c8e67919de7e409"
+    },
+    {
+      "filename": "SCRUM-624-local-geometry.json",
+      "workingCopySha256": "3fc7c78c19fc76ff557e87d131f0e7780484cf2550dd5871dde9b00019810e28",
+      "repositoryBlobOid": "2a0e25d1cf6230f83af636316b36b6a5421dad0e"
+    },
+    {
+      "filename": "SCRUM-624-local-results.json",
+      "workingCopySha256": "9f8c9955b09f6da0301eb8e6c5c48a43a2d8a4dd941d6f5f51eeeec58244ec28",
+      "repositoryBlobOid": "af5737e9106de59f94cf61d1da5134822c66627b"
+    },
+    {
+      "filename": "SCRUM-624-phone-helper-review.json",
+      "workingCopySha256": "90cd6811d91045433134f0366d47d6d5992de6726ea362a6ebde2b902aa17e44",
+      "repositoryBlobOid": "65780e3628963d4ad14bd1dcf7a580fc80b5cc14"
+    },
+    {
+      "filename": "SCRUM-624-phone-image-review.json",
+      "workingCopySha256": "64f7b89789e034037ad9b192ce0276b637f0ad77ced15c24d64506db6865b5d9",
+      "repositoryBlobOid": "2842ee926b46c440a67fb119b863ce812092fdb7"
+    },
+    {
+      "filename": "SCRUM-624-phone-local-geometry.json",
+      "workingCopySha256": "10adbbed6c9df642bca9c6ad793867260e5cacbf02119685b73974e7217d9702",
+      "repositoryBlobOid": "c9e93bb8500aab4f8b55f01f3e443eeb1e2b69f1"
+    },
+    {
+      "filename": "SCRUM-624-phone-recovery-envelope.json",
+      "workingCopySha256": "020554b16b589aa5b80f5bf090b7ef860b433f08f54c1d6b1c8d783fa3704c9b",
+      "repositoryBlobOid": "9f6f185f0ba3271c6cce0f92e52c57cd893ceb95"
+    },
+    {
+      "filename": "SCRUM-624-phone-recovery-results.json",
+      "workingCopySha256": "9b64a6b9a9a782ab39556a5fd12f70574aba771c33b2843d976099559dc292a8",
+      "repositoryBlobOid": "6a781cc67e6a25c9534a117c402e85a90dec452e"
+    },
+    {
+      "filename": "SCRUM-624-proof-regressions.json",
+      "workingCopySha256": "df98180a7986e8cdb8254bffd585379192e5fd5f7a85b7b8c5b21c1c07b29fc6",
+      "repositoryBlobOid": "84f5953ec6c00c33fe4029db707c23ccfcf36282"
+    },
+    {
+      "filename": "SCRUM-624-source-landing.json",
+      "workingCopySha256": "051e827a53f83babf6b91b45e874e269fbb91dba92ef26b28121832b28a76c9b",
+      "repositoryBlobOid": "c1c329f68c215e3a13ed43bbac9983cd747f8e77"
+    },
+    {
+      "filename": "SCRUM-624-source-review.json",
+      "workingCopySha256": "168c959258f081ab219f8fba919a464687179009d070139786ee356f834936c0",
+      "repositoryBlobOid": "941eb0a6429888dd07238c0d96973f8a3df2ec18"
+    },
+    {
+      "filename": "SCRUM-624-staging-audit.json",
+      "workingCopySha256": "039a22a8dcf2c8b0839f31ade71cdfd1804b3684e5bdcd60bf0ddd1906b19e3f",
+      "repositoryBlobOid": "8913990083ed5bdd1003997eec04ba7987545680"
+    },
+    {
+      "filename": "SCRUM-624-v2-image-review.json",
+      "workingCopySha256": "a4e007f89cc534f5dcac4da82feac80b95c9f1ded1fadabc240beb14a20bf229",
+      "repositoryBlobOid": "954741b6b6042aea8ae6a87b7d48630d02e8d5bd"
+    },
+    {
+      "filename": "SCRUM-624-v2-partial-audit.json",
+      "workingCopySha256": "6648a5c12f1d764d10ab70d27d00ea9565897e61636f676be1c2349931143951",
+      "repositoryBlobOid": "c2ab00b77c3b9afbcfa6b5e501dc3766323a9bf4"
+    },
+    {
+      "filename": "SCRUM-624-v2-partial-jira.json",
+      "workingCopySha256": "faa1bebe45cd52d08daf2e6d409b0fa0635fe93f51f3f619b18b36cd5ae6e13f",
+      "repositoryBlobOid": "fa9ff28dee087bda44f5340125c83fec1c6f71f4"
+    },
+    {
+      "filename": "SCRUM-624-v2-staging-envelope.json",
+      "workingCopySha256": "6a8a5400574057da5fd7344ebb2163caa44a07f6731bfeb0066c40e58f98661e",
+      "repositoryBlobOid": "aabff716e2f480630ab822b5f91105ca34fece82"
+    },
+    {
+      "filename": "SCRUM-624-v2-staging-results.json",
+      "workingCopySha256": "7dc261047ea13842671b3f63a4d714d1a581e1d368f57be917e68eee89884015",
+      "repositoryBlobOid": "65a037e6d984f8b0ef4bb7453fc8d920e65ba3e4"
+    }
+  ]
+}

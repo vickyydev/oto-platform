@@ -1,0 +1,35 @@
+{
+  "ticket": "SCRUM-624",
+  "sourceSha": "4dd7eb94b4af383c40cb512229b2ea1ad9283451",
+  "reviewedAt": "2026-10-22T21:17:41.457Z",
+  "screenshots": [
+    {
+      "filename": "SCRUM-624-05-v2-care-pricing-desktop.png",
+      "sha256": "be758202ec5990a0049ed85a293994bb736516d9878d785fdd021d6608be8591",
+      "visuallyReviewed": true,
+      "stagingNative": true,
+      "benefitQrAbsent": true,
+      "identityHidden": true,
+      "capturedAt": "2026-10-22T21:15:03.356Z"
+    },
+    {
+      "filename": "SCRUM-624-06-v2-receipt-preview-desktop.png",
+      "sha256": "2f0ff17f4a36be50a77257653c652b0684df1d2e2e84b19814a897be77d86af6",
+      "visuallyReviewed": true,
+      "stagingNative": true,
+      "benefitQrAbsent": true,
+      "identityHidden": true,
+      "capturedAt": "2026-10-22T21:15:13.990Z"
+    },
+    {
+      "filename": "SCRUM-624-07-v2-benefit-templates-desktop.png",
+      "sha256": "1567277578fa0bee94ae32cbf5a0791a14f884f9ef2059257eaf731c2f2e3d69",
+      "visuallyReviewed": true,
+      "stagingNative": true,
+      "benefitQrAbsent": true,
+      "identityHidden": true,
+      "capturedAt": "2026-10-22T21:15:19.179Z"
+    }
+  ],
+  "phoneEvidencePending": true
+}

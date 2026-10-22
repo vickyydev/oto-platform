@@ -1,0 +1,157 @@
+{
+    "ticket":  "SCRUM-624",
+    "sourceSha":  "4dd7eb94b4af383c40cb512229b2ea1ad9283451",
+    "qaPreparedAt":  "2026-10-22T21:11:22.2036501Z",
+    "passed":  true,
+    "blockingFindings":  0,
+    "reviewChecks":  26,
+    "initialSource":  {
+                          "sourceSha":  "64bbf8d2abd5bd68cdbcb94a5aeefb26e3229c3d",
+                          "reviewedAt":  "2026-10-22T20:14:58.272Z",
+                          "reviewSha256":  "e0ed52e27841ed5da5941293fd7455e4055d79cbe2211c950622c201b5ba7d65",
+                          "sourceInputs":  3568,
+                          "ownedFiles":  38,
+                          "complete":  true,
+                          "checks":  [
+                                         {
+                                             "name":  "Only four authorized Care OpenAPI paths changed",
+                                             "passed":  true
+                                         },
+                                         {
+                                             "name":  "/checkin/config declares honest JSON success",
+                                             "passed":  true
+                                         },
+                                         {
+                                             "name":  "/checkin/config inputs and remaining description unchanged",
+                                             "passed":  true
+                                         },
+                                         {
+                                             "name":  "/checkin/config/confirmations declares honest JSON success",
+                                             "passed":  true
+                                         },
+                                         {
+                                             "name":  "/checkin/config/confirmations inputs and remaining description unchanged",
+                                             "passed":  true
+                                         },
+                                         {
+                                             "name":  "/checkin/config/policy declares honest JSON success",
+                                             "passed":  true
+                                         },
+                                         {
+                                             "name":  "/checkin/config/policy inputs and remaining description unchanged",
+                                             "passed":  true
+                                         },
+                                         {
+                                             "name":  "/checkin/config/pricing declares honest JSON success",
+                                             "passed":  true
+                                         },
+                                         {
+                                             "name":  "/checkin/config/pricing inputs and remaining description unchanged",
+                                             "passed":  true
+                                         },
+                                         {
+                                             "name":  "isEmptyBenefitProfile original function body unchanged",
+                                             "passed":  true
+                                         },
+                                         {
+                                             "name":  "summarizeProfile original function body unchanged",
+                                             "passed":  true
+                                         },
+                                         {
+                                             "name":  "Four lifted Care legacy sites retired",
+                                             "passed":  true
+                                         },
+                                         {
+                                             "name":  "Other legacy allowances unchanged",
+                                             "passed":  true
+                                         },
+                                         {
+                                             "name":  "Every frozen host input unchanged",
+                                             "passed":  true
+                                         },
+                                         {
+                                             "name":  "No prohibited lane or migration source changed",
+                                             "passed":  true
+                                         }
+                                     ]
+                      },
+    "stationCorrection":  {
+                              "baselineSha":  "64bbf8d2abd5bd68cdbcb94a5aeefb26e3229c3d",
+                              "sourceSha":  "4dd7eb94b4af383c40cb512229b2ea1ad9283451",
+                              "reviewedAt":  "2026-10-22T20:43:55.1182940Z",
+                              "reviewSha256":  "afa02c9e793c483fb8e02c66fd47f0a2073e939a76a1418c2f29031e97acaf63",
+                              "files":  [
+                                            {
+                                                "path":  "apps/console/src/pages/Care.tsx",
+                                                "sha256":  "2ae8f45009a0e1af1ff81f4d221f4351873bbb583cb2c24110352393f9bf1c2e"
+                                            },
+                                            {
+                                                "path":  "apps/console/e2e/care-print.spec.ts",
+                                                "sha256":  "c7b36ee74eb358d0223c77c45ade97e5c7fc53fd3ed782d842f606eb7006cd25"
+                                            },
+                                            {
+                                                "path":  "packages/admin-screens/src/lifted/components/admin/templates/TemplateEditor.tsx",
+                                                "sha256":  "a6642dbb063be93b191ea53fca9d3abc8aa89845849cec68dc93e5bdf59e3b31"
+                                            },
+                                            {
+                                                "path":  "packages/admin-screens/test/care-ports.test.ts",
+                                                "sha256":  "c18c3c3d68b9edcd406aa728aba984ee0eb035993efc547b5ef8576049935132"
+                                            }
+                                        ],
+                              "passed":  true,
+                              "checks":  [
+                                             {
+                                                 "name":  "Host actor/operator/grants/page/park version fences and station request epoch reject stale lists",
+                                                 "passed":  true
+                                             },
+                                             {
+                                                 "name":  "Station rows are active and owned by the selected park; choice is empty by default and validated against current list",
+                                                 "passed":  true
+                                             },
+                                             {
+                                                 "name":  "Station read permission gates the list and command permission plus explicit station gates physical offer",
+                                                 "passed":  true
+                                             },
+                                             {
+                                                 "name":  "Station changes do not enter host context key or SDK memo and do not mutate session or remount the draft",
+                                                 "passed":  true
+                                             },
+                                             {
+                                                 "name":  "Monotonic editor station epoch fences Save-and-print continuation across A to B to A",
+                                                 "passed":  true
+                                             },
+                                             {
+                                                 "name":  "Old target lookup/results and old print success/refusal cannot publish for a newer station epoch",
+                                                 "passed":  true
+                                             },
+                                             {
+                                                 "name":  "Pending destination disables native print offer; existing server guards, permission checks and save rules are unchanged",
+                                                 "passed":  true
+                                             },
+                                             {
+                                                 "name":  "Four hook-regression tests execute extracted actual editor statements across rerenders with dirty draft retention and unchanged-target positive control",
+                                                 "passed":  true
+                                             },
+                                             {
+                                                 "name":  "Three native browser additions cover explicit station/no session write, late foreign-park list and preview access without station-read",
+                                                 "passed":  true
+                                             },
+                                             {
+                                                 "name":  "Prior command-denied browser pin now selects a station first and retains its disabled assertion",
+                                                 "passed":  true
+                                             },
+                                             {
+                                                 "name":  "Tracked delta from baseline is exactly four reviewed source/test paths and three standing handover/status documents",
+                                                 "passed":  true
+                                             }
+                                         ],
+                              "findings":  [
+
+                                           ]
+                          },
+    "limits":  [
+                   "Initial 15 checks refer to the initial source freeze, not a claim that all host inputs stayed unchanged after the station correction.",
+                   "The later 11 checks cover the four explicitly hashed station source/test deltas. These are source-review observations, not 26 newly executed tests.",
+                   "No review authentication, hardware command, staging request or product-rule change is claimed."
+               ]
+}

@@ -1,0 +1,509 @@
+{
+    "ticket":  "SCRUM-624",
+    "createdAt":  "2026-10-22T20:53:51.4156311Z",
+    "localOnly":  true,
+    "localValidationComplete":  true,
+    "sourceSha":  "4dd7eb94b4af383c40cb512229b2ea1ad9283451",
+    "sourceLandedOnMain":  true,
+    "sourceLanding":  {
+                          "file":  "admin624-station-landed.json",
+                          "sha256":  "e7dc8ac21b7e55ec08cd85993a9d1238da3ad527763467c8ed17a2f9fb44b98c"
+                      },
+    "ci":  {
+               "observationKind":  "historical local-receipt observation",
+               "runId":  "39852030074",
+               "statusAtObservation":  "pending",
+               "observedAt":  "2026-10-22T20:52:57.584Z",
+               "supersededBy":  "SCRUM-624-ci.json",
+               "originalSourceSha":  "64bbf8d2abd5bd68cdbcb94a5aeefb26e3229c3d",
+               "originalSixJobsGreen":  true,
+               "mutableCurrentSnapshotReferenceRemoved":  true
+           },
+    "stagingAccepted":  false,
+    "stagingProofExecutedByThisReceipt":  false,
+    "networkRequests":  0,
+    "frozenSource":  {
+                         "inputs":  3568,
+                         "manifest":  {
+                                          "file":  "source-manifest.json",
+                                          "sha256":  "72b6d1c75810bd8d8e771ba924c5077e2a6e9ba834f17eb939046b66a717e633"
+                                      },
+                         "freeze":  {
+                                        "file":  "freeze.json",
+                                        "sha256":  "aa5566e38496e83cf69230502b3dac019adc66184de9b57a440c6261898b2b0c"
+                                    },
+                         "imageId":  "sha256:e29eca71197427b1623a2c1298e171249fb2a72636730a0126352790981a3161",
+                         "previousManifestSha256":  "f2f4751f349e4c13accfc19d53126746702ff5195b62432b4dccf76ed4ebab3a",
+                         "unchangedInputs":  3564,
+                         "delta":  [
+                                       {
+                                           "path":  "apps/console/e2e/care-print.spec.ts",
+                                           "sha256":  "c7b36ee74eb358d0223c77c45ade97e5c7fc53fd3ed782d842f606eb7006cd25"
+                                       },
+                                       {
+                                           "path":  "apps/console/src/pages/Care.tsx",
+                                           "sha256":  "2ae8f45009a0e1af1ff81f4d221f4351873bbb583cb2c24110352393f9bf1c2e"
+                                       },
+                                       {
+                                           "path":  "packages/admin-screens/src/lifted/components/admin/templates/TemplateEditor.tsx",
+                                           "sha256":  "a6642dbb063be93b191ea53fca9d3abc8aa89845849cec68dc93e5bdf59e3b31"
+                                       },
+                                       {
+                                           "path":  "packages/admin-screens/test/care-ports.test.ts",
+                                           "sha256":  "c18c3c3d68b9edcd406aa728aba984ee0eb035993efc547b5ef8576049935132"
+                                       }
+                                   ],
+                         "allBackendInputsUnchanged":  true,
+                         "inputDeltaReceipt":  {
+                                                   "file":  "input-delta.json",
+                                                   "sha256":  "b2ffe5a36f9e208b955b14fe84c894ebf59aaaf63b9e89adab3f9209b4cc5c78"
+                                               }
+                     },
+    "finalFrozenGates":  [
+                             {
+                                 "receipt":  {
+                                                 "file":  "checks-exit.json",
+                                                 "sha256":  "324fae2afc9158e8a85106a8149f94efb92ac917e78fd4e20f012843dcc4bbd1"
+                                             },
+                                 "log":  {
+                                             "file":  "checks.log",
+                                             "sha256":  "7cdcd87e9c2c8e6a0a17a4d539c308f9619187956f5c62f51b8adb95cb7b0d90"
+                                         },
+                                 "rawResult":  {
+                                                   "tag":  "checks",
+                                                   "mode":  "checks",
+                                                   "startedAt":  "2026-10-22T20:41:27.603Z",
+                                                   "finishedAt":  "2026-10-22T20:44:01.131Z",
+                                                   "exitCode":  0,
+                                                   "logSha256":  "7cdcd87e9c2c8e6a0a17a4d539c308f9619187956f5c62f51b8adb95cb7b0d90",
+                                                   "sourceManifestSha256":  "72b6d1c75810bd8d8e771ba924c5077e2a6e9ba834f17eb939046b66a717e633",
+                                                   "imageId":  "sha256:e29eca71197427b1623a2c1298e171249fb2a72636730a0126352790981a3161",
+                                                   "sourceFiles":  3568,
+                                                   "staging":  false
+                                               }
+                             },
+                             {
+                                 "receipt":  {
+                                                 "file":  "units-exit.json",
+                                                 "sha256":  "a0114b99e87f51984bca520d6ef9051eabfe78d274cd10eb1a35194dfe0f1aee"
+                                             },
+                                 "log":  {
+                                             "file":  "units.log",
+                                             "sha256":  "bf4bf7a57f2ad599e4897db412db1024b579202a00727d1a345f032586df1341"
+                                         },
+                                 "rawResult":  {
+                                                   "tag":  "units",
+                                                   "mode":  "units",
+                                                   "startedAt":  "2026-10-22T20:41:27.652Z",
+                                                   "finishedAt":  "2026-10-22T20:43:09.310Z",
+                                                   "exitCode":  0,
+                                                   "logSha256":  "bf4bf7a57f2ad599e4897db412db1024b579202a00727d1a345f032586df1341",
+                                                   "sourceManifestSha256":  "72b6d1c75810bd8d8e771ba924c5077e2a6e9ba834f17eb939046b66a717e633",
+                                                   "imageId":  "sha256:e29eca71197427b1623a2c1298e171249fb2a72636730a0126352790981a3161",
+                                                   "sourceFiles":  3568,
+                                                   "staging":  false
+                                               }
+                             },
+                             {
+                                 "receipt":  {
+                                                 "file":  "pos-exit.json",
+                                                 "sha256":  "f335aa126c2f6b4bfe18c1ece99cc8df6a76b4ffd097f0dc6a9effa07515f32c"
+                                             },
+                                 "log":  {
+                                             "file":  "pos.log",
+                                             "sha256":  "3d27d5d7ac26301dc6583f24ff6f95dfdeb1e6950d3c8ec3dd0cae01655012c4"
+                                         },
+                                 "rawResult":  {
+                                                   "tag":  "pos",
+                                                   "mode":  "pos",
+                                                   "startedAt":  "2026-10-22T20:43:09.418Z",
+                                                   "finishedAt":  "2026-10-22T20:44:54.521Z",
+                                                   "exitCode":  0,
+                                                   "logSha256":  "3d27d5d7ac26301dc6583f24ff6f95dfdeb1e6950d3c8ec3dd0cae01655012c4",
+                                                   "sourceManifestSha256":  "72b6d1c75810bd8d8e771ba924c5077e2a6e9ba834f17eb939046b66a717e633",
+                                                   "imageId":  "sha256:e29eca71197427b1623a2c1298e171249fb2a72636730a0126352790981a3161",
+                                                   "sourceFiles":  3568,
+                                                   "staging":  false
+                                               }
+                             },
+                             {
+                                 "receipt":  {
+                                                 "file":  "browser-exit.json",
+                                                 "sha256":  "af99aa917ac34591bb0619768fe96dc026b4aee9b12ef8133cbf93cc7072adb7"
+                                             },
+                                 "log":  {
+                                             "file":  "browser.log",
+                                             "sha256":  "47df96219d6f6aaf51910d2a2aa97739cee5c6d63cb02e9313dfd3a527ce65dc"
+                                         },
+                                 "rawResult":  {
+                                                   "tag":  "browser",
+                                                   "mode":  "browser",
+                                                   "startedAt":  "2026-10-22T20:41:27.619Z",
+                                                   "finishedAt":  "2026-10-22T20:45:28.860Z",
+                                                   "exitCode":  0,
+                                                   "logSha256":  "47df96219d6f6aaf51910d2a2aa97739cee5c6d63cb02e9313dfd3a527ce65dc",
+                                                   "sourceManifestSha256":  "72b6d1c75810bd8d8e771ba924c5077e2a6e9ba834f17eb939046b66a717e633",
+                                                   "imageId":  "sha256:e29eca71197427b1623a2c1298e171249fb2a72636730a0126352790981a3161",
+                                                   "sourceFiles":  3568,
+                                                   "staging":  false
+                                               }
+                             },
+                             {
+                                 "receipt":  {
+                                                 "file":  "post-exit.json",
+                                                 "sha256":  "9e3bf4b8a40a29c55fa64d1776beb7317951c81416d4a0dedce16d7e6a98bf90"
+                                             },
+                                 "log":  {
+                                             "file":  "post.log",
+                                             "sha256":  "819f5df757570990de7bbb8dfc63a09500d49f2aab004abdbb57accc6895a7f9"
+                                         },
+                                 "rawResult":  {
+                                                   "tag":  "post",
+                                                   "mode":  "post",
+                                                   "startedAt":  "2026-10-22T20:46:05.755Z",
+                                                   "finishedAt":  "2026-10-22T20:48:09.658Z",
+                                                   "exitCode":  0,
+                                                   "logSha256":  "819f5df757570990de7bbb8dfc63a09500d49f2aab004abdbb57accc6895a7f9",
+                                                   "sourceManifestSha256":  "72b6d1c75810bd8d8e771ba924c5077e2a6e9ba834f17eb939046b66a717e633",
+                                                   "imageId":  "sha256:e29eca71197427b1623a2c1298e171249fb2a72636730a0126352790981a3161",
+                                                   "sourceFiles":  3568,
+                                                   "staging":  false
+                                               }
+                             }
+                         ],
+    "counts":  {
+                   "adminScreensPassed":  104,
+                   "consolePassed":  210,
+                   "consoleTodo":  3,
+                   "apiTypesPassed":  10,
+                   "affectedApiPassed":  115,
+                   "affectedApiTodo":  4,
+                   "posPassed":  1433,
+                   "builtBrowserPassed":  153,
+                   "compilerTasks":  16,
+                   "compilerExecuted":  7,
+                   "compilerCached":  9,
+                   "builds":  5,
+                   "buildsExecuted":  4,
+                   "buildsCached":  1,
+                   "lintErrors":  0,
+                   "lintWarnings":  8,
+                   "postLintWarnings":  5,
+                   "boxReusedPassed":  749
+               },
+    "independentSourceReview":  {
+                                    "artifact":  {
+                                                     "file":  "admin624-station-review.json",
+                                                     "sha256":  "afa02c9e793c483fb8e02c66fd47f0a2073e939a76a1418c2f29031e97acaf63"
+                                                 },
+                                    "checks":  11,
+                                    "passed":  true,
+                                    "blockingFindings":  0
+                                },
+    "priorLocalReceipt":  {
+                              "file":  "admin624-local-results.json",
+                              "sha256":  "5775fb275d92b6d8a16b5cfb622f6d04f6cd65ff6b661dee5469a6d6a8d32ebb"
+                          },
+    "retainedOriginalResults":  {
+                                    "rawApiShardsAllGreen":  false,
+                                    "apiPassed":  4750,
+                                    "apiFailed":  2,
+                                    "apiSkipped":  401,
+                                    "apiTodo":  5,
+                                    "apiShards":  [
+                                                      {
+                                                          "receipt":  {
+                                                                          "file":  "api1-exit.json",
+                                                                          "sha256":  "46368ba027fb3b60dd8574623eac75964cc1dee2a923b2334e509adf44d3f39c"
+                                                                      },
+                                                          "log":  {
+                                                                      "file":  "api1.log",
+                                                                      "sha256":  "00be23b3ac91148a35ed88dc34c9f9916cb0f2cbf496f1ab67b10f125bffe646"
+                                                                  },
+                                                          "rawResult":  {
+                                                                            "tag":  "api1",
+                                                                            "mode":  "api1",
+                                                                            "startedAt":  "2026-10-22T19:34:34.908Z",
+                                                                            "finishedAt":  "2026-10-22T19:48:57.093Z",
+                                                                            "exitCode":  0,
+                                                                            "logSha256":  "00be23b3ac91148a35ed88dc34c9f9916cb0f2cbf496f1ab67b10f125bffe646",
+                                                                            "sourceManifestSha256":  "03087f2699180f856191caa26860d7438a9f2189e9f6650cbc54e602f84dc196",
+                                                                            "imageId":  "sha256:1042c79b004327eada84e2661611f3b08d9df4020f085526b0e91f696b6d4065",
+                                                                            "sourceFiles":  3568,
+                                                                            "staging":  false
+                                                                        }
+                                                      },
+                                                      {
+                                                          "receipt":  {
+                                                                          "file":  "api2-exit.json",
+                                                                          "sha256":  "9dcf3bc2f29821d51f97db234b1eb81c9de83dea317d19f4d9961ed3a22404bb"
+                                                                      },
+                                                          "log":  {
+                                                                      "file":  "api2.log",
+                                                                      "sha256":  "3ad98e04de4f2def21e9464dafd0c3c80db72ddbba4b8c86372ba540887ac940"
+                                                                  },
+                                                          "rawResult":  {
+                                                                            "tag":  "api2",
+                                                                            "mode":  "api2",
+                                                                            "startedAt":  "2026-10-22T19:34:34.923Z",
+                                                                            "finishedAt":  "2026-10-22T19:48:54.394Z",
+                                                                            "exitCode":  1,
+                                                                            "logSha256":  "3ad98e04de4f2def21e9464dafd0c3c80db72ddbba4b8c86372ba540887ac940",
+                                                                            "sourceManifestSha256":  "03087f2699180f856191caa26860d7438a9f2189e9f6650cbc54e602f84dc196",
+                                                                            "imageId":  "sha256:1042c79b004327eada84e2661611f3b08d9df4020f085526b0e91f696b6d4065",
+                                                                            "sourceFiles":  3568,
+                                                                            "staging":  false
+                                                                        }
+                                                      },
+                                                      {
+                                                          "receipt":  {
+                                                                          "file":  "api3-exit.json",
+                                                                          "sha256":  "81205e1a694788ce096f77cfa5efbe01a2765a08f3dd17cd637d74600de609d6"
+                                                                      },
+                                                          "log":  {
+                                                                      "file":  "api3.log",
+                                                                      "sha256":  "d6007aa2abefe6b38efd5b7d27261ae1f36acdf8f37e54230ec7d2a97d0e9311"
+                                                                  },
+                                                          "rawResult":  {
+                                                                            "tag":  "api3",
+                                                                            "mode":  "api3",
+                                                                            "startedAt":  "2026-10-22T19:34:34.932Z",
+                                                                            "finishedAt":  "2026-10-22T19:50:54.018Z",
+                                                                            "exitCode":  1,
+                                                                            "logSha256":  "d6007aa2abefe6b38efd5b7d27261ae1f36acdf8f37e54230ec7d2a97d0e9311",
+                                                                            "sourceManifestSha256":  "03087f2699180f856191caa26860d7438a9f2189e9f6650cbc54e602f84dc196",
+                                                                            "imageId":  "sha256:1042c79b004327eada84e2661611f3b08d9df4020f085526b0e91f696b6d4065",
+                                                                            "sourceFiles":  3568,
+                                                                            "staging":  false
+                                                                        }
+                                                      }
+                                                  ],
+                                    "pos":  {
+                                                "passed":  1432,
+                                                "failed":  1,
+                                                "gate":  {
+                                                             "receipt":  {
+                                                                             "file":  "pos-exit.json",
+                                                                             "sha256":  "9e79cf09320055cb8ef2a92bb95a5a25b2ea00c0c166d5088436501a12497cc8"
+                                                                         },
+                                                             "log":  {
+                                                                         "file":  "pos.log",
+                                                                         "sha256":  "a56d4af88a8a6b2d2b351f8525a252ef5d333cde96b39da534f828ae6877bcc4"
+                                                                     },
+                                                             "rawResult":  {
+                                                                               "tag":  "pos",
+                                                                               "mode":  "pos",
+                                                                               "startedAt":  "2026-10-22T19:39:44.264Z",
+                                                                               "finishedAt":  "2026-10-22T19:41:53.776Z",
+                                                                               "exitCode":  1,
+                                                                               "logSha256":  "a56d4af88a8a6b2d2b351f8525a252ef5d333cde96b39da534f828ae6877bcc4",
+                                                                               "sourceManifestSha256":  "03087f2699180f856191caa26860d7438a9f2189e9f6650cbc54e602f84dc196",
+                                                                               "imageId":  "sha256:1042c79b004327eada84e2661611f3b08d9df4020f085526b0e91f696b6d4065",
+                                                                               "sourceFiles":  3568,
+                                                                               "staging":  false
+                                                                           }
+                                                         }
+                                            },
+                                    "browser":  {
+                                                    "passed":  149,
+                                                    "failed":  1,
+                                                    "gate":  {
+                                                                 "receipt":  {
+                                                                                 "file":  "browser-exit.json",
+                                                                                 "sha256":  "b622b20a684449c9ce2792b2b862a73d11b2b62d7316268bd7afec3282651acb"
+                                                                             },
+                                                                 "log":  {
+                                                                             "file":  "browser.log",
+                                                                             "sha256":  "0605b897047d61e650e9d18dda2cf5871d7591d53dc80cb529740eaae8d0f93b"
+                                                                         },
+                                                                 "rawResult":  {
+                                                                                   "tag":  "browser",
+                                                                                   "mode":  "browser",
+                                                                                   "startedAt":  "2026-10-22T19:39:44.264Z",
+                                                                                   "finishedAt":  "2026-10-22T19:43:44.600Z",
+                                                                                   "exitCode":  1,
+                                                                                   "logSha256":  "0605b897047d61e650e9d18dda2cf5871d7591d53dc80cb529740eaae8d0f93b",
+                                                                                   "sourceManifestSha256":  "03087f2699180f856191caa26860d7438a9f2189e9f6650cbc54e602f84dc196",
+                                                                                   "imageId":  "sha256:1042c79b004327eada84e2661611f3b08d9df4020f085526b0e91f696b6d4065",
+                                                                                   "sourceFiles":  3568,
+                                                                                   "staging":  false
+                                                                               }
+                                                             }
+                                                },
+                                    "originalRawResultsNeverRelabeled":  true
+                                },
+    "adoption":  {
+                     "currentApiCaseCoveragePassed":  4752,
+                     "inheritedSkipped":  401,
+                     "inheritedTodo":  5,
+                     "twoFailedApiFiles":  [
+                                               "apps/api/test/s221-r1-review.test.ts",
+                                               "apps/api/test/s221-r4-closing-audit.test.ts"
+                                           ],
+                     "successfulWholeAffectedFiles":  {
+                                                          "receipt":  {
+                                                                          "file":  "admin624-legacy-api-inventories-exit.json",
+                                                                          "sha256":  "2f6296014db2ee3d6790f0105c0d9aac19caeda1cd1131cd228e3caad9d6797d"
+                                                                      },
+                                                          "log":  {
+                                                                      "file":  "admin624-legacy-api-inventories.log",
+                                                                      "sha256":  "efa26d5df1ea4e243b14bfefe121b731eeeca2622e41ab25eb04f9969c8ee4e7"
+                                                                  },
+                                                          "rawResult":  {
+                                                                            "tag":  "legacy-api-inventories",
+                                                                            "startedAt":  "2026-10-22T19:47:12.480Z",
+                                                                            "finishedAt":  "2026-10-22T19:48:03.986Z",
+                                                                            "exitCode":  0,
+                                                                            "logSha256":  "efa26d5df1ea4e243b14bfefe121b731eeeca2622e41ab25eb04f9969c8ee4e7",
+                                                                            "container":  "oto-admin624-workspace",
+                                                                            "developmentOnly":  true,
+                                                                            "sourceFrozen":  false,
+                                                                            "staging":  false
+                                                                        }
+                                                      },
+                     "originalInputEquivalence":  {
+                                                      "checkedAt":  "2026-10-22T20:14:58.350Z",
+                                                      "sourceFiles":  3568,
+                                                      "unchangedFiles":  3564,
+                                                      "delta":  [
+                                                                    {
+                                                                        "path":  "apps/api/test/s221-r1-review.test.ts",
+                                                                        "sha256":  "a36394e4c0ade11e84b2a0cd8257e4d315497c2d61c9ba3b4be3ff7a2b912a64"
+                                                                    },
+                                                                    {
+                                                                        "path":  "apps/api/test/s221-r4-closing-audit.test.ts",
+                                                                        "sha256":  "9cf14a0f3bd99534f0d300625672e249afc1cb6a15c3d7573a32f9c9dcb4258f"
+                                                                    },
+                                                                    {
+                                                                        "path":  "apps/console/e2e/care-print.spec.ts",
+                                                                        "sha256":  "26f8250022e2b6029ac768b3d90c5d8756462623985242e8f594bbc5c9134dc7"
+                                                                    },
+                                                                    {
+                                                                        "path":  "apps/pos/test/s221-r2-benefit-qr.test.ts",
+                                                                        "sha256":  "36788cc3d9b37caf3ab1038018715e193a7d40721dc14759366e48ced3b52806"
+                                                                    }
+                                                                ],
+                                                      "allProductionAndConfigurationInputsUnchanged":  true,
+                                                      "firstSourceManifestSha256":  "03087f2699180f856191caa26860d7438a9f2189e9f6650cbc54e602f84dc196",
+                                                      "finalSourceManifestSha256":  "f2f4751f349e4c13accfc19d53126746702ff5195b62432b4dccf76ed4ebab3a",
+                                                      "coverageRule":  "Retain original full runs as failed. Replace only the two whole API inventory files and the POS/browser test files with successful current-source whole-file or whole-suite reruns. Unchanged suites and production/configuration inputs remain byte-identical. Fresh exact-source CI is still required before deploy.",
+                                                      "staging":  false
+                                                  },
+                     "reusedRemainingPackagesAndBox":  [
+                                                           {
+                                                               "receipt":  {
+                                                                               "file":  "other-exit.json",
+                                                                               "sha256":  "ef89da260e15b5cef192d70acda919cf489f66afe7757f2a9ba4547f284aca81"
+                                                                           },
+                                                               "log":  {
+                                                                           "file":  "other.log",
+                                                                           "sha256":  "7465023e12cbd3eee6c6ce160270f77de7179d61b8b9a86903748940f0a7c312"
+                                                                       },
+                                                               "rawResult":  {
+                                                                                 "tag":  "other",
+                                                                                 "mode":  "other",
+                                                                                 "startedAt":  "2026-10-22T19:36:23.292Z",
+                                                                                 "finishedAt":  "2026-10-22T19:40:37.018Z",
+                                                                                 "exitCode":  0,
+                                                                                 "logSha256":  "7465023e12cbd3eee6c6ce160270f77de7179d61b8b9a86903748940f0a7c312",
+                                                                                 "sourceManifestSha256":  "03087f2699180f856191caa26860d7438a9f2189e9f6650cbc54e602f84dc196",
+                                                                                 "imageId":  "sha256:1042c79b004327eada84e2661611f3b08d9df4020f085526b0e91f696b6d4065",
+                                                                                 "sourceFiles":  3568,
+                                                                                 "staging":  false
+                                                                             }
+                                                           },
+                                                           {
+                                                               "receipt":  {
+                                                                               "file":  "box-exit.json",
+                                                                               "sha256":  "0a9bdc1fbc3ab84d923f86be773947da5fb24d9c18b54eda11b47a14b43d95b2"
+                                                                           },
+                                                               "log":  {
+                                                                           "file":  "box.log",
+                                                                           "sha256":  "11e16aa08732f801bbd3797ef777f334d00026cf03d87486d36cd04d1383e90e"
+                                                                       },
+                                                               "rawResult":  {
+                                                                                 "tag":  "box",
+                                                                                 "mode":  "box",
+                                                                                 "startedAt":  "2026-10-22T19:52:33.985Z",
+                                                                                 "finishedAt":  "2026-10-22T19:55:07.176Z",
+                                                                                 "exitCode":  0,
+                                                                                 "logSha256":  "11e16aa08732f801bbd3797ef777f334d00026cf03d87486d36cd04d1383e90e",
+                                                                                 "sourceManifestSha256":  "03087f2699180f856191caa26860d7438a9f2189e9f6650cbc54e602f84dc196",
+                                                                                 "imageId":  "sha256:1042c79b004327eada84e2661611f3b08d9df4020f085526b0e91f696b6d4065",
+                                                                                 "sourceFiles":  3568,
+                                                                                 "staging":  false
+                                                                             }
+                                                           }
+                                                       ],
+                     "rule":  "Original raw failures remain failed. Successful whole affected API-file reruns replace only their previous case results. Original remaining packages and Box are reused through initial test-only equivalence and the explicit four-file station delta; affected AdminScreens/Console/API/POS/built-browser/compiler/lint gates ran again on the station freeze. No all-shard rerun or corrected-source CI success is claimed."
+                 },
+    "meaningfulStationBeforeFix":  {
+                                       "browser":  {
+                                                       "passed":  8,
+                                                       "failed":  1,
+                                                       "gate":  {
+                                                                    "receipt":  {
+                                                                                    "file":  "admin624-station-baseline-v1-exit.json",
+                                                                                    "sha256":  "06d52521291a8cdc0b1d65535cefa4cbb4d9d21595ea58ae271d27521326814d"
+                                                                                },
+                                                                    "log":  {
+                                                                                "file":  "admin624-station-baseline-v1.log",
+                                                                                "sha256":  "e67a367785bcc037aa572263cb22839f048196af8fcbaf77b97defadf6a58f81"
+                                                                            },
+                                                                    "rawResult":  {
+                                                                                      "tag":  "station-baseline-v1",
+                                                                                      "startedAt":  "2026-10-22T20:35:47.041Z",
+                                                                                      "finishedAt":  "2026-10-22T20:36:34.200Z",
+                                                                                      "exitCode":  1,
+                                                                                      "logSha256":  "e67a367785bcc037aa572263cb22839f048196af8fcbaf77b97defadf6a58f81",
+                                                                                      "container":  "oto-admin624-workspace",
+                                                                                      "developmentOnly":  true,
+                                                                                      "sourceFrozen":  false,
+                                                                                      "staging":  false
+                                                                                  }
+                                                                }
+                                                   },
+                                       "editor":  {
+                                                      "passed":  13,
+                                                      "failed":  3,
+                                                      "gate":  {
+                                                                   "receipt":  {
+                                                                                   "file":  "admin624-station-editor-red-v1-exit.json",
+                                                                                   "sha256":  "7232812f7ec2e5a9025b64dae384a6fd77837a3fe5a8459a92dbf948b0345bbd"
+                                                                               },
+                                                                   "log":  {
+                                                                               "file":  "admin624-station-editor-red-v1.log",
+                                                                               "sha256":  "45d24c1ec582f817332d524dc1685c63a5693d5bff3457afce76ce54bede90c5"
+                                                                           },
+                                                                   "rawResult":  {
+                                                                                     "tag":  "station-editor-red-v1",
+                                                                                     "startedAt":  "2026-10-22T20:37:46.885Z",
+                                                                                     "finishedAt":  "2026-10-22T20:37:50.978Z",
+                                                                                     "exitCode":  1,
+                                                                                     "logSha256":  "45d24c1ec582f817332d524dc1685c63a5693d5bff3457afce76ce54bede90c5",
+                                                                                     "container":  "oto-admin624-workspace",
+                                                                                     "developmentOnly":  true,
+                                                                                     "sourceFrozen":  false,
+                                                                                     "staging":  false
+                                                                                 }
+                                                               }
+                                                  }
+                                   },
+    "preparationChecks":  {
+                              "allReferencedRawGateExitCodesAndLogHashesVerified":  true,
+                              "successfulStationGateFrozenInputsVerified":  true,
+                              "exactFourDeltaCurrentHashesMatchReview":  true,
+                              "originalSixCiJobsVerified":  true,
+                              "countsReadFromActualLogSummaries":  true,
+                              "boxCountReadFromTapNotVitest":  true
+                          },
+    "limits":  [
+                   "This is local validation and source provenance. CI was pending at the historical observation recorded above; final six-job success is recorded separately in SCRUM-624-ci.json. No deployment or staging acceptance is claimed here.",
+                   "Full original API shards were not all green; 4752 is explicitly adopted current case coverage after successful whole affected-file replacement.",
+                   "No raw log content, request key, credential, bearer value, personal record or deployment URL is embedded.",
+                   "Existing eight lint warnings remain; the narrower post-rebase pass reported five warnings and zero errors.",
+                   "No physical printer command, station session workflow, payment, SMS or fixture operation was run by this receipt preparation."
+               ],
+    "qaPreparedAt":  "2026-10-22T21:11:22.2036501Z",
+    "originalExternalReceiptSha256":  "c3e1933d2a6ebd070196b3ae8372585248065d9b2b457dc68698c2f11c448964"
+}

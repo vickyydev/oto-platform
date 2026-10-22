@@ -1,0 +1,235 @@
+{
+    "ticket":  "SCRUM-624",
+    "checkedAt":  "2026-10-22T21:20:20.1373060Z",
+    "sourceSha":  "4dd7eb94b4af383c40cb512229b2ea1ad9283451",
+    "helperSha256":  "de74b54505b2dc01501f4fad84c03c10d28bbe2391084f81f34e32cd985f3662",
+    "passed":  true,
+    "safetyAuditOnly":  true,
+    "fullAcceptance":  false,
+    "stagingAccepted":  false,
+    "inputs":  {
+                   "resultSha256":  "7dc261047ea13842671b3f63a4d714d1a581e1d368f57be917e68eee89884015",
+                   "envelopeSha256":  "6a8a5400574057da5fd7344ebb2163caa44a07f6731bfeb0066c40e58f98661e",
+                   "runExitSha256":  "a4de283bac5711d02665ed7e42f1a0361c6035119808f4e50f598525bcf4de46",
+                   "runLogSha256":  "01aded4d2fadfc0d9b5c3b5e281b0fcd4d20b41d3646264b1b88637564442da1",
+                   "priorSafetyAuditSha256":  "d3a2df121fd41147eb346753383deab1eef327264dac1e0684d3ea016a268d18"
+               },
+    "originalOutcome":  {
+                            "complete":  false,
+                            "exitCode":  1,
+                            "failedPhase":  "CAPTURE_4",
+                            "diagnostic":  "CAPTURE_BOUNDS_OR_CAPTION_FAILED",
+                            "checks":  7,
+                            "images":  3,
+                            "counts":  {
+                                           "signIns":  1,
+                                           "signOuts":  1,
+                                           "reads":  48,
+                                           "ancillaryReads":  12,
+                                           "previewPosts":  13,
+                                           "previewCanceled":  0,
+                                           "targetReads":  2,
+                                           "blockedReads":  0,
+                                           "blockedWrites":  0,
+                                           "businessWrites":  0,
+                                           "smsRequests":  0,
+                                           "fixturesCreated":  0,
+                                           "testPrintRequests":  0,
+                                           "benefitQrRequests":  0,
+                                           "publicAssetReads":  8
+                                       },
+                            "authCleanup":  {
+                                                "signOutStatus":  200,
+                                                "meStatus":  401,
+                                                "confirmed":  true
+                                            },
+                            "authState":  {
+                                              "signInAttempted":  true,
+                                              "authUncertain":  false,
+                                              "pendingAuth":  0
+                                          },
+                            "fingerprints":  {
+                                                 "initial":  {
+                                                                 "config":  "063ebbace576830e0db14fa35fdab11a6aca4768b4f909e6467693c9b7ccbba4",
+                                                                 "templates":  "c2b4eef72567dee6cb2101f491d8706d9e379aabc0b5970abfefa2dcc14d72e2",
+                                                                 "benefitTemplates":  "0afa3b9482f7c1fb74b1b6f7d4f125e5304c5fe10f288ac1a038f81cb0fbd260"
+                                                             },
+                                                 "final":  {
+                                                               "config":  "063ebbace576830e0db14fa35fdab11a6aca4768b4f909e6467693c9b7ccbba4",
+                                                               "templates":  "c2b4eef72567dee6cb2101f491d8706d9e379aabc0b5970abfefa2dcc14d72e2",
+                                                               "benefitTemplates":  "0afa3b9482f7c1fb74b1b6f7d4f125e5304c5fe10f288ac1a038f81cb0fbd260"
+                                                           }
+                                             }
+                        },
+    "images":  [
+                   {
+                       "filename":  "SCRUM-624-05-v2-care-pricing-desktop.png",
+                       "sha256":  "be758202ec5990a0049ed85a293994bb736516d9878d785fdd021d6608be8591",
+                       "capturedAt":  "2026-10-22T21:15:03.356Z",
+                       "bounds":  [
+                                      {
+                                          "name":  "pricing heading",
+                                          "wholeInViewport":  true,
+                                          "clearOfCaption":  true
+                                      },
+                                      {
+                                          "name":  "first native price",
+                                          "wholeInViewport":  true,
+                                          "clearOfCaption":  true
+                                      }
+                                  ],
+                       "layout":  {
+                                      "viewport":  1440,
+                                      "document":  1440
+                                  },
+                       "captionClear":  true
+                   },
+                   {
+                       "filename":  "SCRUM-624-06-v2-receipt-preview-desktop.png",
+                       "sha256":  "2f0ff17f4a36be50a77257653c652b0684df1d2e2e84b19814a897be77d86af6",
+                       "capturedAt":  "2026-10-22T21:15:13.990Z",
+                       "bounds":  [
+                                      {
+                                          "name":  "native PNG sample",
+                                          "wholeInViewport":  true,
+                                          "clearOfCaption":  true
+                                      },
+                                      {
+                                          "name":  "native destination text",
+                                          "wholeInViewport":  true,
+                                          "clearOfCaption":  true
+                                      }
+                                  ],
+                       "layout":  {
+                                      "viewport":  1440,
+                                      "document":  1440
+                                  },
+                       "captionClear":  true
+                   },
+                   {
+                       "filename":  "SCRUM-624-07-v2-benefit-templates-desktop.png",
+                       "sha256":  "1567277578fa0bee94ae32cbf5a0791a14f884f9ef2059257eaf731c2f2e3d69",
+                       "capturedAt":  "2026-10-22T21:15:19.179Z",
+                       "bounds":  [
+                                      {
+                                          "name":  "role template heading",
+                                          "wholeInViewport":  true,
+                                          "clearOfCaption":  true
+                                      },
+                                      {
+                                          "name":  "owner effective date",
+                                          "wholeInViewport":  true,
+                                          "clearOfCaption":  true
+                                      }
+                                  ],
+                       "layout":  {
+                                      "viewport":  1440,
+                                      "document":  1440
+                                  },
+                       "captionClear":  true
+                   }
+               ],
+    "helperOnlyCause":  {
+                            "kind":  "CAPTION_HAS_NO_CLEAR_CORNER_AFTER_HEADING_ONLY_SCROLL",
+                            "productDefectInferred":  false,
+                            "localMeasurementSha256":  "10adbbed6c9df642bca9c6ad793867260e5cacbf02119685b73974e7217d9702",
+                            "beforeGuardPass":  false,
+                            "afterGuardPass":  true,
+                            "beforeCornerControlOverlaps":  [
+                                                                2,
+                                                                3,
+                                                                3,
+                                                                2
+                                                            ],
+                            "afterCornerControlOverlaps":  [
+                                                               2,
+                                                               0,
+                                                               3,
+                                                               0
+                                                           ],
+                            "documentWidthBefore":  390,
+                            "documentWidthAfter":  390,
+                            "minimalEvidenceOnlyPrescription":  "After scrolling the Age bands heading into view, align its top to approximately 96px below the viewport top, then run the original HUD placement and bounds/overflow assertions unchanged."
+                        },
+    "checks":  [
+                   {
+                       "name":  "Exact source and V2 helper bound",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Original V2 outcome remains partial and failed",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Original failed run log hash matches",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Six-job source CI and three exact live deploys recorded by envelope",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Helper deploy agrees with envelope: oto-api-staging",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Helper deploy agrees with envelope: oto-console-staging",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Helper final deployment equality comparison reported no failure",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Exactly seven completed checks and three images",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Zero blocked requests business writes SMS fixtures physical print QR or browser errors",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Three settings fingerprints unchanged within V2 and from previous partial",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Certain auth and logout200 me401",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Explicit own-park station and read-only destination target confirmed",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Thirteen read-only PNG preview responses succeeded",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Fresh image hash and claimed bounds: SCRUM-624-05-v2-care-pricing-desktop.png",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Fresh image hash and claimed bounds: SCRUM-624-06-v2-receipt-preview-desktop.png",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Fresh image hash and claimed bounds: SCRUM-624-07-v2-benefit-templates-desktop.png",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Actual local native reproduction isolates caption placement and confirms unchanged guard passes after scroll-only alignment",
+                       "passed":  true
+                   }
+               ],
+    "cleanupNeeded":  false,
+    "networkRequestsByAuditor":  0,
+    "authenticationByAuditor":  false,
+    "originalFilesModified":  false,
+    "limits":  [
+                   "This is safety/restoration audit of a partial attempt, not full acceptance. Capture4 is missing.",
+                   "The three native desktop PNGs were coordinator-viewed; this audit verifies their bytes, freshness and recorded bounds without claiming phone completion.",
+                   "Helper records API/Console deploys and a failure flag for final equality checking; a second snapshot is not published.",
+                   "Local phone reproduction uses an isolated real seeded API and actual V2 HUD arrow, with external font blocked; staging recovery must still satisfy runtime geometry guards.",
+                   "No private journal, product source edit, live authentication or network was used by this audit."
+               ]
+}

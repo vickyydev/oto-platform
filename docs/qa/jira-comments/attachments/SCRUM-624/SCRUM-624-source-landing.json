@@ -1,0 +1,31 @@
+{
+    "ticket":  "SCRUM-624",
+    "sourceSha":  "4dd7eb94b4af383c40cb512229b2ea1ad9283451",
+    "parentSha":  "64bbf8d2abd5bd68cdbcb94a5aeefb26e3229c3d",
+    "pushedAt":  "2026-10-22T20:48:33.330Z",
+    "sourceLandedOnMain":  true,
+    "sourceInputs":  3568,
+    "sourceManifestSha256":  "72b6d1c75810bd8d8e771ba924c5077e2a6e9ba834f17eb939046b66a717e633",
+    "files":  [
+                  "apps/console/e2e/care-print.spec.ts",
+                  "apps/console/src/pages/Care.tsx",
+                  "docs/handover/CLOUD_HANDOVER.md",
+                  "docs/handover/CODEX_HANDOVER.md",
+                  "docs/progress/STATUS.md",
+                  "packages/admin-screens/src/lifted/components/admin/templates/TemplateEditor.tsx",
+                  "packages/admin-screens/test/care-ports.test.ts"
+              ],
+    "previousMainSixCiJobsGreenAtPush":  true,
+    "landingReceiptSha256":  "e7dc8ac21b7e55ec08cd85993a9d1238da3ad527763467c8ed17a2f9fb44b98c",
+    "initialSourceLanding":  {
+                                 "ticket":  "SCRUM-624",
+                                 "sourceSha":  "64bbf8d2abd5bd68cdbcb94a5aeefb26e3229c3d",
+                                 "landedAt":  "2026-10-22T20:23:09.968Z",
+                                 "sourceLanded":  true,
+                                 "stagingAccepted":  false,
+                                 "sourceFiles":  3568,
+                                 "sourceManifestSha256":  "f2f4751f349e4c13accfc19d53126746702ff5195b62432b4dccf76ed4ebab3a"
+                             },
+    "finalCiEvidence":  "SCRUM-624-ci.json",
+    "stagingAccepted":  false
+}

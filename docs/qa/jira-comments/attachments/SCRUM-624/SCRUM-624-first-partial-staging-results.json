@@ -1,0 +1,108 @@
+{
+  "ticket": "SCRUM-624",
+  "helperFilename": "admin624-evidence-station-selected.mjs",
+  "helperSha256": "e7b12c38110605c10e2fe575ad481518e94ea8f67bb07a9f7f4e797a87daf6e9",
+  "sourceSha": "4dd7eb94b4af383c40cb512229b2ea1ad9283451",
+  "startedAt": "2026-10-22T21:10:39.753Z",
+  "complete": false,
+  "controlsComplete": false,
+  "unchangedReadback": true,
+  "checks": [
+    {
+      "code": "EXACT_ACTOR_OWN_PARK_AND_INITIAL_READ_FINGERPRINTS",
+      "passed": true,
+      "checkedAt": "2026-10-22T21:11:03.543Z"
+    },
+    {
+      "code": "CANONICAL_CONFIG_TEMPLATES_AND_BENEFITS_UNCHANGED",
+      "passed": true,
+      "checkedAt": "2026-10-22T21:11:07.956Z"
+    },
+    {
+      "code": "SIGNOUT200_AND_ME401",
+      "passed": true,
+      "checkedAt": "2026-10-22T21:11:09.592Z"
+    }
+  ],
+  "screenshots": [],
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "sourceSha": "4dd7eb94b4af383c40cb512229b2ea1ad9283451",
+      "deployId": "dep-dbd7lquk1f9s738r8c00",
+      "finishedAt": "2026-10-22T21:09:56.653142Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "sourceSha": "4dd7eb94b4af383c40cb512229b2ea1ad9283451",
+      "deployId": "dep-dbd7lr6k1f9s738r8d00",
+      "finishedAt": "2026-10-22T21:09:57.068675Z"
+    }
+  ],
+  "blockedRequests": [
+    {
+      "method": "GET",
+      "originKind": "console",
+      "pathSha256": "641b731619561076907aeabb288ff1ff1af3adece16e44ccbede2b59cc70fe7d"
+    }
+  ],
+  "browserErrorKinds": [],
+  "previewResponses": [],
+  "fingerprints": {
+    "initial": {
+      "config": "063ebbace576830e0db14fa35fdab11a6aca4768b4f909e6467693c9b7ccbba4",
+      "templates": "c2b4eef72567dee6cb2101f491d8706d9e379aabc0b5970abfefa2dcc14d72e2",
+      "benefitTemplates": "0afa3b9482f7c1fb74b1b6f7d4f125e5304c5fe10f288ac1a038f81cb0fbd260"
+    },
+    "final": {
+      "config": "063ebbace576830e0db14fa35fdab11a6aca4768b4f909e6467693c9b7ccbba4",
+      "templates": "c2b4eef72567dee6cb2101f491d8706d9e379aabc0b5970abfefa2dcc14d72e2",
+      "benefitTemplates": "0afa3b9482f7c1fb74b1b6f7d4f125e5304c5fe10f288ac1a038f81cb0fbd260"
+    }
+  },
+  "counts": {
+    "signIns": 1,
+    "signOuts": 1,
+    "reads": 18,
+    "ancillaryReads": 3,
+    "previewPosts": 0,
+    "previewCanceled": 0,
+    "targetReads": 0,
+    "blockedReads": 1,
+    "blockedWrites": 0,
+    "businessWrites": 0,
+    "smsRequests": 0,
+    "fixturesCreated": 0,
+    "testPrintRequests": 0,
+    "benefitQrRequests": 0,
+    "publicAssetReads": 2
+  },
+  "limitations": [
+    "Read-only controls and current-record fingerprints; no save, physical print, redemption, benefit credential, Till or station-session workflow is exercised. Station selection changes only the local preview and read-only destination target.",
+    "The PNG preview uses the existing renderer fixture sample, not a real sale.",
+    "Care fingerprints cover policy, pricing and photo retention; the live nanny roster is excluded.",
+    "Only named controls are required to fit each capture; the whole long panel is not claimed.",
+    "Staff/application rows and sign-in identity are hidden before capture. No complete history or cross-park equivalence is claimed.",
+    "Exact-SHA CI approval is the coordinator envelope responsibility; this helper independently checks latest API and Console live deploys."
+  ],
+  "signInStatus": 200,
+  "actor": {
+    "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+    "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+  },
+  "failedPhase": "CAPTURE_1",
+  "failureKind": "PROOF_ERROR",
+  "diagnostic": "CAPTURE_STATE_UNCONFIRMED",
+  "authCleanup": {
+    "signOutStatus": 200,
+    "meStatus": 401,
+    "confirmed": true
+  },
+  "authState": {
+    "signInAttempted": true,
+    "authUncertain": false,
+    "pendingAuth": 0
+  },
+  "completedAt": "2026-10-22T21:11:10.919Z"
+}

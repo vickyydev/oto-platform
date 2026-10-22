@@ -1,0 +1,194 @@
+{
+    "ticket":  "SCRUM-624",
+    "checkedAt":  "2026-10-22T21:14:00.0830148Z",
+    "sourceSha":  "4dd7eb94b4af383c40cb512229b2ea1ad9283451",
+    "helperSha256":  "e7b12c38110605c10e2fe575ad481518e94ea8f67bb07a9f7f4e797a87daf6e9",
+    "passed":  true,
+    "safetyAuditOnly":  true,
+    "fullAcceptance":  false,
+    "stagingAccepted":  false,
+    "inputs":  {
+                   "result":  {
+                                  "filename":  "admin624-staging-results.json",
+                                  "sha256":  "a77e1dd47716a2a8c1d6eb821d5fa7a843834da1bbb84254c9e7a38a6e3369d6"
+                              },
+                   "envelope":  {
+                                    "filename":  "admin624-station-selected-staging-envelope.json",
+                                    "sha256":  "9cc1094f72167be43fe9ec6cb0a56c0482429e463439d2dc839ce741ee5b045a"
+                                },
+                   "runExit":  {
+                                   "filename":  "admin624-station-selected-staging-run-exit.json",
+                                   "sha256":  "39d10b2deef62bde85649f9886dc81875a457f9532d6074c849c1feb6960af96"
+                               },
+                   "runLogSha256":  "3a7997bfcbbc1fe9c547711917f4bf398d5ef234f5e43366cc379f2c22c354f1"
+               },
+    "originalOutcome":  {
+                            "complete":  false,
+                            "controlsComplete":  false,
+                            "exitCode":  1,
+                            "failedPhase":  "CAPTURE_1",
+                            "diagnostic":  "CAPTURE_STATE_UNCONFIRMED",
+                            "checks":  3,
+                            "screenshots":  0,
+                            "unchangedReadback":  true,
+                            "counts":  {
+                                           "signIns":  1,
+                                           "signOuts":  1,
+                                           "reads":  18,
+                                           "ancillaryReads":  3,
+                                           "previewPosts":  0,
+                                           "previewCanceled":  0,
+                                           "targetReads":  0,
+                                           "blockedReads":  1,
+                                           "blockedWrites":  0,
+                                           "businessWrites":  0,
+                                           "smsRequests":  0,
+                                           "fixturesCreated":  0,
+                                           "testPrintRequests":  0,
+                                           "benefitQrRequests":  0,
+                                           "publicAssetReads":  2
+                                       },
+                            "authCleanup":  {
+                                                "signOutStatus":  200,
+                                                "meStatus":  401,
+                                                "confirmed":  true
+                                            },
+                            "authState":  {
+                                              "signInAttempted":  true,
+                                              "authUncertain":  false,
+                                              "pendingAuth":  0
+                                          },
+                            "fingerprints":  {
+                                                 "initial":  {
+                                                                 "config":  "063ebbace576830e0db14fa35fdab11a6aca4768b4f909e6467693c9b7ccbba4",
+                                                                 "templates":  "c2b4eef72567dee6cb2101f491d8706d9e379aabc0b5970abfefa2dcc14d72e2",
+                                                                 "benefitTemplates":  "0afa3b9482f7c1fb74b1b6f7d4f125e5304c5fe10f288ac1a038f81cb0fbd260"
+                                                             },
+                                                 "final":  {
+                                                               "config":  "063ebbace576830e0db14fa35fdab11a6aca4768b4f909e6467693c9b7ccbba4",
+                                                               "templates":  "c2b4eef72567dee6cb2101f491d8706d9e379aabc0b5970abfefa2dcc14d72e2",
+                                                               "benefitTemplates":  "0afa3b9482f7c1fb74b1b6f7d4f125e5304c5fe10f288ac1a038f81cb0fbd260"
+                                                           }
+                                             }
+                        },
+    "knownHelperFault":  {
+                             "kind":  "STATIC_READ_ALLOWLIST_OMISSION",
+                             "staticPath":  "/favicon.svg",
+                             "pathSha256":  "641b731619561076907aeabb288ff1ff1af3adece16e44ccbede2b59cc70fe7d",
+                             "readOnlyGet":  true,
+                             "explanation":  "The built Console names favicon.svg; the reviewed helper allowed favicon.ico but not this SVG. Its capture guard correctly stopped when that read was blocked.",
+                             "productDefectInferred":  false
+                         },
+    "deployments":  {
+                        "envelopePreflight":  [
+                                                  {
+                                                      "name":  "oto-api-staging",
+                                                      "deployId":  "dep-dbd7lquk1f9s738r8c00",
+                                                      "sourceSha":  "4dd7eb94b4af383c40cb512229b2ea1ad9283451",
+                                                      "finishedAt":  "2026-10-22T21:09:56.653142Z",
+                                                      "status":  "live"
+                                                  },
+                                                  {
+                                                      "name":  "oto-console-staging",
+                                                      "deployId":  "dep-dbd7lr6k1f9s738r8d00",
+                                                      "sourceSha":  "4dd7eb94b4af383c40cb512229b2ea1ad9283451",
+                                                      "finishedAt":  "2026-10-22T21:09:57.068675Z",
+                                                      "status":  "live"
+                                                  },
+                                                  {
+                                                      "name":  "oto-pos-staging",
+                                                      "deployId":  "dep-dbd7lr6k1f9s738r8dc0",
+                                                      "sourceSha":  "4dd7eb94b4af383c40cb512229b2ea1ad9283451",
+                                                      "finishedAt":  "2026-10-22T21:07:35.501936Z",
+                                                      "status":  "live"
+                                                  }
+                                              ],
+                        "helperRecorded":  [
+                                               {
+                                                   "name":  "oto-api-staging",
+                                                   "sourceSha":  "4dd7eb94b4af383c40cb512229b2ea1ad9283451",
+                                                   "deployId":  "dep-dbd7lquk1f9s738r8c00",
+                                                   "finishedAt":  "2026-10-22T21:09:56.653142Z"
+                                               },
+                                               {
+                                                   "name":  "oto-console-staging",
+                                                   "sourceSha":  "4dd7eb94b4af383c40cb512229b2ea1ad9283451",
+                                                   "deployId":  "dep-dbd7lr6k1f9s738r8d00",
+                                                   "finishedAt":  "2026-10-22T21:09:57.068675Z"
+                                               }
+                                           ],
+                        "helperFinalEqualityComparisonReportedUnconfirmed":  false,
+                        "limit":  "The helper stores its initial API/Console pair and an unconfirmed flag on a failed final equality check; it does not publish a second deployment snapshot."
+                    },
+    "checks":  [
+                   {
+                       "name":  "Exact corrected source and reviewed helper bound across public receipts",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Partial failure remains failure; no acceptance inferred",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Original failed-run log hash matches its immutable receipt",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Envelope records exact-source six-job CI success",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Envelope recorded API Console and POS live at exact source before invocation",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Helper deployment matches envelope: oto-api-staging",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Helper deployment matches envelope: oto-console-staging",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Helper API Console deployment comparison reported no failure",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Attempt and all recorded checks are later than the maximum deploy completion",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Exactly three completed checks and zero images",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Zero business test-print QR SMS fixture preview target-write activity and browser errors",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "All three original current-settings fingerprints unchanged",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Authentication certain and logout200 followed by me401 confirmed",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Single blocked request is exactly the static favicon.svg GET fingerprint",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Known helper-only static icon omission explains capture guard stop",
+                       "passed":  true
+                   }
+               ],
+    "networkRequestsByAuditor":  0,
+    "authenticationByAuditor":  false,
+    "cleanupNeeded":  false,
+    "originalFilesModified":  false,
+    "limits":  [
+                   "This audit confirms bounded safety and unchanged current settings for the failed attempt; it is not full screen acceptance.",
+                   "No screenshots or native-control success proof were produced. No product defect is inferred from the helper-only icon omission.",
+                   "No private journal, credential, authentication, network request or repository mutation was used by this audit."
+               ]
+}

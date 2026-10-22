@@ -1,0 +1,121 @@
+{
+    "ticket":  "SCRUM-624",
+    "sourceSha":  "4dd7eb94b4af383c40cb512229b2ea1ad9283451",
+    "qaPreparedAt":  "2026-10-22T21:11:22.2036501Z",
+    "localOnly":  true,
+    "staging":  false,
+    "complete":  true,
+    "testCasesPassed":  1,
+    "originalResultSha256":  "0ff32917b950124b188a14d52d9485772aadc27bb14a4648f958d3ebde135cc3",
+    "execution":  {
+                      "startedAt":  "2026-10-22T21:05:20.376Z",
+                      "finishedAt":  "2026-10-22T21:05:42.280Z",
+                      "exitCode":  0,
+                      "logSha256":  "a0be33343669b113a4abe956d5c50f2adfad72b452f58996d60d089d87aa8c12",
+                      "receiptSha256":  "960332a07d08d85e794e1ffdae089375d580d8a2b4da904dc1a3a6663f35d1b0"
+                  },
+    "nativeSelection":  "Active Reception Till 1 selected by its captured UUID in the signed-in seeded local park; existing receipt; Fit zoom",
+    "geometry":  {
+                     "viewport":  {
+                                      "width":  1440,
+                                      "height":  1100
+                                  },
+                     "image":  {
+                                   "rect":  {
+                                                "x":  993,
+                                                "y":  347.5,
+                                                "width":  288,
+                                                "height":  357.5,
+                                                "top":  347.5,
+                                                "bottom":  705,
+                                                "left":  993,
+                                                "right":  1281
+                                            },
+                                   "naturalWidth":  576,
+                                   "naturalHeight":  715,
+                                   "ancestors":  [
+                                                     {
+                                                         "rect":  {
+                                                                      "x":  993,
+                                                                      "y":  347.5,
+                                                                      "width":  288,
+                                                                      "height":  357.5,
+                                                                      "top":  347.5,
+                                                                      "bottom":  705,
+                                                                      "left":  993,
+                                                                      "right":  1281
+                                                                  },
+                                                         "overflowX":  "auto",
+                                                         "overflowY":  "auto",
+                                                         "maxHeight":  "770px",
+                                                         "clientHeight":  358,
+                                                         "scrollHeight":  358,
+                                                         "scrollTop":  0
+                                                     }
+                                                 ],
+                                   "visibleRect":  {
+                                                       "top":  347.5,
+                                                       "bottom":  705,
+                                                       "left":  993,
+                                                       "right":  1281
+                                                   },
+                                   "imageWholeInViewport":  true,
+                                   "imageWholeWithinClipping":  true
+                               },
+                     "destination":  {
+                                         "top":  729.75,
+                                         "bottom":  746.25,
+                                         "left":  1102.359375,
+                                         "right":  1277,
+                                         "wholeInViewport":  true
+                                     },
+                     "fullImageAndFooterFit":  true
+                 },
+    "templatesUnchanged":  true,
+    "businessAttempts":  0,
+    "externalRequestsDelivered":  0,
+    "externalRequestsBlocked":  1,
+    "previewPosts":  13,
+    "authCleanup":  {
+                        "signOutStatus":  200,
+                        "meStatus":  401,
+                        "confirmed":  true
+                    },
+    "localImage":  {
+                       "sha256":  "e5249dc18d299301b12c17ebaf74e4b5c2dac1f3238465606f2a773faab5c64f",
+                       "inspected":  true,
+                       "committedOrAttached":  false
+                   },
+    "frozenInputVerification":  {
+                                    "sourceInputs":  3568,
+                                    "beforeVerified":  true,
+                                    "afterVerified":  true,
+                                    "observation":  "Read-only frozen-input verifier returned exit 0 before and after the local run; no repository source edits."
+                                },
+    "preservedSetupAttempts":  [
+                                   {
+                                       "attempt":  "v1",
+                                       "classification":  "external harness module setup only; no test/authentication",
+                                       "exitCode":  1,
+                                       "startedAt":  "2026-10-22T21:04:02.119Z",
+                                       "finishedAt":  "2026-10-22T21:04:17.958Z",
+                                       "receiptSha256":  "28e1dbe93b6f678102c6cbeb72c01a625b7178420134c8ee960cfd853fe9518b",
+                                       "logSha256":  "2853a8e26c0916ba44c3cf44e8e3fc0b66870bc7e10f2c934af1becd5612e56d"
+                                   },
+                                   {
+                                       "attempt":  "v2",
+                                       "classification":  "external harness module setup only; no test/authentication",
+                                       "exitCode":  1,
+                                       "startedAt":  "2026-10-22T21:04:47.026Z",
+                                       "finishedAt":  "2026-10-22T21:05:07.035Z",
+                                       "receiptSha256":  "0d6da9247491a1f3352122a1535d7708d2b0c3dabb5c672974d0e02af7ca0d05",
+                                       "logSha256":  "6a740d3a1b3c62e391524033386c721f4780178bffe5341de743a0898bd70fb6"
+                                   }
+                               ],
+    "limits":  [
+                   "This measures the built Console and an isolated seeded real local API; it is not staging proof.",
+                   "One external font request was blocked to honor zero external network. Native server-rendered PNG dimensions are exact; staging font and live record geometry still require runtime capture guards.",
+                   "The generic run receipt labels the run developmentOnly/sourceFrozen false; separate read-only manifest checks verified the unchanged 3568 frozen source/configuration inputs.",
+                   "No save, physical print, benefit QR, station session, payment or SMS action occurred. The local PNG is deliberately excluded from committed QA artifacts."
+               ]
+}

@@ -1,0 +1,303 @@
+{
+  "ticket": "SCRUM-624",
+  "helperFilename": "admin624-evidence-station-selected-v2.mjs",
+  "helperSha256": "de74b54505b2dc01501f4fad84c03c10d28bbe2391084f81f34e32cd985f3662",
+  "sourceSha": "4dd7eb94b4af383c40cb512229b2ea1ad9283451",
+  "startedAt": "2026-10-22T21:14:49.269Z",
+  "complete": false,
+  "controlsComplete": false,
+  "unchangedReadback": true,
+  "checks": [
+    {
+      "code": "EXACT_ACTOR_OWN_PARK_AND_INITIAL_READ_FINGERPRINTS",
+      "passed": true,
+      "checkedAt": "2026-10-22T21:15:02.041Z"
+    },
+    {
+      "code": "NATIVE_CARE_PRICING_READ_ONLY",
+      "passed": true,
+      "checkedAt": "2026-10-22T21:15:04.917Z"
+    },
+    {
+      "code": "EXPLICIT_OWN_SEEDED_STATION_SELECTION_AND_READ_ONLY_TARGET",
+      "passed": true,
+      "checkedAt": "2026-10-22T21:15:12.712Z"
+    },
+    {
+      "code": "NATIVE_EXISTING_RECEIPT_EDIT_AND_READ_ONLY_PNG",
+      "passed": true,
+      "checkedAt": "2026-10-22T21:15:15.319Z"
+    },
+    {
+      "code": "NATIVE_BENEFIT_ROLE_TEMPLATES_WITHOUT_QR",
+      "passed": true,
+      "checkedAt": "2026-10-22T21:15:20.933Z"
+    },
+    {
+      "code": "CANONICAL_CONFIG_TEMPLATES_AND_BENEFITS_UNCHANGED",
+      "passed": true,
+      "checkedAt": "2026-10-22T21:15:27.610Z"
+    },
+    {
+      "code": "SIGNOUT200_AND_ME401",
+      "passed": true,
+      "checkedAt": "2026-10-22T21:15:28.505Z"
+    }
+  ],
+  "screenshots": [
+    {
+      "filename": "SCRUM-624-05-v2-care-pricing-desktop.png",
+      "label": "native drop-off pricing controls",
+      "capturedAt": "2026-10-22T21:15:03.356Z",
+      "bounds": [
+        {
+          "name": "pricing heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "first native price",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "captionClear": true,
+      "sha256": "be758202ec5990a0049ed85a293994bb736516d9878d785fdd021d6608be8591"
+    },
+    {
+      "filename": "SCRUM-624-06-v2-receipt-preview-desktop.png",
+      "label": "Reception Till 1 receipt PNG and read-only destination; no save or physical print",
+      "capturedAt": "2026-10-22T21:15:13.990Z",
+      "bounds": [
+        {
+          "name": "native PNG sample",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "native destination text",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "captionClear": true,
+      "sha256": "2f0ff17f4a36be50a77257653c652b0684df1d2e2e84b19814a897be77d86af6"
+    },
+    {
+      "filename": "SCRUM-624-07-v2-benefit-templates-desktop.png",
+      "label": "native role template controls; no staff or QR opened",
+      "capturedAt": "2026-10-22T21:15:19.179Z",
+      "bounds": [
+        {
+          "name": "role template heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "owner effective date",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "captionClear": true,
+      "sha256": "1567277578fa0bee94ae32cbf5a0791a14f884f9ef2059257eaf731c2f2e3d69"
+    }
+  ],
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "sourceSha": "4dd7eb94b4af383c40cb512229b2ea1ad9283451",
+      "deployId": "dep-dbd7lquk1f9s738r8c00",
+      "finishedAt": "2026-10-22T21:09:56.653142Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "sourceSha": "4dd7eb94b4af383c40cb512229b2ea1ad9283451",
+      "deployId": "dep-dbd7lr6k1f9s738r8d00",
+      "finishedAt": "2026-10-22T21:09:57.068675Z"
+    }
+  ],
+  "blockedRequests": [],
+  "browserErrorKinds": [],
+  "previewResponses": [
+    {
+      "templateId": "01a0c1d7-e73d-7008-b7e3-a8790dcc8ef0",
+      "stationId": null,
+      "status": 200,
+      "png": true,
+      "at": "2026-10-22T21:15:10.503Z"
+    },
+    {
+      "templateId": "01a0c1d7-e748-7e3c-be35-1e02217939ff",
+      "stationId": null,
+      "status": 200,
+      "png": true,
+      "at": "2026-10-22T21:15:10.633Z"
+    },
+    {
+      "templateId": "01a0c1d7-e744-7594-85d2-2edb4572fec8",
+      "stationId": null,
+      "status": 200,
+      "png": true,
+      "at": "2026-10-22T21:15:11.018Z"
+    },
+    {
+      "templateId": "01a0c1d7-e73a-7ab3-914f-93825772a524",
+      "stationId": null,
+      "status": 200,
+      "png": true,
+      "at": "2026-10-22T21:15:11.098Z"
+    },
+    {
+      "templateId": "01a0c1d7-e741-74b8-a12a-dfb7e8a21301",
+      "stationId": null,
+      "status": 200,
+      "png": true,
+      "at": "2026-10-22T21:15:11.251Z"
+    },
+    {
+      "templateId": "01a0c1d7-e736-79cc-bc78-668eb0f1091e",
+      "stationId": null,
+      "status": 200,
+      "png": true,
+      "at": "2026-10-22T21:15:11.472Z"
+    },
+    {
+      "templateId": "01a0c1d7-e73d-7008-b7e3-a8790dcc8ef0",
+      "stationId": "01a0bbdc-8cd7-7208-8e05-84eaf2963a9a",
+      "status": 200,
+      "png": true,
+      "at": "2026-10-22T21:15:11.698Z"
+    },
+    {
+      "templateId": "01a0c1d7-e744-7594-85d2-2edb4572fec8",
+      "stationId": "01a0bbdc-8cd7-7208-8e05-84eaf2963a9a",
+      "status": 200,
+      "png": true,
+      "at": "2026-10-22T21:15:11.812Z"
+    },
+    {
+      "templateId": "01a0c1d7-e741-74b8-a12a-dfb7e8a21301",
+      "stationId": "01a0bbdc-8cd7-7208-8e05-84eaf2963a9a",
+      "status": 200,
+      "png": true,
+      "at": "2026-10-22T21:15:11.918Z"
+    },
+    {
+      "templateId": "01a0c1d7-e748-7e3c-be35-1e02217939ff",
+      "stationId": "01a0bbdc-8cd7-7208-8e05-84eaf2963a9a",
+      "status": 200,
+      "png": true,
+      "at": "2026-10-22T21:15:12.193Z"
+    },
+    {
+      "templateId": "01a0c1d7-e73a-7ab3-914f-93825772a524",
+      "stationId": "01a0bbdc-8cd7-7208-8e05-84eaf2963a9a",
+      "status": 200,
+      "png": true,
+      "at": "2026-10-22T21:15:12.238Z"
+    },
+    {
+      "templateId": "01a0c1d7-e736-79cc-bc78-668eb0f1091e",
+      "stationId": "01a0bbdc-8cd7-7208-8e05-84eaf2963a9a",
+      "status": 200,
+      "png": true,
+      "at": "2026-10-22T21:15:12.484Z"
+    },
+    {
+      "templateId": "01a0c1d7-e736-79cc-bc78-668eb0f1091e",
+      "stationId": "01a0bbdc-8cd7-7208-8e05-84eaf2963a9a",
+      "status": 200,
+      "png": true,
+      "at": "2026-10-22T21:15:12.681Z"
+    }
+  ],
+  "fingerprints": {
+    "initial": {
+      "config": "063ebbace576830e0db14fa35fdab11a6aca4768b4f909e6467693c9b7ccbba4",
+      "templates": "c2b4eef72567dee6cb2101f491d8706d9e379aabc0b5970abfefa2dcc14d72e2",
+      "benefitTemplates": "0afa3b9482f7c1fb74b1b6f7d4f125e5304c5fe10f288ac1a038f81cb0fbd260"
+    },
+    "final": {
+      "config": "063ebbace576830e0db14fa35fdab11a6aca4768b4f909e6467693c9b7ccbba4",
+      "templates": "c2b4eef72567dee6cb2101f491d8706d9e379aabc0b5970abfefa2dcc14d72e2",
+      "benefitTemplates": "0afa3b9482f7c1fb74b1b6f7d4f125e5304c5fe10f288ac1a038f81cb0fbd260"
+    }
+  },
+  "counts": {
+    "signIns": 1,
+    "signOuts": 1,
+    "reads": 48,
+    "ancillaryReads": 12,
+    "previewPosts": 13,
+    "previewCanceled": 0,
+    "targetReads": 2,
+    "blockedReads": 0,
+    "blockedWrites": 0,
+    "businessWrites": 0,
+    "smsRequests": 0,
+    "fixturesCreated": 0,
+    "testPrintRequests": 0,
+    "benefitQrRequests": 0,
+    "publicAssetReads": 8
+  },
+  "limitations": [
+    "Read-only controls and current-record fingerprints; no save, physical print, redemption, benefit credential, Till or station-session workflow is exercised. Station selection changes only the local preview and read-only destination target.",
+    "The PNG preview uses the existing renderer fixture sample, not a real sale.",
+    "Care fingerprints cover policy, pricing and photo retention; the live nanny roster is excluded.",
+    "Only named controls are required to fit each capture; the whole long panel is not claimed.",
+    "Staff/application rows and sign-in identity are hidden before capture. No complete history or cross-park equivalence is claimed.",
+    "Exact-SHA CI approval is the coordinator envelope responsibility; this helper independently checks latest API and Console live deploys."
+  ],
+  "signInStatus": 200,
+  "actor": {
+    "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+    "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+  },
+  "stationSelection": {
+    "stationId": "01a0bbdc-8cd7-7208-8e05-84eaf2963a9a",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "name": "Reception Till 1",
+    "kind": "till",
+    "defaultWasEmpty": true,
+    "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+    "rowSha256": "d650837cc3d956ad22cdb4033a2f9f918f5740a7b07586c652a83960687229c8",
+    "selectedAt": "2026-10-22T21:15:11.222Z",
+    "targetRead": {
+      "templateId": "01a0c1d7-e736-79cc-bc78-668eb0f1091e",
+      "stationId": "01a0bbdc-8cd7-7208-8e05-84eaf2963a9a",
+      "status": 200,
+      "printerNamed": true,
+      "printerDeviceId": "01a0be8c-89a4-756b-aca1-3be1082c669d",
+      "targetSha256": "8fc5bf332fa9c6148072732b2c3c55c0c6cb1409c9479d2bb5ff08c2a1b29305",
+      "checkedAt": "2026-10-22T21:15:12.712Z"
+    }
+  },
+  "failedPhase": "CAPTURE_4",
+  "failureKind": "PROOF_ERROR",
+  "diagnostic": "CAPTURE_BOUNDS_OR_CAPTION_FAILED",
+  "authCleanup": {
+    "signOutStatus": 200,
+    "meStatus": 401,
+    "confirmed": true
+  },
+  "authState": {
+    "signInAttempted": true,
+    "authUncertain": false,
+    "pendingAuth": 0
+  },
+  "completedAt": "2026-10-22T21:15:29.660Z"
+}

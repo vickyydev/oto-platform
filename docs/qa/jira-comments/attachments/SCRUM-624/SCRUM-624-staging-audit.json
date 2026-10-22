@@ -1,0 +1,484 @@
+{
+    "ticket":  "SCRUM-624",
+    "checkedAt":  "2026-10-22T21:29:33.1094813Z",
+    "sourceSha":  "4dd7eb94b4af383c40cb512229b2ea1ad9283451",
+    "passed":  true,
+    "fullAcceptanceReady":  true,
+    "scope":  "Combined native read-only screen evidence and unchanged-state/authentication verification",
+    "actualAuditChecks":  33,
+    "source":  {
+                   "inputs":  3568,
+                   "ownedProjection":  38,
+                   "manifestSha256":  "72b6d1c75810bd8d8e771ba924c5077e2a6e9ba834f17eb939046b66a717e633",
+                   "fourReviewedDeltas":  [
+                                              {
+                                                  "path":  "apps/console/e2e/care-print.spec.ts",
+                                                  "sha256":  "c7b36ee74eb358d0223c77c45ade97e5c7fc53fd3ed782d842f606eb7006cd25"
+                                              },
+                                              {
+                                                  "path":  "apps/console/src/pages/Care.tsx",
+                                                  "sha256":  "2ae8f45009a0e1af1ff81f4d221f4351873bbb583cb2c24110352393f9bf1c2e"
+                                              },
+                                              {
+                                                  "path":  "packages/admin-screens/src/lifted/components/admin/templates/TemplateEditor.tsx",
+                                                  "sha256":  "a6642dbb063be93b191ea53fca9d3abc8aa89845849cec68dc93e5bdf59e3b31"
+                                              },
+                                              {
+                                                  "path":  "packages/admin-screens/test/care-ports.test.ts",
+                                                  "sha256":  "c18c3c3d68b9edcd406aa728aba984ee0eb035993efc547b5ef8576049935132"
+                                              }
+                                          ],
+                   "allBackendInputsUnchanged":  true
+               },
+    "ci":  {
+               "runId":  "39852030074",
+               "completedSuccessfulJobs":  6,
+               "watchExitCode":  0,
+               "watchReceiptSha256":  "cb243d10f379e7231a29dc02391e97d019dfbf2a483c5bdd8f7fd0241228df43"
+           },
+    "deployments":  [
+                        {
+                            "name":  "oto-api-staging",
+                            "deployId":  "dep-dbd7lquk1f9s738r8c00",
+                            "sourceSha":  "4dd7eb94b4af383c40cb512229b2ea1ad9283451",
+                            "finishedAt":  "2026-10-22T21:09:56.653142Z",
+                            "status":  "live"
+                        },
+                        {
+                            "name":  "oto-console-staging",
+                            "deployId":  "dep-dbd7lr6k1f9s738r8d00",
+                            "sourceSha":  "4dd7eb94b4af383c40cb512229b2ea1ad9283451",
+                            "finishedAt":  "2026-10-22T21:09:57.068675Z",
+                            "status":  "live"
+                        },
+                        {
+                            "name":  "oto-pos-staging",
+                            "deployId":  "dep-dbd7lr6k1f9s738r8dc0",
+                            "sourceSha":  "4dd7eb94b4af383c40cb512229b2ea1ad9283451",
+                            "finishedAt":  "2026-10-22T21:07:35.501936Z",
+                            "status":  "live"
+                        }
+                    ],
+    "retainedAttempts":  [
+                             {
+                                 "attempt":  "first partial",
+                                 "complete":  false,
+                                 "checks":  3,
+                                 "images":  0,
+                                 "exitCode":  1,
+                                 "resultSha256":  "a77e1dd47716a2a8c1d6eb821d5fa7a843834da1bbb84254c9e7a38a6e3369d6",
+                                 "envelopeSha256":  "9cc1094f72167be43fe9ec6cb0a56c0482429e463439d2dc839ce741ee5b045a",
+                                 "runExitSha256":  "39d10b2deef62bde85649f9886dc81875a457f9532d6074c849c1feb6960af96",
+                                 "runLogSha256":  "3a7997bfcbbc1fe9c547711917f4bf398d5ef234f5e43366cc379f2c22c354f1",
+                                 "helperSha256":  "e7b12c38110605c10e2fe575ad481518e94ea8f67bb07a9f7f4e797a87daf6e9",
+                                 "counts":  {
+                                                "signIns":  1,
+                                                "signOuts":  1,
+                                                "reads":  18,
+                                                "ancillaryReads":  3,
+                                                "previewPosts":  0,
+                                                "previewCanceled":  0,
+                                                "targetReads":  0,
+                                                "blockedReads":  1,
+                                                "blockedWrites":  0,
+                                                "businessWrites":  0,
+                                                "smsRequests":  0,
+                                                "fixturesCreated":  0,
+                                                "testPrintRequests":  0,
+                                                "benefitQrRequests":  0,
+                                                "publicAssetReads":  2
+                                            },
+                                 "authCleanup":  {
+                                                     "signOutStatus":  200,
+                                                     "meStatus":  401,
+                                                     "confirmed":  true
+                                                 }
+                             },
+                             {
+                                 "attempt":  "V2 partial",
+                                 "complete":  false,
+                                 "checks":  7,
+                                 "images":  3,
+                                 "exitCode":  1,
+                                 "resultSha256":  "7dc261047ea13842671b3f63a4d714d1a581e1d368f57be917e68eee89884015",
+                                 "envelopeSha256":  "6a8a5400574057da5fd7344ebb2163caa44a07f6731bfeb0066c40e58f98661e",
+                                 "runExitSha256":  "a4de283bac5711d02665ed7e42f1a0361c6035119808f4e50f598525bcf4de46",
+                                 "runLogSha256":  "01aded4d2fadfc0d9b5c3b5e281b0fcd4d20b41d3646264b1b88637564442da1",
+                                 "helperSha256":  "de74b54505b2dc01501f4fad84c03c10d28bbe2391084f81f34e32cd985f3662",
+                                 "counts":  {
+                                                "signIns":  1,
+                                                "signOuts":  1,
+                                                "reads":  48,
+                                                "ancillaryReads":  12,
+                                                "previewPosts":  13,
+                                                "previewCanceled":  0,
+                                                "targetReads":  2,
+                                                "blockedReads":  0,
+                                                "blockedWrites":  0,
+                                                "businessWrites":  0,
+                                                "smsRequests":  0,
+                                                "fixturesCreated":  0,
+                                                "testPrintRequests":  0,
+                                                "benefitQrRequests":  0,
+                                                "publicAssetReads":  8
+                                            },
+                                 "authCleanup":  {
+                                                     "signOutStatus":  200,
+                                                     "meStatus":  401,
+                                                     "confirmed":  true
+                                                 }
+                             },
+                             {
+                                 "attempt":  "focused phone recovery",
+                                 "complete":  true,
+                                 "checks":  4,
+                                 "images":  1,
+                                 "exitCode":  0,
+                                 "resultSha256":  "9b64a6b9a9a782ab39556a5fd12f70574aba771c33b2843d976099559dc292a8",
+                                 "envelopeSha256":  "020554b16b589aa5b80f5bf090b7ef860b433f08f54c1d6b1c8d783fa3704c9b",
+                                 "runExitSha256":  "85532c90b6f525636107a6d4c2a295af0ecf1f3f0832fbf7f63b0ad15a2db843",
+                                 "runLogSha256":  "220d04391ba4f1b65689c2cb2bcc4eb7cf117c8ca8acd4c59473faf372a685cb",
+                                 "helperSha256":  "5cb41d9701cf1be1cba9ceef5cc3efc117d664bc4c71ee0f86700bd886aff3df",
+                                 "counts":  {
+                                                "signIns":  1,
+                                                "signOuts":  1,
+                                                "reads":  18,
+                                                "ancillaryReads":  3,
+                                                "previewPosts":  0,
+                                                "previewCanceled":  0,
+                                                "targetReads":  0,
+                                                "blockedReads":  0,
+                                                "blockedWrites":  0,
+                                                "businessWrites":  0,
+                                                "smsRequests":  0,
+                                                "fixturesCreated":  0,
+                                                "testPrintRequests":  0,
+                                                "benefitQrRequests":  0,
+                                                "publicAssetReads":  2
+                                            },
+                                 "authCleanup":  {
+                                                     "signOutStatus":  200,
+                                                     "meStatus":  401,
+                                                     "confirmed":  true
+                                                 }
+                             }
+                         ],
+    "combinedEvidence":  {
+                             "actualCheckEntries":  11,
+                             "rawUniqueCodes":  9,
+                             "normalizedExpectedAreas":  8,
+                             "areas":  [
+                                           "actor_park_baseline",
+                                           "benefit_role_templates",
+                                           "canonical_unchanged",
+                                           "care_pricing",
+                                           "receipt_preview",
+                                           "signout",
+                                           "station_target",
+                                           "supervision_phone"
+                                       ],
+                             "normalization":  "The two actor/park/baseline preflight labels map to one area; raw entries are not deleted.",
+                             "images":  [
+                                            {
+                                                "filename":  "SCRUM-624-05-v2-care-pricing-desktop.png",
+                                                "sha256":  "be758202ec5990a0049ed85a293994bb736516d9878d785fdd021d6608be8591",
+                                                "capturedAt":  "2026-10-22T21:15:03.356Z",
+                                                "width":  1440,
+                                                "height":  1100,
+                                                "bounds":  [
+                                                               {
+                                                                   "name":  "pricing heading",
+                                                                   "wholeInViewport":  true,
+                                                                   "clearOfCaption":  true
+                                                               },
+                                                               {
+                                                                   "name":  "first native price",
+                                                                   "wholeInViewport":  true,
+                                                                   "clearOfCaption":  true
+                                                               }
+                                                           ],
+                                                "captionClear":  true,
+                                                "layout":  {
+                                                               "viewport":  1440,
+                                                               "document":  1440
+                                                           }
+                                            },
+                                            {
+                                                "filename":  "SCRUM-624-06-v2-receipt-preview-desktop.png",
+                                                "sha256":  "2f0ff17f4a36be50a77257653c652b0684df1d2e2e84b19814a897be77d86af6",
+                                                "capturedAt":  "2026-10-22T21:15:13.990Z",
+                                                "width":  1440,
+                                                "height":  1100,
+                                                "bounds":  [
+                                                               {
+                                                                   "name":  "native PNG sample",
+                                                                   "wholeInViewport":  true,
+                                                                   "clearOfCaption":  true
+                                                               },
+                                                               {
+                                                                   "name":  "native destination text",
+                                                                   "wholeInViewport":  true,
+                                                                   "clearOfCaption":  true
+                                                               }
+                                                           ],
+                                                "captionClear":  true,
+                                                "layout":  {
+                                                               "viewport":  1440,
+                                                               "document":  1440
+                                                           }
+                                            },
+                                            {
+                                                "filename":  "SCRUM-624-07-v2-benefit-templates-desktop.png",
+                                                "sha256":  "1567277578fa0bee94ae32cbf5a0791a14f884f9ef2059257eaf731c2f2e3d69",
+                                                "capturedAt":  "2026-10-22T21:15:19.179Z",
+                                                "width":  1440,
+                                                "height":  1100,
+                                                "bounds":  [
+                                                               {
+                                                                   "name":  "role template heading",
+                                                                   "wholeInViewport":  true,
+                                                                   "clearOfCaption":  true
+                                                               },
+                                                               {
+                                                                   "name":  "owner effective date",
+                                                                   "wholeInViewport":  true,
+                                                                   "clearOfCaption":  true
+                                                               }
+                                                           ],
+                                                "captionClear":  true,
+                                                "layout":  {
+                                                               "viewport":  1440,
+                                                               "document":  1440
+                                                           }
+                                            },
+                                            {
+                                                "filename":  "SCRUM-624-09-supervision-phone.png",
+                                                "sha256":  "d5538ce7b8961b8e768689bafbc0c0736f104d148d27474ce37419b992d1cd73",
+                                                "capturedAt":  "2026-10-22T21:23:48.244Z",
+                                                "width":  390,
+                                                "height":  1100,
+                                                "bounds":  [
+                                                               {
+                                                                   "name":  "age bands heading",
+                                                                   "rect":  {
+                                                                                "x":  61,
+                                                                                "y":  95.5,
+                                                                                "width":  94,
+                                                                                "height":  28,
+                                                                                "left":  61,
+                                                                                "top":  95.5,
+                                                                                "right":  155,
+                                                                                "bottom":  123.5
+                                                                            },
+                                                                   "wholeInViewport":  true,
+                                                                   "clearOfCaption":  true
+                                                               },
+                                                               {
+                                                                   "name":  "first native band control",
+                                                                   "rect":  {
+                                                                                "x":  50,
+                                                                                "y":  260.5,
+                                                                                "width":  290,
+                                                                                "height":  40,
+                                                                                "left":  50,
+                                                                                "top":  260.5,
+                                                                                "right":  340,
+                                                                                "bottom":  300.5
+                                                                            },
+                                                                   "wholeInViewport":  true,
+                                                                   "clearOfCaption":  true
+                                                               }
+                                                           ],
+                                                "captionClear":  true,
+                                                "layout":  {
+                                                               "viewport":  390,
+                                                               "document":  390
+                                                           }
+                                            }
+                                        ],
+                             "selectedSessionsBlockedRequests":  0,
+                             "businessWrites":  0,
+                             "smsRequests":  0,
+                             "fixturesCreated":  0,
+                             "physicalPrintRequests":  0,
+                             "benefitQrRequests":  0,
+                             "browserErrors":  0,
+                             "desktopReadOnlyPngPosts":  13,
+                             "phonePreviewPosts":  0,
+                             "phoneTargetReads":  0,
+                             "priorProofSha256":  "7dc261047ea13842671b3f63a4d714d1a581e1d368f57be917e68eee89884015"
+                         },
+    "baseline":  {
+                     "sameRecordedActorOperatorPark":  true,
+                     "persistedSettingsFingerprints":  {
+                                                           "config":  "063ebbace576830e0db14fa35fdab11a6aca4768b4f909e6467693c9b7ccbba4",
+                                                           "templates":  "c2b4eef72567dee6cb2101f491d8706d9e379aabc0b5970abfefa2dcc14d72e2",
+                                                           "benefitTemplates":  "0afa3b9482f7c1fb74b1b6f7d4f125e5304c5fe10f288ac1a038f81cb0fbd260"
+                                                       },
+                     "allSessionsInitialAndFinalSame":  true,
+                     "perSessionPreferencesGuarded":  true,
+                     "crossSessionPreferencesHashPersisted":  false,
+                     "preferenceOrSessionSeatWritesAllowedOrObserved":  false
+                 },
+    "coordinatorVisualReview":  {
+                                    "reportedViewedImages":  [
+                                                                 "SCRUM-624-05-v2-care-pricing-desktop.png",
+                                                                 "SCRUM-624-06-v2-receipt-preview-desktop.png",
+                                                                 "SCRUM-624-07-v2-benefit-templates-desktop.png",
+                                                                 "SCRUM-624-09-supervision-phone.png"
+                                                             ],
+                                    "reportedAttachmentIds":  [
+                                                                  "11974",
+                                                                  "11975",
+                                                                  "11976",
+                                                                  "11977"
+                                                              ],
+                                    "independentJiraReadByAuditor":  false
+                                },
+    "checks":  [
+                   {
+                       "name":  "Every actual proof envelope and run exit binds exact source4dd7",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "First partial remains failed with three checks and no images",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "V2 remains incomplete at capture4 with seven checks three images and exit1",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Focused recovery actually completed four checks and one image with exit0",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "All three reviewed helper byte hashes agree across proof envelope and run receipt",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Original failed failed successful raw run log hashes remain valid",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Recovery references exact immutable prior7dc V2 proof",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Prior safety audits bind original partials and do not claim acceptance",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Six exact-source CI jobs and full-SHA watcher successful",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Three envelope observations show stable identical latest-live API Console POS exact-source deploys",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Helper API Console pairs match preflight and final equality guards report no failure",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "All proof sessions started after the maximum three-service live completion",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Recorded seeded actor operator and park agree across all sessions",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "All three persisted configuration baselines agree initially and finally in every session",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Each session guards its own preferences with no allowed or observed preference/session-seat write; cross-session hash is not claimed",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Selected evidence has zero business equipment physical print QR SMS or fixture writes",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Selected desktop and phone sessions have no blocked request or browser error",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "All sessions closed with certain logout200 me401 and no pending auth",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Recovery performs no PNG preview or station destination request",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "V2 has real own-station target and thirteen successful read-only native PNG previews",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Eleven actual successful entries across V2 plus phone recovery",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Eleven entries normalize to eight expected areas with actor-baseline labels explicitly grouped",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Exactly four named completed native images selected",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Actual image hash freshness dimensions and exact named bounds: SCRUM-624-05-v2-care-pricing-desktop.png",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Actual image hash freshness dimensions and exact named bounds: SCRUM-624-06-v2-receipt-preview-desktop.png",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Actual image hash freshness dimensions and exact named bounds: SCRUM-624-07-v2-benefit-templates-desktop.png",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Actual image hash freshness dimensions and exact named bounds: SCRUM-624-09-supervision-phone.png",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Numeric live phone rectangles independently fit390 and clear actual bottom-right caption",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Actual held source is3568 not3586 with38 projections under exact72b6 manifest",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Four reviewed source/test deltas still match current bytes and input-equivalence record",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Final phone protocol review plus81and8 offline checks bind actual helper",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Actual paired local caption-failure and scroll-only success evidence retained",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Historical first favicon refusal remains visible and is not relabeled zero-blocked",
+                       "passed":  true
+                   }
+               ],
+    "pendingProofSessions":  0,
+    "networkRequestsByAuditor":  0,
+    "authenticationByAuditor":  false,
+    "repositoryFilesModifiedByAuditor":  false,
+    "limits":  [
+                   "Original first and V2 receipts remain explicitly incomplete/failed. Acceptance combines only their completed native desktop evidence with hash-bound successful focused phone recovery.",
+                   "Four named read-only screen/control captures are accepted; no save, physical print, benefit credential, redemption, station-session, Till, whole long-panel or complete historical workflow is claimed.",
+                   "Care fingerprints cover policy, pricing and photo retention; the live nanny roster is excluded.",
+                   "Public receipts do not persist cross-session preferences. Reviewed helpers guard each session initial me preferences and permit no preference/session-seat write. No cross-session preference equality/hash is invented.",
+                   "Three-service live observations occur in each envelope. Helper initial API/Console pairs match them and final equality guards reported no failure; second after snapshots are not published.",
+                   "Coordinator viewed all four PNGs and reported attachment readbacks11974-11977. Auditor verifies bytes/freshness/named bounds and uses no Jira/network/authentication."
+               ]
+}

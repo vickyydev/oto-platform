@@ -1,0 +1,23 @@
+{
+  "ticket": "SCRUM-624",
+  "status": "Testing",
+  "sourceSha": "4dd7eb94b4af383c40cb512229b2ea1ad9283451",
+  "commentId": "12508",
+  "commentVerified": true,
+  "checkedAt": "2026-10-22T21:17:44.917Z",
+  "attachments": [
+    {
+      "id": "11974",
+      "filename": "SCRUM-624-05-v2-care-pricing-desktop.png"
+    },
+    {
+      "id": "11975",
+      "filename": "SCRUM-624-06-v2-receipt-preview-desktop.png"
+    },
+    {
+      "id": "11976",
+      "filename": "SCRUM-624-07-v2-benefit-templates-desktop.png"
+    }
+  ],
+  "stagingAccepted": false
+}

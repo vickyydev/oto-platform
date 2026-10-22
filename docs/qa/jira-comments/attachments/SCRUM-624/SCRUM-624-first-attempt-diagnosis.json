@@ -1,0 +1,63 @@
+{
+    "ticket":  "SCRUM-624",
+    "checkedAt":  "2026-10-22T21:13:12.4798802Z",
+    "mode":  "Read-only offline fingerprint and source diagnosis",
+    "passed":  true,
+    "fullAcceptance":  false,
+    "proof":  {
+                  "path":  "C:/w/admin624-staging-results.json",
+                  "sha256":  "a77e1dd47716a2a8c1d6eb821d5fa7a843834da1bbb84254c9e7a38a6e3369d6",
+                  "sourceSha":  "4dd7eb94b4af383c40cb512229b2ea1ad9283451",
+                  "helperSha256":  "e7b12c38110605c10e2fe575ad481518e94ea8f67bb07a9f7f4e797a87daf6e9",
+                  "complete":  false,
+                  "failedPhase":  "CAPTURE_1",
+                  "diagnostic":  "CAPTURE_STATE_UNCONFIRMED"
+              },
+    "finding":  {
+                    "classification":  "Proof allowlist omission; existing public read-only favicon asset",
+                    "method":  "GET",
+                    "originKind":  "console",
+                    "pathSha256":  "641b731619561076907aeabb288ff1ff1af3adece16e44ccbede2b59cc70fe7d",
+                    "source":  {
+                                   "path":  "apps/console/index.html",
+                                   "line":  13,
+                                   "sha256":  "1a7d79718089084d6e6d0d44c78df3c4a4515e305e0425dcbe0e953282d6f968"
+                               },
+                    "asset":  {
+                                  "path":  "apps/console/public/favicon.svg",
+                                  "bytes":  163,
+                                  "sha256":  "8ffbde9092b1fa4de97c9481b76f518b131268c82e7c555041925225b1dab6e0"
+                              },
+                    "matchedCandidateFingerprint":  true,
+                    "prescribedFix":  "In a separately preserved helper revision, permit only the existing same-origin GET favicon SVG with no query, userinfo or fragment. Retain all API, write and credential guards."
+                },
+    "partialSafety":  {
+                          "checks":  [
+                                         "EXACT_ACTOR_OWN_PARK_AND_INITIAL_READ_FINGERPRINTS",
+                                         "CANONICAL_CONFIG_TEMPLATES_AND_BENEFITS_UNCHANGED",
+                                         "SIGNOUT200_AND_ME401"
+                                     ],
+                          "screenshots":  0,
+                          "unchangedReadback":  true,
+                          "signIns":  1,
+                          "signOuts":  1,
+                          "blockedReads":  1,
+                          "blockedWrites":  0,
+                          "businessWrites":  0,
+                          "smsRequests":  0,
+                          "fixturesCreated":  0,
+                          "testPrintRequests":  0,
+                          "benefitQrRequests":  0,
+                          "authCleanup":  {
+                                              "signOutStatus":  200,
+                                              "meStatus":  401,
+                                              "confirmed":  true
+                                          }
+                      },
+    "limitations":  [
+                        "The original attempt remains incomplete with zero captured images; the three recorded checks are initial read fingerprints, unchanged readback and sign-out.",
+                        "No helper/attempt/source edit, rerun, browser, authentication, environment/private read or network operation by this reviewer.",
+                        "Fingerprint/source corroboration does not claim a successful HTTP response for the blocked asset or staging acceptance.",
+                        "The product API/native controls are not implicated by this static-asset guard omission."
+                    ]
+}

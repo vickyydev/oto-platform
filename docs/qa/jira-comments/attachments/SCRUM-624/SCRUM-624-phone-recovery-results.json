@@ -1,0 +1,210 @@
+{
+  "ticket": "SCRUM-624",
+  "helperFilename": "admin624-evidence-phone-recovery.mjs",
+  "helperSha256": "5cb41d9701cf1be1cba9ceef5cc3efc117d664bc4c71ee0f86700bd886aff3df",
+  "sourceSha": "4dd7eb94b4af383c40cb512229b2ea1ad9283451",
+  "startedAt": "2026-10-22T21:23:35.568Z",
+  "complete": true,
+  "controlsComplete": true,
+  "unchangedReadback": true,
+  "checks": [
+    {
+      "code": "EXACT_V2_ACTOR_PARK_AND_BASELINE_FINGERPRINTS",
+      "passed": true,
+      "checkedAt": "2026-10-22T21:23:46.894Z"
+    },
+    {
+      "code": "NATIVE_SUPERVISION_PHONE390",
+      "passed": true,
+      "checkedAt": "2026-10-22T21:23:49.519Z"
+    },
+    {
+      "code": "CANONICAL_CONFIG_TEMPLATES_AND_BENEFITS_UNCHANGED",
+      "passed": true,
+      "checkedAt": "2026-10-22T21:23:52.238Z"
+    },
+    {
+      "code": "SIGNOUT200_AND_ME401",
+      "passed": true,
+      "checkedAt": "2026-10-22T21:23:53.148Z"
+    }
+  ],
+  "screenshots": [
+    {
+      "filename": "SCRUM-624-09-supervision-phone.png",
+      "label": "native supervision age-band controls at 390px",
+      "capturedAt": "2026-10-22T21:23:48.244Z",
+      "bounds": [
+        {
+          "name": "age bands heading",
+          "rect": {
+            "x": 61,
+            "y": 95.5,
+            "width": 94,
+            "height": 28,
+            "left": 61,
+            "top": 95.5,
+            "right": 155,
+            "bottom": 123.5
+          },
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "first native band control",
+          "rect": {
+            "x": 50,
+            "y": 260.5,
+            "width": 290,
+            "height": 40,
+            "left": 50,
+            "top": 260.5,
+            "right": 340,
+            "bottom": 300.5
+          },
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 390,
+        "document": 390
+      },
+      "captionClear": true,
+      "sha256": "d5538ce7b8961b8e768689bafbc0c0736f104d148d27474ce37419b992d1cd73"
+    }
+  ],
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "sourceSha": "4dd7eb94b4af383c40cb512229b2ea1ad9283451",
+      "deployId": "dep-dbd7lquk1f9s738r8c00",
+      "finishedAt": "2026-10-22T21:09:56.653142Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "sourceSha": "4dd7eb94b4af383c40cb512229b2ea1ad9283451",
+      "deployId": "dep-dbd7lr6k1f9s738r8d00",
+      "finishedAt": "2026-10-22T21:09:57.068675Z"
+    }
+  ],
+  "blockedRequests": [],
+  "browserErrorKinds": [],
+  "previewResponses": [],
+  "fingerprints": {
+    "initial": {
+      "config": "063ebbace576830e0db14fa35fdab11a6aca4768b4f909e6467693c9b7ccbba4",
+      "templates": "c2b4eef72567dee6cb2101f491d8706d9e379aabc0b5970abfefa2dcc14d72e2",
+      "benefitTemplates": "0afa3b9482f7c1fb74b1b6f7d4f125e5304c5fe10f288ac1a038f81cb0fbd260"
+    },
+    "final": {
+      "config": "063ebbace576830e0db14fa35fdab11a6aca4768b4f909e6467693c9b7ccbba4",
+      "templates": "c2b4eef72567dee6cb2101f491d8706d9e379aabc0b5970abfefa2dcc14d72e2",
+      "benefitTemplates": "0afa3b9482f7c1fb74b1b6f7d4f125e5304c5fe10f288ac1a038f81cb0fbd260"
+    }
+  },
+  "counts": {
+    "signIns": 1,
+    "signOuts": 1,
+    "reads": 18,
+    "ancillaryReads": 3,
+    "previewPosts": 0,
+    "previewCanceled": 0,
+    "targetReads": 0,
+    "blockedReads": 0,
+    "blockedWrites": 0,
+    "businessWrites": 0,
+    "smsRequests": 0,
+    "fixturesCreated": 0,
+    "testPrintRequests": 0,
+    "benefitQrRequests": 0,
+    "publicAssetReads": 2
+  },
+  "limitations": [
+    "Focused read-only supervision phone recovery only. No station selection, print editor, benefit panel, save, physical print, redemption, benefit credential, Till or station-session workflow is exercised.",
+    "The PNG preview uses the existing renderer fixture sample, not a real sale.",
+    "Care fingerprints cover policy, pricing and photo retention; the live nanny roster is excluded.",
+    "Only named controls are required to fit each capture; the whole long panel is not claimed.",
+    "Staff/application rows and sign-in identity are hidden before capture. No complete history or cross-park equivalence is claimed.",
+    "Exact-SHA CI approval is the coordinator envelope responsibility; this helper independently checks latest API and Console live deploys."
+  ],
+  "previousProof": {
+    "receiptFilename": "admin624-staging-v2-results.json",
+    "sha256": "7dc261047ea13842671b3f63a4d714d1a581e1d368f57be917e68eee89884015",
+    "sourceSha": "4dd7eb94b4af383c40cb512229b2ea1ad9283451",
+    "checkedAt": "2026-10-22T21:23:35.579Z"
+  },
+  "signInStatus": 200,
+  "actor": {
+    "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+    "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+  },
+  "captureDiagnostics": [
+    {
+      "index": 1,
+      "capturedAt": "2026-10-22T21:23:48.244Z",
+      "bounds": [
+        {
+          "name": "age bands heading",
+          "rect": {
+            "x": 61,
+            "y": 95.5,
+            "width": 94,
+            "height": 28,
+            "left": 61,
+            "top": 95.5,
+            "right": 155,
+            "bottom": 123.5
+          },
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "first native band control",
+          "rect": {
+            "x": 50,
+            "y": 260.5,
+            "width": 290,
+            "height": 40,
+            "left": 50,
+            "top": 260.5,
+            "right": 340,
+            "bottom": 300.5
+          },
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "caption": {
+        "chosenPosition": "bottom-right",
+        "clear": true,
+        "rect": {
+          "x": 161,
+          "y": 1048,
+          "width": 225,
+          "height": 48,
+          "left": 161,
+          "top": 1048,
+          "right": 386,
+          "bottom": 1096
+        }
+      },
+      "layout": {
+        "viewport": 390,
+        "document": 390
+      }
+    }
+  ],
+  "authCleanup": {
+    "signOutStatus": 200,
+    "meStatus": 401,
+    "confirmed": true
+  },
+  "authState": {
+    "signInAttempted": true,
+    "authUncertain": false,
+    "pendingAuth": 0
+  },
+  "completedAt": "2026-10-22T21:23:54.346Z"
+}

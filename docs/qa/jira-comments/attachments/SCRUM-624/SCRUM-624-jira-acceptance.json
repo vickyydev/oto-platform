@@ -1,0 +1,34 @@
+{
+  "ticket": "SCRUM-624",
+  "status": "Deployed",
+  "sourceSha": "4dd7eb94b4af383c40cb512229b2ea1ad9283451",
+  "checkedAt": "2026-10-22T21:30:21.801Z",
+  "commentId": "12509",
+  "plainOutcomeReadBack": true,
+  "files": [
+    {
+      "id": "11974",
+      "filename": "SCRUM-624-05-v2-care-pricing-desktop.png"
+    },
+    {
+      "id": "11975",
+      "filename": "SCRUM-624-06-v2-receipt-preview-desktop.png"
+    },
+    {
+      "id": "11976",
+      "filename": "SCRUM-624-07-v2-benefit-templates-desktop.png"
+    },
+    {
+      "id": "11977",
+      "filename": "SCRUM-624-09-supervision-phone.png"
+    }
+  ],
+  "parentStatus": "In Progress",
+  "ownerRetainsDone": true,
+  "limits": [
+    "Staging controls and previews were read-only; saves, refusals, retry identity and foreign-park boundaries were tested locally.",
+    "No physical print, benefit credential issuance, payment or SMS was performed on staging.",
+    "Cross-run preferences equality is not persisted; each session enforces its own preferences equality and all preference writes were blocked.",
+    "Parent P2 actual Till price/tender/tax round trip remains separate."
+  ]
+}

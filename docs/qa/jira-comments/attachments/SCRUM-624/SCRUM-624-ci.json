@@ -1,0 +1,73 @@
+{
+    "ticket":  "SCRUM-624",
+    "sourceSha":  "4dd7eb94b4af383c40cb512229b2ea1ad9283451",
+    "ciRunId":  "39852030074",
+    "observedAt":  "2026-10-22T21:07:34.258Z",
+    "conclusion":  "success",
+    "completedSuccessfulJobs":  6,
+    "jobs":  [
+                 {
+                     "name":  "ci",
+                     "databaseId":  120080453077,
+                     "status":  "completed",
+                     "conclusion":  "success",
+                     "startedAt":  "2026-10-22T20:48:44Z",
+                     "completedAt":  "2026-10-22T21:02:12Z"
+                 },
+                 {
+                     "name":  "pos-tests",
+                     "databaseId":  120080453486,
+                     "status":  "completed",
+                     "conclusion":  "success",
+                     "startedAt":  "2026-10-22T20:48:39Z",
+                     "completedAt":  "2026-10-22T20:50:10Z"
+                 },
+                 {
+                     "name":  "api-tests (3)",
+                     "databaseId":  120080453496,
+                     "status":  "completed",
+                     "conclusion":  "success",
+                     "startedAt":  "2026-10-22T20:48:39Z",
+                     "completedAt":  "2026-10-22T21:06:47Z"
+                 },
+                 {
+                     "name":  "api-tests (1)",
+                     "databaseId":  120080453527,
+                     "status":  "completed",
+                     "conclusion":  "success",
+                     "startedAt":  "2026-10-22T20:48:39Z",
+                     "completedAt":  "2026-10-22T21:03:15Z"
+                 },
+                 {
+                     "name":  "oto-app",
+                     "databaseId":  120080453557,
+                     "status":  "completed",
+                     "conclusion":  "success",
+                     "startedAt":  "2026-10-22T20:48:39Z",
+                     "completedAt":  "2026-10-22T20:49:16Z"
+                 },
+                 {
+                     "name":  "api-tests (2)",
+                     "databaseId":  120080453884,
+                     "status":  "completed",
+                     "conclusion":  "success",
+                     "startedAt":  "2026-10-22T20:48:39Z",
+                     "completedAt":  "2026-10-22T21:05:08Z"
+                 }
+             ],
+    "watcher":  {
+                    "sourceSha":  "4dd7eb94b4af383c40cb512229b2ea1ad9283451",
+                    "startedAt":  "2026-10-22T20:48:36.032Z",
+                    "finishedAt":  "2026-10-22T21:07:01.127Z",
+                    "exitCode":  0,
+                    "logSha256":  "9449022ad0351c2f3205de670f12e8f8206ddd73a2072c6455d4d7dd8755152c",
+                    "receiptSha256":  "cb243d10f379e7231a29dc02391e97d019dfbf2a483c5bdd8f7fd0241228df43"
+                },
+    "originalSourceCi":  {
+                             "sourceSha":  "64bbf8d2abd5bd68cdbcb94a5aeefb26e3229c3d",
+                             "sixJobsSucceeded":  true,
+                             "evidenceSha256":  "476adb3fe34ceef1d79580ec92548e506c3c34dcb9d0798ff3a1f1e2d81bb6ac"
+                         },
+    "stagingAcceptanceClaim":  false,
+    "networkUsedByPreparation":  false
+}

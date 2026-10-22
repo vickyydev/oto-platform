@@ -1,0 +1,243 @@
+{
+  "localOnly": true,
+  "staging": false,
+  "complete": true,
+  "businessAttempts": 0,
+  "externalDelivered": 0,
+  "externalBlocked": 1,
+  "startedAt": "2026-10-22T21:18:34.303Z",
+  "before": {
+    "layout": {
+      "viewport": 390,
+      "document": 390,
+      "height": 1100,
+      "scrollY": 793
+    },
+    "actual": {
+      "captionClear": false,
+      "captionRect": {
+        "left": 4,
+        "right": 229,
+        "top": 1049,
+        "bottom": 1096,
+        "width": 225,
+        "height": 47
+      },
+      "heading": {
+        "rect": {
+          "left": 61,
+          "right": 153.015625,
+          "top": 535.5,
+          "bottom": 563.5,
+          "width": 92.015625,
+          "height": 28
+        },
+        "wholeInViewport": true,
+        "clearOfCaption": true
+      },
+      "field": {
+        "rect": {
+          "left": 50,
+          "right": 340,
+          "top": 680.5,
+          "bottom": 720.5,
+          "width": 290,
+          "height": 40
+        },
+        "wholeInViewport": true,
+        "clearOfCaption": true
+      }
+    },
+    "corners": [
+      {
+        "position": {
+          "top": "4px",
+          "right": "4px"
+        },
+        "rect": {
+          "left": 161,
+          "right": 386,
+          "top": 4,
+          "bottom": 51,
+          "width": 225,
+          "height": 47
+        },
+        "overlapsVisibleControls": 2,
+        "headingClear": true,
+        "fieldClear": true
+      },
+      {
+        "position": {
+          "bottom": "4px",
+          "right": "4px"
+        },
+        "rect": {
+          "left": 161,
+          "right": 386,
+          "top": 1049,
+          "bottom": 1096,
+          "width": 225,
+          "height": 47
+        },
+        "overlapsVisibleControls": 3,
+        "headingClear": true,
+        "fieldClear": true
+      },
+      {
+        "position": {
+          "top": "4px",
+          "left": "4px"
+        },
+        "rect": {
+          "left": 4,
+          "right": 229,
+          "top": 4,
+          "bottom": 51,
+          "width": 225,
+          "height": 47
+        },
+        "overlapsVisibleControls": 3,
+        "headingClear": true,
+        "fieldClear": true
+      },
+      {
+        "position": {
+          "bottom": "4px",
+          "left": "4px"
+        },
+        "rect": {
+          "left": 4,
+          "right": 229,
+          "top": 1049,
+          "bottom": 1096,
+          "width": 225,
+          "height": 47
+        },
+        "overlapsVisibleControls": 2,
+        "headingClear": true,
+        "fieldClear": true
+      }
+    ],
+    "guardPass": false
+  },
+  "after": {
+    "layout": {
+      "viewport": 390,
+      "document": 390,
+      "height": 1100,
+      "scrollY": 1233
+    },
+    "actual": {
+      "captionClear": true,
+      "captionRect": {
+        "left": 161,
+        "right": 386,
+        "top": 1049,
+        "bottom": 1096,
+        "width": 225,
+        "height": 47
+      },
+      "heading": {
+        "rect": {
+          "left": 61,
+          "right": 153.015625,
+          "top": 95.5,
+          "bottom": 123.5,
+          "width": 92.015625,
+          "height": 28
+        },
+        "wholeInViewport": true,
+        "clearOfCaption": true
+      },
+      "field": {
+        "rect": {
+          "left": 50,
+          "right": 340,
+          "top": 240.5,
+          "bottom": 280.5,
+          "width": 290,
+          "height": 40
+        },
+        "wholeInViewport": true,
+        "clearOfCaption": true
+      }
+    },
+    "corners": [
+      {
+        "position": {
+          "top": "4px",
+          "right": "4px"
+        },
+        "rect": {
+          "left": 161,
+          "right": 386,
+          "top": 4,
+          "bottom": 51,
+          "width": 225,
+          "height": 47
+        },
+        "overlapsVisibleControls": 2,
+        "headingClear": true,
+        "fieldClear": true
+      },
+      {
+        "position": {
+          "bottom": "4px",
+          "right": "4px"
+        },
+        "rect": {
+          "left": 161,
+          "right": 386,
+          "top": 1049,
+          "bottom": 1096,
+          "width": 225,
+          "height": 47
+        },
+        "overlapsVisibleControls": 0,
+        "headingClear": true,
+        "fieldClear": true
+      },
+      {
+        "position": {
+          "top": "4px",
+          "left": "4px"
+        },
+        "rect": {
+          "left": 4,
+          "right": 229,
+          "top": 4,
+          "bottom": 51,
+          "width": 225,
+          "height": 47
+        },
+        "overlapsVisibleControls": 3,
+        "headingClear": true,
+        "fieldClear": true
+      },
+      {
+        "position": {
+          "bottom": "4px",
+          "left": "4px"
+        },
+        "rect": {
+          "left": 4,
+          "right": 229,
+          "top": 1049,
+          "bottom": 1096,
+          "width": 225,
+          "height": 47
+        },
+        "overlapsVisibleControls": 0,
+        "headingClear": true,
+        "fieldClear": true
+      }
+    ],
+    "guardPass": true
+  },
+  "authCleanup": {
+    "signOutStatus": 200,
+    "meStatus": 401,
+    "confirmed": true
+  },
+  "completedAt": "2026-10-22T21:18:35.306Z"
+}

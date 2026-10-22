@@ -1,0 +1,83 @@
+{
+    "ticket":  "SCRUM-624",
+    "checkedAt":  "2026-10-22T21:23:39.9316282Z",
+    "mode":  "Independent read-only phone-only recovery protocol and literal delta review",
+    "passed":  true,
+    "protocolBlockers":  [
+
+                         ],
+    "helper":  {
+                   "path":  "C:/w/admin624-evidence-phone-recovery.mjs",
+                   "sha256":  "5cb41d9701cf1be1cba9ceef5cc3efc117d664bc4c71ee0f86700bd886aff3df"
+               },
+    "preservedV2Helper":  {
+                              "path":  "C:/w/admin624-evidence-station-selected-v2.mjs",
+                              "sha256":  "de74b54505b2dc01501f4fad84c03c10d28bbe2391084f81f34e32cd985f3662"
+                          },
+    "priorAttempt":  {
+                         "path":  "C:/w/admin624-staging-v2-results.json",
+                         "sha256":  "7dc261047ea13842671b3f63a4d714d1a581e1d368f57be917e68eee89884015",
+                         "complete":  false,
+                         "images":  3,
+                         "checks":  7,
+                         "unchangedReadback":  true,
+                         "cleanupConfirmed":  true
+                     },
+    "sourceSha":  "4dd7eb94b4af383c40cb512229b2ea1ad9283451",
+    "staticComparison":  {
+                             "method":  "TypeScript AST source slices; no helper module evaluation",
+                             "protocolFunctionsUnchanged":  [
+                                                                "save",
+                                                                "stationForProof",
+                                                                "actorIsKnown",
+                                                                "readAllowed",
+                                                                "previewAllowed",
+                                                                "publicFont",
+                                                                "remember",
+                                                                "blocked",
+                                                                "installGuards",
+                                                                "read",
+                                                                "deploymentsUnchanged",
+                                                                "currentFingerprints",
+                                                                "open"
+                                                            ],
+                             "otherUnchangedFunction":  "check",
+                             "changedFunction":  "capture",
+                             "captureDelta":  "Numerical control/caption rectangles and chosen HUD position are recorded; original viewport/caption/phone assertions and caption text remain unchanged."
+                         },
+    "verifiedProtocol":  [
+                             "Exact prior raw hash/source/helper and complete:false seven-check three-image restored baseline required before authentication",
+                             "Fresh same seeded actor, original park, active park and exact canonical baselines required",
+                             "Only Care native age-band phone flow is executed; no station selection or old station completion requirement",
+                             "Fresh image09 only, four checks, equal initial/final baseline and stable deployments required",
+                             "Zero preview/target/QR/business/SMS/fixtures/test-print counters required for complete",
+                             "Safety sign-out remains independent of receipt IO; logout200/me401, no auth uncertainty required"
+                         ],
+    "offlineEvidence":  {
+                            "boundaries":  {
+                                               "path":  "C:/w/admin624-phone-recovery-final-boundaries.json",
+                                               "sha256":  "a5dca9a4d158645832744ee5fba08cb2892a11cba5dcbac4a1e1a535966be629",
+                                               "checks":  81,
+                                               "passed":  true,
+                                               "networkRequests":  0
+                                           },
+                            "favicon":  {
+                                            "path":  "C:/w/admin624-phone-favicon-final-green.json",
+                                            "sha256":  "dce7e403fe930734690aab2a69bf891eaa8a54258475f26ff3e1bebf4c13e5dc",
+                                            "checks":  8,
+                                            "passed":  true,
+                                            "networkRequests":  0
+                                        },
+                            "headingAlignment":  {
+                                                     "path":  "C:/w/admin624-local-phone-geometry-results.json",
+                                                     "sha256":  "10adbbed6c9df642bca9c6ad793867260e5cacbf02119685b73974e7217d9702",
+                                                     "change":  "Native heading aligned to96px before unchanged capture; recorded actual local failed/passing pair is separate coordinator evidence."
+                                                 }
+                        },
+    "limitations":  [
+                        "This review did not import or execute the helper, authenticate, read environment/private journals, access staging or make network requests.",
+                        "The unchanged full API/Console/POS CI/deployment envelope remains a coordinator execution prerequisite.",
+                        "Local geometry regression and89 offline boundaries are not a live phone capture; actual one-image/four-check proof remains required.",
+                        "Only named controls are required whole and caption-clear; no whole long-panel, station value, physical print, save, benefit credential or Till claim."
+                    ]
+}
