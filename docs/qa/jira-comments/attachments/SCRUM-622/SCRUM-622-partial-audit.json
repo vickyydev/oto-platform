@@ -1,0 +1,86 @@
+{
+  "ticket": "SCRUM-622",
+  "checkedAt": "2026-10-22T14:23:05.239Z",
+  "passed": true,
+  "partialOutcomeVerified": true,
+  "fullAcceptance": false,
+  "sourceSha": "82a3fac8706a3fa0d53d302712e17fa0c4dfb6e5",
+  "helperSha256": "1c6413f908a1abb41451cf8c22079d8a3032a9ab8f35461606f262837a3b91db",
+  "proof": {
+    "path": "C:/w/admin622-staging-results.json",
+    "sha256": "a7b76dfa5732b1bab043feb4efc06921deb8ed14af99ede2ff8da4e7e3d14735"
+  },
+  "envelope": {
+    "path": "C:/w/admin622-stage-envelope.json",
+    "sha256": "32fd4114cbbcca2f025d4fdcbb5fee91045ded77d4e82991995fedeaa88cc0db"
+  },
+  "checks": [
+    {
+      "name": "preserved original proof/envelope explicitly remain incomplete at OPEN_MERCH",
+      "passed": true
+    },
+    {
+      "name": "three exact-source service observations are stable around the partial run",
+      "passed": true
+    },
+    {
+      "name": "three existing PNGs independently match hashes/freshness/dimensions/control bounds",
+      "passed": true
+    },
+    {
+      "name": "four completed controls plus sign-out are recorded without Merch or full-audit acceptance",
+      "passed": true
+    },
+    {
+      "name": "ten logical operations/eleven dispatches are all confirmed200 including exact import replay",
+      "passed": true
+    },
+    {
+      "name": "one blocked same-origin current-park stock GET is retained; no blocked or forbidden writes",
+      "passed": true
+    },
+    {
+      "name": "current catalogue/branch/preferences fingerprints restored and auth cleanup confirmed200/401",
+      "passed": true
+    }
+  ],
+  "actual": {
+    "completedControls": 4,
+    "signOutChecks": 1,
+    "screenshots": 3,
+    "logicalOperations": 10,
+    "dispatches": 11,
+    "fixtureCreates": 3,
+    "confirmedImportReplay": true,
+    "independentlyReadFixtureAudits": 0,
+    "blockedReads": 1,
+    "blockedWrites": 0,
+    "resourcesRestored": true,
+    "signOutStatus": 200,
+    "meStatus": 401
+  },
+  "images": [
+    {
+      "filename": "SCRUM-622-02-categories-desktop.png",
+      "sha256": "ccd1af30b63f496ffa6abb90f3eb9ad3d1c9ff5c24400857288801511951dd88",
+      "capturedAt": "2026-10-22T14:19:07.483Z"
+    },
+    {
+      "filename": "SCRUM-622-03-modifiers-desktop.png",
+      "sha256": "8e957f9ffa53a6d8fb26d969ed1bdfb144553ee27282924085f848eb66addd84",
+      "capturedAt": "2026-10-22T14:19:25.169Z"
+    },
+    {
+      "filename": "SCRUM-622-01-menu-desktop.png",
+      "sha256": "8b976125d6f6f626c885eaad5d94373ba06a90575777340a4c24e637d9ca9204",
+      "capturedAt": "2026-10-22T14:19:52.006Z"
+    }
+  ],
+  "limits": [
+    "This verifies the preserved failed proof outcome, not SCRUM-622 acceptance; Merch and the390px capture were not reached.",
+    "The envelope four-image freshness/hash flags remain false due to missing fourth image; all three produced image hashes/freshness passed independently here.",
+    "No fixture audit reads were reached; settled responses and catalogue restoration do not substitute for the final14-row audit proof.",
+    "The stock path was blocked before dispatch; no successful stock read is claimed.",
+    "No actual Till, station value or complete historical usage was observed; archived ZZ TEST fixtures/audit history remain."
+  ]
+}

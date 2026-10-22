@@ -1,0 +1,355 @@
+{
+  "ticket": "SCRUM-622",
+  "helperFilename": "admin622-evidence-v2.mjs",
+  "helperSha256": "1c6413f908a1abb41451cf8c22079d8a3032a9ab8f35461606f262837a3b91db",
+  "releaseSha": "82a3fac8706a3fa0d53d302712e17fa0c4dfb6e5",
+  "startedAt": "2026-10-22T14:18:33.701Z",
+  "complete": false,
+  "resourcesRestored": true,
+  "checks": [
+    {
+      "name": "NATIVE_CATEGORY_CREATE_EDIT_DEFAULTS",
+      "passed": true,
+      "checkedAt": "2026-10-22T14:19:08.753Z"
+    },
+    {
+      "name": "NATIVE_LIBRARY_CREATE_EDIT_EXACT_DELTAS",
+      "passed": true,
+      "checkedAt": "2026-10-22T14:19:26.565Z"
+    },
+    {
+      "name": "NATIVE_FIXTURE_WORKBOOK_PREVIEW_COMMIT_REPLAY_AND_EXPORT",
+      "passed": true,
+      "checkedAt": "2026-10-22T14:19:50.503Z"
+    },
+    {
+      "name": "NATIVE_MENU_CREATE_EDIT_EXACT_PRICES_AND_LINKS",
+      "passed": true,
+      "checkedAt": "2026-10-22T14:19:53.288Z"
+    },
+    {
+      "name": "SIGNOUT200_AND_ME401",
+      "passed": true,
+      "checkedAt": "2026-10-22T14:20:48.907Z"
+    }
+  ],
+  "screenshots": [
+    {
+      "filename": "SCRUM-622-02-categories-desktop.png",
+      "capturedAt": "2026-10-22T14:19:07.483Z",
+      "bounds": [
+        {
+          "name": "heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "edit fixture",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "captionClear": true,
+      "sha256": "ccd1af30b63f496ffa6abb90f3eb9ad3d1c9ff5c24400857288801511951dd88"
+    },
+    {
+      "filename": "SCRUM-622-03-modifiers-desktop.png",
+      "capturedAt": "2026-10-22T14:19:25.169Z",
+      "bounds": [
+        {
+          "name": "heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "fixture row",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "edit fixture",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "captionClear": true,
+      "sha256": "8e957f9ffa53a6d8fb26d969ed1bdfb144553ee27282924085f848eb66addd84"
+    },
+    {
+      "filename": "SCRUM-622-01-menu-desktop.png",
+      "capturedAt": "2026-10-22T14:19:52.006Z",
+      "bounds": [
+        {
+          "name": "heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "fixture card",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "edit fixture",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "captionClear": true,
+      "sha256": "8b976125d6f6f626c885eaad5d94373ba06a90575777340a4c24e637d9ca9204"
+    }
+  ],
+  "operations": [
+    {
+      "label": "category-create",
+      "method": "POST",
+      "pathSha256": "13737b75c3b8b1b0bb8e96347b2bae6837038bc01d21e7e1bd45016dd3e5e08c",
+      "bodySha256": "12603e368cfe993c0c9ffa31a1071765ae2739d6bed7a3fbc6d4a4103557d6b8",
+      "keySha256": "c6346ed32384eaec54a2092ec12dc9f3796834e59e6ed72ba34bbb482635b400",
+      "attempts": 1,
+      "confirmedAttempts": [
+        1
+      ],
+      "latestAttemptConfirmed": true,
+      "settled": true,
+      "status": 200,
+      "createdId": "01a163fa-aea6-7f91-a187-0a57b0c5a900"
+    },
+    {
+      "label": "category-edit",
+      "method": "PATCH",
+      "pathSha256": "18ec1ffe80630e9ded5e9a454c01ef1b9df4c7739752892071924d514810e5b9",
+      "bodySha256": "d712ca4c8d35c81386f661e99a3cef64b3ddfc919385fcca2f4db52dd1b4400f",
+      "keySha256": "46712358cf88804c446ecea6bbf796f9f6d7778223859f113d2357eb6daff6d0",
+      "attempts": 1,
+      "confirmedAttempts": [
+        1
+      ],
+      "latestAttemptConfirmed": true,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "group-create",
+      "method": "POST",
+      "pathSha256": "2479f46f14de8c7ed221f77aed4cc24daa5c478ad5144d073249e84b6e7a3230",
+      "bodySha256": "a5c2311ad7025fbb0a5a44e520a7290b014bdd3c56f13ddba8d6a453a0af4190",
+      "keySha256": "b3ab65e2d0a3dbb66409c19840de209ec3642c505cd988476ac8efc47573d405",
+      "attempts": 1,
+      "confirmedAttempts": [
+        1
+      ],
+      "latestAttemptConfirmed": true,
+      "settled": true,
+      "status": 200,
+      "createdId": "01a163fa-fb02-78c7-a42a-77d079ccc546"
+    },
+    {
+      "label": "group-edit",
+      "method": "PATCH",
+      "pathSha256": "a4f4af6a2d0b4b2b10433925e6a0ce1af198d6f73a1b0908bf092d8770ecc049",
+      "bodySha256": "fe56e4bc3f61961c53e3cb63a23d62a61a40219d6d241b3167ba4e835ce060a0",
+      "keySha256": "9681c146eec2fb768e0248081ab885c4499e27ecec02c7afbaa77f10fcc7ed84",
+      "attempts": 1,
+      "confirmedAttempts": [
+        1
+      ],
+      "latestAttemptConfirmed": true,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "menu-create",
+      "method": "POST",
+      "pathSha256": "0e5b9fdce2d95f3ad013091c19ba56477ce99d915308d8b248f2386e4be950e2",
+      "bodySha256": "fc1f4c2932f75e36e89f1d70c2982f0a054ed7da62a14d6eb83519967b693285",
+      "keySha256": "9b55098f299477936546229f4fe7795aa9ccb7f31a720b17f09c1aae9dced353",
+      "attempts": 1,
+      "confirmedAttempts": [
+        1
+      ],
+      "latestAttemptConfirmed": true,
+      "settled": true,
+      "status": 200,
+      "createdId": "01a163fb-4366-77ca-bbfb-b441b77d023d"
+    },
+    {
+      "label": "menu-edit",
+      "method": "PATCH",
+      "pathSha256": "bedbd27bd5a422cf4c4f85a2bc642a1b14336bcbccb9c28eb0c5c9665143be40",
+      "bodySha256": "daf63890c85ec52fa3dcf9cba564bd2e593e4a9673537b6d711f8119297e7361",
+      "keySha256": "0a1dcd741b4e2c389aa37d5b0148f177ba1b083d85133430266b729d315c0f03",
+      "attempts": 1,
+      "confirmedAttempts": [
+        1
+      ],
+      "latestAttemptConfirmed": true,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "import-commit",
+      "method": "POST",
+      "pathSha256": "db7823f11787d24f2c2e48907dfea3a939c9023536152acf26de0ae1648cb40a",
+      "bodySha256": "4532f7fba532544395c525cbff9c120d333381cd4fad883c694ed6b8b4775cbd",
+      "keySha256": "81913c80fcadf0bac15c1044a869d7c0cee1672427d547db080bf266b829357d",
+      "attempts": 2,
+      "confirmedAttempts": [
+        1,
+        2
+      ],
+      "latestAttemptConfirmed": true,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "menu-delete",
+      "method": "DELETE",
+      "pathSha256": "bedbd27bd5a422cf4c4f85a2bc642a1b14336bcbccb9c28eb0c5c9665143be40",
+      "bodySha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "keySha256": "491a8987d8c831d92948b33d0032ffba347fe8dbe2cede7031c714cbb1a5d43c",
+      "attempts": 1,
+      "confirmedAttempts": [
+        1
+      ],
+      "latestAttemptConfirmed": true,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "group-delete",
+      "method": "DELETE",
+      "pathSha256": "a4f4af6a2d0b4b2b10433925e6a0ce1af198d6f73a1b0908bf092d8770ecc049",
+      "bodySha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "keySha256": "a59491d521186cd2d8075e477503aea79706b9b06c95df24058df7bd368d8ee7",
+      "attempts": 1,
+      "confirmedAttempts": [
+        1
+      ],
+      "latestAttemptConfirmed": true,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "category-delete",
+      "method": "DELETE",
+      "pathSha256": "18ec1ffe80630e9ded5e9a454c01ef1b9df4c7739752892071924d514810e5b9",
+      "bodySha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "keySha256": "96b737545e49ef34323d843de23b220501e1372ff03cdeafc0b4fda6d6732b7e",
+      "attempts": 1,
+      "confirmedAttempts": [
+        1
+      ],
+      "latestAttemptConfirmed": true,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    }
+  ],
+  "audits": [],
+  "blockedRequests": [
+    {
+      "phase": "OPEN_MERCH",
+      "code": "READ_NOT_ALLOWLISTED",
+      "method": "GET",
+      "sameOrigin": true,
+      "resourceType": "fetch",
+      "pathSha256": "024420c8ca746d79a7694a95dc4cfffefb2c4ebcb21a38b5ff090805d20fcb84",
+      "queryKeyCount": 0
+    }
+  ],
+  "browserErrorKinds": [],
+  "counts": {
+    "signIns": 1,
+    "signOuts": 1,
+    "fixtureCreates": 3,
+    "businessAttempts": 11,
+    "blockedReads": 1,
+    "blockedWrites": 0,
+    "publicAssetReads": 24,
+    "SMS": 0,
+    "equipmentWrites": 0,
+    "paymentWrites": 0,
+    "stockWrites": 0,
+    "otherBusinessWrites": 0
+  },
+  "limitations": [
+    "Only the current park catalogue, operator category/library records returned with it, branch and preferences are compared.",
+    "GET /me omits stationId; no station value is observed and no station write is allowed.",
+    "Actual Till and complete historical usage are not exercised.",
+    "Unrelated rows and person details are hidden in evidence.",
+    "Browser error tags remain unclassified; passing stated controls do not establish an error-free browser."
+  ],
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "deployId": "dep-dbd1knmk1f9s73b7me50",
+      "sourceSha": "82a3fac8706a3fa0d53d302712e17fa0c4dfb6e5",
+      "finishedAt": "2026-10-22T14:18:05.846532Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "deployId": "dep-dbd1knmk1f9s73b7mf60",
+      "sourceSha": "82a3fac8706a3fa0d53d302712e17fa0c4dfb6e5",
+      "finishedAt": "2026-10-22T14:15:44.355138Z"
+    }
+  ],
+  "actor": {
+    "id": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+    "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+  },
+  "freshStorage": true,
+  "importPreview": {
+    "status": 200,
+    "itemUpdates": 1,
+    "categoryChanges": 0,
+    "fileSha256": "36029f3bb3599d6de0a5af280036938f044563f5e52918c497209e9b2d9f7fd0"
+  },
+  "export": {
+    "status": 200,
+    "contentType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "contentDisposition": "attachment; filename=\"oto-menu-hkt-central-2026-10-22.xlsx\"",
+    "byteLength": 9062,
+    "sha256": "d3095d791de2953e4752e6499c384ca5748c8528fca9caa5010ebeaf1b79b65e",
+    "filename": "oto-menu-hkt-central-2026-10-22.xlsx"
+  },
+  "diagnostic": "ASSERTION_OR_RUNTIME_FAILED",
+  "failedPhase": "OPEN_MERCH",
+  "errorName": "TimeoutError",
+  "baselineRestored": {
+    "original": "97e4134974a587429e5cd4753ca6253a2ef97ecc17b84faea4c6948f8f3a98a3",
+    "after": "97e4134974a587429e5cd4753ca6253a2ef97ecc17b84faea4c6948f8f3a98a3",
+    "branch": "ff1408f7b8cf4f693cbd2f6e6a82a0e79e347415fdeb0f1886ea0d49d4ded535",
+    "preferences": "00df943c543d230f9e93ceca1038b659220a9779f4d70ae1b114715829458881"
+  },
+  "authCleanup": {
+    "signOutStatus": 200,
+    "meStatus": 401,
+    "confirmed": true
+  },
+  "authState": {
+    "signInAttempted": true,
+    "authUncertain": false,
+    "pendingAuth": 0
+  },
+  "completedAt": "2026-10-22T14:20:50.188Z"
+}

@@ -1,0 +1,107 @@
+{
+  "sourceSha": "82a3fac8706a3fa0d53d302712e17fa0c4dfb6e5",
+  "helperSha256": "1c6413f908a1abb41451cf8c22079d8a3032a9ab8f35461606f262837a3b91db",
+  "helperFilename": "admin622-evidence-v2.mjs",
+  "startedAt": "2026-10-22T14:18:31.243Z",
+  "complete": false,
+  "ciRunId": 39789908451,
+  "jobs": [
+    {
+      "name": "oto-app",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "pos-tests",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "api-tests (1)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "ci",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "api-tests (3)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "api-tests (2)",
+      "status": "completed",
+      "conclusion": "success"
+    }
+  ],
+  "reviews": [
+    {
+      "path": "C:/w/admin622-proof-replay-green.json",
+      "sha256": "02ad7b9ce6ef41d67013bc76f5a1e9eda7e563fee0809c982d4221a9ee5ebb73",
+      "passed": true,
+      "actualChecks": 9
+    },
+    {
+      "path": "C:/w/admin622-proof-boundaries-review.json",
+      "sha256": "5972b155a1b0128b3790d078ae1a2823e8531abb302b7b0ef99ebc32e7ceed69",
+      "passed": true,
+      "actualChecks": 28
+    }
+  ],
+  "before": [
+    {
+      "name": "oto-api-staging",
+      "id": "dep-dbd1knmk1f9s73b7me50",
+      "sourceSha": "82a3fac8706a3fa0d53d302712e17fa0c4dfb6e5",
+      "finishedAt": "2026-10-22T14:18:05.846532Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "id": "dep-dbd1knmk1f9s73b7mf60",
+      "sourceSha": "82a3fac8706a3fa0d53d302712e17fa0c4dfb6e5",
+      "finishedAt": "2026-10-22T14:15:44.355138Z"
+    },
+    {
+      "name": "oto-pos-staging",
+      "id": "dep-dbd1knmk1f9s73b7mfcg",
+      "sourceSha": "82a3fac8706a3fa0d53d302712e17fa0c4dfb6e5",
+      "finishedAt": "2026-10-22T14:15:41.444636Z"
+    }
+  ],
+  "finishedAt": "2026-10-22T14:20:52.302Z",
+  "after": [
+    {
+      "name": "oto-api-staging",
+      "id": "dep-dbd1knmk1f9s73b7me50",
+      "sourceSha": "82a3fac8706a3fa0d53d302712e17fa0c4dfb6e5",
+      "finishedAt": "2026-10-22T14:18:05.846532Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "id": "dep-dbd1knmk1f9s73b7mf60",
+      "sourceSha": "82a3fac8706a3fa0d53d302712e17fa0c4dfb6e5",
+      "finishedAt": "2026-10-22T14:15:44.355138Z"
+    },
+    {
+      "name": "oto-pos-staging",
+      "id": "dep-dbd1knmk1f9s73b7mfcg",
+      "sourceSha": "82a3fac8706a3fa0d53d302712e17fa0c4dfb6e5",
+      "finishedAt": "2026-10-22T14:15:41.444636Z"
+    }
+  ],
+  "stable": true,
+  "freshAfterAllThreeDeploys": false,
+  "imageHashesMatch": false,
+  "helperMatches": true,
+  "proofExitCode": 1,
+  "proofReceiptSha256": "a7b76dfa5732b1bab043feb4efc06921deb8ed14af99ede2ff8da4e7e3d14735",
+  "diagnostic": null,
+  "limits": [
+    "Native controls and captures exercise Console only; the verified POS deployment is not an actual Till demonstration.",
+    "Station value and complete historical usage are not observed.",
+    "Actual browser error tags and partial outcomes remain in the public proof receipt; this envelope does not classify their cause."
+  ]
+}

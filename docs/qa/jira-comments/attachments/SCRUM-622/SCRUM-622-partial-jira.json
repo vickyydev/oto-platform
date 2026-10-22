@@ -1,0 +1,22 @@
+{
+  "ticket": "SCRUM-622",
+  "recordedAt": "2026-10-22T14:24:20.890Z",
+  "status": "Testing",
+  "partial": true,
+  "fullAcceptance": false,
+  "commentId": "12485",
+  "attachments": [
+    {
+      "filename": "SCRUM-622-02-categories-desktop.png",
+      "id": "11961"
+    },
+    {
+      "filename": "SCRUM-622-03-modifiers-desktop.png",
+      "id": "11962"
+    },
+    {
+      "filename": "SCRUM-622-01-menu-desktop.png",
+      "id": "11963"
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "ticket": "SCRUM-622",
+  "recordedAt": "2026-10-22T14:24:17.210Z",
+  "passed": true,
+  "partial": true,
+  "fullAcceptance": false,
+  "images": [
+    {
+      "filename": "SCRUM-622-02-categories-desktop.png",
+      "sha256": "ccd1af30b63f496ffa6abb90f3eb9ad3d1c9ff5c24400857288801511951dd88",
+      "visuallyReviewed": true
+    },
+    {
+      "filename": "SCRUM-622-03-modifiers-desktop.png",
+      "sha256": "8e957f9ffa53a6d8fb26d969ed1bdfb144553ee27282924085f848eb66addd84",
+      "visuallyReviewed": true
+    },
+    {
+      "filename": "SCRUM-622-01-menu-desktop.png",
+      "sha256": "8b976125d6f6f626c885eaad5d94373ba06a90575777340a4c24e637d9ca9204",
+      "visuallyReviewed": true
+    }
+  ],
+  "observations": "Actual images inspected through view_image: native category Kitchen/F&B, library Choose one/one option, imported menu345.67/389.01; no person details or benefit QR. Merch not captured."
+}
