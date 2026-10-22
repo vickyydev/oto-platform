@@ -1,0 +1,31 @@
+{
+  "ticket": "SCRUM-654",
+  "complete": false,
+  "receipt": "SCRUM-654-first-attempt-results.json",
+  "receiptSha256": "156d388b03c17cffacd6fe234bf68811b55ffd2aef5f7884f735efa51ae533fd",
+  "checks": 4,
+  "images": [
+    {
+      "originalFilename": "SCRUM-654-01-native-dark.png",
+      "preservedPath": "first-attempt/SCRUM-654-01-native-dark.png",
+      "sha256": "0ee2f21147d1f5b3aefb97ea837e451802275407cfd8ea487d12980404fac803",
+      "capturedAt": "2026-10-22T05:34:32.065Z",
+      "coordinatorViewed": true
+    },
+    {
+      "originalFilename": "SCRUM-654-02-system-phone.png",
+      "preservedPath": "first-attempt/SCRUM-654-02-system-phone.png",
+      "sha256": "13e23c8b9e7b4680b65b29fcdbb296c176b0667971af250b5a30554467259790",
+      "capturedAt": "2026-10-22T05:34:39.121Z",
+      "coordinatorViewed": true
+    }
+  ],
+  "restoredOriginalPreferences": true,
+  "cleanupSignOut": {
+    "status": 200,
+    "meStatus": 401
+  },
+  "captureIssue": "NATIVE_THEME_BUTTON_OUTSIDE_CAPTURE",
+  "archivedAt": "2026-10-22T05:36:28.594Z",
+  "note": "Raw receipt and images preserved; reload capture incomplete. Initial local archive path check used slash strings with Windows paths; corrected to resolved native separator before any file move. No final acceptance claimed."
+}

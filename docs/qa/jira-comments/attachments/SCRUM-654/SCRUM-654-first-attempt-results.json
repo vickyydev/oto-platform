@@ -1,0 +1,187 @@
+{
+  "ticket": "SCRUM-654",
+  "releaseSha": "e84a6fc9ba6e6fe31d00d0e338c2a32ea3c1ad8b",
+  "startedAt": "2026-10-22T05:34:12.393Z",
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "sourceSha": "e84a6fc9ba6e6fe31d00d0e338c2a32ea3c1ad8b",
+      "deployId": "dep-dbcpusjncjis73b4kcrg",
+      "finishedAt": "2026-10-22T05:33:47.768837Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "sourceSha": "e84a6fc9ba6e6fe31d00d0e338c2a32ea3c1ad8b",
+      "deployId": "dep-dbcpusjncjis73b4kej0",
+      "finishedAt": "2026-10-22T05:31:36.497572Z"
+    }
+  ],
+  "checks": [
+    {
+      "code": "ACCOUNT_LIGHT_ADOPTED_WITHOUT_WRITE",
+      "passed": true,
+      "at": "2026-10-22T05:34:25.844Z"
+    },
+    {
+      "code": "NATIVE_DARK_CYCLE_THEME_ONLY_WRITE_AND_READBACK",
+      "passed": true,
+      "at": "2026-10-22T05:34:33.835Z"
+    },
+    {
+      "code": "SYSTEM_FOLLOWS_DEVICE_WITHOUT_WRITE",
+      "passed": true,
+      "at": "2026-10-22T05:34:37.121Z"
+    },
+    {
+      "code": "NATIVE_SYSTEM_PHONE390_SIDEBAR",
+      "passed": true,
+      "at": "2026-10-22T05:34:40.558Z"
+    }
+  ],
+  "screenshots": [
+    {
+      "filename": "SCRUM-654-01-native-dark.png",
+      "capturedAt": "2026-10-22T05:34:32.065Z",
+      "capturedAfterDeploy": true,
+      "preference": "dark",
+      "resolved": "dark",
+      "bounds": {
+        "buttonInViewport": true,
+        "width": 32,
+        "height": 32,
+        "preference": "dark"
+      },
+      "layout": {
+        "viewport": 1440,
+        "page": 1440
+      },
+      "sha256": "0ee2f21147d1f5b3aefb97ea837e451802275407cfd8ea487d12980404fac803"
+    },
+    {
+      "filename": "SCRUM-654-02-system-phone.png",
+      "capturedAt": "2026-10-22T05:34:39.121Z",
+      "capturedAfterDeploy": true,
+      "preference": "system",
+      "resolved": "dark",
+      "bounds": {
+        "buttonInViewport": true,
+        "width": 32,
+        "height": 32,
+        "preference": "system"
+      },
+      "layout": {
+        "viewport": 390,
+        "page": 390
+      },
+      "sha256": "13e23c8b9e7b4680b65b29fcdbb296c176b0667971af250b5a30554467259790"
+    }
+  ],
+  "operations": [
+    {
+      "label": "THEME_DARK",
+      "theme": "dark",
+      "keySha256": "353fdd3ec1cdb3c5e344f1d694f11a58c27203022341548ec45f1b0b1a0edb37",
+      "attempts": 1,
+      "settled": true,
+      "status": 200
+    },
+    {
+      "label": "THEME_SYSTEM",
+      "theme": "system",
+      "keySha256": "f3d84b54fd6f3fd041acdca2879467c6879ae64dc0ab5c63b37684c3a9df953b",
+      "attempts": 1,
+      "settled": true,
+      "status": 200
+    },
+    {
+      "label": "RESTORE_ORIGINAL",
+      "theme": "light",
+      "keySha256": "9c29a97f834ee53cd657ed2720a6eb1ac9038416626f257e8b99a270ecb52332",
+      "attempts": 1,
+      "settled": true,
+      "status": 200
+    }
+  ],
+  "counts": {
+    "smsRequests": 0,
+    "fixturesCreated": 0,
+    "otherBusinessWrites": 0,
+    "blockedWrites": 0,
+    "blockedReads": 0,
+    "signIns": 1,
+    "signOuts": 1,
+    "preferenceAttempts": 3,
+    "publicAssetReads": 4
+  },
+  "blockedRequests": [],
+  "browserErrorKinds": [],
+  "originalPreferencesRestored": true,
+  "complete": false,
+  "limitations": [
+    "Only the seeded administrator theme is changed. The seeded manager is read-only; language and every other account field stay unchanged.",
+    "Each actor is checked against its own actual account preference. Different persisted values across people are covered by automated tests if both seeded accounts have the same value."
+  ],
+  "actor": {
+    "id": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+    "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75"
+  },
+  "originalPreferences": {
+    "theme": "light",
+    "language": "en"
+  },
+  "diagnostic": "NATIVE_THEME_BUTTON_OUTSIDE_CAPTURE",
+  "failedProofPhase": "CAPTURE",
+  "preferenceAudits": [
+    {
+      "id": "01a1621a-d078-7847-b964-06329a82e271",
+      "actorAccountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "entityId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "before": {
+        "theme": "system",
+        "language": "en"
+      },
+      "after": {
+        "theme": "light",
+        "language": "en"
+      },
+      "createdAt": "2026-10-22T05:34:46.900Z"
+    },
+    {
+      "id": "01a1621a-a4b5-7012-ac66-568f8006b476",
+      "actorAccountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "entityId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "before": {
+        "theme": "dark",
+        "language": "en"
+      },
+      "after": {
+        "theme": "system",
+        "language": "en"
+      },
+      "createdAt": "2026-10-22T05:34:35.699Z"
+    },
+    {
+      "id": "01a1621a-8868-7b82-aec6-daff7f2e4d01",
+      "actorAccountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "entityId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "before": {
+        "theme": "light",
+        "language": "en"
+      },
+      "after": {
+        "theme": "dark",
+        "language": "en"
+      },
+      "createdAt": "2026-10-22T05:34:28.453Z"
+    }
+  ],
+  "restoredPreferences": {
+    "theme": "light",
+    "language": "en"
+  },
+  "cleanupSignOut": {
+    "status": 200,
+    "meStatus": 401
+  },
+  "completedAt": "2026-10-22T05:34:50.184Z"
+}
