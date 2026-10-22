@@ -1,0 +1,64 @@
+{
+  "ticket": "SCRUM-622",
+  "checkedAt": "2026-10-22T14:24:21.870Z",
+  "passed": true,
+  "helperFilename": "admin622-evidence-v3.mjs",
+  "helperSha256": "e517250d8e5faf06539999e21598692db7f92930c48834d97318dfdfb581f400",
+  "parentHelperSha256": "1c6413f908a1abb41451cf8c22079d8a3032a9ab8f35461606f262837a3b91db",
+  "checks": [
+    {
+      "name": "all existing functions except exact read allowlist are byte-identical",
+      "passed": true
+    },
+    {
+      "name": "read allowlist adds only exact authenticated original-park stock/sellable path",
+      "passed": true
+    },
+    {
+      "name": "all other source changes are fresh artifact bindings and prior-partial precondition only",
+      "passed": true
+    },
+    {
+      "name": "prior partial checks actual immutable public hashes and exact restored/auth/settlement outcome before auth",
+      "passed": true
+    }
+  ],
+  "preservedFunctionCount": 27,
+  "preservedFunctions": [
+    "categoryBody",
+    "groupBody",
+    "productBody",
+    "spec",
+    "queryEquals",
+    "auditPath",
+    "auditSpecs",
+    "save",
+    "publicFont",
+    "actorIsKnown",
+    "read",
+    "deploymentsUnchanged",
+    "beginOperation",
+    "recordResponse",
+    "installGuards",
+    "settle",
+    "uiWrite",
+    "capture",
+    "panel",
+    "canonicalFixture",
+    "editCategory",
+    "editGroup",
+    "editProduct",
+    "importFixture",
+    "archiveFixture",
+    "restoreFixtures",
+    "verifyAudits"
+  ],
+  "networkRequests": 0,
+  "helperImports": 0,
+  "helperExecutions": 0,
+  "privateJournalReads": 0,
+  "limitations": [
+    "Static exact-delta review only; this does not execute the new proof or establish staging acceptance.",
+    "The prior partial proof remains incomplete; its settled operations/catalogue restoration and sign-out are prerequisites for a new guarded session."
+  ]
+}

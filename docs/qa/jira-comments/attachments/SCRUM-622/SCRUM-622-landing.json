@@ -1,0 +1,16 @@
+{
+  "ticket": "SCRUM-622",
+  "sourceSha": "82a3fac8706a3fa0d53d302712e17fa0c4dfb6e5",
+  "recordedAt": "2026-10-22T13:46:57.804Z",
+  "sourceLandedOnMain": true,
+  "mainHead": "82a3fac8706a3fa0d53d302712e17fa0c4dfb6e5",
+  "localReceipt": {
+    "path": "C:/w/admin622-local-results.json",
+    "sha256": "3d9b52c079d234cb5a28d2d6cee7b24ffb2e5c7683681f8a8d66b6f6b65630ec"
+  },
+  "committedSourceVerification": {
+    "path": "C:/w/admin622-source-verification.json",
+    "sha256": "9f83e6c063a79ca96ddbf7404ef7bdae46fcf26304cae4fd7524fe047fb96081"
+  },
+  "limits": "Observed landing only. Immutable local/pre-push receipts remain unchanged; CI, deployment and staging are separate."
+}

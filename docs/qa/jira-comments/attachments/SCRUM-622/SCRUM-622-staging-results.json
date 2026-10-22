@@ -1,0 +1,542 @@
+{
+  "ticket": "SCRUM-622",
+  "helperFilename": "admin622-evidence-v3.mjs",
+  "helperSha256": "e517250d8e5faf06539999e21598692db7f92930c48834d97318dfdfb581f400",
+  "releaseSha": "82a3fac8706a3fa0d53d302712e17fa0c4dfb6e5",
+  "startedAt": "2026-10-22T14:27:23.634Z",
+  "complete": true,
+  "resourcesRestored": true,
+  "checks": [
+    {
+      "name": "NATIVE_CATEGORY_CREATE_EDIT_DEFAULTS",
+      "passed": true,
+      "checkedAt": "2026-10-22T14:27:53.062Z"
+    },
+    {
+      "name": "NATIVE_LIBRARY_CREATE_EDIT_EXACT_DELTAS",
+      "passed": true,
+      "checkedAt": "2026-10-22T14:28:09.048Z"
+    },
+    {
+      "name": "NATIVE_FIXTURE_WORKBOOK_PREVIEW_COMMIT_REPLAY_AND_EXPORT",
+      "passed": true,
+      "checkedAt": "2026-10-22T14:28:33.670Z"
+    },
+    {
+      "name": "NATIVE_MENU_CREATE_EDIT_EXACT_PRICES_AND_LINKS",
+      "passed": true,
+      "checkedAt": "2026-10-22T14:28:36.582Z"
+    },
+    {
+      "name": "NATIVE_UNTRACKED_MERCH_CREATE_EDIT_PHONE390",
+      "passed": true,
+      "checkedAt": "2026-10-22T14:28:55.207Z"
+    },
+    {
+      "name": "EXACT_CURRENT_PARK_AND_PREFERENCES_RESTORED",
+      "passed": true,
+      "checkedAt": "2026-10-22T14:29:22.620Z"
+    },
+    {
+      "name": "FOURTEEN_FRESH_OWN_FIXTURE_AND_IMPORT_AUDITS",
+      "passed": true,
+      "checkedAt": "2026-10-22T14:29:31.960Z"
+    },
+    {
+      "name": "SIGNOUT200_AND_ME401",
+      "passed": true,
+      "checkedAt": "2026-10-22T14:29:34.786Z"
+    }
+  ],
+  "screenshots": [
+    {
+      "filename": "SCRUM-622-06-final-categories-desktop.png",
+      "capturedAt": "2026-10-22T14:27:51.784Z",
+      "bounds": [
+        {
+          "name": "heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "edit fixture",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "captionClear": true,
+      "sha256": "f04fd733cee125ae36ea290bded33f5b8455d951f952ddec3c6d8ff793fb1cb7"
+    },
+    {
+      "filename": "SCRUM-622-07-final-modifiers-desktop.png",
+      "capturedAt": "2026-10-22T14:28:07.717Z",
+      "bounds": [
+        {
+          "name": "heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "fixture row",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "edit fixture",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "captionClear": true,
+      "sha256": "e28895d01be8000b64b924831aed7f267b96e5a88187f3d282ee31e7826bd2da"
+    },
+    {
+      "filename": "SCRUM-622-05-final-menu-desktop.png",
+      "capturedAt": "2026-10-22T14:28:35.171Z",
+      "bounds": [
+        {
+          "name": "heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "fixture card",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "edit fixture",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "captionClear": true,
+      "sha256": "e56ac253a7a15a12d0237ffd91efcda0a6fe52313c42a7dec67c8cddad117bb9"
+    },
+    {
+      "filename": "SCRUM-622-08-final-merch-phone.png",
+      "capturedAt": "2026-10-22T14:28:53.607Z",
+      "bounds": [
+        {
+          "name": "heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "fixture card",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "edit fixture",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 390,
+        "document": 390
+      },
+      "captionClear": true,
+      "sha256": "2bf0d04dc184310aa93380731a0f33e11fb4c456fc0e20288f26a0994d1ec9a6"
+    }
+  ],
+  "operations": [
+    {
+      "label": "category-create",
+      "method": "POST",
+      "pathSha256": "13737b75c3b8b1b0bb8e96347b2bae6837038bc01d21e7e1bd45016dd3e5e08c",
+      "bodySha256": "d1e40fb10f4e4ddb8c50b4edcc1ca367db6d42b45d0d94bf56f99930022dde7a",
+      "keySha256": "51ba95efffbede62c081381702a80fe758ab4a53ee3c4e9eeb2807ee70476017",
+      "attempts": 1,
+      "confirmedAttempts": [
+        1
+      ],
+      "latestAttemptConfirmed": true,
+      "settled": true,
+      "status": 200,
+      "createdId": "01a16402-b419-7b7f-aca7-6853fade93f6"
+    },
+    {
+      "label": "category-edit",
+      "method": "PATCH",
+      "pathSha256": "3e7da95c7b5caad78cbcab518e186ccbd521a3709f8cec88992c02c12949ef72",
+      "bodySha256": "5e5204834139814694a286bc5c41766f564f074a1e4b518556b718a5838a24ab",
+      "keySha256": "94ce301a7ebb994944af29e7a4e2cbfd698ddfabc3c036db740cb54011b01ca6",
+      "attempts": 1,
+      "confirmedAttempts": [
+        1
+      ],
+      "latestAttemptConfirmed": true,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "group-create",
+      "method": "POST",
+      "pathSha256": "2479f46f14de8c7ed221f77aed4cc24daa5c478ad5144d073249e84b6e7a3230",
+      "bodySha256": "5e94d387e7cb61be8035c1169f7a400006fc898c8f7a6711629e5b084498867a",
+      "keySha256": "16bf1595ae0889715608d662fe9a3ad8b2417fb5ae3905512d90b70355a3e1b1",
+      "attempts": 1,
+      "confirmedAttempts": [
+        1
+      ],
+      "latestAttemptConfirmed": true,
+      "settled": true,
+      "status": 200,
+      "createdId": "01a16402-f6d2-71dd-b7b8-e7041ac224bd"
+    },
+    {
+      "label": "group-edit",
+      "method": "PATCH",
+      "pathSha256": "4a4c60b6a52ccf7513c43a68b616e58a2e6761a39b91261c1e344c5aee9d96d4",
+      "bodySha256": "2cd7e66932671df61a706ef6e019c22b03d6c3295bf1cd20df77a7910ce3d57f",
+      "keySha256": "6a05ad8a476492a545b465314fa0d7f4b69a05fb00a58b37878707a6120ae4e7",
+      "attempts": 1,
+      "confirmedAttempts": [
+        1
+      ],
+      "latestAttemptConfirmed": true,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "menu-create",
+      "method": "POST",
+      "pathSha256": "0e5b9fdce2d95f3ad013091c19ba56477ce99d915308d8b248f2386e4be950e2",
+      "bodySha256": "d5333e293773ddb444079a1d8f76e2bd40951bb94facfaa84da4b3c1ac174124",
+      "keySha256": "54b095949f1d1d8a0a9a48484640fcc3d73d89f54a4c5ed70f09c3cc4da7a8f6",
+      "attempts": 1,
+      "confirmedAttempts": [
+        1
+      ],
+      "latestAttemptConfirmed": true,
+      "settled": true,
+      "status": 200,
+      "createdId": "01a16403-3aa7-7231-bb09-3bc17478d2fa"
+    },
+    {
+      "label": "menu-edit",
+      "method": "PATCH",
+      "pathSha256": "575754765f16b169c8337bc476386d132550311020f6189c430d2a54bb387835",
+      "bodySha256": "9a114afd5a2a63608cacb6231c5ea17a2379831be5234e2889df3eee84a8c1f2",
+      "keySha256": "fdefd9b07190341310ff35d2877220645e7bd3a3cf996864ced7f861a1acb2fd",
+      "attempts": 1,
+      "confirmedAttempts": [
+        1
+      ],
+      "latestAttemptConfirmed": true,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "import-commit",
+      "method": "POST",
+      "pathSha256": "db7823f11787d24f2c2e48907dfea3a939c9023536152acf26de0ae1648cb40a",
+      "bodySha256": "6bc158cf25b845e2f5adc0f1322f030814a2ff4a2055aded65e64bb328eceb88",
+      "keySha256": "f5888173167475648345ea6450cdcede38c63985ccac0d9cc0f97279861bb1b0",
+      "attempts": 2,
+      "confirmedAttempts": [
+        1,
+        2
+      ],
+      "latestAttemptConfirmed": true,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "merch-create",
+      "method": "POST",
+      "pathSha256": "0e5b9fdce2d95f3ad013091c19ba56477ce99d915308d8b248f2386e4be950e2",
+      "bodySha256": "ad8a43f9353847dfc03c7dced2929b5773e2087794f8b7ffa62849ef5cdc5acc",
+      "keySha256": "5e68f32573406e2e6755c6c842c6877959b39d7ab5b6b640e55e81a50ee9a2b3",
+      "attempts": 1,
+      "confirmedAttempts": [
+        1
+      ],
+      "latestAttemptConfirmed": true,
+      "settled": true,
+      "status": 200,
+      "createdId": "01a16403-a374-7415-9111-6fac48f8935e"
+    },
+    {
+      "label": "merch-edit",
+      "method": "PATCH",
+      "pathSha256": "e792adca086f5db6718277de8fb11ccb4cdd5f9e171ef842457af703f2a2a48a",
+      "bodySha256": "cb0f7afe4396be94f2271289f0dc5f38c9983910a2b92059bb50dbdece2a4bc1",
+      "keySha256": "ef0538e5b1a416a61e70939fba21c16254a6b88d597640f2735b0a656c7f7925",
+      "attempts": 1,
+      "confirmedAttempts": [
+        1
+      ],
+      "latestAttemptConfirmed": true,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "menu-delete",
+      "method": "DELETE",
+      "pathSha256": "575754765f16b169c8337bc476386d132550311020f6189c430d2a54bb387835",
+      "bodySha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "keySha256": "75ae3ae4059c87e6fc55b7a3b55702493af4f492beaf85f47ef8e9383a3403e5",
+      "attempts": 1,
+      "confirmedAttempts": [
+        1
+      ],
+      "latestAttemptConfirmed": true,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "merch-delete",
+      "method": "DELETE",
+      "pathSha256": "e792adca086f5db6718277de8fb11ccb4cdd5f9e171ef842457af703f2a2a48a",
+      "bodySha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "keySha256": "f7e39ca5f35e62c78fe1c6590ea6fbcb444352d9d1e0fbfbdee7c6470dda72a0",
+      "attempts": 1,
+      "confirmedAttempts": [
+        1
+      ],
+      "latestAttemptConfirmed": true,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "group-delete",
+      "method": "DELETE",
+      "pathSha256": "4a4c60b6a52ccf7513c43a68b616e58a2e6761a39b91261c1e344c5aee9d96d4",
+      "bodySha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "keySha256": "b8db59bb7414b3e4c3d1fe85ae7c6e8bbe186ec98cb14c9ca260ea1abb41f7ea",
+      "attempts": 1,
+      "confirmedAttempts": [
+        1
+      ],
+      "latestAttemptConfirmed": true,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "category-delete",
+      "method": "DELETE",
+      "pathSha256": "3e7da95c7b5caad78cbcab518e186ccbd521a3709f8cec88992c02c12949ef72",
+      "bodySha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "keySha256": "0a77710608779903c4f3e7fe666e11b345660b0a53f8e5dccdbbac2b94904463",
+      "attempts": 1,
+      "confirmedAttempts": [
+        1
+      ],
+      "latestAttemptConfirmed": true,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    }
+  ],
+  "audits": [
+    {
+      "action": "menu_category.create",
+      "entityId": "01a16402-b419-7b7f-aca7-6853fade93f6",
+      "count": 1,
+      "timestamps": [
+        "2026-10-22T14:27:41.210Z"
+      ]
+    },
+    {
+      "action": "menu_category.update",
+      "entityId": "01a16402-b419-7b7f-aca7-6853fade93f6",
+      "count": 1,
+      "timestamps": [
+        "2026-10-22T14:27:48.702Z"
+      ]
+    },
+    {
+      "action": "menu_category.archive",
+      "entityId": "01a16402-b419-7b7f-aca7-6853fade93f6",
+      "count": 1,
+      "timestamps": [
+        "2026-10-22T14:29:20.794Z"
+      ]
+    },
+    {
+      "action": "modifier_group.create",
+      "entityId": "01a16402-f6d2-71dd-b7b8-e7041ac224bd",
+      "count": 1,
+      "timestamps": [
+        "2026-10-22T14:27:58.290Z"
+      ]
+    },
+    {
+      "action": "modifier_group.update",
+      "entityId": "01a16402-f6d2-71dd-b7b8-e7041ac224bd",
+      "count": 1,
+      "timestamps": [
+        "2026-10-22T14:28:05.276Z"
+      ]
+    },
+    {
+      "action": "modifier_group.archive",
+      "entityId": "01a16402-f6d2-71dd-b7b8-e7041ac224bd",
+      "count": 1,
+      "timestamps": [
+        "2026-10-22T14:29:13.715Z"
+      ]
+    },
+    {
+      "action": "menu_item.create",
+      "entityId": "01a16403-3aa7-7231-bb09-3bc17478d2fa",
+      "count": 1,
+      "timestamps": [
+        "2026-10-22T14:28:15.656Z"
+      ]
+    },
+    {
+      "action": "menu_item.update",
+      "entityId": "01a16403-3aa7-7231-bb09-3bc17478d2fa",
+      "count": 2,
+      "timestamps": [
+        "2026-10-22T14:28:30.993Z",
+        "2026-10-22T14:28:23.871Z"
+      ]
+    },
+    {
+      "action": "menu_item.archive",
+      "entityId": "01a16403-3aa7-7231-bb09-3bc17478d2fa",
+      "count": 1,
+      "timestamps": [
+        "2026-10-22T14:29:00.584Z"
+      ]
+    },
+    {
+      "action": "menu_item.create",
+      "entityId": "01a16403-a374-7415-9111-6fac48f8935e",
+      "count": 1,
+      "timestamps": [
+        "2026-10-22T14:28:42.484Z"
+      ]
+    },
+    {
+      "action": "menu_item.update",
+      "entityId": "01a16403-a374-7415-9111-6fac48f8935e",
+      "count": 1,
+      "timestamps": [
+        "2026-10-22T14:28:48.933Z"
+      ]
+    },
+    {
+      "action": "menu_item.archive",
+      "entityId": "01a16403-a374-7415-9111-6fac48f8935e",
+      "count": 1,
+      "timestamps": [
+        "2026-10-22T14:29:07.730Z"
+      ]
+    },
+    {
+      "action": "menu.import",
+      "entityId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+      "count": 1,
+      "timestamps": [
+        "2026-10-22T14:28:30.993Z"
+      ]
+    }
+  ],
+  "blockedRequests": [],
+  "browserErrorKinds": [],
+  "counts": {
+    "signIns": 1,
+    "signOuts": 1,
+    "fixtureCreates": 4,
+    "businessAttempts": 14,
+    "blockedReads": 0,
+    "blockedWrites": 0,
+    "publicAssetReads": 30,
+    "SMS": 0,
+    "equipmentWrites": 0,
+    "paymentWrites": 0,
+    "stockWrites": 0,
+    "otherBusinessWrites": 0
+  },
+  "limitations": [
+    "Only the current park catalogue, operator category/library records returned with it, branch and preferences are compared.",
+    "GET /me omits stationId; no station value is observed and no station write is allowed.",
+    "Actual Till and complete historical usage are not exercised.",
+    "Unrelated rows and person details are hidden in evidence.",
+    "Browser error tags remain unclassified; passing stated controls do not establish an error-free browser."
+  ],
+  "priorPartial": {
+    "receiptSha256": "a7b76dfa5732b1bab043feb4efc06921deb8ed14af99ede2ff8da4e7e3d14735",
+    "envelopeSha256": "32fd4114cbbcca2f025d4fdcbb5fee91045ded77d4e82991995fedeaa88cc0db",
+    "cleanupConfirmed": true,
+    "reason": "Exact current-park sellable-stock GET omitted by V2 proof allowlist; no product change."
+  },
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "deployId": "dep-dbd1knmk1f9s73b7me50",
+      "sourceSha": "82a3fac8706a3fa0d53d302712e17fa0c4dfb6e5",
+      "finishedAt": "2026-10-22T14:18:05.846532Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "deployId": "dep-dbd1knmk1f9s73b7mf60",
+      "sourceSha": "82a3fac8706a3fa0d53d302712e17fa0c4dfb6e5",
+      "finishedAt": "2026-10-22T14:15:44.355138Z"
+    }
+  ],
+  "actor": {
+    "id": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+    "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+  },
+  "freshStorage": true,
+  "importPreview": {
+    "status": 200,
+    "itemUpdates": 1,
+    "categoryChanges": 0,
+    "fileSha256": "f862ba507fe0646326aa71a2152e5599631a09be77e36acb92e7f8423c5f0e5f"
+  },
+  "export": {
+    "status": 200,
+    "contentType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "contentDisposition": "attachment; filename=\"oto-menu-hkt-central-2026-10-22.xlsx\"",
+    "byteLength": 9068,
+    "sha256": "e5f2ac271093938b0766b0f51fe3379105ad4a48395cbda1a40d247076584b3e",
+    "filename": "oto-menu-hkt-central-2026-10-22.xlsx"
+  },
+  "baselineRestored": {
+    "original": "97e4134974a587429e5cd4753ca6253a2ef97ecc17b84faea4c6948f8f3a98a3",
+    "after": "97e4134974a587429e5cd4753ca6253a2ef97ecc17b84faea4c6948f8f3a98a3",
+    "branch": "ff1408f7b8cf4f693cbd2f6e6a82a0e79e347415fdeb0f1886ea0d49d4ded535",
+    "preferences": "00df943c543d230f9e93ceca1038b659220a9779f4d70ae1b114715829458881"
+  },
+  "controlsComplete": true,
+  "authCleanup": {
+    "signOutStatus": 200,
+    "meStatus": 401,
+    "confirmed": true
+  },
+  "authState": {
+    "signInAttempted": true,
+    "authUncertain": false,
+    "pendingAuth": 0
+  },
+  "completedAt": "2026-10-22T14:29:36.494Z"
+}

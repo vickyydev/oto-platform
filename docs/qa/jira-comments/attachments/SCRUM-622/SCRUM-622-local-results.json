@@ -1,0 +1,200 @@
+{
+  "ticket": "SCRUM-622",
+  "checkedAt": "2026-10-22T13:38:35.170Z",
+  "complete": true,
+  "sourceLanded": false,
+  "stagingAccepted": false,
+  "source": {
+    "files": 3546,
+    "ownedFiles": 29,
+    "manifestSha256": "2db415adab241a559a034daab753027b48df2ca32f10a02e8db8917f75303a81",
+    "apiImage": "sha256:e4dda6134b637bdcee99349182e49453e73d1f0b5ec5246846faf24948c5f105",
+    "backendInputsUnchanged": true,
+    "frontendOnlyDelta": [
+      "apps/console/e2e/menu.spec.ts"
+    ]
+  },
+  "metrics": {
+    "api": {
+      "passed": 4731,
+      "skipped": 401,
+      "todo": 5,
+      "files": 339
+    },
+    "shards": [
+      {
+        "shard": "1",
+        "passed": 1631,
+        "skipped": 106,
+        "files": 113
+      },
+      {
+        "shard": "2",
+        "passed": 1615,
+        "skipped": 174,
+        "todo": 4,
+        "files": 113
+      },
+      {
+        "shard": "3",
+        "passed": 1485,
+        "skipped": 121,
+        "todo": 1,
+        "files": 113
+      }
+    ],
+    "console": {
+      "passed": 200,
+      "todo": 3
+    },
+    "apiTypes": 10,
+    "adminScreens": 46,
+    "pos": {
+      "passed": 1433,
+      "files": 101
+    },
+    "builtBrowser": 132,
+    "other": {
+      "shared": 769,
+      "db": 305,
+      "booth": 33,
+      "launcher": 72,
+      "inbox": 176,
+      "assistant": 434,
+      "print": 271,
+      "messaging": 78,
+      "payments": 81,
+      "telemetry": 36
+    },
+    "box": 749,
+    "compilerTasks": 16,
+    "buildTasks": 5,
+    "lintErrors": 0,
+    "lintWarnings": 4,
+    "apiDiagnostics": 0
+  },
+  "artifacts": [
+    {
+      "name": "checks",
+      "receiptPath": "C:/w/admin622-final2-linux/checks-exit.json",
+      "receiptSha256": "9b008305b16b898ae898fed43becf6bee5df627e2fd24f2c17d51ccd669dbaa3",
+      "mode": "checks",
+      "startedAt": "2026-10-22T13:03:15.029Z",
+      "finishedAt": "2026-10-22T13:09:27.641Z",
+      "exitCode": 0,
+      "sha256": "5985f9b69d95956d1d893fe7311d7c5a12d8fc349476eb8cdc31d0ff942c5d70",
+      "sourceFiles": 3546
+    },
+    {
+      "name": "units",
+      "receiptPath": "C:/w/admin622-final2-linux/units-exit.json",
+      "receiptSha256": "6425fa025c0383105da29c5c604c8843a1a0759f26327c64e676f7c37603e7a3",
+      "mode": "units",
+      "startedAt": "2026-10-22T13:03:15.031Z",
+      "finishedAt": "2026-10-22T13:04:51.060Z",
+      "exitCode": 0,
+      "sha256": "be439b2725e408c576e5b4b9238902e3b6f9cd7dbe972a23a96b64019a864b18",
+      "sourceFiles": 3546
+    },
+    {
+      "name": "pos",
+      "receiptPath": "C:/w/admin622-final2-linux/pos-exit.json",
+      "receiptSha256": "f8b4160b5ccb5b1f8b76f2fab296e3679d0e4871dbc61e122c32a9d2382121bf",
+      "mode": "pos",
+      "startedAt": "2026-10-22T13:03:15.036Z",
+      "finishedAt": "2026-10-22T13:07:57.083Z",
+      "exitCode": 0,
+      "sha256": "0110e54eaccc59c5972e491559f6ba13f7a14c17f251c0f2a07219bef37bb45d",
+      "sourceFiles": 3546
+    },
+    {
+      "name": "other",
+      "receiptPath": "C:/w/admin622-final2-linux/other-exit.json",
+      "receiptSha256": "de6bf9dfa7eab7478e8035bdf8c726f10ad5812967d58fda542857abd059ea55",
+      "mode": "other",
+      "startedAt": "2026-10-22T13:03:15.028Z",
+      "finishedAt": "2026-10-22T13:14:58.992Z",
+      "exitCode": 0,
+      "sha256": "201f7063a844b26bc9f57ac654a187c5690c30f9306efe903e8256bc86645104",
+      "sourceFiles": 3546
+    },
+    {
+      "name": "browser",
+      "receiptPath": "C:/w/admin622-final2-linux/browser-exit.json",
+      "receiptSha256": "6e58723d7e40a7a12e4e1f4a6005758ab86c32207d24013738c258e6458a7407",
+      "mode": "browser",
+      "startedAt": "2026-10-22T13:09:42.750Z",
+      "finishedAt": "2026-10-22T13:15:01.788Z",
+      "exitCode": 0,
+      "sha256": "198f81570e0820dbd7a284c318ae3650648e152be7054a8e249f3ac212424f9b",
+      "sourceFiles": 3546
+    },
+    {
+      "name": "box",
+      "receiptPath": "C:/w/admin622-final2-linux/box-exit.json",
+      "receiptSha256": "0825774223d960b2216569acde9a72ccffe7f7fdcb1b86da0e60ce36d42b21f6",
+      "mode": "box",
+      "startedAt": "2026-10-22T13:34:51.020Z",
+      "finishedAt": "2026-10-22T13:37:43.823Z",
+      "exitCode": 0,
+      "sha256": "dc4cc2627cae0c8df80a7537c2e56492267ae7c79175d30c0921f49715d41f4b",
+      "sourceFiles": 3546,
+      "command": "pnpm --filter @oto/box-agent test --test-concurrency=1",
+      "fileScheduling": "Serial files as adopted in SCRUM-621; all assertions, time bounds and nested concurrency unchanged."
+    },
+    {
+      "name": "api1",
+      "receiptPath": "C:/w/admin622-api-release/api1-exit.json",
+      "receiptSha256": "8919a6e8c76786dd74189c6f9d115de10af18599fc58b2d77da9e51a70a6522b",
+      "shard": "1",
+      "startedAt": "2026-10-22T13:01:07.065Z",
+      "finishedAt": "2026-10-22T13:33:11.768Z",
+      "exitCode": 0,
+      "log": "C:/w/admin622-api-release/api1.log",
+      "sha256": "9e6e56f203548d4ef20eaa27b6aa5f7ea22b07891837b4234565fc88012a6381",
+      "sourceFiles": 3546,
+      "imageId": "sha256:e4dda6134b637bdcee99349182e49453e73d1f0b5ec5246846faf24948c5f105",
+      "sourceManifestSha256": "a6b6277ad0d6c9515466e2eadf939af84e1726c32763d9bba41f932f6f58947d"
+    },
+    {
+      "name": "api2",
+      "receiptPath": "C:/w/admin622-api-release/api2-exit.json",
+      "receiptSha256": "5c1cbfe9d31c18be8d10015251361e04c8d4409c37ecfd96c34a2d837a1da5d9",
+      "shard": "2",
+      "startedAt": "2026-10-22T13:01:07.048Z",
+      "finishedAt": "2026-10-22T13:32:48.605Z",
+      "exitCode": 0,
+      "log": "C:/w/admin622-api-release/api2.log",
+      "sha256": "db003e93ed68d06d224a70ac37c71ffc7b39260ea2d343931f1e3c1223fa64fd",
+      "sourceFiles": 3546,
+      "imageId": "sha256:e4dda6134b637bdcee99349182e49453e73d1f0b5ec5246846faf24948c5f105",
+      "sourceManifestSha256": "a6b6277ad0d6c9515466e2eadf939af84e1726c32763d9bba41f932f6f58947d"
+    },
+    {
+      "name": "api3",
+      "receiptPath": "C:/w/admin622-api-release/api3-exit.json",
+      "receiptSha256": "34c6b9ceab456f834ac7366176f9ca65e42567fa65570db1049e23e4a2dedef0",
+      "shard": "3",
+      "startedAt": "2026-10-22T13:01:07.077Z",
+      "finishedAt": "2026-10-22T13:33:53.123Z",
+      "exitCode": 0,
+      "log": "C:/w/admin622-api-release/api3.log",
+      "sha256": "03f28c352931ba41440a4c6b12cd9c76e977097902f52a3449c29ea1fba9b94e",
+      "sourceFiles": 3546,
+      "imageId": "sha256:e4dda6134b637bdcee99349182e49453e73d1f0b5ec5246846faf24948c5f105",
+      "sourceManifestSha256": "a6b6277ad0d6c9515466e2eadf939af84e1726c32763d9bba41f932f6f58947d"
+    }
+  ],
+  "limits": [
+    "Local release gates only; source landing, exact-SHA CI, staging proof and acceptance remain separate.",
+    "One new numeric request-generation cleanup lint warning was reviewed as intentional; three API warnings are inherited.",
+    "Mock stock setup remains as approved; actual Till and complete historical usage are not demonstrated."
+  ],
+  "retainedFailures": [
+    "Initial no-files source-sync setup failures; native5red/1positive; API contracts3red/3positive; house4red/2positive including the required denied-security-audit classification correction.",
+    "SDK explicit-key, duplicate-create and hidden-metadata reds, followed by sparse-order, cache-lifetime and stale-tail reds.",
+    "Compiler boolean adapter and original POS surface typing failures; both corrected without POS source change.",
+    "Browser first5failed/3passed, second1failed/7passed, with money validity defects separated from Apply/Retry locator and variant-fixture corrections.",
+    "Original unexecuted proof helper replay regression7failed/2passed; corrected frozen V2 has9passing replay and28passing boundary checks."
+  ]
+}

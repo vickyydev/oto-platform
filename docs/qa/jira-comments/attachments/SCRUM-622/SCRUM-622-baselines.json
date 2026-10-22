@@ -1,0 +1,153 @@
+{
+  "ticket": "SCRUM-622",
+  "sourceSha": "82a3fac8706a3fa0d53d302712e17fa0c4dfb6e5",
+  "recordedAt": "2026-10-22T13:51:21.497Z",
+  "mode": "read-only retrospective from retained public logs and actual exit receipts",
+  "complete": true,
+  "ciObserved": false,
+  "stagingObserved": false,
+  "originalInputs": [
+    {"path":"C:/w/admin622-api-baseline/manifest.json","sha256":"232a9258e3548e392e281fc9a13fca6843437693447c479319a33c8fb46dc951","bytes":849},
+    {"path":"C:/w/admin622-ui-baseline/manifest.json","sha256":"f3c2312c5f948e7321fc8d2d9a56dc054ee480074b1629e543244a9d1152a71d","bytes":2156}
+  ],
+  "classifications": [
+    {"log":"api-baseline-run","classification":"missing response contracts","failed":3,"passed":3,"meaning":"Three OpenAPI output groups were absent; existing CRUD/workbook behavior cases passed."},
+    {"log":"house-baseline-run","classification":"three behavior findings plus one test classification error","failed":4,"passed":2,"meaning":"R1 category import and R2 shared-product import escaped branch authority; R4 foreign modifier options leaked or were modified. R3/R5 legitimate imports passed. R6 mistakenly counted the required auth.permission_denied audit as a catalogue mutation."},
+    {"log":"ui-baseline-run","classification":"native behavior findings","failed":5,"passed":1,"meaning":"Operator-only category/library offers, menu/category translation preservation and inherited subcategory defaults failed on preserved original UI bytes."},
+    {"log":"sdk-baseline-run","classification":"SDK behavior findings","failed":2,"passed":0,"meaning":"Explicit write keys were missing and retry after an inline failure could create another product."},
+    {"log":"sdk-baseline-v2-run","classification":"SDK behavior findings, expanded same preserved baseline","failed":3,"passed":0,"meaning":"Added hidden modifier language and shared sort-order preservation failure; original two findings remained."},
+    {"log":"sdk-sparse-order-red","classification":"SDK behavior finding","failed":1,"passed":3,"meaning":"Unchanged inline questions with sparse stored ordering were rewritten during a product-only edit."},
+    {"log":"sdk-cache-lifetime-red","classification":"SDK behavior finding","failed":1,"passed":4,"meaning":"A completed create cache could survive canonical refresh and target a later draft with the same POS slug."},
+    {"log":"sdk-stale-tail-red","classification":"SDK behavior finding","failed":1,"passed":5,"meaning":"An old panel could issue a later inline write after the owning screen changed."},
+    {"log":"pos-offers-red","classification":"native wrapper authority findings","failed":2,"passed":10,"meaning":"Server-backed menu/merch wrappers offered writes before canonical authority was known; local mock defaults remained covered."},
+    {"log":"browser-baseline","classification":"mixed behavior and test errors","failed":5,"passed":3,"meaning":"Stored fractional values reported native stepMismatch. Modifier/Merch refusal cases could not reach submission. Apply and Retry were wrong test labels; native controls are Apply changes and Try again."},
+    {"log":"browser-v2","classification":"test locator error only","failed":1,"passed":7,"meaning":"Remaining failure was the stale Retry locator; canonical Saved error and native Try again control were already present."},
+    {"log":"focused-compilers","classification":"implementation integration error","exitCode":2,"meaning":"MenuPanel onImported returned Promise<boolean> where void/Promise<void> was required; corrected by awaiting and discarding the result."},
+    {"log":"focused-compilers-v2","classification":"implementation integration error","exitCode":2,"meaning":"The shared runtime type required saveMenuItem absent from the original POS facade; corrected without POS source edits."}
+  ],
+  "setupAndTestNotes": [
+    {"classification":"setup only","evidence":"coordinator-observed tool output; no standalone raw setup log found","meaning":"Two commands raced the initial container source sync and found no test files. They establish no behavior result."},
+    {"classification":"setup only","evidence":{"path":"C:/w/admin622-review-baseline.json","sha256":"d8e3b2ffb4098fdd0da4f301da3f35ca82628976d1698f3984b207eca6784710","bytes":3302},"meaning":"The independent worktree eslint attempt lacked an installed eslint executable; final full lint passed separately."},
+    {"classification":"fixture/expectation corrections","meaning":"Unchanged inline groups intentionally make no write; the test now edits an option before expecting its PATCH. Merch translations are verified canonically rather than forcing an omitted field. Synthetic size barcode and identifier were corrected to existing schema shapes; the final identifier correction is the single browser-only source delta after API freeze."}
+  ],
+  "logs": [
+    {"path":"C:/w/admin622-api-baseline-run.log","sha256":"3a4be77d1c4a37a1d9cf652bebbd24821d09849cd0d7c9494ceca5615ca8b475","bytes":12066,"encoding":"utf16le","summaries":["Test Files  1 failed (1)","Tests  3 failed | 3 passed (6)","Exit status 1"]},
+    {"path":"C:/w/admin622-house-baseline-run.log","sha256":"46ceb5f81966b84a5d669c72a6206e785d795ea3398d25f9343b1f6b712b607e","bytes":61002,"encoding":"utf16le","summaries":["Test Files  1 failed (1)","Tests  4 failed | 2 passed (6)","Exit status 1"]},
+    {"path":"C:/w/admin622-ui-baseline-run.log","sha256":"09f60d68be61a9be803101a711b36793c2d2d649d7a75ef7e2655ddcc0751e2d","bytes":39174,"encoding":"utf16le","summaries":["Test Files  1 failed (1)","Tests  5 failed | 1 passed (6)","Exit status 1"]},
+    {"path":"C:/w/admin622-sdk-baseline-run.log","sha256":"f00daa499bf19ecf9fe9d9c3ff919d72591464294de1e24141dcc89cf81c3ed7","bytes":7504,"encoding":"utf16le","summaries":["Test Files  1 failed (1)","Tests  2 failed (2)","Exit status 1"]},
+    {"path":"C:/w/admin622-sdk-baseline-v2-run.log","sha256":"d40027f77d11819fc5f712d658e2e3924103177c35b883af29d4ec51ce3c29ed","bytes":10862,"encoding":"utf16le","summaries":["Test Files  1 failed (1)","Tests  3 failed (3)","Exit status 1"]},
+    {"path":"C:/w/admin622-sdk-sparse-order-red.log","sha256":"82d7f874ba16cf21d0a324687fb42a9a74abb9f9682baeb65e4bf9690404b984","bytes":6430,"encoding":"utf16le","summaries":["Test Files  1 failed (1)","Tests  1 failed | 3 passed (4)","Exit status 1"]},
+    {"path":"C:/w/admin622-sdk-cache-lifetime-red.log","sha256":"732a2522160774e4bbb91dd0569f3c9047f3ac8aae52455d2a4e4a948b03c951","bytes":6766,"encoding":"utf16le","summaries":["Test Files  1 failed (1)","Tests  1 failed | 4 passed (5)","Exit status 1"]},
+    {"path":"C:/w/admin622-sdk-stale-tail-red.log","sha256":"dfc4a4919b0a242dc9080b7842b8d2bb4b492e2c82658154a880c4f1be4bf05e","bytes":6182,"encoding":"utf16le","summaries":["Test Files  1 failed (1)","Tests  1 failed | 5 passed (6)","Exit status 1"]},
+    {"path":"C:/w/admin622-pos-offers-red.log","sha256":"80e72adf4bc9dfef7d6cba21ebbb4798d1fe3802f2efe601aa8be045beaf12f0","bytes":10652,"encoding":"utf16le","summaries":["Test Files  1 failed (1)","Tests  2 failed | 10 passed (12)","Exit status 1"]},
+    {"path":"C:/w/admin622-browser-baseline.log","sha256":"0df02b489be248e3eacd03f9b79a99f8e9e65354231a8a2be5f52896ab180b12","bytes":32986,"encoding":"utf16le","summaries":["5 failed","3 passed (1.1m)","Exit status 1"]},
+    {"path":"C:/w/admin622-browser-v2.log","sha256":"8696bdf40c3f7d0fcc676a60f0349ff3277d35dacb4761299e713ceaefa3eed4","bytes":19072,"encoding":"utf16le","summaries":["1 failed","7 passed (39.0s)","Exit status 1"]},
+    {"path":"C:/w/admin622-focused-compilers.log","sha256":"fc0edd2e848b6e10714bc8ce40b7ecd499394d4e7f7af40fdbbcba3da3d5d3b9","bytes":3634,"encoding":"utf16le","summaries":["Exit status 2"]},
+    {"path":"C:/w/admin622-focused-compilers-v2.log","sha256":"64d80c9e26c3718518450f9a3531705bada9d92dfa54dc112a1a1b1d1c4c0be1","bytes":5682,"encoding":"utf16le","summaries":["Exit status 2"]},
+    {"path":"C:/w/admin622-focused-api.log","sha256":"8bd7572d6f2816363b82f4d7789348354afd126a9bb75a9a5448cdd631ec017a","bytes":19188,"encoding":"utf16le","summaries":["Test Files  9 passed (9)","Tests  147 passed (147)"]},
+    {"path":"C:/w/admin622-focused-package.log","sha256":"abf0807c722fb2c158d9743a97e159e947934c01e341a2f2e304a3a3bcee9028","bytes":1454,"encoding":"utf16le","summaries":["Test Files  8 passed (8)","Tests  40 passed (40)"]},
+    {"path":"C:/w/admin622-focused-units-v2.log","sha256":"022d15ce2bdc6d017284421284d6c0c86e7aca481899672aa1095467263421b5","bytes":5346,"encoding":"utf16le","summaries":["Test Files  8 passed (8)","Tests  42 passed (42)","Test Files  1 passed (1)","Tests  10 passed (10)","Test Files  26 passed (26)","Tests  200 passed | 3 todo (203)"]},
+    {"path":"C:/w/admin622-focused-final.log","sha256":"935ce8dfd64d71b47087a36137ddfde04407e02b50a4bcb53e915a8270a89c2e","bytes":4338,"encoding":"utf16le","summaries":["Test Files  8 passed (8)","Tests  46 passed (46)"]},
+    {"path":"C:/w/admin622-generate.log","sha256":"79ffa6df38c6a2aadb89d6bd298d824528d528a1fa2e9269903fa62130521884","bytes":1860,"encoding":"utf16le","summaries":[]}
+  ],
+  "finalPassingEvidence": {
+    "localReceipt": {
+      "path": "C:/w/admin622-local-results.json",
+      "sha256": "3d9b52c079d234cb5a28d2d6cee7b24ffb2e5c7683681f8a8d66b6f6b65630ec",
+      "bytes": 7591
+    },
+    "independentLocalAudit": {
+      "path": "C:/w/admin622-local-audit.json",
+      "sha256": "0e2fba18c93d73f66c1615a493e747f1f0c6463115b15cb3a1b405623d568c24",
+      "bytes": 2987
+    },
+    "metrics": {
+      "api": {
+        "passed": 4731,
+        "skipped": 401,
+        "todo": 5,
+        "files": 339
+      },
+      "shards": [
+        {"shard":"1","passed":1631,"skipped":106,"files":113},
+        {"shard":"2","passed":1615,"skipped":174,"todo":4,"files":113},
+        {"shard":"3","passed":1485,"skipped":121,"todo":1,"files":113}
+      ],
+      "console": {
+        "passed": 200,
+        "todo": 3
+      },
+      "apiTypes": 10,
+      "adminScreens": 46,
+      "pos": {
+        "passed": 1433,
+        "files": 101
+      },
+      "builtBrowser": 132,
+      "other": {
+        "shared": 769,
+        "db": 305,
+        "booth": 33,
+        "launcher": 72,
+        "inbox": 176,
+        "assistant": 434,
+        "print": 271,
+        "messaging": 78,
+        "payments": 81,
+        "telemetry": 36
+      },
+      "box": 749,
+      "compilerTasks": 16,
+      "buildTasks": 5,
+      "lintErrors": 0,
+      "lintWarnings": 4,
+      "apiDiagnostics": 0
+    },
+    "gates": [
+      {"name":"checks","exitCode":0,"receipt":{"path":"C:/w/admin622-final2-linux/checks-exit.json","sha256":"9b008305b16b898ae898fed43becf6bee5df627e2fd24f2c17d51ccd669dbaa3","bytes":230},"log":{"path":"C:/w/admin622-final2-linux/checks.log","sha256":"5985f9b69d95956d1d893fe7311d7c5a12d8fc349476eb8cdc31d0ff942c5d70","bytes":14145},"finishedAt":"2026-10-22T13:09:27.641Z"},
+      {"name":"units","exitCode":0,"receipt":{"path":"C:/w/admin622-final2-linux/units-exit.json","sha256":"6425fa025c0383105da29c5c604c8843a1a0759f26327c64e676f7c37603e7a3","bytes":229},"log":{"path":"C:/w/admin622-final2-linux/units.log","sha256":"be439b2725e408c576e5b4b9238902e3b6f9cd7dbe972a23a96b64019a864b18","bytes":4355},"finishedAt":"2026-10-22T13:04:51.060Z"},
+      {"name":"pos","exitCode":0,"receipt":{"path":"C:/w/admin622-final2-linux/pos-exit.json","sha256":"f8b4160b5ccb5b1f8b76f2fab296e3679d0e4871dbc61e122c32a9d2382121bf","bytes":227},"log":{"path":"C:/w/admin622-final2-linux/pos.log","sha256":"0110e54eaccc59c5972e491559f6ba13f7a14c17f251c0f2a07219bef37bb45d","bytes":6450},"finishedAt":"2026-10-22T13:07:57.083Z"},
+      {"name":"other","exitCode":0,"receipt":{"path":"C:/w/admin622-final2-linux/other-exit.json","sha256":"de6bf9dfa7eab7478e8035bdf8c726f10ad5812967d58fda542857abd059ea55","bytes":229},"log":{"path":"C:/w/admin622-final2-linux/other.log","sha256":"201f7063a844b26bc9f57ac654a187c5690c30f9306efe903e8256bc86645104","bytes":41803},"finishedAt":"2026-10-22T13:14:58.992Z"},
+      {"name":"browser","exitCode":0,"receipt":{"path":"C:/w/admin622-final2-linux/browser-exit.json","sha256":"6e58723d7e40a7a12e4e1f4a6005758ab86c32207d24013738c258e6458a7407","bytes":231},"log":{"path":"C:/w/admin622-final2-linux/browser.log","sha256":"198f81570e0820dbd7a284c318ae3650648e152be7054a8e249f3ac212424f9b","bytes":23341},"finishedAt":"2026-10-22T13:15:01.788Z"},
+      {"name":"box","exitCode":0,"receipt":{"path":"C:/w/admin622-final2-linux/box-exit.json","sha256":"0825774223d960b2216569acde9a72ccffe7f7fdcb1b86da0e60ce36d42b21f6","bytes":421},"log":{"path":"C:/w/admin622-final2-linux/box.log","sha256":"dc4cc2627cae0c8df80a7537c2e56492267ae7c79175d30c0921f49715d41f4b","bytes":178626},"finishedAt":"2026-10-22T13:37:43.823Z"},
+      {"name":"api1","exitCode":0,"receipt":{"path":"C:/w/admin622-api-release/api1-exit.json","sha256":"8919a6e8c76786dd74189c6f9d115de10af18599fc58b2d77da9e51a70a6522b","bytes":455},"log":{"path":"C:/w/admin622-api-release/api1.log","sha256":"9e6e56f203548d4ef20eaa27b6aa5f7ea22b07891837b4234565fc88012a6381","bytes":154323},"finishedAt":"2026-10-22T13:33:11.768Z"},
+      {"name":"api2","exitCode":0,"receipt":{"path":"C:/w/admin622-api-release/api2-exit.json","sha256":"5c1cbfe9d31c18be8d10015251361e04c8d4409c37ecfd96c34a2d837a1da5d9","bytes":455},"log":{"path":"C:/w/admin622-api-release/api2.log","sha256":"db003e93ed68d06d224a70ac37c71ffc7b39260ea2d343931f1e3c1223fa64fd","bytes":153682},"finishedAt":"2026-10-22T13:32:48.605Z"},
+      {"name":"api3","exitCode":0,"receipt":{"path":"C:/w/admin622-api-release/api3-exit.json","sha256":"34c6b9ceab456f834ac7366176f9ca65e42567fa65570db1049e23e4a2dedef0","bytes":455},"log":{"path":"C:/w/admin622-api-release/api3.log","sha256":"03f28c352931ba41440a4c6b12cd9c76e977097902f52a3449c29ea1fba9b94e","bytes":167811},"finishedAt":"2026-10-22T13:33:53.123Z"},
+      {"name":"post-rebase","exitCode":0,"receipt":{"path":"C:/w/admin622-final2-linux/post-exit.json","sha256":"926073b3f372ba569b06f91d6e782b989d3605b6c2daf936535b02f6182b83f4","bytes":228},"log":{"path":"C:/w/admin622-final2-linux/post.log","sha256":"c77b7fc4f3d48098f5cd92c5e3bee8cffe152d7ad889ef49c1b62160f22b195c","bytes":16797},"finishedAt":"2026-10-22T13:45:51.133Z"}
+    ],
+    "focusedPasses": [
+      "147 API cases across nine files",
+      "40 then42 and final46 admin-screen cases",
+      "Console200 plus3todo and API-type seams10"
+    ],
+    "sourceDelta": [
+      "apps/console/e2e/menu.spec.ts"
+    ]
+  },
+  "proofPreparation": {
+    "originalHelper": {
+      "path": "C:/w/admin622-evidence.mjs",
+      "sha256": "f494d356586f8ebcd503dd030fc316fa94e33e474a5aaf7d63cacb9cd558f419",
+      "bytes": 39735
+    },
+    "currentHelper": {
+      "path": "C:/w/admin622-evidence-v2.mjs",
+      "sha256": "1c6413f908a1abb41451cf8c22079d8a3032a9ab8f35461606f262837a3b91db",
+      "bytes": 40241
+    },
+    "classification": "unexecuted proof-harness safety regression; not a product or staging failure",
+    "meaning": "An earlier successful attempt could remain settled after a failed or ambiguous replay. V2 checkpoints the latest dispatch as unresolved and requires a new exact successful response, preserving earlier successful attempt numbers. Native Menu capture also uses its actual card rather than a table row.",
+    "reviews": [
+      {"path":"C:/w/admin622-proof-replay-red.json","sha256":"40aedd5d1032786a4e12221537c73a8d5ee19c8f25a818fbdad9c4879657b07a","bytes":1545,"helperSha256":"f494d356586f8ebcd503dd030fc316fa94e33e474a5aaf7d63cacb9cd558f419","passed":false,"cases":9,"passedCases":2,"failedCases":7,"networkRequests":0},
+      {"path":"C:/w/admin622-proof-replay-green.json","sha256":"02ad7b9ce6ef41d67013bc76f5a1e9eda7e563fee0809c982d4221a9ee5ebb73","bytes":1540,"helperSha256":"1c6413f908a1abb41451cf8c22079d8a3032a9ab8f35461606f262837a3b91db","passed":true,"cases":9,"passedCases":9,"failedCases":0,"networkRequests":0},
+      {"path":"C:/w/admin622-proof-boundaries-review.json","sha256":"5972b155a1b0128b3790d078ae1a2823e8531abb302b7b0ef99ebc32e7ceed69","bytes":4571,"helperSha256":"1c6413f908a1abb41451cf8c22079d8a3032a9ab8f35461606f262837a3b91db","passed":true,"cases":28,"passedCases":28,"failedCases":0,"networkRequests":0}
+    ]
+  },
+  "limits": [
+    "Every log is retained in place; this receipt records only paths, byte hashes and bounded classifications, not raw log contents.",
+    "Development results were run by the release coordinator; the independent log summary inspection and offline replay tests are identified separately.",
+    "No missing-native-page red is claimed for this story; the first built browser run already used the native Console host.",
+    "The immutable local receipt and audit retain their original not-landed/not-observed flags; separate landing and CI receipts describe later state.",
+    "CI, deployment, staging acceptance, actual Till, station state and complete historical usage are not established here."
+  ]
+}

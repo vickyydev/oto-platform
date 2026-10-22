@@ -1,0 +1,109 @@
+{
+  "ticket": "SCRUM-622",
+  "checkedAt": "2026-10-22T14:29:57.338Z",
+  "sourceSha": "82a3fac8706a3fa0d53d302712e17fa0c4dfb6e5",
+  "passed": true,
+  "publicArtefactsOnly": true,
+  "proof": {
+    "path": "C:/w/admin622-staging-final-results.json",
+    "sha256": "9b3077173aee784cf226c3d415c9ccd7e7a4b1c1c9055925a9e99b0a377b901d"
+  },
+  "envelope": {
+    "path": "C:/w/admin622-stage-final-envelope.json",
+    "sha256": "af1a1d2734141df8f74fc92dea3da060a7b184df0deade84fd32a181ae82b09f"
+  },
+  "helperSha256": "e517250d8e5faf06539999e21598692db7f92930c48834d97318dfdfb581f400",
+  "checks": [
+    {
+      "name": "completed public proof and envelope bind exact source/helper and successful six-job CI",
+      "passed": true
+    },
+    {
+      "name": "three service sources/latest live observations remain identical before and after proof",
+      "passed": true
+    },
+    {
+      "name": "five actual9/28/9/4/4 offline review artefacts match frozen V3 helper and envelope",
+      "passed": true
+    },
+    {
+      "name": "original incomplete proof/envelope and independent cleanup audit remain pinned before fresh V3 proof",
+      "passed": true
+    },
+    {
+      "name": "four exact PNG bytes/times and native control bounds meet desktop/390px capture requirements",
+      "passed": true
+    },
+    {
+      "name": "thirteen exact logical writes and fourteen dispatches include one confirmed same-key import replay",
+      "passed": true
+    },
+    {
+      "name": "fourteen fresh fixture/import audits have exact action/identity multiplicities",
+      "passed": true
+    },
+    {
+      "name": "workbook preview/commit/export and full current-catalogue restoration remain explicit",
+      "passed": true
+    },
+    {
+      "name": "all eight controls passed, auth cleanup is200/401 and forbidden write/read counters are zero",
+      "passed": true
+    }
+  ],
+  "actual": {
+    "controls": 8,
+    "screenshots": 4,
+    "logicalOperations": 13,
+    "dispatches": 14,
+    "importReplayDispatches": 2,
+    "fixtureCreates": 4,
+    "matchingFixtureAuditRows": 14,
+    "resourcesRestored": true,
+    "blockedReads": 0,
+    "blockedWrites": 0,
+    "browserErrorKinds": []
+  },
+  "images": [
+    {
+      "filename": "SCRUM-622-06-final-categories-desktop.png",
+      "sha256": "f04fd733cee125ae36ea290bded33f5b8455d951f952ddec3c6d8ff793fb1cb7",
+      "capturedAt": "2026-10-22T14:27:51.784Z",
+      "width": 1440,
+      "height": 1000,
+      "controls": 2
+    },
+    {
+      "filename": "SCRUM-622-07-final-modifiers-desktop.png",
+      "sha256": "e28895d01be8000b64b924831aed7f267b96e5a88187f3d282ee31e7826bd2da",
+      "capturedAt": "2026-10-22T14:28:07.717Z",
+      "width": 1440,
+      "height": 1000,
+      "controls": 3
+    },
+    {
+      "filename": "SCRUM-622-05-final-menu-desktop.png",
+      "sha256": "e56ac253a7a15a12d0237ffd91efcda0a6fe52313c42a7dec67c8cddad117bb9",
+      "capturedAt": "2026-10-22T14:28:35.171Z",
+      "width": 1440,
+      "height": 1000,
+      "controls": 3
+    },
+    {
+      "filename": "SCRUM-622-08-final-merch-phone.png",
+      "sha256": "2bf0d04dc184310aa93380731a0f33e11fb4c456fc0e20288f26a0994d1ec9a6",
+      "capturedAt": "2026-10-22T14:28:53.607Z",
+      "width": 390,
+      "height": 844,
+      "controls": 3
+    }
+  ],
+  "limitations": [
+    "Console-native controls only; a matching POS deployment does not demonstrate an actual Till.",
+    "No station value or complete historical usage was observed.",
+    "Fourteen counts matching fixture/import audits only; auth and privileged audit-read access events may exist additionally.",
+    "Restoration means the current visible park catalogue and original branch/preferences fingerprints match; archived ZZ TEST fixtures and their audit history remain.",
+    "Image bytes/dimensions, timestamps and recorded control geometry were checked; independent visual inspection remains the release coordinator responsibility.",
+    "Browser error tags, if present, remain unclassified and do not establish an error-free browser."
+  ]
+}

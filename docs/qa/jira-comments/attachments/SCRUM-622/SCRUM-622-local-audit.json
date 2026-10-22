@@ -1,0 +1,92 @@
+{
+  "ticket": "SCRUM-622",
+  "checkedAt": "2026-10-22T13:42:37.467Z",
+  "candidateSha": "82a3fac8706a3fa0d53d302712e17fa0c4dfb6e5",
+  "passed": true,
+  "localOnly": true,
+  "sourceLanded": false,
+  "ciObserved": false,
+  "deploymentObserved": false,
+  "stagingObserved": false,
+  "localReceipt": {
+    "path": "C:/w/admin622-local-results.json",
+    "sha256": "3d9b52c079d234cb5a28d2d6cee7b24ffb2e5c7683681f8a8d66b6f6b65630ec"
+  },
+  "sourceVerification": {
+    "path": "C:/w/admin622-source-verification.json",
+    "sha256": "9f83e6c063a79ca96ddbf7404ef7bdae46fcf26304cae4fd7524fe047fb96081"
+  },
+  "checks": [
+    {
+      "name": "receipt is complete for local gates and explicitly has no source landing or staging acceptance",
+      "passed": true
+    },
+    {
+      "name": "all nine completed exit receipts and full log hashes match the local receipt",
+      "passed": true
+    },
+    {
+      "name": "all three whole API shard summaries independently total4731/401skip/5todo/339files",
+      "passed": true
+    },
+    {
+      "name": "Console/API types/admin screens/POS and all ten other package results match actual package headers",
+      "passed": true
+    },
+    {
+      "name": "all132 built browser checks and serial-file Box749 passed, with Box run last",
+      "passed": true
+    },
+    {
+      "name": "compiler/build/API-type and lint results retain actual four warnings and zero diagnostics",
+      "passed": true
+    },
+    {
+      "name": "exact one browser-fixture delta after API freeze; all1013 backend inputs and3545 other inputs identical",
+      "passed": true
+    },
+    {
+      "name": "all3546 raw files match final manifest and candidate filtered Git blobs",
+      "passed": true
+    },
+    {
+      "name": "candidate has exactly29 owned source paths and three standing docs; no forbidden app/Box/migration edits",
+      "passed": true
+    }
+  ],
+  "actualMetrics": {
+    "sourceFiles": 3546,
+    "rawSha256Matches": 3546,
+    "filteredGitBlobMatches": 3546,
+    "backendInputs": 1013,
+    "ownedSourceFiles": 29,
+    "documentationFiles": 3,
+    "committedPaths": 32,
+    "api": {
+      "passed": 4731,
+      "skipped": 401,
+      "todo": 5,
+      "files": 339
+    },
+    "consolePassed": 200,
+    "consoleTodo": 3,
+    "apiTypesPassed": 10,
+    "adminScreensPassed": 46,
+    "posPassed": 1433,
+    "builtBrowserPassed": 132,
+    "boxPassed": 749,
+    "boxFileScheduling": "serial (--test-concurrency=1)",
+    "compilerTasks": 16,
+    "buildTasks": 5,
+    "lintErrors": 0,
+    "lintWarnings": 4
+  },
+  "deltaFromApiFreeze": [
+    "apps/console/e2e/menu.spec.ts"
+  ],
+  "limitations": [
+    "Only nine completed local full-battery receipts were inspected; the separately running post-rebase gate is deliberately excluded.",
+    "CI, remote main landing, Render deployment and staging acceptance were not observed or asserted.",
+    "Source comparisons use raw SHA256 plus repository-filtered Git blob IDs, accounting for tracked line-ending filters."
+  ]
+}

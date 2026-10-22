@@ -1,0 +1,199 @@
+{
+  "ticket": "SCRUM-622",
+  "sourceSha": "82a3fac8706a3fa0d53d302712e17fa0c4dfb6e5",
+  "recordedAt": "2026-10-22T14:30:28.756Z",
+  "status": "Deployed",
+  "publicOnly": true,
+  "files": [
+    {
+      "filename": "SCRUM-622-partial-staging-results.json",
+      "sha256": "a7b76dfa5732b1bab043feb4efc06921deb8ed14af99ede2ff8da4e7e3d14735",
+      "partial": true,
+      "fullAcceptance": false
+    },
+    {
+      "filename": "SCRUM-622-partial-stage-envelope.json",
+      "sha256": "32fd4114cbbcca2f025d4fdcbb5fee91045ded77d4e82991995fedeaa88cc0db",
+      "partial": true,
+      "fullAcceptance": false
+    },
+    {
+      "filename": "SCRUM-622-partial-audit.json",
+      "sha256": "9c9eefb7c140e5dfc8e23d606e73c62a2873be14ce100229f21a91bc74f06abc",
+      "partial": true,
+      "fullAcceptance": false
+    },
+    {
+      "filename": "SCRUM-622-partial-image-review.json",
+      "sha256": "7bca0e64ba3913512b01f9003851d3d89d332ac31ff54f35b7daeb9417796ee8",
+      "partial": true,
+      "fullAcceptance": false
+    },
+    {
+      "filename": "SCRUM-622-partial-jira.json",
+      "sha256": "bf7d473a9522442a04a10d1b268cc58ab2158fd1e263b7059c95f1258ac72c1b",
+      "partial": true,
+      "fullAcceptance": false
+    },
+    {
+      "filename": "SCRUM-622-02-categories-desktop.png",
+      "sha256": "ccd1af30b63f496ffa6abb90f3eb9ad3d1c9ff5c24400857288801511951dd88",
+      "partial": true,
+      "fullAcceptance": false
+    },
+    {
+      "filename": "SCRUM-622-03-modifiers-desktop.png",
+      "sha256": "8e957f9ffa53a6d8fb26d969ed1bdfb144553ee27282924085f848eb66addd84",
+      "partial": true,
+      "fullAcceptance": false
+    },
+    {
+      "filename": "SCRUM-622-01-menu-desktop.png",
+      "sha256": "8b976125d6f6f626c885eaad5d94373ba06a90575777340a4c24e637d9ca9204",
+      "partial": true,
+      "fullAcceptance": false
+    },
+    {
+      "filename": "SCRUM-622-local-results.json",
+      "sha256": "3d9b52c079d234cb5a28d2d6cee7b24ffb2e5c7683681f8a8d66b6f6b65630ec",
+      "source": "C:/w/admin622-local-results.json"
+    },
+    {
+      "filename": "SCRUM-622-source-verification.json",
+      "sha256": "9f83e6c063a79ca96ddbf7404ef7bdae46fcf26304cae4fd7524fe047fb96081",
+      "source": "C:/w/admin622-source-verification.json"
+    },
+    {
+      "filename": "SCRUM-622-local-audit.json",
+      "sha256": "0e2fba18c93d73f66c1615a493e747f1f0c6463115b15cb3a1b405623d568c24",
+      "source": "C:/w/admin622-local-audit.json"
+    },
+    {
+      "filename": "SCRUM-622-post-rebase.json",
+      "sha256": "926073b3f372ba569b06f91d6e782b989d3605b6c2daf936535b02f6182b83f4",
+      "source": "C:/w/admin622-final2-linux/post-exit.json"
+    },
+    {
+      "filename": "SCRUM-622-landing.json",
+      "sha256": "f17ca33b5bd37b3c876a9e11cbea21bbffdbc48c5001916f4dae7c89d02edb20",
+      "source": "C:/w/admin622-landing-results.json"
+    },
+    {
+      "filename": "SCRUM-622-ci.json",
+      "sha256": "02a33438bc028e47fb2181a73f21965170d492a7ebb93de89f99348e4c4b8f38",
+      "source": "C:/w/admin622-ci-results.json"
+    },
+    {
+      "filename": "SCRUM-622-source-comment.json",
+      "sha256": "999ee554697207dd7aa86feed79646695dad233e1511c3d69582aad7d164c66d",
+      "source": "C:/w/admin622-source-comment-confirmed.json"
+    },
+    {
+      "filename": "SCRUM-622-baselines.json",
+      "sha256": "9decb79f040a3cba3e306bc31c14385530a945e90c1c046a034360c75ed3ac57",
+      "source": "C:/w/admin622-baseline-results.json"
+    },
+    {
+      "filename": "SCRUM-622-proof-replay-red.json",
+      "sha256": "40aedd5d1032786a4e12221537c73a8d5ee19c8f25a818fbdad9c4879657b07a",
+      "source": "C:/w/admin622-proof-replay-red.json"
+    },
+    {
+      "filename": "SCRUM-622-proof-replay-green.json",
+      "sha256": "02ad7b9ce6ef41d67013bc76f5a1e9eda7e563fee0809c982d4221a9ee5ebb73",
+      "source": "C:/w/admin622-proof-replay-green.json"
+    },
+    {
+      "filename": "SCRUM-622-proof-boundaries.json",
+      "sha256": "5972b155a1b0128b3790d078ae1a2823e8531abb302b7b0ef99ebc32e7ceed69",
+      "source": "C:/w/admin622-proof-boundaries-review.json"
+    },
+    {
+      "filename": "SCRUM-622-stage-envelope.json",
+      "sha256": "af1a1d2734141df8f74fc92dea3da060a7b184df0deade84fd32a181ae82b09f",
+      "source": "C:/w/admin622-stage-final-envelope.json"
+    },
+    {
+      "filename": "SCRUM-622-staging-results.json",
+      "sha256": "9b3077173aee784cf226c3d415c9ccd7e7a4b1c1c9055925a9e99b0a377b901d",
+      "source": "C:/w/admin622-staging-final-results.json"
+    },
+    {
+      "filename": "SCRUM-622-staging-audit.json",
+      "sha256": "2446f21ea8f67449c05177ac77ce3f6bad4cf9e7f2f697fd9cc601d79dae4b9f",
+      "source": "C:/w/admin622-staging-final-audit.json"
+    },
+    {
+      "filename": "SCRUM-622-image-review.json",
+      "sha256": "f54f2dffdb573fa2b2c9a4d8ef3f9fd0fc3f22b57ac91d19ba39781df7fd60fb",
+      "source": "C:/w/admin622-image-review.json"
+    },
+    {
+      "filename": "SCRUM-622-jira-acceptance.json",
+      "sha256": "5c02ca70bd7fefaecb4f32f58f9c252eb1f7e324fe689305a873b6ef62b9c587",
+      "source": "C:/w/admin622-jira-acceptance.json"
+    },
+    {
+      "filename": "SCRUM-622-proof-replay-v3.json",
+      "sha256": "e180075356335a43dfa81c1b7a08dec37ff1f47a89ce92132824dff53fe8539c",
+      "source": "C:/w/admin622-proof-replay-v3.json"
+    },
+    {
+      "filename": "SCRUM-622-proof-boundaries-v3.json",
+      "sha256": "2580edb1b15c74c4dc3160fc581d1b2e68afe5b5038c52e10d46c3c30421cca2",
+      "source": "C:/w/admin622-proof-boundaries-v3.json"
+    },
+    {
+      "filename": "SCRUM-622-stock-read-red.json",
+      "sha256": "5aef60f51958dec22eb15aaa09c93d0b632d83518926c9237b319414f2a11698",
+      "source": "C:/w/admin622-stock-read-red-final.json"
+    },
+    {
+      "filename": "SCRUM-622-stock-read-green.json",
+      "sha256": "aa47955530bc19c206ce0c12d21ae15d7a805bad366f576f3a470b0910452135",
+      "source": "C:/w/admin622-stock-read-green.json"
+    },
+    {
+      "filename": "SCRUM-622-stock-read-diagnosis.json",
+      "sha256": "42953e792004575b88ba16ccd53ef7266d310c6b30fd545a387517dc639de740",
+      "source": "C:/w/admin622-stock-read-diagnosis.json"
+    },
+    {
+      "filename": "SCRUM-622-prior-partial-review.json",
+      "sha256": "a405f09dd2c08df2ab8a8de9d4a1428c85de86493fd8449d493a0c3e44b94938",
+      "source": "C:/w/admin622-prior-partial-review.json"
+    },
+    {
+      "filename": "SCRUM-622-v3-peer-review.json",
+      "sha256": "a7a0b3bf14c67cfc35a2a8f2e906d065eca0d71476e5ca29da73552d2c5110aa",
+      "source": "C:/w/admin622-v3-peer-review.json"
+    },
+    {
+      "filename": "SCRUM-622-06-final-categories-desktop.png",
+      "sha256": "f04fd733cee125ae36ea290bded33f5b8455d951f952ddec3c6d8ff793fb1cb7",
+      "capturedAt": "2026-10-22T14:27:51.784Z"
+    },
+    {
+      "filename": "SCRUM-622-07-final-modifiers-desktop.png",
+      "sha256": "e28895d01be8000b64b924831aed7f267b96e5a88187f3d282ee31e7826bd2da",
+      "capturedAt": "2026-10-22T14:28:07.717Z"
+    },
+    {
+      "filename": "SCRUM-622-05-final-menu-desktop.png",
+      "sha256": "e56ac253a7a15a12d0237ffd91efcda0a6fe52313c42a7dec67c8cddad117bb9",
+      "capturedAt": "2026-10-22T14:28:35.171Z"
+    },
+    {
+      "filename": "SCRUM-622-08-final-merch-phone.png",
+      "sha256": "2bf0d04dc184310aa93380731a0f33e11fb4c456fc0e20288f26a0994d1ec9a6",
+      "capturedAt": "2026-10-22T14:28:53.607Z"
+    }
+  ],
+  "limits": [
+    "Only the current park catalogue, operator category/library records returned with it, branch and preferences are compared.",
+    "GET /me omits stationId; no station value is observed and no station write is allowed.",
+    "Actual Till and complete historical usage are not exercised.",
+    "Unrelated rows and person details are hidden in evidence.",
+    "Browser error tags remain unclassified; passing stated controls do not establish an error-free browser."
+  ]
+}

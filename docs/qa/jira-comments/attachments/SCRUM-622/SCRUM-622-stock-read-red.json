@@ -1,0 +1,55 @@
+{
+  "ticket": "SCRUM-622",
+  "mode": "offline source-extracted allowlist and request-handler regression",
+  "helper": "C:/w/admin622-evidence-v2.mjs",
+  "helperSha256": "1c6413f908a1abb41451cf8c22079d8a3032a9ab8f35461606f262837a3b91db",
+  "pathSha256": "024420c8ca746d79a7694a95dc4cfffefb2c4ebcb21a38b5ff090805d20fcb84",
+  "passed": false,
+  "cases": 9,
+  "passedCases": 7,
+  "failedCases": 2,
+  "checks": [
+    {
+      "name": "exact current-branch sellable-stock read with no query is allowed",
+      "passed": false
+    },
+    {
+      "name": "real extracted request guard continues only the exact current-branch GET",
+      "passed": false
+    },
+    {
+      "name": "another branch sellable-stock read is refused",
+      "passed": true
+    },
+    {
+      "name": "query-bearing stock reads are refused",
+      "passed": true
+    },
+    {
+      "name": "other origins are refused",
+      "passed": true
+    },
+    {
+      "name": "credential-bearing or fragment-bearing URLs are refused",
+      "passed": true
+    },
+    {
+      "name": "stock reads before the known actor exists remain refused",
+      "passed": true
+    },
+    {
+      "name": "adjacent stock collection or item paths are not added",
+      "passed": true
+    },
+    {
+      "name": "POST PATCH and DELETE stock requests remain blocked before the business boundary",
+      "passed": true
+    }
+  ],
+  "networkRequests": 0,
+  "helperImports": 0,
+  "sourceFilesEdited": 0,
+  "limits": [
+    "Synthetic exact-path guard execution only; no authentication, staging reads/writes, browser rendering or stock mutation."
+  ]
+}

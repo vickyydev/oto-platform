@@ -1,0 +1,32 @@
+{
+  "ticket": "SCRUM-622",
+  "sourceSha": "82a3fac8706a3fa0d53d302712e17fa0c4dfb6e5",
+  "recordedAt": "2026-10-22T14:30:28.329Z",
+  "before": "Testing",
+  "status": "Deployed",
+  "commentId": "12487",
+  "commentCreatedAt": "2026-10-22T21:30:26.331+0700",
+  "commentReadBack": true,
+  "attachments": [
+    {
+      "filename": "SCRUM-622-06-final-categories-desktop.png",
+      "id": "11964",
+      "createdAt": "2026-10-22T21:30:23.760+0700"
+    },
+    {
+      "filename": "SCRUM-622-07-final-modifiers-desktop.png",
+      "id": "11965",
+      "createdAt": "2026-10-22T21:30:24.281+0700"
+    },
+    {
+      "filename": "SCRUM-622-05-final-menu-desktop.png",
+      "id": "11966",
+      "createdAt": "2026-10-22T21:30:24.699+0700"
+    },
+    {
+      "filename": "SCRUM-622-08-final-merch-phone.png",
+      "id": "11967",
+      "createdAt": "2026-10-22T21:30:25.144+0700"
+    }
+  ]
+}

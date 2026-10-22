@@ -1,0 +1,42 @@
+{
+  "ticket": "SCRUM-622",
+  "sourceSha": "82a3fac8706a3fa0d53d302712e17fa0c4dfb6e5",
+  "recordedAt": "2026-10-22T14:30:09.455Z",
+  "passed": true,
+  "images": [
+    {
+      "filename": "SCRUM-622-05-final-menu-desktop.png",
+      "sha256": "e56ac253a7a15a12d0237ffd91efcda0a6fe52313c42a7dec67c8cddad117bb9",
+      "capturedAt": "2026-10-22T14:28:35.171Z",
+      "visuallyReviewed": true
+    },
+    {
+      "filename": "SCRUM-622-06-final-categories-desktop.png",
+      "sha256": "f04fd733cee125ae36ea290bded33f5b8455d951f952ddec3c6d8ff793fb1cb7",
+      "capturedAt": "2026-10-22T14:27:51.784Z",
+      "visuallyReviewed": true
+    },
+    {
+      "filename": "SCRUM-622-07-final-modifiers-desktop.png",
+      "sha256": "e28895d01be8000b64b924831aed7f267b96e5a88187f3d282ee31e7826bd2da",
+      "capturedAt": "2026-10-22T14:28:07.717Z",
+      "visuallyReviewed": true
+    },
+    {
+      "filename": "SCRUM-622-08-final-merch-phone.png",
+      "sha256": "2bf0d04dc184310aa93380731a0f33e11fb4c456fc0e20288f26a0994d1ec9a6",
+      "capturedAt": "2026-10-22T14:28:53.607Z",
+      "visuallyReviewed": true
+    }
+  ],
+  "method": "Each actual PNG opened using view_image and inspected by release coordinator.",
+  "observations": [
+    "Native Category Kitchen/F&B fixture and Edit control are clear.",
+    "Native Modifier row shows the fixture, Choose one, one option and action controls.",
+    "Native imported Menu card shows345.67/389.01 prices, fixture and action controls.",
+    "Native Merch390px card, prices and Edit/Delete controls fit; full page has no horizontal overflow and caption is clear. Its existing read-only restocking summary remains visible; stock is unchanged.",
+    "No person details, benefit QR or payment data is visible. Existing price formatting and name truncation are retained."
+  ],
+  "proofSha256": "9b3077173aee784cf226c3d415c9ccd7e7a4b1c1c9055925a9e99b0a377b901d",
+  "priorPartialImageReviewSha256": "7bca0e64ba3913512b01f9003851d3d89d332ac31ff54f35b7daeb9417796ee8"
+}

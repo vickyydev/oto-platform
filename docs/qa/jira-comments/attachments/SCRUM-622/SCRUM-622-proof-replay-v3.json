@@ -1,0 +1,56 @@
+{
+  "mode": "offline extracted function VM; no helper imports or staging",
+  "helper": "C:/w/admin622-evidence-v3.mjs",
+  "helperSha256": "e517250d8e5faf06539999e21598692db7f92930c48834d97318dfdfb581f400",
+  "sourceExtracted": [
+    "beginOperation",
+    "recordResponse",
+    "settle"
+  ],
+  "passed": true,
+  "cases": 9,
+  "passedCases": 9,
+  "failedCases": 0,
+  "checks": [
+    {
+      "name": "409 replay is unresolved despite the earlier confirmed success",
+      "passed": true
+    },
+    {
+      "name": "500 replay cannot inherit settled from the first response",
+      "passed": true
+    },
+    {
+      "name": "transport uncertainty is unresolved before any new response",
+      "passed": true
+    },
+    {
+      "name": "non-JSON 200 replay cannot confirm a mutation response",
+      "passed": true
+    },
+    {
+      "name": "incorrect JSON 200 replay cannot confirm the expected result",
+      "passed": true
+    },
+    {
+      "name": "checkpoint records the replay as unresolved before dispatch",
+      "passed": true
+    },
+    {
+      "name": "positive replay confirms exactly the original key and body",
+      "passed": true
+    },
+    {
+      "name": "changed-body reuse is rejected without dispatch",
+      "passed": true
+    },
+    {
+      "name": "ambiguous replay recovers with the same captured operation only",
+      "passed": true
+    }
+  ],
+  "networkRequests": 0,
+  "limitations": [
+    "Synthetic response and checkpoint boundary checks only; not browser geometry, authentication or live API acceptance."
+  ]
+}

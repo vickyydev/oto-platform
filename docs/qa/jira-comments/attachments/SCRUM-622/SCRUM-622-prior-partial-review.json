@@ -1,0 +1,29 @@
+{
+  "ticket": "SCRUM-622",
+  "mode": "offline extracted V3 prerequisite function; public bytes only",
+  "helperSha256": "e517250d8e5faf06539999e21598692db7f92930c48834d97318dfdfb581f400",
+  "priorReceiptSha256": "a7b76dfa5732b1bab043feb4efc06921deb8ed14af99ede2ff8da4e7e3d14735",
+  "priorEnvelopeSha256": "32fd4114cbbcca2f025d4fdcbb5fee91045ded77d4e82991995fedeaa88cc0db",
+  "passed": true,
+  "checks": [
+    {
+      "name": "actual immutable restored partial accepted",
+      "passed": true
+    },
+    {
+      "name": "another release refused before authentication",
+      "passed": true
+    },
+    {
+      "name": "changed public receipt bytes refused",
+      "passed": true
+    },
+    {
+      "name": "missing public prerequisite refused",
+      "passed": true
+    }
+  ],
+  "networkRequests": 0,
+  "helperImports": 0,
+  "privateReads": 0
+}

@@ -1,0 +1,101 @@
+{
+  "ticket": "SCRUM-622",
+  "checkedAt": "2026-10-22T14:25:28.044Z",
+  "mode": "offline public-evidence and source-extracted guard regression",
+  "passed": true,
+  "diagnosis": "The native Merch host legitimately requests the current park sellable-stock GET. The V2 proof allowlist omitted that read and refused it before Merch rendered.",
+  "pathSha256": "024420c8ca746d79a7694a95dc4cfffefb2c4ebcb21a38b5ff090805d20fcb84",
+  "sourceEvidence": [
+    {
+      "path": "C:/w/admin-menu/apps/console/src/pages/MenuCatalogue.tsx",
+      "sha256": "065ec3c6aaaedf7646ea6bf04014d26aa839de09451a3a7e98cab17781c394c8",
+      "lines": [
+        12,
+        83
+      ],
+      "meaning": "Merch reads stock when pos:stock:read reaches the selected park."
+    },
+    {
+      "path": "C:/w/admin-menu/apps/console/src/api/menu.ts",
+      "sha256": "6f98a86bbdae37a850174b17e7956ac0519e0c43e6bbdcf9d18bef9420cde2d3",
+      "lines": [
+        7,
+        8
+      ],
+      "meaning": "readMenuStock calls GET /branches/{branchId}/stock/sellable."
+    }
+  ],
+  "priorPartial": {
+    "path": "C:/w/admin622-staging-results.json",
+    "sha256": "a7b76dfa5732b1bab043feb4efc06921deb8ed14af99ede2ff8da4e7e3d14735",
+    "complete": false,
+    "resourcesRestored": true,
+    "authCleanup": {
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    },
+    "blockedRequests": [
+      {
+        "phase": "OPEN_MERCH",
+        "method": "GET",
+        "code": "READ_NOT_ALLOWLISTED",
+        "pathSha256": "024420c8ca746d79a7694a95dc4cfffefb2c4ebcb21a38b5ff090805d20fcb84"
+      }
+    ],
+    "fullAcceptance": false
+  },
+  "runs": [
+    {
+      "path": "C:/w/admin622-stock-read-red-final.json",
+      "sha256": "5aef60f51958dec22eb15aaa09c93d0b632d83518926c9237b319414f2a11698",
+      "helperSha256": "1c6413f908a1abb41451cf8c22079d8a3032a9ab8f35461606f262837a3b91db",
+      "observedExitCode": 1,
+      "cases": 9,
+      "passedCases": 7,
+      "failedCases": 2
+    },
+    {
+      "path": "C:/w/admin622-stock-read-green.json",
+      "sha256": "aa47955530bc19c206ce0c12d21ae15d7a805bad366f576f3a470b0910452135",
+      "helperSha256": "e517250d8e5faf06539999e21598692db7f92930c48834d97318dfdfb581f400",
+      "observedExitCode": 0,
+      "cases": 9,
+      "passedCases": 9,
+      "failedCases": 0
+    }
+  ],
+  "preservedHarnessCorrection": {
+    "cause": "The first local actor-absent assertion expected literal false; the helper returns falsy null. Only the test assertion was changed to Boolean coercion.",
+    "initialOld": {
+      "path": "C:/w/admin622-stock-read-red.json",
+      "sha256": "c9652d7df6c6d0094ecc92a26c64937aced9a42ba5ef961bc47d72dc7b89e2ec",
+      "cases": 9,
+      "passedCases": 6,
+      "failedCases": 3
+    },
+    "initialGreen": {
+      "path": "C:/w/admin622-stock-read-green-initial.json",
+      "sha256": "8607ffbd4aa06bd30af9c23d1deb8dd136df11969a3486fc0a9d600d3036b3a4",
+      "cases": 9,
+      "passedCases": 8,
+      "failedCases": 1
+    }
+  },
+  "priorPrerequisite": {
+    "path": "C:/w/admin622-prior-partial-review.json",
+    "sha256": "a405f09dd2c08df2ab8a8de9d4a1428c85de86493fd8449d493a0c3e44b94938",
+    "passed": true,
+    "checks": 4,
+    "observedExitCode": 0
+  },
+  "networkRequests": 0,
+  "helperImports": 0,
+  "privateReads": 0,
+  "sourceFilesEdited": 0,
+  "limits": [
+    "Exact current-branch no-query read and unchanged stock mutator refusal were exercised in a local VM only.",
+    "No staging session, authentication, application mutation, browser rendering or fresh V3 proof was executed.",
+    "The initial live proof remains partial; cleanup success does not make it full acceptance."
+  ]
+}
