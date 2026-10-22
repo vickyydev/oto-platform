@@ -1,3 +1,5 @@
+import { archiveFailureMessage } from '../../../runtime/organisation';
+import type { OperatorsPanelPorts } from '../../../runtime/organisation';
 import { useAdminScreenRuntime } from '../../../runtime/AdminScreenRuntime';
 import { useCallback, useEffect, useState } from "react";
 import { Archive, Building2, Loader2, Plus, RotateCcw, UserPlus } from "lucide-react";
@@ -15,15 +17,19 @@ import { PhoneInput } from "../../shared/PhoneInput";
  */
 export function OperatorsPanel() {
   const runtime = useAdminScreenRuntime();
-  const toast = runtime.toast;
-  const adminApi = runtime.api.platform.adminApi;
-  const opsApi = runtime.api.platform.opsApi;
+  return <OperatorsPanelWithPorts ports={{ adminApi: runtime.api.platform.adminApi, opsApi: runtime.api.platform.opsApi, toast: runtime.toast, phoneLanguage: runtime.language }} />;
+}
+
+export function OperatorsPanelWithPorts({ ports }: { ports: OperatorsPanelPorts }) {
+  const { adminApi, opsApi, toast, phoneLanguage, renderOperatorActions } = ports;
 
   const [operators, setOperators] = useState<Array<{ id: string; name: string }>>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [newName, setNewName] = useState('');
 
+  const [archiveName, setArchiveName] = useState('');
+  const [archiveError, setArchiveError] = useState<string | null>(null);
   const [pendingArchive, setPendingArchive] = useState<{ id: string; name: string } | null>(null);
   const [adminFor, setAdminFor] = useState<{ id: string; name: string } | null>(null);
   const [adminName, setAdminName] = useState('');
@@ -71,14 +77,22 @@ export function OperatorsPanel() {
     }
   };
 
-  const archive = (id: string) =>
-    adminApi
-      .archiveOperator(id)
-      .then(() => {
-        toast({ title: 'Operator archived', description: 'Hidden from every picker.' });
-        return refresh();
-      })
-      .catch(apiFail("Couldn't archive the operator"));
+  const archive = async (id: string, confirmName: string) => {
+    if (busy) return;
+    setBusy(true);
+    setArchiveError(null);
+    try {
+      await adminApi.archiveOperator(id, confirmName);
+      toast({ title: 'Operator archived', description: 'Hidden from every picker.' });
+      await refresh();
+      setPendingArchive(null);
+      setArchiveName('');
+    } catch (failure) {
+      const message = archiveFailureMessage(failure, 'The operator could not be archived.');
+      setArchiveError(message);
+      toast({ title: "Couldn't archive the operator", description: message, variant: 'destructive' });
+    } finally { setBusy(false); }
+  };
 
   const assignAdmin = async () => {
     if (!adminFor || busy || !adminName.trim() || !adminPhone.trim()) return;
@@ -91,11 +105,13 @@ export function OperatorsPanel() {
       // The administrator exists either way; only the text may have failed.
       toast({
         title: 'Administrator invited',
-        description: res.codeSent
+        description: res.codeSent === true
           ? 'A six-digit setup code has been texted to that number. It lasts 10 minutes and works once.'
-          : (res.warning?.message ??
-            'The administrator was created, but the setup code could not be texted. Send it again from the lock screen.'),
-        variant: res.codeSent ? undefined : 'destructive',
+          : res.codeSent === false
+            ? (res.warning?.message ??
+              'The administrator was created, but the setup code could not be texted. Send it again from the lock screen.')
+            : 'The administrator is recorded. Setup-code delivery was not reported. Check their sign-in account before sending another code.',
+        variant: res.codeSent === false ? 'destructive' : undefined,
       });
       setAdminFor(null);
       setAdminName('');
@@ -165,6 +181,7 @@ export function OperatorsPanel() {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              {renderOperatorActions?.(o, refresh)}
               <Button variant="outline" size="sm" onClick={() => setAdminFor(o)}>
                 <UserPlus className="w-4 h-4" />
                 Assign admin
@@ -174,7 +191,7 @@ export function OperatorsPanel() {
                 size="sm"
                 className="text-destructive"
                 title="Archive (hidden from pickers)"
-                onClick={() => setPendingArchive(o)}
+                onClick={() => { setPendingArchive(o); setArchiveName(''); setArchiveError(null); }}
               >
                 <Archive className="w-4 h-4" />
               </Button>
@@ -211,7 +228,7 @@ export function OperatorsPanel() {
         </div>
       )}
 
-      <AlertDialog open={pendingArchive !== null} onOpenChange={(o) => !o && setPendingArchive(null)}>
+      <AlertDialog open={pendingArchive !== null} onOpenChange={(o) => { if (!o && !busy) setPendingArchive(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Archive operator "{pendingArchive?.name}"?</AlertDialogTitle>
@@ -220,13 +237,18 @@ export function OperatorsPanel() {
               platform admin can unarchive it later.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <label className="flex flex-col gap-2 text-sm font-semibold">Confirm operator name
+            <input value={archiveName} onChange={(event) => setArchiveName(event.target.value)} disabled={busy} className="w-full min-w-0 rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+          </label>
+          {archiveError && <p role="alert" className="text-sm text-destructive [overflow-wrap:anywhere]">{archiveError}</p>}
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => {
-                if (pendingArchive) void archive(pendingArchive.id);
-                setPendingArchive(null);
+              disabled={busy || archiveName !== pendingArchive?.name}
+              onClick={(event) => {
+                event.preventDefault();
+                if (pendingArchive && archiveName === pendingArchive.name) void archive(pendingArchive.id, archiveName);
               }}
             >
               Archive operator
@@ -253,7 +275,7 @@ export function OperatorsPanel() {
               className="w-full h-11 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             />
             <label className="text-sm font-semibold text-foreground/60">Phone</label>
-            <PhoneInput value={adminPhone} onChange={setAdminPhone} />
+            <PhoneInput language={phoneLanguage} value={adminPhone} onChange={setAdminPhone} />
             <Button
               className="mt-2"
               onClick={() => void assignAdmin()}

@@ -9,6 +9,7 @@ import { ClientIdSchema, REPLAY_HEADER, claimClientId } from '../services/client
 import { opCtx, withTx } from '../services/tx';
 import { isPlatformWide } from '../services/permissions';
 import { deliverCode, mintCode, type PendingCode } from '../services/auth';
+import { assertArchiveAllowed, lockOperatorForArchive } from '../services/organisation-archive';
 
 /** SCRUM-27 — platform admin: operators and their administrators. */
 export async function operatorRoutes(app: App): Promise<void> {
@@ -22,7 +23,13 @@ export async function operatorRoutes(app: App): Promise<void> {
 
   app.get(
     '/',
-    { config: { platformWide: true }, schema: { description: 'List operators (archived hidden by default)' } },
+    {
+      config: { platformWide: true },
+      schema: {
+        description: 'List operators (archived hidden by default)',
+        response: { 200: z.object({ operators: z.array(z.object({ id: z.string().uuid(), name: z.string() })) }) },
+      },
+    },
     async (req) => {
       await requirePlatform(req);
       const rows = await app.db.select().from(operator).where(isNull(operator.archivedAt));
@@ -43,6 +50,7 @@ export async function operatorRoutes(app: App): Promise<void> {
           id: ClientIdSchema.optional(),
           name: z.string().min(1),
         }),
+        response: { 200: z.object({ id: z.string().uuid() }) },
       },
     },
     async (req, reply) => {
@@ -82,7 +90,8 @@ export async function operatorRoutes(app: App): Promise<void> {
       schema: {
         description: 'Rename or archive/unarchive an operator',
         params: z.object({ id: z.string().uuid() }),
-        body: z.object({ name: z.string().min(1).optional(), archived: z.boolean().optional() }).strict(),
+        body: z.object({ name: z.string().min(1).optional(), archived: z.boolean().optional(), confirmName: z.string().optional() }).strict(),
+        response: { 200: z.object({ ok: z.literal(true) }) },
       },
     },
     async (req) => {
@@ -93,6 +102,10 @@ export async function operatorRoutes(app: App): Promise<void> {
       if (req.body.name !== undefined) patch.name = req.body.name;
       if (req.body.archived !== undefined) patch.archivedAt = req.body.archived ? new Date() : null;
       return withTx(app.db, opCtx(req), 'operator.update', async (tx) => {
+        const current = req.body.archived === true ? await lockOperatorForArchive(tx, before.id) : before;
+        if (req.body.archived === true) await assertArchiveAllowed(tx, {
+          operatorId: current.id, name: current.name, confirmName: req.body.confirmName,
+        });
         const [after] = await tx.update(operator).set(patch).where(eq(operator.id, req.params.id)).returning();
         await audit.record(tx, {
           actorAccountId: auth.accountId,
@@ -100,7 +113,7 @@ export async function operatorRoutes(app: App): Promise<void> {
           action: 'operator.update',
           entityType: 'operator',
           entityId: req.params.id,
-          before,
+          before: current,
           after,
           requestId: req.id,
         });
@@ -126,6 +139,13 @@ export async function operatorRoutes(app: App): Promise<void> {
           phone: z.string(),
           name: z.string().min(1),
         }),
+        response: { 200: z.object({
+          accountId: z.string().uuid(),
+          // A client-ID replay returns the existing account without sending
+          // another setup message, so it has no delivery result.
+          codeSent: z.boolean().optional(),
+          warning: z.object({ code: z.string(), message: z.string() }).optional(),
+        }) },
       },
     },
     async (req, reply) => {

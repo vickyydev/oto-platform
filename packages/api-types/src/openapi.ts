@@ -691,7 +691,12 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            ok: true;
+                        };
+                    };
                 };
             };
         };
@@ -1980,7 +1985,15 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            operators: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                            }[];
+                        };
+                    };
                 };
             };
         };
@@ -2008,7 +2021,12 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                        };
+                    };
                 };
             };
         };
@@ -2046,6 +2064,7 @@ export interface paths {
                     "application/json": {
                         name?: string;
                         archived?: boolean;
+                        confirmName?: string;
                     };
                 };
             };
@@ -2055,7 +2074,12 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            ok: true;
+                        };
+                    };
                 };
             };
         };
@@ -2096,7 +2120,17 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            accountId: string;
+                            codeSent?: boolean;
+                            warning?: {
+                                code: string;
+                                message: string;
+                            };
+                        };
+                    };
                 };
             };
         };
@@ -2130,7 +2164,22 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            branches: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                                code: string;
+                                timezone: string;
+                                address: string | null;
+                                country: string | null;
+                                openingHours?: unknown;
+                                businessDayStart: string;
+                                archived: boolean;
+                            }[];
+                        };
+                    };
                 };
             };
         };
@@ -2163,7 +2212,22 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            otoApp: {
+                                appBranchId: string | null;
+                                appBranchName: string | null;
+                                /** @enum {string|null} */
+                                status: "PENDING" | "SUCCESS" | "FAILED" | "APP_ONLY" | null;
+                                /** @enum {string|null} */
+                                mappedBy: "core_branch_id" | "name" | "created" | null;
+                                /** @enum {string|null} */
+                                reason: "app_not_installed" | "no_app_anchor" | "ambiguous_name" | null;
+                            } | null;
+                        };
+                    };
                 };
             };
         };
@@ -2195,7 +2259,27 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            installed: boolean;
+                            branches: {
+                                /** Format: uuid */
+                                branchId: string;
+                                branchName: string;
+                                appBranchId: string | null;
+                                appBranchName: string | null;
+                                /** @enum {string|null} */
+                                status: "PENDING" | "SUCCESS" | "FAILED" | "APP_ONLY" | null;
+                                error: string | null;
+                            }[];
+                            appOnly: {
+                                appBranchId: string;
+                                appBranchName: string;
+                                /** @enum {string|null} */
+                                status: "PENDING" | "SUCCESS" | "FAILED" | "APP_ONLY" | null;
+                            }[];
+                        };
+                    };
                 };
             };
         };
@@ -2231,7 +2315,58 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            installed: boolean;
+                            alreadyMapped: number;
+                            matchedByName: {
+                                /** Format: uuid */
+                                branchId: string;
+                                branchName: string;
+                                appBranchId: string;
+                                appBranchName: string;
+                            }[];
+                            created: {
+                                /** Format: uuid */
+                                branchId: string;
+                                branchName: string;
+                                appBranchId: string;
+                            }[];
+                            appOnly: {
+                                appBranchId: string;
+                                appBranchName: string;
+                                marked: boolean;
+                            }[];
+                            ambiguous: {
+                                appBranchId: string;
+                                appBranchName: string;
+                                /** @enum {string} */
+                                why: "two_app_rows" | "two_platform_branches";
+                            }[];
+                            unmapped: {
+                                /** Format: uuid */
+                                branchId: string;
+                                branchName: string;
+                                /** @enum {string} */
+                                reason: "no_app_anchor" | "ambiguous_name";
+                            }[];
+                            caseLowered: {
+                                appBranchId: string;
+                                appBranchName: string;
+                                coreBranchId: string;
+                                canonical: string;
+                                heldBy: string | null;
+                            }[];
+                            caseCollisions: {
+                                appBranchId: string;
+                                appBranchName: string;
+                                coreBranchId: string;
+                                canonical: string;
+                                heldBy: string | null;
+                            }[];
+                            writes: number;
+                        };
+                    };
                 };
             };
         };
@@ -2272,6 +2407,38 @@ export interface paths {
                         country?: string;
                         address?: string;
                         archived?: boolean;
+                        confirmName?: string;
+                        openingHours?: {
+                            mon?: {
+                                open: string;
+                                close: string;
+                            } | null;
+                            tue?: {
+                                open: string;
+                                close: string;
+                            } | null;
+                            wed?: {
+                                open: string;
+                                close: string;
+                            } | null;
+                            thu?: {
+                                open: string;
+                                close: string;
+                            } | null;
+                            fri?: {
+                                open: string;
+                                close: string;
+                            } | null;
+                            sat?: {
+                                open: string;
+                                close: string;
+                            } | null;
+                            sun?: {
+                                open: string;
+                                close: string;
+                            } | null;
+                        } | null;
+                        businessDayStart?: string;
                     };
                 };
             };
@@ -2281,7 +2448,16 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            ok: true;
+                            otoApp: {
+                                appBranchId: string;
+                                appBranchName: string;
+                            } | null;
+                        };
+                    };
                 };
             };
         };
@@ -4980,7 +5156,18 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            holidays: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                                startsOn: string;
+                                endsOn: string;
+                                pricedSales: number;
+                            }[];
+                        };
+                    };
                 };
             };
         };
@@ -5012,7 +5199,12 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                        };
+                    };
                 };
             };
         };
@@ -5050,7 +5242,12 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            ok: true;
+                        };
+                    };
                 };
             };
         };
@@ -5082,7 +5279,12 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            ok: true;
+                        };
+                    };
                 };
             };
         };

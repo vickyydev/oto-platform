@@ -66,6 +66,10 @@ async function loadBranch(app: App, branchId: string, operatorId: string) {
 }
 
 const BranchParams = z.object({ branchId: z.string().uuid() });
+const HolidayListSchema = z.object({ holidays: z.array(z.object({
+  id: z.string().uuid(), name: z.string(), startsOn: z.string(), endsOn: z.string(),
+  pricedSales: z.number().int().nonnegative(),
+})) });
 
 /**
  * A tier code is what a ticket package's price map is keyed by and what
@@ -611,7 +615,7 @@ export async function catalogRoutes(app: App): Promise<void> {
   // --- SCRUM-36: holidays + the pricing-mode resolver ----------------------
   app.get(
     '/branches/:branchId/holidays',
-    { config: { permission: 'catalog:holiday:read', target: { branchId: 'params.branchId' } }, schema: { description: 'Holiday (weekend-pricing) ranges', params: BranchParams } },
+    { config: { permission: 'catalog:holiday:read', target: { branchId: 'params.branchId' } }, schema: { description: 'Holiday (weekend-pricing) ranges', params: BranchParams, response: { 200: HolidayListSchema } } },
     async (req) => {
       const auth = req.requireAuth();
       await loadBranch(app, req.params.branchId, auth.operatorId);
@@ -659,6 +663,7 @@ export async function catalogRoutes(app: App): Promise<void> {
             endsOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
           })
           .refine((b) => b.startsOn <= b.endsOn, { message: 'startsOn must be <= endsOn' }),
+        response: { 200: z.object({ id: z.string().uuid() }) },
       },
     },
     async (req, reply) => {
@@ -737,7 +742,7 @@ export async function catalogRoutes(app: App): Promise<void> {
    */
   app.delete(
     '/branches/:branchId/holidays/:id',
-    { config: { permission: 'catalog:holiday:manage', target: { branchId: 'params.branchId' } }, schema: { description: 'Remove a holiday range; refused once sales were priced by it', params: BranchParams.extend({ id: z.string().uuid() }) } },
+    { config: { permission: 'catalog:holiday:manage', target: { branchId: 'params.branchId' } }, schema: { description: 'Remove a holiday range; refused once sales were priced by it', params: BranchParams.extend({ id: z.string().uuid() }), response: { 200: z.object({ ok: z.literal(true) }) } } },
     async (req) => {
       const auth = req.requireAuth();
       await loadBranch(app, req.params.branchId, auth.operatorId);
@@ -767,7 +772,7 @@ export async function catalogRoutes(app: App): Promise<void> {
           before,
           requestId: req.id,
         });
-        return { ok: true };
+        return { ok: true as const };
       });
     },
   );
@@ -813,6 +818,7 @@ export async function catalogRoutes(app: App): Promise<void> {
           .refine((b) => b.name !== undefined || b.startsOn !== undefined || b.endsOn !== undefined, {
             message: 'give a name, a start date or an end date to change',
           }),
+        response: { 200: z.object({ ok: z.literal(true) }) },
       },
     },
     async (req) => {
@@ -859,7 +865,7 @@ export async function catalogRoutes(app: App): Promise<void> {
           after,
           requestId: req.id,
         });
-        return { ok: true };
+        return { ok: true as const };
       });
     },
   );

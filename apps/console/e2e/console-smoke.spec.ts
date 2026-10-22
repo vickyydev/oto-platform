@@ -118,8 +118,8 @@ test('Branches: both parks are listed', async ({ page }) => {
   await signInAndWait(page);
   await openSection(page, 'Branches');
 
-  await expect(page.getByText(CENTRAL_FLORESTA, { exact: true })).toBeVisible({ timeout: 30_000 });
-  await expect(page.getByText(ROBINSON_CHALONG, { exact: true })).toBeVisible();
+  await expect(page.getByRole('list').getByText(CENTRAL_FLORESTA, { exact: true })).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByRole('list').getByText(ROBINSON_CHALONG, { exact: true })).toBeVisible();
 });
 
 /**

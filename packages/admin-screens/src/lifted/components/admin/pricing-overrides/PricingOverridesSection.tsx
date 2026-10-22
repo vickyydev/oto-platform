@@ -1,5 +1,6 @@
+import type { HolidaysPanelPorts } from '../../../runtime/organisation';
 import { useAdminScreenRuntime } from '../../../runtime/AdminScreenRuntime';
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CalendarRange, Plus, Trash2, Pencil, X, Check } from "lucide-react";
 import { type PricingOverride } from "../../../model/types";
 import { useCatalogStore } from "../../../runtime/AdminScreenRuntime";
@@ -26,11 +27,17 @@ const EMPTY_DRAFT: DraftForm = { name: '', startDate: '', endDate: '' };
  */
 export function PricingOverridesSection() {
   const runtime = useAdminScreenRuntime();
-  const getActiveBranch = runtime.reads.getActiveBranch;
-  const holidaySaleCounts = runtime.api.catalogBridge.holidaySaleCounts;
-
   const { pricingOverrides, mutators } = useCatalogStore();
+  return <PricingOverridesWithPorts ports={{ pricingOverrides, upsertPricingOverride: mutators.upsertPricingOverride, deletePricingOverride: mutators.deletePricingOverride, getActiveBranch: runtime.reads.getActiveBranch, holidaySaleCounts: runtime.api.catalogBridge.holidaySaleCounts }} />;
+}
+
+export function PricingOverridesWithPorts({ ports }: { ports: HolidaysPanelPorts }) {
+  const { pricingOverrides, upsertPricingOverride, deletePricingOverride, getActiveBranch, holidaySaleCounts } = ports;
+  const [writing, setWriting] = useState(false);
+  const [writeError, setWriteError] = useState<string | null>(null);
   const [draft, setDraft] = useState<DraftForm | null>(null);
+  const draftRef = useRef(draft);
+  draftRef.current = draft;
   const [error, setError] = useState<string | undefined>();
 
   /**
@@ -76,8 +83,8 @@ export function PricingOverridesSection() {
     setError(undefined);
   };
 
-  const save = () => {
-    if (!draft) return;
+  const save = async () => {
+    if (!draft || writing) return;
     const name = draft.name.trim();
     if (!name) {
       setError('Enter a name for this range.');
@@ -91,20 +98,38 @@ export function PricingOverridesSection() {
       setError('End date must be on or after the start date.');
       return;
     }
-    mutators.upsertPricingOverride({
+    const submittedDraft = draft;
+    setWriting(true);
+    setWriteError(null);
+    try {
+    await upsertPricingOverride({
       id: draft.id ?? `override-${Date.now().toString(36)}`,
       name,
       startDate: draft.startDate,
       endDate: draft.endDate,
     });
-    setDraft(null);
-    setError(undefined);
+    if (draftRef.current === submittedDraft) {
+      setDraft(null);
+      setError(undefined);
+    }
+    } catch (failure) {
+      const message = failure instanceof Error ? failure.message : 'The holiday could not be saved.';
+      if (draftRef.current === submittedDraft) setError(message);
+      else setWriteError(message);
+    } finally { setWriting(false); }
   };
 
   // Deleting a holiday range flips its dates back to weekday pricing —
   // destructive enough to warrant a confirm (failing-case rule).
   const [pendingDelete, setPendingDelete] = useState<PricingOverride | null>(null);
-  const remove = (id: string) => mutators.deletePricingOverride(id);
+  const remove = async (id: string) => {
+    if (writing) return;
+    setWriting(true);
+    setWriteError(null);
+    try { await deletePricingOverride(id); }
+    catch (failure) { setWriteError(failure instanceof Error ? failure.message : 'The holiday could not be removed.'); }
+    finally { setWriting(false); }
+  };
 
   return (
     <section className="rounded-3xl border border-foreground/10 bg-foreground/[0.02] p-5 sm:p-6">
@@ -125,6 +150,7 @@ export function PricingOverridesSection() {
         )}
       </div>
 
+      {writeError && <p role="alert" className="mt-3 text-sm text-destructive">{writeError}</p>}
       {draft && (
         <div className="mt-5 rounded-2xl border border-primary/30 bg-primary/[0.04] p-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -167,7 +193,7 @@ export function PricingOverridesSection() {
           )}
           {error && <p className="mt-2 text-xs font-medium text-destructive">{error}</p>}
           <div className="mt-4 flex gap-2">
-            <Button onClick={save}>
+            <Button onClick={() => void save()} disabled={writing}>
               <Check className="w-4 h-4" />
               Save
             </Button>
@@ -233,7 +259,7 @@ export function PricingOverridesSection() {
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => {
-                if (pendingDelete) remove(pendingDelete.id);
+                if (pendingDelete) void remove(pendingDelete.id);
                 setPendingDelete(null);
               }}
             >

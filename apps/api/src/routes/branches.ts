@@ -15,6 +15,46 @@ import {
 import { liveOccupancy } from '../services/occupancy';
 import { opCtx, withTx } from '../services/tx';
 import { LiveOccupancyViewSchema } from '@oto/shared';
+import { assertArchiveAllowed, lockActiveOrganisation, lockBranchForArchive } from '../services/organisation-archive';
+
+const HoursClockSchema = z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/, 'HH:MM');
+const HoursDaySchema = z.object({ open: HoursClockSchema, close: HoursClockSchema }).strict().nullable().optional();
+const OpeningHoursSchema = z.object({
+  mon: HoursDaySchema, tue: HoursDaySchema, wed: HoursDaySchema, thu: HoursDaySchema,
+  fri: HoursDaySchema, sat: HoursDaySchema, sun: HoursDaySchema,
+}).strict().nullable();
+const BusinessDayStartSchema = z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/, 'HH:MM or HH:MM:SS');
+const AppSyncStatusSchema = z.enum(['PENDING', 'SUCCESS', 'FAILED', 'APP_ONLY']).nullable();
+const AppMapResultSchema = z.object({
+  appBranchId: z.string().nullable(),
+  appBranchName: z.string().nullable(),
+  status: AppSyncStatusSchema,
+  mappedBy: z.enum(['core_branch_id', 'name', 'created']).nullable(),
+  reason: z.enum(['app_not_installed', 'no_app_anchor', 'ambiguous_name']).nullable(),
+});
+const AppMappingSchema = z.object({
+  installed: z.boolean(),
+  branches: z.array(z.object({
+    branchId: z.string().uuid(), branchName: z.string(),
+    appBranchId: z.string().nullable(), appBranchName: z.string().nullable(),
+    status: AppSyncStatusSchema, error: z.string().nullable(),
+  })),
+  appOnly: z.array(z.object({ appBranchId: z.string(), appBranchName: z.string(), status: AppSyncStatusSchema })),
+});
+const AppIdCaseSchema = z.object({
+  appBranchId: z.string(), appBranchName: z.string(), coreBranchId: z.string(),
+  canonical: z.string(), heldBy: z.string().nullable(),
+});
+const AppReconcileSchema = z.object({
+  installed: z.boolean(), alreadyMapped: z.number().int().nonnegative(),
+  matchedByName: z.array(z.object({ branchId: z.string().uuid(), branchName: z.string(), appBranchId: z.string(), appBranchName: z.string() })),
+  created: z.array(z.object({ branchId: z.string().uuid(), branchName: z.string(), appBranchId: z.string() })),
+  appOnly: z.array(z.object({ appBranchId: z.string(), appBranchName: z.string(), marked: z.boolean() })),
+  ambiguous: z.array(z.object({ appBranchId: z.string(), appBranchName: z.string(), why: z.enum(['two_app_rows', 'two_platform_branches']) })),
+  unmapped: z.array(z.object({ branchId: z.string().uuid(), branchName: z.string(), reason: z.enum(['no_app_anchor', 'ambiguous_name']) })),
+  caseLowered: z.array(AppIdCaseSchema), caseCollisions: z.array(AppIdCaseSchema),
+  writes: z.number().int().nonnegative(),
+});
 
 /** SCRUM-27 — branches (with timezone) under the caller's operator. */
 export async function branchRoutes(app: App): Promise<void> {
@@ -25,6 +65,13 @@ export async function branchRoutes(app: App): Promise<void> {
       schema: {
         description: 'List branches the caller holds (archived hidden unless includeArchived)',
         querystring: z.object({ includeArchived: z.coerce.boolean().default(false) }),
+        response: { 200: z.object({ branches: z.array(z.object({
+          id: z.string().uuid(), name: z.string(), code: z.string(), timezone: z.string(),
+          address: z.string().nullable(), country: z.string().nullable(),
+          // Older JSONB rows have no shape constraint. Read them honestly;
+          // only a new hours write is validated against the weekly format.
+          openingHours: z.unknown().nullable(), businessDayStart: z.string(), archived: z.boolean(),
+        })) }) },
       },
     },
     async (req) => {
@@ -53,6 +100,8 @@ export async function branchRoutes(app: App): Promise<void> {
           name: b.name,
           code: b.code,
           timezone: b.timezone,
+          address: b.address,
+          openingHours: b.openingHours,
           // When the trading day starts (SCRUM-308): the till prices on it, so the
           // till must know it. "05:00:00" as Postgres renders a time column.
           businessDayStart: b.businessDayStart,
@@ -83,6 +132,7 @@ export async function branchRoutes(app: App): Promise<void> {
           country: z.string().optional(),
           address: z.string().optional(),
         }),
+        response: { 200: z.object({ id: z.string().uuid(), otoApp: AppMapResultSchema.nullable() }) },
       },
     },
     async (req, reply) => {
@@ -113,6 +163,7 @@ export async function branchRoutes(app: App): Promise<void> {
       // Everything the operator's estate is judged by hangs off a branch row,
       // so it arrives with the record of who opened it or not at all.
       return withTx(app.db, opCtx(req), 'branch.create', async (tx) => {
+        await lockActiveOrganisation(tx, auth.operatorId);
         await tx.insert(branch).values({ id, operatorId: auth.operatorId, ...fields });
         /**
          * The OTO App's own branch list, in the same transaction (SCRUM-268).
@@ -156,6 +207,7 @@ export async function branchRoutes(app: App): Promise<void> {
       config: { permission: 'admin:branch:read' },
       schema: {
         description: "Each branch's row in the OTO App: mapped, app-only, or not mapped and why",
+        response: { 200: AppMappingSchema },
       },
     },
     async (req) => {
@@ -176,6 +228,7 @@ export async function branchRoutes(app: App): Promise<void> {
       schema: {
         description:
           'Join the OTO App branch rows that already exist to this operator\'s branches (SCRUM-268). Idempotent: a second run writes nothing.',
+        response: { 200: AppReconcileSchema },
       },
     },
     async (req) => {
@@ -225,8 +278,15 @@ export async function branchRoutes(app: App): Promise<void> {
             country: z.string().optional(),
             address: z.string().optional(),
             archived: z.boolean().optional(),
+            confirmName: z.string().optional(),
+            openingHours: OpeningHoursSchema.optional(),
+            businessDayStart: BusinessDayStartSchema.optional(),
           })
           .strict(),
+        response: { 200: z.object({
+          ok: z.literal(true),
+          otoApp: z.object({ appBranchId: z.string(), appBranchName: z.string() }).nullable(),
+        }) },
       },
     },
     async (req) => {
@@ -237,21 +297,25 @@ export async function branchRoutes(app: App): Promise<void> {
         .where(and(eq(branch.id, req.params.id), eq(branch.operatorId, auth.operatorId)))
         .limit(1);
       if (!before) throw errors.notFound('Branch not found');
-      const { archived, ...rest } = req.body;
+      const { archived, confirmName, ...rest } = req.body;
       const patch: Partial<typeof branch.$inferInsert> = { ...rest };
       if (archived !== undefined) patch.archivedAt = archived ? new Date() : null;
       return withTx(app.db, opCtx(req), 'branch.update', async (tx) => {
+        const current = archived === true ? await lockBranchForArchive(tx, auth.operatorId, before.id) : before;
+        if (archived === true) await assertArchiveAllowed(tx, {
+          operatorId: auth.operatorId, branchId: current.id, name: current.name, confirmName,
+        });
         const [after] = await tx.update(branch).set(patch).where(eq(branch.id, req.params.id)).returning();
         // The platform's branch is the record, so its app row follows the name
         // (SCRUM-268) — by id, in this transaction, and only when the name
         // actually moved.
         const otoApp =
-          rest.name !== undefined && rest.name !== before.name
+          rest.name !== undefined && rest.name !== current.name
             ? await syncBranchRenameToApp(
                 tx,
                 { actorAccountId: auth.accountId, operatorId: auth.operatorId, requestId: req.id },
                 // The id as the database spells it, not as the URL did.
-                { branchId: before.id, name: rest.name },
+                { branchId: current.id, name: rest.name },
               )
             : null;
         await audit.record(tx, {
@@ -261,11 +325,11 @@ export async function branchRoutes(app: App): Promise<void> {
           action: 'branch.update',
           entityType: 'branch',
           entityId: req.params.id,
-          before,
+          before: current,
           after: { ...after, otoApp },
           requestId: req.id,
         });
-        return { ok: true, otoApp };
+        return { ok: true as const, otoApp };
       });
     },
   );

@@ -11,7 +11,8 @@
     "./lifted/admin/*": "./src/lifted/components/admin/*.tsx",
     "./lifted/admin-helpers/*": "./src/lifted/components/admin/*.ts",
     "./lifted/runtime": "./src/lifted/runtime/AdminScreenRuntime.tsx",
-    "./lifted/model/*": "./src/lifted/model/*.ts"
+    "./lifted/model/*": "./src/lifted/model/*.ts",
+    "./lifted/organisation": "./src/lifted/runtime/organisation.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",

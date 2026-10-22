@@ -1,4 +1,5 @@
 import type { ApiResponse } from '@oto/api-types';
+import type { AdminApi } from '../../api/admin-api';
 import type { LiftedAdminApi } from '../../api/lifted-api';
 import type { AddOn, TaxableCategory } from '../model/types';
 import { newId as newRecordId } from '@oto/shared';
@@ -70,6 +71,8 @@ export interface ApiBranch {
   /** When the trading day starts, "05:00:00" (SCRUM-308). Absent on an older api. */
   businessDayStart?: string;
   country: string | null;
+  address?: string | null;
+  openingHours?: unknown;
   archived: boolean;
 }
 
@@ -208,14 +211,12 @@ export interface TestPrintTarget {
 }
 
 
-export function createPlatformAdminApi(api: LiftedAdminApi) {
-
-
+export function createOrganisationAdminApi(api: AdminApi) {
 const branchesApi = {
-  list: () => api.get<{ branches: ApiBranch[] }>('/branches'),
+  list: () => api.get<ApiResponse<'/branches/', 'get'>>('/branches'),
   create: (body: { name: string; code: string; timezone?: string; country?: string }) =>
-    api.post<{ id: string }>('/branches', body, { idempotencyKey: idemKey() }),
-  update: (id: string, patch: Record<string, unknown>) => api.patch<{ ok: true }>(`/branches/${id}`, patch),
+    api.post<ApiResponse<'/branches/', 'post'>>('/branches', body, { idempotencyKey: idemKey() }),
+  update: (id: string, patch: Record<string, unknown>) => api.patch<ApiResponse<'/branches/{id}', 'patch'>>(`/branches/${id}`, patch, { idempotencyKey: idemKey() }),
   /** What copying `sourceBranchId` into `branchId` would create. Reads only. */
   clonePreview: (branchId: string, sourceBranchId: string) =>
     api.get<ApiClonePreview>(
@@ -233,6 +234,63 @@ const branchesApi = {
       { idempotencyKey: idemKey() },
     ),
 };
+
+const adminApi = {
+  operators: () => api.get<ApiResponse<'/operators/', 'get'>>('/operators'),
+  createOperator: (name: string) =>
+    api.post<ApiResponse<'/operators/', 'post'>>('/operators', { name }, { idempotencyKey: idemKey() }),
+  renameOperator: (id: string, name: string) => api.patch<ApiResponse<'/operators/{id}', 'patch'>>('/operators/' + id, { name }, { idempotencyKey: idemKey() }),
+  archiveOperator: (id: string, confirmName: string) => api.patch<ApiResponse<'/operators/{id}', 'patch'>>(`/operators/${id}`, { archived: true, confirmName }, { idempotencyKey: idemKey() }),
+  assignOperatorAdmin: (id: string, body: { phone: string; name: string }) =>
+    /** `warning` is an object — see `createAccount` above for what typing it
+     *  as a string cost. */
+    api.post<ApiResponse<'/operators/{id}/administrators', 'post'>>(`/operators/${id}/administrators`, body, { idempotencyKey: idemKey() }),
+};
+
+const opsApi = {
+  /**
+   * Answers rather than refuses, so a console that is not entitled to the
+   * control simply never renders it. `available` is false both for a caller
+   * who is not a platform admin and on a deployment that did not opt in.
+   */
+  demoResetStatus: () =>
+    api.get<{ available: boolean; confirmationPhrase: string; playground?: boolean }>('/ops/demo-reset'),
+  demoReset: (confirm: string) =>
+    api.post<{ deleted: Record<string, number> }>(
+      '/ops/demo-reset',
+      { confirm },
+      { idempotencyKey: idemKey() },
+    ),
+};
+
+const holidaysApi = {
+
+  /**
+   * `pricedSales` is how many sales each range priced. Nonzero means the
+   * platform has frozen its dates (SCRUM-309), so the panel can say why rather
+   * than let a manager find out by being refused.
+   */
+  holidays: (branchId: string) =>
+    api.get<ApiResponse<'/branches/{branchId}/holidays', 'get'>>(`/branches/${branchId}/holidays`),
+  createHoliday: (branchId: string, body: { name: string; startsOn: string; endsOn: string }) =>
+    api.post<ApiResponse<'/branches/{branchId}/holidays', 'post'>>(`/branches/${branchId}/holidays`, body, { idempotencyKey: idemKey() }),
+  /** The name always; the dates only while nothing has been priced by the range. */
+  updateHoliday: (
+    branchId: string,
+    id: string,
+    body: { name?: string; startsOn?: string; endsOn?: string },
+  ) => api.patch<ApiResponse<'/branches/{branchId}/holidays/{id}', 'patch'>>(`/branches/${branchId}/holidays/${id}`, body, { idempotencyKey: idemKey() }),
+  deleteHoliday: (branchId: string, id: string) =>
+    api.delete<ApiResponse<'/branches/{branchId}/holidays/{id}', 'delete'>>(`/branches/${branchId}/holidays/${id}`, { idempotencyKey: idemKey() })
+};
+return { branchesApi, adminApi, opsApi, holidaysApi };
+}
+
+export function createPlatformAdminApi(api: LiftedAdminApi) {
+const { branchesApi, adminApi, opsApi, holidaysApi } = createOrganisationAdminApi(api);
+
+
+
 
 
 const catalogApi = {
@@ -265,31 +323,7 @@ const catalogApi = {
     api.get<{ date: string; mode: 'weekday' | 'weekend'; reason: string; overrideName?: string }>(
       `/branches/${branchId}/pricing-mode${date ? `?date=${date}` : ''}`,
     ),
-  /**
-   * `pricedSales` is how many sales each range priced. Nonzero means the
-   * platform has frozen its dates (SCRUM-309), so the panel can say why rather
-   * than let a manager find out by being refused.
-   */
-  holidays: (branchId: string) =>
-    api.get<{
-      holidays: Array<{
-        id: string;
-        name: string;
-        startsOn: string;
-        endsOn: string;
-        pricedSales: number;
-      }>;
-    }>(`/branches/${branchId}/holidays`),
-  createHoliday: (branchId: string, body: { name: string; startsOn: string; endsOn: string }) =>
-    api.post<{ id: string }>(`/branches/${branchId}/holidays`, body, { idempotencyKey: idemKey() }),
-  /** The name always; the dates only while nothing has been priced by the range. */
-  updateHoliday: (
-    branchId: string,
-    id: string,
-    body: { name?: string; startsOn?: string; endsOn?: string },
-  ) => api.patch<{ ok: true }>(`/branches/${branchId}/holidays/${id}`, body, { idempotencyKey: idemKey() }),
-  deleteHoliday: (branchId: string, id: string) =>
-    api.delete<{ ok: true }>(`/branches/${branchId}/holidays/${id}`),
+  ...holidaysApi,
   taxConfig: (branchId: string) => api.get<{ config: unknown | null }>(`/branches/${branchId}/tax-config`),
   putTaxConfig: (branchId: string, config: unknown) =>
     api.put<{ ok: true }>(`/branches/${branchId}/tax-config`, config),
@@ -431,20 +465,7 @@ const membersApi = {
   tierVerifications: () =>
     api.get<{ verifications: ApiTierVerificationRecord[] }>('/members/tier-verifications'),
 };
-const adminApi = {
-  operators: () => api.get<{ operators: Array<{ id: string; name: string }> }>('/operators'),
-  createOperator: (name: string) =>
-    api.post<{ id: string }>('/operators', { name }, { idempotencyKey: idemKey() }),
-  archiveOperator: (id: string) => api.patch<{ ok: true }>(`/operators/${id}`, { archived: true }),
-  assignOperatorAdmin: (id: string, body: { phone: string; name: string }) =>
-    /** `warning` is an object — see `createAccount` above for what typing it
-     *  as a string cost. */
-    api.post<{
-      accountId: string;
-      codeSent: boolean;
-      warning?: { code: string; message: string };
-    }>(`/operators/${id}/administrators`, body, { idempotencyKey: idemKey() }),
-};
+
 const templatesApi = {
   /**
    * The draft's sample, drawn by the renderer that drives the printer. The
@@ -465,21 +486,7 @@ const templatesApi = {
     ),
 };
 
-const opsApi = {
-  /**
-   * Answers rather than refuses, so a console that is not entitled to the
-   * control simply never renders it. `available` is false both for a caller
-   * who is not a platform admin and on a deployment that did not opt in.
-   */
-  demoResetStatus: () =>
-    api.get<{ available: boolean; confirmationPhrase: string; playground?: boolean }>('/ops/demo-reset'),
-  demoReset: (confirm: string) =>
-    api.post<{ deleted: Record<string, number> }>(
-      '/ops/demo-reset',
-      { confirm },
-      { idempotencyKey: idemKey() },
-    ),
-};
+
 
 return {branchesApi,catalogApi,printApi,membersApi,adminApi,templatesApi,opsApi};
 }

@@ -7,8 +7,12 @@ import type { AdminDomain } from './domain';
 import type { StockModuleHooks } from '../api/stock';
 export { MOCK_MUTATOR_TICKETS, type MockMutatorName } from '../model/mock-mutators';
 
+type PlatformAdminApis = ReturnType<typeof import('../api/platform').createPlatformAdminApi>;
+
 export interface AdminScreenApis {
-  platform: ReturnType<typeof import('../api/platform').createPlatformAdminApi>;
+  platform: Omit<PlatformAdminApis, 'adminApi'> & {
+    adminApi: Pick<PlatformAdminApis['adminApi'], 'operators' | 'createOperator' | 'archiveOperator' | 'assignOperatorAdmin'>;
+  };
   menu: ReturnType<typeof import('../api/menu').createMenuApi>;
   catalogBridge: ReturnType<typeof import('../api/catalogBridge').createCatalogBridge>;
   analyticsReports: ReturnType<typeof import('../api/analyticsReports').createAnalyticsReportsApi>;

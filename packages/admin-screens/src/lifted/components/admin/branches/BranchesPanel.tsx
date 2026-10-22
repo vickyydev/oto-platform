@@ -1,5 +1,7 @@
+import type { BranchesPanelPorts } from '../../../runtime/organisation';
 import { useAdminScreenRuntime } from '../../../runtime/AdminScreenRuntime';
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../../ui/alert-dialog";
 import { Building2, Copy, ChevronDown, AlertTriangle, CheckCircle2, Clock, Plus } from "lucide-react";
 import { useCatalogStore } from "../../../runtime/AdminScreenRuntime";
 import { useBranch } from "../../../runtime/AdminScreenRuntime";
@@ -81,12 +83,14 @@ interface CloneStamp {
 
 export function BranchesPanel() {
   const runtime = useAdminScreenRuntime();
-  const branchesApi = runtime.api.platform.branchesApi;
-  const loadCatalogFromApi = runtime.api.catalogBridge.loadCatalogFromApi;
-
   const { branches, mutators } = useCatalogStore();
-  const { branch: activeBranch, setActiveBranchId } = useBranch();
+  const { branch, setActiveBranchId } = useBranch();
   const { operator } = useOperator();
+  return <BranchesPanelWithPorts ports={{ branches, activeBranch: branch, onSelectBranch: setActiveBranchId, actorName: operator?.name ?? 'Unknown', upsertBranch: mutators.upsertBranch, branchesApi: runtime.api.platform.branchesApi, afterClone: runtime.api.catalogBridge.loadCatalogFromApi }} />;
+}
+
+export function BranchesPanelWithPorts({ ports }: { ports: BranchesPanelPorts }) {
+  const { branches, activeBranch, onSelectBranch: setActiveBranchId, actorName, upsertBranch, branchesApi, afterClone: loadCatalogFromApi, renderBranchDetails, renderBranchActions } = ports;
 
   const [step, setStep] = useState<CloneStep>('idle');
   const [sourceId, setSourceId] = useState<string>('');
@@ -97,6 +101,8 @@ export function BranchesPanel() {
   // Opening a branch (SCRUM-240). `POST /branches` and the write-through have
   // been here since Sprint 1 with no screen calling them, so an operator
   // created in the admin console had no branch and no way to get one.
+  const [writeError, setWriteError] = useState<string | null>(null);
+  const [writing, setWriting] = useState(false);
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState('');
   const [newCode, setNewCode] = useState('');
@@ -104,6 +110,9 @@ export function BranchesPanel() {
   const [newCountry, setNewCountry] = useState('TH');
   const [newTimezone, setNewTimezone] = useState('Asia/Bangkok');
   const zones = timezoneOptions();
+  const addVersion = useRef(0);
+  const addSnapshot = useRef('');
+  addSnapshot.current = JSON.stringify([newName, newCode, codeEdited, newCountry, newTimezone]);
 
   const code = codeEdited ? newCode.trim() : slugify(newName);
   const codeTaken = branches.some((b) => b.id === code);
@@ -111,6 +120,7 @@ export function BranchesPanel() {
   const canCreate = newName.trim().length > 0 && codeValid && !codeTaken;
 
   function resetAdd() {
+    addVersion.current++;
     setAdding(false);
     setNewName('');
     setNewCode('');
@@ -119,25 +129,33 @@ export function BranchesPanel() {
     setNewTimezone('Asia/Bangkok');
   }
 
-  function createBranch() {
-    if (!canCreate) return;
+  async function createBranch() {
+    if (!canCreate || writing) return;
+    const version = addVersion.current;
+    const submittedSnapshot = addSnapshot.current;
+    setWriting(true);
+    setWriteError(null);
+    try {
     // Name, code, timezone and country — everything the schema needs that has
     // no sensible default. Opening hours are deliberately NOT set here: the
     // column is nullable and null means "nobody has said yet", which the box
     // watchdog reads as "do not raise". Guessing them would either page
     // somebody at two in the morning or stay quiet through a busy Saturday.
-    mutators.upsertBranch({
+    await upsertBranch({
       id: code,
       name: newName.trim(),
       country: newCountry.trim() || undefined,
       timezone: newTimezone,
       active: true,
     });
-    resetAdd();
+    if (addVersion.current === version && addSnapshot.current === submittedSnapshot) resetAdd();
+    } catch (error) {
+      setWriteError(error instanceof Error ? error.message : 'The branch could not be created.');
+    } finally { setWriting(false); }
   }
 
   // Branches that can be cloned FROM (any branch except the active/target one).
-  const sourceBranches = branches.filter((b) => b.id !== activeBranch.id);
+  const sourceBranches = branches.filter((b) => b.id !== activeBranch?.id);
 
   function startClone() {
     setSourceId(sourceBranches[0]?.id ?? '');
@@ -155,14 +173,14 @@ export function BranchesPanel() {
    */
   async function confirmSource() {
     const source = branches.find((b) => b.id === sourceId);
-    if (!source?.apiId || !activeBranch.apiId) {
+    if (!source?.apiId || !activeBranch?.apiId) {
       setCloneError('That branch has not been saved to the platform yet, so its catalogue cannot be copied.');
       return;
     }
     setCloneError(null);
     setStep('preview');
     try {
-      setPlan(await branchesApi.clonePreview(activeBranch.apiId, source.apiId));
+      setPlan(await branchesApi.clonePreview(activeBranch?.apiId, source.apiId));
     } catch (err) {
       setPlan(null);
       setCloneError(err instanceof Error ? err.message : 'Could not read the source catalogue.');
@@ -171,21 +189,21 @@ export function BranchesPanel() {
 
   async function runClone() {
     const source = branches.find((b) => b.id === sourceId);
-    if (!source?.apiId || !activeBranch.apiId) return;
+    if (!source?.apiId || !activeBranch?.apiId) return;
     setStep('running');
     setCloneError(null);
     try {
-      const result = await branchesApi.clone(activeBranch.apiId, source.apiId);
+      const result = await branchesApi.clone(activeBranch?.apiId, source.apiId);
       setStamp({
         sourceName: source.name,
-        targetName: activeBranch.name,
-        by: operator?.name ?? 'Unknown',
+        targetName: activeBranch?.name ?? 'a selected branch',
+        by: actorName,
         at: new Date().toISOString(),
         created: result.created,
       });
       // Server truth, not a local copy: the panel has just changed what this
       // branch sells, and every other admin screen reads it from the store.
-      await loadCatalogFromApi(activeBranch.id).catch(() => {});
+      await loadCatalogFromApi(activeBranch?.id).catch(() => {});
       setStep('done');
     } catch (err) {
       setCloneError(err instanceof Error ? err.message : 'The catalogue could not be copied.');
@@ -212,7 +230,7 @@ export function BranchesPanel() {
               branch has its own independent catalog after seeding or cloning.
             </p>
           </div>
-          {!adding && (
+          {!adding && ports.canCreate !== false && (
             <button
               type="button"
               onClick={() => setAdding(true)}
@@ -224,6 +242,7 @@ export function BranchesPanel() {
           )}
         </div>
 
+        {writeError && <div className="px-5 py-3" role="alert"><AdminNoticeBanner>{writeError}</AdminNoticeBanner></div>}
         {adding && (
           <div className="border-b border-foreground/10 px-5 py-5 bg-foreground/[0.02]">
             <div className="grid gap-4 sm:grid-cols-2 max-w-2xl">
@@ -310,8 +329,8 @@ export function BranchesPanel() {
             <div className="flex gap-2 mt-4">
               <button
                 type="button"
-                onClick={createBranch}
-                disabled={!canCreate}
+                onClick={() => void createBranch()}
+                disabled={!canCreate || writing}
                 className="rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40"
               >
                 Create branch
@@ -328,7 +347,7 @@ export function BranchesPanel() {
         )}
         <ul className="divide-y divide-foreground/8">
           {branches.map((b) => {
-            const isActive = b.id === activeBranch.id;
+            const isActive = b.id === activeBranch?.id;
             return (
               <li
                 key={b.id}
@@ -363,11 +382,21 @@ export function BranchesPanel() {
                     {b.country ? `${b.country} · ` : ''}
                     ID: <code className="font-mono">{b.id}</code>
                   </div>
+                  {renderBranchDetails?.(b)}
                 </div>
+                {renderBranchActions?.(b)}
                 {!isActive && b.active && (
                   <button
                     type="button"
-                    onClick={() => setActiveBranchId(b.id)}
+                    disabled={writing}
+                    onClick={() => {
+                      if (writing) return;
+                      setWriting(true);
+                      setWriteError(null);
+                      void Promise.resolve().then(() => setActiveBranchId(b.id))
+                        .catch((error: unknown) => setWriteError(error instanceof Error ? error.message : 'The branch could not be selected.'))
+                        .finally(() => setWriting(false));
+                    }}
                     className="shrink-0 rounded-lg border border-foreground/15 px-3 py-1.5 text-xs font-medium text-foreground/60 hover:text-foreground hover:border-foreground/30 transition-colors"
                   >
                     Switch here
@@ -385,7 +414,7 @@ export function BranchesPanel() {
           <h2 className="font-semibold text-sm">Clone from another branch</h2>
           <p className="text-xs text-foreground/50 mt-0.5">
             Copy the catalog (tickets, menu, tax rules, print templates) from a source
-            branch into <strong>{activeBranch.name}</strong>. After cloning the
+            branch into <strong>{activeBranch?.name ?? 'a selected branch'}</strong>. After cloning the
             branches are fully independent — changing one never affects the other.
           </p>
         </div>
@@ -400,7 +429,9 @@ export function BranchesPanel() {
           {step === 'idle' && (
             <div className="flex flex-col gap-3">
               {stamp && <CloneSuccessBanner stamp={stamp} />}
-              {sourceBranches.length === 0 ? (
+              {!activeBranch ? (
+                <p className="text-sm text-foreground/50 italic">Choose Switch here on a branch before copying its catalogue.</p>
+              ) : sourceBranches.length === 0 ? (
                 <p className="text-sm text-foreground/50 italic">
                   No other branches to clone from. Add more branches to use this
                   feature.
@@ -412,7 +443,7 @@ export function BranchesPanel() {
                   className="inline-flex items-center gap-2 self-start rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity"
                 >
                   <Copy className="w-4 h-4" />
-                  Clone into {activeBranch.name}…
+                  Clone into {activeBranch?.name ?? 'a selected branch'}…
                 </button>
               )}
             </div>
@@ -440,7 +471,7 @@ export function BranchesPanel() {
                 </div>
                 <p className="text-xs text-foreground/40">
                   The next screen lists exactly what would be copied into{' '}
-                  <strong>{activeBranch.name}</strong> and what it already has. Nothing
+                  <strong>{activeBranch?.name ?? 'a selected branch'}</strong> and what it already has. Nothing
                   is written until you confirm it there.
                 </p>
               </div>
@@ -641,4 +672,31 @@ function CloneSuccessBanner({ stamp }: { stamp: CloneStamp }) {
       </div>
     </div>
   );
+}
+
+/** The approved exact-name confirmation, hosted without catalogue state. */
+export function BranchArchiveConfirmation({ name, open, busy, error, onCancel, onConfirm }: {
+  name: string;
+  open: boolean;
+  busy: boolean;
+  error: string | null;
+  onCancel: () => void;
+  onConfirm: (confirmName: string) => Promise<void>;
+}) {
+  const [confirmName, setConfirmName] = useState('');
+  useEffect(() => { if (open) setConfirmName(''); }, [open, name]);
+  return <AlertDialog open={open} onOpenChange={(shown) => { if (!shown && !busy) onCancel(); }}>
+    <AlertDialogContent>
+      <AlertDialogHeader>
+        <AlertDialogTitle>Archive branch "{name}"?</AlertDialogTitle>
+        <AlertDialogDescription>The branch disappears from active pickers. Its data is kept. Active boxes and stations must be moved or archived first. Unsaved edits are not applied.</AlertDialogDescription>
+      </AlertDialogHeader>
+      <label className="flex flex-col gap-2 text-sm font-semibold">Confirm branch name<input value={confirmName} onChange={(event) => setConfirmName(event.target.value)} disabled={busy} className="w-full min-w-0 rounded-lg border border-input bg-background px-3 py-2 text-sm" /></label>
+      {error && <p role="alert" className="text-sm text-destructive [overflow-wrap:anywhere]">{error}</p>}
+      <AlertDialogFooter>
+        <AlertDialogCancel disabled={busy}>Keep branch</AlertDialogCancel>
+        <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={busy || confirmName !== name} onClick={(event) => { event.preventDefault(); if (confirmName === name && !busy) void onConfirm(confirmName); }}>Archive branch</AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>;
 }

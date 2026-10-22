@@ -4,7 +4,7 @@
 // route, so a change to a response is felt in one place per app.
 import type { ApiBody, ApiResponse } from '@oto/api-types';
 import type { UiPreferences } from '@oto/shared/ui-preferences';
-import { api } from './client';
+import { api, idemKey } from './client';
 
 export interface MeResponse {
   account: {
@@ -49,6 +49,8 @@ export const authApi = {
   handoffExchange: (token: string) => api.post<{ ok: true }>('/auth/handoff/exchange', { token }),
   me: () => api.get<MeResponse>('/me'),
   permissions: () => api.get<{ permissions: EffectivePermission[] }>('/me/permissions'),
+  switchBranch: (branchId: string, idempotencyKey: string) =>
+    api.put<ApiResponse<'/me/session/branch', 'put'>>('/me/session/branch', { branchId }, { idempotencyKey }),
 };
 
 export interface BranchRow {
@@ -132,5 +134,5 @@ export interface BranchAppReconcileReport {
 
 export const branchAppApi = {
   mapping: () => api.get<BranchAppMapping>('/branches/oto-app'),
-  reconcile: () => api.post<BranchAppReconcileReport>('/branches/oto-app/reconcile'),
+  reconcile: () => api.post<BranchAppReconcileReport>('/branches/oto-app/reconcile', undefined, { idempotencyKey: idemKey() }),
 };

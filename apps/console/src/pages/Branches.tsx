@@ -1,108 +1,131 @@
-import { useCallback, useEffect, useState } from 'react';
+import { archiveFailureMessage } from '@oto/admin-screens/lifted/organisation';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link2, Loader2, RefreshCw } from 'lucide-react';
+import {
+  BranchArchiveConfirmation,
+  BranchesPanelWithPorts,
+} from '@oto/admin-screens/lifted/admin/branches/BranchesPanel';
 import {
   branchAppApi,
   type BranchAppMapping,
   type BranchAppMappingRow,
   type BranchAppReconcileReport,
 } from '@/api/platform';
+import { apiBranchToBranch, organisationApi, type OrganisationBranch } from '@/api/organisation';
 import { isMissingRoute } from '@/api/client';
 import { Button } from '@/components/ui/button';
-import { ErrorNote, Loading, RouteUnavailable } from '@/components/Panel';
+import { Drawer } from '@/components/Drawer';
+import { ErrorNote, Loading, PermissionRequired, RouteUnavailable } from '@/components/Panel';
 import { StatusMark, type Tone } from '@/components/Status';
-import { CommandBar, placeName } from '@/components/redesign/CommandBar';
+import { CommandBar } from '@/components/redesign/CommandBar';
 import { StatusChip, Tag, TitleChip } from '@/components/redesign/chips';
 import { CardShell, FactLine, FactList, PageGrid, RailNote } from '@/components/redesign/layout';
-import { EmptyNote } from '@/components/redesign/StatTile';
-import { useSession } from '@/auth/SessionContext';
+import { displayName, useSession } from '@/auth/SessionContext';
 
-/**
- * The parks, and whether each one is joined to its row in the OTO App
- * (SCRUM-268), laid out as the approved design draws them (SCRUM-474): one
- * equal card per park and a strip across the foot for what the two lists do
- * not share and the button that reconciles them.
- *
- * Why this page exists at all: the two systems carry two branch lists, and
- * until SCRUM-268 nothing joined them — so a park opened here did not appear
- * there, a rename here did not reach there, and everybody provisioned from the
- * launcher landed in no app branch at all. None of that was visible anywhere.
- * A mapping nobody can see is a mapping nobody trusts, and the first question
- * on the morning it goes wrong is "which branch is not joined".
- *
- * So each card says one of four things, and never guesses between them:
- *
- *   - **mapped** — joined, and which app row it is joined to;
- *   - **app-only** — a row the app has that is deliberately not a park. Head
- *     Office trades nowhere and has no till; it is unmapped by design and is
- *     listed apart rather than shown as a failure;
- *   - **not mapped** — with the reason on the card, because "no app row" and
- *     "two rows it could be" are different things to do something about;
- *   - **not on this deployment** — the OTO App's tables are not here at all,
- *     which is every platform-only environment and is not a fault.
- *
- * The page shows what the mapping route answers and nothing else: a park's
- * trading day, its tax and its stations live on other pages and are not
- * guessed at here.
- */
+/** The original branch controls and the existing mapping, on one branch list. */
 export function Branches() {
-  const { has } = useSession();
-  const canReconcile = has('admin:branch:update');
-
+  const { me, has, permissions, switchBranch } = useSession();
+  const allowed = has('admin:branch:read');
+  const [branches, setBranches] = useState<OrganisationBranch[] | null>(null);
   const [mapping, setMapping] = useState<BranchAppMapping | null>(null);
   const [missing, setMissing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mappingError, setMappingError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [report, setReport] = useState<BranchAppReconcileReport | null>(null);
+  const [editing, setEditing] = useState<OrganisationBranch | null>(null);
+  const request = useRef(0);
+  const editorRequest = useRef(0);
+  const canOperator = (permission: string) =>
+    permissions.some(
+      (grant) =>
+        grant.permission === permission &&
+        grant.scopeType === 'operator' &&
+        (grant.scopeId === null || grant.scopeId === me?.account.operatorId),
+    );
+  const canUpdate = (id: string) =>
+    canOperator('admin:branch:update') ||
+    permissions.some(
+      (grant) =>
+        grant.permission === 'admin:branch:update' &&
+        grant.scopeType === 'branch' &&
+        grant.scopeId === id,
+    );
 
   const load = useCallback(async () => {
+    const current = ++request.current;
     setLoading(true);
     setError(null);
-    try {
-      setMapping(await branchAppApi.mapping());
+    setMappingError(null);
+    const [directory, appMapping] = await Promise.allSettled([
+      organisationApi.branchesApi.list(),
+      branchAppApi.mapping(),
+    ]);
+    if (current !== request.current) return;
+    if (directory.status === 'fulfilled') setBranches(directory.value.branches);
+    else
+      setError(
+        directory.reason instanceof Error
+          ? directory.reason.message
+          : 'The branches could not be read.',
+      );
+    if (appMapping.status === 'fulfilled') {
+      setMapping(appMapping.value);
       setMissing(false);
-    } catch (err) {
-      if (isMissingRoute(err)) {
-        setMissing(true);
-      } else {
-        setError(err instanceof Error ? err.message : 'The branch list could not be read');
-      }
-    } finally {
-      setLoading(false);
+    } else if (isMissingRoute(appMapping.reason)) {
+      setMapping(null);
+      setMissing(true);
+    } else {
+      setMapping(null);
+      setMappingError(
+        appMapping.reason instanceof Error
+          ? appMapping.reason.message
+          : 'The mapping could not be read.',
+      );
     }
+    setLoading(false);
+    if (directory.status === 'rejected') throw directory.reason;
   }, []);
-
   useEffect(() => {
-    void load();
-  }, [load]);
+    if (allowed) void load().catch(() => {});
+    return () => {
+      request.current++;
+    };
+  }, [allowed, load]);
 
   const reconcile = async () => {
+    if (busy) return;
     setBusy(true);
-    setError(null);
+    setMappingError(null);
     try {
       setReport(await branchAppApi.reconcile());
       await load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'The two lists could not be reconciled');
+    } catch (failure) {
+      setMappingError(
+        failure instanceof Error ? failure.message : 'The two lists could not be reconciled.',
+      );
     } finally {
       setBusy(false);
     }
   };
 
-  const parks = mapping?.branches ?? [];
+  if (!allowed) return <PermissionRequired permission="admin:branch:read" />;
+  const views = (branches ?? []).map(apiBranchToBranch);
+  const activeBranch = views.find((row) => row.apiId === me?.branch?.id) ?? null;
   const joined = mapping?.installed
-    ? parks.filter((row) => mappingWords(row, true).tone === 'ok').length
+    ? mapping.branches.filter((row) => mappingWords(row, true).tone === 'ok').length
     : 0;
-
+  const editVersion = editorRequest.current;
   return (
     <>
       <CommandBar
         sectionId="branches"
         badges={
-          mapping && !missing && parks.length > 0 ? (
+          branches ? (
             <TitleChip>
-              {parks.length} park{parks.length === 1 ? '' : 's'}
-              {mapping.installed ? ` · ${joined} joined to the OTO App` : ''}
+              {branches.length} park{branches.length === 1 ? '' : 's'}
+              {mapping?.installed ? ' · ' + joined + ' joined to the OTO App' : ''}
             </TitleChip>
           ) : undefined
         }
@@ -111,53 +134,423 @@ export function Branches() {
             variant="outline"
             size="sm"
             className="h-9 gap-2 rounded-full px-3.5"
-            onClick={() => void load()}
             disabled={loading}
+            onClick={() => void load().catch(() => {})}
           >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+            {loading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <RefreshCw className="w-4 h-4" />
+            )}
             Refresh
           </Button>
         }
       />
-
-      {error && <ErrorNote message={error} onRetry={() => void load()} />}
-
+      {error && <ErrorNote message={error} onRetry={() => void load().catch(() => {})} />}
+      {mappingError && (
+        <ErrorNote message={mappingError} onRetry={() => void load().catch(() => {})} />
+      )}
+      {missing && (
+        <RouteUnavailable
+          what="The branch mapping"
+          detail="The branch controls still use the platform; mapping appears when this deployment carries it."
+        />
+      )}
+      {!branches && loading ? (
+        <Loading what="branches" />
+      ) : (
+        branches && (
+          <BranchesPanelWithPorts
+            key={me?.account.id + ':' + (activeBranch?.apiId ?? 'unseated')}
+            ports={{
+              branches: views,
+              activeBranch,
+              actorName: displayName(me),
+              canCreate: canOperator('admin:branch:create'),
+              branchesApi: organisationApi.branchesApi,
+              upsertBranch: async (branch) => {
+                await organisationApi.branchesApi.create({
+                  name: branch.name,
+                  code: branch.id,
+                  timezone: branch.timezone,
+                  country: branch.country,
+                });
+                await load();
+              },
+              onSelectBranch: async (slug) => {
+                const target = views.find((row) => row.id === slug);
+                if (!target?.apiId)
+                  throw new Error('That branch has not been saved to the platform.');
+                await switchBranch(target.apiId);
+              },
+              afterClone: async () => {
+                await load();
+              },
+              renderBranchDetails: (branch) => {
+                const row = mapping?.branches.find((item) => item.branchId === branch.apiId);
+                return row ? (
+                  <BranchMappingDetails row={row} installed={mapping?.installed ?? false} />
+                ) : (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {missing
+                      ? 'Mapping is not on this deployment.'
+                      : mappingError
+                        ? 'Mapping could not be read.'
+                        : 'No mapping was returned for this park.'}
+                  </p>
+                );
+              },
+              renderBranchActions: (branch) =>
+                canUpdate(branch.apiId ?? '') ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      editorRequest.current++;
+                      setEditing(branches.find((row) => row.id === branch.apiId) ?? null);
+                    }}
+                  >
+                    Edit
+                  </Button>
+                ) : null,
+            }}
+          />
+        )
+      )}
       <PageGrid>
-        {missing ? (
-          <CardShell span={12}>
-            <RouteUnavailable
-              what="The branch mapping"
-              detail="It appears here as soon as this environment is running an API that carries it."
-            />
-          </CardShell>
-        ) : loading && !mapping ? (
-          <CardShell span={12}>
-            <Loading what="branches" />
-          </CardShell>
-        ) : parks.length === 0 ? (
-          <CardShell span={12}>
-            <EmptyNote
-              title="No branches here"
-              detail="Either none is open yet, or this account holds no branch of its own."
-            />
-          </CardShell>
-        ) : (
-          parks.map((row) => (
-            <BranchCard key={row.branchId} row={row} installed={mapping?.installed ?? false} />
-          ))
-        )}
-
         {mapping && !missing && (
           <ReconcileStrip
             mapping={mapping}
-            canReconcile={canReconcile}
+            canReconcile={canOperator('admin:branch:update')}
             busy={busy}
             report={report}
             onReconcile={() => void reconcile()}
           />
         )}
       </PageGrid>
+      {editing && (
+        <BranchEditor
+          key={editing.id + ':' + editVersion}
+          branch={editing}
+          onClose={() => {
+            if (editorRequest.current === editVersion) setEditing(null);
+          }}
+          onSave={async (body) => {
+            await organisationApi.branchesApi.update(editing.id, body);
+            await load();
+          }}
+          onArchive={async (confirmName) => {
+            await organisationApi.branchesApi.update(editing.id, { archived: true, confirmName });
+            await load();
+          }}
+        />
+      )}
     </>
+  );
+}
+
+function BranchMappingDetails({
+  row,
+  installed,
+}: {
+  row: BranchAppMappingRow;
+  installed: boolean;
+}) {
+  const { tone, chip, detail } = mappingWords(row, installed);
+  const drifted = row.appBranchName !== null && row.appBranchName.trim() !== row.branchName.trim();
+  return (
+    <div className="mt-2 flex min-w-0 flex-col gap-2">
+      <div>
+        <StatusChip tone={tone}>{chip}</StatusChip>
+      </div>
+      {drifted && (
+        <p className="text-xs text-muted-foreground break-words">
+          in the OTO App as “{row.appBranchName}”
+        </p>
+      )}
+      <FactList>
+        <FactLine label="OTO App">{detail}</FactLine>
+        {row.appBranchId && (
+          <FactLine label="App row">
+            <span className="font-mono text-xs font-normal break-all">{row.appBranchId}</span>
+          </FactLine>
+        )}
+      </FactList>
+    </div>
+  );
+}
+
+const DAYS = [
+  ['mon', 'Monday'],
+  ['tue', 'Tuesday'],
+  ['wed', 'Wednesday'],
+  ['thu', 'Thursday'],
+  ['fri', 'Friday'],
+  ['sat', 'Saturday'],
+  ['sun', 'Sunday'],
+] as const;
+type DayKey = (typeof DAYS)[number][0];
+type Hours = Partial<Record<DayKey, { open: string; close: string } | null>>;
+function editableHours(raw: unknown): raw is Hours {
+  if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) return false;
+  return Object.entries(raw).every(
+    ([key, value]) =>
+      DAYS.some(([day]) => day === key) &&
+      (value === null ||
+        (typeof value === 'object' &&
+          !Array.isArray(value) &&
+          Object.keys(value).every((field) => field === 'open' || field === 'close') &&
+          typeof value.open === 'string' &&
+          typeof value.close === 'string' &&
+          /^([01]\d|2[0-3]):[0-5]\d$/.test(value.open) &&
+          /^([01]\d|2[0-3]):[0-5]\d$/.test(value.close))),
+  );
+}
+
+function BranchEditor({
+  branch,
+  onClose,
+  onSave,
+  onArchive,
+}: {
+  branch: OrganisationBranch;
+  onClose: () => void;
+  onSave: (body: Record<string, unknown>) => Promise<void>;
+  onArchive: (confirmName: string) => Promise<void>;
+}) {
+  const [name, setName] = useState(branch.name);
+  const [timezone, setTimezone] = useState(branch.timezone);
+  const [dayStart, setDayStart] = useState(branch.businessDayStart ?? '');
+  const initialMode =
+    branch.openingHours === null
+      ? 'unknown'
+      : editableHours(branch.openingHours)
+        ? 'weekly'
+        : 'legacy';
+  const [hoursMode, setHoursMode] = useState(initialMode);
+  const [hours, setHours] = useState<Hours>(() =>
+    editableHours(branch.openingHours) ? branch.openingHours : {},
+  );
+  const [hoursChanged, setHoursChanged] = useState(false);
+  const [archiveOpen, setArchiveOpen] = useState(false);
+  const [archiving, setArchiving] = useState(false);
+  const [archiveError, setArchiveError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const fieldClass =
+    'w-full min-w-0 rounded-xl border border-input bg-background px-3 py-2 text-sm';
+  const save = async () => {
+    if (saving) return;
+    const body: Record<string, unknown> = {};
+    if (!name.trim()) {
+      setError('Enter a branch name.');
+      return;
+    }
+    if (name.trim() !== branch.name) body.name = name.trim();
+    if (timezone !== branch.timezone) body.timezone = timezone;
+    if (dayStart !== (branch.businessDayStart ?? '')) body.businessDayStart = dayStart;
+    if (hoursChanged && hoursMode !== 'legacy') {
+      if (
+        hoursMode === 'weekly' &&
+        Object.values(hours).some((day) => day && (!day.open || !day.close))
+      ) {
+        setError('Enter opening and closing times for every open day.');
+        return;
+      }
+      body.openingHours = hoursMode === 'unknown' ? null : hours;
+    }
+    if (Object.keys(body).length === 0) {
+      onClose();
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      await onSave(body);
+      onClose();
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : 'The branch could not be saved.');
+    } finally {
+      setSaving(false);
+    }
+  };
+  const archive = async (confirmName: string) => {
+    if (archiving || confirmName !== branch.name) return;
+    setArchiving(true);
+    setArchiveError(null);
+    try {
+      await onArchive(confirmName);
+      onClose();
+    } catch (failure) {
+      setArchiveError(archiveFailureMessage(failure, 'The branch could not be archived.'));
+    } finally {
+      setArchiving(false);
+    }
+  };
+  const closeEditor = () => {
+    if (archiveOpen) {
+      if (!archiving) setArchiveOpen(false);
+      return;
+    }
+    onClose();
+  };
+  return (
+    <Drawer
+      title="Edit branch"
+      subtitle={branch.name}
+      onClose={closeEditor}
+      footer={
+        <div className="flex gap-2">
+          <Button disabled={saving} onClick={() => void save()}>
+            Save branch
+          </Button>
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+        </div>
+      }
+    >
+      {error && (
+        <div role="alert">
+          <ErrorNote message={error} />
+        </div>
+      )}
+      <label className="flex flex-col gap-1 text-sm font-semibold">
+        Branch name
+        <input
+          className={fieldClass}
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-sm font-semibold">
+        Timezone
+        <input
+          className={fieldClass}
+          value={timezone}
+          onChange={(event) => setTimezone(event.target.value)}
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-sm font-semibold">
+        Business day start
+        <input
+          className={fieldClass}
+          type="time"
+          step="1"
+          value={dayStart}
+          onChange={(event) => setDayStart(event.target.value)}
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-sm font-semibold">
+        Opening hours
+        <select
+          className={fieldClass}
+          value={hoursMode}
+          onChange={(event) => {
+            setHoursMode(event.target.value as typeof hoursMode);
+            setHoursChanged(true);
+          }}
+        >
+          {initialMode === 'legacy' && <option value="legacy">Stored hours (unchanged)</option>}
+          <option value="unknown">Not set</option>
+          <option value="weekly">Weekly hours</option>
+        </select>
+      </label>
+      {hoursMode === 'unknown' && (
+        <p className="text-sm text-muted-foreground">
+          Opening hours have not been set. This does not mean the park is closed.
+        </p>
+      )}
+      {hoursMode === 'legacy' && (
+        <p className="text-sm text-muted-foreground">
+          The stored hours use a format this editor cannot change. They stay unchanged when other
+          details are saved. Choose Weekly hours or Not set to replace them.
+        </p>
+      )}
+      {hoursMode === 'weekly' && (
+        <div className="flex min-w-0 flex-col gap-3">
+          {DAYS.map(([day, label]) => (
+            <div key={day} className="min-w-0 rounded-xl border p-3">
+              <label className="flex items-center gap-2 text-sm font-semibold">
+                <input
+                  type="checkbox"
+                  checked={!!hours[day]}
+                  onChange={(event) => {
+                    setHoursChanged(true);
+                    setHours((held) => ({
+                      ...held,
+                      [day]: event.target.checked ? { open: '', close: '' } : null,
+                    }));
+                  }}
+                />
+                {label} open
+              </label>
+              {hours[day] && (
+                <div className="mt-2 grid min-w-0 grid-cols-2 gap-2">
+                  <label className="min-w-0 text-xs">
+                    Open
+                    <input
+                      aria-label={label + ' opens'}
+                      className={fieldClass}
+                      type="time"
+                      value={hours[day]?.open ?? ''}
+                      onChange={(event) => {
+                        setHoursChanged(true);
+                        setHours((held) => ({
+                          ...held,
+                          [day]: { open: event.target.value, close: held[day]?.close ?? '' },
+                        }));
+                      }}
+                    />
+                  </label>
+                  <label className="min-w-0 text-xs">
+                    Close
+                    <input
+                      aria-label={label + ' closes'}
+                      className={fieldClass}
+                      type="time"
+                      value={hours[day]?.close ?? ''}
+                      onChange={(event) => {
+                        setHoursChanged(true);
+                        setHours((held) => ({
+                          ...held,
+                          [day]: { open: held[day]?.open ?? '', close: event.target.value },
+                        }));
+                      }}
+                    />
+                  </label>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="rounded-xl border border-destructive/25 p-4">
+        <h3 className="font-semibold">Archive branch</h3>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Hide this branch from active pickers while keeping its records.
+        </p>
+        <Button
+          className="mt-3"
+          variant="outline"
+          disabled={saving || archiving}
+          onClick={() => {
+            setArchiveError(null);
+            setArchiveOpen(true);
+          }}
+        >
+          Archive branch
+        </Button>
+      </div>
+      <BranchArchiveConfirmation
+        name={branch.name}
+        open={archiveOpen}
+        busy={archiving}
+        error={archiveError}
+        onCancel={() => setArchiveOpen(false)}
+        onConfirm={archive}
+      />
+    </Drawer>
   );
 }
 
@@ -167,11 +560,19 @@ function mappingWords(
   installed: boolean,
 ): { tone: Tone; chip: string; detail: string } {
   if (!installed) {
-    return { tone: 'idle', chip: 'Not on this deployment', detail: 'the OTO App is not installed here' };
+    return {
+      tone: 'idle',
+      chip: 'Not on this deployment',
+      detail: 'the OTO App is not installed here',
+    };
   }
   if (row.status === 'APP_ONLY') return { tone: 'idle', chip: 'App-only', detail: 'app-only' };
   if (row.status === 'FAILED') {
-    return { tone: 'down', chip: 'Not mapped', detail: `not mapped — ${row.error ?? 'the join failed'}` };
+    return {
+      tone: 'down',
+      chip: 'Not mapped',
+      detail: `not mapped — ${row.error ?? 'the join failed'}`,
+    };
   }
   if (!row.appBranchId) {
     return {
@@ -181,54 +582,6 @@ function mappingWords(
     };
   }
   return { tone: 'ok', chip: 'Mapped', detail: 'mapped ✓' };
-}
-
-/** The park's two letters, for its tile: "Central Floresta" is CF. */
-function initials(name: string): string {
-  const words = placeName(name).split(/\s+/).filter(Boolean);
-  return (words.length > 1 ? words[0]![0]! + words[1]![0]! : (words[0] ?? '?').slice(0, 2)).toUpperCase();
-}
-
-function BranchCard({ row, installed }: { row: BranchAppMappingRow; installed: boolean }) {
-  const { tone, chip, detail } = mappingWords(row, installed);
-  // The app's own name for the same park, when the two have drifted. Worth
-  // saying: it is what somebody reads inside that app, and a rename here brings
-  // it back into line.
-  const drifted =
-    row.appBranchName !== null && row.appBranchName.trim() !== row.branchName.trim();
-
-  return (
-    <section className="@container min-w-0 flex flex-col gap-3.5 rounded-[20px] border border-card-border bg-card p-5 @4xl:p-6 @2xl:col-span-6 @4xl:col-span-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3">
-          <span
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-primary/10 text-[15px] font-extrabold text-primary"
-            aria-hidden="true"
-          >
-            {initials(row.branchName)}
-          </span>
-          <div className="min-w-0">
-            <h2 className="m-0 text-[16.5px] font-bold break-words">{row.branchName}</h2>
-            {drifted && (
-              <p className="text-[12.5px] text-muted-foreground break-words">
-                in the OTO App as “{row.appBranchName}”
-              </p>
-            )}
-          </div>
-        </div>
-        <StatusChip tone={tone}>{chip}</StatusChip>
-      </div>
-
-      <FactList>
-        <FactLine label="OTO App">{detail}</FactLine>
-        {row.appBranchId && (
-          <FactLine label="App row">
-            <span className="font-mono text-xs font-normal break-all">{row.appBranchId}</span>
-          </FactLine>
-        )}
-      </FactList>
-    </section>
-  );
 }
 
 /**
@@ -288,11 +641,16 @@ function ReconcileStrip({
       {appOnly.length > 0 && (
         <ul className="flex flex-col gap-1.5 pl-[34px]">
           {appOnly.map((row) => (
-            <li key={row.appBranchId} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px]">
+            <li
+              key={row.appBranchId}
+              className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px]"
+            >
               <StatusMark tone="idle" />
               <span className="min-w-0 font-semibold break-words">{row.appBranchName}</span>
               <Tag>app-only</Tag>
-              <span className="text-xs text-muted-foreground">No platform branch, and none expected</span>
+              <span className="text-xs text-muted-foreground">
+                No platform branch, and none expected
+              </span>
             </li>
           ))}
         </ul>
@@ -315,7 +673,8 @@ function ReconcileReport({ report }: { report: BranchAppReconcileReport }) {
     ),
     ...report.unmapped.map((u) => `${u.branchName} has no row in the app (${u.reason}).`),
     ...(report.caseLowered ?? []).map(
-      (c) => `Lower-cased the platform id on the app's “${c.appBranchName}”, so its events reach the till.`,
+      (c) =>
+        `Lower-cased the platform id on the app's “${c.appBranchName}”, so its events reach the till.`,
     ),
   ];
   /**

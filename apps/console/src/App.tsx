@@ -31,6 +31,8 @@ import { AppAccess } from '@/pages/AppAccess';
 import { Employees } from '@/pages/Employees';
 import { Departments } from '@/pages/Departments';
 import { AccessReview } from '@/pages/AccessReview';
+import { Operators } from '@/pages/Operators';
+import { Holidays } from '@/pages/Holidays';
 
 const LAUNCHER_URL = import.meta.env.VITE_LAUNCHER_URL?.trim();
 
@@ -110,9 +112,10 @@ function MustChangePassword() {
 
 /** A section reached by address rather than by the nav that would have hidden it. */
 function Section({ id, children }: { id: string; children: ReactElement }) {
-  const { has } = useSession();
+  const { has, me } = useSession();
   const section = findSection(id);
   if (!section) return <Redirect to={`/${DEFAULT_SECTION}`} />;
+  if (section.platformWide && !me?.isPlatformAdmin) return <PermissionRequired permission={section.permission} />;
   if (!has(section.permission)) return <PermissionRequired permission={section.permission} />;
   return children;
 }
@@ -130,6 +133,8 @@ function NotFound() {
 }
 
 const pageElements: Record<string, ReactElement> = {
+  operators: <Operators />,
+  holidays: <Holidays />,
   accounts: <Accounts />,
   roles: <Roles />,
   'app-access': <AppAccess />,

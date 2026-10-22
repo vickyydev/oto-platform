@@ -13,6 +13,8 @@ export interface ConsoleSection {
   icon: LucideIcon;
   description: string;
   permission: Permission;
+  /** Platform-wide actions are never offered to an operator administrator. */
+  platformWide?: boolean;
 }
 
 export type AreaGate =
@@ -33,6 +35,10 @@ export interface ConsoleNavGroup {
 
 /** Existing pages keep their permissions and their old addresses. */
 export const CONSOLE_SECTIONS: ConsoleSection[] = [
+  { id: 'operators', path: '/organisation/operators', label: 'Operators', icon: Building2,
+    description: 'Platform operators and their administrators.', permission: 'admin:operator:read', platformWide: true },
+  { id: 'holidays', path: '/organisation/holidays', label: 'Holidays', icon: CalendarCheck,
+    description: 'Ticket-pricing holiday and weekend date ranges for a park.', permission: 'catalog:holiday:manage' },
   { id: 'access-review', path: '/people/access-review', label: 'Access review', icon: Shield,
     description: 'Read-only review of wide role holders, account links, recorded sign-ins and required password changes.',
     permission: 'admin:role:read' },
@@ -194,8 +200,8 @@ export const consoleNav: ConsoleNavGroup[] = [
   },
   {
     id: 'organisation', label: 'Organisation', icon: Building2,
-    description: 'Branches and their connection to the OTO App.',
-    gate: { any: ['admin:branch:read'] }, sections: pages('branches'),
+    description: 'Operators, branches, their connection to the OTO App and ticket-pricing holidays.',
+    gate: { any: ['admin:branch:read'] }, sections: pages('operators', 'branches', 'holidays'),
   },
   {
     id: 'catalogue', label: 'Catalogue & money', icon: Ticket,
@@ -259,7 +265,7 @@ export function visibleNavigation(
   isPlatformAdmin: boolean,
 ): ConsoleNavGroup[] {
   return consoleNav.filter((area) => canSeeArea(area, has, isPlatformAdmin))
-    .map((area) => ({ ...area, sections: area.sections.filter((page) => has(page.permission)) }));
+    .map((area) => ({ ...area, sections: area.sections.filter((page) => has(page.permission) && (!page.platformWide || isPlatformAdmin)) }));
 }
 
 export const DEFAULT_SECTION = 'overview';

@@ -232,7 +232,7 @@ export async function meRoutes(app: App): Promise<void> {
    */
   app.put(
     '/session/branch',
-    { config: { auth: 'session' }, schema: { description: 'Switch the active branch, among those the caller holds a grant at', body: z.object({ branchId: z.string().uuid() }) } },
+    { config: { auth: 'session' }, schema: { description: 'Switch the active branch, among those the caller holds a grant at', body: z.object({ branchId: z.string().uuid() }), response: { 200: z.object({ ok: z.literal(true) }) } } },
     async (req) => {
       const auth = req.requireAuth();
       const [br] = await app.db
@@ -276,7 +276,7 @@ export async function meRoutes(app: App): Promise<void> {
           requestId: req.id,
         });
       });
-      return { ok: true };
+      return { ok: true as const };
     },
   );
 

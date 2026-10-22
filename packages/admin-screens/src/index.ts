@@ -10,3 +10,4 @@ export { UnlinkedOtoAppUsers } from './apps/UnlinkedOtoAppUsers';
 export { createAppIdentitiesApi, APP_KEYS, OTO_APP_ROLES, type AppIdentity, type AppKey } from './api/app-identities';
 export { scopeWords } from './roles/presentation';
 export type { LiftedAdminApi, AdminFile, LiftedRequestOptions } from './api/lifted-api';
+export { toast as adminToast } from './hooks/use-toast';

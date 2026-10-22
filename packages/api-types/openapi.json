@@ -532,7 +532,26 @@
         },
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -3225,7 +3244,40 @@
         "description": "List operators (archived hidden by default)",
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "operators": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "operators"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       },
@@ -3257,7 +3309,24 @@
         },
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "required": [
+                    "id"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -3278,6 +3347,9 @@
                   },
                   "archived": {
                     "type": "boolean"
+                  },
+                  "confirmName": {
+                    "type": "string"
                   }
                 },
                 "additionalProperties": false
@@ -3298,7 +3370,26 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -3347,7 +3438,43 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accountId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "codeSent": {
+                      "type": "boolean"
+                    },
+                    "warning": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "accountId"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -3368,7 +3495,69 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "branches": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "timezone": {
+                            "type": "string"
+                          },
+                          "address": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "country": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "openingHours": {
+                            "nullable": true
+                          },
+                          "businessDayStart": {
+                            "type": "string"
+                          },
+                          "archived": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "code",
+                          "timezone",
+                          "address",
+                          "country",
+                          "businessDayStart",
+                          "archived"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "branches"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       },
@@ -3416,7 +3605,75 @@
         },
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "otoApp": {
+                      "type": "object",
+                      "properties": {
+                        "appBranchId": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "appBranchName": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "PENDING",
+                            "SUCCESS",
+                            "FAILED",
+                            "APP_ONLY"
+                          ],
+                          "nullable": true
+                        },
+                        "mappedBy": {
+                          "type": "string",
+                          "enum": [
+                            "core_branch_id",
+                            "name",
+                            "created"
+                          ],
+                          "nullable": true
+                        },
+                        "reason": {
+                          "type": "string",
+                          "enum": [
+                            "app_not_installed",
+                            "no_app_anchor",
+                            "ambiguous_name"
+                          ],
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "appBranchId",
+                        "appBranchName",
+                        "status",
+                        "mappedBy",
+                        "reason"
+                      ],
+                      "additionalProperties": false,
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "otoApp"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -3426,7 +3683,101 @@
         "description": "Each branch's row in the OTO App: mapped, app-only, or not mapped and why",
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "installed": {
+                      "type": "boolean"
+                    },
+                    "branches": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "branchId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "branchName": {
+                            "type": "string"
+                          },
+                          "appBranchId": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "appBranchName": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "PENDING",
+                              "SUCCESS",
+                              "FAILED",
+                              "APP_ONLY"
+                            ],
+                            "nullable": true
+                          },
+                          "error": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "branchId",
+                          "branchName",
+                          "appBranchId",
+                          "appBranchName",
+                          "status",
+                          "error"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "appOnly": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "appBranchId": {
+                            "type": "string"
+                          },
+                          "appBranchName": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "PENDING",
+                              "SUCCESS",
+                              "FAILED",
+                              "APP_ONLY"
+                            ],
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "appBranchId",
+                          "appBranchName",
+                          "status"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "installed",
+                    "branches",
+                    "appOnly"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -3436,7 +3787,234 @@
         "description": "Join the OTO App branch rows that already exist to this operator's branches (SCRUM-268). Idempotent: a second run writes nothing.",
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "installed": {
+                      "type": "boolean"
+                    },
+                    "alreadyMapped": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "matchedByName": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "branchId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "branchName": {
+                            "type": "string"
+                          },
+                          "appBranchId": {
+                            "type": "string"
+                          },
+                          "appBranchName": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "branchId",
+                          "branchName",
+                          "appBranchId",
+                          "appBranchName"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "created": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "branchId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "branchName": {
+                            "type": "string"
+                          },
+                          "appBranchId": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "branchId",
+                          "branchName",
+                          "appBranchId"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "appOnly": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "appBranchId": {
+                            "type": "string"
+                          },
+                          "appBranchName": {
+                            "type": "string"
+                          },
+                          "marked": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "appBranchId",
+                          "appBranchName",
+                          "marked"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "ambiguous": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "appBranchId": {
+                            "type": "string"
+                          },
+                          "appBranchName": {
+                            "type": "string"
+                          },
+                          "why": {
+                            "type": "string",
+                            "enum": [
+                              "two_app_rows",
+                              "two_platform_branches"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "appBranchId",
+                          "appBranchName",
+                          "why"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "unmapped": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "branchId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "branchName": {
+                            "type": "string"
+                          },
+                          "reason": {
+                            "type": "string",
+                            "enum": [
+                              "no_app_anchor",
+                              "ambiguous_name"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "branchId",
+                          "branchName",
+                          "reason"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "caseLowered": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "appBranchId": {
+                            "type": "string"
+                          },
+                          "appBranchName": {
+                            "type": "string"
+                          },
+                          "coreBranchId": {
+                            "type": "string"
+                          },
+                          "canonical": {
+                            "type": "string"
+                          },
+                          "heldBy": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "appBranchId",
+                          "appBranchName",
+                          "coreBranchId",
+                          "canonical",
+                          "heldBy"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "caseCollisions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "appBranchId": {
+                            "type": "string"
+                          },
+                          "appBranchName": {
+                            "type": "string"
+                          },
+                          "coreBranchId": {
+                            "type": "string"
+                          },
+                          "canonical": {
+                            "type": "string"
+                          },
+                          "heldBy": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "appBranchId",
+                          "appBranchName",
+                          "coreBranchId",
+                          "canonical",
+                          "heldBy"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "writes": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "installed",
+                    "alreadyMapped",
+                    "matchedByName",
+                    "created",
+                    "appOnly",
+                    "ambiguous",
+                    "unmapped",
+                    "caseLowered",
+                    "caseCollisions",
+                    "writes"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -3466,6 +4044,153 @@
                   },
                   "archived": {
                     "type": "boolean"
+                  },
+                  "confirmName": {
+                    "type": "string"
+                  },
+                  "openingHours": {
+                    "type": "object",
+                    "properties": {
+                      "mon": {
+                        "type": "object",
+                        "properties": {
+                          "open": {
+                            "type": "string",
+                            "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$"
+                          },
+                          "close": {
+                            "type": "string",
+                            "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$"
+                          }
+                        },
+                        "required": [
+                          "open",
+                          "close"
+                        ],
+                        "additionalProperties": false,
+                        "nullable": true
+                      },
+                      "tue": {
+                        "type": "object",
+                        "properties": {
+                          "open": {
+                            "type": "string",
+                            "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$"
+                          },
+                          "close": {
+                            "type": "string",
+                            "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$"
+                          }
+                        },
+                        "required": [
+                          "open",
+                          "close"
+                        ],
+                        "additionalProperties": false,
+                        "nullable": true
+                      },
+                      "wed": {
+                        "type": "object",
+                        "properties": {
+                          "open": {
+                            "type": "string",
+                            "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$"
+                          },
+                          "close": {
+                            "type": "string",
+                            "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$"
+                          }
+                        },
+                        "required": [
+                          "open",
+                          "close"
+                        ],
+                        "additionalProperties": false,
+                        "nullable": true
+                      },
+                      "thu": {
+                        "type": "object",
+                        "properties": {
+                          "open": {
+                            "type": "string",
+                            "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$"
+                          },
+                          "close": {
+                            "type": "string",
+                            "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$"
+                          }
+                        },
+                        "required": [
+                          "open",
+                          "close"
+                        ],
+                        "additionalProperties": false,
+                        "nullable": true
+                      },
+                      "fri": {
+                        "type": "object",
+                        "properties": {
+                          "open": {
+                            "type": "string",
+                            "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$"
+                          },
+                          "close": {
+                            "type": "string",
+                            "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$"
+                          }
+                        },
+                        "required": [
+                          "open",
+                          "close"
+                        ],
+                        "additionalProperties": false,
+                        "nullable": true
+                      },
+                      "sat": {
+                        "type": "object",
+                        "properties": {
+                          "open": {
+                            "type": "string",
+                            "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$"
+                          },
+                          "close": {
+                            "type": "string",
+                            "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$"
+                          }
+                        },
+                        "required": [
+                          "open",
+                          "close"
+                        ],
+                        "additionalProperties": false,
+                        "nullable": true
+                      },
+                      "sun": {
+                        "type": "object",
+                        "properties": {
+                          "open": {
+                            "type": "string",
+                            "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$"
+                          },
+                          "close": {
+                            "type": "string",
+                            "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$"
+                          }
+                        },
+                        "required": [
+                          "open",
+                          "close"
+                        ],
+                        "additionalProperties": false,
+                        "nullable": true
+                      }
+                    },
+                    "additionalProperties": false,
+                    "nullable": true
+                  },
+                  "businessDayStart": {
+                    "type": "string",
+                    "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d)?$"
                   }
                 },
                 "additionalProperties": false
@@ -3486,7 +4211,44 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "otoApp": {
+                      "type": "object",
+                      "properties": {
+                        "appBranchId": {
+                          "type": "string"
+                        },
+                        "appBranchName": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "appBranchId",
+                        "appBranchName"
+                      ],
+                      "additionalProperties": false,
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "otoApp"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -8957,7 +9719,53 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "holidays": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "startsOn": {
+                            "type": "string"
+                          },
+                          "endsOn": {
+                            "type": "string"
+                          },
+                          "pricedSales": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "startsOn",
+                          "endsOn",
+                          "pricedSales"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "holidays"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       },
@@ -9010,7 +9818,24 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "required": [
+                    "id"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -9040,7 +9865,26 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       },
@@ -9093,7 +9937,26 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }

@@ -79,4 +79,21 @@ describe('SCRUM-609 Admin navigation', () => {
     expect(ROLE_BUNDLES.reception).not.toContain('console:overview:read');
     expect(ROLE_BUNDLES.staff).not.toContain('console:overview:read');
   });
+
+  it('offers Organisation Operators only to a platform-wide account, even when an operator administrator holds the named read permission', () => {
+    const operatorPages = visibleNavigation(has(...ROLE_BUNDLES.operator_admin), false).find(area => area.id === 'organisation')?.sections.map(page => page.id) ?? [];
+    expect(operatorPages).not.toContain('operators');
+    const platformPages = visibleNavigation(has(...ROLE_BUNDLES.platform_admin), true).find(area => area.id === 'organisation')?.sections.map(page => page.id) ?? [];
+    expect(platformPages).toContain('operators');
+    expect(findSection('operators')).toMatchObject({ path: '/organisation/operators', permission: 'admin:operator:read' });
+  });
+
+  it('keeps Holidays on its own pricing permission while retaining the old Branches address', () => {
+    const pagesFor = (...permissions: Permission[]) => visibleNavigation(has('admin:branch:read', ...permissions), false).find(area => area.id === 'organisation')?.sections.map(page => page.id) ?? [];
+    expect(pagesFor()).not.toContain('holidays');
+    expect(pagesFor('catalog:holiday:manage')).toContain('holidays');
+    expect(findSection('holidays')).toMatchObject({ path: '/organisation/holidays', permission: 'catalog:holiday:manage' });
+    expect(sectionForPath('/branches')).toEqual(findSection('branches'));
+    expect(sectionForPath('/organisation/branches')).toEqual(findSection('branches'));
+  });
 });

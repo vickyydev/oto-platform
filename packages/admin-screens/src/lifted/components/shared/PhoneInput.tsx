@@ -1,3 +1,4 @@
+import type { PhoneLanguagePort } from '../../runtime/organisation';
 
 /**
  * Shared phone input with searchable country picker defaulting to Thailand (+66).
@@ -41,6 +42,8 @@ import { CONTACT_CHANNELS, CHANNEL_ICON, CHANNEL_COLOR, CHANNEL_LABEL, normalize
 import { useLanguage } from "../../runtime/AdminScreenRuntime";
 
 interface PhoneInputProps {
+  /** Explicit host translation capability; staff forms keep their original English. */
+  language?: PhoneLanguagePort;
   value: string;
   onChange: (next: string) => void;
   showKeypad?: boolean;
@@ -118,13 +121,18 @@ function CountryPicker({
   onSelect,
   kiosk,
   translate,
+  language,
 }: {
+  language?: PhoneLanguagePort;
   selected: CountryOption;
   onSelect: (c: CountryOption) => void;
   kiosk: boolean;
   translate: boolean;
 }) {
-  const { t } = useLanguage();
+  const t = (key: Parameters<PhoneLanguagePort['t']>[0]) => {
+    if (!language) throw new Error('Translated phone input needs a language capability');
+    return language.t(key);
+  };
   const searchPlaceholder = translate ? t('phoneInput.searchCountry') : 'Search country or code…';
   const noResultsLabel = translate ? t('phoneInput.noResults') : 'No results';
   const selectCountryLabel = translate ? t('phoneInput.selectCountry') : 'Select country code';
@@ -236,7 +244,16 @@ function CountryPicker({
 // ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
-export function PhoneInput({
+export function PhoneInput(props: PhoneInputProps) {
+  return props.translate && !props.language ? <RuntimePhoneInput {...props} /> : <PhoneInputContent {...props} />;
+}
+
+function RuntimePhoneInput(props: PhoneInputProps) {
+  const language = useLanguage();
+  return <PhoneInputContent {...props} language={language} />;
+}
+
+function PhoneInputContent({
   value,
   onChange,
   showKeypad = false,
@@ -247,8 +264,12 @@ export function PhoneInput({
   channel,
   onChannelChange,
   translate = false,
+  language,
 }: PhoneInputProps) {
-  const { t } = useLanguage();
+  const t = (key: Parameters<PhoneLanguagePort['t']>[0]) => {
+    if (!language) throw new Error('Translated phone input needs a language capability');
+    return language.t(key);
+  };
   const resolvedLabel = label !== undefined ? label : translate ? t('phoneInput.label') : 'Phone Number';
   const nationalNumberPlaceholder = translate ? t('phoneInput.nationalNumberPlaceholder') : 'national number';
   const storedAsLabel = translate ? t('phoneInput.storedAs') : 'Stored as:';
@@ -283,7 +304,7 @@ export function PhoneInput({
         {resolvedLabel && <label className="text-foreground/70 text-lg">{resolvedLabel}</label>}
 
         <div className="flex items-stretch gap-2">
-          <CountryPicker selected={country} onSelect={handleCountryChange} kiosk translate={translate} />
+          <CountryPicker selected={country} onSelect={handleCountryChange} kiosk translate={translate} language={language} />
 
           {/* Number display */}
           <div className="h-16 flex-1 rounded-2xl bg-foreground/5 border border-foreground/10 flex items-center px-5 text-3xl font-bold tracking-wider select-none">
@@ -323,7 +344,7 @@ export function PhoneInput({
         </label>
       )}
       <div className="flex items-center gap-2">
-        <CountryPicker selected={country} onSelect={handleCountryChange} kiosk={false} translate={translate} />
+        <CountryPicker selected={country} onSelect={handleCountryChange} kiosk={false} translate={translate} language={language} />
         <input
           type="tel"
           inputMode="numeric"

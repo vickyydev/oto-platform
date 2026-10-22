@@ -79,7 +79,7 @@ export const HAND_TYPED: Record<string, number> = {
   // Described outputs migrated; routes without an output schema retain their DTO.
   'packages/admin-screens/src/lifted/api/checkin.ts': 4,
   'packages/admin-screens/src/lifted/api/menu.ts': 16,
-  'packages/admin-screens/src/lifted/api/platform.ts': 42,
+  'packages/admin-screens/src/lifted/api/platform.ts': 31,
   'packages/admin-screens/src/lifted/api/voucherPromotions.ts': 2,
   'packages/admin-screens/src/lifted/api/wallet.ts': 5,
   'apps/pos/src/lib/displaySession.ts': 1,

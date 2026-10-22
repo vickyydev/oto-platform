@@ -11,6 +11,7 @@ import {
 import type { Permission } from '@oto/shared/permissions';
 import { readUiPreferences } from '@oto/shared/ui-preferences';
 import { authApi, type EffectivePermission, type MeResponse } from '@/api/platform';
+import { ApiError, idemKey } from '@/api/client';
 import { handoffArrival } from '@/auth/handoff';
 import { accountTheme } from '@/lib/theme';
 
@@ -29,6 +30,7 @@ interface SessionValue {
   signIn: (phone: string, password: string) => Promise<void>;
   unlock: (password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  switchBranch: (branchId: string) => Promise<void>;
 }
 
 const SessionContext = createContext<SessionValue | null>(null);
@@ -47,23 +49,25 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [permissions, setPermissions] = useState<EffectivePermission[]>([]);
   const [handoffError, setHandoffError] = useState<string | null>(null);
   const sessionRequest = useRef(0);
+  const branchSwitching = useRef(false);
 
   const load = useCallback(async () => {
     const request = ++sessionRequest.current;
     try {
       const account = await authApi.me();
-      if (request !== sessionRequest.current) return;
+      if (request !== sessionRequest.current) return null;
       const { permissions: effective } = await authApi.permissions();
       // A sign-out, expiry or newer read may have replaced this session while
       // either request was pending. Its old account must not bind writes again.
-      if (request !== sessionRequest.current) return;
+      if (request !== sessionRequest.current) return null;
       setMe(account);
       setPermissions(effective);
       accountTheme.adopt(readUiPreferences(account));
       setHandoffError(null);
       setState('signed-in');
+      return account;
     } catch (error) {
-      if (request !== sessionRequest.current) return;
+      if (request !== sessionRequest.current) return null;
       accountTheme.release();
       throw error;
     }
@@ -154,6 +158,56 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  // A retained callback from an earlier account must never seat the new one.
+  // Capture the render's epoch, then re-check it after each awaited request.
+  const sessionEpoch = sessionRequest.current;
+  const switchBranch = useCallback(async (branchId: string) => {
+    if (sessionEpoch !== sessionRequest.current || state !== 'signed-in' || !me || me.sessionLocked) {
+      throw new Error('Sign in again before switching branch.');
+    }
+    if (branchSwitching.current) throw new Error('A branch switch is already in progress.');
+    branchSwitching.current = true;
+    try {
+      try {
+        await authApi.switchBranch(branchId, idemKey());
+      } catch (failure) {
+        // A lost response or server error may follow a committed switch.
+        // An explicit client refusal keeps its native error and current seat.
+        const refused = failure instanceof ApiError && failure.status >= 400 && failure.status < 500;
+        if (!refused && sessionEpoch === sessionRequest.current) {
+          sessionRequest.current++;
+          setMe(null);
+          setPermissions([]);
+          accountTheme.release();
+          setState('signed-out');
+        }
+        throw failure;
+      }
+      if (sessionEpoch !== sessionRequest.current) throw new Error('The signed-in account changed.');
+      // The write may have moved the server session. Until its canonical read
+      // finishes, the previous branch must offer no active-branch controls.
+      setMe(null);
+      setPermissions([]);
+      setState('loading');
+      const confirmationEpoch = sessionEpoch + 1;
+      try {
+        const current = await load();
+        if (!current || current.branch?.id !== branchId) throw new Error('The selected branch could not be confirmed.');
+      } catch (failure) {
+        if (sessionRequest.current === confirmationEpoch) {
+          sessionRequest.current++;
+          setMe(null);
+          setPermissions([]);
+          accountTheme.release();
+          setState('signed-out');
+        }
+        throw failure;
+      }
+    } finally {
+      branchSwitching.current = false;
+    }
+  }, [load, me, sessionEpoch, state]);
+
   const value = useMemo<SessionValue>(() => {
     const held = new Set(permissions.map((p) => p.permission));
     return {
@@ -166,8 +220,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       signIn,
       unlock,
       signOut,
+      switchBranch,
     };
-  }, [state, me, permissions, handoffError, signIn, unlock, signOut]);
+  }, [state, me, permissions, handoffError, signIn, unlock, signOut, switchBranch]);
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }

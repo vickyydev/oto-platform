@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { and, desc, eq } from 'drizzle-orm';
-import { account, auditLog, operator } from '@oto/db';
+import { account, auditLog, box, branch, operator, station } from '@oto/db';
 import {
   ADMIN,
   CHALONG_BRANCH_CODE,
@@ -108,9 +108,15 @@ describe('an archived operator stops trading (SCRUM-253)', () => {
   });
 
   it('archives it through the platform route', async () => {
+    // Retire only this isolated fixture's fleet before the approved archive.
+    // Its existing session must still work: the operator archive remains the cause of refusal.
+    await ctx.db.update(box).set({ archivedAt: new Date() }).where(eq(box.operatorId, operatorB));
+    await ctx.db.update(station).set({ archivedAt: new Date() }).where(eq(station.operatorId, operatorB));
+    expect((await call('GET', '/me', { cookie: adminBCookie })).statusCode).toBe(200);
+    const [current] = await ctx.db.select({ name: operator.name }).from(operator).where(eq(operator.id, operatorB));
     const archived = await call('PATCH', `/operators/${operatorB}`, {
       cookie: platformCookie,
-      payload: { archived: true },
+      payload: { archived: true, confirmName: current!.name },
     });
     expect(archived.statusCode).toBe(200);
     const [row] = await ctx.db.select().from(operator).where(eq(operator.id, operatorB)).limit(1);
@@ -235,9 +241,13 @@ describe('an archived branch stops trading (SCRUM-253)', () => {
   });
 
   it('archives the branch', async () => {
+    await ctx.db.update(box).set({ archivedAt: new Date() }).where(eq(box.branchId, chalongId));
+    await ctx.db.update(station).set({ archivedAt: new Date() }).where(eq(station.branchId, chalongId));
+    expect((await call('GET', '/me', { cookie: chalongCookie })).statusCode).toBe(200);
+    const [current] = await ctx.db.select({ name: branch.name }).from(branch).where(eq(branch.id, chalongId));
     const archived = await call('PATCH', `/branches/${chalongId}`, {
       cookie: adminCookie,
-      payload: { archived: true },
+      payload: { archived: true, confirmName: current!.name },
     });
     expect(archived.statusCode).toBe(200);
   });

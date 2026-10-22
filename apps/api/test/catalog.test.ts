@@ -5,6 +5,7 @@ import {
   branch,
   branchHoliday,
   member,
+  operator,
   paymentAttempt,
   sale,
   saleDiscount,
@@ -311,11 +312,12 @@ describe('SCRUM-27 — operators and branches', () => {
     });
     expect(adminRes.statusCode).toBe(200);
 
+    const [persistedOperator] = await ctx.db.select({ name: operator.name }).from(operator).where(eq(operator.id, opId)).limit(1);
     const archived = await ctx.app.inject({
       method: 'PATCH',
       url: `/operators/${opId}`,
       headers: { cookie },
-      payload: { archived: true },
+      payload: { archived: true, confirmName: persistedOperator!.name },
     });
     expect(archived.statusCode).toBe(200);
     const list = await ctx.app.inject({ method: 'GET', url: '/operators', headers: { cookie } });
@@ -331,12 +333,14 @@ describe('SCRUM-27 — operators and branches', () => {
     });
     expect(create.statusCode).toBe(200);
     const id = create.json().id as string;
-    await ctx.app.inject({
+    const [persistedBranch] = await ctx.db.select({ name: branch.name }).from(branch).where(eq(branch.id, id)).limit(1);
+    const archived = await ctx.app.inject({
       method: 'PATCH',
       url: `/branches/${id}`,
       headers: { cookie },
-      payload: { archived: true },
+      payload: { archived: true, confirmName: persistedBranch!.name },
     });
+    expect(archived.statusCode).toBe(200);
     const list = await ctx.app.inject({ method: 'GET', url: '/branches', headers: { cookie } });
     expect(list.json().branches.some((b: { id: string }) => b.id === id)).toBe(false);
   });

@@ -50,6 +50,7 @@ import { atBranch } from '../lib/staff-scope';
 import { mintStaffToken, staffTokenSettings, type MintedStaffToken } from './staff-token';
 import { withTx, type Exec, type OpContext } from './tx';
 import type { Env } from '../env';
+import { lockActiveOrganisation } from './organisation-archive';
 
 /**
  * The ordinary HTTP surface of the fleet (S2-04): the estate an administrator
@@ -1186,6 +1187,7 @@ export async function createStation(
   const id = claim.id;
   try {
     return await withTx(db, ctx, 'station.create', async (tx) => {
+      await lockActiveOrganisation(tx, actor.operatorId, branchId);
       await tx.insert(station).values({
         id,
         operatorId: actor.operatorId,
@@ -1494,6 +1496,7 @@ export async function createBox(
   let code!: { code: string; expiresAt: Date };
   try {
     const created = await withTx(db, ctx, 'box.create', async (tx) => {
+      await lockActiveOrganisation(tx, actor.operatorId, branchId);
       await tx.insert(box).values({
         id,
         operatorId: actor.operatorId,
