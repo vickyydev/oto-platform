@@ -1,0 +1,122 @@
+{
+  "ticket": "SCRUM-615",
+  "releaseSha": "5246c134ec1c0fbaab6f0fbfec592e2c36c12613",
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "sourceSha": "5246c134ec1c0fbaab6f0fbfec592e2c36c12613",
+      "deployId": "dep-dbcmvcuk1f9s73ardhs0",
+      "finishedAt": "2026-10-22T02:09:42.869361Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "sourceSha": "5246c134ec1c0fbaab6f0fbfec592e2c36c12613",
+      "deployId": "dep-dbcmvcuk1f9s73ardkmg",
+      "finishedAt": "2026-10-22T02:07:32.059483Z"
+    }
+  ],
+  "checks": [
+    {
+      "code": "ADMIN_MEMBER_COUNTS_MATCH_VISIBLE_EMPLOYEE_LINKS",
+      "passed": true,
+      "at": "2026-10-22T02:10:34.755Z"
+    },
+    {
+      "code": "SEEDED_PARK_DIRECTORY_READ_ONLY",
+      "passed": true,
+      "at": "2026-10-22T02:10:38.974Z"
+    },
+    {
+      "code": "OPERATOR_WIDE_DEPARTMENT_READ_ONLY",
+      "passed": true,
+      "at": "2026-10-22T02:10:42.232Z"
+    },
+    {
+      "code": "MANAGER_SCOPE_COUNTS_AND_PHONE",
+      "passed": true,
+      "at": "2026-10-22T02:10:52.781Z"
+    }
+  ],
+  "screenshots": [
+    {
+      "filename": "SCRUM-615-01-park-member-count.png",
+      "capturedAt": "2026-10-22T02:10:37.604Z",
+      "capturedAfterDeploy": true,
+      "departmentId": "01a0bbdc-8c46-7b87-8f65-5d61156ad636",
+      "content": {
+        "wholeRowInViewport": true,
+        "headingInViewport": true,
+        "factGroupsInViewport": 2,
+        "allFactGroups": 2
+      },
+      "sha256": "6b0c8ee217c08c93fbeca71ef31b1ebae2528abe1aceaed01334d7b3bf981095",
+      "inspectedForPrivacyAndContent": true,
+      "jiraAttachmentId": "11929"
+    },
+    {
+      "filename": "SCRUM-615-02-operator-wide-department.png",
+      "capturedAt": "2026-10-22T02:10:41.019Z",
+      "capturedAfterDeploy": true,
+      "departmentId": "01a1562e-64e5-7988-ab65-02f337aa53de",
+      "content": {
+        "wholeRowInViewport": true,
+        "headingInViewport": true,
+        "factGroupsInViewport": 2,
+        "allFactGroups": 2
+      },
+      "sha256": "eda2574a2f6d206406150ce6424b8854958442d8abd91d0ce2bf0af501940d8f",
+      "inspectedForPrivacyAndContent": true,
+      "jiraAttachmentId": "11930"
+    },
+    {
+      "filename": "SCRUM-615-03-manager-phone.png",
+      "capturedAt": "2026-10-22T02:10:51.306Z",
+      "capturedAfterDeploy": true,
+      "departmentId": "01a0bbdc-8c46-7b87-8f65-5d61156ad636",
+      "content": {
+        "wholeRowInViewport": true,
+        "headingInViewport": true,
+        "factGroupsInViewport": 2,
+        "allFactGroups": 2
+      },
+      "sha256": "f9731ff17a4c3a361d2610273d85c425bd3ac40e82cefea833e8d0f1604e07bb",
+      "inspectedForPrivacyAndContent": true,
+      "jiraAttachmentId": "11931"
+    }
+  ],
+  "blockedRequests": [],
+  "counts": {
+    "businessWrites": 0,
+    "smsRequests": 0,
+    "fixturesCreated": 0,
+    "blockedWrites": 0,
+    "omittedAuditReads": 0,
+    "adminDepartments": 11,
+    "managerDepartments": 4
+  },
+  "complete": true,
+  "adminDirectoryFingerprint": "9b0dc3fb42d40015e51b31e1ed146a9801206b384fda424e3dd45fde4f7deb5c",
+  "adminSignOutStatus": 200,
+  "managerDirectoryFingerprint": "4e9d3ad75db6cf50bdfcaed9984b3ef53592921504e792efe1a4007d25220ae7",
+  "phoneLayout": {
+    "viewport": 390,
+    "page": 390
+  },
+  "managerSignOutStatus": 200,
+  "completedAt": "2026-10-22T02:10:54.610Z",
+  "reviewedAt": "2026-10-22T02:12:09.641Z",
+  "review": {
+    "coordinatorInspectedAllImages": true,
+    "helper": {
+      "path": "C:/w/admin615-evidence.mjs",
+      "sha256": "b9772ad2eb05354dbac9e4adaa2b8f214bd982c57075fbcd94d7d0d9fde1beec",
+      "bytes": 11967
+    },
+    "guardReview": {
+      "path": "C:/w/admin615-proof-review-results.json",
+      "sha256": "9e1d48efed811e46f86a2650abc7b82195fe74cef73593fc88e88487f9fb3bc4",
+      "bytes": 6950
+    },
+    "localGuardChecks": 66
+  }
+}
