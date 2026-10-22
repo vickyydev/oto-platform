@@ -1,0 +1,99 @@
+{
+  "ticket": "SCRUM-623",
+  "kind": "Independent bounded public partial-outcome audit",
+  "passed": true,
+  "fullAcceptance": false,
+  "checkedAt": "2026-10-22T23:06:53.520573+07:00",
+  "sourceSha": "5ddb61408a0d931802fd2f86f307ab058878dd34",
+  "helperSha256": "dd8495ceaddfcb8da7148ca6323648669bf0c47e552dad70c47d2f757cf6843d",
+  "proof": {
+    "path": "C:\\w\\admin623-staging-results.json",
+    "sha256": "0c6cd31b0e7ac4852510e119c87da69996c911200047fdc17d28b407bdf3194e"
+  },
+  "envelope": {
+    "path": "C:\\w\\admin623-stage-envelope.json",
+    "sha256": "684b8982974c0a7af9d3329d981b1c6f64cea7fbe0691fbe5a6f664417ca9151"
+  },
+  "checks": [
+    {
+      "name": "Exact source and V2 helper identifiers match both public receipts",
+      "passed": true
+    },
+    {
+      "name": "Envelope binds actual raw proof bytes",
+      "passed": true
+    },
+    {
+      "name": "Partial outcome and actual exit1 are retained",
+      "passed": true
+    },
+    {
+      "name": "Three exact declared deployment IDs/times remain stable",
+      "passed": true
+    },
+    {
+      "name": "Attempt and two checks occurred after all three declared live finishes",
+      "passed": true
+    },
+    {
+      "name": "Exactly two safety checks; no feature proof is claimed",
+      "passed": true
+    },
+    {
+      "name": "No business operations, fixtures, audits or images were produced",
+      "passed": true
+    },
+    {
+      "name": "No blocked requests or classified browser errors are recorded",
+      "passed": true
+    },
+    {
+      "name": "All forbidden-write counters remain zero",
+      "passed": true
+    },
+    {
+      "name": "Original active-row baseline hashes equal after cleanup",
+      "passed": true
+    },
+    {
+      "name": "One fresh seeded session has confirmed safety logout",
+      "passed": true
+    },
+    {
+      "name": "Event write skip and planned count do not become performed work",
+      "passed": true
+    },
+    {
+      "name": "Absent image freshness/hash proof stays explicitly false",
+      "passed": true
+    }
+  ],
+  "metrics": {
+    "safetyChecks": 2,
+    "auditPins": 13,
+    "operations": 0,
+    "businessAttempts": 0,
+    "fixtureCreates": 0,
+    "images": 0,
+    "businessAuditRows": 0,
+    "blockedRequests": 0,
+    "browserErrorKinds": 0,
+    "signIns": 1,
+    "signOuts": 1,
+    "signOutStatus": 200,
+    "signedOutMeStatus": 401,
+    "eventWriteSkips": 1,
+    "plannedNotPerformedLogicalOperations": 12,
+    "resourcesRestored": true,
+    "stableDeclaredDeployments": 3
+  },
+  "outcome": "OPEN_DISCOUNTS TimeoutError before business dispatch; only safety, restoration and stable release bindings pass.",
+  "limits": [
+    "Public receipts only; no private journal, authentication, network or staging API/browser access.",
+    "Deployment bindings are compared between public envelope observations, not independently queried live.",
+    "No PNGs or feature acceptance. Envelope image freshness and image hash match remain false because zero images exist.",
+    "Tax preflight was writable but no Tax/Event or other business mutation dispatched. The event skip reason is intentionally combined; this audit does not infer whether configuration or authority was absent.",
+    "Catalogue/branch/preferences baseline equality is the recorded hash comparison, not a new independent database read.",
+    "No Till, station restoration, campaign mint/export, QR, redemption or complete historical usage claim."
+  ]
+}

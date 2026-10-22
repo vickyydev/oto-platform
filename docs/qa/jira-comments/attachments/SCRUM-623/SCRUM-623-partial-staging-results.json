@@ -1,0 +1,103 @@
+{
+  "ticket": "SCRUM-623",
+  "helperFilename": "admin623-evidence-v2.mjs",
+  "helperSha256": "dd8495ceaddfcb8da7148ca6323648669bf0c47e552dad70c47d2f757cf6843d",
+  "releaseSha": "5ddb61408a0d931802fd2f86f307ab058878dd34",
+  "startedAt": "2026-10-22T16:04:25.938Z",
+  "complete": false,
+  "resourcesRestored": true,
+  "checks": [
+    {
+      "name": "EXACT_SEEDED_ACTOR_AND_LOSSLESS_PREFLIGHT",
+      "passed": true,
+      "checkedAt": "2026-10-22T16:04:41.252Z"
+    },
+    {
+      "name": "SIGNOUT200_AND_ME401",
+      "passed": true,
+      "checkedAt": "2026-10-22T16:05:16.863Z"
+    }
+  ],
+  "screenshots": [],
+  "operations": [],
+  "audits": [],
+  "blockedRequests": [],
+  "browserErrorKinds": [],
+  "skips": [
+    {
+      "surface": "event-pricing",
+      "reason": "EXISTING_CONFIGURED_EXACT_PRICES_OR_AUTHORITY_NOT_ESTABLISHED",
+      "writes": 0
+    }
+  ],
+  "counts": {
+    "signIns": 1,
+    "signOuts": 1,
+    "fixtureCreates": 0,
+    "businessAttempts": 0,
+    "blockedReads": 0,
+    "blockedWrites": 0,
+    "publicAssetReads": 4,
+    "SMS": 0,
+    "paymentWrites": 0,
+    "equipmentWrites": 0,
+    "otherBusinessWrites": 0
+  },
+  "limitations": [
+    "Campaign rules and controls only: no mint, bearer codes, CSV, QR download, publication or redemption.",
+    "Current-park configuration values and original active catalogue rows are compared, not a complete ledger or historical usage.",
+    "No Till or station/session workflow is exercised; /me does not expose stationId.",
+    "Tax/event writes are skipped unless an existing configuration is exactly restorable.",
+    "Unrelated rows, person details and QR values are hidden. Browser error tags remain unclassified.",
+    "Audit reads may cause an approved server audit-access row; only the named business audit rows are counted."
+  ],
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "deployId": "dep-dbd35049v7es73c6piq0",
+      "sourceSha": "5ddb61408a0d931802fd2f86f307ab058878dd34",
+      "finishedAt": "2026-10-22T16:01:18.61569Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "deployId": "dep-dbd35049v7es73c6pjrg",
+      "sourceSha": "5ddb61408a0d931802fd2f86f307ab058878dd34",
+      "finishedAt": "2026-10-22T15:58:35.150771Z"
+    },
+    {
+      "name": "oto-pos-staging",
+      "deployId": "dep-dbd350c9v7es73c6pk0g",
+      "sourceSha": "5ddb61408a0d931802fd2f86f307ab058878dd34",
+      "finishedAt": "2026-10-22T15:58:40.314539Z"
+    }
+  ],
+  "actor": {
+    "id": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+    "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+  },
+  "freshStorage": true,
+  "expectedLogicalOperations": 12,
+  "diagnostic": "ASSERTION_OR_RUNTIME_FAILED",
+  "failedPhase": "OPEN_DISCOUNTS",
+  "errorName": "TimeoutError",
+  "baselineRestored": {
+    "original": "58c062c99d24fecf6a68d6677111424ec96b005cfcc94def95ba9b295bf20c60",
+    "after": "58c062c99d24fecf6a68d6677111424ec96b005cfcc94def95ba9b295bf20c60",
+    "branch": "ff1408f7b8cf4f693cbd2f6e6a82a0e79e347415fdeb0f1886ea0d49d4ded535",
+    "preferences": "00df943c543d230f9e93ceca1038b659220a9779f4d70ae1b114715829458881",
+    "tax": "f406d20c481cfaa35ffca2f3c3443cff85ca20d85ece3721d66bd7516e4f8af5",
+    "event": null
+  },
+  "authCleanup": {
+    "signOutStatus": 200,
+    "meStatus": 401,
+    "confirmed": true
+  },
+  "authState": {
+    "signInAttempted": true,
+    "authUncertain": false,
+    "pendingAuth": 0
+  },
+  "completedAt": "2026-10-22T16:05:18.829Z"
+}
