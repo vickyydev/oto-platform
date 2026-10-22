@@ -131,6 +131,8 @@ SCRUM-611 evidence ruling (owner, 2026-10-22): prove the reception invitation lo
 
 Owner question Q1 (2026-10-22, SCRUM-611; default unchanged): the inherited Sessions view includes historical revoked entries although its caption says "signed in". Should a later screen distinguish current sessions from history? The lift preserves the approved list and caption; actual eviction is verified separately by a session returning 401. This question does not block the lift.
 
+SCRUM-620 owner rulings (2026-10-22): Q2 is resolved: implement S2-23's typed archive confirmation and dependency safeguards alongside the approved branch edit fields. Q4 defines those dependencies as **active boxes and stations only**; retain the existing branch cash model, with no drawer-session table or unclosed-trading-day blocker. Archived historical fleet records remain history. Q3 authorizes exactly the success response schema on the existing `PUT /me/session/branch` in `apps/api/src/routes/me.ts`, plus a type-only literal annotation if its compiler requires one; no other change to that file is authorized by this exception. Equipment creation and archive must share parent locks so a concurrent creation cannot pass the dependency check and then appear under an archived branch/operator.
+
 ## 8. P2 — organisation, catalogue, reports (Codex)
 
 | Ticket | Deliverable |
