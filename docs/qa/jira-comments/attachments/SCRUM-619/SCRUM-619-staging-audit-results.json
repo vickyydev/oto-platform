@@ -1,0 +1,225 @@
+{
+  "passed": true,
+  "checkedAt": "2026-10-22T07:29:23.650Z",
+  "mode": "Read-only audit of actual retained staging/CI receipts and PNG metadata; no new auth/network/staging or source/Git mutations",
+  "candidateSha": "798532aebaa3c1464e1a89c0a30901d173ae6ca3",
+  "checks": [
+    {
+      "name": "Completed proof and independently audited local source match exactcandidate",
+      "passed": true
+    },
+    {
+      "name": "Actual helper bytes match reviewed22-case77-scenario helper",
+      "passed": true
+    },
+    {
+      "name": "Observed exact-SHA CI allsixgreen on firstattempt",
+      "passed": true
+    },
+    {
+      "name": "Proof binds exact source and observed API/POS deployment pair",
+      "passed": true
+    },
+    {
+      "name": "Session itself starts after both deploys and completes later",
+      "passed": true
+    },
+    {
+      "name": "Exactlyfive actual approved controls pass within postdeploysession",
+      "passed": true
+    },
+    {
+      "name": "Exactlythree original native proof filenames",
+      "passed": true
+    },
+    {
+      "name": "All PNG bytes match actualreceipt hashes",
+      "passed": true
+    },
+    {
+      "name": "Native capture dimensions are1440x1000,1440x1000,390x844",
+      "passed": true
+    },
+    {
+      "name": "All capture timestamps and filemtimes are fresh aftermaxdeploy",
+      "passed": true
+    },
+    {
+      "name": "Every chosen native heading/control/row/card is inframe and captionclear",
+      "passed": true
+    },
+    {
+      "name": "Exact approved seededadministrator/operator and validexistingpark",
+      "passed": true
+    },
+    {
+      "name": "Onlyonesignin/onesignout; no business/SMS/fixture/blockedoperation",
+      "passed": true
+    },
+    {
+      "name": "Fresh empty session and sign-in200; no authambiguity/inflight",
+      "passed": true
+    },
+    {
+      "name": "Actual signout200 and/me401 confirmed incleanup",
+      "passed": true
+    },
+    {
+      "name": "Original Tickets phone has390viewport/390document",
+      "passed": true
+    },
+    {
+      "name": "All13 observed read fingerprints are the exact approvedbootstrap paths",
+      "passed": true
+    },
+    {
+      "name": "Five actual TypeError tags retained without errorfree claim",
+      "passed": true
+    }
+  ],
+  "metrics": {
+    "acceptedControls": 5,
+    "images": 3,
+    "seededTicketTypes": 4,
+    "phoneViewport": 390,
+    "phoneDocument": 390,
+    "businessWrites": 0,
+    "smsRequests": 0,
+    "fixturesCreated": 0,
+    "blockedReads": 0,
+    "blockedWrites": 0,
+    "unclassifiedTypeErrorTags": 5
+  },
+  "artifacts": {
+    "stage": {
+      "path": "C:/w/admin619-staging-results.json",
+      "sha256": "4c85dd4ac2d151b01dbd192543cd4823a0c271dd53f01062410b59468dd70167"
+    },
+    "ci": {
+      "path": "C:/w/admin619-source-ci-results.json",
+      "sha256": "d132d940b4869831a19ce8070308583b353d8abe8667de02e187fefa31c7aaa4"
+    },
+    "localAudit": {
+      "path": "C:/w/admin619-final-audit.json",
+      "sha256": "e31624d7e88744311e146669459a6605de5f4c0542f3b9163824849780a0306f"
+    },
+    "proofReview": {
+      "path": "C:/w/admin619-proof-review.json",
+      "sha256": "3ab7538f90878aa04c81e8d89f9b1c38dbab68b4f4f7ec9d3ba0f9b05cc070ee"
+    },
+    "proofHelper": {
+      "path": "C:/w/admin619-evidence.mjs",
+      "sha256": "39cc64c976f268ac67121d557e1d6964390f8c2e963e3e2c810a9ed472f2db21"
+    }
+  },
+  "latestProofDeployments": [
+    {
+      "name": "oto-api-staging",
+      "sourceSha": "798532aebaa3c1464e1a89c0a30901d173ae6ca3",
+      "deployId": "dep-dbcriuvavr4c73cv17vg",
+      "finishedAt": "2026-10-22T07:24:35.451097Z"
+    },
+    {
+      "name": "oto-pos-staging",
+      "sourceSha": "798532aebaa3c1464e1a89c0a30901d173ae6ca3",
+      "deployId": "dep-dbcriv7avr4c73cv191g",
+      "finishedAt": "2026-10-22T07:22:10.718391Z"
+    }
+  ],
+  "images": [
+    {
+      "filename": "SCRUM-619-01-tickets-desktop.png",
+      "path": "C:\\w\\admin-screen-lift\\docs\\qa\\jira-comments\\attachments\\SCRUM-619\\SCRUM-619-01-tickets-desktop.png",
+      "width": 1440,
+      "height": 1000,
+      "sha256": "f706b8ac40f9a54d5598982747ed2be5c97b1b40072329232f5d1005132dd1e1",
+      "capturedAt": "2026-10-22T07:25:29.159Z",
+      "modifiedAt": "2026-10-22T07:25:29.242Z",
+      "bounds": [
+        {
+          "name": "heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "add ticket control",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "first ticket row",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ]
+    },
+    {
+      "filename": "SCRUM-619-02-menu-desktop.png",
+      "path": "C:\\w\\admin-screen-lift\\docs\\qa\\jira-comments\\attachments\\SCRUM-619\\SCRUM-619-02-menu-desktop.png",
+      "width": 1440,
+      "height": 1000,
+      "sha256": "71765a2cd62a608c549c9adab64a8fdc93bb8b09ce1b43eac51c735ae0b736ec",
+      "capturedAt": "2026-10-22T07:25:35.644Z",
+      "modifiedAt": "2026-10-22T07:25:35.762Z",
+      "bounds": [
+        {
+          "name": "heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "Export control",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "Import control",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "Add item control",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ]
+    },
+    {
+      "filename": "SCRUM-619-03-tickets-phone.png",
+      "path": "C:\\w\\admin-screen-lift\\docs\\qa\\jira-comments\\attachments\\SCRUM-619\\SCRUM-619-03-tickets-phone.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "dd1d91d845bbd6e406c49ca9ce1fc2b0313de156c56ba968927998e5ce419ec0",
+      "capturedAt": "2026-10-22T07:25:48.104Z",
+      "modifiedAt": "2026-10-22T07:25:48.182Z",
+      "bounds": [
+        {
+          "name": "heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "add ticket control",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "first native ticket card",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ]
+    }
+  ],
+  "authCleanup": {
+    "signOutStatus": 200,
+    "meStatus": 401,
+    "confirmed": true
+  },
+  "limitations": [
+    "Five TypeError tags are unclassified; the five stated controls and native captures pass, but this is not an error-free-browser claim.",
+    "This independent check verifies retained PNG bytes/dimensions/times/bounds. The coordinator separately reported viewing all three native images before attachment; no independent pixel-level content claim is invented.",
+    "Staging exercised native read/control rendering only; mutations and permission refusals remain local automated coverage. No Tax phone-fit rule was added.",
+    "Deployment freshness/CI are checked against the observed receipts without a new remote status query."
+  ]
+}

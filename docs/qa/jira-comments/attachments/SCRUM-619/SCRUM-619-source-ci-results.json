@@ -1,0 +1,62 @@
+{
+  "sourceSha": "798532aebaa3c1464e1a89c0a30901d173ae6ca3",
+  "runId": "39737897728",
+  "attempt": 1,
+  "status": "completed",
+  "conclusion": "success",
+  "createdAt": "2026-10-22T07:03:33Z",
+  "updatedAt": "2026-10-22T07:21:25Z",
+  "url": "https://github.com/vickyydev/oto-platform/actions/runs/39737897728",
+  "observedAt": "2026-10-22T07:22:04.408Z",
+  "jobs": [
+    {
+      "id": 119687822948,
+      "name": "api-tests (2)",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-22T07:03:35Z",
+      "completedAt": "2026-10-22T07:15:45Z"
+    },
+    {
+      "id": 119687823073,
+      "name": "pos-tests",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-22T07:03:35Z",
+      "completedAt": "2026-10-22T07:05:20Z"
+    },
+    {
+      "id": 119687823130,
+      "name": "ci",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-22T07:03:35Z",
+      "completedAt": "2026-10-22T07:16:53Z"
+    },
+    {
+      "id": 119687823135,
+      "name": "api-tests (3)",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-22T07:03:36Z",
+      "completedAt": "2026-10-22T07:21:24Z"
+    },
+    {
+      "id": 119687823170,
+      "name": "oto-app",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-22T07:03:35Z",
+      "completedAt": "2026-10-22T07:14:17Z"
+    },
+    {
+      "id": 119687823178,
+      "name": "api-tests (1)",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-22T07:03:35Z",
+      "completedAt": "2026-10-22T07:15:34Z"
+    }
+  ],
+  "allSixSuccessful": true
+}

@@ -1,0 +1,172 @@
+{
+  "passed": true,
+  "auditStatus": "complete; CI and staging acceptance not audited",
+  "candidateSha": "798532aebaa3c1464e1a89c0a30901d173ae6ca3",
+  "checkedAt": "2026-10-22T07:08:46.766Z",
+  "checks": [
+    {
+      "name": "Unique exact source snapshots",
+      "passed": true
+    },
+    {
+      "name": "Only three approved test deltas after full API freeze",
+      "passed": true
+    },
+    {
+      "name": "All3506 final raw hashes match",
+      "passed": true
+    },
+    {
+      "name": "All1005 backend inputs unchanged",
+      "passed": true
+    },
+    {
+      "name": "All3506 candidate Git blobs match tested raw hashes",
+      "passed": true
+    },
+    {
+      "name": "Scoped229-file commit equals226source plus3docs",
+      "passed": true
+    },
+    {
+      "name": "Commit excludes prohibited paths",
+      "passed": true
+    },
+    {
+      "name": "Landed candidate bound to current origin/main ancestry; CI and staging stillpending",
+      "passed": true
+    },
+    {
+      "name": "Every embedded artifact hash matches",
+      "passed": true,
+      "artifacts": 52
+    },
+    {
+      "name": "Unexecuted helper bound to22-case77-scenario review",
+      "passed": true
+    },
+    {
+      "name": "Release builder post gate is mandatory",
+      "passed": true
+    },
+    {
+      "name": "All13 final release/post gate exits and failed-history bytes verified",
+      "passed": true,
+      "greenGateReceipts": 13
+    },
+    {
+      "name": "Actual full API totals exactly4686/401skip/5todo/332files",
+      "passed": true
+    },
+    {
+      "name": "Final Linux POS includes all1433 with no skipped headers",
+      "passed": true
+    },
+    {
+      "name": "Original failed POS attempt honestly retained",
+      "passed": true
+    },
+    {
+      "name": "Archived native eight failures and classifications retained",
+      "passed": true
+    },
+    {
+      "name": "Failed Print270/1 replaced only by actual final271",
+      "passed": true
+    },
+    {
+      "name": "Actual remaining package prefixes/tail allgreen without double-count",
+      "passed": true
+    },
+    {
+      "name": "Actual Box749 after heavy suites",
+      "passed": true
+    },
+    {
+      "name": "Console192+3todo, seam10 and focused65 agree with raw logs",
+      "passed": true
+    },
+    {
+      "name": "Built browser95 after completed build",
+      "passed": true
+    },
+    {
+      "name": "Actual16 compiler tasks,5 builds, lint0errors3warnings, generatedmatch",
+      "passed": true
+    },
+    {
+      "name": "Whole post API compiler block has zero diagnostics",
+      "passed": true
+    },
+    {
+      "name": "Actual post focus65/POS1433/Admin11/Console192+3todo/seam10/Print271 allgreen",
+      "passed": true
+    },
+    {
+      "name": "Local receipt final metrics equal independent raw-log totals",
+      "passed": true
+    }
+  ],
+  "metrics": {
+    "sourceConfigFiles": 3506,
+    "backendFiles": 1005,
+    "rawSha256Matches": 3506,
+    "gitBlobMatches": 3506,
+    "changedFiles": 229,
+    "sourceFiles": 226,
+    "documentationFiles": 3,
+    "verifiedArtifacts": 52,
+    "apiTotals": {
+      "passed": 4686,
+      "skipped": 401,
+      "todo": 5,
+      "files": 332
+    },
+    "posPassed": 1433,
+    "posFiles": 101,
+    "printPassed": 271,
+    "adminScreensPassed": 11,
+    "consolePassed": 192,
+    "consoleTodo": 3,
+    "seamPassed": 10,
+    "focusedPassed": 65,
+    "browserPassed": 95,
+    "boxPassed": 749,
+    "compilerTasks": 16,
+    "compilerExecuted": 7,
+    "compilerCached": 9,
+    "buildTasks": 5,
+    "lintErrors": 0,
+    "lintWarnings": 3,
+    "localProofCases": 22,
+    "localProofScenarios": 77
+  },
+  "changedAfterFreeze": [
+    "apps/pos/test/checkin-r1-gate.test.ts",
+    "apps/pos/test/s220-e2-review-screens.test.ts",
+    "packages/print/test/single-renderer.test.ts"
+  ],
+  "artifacts": {
+    "releaseBuilder": {
+      "path": "C:/w/admin619-release-receipt.mjs",
+      "sha256": "da468f7ce6dae559edfede266e86c3c81ae467e29ded2517aaed7a330f5e5be3"
+    },
+    "localReceipt": {
+      "path": "C:/w/admin619-local-results.json",
+      "sha256": "1f83fac62398f33e96ccd35ff9cb180280591e7775aaa2653a3c11ae46210798"
+    },
+    "proofHelper": {
+      "path": "C:/w/admin619-evidence.mjs",
+      "sha256": "39cc64c976f268ac67121d557e1d6964390f8c2e963e3e2c810a9ed472f2db21"
+    }
+  },
+  "auditorHistory": [
+    "Initial local-only lifecycle assertion was obsolete when the coordinator landed the source during this audit; current landed flag is independently checked against origin/main ancestry. This was an auditor assumption, not a product-test failure."
+  ],
+  "limitations": [
+    "Full API used preserved initial snapshot; three approved final changes are tests only, product and1005backend inputs unchanged.",
+    "Original POS stop cause is not established; the en-AT native locale attribution remains explicitly coordinator-observed. Failed counts are preserved and excluded from final metrics.",
+    "Seven compiler tasks executed and nine were cache hits, recorded as such.",
+    "Exact-SHA CI and live staging outcomes require separate observation; no network or staging check was made here."
+  ]
+}

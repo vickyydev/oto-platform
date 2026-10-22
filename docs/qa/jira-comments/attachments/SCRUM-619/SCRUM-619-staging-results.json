@@ -1,0 +1,186 @@
+{
+  "ticket": "SCRUM-619",
+  "releaseSha": "798532aebaa3c1464e1a89c0a30901d173ae6ca3",
+  "startedAt": "2026-10-22T07:25:11.190Z",
+  "complete": true,
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "sourceSha": "798532aebaa3c1464e1a89c0a30901d173ae6ca3",
+      "deployId": "dep-dbcriuvavr4c73cv17vg",
+      "finishedAt": "2026-10-22T07:24:35.451097Z"
+    },
+    {
+      "name": "oto-pos-staging",
+      "sourceSha": "798532aebaa3c1464e1a89c0a30901d173ae6ca3",
+      "deployId": "dep-dbcriv7avr4c73cv191g",
+      "finishedAt": "2026-10-22T07:22:10.718391Z"
+    }
+  ],
+  "checks": [
+    {
+      "code": "TICKETS_NATIVE_ADDRESS_CONTROLS_AND_CATALOGUE_COUNT",
+      "passed": true,
+      "at": "2026-10-22T07:25:30.457Z"
+    },
+    {
+      "code": "MENU_NATIVE_ADDRESS_AND_EXISTING_IMPORT_EXPORT_ADD_CONTROLS",
+      "passed": true,
+      "at": "2026-10-22T07:25:36.933Z"
+    },
+    {
+      "code": "TAX_NATIVE_ADDRESS_GLOBAL_RATES_AREA_RULES_AND_SAVE_CONTROL_READ_ONLY",
+      "passed": true,
+      "at": "2026-10-22T07:25:42.577Z"
+    },
+    {
+      "code": "TICKETS_PHONE390_ORIGINAL_STACKED_CARDS_AND_CATALOGUE_COUNT",
+      "passed": true,
+      "at": "2026-10-22T07:25:49.573Z"
+    },
+    {
+      "code": "POS_SIGNOUT200_AND_ME401",
+      "passed": true,
+      "at": "2026-10-22T07:25:50.499Z"
+    }
+  ],
+  "screenshots": [
+    {
+      "filename": "SCRUM-619-01-tickets-desktop.png",
+      "capturedAt": "2026-10-22T07:25:29.159Z",
+      "capturedAfterDeploy": true,
+      "bounds": [
+        {
+          "name": "heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "add ticket control",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "first ticket row",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "sha256": "f706b8ac40f9a54d5598982747ed2be5c97b1b40072329232f5d1005132dd1e1"
+    },
+    {
+      "filename": "SCRUM-619-02-menu-desktop.png",
+      "capturedAt": "2026-10-22T07:25:35.644Z",
+      "capturedAfterDeploy": true,
+      "bounds": [
+        {
+          "name": "heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "Export control",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "Import control",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "Add item control",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "sha256": "71765a2cd62a608c549c9adab64a8fdc93bb8b09ce1b43eac51c735ae0b736ec"
+    },
+    {
+      "filename": "SCRUM-619-03-tickets-phone.png",
+      "capturedAt": "2026-10-22T07:25:48.104Z",
+      "capturedAfterDeploy": true,
+      "bounds": [
+        {
+          "name": "heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "add ticket control",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "first native ticket card",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "sha256": "dd1d91d845bbd6e406c49ca9ce1fc2b0313de156c56ba968927998e5ce419ec0"
+    }
+  ],
+  "browserErrorKinds": [
+    "TYPE_ERROR",
+    "TYPE_ERROR",
+    "TYPE_ERROR",
+    "TYPE_ERROR",
+    "TYPE_ERROR"
+  ],
+  "blockedRequests": [],
+  "counts": {
+    "browserSignIns": 1,
+    "directSignOuts": 1,
+    "businessWrites": 0,
+    "smsRequests": 0,
+    "fixturesCreated": 0,
+    "blockedReads": 0,
+    "blockedWrites": 0
+  },
+  "limitations": [
+    "This session checks existing native catalogue screens and controls; mutation behavior and permission refusals are covered locally.",
+    "Only Tickets has a phone-fit assertion: its approved original screen has stacked mobile cards. Tax is checked on desktop without a new phone rule.",
+    "The read-only payment-methods request is the existing tender catalogue bootstrap; no payment operation is permitted.",
+    "The proof caption occupies header branding space; the signed-in identity and footer are masked. Native panel headings and controls must remain clear.",
+    "Actual classified browser error kinds are retained; passing stated controls does not claim an error-free browser."
+  ],
+  "freshStorage": true,
+  "signInStatus": 200,
+  "actor": {
+    "id": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+    "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+  },
+  "ticketTypes": 4,
+  "phoneLayout": {
+    "viewport": 390,
+    "document": 390
+  },
+  "controlsComplete": true,
+  "authCleanup": {
+    "signOutStatus": 200,
+    "meStatus": 401,
+    "confirmed": true
+  },
+  "authState": {
+    "signInAttempted": true,
+    "authUncertain": false,
+    "pendingAuth": 0
+  },
+  "observedCataloguePathFingerprints": [
+    "534b9f0924a323aa562d9e3e48ee9a36016236e696427e69ea8c4250e4505649",
+    "0807a8835ae3ae1589bd2d77dcf6e6e1a50fe450cf0a85e1eb805132587c1f7a",
+    "ecd281decf9b12a93eee623e817c50c3f49a4f09084df27a6fc4671de2facb3a",
+    "e6e36c8bc72f8ffc1b33351b46f0bb3cc4ea29802233041252c5bcb188a1dc91",
+    "a4f5f6193842be6d8c9b32422d850b27e67ae6fd608dd2a2d86b321fff27a1e6",
+    "d37104d749765587a7792cbd4490c5939b99035ca7983b8deedfd83869944d7a",
+    "7d4bd1fb39fb78b6d0dd2a8272d543b27dd99b09f91c4de881be12057178d263",
+    "cf84102daa2e6261f7693b5dd4fe6bcae1cab2bfcc9f707693a1c36062e3472b",
+    "0aa8ec15666a1d519ce617ed5730eba8d9ac5562737b7ad0b97da30a2cde9342",
+    "970797acbfe05080f2595aa657c4db17d14cf0609661781c3acc328931e484a6",
+    "7e0522ac126dde4a0166263be2fbe96860e60b8b2034eb0ac2a28feb1526f1de",
+    "48cdbef3a7926bb9045ce33de80324655d2acdfb1679e73d40fb0201d3a9f716",
+    "075a109e144724f502de58f8b40d9581efc929d69a0c330722e87041f1fcec21"
+  ],
+  "completedAt": "2026-10-22T07:25:51.693Z"
+}

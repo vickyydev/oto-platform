@@ -1,0 +1,1953 @@
+{
+  "ticket": "SCRUM-619",
+  "passed": true,
+  "localReleaseGatesComplete": true,
+  "preparedAt": "2026-10-22T07:02:54.694Z",
+  "candidateSha": "798532aebaa3c1464e1a89c0a30901d173ae6ca3",
+  "sourceLandedOnMain": true,
+  "ci": {
+    "status": "pending"
+  },
+  "staging": {
+    "status": "pending"
+  },
+  "source": {
+    "initial": {
+      "path": "C:/w/admin619-linux/frozen-source-manifest.json",
+      "sha256": "514bd3c2b758b86c2ae50385bf26fa36a831e061b94275f1ce1341f649555ed2",
+      "files": 3506
+    },
+    "final": {
+      "path": "C:/w/admin619-linux/final-source-manifest.json",
+      "sha256": "eb9204ba5a55138bc103197e020ed68d0b8ea8dd5cdffbdf62b2570b5212b690",
+      "files": 3506
+    },
+    "changedAfterInitialFreeze": [
+      "apps/pos/test/checkin-r1-gate.test.ts",
+      "apps/pos/test/s220-e2-review-screens.test.ts",
+      "packages/print/test/single-renderer.test.ts"
+    ],
+    "productAndBackendSourceUnchanged": true,
+    "backendInputs": {
+      "path": "C:/w/admin619-linux/backend-inputs.json",
+      "sha256": "139b79cb3a91ffa30a2e35acb9594b5edea2796415fad7c44602e8a3cc2a02c7",
+      "files": 1005,
+      "initialAndFinalHashesMatch": true
+    },
+    "cssHtmlSvg": 26,
+    "intendedSourcePaths": [
+      "apps/api/test/print-preview-samples.test.ts",
+      "apps/api/test/s619-admin-screen-lift-review.test.ts",
+      "apps/pos/package.json",
+      "apps/pos/src/api/admin-screen-api.ts",
+      "apps/pos/src/api/analyticsReports.ts",
+      "apps/pos/src/api/benefits.ts",
+      "apps/pos/src/api/catalogBridge.ts",
+      "apps/pos/src/api/checkin.ts",
+      "apps/pos/src/api/client.ts",
+      "apps/pos/src/api/events.ts",
+      "apps/pos/src/api/menu.ts",
+      "apps/pos/src/api/platform.ts",
+      "apps/pos/src/api/stock.ts",
+      "apps/pos/src/api/voucherPromotions.ts",
+      "apps/pos/src/api/wallet.ts",
+      "apps/pos/src/components/admin/AdminScreenHost.tsx",
+      "apps/pos/src/components/admin/NotSavedNotice.tsx",
+      "apps/pos/src/components/admin/access/OperatorsPanel.tsx",
+      "apps/pos/src/components/admin/addons/AddOnFormDialog.tsx",
+      "apps/pos/src/components/admin/addons/AddOnsPanel.tsx",
+      "apps/pos/src/components/admin/branches/BranchesPanel.tsx",
+      "apps/pos/src/components/admin/categories/CategoriesPanel.tsx",
+      "apps/pos/src/components/admin/categories/CategoryFormDialog.tsx",
+      "apps/pos/src/components/admin/categories/categoryLabels.ts",
+      "apps/pos/src/components/admin/discounts/DiscountCodesSection.tsx",
+      "apps/pos/src/components/admin/discounts/DiscountReasonsSection.tsx",
+      "apps/pos/src/components/admin/discounts/DiscountTargetPicker.tsx",
+      "apps/pos/src/components/admin/discounts/DiscountsScreen.tsx",
+      "apps/pos/src/components/admin/discounts/fields.tsx",
+      "apps/pos/src/components/admin/discounts/qrDownload.ts",
+      "apps/pos/src/components/admin/dropoff-pricing/DropOffPricingPanel.tsx",
+      "apps/pos/src/components/admin/events/EventsPanel.tsx",
+      "apps/pos/src/components/admin/inventory/InventoryItemFormDialog.tsx",
+      "apps/pos/src/components/admin/inventory/InventoryPanel.tsx",
+      "apps/pos/src/components/admin/inventory/StockAdjustModal.tsx",
+      "apps/pos/src/components/admin/inventory/StockLocationsPanel.tsx",
+      "apps/pos/src/components/admin/markets-tiers/MarketsTiersSection.tsx",
+      "apps/pos/src/components/admin/members/MemberFormDialog.tsx",
+      "apps/pos/src/components/admin/members/MembersPanel.tsx",
+      "apps/pos/src/components/admin/members/TierVerificationsPanel.tsx",
+      "apps/pos/src/components/admin/menu/ImportMenuDialog.tsx",
+      "apps/pos/src/components/admin/menu/MenuItemForm.tsx",
+      "apps/pos/src/components/admin/menu/MenuPanel.tsx",
+      "apps/pos/src/components/admin/menu/menuItem.ts",
+      "apps/pos/src/components/admin/merch/MerchItemForm.tsx",
+      "apps/pos/src/components/admin/merch/MerchPanel.tsx",
+      "apps/pos/src/components/admin/merch/MerchStockAdjustModal.tsx",
+      "apps/pos/src/components/admin/modifiers/ModifierGroupFormDialog.tsx",
+      "apps/pos/src/components/admin/modifiers/ModifiersPanel.tsx",
+      "apps/pos/src/components/admin/payments/PaymentMethodsSection.tsx",
+      "apps/pos/src/components/admin/pricing-overrides/PricingOverridesSection.tsx",
+      "apps/pos/src/components/admin/reports/DiscountCompReportPanel.tsx",
+      "apps/pos/src/components/admin/reports/ProfitabilityReportPanel.tsx",
+      "apps/pos/src/components/admin/reports/SalesReportPanel.tsx",
+      "apps/pos/src/components/admin/reports/TaxVatReportPanel.tsx",
+      "apps/pos/src/components/admin/reports/WalletPromoReportPanel.tsx",
+      "apps/pos/src/components/admin/reports/shared.tsx",
+      "apps/pos/src/components/admin/staff-benefits/BenefitHistoryList.tsx",
+      "apps/pos/src/components/admin/staff-benefits/BenefitProfileFields.tsx",
+      "apps/pos/src/components/admin/staff-benefits/BenefitQrDialog.tsx",
+      "apps/pos/src/components/admin/staff-benefits/OperatorOverrideDialog.tsx",
+      "apps/pos/src/components/admin/staff-benefits/StaffBenefitsPanel.tsx",
+      "apps/pos/src/components/admin/staff-benefits/StaffSourceChip.tsx",
+      "apps/pos/src/components/admin/supervision/SupervisionPanel.tsx",
+      "apps/pos/src/components/admin/tax/TaxPanel.tsx",
+      "apps/pos/src/components/admin/templates/PrintTemplatePreview.tsx",
+      "apps/pos/src/components/admin/templates/TemplateEditor.tsx",
+      "apps/pos/src/components/admin/templates/TemplatesPanel.tsx",
+      "apps/pos/src/components/admin/templates/previewSamples.ts",
+      "apps/pos/src/components/admin/templates/templateDraft.ts",
+      "apps/pos/src/components/admin/templates/templateFields.ts",
+      "apps/pos/src/components/admin/templates/templatesApi.ts",
+      "apps/pos/src/components/admin/templates/useUnsavedChangesPrompt.ts",
+      "apps/pos/src/components/admin/tickets/TicketTypeForm.tsx",
+      "apps/pos/src/components/admin/tickets/TicketsPanel.tsx",
+      "apps/pos/src/components/admin/vouchers/VoucherPromotionsPanel.tsx",
+      "apps/pos/src/components/admin/wallets/WalletLookupPanel.tsx",
+      "apps/pos/src/index.css",
+      "apps/pos/src/pages/Admin.tsx",
+      "apps/pos/test/admin-lift-host.test.ts",
+      "apps/pos/test/checkin-r1-gate.test.ts",
+      "apps/pos/test/s216-r4-reports.test.ts",
+      "apps/pos/test/s217b-r2-staff-source.test.ts",
+      "apps/pos/test/s220-e2-events.test.ts",
+      "apps/pos/test/s220-e2-review-screens.test.ts",
+      "apps/pos/test/s221-r1-review-admin.test.ts",
+      "apps/pos/test/s221-r2-benefit-qr.test.ts",
+      "apps/pos/test/s221-r3-checkout.test.ts",
+      "apps/pos/test/s221-r4-closing-audit.test.ts",
+      "apps/pos/test/s502-review-counter-surfaces.test.ts",
+      "apps/pos/test/stock-r2.test.ts",
+      "apps/pos/test/support/admin-source-path.ts",
+      "apps/pos/test/template-editor.test.ts",
+      "apps/pos/test/template-leave-prompt.test.ts",
+      "packages/admin-screens/package.json",
+      "packages/admin-screens/src/api/lifted-api.ts",
+      "packages/admin-screens/src/index.ts",
+      "packages/admin-screens/src/lifted/api/analyticsReports.ts",
+      "packages/admin-screens/src/lifted/api/benefits.ts",
+      "packages/admin-screens/src/lifted/api/catalogBridge.ts",
+      "packages/admin-screens/src/lifted/api/checkin.ts",
+      "packages/admin-screens/src/lifted/api/client.ts",
+      "packages/admin-screens/src/lifted/api/events.ts",
+      "packages/admin-screens/src/lifted/api/mappers.ts",
+      "packages/admin-screens/src/lifted/api/menu.ts",
+      "packages/admin-screens/src/lifted/api/platform.ts",
+      "packages/admin-screens/src/lifted/api/stock.ts",
+      "packages/admin-screens/src/lifted/api/voucherPromotions.ts",
+      "packages/admin-screens/src/lifted/api/wallet.ts",
+      "packages/admin-screens/src/lifted/components/admin/NotSavedNotice.tsx",
+      "packages/admin-screens/src/lifted/components/admin/access/OperatorsPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/addons/AddOnFormDialog.tsx",
+      "packages/admin-screens/src/lifted/components/admin/addons/AddOnsPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/branches/BranchesPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/categories/CategoriesPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/categories/CategoryFormDialog.tsx",
+      "packages/admin-screens/src/lifted/components/admin/categories/categoryLabels.ts",
+      "packages/admin-screens/src/lifted/components/admin/discounts/DiscountCodesSection.tsx",
+      "packages/admin-screens/src/lifted/components/admin/discounts/DiscountReasonsSection.tsx",
+      "packages/admin-screens/src/lifted/components/admin/discounts/DiscountTargetPicker.tsx",
+      "packages/admin-screens/src/lifted/components/admin/discounts/DiscountsScreen.tsx",
+      "packages/admin-screens/src/lifted/components/admin/discounts/fields.tsx",
+      "packages/admin-screens/src/lifted/components/admin/discounts/qrDownload.ts",
+      "packages/admin-screens/src/lifted/components/admin/dropoff-pricing/DropOffPricingPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/events/EventsPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/inventory/InventoryItemFormDialog.tsx",
+      "packages/admin-screens/src/lifted/components/admin/inventory/InventoryPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/inventory/StockAdjustModal.tsx",
+      "packages/admin-screens/src/lifted/components/admin/inventory/StockLocationsPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/markets-tiers/MarketsTiersSection.tsx",
+      "packages/admin-screens/src/lifted/components/admin/members/MemberFormDialog.tsx",
+      "packages/admin-screens/src/lifted/components/admin/members/MembersPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/members/TierVerificationsPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/members/memberLabels.ts",
+      "packages/admin-screens/src/lifted/components/admin/menu/ImportMenuDialog.tsx",
+      "packages/admin-screens/src/lifted/components/admin/menu/MenuItemForm.tsx",
+      "packages/admin-screens/src/lifted/components/admin/menu/MenuPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/menu/menuItem.ts",
+      "packages/admin-screens/src/lifted/components/admin/merch/MerchItemForm.tsx",
+      "packages/admin-screens/src/lifted/components/admin/merch/MerchPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/merch/MerchStockAdjustModal.tsx",
+      "packages/admin-screens/src/lifted/components/admin/modifiers/ModifierGroupFormDialog.tsx",
+      "packages/admin-screens/src/lifted/components/admin/modifiers/ModifiersPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/payments/PaymentMethodsSection.tsx",
+      "packages/admin-screens/src/lifted/components/admin/pricing-overrides/PricingOverridesSection.tsx",
+      "packages/admin-screens/src/lifted/components/admin/reports/DiscountCompReportPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/reports/ProfitabilityReportPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/reports/SalesReportPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/reports/TaxVatReportPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/reports/WalletPromoReportPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/reports/shared.tsx",
+      "packages/admin-screens/src/lifted/components/admin/staff-benefits/BenefitHistoryList.tsx",
+      "packages/admin-screens/src/lifted/components/admin/staff-benefits/BenefitProfileFields.tsx",
+      "packages/admin-screens/src/lifted/components/admin/staff-benefits/BenefitQrDialog.tsx",
+      "packages/admin-screens/src/lifted/components/admin/staff-benefits/OperatorOverrideDialog.tsx",
+      "packages/admin-screens/src/lifted/components/admin/staff-benefits/StaffBenefitsPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/staff-benefits/StaffSourceChip.tsx",
+      "packages/admin-screens/src/lifted/components/admin/staff-benefits/summary.ts",
+      "packages/admin-screens/src/lifted/components/admin/supervision/SupervisionPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/tax/TaxPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/templates/PrintTemplatePreview.tsx",
+      "packages/admin-screens/src/lifted/components/admin/templates/TemplateEditor.tsx",
+      "packages/admin-screens/src/lifted/components/admin/templates/TemplatesPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/templates/previewSamples.ts",
+      "packages/admin-screens/src/lifted/components/admin/templates/templateDraft.ts",
+      "packages/admin-screens/src/lifted/components/admin/templates/templateFields.ts",
+      "packages/admin-screens/src/lifted/components/admin/templates/templatesApi.ts",
+      "packages/admin-screens/src/lifted/components/admin/templates/useUnsavedChangesPrompt.ts",
+      "packages/admin-screens/src/lifted/components/admin/tickets/TicketTypeForm.tsx",
+      "packages/admin-screens/src/lifted/components/admin/tickets/TicketsPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/tickets/ticketPricing.ts",
+      "packages/admin-screens/src/lifted/components/admin/vouchers/VoucherPromotionsPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/wallets/WalletLookupPanel.tsx",
+      "packages/admin-screens/src/lifted/components/shared/ChildDetailsFields.tsx",
+      "packages/admin-screens/src/lifted/components/shared/ChildDobPicker.tsx",
+      "packages/admin-screens/src/lifted/components/shared/PhoneInput.tsx",
+      "packages/admin-screens/src/lifted/components/shared/WeekdayWeekendPriceInput.tsx",
+      "packages/admin-screens/src/lifted/components/till/NumberKeypad.tsx",
+      "packages/admin-screens/src/lifted/components/till/QrCode.tsx",
+      "packages/admin-screens/src/lifted/components/ui/alert-dialog.tsx",
+      "packages/admin-screens/src/lifted/components/ui/badge.tsx",
+      "packages/admin-screens/src/lifted/components/ui/button.tsx",
+      "packages/admin-screens/src/lifted/components/ui/checkbox.tsx",
+      "packages/admin-screens/src/lifted/components/ui/dialog.tsx",
+      "packages/admin-screens/src/lifted/components/ui/input.tsx",
+      "packages/admin-screens/src/lifted/components/ui/label.tsx",
+      "packages/admin-screens/src/lifted/components/ui/select.tsx",
+      "packages/admin-screens/src/lifted/components/ui/switch.tsx",
+      "packages/admin-screens/src/lifted/components/ui/table.tsx",
+      "packages/admin-screens/src/lifted/components/ui/textarea.tsx",
+      "packages/admin-screens/src/lifted/components/ui/toggle-group.tsx",
+      "packages/admin-screens/src/lifted/components/ui/toggle.tsx",
+      "packages/admin-screens/src/lifted/data/countries.ts",
+      "packages/admin-screens/src/lifted/lib/benefits.ts",
+      "packages/admin-screens/src/lifted/lib/cartWire.ts",
+      "packages/admin-screens/src/lifted/lib/childDob.ts",
+      "packages/admin-screens/src/lifted/lib/contactChannel.ts",
+      "packages/admin-screens/src/lifted/lib/csv.ts",
+      "packages/admin-screens/src/lifted/lib/discountTarget.ts",
+      "packages/admin-screens/src/lifted/lib/inventory.ts",
+      "packages/admin-screens/src/lifted/lib/membership.ts",
+      "packages/admin-screens/src/lifted/lib/menu.ts",
+      "packages/admin-screens/src/lifted/lib/merch.ts",
+      "packages/admin-screens/src/lifted/lib/payments.ts",
+      "packages/admin-screens/src/lifted/lib/phoneUtils.ts",
+      "packages/admin-screens/src/lifted/lib/pricing.ts",
+      "packages/admin-screens/src/lifted/lib/pricingMode.ts",
+      "packages/admin-screens/src/lifted/lib/qr.ts",
+      "packages/admin-screens/src/lifted/lib/reporting.ts",
+      "packages/admin-screens/src/lifted/lib/tierProof.ts",
+      "packages/admin-screens/src/lifted/lib/utils.ts",
+      "packages/admin-screens/src/lifted/lib/walletView.ts",
+      "packages/admin-screens/src/lifted/model/catalog.ts",
+      "packages/admin-screens/src/lifted/model/language.ts",
+      "packages/admin-screens/src/lifted/model/mock-mutators.ts",
+      "packages/admin-screens/src/lifted/model/ports.ts",
+      "packages/admin-screens/src/lifted/model/types.ts",
+      "packages/admin-screens/src/lifted/runtime/AdminScreenRuntime.tsx",
+      "packages/admin-screens/src/lifted/runtime/domain.ts",
+      "packages/admin-screens/test/lifted-catalogue-api.test.ts",
+      "packages/admin-screens/test/lifted-runtime.test.ts",
+      "packages/api-types/test/migration-list.ts",
+      "packages/api-types/test/seam-walker.test.ts",
+      "packages/api-types/test/seams.ts",
+      "packages/print/test/single-renderer.test.ts",
+      "pnpm-lock.yaml"
+    ],
+    "intendedCommitPaths": [
+      "apps/api/test/print-preview-samples.test.ts",
+      "apps/api/test/s619-admin-screen-lift-review.test.ts",
+      "apps/pos/package.json",
+      "apps/pos/src/api/admin-screen-api.ts",
+      "apps/pos/src/api/analyticsReports.ts",
+      "apps/pos/src/api/benefits.ts",
+      "apps/pos/src/api/catalogBridge.ts",
+      "apps/pos/src/api/checkin.ts",
+      "apps/pos/src/api/client.ts",
+      "apps/pos/src/api/events.ts",
+      "apps/pos/src/api/menu.ts",
+      "apps/pos/src/api/platform.ts",
+      "apps/pos/src/api/stock.ts",
+      "apps/pos/src/api/voucherPromotions.ts",
+      "apps/pos/src/api/wallet.ts",
+      "apps/pos/src/components/admin/AdminScreenHost.tsx",
+      "apps/pos/src/components/admin/NotSavedNotice.tsx",
+      "apps/pos/src/components/admin/access/OperatorsPanel.tsx",
+      "apps/pos/src/components/admin/addons/AddOnFormDialog.tsx",
+      "apps/pos/src/components/admin/addons/AddOnsPanel.tsx",
+      "apps/pos/src/components/admin/branches/BranchesPanel.tsx",
+      "apps/pos/src/components/admin/categories/CategoriesPanel.tsx",
+      "apps/pos/src/components/admin/categories/CategoryFormDialog.tsx",
+      "apps/pos/src/components/admin/categories/categoryLabels.ts",
+      "apps/pos/src/components/admin/discounts/DiscountCodesSection.tsx",
+      "apps/pos/src/components/admin/discounts/DiscountReasonsSection.tsx",
+      "apps/pos/src/components/admin/discounts/DiscountTargetPicker.tsx",
+      "apps/pos/src/components/admin/discounts/DiscountsScreen.tsx",
+      "apps/pos/src/components/admin/discounts/fields.tsx",
+      "apps/pos/src/components/admin/discounts/qrDownload.ts",
+      "apps/pos/src/components/admin/dropoff-pricing/DropOffPricingPanel.tsx",
+      "apps/pos/src/components/admin/events/EventsPanel.tsx",
+      "apps/pos/src/components/admin/inventory/InventoryItemFormDialog.tsx",
+      "apps/pos/src/components/admin/inventory/InventoryPanel.tsx",
+      "apps/pos/src/components/admin/inventory/StockAdjustModal.tsx",
+      "apps/pos/src/components/admin/inventory/StockLocationsPanel.tsx",
+      "apps/pos/src/components/admin/markets-tiers/MarketsTiersSection.tsx",
+      "apps/pos/src/components/admin/members/MemberFormDialog.tsx",
+      "apps/pos/src/components/admin/members/MembersPanel.tsx",
+      "apps/pos/src/components/admin/members/TierVerificationsPanel.tsx",
+      "apps/pos/src/components/admin/menu/ImportMenuDialog.tsx",
+      "apps/pos/src/components/admin/menu/MenuItemForm.tsx",
+      "apps/pos/src/components/admin/menu/MenuPanel.tsx",
+      "apps/pos/src/components/admin/menu/menuItem.ts",
+      "apps/pos/src/components/admin/merch/MerchItemForm.tsx",
+      "apps/pos/src/components/admin/merch/MerchPanel.tsx",
+      "apps/pos/src/components/admin/merch/MerchStockAdjustModal.tsx",
+      "apps/pos/src/components/admin/modifiers/ModifierGroupFormDialog.tsx",
+      "apps/pos/src/components/admin/modifiers/ModifiersPanel.tsx",
+      "apps/pos/src/components/admin/payments/PaymentMethodsSection.tsx",
+      "apps/pos/src/components/admin/pricing-overrides/PricingOverridesSection.tsx",
+      "apps/pos/src/components/admin/reports/DiscountCompReportPanel.tsx",
+      "apps/pos/src/components/admin/reports/ProfitabilityReportPanel.tsx",
+      "apps/pos/src/components/admin/reports/SalesReportPanel.tsx",
+      "apps/pos/src/components/admin/reports/TaxVatReportPanel.tsx",
+      "apps/pos/src/components/admin/reports/WalletPromoReportPanel.tsx",
+      "apps/pos/src/components/admin/reports/shared.tsx",
+      "apps/pos/src/components/admin/staff-benefits/BenefitHistoryList.tsx",
+      "apps/pos/src/components/admin/staff-benefits/BenefitProfileFields.tsx",
+      "apps/pos/src/components/admin/staff-benefits/BenefitQrDialog.tsx",
+      "apps/pos/src/components/admin/staff-benefits/OperatorOverrideDialog.tsx",
+      "apps/pos/src/components/admin/staff-benefits/StaffBenefitsPanel.tsx",
+      "apps/pos/src/components/admin/staff-benefits/StaffSourceChip.tsx",
+      "apps/pos/src/components/admin/supervision/SupervisionPanel.tsx",
+      "apps/pos/src/components/admin/tax/TaxPanel.tsx",
+      "apps/pos/src/components/admin/templates/PrintTemplatePreview.tsx",
+      "apps/pos/src/components/admin/templates/TemplateEditor.tsx",
+      "apps/pos/src/components/admin/templates/TemplatesPanel.tsx",
+      "apps/pos/src/components/admin/templates/previewSamples.ts",
+      "apps/pos/src/components/admin/templates/templateDraft.ts",
+      "apps/pos/src/components/admin/templates/templateFields.ts",
+      "apps/pos/src/components/admin/templates/templatesApi.ts",
+      "apps/pos/src/components/admin/templates/useUnsavedChangesPrompt.ts",
+      "apps/pos/src/components/admin/tickets/TicketTypeForm.tsx",
+      "apps/pos/src/components/admin/tickets/TicketsPanel.tsx",
+      "apps/pos/src/components/admin/vouchers/VoucherPromotionsPanel.tsx",
+      "apps/pos/src/components/admin/wallets/WalletLookupPanel.tsx",
+      "apps/pos/src/index.css",
+      "apps/pos/src/pages/Admin.tsx",
+      "apps/pos/test/admin-lift-host.test.ts",
+      "apps/pos/test/checkin-r1-gate.test.ts",
+      "apps/pos/test/s216-r4-reports.test.ts",
+      "apps/pos/test/s217b-r2-staff-source.test.ts",
+      "apps/pos/test/s220-e2-events.test.ts",
+      "apps/pos/test/s220-e2-review-screens.test.ts",
+      "apps/pos/test/s221-r1-review-admin.test.ts",
+      "apps/pos/test/s221-r2-benefit-qr.test.ts",
+      "apps/pos/test/s221-r3-checkout.test.ts",
+      "apps/pos/test/s221-r4-closing-audit.test.ts",
+      "apps/pos/test/s502-review-counter-surfaces.test.ts",
+      "apps/pos/test/stock-r2.test.ts",
+      "apps/pos/test/support/admin-source-path.ts",
+      "apps/pos/test/template-editor.test.ts",
+      "apps/pos/test/template-leave-prompt.test.ts",
+      "docs/handover/CLOUD_HANDOVER.md",
+      "docs/handover/CODEX_HANDOVER.md",
+      "docs/progress/STATUS.md",
+      "packages/admin-screens/package.json",
+      "packages/admin-screens/src/api/lifted-api.ts",
+      "packages/admin-screens/src/index.ts",
+      "packages/admin-screens/src/lifted/api/analyticsReports.ts",
+      "packages/admin-screens/src/lifted/api/benefits.ts",
+      "packages/admin-screens/src/lifted/api/catalogBridge.ts",
+      "packages/admin-screens/src/lifted/api/checkin.ts",
+      "packages/admin-screens/src/lifted/api/client.ts",
+      "packages/admin-screens/src/lifted/api/events.ts",
+      "packages/admin-screens/src/lifted/api/mappers.ts",
+      "packages/admin-screens/src/lifted/api/menu.ts",
+      "packages/admin-screens/src/lifted/api/platform.ts",
+      "packages/admin-screens/src/lifted/api/stock.ts",
+      "packages/admin-screens/src/lifted/api/voucherPromotions.ts",
+      "packages/admin-screens/src/lifted/api/wallet.ts",
+      "packages/admin-screens/src/lifted/components/admin/NotSavedNotice.tsx",
+      "packages/admin-screens/src/lifted/components/admin/access/OperatorsPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/addons/AddOnFormDialog.tsx",
+      "packages/admin-screens/src/lifted/components/admin/addons/AddOnsPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/branches/BranchesPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/categories/CategoriesPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/categories/CategoryFormDialog.tsx",
+      "packages/admin-screens/src/lifted/components/admin/categories/categoryLabels.ts",
+      "packages/admin-screens/src/lifted/components/admin/discounts/DiscountCodesSection.tsx",
+      "packages/admin-screens/src/lifted/components/admin/discounts/DiscountReasonsSection.tsx",
+      "packages/admin-screens/src/lifted/components/admin/discounts/DiscountTargetPicker.tsx",
+      "packages/admin-screens/src/lifted/components/admin/discounts/DiscountsScreen.tsx",
+      "packages/admin-screens/src/lifted/components/admin/discounts/fields.tsx",
+      "packages/admin-screens/src/lifted/components/admin/discounts/qrDownload.ts",
+      "packages/admin-screens/src/lifted/components/admin/dropoff-pricing/DropOffPricingPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/events/EventsPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/inventory/InventoryItemFormDialog.tsx",
+      "packages/admin-screens/src/lifted/components/admin/inventory/InventoryPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/inventory/StockAdjustModal.tsx",
+      "packages/admin-screens/src/lifted/components/admin/inventory/StockLocationsPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/markets-tiers/MarketsTiersSection.tsx",
+      "packages/admin-screens/src/lifted/components/admin/members/MemberFormDialog.tsx",
+      "packages/admin-screens/src/lifted/components/admin/members/MembersPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/members/TierVerificationsPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/members/memberLabels.ts",
+      "packages/admin-screens/src/lifted/components/admin/menu/ImportMenuDialog.tsx",
+      "packages/admin-screens/src/lifted/components/admin/menu/MenuItemForm.tsx",
+      "packages/admin-screens/src/lifted/components/admin/menu/MenuPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/menu/menuItem.ts",
+      "packages/admin-screens/src/lifted/components/admin/merch/MerchItemForm.tsx",
+      "packages/admin-screens/src/lifted/components/admin/merch/MerchPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/merch/MerchStockAdjustModal.tsx",
+      "packages/admin-screens/src/lifted/components/admin/modifiers/ModifierGroupFormDialog.tsx",
+      "packages/admin-screens/src/lifted/components/admin/modifiers/ModifiersPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/payments/PaymentMethodsSection.tsx",
+      "packages/admin-screens/src/lifted/components/admin/pricing-overrides/PricingOverridesSection.tsx",
+      "packages/admin-screens/src/lifted/components/admin/reports/DiscountCompReportPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/reports/ProfitabilityReportPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/reports/SalesReportPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/reports/TaxVatReportPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/reports/WalletPromoReportPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/reports/shared.tsx",
+      "packages/admin-screens/src/lifted/components/admin/staff-benefits/BenefitHistoryList.tsx",
+      "packages/admin-screens/src/lifted/components/admin/staff-benefits/BenefitProfileFields.tsx",
+      "packages/admin-screens/src/lifted/components/admin/staff-benefits/BenefitQrDialog.tsx",
+      "packages/admin-screens/src/lifted/components/admin/staff-benefits/OperatorOverrideDialog.tsx",
+      "packages/admin-screens/src/lifted/components/admin/staff-benefits/StaffBenefitsPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/staff-benefits/StaffSourceChip.tsx",
+      "packages/admin-screens/src/lifted/components/admin/staff-benefits/summary.ts",
+      "packages/admin-screens/src/lifted/components/admin/supervision/SupervisionPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/tax/TaxPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/templates/PrintTemplatePreview.tsx",
+      "packages/admin-screens/src/lifted/components/admin/templates/TemplateEditor.tsx",
+      "packages/admin-screens/src/lifted/components/admin/templates/TemplatesPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/templates/previewSamples.ts",
+      "packages/admin-screens/src/lifted/components/admin/templates/templateDraft.ts",
+      "packages/admin-screens/src/lifted/components/admin/templates/templateFields.ts",
+      "packages/admin-screens/src/lifted/components/admin/templates/templatesApi.ts",
+      "packages/admin-screens/src/lifted/components/admin/templates/useUnsavedChangesPrompt.ts",
+      "packages/admin-screens/src/lifted/components/admin/tickets/TicketTypeForm.tsx",
+      "packages/admin-screens/src/lifted/components/admin/tickets/TicketsPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/tickets/ticketPricing.ts",
+      "packages/admin-screens/src/lifted/components/admin/vouchers/VoucherPromotionsPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/wallets/WalletLookupPanel.tsx",
+      "packages/admin-screens/src/lifted/components/shared/ChildDetailsFields.tsx",
+      "packages/admin-screens/src/lifted/components/shared/ChildDobPicker.tsx",
+      "packages/admin-screens/src/lifted/components/shared/PhoneInput.tsx",
+      "packages/admin-screens/src/lifted/components/shared/WeekdayWeekendPriceInput.tsx",
+      "packages/admin-screens/src/lifted/components/till/NumberKeypad.tsx",
+      "packages/admin-screens/src/lifted/components/till/QrCode.tsx",
+      "packages/admin-screens/src/lifted/components/ui/alert-dialog.tsx",
+      "packages/admin-screens/src/lifted/components/ui/badge.tsx",
+      "packages/admin-screens/src/lifted/components/ui/button.tsx",
+      "packages/admin-screens/src/lifted/components/ui/checkbox.tsx",
+      "packages/admin-screens/src/lifted/components/ui/dialog.tsx",
+      "packages/admin-screens/src/lifted/components/ui/input.tsx",
+      "packages/admin-screens/src/lifted/components/ui/label.tsx",
+      "packages/admin-screens/src/lifted/components/ui/select.tsx",
+      "packages/admin-screens/src/lifted/components/ui/switch.tsx",
+      "packages/admin-screens/src/lifted/components/ui/table.tsx",
+      "packages/admin-screens/src/lifted/components/ui/textarea.tsx",
+      "packages/admin-screens/src/lifted/components/ui/toggle-group.tsx",
+      "packages/admin-screens/src/lifted/components/ui/toggle.tsx",
+      "packages/admin-screens/src/lifted/data/countries.ts",
+      "packages/admin-screens/src/lifted/lib/benefits.ts",
+      "packages/admin-screens/src/lifted/lib/cartWire.ts",
+      "packages/admin-screens/src/lifted/lib/childDob.ts",
+      "packages/admin-screens/src/lifted/lib/contactChannel.ts",
+      "packages/admin-screens/src/lifted/lib/csv.ts",
+      "packages/admin-screens/src/lifted/lib/discountTarget.ts",
+      "packages/admin-screens/src/lifted/lib/inventory.ts",
+      "packages/admin-screens/src/lifted/lib/membership.ts",
+      "packages/admin-screens/src/lifted/lib/menu.ts",
+      "packages/admin-screens/src/lifted/lib/merch.ts",
+      "packages/admin-screens/src/lifted/lib/payments.ts",
+      "packages/admin-screens/src/lifted/lib/phoneUtils.ts",
+      "packages/admin-screens/src/lifted/lib/pricing.ts",
+      "packages/admin-screens/src/lifted/lib/pricingMode.ts",
+      "packages/admin-screens/src/lifted/lib/qr.ts",
+      "packages/admin-screens/src/lifted/lib/reporting.ts",
+      "packages/admin-screens/src/lifted/lib/tierProof.ts",
+      "packages/admin-screens/src/lifted/lib/utils.ts",
+      "packages/admin-screens/src/lifted/lib/walletView.ts",
+      "packages/admin-screens/src/lifted/model/catalog.ts",
+      "packages/admin-screens/src/lifted/model/language.ts",
+      "packages/admin-screens/src/lifted/model/mock-mutators.ts",
+      "packages/admin-screens/src/lifted/model/ports.ts",
+      "packages/admin-screens/src/lifted/model/types.ts",
+      "packages/admin-screens/src/lifted/runtime/AdminScreenRuntime.tsx",
+      "packages/admin-screens/src/lifted/runtime/domain.ts",
+      "packages/admin-screens/test/lifted-catalogue-api.test.ts",
+      "packages/admin-screens/test/lifted-runtime.test.ts",
+      "packages/api-types/test/migration-list.ts",
+      "packages/api-types/test/seam-walker.test.ts",
+      "packages/api-types/test/seams.ts",
+      "packages/print/test/single-renderer.test.ts",
+      "pnpm-lock.yaml"
+    ]
+  },
+  "gates": {
+    "checks": {
+      "mode": "checks",
+      "container": "oto-admin619-workspace",
+      "startedAt": "2026-10-22T06:35:50.406Z",
+      "finishedAt": "2026-10-22T06:37:29.779Z",
+      "exitCode": 0,
+      "log": "C:/w/admin619-linux/checks.log",
+      "sha256": "5b9c5356defdc337961fe12757b886d662f1b1453249cb2149784d67e6c96a29",
+      "frozenFiles": 3506,
+      "artifactLabel": "checks",
+      "receipt": {
+        "path": "C:/w/admin619-linux/checks-exit.json",
+        "sha256": "7eda8d1f24dd334c6f0fd0ca75736ec815cdd24600b17594bd370c7d6b33654c"
+      },
+      "verifiedLog": {
+        "path": "C:/w/admin619-linux/checks.log",
+        "sha256": "5b9c5356defdc337961fe12757b886d662f1b1453249cb2149784d67e6c96a29"
+      },
+      "sourcePhase": "initial",
+      "summaries": []
+    },
+    "units": {
+      "mode": "units",
+      "container": "oto-admin619-workspace",
+      "startedAt": "2026-10-22T06:35:50.433Z",
+      "finishedAt": "2026-10-22T06:36:04.512Z",
+      "exitCode": 0,
+      "log": "C:/w/admin619-linux/units.log",
+      "sha256": "e5677aa439cf0f7565f36c55402f1ee34eef88a031957b59ef52df3235478c4c",
+      "frozenFiles": 3506,
+      "artifactLabel": "units",
+      "receipt": {
+        "path": "C:/w/admin619-linux/units-exit.json",
+        "sha256": "1753c11c133883b2b32119ed1d016bc2815e82b07ced2bb2e56dfde32e712646"
+      },
+      "verifiedLog": {
+        "path": "C:/w/admin619-linux/units.log",
+        "sha256": "e5677aa439cf0f7565f36c55402f1ee34eef88a031957b59ef52df3235478c4c"
+      },
+      "sourcePhase": "initial",
+      "summaries": [
+        {
+          "package": "@oto/console",
+          "files": {
+            "passed": 24
+          },
+          "tests": {
+            "passed": 192,
+            "todo": 3
+          }
+        },
+        {
+          "package": "@oto/api-types",
+          "files": {
+            "passed": 1
+          },
+          "tests": {
+            "passed": 10
+          }
+        }
+      ]
+    },
+    "review": {
+      "mode": "review",
+      "container": "oto-admin619-workspace",
+      "startedAt": "2026-10-22T06:35:50.405Z",
+      "finishedAt": "2026-10-22T06:36:23.494Z",
+      "exitCode": 0,
+      "log": "C:/w/admin619-linux/review.log",
+      "sha256": "7e33a1d2562967399a4f5b33d8f2b3b7742a9a2b1eef9ace8de2125d1faefe54",
+      "frozenFiles": 3506,
+      "artifactLabel": "review",
+      "receipt": {
+        "path": "C:/w/admin619-linux/review-exit.json",
+        "sha256": "563bd30f45228d0b7e9124ce6cb74bbc9da207428452e3c8f484235f9cd35657"
+      },
+      "verifiedLog": {
+        "path": "C:/w/admin619-linux/review.log",
+        "sha256": "7e33a1d2562967399a4f5b33d8f2b3b7742a9a2b1eef9ace8de2125d1faefe54"
+      },
+      "sourcePhase": "initial",
+      "summaries": [
+        {
+          "package": null,
+          "files": {
+            "passed": 5
+          },
+          "tests": {
+            "passed": 65
+          }
+        }
+      ]
+    },
+    "browser": {
+      "mode": "browser",
+      "container": "oto-admin619-workspace",
+      "startedAt": "2026-10-22T06:37:56.090Z",
+      "finishedAt": "2026-10-22T06:40:12.283Z",
+      "exitCode": 0,
+      "log": "C:/w/admin619-linux/browser.log",
+      "sha256": "7686940e78b0383f76f93829220034b579cd48103e27c586c76139a5ba0c7154",
+      "frozenFiles": 3506,
+      "artifactLabel": "browser",
+      "receipt": {
+        "path": "C:/w/admin619-linux/browser-exit.json",
+        "sha256": "2501da8d5660bb5c9438d5aa12c67c853ed805fea18fac386fb0374668724b3e"
+      },
+      "verifiedLog": {
+        "path": "C:/w/admin619-linux/browser.log",
+        "sha256": "7686940e78b0383f76f93829220034b579cd48103e27c586c76139a5ba0c7154"
+      },
+      "sourcePhase": "initial",
+      "summaries": []
+    },
+    "api1": {
+      "mode": "api1",
+      "container": "oto-admin619-api1",
+      "startedAt": "2026-10-22T06:35:50.406Z",
+      "finishedAt": "2026-10-22T06:47:06.903Z",
+      "exitCode": 0,
+      "log": "C:/w/admin619-linux/api1.log",
+      "sha256": "3cafe4ed1f4bef707aebbad4684f46b74406fd6afec8d72e3cbc295c0321c995",
+      "frozenFiles": 3506,
+      "artifactLabel": "api1",
+      "receipt": {
+        "path": "C:/w/admin619-linux/api1-exit.json",
+        "sha256": "a41d61dd36aecdaa5efe50d9c47916b1fe7364b7c623de418e30c8a7119af55d"
+      },
+      "verifiedLog": {
+        "path": "C:/w/admin619-linux/api1.log",
+        "sha256": "3cafe4ed1f4bef707aebbad4684f46b74406fd6afec8d72e3cbc295c0321c995"
+      },
+      "sourcePhase": "initial",
+      "summaries": [
+        {
+          "package": null,
+          "files": {
+            "passed": 109,
+            "skipped": 2
+          },
+          "tests": {
+            "passed": 1619,
+            "skipped": 106
+          }
+        }
+      ]
+    },
+    "api2": {
+      "mode": "api2",
+      "container": "oto-admin619-api2",
+      "startedAt": "2026-10-22T06:35:50.407Z",
+      "finishedAt": "2026-10-22T06:47:00.745Z",
+      "exitCode": 0,
+      "log": "C:/w/admin619-linux/api2.log",
+      "sha256": "df3c14f49bc5040af649628ec12840f1d5c8d237e07d6d562336a4a2f53a8288",
+      "frozenFiles": 3506,
+      "artifactLabel": "api2",
+      "receipt": {
+        "path": "C:/w/admin619-linux/api2-exit.json",
+        "sha256": "bffcc0d6622bef3ce558b264d840d751c777bf80504a4595ed86c98ae9371c9f"
+      },
+      "verifiedLog": {
+        "path": "C:/w/admin619-linux/api2.log",
+        "sha256": "df3c14f49bc5040af649628ec12840f1d5c8d237e07d6d562336a4a2f53a8288"
+      },
+      "sourcePhase": "initial",
+      "summaries": [
+        {
+          "package": null,
+          "files": {
+            "passed": 107,
+            "skipped": 4
+          },
+          "tests": {
+            "passed": 1628,
+            "skipped": 174,
+            "todo": 4
+          }
+        }
+      ]
+    },
+    "api3": {
+      "mode": "api3",
+      "container": "oto-admin619-api3",
+      "startedAt": "2026-10-22T06:35:50.434Z",
+      "finishedAt": "2026-10-22T06:47:40.166Z",
+      "exitCode": 0,
+      "log": "C:/w/admin619-linux/api3.log",
+      "sha256": "ca58a378a1da9780fe9488f9d8a1aae46dcbc6ee422cc7f41c71be294e5a18e4",
+      "frozenFiles": 3506,
+      "artifactLabel": "api3",
+      "receipt": {
+        "path": "C:/w/admin619-linux/api3-exit.json",
+        "sha256": "d18a9edef6a43df82334f5d2ecc972ac444c4688e67653dcae6d40ead492b2a8"
+      },
+      "verifiedLog": {
+        "path": "C:/w/admin619-linux/api3.log",
+        "sha256": "ca58a378a1da9780fe9488f9d8a1aae46dcbc6ee422cc7f41c71be294e5a18e4"
+      },
+      "sourcePhase": "initial",
+      "summaries": [
+        {
+          "package": null,
+          "files": {
+            "passed": 108,
+            "skipped": 2
+          },
+          "tests": {
+            "passed": 1439,
+            "skipped": 121,
+            "todo": 1
+          }
+        }
+      ]
+    },
+    "print-final": {
+      "mode": "print-final",
+      "container": "oto-admin619-final-workspace",
+      "startedAt": "2026-10-22T06:55:23.184Z",
+      "finishedAt": "2026-10-22T06:55:46.361Z",
+      "exitCode": 0,
+      "log": "C:/w/admin619-linux/print-final.log",
+      "sha256": "b12e312493c4d8315982d2067ee8bf4f4a3ee4b722e06825c19adfb2487c76af",
+      "frozenFiles": 3506,
+      "artifactLabel": "print-final",
+      "receipt": {
+        "path": "C:/w/admin619-linux/print-final-exit.json",
+        "sha256": "01a7d46731faef56a107a77dba6db5944d756cae144bc36eeea638af50415ef2"
+      },
+      "verifiedLog": {
+        "path": "C:/w/admin619-linux/print-final.log",
+        "sha256": "b12e312493c4d8315982d2067ee8bf4f4a3ee4b722e06825c19adfb2487c76af"
+      },
+      "sourcePhase": "final",
+      "summaries": [
+        {
+          "package": "@oto/print",
+          "files": {
+            "passed": 11
+          },
+          "tests": {
+            "passed": 271
+          }
+        }
+      ]
+    },
+    "resumed-tail": {
+      "mode": "resumed-tail",
+      "container": "oto-admin619-final-workspace",
+      "startedAt": "2026-10-22T06:55:23.183Z",
+      "finishedAt": "2026-10-22T06:55:30.646Z",
+      "exitCode": 0,
+      "log": "C:/w/admin619-linux/resumed-tail.log",
+      "sha256": "c5d7dca7d6205943ed8495e1a9aef17ebc0903e65c4bf10b4758555edd83d41d",
+      "frozenFiles": 3506,
+      "artifactLabel": "resumed-tail",
+      "receipt": {
+        "path": "C:/w/admin619-linux/resumed-tail-exit.json",
+        "sha256": "c784c4579a162fe8cbfd49f6e02046c24843bbd7368261497fee82bd7eb75dce"
+      },
+      "verifiedLog": {
+        "path": "C:/w/admin619-linux/resumed-tail.log",
+        "sha256": "c5d7dca7d6205943ed8495e1a9aef17ebc0903e65c4bf10b4758555edd83d41d"
+      },
+      "sourcePhase": "final",
+      "summaries": [
+        {
+          "package": "@oto/messaging",
+          "files": {
+            "passed": 6
+          },
+          "tests": {
+            "passed": 78
+          }
+        },
+        {
+          "package": "@oto/payments-2c2p",
+          "files": {
+            "passed": 6
+          },
+          "tests": {
+            "passed": 81
+          }
+        },
+        {
+          "package": "@oto/telemetry",
+          "files": {
+            "passed": 4
+          },
+          "tests": {
+            "passed": 36
+          }
+        },
+        {
+          "package": "@oto/admin-screens",
+          "files": {
+            "passed": 4
+          },
+          "tests": {
+            "passed": 11
+          }
+        }
+      ]
+    },
+    "pos-final": {
+      "mode": "pos-final",
+      "container": "oto-admin619-final-workspace",
+      "startedAt": "2026-10-22T06:55:23.184Z",
+      "finishedAt": "2026-10-22T06:56:35.978Z",
+      "exitCode": 0,
+      "log": "C:/w/admin619-linux/pos-final.log",
+      "sha256": "af577bb5cff6dae7a904eecbdd5077d4eba1a3ad1ac83a6675643cefbb476729",
+      "frozenFiles": 3506,
+      "artifactLabel": "pos-final",
+      "receipt": {
+        "path": "C:/w/admin619-linux/pos-final-exit.json",
+        "sha256": "180db48512fc6b59dff91b4531419b7910bc6dd209c9d93059bc429f1aaf3758"
+      },
+      "verifiedLog": {
+        "path": "C:/w/admin619-linux/pos-final.log",
+        "sha256": "af577bb5cff6dae7a904eecbdd5077d4eba1a3ad1ac83a6675643cefbb476729"
+      },
+      "sourcePhase": "final",
+      "summaries": [
+        {
+          "package": "@oto/pos",
+          "files": {
+            "passed": 101
+          },
+          "tests": {
+            "passed": 1433
+          }
+        }
+      ]
+    },
+    "final-affected": {
+      "mode": "final-affected",
+      "container": "oto-admin619-final-workspace",
+      "startedAt": "2026-10-22T06:55:23.205Z",
+      "finishedAt": "2026-10-22T06:56:47.660Z",
+      "exitCode": 0,
+      "log": "C:/w/admin619-linux/final-affected.log",
+      "sha256": "27e8bfa49548a75315d132b843949c69dd118d96e715989571780c4cfbebb994",
+      "frozenFiles": 3506,
+      "artifactLabel": "final-affected",
+      "receipt": {
+        "path": "C:/w/admin619-linux/final-affected-exit.json",
+        "sha256": "4aafeb55f90fc8db2d027bdfa024358ee746ce3eb28d8fe2b1a170d2f00118be"
+      },
+      "verifiedLog": {
+        "path": "C:/w/admin619-linux/final-affected.log",
+        "sha256": "27e8bfa49548a75315d132b843949c69dd118d96e715989571780c4cfbebb994"
+      },
+      "sourcePhase": "final",
+      "summaries": []
+    },
+    "box": {
+      "mode": "box",
+      "container": "oto-admin619-final-workspace",
+      "startedAt": "2026-10-22T06:57:03.100Z",
+      "finishedAt": "2026-10-22T06:57:25.194Z",
+      "exitCode": 0,
+      "log": "C:/w/admin619-linux/box.log",
+      "sha256": "cf718ac7bd59f7a337d4576085ace03018c1ec415c7671a5520dda415a206c39",
+      "frozenFiles": 3506,
+      "artifactLabel": "box",
+      "receipt": {
+        "path": "C:/w/admin619-linux/box-exit.json",
+        "sha256": "c04c7c558e084b596de01aa888f53f83ce9b3887bcc2b1f0c02130bb2e4d0476"
+      },
+      "verifiedLog": {
+        "path": "C:/w/admin619-linux/box.log",
+        "sha256": "cf718ac7bd59f7a337d4576085ace03018c1ec415c7671a5520dda415a206c39"
+      },
+      "sourcePhase": "final",
+      "summaries": [
+        {
+          "package": "@oto/box-agent",
+          "runner": "node:test",
+          "files": null,
+          "tests": {
+            "passed": 749,
+            "failed": 0,
+            "skipped": 0,
+            "todo": 0,
+            "cancelled": 0
+          },
+          "reportedTests": 749
+        }
+      ]
+    },
+    "post": {
+      "mode": "post",
+      "container": "oto-admin619-final-workspace",
+      "startedAt": "2026-10-22T06:59:19.473Z",
+      "finishedAt": "2026-10-22T07:02:26.321Z",
+      "exitCode": 0,
+      "log": "C:/w/admin619-linux/post.log",
+      "sha256": "6541f38f04bbb94f5c5d5b6c61b396bb0996dfd99d22ebb1f6b71d6c284d1e65",
+      "frozenFiles": 3506,
+      "artifactLabel": "post",
+      "receipt": {
+        "path": "C:/w/admin619-linux/post-exit.json",
+        "sha256": "a0b3fab008e44ff1360dc2d95ce2960c9b6b053c9b01e1a7e96c5cb9b66a2a61"
+      },
+      "verifiedLog": {
+        "path": "C:/w/admin619-linux/post.log",
+        "sha256": "6541f38f04bbb94f5c5d5b6c61b396bb0996dfd99d22ebb1f6b71d6c284d1e65"
+      },
+      "sourcePhase": "final",
+      "summaries": [
+        {
+          "package": null,
+          "files": {
+            "passed": 5
+          },
+          "tests": {
+            "passed": 65
+          }
+        },
+        {
+          "package": "@oto/pos",
+          "files": {
+            "passed": 101
+          },
+          "tests": {
+            "passed": 1433
+          }
+        },
+        {
+          "package": "@oto/admin-screens",
+          "files": {
+            "passed": 4
+          },
+          "tests": {
+            "passed": 11
+          }
+        },
+        {
+          "package": "@oto/console",
+          "files": {
+            "passed": 24
+          },
+          "tests": {
+            "passed": 192,
+            "todo": 3
+          }
+        },
+        {
+          "package": "@oto/api-types",
+          "files": {
+            "passed": 1
+          },
+          "tests": {
+            "passed": 10
+          }
+        },
+        {
+          "package": "@oto/print",
+          "files": {
+            "passed": 11
+          },
+          "tests": {
+            "passed": 271
+          }
+        }
+      ]
+    }
+  },
+  "remainingComposition": {
+    "originalAttempt": {
+      "mode": "remaining",
+      "container": "oto-admin619-workspace",
+      "startedAt": "2026-10-22T06:37:05.226Z",
+      "finishedAt": "2026-10-22T06:53:00.652Z",
+      "exitCode": 1,
+      "log": "C:/w/admin619-linux/remaining.log",
+      "sha256": "7dc598a123f5717f4da45938746b6b8defc12a721bb178cc982bd3681e33b06d",
+      "frozenFiles": 3506,
+      "artifactLabel": "remaining",
+      "receipt": {
+        "path": "C:/w/admin619-linux/remaining-exit.json",
+        "sha256": "f5fa0687bf8329cf0b4019c6d64c56ad2d970ecb69f4a2958e063932ee44a175"
+      },
+      "verifiedLog": {
+        "path": "C:/w/admin619-linux/remaining.log",
+        "sha256": "7dc598a123f5717f4da45938746b6b8defc12a721bb178cc982bd3681e33b06d"
+      },
+      "sourcePhase": "initial",
+      "summaries": [
+        {
+          "package": "@oto/shared",
+          "files": {
+            "passed": 50
+          },
+          "tests": {
+            "passed": 769
+          }
+        },
+        {
+          "package": "@oto/db",
+          "files": {
+            "passed": 43
+          },
+          "tests": {
+            "passed": 305
+          }
+        },
+        {
+          "package": "@oto/pos",
+          "files": {
+            "failed": 3,
+            "passed": 98
+          },
+          "tests": {
+            "failed": 2,
+            "passed": 1356,
+            "skipped": 75
+          }
+        }
+      ]
+    },
+    "sharedDbPrefix": [
+      {
+        "package": "@oto/shared",
+        "files": {
+          "passed": 50
+        },
+        "tests": {
+          "passed": 769
+        }
+      },
+      {
+        "package": "@oto/db",
+        "files": {
+          "passed": 43
+        },
+        "tests": {
+          "passed": 305
+        }
+      }
+    ],
+    "originalTailAttempt": {
+      "mode": "remaining-tail",
+      "container": "oto-admin619-workspace",
+      "startedAt": "2026-10-22T06:45:24.556Z",
+      "finishedAt": "2026-10-22T06:45:54.371Z",
+      "exitCode": 1,
+      "log": "C:/w/admin619-linux/remaining-tail.log",
+      "sha256": "2581169afd169d0cbc0dada70d8d88015d32ede963236af6faf8e89a9a9fa040",
+      "frozenFiles": 3506,
+      "artifactLabel": "remaining-tail",
+      "receipt": {
+        "path": "C:/w/admin619-linux/remaining-tail-exit.json",
+        "sha256": "3acdc95dd45202ae8f73075e6a82d9ee8d51539b09d7d028519a70a2d53f6688"
+      },
+      "verifiedLog": {
+        "path": "C:/w/admin619-linux/remaining-tail.log",
+        "sha256": "2581169afd169d0cbc0dada70d8d88015d32ede963236af6faf8e89a9a9fa040"
+      },
+      "sourcePhase": "initial",
+      "summaries": [
+        {
+          "package": "@oto/booth",
+          "runner": "node:test",
+          "files": null,
+          "tests": {
+            "passed": 33,
+            "failed": 0,
+            "skipped": 0,
+            "todo": 0,
+            "cancelled": 0
+          },
+          "reportedTests": 33
+        },
+        {
+          "package": "@oto/launcher",
+          "files": {
+            "passed": 5
+          },
+          "tests": {
+            "passed": 72
+          }
+        },
+        {
+          "package": "@oto/inbox",
+          "files": {
+            "passed": 8
+          },
+          "tests": {
+            "passed": 176
+          }
+        },
+        {
+          "package": "@oto/assistant",
+          "files": {
+            "passed": 8
+          },
+          "tests": {
+            "passed": 434
+          }
+        },
+        {
+          "package": "@oto/print",
+          "files": {
+            "failed": 1,
+            "passed": 10
+          },
+          "tests": {
+            "failed": 1,
+            "passed": 270
+          }
+        }
+      ]
+    },
+    "tailPrefix": [
+      {
+        "package": "@oto/booth",
+        "runner": "node:test",
+        "files": null,
+        "tests": {
+          "passed": 33,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "cancelled": 0
+        },
+        "reportedTests": 33
+      },
+      {
+        "package": "@oto/launcher",
+        "files": {
+          "passed": 5
+        },
+        "tests": {
+          "passed": 72
+        }
+      },
+      {
+        "package": "@oto/inbox",
+        "files": {
+          "passed": 8
+        },
+        "tests": {
+          "passed": 176
+        }
+      },
+      {
+        "package": "@oto/assistant",
+        "files": {
+          "passed": 8
+        },
+        "tests": {
+          "passed": 434
+        }
+      }
+    ],
+    "failedPrint": {
+      "package": "@oto/print",
+      "files": {
+        "failed": 1,
+        "passed": 10
+      },
+      "tests": {
+        "failed": 1,
+        "passed": 270
+      }
+    },
+    "finalPrint": {
+      "package": "@oto/print",
+      "files": {
+        "passed": 11
+      },
+      "tests": {
+        "passed": 271
+      }
+    },
+    "resumedTail": [
+      {
+        "package": "@oto/messaging",
+        "files": {
+          "passed": 6
+        },
+        "tests": {
+          "passed": 78
+        }
+      },
+      {
+        "package": "@oto/payments-2c2p",
+        "files": {
+          "passed": 6
+        },
+        "tests": {
+          "passed": 81
+        }
+      },
+      {
+        "package": "@oto/telemetry",
+        "files": {
+          "passed": 4
+        },
+        "tests": {
+          "passed": 36
+        }
+      },
+      {
+        "package": "@oto/admin-screens",
+        "files": {
+          "passed": 4
+        },
+        "tests": {
+          "passed": 11
+        }
+      }
+    ],
+    "finalPos": {
+      "package": "@oto/pos",
+      "files": {
+        "passed": 101
+      },
+      "tests": {
+        "passed": 1433
+      }
+    },
+    "description": "Green Shared/DB and Booth/Launcher/Inbox/Assistant prefixes are composed with final full POS, final Print and resumed remaining packages; failed attempts are retained, not counted twice."
+  },
+  "attempts": {
+    "originalPos": {
+      "summary": {
+        "package": "@oto/pos",
+        "files": {
+          "failed": 3,
+          "passed": 98
+        },
+        "tests": {
+          "failed": 2,
+          "passed": 1356,
+          "skipped": 75
+        }
+      },
+      "beforeAllTimeoutFailures": 5,
+      "stopCoincidedWithFinish": {
+        "source": "coordinator observation",
+        "value": true
+      },
+      "causeEstablished": false,
+      "uninterruptedNaturalCompletionClaimed": false
+    },
+    "nativePos": {
+      "mode": "pos-final",
+      "container": "native Windows through Git Bash",
+      "startedAt": "2026-10-22T06:50:38.746Z",
+      "finishedAt": "2026-10-22T06:51:35.485Z",
+      "exitCode": 1,
+      "log": "C:/w/admin619-linux/pos-final.log",
+      "sha256": "3602076785f61ac38cfe64e1d69f6c855dd9253a0bc29d0a5a2bce1ef4c1c50c",
+      "frozenFiles": 3506,
+      "artifactLabel": "pos-native-attempt",
+      "receipt": {
+        "path": "C:/w/admin619-linux/pos-native-attempt-exit.json",
+        "sha256": "8eed3f46112dd289b09e385d011465109e630e015eefb41102a0b0c1f2d0faa5"
+      },
+      "verifiedLog": {
+        "path": "C:/w/admin619-linux/pos-native-attempt.log",
+        "sha256": "3602076785f61ac38cfe64e1d69f6c855dd9253a0bc29d0a5a2bce1ef4c1c50c"
+      },
+      "sourcePhase": "intermediate-test-only",
+      "summaries": [
+        {
+          "package": "@oto/pos",
+          "files": {
+            "failed": 4,
+            "passed": 97
+          },
+          "tests": {
+            "failed": 8,
+            "passed": 1425
+          }
+        }
+      ],
+      "classification": {
+        "localeRelatedFailures": 7,
+        "defaultLocale": {
+          "value": "en-AT",
+          "source": "coordinator observation"
+        },
+        "observedNumberFormat": "17.434,86",
+        "incorrectAwaitingOptionalArgumentAssertion": 1,
+        "correctedToOriginalOneArgumentCall": true
+      },
+      "excludedFromReleaseMetrics": true
+    },
+    "nativeAffected": {
+      "mode": "final-affected",
+      "container": "native Windows through Git Bash",
+      "startedAt": "2026-10-22T06:50:38.752Z",
+      "finishedAt": "2026-10-22T06:51:56.963Z",
+      "exitCode": 0,
+      "log": "C:/w/admin619-linux/final-affected.log",
+      "sha256": "f695191dad0428119d0270f9d1fcac9cbf017c83a5a4c37d76e8b914a9ddefa6",
+      "frozenFiles": 3506,
+      "artifactLabel": "native-affected-attempt",
+      "receipt": {
+        "path": "C:/w/admin619-linux/native-affected-attempt-exit.json",
+        "sha256": "e717df838890e753f4ec20a84f2dc059546a6a04b96f70572939e4f6f03df7f7"
+      },
+      "verifiedLog": {
+        "path": "C:/w/admin619-linux/native-affected-attempt.log",
+        "sha256": "f695191dad0428119d0270f9d1fcac9cbf017c83a5a4c37d76e8b914a9ddefa6"
+      },
+      "sourcePhase": "intermediate-test-only",
+      "summaries": [],
+      "excludedFromReleaseMetrics": true
+    }
+  },
+  "metrics": {
+    "api": {
+      "passed": 4686,
+      "skipped": 401,
+      "todo": 5
+    },
+    "apiFiles": 332,
+    "units": [
+      {
+        "package": "@oto/console",
+        "files": {
+          "passed": 24
+        },
+        "tests": {
+          "passed": 192,
+          "todo": 3
+        }
+      },
+      {
+        "package": "@oto/api-types",
+        "files": {
+          "passed": 1
+        },
+        "tests": {
+          "passed": 10
+        }
+      }
+    ],
+    "focused": {
+      "package": null,
+      "files": {
+        "passed": 5
+      },
+      "tests": {
+        "passed": 65
+      }
+    },
+    "packages": [
+      {
+        "package": "@oto/shared",
+        "files": {
+          "passed": 50
+        },
+        "tests": {
+          "passed": 769
+        }
+      },
+      {
+        "package": "@oto/db",
+        "files": {
+          "passed": 43
+        },
+        "tests": {
+          "passed": 305
+        }
+      },
+      {
+        "package": "@oto/booth",
+        "runner": "node:test",
+        "files": null,
+        "tests": {
+          "passed": 33,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "cancelled": 0
+        },
+        "reportedTests": 33
+      },
+      {
+        "package": "@oto/launcher",
+        "files": {
+          "passed": 5
+        },
+        "tests": {
+          "passed": 72
+        }
+      },
+      {
+        "package": "@oto/inbox",
+        "files": {
+          "passed": 8
+        },
+        "tests": {
+          "passed": 176
+        }
+      },
+      {
+        "package": "@oto/assistant",
+        "files": {
+          "passed": 8
+        },
+        "tests": {
+          "passed": 434
+        }
+      },
+      {
+        "package": "@oto/print",
+        "files": {
+          "passed": 11
+        },
+        "tests": {
+          "passed": 271
+        }
+      },
+      {
+        "package": "@oto/messaging",
+        "files": {
+          "passed": 6
+        },
+        "tests": {
+          "passed": 78
+        }
+      },
+      {
+        "package": "@oto/payments-2c2p",
+        "files": {
+          "passed": 6
+        },
+        "tests": {
+          "passed": 81
+        }
+      },
+      {
+        "package": "@oto/telemetry",
+        "files": {
+          "passed": 4
+        },
+        "tests": {
+          "passed": 36
+        }
+      },
+      {
+        "package": "@oto/admin-screens",
+        "files": {
+          "passed": 4
+        },
+        "tests": {
+          "passed": 11
+        }
+      },
+      {
+        "package": "@oto/pos",
+        "files": {
+          "passed": 101
+        },
+        "tests": {
+          "passed": 1433
+        }
+      }
+    ],
+    "box": [
+      {
+        "package": "@oto/box-agent",
+        "runner": "node:test",
+        "files": null,
+        "tests": {
+          "passed": 749,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "cancelled": 0
+        },
+        "reportedTests": 749
+      }
+    ],
+    "browserPassed": 95,
+    "compilers": {
+      "total": 16,
+      "executed": 7,
+      "cached": 9,
+      "tasks": [
+        {
+          "package": "@oto/booth",
+          "cached": true
+        },
+        {
+          "package": "@oto/api-types",
+          "cached": false
+        },
+        {
+          "package": "@oto/shared",
+          "cached": true
+        },
+        {
+          "package": "@oto/db",
+          "cached": true
+        },
+        {
+          "package": "@oto/box-agent",
+          "cached": true
+        },
+        {
+          "package": "@oto/print",
+          "cached": true
+        },
+        {
+          "package": "@oto/payments-2c2p",
+          "cached": true
+        },
+        {
+          "package": "@oto/messaging",
+          "cached": true
+        },
+        {
+          "package": "@oto/assistant",
+          "cached": true
+        },
+        {
+          "package": "@oto/telemetry",
+          "cached": true
+        },
+        {
+          "package": "@oto/api",
+          "cached": false
+        },
+        {
+          "package": "@oto/admin-screens",
+          "cached": false
+        },
+        {
+          "package": "@oto/inbox",
+          "cached": false
+        },
+        {
+          "package": "@oto/console",
+          "cached": false
+        },
+        {
+          "package": "@oto/launcher",
+          "cached": false
+        },
+        {
+          "package": "@oto/pos",
+          "cached": false
+        }
+      ],
+      "apiDiagnostics": 0
+    },
+    "lint": {
+      "errors": 0,
+      "warnings": 3
+    },
+    "builds": {
+      "total": 5,
+      "tasks": [
+        {
+          "package": "@oto/launcher",
+          "cached": false
+        },
+        {
+          "package": "@oto/inbox",
+          "cached": false
+        },
+        {
+          "package": "@oto/console",
+          "cached": false
+        },
+        {
+          "package": "@oto/pos",
+          "cached": false
+        },
+        {
+          "package": "@oto/booth",
+          "cached": true
+        }
+      ]
+    },
+    "generatedTypesMatch": true
+  },
+  "ordering": {
+    "boxLast": true,
+    "browserAfterBuild": true
+  },
+  "reviews": {
+    "ui": {
+      "path": "C:/w/admin619-ui-final-review.json",
+      "sha256": "7fecf59c530b87598e4e1942400a92ac3f01a266dcb4694bb85cb37dd4330e66",
+      "manifest": {
+        "path": "C:/w/admin619-ui-source-manifest.json",
+        "sha256": "b8780bed4b2e6c1da91c2ce5d3d6be76067b46457fef682ef5d120695f6ecc38"
+      },
+      "checks": {
+        "adminPresentation": {
+          "files": 53,
+          "jsxTrees": "identical after type-only assertion normalization",
+          "classNameValues": "identical",
+          "permissionCanCalls": "identical"
+        },
+        "helpers": {
+          "files": 30,
+          "originalNamedFunctions": 211,
+          "retained": 211,
+          "emittedBodiesIdentical": 210,
+          "remainingBody": "applyStaffBenefits: existing bounded array -= amount/take/cut expands to equivalent assignment under strict indexing; no rule or result change"
+        },
+        "namedTsxFunctions": {
+          "files": 53,
+          "originalNamedFunctions": 377,
+          "retained": 377,
+          "emittedBodiesIdentical": 324,
+          "reviewedDifferences": "Runtime port bindings, stable hook dependencies/private helper closures, explicit callback dependencies and structural host API-error predicate; JSX unchanged"
+        },
+        "boundaries": {
+          "ownedStaticImports": 631,
+          "forbiddenHostImports": [],
+          "copiedStoreImplementation": false,
+          "copiedOfflineOrMockApi": false,
+          "globalCurrentRuntime": false,
+          "directFetchOrStorageInOwnedLift": false
+        },
+        "host": {
+          "file": "apps/pos/src/components/admin/AdminScreenHost.tsx",
+          "description": "Original POS catalog/session/branch/station/language/navigation/API namespaces and original domain helpers passed explicitly; stable API/domain/legacy objects outside render; existing Admin.tsx permission/direct-address routing unchanged except context wrapper"
+        },
+        "compatibility": {
+          "location": "Only second useLocation tuple item is consumed by lifted TemplatesPanel; fixed empty first item is unused",
+          "prototype": "Existing local/mock classification, legacy actions and apiId-null behavior preserved; no policy or persisted-data change found"
+        },
+        "ownValidation": {
+          "packageTypecheck": {
+            "command": "pnpm --filter @oto/admin-screens typecheck",
+            "exitCode": 0
+          },
+          "lint": {
+            "command": "pnpm exec eslint packages/admin-screens/src/lifted/components packages/admin-screens/src/lifted/data packages/admin-screens/src/lifted/lib packages/admin-screens/src/lifted/model packages/admin-screens/src/lifted/runtime",
+            "exitCode": 0,
+            "errors": 0,
+            "warnings": 0
+          }
+        }
+      }
+    },
+    "census": {
+      "path": "C:/w/admin619-api-call-census.json",
+      "sha256": "6831e08f5844e2a3a24febe425abe69463861e430a2b52b17655f789a67927d7",
+      "before": {
+        "calls": 209,
+        "handTyped": 184,
+        "uniqueEndpointVerbs": 208,
+        "unread": 0
+      },
+      "after": {
+        "calls": 209,
+        "handTyped": 153,
+        "uniqueEndpointVerbs": 208,
+        "unread": 0
+      },
+      "generatedResponseMigrations": 31,
+      "ratchet": {
+        "beforeTotal": 379,
+        "afterTotal": 348,
+        "reduction": 31,
+        "changedEntries": [
+          {
+            "file": "apps/pos/src/api/analyticsReports.ts",
+            "before": 6,
+            "after": 0
+          },
+          {
+            "file": "apps/pos/src/api/checkin.ts",
+            "before": 22,
+            "after": 18
+          },
+          {
+            "file": "apps/pos/src/api/events.ts",
+            "before": 9,
+            "after": 7
+          },
+          {
+            "file": "apps/pos/src/api/menu.ts",
+            "before": 16,
+            "after": 0
+          },
+          {
+            "file": "apps/pos/src/api/platform.ts",
+            "before": 98,
+            "after": 52
+          },
+          {
+            "file": "apps/pos/src/api/stock.ts",
+            "before": 19,
+            "after": 5
+          },
+          {
+            "file": "apps/pos/src/api/voucherPromotions.ts",
+            "before": 5,
+            "after": 0
+          },
+          {
+            "file": "apps/pos/src/api/wallet.ts",
+            "before": 7,
+            "after": 2
+          },
+          {
+            "file": "apps/pos/src/components/admin/templates/templatesApi.ts",
+            "before": 1,
+            "after": 0
+          },
+          {
+            "file": "apps/pos/src/components/admin/vouchers/VoucherPromotionsPanel.tsx",
+            "before": 1,
+            "after": 0
+          },
+          {
+            "file": "packages/admin-screens/src/lifted/api/checkin.ts",
+            "before": 0,
+            "after": 4
+          },
+          {
+            "file": "packages/admin-screens/src/lifted/api/menu.ts",
+            "before": 0,
+            "after": 16
+          },
+          {
+            "file": "packages/admin-screens/src/lifted/api/platform.ts",
+            "before": 0,
+            "after": 42
+          },
+          {
+            "file": "packages/admin-screens/src/lifted/api/voucherPromotions.ts",
+            "before": 0,
+            "after": 2
+          },
+          {
+            "file": "packages/admin-screens/src/lifted/api/wallet.ts",
+            "before": 0,
+            "after": 5
+          }
+        ]
+      }
+    },
+    "mountedLocal": {
+      "path": "C:/w/admin619-mount-smoke-results.json",
+      "sha256": "c4b52585fcc371a099b9c711888c363449ca51bbd01069bde996d24c1a34b6e0",
+      "passed": true,
+      "mode": "Local synthetic ReactDOM mount only; no staging or authenticated API",
+      "checks": [
+        {
+          "code": "TICKET_DRAFT_SURVIVES_HOST_RERENDER",
+          "passed": true
+        },
+        {
+          "code": "MENU_NATIVE_SAVE_CANONICAL_READBACK",
+          "passed": true
+        },
+        {
+          "code": "TAX_DRAFT_SURVIVES_HOST_RERENDER",
+          "passed": true
+        }
+      ],
+      "counts": {
+        "renders": 8,
+        "writes": 1,
+        "readbacks": 2,
+        "loadCalls": 0,
+        "errors": 0
+      },
+      "runtimeErrors": 0,
+      "apiAttempts": 0,
+      "blockedExternal": 0,
+      "transientFixturesRemoved": true
+    }
+  },
+  "proofPreparation": {
+    "path": "C:/w/admin619-proof-review.json",
+    "sha256": "3ab7538f90878aa04c81e8d89f9b1c38dbab68b4f4f7ec9d3ba0f9b05cc070ee",
+    "helperSha256": "39cc64c976f268ac67121d557e1d6964390f8c2e963e3e2c810a9ed472f2db21",
+    "localCases": 22,
+    "scenarios": 77,
+    "stagingExecuted": false
+  },
+  "history": [
+    {
+      "path": "C:/w/admin619-house-first-harness.log",
+      "sha256": "18ff6aa2eab9a84483c74a2f79bd6fa78b9e6df424170478f4e9022dd8ce39a2",
+      "description": "Harness false positive: package-owned src/apps imports were initially misclassified.",
+      "summaries": [
+        {
+          "package": null,
+          "files": {
+            "failed": 1
+          },
+          "tests": {
+            "failed": 6
+          }
+        }
+      ]
+    },
+    {
+      "path": "C:/w/admin619-house-red.log",
+      "sha256": "e1b328fb77b2e5d4625f8f61111d88738e97f0b367262f52012a14594e657cdb",
+      "description": "Meaningful baseline red: package implementations absent and explicit adapter stub unbound; five failed, one passed.",
+      "summaries": [
+        {
+          "package": null,
+          "files": {
+            "failed": 1
+          },
+          "tests": {
+            "failed": 5,
+            "passed": 1
+          }
+        }
+      ]
+    },
+    {
+      "path": "C:/w/admin619-house-adapter.log",
+      "sha256": "6c446e5e8249da2a10baa2834ab701b8cca53c6b050daaf9985905b12e4d2fae",
+      "description": "Intermediate transport green with panel move still pending.",
+      "summaries": [
+        {
+          "package": "@oto/api",
+          "files": {
+            "failed": 1
+          },
+          "tests": {
+            "failed": 1,
+            "passed": 5
+          }
+        }
+      ]
+    },
+    {
+      "path": "C:/w/admin619-relocated-guards.log",
+      "sha256": "bacc46550a141f4dc5cceccade6ed57077feb1cf7464b25607ec313a6977b4d0",
+      "description": "Type-only copied model field caused one runtime-use scan false positive.",
+      "summaries": [
+        {
+          "package": "@oto/pos",
+          "files": {
+            "failed": 1,
+            "passed": 6
+          },
+          "tests": {
+            "failed": 1,
+            "passed": 65
+          }
+        }
+      ]
+    },
+    {
+      "path": "C:/w/admin619-relocated-guards-green.log",
+      "sha256": "52592c4d1114b3b4388abc57bf7d0b2343a80d1fc4713dc889026c583e6580f3",
+      "description": "AST declaration erasure plus executable variable/member/destructuring pin; original runtime guards retained.",
+      "summaries": [
+        {
+          "package": "@oto/pos",
+          "files": {
+            "passed": 7
+          },
+          "tests": {
+            "passed": 67
+          }
+        }
+      ]
+    },
+    {
+      "path": "C:/w/admin619-lifted-render-parity.log",
+      "sha256": "970bf1381498516759c1fbfff0e9a1928d7c7d23b007482892252e9deb32228a",
+      "description": "Old standalone summary import adapted to its host-bound factory; two fixture failures.",
+      "summaries": [
+        {
+          "package": "@oto/pos",
+          "files": {
+            "failed": 1,
+            "passed": 4
+          },
+          "tests": {
+            "failed": 2,
+            "passed": 46
+          }
+        }
+      ]
+    },
+    {
+      "path": "C:/w/admin619-lifted-render-parity-green.log",
+      "sha256": "5bdf71be18207d99d778ca7feb7fb73e999a910ee1623bc738ce53b574eccb74",
+      "description": "Original rendering/control/class assertions retained on the actual lifted source.",
+      "summaries": [
+        {
+          "package": "@oto/pos",
+          "files": {
+            "passed": 5
+          },
+          "tests": {
+            "passed": 48
+          }
+        }
+      ]
+    },
+    {
+      "path": "C:/w/admin619-integration-seams-before-final-generated.log",
+      "sha256": "0f1773eeedc0759197f431bb01873272f6992f342e1c12a311defd4dc2cabb9b",
+      "description": "Integration seam ratchet before the final generated-response migration.",
+      "summaries": [
+        {
+          "package": "@oto/api-types",
+          "files": {
+            "failed": 1
+          },
+          "tests": {
+            "failed": 1,
+            "passed": 9
+          }
+        }
+      ]
+    },
+    {
+      "path": "C:/w/admin619-integration-seams.log",
+      "sha256": "2b57a590a2520755fba9364728af4133ee24194d2e2090e2bcb24d3479a5dd59",
+      "description": "Final independent seam checks green.",
+      "summaries": [
+        {
+          "package": "@oto/api-types",
+          "files": {
+            "passed": 1
+          },
+          "tests": {
+            "passed": 10
+          }
+        }
+      ]
+    },
+    {
+      "path": "C:/w/admin619-unfrozen-overscoped-api.log",
+      "sha256": "c7d954a871223bd204327287aa4928570ed7f81d20b0464cf03c98afc71abbfd",
+      "excludedFromReleaseMetrics": true,
+      "description": "Earlier unfrozen over-scoped API attempt; not counted as release coverage."
+    }
+  ],
+  "limitations": [
+    "Initial complete API shards and initial gates use the preserved first freeze; exactly three final test-only adaptations are identified, and all 1005 backend inputs plus product source are unchanged.",
+    "The original POS sweep reported five beforeAll timeouts; its finish coincided with the coordinator stopping the owned container, so uninterrupted natural completion and the exact cause are not claimed.",
+    "The failed native Windows POS attempt is preserved with seven locale-related failures and one corrected test assertion; its passing counts are not release coverage.",
+    "Local synthetic mounting and proof-helper guard checks are not staging acceptance.",
+    "No candidate landing, exact-SHA CI or live deployment is claimed by this local receipt."
+  ],
+  "landedAt": "2026-10-22T07:03:31.082Z"
+}
