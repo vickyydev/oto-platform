@@ -1,0 +1,312 @@
+{
+  "ticket": "SCRUM-620",
+  "passed": true,
+  "auditedAt": "2026-10-22T09:12:44.396Z",
+  "candidateSha": "278ebd9d7c6c8a8d71937a5d4ca72d1997003d94",
+  "localReleaseGatesComplete": true,
+  "sourceFiles": 3531,
+  "ownedSourcePaths": 38,
+  "commitFiles": 41,
+  "backendInputs": 1234,
+  "checks": [
+    {
+      "name": "Local receipt is complete and bound to the exact candidate, with CI/staging pending",
+      "passed": true
+    },
+    {
+      "name": "Current HEAD is the reviewed candidate",
+      "passed": true
+    },
+    {
+      "name": "Final raw manifest has3531 unique safe source/config paths",
+      "passed": true
+    },
+    {
+      "name": "All3531 current raw inputs match the recorded final freeze",
+      "passed": true
+    },
+    {
+      "name": "All3531 filtered Git blob IDs equal the committed candidate tree",
+      "passed": true,
+      "evidence": {
+        "rawSha256BeforeFiltering": true,
+        "gitFiltering": "git hash-object --stdin-paths, no write; preserves repository filters/line endings rather than pretending raw bytes always equal a Git blob"
+      }
+    },
+    {
+      "name": "Candidate changes exactly38 owned source paths and three coordinator documents",
+      "passed": true
+    },
+    {
+      "name": "Commit references620 and contains no attribution trailer",
+      "passed": true
+    },
+    {
+      "name": "Source is clean after the reviewed rebase",
+      "passed": true
+    },
+    {
+      "name": "Snapshot fingerprint matches local receipt: initial",
+      "passed": true
+    },
+    {
+      "name": "Snapshot fingerprint matches local receipt: final",
+      "passed": true
+    },
+    {
+      "name": "Snapshot fingerprint matches local receipt: release2",
+      "passed": true
+    },
+    {
+      "name": "Snapshot fingerprint matches local receipt: release3",
+      "passed": true
+    },
+    {
+      "name": "Backend selector is explicit:1234 inputs, only the catalog test changed since initial API freeze",
+      "passed": true,
+      "evidence": {
+        "selector": "^(apps\\/api\\/|packages\\/(db|shared|print|messaging|payments-2c2p|telemetry)\\/|apps\\/oto-app\\/(migrations|shared)\\/)",
+        "unchanged": 1233,
+        "soleDelta": [
+          "apps/api/test/catalog.test.ts"
+        ],
+        "earlier1009Selector": "API plus db/shared/api-types; a different narrower set, not the same census"
+      }
+    },
+    {
+      "name": "Completed/source-verified gate matches actual receipt: checks",
+      "passed": true
+    },
+    {
+      "name": "Completed/source-verified gate matches actual receipt: units",
+      "passed": true
+    },
+    {
+      "name": "Completed/source-verified gate matches actual receipt: other",
+      "passed": true
+    },
+    {
+      "name": "Completed/source-verified gate matches actual receipt: api1",
+      "passed": true
+    },
+    {
+      "name": "Completed/source-verified gate matches actual receipt: api2",
+      "passed": true
+    },
+    {
+      "name": "Completed/source-verified gate matches actual receipt: api3",
+      "passed": true
+    },
+    {
+      "name": "Completed/source-verified gate matches actual receipt: pos",
+      "passed": true
+    },
+    {
+      "name": "Completed/source-verified gate matches actual receipt: review",
+      "passed": true
+    },
+    {
+      "name": "Completed/source-verified gate matches actual receipt: browser",
+      "passed": true
+    },
+    {
+      "name": "Completed/source-verified gate matches actual receipt: box",
+      "passed": true
+    },
+    {
+      "name": "Completed/source-verified gate matches actual receipt: post",
+      "passed": true
+    },
+    {
+      "name": "Each full API shard has one successful whole-suite report",
+      "passed": true
+    },
+    {
+      "name": "Actual API aggregate is4707 passed401 skipped5 todo across335 files",
+      "passed": true
+    },
+    {
+      "name": "Historical API2/3 did not select the changed catalog test",
+      "passed": true
+    },
+    {
+      "name": "Whole focused and POS gates retain actual95/1433 counts",
+      "passed": true
+    },
+    {
+      "name": "Whole Console200 plus3 todo and seam10 are verified",
+      "passed": true
+    },
+    {
+      "name": "All11 remaining packages have their actual whole-suite results",
+      "passed": true
+    },
+    {
+      "name": "Actual16 compilers, five builds, full lint0errors3 inherited warnings and generated types match",
+      "passed": true
+    },
+    {
+      "name": "Post API compiler prints zero diagnostics",
+      "passed": true
+    },
+    {
+      "name": "Targeted post has95/POS1433/Admin16/Console200+3todo/seam10; generated-file warning disclosed",
+      "passed": true,
+      "evidence": {
+        "postLintErrors": 0,
+        "postLintWarnings": 1,
+        "warning": "Generated packages/api-types/src/openapi.ts is ignored by ESLint. This is distinct from the three unchanged warnings in the full lint gate."
+      }
+    },
+    {
+      "name": "Whole built browser113 includes all18 Organisation cases",
+      "passed": true
+    },
+    {
+      "name": "Box finished749/0 with no cancelled, skipped or todo",
+      "passed": true
+    },
+    {
+      "name": "Browser follows build, Box is last full battery, post follows Box",
+      "passed": true
+    },
+    {
+      "name": "Original failed attempt is preserved: initialWorkspace",
+      "passed": true
+    },
+    {
+      "name": "Original failed attempt is preserved: initialApi1",
+      "passed": true
+    },
+    {
+      "name": "Original failed attempt is preserved: browser",
+      "passed": true
+    },
+    {
+      "name": "All22 historical focused/setup records retain their original hashes and distinctions",
+      "passed": true
+    },
+    {
+      "name": "Proof preparation is current14cases83scenarios plus3 geometry checks, separately limited",
+      "passed": true,
+      "evidence": {
+        "fontSubstitution": {
+          "sha256": "3100e775e8616cd2611beecfa23a4263d7037586789b43f035236a2e6fbd4c62",
+          "path": "apps/pos/src/assets/fonts/inter-latin.woff2",
+          "substitutedForGoogleBytes": true,
+          "note": "Bundled Inter Latin is inlined locally; exact Google-served bytes are not asserted. Live capture geometry remains authoritative."
+        },
+        "closedDialogStub": true,
+        "stagingExecuted": false
+      }
+    },
+    {
+      "name": "All independent source audits remain successful with their original scope",
+      "passed": true
+    }
+  ],
+  "actualMetrics": {
+    "api": {
+      "passed": 4707,
+      "skipped": 401,
+      "todo": 5
+    },
+    "apiFiles": 335,
+    "browserPassed": 113,
+    "organisationBrowserCases": 18,
+    "focused": 95,
+    "pos": 1433,
+    "console": 200,
+    "consoleTodo": 3,
+    "seam": 10,
+    "remainingPackages": {
+      "@oto/shared": 769,
+      "@oto/db": 305,
+      "@oto/booth": 33,
+      "@oto/launcher": 72,
+      "@oto/inbox": 176,
+      "@oto/assistant": 434,
+      "@oto/print": 271,
+      "@oto/messaging": 78,
+      "@oto/payments-2c2p": 81,
+      "@oto/telemetry": 36,
+      "@oto/admin-screens": 16
+    },
+    "box": 749,
+    "compilers": {
+      "total": 16,
+      "executed": 4,
+      "cached": 12
+    },
+    "builds": 5,
+    "fullLint": {
+      "errors": 0,
+      "warnings": 3
+    },
+    "postLint": {
+      "errors": 0,
+      "warnings": 1,
+      "kind": "generated ignored file"
+    }
+  },
+  "localReceipt": {
+    "path": "C:/w/admin620-local-results.json",
+    "sha256": "30cd9746efe9618c25d98c1b8516429457c810de54cdcf60729460f4a179eb67"
+  },
+  "sourceManifest": {
+    "path": "C:/w/admin620-release3-linux/frozen-source-manifest.json",
+    "sha256": "51247bbc088e2ad5cfb8a1e3c952a1b57e80937f32fefa67a9be2884970e51fd"
+  },
+  "verifiedPublicArtifacts": 80,
+  "sourceAudits": [
+    {
+      "path": "C:/w/admin620-source-audit.json",
+      "sha256": "e099b897aec3f8451103be80e01006964d6a729734b0bc8ca967b17e71802495"
+    },
+    {
+      "path": "C:/w/admin620-release2-source-audit.json",
+      "sha256": "03771681dcc87f60a42f9ad3dcc64d85d18fe3b15681a2f7efeaf33351666941"
+    },
+    {
+      "path": "C:/w/admin620-release3-source-audit.json",
+      "sha256": "1855791f3f90cad5f64cdfd01fcf8e9a37905a2bcb39266acd4838444ef349c0"
+    }
+  ],
+  "ci": {
+    "status": "pending"
+  },
+  "staging": {
+    "status": "pending"
+  },
+  "limits": [
+    "Local source, committed blobs and release receipts only; no CI, Render, Jira or staging access was used.",
+    "API2/3 are historical initial-snapshot runs. The explicit1234-input backend selector changes only the catalog test, unselected there; whole API1 reran on release2.",
+    "Full workspace/units/remaining packages ran on final3529, POS/focus/API1 on release2, browser/Box/post on release3; exact deltas and prior failures remain preserved.",
+    "Full lint retains three unchanged warnings. Post lint reports one generated-file ignore warning, with zero errors.",
+    "Proof preparation uses disclosed font substitution and closed-dialog stubs; staging acceptance is still pending."
+  ],
+  "landingMetadataBinding": {
+    "checkedAt": "2026-10-22T09:17:45.390Z",
+    "passed": true,
+    "sourceAndAllGateEvidenceUnchanged": true,
+    "changedFields": [
+      "sourceLandedOnMain",
+      "landedAt",
+      "limitations[0]"
+    ],
+    "originalIndependentAudit": {
+      "path": "C:/w/admin620-prelanding-release-audit.json",
+      "sha256": "508348f0655dd1fc8baa995fc15a8c30b04145d93a2df95befaedbbb46e89a26",
+      "checks": 42
+    },
+    "originalLocalReceipt": {
+      "path": "C:/w/admin620-prelanding-local-results.json",
+      "sha256": "0f50974702af8296a5bb11b40a3c8eaad3d5924046333876ccd456f4aabccf83"
+    },
+    "currentLocalReceipt": {
+      "path": "C:/w/admin620-local-results.json",
+      "sha256": "30cd9746efe9618c25d98c1b8516429457c810de54cdcf60729460f4a179eb67"
+    },
+    "scope": "The independent local audit remains42 checks. This additional binding verifies only the observed source-push metadata; it does not rerun tests or claim CI/staging acceptance."
+  }
+}

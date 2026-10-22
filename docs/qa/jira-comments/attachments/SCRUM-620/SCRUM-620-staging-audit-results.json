@@ -1,0 +1,496 @@
+{
+  "ticket": "SCRUM-620",
+  "passed": true,
+  "checkedAt": "2026-10-22T09:55:58.082Z",
+  "candidateSha": "278ebd9d7c6c8a8d71937a5d4ca72d1997003d94",
+  "mode": "Public retained evidence audit only; no helper execution, auth, network, private journal or Git/source writes",
+  "checks": [
+    {
+      "name": "Completed staging, local gates and independent committed-source audit bind exact source SHA",
+      "passed": true
+    },
+    {
+      "name": "Explicit reviewed V2 amendment preserves historical54 and binds current helper, actual14/83 rerun and native selection regression",
+      "passed": true
+    },
+    {
+      "name": "Observed exact-SHA CI has six completed successful jobs",
+      "passed": true
+    },
+    {
+      "name": "Reviewed helper retained exact latest-live API and Console deployment pair",
+      "passed": true
+    },
+    {
+      "name": "Fresh session and all proof controls follow both deployments",
+      "passed": true
+    },
+    {
+      "name": "Exactly seven stated native controls passed within the post-deployment session",
+      "passed": true
+    },
+    {
+      "name": "Exact seeded administrator has a known original park and fresh empty browser storage",
+      "passed": true
+    },
+    {
+      "name": "Only three labelled fixtures and eleven logical operations; one sign-in/sign-out with no prohibited or blocked action",
+      "passed": true
+    },
+    {
+      "name": "Every exact-key operation is positively settled with200 and only safe public fingerprints",
+      "passed": true
+    },
+    {
+      "name": "Captured fixture IDs are distinct and retained archived branch is labelled and owned",
+      "passed": true
+    },
+    {
+      "name": "Public wire fingerprints match only approved own fixture bodies, typed confirmations and two exact seats",
+      "passed": true
+    },
+    {
+      "name": "Reviewed helper confirms exact original preferences/session/estate and successful retained mirror",
+      "passed": true
+    },
+    {
+      "name": "Fresh owned branch/holiday/session audit counts and timestamps are retained without claiming live operator audits",
+      "passed": true
+    },
+    {
+      "name": "Exactly three native screenshots have their required controls, whole bounds and clear caption",
+      "passed": true
+    },
+    {
+      "name": "Actual PNG hashes/dimensions/post-deploy file times match; phone viewport/document are390",
+      "passed": true
+    },
+    {
+      "name": "Sign-out200 and anonymous/me401 are confirmed without pending/uncertain auth",
+      "passed": true
+    },
+    {
+      "name": "Actual browser error kinds are retained without classifying their cause",
+      "passed": true
+    }
+  ],
+  "metrics": {
+    "acceptedControls": 7,
+    "images": 3,
+    "logicalOperations": 11,
+    "dispatchAttempts": 11,
+    "createdFixtures": 3,
+    "prohibitedBusinessWrites": 0,
+    "smsRequests": 0,
+    "equipmentWrites": 0,
+    "blockedRequests": 0,
+    "browserErrorKinds": [],
+    "ownAuditEvents": 8
+  },
+  "artifacts": {
+    "stage": {
+      "path": "C:/w/admin620-staging-results.json",
+      "sha256": "48f9c841433215950cb061cd0c7d2f627cafc538eb6cafae8917198e5b63cd3b"
+    },
+    "local": {
+      "path": "C:/w/admin620-local-results.json",
+      "sha256": "30cd9746efe9618c25d98c1b8516429457c810de54cdcf60729460f4a179eb67"
+    },
+    "independentReleaseAudit": {
+      "path": "C:/w/admin620-final-release-audit.json",
+      "sha256": "bd2bf34b0af8c28397f8597dc55e7227810338a897cbe39b92f130502ab92ecb"
+    },
+    "ci": {
+      "path": "C:/w/admin620-source-ci-results.json",
+      "sha256": "a283f082f8d7a63f786c9b9f0a2bc663ddfaf3de347c5fff8890a25a850be420"
+    },
+    "helper": {
+      "path": "C:/w/admin620-evidence-v2.mjs",
+      "sha256": "8f8a74a257a7b70722c3212fb6bba9df307046f40ef5895be8b78c52ee4a6660"
+    },
+    "amendment": {
+      "path": "C:/w/admin620-proof-amendment-v2.json",
+      "sha256": "db271cd9cb7fcc5e30bea3a5eddba2a0cd364372c38647f4e1bd55d92f605cd6"
+    },
+    "currentGuardReview": {
+      "path": "C:/w/admin620-proof-review-v2.json",
+      "sha256": "5c4a40dc8f3580d170821d18f9a1c8ddbd28821b41c698baca05ff5004f9f51c"
+    },
+    "nativeSelectionRegression": {
+      "path": "C:/w/admin620-same-selection-review.json",
+      "sha256": "6a4b9119ad09ba948242e3da74f2331908c5b72833fdaf82fc694ce9a3a9cb2d"
+    },
+    "historicalGuardReview": {
+      "path": "C:/w/admin620-proof-review.json",
+      "sha256": "ce9b0061352e3c138d553cb74a29e080cde02a462fa7f17d27255dd2ef81f13f"
+    },
+    "independentProofReview": {
+      "path": "C:/w/admin620-proof-final-independent.json",
+      "sha256": "e297694d5b325eeb28815db1b41c481e45128cd932dcef0b4a07ee285613385c"
+    }
+  },
+  "latestProofDeployments": [
+    {
+      "name": "oto-api-staging",
+      "deployId": "dep-dbctg3lg1s2s738eju40",
+      "sourceSha": "278ebd9d7c6c8a8d71937a5d4ca72d1997003d94",
+      "finishedAt": "2026-10-22T09:35:26.639459Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "deployId": "dep-dbctg3lg1s2s738ejv90",
+      "sourceSha": "278ebd9d7c6c8a8d71937a5d4ca72d1997003d94",
+      "finishedAt": "2026-10-22T09:32:46.482801Z"
+    }
+  ],
+  "images": [
+    {
+      "filename": "SCRUM-620-01-operators-desktop.png",
+      "path": "C:\\w\\admin-organisation\\docs\\qa\\jira-comments\\attachments\\SCRUM-620\\SCRUM-620-01-operators-desktop.png",
+      "sha256": "8415b79f75f66792354fd10688cba4ff452633c8d71f35d3cd6a4ebf76e205ee",
+      "width": 1440,
+      "height": 1000,
+      "capturedAt": "2026-10-22T09:54:27.678Z",
+      "modifiedAt": "2026-10-22T09:54:27.738Z",
+      "bounds": [
+        {
+          "name": "heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "fixture row",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "rename control",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "attachmentId": "11955"
+    },
+    {
+      "filename": "SCRUM-620-02-branch-edit-desktop.png",
+      "path": "C:\\w\\admin-organisation\\docs\\qa\\jira-comments\\attachments\\SCRUM-620\\SCRUM-620-02-branch-edit-desktop.png",
+      "sha256": "a39e02bb680979f86f9fdd62bcf70f427fe6a2529bc14457d33b359519a9615b",
+      "width": 1440,
+      "height": 1000,
+      "capturedAt": "2026-10-22T09:54:42.452Z",
+      "modifiedAt": "2026-10-22T09:54:42.531Z",
+      "bounds": [
+        {
+          "name": "heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "name",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "timezone",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "trading day",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "Monday opens",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "Monday closes",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "save",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "attachmentId": "11956"
+    },
+    {
+      "filename": "SCRUM-620-03-holidays-phone.png",
+      "path": "C:\\w\\admin-organisation\\docs\\qa\\jira-comments\\attachments\\SCRUM-620\\SCRUM-620-03-holidays-phone.png",
+      "sha256": "ccf61439679243d50c30b773bd69388b2efe59c1272779f163a3e7d570d1f427",
+      "width": 390,
+      "height": 844,
+      "capturedAt": "2026-10-22T09:54:59.343Z",
+      "modifiedAt": "2026-10-22T09:54:59.385Z",
+      "bounds": [
+        {
+          "name": "heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "add range",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "fixture holiday",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "edit fixture",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "attachmentId": "11957"
+    }
+  ],
+  "coordinatorReviewedImages": true,
+  "attachmentIds": [
+    "11955",
+    "11956",
+    "11957"
+  ],
+  "actor": {
+    "id": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+    "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+    "originalBranchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+  },
+  "retainedFixture": {
+    "operatorId": "01a16308-7dc1-71e1-8f4c-57658b32faa9",
+    "branchId": "01a16308-b040-7c82-9353-c0125dc3e3ff",
+    "branchName": "ZZ TEST SCRUM-620 Renamed branch 20261022T095413021Z",
+    "archivedBranchRetained": true,
+    "directAppDelete": false
+  },
+  "mapping": {
+    "installed": true,
+    "status": "SUCCESS",
+    "hasAppRow": true,
+    "appBranchId": "01a16308-b044-7728-9dab-28493d5873d4",
+    "appBranchName": "ZZ TEST SCRUM-620 Renamed branch 20261022T095413021Z"
+  },
+  "resourcesRestored": true,
+  "authCleanup": {
+    "signOutStatus": 200,
+    "meStatus": 401,
+    "confirmed": true
+  },
+  "operations": [
+    {
+      "label": "operator-create",
+      "method": "POST",
+      "pathSha256": "a533a3bb2fc8d9d148b243f97547e8cb318da3efa67c7cb0e378011b24fd74a2",
+      "bodySha256": "8f5c05ebb259e8f8e2afe32506644e2330b915a2bf6bb4976f001487dfece117",
+      "keySha256": "8b6d188bc7599e8e1b50e10bdda107c1c7774c171f18ef466e3e7a898109a3a5",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": "01a16308-7dc1-71e1-8f4c-57658b32faa9"
+    },
+    {
+      "label": "operator-rename",
+      "method": "PATCH",
+      "pathSha256": "594fe1bccd63c40265d6e4b707c0ea2a30a972d181a36a27c633151f802c011e",
+      "bodySha256": "ae48f0417a5308b7f6d14a8b34df2761ae912e958e29e28086518855b08acc19",
+      "keySha256": "97921d55e7c59a5da20907e0613885a5f50d45329d2e7636748e927452a40dd2",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "operator-archive",
+      "method": "PATCH",
+      "pathSha256": "594fe1bccd63c40265d6e4b707c0ea2a30a972d181a36a27c633151f802c011e",
+      "bodySha256": "5a5b2e911fbf9b5d6cb15ab7a4e7ad162d50ac352bb2da98155eebf909b354ee",
+      "keySha256": "7373b62ec1a0928b627c26509f09696e0601404bcceb9ce6787ac38a71342272",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "branch-create",
+      "method": "POST",
+      "pathSha256": "83ee7a9bd98a15e175434060773236c3dc6f7f3c0c9353a874d486be7e5d73a5",
+      "bodySha256": "be9247253d3f2c44c9612fd6c5f0e9ec7d96294858212160e45d120b48cdfb24",
+      "keySha256": "a6e8afa0544357b742243fa8715cdb0bee183901c3e960f2a598d01420b96f05",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": "01a16308-b040-7c82-9353-c0125dc3e3ff"
+    },
+    {
+      "label": "branch-edit",
+      "method": "PATCH",
+      "pathSha256": "a00dbf292f905d5901744902feb1d5f75178ee53d984ef9ffcf58a3ee44da4f7",
+      "bodySha256": "b72b14c865f597041a8b0af60d4e6355d31f4a7de924fa793685cdf727d1e2f2",
+      "keySha256": "9a635b529f30796c0e08964b1dd36304607b4afe15741f7e0f5f36dffc6be256",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "switch-fixture",
+      "method": "PUT",
+      "pathSha256": "029d741272dd5da040d551a15dc5e32e4299f4abe3e60b4e1b473375281bbf19",
+      "bodySha256": "bed7457382917a30000fae00e747a2a13a8fefc704d322e0a49a5386636aa393",
+      "keySha256": "e402728badd9fcdadb8c4024747dd65de8df69908c65ae6a0ae4bdb7d6db4178",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "holiday-create",
+      "method": "POST",
+      "pathSha256": "4a9d479034ff0245f15ab8023d91d8e30f73578e158ba98f4a515f9abcb2064f",
+      "bodySha256": "3b08094d4e756b02cfaab2dab7c8c7c082bf6608a098adcab40de68c9a49155a",
+      "keySha256": "d41e98df44669af7bd0527c5f1e9bf5b3c59f1f009fda0ca77f34abe39749f77",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": "01a16308-f0e3-7692-94bc-f44518eb9f4c"
+    },
+    {
+      "label": "holiday-edit",
+      "method": "PATCH",
+      "pathSha256": "893e3386a13988ae42e33d103c83d27d85ac4d2a3ac280603996a205d519f7b3",
+      "bodySha256": "4842c72ca9b18546d17ea57dc373f2413e113d7e3112de55f617b0606bed575d",
+      "keySha256": "d4bc2a7c0fa1cc4d535e469599a43f65e6f379d278ee6b3a93afb68bb3d76f1e",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "holiday-delete",
+      "method": "DELETE",
+      "pathSha256": "893e3386a13988ae42e33d103c83d27d85ac4d2a3ac280603996a205d519f7b3",
+      "bodySha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "keySha256": "7a6bba27475d7a2b743172bd523c488f5e65d3d1b4984fe684d4f7066368ae87",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "switch-original",
+      "method": "PUT",
+      "pathSha256": "029d741272dd5da040d551a15dc5e32e4299f4abe3e60b4e1b473375281bbf19",
+      "bodySha256": "6af194b7ab09888b44159ca3bbb5cdf5ecada10f7da8f68730e8053be0d73fef",
+      "keySha256": "588760344ee3e4430f96c1253bed933aedbf297dfe9f10dac2703da9a34d6d8e",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "branch-archive",
+      "method": "PATCH",
+      "pathSha256": "a00dbf292f905d5901744902feb1d5f75178ee53d984ef9ffcf58a3ee44da4f7",
+      "bodySha256": "c86c48a6839fc3adb398480e9031459072f70c68f5dfea2c903417f0ea92da5e",
+      "keySha256": "c82c5e1f7654768806ad8c70e775d18a5b374097514d45601c9ee8245ee22496",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    }
+  ],
+  "audits": [
+    {
+      "action": "branch.create",
+      "entityId": "01a16308-b040-7c82-9353-c0125dc3e3ff",
+      "count": 1,
+      "timestamps": [
+        "2026-10-22T09:54:36.224Z"
+      ]
+    },
+    {
+      "action": "branch.update",
+      "entityId": "01a16308-b040-7c82-9353-c0125dc3e3ff",
+      "count": 2,
+      "timestamps": [
+        "2026-10-22T09:55:15.709Z",
+        "2026-10-22T09:54:38.484Z"
+      ]
+    },
+    {
+      "action": "branch_holiday.create",
+      "entityId": "01a16308-f0e3-7692-94bc-f44518eb9f4c",
+      "count": 1,
+      "timestamps": [
+        "2026-10-22T09:54:52.771Z"
+      ]
+    },
+    {
+      "action": "branch_holiday.update",
+      "entityId": "01a16308-f0e3-7692-94bc-f44518eb9f4c",
+      "count": 1,
+      "timestamps": [
+        "2026-10-22T09:54:54.233Z"
+      ]
+    },
+    {
+      "action": "branch_holiday.delete",
+      "entityId": "01a16308-f0e3-7692-94bc-f44518eb9f4c",
+      "count": 1,
+      "timestamps": [
+        "2026-10-22T09:55:04.703Z"
+      ]
+    },
+    {
+      "action": "session.branch_switch",
+      "count": 2,
+      "sessionIdSha256": "b00f5d301c15f871b7c7fb0199586afe7c0afc9fccdbfc345da496664445bf19",
+      "timestamps": [
+        "2026-10-22T09:55:09.003Z",
+        "2026-10-22T09:54:47.200Z"
+      ]
+    }
+  ],
+  "browserErrorKinds": [],
+  "previousAttempts": [
+    {
+      "path": "C:\\w\\admin-organisation\\docs\\qa\\jira-comments\\attachments\\SCRUM-620\\SCRUM-620-attempt1-preservation.json",
+      "sha256": "fb1402571d5746f9ae2c7970134e42fc1c3ba6595cd0f14ca8115057a8fc2eb3"
+    },
+    {
+      "path": "C:\\w\\admin-organisation\\docs\\qa\\jira-comments\\attachments\\SCRUM-620\\SCRUM-620-attempt1-recovery-readonly-v2.json",
+      "sha256": "9ad57dbfc423b002aa77a82924852c47bd7b3b169f0f76f7bcdf7b963fcb2450"
+    },
+    {
+      "path": "C:\\w\\admin-organisation\\docs\\qa\\jira-comments\\attachments\\SCRUM-620\\SCRUM-620-attempt1-recovery-readonly-v3.json",
+      "sha256": "963b6dcb4849ae1f3de9940fd36988a3e092dd496076c774cdec3b970de578bf"
+    },
+    {
+      "path": "C:\\w\\admin-organisation\\docs\\qa\\jira-comments\\attachments\\SCRUM-620\\SCRUM-620-attempt1-recovery-readonly.json",
+      "sha256": "48dc2d7899e6648a7af8ba2a13c885de62fa456c76e93b5c22845a17e00fb263"
+    },
+    {
+      "path": "C:\\w\\admin-organisation\\docs\\qa\\jira-comments\\attachments\\SCRUM-620\\SCRUM-620-attempt1-staging-results.json",
+      "sha256": "d0e94a95c5d304183d6ee08074a1bea2fe423b7df21b2946cb970befcf6a3d7f"
+    }
+  ],
+  "limitations": [
+    "Operator create/rename/archive audits belong to the new operator and cannot be read through the current tenant-fenced audit API. Exact three-event audit/replay proof is automated-only; staging verifies native UI and canonical operator reads.",
+    "Only fresh labelled operator, branch and unused future holiday fixtures are changed. The archived branch and its existing owned mirror are retained, never directly deleted.",
+    "The fresh session switches to the fixture and back. GET /me exposes no station ID; no station selection or other session mutation is performed.",
+    "Active equipment archive refusals, permission negatives, sold-holiday locks and uncertain readback cases are automated proof; no live equipment or payment record is changed.",
+    "Unrelated operator/branch rows, navigation labels and signed-in person details are hidden for proof privacy; the asserted native controls and fixture records remain visible.",
+    "Browser error kinds and partial attempts are retained. Passing these stated controls does not claim an error-free browser.",
+    "Original local release/proof preparation remains54. Executed V2 is bound separately through the explicit amendment and actual14/83 rerun. Candidate-CSS geometry is inherited under identical capture code; font substitution and closed-dialog stubs remain disclosed.",
+    "This validator checks retained public flags/fingerprints and the reviewed helper, without a new remote read. Exact preferences/estate equality, audit actor and session direction were checked inside that helper; the public receipt does not include those raw snapshots.",
+    "No station-null state or live operator-audit proof is claimed. Operator audit/replay and permission/equipment/payment negatives remain automated-only.",
+    "All3 images were viewed by the coordinator under the explicit command flag. The validator verifies PNG bytes/dimensions/bounds metadata, without inventing an independent pixel review.",
+    "Browser error kinds are retained exactly and remain unclassified; passing the seven stated controls does not establish their cause or claim an error-free browser."
+  ]
+}

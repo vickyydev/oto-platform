@@ -1,0 +1,145 @@
+{
+  "ticket": "SCRUM-620",
+  "passed": true,
+  "preparedAt": "2026-10-22T09:53:44.831Z",
+  "sourceReleaseSha": "278ebd9d7c6c8a8d71937a5d4ca72d1997003d94",
+  "mode": "External proof helper amendment only; product source, local gates, source CI and original proof preparation remain unchanged",
+  "originalHelper": {
+    "path": "C:/w/admin620-evidence-before-diagnostics.mjs",
+    "sha256": "54e4e01ea902820e73a33c3a934c13ca9eaa5722f341796958686d0ae4dd9a22"
+  },
+  "originalHelperStillImmutable": {
+    "path": "C:/w/admin620-evidence.mjs",
+    "sha256": "54e4e01ea902820e73a33c3a934c13ca9eaa5722f341796958686d0ae4dd9a22"
+  },
+  "revisedHelper": {
+    "path": "C:/w/admin620-evidence-v2.mjs",
+    "sha256": "8f8a74a257a7b70722c3212fb6bba9df307046f40ef5895be8b78c52ee4a6660"
+  },
+  "helperSelfReportsSha256": true,
+  "helperFilename": "admin620-evidence-v2.mjs",
+  "changedFunctions": [
+    "holidayPage",
+    "installGuards",
+    "read"
+  ],
+  "addedDiagnosticFunctions": [
+    "holidayFacts",
+    "recordApiGet",
+    "safeRequestMetadata"
+  ],
+  "changes": [
+    "Skip native selectOption when the captured fixture UUID is already selected; assert the same selected UUID before requiring the unchanged native calendar heading. A different selected park still dispatches one native change.",
+    "Add fixed Holiday navigation/selection/range-readiness phase tags and failure-only DOM booleans/counts.",
+    "Record only approved-host/resource/path-hash/query-key classifications for blocked requests and bounded API GET status classes. Query values, bodies, raw errors and auth values are never recorded.",
+    "Self-report executing helper file SHA256 and basename in the public receipt."
+  ],
+  "unchanged": [
+    "Exact actor/origin/deployment checks; all business specifications and input/read/font guards; permissions; journal-before-dispatch; same-key recovery; narrow fixture cleanup and final completion predicates.",
+    "Original14/83 preparation and candidate-CSS geometry receipts are immutable. V2 guard harness reran14/83; original geometry is reused explicitly because capture and all source/CSS inputs are unchanged.",
+    "No new font allowance: matching /l/font path is only a candidate; original hostname/resource/query were not recorded."
+  ],
+  "originalGuardRerun": {
+    "path": "C:/w/admin620-proof-review-v2.json",
+    "sha256": "5c4a40dc8f3580d170821d18f9a1c8ddbd28821b41c698baca05ff5004f9f51c",
+    "passed": true,
+    "localCases": 14,
+    "scenarios": 83,
+    "helperSha256": "8f8a74a257a7b70722c3212fb6bba9df307046f40ef5895be8b78c52ee4a6660",
+    "geometryReusedFromOriginalHelperSha256": "54e4e01ea902820e73a33c3a934c13ca9eaa5722f341796958686d0ae4dd9a22"
+  },
+  "sameSelectionRegression": {
+    "path": "C:/w/admin620-same-selection-review.json",
+    "sha256": "6a4b9119ad09ba948242e3da74f2331908c5b72833fdaf82fc694ce9a3a9cb2d",
+    "meaningfulOldRed": 1,
+    "revisedGreen": 2,
+    "networkRequests": 0,
+    "checks": [
+      {
+        "name": "old helper redundantly selecting current UUID removes native calendar",
+        "passed": true,
+        "expectedHelperOutcome": "RED",
+        "observedChangeEvents": 1,
+        "observedHolidayReads": 1,
+        "calendarPresent": false
+      },
+      {
+        "name": "V2 already-selected UUID keeps native calendar without change event",
+        "passed": true,
+        "expectedHelperOutcome": "GREEN",
+        "observedChangeEvents": 0,
+        "observedHolidayReads": 1,
+        "calendarPresent": true
+      },
+      {
+        "name": "V2 different UUID selects captured fixture once and loads its calendar",
+        "passed": true,
+        "expectedHelperOutcome": "GREEN",
+        "observedChangeEvents": 1,
+        "observedHolidayReads": 2,
+        "calendarPresent": true
+      }
+    ]
+  },
+  "diagnosticChecks": {
+    "path": "C:/w/admin620-diagnostics-review.json",
+    "sha256": "5c704c20b83e6b80f1110ac30d17606e47c7d9415733fead0f82ac94ef091709",
+    "cases": 5,
+    "scenarios": 53,
+    "helperVersion": "Intermediate diagnostics-only80bf; its diagnostic functions are unchanged in finalV2."
+  },
+  "actualFirstAttempt": {
+    "path": "C:/w/admin-organisation/docs/qa/jira-comments/attachments/SCRUM-620/SCRUM-620-attempt1-staging-results.json",
+    "sha256": "d0e94a95c5d304183d6ee08074a1bea2fe423b7df21b2946cb970befcf6a3d7f",
+    "complete": false,
+    "acceptedNativeControlsBeforeStop": 3,
+    "images": 2,
+    "positiveSettledOperations": 8,
+    "resourcesRestoredFlag": false,
+    "authCleanup": {
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    },
+    "classification": "Redundant same-value automation event reproduced the calendar disappearing. A separate blocked cross-origin GET remains only path-identified as/l/font; its original host/type/query are unobserved."
+  },
+  "canonicalRecovery": {
+    "path": "C:/w/admin-organisation/docs/qa/jira-comments/attachments/SCRUM-620/SCRUM-620-attempt1-recovery-readonly-v2.json",
+    "sha256": "9ad57dbfc423b002aa77a82924852c47bd7b3b169f0f76f7bcdf7b963fcb2450",
+    "checks": 6,
+    "businessWrites": 0,
+    "authCleanup": {
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    }
+  },
+  "actualReadonlyReproduction": {
+    "path": "C:/w/admin-organisation/docs/qa/jira-comments/attachments/SCRUM-620/SCRUM-620-attempt1-recovery-readonly-v3.json",
+    "sha256": "963b6dcb4849ae1f3de9940fd36988a3e092dd496076c774cdec3b970de578bf",
+    "sameSelection": {
+      "selectedSameValue": true,
+      "beforeRanges": 1,
+      "afterRanges": 0,
+      "beforeReads": 1,
+      "afterReads": 2
+    },
+    "businessWrites": 0,
+    "authCleanup": {
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    }
+  },
+  "attemptPreservation": {
+    "path": "C:/w/admin-organisation/docs/qa/jira-comments/attachments/SCRUM-620/SCRUM-620-attempt1-preservation.json",
+    "sha256": "fb1402571d5746f9ae2c7970134e42fc1c3ba6595cd0f14ca8115057a8fc2eb3"
+  },
+  "helperExecuted": false,
+  "stagingRerunClaimed": false,
+  "limitations": [
+    "The local same-selection regression uses actual Holidays state/effect and SelectChip source with real React; API/session/chrome/calendar presentation are controlled offline fixtures.",
+    "The original first-attempt restoration flag remains false. The separate six-check read-only recovery establishes canonical cleanup; the failed receipt is not rewritten to pass.",
+    "This amendment is preparation for a fresh guarded session after coordinator preservation/review. It does not claim the missing Holiday CRUD/phone proof, final seven-control acceptance or an explained font request."
+  ]
+}

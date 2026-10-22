@@ -1,0 +1,262 @@
+{
+  "ticket": "SCRUM-620",
+  "releaseSha": "278ebd9d7c6c8a8d71937a5d4ca72d1997003d94",
+  "startedAt": "2026-10-22T09:35:45.534Z",
+  "complete": false,
+  "checks": [
+    {
+      "label": "NATIVE_OPERATOR_CREATE_RENAME_TYPED_ARCHIVE",
+      "passed": true,
+      "at": "2026-10-22T09:36:05.135Z"
+    },
+    {
+      "label": "NATIVE_BRANCH_FIELDS_AND_OWN_MAPPING",
+      "passed": true,
+      "at": "2026-10-22T09:36:15.162Z"
+    },
+    {
+      "label": "NATIVE_SWITCH_TO_CAPTURED_FIXTURE_WITH_CANONICAL_READBACK",
+      "passed": true,
+      "at": "2026-10-22T09:36:21.420Z"
+    },
+    {
+      "label": "SIGNOUT200_AND_ME401",
+      "passed": true,
+      "at": "2026-10-22T09:37:04.356Z"
+    }
+  ],
+  "screenshots": [
+    {
+      "filename": "SCRUM-620-01-operators-desktop.png",
+      "capturedAt": "2026-10-22T09:35:59.948Z",
+      "bounds": [
+        {
+          "name": "heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "fixture row",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "rename control",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "sha256": "517066c2fc9cac110162654e178bc96c101010d8416053e0f9dc8f49f092885f"
+    },
+    {
+      "filename": "SCRUM-620-02-branch-edit-desktop.png",
+      "capturedAt": "2026-10-22T09:36:13.880Z",
+      "bounds": [
+        {
+          "name": "heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "name",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "timezone",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "trading day",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "Monday opens",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "Monday closes",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "save",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "sha256": "f76f58124cd75db9f3feac8b6fc1288e451226b47dcf3016f8adb09b5d845d91"
+    }
+  ],
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "deployId": "dep-dbctg3lg1s2s738eju40",
+      "sourceSha": "278ebd9d7c6c8a8d71937a5d4ca72d1997003d94",
+      "finishedAt": "2026-10-22T09:35:26.639459Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "deployId": "dep-dbctg3lg1s2s738ejv90",
+      "sourceSha": "278ebd9d7c6c8a8d71937a5d4ca72d1997003d94",
+      "finishedAt": "2026-10-22T09:32:46.482801Z"
+    }
+  ],
+  "operations": [
+    {
+      "label": "operator-create",
+      "method": "POST",
+      "pathSha256": "a533a3bb2fc8d9d148b243f97547e8cb318da3efa67c7cb0e378011b24fd74a2",
+      "bodySha256": "2f60ae50a21f05bb32b4114ad66baa60123aadd41f16198111e935044c57d010",
+      "keySha256": "5e66b9b3b0a09ef8413238433e184224cd914cf201c184975fc1c97ce144d84a",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": "01a162f7-9352-7b0c-b743-1adc2023d33c"
+    },
+    {
+      "label": "operator-rename",
+      "method": "PATCH",
+      "pathSha256": "edf6cb87fef49aeffd312ba814ccd7a195f48b7c2ceb1f8899c721a1b3e5ea38",
+      "bodySha256": "76477323b0aed812f73eec730821abfe7aee8aaf2e2c0932be37da62f0e39dc6",
+      "keySha256": "071970b8c2bbaf304d5049ba53ccac78cea0b7059560c0cb72d2fe471d40e51d",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "operator-archive",
+      "method": "PATCH",
+      "pathSha256": "edf6cb87fef49aeffd312ba814ccd7a195f48b7c2ceb1f8899c721a1b3e5ea38",
+      "bodySha256": "1764a83b7c7222cd14cc5bc89b1ce420b6e8c4cd4c24d8c39ae793d3bf5e5456",
+      "keySha256": "768bc14a06e5ec1e66e5dda0b9facc3ed66d930983d898efb2f913d00cfffa1c",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "branch-create",
+      "method": "POST",
+      "pathSha256": "83ee7a9bd98a15e175434060773236c3dc6f7f3c0c9353a874d486be7e5d73a5",
+      "bodySha256": "ac1765b4e685d28be13c1b9b010b184ad3ce2173e1e7c5583b86986bbc1e2059",
+      "keySha256": "3b860891c863f82bbcaef75302328ef041567109a034ab901286b532e6ed2e4b",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": "01a162f7-c9af-70c3-8258-31efb0462843"
+    },
+    {
+      "label": "branch-edit",
+      "method": "PATCH",
+      "pathSha256": "f0fd8dffa5a5d68ecb018147a3ea75e845b86e9d8cde1574f94803e6bb42d189",
+      "bodySha256": "6a66b50a4ee524b4b36917dfb09985cd031c681c48eb25d09c31b042abcca071",
+      "keySha256": "5b45d8bc31b59cc428424b0c3e091760d75442da4e5b8c73a933a88cb8e5b730",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "switch-fixture",
+      "method": "PUT",
+      "pathSha256": "029d741272dd5da040d551a15dc5e32e4299f4abe3e60b4e1b473375281bbf19",
+      "bodySha256": "1c8e27769c4c269ec14e4743199aaae909f0f6eda17f7564515177cb1ed1db48",
+      "keySha256": "1c0f70043be95c9c17369584de2b4992ab595168723791c3578a7d83d22813f5",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "switch-original",
+      "method": "PUT",
+      "pathSha256": "029d741272dd5da040d551a15dc5e32e4299f4abe3e60b4e1b473375281bbf19",
+      "bodySha256": "6af194b7ab09888b44159ca3bbb5cdf5ecada10f7da8f68730e8053be0d73fef",
+      "keySha256": "3036f5dca5622ad56119ba3a024dd0d90f5065b83654561f866ea912d1a103fe",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "branch-archive",
+      "method": "PATCH",
+      "pathSha256": "f0fd8dffa5a5d68ecb018147a3ea75e845b86e9d8cde1574f94803e6bb42d189",
+      "bodySha256": "6fe359a54f1558a15c3f1cada4ce4b52145c256d5d9cc5efa41d5262db3d9cf5",
+      "keySha256": "a0d6b2525416d56d37c6f25e8c7f5e23f6e6808388358a31fb55c5ab570dc4e2",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    }
+  ],
+  "browserErrorKinds": [],
+  "blockedRequests": [
+    {
+      "method": "GET",
+      "pathSha256": "485ca58e5e685aec711fb06ae3050f43c4d419e630d04c739a27acfec8781e1d",
+      "sameOrigin": false
+    }
+  ],
+  "counts": {
+    "signIns": 1,
+    "signOuts": 1,
+    "fixtureCreates": 2,
+    "businessAttempts": 8,
+    "otherBusinessWrites": 0,
+    "smsRequests": 0,
+    "equipmentWrites": 0,
+    "blockedReads": 1,
+    "blockedWrites": 0,
+    "publicAssetReads": 13
+  },
+  "resourcesRestored": false,
+  "limitations": [
+    "Operator create/rename/archive audits belong to the new operator and cannot be read through the current tenant-fenced audit API. Exact three-event audit/replay proof is automated-only; staging verifies native UI and canonical operator reads.",
+    "Only fresh labelled operator, branch and unused future holiday fixtures are changed. The archived branch and its existing owned mirror are retained, never directly deleted.",
+    "The fresh session switches to the fixture and back. GET /me exposes no station ID; no station selection or other session mutation is performed.",
+    "Active equipment archive refusals, permission negatives, sold-holiday locks and uncertain readback cases are automated proof; no live equipment or payment record is changed.",
+    "Unrelated operator/branch rows, navigation labels and signed-in person details are hidden for proof privacy; the asserted native controls and fixture records remain visible.",
+    "Browser error kinds and partial attempts are retained. Passing these stated controls does not claim an error-free browser."
+  ],
+  "actor": {
+    "id": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+    "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+    "originalBranchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+  },
+  "freshStorage": true,
+  "mapping": {
+    "installed": true,
+    "status": "SUCCESS",
+    "hasAppRow": true,
+    "appBranchId": "01a162f7-c9b6-7998-9bce-1acb13f67cd0",
+    "appBranchName": "ZZ TEST SCRUM-620 Renamed branch 20261022T093545534Z"
+  },
+  "diagnostic": "ASSERTION_OR_RUNTIME_FAILED",
+  "failedPhase": "switch-fixture",
+  "cleanupDiagnostic": "GUARD_REFUSED_NATIVE_OPERATION",
+  "authCleanup": {
+    "signOutStatus": 200,
+    "meStatus": 401,
+    "confirmed": true
+  },
+  "authState": {
+    "signInAttempted": true,
+    "authUncertain": false,
+    "pendingAuth": 0
+  },
+  "completedAt": "2026-10-22T09:37:05.692Z"
+}

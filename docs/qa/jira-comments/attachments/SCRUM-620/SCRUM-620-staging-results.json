@@ -1,0 +1,1711 @@
+{
+  "ticket": "SCRUM-620",
+  "helperSha256": "8f8a74a257a7b70722c3212fb6bba9df307046f40ef5895be8b78c52ee4a6660",
+  "helperFilename": "admin620-evidence-v2.mjs",
+  "releaseSha": "278ebd9d7c6c8a8d71937a5d4ca72d1997003d94",
+  "startedAt": "2026-10-22T09:54:13.021Z",
+  "complete": true,
+  "checks": [
+    {
+      "label": "NATIVE_OPERATOR_CREATE_RENAME_TYPED_ARCHIVE",
+      "passed": true,
+      "at": "2026-10-22T09:54:32.695Z"
+    },
+    {
+      "label": "NATIVE_BRANCH_FIELDS_AND_OWN_MAPPING",
+      "passed": true,
+      "at": "2026-10-22T09:54:43.755Z"
+    },
+    {
+      "label": "NATIVE_SWITCH_TO_CAPTURED_FIXTURE_WITH_CANONICAL_READBACK",
+      "passed": true,
+      "at": "2026-10-22T09:54:48.925Z"
+    },
+    {
+      "label": "NATIVE_HOLIDAY_CREATE_EDIT_AND_PHONE390",
+      "passed": true,
+      "at": "2026-10-22T09:55:00.603Z"
+    },
+    {
+      "label": "ORIGINAL_BRANCH_RESTORED_BEFORE_TYPED_ARCHIVE_AND_HOLIDAY_REMOVED",
+      "passed": true,
+      "at": "2026-10-22T09:55:18.852Z"
+    },
+    {
+      "label": "FRESH_BRANCH_HOLIDAY_AND_OWN_SESSION_AUDITS",
+      "passed": true,
+      "at": "2026-10-22T09:55:23.210Z"
+    },
+    {
+      "label": "SIGNOUT200_AND_ME401",
+      "passed": true,
+      "at": "2026-10-22T09:55:27.273Z"
+    }
+  ],
+  "screenshots": [
+    {
+      "filename": "SCRUM-620-01-operators-desktop.png",
+      "capturedAt": "2026-10-22T09:54:27.678Z",
+      "bounds": [
+        {
+          "name": "heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "fixture row",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "rename control",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "sha256": "8415b79f75f66792354fd10688cba4ff452633c8d71f35d3cd6a4ebf76e205ee"
+    },
+    {
+      "filename": "SCRUM-620-02-branch-edit-desktop.png",
+      "capturedAt": "2026-10-22T09:54:42.452Z",
+      "bounds": [
+        {
+          "name": "heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "name",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "timezone",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "trading day",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "Monday opens",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "Monday closes",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "save",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "sha256": "a39e02bb680979f86f9fdd62bcf70f427fe6a2529bc14457d33b359519a9615b"
+    },
+    {
+      "filename": "SCRUM-620-03-holidays-phone.png",
+      "capturedAt": "2026-10-22T09:54:59.343Z",
+      "bounds": [
+        {
+          "name": "heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "add range",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "fixture holiday",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "edit fixture",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 390,
+        "document": 390
+      },
+      "sha256": "ccf61439679243d50c30b773bd69388b2efe59c1272779f163a3e7d570d1f427"
+    }
+  ],
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "deployId": "dep-dbctg3lg1s2s738eju40",
+      "sourceSha": "278ebd9d7c6c8a8d71937a5d4ca72d1997003d94",
+      "finishedAt": "2026-10-22T09:35:26.639459Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "deployId": "dep-dbctg3lg1s2s738ejv90",
+      "sourceSha": "278ebd9d7c6c8a8d71937a5d4ca72d1997003d94",
+      "finishedAt": "2026-10-22T09:32:46.482801Z"
+    }
+  ],
+  "operations": [
+    {
+      "label": "operator-create",
+      "method": "POST",
+      "pathSha256": "a533a3bb2fc8d9d148b243f97547e8cb318da3efa67c7cb0e378011b24fd74a2",
+      "bodySha256": "8f5c05ebb259e8f8e2afe32506644e2330b915a2bf6bb4976f001487dfece117",
+      "keySha256": "8b6d188bc7599e8e1b50e10bdda107c1c7774c171f18ef466e3e7a898109a3a5",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": "01a16308-7dc1-71e1-8f4c-57658b32faa9"
+    },
+    {
+      "label": "operator-rename",
+      "method": "PATCH",
+      "pathSha256": "594fe1bccd63c40265d6e4b707c0ea2a30a972d181a36a27c633151f802c011e",
+      "bodySha256": "ae48f0417a5308b7f6d14a8b34df2761ae912e958e29e28086518855b08acc19",
+      "keySha256": "97921d55e7c59a5da20907e0613885a5f50d45329d2e7636748e927452a40dd2",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "operator-archive",
+      "method": "PATCH",
+      "pathSha256": "594fe1bccd63c40265d6e4b707c0ea2a30a972d181a36a27c633151f802c011e",
+      "bodySha256": "5a5b2e911fbf9b5d6cb15ab7a4e7ad162d50ac352bb2da98155eebf909b354ee",
+      "keySha256": "7373b62ec1a0928b627c26509f09696e0601404bcceb9ce6787ac38a71342272",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "branch-create",
+      "method": "POST",
+      "pathSha256": "83ee7a9bd98a15e175434060773236c3dc6f7f3c0c9353a874d486be7e5d73a5",
+      "bodySha256": "be9247253d3f2c44c9612fd6c5f0e9ec7d96294858212160e45d120b48cdfb24",
+      "keySha256": "a6e8afa0544357b742243fa8715cdb0bee183901c3e960f2a598d01420b96f05",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": "01a16308-b040-7c82-9353-c0125dc3e3ff"
+    },
+    {
+      "label": "branch-edit",
+      "method": "PATCH",
+      "pathSha256": "a00dbf292f905d5901744902feb1d5f75178ee53d984ef9ffcf58a3ee44da4f7",
+      "bodySha256": "b72b14c865f597041a8b0af60d4e6355d31f4a7de924fa793685cdf727d1e2f2",
+      "keySha256": "9a635b529f30796c0e08964b1dd36304607b4afe15741f7e0f5f36dffc6be256",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "switch-fixture",
+      "method": "PUT",
+      "pathSha256": "029d741272dd5da040d551a15dc5e32e4299f4abe3e60b4e1b473375281bbf19",
+      "bodySha256": "bed7457382917a30000fae00e747a2a13a8fefc704d322e0a49a5386636aa393",
+      "keySha256": "e402728badd9fcdadb8c4024747dd65de8df69908c65ae6a0ae4bdb7d6db4178",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "holiday-create",
+      "method": "POST",
+      "pathSha256": "4a9d479034ff0245f15ab8023d91d8e30f73578e158ba98f4a515f9abcb2064f",
+      "bodySha256": "3b08094d4e756b02cfaab2dab7c8c7c082bf6608a098adcab40de68c9a49155a",
+      "keySha256": "d41e98df44669af7bd0527c5f1e9bf5b3c59f1f009fda0ca77f34abe39749f77",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": "01a16308-f0e3-7692-94bc-f44518eb9f4c"
+    },
+    {
+      "label": "holiday-edit",
+      "method": "PATCH",
+      "pathSha256": "893e3386a13988ae42e33d103c83d27d85ac4d2a3ac280603996a205d519f7b3",
+      "bodySha256": "4842c72ca9b18546d17ea57dc373f2413e113d7e3112de55f617b0606bed575d",
+      "keySha256": "d4bc2a7c0fa1cc4d535e469599a43f65e6f379d278ee6b3a93afb68bb3d76f1e",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "holiday-delete",
+      "method": "DELETE",
+      "pathSha256": "893e3386a13988ae42e33d103c83d27d85ac4d2a3ac280603996a205d519f7b3",
+      "bodySha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "keySha256": "7a6bba27475d7a2b743172bd523c488f5e65d3d1b4984fe684d4f7066368ae87",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "switch-original",
+      "method": "PUT",
+      "pathSha256": "029d741272dd5da040d551a15dc5e32e4299f4abe3e60b4e1b473375281bbf19",
+      "bodySha256": "6af194b7ab09888b44159ca3bbb5cdf5ecada10f7da8f68730e8053be0d73fef",
+      "keySha256": "588760344ee3e4430f96c1253bed933aedbf297dfe9f10dac2703da9a34d6d8e",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "branch-archive",
+      "method": "PATCH",
+      "pathSha256": "a00dbf292f905d5901744902feb1d5f75178ee53d984ef9ffcf58a3ee44da4f7",
+      "bodySha256": "c86c48a6839fc3adb398480e9031459072f70c68f5dfea2c903417f0ea92da5e",
+      "keySha256": "c82c5e1f7654768806ad8c70e775d18a5b374097514d45601c9ee8245ee22496",
+      "attempts": 1,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    }
+  ],
+  "browserErrorKinds": [],
+  "blockedRequests": [],
+  "apiGetDiagnostics": [
+    {
+      "at": "2026-10-22T09:54:16.667Z",
+      "phase": "SIGNIN",
+      "source": "BROWSER",
+      "kind": "ME",
+      "pathSha256": "cf84102daa2e6261f7693b5dd4fe6bcae1cab2bfcc9f707693a1c36062e3472b",
+      "status": 401,
+      "statusClass": "REFUSED_4XX"
+    },
+    {
+      "at": "2026-10-22T09:54:18.893Z",
+      "phase": "SIGNIN",
+      "source": "BROWSER",
+      "kind": "ME",
+      "pathSha256": "cf84102daa2e6261f7693b5dd4fe6bcae1cab2bfcc9f707693a1c36062e3472b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:19.363Z",
+      "phase": "SIGNIN",
+      "source": "BROWSER",
+      "kind": "PERMISSIONS",
+      "pathSha256": "0aa8ec15666a1d519ce617ed5730eba8d9ac5562737b7ad0b97da30a2cde9342",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:19.860Z",
+      "phase": "SIGNIN",
+      "source": "BROWSER",
+      "kind": "OPERATORS",
+      "pathSha256": "269c85e4665fb1f9713dd5335a383fa46e8c8664417944cc898eef9cd6ccc0f7",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:19.881Z",
+      "phase": "SIGNIN",
+      "source": "BROWSER",
+      "kind": "READY",
+      "pathSha256": "5423d28cbf8543d8f754615c5c9054596313519d4af85654cb1aaa2ada61e9f0",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:19.908Z",
+      "phase": "SIGNIN",
+      "source": "BROWSER",
+      "kind": "DEMO_RESET_OPTIONS",
+      "pathSha256": "9cb82221a371381e27cc068ca8dcb901d46e9b04b3c62b980ba63b7d9c4c3dd6",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:20.240Z",
+      "phase": "SIGNIN",
+      "source": "BROWSER",
+      "kind": "FAILURES",
+      "pathSha256": "8d82780b19d6a81785322f997ada5058231cdd0109e4d3ba419a328a316d01a7",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:20.397Z",
+      "phase": "SIGNIN",
+      "source": "BROWSER",
+      "kind": "HEALTH",
+      "pathSha256": "7b47703545538bcbc079b29c786a54f300e15a48f06e2dfc8aee60fd52122434",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:20.594Z",
+      "phase": "SIGNIN",
+      "source": "DIRECT",
+      "kind": "ME",
+      "pathSha256": "cf84102daa2e6261f7693b5dd4fe6bcae1cab2bfcc9f707693a1c36062e3472b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:21.105Z",
+      "phase": "SIGNIN",
+      "source": "DIRECT",
+      "kind": "BRANCHES",
+      "pathSha256": "534b9f0924a323aa562d9e3e48ee9a36016236e696427e69ea8c4250e4505649",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:21.567Z",
+      "phase": "SIGNIN",
+      "source": "DIRECT",
+      "kind": "PERMISSIONS",
+      "pathSha256": "0aa8ec15666a1d519ce617ed5730eba8d9ac5562737b7ad0b97da30a2cde9342",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:22.648Z",
+      "phase": "operator-create",
+      "source": "DIRECT",
+      "kind": "ME",
+      "pathSha256": "cf84102daa2e6261f7693b5dd4fe6bcae1cab2bfcc9f707693a1c36062e3472b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:23.568Z",
+      "phase": "operator-create",
+      "source": "BROWSER",
+      "kind": "OPERATORS",
+      "pathSha256": "269c85e4665fb1f9713dd5335a383fa46e8c8664417944cc898eef9cd6ccc0f7",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:24.452Z",
+      "phase": "operator-create",
+      "source": "DIRECT",
+      "kind": "OPERATORS",
+      "pathSha256": "269c85e4665fb1f9713dd5335a383fa46e8c8664417944cc898eef9cd6ccc0f7",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:24.950Z",
+      "phase": "operator-rename",
+      "source": "DIRECT",
+      "kind": "ME",
+      "pathSha256": "cf84102daa2e6261f7693b5dd4fe6bcae1cab2bfcc9f707693a1c36062e3472b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:25.889Z",
+      "phase": "operator-rename",
+      "source": "BROWSER",
+      "kind": "OPERATORS",
+      "pathSha256": "269c85e4665fb1f9713dd5335a383fa46e8c8664417944cc898eef9cd6ccc0f7",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:26.398Z",
+      "phase": "operator-rename",
+      "source": "DIRECT",
+      "kind": "OPERATORS",
+      "pathSha256": "269c85e4665fb1f9713dd5335a383fa46e8c8664417944cc898eef9cd6ccc0f7",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:29.519Z",
+      "phase": "CAPTURE_1",
+      "source": "BROWSER",
+      "kind": "ME",
+      "pathSha256": "cf84102daa2e6261f7693b5dd4fe6bcae1cab2bfcc9f707693a1c36062e3472b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:29.967Z",
+      "phase": "CAPTURE_1",
+      "source": "BROWSER",
+      "kind": "PERMISSIONS",
+      "pathSha256": "0aa8ec15666a1d519ce617ed5730eba8d9ac5562737b7ad0b97da30a2cde9342",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:30.490Z",
+      "phase": "CAPTURE_1",
+      "source": "BROWSER",
+      "kind": "OPERATORS",
+      "pathSha256": "269c85e4665fb1f9713dd5335a383fa46e8c8664417944cc898eef9cd6ccc0f7",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:30.510Z",
+      "phase": "CAPTURE_1",
+      "source": "BROWSER",
+      "kind": "FAILURES",
+      "pathSha256": "8d82780b19d6a81785322f997ada5058231cdd0109e4d3ba419a328a316d01a7",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:30.650Z",
+      "phase": "CAPTURE_1",
+      "source": "BROWSER",
+      "kind": "DEMO_RESET_OPTIONS",
+      "pathSha256": "9cb82221a371381e27cc068ca8dcb901d46e9b04b3c62b980ba63b7d9c4c3dd6",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:30.837Z",
+      "phase": "CAPTURE_1",
+      "source": "DIRECT",
+      "kind": "OPERATORS",
+      "pathSha256": "269c85e4665fb1f9713dd5335a383fa46e8c8664417944cc898eef9cd6ccc0f7",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:31.026Z",
+      "phase": "operator-archive",
+      "source": "BROWSER",
+      "kind": "READY",
+      "pathSha256": "5423d28cbf8543d8f754615c5c9054596313519d4af85654cb1aaa2ada61e9f0",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:31.330Z",
+      "phase": "operator-archive",
+      "source": "DIRECT",
+      "kind": "ME",
+      "pathSha256": "cf84102daa2e6261f7693b5dd4fe6bcae1cab2bfcc9f707693a1c36062e3472b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:31.523Z",
+      "phase": "operator-archive",
+      "source": "BROWSER",
+      "kind": "HEALTH",
+      "pathSha256": "7b47703545538bcbc079b29c786a54f300e15a48f06e2dfc8aee60fd52122434",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:32.242Z",
+      "phase": "operator-archive",
+      "source": "BROWSER",
+      "kind": "OPERATORS",
+      "pathSha256": "269c85e4665fb1f9713dd5335a383fa46e8c8664417944cc898eef9cd6ccc0f7",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:32.694Z",
+      "phase": "operator-archive",
+      "source": "DIRECT",
+      "kind": "OPERATORS",
+      "pathSha256": "269c85e4665fb1f9713dd5335a383fa46e8c8664417944cc898eef9cd6ccc0f7",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:33.862Z",
+      "phase": "operator-archive",
+      "source": "BROWSER",
+      "kind": "ME",
+      "pathSha256": "cf84102daa2e6261f7693b5dd4fe6bcae1cab2bfcc9f707693a1c36062e3472b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:34.494Z",
+      "phase": "operator-archive",
+      "source": "BROWSER",
+      "kind": "PERMISSIONS",
+      "pathSha256": "0aa8ec15666a1d519ce617ed5730eba8d9ac5562737b7ad0b97da30a2cde9342",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:34.958Z",
+      "phase": "operator-archive",
+      "source": "BROWSER",
+      "kind": "FAILURES",
+      "pathSha256": "8d82780b19d6a81785322f997ada5058231cdd0109e4d3ba419a328a316d01a7",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:34.982Z",
+      "phase": "operator-archive",
+      "source": "BROWSER",
+      "kind": "BRANCHES",
+      "pathSha256": "534b9f0924a323aa562d9e3e48ee9a36016236e696427e69ea8c4250e4505649",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:34.997Z",
+      "phase": "operator-archive",
+      "source": "BROWSER",
+      "kind": "APP_BRANCH_MAPPING",
+      "pathSha256": "0832c67ac147212e0c660c3558b8dd2eccaa6c8f4096e4f3a284dd089b7e9e4c",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:35.310Z",
+      "phase": "branch-create",
+      "source": "BROWSER",
+      "kind": "READY",
+      "pathSha256": "5423d28cbf8543d8f754615c5c9054596313519d4af85654cb1aaa2ada61e9f0",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:35.595Z",
+      "phase": "branch-create",
+      "source": "DIRECT",
+      "kind": "ME",
+      "pathSha256": "cf84102daa2e6261f7693b5dd4fe6bcae1cab2bfcc9f707693a1c36062e3472b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:35.800Z",
+      "phase": "branch-create",
+      "source": "BROWSER",
+      "kind": "HEALTH",
+      "pathSha256": "7b47703545538bcbc079b29c786a54f300e15a48f06e2dfc8aee60fd52122434",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:36.506Z",
+      "phase": "branch-create",
+      "source": "BROWSER",
+      "kind": "APP_BRANCH_MAPPING",
+      "pathSha256": "0832c67ac147212e0c660c3558b8dd2eccaa6c8f4096e4f3a284dd089b7e9e4c",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:36.511Z",
+      "phase": "branch-create",
+      "source": "BROWSER",
+      "kind": "BRANCHES",
+      "pathSha256": "534b9f0924a323aa562d9e3e48ee9a36016236e696427e69ea8c4250e4505649",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:36.967Z",
+      "phase": "branch-create",
+      "source": "DIRECT",
+      "kind": "BRANCHES",
+      "pathSha256": "534b9f0924a323aa562d9e3e48ee9a36016236e696427e69ea8c4250e4505649",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:37.837Z",
+      "phase": "branch-edit",
+      "source": "DIRECT",
+      "kind": "ME",
+      "pathSha256": "cf84102daa2e6261f7693b5dd4fe6bcae1cab2bfcc9f707693a1c36062e3472b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:38.752Z",
+      "phase": "branch-edit",
+      "source": "BROWSER",
+      "kind": "BRANCHES",
+      "pathSha256": "534b9f0924a323aa562d9e3e48ee9a36016236e696427e69ea8c4250e4505649",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:39.086Z",
+      "phase": "branch-edit",
+      "source": "BROWSER",
+      "kind": "APP_BRANCH_MAPPING",
+      "pathSha256": "0832c67ac147212e0c660c3558b8dd2eccaa6c8f4096e4f3a284dd089b7e9e4c",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:40.369Z",
+      "phase": "branch-edit",
+      "source": "DIRECT",
+      "kind": "BRANCHES",
+      "pathSha256": "534b9f0924a323aa562d9e3e48ee9a36016236e696427e69ea8c4250e4505649",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:41.053Z",
+      "phase": "branch-edit",
+      "source": "DIRECT",
+      "kind": "APP_BRANCH_MAPPING",
+      "pathSha256": "0832c67ac147212e0c660c3558b8dd2eccaa6c8f4096e4f3a284dd089b7e9e4c",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:44.386Z",
+      "phase": "CAPTURE_2",
+      "source": "BROWSER",
+      "kind": "ME",
+      "pathSha256": "cf84102daa2e6261f7693b5dd4fe6bcae1cab2bfcc9f707693a1c36062e3472b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:45.181Z",
+      "phase": "CAPTURE_2",
+      "source": "BROWSER",
+      "kind": "PERMISSIONS",
+      "pathSha256": "0aa8ec15666a1d519ce617ed5730eba8d9ac5562737b7ad0b97da30a2cde9342",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:45.644Z",
+      "phase": "CAPTURE_2",
+      "source": "BROWSER",
+      "kind": "READY",
+      "pathSha256": "5423d28cbf8543d8f754615c5c9054596313519d4af85654cb1aaa2ada61e9f0",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:45.653Z",
+      "phase": "CAPTURE_2",
+      "source": "BROWSER",
+      "kind": "APP_BRANCH_MAPPING",
+      "pathSha256": "0832c67ac147212e0c660c3558b8dd2eccaa6c8f4096e4f3a284dd089b7e9e4c",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:45.656Z",
+      "phase": "CAPTURE_2",
+      "source": "BROWSER",
+      "kind": "BRANCHES",
+      "pathSha256": "534b9f0924a323aa562d9e3e48ee9a36016236e696427e69ea8c4250e4505649",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:45.764Z",
+      "phase": "CAPTURE_2",
+      "source": "DIRECT",
+      "kind": "ME",
+      "pathSha256": "cf84102daa2e6261f7693b5dd4fe6bcae1cab2bfcc9f707693a1c36062e3472b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:45.981Z",
+      "phase": "switch-fixture",
+      "source": "BROWSER",
+      "kind": "FAILURES",
+      "pathSha256": "8d82780b19d6a81785322f997ada5058231cdd0109e4d3ba419a328a316d01a7",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:46.143Z",
+      "phase": "switch-fixture",
+      "source": "BROWSER",
+      "kind": "HEALTH",
+      "pathSha256": "7b47703545538bcbc079b29c786a54f300e15a48f06e2dfc8aee60fd52122434",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:46.218Z",
+      "phase": "switch-fixture",
+      "source": "DIRECT",
+      "kind": "ME",
+      "pathSha256": "cf84102daa2e6261f7693b5dd4fe6bcae1cab2bfcc9f707693a1c36062e3472b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:47.478Z",
+      "phase": "switch-fixture",
+      "source": "BROWSER",
+      "kind": "ME",
+      "pathSha256": "cf84102daa2e6261f7693b5dd4fe6bcae1cab2bfcc9f707693a1c36062e3472b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:47.921Z",
+      "phase": "switch-fixture",
+      "source": "BROWSER",
+      "kind": "PERMISSIONS",
+      "pathSha256": "0aa8ec15666a1d519ce617ed5730eba8d9ac5562737b7ad0b97da30a2cde9342",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:48.387Z",
+      "phase": "switch-fixture",
+      "source": "BROWSER",
+      "kind": "READY",
+      "pathSha256": "5423d28cbf8543d8f754615c5c9054596313519d4af85654cb1aaa2ada61e9f0",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:48.387Z",
+      "phase": "switch-fixture",
+      "source": "BROWSER",
+      "kind": "BRANCHES",
+      "pathSha256": "534b9f0924a323aa562d9e3e48ee9a36016236e696427e69ea8c4250e4505649",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:48.387Z",
+      "phase": "switch-fixture",
+      "source": "BROWSER",
+      "kind": "APP_BRANCH_MAPPING",
+      "pathSha256": "0832c67ac147212e0c660c3558b8dd2eccaa6c8f4096e4f3a284dd089b7e9e4c",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:48.792Z",
+      "phase": "switch-fixture",
+      "source": "BROWSER",
+      "kind": "FAILURES",
+      "pathSha256": "8d82780b19d6a81785322f997ada5058231cdd0109e4d3ba419a328a316d01a7",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:48.925Z",
+      "phase": "switch-fixture",
+      "source": "DIRECT",
+      "kind": "ME",
+      "pathSha256": "cf84102daa2e6261f7693b5dd4fe6bcae1cab2bfcc9f707693a1c36062e3472b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:49.014Z",
+      "phase": "HOLIDAYS_NAVIGATE",
+      "source": "BROWSER",
+      "kind": "HEALTH",
+      "pathSha256": "7b47703545538bcbc079b29c786a54f300e15a48f06e2dfc8aee60fd52122434",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:49.806Z",
+      "phase": "HOLIDAYS_NAVIGATE",
+      "source": "BROWSER",
+      "kind": "ME",
+      "pathSha256": "cf84102daa2e6261f7693b5dd4fe6bcae1cab2bfcc9f707693a1c36062e3472b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:50.261Z",
+      "phase": "HOLIDAYS_NAVIGATE",
+      "source": "BROWSER",
+      "kind": "PERMISSIONS",
+      "pathSha256": "0aa8ec15666a1d519ce617ed5730eba8d9ac5562737b7ad0b97da30a2cde9342",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:50.718Z",
+      "phase": "HOLIDAYS_PARK_SELECT",
+      "source": "BROWSER",
+      "kind": "FAILURES",
+      "pathSha256": "8d82780b19d6a81785322f997ada5058231cdd0109e4d3ba419a328a316d01a7",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:50.726Z",
+      "phase": "HOLIDAYS_PARK_SELECT",
+      "source": "BROWSER",
+      "kind": "READY",
+      "pathSha256": "5423d28cbf8543d8f754615c5c9054596313519d4af85654cb1aaa2ada61e9f0",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:50.742Z",
+      "phase": "HOLIDAYS_PARK_SELECT",
+      "source": "BROWSER",
+      "kind": "BRANCHES",
+      "pathSha256": "534b9f0924a323aa562d9e3e48ee9a36016236e696427e69ea8c4250e4505649",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:51.222Z",
+      "phase": "HOLIDAYS_RANGE_READY",
+      "source": "BROWSER",
+      "kind": "HEALTH",
+      "pathSha256": "7b47703545538bcbc079b29c786a54f300e15a48f06e2dfc8aee60fd52122434",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:51.291Z",
+      "phase": "HOLIDAYS_RANGE_READY",
+      "source": "BROWSER",
+      "kind": "HOLIDAYS",
+      "pathSha256": "300472b786003dbdcf28d2c74d27209c3b12cdcac483026342fcb3cd229cf98b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:51.755Z",
+      "phase": "holiday-create",
+      "source": "BROWSER",
+      "kind": "HOLIDAYS",
+      "pathSha256": "300472b786003dbdcf28d2c74d27209c3b12cdcac483026342fcb3cd229cf98b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:52.113Z",
+      "phase": "holiday-create",
+      "source": "DIRECT",
+      "kind": "ME",
+      "pathSha256": "cf84102daa2e6261f7693b5dd4fe6bcae1cab2bfcc9f707693a1c36062e3472b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:53.042Z",
+      "phase": "holiday-create",
+      "source": "BROWSER",
+      "kind": "HOLIDAYS",
+      "pathSha256": "300472b786003dbdcf28d2c74d27209c3b12cdcac483026342fcb3cd229cf98b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:53.586Z",
+      "phase": "holiday-edit",
+      "source": "DIRECT",
+      "kind": "ME",
+      "pathSha256": "cf84102daa2e6261f7693b5dd4fe6bcae1cab2bfcc9f707693a1c36062e3472b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:53.850Z",
+      "phase": "holiday-edit",
+      "source": "BROWSER",
+      "kind": "HOLIDAYS",
+      "pathSha256": "300472b786003dbdcf28d2c74d27209c3b12cdcac483026342fcb3cd229cf98b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:54.510Z",
+      "phase": "holiday-edit",
+      "source": "BROWSER",
+      "kind": "HOLIDAYS",
+      "pathSha256": "300472b786003dbdcf28d2c74d27209c3b12cdcac483026342fcb3cd229cf98b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:54.995Z",
+      "phase": "holiday-edit",
+      "source": "BROWSER",
+      "kind": "HOLIDAYS",
+      "pathSha256": "300472b786003dbdcf28d2c74d27209c3b12cdcac483026342fcb3cd229cf98b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:55.281Z",
+      "phase": "holiday-edit",
+      "source": "DIRECT",
+      "kind": "HOLIDAYS",
+      "pathSha256": "300472b786003dbdcf28d2c74d27209c3b12cdcac483026342fcb3cd229cf98b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:55.902Z",
+      "phase": "HOLIDAYS_NAVIGATE",
+      "source": "BROWSER",
+      "kind": "ME",
+      "pathSha256": "cf84102daa2e6261f7693b5dd4fe6bcae1cab2bfcc9f707693a1c36062e3472b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:56.743Z",
+      "phase": "HOLIDAYS_NAVIGATE",
+      "source": "BROWSER",
+      "kind": "PERMISSIONS",
+      "pathSha256": "0aa8ec15666a1d519ce617ed5730eba8d9ac5562737b7ad0b97da30a2cde9342",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:57.201Z",
+      "phase": "HOLIDAYS_PARK_SELECT",
+      "source": "BROWSER",
+      "kind": "READY",
+      "pathSha256": "5423d28cbf8543d8f754615c5c9054596313519d4af85654cb1aaa2ada61e9f0",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:57.211Z",
+      "phase": "HOLIDAYS_PARK_SELECT",
+      "source": "BROWSER",
+      "kind": "BRANCHES",
+      "pathSha256": "534b9f0924a323aa562d9e3e48ee9a36016236e696427e69ea8c4250e4505649",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:57.220Z",
+      "phase": "HOLIDAYS_PARK_SELECT",
+      "source": "BROWSER",
+      "kind": "FAILURES",
+      "pathSha256": "8d82780b19d6a81785322f997ada5058231cdd0109e4d3ba419a328a316d01a7",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:57.669Z",
+      "phase": "HOLIDAYS_RANGE_READY",
+      "source": "BROWSER",
+      "kind": "HOLIDAYS",
+      "pathSha256": "300472b786003dbdcf28d2c74d27209c3b12cdcac483026342fcb3cd229cf98b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:57.685Z",
+      "phase": "HOLIDAYS_RANGE_READY",
+      "source": "BROWSER",
+      "kind": "HEALTH",
+      "pathSha256": "7b47703545538bcbc079b29c786a54f300e15a48f06e2dfc8aee60fd52122434",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:54:58.133Z",
+      "phase": "CAPTURE_3",
+      "source": "BROWSER",
+      "kind": "HOLIDAYS",
+      "pathSha256": "300472b786003dbdcf28d2c74d27209c3b12cdcac483026342fcb3cd229cf98b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:01.170Z",
+      "phase": "CAPTURE_3",
+      "source": "DIRECT",
+      "kind": "HOLIDAYS",
+      "pathSha256": "300472b786003dbdcf28d2c74d27209c3b12cdcac483026342fcb3cd229cf98b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:02.125Z",
+      "phase": "HOLIDAYS_NAVIGATE",
+      "source": "BROWSER",
+      "kind": "ME",
+      "pathSha256": "cf84102daa2e6261f7693b5dd4fe6bcae1cab2bfcc9f707693a1c36062e3472b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:02.594Z",
+      "phase": "HOLIDAYS_NAVIGATE",
+      "source": "BROWSER",
+      "kind": "PERMISSIONS",
+      "pathSha256": "0aa8ec15666a1d519ce617ed5730eba8d9ac5562737b7ad0b97da30a2cde9342",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:03.081Z",
+      "phase": "HOLIDAYS_PARK_SELECT",
+      "source": "BROWSER",
+      "kind": "BRANCHES",
+      "pathSha256": "534b9f0924a323aa562d9e3e48ee9a36016236e696427e69ea8c4250e4505649",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:03.082Z",
+      "phase": "HOLIDAYS_PARK_SELECT",
+      "source": "BROWSER",
+      "kind": "FAILURES",
+      "pathSha256": "8d82780b19d6a81785322f997ada5058231cdd0109e4d3ba419a328a316d01a7",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:03.083Z",
+      "phase": "HOLIDAYS_PARK_SELECT",
+      "source": "BROWSER",
+      "kind": "READY",
+      "pathSha256": "5423d28cbf8543d8f754615c5c9054596313519d4af85654cb1aaa2ada61e9f0",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:03.558Z",
+      "phase": "HOLIDAYS_RANGE_READY",
+      "source": "BROWSER",
+      "kind": "HOLIDAYS",
+      "pathSha256": "300472b786003dbdcf28d2c74d27209c3b12cdcac483026342fcb3cd229cf98b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:03.590Z",
+      "phase": "HOLIDAYS_RANGE_READY",
+      "source": "BROWSER",
+      "kind": "HEALTH",
+      "pathSha256": "7b47703545538bcbc079b29c786a54f300e15a48f06e2dfc8aee60fd52122434",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:04.010Z",
+      "phase": "holiday-delete",
+      "source": "BROWSER",
+      "kind": "HOLIDAYS",
+      "pathSha256": "300472b786003dbdcf28d2c74d27209c3b12cdcac483026342fcb3cd229cf98b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:04.056Z",
+      "phase": "holiday-delete",
+      "source": "DIRECT",
+      "kind": "ME",
+      "pathSha256": "cf84102daa2e6261f7693b5dd4fe6bcae1cab2bfcc9f707693a1c36062e3472b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:04.975Z",
+      "phase": "holiday-delete",
+      "source": "BROWSER",
+      "kind": "HOLIDAYS",
+      "pathSha256": "300472b786003dbdcf28d2c74d27209c3b12cdcac483026342fcb3cd229cf98b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:05.421Z",
+      "phase": "holiday-delete",
+      "source": "DIRECT",
+      "kind": "HOLIDAYS",
+      "pathSha256": "300472b786003dbdcf28d2c74d27209c3b12cdcac483026342fcb3cd229cf98b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:05.436Z",
+      "phase": "holiday-delete",
+      "source": "BROWSER",
+      "kind": "HOLIDAYS",
+      "pathSha256": "300472b786003dbdcf28d2c74d27209c3b12cdcac483026342fcb3cd229cf98b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:05.880Z",
+      "phase": "holiday-delete",
+      "source": "DIRECT",
+      "kind": "ME",
+      "pathSha256": "cf84102daa2e6261f7693b5dd4fe6bcae1cab2bfcc9f707693a1c36062e3472b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:06.471Z",
+      "phase": "holiday-delete",
+      "source": "BROWSER",
+      "kind": "ME",
+      "pathSha256": "cf84102daa2e6261f7693b5dd4fe6bcae1cab2bfcc9f707693a1c36062e3472b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:06.930Z",
+      "phase": "holiday-delete",
+      "source": "BROWSER",
+      "kind": "PERMISSIONS",
+      "pathSha256": "0aa8ec15666a1d519ce617ed5730eba8d9ac5562737b7ad0b97da30a2cde9342",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:07.461Z",
+      "phase": "holiday-delete",
+      "source": "DIRECT",
+      "kind": "ME",
+      "pathSha256": "cf84102daa2e6261f7693b5dd4fe6bcae1cab2bfcc9f707693a1c36062e3472b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:07.463Z",
+      "phase": "switch-original",
+      "source": "BROWSER",
+      "kind": "BRANCHES",
+      "pathSha256": "534b9f0924a323aa562d9e3e48ee9a36016236e696427e69ea8c4250e4505649",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:07.464Z",
+      "phase": "switch-original",
+      "source": "BROWSER",
+      "kind": "READY",
+      "pathSha256": "5423d28cbf8543d8f754615c5c9054596313519d4af85654cb1aaa2ada61e9f0",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:07.464Z",
+      "phase": "switch-original",
+      "source": "BROWSER",
+      "kind": "FAILURES",
+      "pathSha256": "8d82780b19d6a81785322f997ada5058231cdd0109e4d3ba419a328a316d01a7",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:07.464Z",
+      "phase": "switch-original",
+      "source": "BROWSER",
+      "kind": "APP_BRANCH_MAPPING",
+      "pathSha256": "0832c67ac147212e0c660c3558b8dd2eccaa6c8f4096e4f3a284dd089b7e9e4c",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:07.920Z",
+      "phase": "switch-original",
+      "source": "DIRECT",
+      "kind": "ME",
+      "pathSha256": "cf84102daa2e6261f7693b5dd4fe6bcae1cab2bfcc9f707693a1c36062e3472b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:07.996Z",
+      "phase": "switch-original",
+      "source": "BROWSER",
+      "kind": "HEALTH",
+      "pathSha256": "7b47703545538bcbc079b29c786a54f300e15a48f06e2dfc8aee60fd52122434",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:09.327Z",
+      "phase": "switch-original",
+      "source": "BROWSER",
+      "kind": "ME",
+      "pathSha256": "cf84102daa2e6261f7693b5dd4fe6bcae1cab2bfcc9f707693a1c36062e3472b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:09.839Z",
+      "phase": "switch-original",
+      "source": "BROWSER",
+      "kind": "PERMISSIONS",
+      "pathSha256": "0aa8ec15666a1d519ce617ed5730eba8d9ac5562737b7ad0b97da30a2cde9342",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:10.353Z",
+      "phase": "switch-original",
+      "source": "BROWSER",
+      "kind": "APP_BRANCH_MAPPING",
+      "pathSha256": "0832c67ac147212e0c660c3558b8dd2eccaa6c8f4096e4f3a284dd089b7e9e4c",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:10.353Z",
+      "phase": "switch-original",
+      "source": "BROWSER",
+      "kind": "BRANCHES",
+      "pathSha256": "534b9f0924a323aa562d9e3e48ee9a36016236e696427e69ea8c4250e4505649",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:10.353Z",
+      "phase": "switch-original",
+      "source": "BROWSER",
+      "kind": "FAILURES",
+      "pathSha256": "8d82780b19d6a81785322f997ada5058231cdd0109e4d3ba419a328a316d01a7",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:10.353Z",
+      "phase": "switch-original",
+      "source": "BROWSER",
+      "kind": "READY",
+      "pathSha256": "5423d28cbf8543d8f754615c5c9054596313519d4af85654cb1aaa2ada61e9f0",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:10.858Z",
+      "phase": "switch-original",
+      "source": "BROWSER",
+      "kind": "HEALTH",
+      "pathSha256": "7b47703545538bcbc079b29c786a54f300e15a48f06e2dfc8aee60fd52122434",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:11.135Z",
+      "phase": "switch-original",
+      "source": "DIRECT",
+      "kind": "ME",
+      "pathSha256": "cf84102daa2e6261f7693b5dd4fe6bcae1cab2bfcc9f707693a1c36062e3472b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:12.050Z",
+      "phase": "switch-original",
+      "source": "DIRECT",
+      "kind": "BRANCHES",
+      "pathSha256": "534b9f0924a323aa562d9e3e48ee9a36016236e696427e69ea8c4250e4505649",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:12.491Z",
+      "phase": "switch-original",
+      "source": "DIRECT",
+      "kind": "ME",
+      "pathSha256": "cf84102daa2e6261f7693b5dd4fe6bcae1cab2bfcc9f707693a1c36062e3472b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:13.070Z",
+      "phase": "switch-original",
+      "source": "BROWSER",
+      "kind": "ME",
+      "pathSha256": "cf84102daa2e6261f7693b5dd4fe6bcae1cab2bfcc9f707693a1c36062e3472b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:13.684Z",
+      "phase": "switch-original",
+      "source": "BROWSER",
+      "kind": "PERMISSIONS",
+      "pathSha256": "0aa8ec15666a1d519ce617ed5730eba8d9ac5562737b7ad0b97da30a2cde9342",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:14.153Z",
+      "phase": "switch-original",
+      "source": "BROWSER",
+      "kind": "BRANCHES",
+      "pathSha256": "534b9f0924a323aa562d9e3e48ee9a36016236e696427e69ea8c4250e4505649",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:14.160Z",
+      "phase": "switch-original",
+      "source": "BROWSER",
+      "kind": "FAILURES",
+      "pathSha256": "8d82780b19d6a81785322f997ada5058231cdd0109e4d3ba419a328a316d01a7",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:14.162Z",
+      "phase": "switch-original",
+      "source": "BROWSER",
+      "kind": "APP_BRANCH_MAPPING",
+      "pathSha256": "0832c67ac147212e0c660c3558b8dd2eccaa6c8f4096e4f3a284dd089b7e9e4c",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:14.426Z",
+      "phase": "switch-original",
+      "source": "BROWSER",
+      "kind": "READY",
+      "pathSha256": "5423d28cbf8543d8f754615c5c9054596313519d4af85654cb1aaa2ada61e9f0",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:14.916Z",
+      "phase": "branch-archive",
+      "source": "BROWSER",
+      "kind": "HEALTH",
+      "pathSha256": "7b47703545538bcbc079b29c786a54f300e15a48f06e2dfc8aee60fd52122434",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:15.068Z",
+      "phase": "branch-archive",
+      "source": "DIRECT",
+      "kind": "ME",
+      "pathSha256": "cf84102daa2e6261f7693b5dd4fe6bcae1cab2bfcc9f707693a1c36062e3472b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:15.995Z",
+      "phase": "branch-archive",
+      "source": "BROWSER",
+      "kind": "APP_BRANCH_MAPPING",
+      "pathSha256": "0832c67ac147212e0c660c3558b8dd2eccaa6c8f4096e4f3a284dd089b7e9e4c",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:15.995Z",
+      "phase": "branch-archive",
+      "source": "BROWSER",
+      "kind": "BRANCHES",
+      "pathSha256": "534b9f0924a323aa562d9e3e48ee9a36016236e696427e69ea8c4250e4505649",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:16.483Z",
+      "phase": "branch-archive",
+      "source": "DIRECT",
+      "kind": "BRANCHES",
+      "pathSha256": "534b9f0924a323aa562d9e3e48ee9a36016236e696427e69ea8c4250e4505649",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:16.998Z",
+      "phase": "branch-archive",
+      "source": "DIRECT",
+      "kind": "ME",
+      "pathSha256": "cf84102daa2e6261f7693b5dd4fe6bcae1cab2bfcc9f707693a1c36062e3472b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:17.453Z",
+      "phase": "branch-archive",
+      "source": "DIRECT",
+      "kind": "BRANCHES",
+      "pathSha256": "534b9f0924a323aa562d9e3e48ee9a36016236e696427e69ea8c4250e4505649",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:17.909Z",
+      "phase": "branch-archive",
+      "source": "DIRECT",
+      "kind": "OPERATORS",
+      "pathSha256": "269c85e4665fb1f9713dd5335a383fa46e8c8664417944cc898eef9cd6ccc0f7",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:18.376Z",
+      "phase": "branch-archive",
+      "source": "DIRECT",
+      "kind": "BRANCHES",
+      "pathSha256": "534b9f0924a323aa562d9e3e48ee9a36016236e696427e69ea8c4250e4505649",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:18.851Z",
+      "phase": "branch-archive",
+      "source": "DIRECT",
+      "kind": "HOLIDAYS",
+      "pathSha256": "300472b786003dbdcf28d2c74d27209c3b12cdcac483026342fcb3cd229cf98b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:19.471Z",
+      "phase": "branch-archive",
+      "source": "DIRECT",
+      "kind": "OWN_AUDIT",
+      "pathSha256": "e83c7374a376f20ab1f5f6f4480084d58c6b0784cd90f4db301554bd80703ab6",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:20.658Z",
+      "phase": "branch-archive",
+      "source": "DIRECT",
+      "kind": "OWN_AUDIT",
+      "pathSha256": "e83c7374a376f20ab1f5f6f4480084d58c6b0784cd90f4db301554bd80703ab6",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:21.180Z",
+      "phase": "branch-archive",
+      "source": "DIRECT",
+      "kind": "OWN_AUDIT",
+      "pathSha256": "e83c7374a376f20ab1f5f6f4480084d58c6b0784cd90f4db301554bd80703ab6",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:21.685Z",
+      "phase": "branch-archive",
+      "source": "DIRECT",
+      "kind": "OWN_AUDIT",
+      "pathSha256": "e83c7374a376f20ab1f5f6f4480084d58c6b0784cd90f4db301554bd80703ab6",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:22.182Z",
+      "phase": "branch-archive",
+      "source": "DIRECT",
+      "kind": "OWN_AUDIT",
+      "pathSha256": "e83c7374a376f20ab1f5f6f4480084d58c6b0784cd90f4db301554bd80703ab6",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:22.715Z",
+      "phase": "branch-archive",
+      "source": "DIRECT",
+      "kind": "OWN_AUDIT",
+      "pathSha256": "e83c7374a376f20ab1f5f6f4480084d58c6b0784cd90f4db301554bd80703ab6",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:23.210Z",
+      "phase": "branch-archive",
+      "source": "DIRECT",
+      "kind": "OWN_AUDIT",
+      "pathSha256": "e83c7374a376f20ab1f5f6f4480084d58c6b0784cd90f4db301554bd80703ab6",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:23.679Z",
+      "phase": "branch-archive",
+      "source": "DIRECT",
+      "kind": "ME",
+      "pathSha256": "cf84102daa2e6261f7693b5dd4fe6bcae1cab2bfcc9f707693a1c36062e3472b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:24.131Z",
+      "phase": "branch-archive",
+      "source": "DIRECT",
+      "kind": "ME",
+      "pathSha256": "cf84102daa2e6261f7693b5dd4fe6bcae1cab2bfcc9f707693a1c36062e3472b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:24.592Z",
+      "phase": "branch-archive",
+      "source": "DIRECT",
+      "kind": "BRANCHES",
+      "pathSha256": "534b9f0924a323aa562d9e3e48ee9a36016236e696427e69ea8c4250e4505649",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:25.060Z",
+      "phase": "branch-archive",
+      "source": "DIRECT",
+      "kind": "OPERATORS",
+      "pathSha256": "269c85e4665fb1f9713dd5335a383fa46e8c8664417944cc898eef9cd6ccc0f7",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:25.912Z",
+      "phase": "branch-archive",
+      "source": "DIRECT",
+      "kind": "BRANCHES",
+      "pathSha256": "534b9f0924a323aa562d9e3e48ee9a36016236e696427e69ea8c4250e4505649",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    },
+    {
+      "at": "2026-10-22T09:55:26.374Z",
+      "phase": "branch-archive",
+      "source": "DIRECT",
+      "kind": "HOLIDAYS",
+      "pathSha256": "300472b786003dbdcf28d2c74d27209c3b12cdcac483026342fcb3cd229cf98b",
+      "status": 200,
+      "statusClass": "SUCCESS_2XX"
+    }
+  ],
+  "holidayDiagnostics": [],
+  "counts": {
+    "signIns": 1,
+    "signOuts": 1,
+    "fixtureCreates": 3,
+    "businessAttempts": 11,
+    "otherBusinessWrites": 0,
+    "smsRequests": 0,
+    "equipmentWrites": 0,
+    "blockedReads": 0,
+    "blockedWrites": 0,
+    "publicAssetReads": 18
+  },
+  "resourcesRestored": true,
+  "limitations": [
+    "Operator create/rename/archive audits belong to the new operator and cannot be read through the current tenant-fenced audit API. Exact three-event audit/replay proof is automated-only; staging verifies native UI and canonical operator reads.",
+    "Only fresh labelled operator, branch and unused future holiday fixtures are changed. The archived branch and its existing owned mirror are retained, never directly deleted.",
+    "The fresh session switches to the fixture and back. GET /me exposes no station ID; no station selection or other session mutation is performed.",
+    "Active equipment archive refusals, permission negatives, sold-holiday locks and uncertain readback cases are automated proof; no live equipment or payment record is changed.",
+    "Unrelated operator/branch rows, navigation labels and signed-in person details are hidden for proof privacy; the asserted native controls and fixture records remain visible.",
+    "Browser error kinds and partial attempts are retained. Passing these stated controls does not claim an error-free browser."
+  ],
+  "actor": {
+    "id": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+    "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+    "originalBranchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+  },
+  "freshStorage": true,
+  "mapping": {
+    "installed": true,
+    "status": "SUCCESS",
+    "hasAppRow": true,
+    "appBranchId": "01a16308-b044-7728-9dab-28493d5873d4",
+    "appBranchName": "ZZ TEST SCRUM-620 Renamed branch 20261022T095413021Z"
+  },
+  "retainedFixture": {
+    "operatorId": "01a16308-7dc1-71e1-8f4c-57658b32faa9",
+    "branchId": "01a16308-b040-7c82-9353-c0125dc3e3ff",
+    "branchName": "ZZ TEST SCRUM-620 Renamed branch 20261022T095413021Z",
+    "archivedBranchRetained": true,
+    "directAppDelete": false
+  },
+  "audits": [
+    {
+      "action": "branch.create",
+      "entityId": "01a16308-b040-7c82-9353-c0125dc3e3ff",
+      "count": 1,
+      "timestamps": [
+        "2026-10-22T09:54:36.224Z"
+      ]
+    },
+    {
+      "action": "branch.update",
+      "entityId": "01a16308-b040-7c82-9353-c0125dc3e3ff",
+      "count": 2,
+      "timestamps": [
+        "2026-10-22T09:55:15.709Z",
+        "2026-10-22T09:54:38.484Z"
+      ]
+    },
+    {
+      "action": "branch_holiday.create",
+      "entityId": "01a16308-f0e3-7692-94bc-f44518eb9f4c",
+      "count": 1,
+      "timestamps": [
+        "2026-10-22T09:54:52.771Z"
+      ]
+    },
+    {
+      "action": "branch_holiday.update",
+      "entityId": "01a16308-f0e3-7692-94bc-f44518eb9f4c",
+      "count": 1,
+      "timestamps": [
+        "2026-10-22T09:54:54.233Z"
+      ]
+    },
+    {
+      "action": "branch_holiday.delete",
+      "entityId": "01a16308-f0e3-7692-94bc-f44518eb9f4c",
+      "count": 1,
+      "timestamps": [
+        "2026-10-22T09:55:04.703Z"
+      ]
+    },
+    {
+      "action": "session.branch_switch",
+      "count": 2,
+      "sessionIdSha256": "b00f5d301c15f871b7c7fb0199586afe7c0afc9fccdbfc345da496664445bf19",
+      "timestamps": [
+        "2026-10-22T09:55:09.003Z",
+        "2026-10-22T09:54:47.200Z"
+      ]
+    }
+  ],
+  "controlsComplete": true,
+  "authCleanup": {
+    "signOutStatus": 200,
+    "meStatus": 401,
+    "confirmed": true
+  },
+  "authState": {
+    "signInAttempted": true,
+    "authUncertain": false,
+    "pendingAuth": 0
+  },
+  "completedAt": "2026-10-22T09:55:28.556Z"
+}

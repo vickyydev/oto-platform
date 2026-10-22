@@ -1,0 +1,93 @@
+{
+  "ticket": "SCRUM-620",
+  "attempt": 1,
+  "preservedAt": "2026-10-22T09:49:57.039Z",
+  "accepted": false,
+  "originalCompleteFlag": false,
+  "originalResourcesRestoredFlag": false,
+  "sourceSha": "278ebd9d7c6c8a8d71937a5d4ca72d1997003d94",
+  "canonicalRecovery": [
+    {
+      "label": "EXACT_SEEDED_ACTOR",
+      "passed": true
+    },
+    {
+      "label": "OWN_BRANCH_ARCHIVED_CANONICALLY",
+      "passed": true
+    },
+    {
+      "label": "OWN_OPERATOR_HIDDEN_AFTER_CONFIRMED_ARCHIVE",
+      "passed": true
+    },
+    {
+      "label": "NO_HOLIDAY_CREATED_OR_RETAINED",
+      "passed": true
+    },
+    {
+      "label": "ONE_ORIGINAL_PROOF_SIGNIN_AUDIT",
+      "passed": true
+    },
+    {
+      "label": "ORIGINAL_PROOF_SESSION_RETURNED_TO_ORIGINAL_BRANCH",
+      "passed": true
+    }
+  ],
+  "oldSessionReturnAudit": {
+    "originalBranchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "fixtureBranchId": "01a162f7-c9af-70c3-8258-31efb0462843",
+    "originalSessionSha256": "df818d6da3418ff160b796dfe5d349b18b03687579e6164d28ef452dc5786e6a",
+    "switches": 2,
+    "positiveReturnAudit": true,
+    "originalProofSignedOut": true
+  },
+  "originalAuthCleanup": {
+    "signOutStatus": 200,
+    "meStatus": 401,
+    "confirmed": true
+  },
+  "diagnosticAuthCleanup": {
+    "signOutStatus": 200,
+    "meStatus": 401,
+    "confirmed": true
+  },
+  "businessOperations": 8,
+  "allSettled200": true,
+  "noHolidayEverCreated": true,
+  "originalEstateComparisonRecomputed": false,
+  "privateJournal": {
+    "path": "C:/w/admin620-attempt1-recovery.private.json",
+    "sha256": "70bb7a01068ebbe3278f815016c87b3c404bd6467a3007158c705ff8b66dda14",
+    "containsNoAuthPayloadByHelperDesign": true
+  },
+  "publicResult": {
+    "path": "C:/w/admin620-attempt1-staging-results.json",
+    "sha256": "d0e94a95c5d304183d6ee08074a1bea2fe423b7df21b2946cb970befcf6a3d7f"
+  },
+  "artifacts": [
+    {
+      "path": "attempt1/SCRUM-620-01-operators-desktop.png",
+      "sha256": "517066c2fc9cac110162654e178bc96c101010d8416053e0f9dc8f49f092885f"
+    },
+    {
+      "path": "attempt1/SCRUM-620-02-branch-edit-desktop.png",
+      "sha256": "f76f58124cd75db9f3feac8b6fc1288e451226b47dcf3016f8adb09b5d845d91"
+    },
+    {
+      "path": "SCRUM-620-attempt1-staging-results.json",
+      "sha256": "d0e94a95c5d304183d6ee08074a1bea2fe423b7df21b2946cb970befcf6a3d7f"
+    },
+    {
+      "path": "SCRUM-620-attempt1-recovery-readonly.json",
+      "sha256": "48dc2d7899e6648a7af8ba2a13c885de62fa456c76e93b5c22845a17e00fb263"
+    },
+    {
+      "path": "SCRUM-620-attempt1-recovery-readonly-v2.json",
+      "sha256": "9ad57dbfc423b002aa77a82924852c47bd7b3b169f0f76f7bcdf7b963fcb2450"
+    },
+    {
+      "path": "SCRUM-620-attempt1-recovery-readonly-v3.json",
+      "sha256": "963b6dcb4849ae1f3de9940fd36988a3e092dd496076c774cdec3b970de578bf"
+    }
+  ],
+  "limitation": "Canonical fixture/archive and old-session return were independently read. The original initial preference/estate snapshot was not persisted, so its unperformed final comparison is not retroactively claimed."
+}

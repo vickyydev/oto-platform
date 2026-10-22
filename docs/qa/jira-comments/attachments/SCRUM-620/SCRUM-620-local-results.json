@@ -1,0 +1,1196 @@
+{
+  "ticket": "SCRUM-620",
+  "passed": true,
+  "localReleaseGatesComplete": true,
+  "preparedAt": "2026-10-22T09:08:31.579Z",
+  "candidateSha": "278ebd9d7c6c8a8d71937a5d4ca72d1997003d94",
+  "sourceLandedOnMain": true,
+  "ci": {
+    "status": "pending"
+  },
+  "staging": {
+    "status": "pending"
+  },
+  "source": {
+    "snapshots": {
+      "initial": {
+        "path": "C:/w/admin620-linux/frozen-source-manifest.json",
+        "sha256": "a9fa9fb21f1564ee7d12bee6e7d045ed4de78bc32714559c123f00ac7f8a737f",
+        "files": 3529
+      },
+      "final": {
+        "path": "C:/w/admin620-final-linux/frozen-source-manifest.json",
+        "sha256": "d84fc9466b831736567d11b9377556249bd2112a2d3e27fb5901b4ff73b7d6d8",
+        "files": 3529
+      },
+      "release2": {
+        "path": "C:/w/admin620-release2-linux/frozen-source-manifest.json",
+        "sha256": "21d5d26a5267e691805b9fa104318a1e714128e1eb1ef679c86c6801f1e6f978",
+        "files": 3531
+      },
+      "release3": {
+        "path": "C:/w/admin620-release3-linux/frozen-source-manifest.json",
+        "sha256": "51247bbc088e2ad5cfb8a1e3c952a1b57e80937f32fefa67a9be2884970e51fd",
+        "files": 3531
+      }
+    },
+    "firstAmendment": {
+      "path": "C:/w/admin620-final-linux/delta-results.json",
+      "sha256": "47acaf9a04b21409a038cbe071e8d1b2735f22f2122440c09d74f3796a2e3e25",
+      "passed": true,
+      "initialFiles": 3529,
+      "finalFiles": 3529,
+      "ownedFiles": 36,
+      "changes": [
+        {
+          "path": "apps/oto-app/tests/fix-module.check.ts",
+          "sha256": "9263a15cf7be5014141fdd44a096c76722fc49e1fcead7d90fe21c566265f534"
+        },
+        {
+          "path": "packages/admin-screens/src/lifted/runtime/AdminScreenRuntime.tsx",
+          "sha256": "11bb8485611fa98ed171df67491be1ee0d898f1f2f839f6d71986d92736f2909"
+        },
+        {
+          "path": "packages/admin-screens/src/lifted/runtime/organisation.ts",
+          "sha256": "10067994489003d804f2e845e3f1175d2d20f4772580ca82ef6f9fa053ad7e6b"
+        },
+        {
+          "path": "packages/admin-screens/test/organisation-ports.test.ts",
+          "sha256": "9e8f70f1e472f8745ddd13d779189d8769d048a7f98cbfd9e9cf4f94102f9d97"
+        }
+      ],
+      "backendSelector": "API; db/shared/print/messaging/payments/telemetry packages; OTO App migrations/shared",
+      "unchangedBackendInputs": 1234,
+      "identicalRuntimeJavaScript": [
+        {
+          "path": "packages/admin-screens/src/lifted/runtime/AdminScreenRuntime.tsx",
+          "originalRawMatchesInitial": true,
+          "identicalJavaScript": true,
+          "emittedSha256": "7df6c57063378f4516c0ccf28360dce50f029ab20fb315c67f4e2122034d7804"
+        },
+        {
+          "path": "packages/admin-screens/src/lifted/runtime/organisation.ts",
+          "originalRawMatchesInitial": true,
+          "identicalJavaScript": true,
+          "emittedSha256": "c49115e720e0f37c0a67108dac26f346a5b01f5f66b2ef88ed64fb35834b188c"
+        }
+      ],
+      "plannerCommit": "58d8eaab1f8b2ac98fea5f8d978c872fe8c04072",
+      "plannerChangedOnly": "apps/oto-app/tests/fix-module.check.ts",
+      "apiShardsRemainOnInitialFrozenInputs": true
+    },
+    "secondAmendment": {
+      "path": "C:/w/admin620-release2-linux/delta-results.json",
+      "sha256": "377a33566f6bb146b9c163f5b6c7917aa3865000b4283cbbaf7591374124bcc8",
+      "passed": true,
+      "fromFiles": 3529,
+      "toFiles": 3531,
+      "ownedFiles": 37,
+      "changes": [
+        {
+          "path": ".github/workflows/ci.yml",
+          "sha256": "29df21012d4a5498b806fa164e64f1979f292d2388c1fa9ad0d869e54a9fb8a6"
+        },
+        {
+          "path": "apps/api/test/catalog.test.ts",
+          "sha256": "f18e0a47dfa0181f45bfecca2986f4dcfc52b677759fda01c01a07af923d598b"
+        },
+        {
+          "path": "apps/oto-app/client/src/lib/camp-days.ts",
+          "sha256": "181afc1e80de0ea29b959cfb0a4d85ad160f53bf810f2858f29c7be6ca6c6523"
+        },
+        {
+          "path": "apps/oto-app/client/src/pages/studio/events.tsx",
+          "sha256": "af66fbb50c3e669656fe356301cced3924821758b5a454ef6825dd4a824dcdf6"
+        },
+        {
+          "path": "apps/oto-app/tests/camp-creation-exclusions.check.ts",
+          "sha256": "4a9f7fe2c0787904d486e170668d99a6d4e319bd131bd15bb62cffa0e85461fd"
+        },
+        {
+          "path": "apps/oto-app/tests/camp-creation-exclusions.spec.ts",
+          "sha256": "af720676a56e6c5e532ce54ceca7bc7d5ce1baeb90e381005e9854467836b842"
+        }
+      ],
+      "unchangedBackendInputs": 1233,
+      "backendInputs": 1234,
+      "onlyBackendDelta": "apps/api/test/catalog.test.ts",
+      "plannerCommit": "4425beb2cca0cdb09645381c1bf0bac99fd642ef",
+      "shard1MustRerun": true,
+      "shard2and3UnchangedInputsExceptUnselectedCatalogTest": true
+    },
+    "thirdAmendment": {
+      "path": "C:/w/admin620-release3-linux/delta-results.json",
+      "sha256": "c5336001e56e100720d31d887db1febd7b9d8862a3aad616da71325e94505888",
+      "passed": true,
+      "fromFiles": 3531,
+      "toFiles": 3531,
+      "ownedFiles": 38,
+      "changes": [
+        {
+          "path": "apps/console/e2e/console-smoke.spec.ts",
+          "sha256": "26dcebef54ae032b3e4e7d695eb647758d86e5876e3ad602bccd635e9a3faae7"
+        }
+      ],
+      "unchangedBackendInputs": 1234,
+      "description": "Only two branch-list locators are narrowed; both original visible-park assertions remain. Full failed browser run retained; full suite must run again."
+    },
+    "backendInputs": {
+      "path": "C:/w/admin620-release3-linux/backend-inputs.json",
+      "sha256": "305e112d6f42ebed6db02bdb71b7ed6b08233868aaa63aefd211ad8e4d868267",
+      "files": 1234,
+      "unchangedAfterFirstAmendment": 1234,
+      "unchangedAfterSecondAmendment": 1233,
+      "unchangedAfterThirdAmendment": 1234,
+      "soleDelta": "apps/api/test/catalog.test.ts",
+      "selector": "API; db/shared/print/messaging/payments/telemetry; OTO migrations/shared",
+      "earlierIndependentSelectorCount": 1009
+    },
+    "typeErasure": {
+      "path": "C:/w/admin620-type-erasure-results.json",
+      "sha256": "18dfe623cd85a4d3380f398a52a9106b0ebd7fdfdd5a01aed7bbb09d6be515e3",
+      "rows": [
+        {
+          "path": "packages/admin-screens/src/lifted/runtime/AdminScreenRuntime.tsx",
+          "originalRawMatchesInitial": true,
+          "identicalJavaScript": true,
+          "emittedSha256": "7df6c57063378f4516c0ccf28360dce50f029ab20fb315c67f4e2122034d7804"
+        },
+        {
+          "path": "packages/admin-screens/src/lifted/runtime/organisation.ts",
+          "originalRawMatchesInitial": true,
+          "identicalJavaScript": true,
+          "emittedSha256": "c49115e720e0f37c0a67108dac26f346a5b01f5f66b2ef88ed64fb35834b188c"
+        }
+      ]
+    },
+    "ownedPaths": [
+      "apps/api/src/routes/branches.ts",
+      "apps/api/src/routes/catalog.ts",
+      "apps/api/src/routes/me.ts",
+      "apps/api/src/routes/operators.ts",
+      "apps/api/src/services/fleet.ts",
+      "apps/api/src/services/organisation-archive.ts",
+      "apps/api/test/archive-races.test.ts",
+      "apps/api/test/archived-tenancy.test.ts",
+      "apps/api/test/catalog.test.ts",
+      "apps/api/test/s620-organisation-review.test.ts",
+      "apps/api/test/s620-organisation-routes.test.ts",
+      "apps/console/e2e/console-smoke.spec.ts",
+      "apps/console/e2e/organisation.spec.ts",
+      "apps/console/src/App.tsx",
+      "apps/console/src/api/organisation.ts",
+      "apps/console/src/api/platform.ts",
+      "apps/console/src/auth/SessionContext.tsx",
+      "apps/console/src/components/consoleSections.tsx",
+      "apps/console/src/components/redesign/CommandBar.tsx",
+      "apps/console/src/pages/Branches.tsx",
+      "apps/console/src/pages/Holidays.tsx",
+      "apps/console/src/pages/Operators.tsx",
+      "apps/console/test/admin-navigation.test.ts",
+      "apps/console/test/organisation-api.test.ts",
+      "apps/console/test/organisation-markup.test.ts",
+      "packages/admin-screens/package.json",
+      "packages/admin-screens/src/index.ts",
+      "packages/admin-screens/src/lifted/api/platform.ts",
+      "packages/admin-screens/src/lifted/components/admin/access/OperatorsPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/branches/BranchesPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/pricing-overrides/PricingOverridesSection.tsx",
+      "packages/admin-screens/src/lifted/components/shared/PhoneInput.tsx",
+      "packages/admin-screens/src/lifted/runtime/AdminScreenRuntime.tsx",
+      "packages/admin-screens/src/lifted/runtime/organisation.ts",
+      "packages/admin-screens/test/organisation-ports.test.ts",
+      "packages/api-types/openapi.json",
+      "packages/api-types/src/openapi.ts",
+      "packages/api-types/test/migration-list.ts"
+    ],
+    "intendedCommitPaths": [
+      "apps/api/src/routes/branches.ts",
+      "apps/api/src/routes/catalog.ts",
+      "apps/api/src/routes/me.ts",
+      "apps/api/src/routes/operators.ts",
+      "apps/api/src/services/fleet.ts",
+      "apps/api/src/services/organisation-archive.ts",
+      "apps/api/test/archive-races.test.ts",
+      "apps/api/test/archived-tenancy.test.ts",
+      "apps/api/test/catalog.test.ts",
+      "apps/api/test/s620-organisation-review.test.ts",
+      "apps/api/test/s620-organisation-routes.test.ts",
+      "apps/console/e2e/console-smoke.spec.ts",
+      "apps/console/e2e/organisation.spec.ts",
+      "apps/console/src/App.tsx",
+      "apps/console/src/api/organisation.ts",
+      "apps/console/src/api/platform.ts",
+      "apps/console/src/auth/SessionContext.tsx",
+      "apps/console/src/components/consoleSections.tsx",
+      "apps/console/src/components/redesign/CommandBar.tsx",
+      "apps/console/src/pages/Branches.tsx",
+      "apps/console/src/pages/Holidays.tsx",
+      "apps/console/src/pages/Operators.tsx",
+      "apps/console/test/admin-navigation.test.ts",
+      "apps/console/test/organisation-api.test.ts",
+      "apps/console/test/organisation-markup.test.ts",
+      "docs/handover/CLOUD_HANDOVER.md",
+      "docs/handover/CODEX_HANDOVER.md",
+      "docs/progress/STATUS.md",
+      "packages/admin-screens/package.json",
+      "packages/admin-screens/src/index.ts",
+      "packages/admin-screens/src/lifted/api/platform.ts",
+      "packages/admin-screens/src/lifted/components/admin/access/OperatorsPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/branches/BranchesPanel.tsx",
+      "packages/admin-screens/src/lifted/components/admin/pricing-overrides/PricingOverridesSection.tsx",
+      "packages/admin-screens/src/lifted/components/shared/PhoneInput.tsx",
+      "packages/admin-screens/src/lifted/runtime/AdminScreenRuntime.tsx",
+      "packages/admin-screens/src/lifted/runtime/organisation.ts",
+      "packages/admin-screens/test/organisation-ports.test.ts",
+      "packages/api-types/openapi.json",
+      "packages/api-types/src/openapi.ts",
+      "packages/api-types/test/migration-list.ts"
+    ],
+    "migrationChanges": 0
+  },
+  "gates": {
+    "checks": {
+      "phase": "final",
+      "mode": "checks",
+      "startedAt": "2026-10-22T08:46:03.644Z",
+      "finishedAt": "2026-10-22T08:47:34.735Z",
+      "exitCode": 0,
+      "frozenFiles": 3529,
+      "receipt": {
+        "path": "C:/w/admin620-final-linux/checks-exit.json",
+        "sha256": "201d34aec00e1fb42b1287284a0829eac03f68147cfbf68da031a0b125951931"
+      },
+      "log": {
+        "path": "C:/w/admin620-final-linux/checks.log",
+        "sha256": "ff708e09af710e5fe9cdc5915c12d944d4a2d52839764aab51447cc6249df0fb"
+      },
+      "summaries": []
+    },
+    "units": {
+      "phase": "final",
+      "mode": "units",
+      "startedAt": "2026-10-22T08:51:09.013Z",
+      "finishedAt": "2026-10-22T08:51:20.316Z",
+      "exitCode": 0,
+      "frozenFiles": 3529,
+      "receipt": {
+        "path": "C:/w/admin620-final-linux/units-exit.json",
+        "sha256": "bf0020e35310b6e219fe787ff3fa803b2fb0ec1f355d1dc9e554a7dbcba13e2d"
+      },
+      "log": {
+        "path": "C:/w/admin620-final-linux/units.log",
+        "sha256": "1ae478af7dd4b619a323a5de529807828a50ac29b00ea3b5a3b772d558dbee85"
+      },
+      "summaries": [
+        {
+          "package": "@oto/console",
+          "files": {
+            "passed": 26
+          },
+          "tests": {
+            "passed": 200,
+            "todo": 3
+          }
+        },
+        {
+          "package": "@oto/api-types",
+          "files": {
+            "passed": 1
+          },
+          "tests": {
+            "passed": 10
+          }
+        }
+      ]
+    },
+    "other": {
+      "phase": "final",
+      "mode": "other",
+      "startedAt": "2026-10-22T08:51:09.013Z",
+      "finishedAt": "2026-10-22T08:54:45.552Z",
+      "exitCode": 0,
+      "frozenFiles": 3529,
+      "receipt": {
+        "path": "C:/w/admin620-final-linux/other-exit.json",
+        "sha256": "14326ff106aced743b19a64d4b2b480a6ccd52759a92d4564b919145050afb72"
+      },
+      "log": {
+        "path": "C:/w/admin620-final-linux/other.log",
+        "sha256": "77004ace2dcd16a1f648db3424025fd85d3b68d2fe04e276e38a7ee3957fa081"
+      },
+      "summaries": [
+        {
+          "package": "@oto/shared",
+          "files": {
+            "passed": 50
+          },
+          "tests": {
+            "passed": 769
+          }
+        },
+        {
+          "package": "@oto/db",
+          "files": {
+            "passed": 43
+          },
+          "tests": {
+            "passed": 305
+          }
+        },
+        {
+          "package": "@oto/booth",
+          "runner": "node:test",
+          "files": null,
+          "tests": {
+            "passed": 33,
+            "failed": 0,
+            "skipped": 0,
+            "todo": 0,
+            "cancelled": 0
+          },
+          "reportedTests": 33
+        },
+        {
+          "package": "@oto/launcher",
+          "files": {
+            "passed": 5
+          },
+          "tests": {
+            "passed": 72
+          }
+        },
+        {
+          "package": "@oto/inbox",
+          "files": {
+            "passed": 8
+          },
+          "tests": {
+            "passed": 176
+          }
+        },
+        {
+          "package": "@oto/assistant",
+          "files": {
+            "passed": 8
+          },
+          "tests": {
+            "passed": 434
+          }
+        },
+        {
+          "package": "@oto/print",
+          "files": {
+            "passed": 11
+          },
+          "tests": {
+            "passed": 271
+          }
+        },
+        {
+          "package": "@oto/messaging",
+          "files": {
+            "passed": 6
+          },
+          "tests": {
+            "passed": 78
+          }
+        },
+        {
+          "package": "@oto/payments-2c2p",
+          "files": {
+            "passed": 6
+          },
+          "tests": {
+            "passed": 81
+          }
+        },
+        {
+          "package": "@oto/telemetry",
+          "files": {
+            "passed": 4
+          },
+          "tests": {
+            "passed": 36
+          }
+        },
+        {
+          "package": "@oto/admin-screens",
+          "files": {
+            "passed": 5
+          },
+          "tests": {
+            "passed": 16
+          }
+        }
+      ]
+    },
+    "api1": {
+      "phase": "release2",
+      "mode": "api1",
+      "startedAt": "2026-10-22T08:53:31.361Z",
+      "finishedAt": "2026-10-22T09:03:55.443Z",
+      "exitCode": 0,
+      "frozenFiles": 3531,
+      "receipt": {
+        "path": "C:/w/admin620-release2-linux/api1-exit.json",
+        "sha256": "ac012466f7014117b253d5256007552535a89f557e8e223d6f97db7848fc1b36"
+      },
+      "log": {
+        "path": "C:/w/admin620-release2-linux/api1.log",
+        "sha256": "591a823938be2ae6b5c72f1ad7295a0c8a5060318b3edcdf02a51ece3feddb15"
+      },
+      "summaries": [
+        {
+          "package": null,
+          "files": {
+            "passed": 110,
+            "skipped": 2
+          },
+          "tests": {
+            "passed": 1629,
+            "skipped": 106
+          }
+        }
+      ]
+    },
+    "api2": {
+      "phase": "initial",
+      "mode": "api2",
+      "startedAt": "2026-10-22T08:34:15.549Z",
+      "finishedAt": "2026-10-22T08:45:43.448Z",
+      "exitCode": 0,
+      "frozenFiles": 3529,
+      "receipt": {
+        "path": "C:/w/admin620-linux/api2-exit.json",
+        "sha256": "f58425125bb7bc76de9245a5e77807d1285c3fcdca7e09b81f82894e27cdd1a5"
+      },
+      "log": {
+        "path": "C:/w/admin620-linux/api2.log",
+        "sha256": "c67364b966471f003655ad812d88e16c2794fc10e7e31fd98d86c7009187e67d"
+      },
+      "summaries": [
+        {
+          "package": null,
+          "files": {
+            "passed": 108,
+            "skipped": 4
+          },
+          "tests": {
+            "passed": 1635,
+            "skipped": 174,
+            "todo": 4
+          }
+        }
+      ]
+    },
+    "api3": {
+      "phase": "initial",
+      "mode": "api3",
+      "startedAt": "2026-10-22T08:34:15.549Z",
+      "finishedAt": "2026-10-22T08:46:50.053Z",
+      "exitCode": 0,
+      "frozenFiles": 3529,
+      "receipt": {
+        "path": "C:/w/admin620-linux/api3-exit.json",
+        "sha256": "dd896f9b14d214d880614424bce65eb93e9d1831366d82d43f03870e31ca3ab3"
+      },
+      "log": {
+        "path": "C:/w/admin620-linux/api3.log",
+        "sha256": "0f899978d50373a58598211c4bda7021a3cf78fcde7a98559b65fe566e2924a6"
+      },
+      "summaries": [
+        {
+          "package": null,
+          "files": {
+            "passed": 109,
+            "skipped": 2
+          },
+          "tests": {
+            "passed": 1443,
+            "skipped": 121,
+            "todo": 1
+          }
+        }
+      ]
+    },
+    "pos": {
+      "phase": "release2",
+      "mode": "pos",
+      "startedAt": "2026-10-22T08:55:06.556Z",
+      "finishedAt": "2026-10-22T08:56:33.772Z",
+      "exitCode": 0,
+      "frozenFiles": 3531,
+      "receipt": {
+        "path": "C:/w/admin620-release2-linux/pos-exit.json",
+        "sha256": "ad3b7fbdac931117b133f4aa4ef80e5c66181906f2d99b785ac3222cf09808d6"
+      },
+      "log": {
+        "path": "C:/w/admin620-release2-linux/pos.log",
+        "sha256": "820b86f2e11e35e43d8338222f4cd5ef577fe7f07c6bd847db484b0596277bd7"
+      },
+      "summaries": [
+        {
+          "package": "@oto/pos",
+          "files": {
+            "passed": 101
+          },
+          "tests": {
+            "passed": 1433
+          }
+        }
+      ]
+    },
+    "review": {
+      "phase": "release2",
+      "mode": "review",
+      "startedAt": "2026-10-22T08:55:52.625Z",
+      "finishedAt": "2026-10-22T08:56:40.640Z",
+      "exitCode": 0,
+      "frozenFiles": 3531,
+      "receipt": {
+        "path": "C:/w/admin620-release2-linux/review-exit.json",
+        "sha256": "a1395bdfccc74535c01fe1c06944722c1b30934e5e77b86ec88c8d7041936d99"
+      },
+      "log": {
+        "path": "C:/w/admin620-release2-linux/review.log",
+        "sha256": "0a59ab43009961d76f2aa24ff8cf2f1fc1ae58359fe85cc1b3f2d2b87a4c9518"
+      },
+      "summaries": [
+        {
+          "package": null,
+          "files": {
+            "passed": 8
+          },
+          "tests": {
+            "passed": 95
+          }
+        }
+      ]
+    },
+    "browser": {
+      "phase": "release3",
+      "mode": "browser",
+      "startedAt": "2026-10-22T08:59:14.198Z",
+      "finishedAt": "2026-10-22T09:01:36.991Z",
+      "exitCode": 0,
+      "frozenFiles": 3531,
+      "receipt": {
+        "path": "C:/w/admin620-release3-linux/browser-exit.json",
+        "sha256": "a5b9f23b5101ddf64090b01b275952f52ba3f0f055737c1aa26e9f14a5881642"
+      },
+      "log": {
+        "path": "C:/w/admin620-release3-linux/browser.log",
+        "sha256": "91291fb052f1acf262af18d6e4a2f25de37df958a89acc651116f33690a955b9"
+      },
+      "summaries": []
+    },
+    "box": {
+      "phase": "release3",
+      "mode": "box",
+      "startedAt": "2026-10-22T09:04:09.743Z",
+      "finishedAt": "2026-10-22T09:04:27.326Z",
+      "exitCode": 0,
+      "frozenFiles": 3531,
+      "receipt": {
+        "path": "C:/w/admin620-release3-linux/box-exit.json",
+        "sha256": "aef0d672a722848b393b5d52471b4df54956d911685fdb788788e42a29de76dc"
+      },
+      "log": {
+        "path": "C:/w/admin620-release3-linux/box.log",
+        "sha256": "b48c0f4834e042d295710ffaeaceae7fa230fd84fa46097d2501c7ea49403218"
+      },
+      "summaries": [
+        {
+          "package": "@oto/box-agent",
+          "runner": "node:test",
+          "files": null,
+          "tests": {
+            "passed": 749,
+            "failed": 0,
+            "skipped": 0,
+            "todo": 0,
+            "cancelled": 0
+          },
+          "reportedTests": 749
+        }
+      ]
+    },
+    "post": {
+      "phase": "release3",
+      "mode": "post",
+      "startedAt": "2026-10-22T09:05:44.726Z",
+      "finishedAt": "2026-10-22T09:08:16.097Z",
+      "exitCode": 0,
+      "frozenFiles": 3531,
+      "receipt": {
+        "path": "C:/w/admin620-release3-linux/post-exit.json",
+        "sha256": "a0b94148e0b9ab3ca3c7698b1e56280706803e79b0e0bbd0dac7c598622d99ed"
+      },
+      "log": {
+        "path": "C:/w/admin620-release3-linux/post.log",
+        "sha256": "6f755841d2a71455cdcd906a07017eb687b57e07a5e643c3c59c20a8ebb28a00"
+      },
+      "summaries": [
+        {
+          "package": null,
+          "files": {
+            "passed": 8
+          },
+          "tests": {
+            "passed": 95
+          }
+        },
+        {
+          "package": "@oto/pos",
+          "files": {
+            "passed": 101
+          },
+          "tests": {
+            "passed": 1433
+          }
+        },
+        {
+          "package": "@oto/admin-screens",
+          "files": {
+            "passed": 5
+          },
+          "tests": {
+            "passed": 16
+          }
+        },
+        {
+          "package": "@oto/console",
+          "files": {
+            "passed": 26
+          },
+          "tests": {
+            "passed": 200,
+            "todo": 3
+          }
+        },
+        {
+          "package": "@oto/api-types",
+          "files": {
+            "passed": 1
+          },
+          "tests": {
+            "passed": 10
+          }
+        }
+      ]
+    }
+  },
+  "apiComposition": {
+    "description": "Initial API2/3 plus the whole release2 API1 rerun. Catalog is the sole backend-test delta and is absent from API2/3. All production backend inputs are identical.",
+    "shards": [
+      "release2/api1",
+      "initial/api2",
+      "initial/api3"
+    ],
+    "totals": {
+      "passed": 4707,
+      "skipped": 401,
+      "todo": 5
+    },
+    "files": 335
+  },
+  "metrics": {
+    "api": {
+      "passed": 4707,
+      "skipped": 401,
+      "todo": 5
+    },
+    "apiFiles": 335,
+    "focused": {
+      "package": null,
+      "files": {
+        "passed": 8
+      },
+      "tests": {
+        "passed": 95
+      }
+    },
+    "console": {
+      "package": "@oto/console",
+      "files": {
+        "passed": 26
+      },
+      "tests": {
+        "passed": 200,
+        "todo": 3
+      }
+    },
+    "seam": {
+      "package": "@oto/api-types",
+      "files": {
+        "passed": 1
+      },
+      "tests": {
+        "passed": 10
+      }
+    },
+    "remainingPackages": [
+      {
+        "package": "@oto/shared",
+        "files": {
+          "passed": 50
+        },
+        "tests": {
+          "passed": 769
+        }
+      },
+      {
+        "package": "@oto/db",
+        "files": {
+          "passed": 43
+        },
+        "tests": {
+          "passed": 305
+        }
+      },
+      {
+        "package": "@oto/booth",
+        "runner": "node:test",
+        "files": null,
+        "tests": {
+          "passed": 33,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "cancelled": 0
+        },
+        "reportedTests": 33
+      },
+      {
+        "package": "@oto/launcher",
+        "files": {
+          "passed": 5
+        },
+        "tests": {
+          "passed": 72
+        }
+      },
+      {
+        "package": "@oto/inbox",
+        "files": {
+          "passed": 8
+        },
+        "tests": {
+          "passed": 176
+        }
+      },
+      {
+        "package": "@oto/assistant",
+        "files": {
+          "passed": 8
+        },
+        "tests": {
+          "passed": 434
+        }
+      },
+      {
+        "package": "@oto/print",
+        "files": {
+          "passed": 11
+        },
+        "tests": {
+          "passed": 271
+        }
+      },
+      {
+        "package": "@oto/messaging",
+        "files": {
+          "passed": 6
+        },
+        "tests": {
+          "passed": 78
+        }
+      },
+      {
+        "package": "@oto/payments-2c2p",
+        "files": {
+          "passed": 6
+        },
+        "tests": {
+          "passed": 81
+        }
+      },
+      {
+        "package": "@oto/telemetry",
+        "files": {
+          "passed": 4
+        },
+        "tests": {
+          "passed": 36
+        }
+      },
+      {
+        "package": "@oto/admin-screens",
+        "files": {
+          "passed": 5
+        },
+        "tests": {
+          "passed": 16
+        }
+      },
+      {
+        "package": "@oto/pos",
+        "files": {
+          "passed": 101
+        },
+        "tests": {
+          "passed": 1433
+        }
+      }
+    ],
+    "box": {
+      "package": "@oto/box-agent",
+      "runner": "node:test",
+      "files": null,
+      "tests": {
+        "passed": 749,
+        "failed": 0,
+        "skipped": 0,
+        "todo": 0,
+        "cancelled": 0
+      },
+      "reportedTests": 749
+    },
+    "browserPassed": 113,
+    "compilers": {
+      "total": 16,
+      "executed": 4,
+      "cached": 12,
+      "apiDiagnostics": 0
+    },
+    "builds": 5,
+    "lint": {
+      "errors": 0,
+      "warnings": 3
+    },
+    "generatedTypesMatch": true
+  },
+  "ordering": {
+    "boxAfterFullBattery": true,
+    "browserAfterBuild": true,
+    "targetedPostAfterBox": true
+  },
+  "attempts": {
+    "initialWorkspace": {
+      "phase": "initial",
+      "mode": "checks",
+      "startedAt": "2026-10-22T08:34:15.549Z",
+      "finishedAt": "2026-10-22T08:34:48.645Z",
+      "exitCode": 2,
+      "frozenFiles": 3529,
+      "receipt": {
+        "path": "C:/w/admin620-linux/checks-exit.json",
+        "sha256": "b777a4a031484b71649e140afe6c1a8a7e1457f8d869fb3ea7fb9b0486343920"
+      },
+      "log": {
+        "path": "C:/w/admin620-linux/checks.log",
+        "sha256": "32b8c16039592182a9af0637ce433753c6ece99abc5e51ac000668eb32ff2c7c"
+      },
+      "summaries": [],
+      "classification": "Integration type incompatibility in existing POS host; two reviewed declaration changes erase to identical runtime JavaScript."
+    },
+    "initialApi1": {
+      "phase": "initial",
+      "mode": "api1",
+      "startedAt": "2026-10-22T08:34:15.549Z",
+      "finishedAt": "2026-10-22T08:45:47.354Z",
+      "exitCode": 1,
+      "frozenFiles": 3529,
+      "receipt": {
+        "path": "C:/w/admin620-linux/api1-exit.json",
+        "sha256": "b41725a341e02c5d7bd206c992e19dafc645d0290ee0513902be243d7cd002b5"
+      },
+      "log": {
+        "path": "C:/w/admin620-linux/api1.log",
+        "sha256": "b38ca7be960cecb95117fd8d224fddb4aa54e55248b11dea56edfe816b7f9d5d"
+      },
+      "summaries": [
+        {
+          "package": null,
+          "files": {
+            "failed": 1,
+            "passed": 109,
+            "skipped": 2
+          },
+          "tests": {
+            "failed": 2,
+            "passed": 1627,
+            "skipped": 106
+          }
+        }
+      ],
+      "classification": "Two existing catalog archive fixtures omitted the approved exact-name confirmation. Assertions retained; catalog-only test adaptation and whole shard rerun."
+    },
+    "browser": {
+      "phase": "release2",
+      "mode": "browser",
+      "startedAt": "2026-10-22T08:55:19.175Z",
+      "finishedAt": "2026-10-22T08:57:48.321Z",
+      "exitCode": 1,
+      "frozenFiles": 3531,
+      "receipt": {
+        "path": "C:/w/admin620-release2-linux/browser-exit.json",
+        "sha256": "2a5ce99282808846f7f0fa40aed52fe5d51b06ecde14d6b5915d85bd6fb76f52"
+      },
+      "log": {
+        "path": "C:/w/admin620-release2-linux/browser.log",
+        "sha256": "ae3e77540b2902cbf57bd9fd7f301d49c2f1931441df3a7603bcecf8feb00a06"
+      },
+      "summaries": [],
+      "classification": "112 passed and one ambiguous existing same-park locator. Two existing assertions were narrowed to the native list; no product change. Whole113 browser rerun required."
+    },
+    "catalogAdaptation": {
+      "path": "C:/w/admin620-catalog-adaptation-results.json",
+      "sha256": "36563a290d7b990b368872b75342637db49540e67845268b63612842dbefeb96",
+      "ticket": "SCRUM-620",
+      "recordedAt": "2026-10-22T08:54:34.0281192Z",
+      "passed": true,
+      "originalFailure": {
+        "receipt": "C:/w/admin620-linux/api1-exit.json",
+        "receiptSha256": "b41725a341e02c5d7bd206c992e19dafc645d0290ee0513902be243d7cd002b5",
+        "log": "C:/w/admin620-linux/api1.log",
+        "logSha256": "b38ca7be960cecb95117fd8d224fddb4aa54e55248b11dea56edfe816b7f9d5d",
+        "exitCode": 1,
+        "filesFailed": 1,
+        "filesPassed": 109,
+        "filesSkipped": 2,
+        "testsFailed": 2,
+        "testsPassed": 1627,
+        "testsSkipped": 106,
+        "findings": [
+          "The new operator archive request lacked exact typed confirmation and returned400 instead of200.",
+          "The new branch archive request also lacked confirmation; the unchanged picker-absence assertion failed."
+        ],
+        "cause": "Existing test requests had not adopted the owner-approved archive confirmation contract."
+      },
+      "adaptation": {
+        "path": "apps/api/test/catalog.test.ts",
+        "sha256": "f18e0a47dfa0181f45bfecca2986f4dcfc52b677759fda01c01a07af923d598b",
+        "changes": [
+          "Read each newly created record current persisted name and send it as confirmName.",
+          "Add an explicit200 assertion on the existing branch archive response."
+        ],
+        "originalAssertionsRetained": true,
+        "productionChanges": 0,
+        "fleetFixtureChanges": 0,
+        "runtimeGuardsWeakened": 0
+      },
+      "finalFocused": {
+        "receipt": "C:/w/admin620-catalog-final-exit.json",
+        "receiptSha256": "a5a1a156e177c68ae01daaba62011aa14ffd0f1d2d0a96b8f1f5bc5731d909cc",
+        "log": "C:/w/admin620-catalog-final.log",
+        "logSha256": "47edf30cbe71a2eb1da7a8a389ed0ba1f7b2ff63ca696f8e0e167a2fab84c0c2",
+        "exitCode": 0,
+        "testsPassed": 24,
+        "apiOwnCompilerDiagnostics": 0,
+        "changedFileLintDiagnostics": 0,
+        "wholeLogRead": true
+      },
+      "limits": [
+        "This is the whole catalog suite plus its package compiler and changed-file lint, not a claim that the final full API shard or release battery is green.",
+        "The original shard ran the initial freeze. This catalog test adaptation is a separate later backend-test-only delta for the coordinator amended snapshot."
+      ]
+    }
+  },
+  "history": {
+    "artifactIndex": {
+      "path": "C:/w/admin620-test-artifact-index.json",
+      "sha256": "acc78d67bfd120e331e877f8a80a73f9cc36f8ad314f4211d22ab3bb0f551cc3",
+      "artifactCount": 22,
+      "classifications": [
+        {
+          "mode": "house-red",
+          "exitCode": 1,
+          "classification": "meaningful",
+          "explanation": "Four new branch-field failures; two existing boundaries passed."
+        },
+        {
+          "mode": "ports-initial",
+          "exitCode": 1,
+          "classification": "source-edit-setup",
+          "explanation": "No tests collected while the UI owner was midway through a JSX edit; not a feature red."
+        },
+        {
+          "mode": "ports-green",
+          "exitCode": 0,
+          "classification": "focused-green",
+          "explanation": "Five native package port cases."
+        },
+        {
+          "mode": "console-unit-initial",
+          "exitCode": 0,
+          "classification": "focused-green",
+          "explanation": "Six Console markup/API cases."
+        },
+        {
+          "mode": "nav-green",
+          "exitCode": 0,
+          "classification": "focused-green",
+          "explanation": "Twenty navigation cases, including two Organisation additions."
+        },
+        {
+          "mode": "rename-red",
+          "exitCode": 1,
+          "classification": "harness-error",
+          "explanation": "Blank page before the intended Rename assertion: the API mock intercepted Vite module URLs."
+        },
+        {
+          "mode": "rename-diagnostic",
+          "exitCode": 1,
+          "classification": "harness-error",
+          "explanation": "Same blank-page setup fault, not a missing Rename proof."
+        },
+        {
+          "mode": "rename-baseline",
+          "exitCode": 1,
+          "classification": "meaningful",
+          "explanation": "After fixing the mock to intercept only real /api/ paths, the native loaded operator row lacked Rename."
+        },
+        {
+          "mode": "editor-red",
+          "exitCode": 1,
+          "classification": "mixed",
+          "explanation": "Two real failures: untouched absent day-start was sent empty, and old branch A save closed branch B. The legacy-hours case stopped at a locator fault."
+        },
+        {
+          "mode": "editor-refined-red",
+          "exitCode": 1,
+          "classification": "meaningful",
+          "explanation": "Two real failures: Stored-hours selector roundtrip overwrote legacy JSON; omitted codeSent replay falsely claimed delivery failure."
+        },
+        {
+          "mode": "archive-house-red",
+          "exitCode": 1,
+          "classification": "meaningful",
+          "explanation": "Four missing approved archive boundaries. Missing confirmation returned 200; confirmed live-fleet bodies were rejected as unknown fields with 400 instead of the approved 409."
+        },
+        {
+          "mode": "archive-ui-red",
+          "exitCode": 1,
+          "classification": "meaningful",
+          "explanation": "Two failures: typed operator confirmation was absent and branch Archive action was absent."
+        },
+        {
+          "mode": "organisation-browser",
+          "exitCode": 1,
+          "classification": "harness-error",
+          "explanation": "Eleven passed; two failures came from an ambiguous Active-card locator. No product defect claimed from those two."
+        },
+        {
+          "mode": "session-confirmation-red",
+          "exitCode": 1,
+          "classification": "mixed",
+          "explanation": "Two real failures retained old active-park authority after accepted PUT and failed canonical reads. The third failure was a hidden phone-header locator."
+        },
+        {
+          "mode": "async-drafts-red",
+          "exitCode": 1,
+          "classification": "meaningful",
+          "explanation": "Three real failures: Holidays overflow at 390px, an old Holiday save erased a new draft, and an old branch create erased a reopened form."
+        },
+        {
+          "mode": "uncertain-switch-red",
+          "exitCode": 1,
+          "classification": "meaningful",
+          "explanation": "Four failures: the previous three were still pre-fix, plus a lost/uncertain PUT response left old branch authority. This run finished before the three UI fixes were written; it is not a failed-fix claim."
+        },
+        {
+          "mode": "built-green",
+          "exitCode": 0,
+          "classification": "final-focused-green",
+          "explanation": "All eighteen native Organisation browser cases passed against the fresh built Console. Local mocked data, not staging."
+        },
+        {
+          "mode": "own-units",
+          "exitCode": 0,
+          "classification": "final-focused-green",
+          "explanation": "Console 26 (navigation 20, markup 4, API 2) and package Organisation ports 5."
+        },
+        {
+          "mode": "own-checks",
+          "exitCode": 0,
+          "classification": "final-focused-green",
+          "explanation": "API, Console and AdminScreens own compiler scripts plus lint on all seven owned test files; whole output read with zero diagnostics or lint warnings."
+        },
+        {
+          "mode": "fields",
+          "exitCode": 0,
+          "classification": "peer-focused-green",
+          "explanation": "Root/API owner run: twelve house/route field cases."
+        },
+        {
+          "mode": "archive",
+          "exitCode": 0,
+          "classification": "peer-focused-green",
+          "explanation": "Root/API owner run: thirty-five cases across house 10, route 6, races 4 and archived-tenancy 15."
+        },
+        {
+          "mode": "conformance",
+          "exitCode": 0,
+          "classification": "peer-focused-green",
+          "explanation": "Root run: four conformance suites, fifty-nine passing cases."
+        }
+      ]
+    },
+    "independentSourceReview": {
+      "path": "C:/w/admin620-source-audit.json",
+      "sha256": "e099b897aec3f8451103be80e01006964d6a729734b0bc8ca967b17e71802495",
+      "scope": "Earlier3529 freeze, 1009-input selector; current1234-input manifests are separately verified above.",
+      "sourceHead": "58d8eaab1f8b2ac98fea5f8d978c872fe8c04072",
+      "checks": 18
+    },
+    "finalIndependentSourceReview": {
+      "path": "C:/w/admin620-release3-source-audit.json",
+      "sha256": "1855791f3f90cad5f64cdfd01fcf8e9a37905a2bcb39266acd4838444ef349c0",
+      "checks": 13,
+      "frozenInputs": 3531,
+      "productSourceDifferences": 0,
+      "unchangedBackendInputs": 1234
+    }
+  },
+  "proofPreparation": {
+    "helper": {
+      "path": "C:/w/admin620-evidence.mjs",
+      "sha256": "54e4e01ea902820e73a33c3a934c13ca9eaa5722f341796958686d0ae4dd9a22"
+    },
+    "guardReview": {
+      "path": "C:/w/admin620-proof-review.json",
+      "sha256": "ce9b0061352e3c138d553cb74a29e080cde02a462fa7f17d27255dd2ef81f13f",
+      "localCases": 14,
+      "scenarios": 83
+    },
+    "geometry": {
+      "path": "C:/w/admin620-geometry-results.json",
+      "sha256": "a50d0cf0048bc475a3a5494c37a06e44790e6063e7e8306b486f8737a8cf540d",
+      "scenarios": 3,
+      "candidateCssSha256": "bec82339e11c74c3f298c136ef8704fa3e651a769c2b7108f29df54d2bf76ca1",
+      "fontSubstitution": {
+        "sha256": "3100e775e8616cd2611beecfa23a4263d7037586789b43f035236a2e6fbd4c62",
+        "path": "apps/pos/src/assets/fonts/inter-latin.woff2",
+        "substitutedForGoogleBytes": true,
+        "note": "Bundled Inter Latin is inlined locally; exact Google-served bytes are not asserted. Live capture geometry remains authoritative."
+      },
+      "closedDialogStub": true
+    },
+    "independent": {
+      "path": "C:/w/admin620-proof-final-independent.json",
+      "sha256": "e297694d5b325eeb28815db1b41c481e45128cd932dcef0b4a07ee285613385c"
+    },
+    "stagingExecuted": false
+  },
+  "limitations": [
+    "This receipt records local gates and the observed source push. Exact-SHA CI and staging acceptance are recorded separately.",
+    "Full workspace/Console/remaining packages use the final3529 snapshot; POS, focus and API1 use release2; the complete browser rerun, Box and targeted post use release3. The two erased type changes and exact inherited planner/test deltas are identified rather than described as one all-current run.",
+    "API2/3 retain initial3529 execution. The only later backend delta is catalog.test.ts, not selected by those shards; API1 was rerun in full.",
+    "Earlier1009 backend inputs and the expanded1234 dependency set use different selectors, not contradictory totals.",
+    "The artifact index preserves meaningful failures, mixed runs and setup-only failures; its historical focused counts are not full-release coverage.",
+    "Proof14/83 and actual-candidate-CSS SSR geometry are preparation, with font substitution and closed-dialog stubs disclosed. Operator tenant-audit staging negatives remain automated-only."
+  ],
+  "landedAt": "2026-10-22T09:13:31.000Z"
+}

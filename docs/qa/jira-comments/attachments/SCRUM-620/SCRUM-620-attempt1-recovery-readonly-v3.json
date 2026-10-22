@@ -1,0 +1,170 @@
+{
+  "startedAt": "2026-10-22T09:46:57.776Z",
+  "complete": true,
+  "mode": "READ_ONLY_BUSINESS_STATE_WITH_FRESH_SEEDED_AUTH",
+  "businessWrites": 0,
+  "blockedWrites": 0,
+  "foreignReads": [
+    {
+      "origin": "https://fonts.googleapis.com",
+      "resourceType": "stylesheet",
+      "navigation": false,
+      "pathSha256": "b41b12f5bff6c579a37fd37e3e9d52239e88b17a52880a47e0ab98099289e093",
+      "queryKeys": [
+        "display",
+        "family"
+      ],
+      "querySha256": "6eadb847986dc9d422d458666a2d152f6f87d234d9db233ec680cb4cc5e39e21",
+      "oldAllowed": true,
+      "publicRead": true
+    },
+    {
+      "origin": "https://fonts.gstatic.com",
+      "resourceType": "font",
+      "navigation": false,
+      "pathSha256": "13202fc72ccc5e2e45aec9ac4638d734fd2f0180e3734eecddd61984e9e0e1fd",
+      "queryKeys": [],
+      "querySha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "oldAllowed": true,
+      "publicRead": true
+    }
+  ],
+  "apiReads": [
+    {
+      "pathSha256": "cf84102daa2e6261f7693b5dd4fe6bcae1cab2bfcc9f707693a1c36062e3472b",
+      "knownHoliday": null,
+      "status": 401
+    },
+    {
+      "pathSha256": "cf84102daa2e6261f7693b5dd4fe6bcae1cab2bfcc9f707693a1c36062e3472b",
+      "knownHoliday": null,
+      "status": 200
+    },
+    {
+      "pathSha256": "0aa8ec15666a1d519ce617ed5730eba8d9ac5562737b7ad0b97da30a2cde9342",
+      "knownHoliday": null,
+      "status": 200
+    },
+    {
+      "pathSha256": "534b9f0924a323aa562d9e3e48ee9a36016236e696427e69ea8c4250e4505649",
+      "knownHoliday": null,
+      "status": 200
+    },
+    {
+      "pathSha256": "5423d28cbf8543d8f754615c5c9054596313519d4af85654cb1aaa2ada61e9f0",
+      "knownHoliday": null,
+      "status": 200
+    },
+    {
+      "pathSha256": "8d82780b19d6a81785322f997ada5058231cdd0109e4d3ba419a328a316d01a7",
+      "knownHoliday": null,
+      "status": 200
+    },
+    {
+      "pathSha256": "0807a8835ae3ae1589bd2d77dcf6e6e1a50fe450cf0a85e1eb805132587c1f7a",
+      "knownHoliday": "original",
+      "status": 200
+    },
+    {
+      "pathSha256": "7b47703545538bcbc079b29c786a54f300e15a48f06e2dfc8aee60fd52122434",
+      "knownHoliday": null,
+      "status": 200
+    },
+    {
+      "pathSha256": "0807a8835ae3ae1589bd2d77dcf6e6e1a50fe450cf0a85e1eb805132587c1f7a",
+      "knownHoliday": "original",
+      "status": 200
+    }
+  ],
+  "checks": [
+    {
+      "label": "EXACT_SEEDED_ACTOR",
+      "passed": true
+    },
+    {
+      "label": "OWN_BRANCH_ARCHIVED_CANONICALLY",
+      "passed": true
+    },
+    {
+      "label": "OWN_OPERATOR_HIDDEN_AFTER_CONFIRMED_ARCHIVE",
+      "passed": true
+    },
+    {
+      "label": "NO_HOLIDAY_CREATED_OR_RETAINED",
+      "passed": true
+    },
+    {
+      "label": "ONE_ORIGINAL_PROOF_SIGNIN_AUDIT",
+      "passed": true
+    },
+    {
+      "label": "ORIGINAL_PROOF_SESSION_RETURNED_TO_ORIGINAL_BRANCH",
+      "passed": true
+    }
+  ],
+  "currentBranchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+  "preferences": {
+    "theme": "light",
+    "language": "en"
+  },
+  "holidayGrants": [
+    {
+      "permission": "catalog:holiday:read",
+      "scopeType": "operator",
+      "scopeId": null
+    },
+    {
+      "permission": "catalog:holiday:manage",
+      "scopeType": "operator",
+      "scopeId": null
+    },
+    {
+      "permission": "catalog:holiday:read",
+      "scopeType": "operator",
+      "scopeId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75"
+    },
+    {
+      "permission": "catalog:holiday:manage",
+      "scopeType": "operator",
+      "scopeId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75"
+    }
+  ],
+  "holidayDom": {
+    "headings": [
+      "Holidays",
+      "Holidays / weekend overrides"
+    ],
+    "permissionRequired": 0,
+    "parkSelectCount": 1,
+    "rangeHeadingCount": 1,
+    "origin": "https://oto-console-staging.onrender.com",
+    "pathSha256": "578612a027736a197d47396731c69316f5857b48e4368b6ad03eb0c0328c2a61"
+  },
+  "sameSelection": {
+    "selectedSameValue": true,
+    "beforeRanges": 1,
+    "afterRanges": 0,
+    "beforeReads": 1,
+    "afterReads": 2
+  },
+  "fixtureBranch": {
+    "id": "01a162f7-c9af-70c3-8258-31efb0462843",
+    "name": "ZZ TEST SCRUM-620 Renamed branch 20261022T093545534Z",
+    "code": "zz-test-620-20261022t093545534z",
+    "archived": true
+  },
+  "sessionRestoration": {
+    "originalBranchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "fixtureBranchId": "01a162f7-c9af-70c3-8258-31efb0462843",
+    "originalSessionSha256": "df818d6da3418ff160b796dfe5d349b18b03687579e6164d28ef452dc5786e6a",
+    "switches": 2,
+    "positiveReturnAudit": true,
+    "originalProofSignedOut": true
+  },
+  "authCleanup": {
+    "signOutStatus": 200,
+    "meStatus": 401,
+    "confirmed": true
+  },
+  "completedAt": "2026-10-22T09:47:09.583Z"
+}
