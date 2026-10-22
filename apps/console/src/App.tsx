@@ -28,6 +28,7 @@ import { Overview } from '@/pages/Overview';
 import { Accounts } from '@/pages/Accounts';
 import { Roles } from '@/pages/Roles';
 import { AppAccess } from '@/pages/AppAccess';
+import { Employees } from '@/pages/Employees';
 
 const LAUNCHER_URL = import.meta.env.VITE_LAUNCHER_URL?.trim();
 
@@ -130,6 +131,7 @@ const pageElements: Record<string, ReactElement> = {
   accounts: <Accounts />,
   roles: <Roles />,
   'app-access': <AppAccess />,
+  employees: <Employees />,
   health: <Health />, failures: <Failures />, activity: <Activity />,
   devices: <Devices />, branches: <Branches />, bookings: <Bookings />,
   booths: <Booths />, 'booth-report': <BoothReport />, vouchers: <Vouchers />,

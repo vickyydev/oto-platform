@@ -1191,6 +1191,163 @@
         }
       }
     },
+    "/employees/": {
+      "get": {
+        "description": "Read-only employee mirror and native records, including archived copies. The existing account-read route gate still checks the seated branch. Once authorized, employee list reach comes from admin:account:read grants rather than the seat or linked account roles; branchless employees need operator-wide reach. Existing core department links are shown only within the same operator and branch reach. Linked logins independently keep the account list scope rules. Last sign-in is the latest successful same-operator auth.sign_in audit for visible logins, including expired or revoked sessions; it is not session activity. Search matches employee names, nicknames and visible login phones.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "q",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "employees": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "nickname": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "source": {
+                            "type": "string",
+                            "enum": [
+                              "platform",
+                              "otoapp"
+                            ]
+                          },
+                          "externalId": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "archivedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          },
+                          "branch": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ],
+                            "additionalProperties": false,
+                            "nullable": true
+                          },
+                          "department": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ],
+                            "additionalProperties": false,
+                            "nullable": true
+                          },
+                          "accounts": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "phone": {
+                                  "type": "string"
+                                },
+                                "status": {
+                                  "type": "string",
+                                  "enum": [
+                                    "invited",
+                                    "active",
+                                    "inactive"
+                                  ]
+                                },
+                                "lastSignInAt": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "nullable": true
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "phone",
+                                "status",
+                                "lastSignInAt"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "lastSignInAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "nickname",
+                          "source",
+                          "externalId",
+                          "archivedAt",
+                          "branch",
+                          "department",
+                          "accounts",
+                          "lastSignInAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "employees"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/roles/": {
       "get": {
         "description": "System roles and this operator’s role catalogue, with permission sentences. Read-only; no role editor.",

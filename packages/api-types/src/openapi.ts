@@ -1138,6 +1138,77 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/employees/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read-only employee mirror and native records, including archived copies. The existing account-read route gate still checks the seated branch. Once authorized, employee list reach comes from admin:account:read grants rather than the seat or linked account roles; branchless employees need operator-wide reach. Existing core department links are shown only within the same operator and branch reach. Linked logins independently keep the account list scope rules. Last sign-in is the latest successful same-operator auth.sign_in audit for visible logins, including expired or revoked sessions; it is not session activity. Search matches employee names, nicknames and visible login phones. */
+        get: {
+            parameters: {
+                query?: {
+                    q?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            employees: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                                nickname: string | null;
+                                /** @enum {string} */
+                                source: "platform" | "otoapp";
+                                externalId: string | null;
+                                /** Format: date-time */
+                                archivedAt: string | null;
+                                branch: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                } | null;
+                                department: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                } | null;
+                                accounts: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    phone: string;
+                                    /** @enum {string} */
+                                    status: "invited" | "active" | "inactive";
+                                    /** Format: date-time */
+                                    lastSignInAt: string | null;
+                                }[];
+                                /** Format: date-time */
+                                lastSignInAt: string | null;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/roles/": {
         parameters: {
             query?: never;

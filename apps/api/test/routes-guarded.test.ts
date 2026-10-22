@@ -34,6 +34,12 @@ afterAll(async () => {
 const NOT_OURS = new Set(['/*']);
 
 describe('route guards (S2-01b)', () => {
+  it('keeps the employee directory behind the existing account-read gate (SCRUM-614)', () => {
+    const route = ctx.app.routeRegistry.find((r) => r.method === 'GET' && r.url.replace(/\/$/, '') === '/employees');
+    expect(route?.config.permission).toBe('admin:account:read');
+    expect(route?.config.public).not.toBe(true);
+  });
+
   it('the Roles catalogue, reverse lookup and preview retain the permission-read gate (SCRUM-612)', () => {
     for (const url of ['/roles', '/roles/holders', '/roles/preview']) {
       const route = ctx.app.routeRegistry.find((r) => r.method === 'GET' && r.url === url);
