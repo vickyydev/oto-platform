@@ -18,6 +18,7 @@ import { loadUserWithAccess, requireRole, requireAdmin, requireManager, requireG
 import { generatePdf, generateSignedPdf, generateSignedLetterPdf, wrapContentInDocument } from "./pdf";
 import { uploadFinalizedPdf, uploadSignedPdf, uploadSignedLetterPdf, presignedPdfUrl, streamSignedPdf, isObjectStoragePath } from "./pdf-storage";
 import { readFixDepartmentMembers, registerFixRecipientPreview } from "./fix-recipient-preview";
+import { alertUrgentFixReport } from "./fix-urgent-alert";
 import { readPresenceDeliveries, registerPresenceNotificationDelivery } from "./presence-notification-delivery";
 import { fixMulterFilenames } from "./middleware/fixMulterFilenames";
 import { uploadToObjectStorage, getFileFromObjectStorage, fileExistsInObjectStorage, deleteFromObjectStorage, getFileRangeFromObjectStorage } from "./file-storage";
@@ -24360,7 +24361,10 @@ ${context}`;
         assignedDepartmentId,
         sourceChecklistRunItemId: sourceChecklistRunItemId || null,
       } as any);
-      
+
+      // SCRUM-656: an urgent report alerts the Fix Department in the app.
+      await alertUrgentFixReport(report);
+
       res.status(201).json(report);
     } catch (error) {
       next(error);

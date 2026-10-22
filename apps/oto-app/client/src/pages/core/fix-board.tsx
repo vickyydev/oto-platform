@@ -1014,6 +1014,19 @@ export default function FixBoardPage() {
   const [selectedReport, setSelectedReport] = useState<FixReport | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'myqueue'>('all');
 
+  // SCRUM-656: a notification opens its report here (?reportId=), once.
+  const [linkedReportId, setLinkedReportId] = useState(() => new URLSearchParams(window.location.search).get('reportId'));
+  const { data: linkedReport } = useQuery<FixReport>({
+    queryKey: ['/api/fix-reports', linkedReportId],
+    enabled: !!linkedReportId,
+  });
+  useEffect(() => {
+    if (!linkedReport) return;
+    setSelectedReport(linkedReport);
+    setLinkedReportId(null);
+    window.history.replaceState(null, '', window.location.pathname);
+  }, [linkedReport]);
+
   // Check if user is a Fix Department member
   const { data: queueInfo } = useQuery<{ isFixDeptMember: boolean; fixDeptId: string | null; userDeptIds: string[] }>({
     queryKey: ['/api/fix-reports/my-queue-info'],

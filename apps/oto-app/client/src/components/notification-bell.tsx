@@ -27,6 +27,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { notificationTarget } from "@/lib/notification-target";
 
 interface NotificationItem {
   id: string;
@@ -42,6 +43,7 @@ interface NotificationItem {
 
 const notificationMeta: Record<string, { icon: typeof Bell; label: string; color: string }> = {
   timekeeping_ping: { icon: CalendarClock, label: "Clock-in", color: "text-amber-500 dark:text-amber-400" },
+  fix_report_urgent: { icon: AlertTriangle, label: "Urgent fix", color: "text-red-500 dark:text-red-400" },
   task_comment: { icon: MessageSquare, label: "Comment", color: "text-blue-500 dark:text-blue-400" },
   task_assigned: { icon: UserPlus, label: "Assigned", color: "text-violet-500 dark:text-violet-400" },
   task_status_changed: { icon: RefreshCw, label: "Status", color: "text-amber-500 dark:text-amber-400" },
@@ -100,9 +102,8 @@ export function NotificationPanel({ open, onOpenChange }: { open: boolean; onOpe
     }
     if (notification.type === "timekeeping_ping") return;
     onOpenChange(false);
-    if (notification.referenceType === "task" && notification.referenceId) {
-      window.location.href = `/ops?taskId=${notification.referenceId}`;
-    }
+    const target = notificationTarget(notification);
+    if (target) window.location.href = target;
   }
 
   function handleMarkRead(e: React.MouseEvent, notification: NotificationItem) {
@@ -249,6 +250,11 @@ function NotificationRow({
           {notification.referenceType === "task" && notification.referenceId && (
             <span className="text-[10px] text-primary/70 flex items-center gap-0.5">
               Open task <ArrowRight className="h-2.5 w-2.5" />
+            </span>
+          )}
+          {notification.referenceType === "fix_report" && notification.referenceId && (
+            <span className="text-[10px] text-primary/70 flex items-center gap-0.5">
+              Open report <ArrowRight className="h-2.5 w-2.5" />
             </span>
           )}
         </div>

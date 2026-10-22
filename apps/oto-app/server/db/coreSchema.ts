@@ -3540,6 +3540,7 @@ export const notificationTypeEnum = pgEnum("notification_type", [
   "task_due_date_changed",
   "task_priority_changed",
   "timekeeping_ping",
+  "fix_report_urgent",
 ]);
 
 export const notifications = pgTable(

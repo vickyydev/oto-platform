@@ -300,6 +300,39 @@ export async function createTaskDescriptionNotification(params: {
   }
 }
 
+/**
+ * SCRUM-656: an urgent Fix report, to the Fix Department's members. In-app
+ * only. The author is never told of their own report (createNotification's
+ * rule). Opens the report on the Fix Board (referenceType "fix_report").
+ */
+export async function createFixReportUrgentNotification(params: {
+  tenantId: string;
+  reportId: string;
+  reportTitle: string;
+  branchName: string;
+  authorUserId: string;
+  recipientUserIds: string[];
+}): Promise<void> {
+  const actorName = await getActorName(params.authorUserId, params.tenantId);
+  const truncatedTitle = params.reportTitle.length > 50
+    ? params.reportTitle.slice(0, 50) + "..."
+    : params.reportTitle;
+
+  for (const recipientId of params.recipientUserIds) {
+    await createNotification({
+      tenantId: params.tenantId,
+      recipientUserId: recipientId,
+      type: "fix_report_urgent",
+      title: `Urgent Fix report: "${truncatedTitle}"`,
+      body: `${actorName} reported it at ${params.branchName}`,
+      referenceType: "fix_report",
+      referenceId: params.reportId,
+      actorUserId: params.authorUserId,
+      actorName,
+    });
+  }
+}
+
 export async function getTaskStakeholderUserIds(taskId: string, tenantId: string): Promise<string[]> {
   try {
     const result = await db.execute(sql`
