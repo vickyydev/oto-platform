@@ -1,0 +1,160 @@
+{
+    "ticket":  "SCRUM-623",
+    "kind":  "Independent public V4 partial-outcome audit",
+    "passed":  true,
+    "fullAcceptance":  false,
+    "resourcesRestored":  false,
+    "checkedAt":  "2026-10-22T16:26:28.9980375+00:00",
+    "sourceSha":  "5ddb61408a0d931802fd2f86f307ab058878dd34",
+    "helperSha256":  "aacfd3233dec4a5b89817ffb641c33a968796bf91e3578bd1815d8b699f16aeb",
+    "proof":  {
+                  "path":  "C:/w/admin623-staging-v4-results.json",
+                  "sha256":  "950800052b57fc2124afa8a1d483eceb1580fb079ed3f314d23de5f6dcb79ed6"
+              },
+    "envelope":  {
+                     "path":  "C:/w/admin623-stage-v4-envelope.json",
+                     "sha256":  "5d3d064dec14bdccd77f1e7ced6dfff1257975cb706e7eb45b703fbe1320849d"
+                 },
+    "ci":  {
+               "path":  "C:/w/admin623-ci-results.json",
+               "sha256":  "fa94a7be9b14c664085b2910c5b15140754c26c47810e69248cb8dda62714233",
+               "runId":  39807000650,
+               "jobs":  6
+           },
+    "checks":  [
+                   {
+                       "name":  "Exact V4 helper and source identities match public receipts",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Envelope binds actual raw proof bytes",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Partial failure and unconfirmed restoration remain explicit",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Retained CI receipt has six completed successful exact-source jobs",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Three exact-source deployment observations are stable",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Eight recorded safety/native checks are fresh and passing",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Eleven logical operations and twelve dispatches are settled latest200",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Actual type create201 and exact replay200 history is retained",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Tax restore, type rule restore/archive and tender archive are confirmed; discount archive is absent",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "No Event write or business audit verification is invented",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "No blocked, recorded browser-error or forbidden-write activity",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "One fresh seeded session has certain signout200 and me401",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Six raw PNG hashes/dimensions and fresh native bounds match; Event phone390 fits",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "Discount image13 is excluded from publication and raw identity is preserved separately",
+                       "passed":  true
+                   }
+               ],
+    "metrics":  {
+                    "auditPins":  14,
+                    "recordedChecks":  8,
+                    "images":  6,
+                    "publicationEligibleByCoordinatorInstruction":  5,
+                    "operations":  11,
+                    "dispatches":  12,
+                    "fixtureCreates":  3,
+                    "settledLatest200":  11,
+                    "missingCleanupOperation":  "discount-archive",
+                    "businessAuditRowsVerified":  0,
+                    "blockedRequests":  0,
+                    "recordedBrowserErrorKinds":  0,
+                    "signIns":  1,
+                    "signOuts":  1,
+                    "signOutStatus":  200,
+                    "meStatus":  401,
+                    "stableDeployments":  3,
+                    "eventWriteSkips":  1
+                },
+    "images":  [
+                   {
+                       "filename":  "SCRUM-623-13-v4-discounts-desktop.png",
+                       "sha256":  "a241dc50c3ac23a403d568ef74a0647e9adea182e9026c3dacc320fa22a4268e",
+                       "width":  1440,
+                       "height":  1100,
+                       "captureMetadataValid":  true,
+                       "publicationExcluded":  true
+                   },
+                   {
+                       "filename":  "SCRUM-623-14-v4-tenders-desktop.png",
+                       "sha256":  "c205199c8c10139ba3c535eabd235c88f33547d6011da18d1bc2893cc40e601e",
+                       "width":  1440,
+                       "height":  1100,
+                       "captureMetadataValid":  true,
+                       "publicationExcluded":  false
+                   },
+                   {
+                       "filename":  "SCRUM-623-15-v4-tax-desktop.png",
+                       "sha256":  "3064e1cffc7845287f7d720b4b4ad7d3811a757944d9b2494e94d796e70b50df",
+                       "width":  1440,
+                       "height":  1100,
+                       "captureMetadataValid":  true,
+                       "publicationExcluded":  false
+                   },
+                   {
+                       "filename":  "SCRUM-623-16-v4-voucher-types-desktop.png",
+                       "sha256":  "5dbfe6a69f0883926b802fb77e64b5e04f52ed6b817cbe0539f57f82133c4020",
+                       "width":  1440,
+                       "height":  1100,
+                       "captureMetadataValid":  true,
+                       "publicationExcluded":  false
+                   },
+                   {
+                       "filename":  "SCRUM-623-17-v4-voucher-campaigns-desktop.png",
+                       "sha256":  "6b53e56986bcde1da1c7d5accc812d328bbe3fa311d3d567802a8d6eb1bbc17b",
+                       "width":  1440,
+                       "height":  1100,
+                       "captureMetadataValid":  true,
+                       "publicationExcluded":  false
+                   },
+                   {
+                       "filename":  "SCRUM-623-18-v4-event-pricing-phone.png",
+                       "sha256":  "256858b0931632201b7b934ee751dc05de52469e95f5af6eb71eee3e757f8f94",
+                       "width":  390,
+                       "height":  1100,
+                       "captureMetadataValid":  true,
+                       "publicationExcluded":  false
+                   }
+               ],
+    "outcome":  "V4 reached six native captures and eleven confirmed operations, then timed out at discount archive. Tax restore/type rule restore/type archive/tender archive have confirmed replies. Discount archive did not dispatch; baseline restoration remains unconfirmed. Session is signed out.",
+    "limits":  [
+                   "Public receipt and image metadata only; no private journal, auth, network or staging access.",
+                   "No fresh canonical database read or full active-row restoration is claimed; resourcesRestored stays false.",
+                   "Business audit verification was not reached; audits array is empty, not proof of absent server audit rows.",
+                   "Image13 raw bytes were hash-checked at the coordinator-preserved alternate path only; visible native fake QR pattern prevents publication. Remaining image visual approval is the coordinator observation, not this metadata audit.",
+                   "No recorded browser errors is a receipt fact, not an error-free-browser claim. Event price writes were skipped; Till, station and campaign mint/export remain unproved."
+               ]
+}

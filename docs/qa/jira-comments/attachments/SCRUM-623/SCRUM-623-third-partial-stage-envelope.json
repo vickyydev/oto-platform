@@ -1,0 +1,73 @@
+{
+  "ticket": "SCRUM-623",
+  "sourceSha": "5ddb61408a0d931802fd2f86f307ab058878dd34",
+  "ciRun": "39807000650",
+  "startedAt": "2026-10-22T16:18:55.126Z",
+  "complete": false,
+  "helperSha256": "aacfd3233dec4a5b89817ffb641c33a968796bf91e3578bd1815d8b699f16aeb",
+  "reviewSha256": "b31fb12511b8d375480044614d2452d8a634177e42dade50e9123b1d82d7fce6",
+  "boundaryReceiptSha256": "6163773a7a015db01a2faed13618d98f3047f07363a3d77f0f987f84315b3e8b",
+  "extraReceiptSha256": "f569e9931d874784ee3588c727fed19b180e419a1e710f5c1a82b47037dbf9f0",
+  "before": [
+    {
+      "name": "oto-api-staging",
+      "deployId": "dep-dbd35049v7es73c6piq0",
+      "sourceSha": "5ddb61408a0d931802fd2f86f307ab058878dd34",
+      "finishedAt": "2026-10-22T16:01:18.61569Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "deployId": "dep-dbd35049v7es73c6pjrg",
+      "sourceSha": "5ddb61408a0d931802fd2f86f307ab058878dd34",
+      "finishedAt": "2026-10-22T15:58:35.150771Z"
+    },
+    {
+      "name": "oto-pos-staging",
+      "deployId": "dep-dbd350c9v7es73c6pk0g",
+      "sourceSha": "5ddb61408a0d931802fd2f86f307ab058878dd34",
+      "finishedAt": "2026-10-22T15:58:40.314539Z"
+    }
+  ],
+  "tooling": [
+    {
+      "name": "env.mjs",
+      "sha256": "7ed9e5879adeeeadbda307b375595b9bb801071f3939a6afa24de1ee2693e237"
+    },
+    {
+      "name": "render.mjs",
+      "sha256": "38c0624969c762a5d93de2a0ab0675e98c7a265e8dde750a51c25d1a5a9826b7"
+    }
+  ],
+  "limits": [
+    "Console staging controls only; campaign mint/export and actual Till rendering are automated or separate acceptance.",
+    "Optional Tax/Event writes are skipped unless existing values are exactly restorable."
+  ],
+  "finishedAt": "2026-10-22T16:21:40.700Z",
+  "proofExitCode": 1,
+  "proofReceiptSha256": "950800052b57fc2124afa8a1d483eceb1580fb079ed3f314d23de5f6dcb79ed6",
+  "after": [
+    {
+      "name": "oto-api-staging",
+      "deployId": "dep-dbd35049v7es73c6piq0",
+      "sourceSha": "5ddb61408a0d931802fd2f86f307ab058878dd34",
+      "finishedAt": "2026-10-22T16:01:18.61569Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "deployId": "dep-dbd35049v7es73c6pjrg",
+      "sourceSha": "5ddb61408a0d931802fd2f86f307ab058878dd34",
+      "finishedAt": "2026-10-22T15:58:35.150771Z"
+    },
+    {
+      "name": "oto-pos-staging",
+      "deployId": "dep-dbd350c9v7es73c6pk0g",
+      "sourceSha": "5ddb61408a0d931802fd2f86f307ab058878dd34",
+      "finishedAt": "2026-10-22T15:58:40.314539Z"
+    }
+  ],
+  "stable": true,
+  "freshAfterAllThreeDeploys": true,
+  "imageHashesMatch": true,
+  "helperMatches": true,
+  "diagnostic": null
+}

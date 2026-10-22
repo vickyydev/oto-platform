@@ -1,0 +1,562 @@
+{
+  "ticket": "SCRUM-623",
+  "helperFilename": "admin623-evidence-v4.mjs",
+  "helperSha256": "aacfd3233dec4a5b89817ffb641c33a968796bf91e3578bd1815d8b699f16aeb",
+  "releaseSha": "5ddb61408a0d931802fd2f86f307ab058878dd34",
+  "startedAt": "2026-10-22T16:18:55.446Z",
+  "complete": false,
+  "resourcesRestored": false,
+  "checks": [
+    {
+      "name": "EXACT_SEEDED_ACTOR_AND_LOSSLESS_PREFLIGHT",
+      "passed": true,
+      "checkedAt": "2026-10-22T16:19:08.829Z"
+    },
+    {
+      "name": "NATIVE_FIXED_DISCOUNT_CREATE_EDIT",
+      "passed": true,
+      "checkedAt": "2026-10-22T16:19:23.473Z"
+    },
+    {
+      "name": "NATIVE_UNUSED_TENDER_CREATE_RENAME_DESKTOP",
+      "passed": true,
+      "checkedAt": "2026-10-22T16:19:36.321Z"
+    },
+    {
+      "name": "NATIVE_EXISTING_TAX_VALUE_ROUNDTRIP",
+      "passed": true,
+      "checkedAt": "2026-10-22T16:19:46.398Z"
+    },
+    {
+      "name": "NATIVE_UNUSED_GENERATED_VOUCHER_TYPE",
+      "passed": true,
+      "checkedAt": "2026-10-22T16:19:57.521Z"
+    },
+    {
+      "name": "NATIVE_UNUSED_TYPE_RULES_AND_READ_ONLY_CAMPAIGN_CONTROLS",
+      "passed": true,
+      "checkedAt": "2026-10-22T16:20:07.606Z"
+    },
+    {
+      "name": "NATIVE_EVENT_PRICES_READ_ONLY_WRITE_SKIPPED",
+      "passed": true,
+      "checkedAt": "2026-10-22T16:20:14.327Z"
+    },
+    {
+      "name": "SIGNOUT200_AND_ME401",
+      "passed": true,
+      "checkedAt": "2026-10-22T16:21:36.438Z"
+    }
+  ],
+  "screenshots": [
+    {
+      "filename": "SCRUM-623-13-v4-discounts-desktop.png",
+      "capturedAt": "2026-10-22T16:19:21.587Z",
+      "label": "native fixed discount create/edit",
+      "bounds": [
+        {
+          "name": "fixture card",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "edit fixture",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "captionClear": true,
+      "sha256": "a241dc50c3ac23a403d568ef74a0647e9adea182e9026c3dacc320fa22a4268e"
+    },
+    {
+      "filename": "SCRUM-623-14-v4-tenders-desktop.png",
+      "capturedAt": "2026-10-22T16:19:34.407Z",
+      "label": "native unused other tender rename desktop",
+      "bounds": [
+        {
+          "name": "fixture tender row",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "captionClear": true,
+      "sha256": "c205199c8c10139ba3c535eabd235c88f33547d6011da18d1bc2893cc40e601e"
+    },
+    {
+      "filename": "SCRUM-623-15-v4-tax-desktop.png",
+      "capturedAt": "2026-10-22T16:19:44.559Z",
+      "label": "native F&B service value; exact restore follows",
+      "bounds": [
+        {
+          "name": "F&B service control",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "captionClear": true,
+      "sha256": "3064e1cffc7845287f7d720b4b4ad7d3811a757944d9b2494e94d796e70b50df"
+    },
+    {
+      "filename": "SCRUM-623-16-v4-voucher-types-desktop.png",
+      "capturedAt": "2026-10-22T16:19:55.610Z",
+      "label": "unused generated voucher type; no codes issued",
+      "bounds": [
+        {
+          "name": "fixture voucher type row",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "captionClear": true,
+      "sha256": "5dbfe6a69f0883926b802fb77e64b5e04f52ed6b817cbe0539f57f82133c4020"
+    },
+    {
+      "filename": "SCRUM-623-17-v4-voucher-campaigns-desktop.png",
+      "capturedAt": "2026-10-22T16:20:05.498Z",
+      "label": "unused type rules and campaign controls; no mint or download",
+      "bounds": [
+        {
+          "name": "fixture rules row",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "campaign form",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "captionClear": true,
+      "sha256": "6b53e56986bcde1da1c7d5accc812d328bbe3fa311d3d567802a8d6eb1bbc17b"
+    },
+    {
+      "filename": "SCRUM-623-18-v4-event-pricing-phone.png",
+      "capturedAt": "2026-10-22T16:20:12.520Z",
+      "label": "native walk-up controls 390px; configuration write skipped",
+      "bounds": [
+        {
+          "name": "first native weekday price",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 390,
+        "document": 390
+      },
+      "captionClear": true,
+      "sha256": "256858b0931632201b7b934ee751dc05de52469e95f5af6eb71eee3e757f8f94"
+    }
+  ],
+  "operations": [
+    {
+      "label": "discount-create",
+      "method": "POST",
+      "pathSha256": "aff258fc306fefce17ad607f9ed1c12e70b3555bdcb850ed1f2044ffd9771a77",
+      "bodySha256": "216eac7432fc7c8fc0e1296246a433ec99c7857f2b663a26036d965a65e8cbe5",
+      "keySha256": "a87a1b6ffa15d49796824a3007c8a3259bcecc5b7e690fe3db12d317a60189c3",
+      "attempts": 1,
+      "confirmedAttempts": [
+        1
+      ],
+      "firstConfirmedStatus": 200,
+      "firstConfirmedAttempt": 1,
+      "attemptOutcomes": [
+        {
+          "attempt": 1,
+          "status": 200,
+          "confirmed": true,
+          "uncertain": false
+        }
+      ],
+      "latestAttemptConfirmed": true,
+      "settled": true,
+      "status": 200,
+      "createdId": "01a16468-d1b8-786e-b9a9-216bb02cbb0a"
+    },
+    {
+      "label": "discount-edit",
+      "method": "PATCH",
+      "pathSha256": "127abddc9d6b8634ae2bbe81406a00f9fb72442db2b61ac9ee71e3bd828199e0",
+      "bodySha256": "0ceca23036ab9800518cf89b20aae06a5424dc8ec7dc3d6a13c113bbe823e210",
+      "keySha256": "4ff5adccb487f4a34076a84365b899385f05775241289cba7d163f48999d4a3c",
+      "attempts": 1,
+      "confirmedAttempts": [
+        1
+      ],
+      "firstConfirmedStatus": 200,
+      "firstConfirmedAttempt": 1,
+      "attemptOutcomes": [
+        {
+          "attempt": 1,
+          "status": 200,
+          "confirmed": true,
+          "uncertain": false
+        }
+      ],
+      "latestAttemptConfirmed": true,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "tender-create",
+      "method": "POST",
+      "pathSha256": "88352d7b01eda746634f01a813fe1012642ea1217bf35a9e54c03ceafa0e6c33",
+      "bodySha256": "b14b6780d8d8a131c63a8d303c1ec9a2ad9d767bdda34f27667ef6c2f8793d3f",
+      "keySha256": "f131ad163e16a24de0d726658821bf23f582bafd07a61568f2890019ea5bafc5",
+      "attempts": 1,
+      "confirmedAttempts": [
+        1
+      ],
+      "firstConfirmedStatus": 200,
+      "firstConfirmedAttempt": 1,
+      "attemptOutcomes": [
+        {
+          "attempt": 1,
+          "status": 200,
+          "confirmed": true,
+          "uncertain": false
+        }
+      ],
+      "latestAttemptConfirmed": true,
+      "settled": true,
+      "status": 200,
+      "createdId": "01a16469-0afc-7931-93d5-4bcf5409fc77"
+    },
+    {
+      "label": "tender-edit",
+      "method": "PATCH",
+      "pathSha256": "707becd56ef70db4dd4015f3fb7035d9130728e000221292e3450f53f911ad23",
+      "bodySha256": "900c960db2a70c4aec736dfef48e039684e62a0c01ce90953f281929de8fda9e",
+      "keySha256": "3a70996f956da7b210a89691f197793d51b5609bf5b035a0e8c8836777d90844",
+      "attempts": 1,
+      "confirmedAttempts": [
+        1
+      ],
+      "firstConfirmedStatus": 200,
+      "firstConfirmedAttempt": 1,
+      "attemptOutcomes": [
+        {
+          "attempt": 1,
+          "status": 200,
+          "confirmed": true,
+          "uncertain": false
+        }
+      ],
+      "latestAttemptConfirmed": true,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "tax-change",
+      "method": "PUT",
+      "pathSha256": "29cebbb90d0c05c50e5f1932217b0c4999a8519355e5f2fbb2b4ba01d0aa9c8c",
+      "bodySha256": "6e0b0d1fdd29c0b93cb6fa4cb6a6c0183d9a8d7f421d2bb906c845b903c60592",
+      "keySha256": "089da110d5336497b336f963decf2debffb8abc41e1dc64fec82cd9e1763ab88",
+      "attempts": 1,
+      "confirmedAttempts": [
+        1
+      ],
+      "firstConfirmedStatus": 200,
+      "firstConfirmedAttempt": 1,
+      "attemptOutcomes": [
+        {
+          "attempt": 1,
+          "status": 200,
+          "confirmed": true,
+          "uncertain": false
+        }
+      ],
+      "latestAttemptConfirmed": true,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "tax-restore",
+      "method": "PUT",
+      "pathSha256": "29cebbb90d0c05c50e5f1932217b0c4999a8519355e5f2fbb2b4ba01d0aa9c8c",
+      "bodySha256": "f406d20c481cfaa35ffca2f3c3443cff85ca20d85ece3721d66bd7516e4f8af5",
+      "keySha256": "cd99d1db22b6c0f7ca30337165e0785610b45653203b5f472fed1fcdabc223fa",
+      "attempts": 1,
+      "confirmedAttempts": [
+        1
+      ],
+      "firstConfirmedStatus": 200,
+      "firstConfirmedAttempt": 1,
+      "attemptOutcomes": [
+        {
+          "attempt": 1,
+          "status": 200,
+          "confirmed": true,
+          "uncertain": false
+        }
+      ],
+      "latestAttemptConfirmed": true,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "type-create",
+      "method": "POST",
+      "pathSha256": "6bcaa8c3f6fa7cc1f9d4f87e044b504e33868193404a4baf216bc2b7819a131d",
+      "bodySha256": "5425a3d267f58452522682993a3651bb4e002dbd1247245316486dbcdf6f528e",
+      "keySha256": "7b3433f7862091850c8ff760a98295b76d9fac598c09dc7a15fbb3fa14de4297",
+      "attempts": 2,
+      "confirmedAttempts": [
+        1,
+        2
+      ],
+      "firstConfirmedStatus": 201,
+      "firstConfirmedAttempt": 1,
+      "attemptOutcomes": [
+        {
+          "attempt": 1,
+          "status": 201,
+          "confirmed": true,
+          "uncertain": false
+        },
+        {
+          "attempt": 2,
+          "status": 200,
+          "confirmed": true,
+          "uncertain": false
+        }
+      ],
+      "latestAttemptConfirmed": true,
+      "settled": true,
+      "status": 200,
+      "createdId": "01a16469-6b89-7df3-8fad-cbc9b0100c78"
+    },
+    {
+      "label": "type-rules-edit",
+      "method": "PATCH",
+      "pathSha256": "953df0d74f31698a616240eed74fd69f089cee88be93dfa141d3b8d7e0eca9ec",
+      "bodySha256": "ed5855eaabd34084c7d72a8be876d6539bbe0bdd6b0a39acc9a6660beef66547",
+      "keySha256": "3de8f141d2898392970652b7dd6dbba589acca1920e84af445147dab087620f2",
+      "attempts": 1,
+      "confirmedAttempts": [
+        1
+      ],
+      "firstConfirmedStatus": 200,
+      "firstConfirmedAttempt": 1,
+      "attemptOutcomes": [
+        {
+          "attempt": 1,
+          "status": 200,
+          "confirmed": true,
+          "uncertain": false
+        }
+      ],
+      "latestAttemptConfirmed": true,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "type-rules-restore",
+      "method": "PATCH",
+      "pathSha256": "953df0d74f31698a616240eed74fd69f089cee88be93dfa141d3b8d7e0eca9ec",
+      "bodySha256": "1e4eb7d6c47533bdcd2f60a0aa33ad1e96623a77a32353359ff8b9f5e4457092",
+      "keySha256": "2ec2aade722e0f9e0f10fee226990f1b7e5953e582cdfd3e4c55c78fe211fba0",
+      "attempts": 1,
+      "confirmedAttempts": [
+        1
+      ],
+      "firstConfirmedStatus": 200,
+      "firstConfirmedAttempt": 1,
+      "attemptOutcomes": [
+        {
+          "attempt": 1,
+          "status": 200,
+          "confirmed": true,
+          "uncertain": false
+        }
+      ],
+      "latestAttemptConfirmed": true,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "type-archive",
+      "method": "DELETE",
+      "pathSha256": "953df0d74f31698a616240eed74fd69f089cee88be93dfa141d3b8d7e0eca9ec",
+      "bodySha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "keySha256": "58017426deadd03d866107ee43760bfd9798742c7e99ccf9a63f2e2d80295978",
+      "attempts": 1,
+      "confirmedAttempts": [
+        1
+      ],
+      "firstConfirmedStatus": 200,
+      "firstConfirmedAttempt": 1,
+      "attemptOutcomes": [
+        {
+          "attempt": 1,
+          "status": 200,
+          "confirmed": true,
+          "uncertain": false
+        }
+      ],
+      "latestAttemptConfirmed": true,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    },
+    {
+      "label": "tender-archive",
+      "method": "DELETE",
+      "pathSha256": "707becd56ef70db4dd4015f3fb7035d9130728e000221292e3450f53f911ad23",
+      "bodySha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "keySha256": "2348c60d53836492e06684589351aa803f748afa0f983259b900be12b2f701a9",
+      "attempts": 1,
+      "confirmedAttempts": [
+        1
+      ],
+      "firstConfirmedStatus": 200,
+      "firstConfirmedAttempt": 1,
+      "attemptOutcomes": [
+        {
+          "attempt": 1,
+          "status": 200,
+          "confirmed": true,
+          "uncertain": false
+        }
+      ],
+      "latestAttemptConfirmed": true,
+      "settled": true,
+      "status": 200,
+      "createdId": null
+    }
+  ],
+  "audits": [],
+  "blockedRequests": [],
+  "browserErrorKinds": [],
+  "skips": [
+    {
+      "surface": "event-pricing",
+      "reason": "EXISTING_CONFIGURED_EXACT_PRICES_OR_AUTHORITY_NOT_ESTABLISHED",
+      "writes": 0
+    }
+  ],
+  "counts": {
+    "signIns": 1,
+    "signOuts": 1,
+    "fixtureCreates": 3,
+    "businessAttempts": 12,
+    "blockedReads": 0,
+    "blockedWrites": 0,
+    "publicAssetReads": 26,
+    "SMS": 0,
+    "paymentWrites": 0,
+    "equipmentWrites": 0,
+    "otherBusinessWrites": 0
+  },
+  "limitations": [
+    "Campaign rules and controls only: no mint, bearer codes, CSV, QR download, publication or redemption.",
+    "Current-park configuration values and original active catalogue rows are compared, not a complete ledger or historical usage.",
+    "No Till or station/session workflow is exercised; /me does not expose stationId.",
+    "Tax/event writes are skipped unless an existing configuration is exactly restorable.",
+    "Unrelated rows, person details and QR values are hidden. Browser error tags remain unclassified.",
+    "Audit reads may cause an approved server audit-access row; only the named business audit rows are counted."
+  ],
+  "priorPartial": {
+    "receiptSha256": "0c6cd31b0e7ac4852510e119c87da69996c911200047fdc17d28b407bdf3194e",
+    "envelopeSha256": "684b8982974c0a7af9d3329d981b1c6f64cea7fbe0691fbe5a6f664417ca9151",
+    "safetyAuditSha256": "d7869540616024b16b3aca849387484b09b9b69f8ee2ffabf4f1dd53860a922f",
+    "resourcesRestored": true,
+    "authCleanupConfirmed": true,
+    "businessAttempts": 0,
+    "reason": "Native discount Field validation text changes its accessible label; stable existing input IDs are used in V3."
+  },
+  "secondPartial": {
+    "receiptSha256": "51ef9fd5a9d8f434d6aaab14abd6398cebfb88c527a7dc5589f187db9d50cf28",
+    "envelopeSha256": "6dd2d5e973f8c92cc99f9f4fd32adcdbef6d38b1e0202a1d0fdc402e0644f28c",
+    "safetyAuditSha256": "c74ee4718916551d08df8ef3ef53bdd85d17024683614e5ace92286a6bcdb9c2",
+    "resourcesRestored": true,
+    "authCleanupConfirmed": true,
+    "businessAttempts": 0,
+    "reason": "Native discount Type Field includes select option text in its accessible label; stable existing select ID is used in V4."
+  },
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "deployId": "dep-dbd35049v7es73c6piq0",
+      "sourceSha": "5ddb61408a0d931802fd2f86f307ab058878dd34",
+      "finishedAt": "2026-10-22T16:01:18.61569Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "deployId": "dep-dbd35049v7es73c6pjrg",
+      "sourceSha": "5ddb61408a0d931802fd2f86f307ab058878dd34",
+      "finishedAt": "2026-10-22T15:58:35.150771Z"
+    },
+    {
+      "name": "oto-pos-staging",
+      "deployId": "dep-dbd350c9v7es73c6pk0g",
+      "sourceSha": "5ddb61408a0d931802fd2f86f307ab058878dd34",
+      "finishedAt": "2026-10-22T15:58:40.314539Z"
+    }
+  ],
+  "actor": {
+    "id": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+    "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+  },
+  "freshStorage": true,
+  "expectedLogicalOperations": 12,
+  "createReplay": {
+    "label": "type-create",
+    "sameId": true,
+    "sameKey": true,
+    "sameBody": true,
+    "firstConfirmedStatus": 201,
+    "firstConfirmedAttempt": 1,
+    "initialAttempt": {
+      "attempt": 1,
+      "status": 201,
+      "confirmed": true,
+      "uncertain": false
+    },
+    "priorUncertainAttempts": [],
+    "replayStatus": 200
+  },
+  "diagnostic": "ASSERTION_OR_RUNTIME_FAILED",
+  "failedPhase": "discount-archive",
+  "errorName": "TimeoutError",
+  "cleanupDiagnostic": "RESTORATION_UNCONFIRMED",
+  "authCleanup": {
+    "signOutStatus": 200,
+    "meStatus": 401,
+    "confirmed": true
+  },
+  "authState": {
+    "signInAttempted": true,
+    "authUncertain": false,
+    "pendingAuth": 0
+  },
+  "completedAt": "2026-10-22T16:21:38.467Z"
+}
