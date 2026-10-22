@@ -145,6 +145,8 @@ Owner question Q8 (2026-10-23, SCRUM-624; no POS edit): may only apps/pos/test/s
 
 SCRUM-624 owner ruling Q8 (2026-10-23): the owner authorizes only the existing POS source-inspection test in apps/pos/test/s221-r2-benefit-qr.test.ts to check the approved employee-park permission hook and lifted dialog wiring. API, native wording and real-QR assertions stay unchanged; no POS production edit is authorized by this ruling.
 
+Owner question Q9 (2026-10-23, SCRUM-625; production service edits parked): the local house review reproduces foreign-operator facts and sales contributing money/receipt rows to an allowed park, and foreign booth/prize/staff labels appearing in Booth JSON and CSV. May the build extend ownership only to apps/api/src/services/analytics-reports.ts and apps/api/src/services/analytics-booth.ts to fence facts, sales and referenced identities by their owning operator and park? Existing DTOs, formulas, date/source/status filters, per-park omitted/404/403 behavior and read-only exports stay unchanged. No route, schema or migration change is proposed. The alternative is the planning lane landing these bounded isolation fixes.
+
 ## 8. P2 — organisation, catalogue, reports (Codex)
 
 | Ticket | Deliverable |
