@@ -32,6 +32,21 @@ Builder: the Codex agent (phases P1–P4). The coding agent that wrote this plan
 
 Worktrees: Codex works in `C:/w/<lane>` worktrees on `lane/<topic>` branches as the lanes do today; one coordinator lands on `main` with CI watched by SHA. Never push a red gate.
 
+### Questions and standing authorizations (owner directive 2026-10-23)
+
+Scope and boundary questions go to the **planner, not the owner**. Post the question in STATUS and the ticket exactly as today; the planner answers in this plan and STATUS, normally the same day. Ask the owner directly only when the answer would: send an SMS or any real customer message, touch payment data or record a payment, drop or rewrite existing data (a destructive migration), change a prototype or original-app rule's observable behavior, or change an Inbox channel mode.
+
+While a question is pending, **the lane does not stop**: finish everything in the current subtask that does not depend on the answer; if fully blocked, take the next subtask in the phase that does not depend on it, or its read-only preparation, and say so in STATUS. "Parked" means that ticket waits — never the lane and never the day.
+
+Pre-authorized — no question needed, just record what was done in STATUS and the ticket with its test:
+
+1. **Additive response schemas** on existing routes your screens call, with generated client types and the matching legacy-allowance retirement; inputs and behavior unchanged (the Q3/Q6 pattern).
+2. **Test-only edits in any package** when a suite's assertion is stale against an approved change, so long as no assertion is weakened and no production file is touched (the Q8/Q11 pattern).
+3. **Scoped tenant/park isolation fixes** in an api service your review proves leaking (fence rows and referenced identities to their owning operator/park), with shapes, formulas and access semantics unchanged and a regression test that fails without the fix (the Q7/Q9 pattern).
+4. **One-line CI infrastructure repairs** when main is red, locally reproduced before landing (the Q12 pattern).
+
+Production behavior changes outside your files remain questions — to the planner.
+
 ## 3. Navigation and permissions (the contract the screens follow)
 
 | Section | Route prefix | Gate to see the section | Pages |
@@ -198,6 +213,10 @@ Owner ruling Q13 (2026-10-23): "Authorize these scoped changes." Only the three 
 Owner question Q14 (2026-10-23, SCRUM-629; parked before implementation): PLAN4.3 says to persist the mapped role in otoapp.users.role. Existing advisor accounts require that column to stay literal advisor: routes.ts14589 documents that identity rule,14913-14920 heals it, and873 uses the raw marker to preserve advisor exclusions. May flagged advisors retain their raw advisor marker while the platform-mapped effective role is applied only to their sign-on/session? Ordinary user roles would still persist as approved; flag-off behavior and advisor identity exclusions remain unchanged. The alternative is to leave advisors on their existing policy role until a separate identity-marker change is approved. Do not silently erase their marker or substitute another mapping.
 
 Q14 clarification (2026-10-23): the owner asks for a clearer explanation; no ruling is given yet. An advisor can already have manager-level access while the raw advisor identity independently excludes payroll, contracts, scheduling, Xero and finance. The recommendation preserves those identity restrictions and applies platform-mapped effective access only when the flag is on; the alternative keeps advisors on their current app access policy for now. The question remains pending.
+
+Planner ruling Q13 (2026-10-23, under the owner's delegation of scope rulings to the planner — §2): authorized. SCRUM-629 (and 630 for the salary claim) may make additive changes in `apps/api/src/routes/auth.ts`, `apps/api/src/services/handoff.ts` and `apps/api/src/services/otoapp-employee-sync.ts`: the OTO App-only mapped-role/salary claim and its response schema, derived freshly through the existing identity seam, and the employee copy service calling that same seam. The hand-off JWT shape, single-use and live-session checks and every other audience stay unchanged; `jobs.ts` stays unchanged. These three files ARE the identity seam §13 routes everything through, so for role mapping they are the intended lane; §2's table is read with this ruling.
+
+Planner ruling Q14 (2026-10-23): the proposed narrow treatment is correct, and §4.3 is amended by this ruling. Flagged advisors keep the literal `advisor` marker in `otoapp.users.role` — the identity rule the app documents (routes.ts:14590), self-heals (routes.ts:14913) and enforces for the payroll/contracts exclusions (routes.ts:873). The platform-mapped effective role applies at sign-on/session resolution only, the same way the app already resolves an advisor's effective role from `access_policies` at runtime. Ordinary users persist the mapped role as approved; flag-off behavior and every advisor exclusion stay unchanged. Never erase or substitute the marker.
 
 | Ticket | Deliverable |
 |---|---|
