@@ -5,6 +5,7 @@ import { AppError } from '../lib/errors';
 import { audit } from './audit';
 import { recordRun } from './ops';
 import { listAppEmployees, otoAppEmployeesInstalled, type AppEmployee } from './otoapp-employees';
+import { reconcileOtoAppRole } from './oto-app-users';
 import { withTx, type Exec, type Tx } from './tx';
 
 /**
@@ -386,6 +387,7 @@ async function syncOperator(
       ).map((e) => [e.id, e]),
     );
 
+    const reconciledRoles = new Set<string>();
     for (const r of [...input.rows].sort((a, b) => (a.id < b.id ? -1 : 1))) {
       const fields: MirroredFields = {
         name: r.fullName,
@@ -405,6 +407,18 @@ async function syncOperator(
           tenantId: r.tenantId,
           accountFound: Boolean(linked),
         });
+      }
+
+      // Role-only changes still converge when the employee fields are a no-op.
+      // The same owned identity may appear more than once in the employee view.
+      if (ours) {
+        const roleKey = `${ours.id}:${r.tenantId}`;
+        if (!reconciledRoles.has(roleKey)) {
+          await reconcileOtoAppRole(tx, {
+            operatorId, accountId: ours.id, tenantId: r.tenantId, actorAccountId: null,
+          });
+          reconciledRoles.add(roleKey);
+        }
       }
 
       const copy = live.get(r.id) ?? null;

@@ -1,4 +1,5 @@
 import type { AttendanceEvidence } from "./attendance-evidence";
+import type { OtoAppRoleContext } from "./platformRoleMapping";
 import { sql } from "drizzle-orm";
 import { pgTable, text, varchar, integer, timestamp, jsonb, boolean, index, uniqueIndex, time, date, real, uuid, numeric, primaryKey, check, foreignKey } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
@@ -42,6 +43,7 @@ export const operators = pgTable("operators", {
   tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
   name: text("name").notNull(),
   status: text("status", { enum: operatorStatuses }).notNull().default("active"),
+  platformRolesEnabled: boolean("platform_roles_enabled").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
@@ -61,6 +63,7 @@ export const operatorsRelations = relations(operators, ({ one, many }) => ({
 
 export const insertOperatorSchema = createInsertSchema(operators).omit({
   id: true,
+  platformRolesEnabled: true,
   createdAt: true,
   updatedAt: true,
 });
@@ -246,6 +249,7 @@ export type UserBranchAccess = typeof userBranchAccess.$inferSelect;
 
 // Extended user type with branch access info
 export type UserWithBranchAccess = User & {
+  platformRoleMapping?: OtoAppRoleContext;
   branchAccess: UserBranchAccess[];
   hasAllBranchesAccess: boolean;
   allowedBranchIds: string[];

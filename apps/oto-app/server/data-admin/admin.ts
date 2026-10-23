@@ -265,12 +265,14 @@ export abstract class ModelAdmin {
     const managedLinks: Record<string, string[]> = {
       branches: ['coreBranchId'],
       users: ['platformUserId'],
+      operators: ['platformRolesEnabled'],
     };
     for (const key of managedLinks[config.name] ?? []) {
       if (key in mutable && (mutable[key] ?? null) !== (current?.[key] ?? null))
         throw new DataAdminScopeError(409, 'Manage this platform link through the platform screen');
     }
     if (this.table === users) delete mutable.platformUserId;
+    if (config.name === 'operators') delete mutable.platformRolesEnabled;
     const privateReferences: Record<string, string[]> = {
       contract_instances: ['pdfPath', 'signedPdfPath'],
       employee_letters: ['signedPdfPath'],

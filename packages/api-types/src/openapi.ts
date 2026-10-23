@@ -298,7 +298,52 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            accountId: string;
+                            mustChangePassword: boolean;
+                            sessionLocked: boolean;
+                            /** @enum {string} */
+                            audience: "booth";
+                            identity: {
+                                /** Format: uuid */
+                                accountId: string;
+                                name: string | null;
+                                code: string;
+                                /** Format: date-time */
+                                expiresAt: string;
+                            };
+                        } | {
+                            /** Format: uuid */
+                            accountId: string;
+                            mustChangePassword: boolean;
+                            sessionLocked: boolean;
+                            /** @enum {string} */
+                            audience: "oto_app";
+                            otoApp?: {
+                                /** @enum {boolean} */
+                                platformRolesEnabled: true;
+                                userId: string;
+                                /** Format: uuid */
+                                operatorId: string;
+                                /** Format: uuid */
+                                tenantId: string;
+                                /** @enum {string} */
+                                role: "admin" | "manager" | "staff";
+                                permissions: {
+                                    "hr:salary:view": boolean;
+                                };
+                            };
+                        } | {
+                            /** Format: uuid */
+                            accountId: string;
+                            mustChangePassword: boolean;
+                            sessionLocked: boolean;
+                            /** @enum {string} */
+                            audience: "pos" | "console" | "radar" | "inbox";
+                        };
+                    };
                 };
             };
         };

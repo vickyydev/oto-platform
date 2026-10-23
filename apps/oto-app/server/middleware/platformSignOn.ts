@@ -4,6 +4,8 @@ import "express-session";
 import { storage } from "../storage";
 import { log } from "../lib/logger";
 import { readPreferencesUpdate, readUiPreferences, type UiPreferences } from "@shared/uiPreferences";
+import { readOtoAppRoleContext, type OtoAppRoleContext } from "@shared/platformRoleMapping";
+import { loadPlatformUserWithBranchAccess } from "../lib/platformRoleMapping";
 import {
   PLATFORM_SESSION_COOKIE,
   REFUSAL_FALLBACK,
@@ -77,6 +79,7 @@ interface PlatformLink {
    * The client reads it on `/api/user`. Null when the platform did not say.
    */
   preferences?: UiPreferences | null;
+  otoApp?: OtoAppRoleContext;
 }
 
 declare module "express-session" {
@@ -180,12 +183,13 @@ const SEALING_SECRET = process.env.SESSION_SECRET ?? randomBytes(32).toString("h
 // --- The exchange -----------------------------------------------------------
 
 type Exchange =
-  | { ok: true; accountId: string; sessionToken: string }
+  | { ok: true; accountId: string; sessionToken: string; otoApp?: OtoAppRoleContext }
   | { ok: false; status: number; reason: string; message: string };
 
 interface ExchangeBody {
   accountId?: unknown;
   mustChangePassword?: unknown;
+  otoApp?: unknown;
 }
 
 interface ErrorBody {
@@ -283,7 +287,12 @@ async function exchange(
       message: REFUSAL_FALLBACK,
     };
   }
-  return { ok: true, accountId, sessionToken };
+  try {
+    const otoApp = readOtoAppRoleContext(body?.otoApp);
+    return { ok: true, accountId, sessionToken, ...(otoApp ? { otoApp } : {}) };
+  } catch {
+    return { ok: false, status: 502, reason: "platform_unreadable", message: REFUSAL_FALLBACK };
+  }
 }
 
 // --- The person's preferences (SCRUM-653) ------------------------------------
@@ -481,10 +490,23 @@ export function registerPlatformSignOn(app: Express): void {
         });
       }
 
+      let signOnUser = user;
+      if (exchanged.otoApp) {
+        try {
+          const mapped = await loadPlatformUserWithBranchAccess(user.id, {
+            accountId: exchanged.accountId, otoApp: exchanged.otoApp,
+          }, storage);
+          if (!mapped) throw new Error("missing_identity");
+          signOnUser = mapped;
+        } catch {
+          return res.status(403).json({ reason: "identity_mismatch", message: REFUSAL_FALLBACK });
+        }
+      }
+
       // SCRUM-653 — the person's theme, so the first screen already shows it.
       const preferences = await readPlatformPreferences(config, exchanged.sessionToken, req.requestId);
 
-      req.login(user, (err) => {
+      req.login(signOnUser, (err) => {
         if (err) return next(err);
         /**
          * After the login, never before: `req.login` regenerates the session
@@ -495,6 +517,7 @@ export function registerPlatformSignOn(app: Express): void {
           accountId: exchanged.accountId,
           sealedToken: sealPlatformToken(SEALING_SECRET, req.sessionID, exchanged.sessionToken),
           preferences,
+          ...(exchanged.otoApp ? { otoApp: exchanged.otoApp } : {}),
         };
         req.session.save((saveErr) => {
           if (saveErr) return next(saveErr);

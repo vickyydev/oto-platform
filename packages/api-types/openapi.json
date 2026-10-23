@@ -190,7 +190,182 @@
         },
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "accountId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "mustChangePassword": {
+                          "type": "boolean"
+                        },
+                        "sessionLocked": {
+                          "type": "boolean"
+                        },
+                        "audience": {
+                          "type": "string",
+                          "enum": [
+                            "booth"
+                          ]
+                        },
+                        "identity": {
+                          "type": "object",
+                          "properties": {
+                            "accountId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "name": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "code": {
+                              "type": "string"
+                            },
+                            "expiresAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            }
+                          },
+                          "required": [
+                            "accountId",
+                            "name",
+                            "code",
+                            "expiresAt"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "accountId",
+                        "mustChangePassword",
+                        "sessionLocked",
+                        "audience",
+                        "identity"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "accountId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "mustChangePassword": {
+                          "type": "boolean"
+                        },
+                        "sessionLocked": {
+                          "type": "boolean"
+                        },
+                        "audience": {
+                          "type": "string",
+                          "enum": [
+                            "oto_app"
+                          ]
+                        },
+                        "otoApp": {
+                          "type": "object",
+                          "properties": {
+                            "platformRolesEnabled": {
+                              "type": "boolean",
+                              "enum": [
+                                true
+                              ]
+                            },
+                            "userId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "operatorId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "tenantId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "role": {
+                              "type": "string",
+                              "enum": [
+                                "admin",
+                                "manager",
+                                "staff"
+                              ]
+                            },
+                            "permissions": {
+                              "type": "object",
+                              "properties": {
+                                "hr:salary:view": {
+                                  "type": "boolean"
+                                }
+                              },
+                              "required": [
+                                "hr:salary:view"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "required": [
+                            "platformRolesEnabled",
+                            "userId",
+                            "operatorId",
+                            "tenantId",
+                            "role",
+                            "permissions"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "accountId",
+                        "mustChangePassword",
+                        "sessionLocked",
+                        "audience"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "accountId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "mustChangePassword": {
+                          "type": "boolean"
+                        },
+                        "sessionLocked": {
+                          "type": "boolean"
+                        },
+                        "audience": {
+                          "type": "string",
+                          "enum": [
+                            "pos",
+                            "console",
+                            "radar",
+                            "inbox"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "accountId",
+                        "mustChangePassword",
+                        "sessionLocked",
+                        "audience"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              }
+            }
           }
         }
       }

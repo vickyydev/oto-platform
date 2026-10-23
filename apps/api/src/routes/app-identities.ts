@@ -25,6 +25,7 @@ import {
   createOtoAppUser,
   findOtoAppUser,
   linkOtoAppUser,
+  reconcileOtoAppRole,
   listUnlinkedOtoAppUsers,
   otoAppUserIsOperators,
   readOtoAppUserBranches,
@@ -461,6 +462,14 @@ export async function appIdentityRoutes(app: App): Promise<void> {
           auth.operatorId,
           chosenBranches,
         );
+        if (isOtoApp) {
+          await reconcileOtoAppRole(tx, {
+            operatorId: auth.operatorId,
+            accountId,
+            actorAccountId: auth.accountId,
+            requestId: req.id,
+          });
+        }
         await audit.record(tx, {
           actorAccountId: auth.accountId,
           operatorId: auth.operatorId,

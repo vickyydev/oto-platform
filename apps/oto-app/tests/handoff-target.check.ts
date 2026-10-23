@@ -172,4 +172,5 @@ for (const target of ["https://evil.example/health", "//evil.example/health", "/
   assert.deepEqual(urls, ["/"], "and never lands");
 }
 
+await import("./platform-role-suite.check");
 console.log("handoff-target: every check passed");

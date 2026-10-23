@@ -41,6 +41,31 @@ import { managerForStation } from '../services/station-session';
 
 const PhoneSchema = z.string().min(6).max(32);
 
+const HandoffExchangeBaseSchema = z.object({
+  accountId: z.string().uuid(),
+  mustChangePassword: z.boolean(),
+  sessionLocked: z.boolean(),
+});
+const HandoffExchangeResponseSchema = z.union([
+  HandoffExchangeBaseSchema.extend({
+    audience: z.literal('booth'),
+    identity: z.object({
+      accountId: z.string().uuid(), name: z.string().nullable(), code: z.string(),
+      expiresAt: z.string().datetime(),
+    }),
+  }),
+  HandoffExchangeBaseSchema.extend({
+    audience: z.literal('oto_app'),
+    otoApp: z.object({
+      platformRolesEnabled: z.literal(true), userId: z.string().min(1),
+      operatorId: z.string().uuid(), tenantId: z.string().uuid(),
+      role: z.enum(['admin', 'manager', 'staff']),
+      permissions: z.object({ 'hr:salary:view': z.boolean() }),
+    }).optional(),
+  }),
+  HandoffExchangeBaseSchema.extend({ audience: z.enum(HANDOFF_APPS).exclude(['booth', 'oto_app']) }),
+]);
+
 export async function authRoutes(app: App): Promise<void> {
   /**
    * Read per request rather than at registration: an api with no hand-off
@@ -261,6 +286,7 @@ export async function authRoutes(app: App): Promise<void> {
         description:
           'Exchange a hand-off token for a session cookie on this origin. An app with no server of its own (booth) gets no cookie and no credential: the answer names who signed on (`identity`) and nothing more.',
         body: z.object({ token: z.string().min(20).max(8192) }),
+        response: { 200: HandoffExchangeResponseSchema },
       },
     },
     async (req, reply) => {
@@ -306,13 +332,14 @@ export async function authRoutes(app: App): Promise<void> {
           requestId: req.id,
         });
 
-        return {
+        return HandoffExchangeResponseSchema.parse({
           accountId: result.accountId,
           audience: result.audience,
           mustChangePassword: result.mustChangePassword,
           sessionLocked: result.sessionLocked,
           ...(identity ? { identity } : {}),
-        };
+          ...(result.otoApp ? { otoApp: result.otoApp } : {}),
+        });
       } catch (err) {
         if (err instanceof HandoffRejected) {
           // Written on the pool, after the claim it may have just spent: the

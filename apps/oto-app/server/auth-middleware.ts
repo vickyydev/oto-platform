@@ -2,6 +2,8 @@ import { Request, Response, NextFunction } from "express";
 import { storage } from "./storage";
 import type { UserWithBranchAccess, Branch } from "@shared/schema";
 import { getEffectivePermissions, roleCanPerformAction, type AdminOnlyAction, type ModuleKey, type PermissionUserContext, type PermissionRole } from "../shared/permissions";
+import { loadPlatformUserWithBranchAccess } from "./lib/platformRoleMapping";
+import { PlatformRoleMappingError } from "@shared/platformRoleMapping";
 
 // Extended role system with operator support
 export type UserRole = "global_admin" | "operator_admin" | "admin" | "manager" | "staff";
@@ -30,6 +32,14 @@ export interface AllowedScope {
 }
 
 export async function getAllowedOperatorAndBranchIds(user: UserWithBranchAccess): Promise<AllowedScope> {
+  if (user.platformRoleMapping) {
+    return {
+      operatorIds: null,
+      branchIds: user.hasAllBranchesAccess ? null : user.allowedBranchIds,
+      isGlobalAdmin: user.hasAllBranchesAccess && isGlobalAdmin(user),
+      isOperatorAdmin: false,
+    };
+  }
   // Global admins (or legacy admin) have full access
   if (isGlobalAdmin(user)) {
     return {
@@ -78,13 +88,16 @@ declare global {
 }
 
 export async function loadUserWithAccess(req: Request, res: Response, next: NextFunction) {
-  if (req.isAuthenticated() && req.user) {
-    const userWithAccess = await storage.getUserWithBranchAccess(req.user.id);
-    if (userWithAccess) {
-      req.userWithAccess = userWithAccess;
+  try {
+    if (req.isAuthenticated() && req.user) {
+      const userWithAccess = await loadPlatformUserWithBranchAccess(req.user.id, req.session?.platform, storage);
+      if (userWithAccess) req.userWithAccess = userWithAccess;
     }
+    next();
+  } catch (error) {
+    if (error instanceof PlatformRoleMappingError) return res.status(401).json({ message: "Open the OTO App from the launcher again." });
+    next(error);
   }
-  next();
 }
 
 export function requireRole(...allowedRoles: UserRole[]) {

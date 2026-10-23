@@ -13212,7 +13212,7 @@ OTO Company Limited`,
 
       // Check branch access - global_admin and admin have all access
       const isGlobalAdmin = user.role === "global_admin" || user.role === "admin";
-      if (!isGlobalAdmin && !user.hasAllBranchesAccess && !user.allowedBranchIds.includes(branchId)) {
+      if ((!isGlobalAdmin || !!user.platformRoleMapping) && !user.hasAllBranchesAccess && !user.allowedBranchIds.includes(branchId)) {
         return res.status(403).json({ message: "Access denied to this branch" });
       }
 
@@ -13510,7 +13510,7 @@ OTO Company Limited`,
 
       // Check branch access - global_admin and admin have all access
       const isGlobalAdmin = user?.role === "global_admin" || user?.role === "admin";
-      if (user && !isGlobalAdmin && !user.hasAllBranchesAccess) {
+      if (user && (!isGlobalAdmin || !!user.platformRoleMapping) && !user.hasAllBranchesAccess) {
         if (employee.branchId && !user.allowedBranchIds.includes(employee.branchId)) {
           return res.status(403).json({ message: "Access denied" });
         }
@@ -13590,7 +13590,7 @@ OTO Company Limited`,
       // Check branch access - global_admin and admin have all access
       const isGlobalAdmin = user.role === "global_admin" || user.role === "admin";
       // An employee with no branch is refused too (matches the original app's rule).
-      if (!isGlobalAdmin && !user.hasAllBranchesAccess) {
+      if ((!isGlobalAdmin || !!user.platformRoleMapping) && !user.hasAllBranchesAccess) {
         const userBranchIds = user.allowedBranchIds || [];
         if (!employee.branchId || !userBranchIds.includes(employee.branchId)) {
           return res.status(403).json({ message: "Access denied" });
@@ -13625,7 +13625,8 @@ OTO Company Limited`,
 
   /** The app's branch rule for the leave doors (Q40; SCRUM-544 reads `allowedBranchIds`). */
   const leaveBranchAllowed = (user: UserWithBranchAccess, branchId: string): boolean =>
-    user.role === "global_admin" || user.role === "admin" || user.hasAllBranchesAccess || (user.allowedBranchIds || []).includes(branchId);
+    (!user.platformRoleMapping && (user.role === "global_admin" || user.role === "admin")) ||
+    user.hasAllBranchesAccess || (user.allowedBranchIds || []).includes(branchId);
 
   /** The Days Off type answered in a leave policy's shape. */
   const daysOffTypeAsPolicy = (type: LeaveType, tenantId: string, branchId: string | null) => ({
@@ -13690,7 +13691,7 @@ OTO Company Limited`,
         if (!leaveBranchAllowed(user, branchId)) {
           return res.status(403).json({ message: "Access denied" });
         }
-      } else if (!isGlobalAdmin && !user.hasAllBranchesAccess) {
+      } else if ((!isGlobalAdmin || !!user.platformRoleMapping) && !user.hasAllBranchesAccess) {
         return res.status(403).json({ message: "Access denied - select a branch" });
       }
 
@@ -13906,7 +13907,8 @@ OTO Company Limited`,
       const tenantId = documentParkGroup(req, res);
       if (!tenantId) return;
       const user = req.userWithAccess!;
-      if (!user.hasAllBranchesAccess && user.allowedBranchIds.length === 0 && user.role !== "global_admin" && user.role !== "admin") {
+      if (!user.hasAllBranchesAccess && user.allowedBranchIds.length === 0 &&
+        (user.platformRoleMapping || (user.role !== "global_admin" && user.role !== "admin"))) {
         return res.status(403).json({ message: "Leave type access requires branch access" });
       }
       const types = await listTenantLeaveTypes(tenantId);
@@ -16504,7 +16506,7 @@ OTO Company Limited`,
       // Check branch access for the target shift row
       // Global admins and legacy admins bypass branch access checks
       const isGlobalAdmin = user.role === "global_admin" || user.role === "admin";
-      if (!isGlobalAdmin && !user.hasAllBranchesAccess) {
+      if ((!isGlobalAdmin || !!user.platformRoleMapping) && !user.hasAllBranchesAccess) {
         const userBranchIds = user.allowedBranchIds || [];
         if (!userBranchIds.includes(targetShiftRow.branchId)) {
           return res.status(403).json({ message: "Access denied to target branch" });
@@ -25416,6 +25418,8 @@ ${context}`;
 
   const canReadTrainingModule = (user: UserWithBranchAccess, module: typeof trainingModules.$inferSelect, tenantId: string) => {
     if (module.tenantId !== tenantId) return false;
+    if (user.platformRoleMapping && !user.hasAllBranchesAccess && module.scope !== 'GLOBAL' &&
+      !module.branchIds.some(id => user.allowedBranchIds.includes(id))) return false;
     if (user.hasAllBranchesAccess || ['admin', 'global_admin', 'operator_admin'].includes(user.role)) return true;
     if (!module.isActive) return false;
     return module.scope === 'GLOBAL' || module.branchIds.some(id => user.allowedBranchIds.includes(id));
@@ -25430,7 +25434,8 @@ ${context}`;
       if (requestedBranchId != null && typeof requestedBranchId !== 'string') {
         return res.status(400).json({ message: "Invalid branch" });
       }
-      const canSeeAllBranches = user.hasAllBranchesAccess || ['admin', 'global_admin', 'operator_admin'].includes(user.role);
+      const canSeeAllBranches = user.hasAllBranchesAccess ||
+        (!user.platformRoleMapping && ['admin', 'global_admin', 'operator_admin'].includes(user.role));
       if (requestedBranchId === 'all' && !canSeeAllBranches) {
         return res.status(403).json({ message: "All-branch access is not available" });
       }
@@ -27781,7 +27786,8 @@ ${context}`;
       // (staff/manager/admin) resolved from their access policy access level,
       // rather than the raw "advisor" DB value which the permission engine
       // does not recognise as a PermissionRole.
-      const userWithAccess = await storage.getUserWithBranchAccess(userId);
+      const userWithAccess = req.userWithAccess?.platformRoleMapping
+        ? req.userWithAccess : await storage.getUserWithBranchAccess(userId);
       if (!userWithAccess) {
         return res.status(404).json({ message: "User not found" });
       }

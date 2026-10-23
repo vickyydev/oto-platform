@@ -396,6 +396,7 @@ export interface IStorage {
         getUserByPlatformUserId(platformUserId: string): Promise<User | undefined>;
         getUserWithBranchAccess(
                 id: string,
+                trustedTenant?: { tenantId: string },
         ): Promise<UserWithBranchAccess | undefined>;
         getUsers(): Promise<User[]>;
         getUsersWithBranchAccess(): Promise<UserWithBranchAccess[]>;
@@ -2211,6 +2212,7 @@ export class DatabaseStorage implements IStorage {
 
         async getUserWithBranchAccess(
                 id: string,
+                trustedTenant?: { tenantId: string },
         ): Promise<UserWithBranchAccess | undefined> {
                 const user = await this.getUser(id);
                 if (!user) return undefined;
@@ -2253,10 +2255,13 @@ export class DatabaseStorage implements IStorage {
                                 .map((ba) => ba.branchId!);
                 }
 
+                // A mapped caller supplies this only after verifying its linked
+                // user/legal-entity/tenant binding. Resolve policies in that tenant
+                // before the legacy fallback can choose another park group.
                 // Extract tenantId from first branch access record (all records for a user should have same tenantId)
                 // If no branch access records, fall back to getting tenantId from existing branches
                 let tenantId =
-                        branchAccess.length > 0 ? branchAccess[0].tenantId : undefined;
+                        trustedTenant?.tenantId ?? (branchAccess.length > 0 ? branchAccess[0].tenantId : undefined);
                 if (!tenantId) {
                         // Fallback: get from existing branches
                         const existingBranches = await db
@@ -2326,7 +2331,9 @@ export class DatabaseStorage implements IStorage {
                                 profilePhotoPath: employees.profilePhotoPath,
                         })
                         .from(employees)
-                        .where(eq(employees.userId, id));
+                        .where(trustedTenant
+                                ? and(eq(employees.userId, id), eq(employees.tenantId, trustedTenant.tenantId))
+                                : eq(employees.userId, id));
 
                 if (!employeeRecord && user.email) {
                         const emailLower = user.email.toLowerCase();
@@ -2339,7 +2346,9 @@ export class DatabaseStorage implements IStorage {
                                         fullName: employees.fullName,
                                 })
                                 .from(employees)
-                                .where(sql`lower(${employees.email}) = ${emailLower}`);
+                                .where(trustedTenant
+                                        ? and(sql`lower(${employees.email}) = ${emailLower}`, eq(employees.tenantId, trustedTenant.tenantId))
+                                        : sql`lower(${employees.email}) = ${emailLower}`);
                         if (empsByEmail.length === 1) {
                                 employeeRecord = empsByEmail[0];
                         } else if (empsByEmail.length > 1) {

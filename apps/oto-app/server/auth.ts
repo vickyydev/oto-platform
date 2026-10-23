@@ -15,6 +15,8 @@ import {
   signInOptions,
 } from "./middleware/platformSignOn";
 import { User as SelectUser } from "@shared/schema";
+import { loadPlatformUserWithBranchAccess } from "./lib/platformRoleMapping";
+import { PlatformRoleMappingError } from "@shared/platformRoleMapping";
 
 declare global {
   namespace Express {
@@ -102,12 +104,13 @@ export function setupAuth(app: Express) {
   );
 
   passport.serializeUser((user, done) => done(null, user.id));
-  passport.deserializeUser(async (id: string, done) => {
+  passport.deserializeUser(async (req: Request, id: string, done: (error: unknown, user?: SelectUser | false) => void) => {
     try {
       // Use getUserWithBranchAccess to include tenantId in session
-      const user = await storage.getUserWithBranchAccess(id);
+      const user = await loadPlatformUserWithBranchAccess(id, req.session?.platform, storage);
       done(null, user || undefined);
     } catch (err) {
+      if (err instanceof PlatformRoleMappingError) return done(null, false);
       done(err);
     }
   });
@@ -172,9 +175,14 @@ export function setupAuth(app: Express) {
     res.json(signInOptions());
   });
 
-  app.get("/api/user", requireAuth, async (req, res) => {
+  app.get("/api/user", requireAuth, async (req, res, next) => {
     // Get user with branch access info
-    const userWithAccess = await storage.getUserWithBranchAccess(req.user!.id);
+    let userWithAccess;
+    try { userWithAccess = await loadPlatformUserWithBranchAccess(req.user!.id, req.session?.platform, storage); }
+    catch (error) {
+      if (error instanceof PlatformRoleMappingError) return res.sendStatus(401);
+      return next(error);
+    }
     if (!userWithAccess) {
       return res.sendStatus(401);
     }

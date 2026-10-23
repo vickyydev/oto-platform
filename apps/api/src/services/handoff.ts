@@ -21,6 +21,7 @@ import { AppError } from '../lib/errors';
 import { audit } from './audit';
 import { holdsAtOwnDepartment } from './access-control';
 import { hasPermission, resolveEffectivePermissions } from './permissions';
+import { reconcileOtoAppRole, type OtoAppRoleContext } from './oto-app-users';
 import { withTx, type Exec, type OpContext } from './tx';
 
 /**
@@ -408,6 +409,8 @@ export interface ExchangedHandoff {
   branchId: string | null;
   mustChangePassword: boolean;
   sessionLocked: boolean;
+  /** Present only for an OTO App identity whose operator enabled platform roles. */
+  otoApp?: OtoAppRoleContext;
 }
 
 /**
@@ -528,6 +531,17 @@ export async function exchangeHandoff(
     throw new HandoffRejected('signature', 'This hand-off can no longer be opened', seen);
   }
 
+  // The claim is already committed. Role and audit changes are atomic, but a
+  // failed reconciliation must never make this hand-off usable a second time.
+  const otoApp = row.audience === 'oto_app'
+    ? await db.transaction((tx) => reconcileOtoAppRole(tx, {
+      operatorId: live.a.operatorId,
+      accountId: live.a.id,
+      actorAccountId: live.a.id,
+      requestId: opts.requestId,
+    }))
+    : null;
+
   return {
     jti: row.jti,
     sessionId: live.s.id,
@@ -539,6 +553,7 @@ export async function exchangeHandoff(
     branchId: live.s.branchId,
     mustChangePassword: live.a.mustChangePassword,
     sessionLocked: live.s.lockedAt !== null,
+    ...(otoApp ? { otoApp } : {}),
   };
 }
 

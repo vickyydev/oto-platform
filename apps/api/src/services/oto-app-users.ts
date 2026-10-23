@@ -2,8 +2,11 @@ import { randomBytes } from 'node:crypto';
 import { and, asc, eq, inArray, isNull, or, sql } from 'drizzle-orm';
 import {
   account,
+  appIdentity,
+  appTenantAnchors,
   branch,
   canonicalCoreBranchId,
+  department,
   employee,
   findAppBranchForCore,
   mappedAppBranches,
@@ -11,11 +14,15 @@ import {
   otoappBranches,
   otoappUserBranchAccess,
   otoappUsers,
+  role,
+  roleAssignment,
+  rolePermission,
   type OtoAppUserRole,
 } from '@oto/db';
-import { newId, type Permission } from '@oto/shared';
+import { newId, type Permission, type ScopeType } from '@oto/shared';
 import { AppError } from '../lib/errors';
 import type { BranchReach } from './access-control';
+import { audit } from './audit';
 import { hasPermission, resolveEffectivePermissions } from './permissions';
 import type { Exec } from './tx';
 
@@ -234,6 +241,157 @@ async function relationInstalled(exec: Exec, name: string): Promise<boolean> {
     sql`select to_regclass(${name})::text as reg`,
   );
   return Boolean(res.rows[0]?.reg);
+}
+
+export type MappedOtoAppRole = 'admin' | 'manager' | 'staff';
+
+/** Assignment provenance whose owning scope has already been validated. */
+export interface OtoAppRoleGrant {
+  roleName: string;
+  isSystem: boolean;
+  roleOperatorId: string | null;
+  scopeType: ScopeType;
+  scopeId: string | null;
+}
+
+/**
+ * The approved mapping, after validating ownership of each assignment target.
+ * A custom role may share a system role's name; that does not make it that role.
+ * The literal mapping deliberately gives platform_admin alone the staff fallback.
+ */
+export function roleFor(grants: readonly OtoAppRoleGrant[]): MappedOtoAppRole {
+  let mapped: MappedOtoAppRole = 'staff';
+  for (const grant of grants) {
+    if (!grant.isSystem || grant.roleOperatorId !== null || grant.scopeType === 'record') continue;
+    if (grant.scopeType !== 'operator' && grant.scopeId === null) continue;
+    if (grant.roleName === 'operator_admin' && grant.scopeType === 'operator') return 'admin';
+    if (grant.roleName === 'branch_manager') mapped = 'manager';
+  }
+  return mapped;
+}
+
+/** Enabled-only exchange context. operatorId names the app's legal entity. */
+export interface OtoAppRoleContext {
+  platformRolesEnabled: true;
+  userId: string;
+  operatorId: string;
+  tenantId: string;
+  role: MappedOtoAppRole;
+  permissions: { 'hr:salary:view': boolean };
+}
+
+export interface OtoAppRoleContextOptions {
+  /** core.operator.id, never otoapp.operators.id. */
+  operatorId: string;
+  accountId: string;
+  /** The copy job supplies the tenant it independently anchored. */
+  tenantId?: string;
+}
+
+/**
+ * Read the opt-in context through an exact completed identity link. No first
+ * tenant or legal entity is guessed, and no app user is created by a read.
+ * An old app schema without the flag is the same as a flag that is off.
+ */
+export async function resolveOtoAppRoleContext(
+  exec: Exec,
+  opts: OtoAppRoleContextOptions,
+): Promise<OtoAppRoleContext | null> {
+  for (const name of ['otoapp.users', 'otoapp.operators', 'otoapp.branches', 'otoapp.user_branch_access']) {
+    if (!(await relationInstalled(exec, name))) return null;
+  }
+  const [linked] = await exec
+    .select({
+      id: otoappUsers.id,
+      operatorId: otoappUsers.operatorId,
+      isActive: otoappUsers.isActive,
+      status: account.status,
+    })
+    .from(account)
+    .innerJoin(appIdentity, and(eq(appIdentity.accountId, account.id), eq(appIdentity.app, 'oto_app')))
+    .innerJoin(otoappUsers, and(eq(otoappUsers.id, appIdentity.externalUserId), eq(otoappUsers.platformUserId, account.id)))
+    .where(and(eq(account.id, opts.accountId), eq(account.operatorId, opts.operatorId)))
+    .limit(1);
+  if (!linked?.operatorId || !linked.isActive || !['active', 'invited'].includes(linked.status)) return null;
+
+  // JSON projection does not name the new column in SQL, so an API instance
+  // can coexist with an app whose own migrator has not added it yet.
+  const entity = (await exec.execute<{ id: string; tenant_id: string; enabled: string | null }>(sql`
+    select o.id::text as id, o.tenant_id::text as tenant_id,
+      to_jsonb(o)->>'platform_roles_enabled' as enabled
+    from otoapp.operators o where o.id::text = ${linked.operatorId}
+  `)).rows[0];
+  if (!entity || entity.enabled !== 'true' || (opts.tenantId !== undefined && opts.tenantId !== entity.tenant_id)) return null;
+  const anchors = (await appTenantAnchors(exec)).get(entity.tenant_id);
+  if (anchors?.length !== 1 || anchors[0] !== opts.operatorId) return null;
+
+  // A legal entity plus its uniquely anchored tenant can place an advisor
+  // whose branch reach comes from an access policy. Existing access rows,
+  // when present, must all agree; they are never changed by this mapping.
+  const access = await exec.select({ tenantId: otoappUserBranchAccess.tenantId,
+    branchId: otoappUserBranchAccess.branchId, accessScope: otoappUserBranchAccess.accessScope })
+    .from(otoappUserBranchAccess).where(eq(otoappUserBranchAccess.userId, linked.id));
+  const appBranchIds = access.flatMap(row => row.branchId ? [row.branchId] : []);
+  const appBranches = new Map((appBranchIds.length
+    ? await exec.select({ id: otoappBranches.id, tenantId: otoappBranches.tenantId }).from(otoappBranches)
+      .where(inArray(otoappBranches.id, appBranchIds)) : []).map(row => [row.id, row.tenantId]));
+  if (access.some(row => row.tenantId !== entity.tenant_id
+    || (row.accessScope === 'selected_branches' && (!row.branchId || appBranches.get(row.branchId) !== entity.tenant_id))
+    || (row.accessScope === 'all_branches' && row.branchId !== null))) return null;
+
+  const ownBranches = new Set((await exec.select({ id: branch.id }).from(branch)
+    .where(and(eq(branch.operatorId, opts.operatorId), isNull(branch.archivedAt)))).map(row => row.id));
+  const ownDepartments = new Set((await exec.select({ id: department.id, branchId: department.branchId }).from(department)
+    .where(eq(department.operatorId, opts.operatorId)))
+    .filter(row => row.branchId === null || ownBranches.has(row.branchId)).map(row => row.id));
+  const assignments = await exec.select({ roleName: role.name, isSystem: role.isSystem, roleOperatorId: role.operatorId,
+    scopeType: roleAssignment.scopeType, scopeId: roleAssignment.scopeId, salaryPermission: rolePermission.permission })
+    .from(roleAssignment).innerJoin(role, eq(role.id, roleAssignment.roleId))
+    .leftJoin(rolePermission, and(eq(rolePermission.roleId, role.id), eq(rolePermission.permission, 'hr:salary:view')))
+    .where(and(eq(roleAssignment.accountId, opts.accountId), isNull(roleAssignment.archivedAt),
+      or(isNull(role.operatorId), eq(role.operatorId, opts.operatorId))));
+  const grants = assignments.filter(grant => {
+    switch (grant.scopeType) {
+      case 'operator': return grant.scopeId === null || grant.scopeId === opts.operatorId;
+      case 'branch': return grant.scopeId !== null && ownBranches.has(grant.scopeId);
+      case 'department': return grant.scopeId !== null && ownDepartments.has(grant.scopeId);
+      case 'record': return false;
+    }
+  });
+  return { platformRolesEnabled: true, userId: linked.id, operatorId: entity.id, tenantId: entity.tenant_id,
+    role: roleFor(grants), permissions: { 'hr:salary:view': grants.some(grant =>
+      grant.scopeType === 'operator' && grant.salaryPermission === 'hr:salary:view') } };
+}
+
+/**
+ * Reconcile inside the caller's transaction, after its identity and grants
+ * exist. Exchange calls this after consuming/checking the handoff; the copy
+ * calls it inside its operator transaction. Advisors retain their identity
+ * marker and receive only the effective session role, as Q14 requires.
+ */
+export async function reconcileOtoAppRole(
+  exec: Exec,
+  opts: OtoAppRoleContextOptions & { actorAccountId?: string | null; requestId?: string },
+): Promise<OtoAppRoleContext | null> {
+  const initial = await resolveOtoAppRoleContext(exec, opts);
+  if (!initial) return null;
+  const locked = (await exec.execute<{ role: string }>(sql`
+    select role from otoapp.users where id = ${initial.userId}
+      and platform_user_id = ${opts.accountId} for update
+  `)).rows[0];
+  if (!locked) return null;
+  const context = await resolveOtoAppRoleContext(exec, opts);
+  if (!context || context.userId !== initial.userId) return null;
+  if (locked.role === 'advisor' || locked.role === context.role) return context;
+  const [updated] = await exec.update(otoappUsers).set({ role: context.role, updatedAt: new Date() })
+    .where(and(eq(otoappUsers.id, context.userId), eq(otoappUsers.platformUserId, opts.accountId), sql`${otoappUsers.role} = ${locked.role}`))
+    .returning({ id: otoappUsers.id });
+  if (!updated) return null;
+  await audit.record(exec, { actorAccountId: opts.actorAccountId ?? null, operatorId: opts.operatorId,
+    action: 'app_identity.role_sync', entityType: 'otoapp.user', entityId: context.userId,
+    before: { role: locked.role }, after: { role: context.role, platformAccountId: opts.accountId,
+      appOperatorId: context.operatorId, tenantId: context.tenantId }, requestId: opts.requestId });
+  return context;
 }
 
 /** How the OTO App's branch was found for a person being provisioned. */

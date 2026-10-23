@@ -197,6 +197,13 @@
       "when": 1792652612993,
       "tag": "0028_checklist_template_assignees",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1792773345454,
+      "tag": "0029_platform_roles_enabled",
+      "breakpoints": true
     }
   ]
 }

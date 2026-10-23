@@ -227,6 +227,8 @@ Planner ruling Q14 (2026-10-23): the proposed narrow treatment is correct, and Â
 | P3-5 | Provisioning only from the console; the employee editor's Create Login calls the platform |
 | P3-6 | Staff & HR summary page (on shift, attendance issues, leave today, payroll month status) with links |
 
+Local release checkpoint (2026-10-24, SCRUM-629): canonical mapped roles and Q14 advisor preservation are implemented behind the default-off 0029 flag. The full frozen platform battery and eight affected OTO stages pass; 418 inherited compiler diagnostics remain unchanged. Exact-SHA CI, automatic deployment and four real role frames are still required. The pilot helper is being reviewed before any business write. This is not Deployed.
+
 Acceptance: a person granted in the console opens the OTO App with the right role on staging with the flag on; nothing can be granted inside the OTO App.
 
 Also in P3 (from the OTO App inventory): the two lifecycle gaps close in P3-5 - reactivating a platform account switches its OTO App user back on, and an OTO App-side switch-off (including the 03:00 leaver run) deactivates the platform account through the identity seam; and the OTO App pages that call routes which do not exist (the core dashboard and the troubleshooting flows) either get their routes or lose their links.
