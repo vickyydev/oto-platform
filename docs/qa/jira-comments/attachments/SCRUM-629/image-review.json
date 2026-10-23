@@ -1,0 +1,44 @@
+{
+  "ticket": "SCRUM-629",
+  "approved": true,
+  "actualStaging": true,
+  "localMock": false,
+  "sourceSha": "699a7555679aee59ee3e210d00b7b977e017af02",
+  "proofSha256": "cbc5c0a9ac7b643c746f6bdc28c9addd5591ae2961b4c9a3c07cbd0ad9332330",
+  "images": [
+    {
+      "filename": "SCRUM-629-01-flag-off-staff.png",
+      "sha256": "f96e10e16959ea790fef00fe5b5b0dfda43f3c398e76690e603dfbfa508e7754",
+      "visuallyInspected": true,
+      "privacyPassed": true,
+      "nativeControlsPassed": true,
+      "captionTimestampPassed": true
+    },
+    {
+      "filename": "SCRUM-629-02-enabled-admin.png",
+      "sha256": "506dcb9e4a1e1a30b71e1103e069d184a2c98eb4e629b5bd6ddcadb77c2a481a",
+      "visuallyInspected": true,
+      "privacyPassed": true,
+      "nativeControlsPassed": true,
+      "captionTimestampPassed": true
+    },
+    {
+      "filename": "SCRUM-629-03-enabled-manager.png",
+      "sha256": "47c72f2c956342e4323fcd94db5fa48e9f84a079e230227a6af0fdd1cd54fca3",
+      "visuallyInspected": true,
+      "privacyPassed": true,
+      "nativeControlsPassed": true,
+      "captionTimestampPassed": true
+    },
+    {
+      "filename": "SCRUM-629-04-enabled-staff.png",
+      "sha256": "2800bd7ae6fa8937bdefbcbc8e9bc717cb222cd4c57283766e03454a618f1247",
+      "visuallyInspected": true,
+      "privacyPassed": true,
+      "nativeControlsPassed": true,
+      "captionTimestampPassed": true
+    }
+  ],
+  "reviewedAt": "2026-10-23T20:18:55.854Z",
+  "limitations": "Advisor restrictions verified locally; original font and media assets were not fetched."
+}

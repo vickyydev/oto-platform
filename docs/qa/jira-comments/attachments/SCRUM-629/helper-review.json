@@ -1,0 +1,53 @@
+{
+  "ticket": "SCRUM-629",
+  "sourceSha": "699a7555679aee59ee3e210d00b7b977e017af02",
+  "proofSha256": "cbc5c0a9ac7b643c746f6bdc28c9addd5591ae2961b4c9a3c07cbd0ad9332330",
+  "rootFinalApproval": {
+    "approved": true,
+    "artifactSha256": "28dd8340910a197636a0005ff01c04890c5dae43853bd3a57653210a4462d061",
+    "helperSha256": "868f570d69bc673b7bec2b8cbd7c411e51c6b293a8025b52526d1d6af0fa8dd0",
+    "planSha256": "fcd2ba41ee06bd189a0880fd0b57474ef8a4edae3279fbed2beeca5aa6298e01",
+    "moduleHashes": {
+      "gate": "5925a7463ca112ba38f056e95817a2cb1ae6e7a6c58d527fa4fff85802522dc3",
+      "native": "4169f9212c1b92710741827a11a0da6c9583a7e8341c62b2f1c0acb50986e2f6",
+      "flag": "aa3bd5683c029b62d2e4ff98dcdd605f623804ecc9be015ad8a7d5fbc4fbdc0c",
+      "executor": "9109f92deb2a466c45de5965d7736dd714dd7f3d82d87130f69f501d3492c22f"
+    }
+  },
+  "localComponentReviews": [
+    {
+      "artifact": "admin629-fixed-core-independent-review.json",
+      "sha256": "087ba8bb782aec105d721b49b84602226a27fb604cc7ff0fc771ed5436c8f01e",
+      "passed": true,
+      "staging": false,
+      "acceptance": false,
+      "helperSha256": "868f570d69bc673b7bec2b8cbd7c411e51c6b293a8025b52526d1d6af0fa8dd0"
+    },
+    {
+      "artifact": "admin629-flag-executor-independent-review.json",
+      "sha256": "c58c33aed23029e6959a361338b859cc29c7b0eb80a745e770c7fcbe7e390fcf",
+      "passed": true,
+      "staging": false,
+      "acceptance": false,
+      "helperSha256": "9109f92deb2a466c45de5965d7736dd714dd7f3d82d87130f69f501d3492c22f"
+    },
+    {
+      "artifact": "admin629-native-bootstrap-independent-review.json",
+      "sha256": "b3654d1a5906761c6306609b79dc119947cca49891857f390894b39f758464a1",
+      "passed": true,
+      "staging": false,
+      "acceptance": false,
+      "helperSha256": "4169f9212c1b92710741827a11a0da6c9583a7e8341c62b2f1c0acb50986e2f6"
+    },
+    {
+      "artifact": "admin629-orchestration-v1-review.json",
+      "sha256": "497b829bad6e46a5d386b827cbe9dbbf7c936a6086f5d222ae29ffdfbaea335f",
+      "passed": true,
+      "staging": false,
+      "acceptance": false,
+      "helperSha256": null
+    }
+  ],
+  "localReviewsAreNotStagingEvidence": true,
+  "actualImagesReviewedSeparately": true
+}

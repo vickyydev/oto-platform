@@ -1,0 +1,28 @@
+{
+  "ticket": "SCRUM-629",
+  "sourceSha": "699a7555679aee59ee3e210d00b7b977e017af02",
+  "ciRunId": "40014668250",
+  "successfulSourceJobs": 6,
+  "exactSourceAndLatestLiveDeploymentsVerified": true,
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "deployId": "dep-dbdrtk8473hc73bf6kb0",
+      "finishedAt": "2026-10-23T20:12:02.178796Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "deployId": "dep-dbdrtk8473hc73bf6lk0",
+      "finishedAt": "2026-10-23T20:09:34.076627Z"
+    },
+    {
+      "name": "oto-app-staging",
+      "deployId": "dep-dbdrtkg473hc73bf6m4g",
+      "finishedAt": "2026-10-23T20:11:46.571987Z"
+    }
+  ],
+  "proofSha256": "cbc5c0a9ac7b643c746f6bdc28c9addd5591ae2961b4c9a3c07cbd0ad9332330",
+  "proofStartedAt": "2026-10-23T20:13:30.100Z",
+  "proofCompletedAt": "2026-10-23T20:17:34.895Z",
+  "ownerRetainsFinalAcceptance": true
+}
