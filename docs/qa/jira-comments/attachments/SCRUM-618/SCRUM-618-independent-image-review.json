@@ -1,0 +1,102 @@
+{
+  "passed": true,
+  "ticket": "SCRUM-618",
+  "actualStaging": true,
+  "localMock": false,
+  "sourceSha": "cd2ed663d725e0fbcb05a3668249a2de5ba0b254",
+  "proofSha256": "9bf96786d81f5f4c1f989f20e7ae2014e2cd2feb2874f1459abd30edc3781e7a",
+  "images": [
+    {
+      "filename": "SCRUM-618-01-admin-synthetic-ticket-saved-at-100-thb.png",
+      "sha256": "9dae59cece4e481fd8978a47a0058076638f60da52d366700c8901ec7de4b0af",
+      "capturedAt": "2026-10-23T11:51:25.095Z",
+      "visuallyInspected": true,
+      "privacyClear": true,
+      "nativeControlsClear": true,
+      "captionClear": true,
+      "nativeToastAbsent": true,
+      "notes": "Native Tickets heading, exact synthetic ticket and Tourist default-tier price100 are clear. Caption/source/time are readable and clear of controls."
+    },
+    {
+      "filename": "SCRUM-618-02-till-baseline-test-ticket-100-thb-with-no-tax.png",
+      "sha256": "4c041758f1b299eeb365e65407de5b89c82812e1d2fa1e58db0f5b861764e20a",
+      "capturedAt": "2026-10-23T11:51:56.555Z",
+      "visuallyInspected": true,
+      "privacyClear": true,
+      "nativeControlsClear": true,
+      "captionClear": true,
+      "nativeToastAbsent": true,
+      "notes": "Native synthetic ticket configuration, participants1/1, Current Order, subtotal100, Total100 and Pay100 are clear. Caption clears required controls; no toast visible."
+    },
+    {
+      "filename": "SCRUM-618-03-admin-same-synthetic-ticket-saved-at-123-thb.png",
+      "sha256": "501f8e1cd61a621c2f40d6860e8a4bdf862cee1209cf723b7fe0b167900b6141",
+      "capturedAt": "2026-10-23T11:52:07.625Z",
+      "visuallyInspected": true,
+      "privacyClear": true,
+      "nativeControlsClear": true,
+      "captionClear": true,
+      "nativeToastAbsent": true,
+      "notes": "Native Tickets heading, same synthetic ticket and Tourist default-tier price123 are clear. Caption/source/time are readable and clear of controls."
+    },
+    {
+      "filename": "SCRUM-618-04-admin-same-synthetic-tender-renamed-v2.png",
+      "sha256": "738d9d776ad0f414374c5e07bc029856afb9cd8fedc9450669d4819d0a26d302",
+      "capturedAt": "2026-10-23T11:52:15.034Z",
+      "visuallyInspected": true,
+      "privacyClear": true,
+      "nativeControlsClear": true,
+      "captionClear": true,
+      "nativeToastAbsent": true,
+      "notes": "Full native Payment methods heading and complete synthetic tender v2 input row are visible, including Other and Enabled. Caption clears the native rows."
+    },
+    {
+      "filename": "SCRUM-618-05-admin-isolated-tickets-rule-saved-at-exclusive-seven-percent.png",
+      "sha256": "ed1bc79da439a9fd3da31f9608c03c9fb97039499aca81db1b04d3a929563813",
+      "capturedAt": "2026-10-23T11:52:25.108Z",
+      "visuallyInspected": true,
+      "privacyClear": true,
+      "nativeControlsClear": true,
+      "captionClear": true,
+      "nativeToastAbsent": true,
+      "notes": "Full native Tax page shows Tickets VAT added on top, synthetic7% rate, service charge0 and additional tax None; Saved is visible. Caption clears all required controls."
+    },
+    {
+      "filename": "SCRUM-618-06-till-changed-test-ticket-123-thb-with-vat-8-61-and-total-131-61.png",
+      "sha256": "f487d1845ab8b433938ceaaef3ffde0e05ff5b98325da1af338a9369964c53ed",
+      "capturedAt": "2026-10-23T11:52:46.071Z",
+      "visuallyInspected": true,
+      "privacyClear": true,
+      "nativeControlsClear": true,
+      "captionClear": true,
+      "nativeToastAbsent": true,
+      "notes": "Native synthetic ticket configuration, subtotal123, named VAT8.61, Total131.61 and Pay131.61 are clear. Caption clears required controls; no toast visible."
+    },
+    {
+      "filename": "SCRUM-618-07-till-native-payment-grid-shows-the-renamed-test-tender-no-tender-selected.png",
+      "sha256": "a01c317ce27fae4cb5b66574952cb8aa580965f00586656e7a2f9aef83c8550c",
+      "capturedAt": "2026-10-23T11:52:51.090Z",
+      "visuallyInspected": true,
+      "privacyClear": true,
+      "nativeControlsClear": true,
+      "captionClear": true,
+      "nativeToastAbsent": true,
+      "notes": "Native Amount Due131.61, Select Payment Method, full synthetic tender v2 label and visibly disabled Confirm Payment Received are clear. Caption is legible and clears required controls, while overlapping optional synthetic Current Order text. No tender is selected or usable payment QR shown."
+    }
+  ],
+  "reviewedAt": "2026-10-23T11:55:25.760Z",
+  "completedAt": "2026-10-23T11:53:09.418Z",
+  "businessChecksPassed": true,
+  "all23OperationsConfirmed200": true,
+  "cleanupSourceAndAuthPassed": true,
+  "ownUnpaidSaleVoidedWithoutPaymentArtifacts": true,
+  "sourceErrors": 0,
+  "networkAndBrowserErrors": 0,
+  "allImagesAfterAllThreeDeployments": true,
+  "originalReadsHeldUndispatchedAndDisposed": 12,
+  "scopeNotes": [
+    "Review covers the seven fresh fifth-run actual staging images only. Earlier attempts remain separately preserved.",
+    "Original private occupancy was held before dispatch and is not verified by this proof."
+  ],
+  "findings": []
+}

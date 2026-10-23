@@ -1,0 +1,73 @@
+{
+  "passed": true,
+  "actualStaging": true,
+  "localMock": false,
+  "sourceSha": "cd2ed663d725e0fbcb05a3668249a2de5ba0b254",
+  "proofSha256": "9bf96786d81f5f4c1f989f20e7ae2014e2cd2feb2874f1459abd30edc3781e7a",
+  "images": [
+    {
+      "filename": "SCRUM-618-01-admin-synthetic-ticket-saved-at-100-thb.png",
+      "sha256": "9dae59cece4e481fd8978a47a0058076638f60da52d366700c8901ec7de4b0af",
+      "visuallyInspected": true,
+      "privacyClear": true,
+      "nativeControlsClear": true,
+      "captionClear": true,
+      "notes": "Actual native ticket row shows100 in Tourist with unchanged other tiers and ordinary adult rule."
+    },
+    {
+      "filename": "SCRUM-618-02-till-baseline-test-ticket-100-thb-with-no-tax.png",
+      "sha256": "4c041758f1b299eeb365e65407de5b89c82812e1d2fa1e58db0f5b861764e20a",
+      "visuallyInspected": true,
+      "privacyClear": true,
+      "nativeControlsClear": true,
+      "captionClear": true,
+      "notes": "Native baseline staff subtotal, total and Pay100 are complete; no toast or caption obscures them."
+    },
+    {
+      "filename": "SCRUM-618-03-admin-same-synthetic-ticket-saved-at-123-thb.png",
+      "sha256": "501f8e1cd61a621c2f40d6860e8a4bdf862cee1209cf723b7fe0b167900b6141",
+      "visuallyInspected": true,
+      "privacyClear": true,
+      "nativeControlsClear": true,
+      "captionClear": true,
+      "notes": "Same test ticket shows123 after its native Admin save."
+    },
+    {
+      "filename": "SCRUM-618-04-admin-same-synthetic-tender-renamed-v2.png",
+      "sha256": "738d9d776ad0f414374c5e07bc029856afb9cd8fedc9450669d4819d0a26d302",
+      "visuallyInspected": true,
+      "privacyClear": true,
+      "nativeControlsClear": true,
+      "captionClear": true,
+      "notes": "Full-page Payment methods shows the complete own renamed v2 row."
+    },
+    {
+      "filename": "SCRUM-618-05-admin-isolated-tickets-rule-saved-at-exclusive-seven-percent.png",
+      "sha256": "ed1bc79da439a9fd3da31f9608c03c9fb97039499aca81db1b04d3a929563813",
+      "visuallyInspected": true,
+      "privacyClear": true,
+      "nativeControlsClear": true,
+      "captionClear": true,
+      "notes": "Full-page Tax shows Tickets added-on7%, selected named rate, service0, secondaryNone and saved/live state. Native global rate-name input truncates its text; the Tickets selected rate label remains complete."
+    },
+    {
+      "filename": "SCRUM-618-06-till-changed-test-ticket-123-thb-with-vat-8-61-and-total-131-61.png",
+      "sha256": "f487d1845ab8b433938ceaaef3ffde0e05ff5b98325da1af338a9369964c53ed",
+      "visuallyInspected": true,
+      "privacyClear": true,
+      "nativeControlsClear": true,
+      "captionClear": true,
+      "notes": "Native changed cart shows subtotal123, named VAT8.61 and total/Pay131.61, unobscured."
+    },
+    {
+      "filename": "SCRUM-618-07-till-native-payment-grid-shows-the-renamed-test-tender-no-tender-selected.png",
+      "sha256": "a01c317ce27fae4cb5b66574952cb8aa580965f00586656e7a2f9aef83c8550c",
+      "visuallyInspected": true,
+      "privacyClear": true,
+      "nativeControlsClear": true,
+      "captionClear": true,
+      "notes": "Native full-width grid shows the complete own v2 tender, AmountDue131.61 and disabled confirmation. Caption covers only auxiliary synthetic visitor/ticket text in Current Order; all required payment targets and staff totals remain clear."
+    }
+  ],
+  "reviewedAt": "2026-10-23T11:54:37.622Z"
+}

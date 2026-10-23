@@ -1,0 +1,748 @@
+{
+  "ticket": "SCRUM-618",
+  "startedAt": "2026-10-23T11:50:51.676Z",
+  "complete": true,
+  "checks": [
+    {
+      "name": "ISOLATED_NEW_UNCLAIMED_ESTATE_NO_DEVICES_DISPLAYS",
+      "at": "2026-10-23T11:51:05.423Z",
+      "passed": true
+    },
+    {
+      "name": "NATIVE_ADMIN_INITIAL_TICKET100_TENDER_V1_NO_TAX",
+      "at": "2026-10-23T11:51:29.298Z",
+      "passed": true
+    },
+    {
+      "name": "NATIVE_TILL_BASELINE100_PLATFORM_QUOTE_EMPTY_CART_AFTER_CANCEL",
+      "at": "2026-10-23T11:51:56.622Z",
+      "passed": true
+    },
+    {
+      "name": "NATIVE_ADMIN_PRICE123_TENDER_V2_EXCLUSIVE_VAT7_SAVED_READBACK",
+      "at": "2026-10-23T11:52:25.233Z",
+      "passed": true
+    },
+    {
+      "name": "COLD_NATIVE_TILL123_TAX861_TOTAL13161_RENAMED_TENDER_GRID",
+      "at": "2026-10-23T11:52:51.996Z",
+      "passed": true
+    },
+    {
+      "name": "OWN_UNPAID_SALE_VOIDED_NO_ATTEMPTS_REFUNDS_PRINTS_BANDS_GRANTS",
+      "at": "2026-10-23T11:52:52.493Z",
+      "passed": true
+    },
+    {
+      "name": "ORIGINAL_BRANCHES_TIERS_AND_TENDERS_UNCHANGED",
+      "at": "2026-10-23T11:52:53.917Z",
+      "passed": true
+    }
+  ],
+  "screenshots": [
+    {
+      "filename": "SCRUM-618-01-admin-synthetic-ticket-saved-at-100-thb.png",
+      "label": "Admin synthetic ticket saved at 100 THB",
+      "app": "console",
+      "capturedAt": "2026-10-23T11:51:25.095Z",
+      "sha256": "9dae59cece4e481fd8978a47a0058076638f60da52d366700c8901ec7de4b0af",
+      "requiredControls": [
+        "native Tickets heading",
+        "exact synthetic ticket name",
+        "actual default-tier native ticket price"
+      ],
+      "framing": {
+        "fullPage": true,
+        "requiredControlBoundsChecked": true,
+        "ancestorClippingChecked": true,
+        "nativeToastAbsent": true,
+        "width": 1600,
+        "height": 1100
+      }
+    },
+    {
+      "filename": "SCRUM-618-02-till-baseline-test-ticket-100-thb-with-no-tax.png",
+      "label": "Till baseline test ticket 100 THB with no tax",
+      "app": "pos",
+      "capturedAt": "2026-10-23T11:51:56.555Z",
+      "sha256": "4c041758f1b299eeb365e65407de5b89c82812e1d2fa1e58db0f5b861764e20a",
+      "requiredControls": [
+        "native synthetic ticket configuration",
+        "Current Order",
+        "baseline subtotal",
+        "baseline total",
+        "native Pay"
+      ],
+      "framing": {
+        "fullPage": false,
+        "requiredControlBoundsChecked": true,
+        "ancestorClippingChecked": true,
+        "nativeToastAbsent": true,
+        "width": 1600,
+        "height": 1100
+      }
+    },
+    {
+      "filename": "SCRUM-618-03-admin-same-synthetic-ticket-saved-at-123-thb.png",
+      "label": "Admin same synthetic ticket saved at 123 THB",
+      "app": "console",
+      "capturedAt": "2026-10-23T11:52:07.625Z",
+      "sha256": "501f8e1cd61a621c2f40d6860e8a4bdf862cee1209cf723b7fe0b167900b6141",
+      "requiredControls": [
+        "native Tickets heading",
+        "exact synthetic ticket name",
+        "actual default-tier native ticket price"
+      ],
+      "framing": {
+        "fullPage": true,
+        "requiredControlBoundsChecked": true,
+        "ancestorClippingChecked": true,
+        "nativeToastAbsent": true,
+        "width": 1600,
+        "height": 1100
+      }
+    },
+    {
+      "filename": "SCRUM-618-04-admin-same-synthetic-tender-renamed-v2.png",
+      "label": "Admin same synthetic tender renamed v2",
+      "app": "console",
+      "capturedAt": "2026-10-23T11:52:15.034Z",
+      "sha256": "738d9d776ad0f414374c5e07bc029856afb9cd8fedc9450669d4819d0a26d302",
+      "requiredControls": [
+        "native Payment methods heading",
+        "exact renamed synthetic tender field"
+      ],
+      "framing": {
+        "fullPage": true,
+        "requiredControlBoundsChecked": true,
+        "ancestorClippingChecked": true,
+        "nativeToastAbsent": true,
+        "width": 1600,
+        "height": 1426
+      }
+    },
+    {
+      "filename": "SCRUM-618-05-admin-isolated-tickets-rule-saved-at-exclusive-seven-percent.png",
+      "label": "Admin isolated Tickets rule saved at exclusive seven percent",
+      "app": "console",
+      "capturedAt": "2026-10-23T11:52:25.108Z",
+      "sha256": "ed1bc79da439a9fd3da31f9608c03c9fb97039499aca81db1b04d3a929563813",
+      "requiredControls": [
+        "native Tax heading",
+        "native Tickets tax mode",
+        "native Tickets rate",
+        "native Tickets service charge",
+        "native Tickets secondary rate"
+      ],
+      "framing": {
+        "fullPage": true,
+        "requiredControlBoundsChecked": true,
+        "ancestorClippingChecked": true,
+        "nativeToastAbsent": true,
+        "width": 1600,
+        "height": 2673
+      }
+    },
+    {
+      "filename": "SCRUM-618-06-till-changed-test-ticket-123-thb-with-vat-8-61-and-total-131-61.png",
+      "label": "Till changed test ticket 123 THB with VAT 8.61 and total 131.61",
+      "app": "pos",
+      "capturedAt": "2026-10-23T11:52:46.071Z",
+      "sha256": "f487d1845ab8b433938ceaaef3ffde0e05ff5b98325da1af338a9369964c53ed",
+      "requiredControls": [
+        "native synthetic ticket configuration",
+        "Current Order",
+        "changed subtotal",
+        "native added tax",
+        "changed total",
+        "native Pay"
+      ],
+      "framing": {
+        "fullPage": false,
+        "requiredControlBoundsChecked": true,
+        "ancestorClippingChecked": true,
+        "nativeToastAbsent": true,
+        "width": 1600,
+        "height": 1100
+      }
+    },
+    {
+      "filename": "SCRUM-618-07-till-native-payment-grid-shows-the-renamed-test-tender-no-tender-selected.png",
+      "label": "Till native payment grid shows the renamed test tender; no tender selected",
+      "app": "pos",
+      "capturedAt": "2026-10-23T11:52:51.090Z",
+      "sha256": "a01c317ce27fae4cb5b66574952cb8aa580965f00586656e7a2f9aef83c8550c",
+      "requiredControls": [
+        "native Amount Due",
+        "native amount 131.61",
+        "native Select Payment Method",
+        "renamed synthetic tender",
+        "disabled unselected confirmation"
+      ],
+      "framing": {
+        "fullPage": false,
+        "requiredControlBoundsChecked": true,
+        "ancestorClippingChecked": true,
+        "nativeToastAbsent": true,
+        "width": 1600,
+        "height": 1100
+      }
+    }
+  ],
+  "operations": [
+    {
+      "label": "branch-create",
+      "app": "console",
+      "method": "POST",
+      "path": "/branches",
+      "requestSha256": "38d433c4a23d2c9f0bd2f5cdbb5fd77cb4275d07924708cc69f3f6d5771b0108",
+      "attemptedAt": "2026-10-23T11:51:02.558Z",
+      "settled": true,
+      "status": 200,
+      "completedAt": "2026-10-23T11:51:03.473Z"
+    },
+    {
+      "label": "box-create",
+      "app": "console",
+      "method": "POST",
+      "path": "/branches/37d38f1a-3d4f-4b60-90ed-415d3fc442f4/boxes",
+      "requestSha256": "78bf31d3304242e43b0db88f6fc3629732701eb3572b4a8bf8b2648e529a34f0",
+      "attemptedAt": "2026-10-23T11:51:03.474Z",
+      "settled": true,
+      "status": 200,
+      "completedAt": "2026-10-23T11:51:03.939Z"
+    },
+    {
+      "label": "station-create",
+      "app": "console",
+      "method": "POST",
+      "path": "/branches/37d38f1a-3d4f-4b60-90ed-415d3fc442f4/stations",
+      "requestSha256": "1a5c205223abec7a9a3b04c8d3f1304dbdc0c2eb824bcef2dcb5f541a82387ba",
+      "attemptedAt": "2026-10-23T11:51:03.941Z",
+      "settled": true,
+      "status": 200,
+      "completedAt": "2026-10-23T11:51:04.396Z"
+    },
+    {
+      "label": "tax-baseline",
+      "armLabel": "tax-baseline",
+      "app": "console",
+      "method": "PUT",
+      "path": "/branches/37d38f1a-3d4f-4b60-90ed-415d3fc442f4/tax-config",
+      "requestSha256": "cec4901557e58e0fbb3f96338fe5b48b72ab1c1c6a5c7c9081c95578343020b2",
+      "attemptedAt": "2026-10-23T11:51:10.564Z",
+      "settled": true,
+      "status": 200,
+      "completedAt": "2026-10-23T11:51:11.041Z"
+    },
+    {
+      "label": "ticket-create",
+      "armLabel": "ticket-create",
+      "app": "console",
+      "method": "POST",
+      "path": "/branches/37d38f1a-3d4f-4b60-90ed-415d3fc442f4/ticket-packages",
+      "requestSha256": "9310167e52c5b00bdc4db5963d91e9b3da846946a79fdd0c09b3cae3536241e5",
+      "attemptedAt": "2026-10-23T11:51:17.814Z",
+      "settled": true,
+      "status": 200,
+      "completedAt": "2026-10-23T11:51:18.564Z"
+    },
+    {
+      "label": "tender-create",
+      "armLabel": "tender-create",
+      "app": "console",
+      "method": "POST",
+      "path": "/payment-methods",
+      "requestSha256": "a257eabc2a177db531b6d2bf299e3ffca093b8918f7b163cb7baadd88f96640a",
+      "attemptedAt": "2026-10-23T11:51:28.115Z",
+      "settled": true,
+      "status": 200,
+      "completedAt": "2026-10-23T11:51:28.939Z"
+    },
+    {
+      "label": "seat-test-branch",
+      "app": "pos",
+      "method": "PUT",
+      "path": "/me/session/branch",
+      "requestSha256": "3c7cfded572d70ceebd43a31bf6f17bc9e644fa332751901d27c365c108be434",
+      "attemptedAt": "2026-10-23T11:51:30.791Z",
+      "settled": true,
+      "status": 200,
+      "completedAt": "2026-10-23T11:51:31.863Z"
+    },
+    {
+      "label": "station-pick",
+      "armLabel": "station-pick",
+      "app": "pos",
+      "method": "PUT",
+      "path": "/me/session/station",
+      "requestSha256": "35c65ddde39de9bd1af2be6384a102febce3aae32ef5c0351e913da52c71e00a",
+      "attemptedAt": "2026-10-23T11:51:41.205Z",
+      "settled": true,
+      "status": 200,
+      "completedAt": "2026-10-23T11:51:42.342Z"
+    },
+    {
+      "label": "branch-select",
+      "armLabel": "branch-select-initial",
+      "app": "pos",
+      "method": "PUT",
+      "path": "/me/session/branch",
+      "requestSha256": "3c7cfded572d70ceebd43a31bf6f17bc9e644fa332751901d27c365c108be434",
+      "attemptedAt": "2026-10-23T11:51:42.586Z",
+      "settled": true,
+      "status": 200,
+      "completedAt": "2026-10-23T11:51:43.457Z"
+    },
+    {
+      "label": "station-pick",
+      "armLabel": "station-pick",
+      "app": "pos",
+      "method": "PUT",
+      "path": "/me/session/station",
+      "requestSha256": "35c65ddde39de9bd1af2be6384a102febce3aae32ef5c0351e913da52c71e00a",
+      "attemptedAt": "2026-10-23T11:51:47.536Z",
+      "settled": true,
+      "status": 200,
+      "completedAt": "2026-10-23T11:51:47.977Z"
+    },
+    {
+      "label": "ticket-change",
+      "armLabel": "ticket-change",
+      "app": "console",
+      "method": "PATCH",
+      "path": "/branches/37d38f1a-3d4f-4b60-90ed-415d3fc442f4/ticket-packages/01a16899-e610-7b61-bf46-8deebfbee6f8",
+      "requestSha256": "bbe46ba8c594654fe3d9b8aad4d10bb24da4b6c965112581a702722130b34be5",
+      "attemptedAt": "2026-10-23T11:52:00.790Z",
+      "settled": true,
+      "status": 200,
+      "completedAt": "2026-10-23T11:52:01.254Z"
+    },
+    {
+      "label": "tender-change",
+      "armLabel": "tender-change",
+      "app": "console",
+      "method": "PATCH",
+      "path": "/payment-methods/zz_test_618_mvkws8ws_tender_v1",
+      "requestSha256": "788ad73342fd5e0b5a31b8ed9d593a71627707f36a56280622bb3a9729960362",
+      "attemptedAt": "2026-10-23T11:52:10.964Z",
+      "settled": true,
+      "status": 200,
+      "completedAt": "2026-10-23T11:52:11.428Z"
+    },
+    {
+      "label": "tax-change",
+      "armLabel": "tax-change",
+      "app": "console",
+      "method": "PUT",
+      "path": "/branches/37d38f1a-3d4f-4b60-90ed-415d3fc442f4/tax-config",
+      "requestSha256": "9f0adc30d62bd66c1bfdf7ff85454653e7a4ad6475e21fc08e0cc6d90bf87d07",
+      "attemptedAt": "2026-10-23T11:52:19.897Z",
+      "settled": true,
+      "status": 200,
+      "completedAt": "2026-10-23T11:52:20.345Z"
+    },
+    {
+      "label": "station-pick",
+      "armLabel": "reload-own-station",
+      "app": "pos",
+      "method": "PUT",
+      "path": "/me/session/station",
+      "requestSha256": "35c65ddde39de9bd1af2be6384a102febce3aae32ef5c0351e913da52c71e00a",
+      "attemptedAt": "2026-10-23T11:52:31.422Z",
+      "settled": true,
+      "status": 200,
+      "completedAt": "2026-10-23T11:52:31.948Z"
+    },
+    {
+      "label": "branch-select",
+      "armLabel": "branch-select-reloaded",
+      "app": "pos",
+      "method": "PUT",
+      "path": "/me/session/branch",
+      "requestSha256": "3c7cfded572d70ceebd43a31bf6f17bc9e644fa332751901d27c365c108be434",
+      "attemptedAt": "2026-10-23T11:52:32.199Z",
+      "settled": true,
+      "status": 200,
+      "completedAt": "2026-10-23T11:52:32.661Z"
+    },
+    {
+      "label": "station-pick",
+      "armLabel": "branch-select-reloaded",
+      "app": "pos",
+      "method": "PUT",
+      "path": "/me/session/station",
+      "requestSha256": "35c65ddde39de9bd1af2be6384a102febce3aae32ef5c0351e913da52c71e00a",
+      "attemptedAt": "2026-10-23T11:52:36.018Z",
+      "settled": true,
+      "status": 200,
+      "completedAt": "2026-10-23T11:52:36.449Z"
+    },
+    {
+      "label": "sale-void",
+      "armLabel": "sale-void",
+      "app": "pos",
+      "method": "POST",
+      "path": "/sales/01a1689b-3b84-7284-916e-f04f91796976/void",
+      "requestSha256": "fe8d3d875ba34de3f38ffdffb25f45f6081db7d360b9682f5620b331546af6ac",
+      "attemptedAt": "2026-10-23T11:52:51.158Z",
+      "settled": true,
+      "status": 200,
+      "completedAt": "2026-10-23T11:52:51.620Z"
+    },
+    {
+      "label": "restore-branch",
+      "app": "pos",
+      "method": "PUT",
+      "path": "/me/session/branch",
+      "requestSha256": "6af194b7ab09888b44159ca3bbb5cdf5ecada10f7da8f68730e8053be0d73fef",
+      "attemptedAt": "2026-10-23T11:52:54.062Z",
+      "settled": true,
+      "status": 200,
+      "completedAt": "2026-10-23T11:52:54.943Z"
+    },
+    {
+      "label": "tender-archive",
+      "app": "console",
+      "method": "DELETE",
+      "path": "/payment-methods/zz_test_618_mvkws8ws_tender_v1",
+      "requestSha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "attemptedAt": "2026-10-23T11:52:57.572Z",
+      "settled": true,
+      "status": 200,
+      "completedAt": "2026-10-23T11:52:58.365Z"
+    },
+    {
+      "label": "ticket-archive",
+      "app": "console",
+      "method": "DELETE",
+      "path": "/branches/37d38f1a-3d4f-4b60-90ed-415d3fc442f4/ticket-packages/01a16899-e610-7b61-bf46-8deebfbee6f8",
+      "requestSha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "attemptedAt": "2026-10-23T11:52:59.267Z",
+      "settled": true,
+      "status": 200,
+      "completedAt": "2026-10-23T11:52:59.703Z"
+    },
+    {
+      "label": "station-archive",
+      "app": "console",
+      "method": "DELETE",
+      "path": "/stations/4e6d29db-2f5e-4c8c-9d44-bb7a3775a83d",
+      "requestSha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "attemptedAt": "2026-10-23T11:53:00.694Z",
+      "settled": true,
+      "status": 200,
+      "completedAt": "2026-10-23T11:53:01.135Z"
+    },
+    {
+      "label": "box-archive",
+      "app": "console",
+      "method": "DELETE",
+      "path": "/boxes/be351a00-e9f8-49dd-80dc-b79d0018cd31",
+      "requestSha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "attemptedAt": "2026-10-23T11:53:02.180Z",
+      "settled": true,
+      "status": 200,
+      "completedAt": "2026-10-23T11:53:02.655Z"
+    },
+    {
+      "label": "branch-archive",
+      "app": "console",
+      "method": "PATCH",
+      "path": "/branches/37d38f1a-3d4f-4b60-90ed-415d3fc442f4",
+      "requestSha256": "7d2bc1315d292dcdd54d9bbb9b335bd93b199c9fa11db9b018a25e10e8f1d71f",
+      "attemptedAt": "2026-10-23T11:53:03.589Z",
+      "settled": true,
+      "status": 200,
+      "completedAt": "2026-10-23T11:53:04.022Z"
+    }
+  ],
+  "blocked": [],
+  "browserErrors": [],
+  "requestFailures": [],
+  "heldOriginalReads": [
+    {
+      "pathSha256": "97806960995059cf614f80dc5191f893d3ff485c6c0d0e491714e341e7b25cb1",
+      "querySha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "heldAt": "2026-10-23T11:51:42.373Z",
+      "dispatched": false,
+      "disposed": true,
+      "disposedAt": "2026-10-23T11:52:53.942Z"
+    },
+    {
+      "pathSha256": "63c8a9541c46a87827478a6f5c1ea0d9062d16671606d62e4d9f9f2a60544439",
+      "querySha256": "35c6f6a32880b974f32d9527839634d145a05652bd32f314499c49e5755e9e6b",
+      "heldAt": "2026-10-23T11:51:42.375Z",
+      "dispatched": false,
+      "disposed": true,
+      "disposedAt": "2026-10-23T11:52:53.943Z"
+    },
+    {
+      "pathSha256": "a61693c16814c04738c1698ffef278ca96b1e27a987e94eef334f9d0b199e8f1",
+      "querySha256": "35c6f6a32880b974f32d9527839634d145a05652bd32f314499c49e5755e9e6b",
+      "heldAt": "2026-10-23T11:51:42.376Z",
+      "dispatched": false,
+      "disposed": true,
+      "disposedAt": "2026-10-23T11:52:53.944Z"
+    },
+    {
+      "pathSha256": "d30c5d815f8025a2d5e47d850dbab60d61b1eb5b55a76e5b03088fc607172f93",
+      "querySha256": "4a77ee3dd89fedbc595328baf14ba5123120a427092fc75371d542a81f624a77",
+      "heldAt": "2026-10-23T11:51:42.377Z",
+      "dispatched": false,
+      "disposed": true,
+      "disposedAt": "2026-10-23T11:52:53.944Z"
+    },
+    {
+      "pathSha256": "0f8009a41c8f2cde47eff4249596da2c7fc70c09fb137b5b64652c32227c68eb",
+      "querySha256": "35c6f6a32880b974f32d9527839634d145a05652bd32f314499c49e5755e9e6b",
+      "heldAt": "2026-10-23T11:51:42.377Z",
+      "dispatched": false,
+      "disposed": true,
+      "disposedAt": "2026-10-23T11:52:53.945Z"
+    },
+    {
+      "pathSha256": "574ae684256425851b135609455085d4d9dda5813ae0833f4bbadd272c09072d",
+      "querySha256": "35c6f6a32880b974f32d9527839634d145a05652bd32f314499c49e5755e9e6b",
+      "heldAt": "2026-10-23T11:51:42.378Z",
+      "dispatched": false,
+      "disposed": true,
+      "disposedAt": "2026-10-23T11:52:53.945Z"
+    },
+    {
+      "pathSha256": "97806960995059cf614f80dc5191f893d3ff485c6c0d0e491714e341e7b25cb1",
+      "querySha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "heldAt": "2026-10-23T11:52:31.961Z",
+      "dispatched": false,
+      "disposed": true,
+      "disposedAt": "2026-10-23T11:52:53.945Z"
+    },
+    {
+      "pathSha256": "63c8a9541c46a87827478a6f5c1ea0d9062d16671606d62e4d9f9f2a60544439",
+      "querySha256": "35c6f6a32880b974f32d9527839634d145a05652bd32f314499c49e5755e9e6b",
+      "heldAt": "2026-10-23T11:52:31.963Z",
+      "dispatched": false,
+      "disposed": true,
+      "disposedAt": "2026-10-23T11:52:53.946Z"
+    },
+    {
+      "pathSha256": "a61693c16814c04738c1698ffef278ca96b1e27a987e94eef334f9d0b199e8f1",
+      "querySha256": "35c6f6a32880b974f32d9527839634d145a05652bd32f314499c49e5755e9e6b",
+      "heldAt": "2026-10-23T11:52:31.964Z",
+      "dispatched": false,
+      "disposed": true,
+      "disposedAt": "2026-10-23T11:52:53.946Z"
+    },
+    {
+      "pathSha256": "d30c5d815f8025a2d5e47d850dbab60d61b1eb5b55a76e5b03088fc607172f93",
+      "querySha256": "4a77ee3dd89fedbc595328baf14ba5123120a427092fc75371d542a81f624a77",
+      "heldAt": "2026-10-23T11:52:31.965Z",
+      "dispatched": false,
+      "disposed": true,
+      "disposedAt": "2026-10-23T11:52:53.947Z"
+    },
+    {
+      "pathSha256": "0f8009a41c8f2cde47eff4249596da2c7fc70c09fb137b5b64652c32227c68eb",
+      "querySha256": "35c6f6a32880b974f32d9527839634d145a05652bd32f314499c49e5755e9e6b",
+      "heldAt": "2026-10-23T11:52:31.965Z",
+      "dispatched": false,
+      "disposed": true,
+      "disposedAt": "2026-10-23T11:52:53.947Z"
+    },
+    {
+      "pathSha256": "574ae684256425851b135609455085d4d9dda5813ae0833f4bbadd272c09072d",
+      "querySha256": "35c6f6a32880b974f32d9527839634d145a05652bd32f314499c49e5755e9e6b",
+      "heldAt": "2026-10-23T11:52:31.966Z",
+      "dispatched": false,
+      "disposed": true,
+      "disposedAt": "2026-10-23T11:52:53.948Z"
+    }
+  ],
+  "nativeSessionCounts": {
+    "stationPicks": 4,
+    "branchSelections": 2
+  },
+  "counts": {
+    "SMS": 0,
+    "paymentActions": 0,
+    "hardwareActions": 0,
+    "checkinActions": 0,
+    "channelActions": 0,
+    "logicalSales": 1,
+    "saleReplays": 0,
+    "quotes": 2
+  },
+  "limits": [
+    "One wholly synthetic unpaid admission sale is retained as voided; no tender is selected or payment collected.",
+    "Only the new isolated park catalogue/tax and the new operator-wide test tender are changed. Cold Till hydration is tested; hot reload is not promised.",
+    "No account, member, check-in, payment, physical device, display, box claim/command, channel or SMS action is allowed.",
+    "The test tax config is retained with its archived synthetic branch; it cannot be reset to null through its supported API.",
+    "Exact original-park private bootstrap reads are held before dispatch until page close, then disposed. Occupancy is not verified; its native shared pending query may suppress the synthetic read."
+  ],
+  "sourceSha": "cd2ed663d725e0fbcb05a3668249a2de5ba0b254",
+  "ciRunId": "39931622118",
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "sourceSha": "cd2ed663d725e0fbcb05a3668249a2de5ba0b254",
+      "deployId": "dep-dbdin6s9v7es73e0vk50",
+      "finishedAt": "2026-10-23T09:44:12.485416Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "sourceSha": "cd2ed663d725e0fbcb05a3668249a2de5ba0b254",
+      "deployId": "dep-dbdin6s9v7es73e0vl80",
+      "finishedAt": "2026-10-23T09:41:30.311598Z"
+    },
+    {
+      "name": "oto-pos-staging",
+      "sourceSha": "cd2ed663d725e0fbcb05a3668249a2de5ba0b254",
+      "deployId": "dep-dbdin6s9v7es73e0vl40",
+      "finishedAt": "2026-10-23T09:41:31.839278Z"
+    }
+  ],
+  "helperReviewSha256": "9ae767bb202db6b90877391745b60090bcc5bd320578dc48819d1432dc7a2a6f",
+  "authAttempts": {
+    "console": {
+      "attemptedAt": "2026-10-23T11:50:59.128Z",
+      "confirmedAt": "2026-10-23T11:50:59.741Z"
+    },
+    "pos": {
+      "attemptedAt": "2026-10-23T11:51:29.300Z",
+      "confirmedAt": "2026-10-23T11:51:29.886Z"
+    }
+  },
+  "actor": {
+    "knownSeededDemo": true,
+    "originalBranchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "preferencesSha256": "00df943c543d230f9e93ceca1038b659220a9779f4d70ae1b114715829458881"
+  },
+  "unchangedBaseline": {
+    "branchesSha256": "2724c2359e6c996e68d2ac9035fe838424ba5f8dbae54681652d7e427f8a3498",
+    "tendersSha256": "59cf8b75f4c20e799cc975fcf0322f9dff77c1fc053ebf2784837d4447d735e6",
+    "tiersSha256": "ce48b7572094f15174076b0b02339cac14ba4f9dc925b7ad5f3155ec4e1740ae"
+  },
+  "phase": "UI_SALE_VOID",
+  "expectedSseCloses": [
+    {
+      "at": "2026-10-23T11:51:42.590Z",
+      "kind": "NATIVE_OWN_SSE_ABORT"
+    },
+    {
+      "at": "2026-10-23T11:51:51.996Z",
+      "kind": "NATIVE_OWN_SSE_ABORT"
+    },
+    {
+      "at": "2026-10-23T11:52:32.214Z",
+      "kind": "NATIVE_OWN_SSE_ABORT"
+    },
+    {
+      "at": "2026-10-23T11:52:40.472Z",
+      "kind": "NATIVE_OWN_SSE_ABORT"
+    }
+  ],
+  "syntheticEmptyRecoveryReads": 2,
+  "lastQuote": {
+    "at": "2026-10-23T11:52:40.816Z",
+    "source": "platform",
+    "branchId": "37d38f1a-3d4f-4b60-90ed-415d3fc442f4",
+    "stationId": "4e6d29db-2f5e-4c8c-9d44-bb7a3775a83d",
+    "totals": {
+      "subtotalSatang": 12300,
+      "manualDiscountSatang": 0,
+      "promoDiscountSatang": 0,
+      "discountSatang": 0,
+      "netSatang": 12300,
+      "serviceChargeSatang": 0,
+      "taxInclusiveSatang": 0,
+      "taxExclusiveSatang": 861,
+      "grossSatang": 13161,
+      "unappliedDiscountSatang": 0
+    },
+    "taxBreakdown": {
+      "netSubtotal": 12300,
+      "discountTotal": 0,
+      "serviceChargeTotal": 0,
+      "exclusiveTaxTotal": 861,
+      "inclusiveTaxTotal": 0,
+      "taxTotal": 861,
+      "categories": [
+        {
+          "category": "tickets",
+          "base": 12300,
+          "taxMode": "exclusive",
+          "taxRateId": "17c69a5d-e275-4a5c-aa3a-33141c375056",
+          "taxName": "ZZ TEST 618 mvkws8ws VAT",
+          "taxPercent": 7,
+          "serviceCharge": 0,
+          "tax": 861,
+          "secondaryTaxMode": "none",
+          "secondaryTaxPercent": 0,
+          "secondaryTax": 0,
+          "gross": 13161
+        }
+      ],
+      "grandTotal": 13161,
+      "unappliedDiscount": 0
+    },
+    "engineVersion": "2026.10.06-1"
+  },
+  "unpaidCommit": {
+    "at": "2026-10-23T11:52:47.063Z",
+    "id": "01a1689b-3b84-7284-916e-f04f91796976",
+    "status": "tendering",
+    "grossSatang": 13161,
+    "receiptNumber": null
+  },
+  "unpaidReadback": {
+    "id": "01a1689b-3b84-7284-916e-f04f91796976",
+    "branchId": "37d38f1a-3d4f-4b60-90ed-415d3fc442f4",
+    "stationId": "4e6d29db-2f5e-4c8c-9d44-bb7a3775a83d",
+    "status": "tendering",
+    "grossSatang": 13161,
+    "receiptNumber": null,
+    "finalisedAt": null,
+    "attempts": 0,
+    "refunds": 0,
+    "printJobs": 0,
+    "bands": 0,
+    "grants": 0,
+    "at": "2026-10-23T11:52:47.645Z"
+  },
+  "voidedReadback": {
+    "id": "01a1689b-3b84-7284-916e-f04f91796976",
+    "branchId": "37d38f1a-3d4f-4b60-90ed-415d3fc442f4",
+    "stationId": "4e6d29db-2f5e-4c8c-9d44-bb7a3775a83d",
+    "status": "voided",
+    "grossSatang": 13161,
+    "receiptNumber": null,
+    "finalisedAt": null,
+    "attempts": 0,
+    "refunds": 0,
+    "printJobs": 0,
+    "bands": 0,
+    "grants": 0,
+    "at": "2026-10-23T11:52:52.493Z"
+  },
+  "controlsComplete": true,
+  "originalPosStateRestored": true,
+  "originalConsoleStateUnchanged": true,
+  "authCleanup": {
+    "pos": {
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    },
+    "console": {
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    }
+  },
+  "syntheticConfigurationArchived": true,
+  "sourceUnchangedAtEnd": true,
+  "completedAt": "2026-10-23T11:53:09.418Z",
+  "authUncertainOrigins": [],
+  "pendingAtEnd": 0,
+  "pendingReadMonitorsAtEnd": 0
+}

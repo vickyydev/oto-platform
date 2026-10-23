@@ -1,0 +1,53 @@
+{
+  "proofSha256": "9bf96786d81f5f4c1f989f20e7ae2014e2cd2feb2874f1459abd30edc3781e7a",
+  "reviewSha256": "9ae767bb202db6b90877391745b60090bcc5bd320578dc48819d1432dc7a2a6f",
+  "review": {
+    "ticket": "SCRUM-618",
+    "approved": true,
+    "sourceSha": "cd2ed663d725e0fbcb05a3668249a2de5ba0b254",
+    "helpers": {
+      "admin618-proof.mjs": "f79dbffcbbeeec4c97ed7caac6a6505ece2f649cff14a2ef0776a4ac9325c5d4",
+      "admin618-boundaries.mjs": "568f52a6e0fbbbda48106042415fae977f2840fa31e56a7e3257b50cd927016b",
+      "admin618-console-controls.mjs": "679dedc9c811e4673deaf8ed80f33cb879bd054378e336ceb9d16ffa746b35e5",
+      "admin618-console-writes.mjs": "c576558e0370b766ab1b85f951c449eec498dc5b12db4c22f2225f6b0e0b1c28",
+      "admin618-pos-controls.mjs": "fde44c07a817f383e69c2f947bdf96e8bb2ba121783e4c2e2e8309468cf5d5ae",
+      "admin627-accept-jira.mjs": "5925a7463ca112ba38f056e95817a2cb1ae6e7a6c58d527fa4fff85802522dc3",
+      "admin627-workflow-repair.mjs": "da6a88313d8eaf43a77a4b0ca192a42f1978a555125ce84db3a55a6337462938"
+    },
+    "wrapperSha256": "6fdcf6ea05697e564edceee13654a54552912d3ded4e280b5086ff56c3dcea9c",
+    "independentReviewSha256": "b3a6936080ac1f0d255374539992e99a11353abeb0f922a8501470db410530c2",
+    "finalHelperGatesSha256": "ac7265904d5e6fa9c8a2a5ca88a446f92134c965e6e3fba89108f74665ed9164",
+    "localRehearsal": {
+      "localOnly": true,
+      "actualFrozenBuild": true,
+      "actualRootGuardQueueCapture": true,
+      "actualSevenPNGsInspected": true,
+      "sourceCheckStubbed": true,
+      "screenshotIOStubbed": false,
+      "actualInstalledRadixToastSeenThenAbsent": true,
+      "reviewSha256": "3793aa2cf1e60fcb0cabf00634a30850096478954ba8703da2c6131ff33de355",
+      "resultSha256": "25e507a7581b9ef44ccdd0834d1c16e4dbe415d1992b11e1261d4125d1a34a00"
+    },
+    "earlierAttemptSummaries": [
+      {
+        "attempt": 1,
+        "sha256": "cf6503a2f14f0e5d2d361a56eca1897e0fa495c58c23eef63ae3e734fdd685f6"
+      },
+      {
+        "attempt": 2,
+        "sha256": "4e7c7ca65d95edfcb9a807cedc8540223b51ffe96e76c45de35838e701ea2c15"
+      },
+      {
+        "attempt": 3,
+        "sha256": "149a2c3cd08c32044b3abe441409e69b791dd7b78c0b2e4337f792f90b4d19da"
+      },
+      {
+        "attempt": 4,
+        "sha256": "f6b826e7d3d8f60ccb46df0d2a8c1587b8fad7a5b0090eec1b9fb11328f14761"
+      }
+    ],
+    "offlineTestsPassed": 44,
+    "actualRadixDomChecksPassed": 8,
+    "reviewedAt": "2026-10-23T11:50:45.822Z"
+  }
+}
