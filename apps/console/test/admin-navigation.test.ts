@@ -43,6 +43,18 @@ describe('SCRUM-609 Admin navigation', () => {
     expect(ids(ROLE_BUNDLES.operator_admin, true)).toContain('platform');
   });
 
+  it('keeps the approved Channels gate and the routing page permission independent', () => {
+    expect(ids(['inbox:routing:manage'])).toEqual([]);
+    expect(ids(['inbox:template:manage'])).toEqual([]);
+    const withoutRouting = visibleNavigation(has('inbox:channel:manage'), false).find(area => area.id === 'channels');
+    expect(withoutRouting?.sections).toEqual([]);
+    const withRouting = visibleNavigation(has('inbox:channel:manage', 'inbox:routing:manage'), false).find(area => area.id === 'channels');
+    expect(withRouting?.sections.map(page => page.id)).toEqual(['teams-routing']);
+    expect(findSection('teams-routing')).toMatchObject({ path: '/channels/teams-routing', permission: 'inbox:routing:manage' });
+    expect(sectionForPath('/teams-routing')).toEqual(findSection('teams-routing'));
+    expect(sectionForPath('/channels/teams-routing')).toEqual(findSection('teams-routing'));
+  });
+
   it('filters child links by their own permissions inside an allowed area', () => {
     const watch = visibleNavigation(has('admin:audit:read'), false).find((area) => area.id === 'watch');
     expect(watch?.sections.map((page) => page.id)).toEqual(['activity']);

@@ -330,6 +330,23 @@ const mutatingCloudRoutes = (): SourceRoute[] =>
   );
 
 describe('one operation, one transaction (SCRUM-291)', () => {
+  it('Teams and routing mutations retain one transaction and the normal replay store (SCRUM-626)', () => {
+    const managed = routes.filter(r => /^\/inbox\/(teams|routing-rules)(\/|$)/.test(r.path) && MUTATING.has(r.method));
+    expect(managed.map(r => `${r.method} ${r.path}`).sort()).toEqual([
+      'DELETE /inbox/routing-rules/:id', 'DELETE /inbox/teams/:id', 'PATCH /inbox/routing-rules/:id',
+      'PATCH /inbox/teams/:id', 'POST /inbox/routing-rules', 'POST /inbox/teams',
+    ]);
+    for (const route of managed) {
+      expect(opensTransaction(route), route.path).toBe(true);
+      const config = configs.get(`${route.method} ${route.path}`);
+      expect(config?.secretResponse).not.toBe(true);
+      expect(config?.replaysByOwnId).not.toBe(true);
+      expect(config?.credential).toBeUndefined();
+      expect(route.optionsText, route.path).toContain('preValidation');
+      expect(route.optionsText, route.path).toContain('response:');
+    }
+  });
+
   it('the Roles catalogue, reverse lookup and effective diff are reads (SCRUM-612)', () => {
     const roleRoutes = routes.filter((r) => r.path.startsWith('/roles'));
     expect(roleRoutes.map((r) => `${r.method} ${r.path}`).sort()).toEqual([

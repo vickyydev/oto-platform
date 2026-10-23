@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { ANALYTICS_SOURCES } from '@oto/shared';
 import type { App } from '../app';
 import { overviewOf } from '../services/console';
+import { consoleRoutingRoutes } from './console-routing';
 
 const count = z.number().int().nonnegative();
 const figures = z.object({
@@ -24,6 +25,7 @@ export const OverviewSchema = z.object({
 });
 
 export async function consoleRoutes(app: App): Promise<void> {
+  await app.register(consoleRoutingRoutes);
   app.get('/overview', {
     config: { dynamicPermission: true },
     schema: {

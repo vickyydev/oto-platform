@@ -63695,6 +63695,1149 @@
         }
       }
     },
+    "/inbox/teams": {
+      "get": {
+        "description": "Manageable teams and minimal routing choices within inbox:routing:manage reach. Global teams appear only as minimal references for park readers. No account phone, email or credential is returned.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "teams": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "key": {
+                            "type": "string",
+                            "enum": [
+                              "birthdays",
+                              "reception",
+                              "marketing"
+                            ]
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "branchId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "branchName": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "departmentId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "departmentName": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "colour": {
+                            "type": "string"
+                          },
+                          "sortOrder": {
+                            "type": "integer",
+                            "minimum": -2147483648,
+                            "maximum": 2147483647
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "key",
+                          "name",
+                          "branchId",
+                          "branchName",
+                          "departmentId",
+                          "departmentName",
+                          "colour",
+                          "sortOrder",
+                          "createdAt",
+                          "updatedAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "operatorWide": {
+                      "type": "boolean"
+                    },
+                    "branches": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "departments": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "branchId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "branchId"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "accounts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "displayName": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "invited",
+                              "active",
+                              "inactive"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "displayName",
+                          "status"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "teamReferences": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "key": {
+                            "type": "string",
+                            "enum": [
+                              "birthdays",
+                              "reception",
+                              "marketing"
+                            ]
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "branchId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "key",
+                          "name",
+                          "branchId"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "teams",
+                    "operatorWide",
+                    "branches",
+                    "departments",
+                    "accounts",
+                    "teamReferences"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "description": "Create a fixed-kind team in its owned park or at operator scope. Optional caller id and header idempotency replay the same record. Reception requires a park. Department must be global or in the same park.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "key": {
+                    "type": "string",
+                    "enum": [
+                      "birthdays",
+                      "reception",
+                      "marketing"
+                    ]
+                  },
+                  "branchId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "colour": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "departmentId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  },
+                  "sortOrder": {
+                    "type": "integer",
+                    "minimum": -2147483648,
+                    "maximum": 2147483647
+                  }
+                },
+                "required": [
+                  "key",
+                  "branchId",
+                  "name",
+                  "colour"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "team": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "key": {
+                          "type": "string",
+                          "enum": [
+                            "birthdays",
+                            "reception",
+                            "marketing"
+                          ]
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "branchId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "branchName": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "departmentId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "departmentName": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "colour": {
+                          "type": "string"
+                        },
+                        "sortOrder": {
+                          "type": "integer",
+                          "minimum": -2147483648,
+                          "maximum": 2147483647
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "key",
+                        "name",
+                        "branchId",
+                        "branchName",
+                        "departmentId",
+                        "departmentName",
+                        "colour",
+                        "sortOrder",
+                        "createdAt",
+                        "updatedAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "team"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inbox/teams/{id}": {
+      "patch": {
+        "description": "Edit team name, colour, department link and order. Fixed key and park identity remain unchanged. Checks actual row reach before replay and again under transaction lock.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "colour": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "departmentId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  },
+                  "sortOrder": {
+                    "type": "integer",
+                    "minimum": -2147483648,
+                    "maximum": 2147483647
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "team": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "key": {
+                          "type": "string",
+                          "enum": [
+                            "birthdays",
+                            "reception",
+                            "marketing"
+                          ]
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "branchId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "branchName": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "departmentId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "departmentName": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "colour": {
+                          "type": "string"
+                        },
+                        "sortOrder": {
+                          "type": "integer",
+                          "minimum": -2147483648,
+                          "maximum": 2147483647
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "key",
+                        "name",
+                        "branchId",
+                        "branchName",
+                        "departmentId",
+                        "departmentName",
+                        "colour",
+                        "sortOrder",
+                        "createdAt",
+                        "updatedAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "team"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "description": "Teams cannot be deleted (owner Q10). An owned, authorized target answers the clear audited refusal; absent/foreign or out-of-reach rows remain protected. Edit metadata or archive routing rules instead.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "details": {}
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inbox/routing-rules": {
+      "get": {
+        "description": "Rules only within the actual rule and referenced park-team reach; null rule scope requires operator-wide rights. Includes archived history and keeps priority, specificity, oldest and id order. No conversation is rerouted.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "rules": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "teamId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "teamName": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "category": {
+                            "type": "string",
+                            "enum": [
+                              "birthdays",
+                              "general",
+                              "marketing"
+                            ]
+                          },
+                          "language": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "branchId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "branchName": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "primaryKind": {
+                            "type": "string",
+                            "enum": [
+                              "account",
+                              "team"
+                            ]
+                          },
+                          "primaryAccountId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "primaryAccountName": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "backupAccountId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "backupAccountName": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "autoAddBackup": {
+                            "type": "boolean"
+                          },
+                          "priority": {
+                            "type": "integer",
+                            "minimum": -2147483648,
+                            "maximum": 2147483647
+                          },
+                          "active": {
+                            "type": "boolean"
+                          },
+                          "archivedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "teamId",
+                          "teamName",
+                          "category",
+                          "language",
+                          "branchId",
+                          "branchName",
+                          "primaryKind",
+                          "primaryAccountId",
+                          "primaryAccountName",
+                          "backupAccountId",
+                          "backupAccountName",
+                          "autoAddBackup",
+                          "priority",
+                          "active",
+                          "archivedAt",
+                          "createdAt",
+                          "updatedAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "rules"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "description": "Create a routing rule with signed priority and null language/park wildcards. Explicit owned accounts only; the existing router still determines active-person fallback. Checks concrete rule and team parks, or operator reach for a null rule scope. Optional body id and normal header idempotency are supported.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "teamId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "category": {
+                    "type": "string",
+                    "enum": [
+                      "birthdays",
+                      "general",
+                      "marketing"
+                    ]
+                  },
+                  "language": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100,
+                    "nullable": true
+                  },
+                  "branchId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  },
+                  "primaryKind": {
+                    "type": "string",
+                    "enum": [
+                      "account",
+                      "team"
+                    ]
+                  },
+                  "primaryAccountId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  },
+                  "backupAccountId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  },
+                  "autoAddBackup": {
+                    "type": "boolean"
+                  },
+                  "priority": {
+                    "type": "integer",
+                    "minimum": -2147483648,
+                    "maximum": 2147483647
+                  },
+                  "active": {
+                    "type": "boolean"
+                  },
+                  "id": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "required": [
+                  "teamId",
+                  "category",
+                  "primaryKind"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "rule": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "teamId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "teamName": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "category": {
+                          "type": "string",
+                          "enum": [
+                            "birthdays",
+                            "general",
+                            "marketing"
+                          ]
+                        },
+                        "language": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "branchId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "branchName": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "primaryKind": {
+                          "type": "string",
+                          "enum": [
+                            "account",
+                            "team"
+                          ]
+                        },
+                        "primaryAccountId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "primaryAccountName": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "backupAccountId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "backupAccountName": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "autoAddBackup": {
+                          "type": "boolean"
+                        },
+                        "priority": {
+                          "type": "integer",
+                          "minimum": -2147483648,
+                          "maximum": 2147483647
+                        },
+                        "active": {
+                          "type": "boolean"
+                        },
+                        "archivedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "teamId",
+                        "teamName",
+                        "category",
+                        "language",
+                        "branchId",
+                        "branchName",
+                        "primaryKind",
+                        "primaryAccountId",
+                        "primaryAccountName",
+                        "backupAccountId",
+                        "backupAccountName",
+                        "autoAddBackup",
+                        "priority",
+                        "active",
+                        "archivedAt",
+                        "createdAt",
+                        "updatedAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "rule"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inbox/routing-rules/{id}": {
+      "patch": {
+        "description": "Edit an unarchived rule, preserving creation time and engine order. Both old and new rule/team scope are checked before idempotency replay and again under lock. Primary/backup references must belong to the operator.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "teamId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "category": {
+                    "type": "string",
+                    "enum": [
+                      "birthdays",
+                      "general",
+                      "marketing"
+                    ]
+                  },
+                  "language": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100,
+                    "nullable": true
+                  },
+                  "branchId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  },
+                  "primaryKind": {
+                    "type": "string",
+                    "enum": [
+                      "account",
+                      "team"
+                    ]
+                  },
+                  "primaryAccountId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  },
+                  "backupAccountId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  },
+                  "autoAddBackup": {
+                    "type": "boolean"
+                  },
+                  "priority": {
+                    "type": "integer",
+                    "minimum": -2147483648,
+                    "maximum": 2147483647
+                  },
+                  "active": {
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "rule": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "teamId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "teamName": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "category": {
+                          "type": "string",
+                          "enum": [
+                            "birthdays",
+                            "general",
+                            "marketing"
+                          ]
+                        },
+                        "language": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "branchId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "branchName": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "primaryKind": {
+                          "type": "string",
+                          "enum": [
+                            "account",
+                            "team"
+                          ]
+                        },
+                        "primaryAccountId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "primaryAccountName": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "backupAccountId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "backupAccountName": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "autoAddBackup": {
+                          "type": "boolean"
+                        },
+                        "priority": {
+                          "type": "integer",
+                          "minimum": -2147483648,
+                          "maximum": 2147483647
+                        },
+                        "active": {
+                          "type": "boolean"
+                        },
+                        "archivedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "teamId",
+                        "teamName",
+                        "category",
+                        "language",
+                        "branchId",
+                        "branchName",
+                        "primaryKind",
+                        "primaryAccountId",
+                        "primaryAccountName",
+                        "backupAccountId",
+                        "backupAccountName",
+                        "autoAddBackup",
+                        "priority",
+                        "active",
+                        "archivedAt",
+                        "createdAt",
+                        "updatedAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "rule"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "description": "Archive a rule in place, setting active false and archivedAt. Repeated archive is harmless; existing conversation ownership, history, fallback, routing and platform-sync behavior remain unchanged.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/overview": {
       "get": {
         "description": "Today at the live parks within console:overview:read reach, independent of the session seat. The optional branchId selects one reachable park. Revenue and guests use each park’s business date, selected analytics source and stored rollup, with its provisional and freshness marks. Bookings count every state for that visit date. Inbox unanswered reuses its existing rule; alerts are unresolved. These park counts exclude branchless Inbox conversations and operator/platform alerts. Offline boxes use their reported offline status at any hour; alerting hours are unchanged. Summary-only authority: linked screens retain their own permissions. Foreign, absent or archived park: 404; own unreachable park: 403.",

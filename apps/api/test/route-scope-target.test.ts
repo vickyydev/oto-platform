@@ -151,6 +151,18 @@ const OPERATOR_WIDE_WRITES = [
 ];
 
 describe('operator-wide settings are changed at operator scope (SCRUM-606)', () => {
+  it('new Teams and routing writes resolve old/new row targets before replay instead of a seated-park default (SCRUM-626)', () => {
+    const managed = routes.filter(r => /^\/inbox\/(teams|routing-rules)(\/|$)/.test(r.path)
+      && ['POST', 'PATCH', 'DELETE'].includes(r.method));
+    expect(managed).toHaveLength(6);
+    for (const route of managed) {
+      expect(configs.get(`${route.method} ${route.path}`)?.dynamicPermission).toBe(true);
+      expect(route.optionsText, route.path).toContain('preValidation');
+      expect(route.optionsText, route.path).toContain('authorizeBeforeReplay');
+      expect(establishesOwnership(route.handlerText), route.path).toBe(true);
+    }
+  });
+
   it('every operator-wide write declares the operator target, and nothing else', () => {
     const wrong = OPERATOR_WIDE_WRITES.filter((key) => {
       const config = configs.get(key);

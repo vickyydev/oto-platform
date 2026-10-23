@@ -105,6 +105,8 @@ const MACHINE_CALLERS: Array<{ prefix: string; except?: string; caller: string }
  * caller fails until its line is removed, so the list stays the truth.
  */
 const NOT_YET_CALLED = new Map<string, string>([
+  // 2026-10-23, SCRUM-626 Q10: canonical teams remain editable, never deletable.
+  ['DELETE /inbox/teams/{id}', 'the compatibility route returns the approved team-deletion refusal; the editor explains it without offering a destructive action'],
   // 2026-10-14, the walker's first run.
   [
     'GET /box/v1/station/{stationId}/channel',

@@ -25914,6 +25914,511 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/inbox/teams": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Manageable teams and minimal routing choices within inbox:routing:manage reach. Global teams appear only as minimal references for park readers. No account phone, email or credential is returned. */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            teams: {
+                                /** Format: uuid */
+                                id: string;
+                                /** @enum {string} */
+                                key: "birthdays" | "reception" | "marketing";
+                                name: string;
+                                /** Format: uuid */
+                                branchId: string | null;
+                                branchName: string | null;
+                                /** Format: uuid */
+                                departmentId: string | null;
+                                departmentName: string | null;
+                                colour: string;
+                                sortOrder: number;
+                                /** Format: date-time */
+                                createdAt: string;
+                                /** Format: date-time */
+                                updatedAt: string;
+                            }[];
+                            operatorWide: boolean;
+                            branches: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                            }[];
+                            departments: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                                /** Format: uuid */
+                                branchId: string | null;
+                            }[];
+                            accounts: {
+                                /** Format: uuid */
+                                id: string;
+                                displayName: string;
+                                /** @enum {string} */
+                                status: "invited" | "active" | "inactive";
+                            }[];
+                            teamReferences: {
+                                /** Format: uuid */
+                                id: string;
+                                /** @enum {string} */
+                                key: "birthdays" | "reception" | "marketing";
+                                name: string;
+                                /** Format: uuid */
+                                branchId: string | null;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** @description Create a fixed-kind team in its owned park or at operator scope. Optional caller id and header idempotency replay the same record. Reception requires a park. Department must be global or in the same park. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id?: string;
+                        /** @enum {string} */
+                        key: "birthdays" | "reception" | "marketing";
+                        /** Format: uuid */
+                        branchId: string | null;
+                        name: string;
+                        colour: string;
+                        /** Format: uuid */
+                        departmentId?: string | null;
+                        sortOrder?: number;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            team: {
+                                /** Format: uuid */
+                                id: string;
+                                /** @enum {string} */
+                                key: "birthdays" | "reception" | "marketing";
+                                name: string;
+                                /** Format: uuid */
+                                branchId: string | null;
+                                branchName: string | null;
+                                /** Format: uuid */
+                                departmentId: string | null;
+                                departmentName: string | null;
+                                colour: string;
+                                sortOrder: number;
+                                /** Format: date-time */
+                                createdAt: string;
+                                /** Format: date-time */
+                                updatedAt: string;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inbox/teams/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** @description Teams cannot be deleted (owner Q10). An owned, authorized target answers the clear audited refusal; absent/foreign or out-of-reach rows remain protected. Edit metadata or archive routing rules instead. */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            ok: true;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                details?: unknown;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        /** @description Edit team name, colour, department link and order. Fixed key and park identity remain unchanged. Checks actual row reach before replay and again under transaction lock. */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        name?: string;
+                        colour?: string;
+                        /** Format: uuid */
+                        departmentId?: string | null;
+                        sortOrder?: number;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            team: {
+                                /** Format: uuid */
+                                id: string;
+                                /** @enum {string} */
+                                key: "birthdays" | "reception" | "marketing";
+                                name: string;
+                                /** Format: uuid */
+                                branchId: string | null;
+                                branchName: string | null;
+                                /** Format: uuid */
+                                departmentId: string | null;
+                                departmentName: string | null;
+                                colour: string;
+                                sortOrder: number;
+                                /** Format: date-time */
+                                createdAt: string;
+                                /** Format: date-time */
+                                updatedAt: string;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/inbox/routing-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Rules only within the actual rule and referenced park-team reach; null rule scope requires operator-wide rights. Includes archived history and keeps priority, specificity, oldest and id order. No conversation is rerouted. */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            rules: {
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                teamId: string;
+                                teamName: string | null;
+                                /** @enum {string} */
+                                category: "birthdays" | "general" | "marketing";
+                                language: string | null;
+                                /** Format: uuid */
+                                branchId: string | null;
+                                branchName: string | null;
+                                /** @enum {string} */
+                                primaryKind: "account" | "team";
+                                /** Format: uuid */
+                                primaryAccountId: string | null;
+                                primaryAccountName: string | null;
+                                /** Format: uuid */
+                                backupAccountId: string | null;
+                                backupAccountName: string | null;
+                                autoAddBackup: boolean;
+                                priority: number;
+                                active: boolean;
+                                /** Format: date-time */
+                                archivedAt: string | null;
+                                /** Format: date-time */
+                                createdAt: string;
+                                /** Format: date-time */
+                                updatedAt: string;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** @description Create a routing rule with signed priority and null language/park wildcards. Explicit owned accounts only; the existing router still determines active-person fallback. Checks concrete rule and team parks, or operator reach for a null rule scope. Optional body id and normal header idempotency are supported. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        teamId: string;
+                        /** @enum {string} */
+                        category: "birthdays" | "general" | "marketing";
+                        language?: string | null;
+                        /** Format: uuid */
+                        branchId?: string | null;
+                        /** @enum {string} */
+                        primaryKind: "account" | "team";
+                        /** Format: uuid */
+                        primaryAccountId?: string | null;
+                        /** Format: uuid */
+                        backupAccountId?: string | null;
+                        autoAddBackup?: boolean;
+                        priority?: number;
+                        active?: boolean;
+                        /** Format: uuid */
+                        id?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            rule: {
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                teamId: string;
+                                teamName: string | null;
+                                /** @enum {string} */
+                                category: "birthdays" | "general" | "marketing";
+                                language: string | null;
+                                /** Format: uuid */
+                                branchId: string | null;
+                                branchName: string | null;
+                                /** @enum {string} */
+                                primaryKind: "account" | "team";
+                                /** Format: uuid */
+                                primaryAccountId: string | null;
+                                primaryAccountName: string | null;
+                                /** Format: uuid */
+                                backupAccountId: string | null;
+                                backupAccountName: string | null;
+                                autoAddBackup: boolean;
+                                priority: number;
+                                active: boolean;
+                                /** Format: date-time */
+                                archivedAt: string | null;
+                                /** Format: date-time */
+                                createdAt: string;
+                                /** Format: date-time */
+                                updatedAt: string;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inbox/routing-rules/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** @description Archive a rule in place, setting active false and archivedAt. Repeated archive is harmless; existing conversation ownership, history, fallback, routing and platform-sync behavior remain unchanged. */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            ok: true;
+                        };
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        /** @description Edit an unarchived rule, preserving creation time and engine order. Both old and new rule/team scope are checked before idempotency replay and again under lock. Primary/backup references must belong to the operator. */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        teamId?: string;
+                        /** @enum {string} */
+                        category?: "birthdays" | "general" | "marketing";
+                        language?: string | null;
+                        /** Format: uuid */
+                        branchId?: string | null;
+                        /** @enum {string} */
+                        primaryKind?: "account" | "team";
+                        /** Format: uuid */
+                        primaryAccountId?: string | null;
+                        /** Format: uuid */
+                        backupAccountId?: string | null;
+                        autoAddBackup?: boolean;
+                        priority?: number;
+                        active?: boolean;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            rule: {
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                teamId: string;
+                                teamName: string | null;
+                                /** @enum {string} */
+                                category: "birthdays" | "general" | "marketing";
+                                language: string | null;
+                                /** Format: uuid */
+                                branchId: string | null;
+                                branchName: string | null;
+                                /** @enum {string} */
+                                primaryKind: "account" | "team";
+                                /** Format: uuid */
+                                primaryAccountId: string | null;
+                                primaryAccountName: string | null;
+                                /** Format: uuid */
+                                backupAccountId: string | null;
+                                backupAccountName: string | null;
+                                autoAddBackup: boolean;
+                                priority: number;
+                                active: boolean;
+                                /** Format: date-time */
+                                archivedAt: string | null;
+                                /** Format: date-time */
+                                createdAt: string;
+                                /** Format: date-time */
+                                updatedAt: string;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
     "/overview": {
         parameters: {
             query?: never;

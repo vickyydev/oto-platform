@@ -35,6 +35,8 @@ export interface ConsoleNavGroup {
 
 /** Existing pages keep their permissions and their old addresses. */
 export const CONSOLE_SECTIONS: ConsoleSection[] = [
+  { id: 'teams-routing', path: '/channels/teams-routing', label: 'Teams & routing', icon: MessagesSquare,
+    description: 'System teams and the rules that name the primary owner and backup.', permission: 'inbox:routing:manage' },
   { id: 'reports-sales', path: '/reports/sales', label: 'Sales', icon: BarChart3,
     description: 'Revenue by category, payment method, ticket and item over trading days.', permission: 'analytics:read' },
   { id: 'reports-profitability', path: '/reports/profitability', label: 'Profitability', icon: BarChart3,
@@ -257,9 +259,8 @@ export const consoleNav: ConsoleNavGroup[] = [
   },
   {
     id: 'channels', label: 'Channels & assistant', icon: MessagesSquare,
-    description: 'Numbers, templates, knowledge and assistant controls are currently in Inbox settings.',
-    gate: { any: ['inbox:channel:manage', 'inbox:kb:manage', 'inbox:ai:manage'] }, sections: [],
-    currentHome: { app: 'suite', path: '', label: 'Open the suite to choose Inbox' },
+    description: 'Manage teams and routing here; open Numbers, Templates, Knowledge base and Examples in Inbox.',
+    gate: { any: ['inbox:channel:manage', 'inbox:kb:manage', 'inbox:ai:manage'] }, sections: pages('teams-routing'),
   },
   {
     id: 'staff', label: 'Staff & HR', icon: CalendarCheck,

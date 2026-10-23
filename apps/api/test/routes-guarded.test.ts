@@ -34,6 +34,21 @@ afterAll(async () => {
 const NOT_OURS = new Set(['/*']);
 
 describe('route guards (S2-01b)', () => {
+  it('the Console Teams and routing surface declares actual scoped management guards (SCRUM-626)', () => {
+    const routes = ctx.app.routeRegistry.filter(r => /^\/inbox\/(teams|routing-rules)(\/|$)/.test(r.url)
+      && r.method !== 'HEAD' && r.method !== 'OPTIONS');
+    expect(routes.map(r => `${r.method} ${r.url}`).sort()).toEqual([
+      'DELETE /inbox/routing-rules/:id', 'DELETE /inbox/teams/:id',
+      'GET /inbox/routing-rules', 'GET /inbox/teams', 'PATCH /inbox/routing-rules/:id',
+      'PATCH /inbox/teams/:id', 'POST /inbox/routing-rules', 'POST /inbox/teams',
+    ]);
+    for (const route of routes) {
+      expect(route.config.dynamicPermission).toBe(true);
+      expect(route.config.public).not.toBe(true);
+      expect(route.config.credential).toBeUndefined();
+    }
+  });
+
   it('keeps access review behind the existing role-read gate (SCRUM-616)', () => {
     const route = ctx.app.routeRegistry.find((r) => r.method === 'GET' && r.url.replace(/\/$/, '') === '/access-review');
     expect(route?.config.permission).toBe('admin:role:read');

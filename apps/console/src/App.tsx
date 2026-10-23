@@ -39,6 +39,8 @@ import { Money } from '@/pages/Money';
 import { Care } from '@/pages/Care';
 import { StaffBenefits } from '@/pages/StaffBenefits';
 import { Reports, ReportsLanding } from '@/pages/Reports';
+import { ChannelsLanding } from '@/pages/Channels';
+import { TeamsRouting } from '@/pages/TeamsRouting';
 
 const LAUNCHER_URL = import.meta.env.VITE_LAUNCHER_URL?.trim();
 
@@ -139,6 +141,7 @@ function NotFound() {
 }
 
 const pageElements: Record<string, ReactElement> = {
+  'teams-routing': <TeamsRouting />,
   'reports-sales': <Reports page="sales" />,
   'reports-profitability': <Reports page="profitability" />,
   'reports-discounts': <Reports page="discounts" />,
@@ -186,7 +189,7 @@ function Routes() {
       )))}
       {consoleNav.filter((area) => !CONSOLE_SECTIONS.some((page) => page.path === `/${area.id}`))
         .map((area) => <Route key={area.id} path={`/${area.id}`}>
-          {area.id === 'overview' ? <Overview /> : area.id === 'reports' ? <ReportsLanding /> : <AreaLanding id={area.id} />}
+          {area.id === 'overview' ? <Overview /> : area.id === 'reports' ? <ReportsLanding /> : area.id === 'channels' ? <ChannelsLanding /> : <AreaLanding id={area.id} />}
         </Route>)}
       <Route component={NotFound} />
     </Switch>
