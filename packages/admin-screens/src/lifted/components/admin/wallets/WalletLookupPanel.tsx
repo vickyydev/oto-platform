@@ -1,5 +1,6 @@
 import { useAdminScreenRuntime } from '../../../runtime/AdminScreenRuntime';
-import { useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import type { WalletLookupPorts } from '../../../runtime/operations';
 import { History, RotateCcw, ScanLine, Search, UserRound, Wallet } from "lucide-react";
 import { isApiError, idemKey } from "../../../api/client";
 import { type ApiWalletRead } from "../../../api/wallet";
@@ -25,11 +26,16 @@ import { WALLET_STATUS_LABEL, bahtOf, lapsedPartSatang, ledgerNewestFirst, react
  */
 export function WalletLookupPanel() {
   const runtime = useAdminScreenRuntime();
-  const lookupWallet = runtime.api.wallet.lookupWallet;
-  const reactivateWallet = runtime.api.wallet.reactivateWallet;
-  const toast = runtime.toast;
-
   const { can } = useOperator();
+  return <WalletLookupPanelWithPorts key={runtime.session.operator?.id} ports={{
+    lookupWallet: runtime.api.wallet.lookupWallet, reactivateWallet: runtime.api.wallet.reactivateWallet, toast: runtime.toast, can,
+  }} />;
+}
+export function WalletLookupPanelWithPorts({ ports }: { ports: WalletLookupPorts }) {
+  const { lookupWallet, reactivateWallet, toast, can, isCurrent } = ports;
+  const mounted = useRef(false), reads = useRef(0), inFlight = useRef(false);
+  useEffect(() => { const readOwner = reads; mounted.current = true; return () => { mounted.current = false; readOwner.current++; }; }, []);
+  const current = useCallback(() => mounted.current && (isCurrent?.() ?? true), [isCurrent]);
   const [key, setKey] = useState('');
   const [read, setRead] = useState<ApiWalletRead | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -43,36 +49,49 @@ export function WalletLookupPanel() {
   const find = async (event?: FormEvent) => {
     event?.preventDefault();
     const typed = key.trim();
-    if (!typed || loading) return;
+    if (!typed || loading || saving || inFlight.current || !current()) return;
+    const request = ++reads.current;
+    inFlight.current = true;
+    setRead(null);
     setLoading(true);
     setError(null);
     try {
-      setRead(await lookupWallet(typed));
+      const answer = await lookupWallet(typed);
+      if (!current() || request !== reads.current) return;
+      setRead(answer);
       setReason('');
       setReasonError(null);
       pressKey.current = null;
     } catch (err) {
+      if (!current() || request !== reads.current) return;
       setRead(null);
       setError(err instanceof Error ? err.message : 'The wallet could not be looked up.');
     } finally {
-      setLoading(false);
+      if (request === reads.current) {
+        inFlight.current = false;
+        if (current()) setLoading(false);
+      }
     }
   };
 
   const reactivate = async () => {
-    if (!read || saving) return;
+    if (!read || saving || inFlight.current || !current() || !can('pos:wallet:reactivate')) return;
     const refusal = reactivationReasonError(reason);
     setReasonError(refusal);
     if (refusal) return;
     setSaving(true);
+    inFlight.current = true;
+    const request = reads.current;
     pressKey.current ??= idemKey();
     try {
       const answer = await reactivateWallet(read.wallet.id, reason.trim(), pressKey.current);
+      if (!current() || request !== reads.current) return;
       setRead({ wallet: answer.wallet, ledger: answer.ledger });
       setReason('');
       pressKey.current = null;
       toast({ title: 'Credit reactivated', description: `${bahtOf(answer.wallet.balanceSatang)} is spendable again.` });
     } catch (err) {
+      if (!current() || request !== reads.current) return;
       // A refusal is final for this press; a network fault keeps the key for the retry.
       if (isApiError(err)) pressKey.current = null;
       toast({
@@ -81,7 +100,8 @@ export function WalletLookupPanel() {
         variant: 'destructive',
       });
     } finally {
-      setSaving(false);
+      inFlight.current = false;
+      if (current()) setSaving(false);
     }
   };
 
@@ -99,7 +119,12 @@ export function WalletLookupPanel() {
           <ScanLine className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/40" />
           <Input
             value={key}
-            onChange={(e) => setKey(e.target.value)}
+            onChange={(e) => {
+              reads.current++;
+              if (!saving) inFlight.current = false;
+              setKey(e.target.value); setRead(null); setError(null); setLoading(false);
+              setReason(''); setReasonError(null); pressKey.current = null;
+            }}
             placeholder="Scan a band or voucher, or type its code"
             aria-label="Wallet key"
             className="pl-9 font-mono"

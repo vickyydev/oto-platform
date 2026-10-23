@@ -509,7 +509,8 @@ test.describe.serial('The Pi booth, set up in the Console', () => {
       .locator('section')
       .filter({ has: page.getByRole('heading', { name: 'The box', exact: true }) });
     await expect(live).toContainText('Receipt and slip templates', { timeout: 30_000 });
-    await expect(live).toContainText('Operations › Print Templates');
+    await expect(live).toContainText('Opens Print templates under Catalogue & money.');
+    await expect(live.getByRole('link', { name: 'Receipt and slip templates', exact: true })).toHaveAttribute('href', '/catalogue/print-templates');
 
     const prizes = page
       .locator('section')

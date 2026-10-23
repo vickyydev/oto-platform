@@ -1,10 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { WalletEntryView, WalletView } from '@oto/shared';
+import { reactivateWallet } from './support/admin-contracts';
 import { api, ApiError } from '@/api/client';
-import { getCreditDay, reactivateWallet, walletSpendable, walletSpendableSatang, wristbandOfWallet } from '@/api/wallet';
-import { adminPanelsById, panelGroupMap, visibleNavFor } from '@/components/admin/adminSections';
+import { getCreditDay, walletSpendable, walletSpendableSatang, wristbandOfWallet } from '@/api/wallet';
+import { findSection, visibleNavigation } from '../../console/src/components/consoleSections';
+import { ADMIN_PANEL_TARGETS } from '@/api/admin-entry';
 import { withCreditLine } from '@/lib/endOfDay';
-import { platformWalletCreditReport } from '@/lib/reporting';
+import { platformWalletCreditReport } from './support/reporting';
 import {
   bahtOf,
   lapsedPartSatang,
@@ -138,15 +140,11 @@ describe('a lapsed wallet offers no credit at the counter', () => {
 
 describe('the Wallets panel', () => {
   it('is offered to pos:wallet:read, in the reports group beside the Wallet & Promo report', () => {
-    expect(adminPanelsById.wallets).toMatchObject({ id: 'wallets', permission: 'pos:wallet:read' });
-    expect(adminPanelsById.wallets!.localOnly).toBeFalsy();
-    expect(panelGroupMap.wallets).toBe(panelGroupMap['reports-wallet']);
-    // The report now reads the platform, so it no longer says it is local only.
-    expect(adminPanelsById['reports-wallet']!.localOnly).toBeFalsy();
-    const ids = (can: (p: string) => boolean) =>
-      visibleNavFor(can).flatMap((e) => (e.kind === 'group' ? e.panels.map((p) => p.id) : [e.panel.id]));
-    expect(ids((p) => p === 'pos:wallet:read')).toContain('wallets');
-    expect(ids(() => false)).not.toContain('wallets');
+    expect(findSection('wallets')).toMatchObject({ id: 'wallets', permission: 'pos:wallet:read', path: ADMIN_PANEL_TARGETS.wallets });
+    expect(findSection('reports-wallet-promo')?.permission).toBe('analytics:read');
+    const ids = (perms: string[]) => visibleNavigation(p => perms.includes(p), false).flatMap(area => area.sections.map(page => page.id));
+    expect(ids(['analytics:read', 'pos:wallet:read'])).toContain('wallets');
+    expect(ids(['analytics:read'])).not.toContain('wallets');
   });
 });
 

@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { DiscountReport, DiscountTransactions, ProfitabilityReport, SalesReport, TaxReceipts, VatReport } from '@oto/shared';
 import { api } from '@/api/client';
-import { analyticsReportsApi } from '@/api/analyticsReports';
+import { analyticsReportsApi } from './support/admin-contracts';
 import { guardCsvFormula, toCsv } from '@/lib/csv';
 import { SalesReportView, EMPTY_SALES_REPORT } from '../../../packages/admin-screens/src/lifted/components/admin/reports/SalesReportPanel';
 import { ProfitabilityReportView } from '../../../packages/admin-screens/src/lifted/components/admin/reports/ProfitabilityReportPanel';
@@ -13,10 +13,11 @@ import {
   filterTaxReceipts,
   taxReceiptPaymentMethodsOf,
 } from '../../../packages/admin-screens/src/lifted/components/admin/reports/TaxVatReportPanel';
-import { adminPanelsById } from '@/components/admin/adminSections';
+import { findSection } from '../../console/src/components/consoleSections';
+import { ADMIN_PANEL_TARGETS } from '@/api/admin-entry';
 
 vi.mock('../../../packages/admin-screens/src/lifted/runtime/AdminScreenRuntime', async () => {
-  const reporting = await import('@/lib/reporting');
+  const reporting = await import('./support/reporting');
   return { useAdminScreenRuntime: () => ({ domain: { reporting } }) };
 });
 
@@ -81,8 +82,9 @@ describe('the requests', () => {
 
   it('offers the four panels as server-backed now, to analytics:read', () => {
     for (const id of ['reports-sales', 'reports-profitability', 'reports-discounts', 'reports-tax']) {
-      expect(adminPanelsById[id]!.localOnly, id).toBeFalsy();
-      expect(adminPanelsById[id]!.permission, id).toBe('analytics:read');
+      const currentId = id === 'reports-tax' ? 'reports-tax-vat' : id;
+      expect(findSection(currentId)?.path).toBe(ADMIN_PANEL_TARGETS[id as keyof typeof ADMIN_PANEL_TARGETS]);
+      expect(findSection(currentId)?.permission, id).toBe('analytics:read');
     }
   });
 });

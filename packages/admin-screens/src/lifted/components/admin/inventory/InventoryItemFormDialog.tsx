@@ -112,7 +112,12 @@ function linkedOptionsFor(
  * - Reorder settings (supplier, point, lead time, default qty)
  * - Linked sellable-product selection from catalog
  */
-export function InventoryItemFormDialog({
+export function InventoryItemFormDialog(props: InventoryItemFormDialogProps) {
+  const runtime = useAdminScreenRuntime();
+  return <InventoryItemFormDialogWithPorts {...props} catalogueSizesOf={runtime.api.menu.catalogueSizesOf} />;
+}
+
+export function InventoryItemFormDialogWithPorts({
   busy = false,
   frozen = false,
   open,
@@ -123,9 +128,8 @@ export function InventoryItemFormDialog({
   menuItems,
   onClose,
   onSave,
-}: InventoryItemFormDialogProps) {
-  const runtime = useAdminScreenRuntime();
-  const catalogueSizesOf = runtime.api.menu.catalogueSizesOf;
+  catalogueSizesOf,
+}: InventoryItemFormDialogProps & { catalogueSizesOf: (id: string) => Array<{ id: string; label: string }> }) {
 
   // Basics
   const [name, setName] = useState('');

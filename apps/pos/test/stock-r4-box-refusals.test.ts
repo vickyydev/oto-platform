@@ -10,7 +10,7 @@ import { currentLane } from '@/lib/lane';
 import * as paymentMethods from '@/lib/payments';
 import { isStockRefusalCode, stockRefusalAdvice, stockRefusalWords, STOCK_REFUSAL_CODES } from '@/lib/stockRefusal';
 import { usePaymentStage, type PaymentStageOptions } from '@/lib/usePaymentStage';
-import { withLedgerCost, type ProfitabilityRow } from '@/lib/reporting';
+import { withLedgerCost, type ProfitabilityRow } from './support/reporting';
 import type { SaleWriteOutcome } from '@/lib/saleWriter';
 
 /**

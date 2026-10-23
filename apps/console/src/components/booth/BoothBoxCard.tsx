@@ -1,4 +1,5 @@
-import { Cpu, ExternalLink, FileText } from 'lucide-react';
+import { Cpu, FileText } from 'lucide-react';
+import { Link } from 'wouter';
 import { Loading, RouteUnavailable, StaleNote, Unreadable } from '@/components/Panel';
 import { StatusMark } from '@/components/Status';
 import { StatusChip, TONE_INK } from '@/components/redesign/chips';
@@ -8,9 +9,6 @@ import { formatWhen, timeAgo } from '@/lib/time';
 import { cn } from '@/lib/utils';
 import type { BoothStatus } from './boothApi';
 import type { Read } from './readState';
-
-/** The till's origin, whose back office holds the Print Templates panel (`env.d.ts`). */
-const POS_URL = import.meta.env.VITE_POS_URL?.trim();
 
 /**
  * What the booth's box is actually doing, as against what somebody is editing
@@ -155,15 +153,9 @@ export function BoothBoxCard({
  * (SCRUM-468) — the owner looked for it on this page, at the park, and nothing
  * here led to it.
  *
- * The receipt and slip templates are the till's back office's Print
- * Templates panel (`apps/pos`, Operations › Print Templates). The back office
- * gives each panel an address (`/admin?panel=…`, SCRUM-470), so this lands on
- * that panel directly — and still does for a person who is signed out there:
- * the sign-in wall renders in place and keeps the query string. It does not
- * open with this booth's printer chosen: a template is the branch's, not a
- * device's, and the panel is the list of them. With no till origin configured
- * (`VITE_POS_URL`) the words stay and the link does not — a dead address is
- * worse than a sentence.
+ * The receipt and slip templates live on Admin's Print Templates page.
+ * This opens that native panel without choosing the booth's printer: a
+ * template belongs to the park, and the panel is the list of its layouts.
  *
  * The booth's own voucher slip has no template there: its logo, header and
  * footer lines, Staff row and terms are this booth's, set on this page under
@@ -180,21 +172,14 @@ function TemplatesLink() {
   );
   return (
     <span className="flex flex-col gap-0.5 px-3 text-xs">
-      {POS_URL ? (
-        <a
-          href={`${POS_URL}/admin?panel=templates`}
+        <Link
+          href="/catalogue/print-templates"
           className="inline-flex items-center gap-1.5 font-semibold text-primary-ink underline underline-offset-4"
         >
           {label}
-          <ExternalLink className="w-3 h-3 shrink-0 opacity-60" />
-        </a>
-      ) : (
-        <span className="inline-flex items-center gap-1.5 font-semibold">{label}</span>
-      )}
+        </Link>
       <span className="text-muted-foreground">
-        {POS_URL
-          ? 'Opens the till’s back office on its Print Templates screen (Operations › Print Templates). '
-          : 'In the till’s back office, under Operations › Print Templates. '}
+        Opens Print templates under Catalogue &amp; money.{' '}
         The booth’s own voucher slip is set on this page, under Voucher slip.
       </span>
     </span>

@@ -1,14 +1,9 @@
 import type { ApiResponse } from '@oto/api-types';
-import {createBenefitsAdminApi} from '@oto/admin-screens/lifted/api/benefits';
-import {api,idemKey} from './client';
-import {adminScreenApi} from './admin-screen-api';
-export type * from '@oto/admin-screens/lifted/api/benefits';
-export {profileFromApi,profileToApi,sameProfile,inForceOn} from '@oto/admin-screens/lifted/api/benefits';
+import { api, idemKey } from './client';
 
 const path = (s: string) => encodeURIComponent(s);
 
 export const benefitsApi = {
- ...createBenefitsAdminApi(adminScreenApi),
   // --- At the F&B checkout (round 3) ---------------------------------------------
   /**
    * The scan dialog's check: who the QR names and whether they have anything

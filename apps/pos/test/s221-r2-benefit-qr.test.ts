@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { benefitsApi } from '@/api/benefits';
+import { benefitsApi } from './support/admin-contracts';
 
 /**
  * S2-21 (SCRUM-218) round 2 — the Staff Benefits QR button on the platform's

@@ -16,7 +16,6 @@ import StationSetup from "@/pages/StationSetup";
 import Display from "@/pages/Display";
 import Kiosk from "@/pages/Kiosk";
 import Admin from "@/pages/Admin";
-import { AdminAccessGate } from "@/components/admin/AdminAccessGate";
 import { MobileStock } from "@/components/mobile/stock/MobileStock";
 import { OperatorProvider, useOperator } from "@/auth/OperatorContext";
 import { StationProvider, useStation } from "@/station/StationContext";
@@ -171,13 +170,9 @@ function StaffApp() {
                 <Switch>
                   {/* Public, self-driven customer booking engine — no operator login. */}
                   <Route path="/book" component={Book} />
-                  {/* Admin console: a separate, responsive back-office site with
-                      its own auth wall — signed-in manager-role operators only. */}
-                  <Route path="/admin">
-                    <AdminAccessGate>
-                      <Admin />
-                    </AdminAccessGate>
-                  </Route>
+                  {/* Old bookmarks open Admin through the current person's sign-on;
+                      this entry stays independent of choosing a POS station. */}
+                  <Route path="/admin" component={Admin} />
                   <Route>
                     <AuthGate />
                   </Route>

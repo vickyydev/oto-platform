@@ -13,7 +13,8 @@ import {
   toOtoEvent,
   walkUpChargeToExtra,
 } from '@/api/events';
-import { adminNav } from '@/components/admin/adminSections';
+import { findSection } from '../../console/src/components/consoleSections';
+import { ADMIN_PANEL_TARGETS } from '@/api/admin-entry';
 import { computePartyOutstanding, computePartyTotal, partyExtraChargeGroups } from '@/lib/party';
 import type { OtoEvent, PartyBooking } from '@/types';
 
@@ -359,9 +360,8 @@ describe("the pass flow keeps the prototype's words and sells on the platform", 
   });
 
   it('the Admin Events panel sits under Operations, for whoever may set the walk-up prices', () => {
-    const operations = adminNav.find((e) => e.kind === 'group' && e.id === 'operations');
-    const panel = operations?.kind === 'group' ? operations.panels.find((p) => p.id === 'events') : undefined;
-    expect(panel).toMatchObject({ label: 'Events', permission: 'admin:event_pricing:manage' });
+    const panel = findSection('event-pricing');
+    expect(panel).toMatchObject({ label: 'Event pricing', permission: 'admin:event_pricing:manage', path: ADMIN_PANEL_TARGETS.events });
     const src = readFileSync(adminSourcePath('components/admin/events/EventsPanel.tsx'), 'utf8');
     for (const words of ['Camp day', 'Event day', 'Party guest', 'Walk-up / drop-in day pricing for camps, one-off events and party additions.']) {
       expect(src, words).toContain(words);

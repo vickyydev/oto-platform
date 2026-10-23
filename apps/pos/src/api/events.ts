@@ -1,6 +1,4 @@
-import {createEventsAdminApi} from '@oto/admin-screens/lifted/api/events';
-import {adminScreenApi} from './admin-screen-api';
-const eventsAdmin = createEventsAdminApi(adminScreenApi);
+import type { ApiResponse } from '@oto/api-types';
 // S2-20 E1 — the events, camps and parties the POS reads from the OTO App
 // (plan docs/progress/plans/events-kiosk/PLAN.md §9 E1).
 //
@@ -22,16 +20,9 @@ const eventsAdmin = createEventsAdminApi(adminScreenApi);
 // puts the party tab on the platform (`api/parties.ts`).
 
 import { useEffect, useRef, useState } from 'react';
-import {BRIDGE_EVENT_INTENTS, EVENT_CHECKIN_REFUSALS, eventRosterStats, newId, type BridgeEventsDayAnswer, type EventAttendeeCreateBody, type EventAttendeeInput, type EventAttendeeView, type EventAttendeeWriteAnswer, type EventCheckinAnswer, type EventCheckinBody, type EventCheckinView, type EventCheckoutBody, type EventDayAnswer, type EventDropInPricing, type EventPartyWalkUpCharge, type EventPassSellBody, type EventPassesAnswer, type EventReprintBody, type EventView, type EventsCacheItem, type PartyChargeView, type PartyPaymentView} from '@oto/shared';
+import { BRIDGE_EVENT_INTENTS, EVENT_CHECKIN_REFUSALS, eventRosterStats, newId, type BridgeEventsDayAnswer, type EventAttendeeCreateBody, type EventAttendeeInput, type EventAttendeeView, type EventAttendeeWriteAnswer, type EventCheckinAnswer, type EventCheckinBody, type EventCheckinView, type EventCheckoutBody, type EventDayAnswer, type EventDropInPricing, type EventPartyWalkUpCharge, type EventPassSellBody, type EventPassesAnswer, type EventReprintBody, type EventView, type EventsCacheItem, type PartyChargeView, type PartyPaymentView } from '@oto/shared';
 import type { NewEventAttendeeInput } from '@/mockApi';
-import type {
-  EventAttendee,
-  EventAttendeeCheckin,
-  OtoEvent,
-  PartyBooking,
-  PartyExtraCharge,
-  PartyPayment,
-} from '@/types';
+import type { EventAttendee, EventAttendeeCheckin, OtoEvent, PartyBooking, PartyExtraCharge, PartyPayment } from '@/types';
 import { branchTradingDate, resolveRateToday, serverTradingDate } from '@/lib/pricingMode';
 import { paymentMethodKind } from '@/lib/payments';
 import { currentLane, viaLane } from '@/lib/lane';
@@ -399,8 +390,7 @@ export const eventsApi = {
       ...(body.actionId ? { headers: { 'x-oto-action-id': body.actionId } } : {}),
     }),
   /** S2-20 E2 — the branch's walk-up prices (camp day, event day, party guest), in satang. */
-  dropInPricing: eventsAdmin.eventsApi.dropInPricing,
-  saveDropInPricing: eventsAdmin.eventsApi.saveDropInPricing,
+  dropInPricing: (branchId: string) => api.get<ApiResponse<'/branches/{branchId}/event-drop-in-pricing', 'get'>>(`/branches/${encodeURIComponent(branchId)}/event-drop-in-pricing`),
 };
 
 // --- Writes (S2-20 E2) -------------------------------------------------------------

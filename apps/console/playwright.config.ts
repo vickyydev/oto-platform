@@ -24,6 +24,7 @@ import { resolve } from 'node:path';
 const databaseUrl = process.env.CONSOLE_E2E_DATABASE_URL;
 const apiPort = process.env.CONSOLE_E2E_API_PORT;
 const consolePort = process.env.CONSOLE_E2E_PORT;
+const posPort = process.env.CONSOLE_E2E_POS_PORT;
 
 if (!databaseUrl || !apiPort || !consolePort) {
   throw new Error(
@@ -123,6 +124,11 @@ export default defineConfig({
         // The box polls every five seconds and logs each one; at `info` the
         // run's output is that poll and nothing else.
         LOG_LEVEL: 'warn',
+        ...(posPort ? {
+          HANDOFF_SIGNING_KEY: process.env.CONSOLE_E2E_HANDOFF_KEY!,
+          HANDOFF_APP_ORIGINS: `console=http://127.0.0.1:${consolePort},pos=http://127.0.0.1:${posPort}`,
+          ALLOWED_ORIGINS: `http://127.0.0.1:${consolePort},http://127.0.0.1:${posPort}`,
+        } : {}),
       },
     },
     {
@@ -140,5 +146,17 @@ export default defineConfig({
       stderr: 'pipe',
       env: { CONSOLE_PORT: consolePort, API_PORT: apiPort },
     },
+    ...(posPort ? [{
+      command: built
+        ? 'pnpm --filter @oto/pos exec vite preview --config vite.config.ts'
+        : 'pnpm --filter @oto/pos exec vite --config vite.config.ts',
+      cwd: repoRoot,
+      url: `http://127.0.0.1:${posPort}/`,
+      reuseExistingServer: false,
+      timeout: 120_000,
+      stdout: 'ignore' as const,
+      stderr: 'pipe' as const,
+      env: { POS_PORT: posPort, API_PORT: apiPort },
+    }] : []),
   ],
 });

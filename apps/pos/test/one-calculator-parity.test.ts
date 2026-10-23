@@ -112,7 +112,7 @@ const {
 } = await import('@/lib/cartWire');
 const { computeTaxBreakdown } = await import('@oto/shared');
 const { branchTradingDate, setBranchRateMode } = await import('@/lib/pricingMode');
-const reporting = await import('@/lib/reporting');
+const reporting = await import('./support/reporting');
 
 type Mode = 'weekday' | 'weekend';
 const setMode = (mode: Mode) =>

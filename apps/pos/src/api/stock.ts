@@ -1,5 +1,4 @@
-import {createStockAdminApi} from '@oto/admin-screens/lifted/api/stock';
-import {adminScreenApi} from './admin-screen-api';
+import type { ApiResponse } from '@oto/api-types';
 // S2-14b round 1 — what the platform says each shelf holds, for the selling
 // screens (plan docs/progress/plans/stock/PLAN.md §2.2).
 //
@@ -18,17 +17,10 @@ import {adminScreenApi} from './admin-screen-api';
 // till closes.
 
 import { useEffect, useSyncExternalStore } from 'react';
-import type {PurchaseOrderView, SellableStock, SellableStockProduct, StockAttentionView, StockCostOfGoods, StockItemBody, StockLevels, StockLocationView, StockPlaceOpening, StockReports} from '@oto/shared';
+import type { PurchaseOrderView, SellableStock, SellableStockProduct, StockAttentionView, StockLevels, StockLocationView, StockPlaceOpening, StockReports } from '@oto/shared';
 import { getInventoryItem, getMerchItems } from '@/store/catalogStore';
-import {
-  INVENTORY_DEFAULT_VARIANT_ID,
-  type InventoryItem,
-  type InventoryVariant,
-  type MerchItem,
-  type PurchaseOrder,
-  type StockLocation,
-} from '@/types';
-import {api, ApiError, isMissingRoute} from './client';
+import { INVENTORY_DEFAULT_VARIANT_ID, type InventoryItem, type InventoryVariant, type MerchItem, type PurchaseOrder, type StockLocation } from '@/types';
+import { api, ApiError, isMissingRoute, idemKey } from './client';
 
 let branchId: string | null = null;
 let byProduct = new Map<string, SellableStockProduct>();
@@ -383,50 +375,41 @@ async function writeThenRead<T>(branchId: string, write: () => Promise<T>): Prom
 }
 
 
-const stockAdmin = createStockAdminApi(adminScreenApi,{writeThenRead});
-export const stockApi = stockAdmin.stockApi;
+const stockBase = (branchId: string) => `/branches/${branchId}/stock`;
+const once = () => ({ idempotencyKey: idemKey() });
+export const stockApi = {
+transfer: (branchId: string, body: { fromLocationId: string; toLocationId: string; lines: Array<{ stockItemId: string; quantity: number }> }) =>
+    writeThenRead(branchId, () => api.post<ApiResponse<'/branches/{branchId}/stock/transfers', 'post'>>(`${stockBase(branchId)}/transfers`, body, once())),
+receive: (branchId: string, body: { stockItemId: string; locationId: string; quantity: number; reason: string }) =>
+    writeThenRead(branchId, () => api.post<ApiResponse<'/branches/{branchId}/stock/receipts', 'post'>>(`${stockBase(branchId)}/receipts`, body, once())),
+receiveOrderLine: (branchId: string, orderId: string, lineId: string, body: { quantity: number; locationId: string }) =>
+    writeThenRead(branchId, () =>
+      api.post<ApiResponse<'/branches/{branchId}/stock/purchase-orders/{orderId}/lines/{lineId}/receive', 'post'>>(
+        `${stockBase(branchId)}/purchase-orders/${orderId}/lines/${lineId}/receive`,
+        body,
+        once(),
+      ),
+    ),
+addToOrders: (branchId: string, lines: Array<{ stockItemId: string; quantity: number }>) =>
+    writeThenRead(branchId, () =>
+      api.post<ApiResponse<'/branches/{branchId}/stock/purchase-orders/lines', 'post'>>(`${stockBase(branchId)}/purchase-orders/lines`, { lines }, once()),
+    ),
+setOrderLineQuantity: (branchId: string, orderId: string, lineId: string, quantity: number) =>
+    writeThenRead(branchId, () =>
+      api.patch(`${stockBase(branchId)}/purchase-orders/${orderId}/lines/${lineId}`, { quantity }, once()),
+    ),
+removeOrderLine: (branchId: string, orderId: string, lineId: string) =>
+    writeThenRead(branchId, () =>
+      api.delete(`${stockBase(branchId)}/purchase-orders/${orderId}/lines/${lineId}`, undefined, once()),
+    ),
+markOrdered: (branchId: string, orderId: string, body: { expectedArrivalDate?: string; notes?: string }) =>
+    writeThenRead(branchId, () => api.post(`${stockBase(branchId)}/purchase-orders/${orderId}/ordered`, body, once())),
+commitStockTake: (branchId: string, lines: Array<{ stockItemId: string; locationId: string; countedQuantity: number }>) =>
+    writeThenRead(branchId, () => api.post<ApiResponse<'/branches/{branchId}/stock/stock-takes', 'post'>>(`${stockBase(branchId)}/stock-takes`, { lines }, once())),
+resolveAttention: (branchId: string, attentionId: string) =>
+    writeThenRead(branchId, () => api.post(`${stockBase(branchId)}/attention/${attentionId}/resolve`, undefined, once())),
+};
 
-
-/**
- * The admin form's item as the platform's body. A size keeps its stock item id
- * when it already exists on the platform. Only a new item sends starting stock,
- * which the platform records as an audited movement rather than a level overwrite.
- */
-export function inventoryItemToStockBody(
-  item: InventoryItem,
-  opts: { existingSizeIds: ReadonlySet<string>; productSized: boolean; newItem?: boolean },
-): StockItemBody {
-  const rs = item.reorderSettings;
-  return {
-    name: item.name,
-    sku: item.sku ?? null,
-    category: item.category ?? null,
-    active: item.active !== false,
-    productId: item.linkedId ? item.linkedId : null,
-    unitCostSatang: item.unitCostTHB != null ? Math.round(item.unitCostTHB * 100) : null,
-    reorder: rs
-      ? {
-          reorderPoint: rs.reorderPoint,
-          reorderQuantity: rs.reorderQty,
-          leadTimeDays: rs.leadTimeDays,
-          supplierName: rs.supplierName,
-          supplierContact: rs.supplierContact ?? null,
-        }
-      : null,
-    units: (item.units ?? []).map((u) => ({ label: u.label, eaches: u.eaches })),
-    photoUrl: item.photoUrl ?? null,
-    showPhotoInPos: item.showPhotoInPos ?? false,
-    sizes: item.variants.map((v) => ({
-      ...(opts.existingSizeIds.has(v.id) ? { stockItemId: v.id } : {}),
-      variantId: opts.productSized && v.productVariantRef ? v.productVariantRef : null,
-      label: v.label,
-      ...(opts.newItem ? { startingStock: v.stock } : {}),
-      sku: v.sku ?? null,
-      lowStockThreshold: v.lowStockThreshold ?? null,
-      parByLocation: v.parByLocation ?? {},
-    })),
-  };
-}
 
 // =====================================================================================
 // S2-14b round 4 — THE REPORTS, FROM THE LEDGER (plan §2.5).
@@ -444,10 +427,12 @@ export function inventoryItemToStockBody(
  * count's review screen asks before the commit, so a place's first count is
  * described as what the platform records it as — its opening, flagging nothing.
  */
-export async function fetchPlaceOpenings(branchId: string): Promise<StockPlaceOpening[]> { return stockAdmin.fetchPlaceOpenings(branchId); }
+export async function fetchPlaceOpenings(branchId: string): Promise<StockPlaceOpening[]> {
+  return (await api.get<ApiResponse<'/branches/{branchId}/stock/openings', 'get'>>(`${stockBase(branchId)}/openings`)).places;
+}
 
 /** The five stock reports over inclusive business dates. */
-export function fetchStockReports(branchId: string, from: string, to: string): Promise<StockReports> { return stockAdmin.fetchStockReports(branchId,from,to); }
-
-/** Cost of goods per product over inclusive business dates, at the cost frozen on each sale line. */
-export function fetchCostOfGoods(branchId: string, from: string, to: string): Promise<StockCostOfGoods> { return stockAdmin.fetchCostOfGoods(branchId,from,to); }
+export function fetchStockReports(branchId: string, from: string, to: string): Promise<StockReports> {
+  const q = new URLSearchParams({ from, to });
+  return api.get<ApiResponse<'/branches/{branchId}/stock/reports', 'get'>>(`${stockBase(branchId)}/reports?${q.toString()}`);
+}

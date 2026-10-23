@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { apiDiscountToDiscount, type ApiDiscount } from '@/api/menu';
-import { defaultReportFilters, promoUsageSummaryOf } from '@/lib/reporting';
+import { defaultReportFilters, promoUsageSummaryOf } from './support/reporting';
 import type { Discount } from '@/types';
 
 /**

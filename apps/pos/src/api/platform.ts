@@ -1,18 +1,9 @@
-import {createPlatformAdminApi} from '@oto/admin-screens/lifted/api/platform';
-import {adminScreenApi} from './admin-screen-api';
-const platformAdmin = createPlatformAdminApi(adminScreenApi);
 import type { ApiBody, ApiResponse } from '@oto/api-types';
-import type {
-  BookingEventPass,
-  BookingEventPassInput,
-  BookingSupervisionInput,
-  PublicEventPassesAnswer,
-  PublicSupervisionConfig,
-} from '@oto/shared';
+import type { BookingEventPass, BookingEventPassInput, BookingSupervisionInput, PublicEventPassesAnswer, PublicSupervisionConfig } from '@oto/shared';
 // Typed calls to the Sprint 1 API surface, with mapping between the API's
 // satang integers and the prototype UI's whole-baht numbers done in mappers.ts.
 import { newId as newRecordId } from '@oto/shared';
-import { PERMISSIONS, type Permission } from '@oto/shared/permissions';
+
 import type { UiPreferences } from '@oto/shared/ui-preferences';
 import type { AddOn, StationCapability, TaxableCategory, TaxConfig } from '@/types';
 import { api, idemKey } from './client';
@@ -194,10 +185,38 @@ function withCachedTierEntitlement(m: ApiMember): ApiMember {
   };
 }
 
+const cloudMembersApi = {
+lookup: (phone: string) =>
+    api.get<{ member: ApiMember | null }>(`/members/lookup?phone=${encodeURIComponent(phone)}`),
+get: (id: string) => api.get<{ member: ApiMember }>(`/members/${id}`),
+create: (body: { phone: string; nickname: string; preferredChannel?: 'whatsapp' | 'telegram' | 'line' }, id: string = newRecordId()) => {
+    return api.post<{ member: ApiMember }>('/members', { id, ...body }, { idempotencyKey: idemKey() });
+  },
+update: (id: string, patch: Record<string, unknown>) =>
+    api.patch<{ member: ApiMember }>(`/members/${id}`, patch),
+addChild: (memberId: string, body: Record<string, unknown>, id: string = newRecordId()) => {
+    return api.post<{ child: ApiChild }>(
+          `/members/${memberId}/children`,
+          { id, ...body },
+          { idempotencyKey: idemKey() },
+        );
+  },
+updateChild: (childId: string, patch: Record<string, unknown>, idempotencyKey?: string, signal?: AbortSignal) =>
+    api.patch<{ child: ApiChild }>(`/members/children/${childId}`, patch, { idempotencyKey, signal }),
+verifyTier: (memberId: string, body: { toTier: string; evidenceType: string; evidenceExpiresAt?: string; note?: string }) =>
+    api.post<{ member: ApiMember }>(`/members/${memberId}/tier-verification`, body, {
+          idempotencyKey: idemKey(),
+        }),
+revokeTierVerification: (memberId: string, body: { reason: string }) =>
+    api.delete<{ member: ApiMember }>(`/members/${memberId}/tier-verification`, body, {
+          idempotencyKey: idemKey(),
+        }),
+};
+
 export const membersApi = {
-  lookup: (phone: string) =>
+lookup: (phone: string) =>
     viaLane(
-      () => platformAdmin.membersApi.lookup(phone),
+      () => cloudMembersApi.lookup(phone),
       async (stationId) => {
         const answer = (await bridgeApi.lookup(stationId, phone)) as unknown as {
           member: ApiMember | null;
@@ -205,53 +224,36 @@ export const membersApi = {
         return { member: answer.member ? withCachedTierEntitlement(answer.member) : null };
       },
     ),
-  list: (q?: string) =>
-    platformAdmin.membersApi.list(q),
-  archive: (id: string) => platformAdmin.membersApi.archive(id),
-  get: (id: string) => platformAdmin.membersApi.get(id),
-  /**
-   * The till mints the member's id (S2-01b). A retry through a dropped
-   * connection then carries the same id, and the API answers with the member
-   * that already exists instead of creating a second one — belt to the
-   * Idempotency-Key's braces, and the one that survives a client restart.
-   */
-  create: (body: { phone: string; nickname: string; preferredChannel?: 'whatsapp' | 'telegram' | 'line' }) => {
+get: (id: string) => cloudMembersApi.get(id),
+create: (body: { phone: string; nickname: string; preferredChannel?: 'whatsapp' | 'telegram' | 'line' }) => {
     const id = newRecordId();
     return viaLane(
-      () => platformAdmin.membersApi.create(body, id),
+      () => cloudMembersApi.create(body, id),
       (stationId) => onBox<{ member: ApiMember }>(stationId, 'member.create', { memberId: id, ...body }),
     );
   },
-  update: (id: string, patch: Record<string, unknown>) =>
+update: (id: string, patch: Record<string, unknown>) =>
     viaLane(
-      () => platformAdmin.membersApi.update(id, patch),
+      () => cloudMembersApi.update(id, patch),
       (stationId) => onBox<{ member: ApiMember }>(stationId, 'member.update', { memberId: id, ...patch }),
     ),
-  /**
-   * The till mints the child's id too (SCRUM-270, OD-12), for the reason given
-   * on `create`: sending the same id again answers with the child that exists.
-   */
-  addChild: (memberId: string, body: Record<string, unknown>) => {
+addChild: (memberId: string, body: Record<string, unknown>) => {
     const id = newRecordId();
     return viaLane(
       () =>
-        platformAdmin.membersApi.addChild(memberId, body, id),
+        cloudMembersApi.addChild(memberId, body, id),
       (stationId) => onBox<{ child: ApiChild }>(stationId, 'child.create', { childId: id, memberId, ...body }),
     );
   },
-  updateChild: (childId: string, patch: Record<string, unknown>, idempotencyKey?: string, signal?: AbortSignal) =>
+updateChild: (childId: string, patch: Record<string, unknown>, idempotencyKey?: string, signal?: AbortSignal) =>
     viaLane(
-      () => platformAdmin.membersApi.updateChild(childId, patch, idempotencyKey, signal),
+      () => cloudMembersApi.updateChild(childId, patch, idempotencyKey, signal),
       (stationId) => onBox<{ child: ApiChild }>(stationId, 'child.update', { childId, ...patch }),
     ),
-  /**
-   * A tier checked on a document (OD-11): on the box lane it becomes a
-   * `member.tier_changed` fact under the same permission as online.
-   */
-  verifyTier: (memberId: string, body: { toTier: string; evidenceType: string; evidenceExpiresAt?: string; note?: string }) =>
+verifyTier: (memberId: string, body: { toTier: string; evidenceType: string; evidenceExpiresAt?: string; note?: string }) =>
     viaLane(
       () =>
-        platformAdmin.membersApi.verifyTier(memberId, body),
+        cloudMembersApi.verifyTier(memberId, body),
       (stationId) =>
         onBox<{ member: ApiMember }>(stationId, 'member.tier_change', {
           direction: 'upgrade',
@@ -260,19 +262,10 @@ export const membersApi = {
           ...body,
         }),
     ),
-  /**
-   * End a verified tier (SCRUM-241): the member goes back to the operator's
-   * baseline rate and the typed reason is filed with the revocation.
-   *
-   * Nothing is erased — the grant row and this one both stay, which is what
-   * makes the record readable as "who gave this rate and who took it away".
-   * Needs `pos:member:tier_downgrade`, which reception does not hold; a till
-   * session gets a 403 with that message and the screens ask a manager.
-   */
-  revokeTierVerification: (memberId: string, body: { reason: string }) =>
+revokeTierVerification: (memberId: string, body: { reason: string }) =>
     viaLane(
       () =>
-        platformAdmin.membersApi.revokeTierVerification(memberId, body),
+        cloudMembersApi.revokeTierVerification(memberId, body),
       (stationId) =>
         onBox<{ member: ApiMember }>(stationId, 'member.tier_change', {
           direction: 'downgrade',
@@ -281,8 +274,6 @@ export const membersApi = {
           reason: body.reason,
         }),
     ),
-  tierVerifications: () =>
-    platformAdmin.membersApi.tierVerifications(),
 };
 
 export const visitsApi = {
@@ -409,7 +400,9 @@ export interface ApiCloneResult {
   plan: Record<ApiCloneEntity, ApiCloneEntityPlan>;
   created: number;
 }
-export const branchesApi = platformAdmin.branchesApi;
+export const branchesApi = {
+list: () => api.get<ApiResponse<'/branches/', 'get'>>('/branches'),
+};
 
 
 export interface ApiTicketPackage {
@@ -430,7 +423,21 @@ export interface ApiTicketPackage {
   translations: Record<string, { name: string; description?: string }> | null;
   active: boolean;
 }
-export const catalogApi = platformAdmin.catalogApi;
+export const catalogApi = {
+tiers: () =>
+    api.get<ApiResponse<'/tiers', 'get'>>('/tiers'),
+packages: (branchId: string) =>
+    api.get<ApiResponse<'/branches/{branchId}/ticket-packages', 'get'>>(`/branches/${branchId}/ticket-packages`),
+pricingMode: (branchId: string, date?: string) =>
+    api.get<{ date: string; mode: 'weekday' | 'weekend'; reason: string; overrideName?: string }>(
+      `/branches/${branchId}/pricing-mode${date ? `?date=${date}` : ''}`,
+    ),
+taxConfig: (branchId: string) => api.get<ApiResponse<'/branches/{branchId}/tax-config', 'get'>>(`/branches/${branchId}/tax-config`),
+paymentMethods: () => api.get<ApiResponse<'/payment-methods', 'get'>>('/payment-methods'),
+
+holidays: (branchId: string) =>
+    api.get<ApiResponse<'/branches/{branchId}/holidays', 'get'>>(`/branches/${branchId}/holidays`),
+};
 
 
 export interface ApiPaymentMethod {
@@ -616,7 +623,7 @@ export function paymentPageHref(redirectUrl: string): string {
 
 // --- admin: accounts / roles / operators ------------------------------------
 export const adminApi = {
-  accounts: (q?: string) =>
+accounts: (q?: string) =>
     api.get<{
       accounts: Array<{
         id: string;
@@ -626,108 +633,6 @@ export const adminApi = {
         employee: { id: string; name: string } | null;
       }>;
     }>(`/accounts${q ? `?q=${encodeURIComponent(q)}` : ''}`),
-  createAccount: (body: {
-    phone: string;
-    employeeName?: string;
-    roles: Array<{ roleName: string; scopeType: string; scopeId: string | null }>;
-  }) =>
-    /**
-     * `codeSent` is false when the account was created but the text did not
-     * go out — the account exists and the code can be re-sent (S2-01c).
-     *
-     * `warning` is an OBJECT, not a string. It was typed `string` here, which
-     * is what let `res.warning ?? '…'` compile in two panels: the fallback
-     * never ran, React was handed an object as a child, and creating a staff
-     * account white-screened the whole admin console. The account had been
-     * created, so the person retried and was told the phone was already
-     * taken. It only fired when the text failed, which on staging is every
-     * time. The shape is `CodeDelivery` in `apps/api/src/services/auth.ts`;
-     * keep the two in step.
-     */
-    api.post<{
-      id: string;
-      status: string;
-      codeSent: boolean;
-      warning?: { code: string; message: string };
-    }>('/accounts', body, { idempotencyKey: idemKey() }),
-  updateAccount: (id: string, patch: { status?: 'active' | 'inactive'; phone?: string }) =>
-    api.patch<{ ok: true }>(`/accounts/${id}`, patch),
-  tempPassword: (id: string) => api.post<{ temporaryPassword: string }>(`/accounts/${id}/temp-password`),
-  accountPermissions: (id: string) =>
-    api.get<{
-      assignments: Array<{ id: string; roleName: string; scopeType: string; scopeId: string | null }>;
-      effective: Array<{ permission: string; scopeType: string; scopeId: string | null; roleName: string }>;
-    }>(`/accounts/${id}/permissions`),
-  assignRole: (id: string, body: { roleName: string; scopeType: string; scopeId: string | null }) =>
-    api.post<{ id: string }>(`/accounts/${id}/role-assignments`, body, { idempotencyKey: idemKey() }),
-  removeAssignment: (accountId: string, assignmentId: string) =>
-    api.delete<{ ok: true }>(`/accounts/${accountId}/role-assignments/${assignmentId}`),
-  /** S2-01a — sessions an account holds, for the Login Users panel. */
-  accountSessions: (id: string) =>
-    api.get<{
-      sessions: Array<{
-        id: string;
-        branchId: string | null;
-        stationId: string | null;
-        lockedAt: string | null;
-        lastSeenAt: string;
-        expiresAt: string;
-        createdAt: string;
-      }>;
-    }>(`/accounts/${id}/sessions`),
-  /** S2-01a — "Sign out everywhere": end every session this account holds. */
-  revokeSessions: (id: string) =>
-    api.post<{ sessionsEnded: number }>(`/accounts/${id}/sessions/revoke`),
-  /**
-   * SCRUM-512 — the shift tokens minted for one account, newest first, as far
-   * as this session's `admin:account:read` reaches. A shift token is what
-   * unlocks a till when the box decides offline, so a lost iPad's is ended
-   * here, one at a time, with `endStaffToken`.
-   */
-  accountStaffTokens: (id: string) =>
-    api.get<{
-      tokens: Array<{
-        jti: string;
-        accountId: string;
-        stationId: string;
-        boxId: string;
-        issuedAt: string;
-        expiresAt: string;
-        revokedAt: string | null;
-        revokedReason: string | null;
-      }>;
-    }>(`/accounts/${id}/staff-tokens`),
-  /**
-   * End one shift token. Asks `admin:account:update` at the branch it was
-   * minted at; `revoked: 0` means it had already ended or expired. It joins
-   * the deny-list every box pulls, so an offline box honours it from its next
-   * pull.
-   */
-  endStaffToken: (jti: string) =>
-    api.delete<{ revoked: number }>(`/staff-tokens/${encodeURIComponent(jti)}`),
-  /** Whether this deployment mints shift tokens at all, and on what terms. Never the key. */
-  staffTokenSettings: () =>
-    api.get<{
-      available: boolean;
-      kid: string | null;
-      ttlSeconds: number | null;
-      offlineSignIn: boolean;
-    }>('/staff-tokens/settings'),
-  /** S2-01a — refusals recorded by the API, newest first. */
-  recentDenials: (limit = 10) =>
-    api.get<{
-      entries: Array<{
-        id: string;
-        actorAccountId: string | null;
-        requestId: string | null;
-        after: { code: string; message: string; method: string; url: string } | null;
-        createdAt: string;
-      }>;
-    }>(`/audit?action=access.denied&limit=${limit}`),
-  operators: platformAdmin.adminApi.operators,
-  createOperator: platformAdmin.adminApi.createOperator,
-  archiveOperator: platformAdmin.adminApi.archiveOperator,
-  assignOperatorAdmin: platformAdmin.adminApi.assignOperatorAdmin,
 };
 
 // --- stations, boxes and devices (S2-04) ------------------------------------
@@ -941,20 +846,14 @@ export const scanApi = {
     }>(`/stations/${encodeURIComponent(stationId)}/scan`, { code, source }),
 };
 
-/**
- * Printing (S2-06).
- *
- * The till and the admin console both read templates, so this sits beside the
- * catalogue rather than under `adminApi`. Editing one is an admin act and the
- * API says so; reading one is not.
- */
-export type ApiPrintTemplate = import('@oto/admin-screens/lifted/api/platform').ApiPrintTemplate;
 
-export type ApiPrintJob = import('@oto/admin-screens/lifted/api/platform').ApiPrintJob;
-
-export type ApiStationPrinter = import('@oto/admin-screens/lifted/api/platform').ApiStationPrinter;
-export const printApi = platformAdmin.printApi;
-export const templatesApi = platformAdmin.templatesApi;
+export type ApiStationPrinter = ApiResponse<'/stations/{id}/printers', 'get'>['printers'][number];
+export const printApi = {
+stationPrinters: (stationId: string) =>
+    api.get<ApiResponse<'/stations/{id}/printers', 'get'>>(
+      `/stations/${encodeURIComponent(stationId)}/printers`,
+    ),
+};
 
 
 export const stationsApi = {
@@ -1031,148 +930,7 @@ export const stationsApi = {
     ),
 };
 
-// --- admin: app identities (S2-17a) -----------------------------------------
-/** `app:<key>:access` — the permission that puts an app's tile on the launcher. */
-export type AppAccessPermission = Extract<Permission, `app:${string}:access`>;
-
-/** The slug in that permission, which is also the name the routes below take. */
-export type AppKey = AppAccessPermission extends `app:${infer K}:access` ? K : never;
-
-const isAppAccess = (p: Permission): p is AppAccessPermission =>
-  p.startsWith('app:') && p.endsWith(':access');
-
-/**
- * The apps a tile can be granted for, read out of the permission list itself
- * rather than written down a second time: an app joins the suite by gaining an
- * `app:<key>:access` string in packages/shared, and this list follows it there.
- */
-export const APP_KEYS: AppKey[] = PERMISSIONS.filter(isAppAccess).map(
-  // The template-literal type above guarantees the shape, but TypeScript cannot
-  // narrow the result of a slice, so the key is asserted rather than parsed.
-  (p) => p.slice('app:'.length, -':access'.length) as AppKey,
-);
-
-export const appAccessPermission = (app: AppKey): AppAccessPermission => `app:${app}:access`;
-
-/** What an app knows this account as. One per app, at most. */
-export interface AppIdentity {
-  id: string;
-  app: AppKey;
-  /** The id inside that app — `otoapp.users.id` for the OTO App. */
-  externalUserId: string;
-  createdAt: string;
-  createdBy: string | null;
-  /**
-   * The API's own answer to "does the tile actually open". The panel works the
-   * same fact out of the role list instead, because it has to name the role
-   * that grants it and one derivation is better than two.
-   */
-  hasAccess: boolean;
-  /**
-   * OTO App only (SCRUM-469): where the access grant holds — `null` for every
-   * branch, else the platform branch ids — and where the app seats them. Absent
-   * on an older api.
-   */
-  branches?: {
-    accessBranches: string[] | null;
-    appBranches: {
-      allBranches: boolean;
-      branches: Array<{ id: string; name: string; platformBranchId: string | null }>;
-    } | null;
-  };
-}
-
-/**
- * The OTO App's own role vocabulary, as that app spells it
- * (`userRoles` in its `shared/schema.ts`). Not platform roles and not a
- * translation of them: they answer different questions, so whoever provisions
- * somebody picks from this list.
- */
-export const OTO_APP_ROLES = [
-  { value: 'global_admin', label: 'Global admin' },
-  { value: 'operator_admin', label: 'Operator admin' },
-  { value: 'admin', label: 'Admin' },
-  { value: 'manager', label: 'Manager' },
-  { value: 'staff', label: 'Staff' },
-] as const;
-export type OtoAppRole = (typeof OTO_APP_ROLES)[number]['value'];
-
-export const appIdentitiesApi = {
-  list: (accountId: string) =>
-    api.get<{ identities: AppIdentity[] }>(`/admin/apps/users/${accountId}`),
-  /**
-   * Provisioning: one call records the link and grants `app:<key>:access`,
-   * because the two halves are useless apart — a permission with no identity
-   * opens onto a refusal, an identity with no permission is a user in that app
-   * that nobody can reach.
-   *
-   * For the OTO App, which is on the same database, one of the two is sent:
-   * `externalUserId` claims a user that app already has, `otoApp` creates one.
-   * Every other app mints its own user, so its id is all there is to send.
-   */
-  link: (
-    app: AppKey,
-    body: {
-      accountId: string;
-      externalUserId?: string;
-      otoApp?: { email: string; fullName?: string; role: OtoAppRole };
-      /** OTO App only (SCRUM-469). Left out, the access covers all branches. */
-      branchIds?: string[];
-    },
-  ) =>
-    api.post<{
-      id: string;
-      app: AppKey;
-      accountId: string;
-      externalUserId: string;
-      appUserCreated?: boolean;
-    }>(`/admin/apps/${app}/users`, body, { idempotencyKey: idemKey() }),
-  /**
-   * SCRUM-469 — change which branches someone's OTO App access covers: the
-   * tile's scope and their branch access inside the app move together.
-   * `null` is all branches.
-   */
-  setOtoAppBranches: (accountId: string, branchIds: string[] | null) =>
-    api.put<ApiResponse<'/admin/apps/oto_app/users/{accountId}/branches', 'put'>>(
-      `/admin/apps/oto_app/users/${accountId}/branches`,
-      { branchIds },
-      { idempotencyKey: idemKey() },
-    ),
-  /** `accessRevoked` is false when the permission also comes from another role. */
-  unlink: (app: AppKey, accountId: string) =>
-    api.delete<{ ok: true; accessRevoked: boolean }>(`/admin/apps/${app}/users/${accountId}`),
-  /**
-   * S2-17b round 1 — the OTO App's users with no suite sign-in: made in the
-   * app's own Users screen, so no platform account is stamped on them and the
-   * launcher cannot open the app as them. Each is linked with `link` above,
-   * `externalUserId` set to the row's `id`.
-   */
-  unlinkedOtoAppUsers: () => api.get<UnlinkedOtoAppUsers>('/admin/apps/oto_app/unlinked-users'),
+export const opsApi = {
+demoResetStatus: () =>
+    api.get<{ available: boolean; confirmationPhrase: string; playground?: boolean }>('/ops/demo-reset'),
 };
-
-/** One OTO App user nobody can reach from the launcher yet. */
-export interface UnlinkedOtoAppUser {
-  /** `otoapp.users.id` — what Link claims. */
-  id: string;
-  fullName: string;
-  email: string;
-  phoneE164: string | null;
-  /**
-   * The app's word, as stored: usually an `OtoAppRole` or `advisor`, but plain
-   * text in the app's database, so any other word is shown as it is.
-   */
-  role: string;
-  isActive: boolean;
-  createdAt: string;
-  /** Access to every branch of their park group. */
-  allBranches: boolean;
-  branches: Array<{ id: string; name: string; platformBranchId: string | null }>;
-}
-
-export interface UnlinkedOtoAppUsers {
-  installed: boolean;
-  /** False until one of this operator's branches is joined to the app. */
-  anchored: boolean;
-  users: UnlinkedOtoAppUser[];
-}
-export const opsApi = platformAdmin.opsApi;

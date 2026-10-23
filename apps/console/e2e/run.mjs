@@ -29,6 +29,7 @@
  * nothing to drop.
  */
 import { spawn } from 'node:child_process';
+import { randomBytes } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { createServer } from 'node:net';
 import { resolve } from 'node:path';
@@ -138,9 +139,10 @@ try {
       'building the Console (CONSOLE_E2E_BUILT=1): the run serves dist/public through vite preview',
     );
     await run('pnpm', ['--filter', '@oto/console', 'build']);
+    await run('pnpm', ['--filter', '@oto/pos', 'build']);
   }
 
-  say(`making ${databaseName} on ${serverUrl.replace(/:[^:@/]*@/, ':***@')}`);
+  say(`making ${databaseName} on the isolated test server`);
   await onServer(`CREATE DATABASE ${databaseName}`);
   created = true;
 
@@ -151,6 +153,8 @@ try {
 
   const apiPort = String(await freePort());
   const consolePort = String(await freePort());
+  const posPort = String(await freePort());
+  const handoffKey = 'local:' + randomBytes(32).toString('hex');
   say(`api on ${apiPort}, console on ${consolePort}`);
 
   // `pnpm … e2e -- --headed` hands the separator through as an argument of its
@@ -168,6 +172,8 @@ try {
         CONSOLE_E2E_DATABASE_URL: databaseUrl,
         CONSOLE_E2E_API_PORT: apiPort,
         CONSOLE_E2E_PORT: consolePort,
+        CONSOLE_E2E_POS_PORT: posPort,
+        CONSOLE_E2E_HANDOFF_KEY: handoffKey,
       },
     });
     playwright.on('error', fail);

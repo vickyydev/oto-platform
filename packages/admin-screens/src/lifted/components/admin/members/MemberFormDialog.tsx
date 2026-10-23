@@ -1,5 +1,6 @@
 import { useAdminScreenRuntime } from '../../../runtime/AdminScreenRuntime';
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { MemberFormPorts } from '../../../runtime/operations';
 import { type ContactChannel, type CustomerTier, type Member } from "../../../model/types";
 import { TIER_PROOF_NOTE, TIER_PROOF_TYPES } from "../../../lib/tierProof";
 import { useOperator } from "../../../runtime/AdminScreenRuntime";
@@ -197,18 +198,25 @@ function ChannelPicker({
  * entitlement (SCRUM-241) and collects the reason, which is the only record a
  * revocation has — there is no document behind it.
  */
-export function MemberFormDialog({
+export function MemberFormDialog(props: MemberFormDialogProps) {
+  const runtime = useAdminScreenRuntime();
+  const { operator, can } = useOperator();
+  return <MemberFormDialogWithPorts {...props} ports={{ operator, can, getDefaultTier: runtime.legacy.getDefaultTier,
+    verifiedTiers: runtime.domain.memberLabels.verifiedTiers, isDefaultTier: runtime.domain.membership.isDefaultTier,
+    tierLabel: runtime.domain.membership.tierLabel }} />;
+}
+export function MemberFormDialogWithPorts({
   open,
   member,
   record,
   onOpenChange,
   onSave,
-}: MemberFormDialogProps) {
-  const runtime = useAdminScreenRuntime();
-  const verifiedTiers = runtime.domain.memberLabels.verifiedTiers;
-  const getDefaultTier = runtime.legacy.getDefaultTier;
-  const isDefaultTier = runtime.domain.membership.isDefaultTier;
-  const tierLabel = runtime.domain.membership.tierLabel;
+  ports,
+}: MemberFormDialogProps & { ports: MemberFormPorts }) {
+  const { verifiedTiers, getDefaultTier, isDefaultTier, tierLabel, operator, can } = ports;
+  const mounted = useRef(false), writing = useRef(false);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  const isCurrent = () => mounted.current && (ports.isCurrent?.() ?? true);
 
 
 
@@ -233,7 +241,6 @@ const toSelection = useCallback((member: Member | null, isDefaultTier: (tier: st
 }, [emptySelection]);
 
 
-  const { operator, can } = useOperator();
   const proofTypes = TIER_PROOF_TYPES;
   /**
    * A manager gate, and deliberately not the permission that records a
@@ -322,7 +329,7 @@ const toSelection = useCallback((member: Member | null, isDefaultTier: (tier: st
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (saving) return;
+    if (saving || writing.current || !isCurrent()) return;
     const trimmedNickname = nickname.trim();
     const trimmedPhone = phone.trim();
     const nextErrors: FormErrors = {};
@@ -427,18 +434,21 @@ const toSelection = useCallback((member: Member | null, isDefaultTier: (tier: st
     };
 
     setErrors({});
+    writing.current = true;
     setSaving(true);
     onSave(data)
       .then(() => {
+        if (!isCurrent()) return;
         setSaving(false);
         onOpenChange(false);
       })
       .catch((err: unknown) => {
+        if (!isCurrent()) return;
         // The dialog stays open holding what was typed: a save that did not
         // reach the database must not look like one that did.
         setSaving(false);
         setErrors({ save: err instanceof Error ? err.message : 'Unknown error' });
-      });
+      }).finally(() => { writing.current = false; });
   };
 
   return (

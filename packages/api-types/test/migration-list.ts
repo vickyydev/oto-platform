@@ -68,13 +68,13 @@ export const HAND_TYPED: Record<string, number> = {
   'apps/pos/src/api/occupancy.ts': 1,
   'apps/pos/src/api/parties.ts': 4,
   'apps/pos/src/api/payments.ts': 5,
-  'apps/pos/src/api/platform.ts': 52,
+  'apps/pos/src/api/platform.ts': 46,
   'apps/pos/src/api/release.ts': 9,
   'apps/pos/src/api/sales.ts': 8,
   'apps/pos/src/api/settlements.ts': 2,
   'apps/pos/src/api/stock.ts': 5,
   'apps/pos/src/api/vouchers.ts': 7,
-  'apps/pos/src/api/wallet.ts': 2,
+  'apps/pos/src/api/wallet.ts': 3,
   // SCRUM-619: the same legacy callers moved behind the host API seam.
   // Described outputs migrated; routes without an output schema retain their DTO.
   'packages/admin-screens/src/lifted/api/platform.ts': 16,

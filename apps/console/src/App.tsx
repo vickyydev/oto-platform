@@ -41,6 +41,7 @@ import { StaffBenefits } from '@/pages/StaffBenefits';
 import { Reports, ReportsLanding } from '@/pages/Reports';
 import { ChannelsLanding } from '@/pages/Channels';
 import { TeamsRouting } from '@/pages/TeamsRouting';
+import { Operations } from '@/pages/Operations';
 
 const LAUNCHER_URL = import.meta.env.VITE_LAUNCHER_URL?.trim();
 
@@ -68,7 +69,7 @@ function NoConsoleAccess() {
         <p className="mt-2 text-base text-foreground/60">
           {displayName(me)} is signed in, but opening the console needs{' '}
           <code className="font-mono text-sm">app:console:access</code>. A manager grants it from the
-          Login Users panel.
+          Accounts page.
         </p>
         <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
           {LAUNCHER_URL && (
@@ -123,8 +124,8 @@ function Section({ id, children }: { id: string; children: ReactElement }) {
   const { has, me } = useSession();
   const section = findSection(id);
   if (!section) return <Redirect to={`/${DEFAULT_SECTION}`} />;
-  if (section.platformWide && !me?.isPlatformAdmin) return <PermissionRequired permission={section.permission} />;
-  if (!has(section.permission)) return <PermissionRequired permission={section.permission} />;
+  if (section.platformWide && !me?.isPlatformAdmin) return <PermissionRequired permission={section.permission ?? 'app:console:access'} />;
+  if (section.permission && !has(section.permission)) return <PermissionRequired permission={section.permission} />;
   return children;
 }
 
@@ -141,6 +142,10 @@ function NotFound() {
 }
 
 const pageElements: Record<string, ReactElement> = {
+  inventory: <Operations page="inventory" />,
+  members: <Operations page="members" />,
+  'tier-verifications': <Operations page="tier-verifications" />,
+  wallets: <Operations page="wallets" />,
   'teams-routing': <TeamsRouting />,
   'reports-sales': <Reports page="sales" />,
   'reports-profitability': <Reports page="profitability" />,

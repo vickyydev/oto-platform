@@ -12,7 +12,8 @@ export interface ConsoleSection {
   label: string;
   icon: LucideIcon;
   description: string;
-  permission: Permission;
+  /** Omitted only for the inherited Inventory offer; its API keeps stock authority. */
+  permission?: Permission;
   /** Platform-wide actions are never offered to an operator administrator. */
   platformWide?: boolean;
 }
@@ -35,6 +36,14 @@ export interface ConsoleNavGroup {
 
 /** Existing pages keep their permissions and their old addresses. */
 export const CONSOLE_SECTIONS: ConsoleSection[] = [
+  { id: 'inventory', path: '/catalogue/inventory', label: 'Inventory', icon: Ticket,
+    description: 'Stock items, variants, counts and stock locations at a park.' },
+  { id: 'members', path: '/catalogue/members', label: 'Members', icon: Users,
+    description: 'Member profiles, children and verified customer tiers.', permission: 'pos:member:update' },
+  { id: 'tier-verifications', path: '/catalogue/tier-verifications', label: 'Tier verifications', icon: Shield,
+    description: 'Recorded tier proofs, their expiry and the staff account that checked them.', permission: 'pos:member:read' },
+  { id: 'wallets', path: '/reports/wallets', label: 'Wallets', icon: Ticket,
+    description: 'Look up a band or credit voucher and read its balance, expiry and ledger.', permission: 'pos:wallet:read' },
   { id: 'teams-routing', path: '/channels/teams-routing', label: 'Teams & routing', icon: MessagesSquare,
     description: 'System teams and the rules that name the primary owner and backup.', permission: 'inbox:routing:manage' },
   { id: 'reports-sales', path: '/reports/sales', label: 'Sales', icon: BarChart3,
@@ -238,7 +247,6 @@ export const consoleNav: ConsoleNavGroup[] = [
     id: 'people', label: 'People & access', icon: Users,
     description: 'Accounts, roles, app access, employees and departments.',
     gate: { any: ['admin:account:read'] }, sections: pages('accounts', 'roles', 'app-access', 'employees', 'departments', 'access-review'),
-    currentHome: { app: 'pos', path: '/admin?panel=login-users', label: 'Open Login Users in POS Admin' },
   },
   {
     id: 'organisation', label: 'Organisation', icon: Building2,
@@ -249,8 +257,7 @@ export const consoleNav: ConsoleNavGroup[] = [
     id: 'catalogue', label: 'Catalogue & money', icon: Ticket,
     description: 'Tickets, menu, discounts, tenders, tax, vouchers and event pricing.',
     gate: { any: ['catalog:package:read', 'catalog:menu:read'] },
-    sections: pages('tickets', 'tiers', 'add-ons', 'menu', 'categories', 'modifiers', 'merch', 'discounts', 'tenders', 'tax', 'voucher-types', 'voucher-campaigns', 'vouchers', 'event-pricing', 'care', 'print-templates', 'staff-benefits'),
-    currentHome: { app: 'pos', path: '/admin', label: 'Open catalogue and pricing in POS Admin' },
+    sections: pages('tickets', 'tiers', 'add-ons', 'menu', 'categories', 'modifiers', 'merch', 'inventory', 'members', 'tier-verifications', 'discounts', 'tenders', 'tax', 'voucher-types', 'voucher-campaigns', 'vouchers', 'event-pricing', 'care', 'print-templates', 'staff-benefits'),
   },
   {
     id: 'devices', label: 'Devices & places', icon: Router,
@@ -271,7 +278,7 @@ export const consoleNav: ConsoleNavGroup[] = [
   {
     id: 'reports', label: 'Reports', icon: BarChart3,
     description: 'Sales, profitability, discounts, tax, wallet credit, booth activity and online bookings.',
-    gate: { any: ['analytics:read'] }, sections: pages('reports-sales', 'reports-profitability', 'reports-discounts', 'reports-tax-vat', 'reports-wallet-promo', 'booth-report', 'bookings'),
+    gate: { any: ['analytics:read'] }, sections: pages('reports-sales', 'reports-profitability', 'reports-discounts', 'reports-tax-vat', 'reports-wallet-promo', 'wallets', 'booth-report', 'bookings'),
   },
   {
     id: 'watch', label: 'Watch', icon: Activity,
@@ -305,7 +312,7 @@ export function visibleNavigation(
   isPlatformAdmin: boolean,
 ): ConsoleNavGroup[] {
   return consoleNav.filter((area) => canSeeArea(area, has, isPlatformAdmin))
-    .map((area) => ({ ...area, sections: area.sections.filter((page) => has(page.permission) && (!page.platformWide || isPlatformAdmin)) }));
+    .map((area) => ({ ...area, sections: area.sections.filter((page) => (!page.permission || has(page.permission)) && (!page.platformWide || isPlatformAdmin)) }));
 }
 
 export const DEFAULT_SECTION = 'overview';

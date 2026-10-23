@@ -2,8 +2,9 @@ import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import type { BenefitProfile as PlatformProfile } from '@oto/shared';
-import { inForceOn, profileFromApi, profileToApi, sameProfile } from '@/api/benefits';
-import { adminNav, type AdminPanel } from '@/components/admin/adminSections';
+import { inForceOn, profileFromApi, profileToApi, sameProfile } from './support/admin-contracts';
+import { findSection } from '../../console/src/components/consoleSections';
+import { ADMIN_PANEL_TARGETS } from '@/api/admin-entry';
 import { BenefitHistoryList, type BenefitHistoryEntry } from '../../../packages/admin-screens/src/lifted/components/admin/staff-benefits/BenefitHistoryList';
 import { createBenefitSummaryHelpers } from '../../../packages/admin-screens/src/lifted/components/admin/staff-benefits/summary';
 import * as benefitHelpers from '@/lib/benefits';
@@ -150,10 +151,9 @@ describe('SCRUM-218 review — the history list', () => {
 
 describe('SCRUM-218 review — the nav entry', () => {
   it('Staff Benefits asks for admin:benefit:read, the routes’ read, and is no longer local-only', () => {
-    const panels: AdminPanel[] = adminNav.flatMap((e) => (e.kind === 'group' ? e.panels : [e.panel]));
-    const panel = panels.find((p) => p.id === 'staff-benefits')!;
-    expect(panel.label).toBe('Staff Benefits');
+    const panel = findSection('staff-benefits')!;
+    expect(panel.label).toBe('Staff benefits');
     expect(panel.permission).toBe('admin:benefit:read');
-    expect(panel.localOnly).toBeUndefined();
+    expect(panel.path).toBe(ADMIN_PANEL_TARGETS['staff-benefits']);
   });
 });

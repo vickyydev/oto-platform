@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useSearch } from 'wouter';
 import type { Permission } from '@oto/shared/permissions';
 import { AdminNotifications } from '@oto/admin-screens';
 import { DropOffPricingPanelWithPorts, pricingFromConfig } from '@oto/admin-screens/lifted/admin/dropoff-pricing/DropOffPricingPanel';
@@ -19,11 +20,15 @@ import { EmptyNote } from '@/components/redesign/StatTile';
 type Page = 'care' | 'print-templates';
 type Park = { id: string; name: string; code: string };
 type Snapshot = { version: number; api: ReturnType<typeof createConsoleCare>; config: ApiSupervisionConfig | null; templates: PrintTemplate[] };
+const templateKinds = new Set(['receipt', 'kids_wristband', 'adult_wristband', 'kitchen_ticket', 'bar_ticket', 'credit_voucher']);
 const messageOf = (failure: unknown) => failure instanceof Error ? failure.message : 'These settings could not be read.';
 
 /** The approved native forms receive one current account and park snapshot. */
 export function Care({ page }: { page: Page }) {
   const { me, permissions, has } = useSession();
+  const search = useSearch(), [, navigate] = useLocation();
+  const requestedTemplate = new URLSearchParams(search).get('template');
+  const askedType = requestedTemplate && templateKinds.has(requestedTemplate) ? requestedTemplate : null;
   const permission: Permission = page === 'care' ? 'pos:checkin:read' : 'pos:print:read';
   const allowed = has(permission), operatorId = me?.account.operatorId;
   const authority = permissions.map(row => [row.permission, row.scopeType, row.scopeId].join(':')).sort().join('|');
@@ -127,9 +132,9 @@ export function Care({ page }: { page: Page }) {
               return policy;
             } }} />
         </>}
-        {page === 'print-templates' && <TemplatesPanelWithPorts ports={{ templates: snapshot.templates, live: true, stationId,
+        {page === 'print-templates' && <TemplatesPanelWithPorts key={askedType ?? 'list'} ports={{ templates: snapshot.templates, live: true, stationId,
           canEdit: can('admin:branch:update', parkId), canTestPrint: !!stationId && can('admin:box:command', parkId), api: snapshot.api.printApi,
-          onSaved: () => reload(true),
+          onSaved: () => reload(true), askedType, onAddressClose: () => navigate('/catalogue/print-templates', { replace: true }),
         }} />}
       </div> : !error && !parksError ? <Loading what="Care settings" /> : null}
     <AdminNotifications />

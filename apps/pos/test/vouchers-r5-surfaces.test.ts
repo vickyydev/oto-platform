@@ -1,8 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { api } from '@/api/client';
 import { vouchersApi, type VoucherView } from '@/api/vouchers';
-import { voucherPromotionsApi } from '@/api/voucherPromotions';
-import { adminPanelsById, visibleNavFor } from '@/components/admin/adminSections';
+import { voucherPromotionsApi } from './support/admin-contracts';
+import { findSection, visibleNavigation } from '../../console/src/components/consoleSections';
+import { ADMIN_PANEL_TARGETS } from '@/api/admin-entry';
 import { voucherIsGift, voucherSourceLabel } from '@/components/till/RedeemVoucher';
 import type { HeldVoucher } from '@/lib/tillVoucher';
 
@@ -97,12 +98,10 @@ describe('the routes the till and the back office call', () => {
 
 describe('the Voucher Promotions panel is offered to the booth admin’s read', () => {
   it('asks admin:booth:read, the permission its routes declare', () => {
-    expect(adminPanelsById['voucher-promotions']?.permission).toBe('admin:booth:read');
-    const offered = (perms: string[]) =>
-      visibleNavFor((p) => perms.includes(p))
-        .flatMap((entry) => (entry.kind === 'group' ? entry.panels : [entry.panel]))
-        .map((p) => p.id);
-    expect(offered(['admin:booth:read'])).toContain('voucher-promotions');
-    expect(offered(['pos:sale:create'])).not.toContain('voucher-promotions');
+    expect(findSection('voucher-campaigns')?.permission).toBe('admin:booth:read');
+    expect(findSection('voucher-campaigns')?.path).toBe(ADMIN_PANEL_TARGETS['voucher-promotions']);
+    const offered = (perms: string[]) => visibleNavigation(p => perms.includes(p), false).flatMap(area => area.sections.map(page => page.id));
+    expect(offered(['catalog:menu:read', 'admin:booth:read'])).toContain('voucher-campaigns');
+    expect(offered(['catalog:menu:read', 'pos:sale:create'])).not.toContain('voucher-campaigns');
   });
 });

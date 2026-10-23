@@ -5,8 +5,10 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { EventAttendeeWriteAnswer } from '@oto/shared';
 import { api, ApiError } from '@/api/client';
-import { eventWriteBlocker, sellOnPlatform, EVENTS_NOT_LINKED, eventsApi } from '@/api/events';
-import { EventsPanel } from '@/components/admin/events/EventsPanel';
+import { eventWriteBlocker, sellOnPlatform, EVENTS_NOT_LINKED } from '@/api/events';
+import { EventsPanel } from '../../../packages/admin-screens/src/lifted/components/admin/events/EventsPanel';
+import { createEventsAdminApi } from '../../../packages/admin-screens/src/lifted/api/events';
+import { adminScreenApi } from '@/api/admin-screen-api';
 import { apiBranchIdForSlug } from '@/api/catalogBridge';
 import { getActiveBranch } from '@/store/catalogStore';
 import { AdminScreenProvider, type AdminScreenRuntime } from '../../../packages/admin-screens/src/lifted/runtime/AdminScreenRuntime';
@@ -353,7 +355,7 @@ describe('Q8 — the Admin Events panel shows all three walk-up prices', () => {
   it('Camp day, Event day and Party guest, each a weekday/weekend pair, and only the party guest said to be charged', () => {
     const runtime = {
       reads: { getActiveBranch },
-      api: { catalogBridge: { apiBranchIdForSlug }, events: { EVENTS_NOT_LINKED, eventsApi } },
+      api: { catalogBridge: { apiBranchIdForSlug }, events: { EVENTS_NOT_LINKED, eventsApi: createEventsAdminApi(adminScreenApi).eventsApi } },
     } as unknown as AdminScreenRuntime;
     const page = html(React.createElement(AdminScreenProvider, {
       value: runtime, children: React.createElement(EventsPanel),

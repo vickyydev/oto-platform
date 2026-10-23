@@ -1,5 +1,6 @@
 import { useAdminScreenRuntime } from '../../../runtime/AdminScreenRuntime';
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { TierVerificationsPorts } from '../../../runtime/operations';
 import { ArrowRight, BadgeCheck, Info, RefreshCw } from "lucide-react";
 import { type ApiTierVerificationRecord } from "../../../api/platform";
 
@@ -15,27 +16,39 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
  */
 export function TierVerificationsPanel() {
   const runtime = useAdminScreenRuntime();
-  const membersApi = runtime.api.platform.membersApi;
-  const toast = runtime.toast;
-  const tierLabel = runtime.domain.membership.tierLabel;
+  return <TierVerificationsPanelWithPorts key={runtime.session.operator?.id} ports={{
+    membersApi: runtime.api.platform.membersApi, toast: runtime.toast, tierLabel: runtime.domain.membership.tierLabel,
+  }} />;
+}
+export function TierVerificationsPanelWithPorts({ ports }: { ports: TierVerificationsPorts }) {
+  const { membersApi, toast, tierLabel, isCurrent } = ports;
+  const mounted = useRef(false), reads = useRef(0);
+  useEffect(() => { const readOwner = reads; mounted.current = true; return () => { mounted.current = false; readOwner.current++; }; }, []);
+  const current = useCallback(() => mounted.current && (isCurrent?.() ?? true), [isCurrent]);
 
   const [records, setRecords] = useState<ApiTierVerificationRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(() => {
+    if (!current()) return Promise.resolve();
+    const request = ++reads.current;
     setLoading(true);
+    setError(null);
     return membersApi
       .tierVerifications()
-      .then((res) => setRecords(res.verifications))
-      .catch((err: unknown) =>
+      .then((res) => { if (current() && request === reads.current) setRecords(res.verifications); })
+      .catch((err: unknown) => {
+        if (!current() || request !== reads.current) return;
+        setRecords([]); setError(err instanceof Error ? err.message : 'The verification records could not be read.');
         toast({
           title: "Couldn't load verification records",
           description: err instanceof Error ? err.message : 'Unknown error',
           variant: 'destructive',
-        }),
-      )
-      .finally(() => setLoading(false));
-  }, [membersApi, toast]);
+        });
+      })
+      .finally(() => { if (current() && request === reads.current) setLoading(false); });
+  }, [membersApi, toast, current]);
 
   useEffect(() => {
     void refresh();
@@ -50,6 +63,8 @@ export function TierVerificationsPanel() {
       minute: '2-digit',
     });
 
+  if (error) return <div role="alert" className="flex flex-col gap-3 text-sm"><p>{error}</p>
+    <Button variant="outline" onClick={() => void refresh()}>Try again</Button></div>;
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between gap-3">

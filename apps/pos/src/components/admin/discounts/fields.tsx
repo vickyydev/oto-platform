@@ -1,1 +1,0 @@
-export * from '@oto/admin-screens/lifted/admin/discounts/fields';

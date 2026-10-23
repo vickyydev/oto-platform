@@ -3,6 +3,7 @@ import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { benefitsApi } from '@/api/benefits';
+import { benefitsApi as adminBenefitsApi } from './support/admin-contracts';
 import { buildItemCartPayload, type ItemCartIdentity } from '@/api/sales';
 import { readBenefitScan, type StationScanEvent } from '@/lib/scanChannel';
 import type { FnbOrderLine, ManualDiscount } from '@/types';
@@ -125,7 +126,7 @@ describe('the calls', () => {
     stubFetch({});
     await benefitsApi.resolve('OTO-BEN:v1:abc');
     await benefitsApi.removeFromSale('0199a7b0-0000-7000-8000-0000000005a1', 'press-1');
-    await benefitsApi.applications();
+    await adminBenefitsApi.applications();
     expect(calls.map((c) => `${c.method} ${c.url}`)).toEqual([
       'POST /api/benefits/resolve',
       'DELETE /api/sales/0199a7b0-0000-7000-8000-0000000005a1/benefit',

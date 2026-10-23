@@ -1,8 +1,20 @@
-import type { LiftedAdminApi } from '@oto/admin-screens';
+interface RequestOptions { idempotencyKey?: string; headers?: Record<string, string>; signal?: AbortSignal }
+interface NativeTransport {
+  href: (path: string) => string;
+  get: <T>(path: string, options?: RequestOptions) => Promise<T>;
+  post: <T>(path: string, body?: unknown, options?: RequestOptions) => Promise<T>;
+  patch: <T>(path: string, body?: unknown, options?: RequestOptions) => Promise<T>;
+  put: <T>(path: string, body?: unknown, options?: RequestOptions) => Promise<T>;
+  delete: <T>(path: string, options?: RequestOptions) => Promise<T>;
+  deleteWithBody: <T>(path: string, body?: unknown, options?: RequestOptions) => Promise<T>;
+  getBlob: (path: string, signal?: AbortSignal) => Promise<Blob>;
+  postBlob: (path: string, body?: unknown, signal?: AbortSignal) => Promise<Blob>;
+  getFile: (path: string, signal?: AbortSignal) => Promise<{ blob: Blob; filename: string | null; contentType: string | null }>;
+}
 import { api } from './client';
 
-/** Bind the shared screen contract to the POS cookie/session transport. */
-export const adminScreenApi: LiftedAdminApi = {
+/** The POS cookie/session transport, retaining its existing explicit forwarding boundary. */
+export const adminScreenApi: NativeTransport = {
   href: (path) => `/api${path}`,
   get: (path, options) => api.get(path, options),
   post: (path, body, options) => api.post(path, body, options),

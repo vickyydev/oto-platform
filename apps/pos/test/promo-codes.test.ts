@@ -5,7 +5,7 @@ import { cartQuote } from './support/fixtures';
 import type { CartLine, Discount, FnbOrder, FnbOrderLine, ManualDiscount, MerchOrder } from '@/types';
 import { localItemQuote, promoChargeSatang, refusedPromoCodes, type CartQuote } from '@/api/sales';
 import { computeItemPromoDiscount, engineItemLines, recordedOrderPromoRows, validateItemPromoCode } from '@/lib/itemPromo';
-import { fnbOrderTaxBreakdown, promoDiscountImpact, salesByCategory, taxReceiptRows, vatSummary } from '@/lib/reporting';
+import { fnbOrderTaxBreakdown, promoDiscountImpact, salesByCategory, taxReceiptRows, vatSummary } from './support/reporting';
 import { getActiveMerchItems, recordFnbOrder, recordMerchOrder } from '@/mockApi';
 import { computeLineTotal } from '@/lib/pricing';
 import { validatePromoCode } from '@/lib/promoVoucher';

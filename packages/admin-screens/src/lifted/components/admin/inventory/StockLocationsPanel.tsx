@@ -1,5 +1,6 @@
 import { useAdminScreenRuntime } from '../../../runtime/AdminScreenRuntime';
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { StockLocationsPorts } from '../../../runtime/operations';
 import { Plus, Pencil, Star, StarOff, ToggleLeft, ToggleRight } from "lucide-react";
 import { type StockLocation, type StockLocationType } from "../../../model/types";
 
@@ -130,18 +131,29 @@ function LocationFormDialog({ open, location, isSellPoint, onClose, onSave }: Lo
  * the location from which sales decrement stock by default. Setting a new sell point
  * clears the flag from all other locations.
  */
-export function StockLocationsPanel({
+type StockLocationsProps = {
+  branchId: string | null;
+  locations: StockLocation[];
+};
+export function StockLocationsPanel(props: StockLocationsProps) {
+  const runtime = useAdminScreenRuntime();
+  return <StockLocationsPanelWithPorts {...props} ports={{ stockApi: runtime.api.stock.stockApi, stockErrorWords: runtime.api.stock.stockErrorWords }} />;
+}
+export function StockLocationsPanelWithPorts({
   branchId,
   locations: allLocations,
+  ports,
 }: {
   /** The platform branch whose places these are (S2-14b round 2). */
   branchId: string | null;
   /** Every place of the branch, retired ones included, from the platform. */
   locations: StockLocation[];
+  ports: StockLocationsPorts;
 }) {
-  const runtime = useAdminScreenRuntime();
-  const stockApi = runtime.api.stock.stockApi;
-  const stockErrorWords = runtime.api.stock.stockErrorWords;
+  const { stockApi, stockErrorWords, isCurrent } = ports;
+  const mounted = useRef(false), writing = useRef(false);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  const current = useCallback(() => mounted.current && (isCurrent?.() ?? true), [isCurrent]);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<StockLocation | null>(null);
@@ -152,14 +164,15 @@ export function StockLocationsPanel({
    * a refusal arrives in the same words whichever screen sent it.
    */
   const run = async (write: (branch: string) => Promise<unknown>): Promise<boolean> => {
-    if (!branchId) return false;
+    if (!branchId || !current() || writing.current) return false;
+    writing.current = true;
     try {
       await write(branchId);
-      return true;
+      return current();
     } catch (err) {
-      alert(stockErrorWords(err));
+      if (current()) alert(stockErrorWords(err));
       return false;
-    }
+    } finally { writing.current = false; }
   };
 
   const openAdd = () => {

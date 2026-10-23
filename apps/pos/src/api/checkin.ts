@@ -1,15 +1,5 @@
-import {createCheckinAdminApi} from '@oto/admin-screens/lifted/api/checkin';
-import {adminScreenApi} from './admin-screen-api';
-const checkinAdmin = createCheckinAdminApi(adminScreenApi);
-import {
-  BRIDGE_CHECKIN_INTENTS,
-  OFFLINE_PHOTO_POLICY,
-  newId as newRecordId,
-  satangFromBaht,
-  type DropOffPricingConfig,
-  type SupervisionPolicy,
-  type SupervisionRequirement,
-} from '@oto/shared';
+import type { ApiResponse } from '@oto/api-types';
+import { BRIDGE_CHECKIN_INTENTS, OFFLINE_PHOTO_POLICY, newId as newRecordId, satangFromBaht, type DropOffPricingConfig, type SupervisionPolicy, type SupervisionRequirement } from '@oto/shared';
 import type { CheckIn, ChildFoodProvision, ContactChannel, DropOffServiceType } from '@/types';
 import { viaLane } from '@/lib/lane';
 import { api, idemKey } from './client';
@@ -302,7 +292,7 @@ export const checkinApi = {
   config: async (branchId: string) =>
     viaLane(
       () =>
-        checkinAdmin.checkinApi.config(branchId),
+        api.get<ApiResponse<'/checkin/config', 'get'>>(`/checkin/config?branchId=${encodeURIComponent(assertPlatformBranchId(branchId))}`, undefined),
       (stationId) => onBox<ApiSupervisionConfig>(stationId, BRIDGE_CHECKIN_INTENTS.config, {}),
     ),
 
@@ -673,15 +663,12 @@ export interface PricingBody {
 const BOX_EDIT_FIELDS = ['childName', 'childAgeYears', 'service', 'mayOrderFood', 'foodRestrictions', 'allergies', 'bookedMinutes'] as const;
 
 export const boardApi = {
-  /** The park's board. `branchId` is the PLATFORM's id (`requirePlatformBranchId`). */
-  board: (branchId: string) =>
+board: (branchId: string) =>
     viaLane(
       () => api.get<ApiBoard>(`/checkin/board?branchId=${encodeURIComponent(assertPlatformBranchId(branchId))}`),
       (stationId) => onBox<ApiBoard>(stationId, BRIDGE_CHECKIN_INTENTS.board, {}),
     ),
-
-  /** The Today screen's drop-off count. */
-  today: (branchId: string) =>
+today: (branchId: string) =>
     viaLane(
       () =>
         api.get<{ inPark: number; upcoming: number }>(
@@ -696,9 +683,7 @@ export const boardApi = {
         };
       },
     ),
-
-  /** One audited edit; the answer carries how many fields changed and any ratio warning. */
-  edit: (checkinId: string, body: Record<string, unknown>) =>
+edit: (checkinId: string, body: Record<string, unknown>) =>
     viaLane(
       () =>
         api.patch<{ checkin: ApiBoardChild; changed: number; warnings: string[]; contact: ApiContact | null }>(
@@ -718,15 +703,12 @@ export const boardApi = {
         );
       },
     ),
-
-  /** The change log reads the platform's audit rows; offline it has nothing to show yet. */
-  history: (checkinId: string) =>
+history: (checkinId: string) =>
     viaLane(
       () => api.get<{ entries: ApiChangeLogEntry[] }>(`/checkin/checkins/${checkinId}/history`),
       async () => ({ entries: [] as ApiChangeLogEntry[] }),
     ),
-
-  assignNanny: (checkinId: string, nannyId: string) =>
+assignNanny: (checkinId: string, nannyId: string) =>
     viaLane(
       () =>
         api.post<{ checkin: ApiBoardChild; warnings: string[] }>(
@@ -741,9 +723,7 @@ export const boardApi = {
           nannyId,
         }),
     ),
-
-  /** Booked, already-paid children: no payment, no sale — bands on the sale they paid on. */
-  checkInBooked: (body: { entries: { checkinId: string; nannyId?: string | null }[]; consentAcknowledged?: boolean }) =>
+checkInBooked: (body: { entries: { checkinId: string; nannyId?: string | null }[]; consentAcknowledged?: boolean }) =>
     viaLane(
       () =>
         api.post<{
@@ -782,16 +762,14 @@ export const boardApi = {
         return out;
       },
     ),
-
-  contactTest: (registrationId: string) =>
+contactTest: (registrationId: string) =>
     viaLane(
       () => api.post<ApiContact>(`/checkin/registrations/${registrationId}/contact-test`, {}, { idempotencyKey: idemKey() }),
       async () => {
         throw needsInternet('Testing the guardian’s chat channel');
       },
     ),
-
-  contactStatus: (registrationId: string, status: 'confirmed' | 'failed') =>
+contactStatus: (registrationId: string, status: 'confirmed' | 'failed') =>
     viaLane(
       () =>
         api.post<ApiContact>(
@@ -803,13 +781,4 @@ export const boardApi = {
         throw needsInternet('Recording the chat channel’s answer');
       },
     ),
-
-  savePolicy: (branchId: string, body: PolicyBody) =>
-    checkinAdmin.boardApi.savePolicy(branchId, body),
-
-  saveConfirmations: (branchId: string, items: { id: string; text: string; required: boolean; order: number }[]) =>
-    checkinAdmin.boardApi.saveConfirmations(branchId, items),
-
-  savePricing: (branchId: string, body: PricingBody) =>
-    checkinAdmin.boardApi.savePricing(branchId, body),
 };

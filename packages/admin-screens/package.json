@@ -20,6 +20,7 @@
     "./lifted/benefits": "./src/lifted/runtime/benefits.ts",
     "./lifted/reports": "./src/lifted/runtime/reports.ts",
     "./lifted/wallet-report": "./src/lifted/runtime/wallet-report.ts",
+    "./lifted/operations": "./src/lifted/runtime/operations.ts",
     "./lifted/lib/*": "./src/lifted/lib/*.ts"
   },
   "scripts": {

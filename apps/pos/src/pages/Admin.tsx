@@ -1,192 +1,101 @@
-import { useState } from 'react';
-import { useLocation, useSearch } from 'wouter';
-import { Construction, ShieldAlert } from 'lucide-react';
-import { AdminLayout } from '@/components/admin/AdminLayout';
-import { AdminScreenHost } from '@/components/admin/AdminScreenHost';
-import {
-  adminPanelsById,
-  allAdminPanels,
-  DEFAULT_ADMIN_PANEL,
-  firstUsableAdminPanel,
-} from '@/components/admin/adminSections';
-import { AddOnsPanel } from '@/components/admin/addons/AddOnsPanel';
-import { TicketsPanel } from '@/components/admin/tickets/TicketsPanel';
-import { DropOffPricingPanel } from '@/components/admin/dropoff-pricing/DropOffPricingPanel';
-import { DiscountsScreen } from '@/components/admin/discounts/DiscountsScreen';
-import { DevicesPanel } from '@/components/admin/devices/DevicesPanel';
-import { MenuPanel } from '@/components/admin/menu/MenuPanel';
-import { MerchPanel } from '@/components/admin/merch/MerchPanel';
-import { TaxPanel } from '@/components/admin/tax/TaxPanel';
-import { CategoriesPanel } from '@/components/admin/categories/CategoriesPanel';
-import { ModifiersPanel } from '@/components/admin/modifiers/ModifiersPanel';
-import { TemplatesPanel } from '@/components/admin/templates/TemplatesPanel';
-import { MembersPanel } from '@/components/admin/members/MembersPanel';
-import { TierVerificationsPanel } from '@/components/admin/members/TierVerificationsPanel';
-import { SupervisionPanel } from '@/components/admin/supervision/SupervisionPanel';
-import { InventoryPanel } from '@/components/admin/inventory/InventoryPanel';
-import { BranchesPanel } from '@/components/admin/branches/BranchesPanel';
-import { StaffBenefitsPanel } from '@/components/admin/staff-benefits/StaffBenefitsPanel';
-import { EventsPanel } from '@/components/admin/events/EventsPanel';
-import { LoginUsersPanel } from '@/components/admin/access/LoginUsersPanel';
-import { OperatorsPanel } from '@/components/admin/access/OperatorsPanel';
-import { SalesReportPanel } from '@/components/admin/reports/SalesReportPanel';
-import { ProfitabilityReportPanel } from '@/components/admin/reports/ProfitabilityReportPanel';
-import { WalletPromoReportPanel } from '@/components/admin/reports/WalletPromoReportPanel';
-import { WalletLookupPanel } from '@/components/admin/wallets/WalletLookupPanel';
-import { VoucherPromotionsPanel } from '@/components/admin/vouchers/VoucherPromotionsPanel';
-import { DiscountCompReportPanel } from '@/components/admin/reports/DiscountCompReportPanel';
-import { TaxVatReportPanel } from '@/components/admin/reports/TaxVatReportPanel';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Link, useLocation, useSearch } from 'wouter';
+import { ArrowLeft, ArrowUpRight, Loader2, ShieldAlert } from 'lucide-react';
+import { adminDestination } from '@/api/admin-entry';
 import { useOperator } from '@/auth/OperatorContext';
+import { useBranch } from '@/branch/BranchContext';
+import { ChangePasswordScreen } from '@/components/auth/ChangePasswordScreen';
+import { LockScreen } from '@/components/auth/LockScreen';
+import { Button } from '@/components/ui/button';
 
+function refusalWords(failure: unknown): string {
+  const status = typeof failure === 'object' && failure !== null && 'status' in failure ? failure.status : null;
+  if (status === 401) return 'Sign in again before opening Admin.';
+  if (status === 403) return 'This account cannot open Admin. Ask an administrator for access.';
+  if (status === 423) return 'Unlock this session before opening Admin.';
+  return 'Admin could not be opened. Check the connection and try again.';
+}
+
+/** One-release bookmark entry; the server opens Admin as this same signed-in person. */
 export default function Admin() {
-  const { can } = useOperator();
+  const { operator, can, locked, sessionResolved, mustChangePassword, logout } = useOperator();
+  const { branch, switching } = useBranch();
+  const [location] = useLocation();
   const search = useSearch();
-  const [, navigate] = useLocation();
-  /**
-   * Land on something this account can use. Tickets is the console's front
-   * page and needs `catalog:package:update`, which an account here to manage
-   * staff accounts does not hold — opening on a refusal would be a poor
-   * welcome and would read as a fault. Computed once, because it answers
-   * "where does this person start", not "what may they do now".
-   */
-  const [landingId] = useState<string>(() => firstUsableAdminPanel(can));
-  /**
-   * Every panel has an address: `/admin?panel=templates` (SCRUM-470). The
-   * address IS the state — choosing a panel writes it and the active panel is
-   * read back from it — so a panel can be bookmarked, linked to from the
-   * Console (the booth page points its printer at Print Templates) and
-   * returned to with the back button. A person who arrives signed out lands
-   * where the link pointed: the sign-in wall renders in place, and the
-   * launcher hand-off strips only the fragment and keeps the query string. A
-   * name the console does not know is ignored rather than refused, and the
-   * landing panel stands.
-   */
-  const askedId = panelFromSearch(search);
-  const activeId = askedId ?? landingId;
-  const panel = adminPanelsById[activeId] ?? adminPanelsById[DEFAULT_ADMIN_PANEL];
-  const selectPanel = (id: string) => navigate(`/admin?${new URLSearchParams({ panel: id })}`);
-  /**
-   * A panel the nav did not offer, opened anyway — a deep link to one this
-   * account does not hold. It gets a refusal that names the permission rather
-   * than a form that will 403 on save: the same choice App.tsx makes for the
-   * station-setup routes, so a person can be shown why and can screenshot it.
-   */
-  const refusedPermission = panel.permission && !can(panel.permission) ? panel.permission : null;
+  const allowed = can('app:console:access');
+  const ready = sessionResolved && !!operator && !locked && !mustChangePassword && allowed && !switching && location === '/admin';
+  const values = [operator, operator?.id, can, allowed, locked, sessionResolved, mustChangePassword,
+    branch.id, branch.apiId, switching, location, search];
+  const owner = useRef({ values, version: 0 });
+  // Change ownership during render: an old reply cannot win before effect cleanup,
+  // including a park/actor/address that leaves and returns to its previous value.
+  if (values.some((value, index) => !Object.is(value, owner.current.values[index]))) {
+    owner.current = { values, version: owner.current.version + 1 };
+  }
+  const version = owner.current.version;
+  const mounted = useRef(false);
+  const lifetime = useRef(0);
+  const serial = useRef(0);
+  const pending = useRef<{ version: number; lifetime: number; serial: number } | null>(null);
+  const attempted = useRef<{ version: number; lifetime: number } | null>(null);
+  const [outcome, setOutcome] = useState<{ version: number; status: 'opening' | 'failed'; message: string | null } | null>(null);
 
-  return (
-    <AdminScreenHost>
-    <AdminLayout activeId={activeId} onSelect={selectPanel}>
-      <div className="mx-auto max-w-4xl flex flex-col gap-6">
-        <div className="flex items-center gap-3">
-          <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-foreground/5 text-foreground/80">
-            <panel.icon className="w-5 h-5" />
-          </span>
-          <div>
-            <h1 className="text-2xl font-black tracking-tight">{panel.label}</h1>
-            <p className="text-sm text-foreground/50">{panel.description}</p>
-          </div>
-        </div>
+  useEffect(() => {
+    const requestSerial = serial;
+    mounted.current = true;
+    lifetime.current++;
+    return () => { mounted.current = false; requestSerial.current++; pending.current = null; };
+  }, []);
 
-        {refusedPermission ? (
-          <PermissionRefused label={panel.label} permission={refusedPermission} />
-        ) : activeId === 'tickets' ? (
-          <TicketsPanel />
-        ) : activeId === 'addons' ? (
-          <AddOnsPanel />
-        ) : activeId === 'pricing' ? (
-          <DropOffPricingPanel />
-        ) : activeId === 'discounts' ? (
-          <DiscountsScreen />
-        ) : activeId === 'devices' ? (
-          <DevicesPanel />
-        ) : activeId === 'menu' ? (
-          <MenuPanel />
-        ) : activeId === 'merch' ? (
-          <MerchPanel />
-        ) : activeId === 'tax' ? (
-          <TaxPanel />
-        ) : activeId === 'categories' ? (
-          <CategoriesPanel />
-        ) : activeId === 'modifiers' ? (
-          <ModifiersPanel />
-        ) : activeId === 'templates' ? (
-          <TemplatesPanel />
-        ) : activeId === 'members' ? (
-          <MembersPanel />
-        ) : activeId === 'tier-verifications' ? (
-          <TierVerificationsPanel />
-        ) : activeId === 'login-users' ? (
-          <LoginUsersPanel />
-        ) : activeId === 'operators' ? (
-          <OperatorsPanel />
-        ) : activeId === 'supervision' ? (
-          <SupervisionPanel />
-        ) : activeId === 'events' ? (
-          <EventsPanel />
-        ) : activeId === 'inventory' ? (
-          <InventoryPanel />
-        ) : activeId === 'branches' ? (
-          <BranchesPanel />
-        ) : activeId === 'staff-benefits' ? (
-          <StaffBenefitsPanel />
-        ) : activeId === 'reports-sales' ? (
-          <SalesReportPanel />
-        ) : activeId === 'reports-profitability' ? (
-          <ProfitabilityReportPanel />
-        ) : activeId === 'reports-wallet' ? (
-          <WalletPromoReportPanel />
-        ) : activeId === 'wallets' ? (
-          <WalletLookupPanel />
-        ) : activeId === 'voucher-promotions' ? (
-          <VoucherPromotionsPanel />
-        ) : activeId === 'reports-discounts' ? (
-          <DiscountCompReportPanel />
-        ) : activeId === 'reports-tax' ? (
-          <TaxVatReportPanel />
-        ) : (
-          <ComingSoon label={panel.label} />
-        )}
+  const openAdmin = useCallback(() => {
+    if (!mounted.current || !ready || owner.current.version !== version ||
+      (pending.current?.version === version && pending.current.lifetime === lifetime.current)) return;
+    const attempt = { version, lifetime: lifetime.current, serial: ++serial.current };
+    pending.current = attempt;
+    attempted.current = attempt;
+    const live = () => mounted.current && owner.current.version === version &&
+      lifetime.current === attempt.lifetime && serial.current === attempt.serial;
+    setOutcome({ version, status: 'opening', message: null });
+    // Defer issuance until the committed lifetime survives StrictMode's cleanup.
+    void Promise.resolve().then(() => live() ? adminDestination(search) : null).then(destination => {
+      if (!live() || destination === null) return;
+      try { window.location.replace(destination); }
+      catch { setOutcome({ version, status: 'failed', message: 'Admin could not be opened.' }); }
+    }).catch((failure: unknown) => {
+      if (live()) setOutcome({ version, status: 'failed', message: refusalWords(failure) });
+    }).finally(() => { if (live()) pending.current = null; });
+  }, [ready, search, version]);
+
+  useEffect(() => {
+    if (ready && (attempted.current?.version !== version || attempted.current.lifetime !== lifetime.current)) openAdmin();
+  }, [openAdmin, ready, version]);
+
+  if (!sessionResolved) return <div className="flex min-h-[100dvh] items-center justify-center bg-background text-foreground/60" role="status">
+    <Loader2 className="mr-2 h-5 w-5 animate-spin" aria-hidden="true" />Checking sign-in…
+  </div>;
+  if (!operator || locked) return <LockScreen adminMode />;
+  if (mustChangePassword) return <ChangePasswordScreen />;
+
+  const current = outcome?.version === version ? outcome : null;
+  const failed = current?.status === 'failed';
+  return <main className="flex min-h-[100dvh] items-center justify-center bg-background px-5 py-10 text-foreground">
+    <section aria-label="Open Admin" className="w-full min-w-0 max-w-lg rounded-3xl border border-foreground/10 p-6 sm:p-8">
+      {allowed ? <ArrowUpRight className="mb-4 h-8 w-8 text-primary" aria-hidden="true" />
+        : <ShieldAlert className="mb-4 h-8 w-8 text-destructive" aria-hidden="true" />}
+      <h1 className="text-2xl font-black tracking-tight">{!allowed ? 'Admin is not on your access' : failed ? 'Admin could not be opened' : 'Opening Admin'}</h1>
+      <p className="mt-3 text-sm text-foreground/60">{allowed
+        ? 'Park administration is now in Admin. Your saved address opens its page with your current sign-in.'
+        : 'Ask an administrator to give this account access to Admin.'}</p>
+      {allowed && !failed && <p role="status" className="mt-5 flex items-center gap-2 text-sm">
+        <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden="true" />
+        {switching ? 'Waiting for park selection…' : 'Opening your Admin page…'}
+      </p>}
+      {failed && <><p role="alert" className="mt-5 break-words text-sm text-destructive">{current.message}</p>
+        <Button className="mt-4" onClick={openAdmin}>Try opening Admin again</Button></>}
+      <div className="mt-6 flex flex-wrap items-center gap-4">
+        <Link href="/" className="inline-flex items-center gap-2 text-sm font-medium text-foreground/70"><ArrowLeft className="h-4 w-4" aria-hidden="true" />Back to POS</Link>
+        {!allowed && <Button variant="secondary" onClick={() => logout()}>Sign in as a different user</Button>}
       </div>
-    </AdminLayout>
-    </AdminScreenHost>
-  );
-}
-
-/** The panel the address names, when the console has one by that id. */
-function panelFromSearch(search: string): string | null {
-  const asked = new URLSearchParams(search).get('panel');
-  return asked && allAdminPanels.some((p) => p.id === asked) ? asked : null;
-}
-
-function PermissionRefused({ label, permission }: { label: string; permission: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center gap-3 rounded-3xl border border-dashed border-red-500/25 bg-red-500/[0.03] px-6 py-16 text-center">
-      <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-red-500/10 text-red-300">
-        <ShieldAlert className="w-7 h-7" />
-      </span>
-      <h2 className="text-lg font-bold">You do not have access to {label}</h2>
-      <p className="max-w-sm text-sm text-foreground/50">
-        This screen needs the{' '}
-        <code className="rounded bg-foreground/10 px-1.5 py-0.5 font-mono text-xs text-foreground/80">
-          {permission}
-        </code>{' '}
-        permission, which this account does not hold. A manager can grant it in Login Users.
-      </p>
-    </div>
-  );
-}
-
-function ComingSoon({ label }: { label: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center gap-3 rounded-3xl border border-dashed border-foreground/15 bg-foreground/[0.02] px-6 py-16 text-center">
-      <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-400/10 text-amber-300">
-        <Construction className="w-7 h-7" />
-      </span>
-      <h2 className="text-lg font-bold">Coming soon</h2>
-      <p className="max-w-sm text-sm text-foreground/50">
-        The editing screen for <span className="text-foreground/80">{label}</span>{' '}
-        will be built next. The data already flows through the shared store.
-      </p>
-    </div>
-  );
+    </section>
+  </main>;
 }

@@ -1,5 +1,6 @@
 import { useAdminScreenRuntime } from '../../../runtime/AdminScreenRuntime';
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { MemberFormPorts, MembersPanelPorts } from '../../../runtime/operations';
 import { Pencil, Trash2, Plus, Info, Check, Loader2 } from "lucide-react";
 import { type Member } from "../../../model/types";
 // Sprint 1 rebuild: members come from the platform API (mockApi retired here).
@@ -10,7 +11,7 @@ import { apiMemberToMember } from "../../../api/mappers";
 import { Button } from "../../ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../../ui/alert-dialog";
-import { MemberFormDialog, type MemberFormData } from "./MemberFormDialog";
+import { MemberFormDialogWithPorts, type MemberFormData } from "./MemberFormDialog";
 
 
 
@@ -22,10 +23,18 @@ import { MemberFormDialog, type MemberFormData } from "./MemberFormDialog";
  */
 export function MembersPanel() {
   const runtime = useAdminScreenRuntime();
-  const membersApi = runtime.api.platform.membersApi;
-  const toast = runtime.toast;
-  const getDefaultTier = runtime.legacy.getDefaultTier;
-  const tierLabel = runtime.domain.membership.tierLabel;
+  return <MembersPanelWithPorts key={runtime.session.operator?.id} ports={{ membersApi: runtime.api.platform.membersApi,
+    toast: runtime.toast, getDefaultTier: runtime.legacy.getDefaultTier, tierLabel: runtime.domain.membership.tierLabel,
+    isDefaultTier: runtime.domain.membership.isDefaultTier, verifiedTiers: runtime.domain.memberLabels.verifiedTiers,
+    operator: runtime.session.operator, can: runtime.session.can }} />;
+}
+export function MembersPanelWithPorts({ ports }: { ports: MembersPanelPorts }) {
+  const { membersApi, toast, getDefaultTier, tierLabel, isCurrent } = ports;
+  const mounted = useRef(false), reads = useRef(0), details = useRef(0);
+  useEffect(() => { const readOwner = reads, detailOwner = details; mounted.current = true;
+    return () => { mounted.current = false; readOwner.current++; detailOwner.current++; }; }, []);
+  const current = useCallback(() => mounted.current && (isCurrent?.() ?? true), [isCurrent]);
+  const assertCurrent = () => { if (!current()) throw new Error('The signed-in account or park changed. Reopen Members.'); };
 
   const [members, setMembers] = useState<Member[]>([]);
   const [formOpen, setFormOpen] = useState(false);
@@ -39,24 +48,35 @@ export function MembersPanel() {
   const [editingRecord, setEditingRecord] = useState<ApiMember | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Member | null>(null);
+  const [settled, setSettled] = useState(false);
+  const [readError, setReadError] = useState<string | null>(null);
 
-  const refresh = useCallback(() =>
-    membersApi
+  const refresh = useCallback(() => {
+    if (!current()) return Promise.resolve();
+    const request = ++reads.current;
+    setReadError(null);
+    return membersApi
       .list()
-      .then((res) => setMembers(res.members.map(apiMemberToMember)))
-      .catch((err: unknown) =>
+      .then((res) => { if (current() && request === reads.current) { setMembers(res.members.map(apiMemberToMember)); setSettled(true); } })
+      .catch((err: unknown) => {
+        if (!current() || request !== reads.current) return;
+        setReadError(err instanceof Error ? err.message : 'The members could not be read.'); setSettled(true); setMembers([]);
         toast({
           title: "Couldn't load members",
           description: err instanceof Error ? err.message : 'Unknown error',
           variant: 'destructive',
-        }),
-      ), [membersApi, toast]);
+        });
+      });
+  }, [membersApi, toast, current]);
 
   useEffect(() => {
     void refresh();
   }, [refresh]);
 
   const openAdd = () => {
+    if (!current()) return;
+    details.current++;
+    setLoadingId(null);
     setEditingMember(null);
     setEditingRecord(null);
     setFormOpen(true);
@@ -69,24 +89,28 @@ export function MembersPanel() {
    * lost. A read that fails opens nothing and says so.
    */
   const openEdit = async (member: Member) => {
+    if (!current()) return;
+    const request = ++details.current;
     setLoadingId(member.id);
     try {
       const { member: detail } = await membersApi.get(member.id);
+      if (!current() || request !== details.current) return;
       setEditingMember(member);
       setEditingRecord(detail);
       setFormOpen(true);
     } catch (err: unknown) {
+      if (!current() || request !== details.current) return;
       toast({
         title: "Couldn't open this member",
         description: err instanceof Error ? err.message : 'Unknown error',
         variant: 'destructive',
       });
     } finally {
-      setLoadingId(null);
+      if (current() && request === details.current) setLoadingId(null);
     }
   };
 
-  const apiFail = (err: unknown) =>
+  const apiFail = (err: unknown) => current() &&
     toast({
       title: "Couldn't save the member",
       description: err instanceof Error ? err.message : 'Unknown error',
@@ -101,6 +125,7 @@ export function MembersPanel() {
    * it. Rejects on failure so the dialog stays open holding the entry.
    */
   const handleSave = async (data: MemberFormData): Promise<void> => {
+    assertCurrent();
     /**
      * An edit sends the fields that changed and nothing else (SCRUM-321).
      * This used to PATCH the nickname, phone and channel every time, so a
@@ -125,6 +150,7 @@ export function MembersPanel() {
           ...(data.preferredChannel ? { preferredChannel: data.preferredChannel } : {}),
         })
       ).member;
+      assertCurrent();
       // The create route takes a phone and a nickname; the rest of the
       // profile follows in one PATCH when the form carried any of it.
       saved =
@@ -132,6 +158,7 @@ export function MembersPanel() {
           ? (await membersApi.update(created.id, data.patch)).member
           : created;
     }
+    assertCurrent();
 
     /**
      * Each child's edits go to that child's own route, and one failing says
@@ -141,6 +168,7 @@ export function MembersPanel() {
     for (const c of data.childPatches) {
       try {
         await membersApi.updateChild(c.id, c.patch);
+        assertCurrent();
       } catch (err) {
         await refresh();
         throw new Error(
@@ -154,6 +182,7 @@ export function MembersPanel() {
     if (data.tierChange) {
       try {
         const { member: verified } = await membersApi.verifyTier(saved.id, data.tierChange);
+        assertCurrent();
         toast({
           title: `${tierLabel(data.tierChange.toTier)} rate verified`,
           description: `${verified.nickname} · ${data.tierChange.evidenceType}${
@@ -184,6 +213,7 @@ export function MembersPanel() {
           saved.id,
           data.tierRevoke,
         );
+        assertCurrent();
         toast({
           title: `${cleared.nickname} is back on the ${tierLabel(getDefaultTier()!.id)} rate`,
           description: `Filed: ${data.tierRevoke.reason}`,
@@ -201,7 +231,7 @@ export function MembersPanel() {
   };
 
   const confirmDelete = () => {
-    if (pendingDelete) {
+    if (pendingDelete && current()) {
       void membersApi
         .archive(pendingDelete.id)
         .then(refresh)
@@ -209,6 +239,11 @@ export function MembersPanel() {
     }
     setPendingDelete(null);
   };
+
+  if (!settled) return <p role="status" className="text-sm text-foreground/50">Loading members…</p>;
+  if (readError) return <div role="alert" className="flex flex-col gap-3 text-sm">
+    <p>{readError}</p><Button variant="outline" onClick={() => void refresh()}>Try again</Button>
+  </div>;
 
   return (
     <div className="flex flex-col gap-6">
@@ -247,7 +282,7 @@ export function MembersPanel() {
                       {member.phone}
                     </TableCell>
                     <TableCell>
-                      <TierBadge member={member} />
+                      <TierBadge member={member} ports={ports} />
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-2">
@@ -293,7 +328,7 @@ export function MembersPanel() {
                     {member.phone}
                   </div>
                   <div className="mt-2 flex flex-wrap gap-1.5">
-                    <TierBadge member={member} />
+                    <TierBadge member={member} ports={ports} />
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
@@ -330,7 +365,8 @@ export function MembersPanel() {
         Changes are saved to the database and audited.
       </p>
 
-      <MemberFormDialog
+      <MemberFormDialogWithPorts
+        ports={{ ...ports, isCurrent: current }}
         open={formOpen}
         member={editingMember}
         record={editingRecord}
@@ -366,11 +402,8 @@ export function MembersPanel() {
   );
 }
 
-function TierBadge({ member }: { member: Member }) {
-  const runtime = useAdminScreenRuntime();
-  const getDefaultTier = runtime.legacy.getDefaultTier;
-  const isDefaultTier = runtime.domain.membership.isDefaultTier;
-  const tierLabel = runtime.domain.membership.tierLabel;
+function TierBadge({ member, ports }: { member: Member; ports: MemberFormPorts }) {
+  const { getDefaultTier, isDefaultTier, tierLabel } = ports;
 
   /**
    * A verification OF the baseline tier is not an entitlement: the baseline is

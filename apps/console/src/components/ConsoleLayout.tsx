@@ -150,7 +150,7 @@ export function ConsoleLayout({ children }: { children: ReactNode }) {
                   renders its refusal, not its own command bar — so the bar is
                   drawn here instead, and the refusal still says whose page it is.
                 */}
-                {section && !has(section.permission) && <CommandBar sectionId={section.id} />}
+                {section?.permission && !has(section.permission) && <CommandBar sectionId={section.id} />}
                 {children}
               </div>
             </div>

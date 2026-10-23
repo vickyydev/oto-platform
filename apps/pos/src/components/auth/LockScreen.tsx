@@ -55,7 +55,7 @@ const LAUNCHER_URL = launcherOrigin();
  * "Scan my face" placeholder is gone: PROJECT_CONTEXT §13 bans biometrics, so
  * there is nothing behind it to ship.
  *
- * `adminMode` renders the same form as the ADMIN CONSOLE sign-in wall
+ * `adminMode` renders the same form for the Admin bookmark entry
  * (/admin): distinct title + restricted-area chip so staff can tell it apart
  * from the shift sign-in, and a "Back to POS sign-in" link instead of the
  * temp module links.
@@ -237,18 +237,18 @@ export function LockScreen({ adminMode = false }: { adminMode?: boolean }) {
         </div>
 
         <h1 className="text-4xl font-black tracking-tight mb-2">
-          {adminMode ? 'Admin Console' : 'Oto POS is locked'}
+          {adminMode ? 'Sign in to open Admin' : 'Oto POS is locked'}
         </h1>
         {adminMode && (
           <span className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-amber-500/40 bg-amber-400/10 px-3 py-1 text-xs font-semibold text-amber-600 dark:text-amber-300">
             <ShieldCheck className="w-3.5 h-3.5" />
-            Restricted — manager sign-in only
+            Admin access required
           </span>
         )}
         <p className="text-lg text-foreground/60 mb-8">
           {mode === 'signin'
             ? adminMode
-              ? 'Sign in with your manager account to open back-office settings.'
+              ? 'Sign in with your account to continue to Admin.'
               : 'Sign in with your phone to start your shift.'
             : mode === 'setup'
               ? 'First shift? Set up your account.'
@@ -406,14 +406,13 @@ export function LockScreen({ adminMode = false }: { adminMode?: boolean }) {
               Open customer booking site (temp)
             </Link>
 
-            {/* Admin console entry — /admin has its own auth wall (AdminAccessGate):
-                it asks for sign-in and admits manager-role operators only. */}
+            {/* Existing bookmarks continue to Admin with this person's sign-in. */}
             <Link
               href="/admin"
               className="inline-flex items-center justify-center gap-2 w-full h-12 rounded-2xl border border-dashed border-foreground/20 text-foreground/60 hover:text-foreground hover:border-foreground/40 transition-colors text-sm font-medium"
             >
               <Settings className="w-4 h-4" />
-              Open admin console (manager sign-in)
+              Open Admin
             </Link>
 
             {/* Staff stock module — reached from here instead of the POS bottom nav.

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { BenefitProfile as PlatformProfile } from '@oto/shared';
-import { inForceOn, profileFromApi, profileToApi, sameProfile } from '@/api/benefits';
+import { inForceOn, profileFromApi, profileToApi, sameProfile } from './support/admin-contracts';
 
 /**
  * S2-21 round 1 — Admin > Staff Benefits converts a profile at the API

@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -49,7 +49,8 @@ afterEach(() => vi.unstubAllGlobals());
 describe('SCRUM-619 independent review of the shared admin lift', () => {
   it('R1 [high] serves the existing panels from the shared package; fix: move implementations and leave only POS host wiring', () => {
     const shared = sources(join(packageRoot, 'src')).map(path => ({ path, text: code(path) }));
-    const pos = sources(join(root, 'apps/pos/src/components/admin')).map(path => ({ path, text: code(path) }));
+    const directory = join(root, 'apps/pos/src/components/admin');
+    const pos = (existsSync(directory) ? sources(directory) : []).map(path => ({ path, text: code(path) }));
     for (const panel of ['TicketsPanel', 'MenuPanel', 'TaxPanel', 'StaffBenefitsPanel', 'TemplatesPanel', 'SalesReportPanel']) {
       const declaration = new RegExp(`\\b(?:function\\s+${panel}\\b|(?:const|let)\\s+${panel}\\s*=)`);
       expect(shared.some(file => declaration.test(file.text)), `${panel} has no shared implementation`).toBe(true);

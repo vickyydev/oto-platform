@@ -1,16 +1,17 @@
 import { useAdminScreenRuntime } from '../../../runtime/AdminScreenRuntime';
 import { isApiError, idemKey } from "../../../api/client";
 import { type StockItemBody } from "@oto/shared";
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { InventoryPanelPorts } from '../../../runtime/operations';
 import { Package, AlertTriangle, Pencil, Plus, MapPin } from "lucide-react";
 import { type InventoryItem, type InventoryVariant } from "../../../model/types";
 import { useCatalogStore } from "../../../runtime/AdminScreenRuntime";
 import { useBranch } from "../../../runtime/AdminScreenRuntime";
 import { Button } from "../../ui/button";
 import { Badge } from "../../ui/badge";
-import { InventoryItemFormDialog } from "./InventoryItemFormDialog";
+import { InventoryItemFormDialogWithPorts } from "./InventoryItemFormDialog";
 import { StockAdjustModal } from "./StockAdjustModal";
-import { StockLocationsPanel } from "./StockLocationsPanel";
+import { StockLocationsPanelWithPorts } from "./StockLocationsPanel";
 
 
 import { getRestockAlerts } from "../../../lib/inventory";
@@ -61,6 +62,19 @@ export function InventoryPanel() {
   const { branch } = useBranch();
   const branchId = branch?.apiId ?? null;
   const stock = useStockModule(branchId);
+  return <InventoryPanelWithPorts key={runtime.session.operator?.id + ':' + branchId} ports={{
+    branch, stock, merchItems, addOns, menuItems, stockApi, stockErrorWords,
+    inventoryItemToStockBody, catalogueSizesOf, reloadMenuInto,
+  }} />;
+}
+
+export function InventoryPanelWithPorts({ ports }: { ports: InventoryPanelPorts }) {
+  const { branch, stock, merchItems, addOns, menuItems, stockApi, stockErrorWords,
+    inventoryItemToStockBody, catalogueSizesOf, reloadMenuInto, isCurrent } = ports;
+  const branchId = branch?.apiId ?? null;
+  const mounted = useRef(false);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  const current = useCallback(() => mounted.current && (isCurrent?.() ?? true), [isCurrent]);
   const inventory = stock.inventory;
   const stockLocations = stock.locations;
 
@@ -77,33 +91,36 @@ export function InventoryPanel() {
   } | null>(null);
 
   const openAdd = () => {
+    if (!current() || ports.catalogueReady === false) return;
     setEditing(null);
     setFormOpen(true);
   };
 
   const openEdit = (item: InventoryItem) => {
+    if (!current() || ports.catalogueReady === false) return;
     setEditing(item);
     setFormOpen(true);
   };
 
   const openAdjust = (item: InventoryItem, variant: InventoryVariant) => {
+    if (!current()) return;
     setAdjusting({ item, variant });
   };
 
   const handleAdjust = async (delta: number, reason: string) => {
-    if (!adjusting || !branchId) return;
+    if (!adjusting || !branchId || !current()) return;
     try {
       // An increase lands at the sell point; a decrease takes from the sell
       // point first and then the cascade — never past what the branch holds.
       await stockApi.adjust(branchId, { stockItemId: adjusting.variant.id, delta, reason });
-      setAdjusting(null);
+      if (current()) setAdjusting(null);
     } catch (err) {
-      window.alert(stockErrorWords(err));
+      if (current()) window.alert(stockErrorWords(err));
     }
   };
 
   const handleSave = async (newItem: InventoryItem) => {
-    if (!branchId || saveInFlight.current) return;
+    if (!branchId || saveInFlight.current || !current() || ports.catalogueReady === false) return;
     const existing = editing;
     const existingSizeIds = new Set(existing?.variants.map((v) => v.id) ?? []);
     const productSized = newItem.linkedId ? catalogueSizesOf(newItem.linkedId).length > 0 : false;
@@ -119,15 +136,18 @@ export function InventoryPanel() {
       await stockApi.saveItem(
         pending.branchId, pending.groupId, pending.body, pending.actionId,
       );
+      if (!current()) return;
       // The sell grids read "tracked" from the menu's links: read it back.
       if (branch) await reloadMenuInto(branchId, branch.id).catch(() => undefined);
+      if (!current()) return;
       pendingSave.current = null; setSavePending(false); setFormOpen(false);
     } catch (err) {
+      if (!current()) return;
       if (isApiError(err) && err.status < 500 && err.code !== 'IDEMPOTENCY_IN_FLIGHT') {
         pendingSave.current = null; setSavePending(false);
       }
       window.alert(stockErrorWords(err));
-    } finally { saveInFlight.current = false; setSaving(false); }
+    } finally { saveInFlight.current = false; if (current()) setSaving(false); }
   };
 
   // All locations (active + retired) for the form's par inputs
@@ -202,6 +222,7 @@ export function InventoryPanel() {
           className="shrink-0"
           onClick={() => openEdit(item)}
           aria-label={`Edit ${item.name}`}
+          disabled={ports.catalogueReady === false}
         >
           <Pencil className="w-4 h-4" />
         </Button>
@@ -237,7 +258,7 @@ export function InventoryPanel() {
             <p className="text-sm text-foreground/50">
               {inventory.length} items · {inventory.reduce((s, i) => s + i.variants.length, 0)} variants
             </p>
-            <Button onClick={openAdd}>
+            <Button onClick={openAdd} disabled={ports.catalogueReady === false}>
               <Plus className="w-4 h-4" />
               New item
             </Button>
@@ -316,10 +337,11 @@ export function InventoryPanel() {
       )}
 
       {/* ── Locations tab ── */}
-      {tab === 'locations' && <StockLocationsPanel branchId={branchId} locations={stockLocations} />}
+      {tab === 'locations' && <StockLocationsPanelWithPorts branchId={branchId} locations={stockLocations} ports={{ stockApi, stockErrorWords, isCurrent: current }} />}
 
       {/* Dialogs (always mounted so state survives tab switch) */}
-      <InventoryItemFormDialog
+      <InventoryItemFormDialogWithPorts
+        catalogueSizesOf={catalogueSizesOf}
         open={formOpen}
         busy={saving}
         frozen={savePending}

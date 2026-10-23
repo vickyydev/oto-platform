@@ -7,9 +7,9 @@ import {
   catalogueSizesOf,
   isSocksAddOnId,
   mapMenu,
-  merchItemToApiBody,
   type ApiProduct,
-} from '@/api/menu';
+  merchItemToApiBody,
+} from './support/admin-contracts';
 
 /**
  * S2-14b round 1 — the till's selling seams read the platform's stock

@@ -1,9 +1,9 @@
+import { inventoryItemToStockBody } from '../../../packages/admin-screens/src/lifted/api/stock';
 import { readFileSync } from 'node:fs';
 import { adminSourcePath } from './support/admin-source-path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { SellableStock, StockLevels } from '@oto/shared';
 import {
-  inventoryItemToStockBody,
   levelsToInventory,
   loadSellableStock,
   sellableRestockAlerts,

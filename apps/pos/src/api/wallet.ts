@@ -1,6 +1,3 @@
-import {createWalletAdminApi} from '@oto/admin-screens/lifted/api/wallet';
-import {adminScreenApi} from './admin-screen-api';
-const walletAdmin = createWalletAdminApi(adminScreenApi);
 // Stored value — S2-14a round 1 (plan docs/progress/plans/wallet/PLAN.md §2.2).
 //
 // WHAT THE TILL READS OF A WALLET. The platform grants a sale's credit as it
@@ -15,25 +12,10 @@ const walletAdmin = createWalletAdminApi(adminScreenApi);
 // (`scanWallet`), and the till's tab is built from the platform's wallet
 // (`wristbandOfWallet`) — the balance, the ledger popover and the key the
 // confirm press sends to spend it (`api/sales.ts`, `spendWalletOnSale`).
-import {
-  BOX_WALLET_REFUSALS,
-  BRIDGE_CHECKIN_INTENTS,
-  BRIDGE_WALLET_INTENTS,
-  walletOfflineCapMessage,
-  type BandStayView,
-  type BridgeBandFoodAnswer,
-  type BridgeWalletBalance,
-  type WalletCreditDay,
-  type WalletEntryView,
-  type WalletGrantView,
-  type WalletPolicyViewDto,
-  type WalletReportRow,
-  type WalletReportSummary,
-  type WalletView,
-} from '@oto/shared';
+import { BOX_WALLET_REFUSALS, BRIDGE_CHECKIN_INTENTS, BRIDGE_WALLET_INTENTS, walletOfflineCapMessage, type BandStayView, type BridgeBandFoodAnswer, type BridgeWalletBalance, type WalletCreditDay, type WalletEntryView, type WalletGrantView, type WalletView } from '@oto/shared';
 import type { ChildFoodProvision, Wristband, WalletEntry } from '@/types';
 import { bridgeApi } from './bridge';
-import { ApiError, api, idemKey } from './client';
+import { ApiError, api } from './client';
 
 export type ApiWalletGrant = WalletGrantView;
 
@@ -44,10 +26,8 @@ export interface ApiWalletRead {
 }
 
 /** The wallet a scanned or typed key names: a voucher `QR-…`, a band's code or short code. */
-export function lookupWallet(key: string): Promise<ApiWalletRead> { return walletAdmin.lookupWallet(key); }
+export function lookupWallet(key: string): Promise<ApiWalletRead> { return api.get<ApiWalletRead>(`/wallets/lookup?key=${encodeURIComponent(key.trim())}`); }
 
-/** One wallet by id. */
-export function getWallet(id: string): Promise<ApiWalletRead> { return walletAdmin.getWallet(id); }
 
 /**
  * The grants a sale answer carries — the finalise's or `GET /sales/:id`'s — or
@@ -327,28 +307,6 @@ export function walletSpendable(view: Pick<WalletView, 'status' | 'expiresAt' | 
   return view.balanceSatang === 0 || walletSpendableSatang(view, now) > 0;
 }
 
-/** The read after a reactivation: the wallet live again and its ledger with the new entry. */
-export interface ApiWalletReactivated extends ApiWalletRead {
-  replayed: boolean;
-}
-
-/**
- * Bring a wallet's expired credit back (`pos:wallet:reactivate`), with the
- * reason the manager typed. One key per gesture, so a retried press is the
- * same reactivation.
- */
-export function reactivateWallet(walletId: string, reason: string, idempotencyKey: string = idemKey()): Promise<ApiWalletReactivated> { return walletAdmin.reactivateWallet(walletId,reason,idempotencyKey); }
-
-/** The branch's wallet rules (expiry, the offline cap, unused prepaid food). */
-export function getWalletPolicy(branchApiId: string): Promise<WalletPolicyViewDto> { return walletAdmin.getWalletPolicy(branchApiId); }
-
-export interface ApiWalletReport {
-  summary: WalletReportSummary;
-  rows: WalletReportRow[];
-}
-
-/** The Wallet & Promo report's credit half, for a business-date range; no branch = every park this account reads. */
-export function getWalletReport(params: { branchApiId?: string | null; from: string; to: string; limit?: number }): Promise<ApiWalletReport> { return walletAdmin.getWalletReport(params); }
 
 /** The End of day `credit` line for one business date: counter credit redeemed, net of restores. */
 export function getCreditDay(branchApiId: string, date: string): Promise<WalletCreditDay> {
