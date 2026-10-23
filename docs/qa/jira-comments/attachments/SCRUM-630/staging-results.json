@@ -1,0 +1,1735 @@
+{
+  "ticket": "SCRUM-630",
+  "purpose": "platform-salary-staging-proof",
+  "complete": true,
+  "businessComplete": true,
+  "acceptance": false,
+  "sourceSha": "532e9aab705d873da240ad4b40e77e33fa562d31",
+  "ciRunId": "40028592897",
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "deployId": "dep-dbdtgvgu01pc73dudlfg",
+      "finishedAt": "2026-10-23T22:02:18.257936Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "deployId": "dep-dbdtgvou01pc73dudni0",
+      "finishedAt": "2026-10-23T21:59:10.978998Z"
+    },
+    {
+      "name": "oto-app-staging",
+      "deployId": "dep-dbdtgvgu01pc73dudme0",
+      "finishedAt": "2026-10-23T22:00:58.87624Z"
+    }
+  ],
+  "startedAt": "2026-10-23T22:07:30.475Z",
+  "helperSha256": "4c9ad51d5381cc6dee9e6f1811a50c9e3fdb629455d31c86956755bf273069b4",
+  "planSha256": "70f56dca539fb0432dec8404e71b4986e780d4fa3c36c7ede20630ac6748653d",
+  "reviewSha256": "33d7b72c23de4bc19e7bc09837b666c96f1f9923a1a5257e57e08f670affa33d",
+  "moduleHashes": {
+    "gate": "5925a7463ca112ba38f056e95817a2cb1ae6e7a6c58d527fa4fff85802522dc3",
+    "native": "a547bc7cd5e967d98227ecc70e65add5b5945f98f6463ffca68f7dbe396b4ee0",
+    "flag": "6d2e1266fbb0c1ed06da38dbc606e80c5802ab16e54dea7f636048f4a4dfa56a",
+    "executor": "a7014557705d7e537c513c7d7fed9fd81405a6c04ec73f1da339e9cc5b7ca8a0"
+  },
+  "operationModel": {
+    "operations": [
+      "ADMIN:platform:sign-in",
+      "ADMIN:platform:handoff-issue",
+      "ADMIN:app:handoff-exchange",
+      "ADMIN:app:fixture-create",
+      "ADMIN:app:subject-place",
+      "ADMIN:platform:grant-create",
+      "RECEPTION:platform:sign-in",
+      "RECEPTION:platform:handoff-issue",
+      "RECEPTION:app:handoff-exchange",
+      "RECEPTION:app:sign-out",
+      "RECEPTION:platform:sign-out",
+      "RECEPTION:platform:sign-in",
+      "RECEPTION:platform:handoff-issue",
+      "RECEPTION:app:handoff-exchange",
+      "RECEPTION:app:sign-out",
+      "RECEPTION:platform:sign-out",
+      "ADMIN:platform:grant-create",
+      "RECEPTION:platform:sign-in",
+      "RECEPTION:platform:handoff-issue",
+      "RECEPTION:app:handoff-exchange",
+      "RECEPTION:app:sign-out",
+      "RECEPTION:platform:sign-out",
+      "ADMIN:platform:grant-remove",
+      "RECEPTION:platform:sign-in",
+      "RECEPTION:platform:handoff-issue",
+      "RECEPTION:app:handoff-exchange",
+      "RECEPTION:app:sign-out",
+      "RECEPTION:platform:sign-out",
+      "ADMIN:platform:grant-remove",
+      "ADMIN:app:subject-restore",
+      "ADMIN:app:fixture-archive",
+      "ADMIN:app:sign-out",
+      "ADMIN:platform:sign-out"
+    ],
+    "authContexts": 10,
+    "flagJobs": [
+      true,
+      false
+    ],
+    "templatePhases": [
+      "explicit-flag-off-legacy-staff",
+      "enabled-manager-salary-false",
+      "enabled-same-manager-salary-true",
+      "enabled-same-manager-salary-withdrawn"
+    ]
+  },
+  "operationModelSha256": "bb99cc061db39b34c72111f195d574545dbd2b723cb7819cc027bcba6fd97f92",
+  "templateProofs": [
+    {
+      "phase": "explicit-flag-off-legacy-staff",
+      "salaryView": false,
+      "status": 403,
+      "denied": true,
+      "staticTemplateOnly": true
+    },
+    {
+      "phase": "enabled-manager-salary-false",
+      "salaryView": false,
+      "status": 200,
+      "mime": "XLSX",
+      "bytesSha256": "7dcfef713cb7638b780c47086d4e9e759ad6734231eac4497a4eebd15a3fe0df",
+      "headerCount": 15,
+      "payHeaders": [
+        false,
+        false,
+        false
+      ],
+      "staticTemplateOnly": true,
+      "parsedRows": 1
+    },
+    {
+      "phase": "enabled-same-manager-salary-true",
+      "salaryView": true,
+      "status": 200,
+      "mime": "XLSX",
+      "bytesSha256": "188db5d0d047e6044644da94468cc952d26e380a9d5939ca5c8946713df9eb97",
+      "headerCount": 18,
+      "payHeaders": [
+        true,
+        true,
+        true
+      ],
+      "staticTemplateOnly": true,
+      "parsedRows": 1
+    },
+    {
+      "phase": "enabled-same-manager-salary-withdrawn",
+      "salaryView": false,
+      "status": 200,
+      "mime": "XLSX",
+      "bytesSha256": "7dcfef713cb7638b780c47086d4e9e759ad6734231eac4497a4eebd15a3fe0df",
+      "headerCount": 15,
+      "payHeaders": [
+        false,
+        false,
+        false
+      ],
+      "staticTemplateOnly": true,
+      "parsedRows": 1
+    }
+  ],
+  "operations": [
+    {
+      "index": 1,
+      "label": "sign-in",
+      "app": "platform",
+      "method": "POST",
+      "alias": "ADMIN",
+      "contextRef": "e6f5250f-f795-4037-9533-338e459bf1a3",
+      "pathname": "/api/auth/sign-in",
+      "secretBody": true,
+      "bodySha256": null,
+      "idempotencyKeySha256": null,
+      "preparedAt": "2026-10-23T22:07:35.943Z",
+      "dispatchedAt": "2026-10-23T22:07:35.949Z",
+      "settledAt": "2026-10-23T22:07:36.538Z",
+      "status": 200,
+      "uncertain": false,
+      "recordId": null,
+      "dispatchId": "8cecf303-5e39-49da-ae74-3cd864ffba03",
+      "terminalResponseObserved": true
+    },
+    {
+      "index": 2,
+      "label": "handoff-issue",
+      "app": "platform",
+      "method": "POST",
+      "alias": "ADMIN",
+      "contextRef": "e6f5250f-f795-4037-9533-338e459bf1a3",
+      "pathname": "/api/auth/handoff",
+      "secretBody": true,
+      "bodySha256": null,
+      "idempotencyKeySha256": null,
+      "preparedAt": "2026-10-23T22:07:37.035Z",
+      "dispatchedAt": "2026-10-23T22:07:37.038Z",
+      "settledAt": "2026-10-23T22:07:38.230Z",
+      "status": 200,
+      "uncertain": false,
+      "recordId": null,
+      "dispatchId": "3b71fbb2-dc8a-4548-9120-a6997c27fb40",
+      "terminalResponseObserved": true
+    },
+    {
+      "index": 3,
+      "label": "handoff-exchange",
+      "app": "app",
+      "method": "POST",
+      "alias": "ADMIN",
+      "contextRef": "b3600b9d-d495-49e8-961a-d955e183b768",
+      "pathname": "/api/auth/handoff",
+      "secretBody": true,
+      "bodySha256": null,
+      "idempotencyKeySha256": null,
+      "preparedAt": "2026-10-23T22:07:38.235Z",
+      "dispatchedAt": "2026-10-23T22:07:38.237Z",
+      "settledAt": "2026-10-23T22:07:38.468Z",
+      "status": 200,
+      "uncertain": false,
+      "recordId": null,
+      "dispatchId": "256bd05b-ab5a-4dc1-aa25-f694fab1fb02",
+      "terminalResponseObserved": true
+    },
+    {
+      "index": 4,
+      "label": "fixture-create",
+      "app": "app",
+      "method": "POST",
+      "alias": "ADMIN",
+      "contextRef": "b3600b9d-d495-49e8-961a-d955e183b768",
+      "pathname": "/api/admin/operators",
+      "secretBody": false,
+      "bodySha256": "0c7d5f0a37b3be6019e6cd959971b61df2b94b267bc4d27248c70e46cb302fc5",
+      "idempotencyKeySha256": "8887eb7e604de6b52dc3a3b2d9282ec1bfc6b5e4554ecdc259d0abfd7023a6d5",
+      "preparedAt": "2026-10-23T22:07:40.514Z",
+      "dispatchedAt": "2026-10-23T22:07:40.517Z",
+      "settledAt": "2026-10-23T22:07:40.588Z",
+      "status": 201,
+      "uncertain": false,
+      "recordId": null,
+      "dispatchId": "593c53ca-558c-4a30-9570-ae8289cf278f",
+      "terminalResponseObserved": true
+    },
+    {
+      "index": 5,
+      "label": "subject-place",
+      "app": "app",
+      "method": "PUT",
+      "alias": "ADMIN",
+      "contextRef": "b3600b9d-d495-49e8-961a-d955e183b768",
+      "pathname": "/api/data-admin/users/01a11b1d-e8e6-7627-bec8-d92e53579c0b",
+      "secretBody": false,
+      "bodySha256": "e5730cf9f81f8de66ad84b09849387d6b719ac31eeb3147cbdb7532796110263",
+      "idempotencyKeySha256": "364b5a767b77970dd13f5f2c3b5cbfc7551bdfe97c8c1a1f2a2bbaea7424be6c",
+      "preparedAt": "2026-10-23T22:07:40.665Z",
+      "dispatchedAt": "2026-10-23T22:07:40.667Z",
+      "settledAt": "2026-10-23T22:07:40.754Z",
+      "status": 200,
+      "uncertain": false,
+      "recordId": "91db66ae-ac17-47c2-98f4-f4fe42d47df3",
+      "dispatchId": "4642d88b-969b-4888-a4b2-598dab191901",
+      "terminalResponseObserved": true
+    },
+    {
+      "index": 6,
+      "label": "grant-create",
+      "app": "platform",
+      "method": "POST",
+      "alias": "ADMIN",
+      "contextRef": "e6f5250f-f795-4037-9533-338e459bf1a3",
+      "pathname": "/api/accounts/01a0bbdc-8c87-74ca-81c1-61489e34f834/role-assignments",
+      "secretBody": false,
+      "bodySha256": "2fe3873cd73de87892ed6adabccf2567d74305d2dea1060d1c4e14c0e78d35a2",
+      "idempotencyKeySha256": "3fcc5dcdc3f3d290f60df2b709882b67a6aa85367f485926829a2173b623b6ac",
+      "preparedAt": "2026-10-23T22:07:40.841Z",
+      "dispatchedAt": "2026-10-23T22:07:40.843Z",
+      "settledAt": "2026-10-23T22:07:41.287Z",
+      "status": 200,
+      "uncertain": false,
+      "recordId": "ad842cbf-51ae-4618-8dbd-b3cfe870cc56",
+      "dispatchId": "334ac20e-a122-40f1-9584-50bfcf6d4012",
+      "terminalResponseObserved": true
+    },
+    {
+      "index": 7,
+      "label": "sign-in",
+      "app": "platform",
+      "method": "POST",
+      "alias": "RECEPTION",
+      "contextRef": "124cac86-287a-4c7c-9f06-9291e91b0729",
+      "pathname": "/api/auth/sign-in",
+      "secretBody": true,
+      "bodySha256": null,
+      "idempotencyKeySha256": null,
+      "preparedAt": "2026-10-23T22:07:45.806Z",
+      "dispatchedAt": "2026-10-23T22:07:45.809Z",
+      "settledAt": "2026-10-23T22:07:46.355Z",
+      "status": 200,
+      "uncertain": false,
+      "recordId": "91db66ae-ac17-47c2-98f4-f4fe42d47df3",
+      "dispatchId": "0a00650a-62c0-4de2-a3f0-b1a38354f5de",
+      "terminalResponseObserved": true
+    },
+    {
+      "index": 8,
+      "label": "handoff-issue",
+      "app": "platform",
+      "method": "POST",
+      "alias": "RECEPTION",
+      "contextRef": "124cac86-287a-4c7c-9f06-9291e91b0729",
+      "pathname": "/api/auth/handoff",
+      "secretBody": true,
+      "bodySha256": null,
+      "idempotencyKeySha256": null,
+      "preparedAt": "2026-10-23T22:07:46.841Z",
+      "dispatchedAt": "2026-10-23T22:07:46.843Z",
+      "settledAt": "2026-10-23T22:07:47.309Z",
+      "status": 200,
+      "uncertain": false,
+      "recordId": "91db66ae-ac17-47c2-98f4-f4fe42d47df3",
+      "dispatchId": "9d5d1ae9-1708-4f54-8147-13900d1fef50",
+      "terminalResponseObserved": true
+    },
+    {
+      "index": 9,
+      "label": "handoff-exchange",
+      "app": "app",
+      "method": "POST",
+      "alias": "RECEPTION",
+      "contextRef": "14f28bf2-101b-4f5c-8374-57632c98b0ac",
+      "pathname": "/api/auth/handoff",
+      "secretBody": true,
+      "bodySha256": null,
+      "idempotencyKeySha256": null,
+      "preparedAt": "2026-10-23T22:07:47.313Z",
+      "dispatchedAt": "2026-10-23T22:07:47.316Z",
+      "settledAt": "2026-10-23T22:07:47.591Z",
+      "status": 200,
+      "uncertain": false,
+      "recordId": "91db66ae-ac17-47c2-98f4-f4fe42d47df3",
+      "dispatchId": "11199ca2-cfaa-45e0-b3a5-6771e2e7f8cb",
+      "terminalResponseObserved": true
+    },
+    {
+      "index": 10,
+      "label": "sign-out",
+      "app": "app",
+      "method": "POST",
+      "alias": "RECEPTION",
+      "contextRef": "14f28bf2-101b-4f5c-8374-57632c98b0ac",
+      "pathname": "/api/logout",
+      "secretBody": true,
+      "bodySha256": null,
+      "idempotencyKeySha256": null,
+      "preparedAt": "2026-10-23T22:08:01.586Z",
+      "dispatchedAt": "2026-10-23T22:08:01.586Z",
+      "settledAt": "2026-10-23T22:08:01.660Z",
+      "status": 200,
+      "uncertain": false,
+      "recordId": "91db66ae-ac17-47c2-98f4-f4fe42d47df3"
+    },
+    {
+      "index": 11,
+      "label": "sign-out",
+      "app": "platform",
+      "method": "POST",
+      "alias": "RECEPTION",
+      "contextRef": "124cac86-287a-4c7c-9f06-9291e91b0729",
+      "pathname": "/api/auth/sign-out",
+      "secretBody": true,
+      "bodySha256": null,
+      "idempotencyKeySha256": null,
+      "preparedAt": "2026-10-23T22:08:02.174Z",
+      "dispatchedAt": "2026-10-23T22:08:02.174Z",
+      "settledAt": "2026-10-23T22:08:03.067Z",
+      "status": 200,
+      "uncertain": false,
+      "recordId": "91db66ae-ac17-47c2-98f4-f4fe42d47df3"
+    },
+    {
+      "index": 12,
+      "label": "sign-in",
+      "app": "platform",
+      "method": "POST",
+      "alias": "RECEPTION",
+      "contextRef": "10ed918c-fd2b-447b-b50c-74365d4199e4",
+      "pathname": "/api/auth/sign-in",
+      "secretBody": true,
+      "bodySha256": null,
+      "idempotencyKeySha256": null,
+      "preparedAt": "2026-10-23T22:08:40.185Z",
+      "dispatchedAt": "2026-10-23T22:08:40.187Z",
+      "settledAt": "2026-10-23T22:08:40.699Z",
+      "status": 200,
+      "uncertain": false,
+      "recordId": "91db66ae-ac17-47c2-98f4-f4fe42d47df3",
+      "dispatchId": "411417f4-225b-4d49-bbb7-f6703ea6e367",
+      "terminalResponseObserved": true
+    },
+    {
+      "index": 13,
+      "label": "handoff-issue",
+      "app": "platform",
+      "method": "POST",
+      "alias": "RECEPTION",
+      "contextRef": "10ed918c-fd2b-447b-b50c-74365d4199e4",
+      "pathname": "/api/auth/handoff",
+      "secretBody": true,
+      "bodySha256": null,
+      "idempotencyKeySha256": null,
+      "preparedAt": "2026-10-23T22:08:41.152Z",
+      "dispatchedAt": "2026-10-23T22:08:41.154Z",
+      "settledAt": "2026-10-23T22:08:41.581Z",
+      "status": 200,
+      "uncertain": false,
+      "recordId": "91db66ae-ac17-47c2-98f4-f4fe42d47df3",
+      "dispatchId": "88a593bf-2f60-48de-8640-1071ec2cb321",
+      "terminalResponseObserved": true
+    },
+    {
+      "index": 14,
+      "label": "handoff-exchange",
+      "app": "app",
+      "method": "POST",
+      "alias": "RECEPTION",
+      "contextRef": "a6065c4d-9ce3-48d7-955c-96fa392d46dd",
+      "pathname": "/api/auth/handoff",
+      "secretBody": true,
+      "bodySha256": null,
+      "idempotencyKeySha256": null,
+      "preparedAt": "2026-10-23T22:08:41.586Z",
+      "dispatchedAt": "2026-10-23T22:08:41.588Z",
+      "settledAt": "2026-10-23T22:08:41.835Z",
+      "status": 200,
+      "uncertain": false,
+      "recordId": "91db66ae-ac17-47c2-98f4-f4fe42d47df3",
+      "dispatchId": "fe9fb2ec-2532-4098-abec-00d9924ebda5",
+      "terminalResponseObserved": true
+    },
+    {
+      "index": 15,
+      "label": "sign-out",
+      "app": "app",
+      "method": "POST",
+      "alias": "RECEPTION",
+      "contextRef": "a6065c4d-9ce3-48d7-955c-96fa392d46dd",
+      "pathname": "/api/logout",
+      "secretBody": true,
+      "bodySha256": null,
+      "idempotencyKeySha256": null,
+      "preparedAt": "2026-10-23T22:08:57.776Z",
+      "dispatchedAt": "2026-10-23T22:08:57.776Z",
+      "settledAt": "2026-10-23T22:08:57.853Z",
+      "status": 200,
+      "uncertain": false,
+      "recordId": "91db66ae-ac17-47c2-98f4-f4fe42d47df3"
+    },
+    {
+      "index": 16,
+      "label": "sign-out",
+      "app": "platform",
+      "method": "POST",
+      "alias": "RECEPTION",
+      "contextRef": "10ed918c-fd2b-447b-b50c-74365d4199e4",
+      "pathname": "/api/auth/sign-out",
+      "secretBody": true,
+      "bodySha256": null,
+      "idempotencyKeySha256": null,
+      "preparedAt": "2026-10-23T22:08:58.385Z",
+      "dispatchedAt": "2026-10-23T22:08:58.385Z",
+      "settledAt": "2026-10-23T22:08:58.822Z",
+      "status": 200,
+      "uncertain": false,
+      "recordId": "91db66ae-ac17-47c2-98f4-f4fe42d47df3"
+    },
+    {
+      "index": 17,
+      "label": "grant-create",
+      "app": "platform",
+      "method": "POST",
+      "alias": "ADMIN",
+      "contextRef": "e6f5250f-f795-4037-9533-338e459bf1a3",
+      "pathname": "/api/accounts/01a0bbdc-8c87-74ca-81c1-61489e34f834/role-assignments",
+      "secretBody": false,
+      "bodySha256": "b031e3f5666e2131e5800dc246366bf5c743541d28a397fb26a5a61325c3ca09",
+      "idempotencyKeySha256": "f4324ddb9592fe57e611c695707431ed9bd75b01a69987d8ed6d80bc2952e104",
+      "preparedAt": "2026-10-23T22:08:59.264Z",
+      "dispatchedAt": "2026-10-23T22:08:59.266Z",
+      "settledAt": "2026-10-23T22:08:59.724Z",
+      "status": 200,
+      "uncertain": false,
+      "recordId": "9f372fc2-a0bb-4270-8b00-db1f4b02c352",
+      "dispatchId": "058568e8-95af-42a2-8f44-bf2811e9794f",
+      "terminalResponseObserved": true
+    },
+    {
+      "index": 18,
+      "label": "sign-in",
+      "app": "platform",
+      "method": "POST",
+      "alias": "RECEPTION",
+      "contextRef": "9e76e863-776c-49ea-905d-7a656f4fecb8",
+      "pathname": "/api/auth/sign-in",
+      "secretBody": true,
+      "bodySha256": null,
+      "idempotencyKeySha256": null,
+      "preparedAt": "2026-10-23T22:09:03.954Z",
+      "dispatchedAt": "2026-10-23T22:09:03.957Z",
+      "settledAt": "2026-10-23T22:09:05.069Z",
+      "status": 200,
+      "uncertain": false,
+      "recordId": "91db66ae-ac17-47c2-98f4-f4fe42d47df3",
+      "dispatchId": "b0544c3f-6b8d-4aa1-96d7-5ae4cf31ccb2",
+      "terminalResponseObserved": true
+    },
+    {
+      "index": 19,
+      "label": "handoff-issue",
+      "app": "platform",
+      "method": "POST",
+      "alias": "RECEPTION",
+      "contextRef": "9e76e863-776c-49ea-905d-7a656f4fecb8",
+      "pathname": "/api/auth/handoff",
+      "secretBody": true,
+      "bodySha256": null,
+      "idempotencyKeySha256": null,
+      "preparedAt": "2026-10-23T22:09:05.519Z",
+      "dispatchedAt": "2026-10-23T22:09:05.521Z",
+      "settledAt": "2026-10-23T22:09:05.978Z",
+      "status": 200,
+      "uncertain": false,
+      "recordId": "91db66ae-ac17-47c2-98f4-f4fe42d47df3",
+      "dispatchId": "58eba43e-98a4-4855-8c0c-443e8c079150",
+      "terminalResponseObserved": true
+    },
+    {
+      "index": 20,
+      "label": "handoff-exchange",
+      "app": "app",
+      "method": "POST",
+      "alias": "RECEPTION",
+      "contextRef": "c45e1797-e0cb-4820-90e1-aa1309311ffe",
+      "pathname": "/api/auth/handoff",
+      "secretBody": true,
+      "bodySha256": null,
+      "idempotencyKeySha256": null,
+      "preparedAt": "2026-10-23T22:09:05.982Z",
+      "dispatchedAt": "2026-10-23T22:09:05.983Z",
+      "settledAt": "2026-10-23T22:09:06.219Z",
+      "status": 200,
+      "uncertain": false,
+      "recordId": "91db66ae-ac17-47c2-98f4-f4fe42d47df3",
+      "dispatchId": "443efedd-e220-4670-90d3-f5636c49f8bd",
+      "terminalResponseObserved": true
+    },
+    {
+      "index": 21,
+      "label": "sign-out",
+      "app": "app",
+      "method": "POST",
+      "alias": "RECEPTION",
+      "contextRef": "c45e1797-e0cb-4820-90e1-aa1309311ffe",
+      "pathname": "/api/logout",
+      "secretBody": true,
+      "bodySha256": null,
+      "idempotencyKeySha256": null,
+      "preparedAt": "2026-10-23T22:09:21.071Z",
+      "dispatchedAt": "2026-10-23T22:09:21.071Z",
+      "settledAt": "2026-10-23T22:09:21.142Z",
+      "status": 200,
+      "uncertain": false,
+      "recordId": "91db66ae-ac17-47c2-98f4-f4fe42d47df3"
+    },
+    {
+      "index": 22,
+      "label": "sign-out",
+      "app": "platform",
+      "method": "POST",
+      "alias": "RECEPTION",
+      "contextRef": "9e76e863-776c-49ea-905d-7a656f4fecb8",
+      "pathname": "/api/auth/sign-out",
+      "secretBody": true,
+      "bodySha256": null,
+      "idempotencyKeySha256": null,
+      "preparedAt": "2026-10-23T22:09:22.051Z",
+      "dispatchedAt": "2026-10-23T22:09:22.051Z",
+      "settledAt": "2026-10-23T22:09:22.494Z",
+      "status": 200,
+      "uncertain": false,
+      "recordId": "91db66ae-ac17-47c2-98f4-f4fe42d47df3"
+    },
+    {
+      "index": 23,
+      "label": "grant-remove",
+      "app": "platform",
+      "method": "DELETE",
+      "alias": "ADMIN",
+      "contextRef": "e6f5250f-f795-4037-9533-338e459bf1a3",
+      "pathname": "/api/accounts/01a0bbdc-8c87-74ca-81c1-61489e34f834/role-assignments/9f372fc2-a0bb-4270-8b00-db1f4b02c352",
+      "secretBody": false,
+      "bodySha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "idempotencyKeySha256": "8b5a67d362636c72c57376637cae4a1f3bd32685616e0c5787e632f5d2e6f33d",
+      "preparedAt": "2026-10-23T22:09:23.510Z",
+      "dispatchedAt": "2026-10-23T22:09:23.512Z",
+      "settledAt": "2026-10-23T22:09:23.994Z",
+      "status": 200,
+      "uncertain": false,
+      "recordId": "91db66ae-ac17-47c2-98f4-f4fe42d47df3",
+      "dispatchId": "4c6766e7-6f25-44d7-a483-f937533c9afe",
+      "terminalResponseObserved": true
+    },
+    {
+      "index": 24,
+      "label": "sign-in",
+      "app": "platform",
+      "method": "POST",
+      "alias": "RECEPTION",
+      "contextRef": "3e68974e-a777-43cd-bfcc-5bb9761b72d6",
+      "pathname": "/api/auth/sign-in",
+      "secretBody": true,
+      "bodySha256": null,
+      "idempotencyKeySha256": null,
+      "preparedAt": "2026-10-23T22:09:28.854Z",
+      "dispatchedAt": "2026-10-23T22:09:28.857Z",
+      "settledAt": "2026-10-23T22:09:29.347Z",
+      "status": 200,
+      "uncertain": false,
+      "recordId": "91db66ae-ac17-47c2-98f4-f4fe42d47df3",
+      "dispatchId": "3b7dde10-116a-40f4-b088-af3fe1086c16",
+      "terminalResponseObserved": true
+    },
+    {
+      "index": 25,
+      "label": "handoff-issue",
+      "app": "platform",
+      "method": "POST",
+      "alias": "RECEPTION",
+      "contextRef": "3e68974e-a777-43cd-bfcc-5bb9761b72d6",
+      "pathname": "/api/auth/handoff",
+      "secretBody": true,
+      "bodySha256": null,
+      "idempotencyKeySha256": null,
+      "preparedAt": "2026-10-23T22:09:29.823Z",
+      "dispatchedAt": "2026-10-23T22:09:29.827Z",
+      "settledAt": "2026-10-23T22:09:30.564Z",
+      "status": 200,
+      "uncertain": false,
+      "recordId": "91db66ae-ac17-47c2-98f4-f4fe42d47df3",
+      "dispatchId": "5adc279e-f840-4731-a4ef-b106e8968de2",
+      "terminalResponseObserved": true
+    },
+    {
+      "index": 26,
+      "label": "handoff-exchange",
+      "app": "app",
+      "method": "POST",
+      "alias": "RECEPTION",
+      "contextRef": "ef18259e-bd53-4a87-abd1-5c7358c04c14",
+      "pathname": "/api/auth/handoff",
+      "secretBody": true,
+      "bodySha256": null,
+      "idempotencyKeySha256": null,
+      "preparedAt": "2026-10-23T22:09:30.568Z",
+      "dispatchedAt": "2026-10-23T22:09:30.570Z",
+      "settledAt": "2026-10-23T22:09:30.788Z",
+      "status": 200,
+      "uncertain": false,
+      "recordId": "91db66ae-ac17-47c2-98f4-f4fe42d47df3",
+      "dispatchId": "8990a320-c298-4721-9025-9c973a94bac2",
+      "terminalResponseObserved": true
+    },
+    {
+      "index": 27,
+      "label": "sign-out",
+      "app": "app",
+      "method": "POST",
+      "alias": "RECEPTION",
+      "contextRef": "ef18259e-bd53-4a87-abd1-5c7358c04c14",
+      "pathname": "/api/logout",
+      "secretBody": true,
+      "bodySha256": null,
+      "idempotencyKeySha256": null,
+      "preparedAt": "2026-10-23T22:09:46.778Z",
+      "dispatchedAt": "2026-10-23T22:09:46.778Z",
+      "settledAt": "2026-10-23T22:09:46.845Z",
+      "status": 200,
+      "uncertain": false,
+      "recordId": "91db66ae-ac17-47c2-98f4-f4fe42d47df3"
+    },
+    {
+      "index": 28,
+      "label": "sign-out",
+      "app": "platform",
+      "method": "POST",
+      "alias": "RECEPTION",
+      "contextRef": "3e68974e-a777-43cd-bfcc-5bb9761b72d6",
+      "pathname": "/api/auth/sign-out",
+      "secretBody": true,
+      "bodySha256": null,
+      "idempotencyKeySha256": null,
+      "preparedAt": "2026-10-23T22:09:47.361Z",
+      "dispatchedAt": "2026-10-23T22:09:47.361Z",
+      "settledAt": "2026-10-23T22:09:48.219Z",
+      "status": 200,
+      "uncertain": false,
+      "recordId": "91db66ae-ac17-47c2-98f4-f4fe42d47df3"
+    },
+    {
+      "index": 29,
+      "label": "grant-remove",
+      "app": "platform",
+      "method": "DELETE",
+      "alias": "ADMIN",
+      "contextRef": "e6f5250f-f795-4037-9533-338e459bf1a3",
+      "pathname": "/api/accounts/01a0bbdc-8c87-74ca-81c1-61489e34f834/role-assignments/ad842cbf-51ae-4618-8dbd-b3cfe870cc56",
+      "secretBody": false,
+      "bodySha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "idempotencyKeySha256": "d2802a33c7fe63f845960ebcb7bb93e31e1ef20e503a84826f9de27221375fc0",
+      "preparedAt": "2026-10-23T22:09:49.437Z",
+      "dispatchedAt": "2026-10-23T22:09:49.439Z",
+      "settledAt": "2026-10-23T22:09:49.877Z",
+      "status": 200,
+      "uncertain": false,
+      "recordId": "91db66ae-ac17-47c2-98f4-f4fe42d47df3",
+      "dispatchId": "11b5b060-793a-47bf-9937-bdc3fd30375b",
+      "terminalResponseObserved": true
+    },
+    {
+      "index": 30,
+      "label": "subject-restore",
+      "app": "app",
+      "method": "PUT",
+      "alias": "ADMIN",
+      "contextRef": "b3600b9d-d495-49e8-961a-d955e183b768",
+      "pathname": "/api/data-admin/users/01a11b1d-e8e6-7627-bec8-d92e53579c0b",
+      "secretBody": false,
+      "bodySha256": "0a5f737b5a1e64580666076f1d9482a65e474d30052e59e08b4dadc48927f3eb",
+      "idempotencyKeySha256": "50e1c9e7babf3fafcc7b2acd0ff19a9ac16ba6f36f5e2587a696e1f4d52fbd6f",
+      "preparedAt": "2026-10-23T22:09:51.976Z",
+      "dispatchedAt": "2026-10-23T22:09:51.979Z",
+      "settledAt": "2026-10-23T22:09:52.065Z",
+      "status": 200,
+      "uncertain": false,
+      "recordId": "91db66ae-ac17-47c2-98f4-f4fe42d47df3",
+      "dispatchId": "8093c1dc-8bdc-4688-9be7-9b146a826fab",
+      "terminalResponseObserved": true
+    },
+    {
+      "index": 31,
+      "label": "fixture-archive",
+      "app": "app",
+      "method": "PATCH",
+      "alias": "ADMIN",
+      "contextRef": "b3600b9d-d495-49e8-961a-d955e183b768",
+      "pathname": "/api/admin/operators/91db66ae-ac17-47c2-98f4-f4fe42d47df3",
+      "secretBody": false,
+      "bodySha256": "b729e78091e313bb83330a46561d617142c5d33b897cb144098f55c651d6216a",
+      "idempotencyKeySha256": "04f912f8a0746fb2cd1eba1c2f0871deebf6f85f2491000183b72654bbb3301d",
+      "preparedAt": "2026-10-23T22:10:53.764Z",
+      "dispatchedAt": "2026-10-23T22:10:53.767Z",
+      "settledAt": "2026-10-23T22:10:53.841Z",
+      "status": 200,
+      "uncertain": false,
+      "recordId": "91db66ae-ac17-47c2-98f4-f4fe42d47df3",
+      "dispatchId": "c4342662-e41f-40bf-99c0-a04e44f789db",
+      "terminalResponseObserved": true
+    },
+    {
+      "index": 32,
+      "label": "sign-out",
+      "app": "app",
+      "method": "POST",
+      "alias": "ADMIN",
+      "contextRef": "b3600b9d-d495-49e8-961a-d955e183b768",
+      "pathname": "/api/logout",
+      "secretBody": true,
+      "bodySha256": null,
+      "idempotencyKeySha256": null,
+      "preparedAt": "2026-10-23T22:10:54.093Z",
+      "dispatchedAt": "2026-10-23T22:10:54.093Z",
+      "settledAt": "2026-10-23T22:10:54.167Z",
+      "status": 200,
+      "uncertain": false,
+      "recordId": "91db66ae-ac17-47c2-98f4-f4fe42d47df3"
+    },
+    {
+      "index": 33,
+      "label": "sign-out",
+      "app": "platform",
+      "method": "POST",
+      "alias": "ADMIN",
+      "contextRef": "e6f5250f-f795-4037-9533-338e459bf1a3",
+      "pathname": "/api/auth/sign-out",
+      "secretBody": true,
+      "bodySha256": null,
+      "idempotencyKeySha256": null,
+      "preparedAt": "2026-10-23T22:10:54.736Z",
+      "dispatchedAt": "2026-10-23T22:10:54.736Z",
+      "settledAt": "2026-10-23T22:10:55.195Z",
+      "status": 200,
+      "uncertain": false,
+      "recordId": "91db66ae-ac17-47c2-98f4-f4fe42d47df3"
+    }
+  ],
+  "flagJobs": [
+    {
+      "enabled": true,
+      "operatorId": "91db66ae-ac17-47c2-98f4-f4fe42d47df3",
+      "planSha256": "ae817c03e2e9a6d0aba033c24469385baa8470e4fc69b6581f8db4f449953047",
+      "commandSha256": "e3b4a2e743a4d44d27e8f2512d6249f3d7eb16b2002a01b4fe7f069b038f439a",
+      "preparedAt": "2026-10-23T22:08:07.484Z",
+      "dispatchedAt": "2026-10-23T22:08:07.486Z",
+      "terminal": true,
+      "uncertain": false,
+      "dispatchId": "582991b9-d769-4087-ad1d-fa715f5305ee",
+      "jobId": "job-dbdtlkfavr4c739cb3c0",
+      "status": "succeeded",
+      "receipt": {
+        "ticket": "SCRUM-630",
+        "complete": true,
+        "serviceName": "oto-app-staging",
+        "serviceId": "srv-danppvjtqb8s73cnvua0",
+        "sourceSha": "532e9aab705d873da240ad4b40e77e33fa562d31",
+        "ciRunId": "40028592897",
+        "operatorId": "91db66ae-ac17-47c2-98f4-f4fe42d47df3",
+        "tenantId": "681b18d1-4c75-415d-9271-5fe3afc30993",
+        "fixtureName": "ZZ TEST SCRUM-630 3fbbfeb9-984f-4707-8476-5728c0160627",
+        "fixtureCreatedAt": "2026-10-23T22:07:41.527Z",
+        "enabled": true,
+        "fixtureCreatedAtExact": "2026-10-23 22:07:41.527501+00",
+        "previousEnabled": false,
+        "changedRows": 1,
+        "appDatabaseRoleConfirmed": true,
+        "databaseRoleSha256": "7b4cc2189b760f3380801bef5afc05b4bce7b23f774c29aec26ac7b44eeb5f20",
+        "branches": 0,
+        "userIds": [
+          "01a11b1d-e8e6-7627-bec8-d92e53579c0b"
+        ],
+        "sourceIndexSha256": "daf636933c489739919c0572dbe95cf8b03163cfe836f6df6e271cb0c00a77ac",
+        "appBundleSha256": "33ecb876d0fa995452d8693ae94e3b6c7ea4418e470ad119cd9abb219024eec9",
+        "committed": true,
+        "completedAt": "2026-10-23T22:08:22.318Z"
+      },
+      "settledAt": "2026-10-23T22:08:36.841Z"
+    },
+    {
+      "enabled": false,
+      "operatorId": "91db66ae-ac17-47c2-98f4-f4fe42d47df3",
+      "planSha256": "27a927d216c2556725cabb6fcfedaf3493f153f324a77b65c709c9ff5d843f2c",
+      "commandSha256": "cd9f5812986c93b986af185e56b9b46df0c12723d724726225d5dbc383216f2c",
+      "preparedAt": "2026-10-23T22:09:56.428Z",
+      "dispatchedAt": "2026-10-23T22:09:56.431Z",
+      "terminal": true,
+      "uncertain": false,
+      "dispatchId": "9075ab38-ee4a-4545-b9eb-7c8cf39c0ef8",
+      "jobId": "job-dbdtmf1srm7s73cv3o2g",
+      "status": "succeeded",
+      "receipt": {
+        "ticket": "SCRUM-630",
+        "complete": true,
+        "serviceName": "oto-app-staging",
+        "serviceId": "srv-danppvjtqb8s73cnvua0",
+        "sourceSha": "532e9aab705d873da240ad4b40e77e33fa562d31",
+        "ciRunId": "40028592897",
+        "operatorId": "91db66ae-ac17-47c2-98f4-f4fe42d47df3",
+        "tenantId": "681b18d1-4c75-415d-9271-5fe3afc30993",
+        "fixtureName": "ZZ TEST SCRUM-630 3fbbfeb9-984f-4707-8476-5728c0160627",
+        "fixtureCreatedAt": "2026-10-23T22:07:41.527Z",
+        "enabled": false,
+        "fixtureCreatedAtExact": "2026-10-23 22:07:41.527501+00",
+        "previousEnabled": true,
+        "changedRows": 1,
+        "appDatabaseRoleConfirmed": true,
+        "databaseRoleSha256": "7b4cc2189b760f3380801bef5afc05b4bce7b23f774c29aec26ac7b44eeb5f20",
+        "branches": 0,
+        "userIds": [],
+        "sourceIndexSha256": "daf636933c489739919c0572dbe95cf8b03163cfe836f6df6e271cb0c00a77ac",
+        "appBundleSha256": "33ecb876d0fa995452d8693ae94e3b6c7ea4418e470ad119cd9abb219024eec9",
+        "committed": true,
+        "completedAt": "2026-10-23T22:10:28.149Z"
+      },
+      "settledAt": "2026-10-23T22:10:53.763Z"
+    }
+  ],
+  "authCleanup": [
+    {
+      "alias": "RECEPTION",
+      "app": "app",
+      "contextRef": "14f28bf2-101b-4f5c-8374-57632c98b0ac",
+      "attempted": true,
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    },
+    {
+      "alias": "RECEPTION",
+      "app": "platform",
+      "contextRef": "124cac86-287a-4c7c-9f06-9291e91b0729",
+      "attempted": true,
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    },
+    {
+      "alias": "RECEPTION",
+      "app": "app",
+      "contextRef": "a6065c4d-9ce3-48d7-955c-96fa392d46dd",
+      "attempted": true,
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    },
+    {
+      "alias": "RECEPTION",
+      "app": "platform",
+      "contextRef": "10ed918c-fd2b-447b-b50c-74365d4199e4",
+      "attempted": true,
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    },
+    {
+      "alias": "RECEPTION",
+      "app": "app",
+      "contextRef": "c45e1797-e0cb-4820-90e1-aa1309311ffe",
+      "attempted": true,
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    },
+    {
+      "alias": "RECEPTION",
+      "app": "platform",
+      "contextRef": "9e76e863-776c-49ea-905d-7a656f4fecb8",
+      "attempted": true,
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    },
+    {
+      "alias": "RECEPTION",
+      "app": "app",
+      "contextRef": "ef18259e-bd53-4a87-abd1-5c7358c04c14",
+      "attempted": true,
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    },
+    {
+      "alias": "RECEPTION",
+      "app": "platform",
+      "contextRef": "3e68974e-a777-43cd-bfcc-5bb9761b72d6",
+      "attempted": true,
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    },
+    {
+      "alias": "ADMIN",
+      "app": "app",
+      "contextRef": "b3600b9d-d495-49e8-961a-d955e183b768",
+      "attempted": true,
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    },
+    {
+      "alias": "ADMIN",
+      "app": "platform",
+      "contextRef": "e6f5250f-f795-4037-9533-338e459bf1a3",
+      "attempted": true,
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    }
+  ],
+  "authCleanupAttempts": [
+    {
+      "alias": "RECEPTION",
+      "app": "app",
+      "contextRef": "14f28bf2-101b-4f5c-8374-57632c98b0ac",
+      "attempted": true,
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    },
+    {
+      "alias": "RECEPTION",
+      "app": "platform",
+      "contextRef": "124cac86-287a-4c7c-9f06-9291e91b0729",
+      "attempted": true,
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    },
+    {
+      "alias": "RECEPTION",
+      "app": "app",
+      "contextRef": "a6065c4d-9ce3-48d7-955c-96fa392d46dd",
+      "attempted": true,
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    },
+    {
+      "alias": "RECEPTION",
+      "app": "platform",
+      "contextRef": "10ed918c-fd2b-447b-b50c-74365d4199e4",
+      "attempted": true,
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    },
+    {
+      "alias": "RECEPTION",
+      "app": "app",
+      "contextRef": "c45e1797-e0cb-4820-90e1-aa1309311ffe",
+      "attempted": true,
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    },
+    {
+      "alias": "RECEPTION",
+      "app": "platform",
+      "contextRef": "9e76e863-776c-49ea-905d-7a656f4fecb8",
+      "attempted": true,
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    },
+    {
+      "alias": "RECEPTION",
+      "app": "app",
+      "contextRef": "ef18259e-bd53-4a87-abd1-5c7358c04c14",
+      "attempted": true,
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    },
+    {
+      "alias": "RECEPTION",
+      "app": "platform",
+      "contextRef": "3e68974e-a777-43cd-bfcc-5bb9761b72d6",
+      "attempted": true,
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    },
+    {
+      "alias": "ADMIN",
+      "app": "app",
+      "contextRef": "b3600b9d-d495-49e8-961a-d955e183b768",
+      "attempted": true,
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    },
+    {
+      "alias": "ADMIN",
+      "app": "platform",
+      "contextRef": "e6f5250f-f795-4037-9533-338e459bf1a3",
+      "attempted": true,
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    }
+  ],
+  "screenshots": [
+    {
+      "ticket": "SCRUM-630",
+      "phase": "explicit-flag-off-legacy-staff",
+      "mode": "staging-proof",
+      "actualStaging": true,
+      "localMock": false,
+      "acceptanceEligible": true,
+      "capturedAt": "2026-10-23T22:07:53.884Z",
+      "source": {
+        "sha": "532e9aab705d873da240ad4b40e77e33fa562d31",
+        "deployFinishedAt": "2026-10-23T22:02:18.257Z"
+      },
+      "sha256": "19837b2503c0b7bb01f2706b284db11f7ee3f3c94e5edc1582ef95a87f1158bc",
+      "dimensions": {
+        "width": 1600,
+        "height": 1400
+      },
+      "apiRole": "staff",
+      "apiSalaryView": false,
+      "mappingEnabled": false,
+      "identityAndOriginalBranchLimitsConfirmedBeforeAndAfter": true,
+      "nativeRoleVisible": true,
+      "nativeRole": "staff",
+      "nativeAddEmployeeAndPay": false,
+      "nativePayChoiceMatchedBeforeAndAfter": false,
+      "positiveFieldsBlankAndDisabled": false,
+      "hiddenNoticeAndAbsentFields": false,
+      "requiredBounds": [
+        {
+          "x": 516,
+          "y": 32,
+          "width": 214.921875,
+          "height": 32,
+          "clips": [],
+          "documentWidth": 1600,
+          "unobscured": true
+        },
+        {
+          "x": 489,
+          "y": 305,
+          "width": 622,
+          "height": 48,
+          "clips": [],
+          "documentWidth": 1600,
+          "unobscured": true
+        }
+      ],
+      "maskRegions": 6,
+      "privacy": {
+        "privateTextOccurrences": 2,
+        "uncoveredPrivateText": 0,
+        "privateFormValues": 0,
+        "uncoveredPrivateFormValues": 0,
+        "originalMediaFetched": 0,
+        "originalFontsFetched": 0,
+        "exactFontSuppressed": 1,
+        "policyHash": "85a9f5362efb89eeb240425a0377d5f18cce736ce7af143e4bafd2f062e9d226"
+      },
+      "browser": {
+        "allowedReads": {
+          "/api/user": 3,
+          "/api/qa-reports/config": 1,
+          "/api/permissions/me": 1,
+          "/api/branches": 1,
+          "/api/auth/sms-otp/status": 1,
+          "/api/auth/sign-in-options": 1,
+          "/api/my-account/birthday": 1,
+          "/api/my-account/employee-info": 1
+        },
+        "responseStatuses": {
+          "c4cf151d72ec2da6e3152c10060c75391905516868de23dfb7ab945c5afa8c4a:200": 3,
+          "48d57e4e8f6b8193b2982ccfc584b3125f41708a2e8efa2c005afe45ba67d5ea:200": 1,
+          "1da0ee794a6fa5e2148fda0e2aeb7afa8aa79d3f114eeec8de38958e153f2db7:200": 1,
+          "8766b66c91531dcdde3da0b95f3e63cf64d35127c3170972cca0c0450e1dd120:200": 1,
+          "b6cc7805bc94d99159607d5093635ec383a44d9a55cff6235434589f09c68be1:200": 1,
+          "ef2df4bedc2e7442ddf541a5e192e2afa07f9d6035d875662c6b184460821a19:200": 1,
+          "aebdac841416d45bddad1437e60d41e180bbbcdc96c8663618eb092fda1ad3db:200": 1,
+          "e0c5d9a81b77d523a6581e215b18abeceb823cb3a5ad8e68696ed1c11c313cb1:200": 1
+        },
+        "refusedRequests": {},
+        "consoleCounts": {
+          "log": 21
+        },
+        "pageErrors": 0,
+        "apiErrors": 0,
+        "failedRequests": 0
+      },
+      "captionBounds": {
+        "x": 8,
+        "y": 2,
+        "width": 1584,
+        "height": 22,
+        "clips": [],
+        "documentWidth": 1600,
+        "unobscured": true,
+        "textFits": true,
+        "textVisible": true
+      },
+      "captionVisibleUnmaskedBeforeAndAfter": true,
+      "assetPolicyHash": "f024d8bfd2024cd311f7bb11f42f94a49ac71386b95eb9e4aef889f2511071d0",
+      "limitation": "Blank unsaved native form or legacy role only; no employee, salary, payroll or workbook contents captured.",
+      "filename": "SCRUM-630-01-explicit-flag-off-legacy-staff.png"
+    },
+    {
+      "ticket": "SCRUM-630",
+      "phase": "enabled-manager-salary-false",
+      "mode": "staging-proof",
+      "actualStaging": true,
+      "localMock": false,
+      "acceptanceEligible": true,
+      "capturedAt": "2026-10-23T22:08:49.858Z",
+      "source": {
+        "sha": "532e9aab705d873da240ad4b40e77e33fa562d31",
+        "deployFinishedAt": "2026-10-23T22:02:18.257Z"
+      },
+      "sha256": "b5d06106b6d1689a47d6ccd91d2fc90f9975b36a5fa90d0fee1df2c473649a36",
+      "dimensions": {
+        "width": 1600,
+        "height": 1400
+      },
+      "apiRole": "manager",
+      "apiSalaryView": false,
+      "mappingEnabled": true,
+      "identityAndOriginalBranchLimitsConfirmedBeforeAndAfter": true,
+      "nativeRoleVisible": false,
+      "nativeRole": null,
+      "nativeAddEmployeeAndPay": true,
+      "nativePayChoiceMatchedBeforeAndAfter": true,
+      "positiveFieldsBlankAndDisabled": false,
+      "hiddenNoticeAndAbsentFields": true,
+      "requiredBounds": [
+        {
+          "x": 428,
+          "y": 89,
+          "width": 190.984375,
+          "height": 36,
+          "clips": [],
+          "documentWidth": 1600,
+          "unobscured": true
+        },
+        {
+          "x": 432,
+          "y": 271,
+          "width": 345.953125,
+          "height": 24,
+          "clips": [],
+          "documentWidth": 1600,
+          "unobscured": true
+        },
+        {
+          "x": 404,
+          "y": 339,
+          "width": 1051,
+          "height": 46,
+          "clips": [],
+          "documentWidth": 1600,
+          "unobscured": true
+        }
+      ],
+      "maskRegions": 6,
+      "privacy": {
+        "privateTextOccurrences": 0,
+        "uncoveredPrivateText": 0,
+        "privateFormValues": 0,
+        "uncoveredPrivateFormValues": 0,
+        "originalMediaFetched": 0,
+        "originalFontsFetched": 0,
+        "exactFontSuppressed": 1,
+        "policyHash": "85a9f5362efb89eeb240425a0377d5f18cce736ce7af143e4bafd2f062e9d226"
+      },
+      "browser": {
+        "allowedReads": {
+          "/api/user": 3,
+          "/api/me/sidebar-sections": 1,
+          "/api/notifications/unread-count": 1,
+          "/api/qa-reports/config": 1,
+          "/api/permissions/me": 1,
+          "/api/branches": 1,
+          "/api/sidebar/badges": 1,
+          "/api/departments": 1,
+          "/api/roles": 1
+        },
+        "responseStatuses": {
+          "c4cf151d72ec2da6e3152c10060c75391905516868de23dfb7ab945c5afa8c4a:200": 3,
+          "ccfc3bb2bf2d1d8a5544bb18ee096f38ca2cacef783a7847004296b2a724a195:200": 1,
+          "cd4a7ea171295a1363dc4b40166fc3ffc6bafb4bb58400e0cf9e98188c3bee0e:200": 1,
+          "48d57e4e8f6b8193b2982ccfc584b3125f41708a2e8efa2c005afe45ba67d5ea:200": 1,
+          "8766b66c91531dcdde3da0b95f3e63cf64d35127c3170972cca0c0450e1dd120:200": 1,
+          "1da0ee794a6fa5e2148fda0e2aeb7afa8aa79d3f114eeec8de38958e153f2db7:200": 1,
+          "d6d1c8f47297589fb4f6f3af70dfcd6d0931c375515c81c673ba2e2c805a4b61:200": 1,
+          "ede0b94649b5537e6713aa7b223b3a2d958ed27f51643746a96e5bfdd844e008:200": 1,
+          "b8f22233752a42d1d6d5ffd9362dba78400c182b2e671116a5afbff4d224465e:200": 1
+        },
+        "refusedRequests": {},
+        "consoleCounts": {
+          "log": 21
+        },
+        "pageErrors": 0,
+        "apiErrors": 0,
+        "failedRequests": 0
+      },
+      "captionBounds": {
+        "x": 264,
+        "y": 66,
+        "width": 1328,
+        "height": 22,
+        "clips": [],
+        "documentWidth": 1600,
+        "unobscured": true,
+        "textFits": true,
+        "textVisible": true
+      },
+      "captionVisibleUnmaskedBeforeAndAfter": true,
+      "assetPolicyHash": "f024d8bfd2024cd311f7bb11f42f94a49ac71386b95eb9e4aef889f2511071d0",
+      "limitation": "Blank unsaved native form or legacy role only; no employee, salary, payroll or workbook contents captured.",
+      "filename": "SCRUM-630-02-enabled-manager-salary-false.png"
+    },
+    {
+      "ticket": "SCRUM-630",
+      "phase": "enabled-same-manager-salary-true",
+      "mode": "staging-proof",
+      "actualStaging": true,
+      "localMock": false,
+      "acceptanceEligible": true,
+      "capturedAt": "2026-10-23T22:09:13.263Z",
+      "source": {
+        "sha": "532e9aab705d873da240ad4b40e77e33fa562d31",
+        "deployFinishedAt": "2026-10-23T22:02:18.257Z"
+      },
+      "sha256": "776d160f47801bd21260057e60c1cbf3c9f1a5ae43e464d00e678d3f9116e1bd",
+      "dimensions": {
+        "width": 1600,
+        "height": 1400
+      },
+      "apiRole": "manager",
+      "apiSalaryView": true,
+      "mappingEnabled": true,
+      "identityAndOriginalBranchLimitsConfirmedBeforeAndAfter": true,
+      "nativeRoleVisible": false,
+      "nativeRole": null,
+      "nativeAddEmployeeAndPay": true,
+      "nativePayChoiceMatchedBeforeAndAfter": true,
+      "positiveFieldsBlankAndDisabled": true,
+      "hiddenNoticeAndAbsentFields": false,
+      "requiredBounds": [
+        {
+          "x": 428,
+          "y": 89,
+          "width": 190.984375,
+          "height": 36,
+          "clips": [],
+          "documentWidth": 1600,
+          "unobscured": true
+        },
+        {
+          "x": 432,
+          "y": 271,
+          "width": 345.953125,
+          "height": 24,
+          "clips": [],
+          "documentWidth": 1600,
+          "unobscured": true
+        },
+        {
+          "x": 404,
+          "y": 371,
+          "width": 1051,
+          "height": 36,
+          "clips": [],
+          "documentWidth": 1600,
+          "unobscured": true
+        },
+        {
+          "x": 404,
+          "y": 455,
+          "width": 1051,
+          "height": 100,
+          "clips": [],
+          "documentWidth": 1600,
+          "unobscured": true
+        },
+        {
+          "x": 404,
+          "y": 631,
+          "width": 1051,
+          "height": 36,
+          "clips": [],
+          "documentWidth": 1600,
+          "unobscured": true
+        }
+      ],
+      "maskRegions": 6,
+      "privacy": {
+        "privateTextOccurrences": 0,
+        "uncoveredPrivateText": 0,
+        "privateFormValues": 0,
+        "uncoveredPrivateFormValues": 0,
+        "originalMediaFetched": 0,
+        "originalFontsFetched": 0,
+        "exactFontSuppressed": 1,
+        "policyHash": "85a9f5362efb89eeb240425a0377d5f18cce736ce7af143e4bafd2f062e9d226"
+      },
+      "browser": {
+        "allowedReads": {
+          "/api/user": 3,
+          "/api/me/sidebar-sections": 1,
+          "/api/notifications/unread-count": 1,
+          "/api/qa-reports/config": 1,
+          "/api/permissions/me": 1,
+          "/api/branches": 1,
+          "/api/sidebar/badges": 1,
+          "/api/departments": 1,
+          "/api/roles": 1
+        },
+        "responseStatuses": {
+          "c4cf151d72ec2da6e3152c10060c75391905516868de23dfb7ab945c5afa8c4a:200": 3,
+          "ccfc3bb2bf2d1d8a5544bb18ee096f38ca2cacef783a7847004296b2a724a195:200": 1,
+          "1da0ee794a6fa5e2148fda0e2aeb7afa8aa79d3f114eeec8de38958e153f2db7:200": 1,
+          "8766b66c91531dcdde3da0b95f3e63cf64d35127c3170972cca0c0450e1dd120:200": 1,
+          "cd4a7ea171295a1363dc4b40166fc3ffc6bafb4bb58400e0cf9e98188c3bee0e:200": 1,
+          "48d57e4e8f6b8193b2982ccfc584b3125f41708a2e8efa2c005afe45ba67d5ea:200": 1,
+          "d6d1c8f47297589fb4f6f3af70dfcd6d0931c375515c81c673ba2e2c805a4b61:200": 1,
+          "ede0b94649b5537e6713aa7b223b3a2d958ed27f51643746a96e5bfdd844e008:200": 1,
+          "b8f22233752a42d1d6d5ffd9362dba78400c182b2e671116a5afbff4d224465e:200": 1
+        },
+        "refusedRequests": {},
+        "consoleCounts": {
+          "log": 21
+        },
+        "pageErrors": 0,
+        "apiErrors": 0,
+        "failedRequests": 0
+      },
+      "captionBounds": {
+        "x": 264,
+        "y": 66,
+        "width": 1328,
+        "height": 22,
+        "clips": [],
+        "documentWidth": 1600,
+        "unobscured": true,
+        "textFits": true,
+        "textVisible": true
+      },
+      "captionVisibleUnmaskedBeforeAndAfter": true,
+      "assetPolicyHash": "f024d8bfd2024cd311f7bb11f42f94a49ac71386b95eb9e4aef889f2511071d0",
+      "limitation": "Blank unsaved native form or legacy role only; no employee, salary, payroll or workbook contents captured.",
+      "filename": "SCRUM-630-03-enabled-same-manager-salary-true.png"
+    },
+    {
+      "ticket": "SCRUM-630",
+      "phase": "enabled-same-manager-salary-withdrawn",
+      "mode": "staging-proof",
+      "actualStaging": true,
+      "localMock": false,
+      "acceptanceEligible": true,
+      "capturedAt": "2026-10-23T22:09:37.858Z",
+      "source": {
+        "sha": "532e9aab705d873da240ad4b40e77e33fa562d31",
+        "deployFinishedAt": "2026-10-23T22:02:18.257Z"
+      },
+      "sha256": "14aeba229a0d4e935a9c66f05f7a99a384751730199b25eb9e53be28f1283fed",
+      "dimensions": {
+        "width": 1600,
+        "height": 1400
+      },
+      "apiRole": "manager",
+      "apiSalaryView": false,
+      "mappingEnabled": true,
+      "identityAndOriginalBranchLimitsConfirmedBeforeAndAfter": true,
+      "nativeRoleVisible": false,
+      "nativeRole": null,
+      "nativeAddEmployeeAndPay": true,
+      "nativePayChoiceMatchedBeforeAndAfter": true,
+      "positiveFieldsBlankAndDisabled": false,
+      "hiddenNoticeAndAbsentFields": true,
+      "requiredBounds": [
+        {
+          "x": 428,
+          "y": 89,
+          "width": 190.984375,
+          "height": 36,
+          "clips": [],
+          "documentWidth": 1600,
+          "unobscured": true
+        },
+        {
+          "x": 432,
+          "y": 271,
+          "width": 345.953125,
+          "height": 24,
+          "clips": [],
+          "documentWidth": 1600,
+          "unobscured": true
+        },
+        {
+          "x": 404,
+          "y": 339,
+          "width": 1051,
+          "height": 46,
+          "clips": [],
+          "documentWidth": 1600,
+          "unobscured": true
+        }
+      ],
+      "maskRegions": 6,
+      "privacy": {
+        "privateTextOccurrences": 0,
+        "uncoveredPrivateText": 0,
+        "privateFormValues": 0,
+        "uncoveredPrivateFormValues": 0,
+        "originalMediaFetched": 0,
+        "originalFontsFetched": 0,
+        "exactFontSuppressed": 1,
+        "policyHash": "85a9f5362efb89eeb240425a0377d5f18cce736ce7af143e4bafd2f062e9d226"
+      },
+      "browser": {
+        "allowedReads": {
+          "/api/user": 3,
+          "/api/me/sidebar-sections": 1,
+          "/api/notifications/unread-count": 1,
+          "/api/qa-reports/config": 1,
+          "/api/permissions/me": 1,
+          "/api/branches": 1,
+          "/api/departments": 1,
+          "/api/roles": 1,
+          "/api/sidebar/badges": 1
+        },
+        "responseStatuses": {
+          "c4cf151d72ec2da6e3152c10060c75391905516868de23dfb7ab945c5afa8c4a:200": 3,
+          "1da0ee794a6fa5e2148fda0e2aeb7afa8aa79d3f114eeec8de38958e153f2db7:200": 1,
+          "cd4a7ea171295a1363dc4b40166fc3ffc6bafb4bb58400e0cf9e98188c3bee0e:200": 1,
+          "ccfc3bb2bf2d1d8a5544bb18ee096f38ca2cacef783a7847004296b2a724a195:200": 1,
+          "8766b66c91531dcdde3da0b95f3e63cf64d35127c3170972cca0c0450e1dd120:200": 1,
+          "48d57e4e8f6b8193b2982ccfc584b3125f41708a2e8efa2c005afe45ba67d5ea:200": 1,
+          "ede0b94649b5537e6713aa7b223b3a2d958ed27f51643746a96e5bfdd844e008:200": 1,
+          "d6d1c8f47297589fb4f6f3af70dfcd6d0931c375515c81c673ba2e2c805a4b61:200": 1,
+          "b8f22233752a42d1d6d5ffd9362dba78400c182b2e671116a5afbff4d224465e:200": 1
+        },
+        "refusedRequests": {},
+        "consoleCounts": {
+          "log": 21
+        },
+        "pageErrors": 0,
+        "apiErrors": 0,
+        "failedRequests": 0
+      },
+      "captionBounds": {
+        "x": 264,
+        "y": 66,
+        "width": 1328,
+        "height": 22,
+        "clips": [],
+        "documentWidth": 1600,
+        "unobscured": true,
+        "textFits": true,
+        "textVisible": true
+      },
+      "captionVisibleUnmaskedBeforeAndAfter": true,
+      "assetPolicyHash": "f024d8bfd2024cd311f7bb11f42f94a49ac71386b95eb9e4aef889f2511071d0",
+      "limitation": "Blank unsaved native form or legacy role only; no employee, salary, payroll or workbook contents captured.",
+      "filename": "SCRUM-630-04-enabled-same-manager-salary-withdrawn.png"
+    }
+  ],
+  "phases": [
+    {
+      "phase": "explicit-flag-off-legacy-staff",
+      "role": "staff",
+      "enabled": false,
+      "salaryView": false,
+      "appUserId": "01a11b1d-e8e6-7627-bec8-d92e53579c0b",
+      "tenantId": "681b18d1-4c75-415d-9271-5fe3afc30993",
+      "appOperatorId": "91db66ae-ac17-47c2-98f4-f4fe42d47df3",
+      "rawRoleConfirmed": true,
+      "originalBranchLimitsConfirmed": true,
+      "platformSalaryGrantConfirmedBeforeAndAfter": true,
+      "checkedBeforeAndAfter": true,
+      "checkedAt": "2026-10-23T22:08:01.585Z"
+    },
+    {
+      "phase": "enabled-manager-salary-false",
+      "role": "manager",
+      "enabled": true,
+      "salaryView": false,
+      "appUserId": "01a11b1d-e8e6-7627-bec8-d92e53579c0b",
+      "tenantId": "681b18d1-4c75-415d-9271-5fe3afc30993",
+      "appOperatorId": "91db66ae-ac17-47c2-98f4-f4fe42d47df3",
+      "rawRoleConfirmed": true,
+      "originalBranchLimitsConfirmed": true,
+      "platformSalaryGrantConfirmedBeforeAndAfter": true,
+      "checkedBeforeAndAfter": true,
+      "checkedAt": "2026-10-23T22:08:57.775Z"
+    },
+    {
+      "phase": "enabled-same-manager-salary-true",
+      "role": "manager",
+      "enabled": true,
+      "salaryView": true,
+      "appUserId": "01a11b1d-e8e6-7627-bec8-d92e53579c0b",
+      "tenantId": "681b18d1-4c75-415d-9271-5fe3afc30993",
+      "appOperatorId": "91db66ae-ac17-47c2-98f4-f4fe42d47df3",
+      "rawRoleConfirmed": true,
+      "originalBranchLimitsConfirmed": true,
+      "platformSalaryGrantConfirmedBeforeAndAfter": true,
+      "checkedBeforeAndAfter": true,
+      "checkedAt": "2026-10-23T22:09:21.070Z"
+    },
+    {
+      "phase": "enabled-same-manager-salary-withdrawn",
+      "role": "manager",
+      "enabled": true,
+      "salaryView": false,
+      "appUserId": "01a11b1d-e8e6-7627-bec8-d92e53579c0b",
+      "tenantId": "681b18d1-4c75-415d-9271-5fe3afc30993",
+      "appOperatorId": "91db66ae-ac17-47c2-98f4-f4fe42d47df3",
+      "rawRoleConfirmed": true,
+      "originalBranchLimitsConfirmed": true,
+      "platformSalaryGrantConfirmedBeforeAndAfter": true,
+      "checkedBeforeAndAfter": true,
+      "checkedAt": "2026-10-23T22:09:46.777Z"
+    }
+  ],
+  "sourceChecks": [
+    {
+      "checkedAt": "2026-10-23T22:07:34.058Z",
+      "sourceSha": "532e9aab705d873da240ad4b40e77e33fa562d31"
+    },
+    {
+      "checkedAt": "2026-10-23T22:07:45.799Z",
+      "sourceSha": "532e9aab705d873da240ad4b40e77e33fa562d31"
+    },
+    {
+      "checkedAt": "2026-10-23T22:07:52.621Z",
+      "sourceSha": "532e9aab705d873da240ad4b40e77e33fa562d31"
+    },
+    {
+      "checkedAt": "2026-10-23T22:07:57.236Z",
+      "sourceSha": "532e9aab705d873da240ad4b40e77e33fa562d31"
+    },
+    {
+      "checkedAt": "2026-10-23T22:08:00.790Z",
+      "sourceSha": "532e9aab705d873da240ad4b40e77e33fa562d31"
+    },
+    {
+      "checkedAt": "2026-10-23T22:08:07.408Z",
+      "sourceSha": "532e9aab705d873da240ad4b40e77e33fa562d31"
+    },
+    {
+      "checkedAt": "2026-10-23T22:08:11.846Z",
+      "sourceSha": "532e9aab705d873da240ad4b40e77e33fa562d31"
+    },
+    {
+      "checkedAt": "2026-10-23T22:08:16.128Z",
+      "sourceSha": "532e9aab705d873da240ad4b40e77e33fa562d31"
+    },
+    {
+      "checkedAt": "2026-10-23T22:08:31.821Z",
+      "sourceSha": "532e9aab705d873da240ad4b40e77e33fa562d31"
+    },
+    {
+      "checkedAt": "2026-10-23T22:08:36.837Z",
+      "sourceSha": "532e9aab705d873da240ad4b40e77e33fa562d31"
+    },
+    {
+      "checkedAt": "2026-10-23T22:08:40.178Z",
+      "sourceSha": "532e9aab705d873da240ad4b40e77e33fa562d31"
+    },
+    {
+      "checkedAt": "2026-10-23T22:08:47.863Z",
+      "sourceSha": "532e9aab705d873da240ad4b40e77e33fa562d31"
+    },
+    {
+      "checkedAt": "2026-10-23T22:08:53.293Z",
+      "sourceSha": "532e9aab705d873da240ad4b40e77e33fa562d31"
+    },
+    {
+      "checkedAt": "2026-10-23T22:08:57.020Z",
+      "sourceSha": "532e9aab705d873da240ad4b40e77e33fa562d31"
+    },
+    {
+      "checkedAt": "2026-10-23T22:09:03.948Z",
+      "sourceSha": "532e9aab705d873da240ad4b40e77e33fa562d31"
+    },
+    {
+      "checkedAt": "2026-10-23T22:09:11.195Z",
+      "sourceSha": "532e9aab705d873da240ad4b40e77e33fa562d31"
+    },
+    {
+      "checkedAt": "2026-10-23T22:09:16.557Z",
+      "sourceSha": "532e9aab705d873da240ad4b40e77e33fa562d31"
+    },
+    {
+      "checkedAt": "2026-10-23T22:09:20.299Z",
+      "sourceSha": "532e9aab705d873da240ad4b40e77e33fa562d31"
+    },
+    {
+      "checkedAt": "2026-10-23T22:09:28.849Z",
+      "sourceSha": "532e9aab705d873da240ad4b40e77e33fa562d31"
+    },
+    {
+      "checkedAt": "2026-10-23T22:09:36.393Z",
+      "sourceSha": "532e9aab705d873da240ad4b40e77e33fa562d31"
+    },
+    {
+      "checkedAt": "2026-10-23T22:09:41.177Z",
+      "sourceSha": "532e9aab705d873da240ad4b40e77e33fa562d31"
+    },
+    {
+      "checkedAt": "2026-10-23T22:09:45.394Z",
+      "sourceSha": "532e9aab705d873da240ad4b40e77e33fa562d31"
+    },
+    {
+      "checkedAt": "2026-10-23T22:09:56.339Z",
+      "sourceSha": "532e9aab705d873da240ad4b40e77e33fa562d31"
+    },
+    {
+      "checkedAt": "2026-10-23T22:09:59.918Z",
+      "sourceSha": "532e9aab705d873da240ad4b40e77e33fa562d31"
+    },
+    {
+      "checkedAt": "2026-10-23T22:10:03.808Z",
+      "sourceSha": "532e9aab705d873da240ad4b40e77e33fa562d31"
+    },
+    {
+      "checkedAt": "2026-10-23T22:10:50.259Z",
+      "sourceSha": "532e9aab705d873da240ad4b40e77e33fa562d31"
+    },
+    {
+      "checkedAt": "2026-10-23T22:10:53.759Z",
+      "sourceSha": "532e9aab705d873da240ad4b40e77e33fa562d31"
+    },
+    {
+      "checkedAt": "2026-10-23T22:10:59.228Z",
+      "sourceSha": "532e9aab705d873da240ad4b40e77e33fa562d31"
+    }
+  ],
+  "requestCounts": {
+    "GET": 108,
+    "POST": 28,
+    "PUT": 2,
+    "DELETE": 2,
+    "PATCH": 1
+  },
+  "pendingAtEnd": 0,
+  "network": {
+    "blocked": 0,
+    "failed": 0,
+    "pageErrors": 0,
+    "consoleErrors": 0,
+    "suppressedPhotoCount": 0,
+    "suppressedPhotoUrlHashes": [],
+    "expectedPublicFontSuppression": 4,
+    "originalFontsFetched": 0,
+    "originalMediaFetched": 0
+  },
+  "cleanup": {
+    "subjectSessionsClosed": true,
+    "originalAssignmentsUnchanged": true,
+    "subjectRestored": true,
+    "originalBranchAccessAndIdentityUnchanged": true,
+    "fixtureArchivedEmptyFlagOff": true,
+    "originalEntitiesUnchanged": true,
+    "controlUntouched": true,
+    "controlParkAndPreferencesUnchanged": true,
+    "finalSourceConfirmed": true
+  },
+  "originalAssignmentIds": [
+    "01a0c38b-8173-70d2-bff8-3b1b25101e55",
+    "01a11b1d-e8f1-715a-9a9f-1e08e6410564"
+  ],
+  "fixture": {
+    "id": "91db66ae-ac17-47c2-98f4-f4fe42d47df3",
+    "name": "ZZ TEST SCRUM-630 3fbbfeb9-984f-4707-8476-5728c0160627",
+    "tenantId": "681b18d1-4c75-415d-9271-5fe3afc30993",
+    "createdAt": "2026-10-23T22:07:41.527Z"
+  },
+  "trialAssignmentIds": [
+    "ad842cbf-51ae-4618-8dbd-b3cfe870cc56",
+    "9f372fc2-a0bb-4270-8b00-db1f4b02c352"
+  ],
+  "uncertainAuthAtEnd": 0,
+  "unconfirmedFlagJobs": 0,
+  "unresolvedDispatches": [],
+  "unresolvedBusinessDispatches": 0,
+  "unresolvedAuthDispatches": 0,
+  "uncertainMutationsAtEnd": 0,
+  "completedAt": "2026-10-23T22:10:59.232Z",
+  "receiptWriteFailed": false,
+  "limit": "Four native salary-view frames and generated static template headers only; no actual employee salary or payroll data read or changed. Same mapped manager and original branch limits throughout enabled phases. Blank fields remain disabled; advisor and salary write/confirmation cases are local-only. Own profile photos and exact source Google Fonts CSS privacy-suppressed; original photo/font assets untested. No account/employee creation, payment, SMS, check-in, hardware, channel or original-entity mutation."
+}

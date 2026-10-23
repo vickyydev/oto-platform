@@ -1,0 +1,258 @@
+{
+  "ticket": "SCRUM-630",
+  "passed": true,
+  "acceptance": false,
+  "reviewedAt": "2026-10-23T22:19:13.284Z",
+  "sourceSha": "532e9aab705d873da240ad4b40e77e33fa562d31",
+  "ciRunId": "40028592897",
+  "proof": {
+    "path": "C:/w/admin630-staging-results.json",
+    "sha256": "46b93356ba54ed57b92fe99fd5bc228c0ddaf3e83c3910b33c5a947fdcad1f13",
+    "startedAt": "2026-10-23T22:07:30.475Z",
+    "completedAt": "2026-10-23T22:10:59.232Z",
+    "complete": true,
+    "businessComplete": true,
+    "acceptance": false
+  },
+  "observedExit": {
+    "path": "C:/w/admin630-staging-exit.json",
+    "sha256": "0a800a50fc32839bc8a32a954cb3ef87de7c52a8abb40672e838990db1efa10a",
+    "status": 0,
+    "signal": null,
+    "toolSession": 5221
+  },
+  "bindings": {
+    "planSha256": "70f56dca539fb0432dec8404e71b4986e780d4fa3c36c7ede20630ac6748653d",
+    "reviewSha256": "33d7b72c23de4bc19e7bc09837b666c96f1f9923a1a5257e57e08f670affa33d",
+    "helperSha256": "4c9ad51d5381cc6dee9e6f1811a50c9e3fdb629455d31c86956755bf273069b4",
+    "moduleHashes": {
+      "gate": "5925a7463ca112ba38f056e95817a2cb1ae6e7a6c58d527fa4fff85802522dc3",
+      "native": "a547bc7cd5e967d98227ecc70e65add5b5945f98f6463ffca68f7dbe396b4ee0",
+      "flag": "6d2e1266fbb0c1ed06da38dbc606e80c5802ab16e54dea7f636048f4a4dfa56a",
+      "executor": "a7014557705d7e537c513c7d7fed9fd81405a6c04ec73f1da339e9cc5b7ca8a0"
+    },
+    "operationModelSha256": "bb99cc061db39b34c72111f195d574545dbd2b723cb7819cc027bcba6fd97f92",
+    "deployments": [
+      {
+        "name": "oto-api-staging",
+        "deployId": "dep-dbdtgvgu01pc73dudlfg",
+        "finishedAt": "2026-10-23T22:02:18.257936Z"
+      },
+      {
+        "name": "oto-console-staging",
+        "deployId": "dep-dbdtgvou01pc73dudni0",
+        "finishedAt": "2026-10-23T21:59:10.978998Z"
+      },
+      {
+        "name": "oto-app-staging",
+        "deployId": "dep-dbdtgvgu01pc73dudme0",
+        "finishedAt": "2026-10-23T22:00:58.87624Z"
+      }
+    ],
+    "sourceChecks": 28,
+    "firstSourceCheckAt": "2026-10-23T22:07:34.058Z",
+    "lastSourceCheckAt": "2026-10-23T22:10:59.228Z"
+  },
+  "business": {
+    "orderedHttpOperations": 33,
+    "http200": 32,
+    "http201": 1,
+    "fixtureCreate201": true,
+    "authOperations": 25,
+    "businessHttpOperations": 8,
+    "allTerminalNoUncertainty": true,
+    "exactBusinessBodiesAndTargetsVerified": true,
+    "canonicalBranchManagerTrial": 1,
+    "canonicalOwnOperatorPlatformAdminSalaryTrial": 1,
+    "originalAssignmentsPreserved": 2,
+    "ownTrialAssignmentsRemoved": 2,
+    "freshContexts": 10,
+    "logout200Current401": 10,
+    "sameSubjectTenantAndOriginalBranchLimits": true,
+    "sameManagerFalseTrueWithdrawn": true,
+    "phases": [
+      {
+        "phase": "explicit-flag-off-legacy-staff",
+        "role": "staff",
+        "enabled": false,
+        "salaryView": false,
+        "checkedBeforeAndAfter": true,
+        "checkedAt": "2026-10-23T22:08:01.585Z"
+      },
+      {
+        "phase": "enabled-manager-salary-false",
+        "role": "manager",
+        "enabled": true,
+        "salaryView": false,
+        "checkedBeforeAndAfter": true,
+        "checkedAt": "2026-10-23T22:08:57.775Z"
+      },
+      {
+        "phase": "enabled-same-manager-salary-true",
+        "role": "manager",
+        "enabled": true,
+        "salaryView": true,
+        "checkedBeforeAndAfter": true,
+        "checkedAt": "2026-10-23T22:09:21.070Z"
+      },
+      {
+        "phase": "enabled-same-manager-salary-withdrawn",
+        "role": "manager",
+        "enabled": true,
+        "salaryView": false,
+        "checkedBeforeAndAfter": true,
+        "checkedAt": "2026-10-23T22:09:46.777Z"
+      }
+    ],
+    "staticTemplateProbes": [
+      {
+        "phase": "explicit-flag-off-legacy-staff",
+        "salaryView": false,
+        "status": 403,
+        "denied": true,
+        "staticTemplateOnly": true
+      },
+      {
+        "phase": "enabled-manager-salary-false",
+        "salaryView": false,
+        "status": 200,
+        "mime": "XLSX",
+        "bytesSha256": "7dcfef713cb7638b780c47086d4e9e759ad6734231eac4497a4eebd15a3fe0df",
+        "headerCount": 15,
+        "payHeaders": [
+          false,
+          false,
+          false
+        ],
+        "staticTemplateOnly": true,
+        "parsedRows": 1
+      },
+      {
+        "phase": "enabled-same-manager-salary-true",
+        "salaryView": true,
+        "status": 200,
+        "mime": "XLSX",
+        "bytesSha256": "188db5d0d047e6044644da94468cc952d26e380a9d5939ca5c8946713df9eb97",
+        "headerCount": 18,
+        "payHeaders": [
+          true,
+          true,
+          true
+        ],
+        "staticTemplateOnly": true,
+        "parsedRows": 1
+      },
+      {
+        "phase": "enabled-same-manager-salary-withdrawn",
+        "salaryView": false,
+        "status": 200,
+        "mime": "XLSX",
+        "bytesSha256": "7dcfef713cb7638b780c47086d4e9e759ad6734231eac4497a4eebd15a3fe0df",
+        "headerCount": 15,
+        "payHeaders": [
+          false,
+          false,
+          false
+        ],
+        "staticTemplateOnly": true,
+        "parsedRows": 1
+      }
+    ],
+    "flagJobs": [
+      {
+        "jobId": "job-dbdtlkfavr4c739cb3c0",
+        "enabled": true,
+        "status": "succeeded",
+        "terminal": true,
+        "changedRows": 1,
+        "exactOwnFixtureAndTenant": true,
+        "onlyExpectedUsersAndNoBranches": true,
+        "appServiceAndSourceConfirmed": true,
+        "databaseRoleSha256": "7b4cc2189b760f3380801bef5afc05b4bce7b23f774c29aec26ac7b44eeb5f20",
+        "completedAt": "2026-10-23T22:08:22.318Z"
+      },
+      {
+        "jobId": "job-dbdtmf1srm7s73cv3o2g",
+        "enabled": false,
+        "status": "succeeded",
+        "terminal": true,
+        "changedRows": 1,
+        "exactOwnFixtureAndTenant": true,
+        "onlyExpectedUsersAndNoBranches": true,
+        "appServiceAndSourceConfirmed": true,
+        "databaseRoleSha256": "7b4cc2189b760f3380801bef5afc05b4bce7b23f774c29aec26ac7b44eeb5f20",
+        "completedAt": "2026-10-23T22:10:28.149Z"
+      }
+    ]
+  },
+  "cleanup": {
+    "subjectSessionsClosed": true,
+    "originalAssignmentsUnchanged": true,
+    "subjectRestored": true,
+    "originalBranchAccessAndIdentityUnchanged": true,
+    "fixtureArchivedEmptyFlagOff": true,
+    "originalEntitiesUnchanged": true,
+    "controlUntouched": true,
+    "controlParkAndPreferencesUnchanged": true,
+    "finalSourceConfirmed": true
+  },
+  "safety": {
+    "pending": 0,
+    "unresolvedBusinessDispatches": 0,
+    "unresolvedAuthDispatches": 0,
+    "unconfirmedFlagJobs": 0,
+    "receiptWriteFailed": false,
+    "network": {
+      "blocked": 0,
+      "failed": 0,
+      "pageErrors": 0,
+      "consoleErrors": 0,
+      "suppressedPhotoCount": 0,
+      "suppressedPhotoUrlHashes": [],
+      "expectedPublicFontSuppression": 4,
+      "originalFontsFetched": 0,
+      "originalMediaFetched": 0
+    },
+    "rawCredentialContactCookiePayValueWorkbookFieldsAbsentFromProof": true,
+    "forbiddenRawKeysFound": 0,
+    "secretValuePatternsFound": 0
+  },
+  "screenshots": [
+    {
+      "filename": "SCRUM-630-01-explicit-flag-off-legacy-staff.png",
+      "sha256": "19837b2503c0b7bb01f2706b284db11f7ee3f3c94e5edc1582ef95a87f1158bc",
+      "capturedAt": "2026-10-23T22:07:53.884Z",
+      "byteHashAndDimensionsVerified": true,
+      "visuallyInspectedByThisReviewer": false
+    },
+    {
+      "filename": "SCRUM-630-02-enabled-manager-salary-false.png",
+      "sha256": "b5d06106b6d1689a47d6ccd91d2fc90f9975b36a5fa90d0fee1df2c473649a36",
+      "capturedAt": "2026-10-23T22:08:49.858Z",
+      "byteHashAndDimensionsVerified": true,
+      "visuallyInspectedByThisReviewer": false
+    },
+    {
+      "filename": "SCRUM-630-03-enabled-same-manager-salary-true.png",
+      "sha256": "776d160f47801bd21260057e60c1cbf3c9f1a5ae43e464d00e678d3f9116e1bd",
+      "capturedAt": "2026-10-23T22:09:13.263Z",
+      "byteHashAndDimensionsVerified": true,
+      "visuallyInspectedByThisReviewer": false
+    },
+    {
+      "filename": "SCRUM-630-04-enabled-same-manager-salary-withdrawn.png",
+      "sha256": "14aeba229a0d4e935a9c66f05f7a99a384751730199b25eb9e53be28f1283fed",
+      "capturedAt": "2026-10-23T22:09:37.858Z",
+      "byteHashAndDimensionsVerified": true,
+      "visuallyInspectedByThisReviewer": false
+    }
+  ],
+  "visualInspectionPerformed": false,
+  "visualAcceptance": "Separate root and independent visual reviews are required. This review checks image bytes and recorded native metadata only.",
+  "limitations": [
+    "Four native salary-view frames and generated static template headers only; no actual employee salary or payroll data read or changed. Same mapped manager and original branch limits throughout enabled phases. Blank fields remain disabled; advisor and salary write/confirmation cases are local-only. Own profile photos and exact source Google Fonts CSS privacy-suppressed; original photo/font assets untested. No account/employee creation, payment, SMS, check-in, hardware, channel or original-entity mutation.",
+    "Offline audit of the completed reviewed-helper receipt and observed process exit. No independent staging refetch, authentication, job, capture or mutation performed.",
+    "Future release JSON/publication actions are outside this review. Actual proof JSON contains safe hashes, counts, known IDs, route paths and synthetic fixture metadata; no raw credentials, contacts, cookies, pay values or workbook contents."
+  ],
+  "blockers": []
+}

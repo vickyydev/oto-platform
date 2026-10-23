@@ -1,0 +1,81 @@
+{
+  "ticket": "SCRUM-630",
+  "sourceSha": "532e9aab705d873da240ad4b40e77e33fa562d31",
+  "ciRunId": "40028592897",
+  "allSixCiJobsGreen": true,
+  "sourceManifest": {
+    "fullBattery": "a416fc1f33c4790951a8b2d142877703a95a70c3175895f0585688971e0a098f",
+    "final": "1e3f7acf0c6a585c5e6848721f9a787151b5d33c59f16d03a1c526eeda4cc1d4",
+    "files": 3704,
+    "owned": 34,
+    "dependenciesUnchanged": 28,
+    "finalDelta": "Only the existing Admin browser expected permission count137to138; all3703other source/config files unchanged",
+    "bridgeReviewSha256": "b7092fce1806d267f48fcbaed2acb6c0be47518c193faf525f643e35148def43"
+  },
+  "local": {
+    "apiPassed": 4842,
+    "apiInheritedSkips": 401,
+    "apiTodo": 5,
+    "apiFiles": 350,
+    "posPassed": 1437,
+    "otherPassed": 2638,
+    "otherTodo": 3,
+    "boxPassed": 749,
+    "builtBrowserPassed": 194,
+    "postRebasePassed": 107,
+    "compilerTasksPassed": 16,
+    "buildsPassed": 5,
+    "apiCompilerDiagnostics": 0,
+    "generatedContractsMatch": true,
+    "schemaMatches0085": true,
+    "otoStages": 8,
+    "otoGuardedCommands": 29,
+    "otoDisposableDatabasesRemoved": 6,
+    "otoConsumerGroups": 48,
+    "otoSalaryHttpChecks": 72,
+    "otoPayrollConfigChecks": 132
+  },
+  "compiler": {
+    "errors": 418,
+    "files": 54,
+    "buckets": 109,
+    "exactBaselineMatch": true,
+    "wholeLocalOutputReviewed": true,
+    "wholeCiOutputReviewed": true,
+    "ciLines": 668,
+    "ciReviewSha256": "b73a3138793de82f5f47554bc4a4e1aa827228fde48baa01b4b7ddac462c7645",
+    "ciCaptureSha256": "0db5e0caaa5742efa22de6eac71e2215e7a09d80596a51373b4ab05dc870d287"
+  },
+  "reviews": {
+    "platform": "740909b3224a5e9ea7436f1f7db2932cc93561744d2bf4ada524b9e6611c29a3",
+    "oto": "9d23f76e698cebabd3259b4493df5e9abafabd3a7c0ad9fdfc9f2e9d83fab3cd",
+    "postdeployCensus": "343dd52c9838559d3449107307810810f5b85b1547f9102cc93c4dc93927ec0d",
+    "core": "ab8b50e9d26fe05b2d77a4b271efc5e1df9ea7412fab070ac91d3fd6035f7f14",
+    "nativeIndependent": "b19ddc357dc84a01243153213888e9167b44a203a697601794a3374179f349ac",
+    "nativeRoot": "29ea6b7f980cb03e516cf6af8f51de136c9f212d07e928197303b1bdf7b3725e"
+  },
+  "observedProofExit": {
+    "status": 0,
+    "signal": null,
+    "receiptSha256": "0a800a50fc32839bc8a32a954cb3ef87de7c52a8abb40672e838990db1efa10a"
+  },
+  "earlierAttempts": {
+    "initialContractDrift": "Preserved failed1bcdd45f candidate; generated role-holder permission enum repaired",
+    "staleBrowserCount": "193passed/1failed expecting137 rather than138",
+    "firstBrowserRerun": "Setup failed before tests because isolated database environment was omitted; corrected v2passes194",
+    "firstCiCompilerCapture": "Exit1 with no artifacts; original cause and streams unrecoverable; later same-helper read-only retry passed after whole workflow green"
+  },
+  "containers": {
+    "removed": 126,
+    "allOtherContainersPreserved": true,
+    "allImagesNetworksVolumesPreserved": true,
+    "earlierReceiptSha256": "4b4933d20a101f012d296de3984845fe3f406c98687f0a74fad80ccd6abe3eb9",
+    "finalReceiptSha256": "4352aaab028c977165cd96da0ddc330fd90a076a2b1b39834cb0d70b9103de46"
+  },
+  "limits": [
+    "Advisor exclusions verified locally; no advisor demo account was sought or created",
+    "Original private photos were not requested; the exact public font stylesheet was privacy-suppressed; original photo/font assets remain untested",
+    "No real salary values or workbook contents included",
+    "Owner retains final acceptance"
+  ]
+}

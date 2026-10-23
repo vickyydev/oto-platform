@@ -1,0 +1,73 @@
+{
+  "ticket": "SCRUM-630",
+  "passed": true,
+  "actualStaging": true,
+  "allActualImagesViewed": true,
+  "sourceSha": "532e9aab705d873da240ad4b40e77e33fa562d31",
+  "proofSha256": "46b93356ba54ed57b92fe99fd5bc228c0ddaf3e83c3910b33c5a947fdcad1f13",
+  "nativeHelperSha256": "a547bc7cd5e967d98227ecc70e65add5b5945f98f6463ffca68f7dbe396b4ee0",
+  "reviewedAt": "2026-10-23T22:12:16.903Z",
+  "images": [
+    {
+      "filename": "SCRUM-630-01-explicit-flag-off-legacy-staff.png",
+      "path": "C:/w/admin630-proof-images/SCRUM-630-01-explicit-flag-off-legacy-staff.png",
+      "sha256": "19837b2503c0b7bb01f2706b284db11f7ee3f3c94e5edc1582ef95a87f1158bc",
+      "capturedAt": "2026-10-23T22:07:53.884Z",
+      "imageActuallyViewed": true,
+      "captionReadable": true,
+      "privateContentMasked": true,
+      "noClipping": true,
+      "nativeStateVisuallyCorrect": true,
+      "role": "staff",
+      "salaryView": false,
+      "blankDisabledFieldsConfirmedByNativeProbe": null,
+      "hiddenNoticeConfirmedByNativeProbe": null
+    },
+    {
+      "filename": "SCRUM-630-02-enabled-manager-salary-false.png",
+      "path": "C:/w/admin630-proof-images/SCRUM-630-02-enabled-manager-salary-false.png",
+      "sha256": "b5d06106b6d1689a47d6ccd91d2fc90f9975b36a5fa90d0fee1df2c473649a36",
+      "capturedAt": "2026-10-23T22:08:49.858Z",
+      "imageActuallyViewed": true,
+      "captionReadable": true,
+      "privateContentMasked": true,
+      "noClipping": true,
+      "nativeStateVisuallyCorrect": true,
+      "role": "manager",
+      "salaryView": false,
+      "blankDisabledFieldsConfirmedByNativeProbe": null,
+      "hiddenNoticeConfirmedByNativeProbe": true
+    },
+    {
+      "filename": "SCRUM-630-03-enabled-same-manager-salary-true.png",
+      "path": "C:/w/admin630-proof-images/SCRUM-630-03-enabled-same-manager-salary-true.png",
+      "sha256": "776d160f47801bd21260057e60c1cbf3c9f1a5ae43e464d00e678d3f9116e1bd",
+      "capturedAt": "2026-10-23T22:09:13.263Z",
+      "imageActuallyViewed": true,
+      "captionReadable": true,
+      "privateContentMasked": true,
+      "noClipping": true,
+      "nativeStateVisuallyCorrect": true,
+      "role": "manager",
+      "salaryView": true,
+      "blankDisabledFieldsConfirmedByNativeProbe": true,
+      "hiddenNoticeConfirmedByNativeProbe": null
+    },
+    {
+      "filename": "SCRUM-630-04-enabled-same-manager-salary-withdrawn.png",
+      "path": "C:/w/admin630-proof-images/SCRUM-630-04-enabled-same-manager-salary-withdrawn.png",
+      "sha256": "14aeba229a0d4e935a9c66f05f7a99a384751730199b25eb9e53be28f1283fed",
+      "capturedAt": "2026-10-23T22:09:37.858Z",
+      "imageActuallyViewed": true,
+      "captionReadable": true,
+      "privateContentMasked": true,
+      "noClipping": true,
+      "nativeStateVisuallyCorrect": true,
+      "role": "manager",
+      "salaryView": false,
+      "blankDisabledFieldsConfirmedByNativeProbe": null,
+      "hiddenNoticeConfirmedByNativeProbe": true
+    }
+  ],
+  "limitation": "Native role and blank unsaved pay controls only. Original photos/fonts suppressed; no real employee, salary, payroll or workbook contents viewed."
+}
