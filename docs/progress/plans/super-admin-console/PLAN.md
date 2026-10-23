@@ -151,6 +151,8 @@ SCRUM-625 owner ruling Q9 (2026-10-23): the owner authorizes scoped isolation fi
 
 Owner question Q10 (2026-10-23, SCRUM-626; parked before implementation): PLAN4.1 names DELETE /inbox/teams, but inbox.team has no archive/active field and every supported team identity is canonical. platformSync finds or creates each operator birthday/marketing team and each active park's reception team; deleting an unreferenced team is therefore undone with a new id/defaults on the next sync. Existing rules, conversations, assignments and SLA policies also restrict referenced-team deletion. May626 keep canonical teams editable but refuse their deletion with a plain reason, while routing-rule DELETE uses the existing archived_at field? The alternative requires a planner-owned retirement seam in the protected Inbox router/sync lifecycle. Existing model and routing behavior remain unchanged until the ruling; no outside-file edit or migration is proposed.
 
+SCRUM-626 owner ruling Q10 (2026-10-23): keep canonical teams editable and refuse their deletion with a clear reason. Routing-rule deletion uses the existing archived_at field. No persistent team-retirement seam, migration or protected Inbox lifecycle change is authorized or required.
+
 ## 8. P2 — organisation, catalogue, reports (Codex)
 
 | Ticket | Deliverable |
