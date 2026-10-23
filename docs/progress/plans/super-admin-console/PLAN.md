@@ -191,6 +191,10 @@ Note from P0 (2026-10-21): operator-wide settings (tiers, tenders, menu categori
 
 ## 9. P3 — OTO App alignment (Codex)
 
+Owner question Q13 (2026-10-23, SCRUM-629; parked before implementation): the approved hand-off/copy-job integration needs additive changes in apps/api/src/routes/auth.ts, apps/api/src/services/handoff.ts and apps/api/src/services/otoapp-employee-sync.ts. These files are outside PLAN2/4.1's named lane. May629 add the OTO App-only mapped-role/salary claim and its response schema, derive it freshly through the existing identity seam, and call that seam from the employee copy service? The hand-off JWT shape, single-use/live-session checks and every other audience remain unchanged. jobs.ts needs no edit. No dependent source change proceeds before the ruling.
+
+Owner question Q14 (2026-10-23, SCRUM-629; parked before implementation): PLAN4.3 says to persist the mapped role in otoapp.users.role. Existing advisor accounts require that column to stay literal advisor: routes.ts14589 documents that identity rule,14913-14920 heals it, and873 uses the raw marker to preserve advisor exclusions. May flagged advisors retain their raw advisor marker while the platform-mapped effective role is applied only to their sign-on/session? Ordinary user roles would still persist as approved; flag-off behavior and advisor identity exclusions remain unchanged. The alternative is to leave advisors on their existing policy role until a separate identity-marker change is approved. Do not silently erase their marker or substitute another mapping.
+
 | Ticket | Deliverable |
 |---|---|
 | P3-1 | Role mapping behind the per-operator flag; the hand-off carries the mapped role and `hr:salary:view`; the OTO App applies it |
