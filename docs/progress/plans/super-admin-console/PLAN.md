@@ -229,6 +229,8 @@ Planner ruling Q14 (2026-10-23): the proposed narrow treatment is correct, and Â
 
 Local release checkpoint (2026-10-24, SCRUM-629): canonical mapped roles and Q14 advisor preservation are implemented behind the default-off 0029 flag. The full frozen platform battery and eight affected OTO stages pass; 418 inherited compiler diagnostics remain unchanged. Exact-SHA CI, automatic deployment and four real role frames are still required. The pilot helper is being reviewed before any business write. This is not Deployed.
 
+CI repair checkpoint (2026-10-24, SCRUM-629): run40001219847 failed the pre-migration sample operator insert, independently reproduced on the original baseline. The seed-only column view and red-first existing-review regression now pass the actual restore/replay and fresh eight-stage OTO battery. The compiler remains418/54/109; four platform release jobs pass while API shards and Box remain pending. Main remains red; no deployment or staging acceptance is claimed.
+
 Acceptance: a person granted in the console opens the OTO App with the right role on staging with the flag on; nothing can be granted inside the OTO App.
 
 Also in P3 (from the OTO App inventory): the two lifecycle gaps close in P3-5 - reactivating a platform account switches its OTO App user back on, and an OTO App-side switch-off (including the 03:00 leaver run) deactivates the platform account through the identity seam; and the OTO App pages that call routes which do not exist (the core dashboard and the troubleshooting flows) either get their routes or lose their links.
