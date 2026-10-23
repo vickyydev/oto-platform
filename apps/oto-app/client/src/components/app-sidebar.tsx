@@ -15,7 +15,6 @@ import {
   SidebarMenuItem,
   SidebarHeader,
 } from "@/components/ui/sidebar";
-import { Button } from "@/components/ui/button";
 import * as Collapsible from "@radix-ui/react-collapsible";
 import {
   LayoutDashboard,
@@ -41,12 +40,12 @@ import {
   Download,
   MapPin,
   GitBranch,
-  Lock,
   KeyRound,
   BarChart3,
   History,
   Landmark,
 } from "lucide-react";
+import type { HrSalarySubject } from "@shared/hr-salary-permission";
 import { payrollMenuFor, type PayrollEntryId } from "@/lib/payroll/nav";
 
 const SIDEBAR_SECTIONS_KEY = "oto_sidebar_sections";
@@ -222,14 +221,14 @@ const financeItems: MenuItem[] = [
 ];
 
 // The Payroll section (SCRUM-572, R7) comes from the company payroll's own
-// navigation table, the one the hub reads: payroll roles (hr.view_salary) see
-// every payroll page; everyone else, managers included, sees My Payslips only.
+// navigation table, the one the hub reads: salary-view access opens company
+// payroll; everyone else sees My Payslips only.
 const PAYROLL_ICONS: Record<PayrollEntryId, MenuItem["icon"]> = {
   hub: LayoutDashboard, run: Play, people: Users, history: History, downloads: Download,
   documents: Landmark, setup: Settings, myPayslips: FileText,
 };
-function payrollItemsFor(role: string | undefined): MenuItem[] {
-  return payrollMenuFor(role).map((entry) => ({ title: entry.title, url: entry.url, icon: PAYROLL_ICONS[entry.id], exact: entry.exact }));
+function payrollItemsFor(subject: HrSalarySubject): MenuItem[] {
+  return payrollMenuFor(subject).map((entry) => ({ title: entry.title, url: entry.url, icon: PAYROLL_ICONS[entry.id], exact: entry.exact }));
 }
 
 function filterItems(items: MenuItem[], role: string | undefined, isAllBranches: boolean): MenuItem[] {
@@ -288,14 +287,14 @@ function getStoredSectionState(userId: string): SectionState {
     if (stored) {
       return normalizeSections(JSON.parse(stored));
     }
-  } catch {}
+  } catch { /* Unavailable browser storage uses the default section state. */ }
   return { ...DEFAULT_SECTIONS };
 }
 
 function storeSectionState(userId: string, state: SectionState) {
   try {
     localStorage.setItem(`${SIDEBAR_SECTIONS_KEY}:${userId}`, JSON.stringify(state));
-  } catch {}
+  } catch { /* The server preference remains available when browser storage fails. */ }
 }
 
 export function AppSidebar() {
@@ -356,7 +355,7 @@ export function AppSidebar() {
   const filteredDailyOperationsItems = filterItems(dailyOperationsItems, user?.role, isAllBranches);
   const filteredPeopleAndHrItems = filterItems(peopleAndHrItems, user?.role, isAllBranches);
   const filteredFinanceItems = filterItems(financeItems, user?.role, isAllBranches);
-  const filteredPayrollItems = payrollItemsFor(user?.role);
+  const filteredPayrollItems = payrollItemsFor(user);
 
   const wouldHaveConfigAccess = hasRoleAccess(adminItems, user?.role);
   const configHiddenByBranch = !isAllBranches && wouldHaveConfigAccess && filteredAdminItems.length === 0;

@@ -53,7 +53,6 @@ async function check(name: string, body: () => void | Promise<void>) {
 const PAYROLL_ROLES = ["global_admin", "admin", "operator_admin"];
 const OTHER_ROLES = ["manager", "staff"];
 const ALL_ROLES = [...PAYROLL_ROLES, ...OTHER_ROLES];
-const PAYROLL_ROLE_LIST = '["global_admin", "operator_admin", "admin"]';
 const SELF_ROLE_LIST = '["staff", "manager", "operator_admin", "global_admin", "admin"]';
 
 /** PLAN §7 "Old pages, removed from the router and sidebar in R7", with the address each served. */
@@ -110,7 +109,7 @@ await check("1. the Payroll menu by role: payroll roles every page, managers and
 
 await check("1b. the sidebar and the hub read that table and carry no payroll address of their own", () => {
   const sidebar = read("components/app-sidebar.tsx");
-  assert.match(sidebar, /payrollMenuFor\(role\)/);
+  assert.match(sidebar, /payrollMenuFor\(subject\)/);
   assert.equal([...sidebar.matchAll(/["'`]\/(payroll|my-payslips)\b/g)].length, 0, "no payroll address literal in the sidebar");
   const hub = read("pages/payroll-hub-page.tsx");
   assert.match(hub, /PAYROLL_HUB_CARDS\.map/);
@@ -150,15 +149,18 @@ await check("2c. every redirect target and every hub/menu address is a registere
   }
 });
 
-await check("3. every /payroll page route is held to payroll roles, but the hub address and the self-payslip page", () => {
+await check("3. company payroll pages use the claim-aware read guard; the hub and own payslips keep their paths", () => {
   const payroll = routes.filter((r) => r.path.startsWith("/payroll"));
   assert.ok(payroll.length >= 8, `only ${payroll.length} payroll routes found`);
   for (const r of payroll) {
-    const expected = r.path === "/payroll" || r.path === PAYROLL_PATHS.myPayslips ? SELF_ROLE_LIST : PAYROLL_ROLE_LIST;
-    assert.equal(r.roles, expected, `${r.path} requiredRole`);
+    assert.equal(r.roles, SELF_ROLE_LIST, `${r.path} authenticated roles`);
+    if (r.path !== "/payroll" && r.path !== PAYROLL_PATHS.myPayslips) {
+      const route = app.split("\n").find(line => line.includes(`path="${r.path}"`));
+      assert.ok(route?.includes("<PayrollProtectedLayout component="), `${r.path} retains the claim-aware read guard`);
+    }
   }
   assert.match(app, /<ProtectedRoute path="\/payroll" component=\{PayrollHome\}/);
-  assert.match(app, /function PayrollHome\(\) \{\n  const \{ user \} = useAuth\(\);\n  if \(!canViewHrSalary\(user\?\.role\)\) return <Redirect to=\{PAYROLL_PATHS\.myPayslips\} replace \/>;/,
+  assert.match(app, /function PayrollHome\(\) \{\n {2}const \{ user \} = useAuth\(\);\n {2}if \(!canViewHrSalary\(user\)\) return <Redirect to=\{PAYROLL_PATHS\.myPayslips\} replace \/>;/,
     "below a payroll role /payroll is the person's own payslips");
 });
 

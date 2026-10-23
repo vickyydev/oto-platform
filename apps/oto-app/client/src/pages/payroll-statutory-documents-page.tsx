@@ -57,7 +57,7 @@ export default function PayrollStatutoryDocumentsPage() {
   const [year, setYear] = useState(parkMonth().slice(0, 4));
   const period = kind === "month" ? month : year;
   const view = useStatutory(branchId, period);
-  if (!canViewHrSalary(user?.role)) return <div className="p-6"><Empty>{HR_PAY_HIDDEN_NOTE}.</Empty></div>;
+  if (!canViewHrSalary(user)) return <div className="p-6"><Empty>{HR_PAY_HIDDEN_NOTE}.</Empty></div>;
   const v = view.data;
   return <div className="mx-auto max-w-7xl space-y-5 p-4 sm:p-6" data-testid="page-payroll-statutory">
     <div>

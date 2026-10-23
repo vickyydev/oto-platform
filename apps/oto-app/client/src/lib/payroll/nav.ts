@@ -3,14 +3,14 @@
  * page, the sidebar, the router's redirects and tests/payroll-cutover.check.ts,
  * so the three never disagree about where a payroll screen lives or who sees it.
  *
- * Who sees what (PLAN §7 Permissions): payroll roles (`hr.view_salary`, which
- * is admin, operator_admin and global_admin) see every hub entry; every other
- * signed-in employee, managers included, sees their own locked payslips only.
- * Managers keep timekeeping approval and see no pay figures.
+ * With platform mapping enabled, the trusted salary-view claim opens the
+ * company payroll. Without that context, the original hr.view_salary role
+ * decision applies. Other signed-in employees see their own locked payslips.
+ * Payroll writes keep their separate action permissions.
  *
  * Pure: no React, no icons, nothing that needs a browser.
  */
-import { canViewHrSalary } from "@shared/hr-salary-permission";
+import { canViewHrSalary, type HrSalarySubject } from "@shared/hr-salary-permission";
 
 export const PAYROLL_PATHS = {
   hub: "/payroll",
@@ -57,10 +57,10 @@ export const PAYROLL_ENTRIES: readonly PayrollEntry[] = [
   { id: "myPayslips", title: "My Payslips", description: "Your own payslip for every locked month.", url: PAYROLL_PATHS.myPayslips, payrollRole: false },
 ];
 
-/** The sidebar's Payroll section for a role. */
-export function payrollMenuFor(role: string | null | undefined): PayrollEntry[] {
-  if (!role) return [];
-  const payroll = canViewHrSalary(role);
+/** The sidebar's Payroll section for the authenticated salary context. */
+export function payrollMenuFor(subject: HrSalarySubject): PayrollEntry[] {
+  if (!subject) return [];
+  const payroll = canViewHrSalary(subject);
   return PAYROLL_ENTRIES.filter((entry) => !entry.hubOnly && (payroll || !entry.payrollRole));
 }
 
@@ -95,11 +95,10 @@ export const OLD_PAYROLL_REDIRECTS: readonly PayrollRedirect[] = [
 ];
 
 /**
- * Where an old address sends this person: its new home for a payroll role;
- * their own payslips for anyone else (the old overview and exception pages
- * were open to managers, who now have no payroll screen but their own slips).
+ * Where an old address sends this person: its new home with salary-view
+ * access; their own payslips otherwise.
  */
-export function redirectTarget(redirect: PayrollRedirect, params: Record<string, string | undefined>, role: string | null | undefined): string {
+export function redirectTarget(redirect: PayrollRedirect, params: Record<string, string | undefined>, subject: HrSalarySubject): string {
   const target = redirect.to(params);
-  return target === PAYROLL_PATHS.myPayslips || canViewHrSalary(role) ? target : PAYROLL_PATHS.myPayslips;
+  return target === PAYROLL_PATHS.myPayslips || canViewHrSalary(subject) ? target : PAYROLL_PATHS.myPayslips;
 }

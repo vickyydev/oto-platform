@@ -55,7 +55,7 @@ const Empty = ({ children }: { children: ReactNode }) => <p className="rounded-l
 
 export default function PayrollSetupPage() {
   const { user } = useAuth();
-  const seesPay = canViewHrSalary(user?.role);
+  const seesPay = canViewHrSalary(user);
   const setup = usePayrollSetup();
   if (!seesPay) return <div className="p-6"><Empty>{HR_PAY_HIDDEN_NOTE}.</Empty></div>;
   return <div className="mx-auto max-w-6xl space-y-5 p-4 sm:p-6" data-testid="page-payroll-setup">

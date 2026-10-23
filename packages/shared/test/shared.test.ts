@@ -170,6 +170,20 @@ describe('permission bundles (S2-01b)', () => {
     }
   });
 
+  it('salary visibility belongs to administrator bundles, without granting it to counter or Inbox roles', async () => {
+    const { PERMISSIONS, ROLE_BUNDLES, INBOX_ROLE_BUNDLES } = await import('../src/permissions');
+    expect(PERMISSIONS).toContain('hr:salary:view');
+    for (const name of ['platform_admin', 'operator_admin'] as const) {
+      expect(ROLE_BUNDLES[name]).toContain('hr:salary:view');
+    }
+    for (const name of ['branch_manager', 'reception', 'staff'] as const) {
+      expect(ROLE_BUNDLES[name]).not.toContain('hr:salary:view');
+    }
+    for (const bundle of Object.values(INBOX_ROLE_BUNDLES)) {
+      expect(bundle).not.toContain('hr:salary:view');
+    }
+  });
+
   /**
    * SCRUM-306 — the booking pair is carried by the roles that work a counter.
    *

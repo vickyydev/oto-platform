@@ -203,8 +203,20 @@ describe('SCRUM-629 anchored identity context and reconciliation', () => {
     expect((await resolve(p))?.role).toBe('staff');
   });
   it('carries salary only from an actual operator-wide covering permission, never from mapped role or branch grant', async () => {
-    const p = await person(); await grant(p.accountId, 'operator_admin');
-    expect((await resolve(p))?.permissions['hr:salary:view']).toBe(false);
+    const p = await person(); const administratorGrant = await grant(p.accountId, 'operator_admin');
+    expect((await resolve(p))?.permissions['hr:salary:view']).toBe(true);
+    const [administratorRole] = await ctx.db.select({ id: role.id }).from(role)
+      .where(and(eq(role.name, 'operator_admin'), isNull(role.operatorId), eq(role.isSystem, true))).limit(1);
+    const rollback = new Error('ZZ TEST restore administrator salary permission');
+    await expect(ctx.db.transaction(async tx => {
+      await tx.delete(rolePermission).where(and(eq(rolePermission.roleId, administratorRole!.id), eq(rolePermission.permission, 'hr:salary:view')));
+      const withoutPermission = await subject.resolveOtoAppRoleContext(tx, { operatorId, accountId: p.accountId });
+      expect(withoutPermission?.role).toBe('admin');
+      expect(withoutPermission?.permissions['hr:salary:view']).toBe(false);
+      throw rollback;
+    })).rejects.toBe(rollback);
+    expect((await resolve(p))?.permissions['hr:salary:view']).toBe(true);
+    await ctx.db.delete(roleAssignment).where(eq(roleAssignment.id, administratorGrant));
     const salary = newId(); await ctx.db.insert(role).values({ id: salary, operatorId, name: `ZZ TEST salary ${salary}` });
     await ctx.db.insert(rolePermission).values({ id: newId(), roleId: salary, permission: 'hr:salary:view' });
     const assignment = newId(); await ctx.db.insert(roleAssignment).values({ id: assignment, accountId: p.accountId,

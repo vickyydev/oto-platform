@@ -38,7 +38,7 @@ export default function PayrollDownloadsPage() {
   const params = useParams<{ entityId: string; month: string; version: string }>();
   const version = Number(params.version);
   const downloads = useDownloads(params.entityId ?? "", params.month ?? "", Number.isInteger(version) ? version : 0);
-  if (!canViewHrSalary(user?.role)) return <div className="p-6"><Empty>{HR_PAY_HIDDEN_NOTE}.</Empty></div>;
+  if (!canViewHrSalary(user)) return <div className="p-6"><Empty>{HR_PAY_HIDDEN_NOTE}.</Empty></div>;
   return <div className="mx-auto max-w-5xl space-y-5 p-4 sm:p-6" data-testid="page-payroll-downloads">
     <div>
       <p className="text-xs font-semibold uppercase tracking-wider text-primary">Payroll</p>

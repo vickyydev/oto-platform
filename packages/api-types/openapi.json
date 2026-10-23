@@ -2150,6 +2150,7 @@
               "type": "string",
               "enum": [
                 "console:overview:read",
+                "hr:salary:view",
                 "admin:account:create",
                 "admin:account:read",
                 "admin:account:update",

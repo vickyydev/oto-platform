@@ -13,8 +13,8 @@ type Result = { status: number; body: unknown };
 type Action = (req: Request, employee: Employee, tx: DbExecutor) => Promise<Result>;
 const answer = (status: number, body: unknown): Result => ({ status, body });
 const failure = (status: number, message: string) => answer(status, { message });
-/** The signed-in effective role the pay rule reads (SCRUM-559). */
-const payRole = (req: Request) => req.userWithAccess?.role ?? req.user?.role;
+/** Keep the validated platform salary claim with the signed-in effective role. */
+const paySubject = (req: Request) => req.userWithAccess ?? req.user;
 const PAY_CHANGE_TYPES = ["salary_adjustment", "incentive_change"];
 const canonical = (value: unknown): unknown => Array.isArray(value) ? value.map(canonical)
   : value !== null && typeof value === "object"
@@ -63,7 +63,7 @@ function managerAction(name: string, fields: string[], action: Action, afterComm
       if (committed) afterCommit?.(employeeId);
       // The receipt keeps the whole answer; what goes out is withheld below
       // payroll roles (SCRUM-559), a replay included.
-      res.status(result.status).json(hrPayResponse(result.body, payRole(req)));
+      res.status(result.status).json(hrPayResponse(result.body, paySubject(req)));
     } catch (error) { next(error); }
   };
 }
@@ -94,7 +94,7 @@ export function registerEmployeeActionRoutes(app: Express, options: {
       // Pay changes are a payroll role's (SCRUM-559); below one, a pay value
       // riding on another kind of change is not recorded either.
       // Writing pay is hr.edit_salary's (SCRUM-605).
-      const writesPay = canEditHrSalary(payRole(req));
+      const writesPay = canEditHrSalary(paySubject(req));
       if (!writesPay && PAY_CHANGE_TYPES.includes(changeType)) return failure(403, "Pay changes require hr.view_salary.");
       const newSalary = writesPay ? req.body.newSalary : undefined;
       const newIncentiveClause = writesPay ? req.body.newIncentiveClause : undefined;
@@ -150,7 +150,7 @@ export function registerEmployeeActionRoutes(app: Express, options: {
         if (!employee) return failure(404, "Employee not found");
         const [change] = await tx.select().from(employeeChanges).where(and(eq(employeeChanges.id, req.params.changeId), eq(employeeChanges.employeeId, employee.id))).for("update");
         if (!change) return failure(404, "Change not found");
-        if (PAY_CHANGE_TYPES.includes(change.changeType) && !canEditHrSalary(payRole(req))) return failure(403, "Pay changes require hr.view_salary.");
+        if (PAY_CHANGE_TYPES.includes(change.changeType) && !canEditHrSalary(paySubject(req))) return failure(403, "Pay changes require hr.view_salary.");
         if (parsed.data.contractInstanceId) {
           const [contract] = await tx.select().from(contractInstances).where(and(eq(contractInstances.id, parsed.data.contractInstanceId), eq(contractInstances.employeeId, employee.id)));
           if (!contract) return failure(404, "Contract not found");
@@ -158,7 +158,7 @@ export function registerEmployeeActionRoutes(app: Express, options: {
         const [updated] = await tx.update(employeeChanges).set(parsed.data).where(eq(employeeChanges.id, change.id)).returning();
         return answer(200, updated);
       });
-      res.status(result.status).json(hrPayResponse(result.body, payRole(req)));
+      res.status(result.status).json(hrPayResponse(result.body, paySubject(req)));
     } catch (error) { next(error); }
   });
 

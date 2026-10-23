@@ -396,6 +396,50 @@ try {
   assert.equal(adminReview.body.defaultMergeData.salaryThb, SALARY + 2);
   passed += 2;
 
+  // SCRUM-630: attach the already validated platform context to these local
+  // test sessions. This exercises real deserialization and registered HTTP
+  // routes; it is not a platform exchange or staging integration proof.
+  const entity = randomUUID();
+  await q("insert into operators (id, tenant_id, name, platform_roles_enabled) values ($1, $2, $3, true)", [entity, tenant, `ZZ TEST 630 entity ${run}`]);
+  for (const [role, salaryView] of [["manager", true], ["admin", false]] as const) {
+    const accountId = randomUUID();
+    await q("update users set operator_id = $2, platform_user_id = $3 where id = $1", [accounts[role].id, entity, accountId]);
+    const context = { platformRolesEnabled: true, userId: accounts[role].id, operatorId: entity, tenantId: tenant,
+      role, permissions: { "hr:salary:view": salaryView } };
+    const sessions = await q("update session set sess = jsonb_set(sess, '{platform}', $2::jsonb) where sess->'passport'->>'user' = $1 returning sid", [accounts[role].id, JSON.stringify({ accountId, otoApp: context })]);
+    assert.equal(sessions.length, 1, "only this fixture's existing signed-in session is mapped");
+    for (const path of reads) {
+      const response = await call(role, "GET", path);
+      assert.equal(response.status, 200, role + " mapped employee read");
+      const row = Array.isArray(response.body) ? response.body.find((item: { id: string }) => item.id === worker) : response.body;
+      assert.ok(row);
+      if (salaryView) assert.equal(row.defaultMergeData.salaryThb, SALARY + 2);
+      else assert.deepEqual(payKeysIn(row), []);
+      passed++;
+    }
+    const history = await call(role, "GET", `/api/employees/${worker}/changes`);
+    assert.equal(history.status, 200);
+    if (salaryView) assert.ok(payKeysIn(history.body).length > 0);
+    else assert.deepEqual(payKeysIn(history.body), []);
+    assert.equal((await template(role)).includes("Monthly Salary (THB)"), salaryView, "upload template follows view, not edit");
+    const beforePay = await stored();
+    const denied = await call(role, "PATCH", `/api/employees/${worker}`, { dailyRate: 1 });
+    assert.equal(denied.status, 403, "a view-only grant never permits a pay edit");
+    assert.deepEqual(await stored(), beforePay);
+    const ordinary = await call(role, "PATCH", `/api/employees/${worker}`, { nickname: "ZZ-630" });
+    assert.equal(ordinary.status, 200, "ordinary HR edits still save");
+    assert.deepEqual(await stored(), beforePay, "ordinary write keeps every stored pay operand");
+    assert.equal(payKeysIn(ordinary.body).length > 0, salaryView, "write response uses the salary view claim");
+    const deniedBulk = await preview(role, withPay);
+    assert.equal(deniedBulk.status, 403, "a pay-bearing upload is still a write permission");
+    const setup = await call(role, "GET", "/api/payroll/setup");
+    assert.equal(setup.status, salaryView ? 200 : 403, "company payroll reads use the same claim");
+    if (salaryView) assert.equal(setup.body.canManage, false, "view-only response has no payroll write capability");
+    const deniedSetupWrite = await call(role, "POST", "/api/payroll/setup/entities", { name: "ZZ TEST 630 refused entity" });
+    assert.equal(deniedSetupWrite.status, 403);
+    passed += 7;
+  }
+
   console.log(`salary-visibility.check: ${passed} checks passed`);
 } finally {
   for (const child of children) child.kill();

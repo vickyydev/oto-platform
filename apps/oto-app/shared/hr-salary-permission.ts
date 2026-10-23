@@ -10,20 +10,39 @@
  * as its effective role (resolveAdvisorRole), and a raw "advisor" or any
  * unknown string falls to staff inside the engine.
  *
- * It keys off the authenticated effective role only — module overrides widen
- * or narrow modules, and no override can grant an admin-only action — so the
- * check needs no database read and the client can ask the same question of
- * the signed-in user.
+ * With platform mapping enabled, the validated handoff salary claim decides
+ * visibility. Without that context the original effective-role rule remains;
+ * module overrides never grant this action. The client and server read the
+ * same authenticated user, without a second permission database read.
  */
 import { canPerformAction, type PermissionRole } from "./permissions";
+import { readOtoAppRoleContext } from "./platformRoleMapping";
+
+/** The authenticated user, or a legacy role where no platform context exists. */
+export type HrSalarySubject = string | null | undefined | {
+  role?: string | null;
+  platformRoleMapping?: unknown;
+};
+
+const roleOf = (subject: HrSalarySubject) => typeof subject === "string" ? subject : subject?.role;
 
 export const HR_VIEW_SALARY_ACTION = "hr.view_salary";
 
 /** The note shown where a pay field is withheld. */
 export const HR_PAY_HIDDEN_NOTE = "Visible to payroll roles only";
 
-export function canViewHrSalary(role: string | null | undefined): boolean {
+export function canViewHrSalary(subject: HrSalarySubject): boolean {
+  const role = roleOf(subject);
   if (!role) return false;
+  if (typeof subject === "object" && subject?.platformRoleMapping !== undefined) {
+    try {
+      const mapping = readOtoAppRoleContext(subject.platformRoleMapping);
+      return mapping?.role === role && mapping.permissions["hr:salary:view"] === true;
+    } catch {
+      // A present invalid claim must never regain access through a legacy role.
+      return false;
+    }
+  }
   return canPerformAction(
     { userId: "", role: role as PermissionRole, homeBranchId: null, overrides: [] },
     HR_VIEW_SALARY_ACTION,
@@ -35,11 +54,12 @@ export const HR_EDIT_SALARY_ACTION = "hr.edit_salary";
 
 /**
  * Who may write pay (SCRUM-605): `hr.edit_salary`, an admin-only action, on
- * top of seeing it. Today the same roles as canViewHrSalary; checked by its
- * own name wherever pay is written.
+ * top of the claim-aware view prerequisite. A platform view grant does not
+ * grant the separate role action; pay writes still check its own name.
  */
-export function canEditHrSalary(role: string | null | undefined): boolean {
-  if (!role || !canViewHrSalary(role)) return false;
+export function canEditHrSalary(subject: HrSalarySubject): boolean {
+  const role = roleOf(subject);
+  if (!role || !canViewHrSalary(subject)) return false;
   return canPerformAction(
     { userId: "", role: role as PermissionRole, homeBranchId: null, overrides: [] },
     HR_EDIT_SALARY_ACTION,
@@ -76,8 +96,8 @@ export function redactHrPay<T>(value: T): T {
   return result as T;
 }
 
-export function hrPayResponse<T>(value: T, role: string | null | undefined): T {
-  return canViewHrSalary(role) ? value : redactHrPay(value);
+export function hrPayResponse<T>(value: T, subject: HrSalarySubject): T {
+  return canViewHrSalary(subject) ? value : redactHrPay(value);
 }
 
 /** A redacted form must not erase pay operands when it saves ordinary HR fields. */

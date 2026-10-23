@@ -15,7 +15,9 @@
  * the world loader (server/payroll/world.ts) maps onto the engine's world.
  */
 import { canPerformAction, type PermissionRole } from "./permissions";
-import { canViewHrSalary } from "./hr-salary-permission";
+import { canViewHrSalary, type HrSalarySubject } from "./hr-salary-permission";
+
+const roleOf = (subject: HrSalarySubject) => typeof subject === "string" ? subject : subject?.role;
 
 // ─── Permissions ─────────────────────────────────────────────────────────────
 
@@ -27,8 +29,9 @@ export const HR_MANAGE_PAYROLL_ACTION = "hr.manage_payroll";
  * Decided by the permission engine on the effective role, like
  * canViewHrSalary, never by a raw role string.
  */
-export function canManagePayroll(role: string | null | undefined): boolean {
-  if (!role || !canViewHrSalary(role)) return false;
+export function canManagePayroll(subject: HrSalarySubject): boolean {
+  const role = roleOf(subject);
+  if (!role || !canViewHrSalary(subject)) return false;
   return canPerformAction(
     { userId: "", role: role as PermissionRole, homeBranchId: null, overrides: [] },
     HR_MANAGE_PAYROLL_ACTION,
@@ -39,24 +42,25 @@ export function canManagePayroll(role: string | null | undefined): boolean {
 export const PAYROLL_CONFIRM_ACTION = "payroll.confirm";
 export const PAYROLL_LOCK_ACTION = "payroll.lock";
 
-const payrollAction = (role: string | null | undefined, action: string) => {
-  if (!role || !canViewHrSalary(role)) return false;
+const payrollAction = (subject: HrSalarySubject, action: string) => {
+  const role = roleOf(subject);
+  if (!role || !canViewHrSalary(subject)) return false;
   return canPerformAction({ userId: "", role: role as PermissionRole, homeBranchId: null, overrides: [] }, action, "hr").allowed;
 };
 
 /** GM confirmation (SCRUM-569; owner ruling 2026-10-20): admin, operator_admin, global_admin. */
-export function canConfirmPayroll(role: string | null | undefined): boolean {
-  return payrollAction(role, PAYROLL_CONFIRM_ACTION);
+export function canConfirmPayroll(subject: HrSalarySubject): boolean {
+  return payrollAction(subject, PAYROLL_CONFIRM_ACTION);
 }
 
 /** Owner lock, reopen and mark paid (SCRUM-569; owner ruling 2026-10-20): operator_admin and global_admin only. */
-export function canLockPayroll(role: string | null | undefined): boolean {
-  return payrollAction(role, PAYROLL_LOCK_ACTION);
+export function canLockPayroll(subject: HrSalarySubject): boolean {
+  return payrollAction(subject, PAYROLL_LOCK_ACTION);
 }
 
 /** Proposing draft profiles from HR data reads every employee's pay once: global_admin (plan §9 R2). */
-export function canDraftPayrollProfiles(role: string | null | undefined): boolean {
-  return role === "global_admin" && canManagePayroll(role);
+export function canDraftPayrollProfiles(subject: HrSalarySubject): boolean {
+  return roleOf(subject) === "global_admin" && canManagePayroll(subject);
 }
 
 // ─── Configuration ───────────────────────────────────────────────────────────

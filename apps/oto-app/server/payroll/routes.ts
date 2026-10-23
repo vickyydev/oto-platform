@@ -11,8 +11,9 @@
  * branch and period, rendering, the frozen files, filing records and the EWF
  * surcharge estimate.
  *
- * Every route here is behind `hr.view_salary` (managers and staff get 403 on
- * all of them), writes need `hr.manage_payroll`, and the HR-data draft action
+ * Company reads need salary visibility: the enabled platform claim, or the
+ * original role action without mapping. Writes still need the separate
+ * `hr.manage_payroll` role action, and the HR-data draft action
  * is global_admin's. GM confirm needs `payroll.confirm` (admin,
  * operator_admin, global_admin); Owner lock, reopen and mark paid need
  * `payroll.lock` (operator_admin, global_admin; owner ruling 2026-10-20).
@@ -27,7 +28,7 @@
  * .test.ts) reads this file and pins the list, in order, with those keys.
  */
 import type { Express, NextFunction, Request, RequestHandler, Response } from "express";
-import { canViewHrSalary } from "@shared/hr-salary-permission";
+import { canViewHrSalary, type HrSalarySubject } from "@shared/hr-salary-permission";
 import { canConfirmPayroll, canDraftPayrollProfiles, canLockPayroll, canManagePayroll } from "@shared/payroll-config";
 import { parkGroupOf, parkGroupOnly, type CallerParkGroup } from "../lib/routeFences";
 import {
@@ -67,18 +68,19 @@ interface PayrollRouteDependencies {
   callerParkGroup: CallerParkGroup;
 }
 
-const roleOf = (req: Request) => req.userWithAccess?.role ?? req.user?.role;
+const subjectOf = (req: Request) => req.userWithAccess ?? req.user;
 
-/** The permission a route needs, decided by the permission engine on the effective role. */
-export function payrollAllows(permission: PayrollPermission, role: string | null | undefined): boolean {
+/** Salary visibility uses the validated claim; write actions retain their original role rules. */
+export function payrollAllows(permission: PayrollPermission, subject: HrSalarySubject): boolean {
+  const role = typeof subject === "string" ? subject : subject?.role;
   // Everyone signed in reaches their OWN payslips; the service shows nobody else's.
   if (permission === "payroll.own_payslips") return !!role;
-  if (!canViewHrSalary(role)) return false;
+  if (!canViewHrSalary(subject)) return false;
   if (permission === "hr.view_salary") return true;
-  if (permission === "hr.manage_payroll") return canManagePayroll(role);
-  if (permission === "payroll.confirm") return canConfirmPayroll(role);
-  if (permission === "payroll.lock") return canLockPayroll(role);
-  return canDraftPayrollProfiles(role);
+  if (permission === "hr.manage_payroll") return canManagePayroll(subject);
+  if (permission === "payroll.confirm") return canConfirmPayroll(subject);
+  if (permission === "payroll.lock") return canLockPayroll(subject);
+  return canDraftPayrollProfiles(subject);
 }
 
 /** The refusal in plain words, naming the key. */
@@ -89,7 +91,7 @@ const REFUSALS: Partial<Record<PayrollPermission, string>> = {
 
 function payroll(permission: PayrollPermission): RequestHandler {
   return (req, res, next) => {
-    if (!payrollAllows(permission, roleOf(req))) {
+    if (!payrollAllows(permission, subjectOf(req))) {
       res.status(403).json({ message: `${REFUSALS[permission] ?? "Payroll is for payroll roles only"} (${permission} required).` });
       return;
     }
@@ -148,11 +150,11 @@ const sendFrozen = (work: (req: Request, res: Response) => Promise<ServedFile>):
 
 export function registerPayrollRoutes(app: Express, { requireAuth, callerParkGroup }: PayrollRouteDependencies): void {
   const fence = parkGroupOnly(callerParkGroup);
-  const role = (req: Request) => roleOf(req);
+  const subject = (req: Request) => subjectOf(req);
 
   // ── Setup ──
   app.get("/api/payroll/setup", requireAuth, payroll("hr.view_salary"), fence, answer(200, async (req, res) =>
-    ({ ...(await loadSetup(parkGroupOf(res))), canManage: canManagePayroll(role(req)) })));
+    ({ ...(await loadSetup(parkGroupOf(res))), canManage: canManagePayroll(subject(req)) })));
   app.get("/api/payroll/setup/changes", requireAuth, payroll("hr.view_salary"), fence, answer(200, async (req, res) =>
     listSetupChanges(parkGroupOf(res), Number(req.query.limit) || 100)));
   app.post("/api/payroll/setup/entities", requireAuth, payroll("hr.manage_payroll"), fence, answer(201, (req, res) =>
@@ -184,17 +186,17 @@ export function registerPayrollRoutes(app: Express, { requireAuth, callerParkGro
 
   // ── Profiles ──
   app.get("/api/payroll/profiles", requireAuth, payroll("hr.view_salary"), fence, answer(200, async (req, res) =>
-    ({ ...(await loadRoster(parkGroupOf(res), asOfOf(req))), canManage: canManagePayroll(role(req)), canDraft: canDraftPayrollProfiles(role(req)) })));
+    ({ ...(await loadRoster(parkGroupOf(res), asOfOf(req))), canManage: canManagePayroll(subject(req)), canDraft: canDraftPayrollProfiles(subject(req)) })));
   app.post("/api/payroll/profiles/drafts", requireAuth, payroll("payroll.draft_profiles"), fence, answer(200, (req, res) =>
     draftProfiles(parkGroupOf(res), actorOf(req), body(req))));
   app.get("/api/payroll/profiles/:employeeId", requireAuth, payroll("hr.view_salary"), fence, answer(200, async (req, res) =>
-    ({ ...(await loadProfileView(parkGroupOf(res), req.params.employeeId, asOfOf(req))), canManage: canManagePayroll(role(req)) })));
+    ({ ...(await loadProfileView(parkGroupOf(res), req.params.employeeId, asOfOf(req))), canManage: canManagePayroll(subject(req)) })));
   app.put("/api/payroll/profiles/:employeeId", requireAuth, payroll("hr.manage_payroll"), fence, answer(200, (req, res) =>
     saveProfile(parkGroupOf(res), actorOf(req), req.params.employeeId, body(req))));
 
   // ── Month inputs (R3) ──
   app.get("/api/payroll/inputs/:month", requireAuth, payroll("hr.view_salary"), fence, answer(200, async (req, res) =>
-    ({ ...(await loadMonthInputsView(parkGroupOf(res), req.params.month)), canManage: canManagePayroll(role(req)) })));
+    ({ ...(await loadMonthInputsView(parkGroupOf(res), req.params.month)), canManage: canManagePayroll(subject(req)) })));
   app.put("/api/payroll/inputs/:month/revenue/:branchId", requireAuth, payroll("hr.manage_payroll"), fence, answer(200, (req, res) =>
     saveBranchRevenue(parkGroupOf(res), actorOf(req), req.params.month, req.params.branchId, body(req))));
   app.post("/api/payroll/inputs/:month/override", requireAuth, payroll("hr.manage_payroll"), fence, answer(200, (req, res) =>
@@ -204,7 +206,7 @@ export function registerPayrollRoutes(app: Express, { requireAuth, callerParkGro
 
   // ── Rewards setup (R3) ──
   app.get("/api/payroll/setup/rewards", requireAuth, payroll("hr.view_salary"), fence, answer(200, async (req, res) =>
-    ({ ...(await loadRewardsView(parkGroupOf(res))), canManage: canManagePayroll(role(req)) })));
+    ({ ...(await loadRewardsView(parkGroupOf(res))), canManage: canManagePayroll(subject(req)) })));
   app.post("/api/payroll/setup/rewards/service-policies/:branchId", requireAuth, payroll("hr.manage_payroll"), fence, answer(200, (req, res) =>
     saveServicePolicy(parkGroupOf(res), actorOf(req), req.params.branchId, body(req))));
   app.post("/api/payroll/setup/rewards/incentives", requireAuth, payroll("hr.manage_payroll"), fence, answer(200, (req, res) =>
@@ -212,7 +214,7 @@ export function registerPayrollRoutes(app: Express, { requireAuth, callerParkGro
 
   // ── Feeds: OT bank, leave valuations, offboarding (R3) ──
   app.get("/api/payroll/feeds/:month", requireAuth, payroll("hr.view_salary"), fence, answer(200, async (req, res) =>
-    ({ ...(await loadFeedsView(parkGroupOf(res), req.params.month)), canManage: canManagePayroll(role(req)) })));
+    ({ ...(await loadFeedsView(parkGroupOf(res), req.params.month)), canManage: canManagePayroll(subject(req)) })));
   app.post("/api/payroll/feeds/ot-bookings", requireAuth, payroll("hr.manage_payroll"), fence, answer(201, (req, res) =>
     bookOtTimeOff(parkGroupOf(res), actorOf(req), body(req))));
   app.post("/api/payroll/feeds/leave-valuations", requireAuth, payroll("hr.manage_payroll"), fence, answer(201, (req, res) =>
@@ -224,8 +226,8 @@ export function registerPayrollRoutes(app: Express, { requireAuth, callerParkGro
 
   // ── Month-end draft and preview (R3; the lifecycle is R4's) ──
   app.get("/api/payroll/month-end/:entityId/:month", requireAuth, payroll("hr.view_salary"), fence, answer(200, async (req, res) =>
-    ({ ...(await loadMonthEnd(parkGroupOf(res), req.params.entityId, req.params.month)), canManage: canManagePayroll(role(req)),
-      canConfirm: canConfirmPayroll(role(req)), canLock: canLockPayroll(role(req)) })));
+    ({ ...(await loadMonthEnd(parkGroupOf(res), req.params.entityId, req.params.month)), canManage: canManagePayroll(subject(req)),
+      canConfirm: canConfirmPayroll(subject(req)), canLock: canLockPayroll(subject(req)) })));
   app.post("/api/payroll/month-end/:entityId/:month/run", requireAuth, payroll("hr.manage_payroll"), fence, answer(200, (req, res) =>
     startRun(parkGroupOf(res), actorOf(req), req.params.entityId, req.params.month, body(req))));
   app.put("/api/payroll/month-end/:entityId/:month/attendance/:dayKey", requireAuth, payroll("hr.manage_payroll"), fence, answer(200, (req, res) =>
@@ -273,7 +275,7 @@ export function registerPayrollRoutes(app: Express, { requireAuth, callerParkGro
 
   // ── Statutory documents (R6): the prototype's document engine on the per-branch locked runs (none: owner decision 3) ──
   app.get("/api/payroll/statutory", requireAuth, payroll("hr.view_salary"), fence, answer(200, (req, res) =>
-    loadStatutoryView(parkGroupOf(res), { branchId: req.query.branchId, period: req.query.period }, canManagePayroll(role(req)))));
+    loadStatutoryView(parkGroupOf(res), { branchId: req.query.branchId, period: req.query.period }, canManagePayroll(subject(req)))));
   app.get("/api/payroll/statutory/ewf-surcharge", requireAuth, payroll("hr.view_salary"), fence, answer(200, async (req) =>
     ewfSurcharge({ dueDate: req.query.dueDate, asOfDate: req.query.asOfDate, principal: req.query.principal })));
   app.post("/api/payroll/statutory/documents", requireAuth, payroll("hr.manage_payroll"), fence, answer(201, (req, res) =>

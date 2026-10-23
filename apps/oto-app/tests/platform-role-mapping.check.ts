@@ -172,7 +172,8 @@ await check("deserialization, userWithAccess middleware and api/user share the s
   assert.equal(res.body.role, "manager"); assert.equal(res.body.platformRoleMapping.permissions["hr:salary:view"], false);
   assert.equal(JSON.stringify(res.body).includes("sealedToken"), false);
   const guard = rawAdvisorGuard(f.storage);
-  for (const user of [deserialized, req.userWithAccess, res.body]) {
+  for (const salaryView of [false, true]) for (const original of [deserialized, req.userWithAccess, res.body]) {
+    const user = { ...original, platformRoleMapping: { ...original.platformRoleMapping, permissions: { "hr:salary:view": salaryView } } };
     for (const path of ["/api/contracts", "/api/schedule", "/api/rota", "/api/payroll", "/api/auth/xero", "/api/finance"]) {
       const denied = response(); let nextCalled = false;
       await guard({ user, path }, denied, (error?: unknown) => { if (error) throw error; nextCalled = true; });

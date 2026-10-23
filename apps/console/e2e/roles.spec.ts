@@ -116,7 +116,7 @@ test('the full permission catalogue and long park scopes remain usable on a phon
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/people/roles');
   const picker = page.getByRole('combobox', { name: 'Permission', exact: true });
-  await expect(picker.getByRole('option')).toHaveCount(137);
+  await expect(picker.getByRole('option')).toHaveCount(138);
   await picker.selectOption(longest.permission);
   await expect(picker).toHaveValue(longest.permission);
   await expect(page.getByRole('list', { name: 'Permission holders', exact: true })).toContainText(scopeName);

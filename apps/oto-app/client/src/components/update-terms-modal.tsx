@@ -5,7 +5,7 @@ import { Employee, Branch, EmployeeChange, Department } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
-import { canViewHrSalary, redactHrPay, HR_PAY_HIDDEN_NOTE } from "@shared/hr-salary-permission";
+import { canEditHrSalary, redactHrPay, HR_PAY_HIDDEN_NOTE } from "@shared/hr-salary-permission";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -77,8 +77,8 @@ export function UpdateTermsModal({ open, onOpenChange, employee, onSuccess }: Up
   const { toast } = useToast();
   const actionRequest = useManagerActionRequest();
   const { user } = useAuth();
-  const canViewSalary = canViewHrSalary(user?.role);
-  const offeredChangeTypes = canViewSalary ? changeTypes : changeTypes.filter(type => !PAY_CHANGE_TYPES.includes(type.value));
+  const canEditSalary = canEditHrSalary(user);
+  const offeredChangeTypes = canEditSalary ? changeTypes : changeTypes.filter(type => !PAY_CHANGE_TYPES.includes(type.value));
   const [showContractPrompt, setShowContractPrompt] = useState(false);
   const [lastChange, setLastChange] = useState<EmployeeChange | null>(null);
   const [transferResult, setTransferResult] = useState<{ deletedAssignments: number; deletedTimeOff: number } | null>(null);
@@ -92,7 +92,7 @@ export function UpdateTermsModal({ open, onOpenChange, employee, onSuccess }: Up
   const form = useForm<UpdateTermsFormData>({
     resolver: zodResolver(updateTermsSchema),
     defaultValues: {
-      changeType: canViewSalary ? "salary_adjustment" : "title_change",
+      changeType: canEditSalary ? "salary_adjustment" : "title_change",
       effectiveDate: new Date().toISOString().split('T')[0],
       newSalary: mergeData?.salaryThb || undefined,
       newTitle: mergeData?.positionTitle || "",
@@ -121,8 +121,8 @@ export function UpdateTermsModal({ open, onOpenChange, employee, onSuccess }: Up
 
   const createChangeMutation = useMutation({
     mutationFn: async (data: UpdateTermsFormData) => {
-      // Below a payroll role no pay value rides along on another kind of change.
-      const body = canViewSalary ? data : redactHrPay(data);
+      // Salary viewing alone cannot send pay on another kind of change.
+      const body = canEditSalary ? data : redactHrPay(data);
       const res = await apiRequest("POST", `/api/employees/${employee.id}/changes`, { ...body, requestId: actionRequest.requestIdFor(employee.id, body) });
       return await res.json();
     },
@@ -316,7 +316,7 @@ export function UpdateTermsModal({ open, onOpenChange, employee, onSuccess }: Up
                         ))}
                       </SelectContent>
                     </Select>
-                    {!canViewSalary && (
+                    {!canEditSalary && (
                       <FormDescription data-testid="text-pay-changes-hidden">
                         Salary and incentive changes: {HR_PAY_HIDDEN_NOTE}.
                       </FormDescription>

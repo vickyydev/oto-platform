@@ -21,7 +21,7 @@ import {
   ticketPackage,
   tier,
 } from '@oto/db';
-import { seed } from '@oto/db/seed';
+import { platformSync, seed } from '@oto/db/seed';
 import { createTestContext, teardownAll, type TestContext } from './helpers';
 
 /**
@@ -96,6 +96,28 @@ describe('platform sync (S2-01b)', () => {
 
     const rows = await ctx.db.select().from(rolePermission).where(eq(rolePermission.roleId, roleId));
     expect(rows.map((r) => r.permission)).not.toContain('pos:nonsense:do');
+  });
+
+  it('converges salary access only for the two administrator bundles and preserves an operator role', async () => {
+    const system = (await ctx.db.select().from(role)).filter(row => row.isSystem && row.operatorId === null);
+    const administratorIds = system.filter(row => ['platform_admin', 'operator_admin'].includes(row.name)).map(row => row.id);
+    const otherIds = system.filter(row => !['platform_admin', 'operator_admin'].includes(row.name)).map(row => row.id);
+    expect(administratorIds).toHaveLength(2);
+    expect(otherIds).toHaveLength(3);
+    await ctx.db.delete(rolePermission).where(and(inArray(rolePermission.roleId, administratorIds), eq(rolePermission.permission, 'hr:salary:view')));
+    await ctx.db.insert(rolePermission).values(otherIds.map(roleId => ({ id: newId(), roleId, permission: 'hr:salary:view' })));
+    const [owner] = await ctx.db.select({ id: operator.id }).from(operator).limit(1);
+    const customId = newId();
+    await ctx.db.insert(role).values({ id: customId, operatorId: owner!.id, name: `ZZ TEST salary sync ${customId}` });
+    await ctx.db.insert(rolePermission).values({ id: newId(), roleId: customId, permission: 'hr:salary:view' });
+
+    await platformSync(ctx.db);
+    const readSalary = () => ctx.db.select({ roleId: rolePermission.roleId }).from(rolePermission)
+      .where(eq(rolePermission.permission, 'hr:salary:view'));
+    const expected = [...administratorIds, customId].sort();
+    expect((await readSalary()).map(row => row.roleId).sort()).toEqual(expected);
+    await platformSync(ctx.db);
+    expect((await readSalary()).map(row => row.roleId).sort()).toEqual(expected);
   });
 
   it('marks the seeded roles as system roles the platform owns', async () => {

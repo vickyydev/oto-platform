@@ -13,6 +13,8 @@
 export const PERMISSIONS = [
   // Super Admin Console home (SCRUM-609).
   'console:overview:read',
+  /** Read employee pay in the OTO App when its legal entity enables platform access. */
+  'hr:salary:view',
   // Admin console — accounts & access
   'admin:account:create',
   'admin:account:read',

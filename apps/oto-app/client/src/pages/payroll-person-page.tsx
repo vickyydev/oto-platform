@@ -109,7 +109,7 @@ export default function PayrollPersonPage() {
   const { user } = useAuth();
   const view = usePayrollProfile(employeeId);
   const setup = usePayrollSetup();
-  if (!canViewHrSalary(user?.role)) return <div className="p-6"><p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">{HR_PAY_HIDDEN_NOTE}.</p></div>;
+  if (!canViewHrSalary(user)) return <div className="p-6"><p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">{HR_PAY_HIDDEN_NOTE}.</p></div>;
   return <div className="mx-auto max-w-6xl space-y-4 p-4 sm:p-6" data-testid="page-payroll-person">
     <Link href="/payroll/people" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" />Staff roster</Link>
     {(view.isLoading || setup.isLoading) && <Skeleton className="h-96 w-full" />}

@@ -11,6 +11,7 @@ const files = [
   "platform-role-training-scope.check.ts",
   "platform-role-managed-flag.check.ts",
   "platform-role-permissions.check.ts",
+  "platform-salary-permission.check.ts",
 ];
 
 // Keep these isolated handler/guard checks in the existing handoff CI entry.

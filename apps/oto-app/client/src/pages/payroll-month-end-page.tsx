@@ -24,7 +24,7 @@ import { canViewHrSalary, HR_PAY_HIDDEN_NOTE } from "@shared/hr-salary-permissio
 import { PAYROLL_DISCOUNTS, PAYROLL_DISCOUNT_LABELS, type CompanyMonthInputs, type CompanyPerson, type MonthEndView, type MonthInputsView, type FeedsView, type PreviewView } from "@shared/payroll-month";
 import { ReasonDialog } from "@/components/payroll/reason-dialog";
 import {
-  errorText, money, monthBefore, monthLabel, payrollCall, refreshPayroll, useFeeds, useMonthEnd, useMonthInputs, usePayrollSetup, usePreview, withBranchNames,
+  errorText, money, monthLabel, payrollCall, refreshPayroll, useFeeds, useMonthEnd, useMonthInputs, usePayrollSetup, usePreview, withBranchNames,
 } from "@/lib/payroll/api";
 import { Field, NumberInput } from "@/pages/payroll-setup-page";
 
@@ -53,7 +53,7 @@ export default function PayrollMonthEndPage() {
   const entities = (setup.data?.entities ?? []).filter((e) => !e.archivedAt);
   const [entityId, setEntityId] = useState(search.get("entity") ?? "");
   const entity = entityId || entities[0]?.id || "";
-  if (!canViewHrSalary(user?.role)) return <div className="p-6"><Empty>{HR_PAY_HIDDEN_NOTE}.</Empty></div>;
+  if (!canViewHrSalary(user)) return <div className="p-6"><Empty>{HR_PAY_HIDDEN_NOTE}.</Empty></div>;
   return <div className="mx-auto max-w-7xl space-y-5 p-4 sm:p-6" data-testid="page-payroll-month-end">
     <div className="flex flex-wrap items-end justify-between gap-3">
       <div>

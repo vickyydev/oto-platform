@@ -28,7 +28,7 @@ export default function PayrollPeoplePage() {
   const [drafting, setDrafting] = useState(false);
   const [notice, setNotice] = useState("");
   const rows = useMemo(() => (roster.data?.rows ?? []).filter((r) => showLeft || r.employmentState !== "LEFT"), [roster.data, showLeft]);
-  if (!canViewHrSalary(user?.role)) return <div className="p-6"><p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">{HR_PAY_HIDDEN_NOTE}.</p></div>;
+  if (!canViewHrSalary(user)) return <div className="p-6"><p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">{HR_PAY_HIDDEN_NOTE}.</p></div>;
 
   const isReady = (r: PayrollRosterRow) => !!r.readiness?.ready && r.validationErrors === 0 && r.reviewState === "reviewed";
   const thirdParty = (r: PayrollRosterRow) => r.warnings.some((w) => w.startsWith("Third-party"));

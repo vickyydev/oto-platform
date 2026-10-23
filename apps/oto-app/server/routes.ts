@@ -161,7 +161,7 @@ import {
 } from "./leave-types";
 import { directoryEventRouter } from "./directory/eventRoutes";
 import { directoryJobRouter } from "./directory/jobRoutes";
-import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, employeeAssets, employeeOffboarding, offboardingChecklist, eventStatuses, insertEventStatusSchema, branches, departments, operators, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, timekeepingIssues, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, leavePolicies, sickLeavePolicies, type LeaveType, scheduleAuditLog, activityLog, roles, roleBranchAssignments, employeeRoles, payrollEmployeeSummaries, payrollLineItems, payrollDayReconciliations, payrollExceptions, statutoryCalculationResults, employeePayrollProfiles, payslips, accessPolicies, accessItems, userPreferences, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections, kioskAuthAttempts } from "@shared/schema";
+import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, employeeAssets, employeeOffboarding, offboardingChecklist, eventStatuses, insertEventStatusSchema, branches, departments, operators, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, timekeepingIssues, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, sickLeavePolicies, type LeaveType, scheduleAuditLog, activityLog, roles, roleBranchAssignments, employeeRoles, payrollEmployeeSummaries, payrollLineItems, payrollDayReconciliations, payrollExceptions, statutoryCalculationResults, employeePayrollProfiles, payslips, accessPolicies, accessItems, userPreferences, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections, kioskAuthAttempts } from "@shared/schema";
 import { hashSessionToken, requireKioskPermission, requireKioskPermissionIfKiosk, requireKioskSession, validateKioskSession } from "./kiosk-auth";
 import { hashPin, verifyEmployeePin } from "./pin-utils";
 import { DEACTIVATE_INSTEAD, deleteManagedUser } from "./lib/userDeletion";
@@ -3495,7 +3495,7 @@ export async function registerRoutes(
             roles: rolesByEmployee.get(e.id) || [],
           }));
           // Pay withheld below payroll roles (SCRUM-559).
-          return res.json(hrPayResponse(withRoles, req.userWithAccess?.role ?? req.user?.role));
+          return res.json(hrPayResponse(withRoles, req.userWithAccess ?? req.user));
         } else {
           filteredEmployees = filteredEmployees.filter(e => e.branchId === branchIdFilter);
         }
@@ -3516,10 +3516,10 @@ export async function registerRoutes(
         return res.json(hrPayResponse(filteredEmployees.map(e => ({
           ...e,
           roles: rolesByEmployee.get(e.id) || [],
-        })), req.userWithAccess?.role ?? req.user?.role));
+        })), req.userWithAccess ?? req.user));
       }
       
-      res.json(hrPayResponse(filteredEmployees, req.userWithAccess?.role ?? req.user?.role));
+      res.json(hrPayResponse(filteredEmployees, req.userWithAccess ?? req.user));
     } catch (error) {
       next(error);
     }
@@ -3578,7 +3578,7 @@ export async function registerRoutes(
       // Below a payroll role the template has no pay columns (SCRUM-559): an
       // upload carrying pay is refused, so the template must not invite one.
       const payColumns = new Set(["Monthly Salary (THB)", "Incentive Clause", "Food Allowance (Daily)"]);
-      const keep = headers.map(h => canViewHrSalary(req.userWithAccess?.role ?? req.user?.role) || !payColumns.has(h));
+      const keep = headers.map(h => canViewHrSalary(req.userWithAccess ?? req.user) || !payColumns.has(h));
       const workbook = XLSX.utils.book_new();
       const worksheet = XLSX.utils.aoa_to_sheet([headers.filter((_, i) => keep[i]), sampleRow.filter((_, i) => keep[i])]);
       
@@ -3634,7 +3634,7 @@ export async function registerRoutes(
           loginActive = linkedUser.isActive;
         }
       }
-      res.json(hrPayResponse({ ...employee, phoneVerificationInfo, loginActive }, req.userWithAccess?.role ?? req.user?.role));
+      res.json(hrPayResponse({ ...employee, phoneVerificationInfo, loginActive }, req.userWithAccess ?? req.user));
     } catch (error) {
       next(error);
     }
@@ -3933,7 +3933,7 @@ export async function registerRoutes(
     try {
       // Pay is set by a payroll role (SCRUM-559), on a new employee as on an
       // existing one; the form below one sends none.
-      if (!canEditHrSalary(req.userWithAccess?.role ?? req.user?.role) && containsHrPayFields(req.body)) {
+      if (!canEditHrSalary(req.userWithAccess ?? req.user) && containsHrPayFields(req.body)) {
         return res.status(403).json({ message: "Pay fields require hr.view_salary. Ask an admin to set pay." });
       }
       // Convert date strings to Date objects or undefined for optional date fields
@@ -4068,7 +4068,7 @@ export async function registerRoutes(
       // Trigger attention engine for new employee
       evaluateForEmployee(employee.id).catch(err => console.error("[AttentionEngine] Employee create trigger failed:", err));
       
-      res.status(201).json(hrPayResponse(employee, req.userWithAccess?.role ?? req.user?.role));
+      res.status(201).json(hrPayResponse(employee, req.userWithAccess ?? req.user));
     } catch (error) {
       next(error);
     }
@@ -4078,7 +4078,7 @@ export async function registerRoutes(
     try {
       // Pay is a payroll role's to change (SCRUM-559). The body alone decides
       // this, so it answers before any record is looked up.
-      if (!canEditHrSalary(req.userWithAccess?.role ?? req.user?.role) && containsHrPayFields(req.body)) {
+      if (!canEditHrSalary(req.userWithAccess ?? req.user) && containsHrPayFields(req.body)) {
         return res.status(403).json({ message: "Pay fields require hr.view_salary. Ask an admin to change pay." });
       }
       const oldEmployee = await employeeOfParkGroup(req, req.params.id);
@@ -4274,7 +4274,7 @@ export async function registerRoutes(
       // Trigger attention engine for updated employee
       evaluateForEmployee(employee.id).catch(err => console.error("[AttentionEngine] Employee update trigger failed:", err));
       
-      res.json(hrPayResponse(employee, req.userWithAccess?.role ?? req.user?.role));
+      res.json(hrPayResponse(employee, req.userWithAccess ?? req.user));
     } catch (error) {
       next(error);
     }
@@ -5134,7 +5134,7 @@ export async function registerRoutes(
       // Get all existing employees for matching
       const allEmployees = (await storage.getEmployees()).filter(e => ofParkGroup(e.tenantId));
       // Writing pay is hr.edit_salary's (SCRUM-605).
-      const writesPay = canEditHrSalary(req.userWithAccess?.role ?? req.user?.role);
+      const writesPay = canEditHrSalary(req.userWithAccess ?? req.user);
       
       const previewRows: any[] = [];
       
@@ -5265,7 +5265,7 @@ export async function registerRoutes(
       };
       
       // The current values shown beside each row are withheld below payroll roles (SCRUM-559).
-      res.json(hrPayResponse({ previewRows, stats, mappedColumns: Object.values(headerMapping) }, req.userWithAccess?.role ?? req.user?.role));
+      res.json(hrPayResponse({ previewRows, stats, mappedColumns: Object.values(headerMapping) }, req.userWithAccess ?? req.user));
     } catch (error) {
       next(error);
     }
@@ -5288,7 +5288,7 @@ export async function registerRoutes(
       }
 
       // The whole upload is refused before any row is written (SCRUM-559).
-      if (!canEditHrSalary(req.userWithAccess?.role ?? req.user?.role) && rows.some((row: { data?: unknown }) => bulkRowCarriesPay(row?.data))) {
+      if (!canEditHrSalary(req.userWithAccess ?? req.user) && rows.some((row: { data?: unknown }) => bulkRowCarriesPay(row?.data))) {
         return res.status(403).json({ message: BULK_PAY_REFUSAL });
       }
       
@@ -5463,7 +5463,7 @@ export async function registerRoutes(
       if (!await employeeOfParkGroup(req, req.params.employeeId)) return res.json([]);
       const changes = await storage.getEmployeeChanges(req.params.employeeId);
       // Pay values and the notes on pay changes are withheld below payroll roles (SCRUM-559).
-      res.json(hrPayResponse(changes, req.userWithAccess?.role ?? req.user?.role));
+      res.json(hrPayResponse(changes, req.userWithAccess ?? req.user));
     } catch (error) {
       next(error);
     }

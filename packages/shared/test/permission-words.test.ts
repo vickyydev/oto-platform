@@ -36,6 +36,13 @@ describe('plain permission sentences (SCRUM-612)', () => {
     expect(PERMISSION_WORDS['catalog:menu:import']).not.toMatch(/merchandise/i);
   });
 
+  it('describes salary visibility without promising pay editing or payroll approval', () => {
+    const sentence = PERMISSION_WORDS['hr:salary:view'];
+    expect(sentence).toMatch(/view.*salary.*pay details.*OTO App/i);
+    expect(sentence).toMatch(/platform access is enabled/i);
+    expect(sentence).not.toMatch(/edit|approve|confirm|lock/i);
+  });
+
   it('explains the sensitive, approval and payment distinctions in park terms', () => {
     const examples: [Permission, RegExp][] = [
       ['admin:audit:read_sensitive', /unmasked.*child health notes.*phone numbers/i],

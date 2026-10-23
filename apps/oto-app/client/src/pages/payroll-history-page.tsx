@@ -30,7 +30,7 @@ export default function PayrollHistoryPage() {
     const entityId = search.get("entity"), month = search.get("month"), version = Number(search.get("version"));
     return entityId && month && version ? { entityId, month, version } : null;
   });
-  if (!canViewHrSalary(user?.role)) return <div className="p-6"><Empty>{HR_PAY_HIDDEN_NOTE}.</Empty></div>;
+  if (!canViewHrSalary(user)) return <div className="p-6"><Empty>{HR_PAY_HIDDEN_NOTE}.</Empty></div>;
   const rows = history.data ?? [];
   const key = (r: Pick<PayrollHistoryRow, "entityId" | "month" | "version">) => `${r.entityId}:${r.month}:${r.version}`;
   return <div className="mx-auto max-w-7xl space-y-5 p-4 sm:p-6" data-testid="page-payroll-history">

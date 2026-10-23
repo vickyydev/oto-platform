@@ -30,7 +30,7 @@ export default function PayrollHubPage() {
   const { user } = useAuth();
   const setup = usePayrollSetup();
   const month = thisMonth();
-  if (!canViewHrSalary(user?.role)) return <div className="p-6"><Empty>{HR_PAY_HIDDEN_NOTE}.</Empty></div>;
+  if (!canViewHrSalary(user)) return <div className="p-6"><Empty>{HR_PAY_HIDDEN_NOTE}.</Empty></div>;
   const entities = (setup.data?.entities ?? []).filter((e) => !e.archivedAt);
   return <div className="mx-auto max-w-6xl space-y-5 p-4 sm:p-6" data-testid="page-payroll-hub">
     <header>

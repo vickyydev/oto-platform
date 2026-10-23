@@ -3,6 +3,7 @@ import type { Permission } from './permissions';
 /** Describes each permission; assigned scopes and the route's other checks still apply. */
 export const PERMISSION_WORDS: Record<Permission, string> = {
   'console:overview:read': "Read today's summary figures for the parks you can reach.",
+  'hr:salary:view': 'View employee salary and pay details in the OTO App when platform access is enabled.',
 
   'admin:account:create': 'Invite a staff sign-in account with an allowed role and scope.',
   'admin:account:read': 'Read staff sign-in accounts, their sessions and their shift tokens.',

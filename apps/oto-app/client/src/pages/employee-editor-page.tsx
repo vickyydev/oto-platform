@@ -39,7 +39,7 @@ import {
 } from "@/components/ui/form";
 import { ArrowLeft, Save, Loader2, User, Mail, Phone, MapPin, Building2, Briefcase, Globe, CreditCard, FileText, Trash2, Upload, RefreshCw, Eye, History, DollarSign, Plus, CheckCircle, Clock, AlertTriangle, FileSignature, UserX, ChevronDown, Package, RotateCcw, Fingerprint, QrCode, XCircle, Shield, Calendar, Download, Percent, X, PieChart, Settings, Lock, Pencil } from "lucide-react";
 import { MODULES, MODULE_KEYS, BRANCH_SCOPE_TYPES, type ModuleKey, type BranchScopeType, type EffectivePermissions } from "@shared/permissions";
-import { canViewHrSalary, redactHrPay, HR_PAY_HIDDEN_NOTE } from "@shared/hr-salary-permission";
+import { canViewHrSalary, canEditHrSalary, redactHrPay, HR_PAY_HIDDEN_NOTE } from "@shared/hr-salary-permission";
 import { DatePicker } from "@/components/ui/date-picker";
 import { ClickableEmployeeAvatar } from "@/components/clickable-employee-avatar";
 import { useAvatarWorkStatus } from "@/hooks/use-avatar-work-status";
@@ -2446,10 +2446,11 @@ export default function EmployeeEditorPage() {
   
   // Staff role has read-only access
   const canEdit = user?.role !== "staff";
-  // Pay is shown and sent only for payroll roles (SCRUM-559); the server
-  // withholds it from everyone else and refuses a pay field they send.
-  const canViewSalary = canViewHrSalary(user?.role);
-  const withoutPayUnlessPayroll = <T,>(body: T): T => (canViewSalary ? body : redactHrPay(body));
+  // Salary viewing follows the trusted session; writing pay still requires
+  // the original edit action, on both the form and the server.
+  const canViewSalary = canViewHrSalary(user);
+  const canEditSalary = canEditHrSalary(user);
+  const withoutPayUnlessPayroll = <T,>(body: T): T => (canEditSalary ? body : redactHrPay(body));
   const [tab, setTabState] = useState<EditorTab>(() => {
     const q = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("tab") : null;
     return isEditorTab(q) ? q : isNew ? "personal" : "overview";
@@ -2614,7 +2615,7 @@ export default function EmployeeEditorPage() {
   const contractHistory = contracts?.filter(c => c.status !== "active") || [];
 
   const form = useForm<EmployeeFormData>({
-    resolver: zodResolver(canViewSalary ? employeeFormSchema : employeeFormBaseSchema),
+    resolver: zodResolver(canEditSalary ? employeeFormSchema : employeeFormBaseSchema),
     defaultValues: {
       fullName: "",
       thaiName: "",
@@ -4274,7 +4275,7 @@ export default function EmployeeEditorPage() {
             icon={DollarSign}
             defaultOpen={true}
             sectionId="pay"
-            showFormActions={canViewSalary}
+            showFormActions={canEditSalary}
             canEdit={canEdit}
             isPending={isPending}
             isNew={isNew}
@@ -4296,6 +4297,7 @@ export default function EmployeeEditorPage() {
                               className="pl-10"
                               placeholder="e.g., 50,000"
                               data-testid="input-salary"
+                              disabled={!canEditSalary}
                               value={field.value ?? undefined}
                               onChange={field.onChange}
                             />
@@ -4319,6 +4321,7 @@ export default function EmployeeEditorPage() {
                               className="pl-10"
                               placeholder="e.g., 500"
                               data-testid="input-daily-rate"
+                              disabled={!canEditSalary}
                               value={field.value ?? undefined}
                               onChange={field.onChange}
                             />
@@ -4344,6 +4347,7 @@ export default function EmployeeEditorPage() {
                           className="min-h-[100px]"
                           placeholder="e.g., Monthly commission of 2% on sales exceeding THB 100,000. Performance bonus up to 2 months salary based on annual review."
                           data-testid="input-incentive-clause"
+                          disabled={!canEditSalary}
                           value={field.value || ""}
                           onChange={(e) => field.onChange(e.target.value || null)}
                         />
@@ -4369,6 +4373,7 @@ export default function EmployeeEditorPage() {
                             className="pl-10"
                             placeholder="e.g., 60"
                             data-testid="input-food-allowance"
+                              disabled={!canEditSalary}
                             value={field.value ?? undefined}
                             onChange={field.onChange}
                           />
@@ -4440,7 +4445,7 @@ export default function EmployeeEditorPage() {
                       ? `฿${(employee.defaultMergeData as any).salaryThb.toLocaleString()}/month`
                       : "Not set"}
                 </p>
-                {canViewSalary && canEdit && (
+                {canEditSalary && canEdit && (
                   <Button type="button" variant="ghost" size="sm" className="h-auto p-0 text-primary underline underline-offset-4" onClick={() => setTab("payroll")} data-testid="link-salary-edit-in-payroll">Edit in Payroll</Button>
                 )}
               </div>
