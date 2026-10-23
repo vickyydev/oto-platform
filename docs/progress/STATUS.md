@@ -1,5 +1,11 @@
 # Current status - read this first when resuming
 
+**24 October 2026, SCRUM-630 STARTED; PLATFORM SALARY PERMISSION:** SCRUM-629 is Deployed with four attached staging role frames, verified cleanup and published evidence/handovers on 0da38f6e411b64df64e41a8b5179d1fc8c2252fd. P3 continues with630/P3-2 only: add hr:salary:view to the platform permission vocabulary and bundles, then make the OTO App salary decision read its trusted hand-off permission when mapping is enabled. Flag-off behavior and existing advisor restrictions remain the default outside the approved change.
+
+The isolated worktree is C:/w/admin-salary-permission on lane/admin-salary-permission, cut from origin/main 0da38f6e411b64df64e41a8b5179d1fc8c2252fd. Three read-only workflows inspect platform permission/bundle ownership, OTO salary consumers and existing tests, and bounded SMS-free staging acceptance before disjoint implementation ownership is assigned. The coordinator owns Git, docs, Jira, release and staging. Scope questions go to the planner through STATUS; no original-app rule is silently changed.
+
+No630 source change, migration, local gate, staging mutation or deployment is claimed. The live predecessor remains source699a7555679aee59ee3e210d00b7b977e017af02 with six-green CI40014668250. No631 starts before630 is Deployed.
+
 **24 October 2026, SCRUM-629 DEPLOYED; PLATFORM ROLE MAPPING:** Source 699a7555679aee59ee3e210d00b7b977e017af02 passed all six jobs in CI 40014668250 and is live on API, Admin and OTO App. Four native staging frames show Staff with mapping off, then Admin, Manager and Staff with mapping on; the same single-branch limit remains. Both actual image reviews approve every frame. Evidence: `docs/qa/jira-comments/attachments/SCRUM-629/README.md`; proof completed 2026-10-23T20:17:34.895Z. Jira is Deployed and the single outcome comment is 12553.
 
 All 33 HTTP operations and both app-owned flag jobs settled. Ten origin sessions signed out 200 and then answered current-user 401. Trial grants were removed, the original account and app placement were restored, and the empty test entity was archived with its flag off. Original branch access, identity links, entities, control account and park preferences remain unchanged. No SMS, payment, check-in, hardware or channel action occurred.
