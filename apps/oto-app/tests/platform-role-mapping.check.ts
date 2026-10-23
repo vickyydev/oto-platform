@@ -107,8 +107,7 @@ async function moduleAt(entry: string, f: ReturnType<typeof fixture>, exchangeCo
   const unrefInterval = (callback: (...args: any[]) => void, delay?: number, ...args: any[]) => {
     const timer = setInterval(callback, delay, ...args); timer.unref(); return timer;
   };
-  new Function("require", "module", "exports", "globalThis", "process", "fetch", "setInterval", result.outputFiles[0].text)
-    (require, output, output.exports, { ...globalThis, test629: sandbox }, { env }, fetchLocal, unrefInterval);
+  new Function("require", "module", "exports", "globalThis", "process", "fetch", "setInterval", result.outputFiles[0].text)(require, output, output.exports, { ...globalThis, test629: sandbox }, { env }, fetchLocal, unrefInterval);
   return { exports: output.exports, passport };
 }
 async function signOn(f: ReturnType<typeof fixture>, claim: unknown = context) {

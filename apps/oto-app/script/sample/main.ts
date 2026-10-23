@@ -138,6 +138,17 @@ async function ensureTenant(): Promise<string> {
   return created!.id;
 }
 
+// Like employeesAtBaseline below, omit only the managed flag added after the
+// restore baseline. Drizzle otherwise names it even when values omit it. A
+// migrated database fills it with its false default; existing rows stay intact.
+const { platformRolesEnabled: _platformRolesEnabled, ...baselineOperatorColumns } =
+  getTableColumns(operators);
+const operatorsAtBaseline = Object.create(
+  Object.getPrototypeOf(operators),
+  Object.getOwnPropertyDescriptors(operators),
+) as typeof operators;
+Object.defineProperty(operatorsAtBaseline, Table.Symbol.Columns, { value: baselineOperatorColumns });
+
 async function ensureOperator(tenantId: string): Promise<string> {
   const [existing] = await db
     .select({ id: operators.id })
@@ -146,7 +157,7 @@ async function ensureOperator(tenantId: string): Promise<string> {
     .limit(1);
   if (existing) return existing.id;
   const [created] = await db
-    .insert(operators)
+    .insert(operatorsAtBaseline)
     .values({ tenantId, name: OPERATOR.name, status: OPERATOR.status })
     .returning({ id: operators.id });
   count('operator');

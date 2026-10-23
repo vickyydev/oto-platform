@@ -27,8 +27,7 @@ const storage = {
 const code = ts.transpileModule("const handler = " + handlers[0].getText(tree) + ";", {
   compilerOptions: { target: ts.ScriptTarget.ES2022 },
 }).outputText;
-const handler = new Function("storage", "userManagementTenant", "getEffectivePermissions", code + "\nreturn handler;")
-  (storage, async () => "zz-test-629-tenant-a", getEffectivePermissions);
+const handler = new Function("storage", "userManagementTenant", "getEffectivePermissions", code + "\nreturn handler;")(storage, async () => "zz-test-629-tenant-a", getEffectivePermissions);
 async function request(mappedRole?: "admin" | "manager" | "staff") {
   const req = { user: { id: "zz-test-629-user" }, userWithAccess: mappedRole ? {
     id: "zz-test-629-user", role: mappedRole, platformRoleMapping: { platformRolesEnabled: true },

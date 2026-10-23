@@ -42,8 +42,7 @@ function followingGuard(declaration: ts.VariableDeclaration): ts.IfStatement {
 }
 function guardResult(code: string, user: object, branchId = "zz-test-629-b") {
   const res = { status: (statusCode: number) => ({ json: (_body: unknown) => ({ statusCode }) }) };
-  return new Function("user", "branchId", "employee", "targetShiftRow", "res", javascript(code + "\nreturn { statusCode: 200 };"))
-    (user, branchId, { branchId }, { branchId }, res).statusCode;
+  return new Function("user", "branchId", "employee", "targetShiftRow", "res", javascript(code + "\nreturn { statusCode: 200 };"))(user, branchId, { branchId }, { branchId }, res).statusCode;
 }
 const base = { role: "admin", hasAllBranchesAccess: false, allowedBranchIds: ["zz-test-629-a"] };
 const mapped = { ...base, platformRoleMapping: { platformRolesEnabled: true } };

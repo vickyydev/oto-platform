@@ -1,7 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { runInNewContext } from 'node:vm';
 import { describe, expect, it } from 'vitest';
+import ts from 'typescript';
+import { and, eq, getTableColumns, sql, Table } from 'drizzle-orm';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import * as pgCore from 'drizzle-orm/pg-core';
 import { compareDiagnostics, parseDiagnostics } from '../../oto-app/script/typecheck-ratchet.mjs';
 import {
   compareCounts,
@@ -122,6 +127,67 @@ describe('S2-17b round 8 — restore and compiler review', () => {
     const unusual = Object.assign(Object.create(null), counts);
     unusual.__proto__ = '0';
     expect(() => assertTableInventory(sql, unusual)).toThrow('inventory differs');
+  });
+
+  it('SCRUM-629: the real sample operator insert fits the baseline and leaves the migrated managed flag default off', async () => {
+    // Execute the actual table declarations and seed function without importing
+    // server/db or the sample people. Only the transport and test row are local.
+    const schemaText = readFileSync(`${appDir}shared/schema.ts`, 'utf8');
+    const schemaTree = ts.createSourceFile('schema.ts', schemaText, ts.ScriptTarget.Latest, true);
+    const tableDeclarations = schemaTree.statements.filter(statement => ts.isVariableStatement(statement)
+      && statement.declarationList.declarations.some(declaration => ts.isIdentifier(declaration.name)
+        && ['tenants', 'operatorStatuses', 'operators'].includes(declaration.name.text)));
+    expect(tableDeclarations).toHaveLength(3);
+    const tableExports: Record<string, pgCore.PgTable> = {};
+    const transpile = (text: string) => ts.transpileModule(text, {
+      compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+    }).outputText;
+    runInNewContext(transpile(tableDeclarations.map(statement => statement.getText(schemaTree)).join('\n')), {
+      exports: tableExports, ...pgCore, sql,
+    });
+    const operators = tableExports.operators!;
+    const columnsBefore = Object.keys(getTableColumns(operators));
+    expect(getTableColumns(operators).platformRolesEnabled!.default).toBe(false);
+
+    const seedText = source('sample/main.ts');
+    const seedTree = ts.createSourceFile('sample/main.ts', seedText, ts.ScriptTarget.Latest, true);
+    const operatorFunction = seedTree.statements.find(statement => ts.isFunctionDeclaration(statement)
+      && statement.name?.text === 'ensureOperator');
+    expect(operatorFunction).toBeDefined();
+    const setup = seedTree.statements.filter(statement => !ts.isImportDeclaration(statement)
+      && statement.end <= operatorFunction!.end).map(statement => statement.getText(seedTree)).join('\n');
+    const queryCompiler = drizzle.mock(), queries: { sql: string; params: unknown[] }[] = [];
+    const createdId = '01900000-0000-7000-8000-000000000629';
+    let existingId: string | null = null;
+    const seedDb = {
+      select: () => ({ from: () => ({ where: () => ({ limit: async () => existingId ? [{ id: existingId }] : [] }) }) }),
+      insert: (table: pgCore.PgTable) => ({ values: (values: Record<string, unknown>) => ({
+        returning: async (fields: Record<string, pgCore.PgColumn>) => {
+          queries.push(queryCompiler.insert(table).values(values).returning(fields).toSQL());
+          existingId = createdId; return [{ id: createdId }];
+        },
+      }) }),
+    };
+    const ensureOperator = runInNewContext(transpile(setup) + '\nensureOperator;', {
+      operators, Table, getTableColumns, and, eq, db: seedDb,
+      OPERATOR: { name: 'ZZ TEST SCRUM-629 baseline operator', status: 'active' },
+    }) as (tenantId: string) => Promise<string>;
+    const tenantId = '01900000-0000-7000-8000-000000000001';
+    expect(await ensureOperator(tenantId)).toBe(createdId);
+    expect(queries).toHaveLength(1);
+    const baselineSql = readFileSync(`${appDir}migrations/0000_otoapp_baseline.sql`, 'utf8');
+    const baselineTable = /CREATE TABLE "operators" \(([\s\S]*?)\n\);/.exec(baselineSql)?.[1];
+    expect(baselineTable).toBeDefined();
+    const baselineColumns = [...baselineTable!.matchAll(/^\s*"([^"]+)"/gm)].map(match => match[1]);
+    expect(baselineColumns).toHaveLength(6);
+    const insertColumns = /insert into "operators" \(([^)]+)\)/.exec(queries[0]!.sql)?.[1];
+    expect(insertColumns).toBeDefined();
+    expect([...insertColumns!.matchAll(/"([^"]+)"/g)].map(match => match[1])).toEqual(baselineColumns);
+    expect(queries[0]!.params).toEqual([tenantId, 'ZZ TEST SCRUM-629 baseline operator', 'active']);
+    expect(Object.keys(getTableColumns(operators))).toEqual(columnsBefore);
+    expect(getTableColumns(operators).platformRolesEnabled!.default).toBe(false);
+    expect(await ensureOperator(tenantId)).toBe(createdId);
+    expect(queries).toHaveLength(1);
   });
 
   it('ordinary SQL and matched dump wrappers remain usable without client commands', () => {
