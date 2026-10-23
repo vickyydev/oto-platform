@@ -1,0 +1,82 @@
+{
+  "ticket": "SCRUM-627",
+  "sourceSha": "cd2ed663d725e0fbcb05a3668249a2de5ba0b254",
+  "recordedAt": "2026-10-23T09:57:39.869Z",
+  "files": [
+    {
+      "filename": "SCRUM-627-local-results.json",
+      "sha256": "fe2e9e1e028f22a28e22dbcfd18a8e693d19292a4c284f551b16f91981862982",
+      "repositoryBlobOid": "1e70dab528d02dc38df6c55caaf25f91b1aa7458"
+    },
+    {
+      "filename": "SCRUM-627-staging-results.json",
+      "sha256": "0718836a5f24dcedef62569cb6a43b292d85af08a2de25745f9ea23b3e8b2b2c",
+      "repositoryBlobOid": "9b6fdfd356c806e4922c5034bb9d852b0abe5e25"
+    },
+    {
+      "filename": "SCRUM-627-image-review.json",
+      "sha256": "af322ba92cc3fd0e03a3e9319ff640d20526feb5ad122602fa8ede66ce4269f9",
+      "repositoryBlobOid": "64a5ece6cb2d8df589c160f3ac57a790e2a49442"
+    },
+    {
+      "filename": "SCRUM-627-independent-image-review.json",
+      "sha256": "79ea689ef649b9e7eef09be71097546360b023481a5248f5d3eb18a7214536a0",
+      "repositoryBlobOid": "ee6a91e11dd59c10d8282d0656a96448205437d7"
+    },
+    {
+      "filename": "SCRUM-627-workflow-repair.json",
+      "sha256": "9c7337c348b521d7fc8a7f8b193ed84ec60e53c08426fb1be6f9d9b0215781ce",
+      "repositoryBlobOid": "cf47cfb62a7e58f5a75815e94e732aa11fab5a2a"
+    },
+    {
+      "filename": "SCRUM-627-workflow-repair.diff",
+      "sha256": "6e58a0de45cc5c03db4c3a2c2327b5d6737df5be11c1c3d7ae7165b462bbf2cf",
+      "repositoryBlobOid": "230c885b28ef02116f9f4e96de6a840a3b2f6dcf"
+    },
+    {
+      "filename": "SCRUM-627-release.json",
+      "sha256": "e0b4e425d667b28168481d31e01607e90732510e01aca882df743d15362be9f8",
+      "repositoryBlobOid": "3cdd113c9a2377d1b477140aaf5405aa4d92cb11"
+    },
+    {
+      "filename": "SCRUM-627-source-review.json",
+      "sha256": "6e27ef37df582552a0c2c6d4923f725b091d5557eed8fc971c8b4d7998c7f238",
+      "repositoryBlobOid": "cd541cf06b29ebfea3f0a4c7e619dc6723995f19"
+    },
+    {
+      "filename": "README.md",
+      "sha256": "f74e337a8787d61afd5018ff9091b759b3d81dd8856d71331ced3af6fce9454f",
+      "repositoryBlobOid": "fac83b32eb047ecfc73803860b44c0b979cbcaa9"
+    },
+    {
+      "filename": "SCRUM-627-01-pos-admin-opening-phone390.png",
+      "sha256": "e4168c5e965e0e08e4ee4bd90bcda372763606539d0b7265175028f14d4bdb8f",
+      "repositoryBlobOid": "8c0a6ef3a4a68075168ca36961ee70a2b61b341a"
+    },
+    {
+      "filename": "SCRUM-627-02-console-inventory-native.png",
+      "sha256": "6f8df68fa4dc4e3000c91980186993c1f7c688e6b8e36a516bfb9c0d081c0b11",
+      "repositoryBlobOid": "8b50ce8514c373cee0a6e77974bd9f0686b31d89"
+    },
+    {
+      "filename": "SCRUM-627-03-new-member-controls.png",
+      "sha256": "90b56cd8c4ce4b7921bf6cbe78139e4a3dba9568e3c5451e510fb59d644fd83a",
+      "repositoryBlobOid": "4d057ae1070ad3b8ab79acdd0d0c0becdccb1400"
+    },
+    {
+      "filename": "SCRUM-627-04-tier-verifications-native.png",
+      "sha256": "af9f0625f33efa5f1587006bddb0093f90bb3b7a598cc7334cd839b2546fbf86",
+      "repositoryBlobOid": "38be3672522e1381fd99aa7dfe76221e3e2775f8"
+    },
+    {
+      "filename": "SCRUM-627-05-wallet-lookup-empty.png",
+      "sha256": "658cf893a3881058ebc2c0518c529bd680021705633be8d51396b43ce10a0a9a",
+      "repositoryBlobOid": "110e7ebca2dc80874653c6dfcadca24895292e97"
+    },
+    {
+      "filename": "SCRUM-627-06-pos-station-setup-retained.png",
+      "sha256": "ad7f52b86adf10395b3d83595c28e51f62a25a2fcb84f6152e02b3239dc083e1",
+      "repositoryBlobOid": "db4833fc27aa96863903e923e26ced5f579d818d"
+    }
+  ]
+}

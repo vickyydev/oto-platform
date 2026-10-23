@@ -1,0 +1,454 @@
+{
+  "ticket": "SCRUM-627",
+  "helperFilename": "admin627-proof.mjs",
+  "helperSha256": "e8ecb02f957978d20edd10800b24235ebc01f1f19c413a138530bb3ac744cfee",
+  "sourceSha": "cd2ed663d725e0fbcb05a3668249a2de5ba0b254",
+  "startedAt": "2026-10-23T09:56:36.964Z",
+  "complete": true,
+  "controlsComplete": true,
+  "unchangedReadback": true,
+  "checks": [
+    {
+      "name": "SIX_EXACT_SOURCE_GREEN_CI_JOBS_AND_THREE_LATEST_LIVE_DEPLOYMENTS",
+      "passed": true,
+      "at": "2026-10-23T09:56:42.378Z"
+    },
+    {
+      "name": "EXACT_ACTIVE_SEEDED_POS_ACTOR_AND_ORIGINAL_PARK_PREFERENCES",
+      "passed": true,
+      "at": "2026-10-23T09:56:51.011Z"
+    },
+    {
+      "name": "NATIVE_POS_OPENING_PHONE390_BEFORE_REAL_HANDOFF",
+      "passed": true,
+      "at": "2026-10-23T09:56:54.621Z"
+    },
+    {
+      "name": "ONE_REAL_CONSOLE_HANDOFF_EXCHANGE_AND_FIXED_INVENTORY_ARRIVAL",
+      "passed": true,
+      "at": "2026-10-23T09:56:58.678Z"
+    },
+    {
+      "name": "NATIVE_INVENTORY_READ_ONLY",
+      "passed": true,
+      "at": "2026-10-23T09:57:03.072Z"
+    },
+    {
+      "name": "NATIVE_NEW_MEMBER_EMPTY_DRAFT_OPEN_CANCEL_ONLY",
+      "passed": true,
+      "at": "2026-10-23T09:57:10.547Z"
+    },
+    {
+      "name": "NATIVE_TIER_VERIFICATIONS_READ_ONLY",
+      "passed": true,
+      "at": "2026-10-23T09:57:17.305Z"
+    },
+    {
+      "name": "NATIVE_WALLET_LOOKUP_EMPTY_NO_QUERY",
+      "passed": true,
+      "at": "2026-10-23T09:57:23.271Z"
+    },
+    {
+      "name": "NATIVE_POS_STATION_SETUP_RETAINED_WITHOUT_SELECTION",
+      "passed": true,
+      "at": "2026-10-23T09:57:33.184Z"
+    },
+    {
+      "name": "NATIVE_STOCK_MEMBERS_AND_TIER_TRAIL_UNCHANGED",
+      "passed": true,
+      "at": "2026-10-23T09:57:36.094Z"
+    },
+    {
+      "name": "BOTH_ORIGINS_ORIGINAL_BRANCH_AND_PREFERENCES_UNCHANGED",
+      "passed": true,
+      "at": "2026-10-23T09:57:36.095Z"
+    },
+    {
+      "name": "POS_SIGNOUT200_AND_ME401",
+      "passed": true,
+      "at": "2026-10-23T09:57:37.020Z"
+    },
+    {
+      "name": "CONSOLE_SIGNOUT200_AND_ME401",
+      "passed": true,
+      "at": "2026-10-23T09:57:37.900Z"
+    }
+  ],
+  "screenshots": [
+    {
+      "filename": "SCRUM-627-01-pos-admin-opening-phone390.png",
+      "label": "native POS Admin redirect held before issue at390px",
+      "capturedAt": "2026-10-23T09:56:52.835Z",
+      "bounds": [
+        {
+          "name": "native Opening Admin heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "native Back to POS link; not clicked",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 390,
+        "document": 390
+      },
+      "captionClear": true,
+      "sha256": "e4168c5e965e0e08e4ee4bd90bcda372763606539d0b7265175028f14d4bdb8f"
+    },
+    {
+      "filename": "SCRUM-627-02-console-inventory-native.png",
+      "label": "native Inventory controls; no stock or location write",
+      "capturedAt": "2026-10-23T09:57:00.672Z",
+      "bounds": [
+        {
+          "name": "native Inventory heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "native Items tab",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "native New item offer; not clicked",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "captionClear": true,
+      "sha256": "6f8df68fa4dc4e3000c91980186993c1f7c688e6b8e36a516bfb9c0d081c0b11"
+    },
+    {
+      "filename": "SCRUM-627-03-new-member-controls.png",
+      "label": "native new-member controls; empty draft opened and canceled only",
+      "capturedAt": "2026-10-23T09:57:08.457Z",
+      "bounds": [
+        {
+          "name": "native Add member heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "native Nickname label",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "native Cancel control",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "native Add member save offer; not clicked",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "captionClear": true,
+      "sha256": "90b56cd8c4ce4b7921bf6cbe78139e4a3dba9568e3c5451e510fb59d644fd83a"
+    },
+    {
+      "filename": "SCRUM-627-04-tier-verifications-native.png",
+      "label": "native read-only tier verification audit; record values hidden",
+      "capturedAt": "2026-10-23T09:57:15.386Z",
+      "bounds": [
+        {
+          "name": "native Tier verifications heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "native audit Refresh offer; not clicked",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "captionClear": true,
+      "sha256": "af9f0625f33efa5f1587006bddb0093f90bb3b7a598cc7334cd839b2546fbf86"
+    },
+    {
+      "filename": "SCRUM-627-05-wallet-lookup-empty.png",
+      "label": "native empty Wallet lookup; no key, search or reactivation",
+      "capturedAt": "2026-10-23T09:57:21.451Z",
+      "bounds": [
+        {
+          "name": "native Wallets heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "native empty Wallet key input",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "native disabled Look up control",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "captionClear": true,
+      "sha256": "658cf893a3881058ebc2c0518c529bd680021705633be8d51396b43ce10a0a9a"
+    },
+    {
+      "filename": "SCRUM-627-06-pos-station-setup-retained.png",
+      "label": "native POS Station Setup retained; no station chosen or created",
+      "capturedAt": "2026-10-23T09:57:31.368Z",
+      "bounds": [
+        {
+          "name": "native station picker heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "native Set up a station offer; not clicked",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "captionClear": true,
+      "sha256": "ad7f52b86adf10395b3d83595c28e51f62a25a2fcb84f6152e02b3239dc083e1"
+    }
+  ],
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "sourceSha": "cd2ed663d725e0fbcb05a3668249a2de5ba0b254",
+      "deployId": "dep-dbdin6s9v7es73e0vk50",
+      "finishedAt": "2026-10-23T09:44:12.485416Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "sourceSha": "cd2ed663d725e0fbcb05a3668249a2de5ba0b254",
+      "deployId": "dep-dbdin6s9v7es73e0vl80",
+      "finishedAt": "2026-10-23T09:41:30.311598Z"
+    },
+    {
+      "name": "oto-pos-staging",
+      "sourceSha": "cd2ed663d725e0fbcb05a3668249a2de5ba0b254",
+      "deployId": "dep-dbdin6s9v7es73e0vl40",
+      "finishedAt": "2026-10-23T09:41:31.839278Z"
+    }
+  ],
+  "reads": [
+    {
+      "kind": "stockLevels",
+      "at": "2026-10-23T09:56:58.272Z",
+      "bodySha256": "460c0ba030e2655784d0e4ea4362016523ddfd561e7e59a781f835fb852cd8bd",
+      "count": 23
+    },
+    {
+      "kind": "stockLocations",
+      "at": "2026-10-23T09:56:58.310Z",
+      "bodySha256": "13961bc44077b78bd05dd380899209a751de1604e36207474e6a9643aad077aa",
+      "count": 3
+    },
+    {
+      "kind": "members",
+      "at": "2026-10-23T09:57:06.094Z",
+      "bodySha256": "0439e887fc3ae27a3f1b57d543a14b66e3f9d9bdcec3ed37bf240fef23399498",
+      "count": 17
+    },
+    {
+      "kind": "tierVerifications",
+      "at": "2026-10-23T09:57:13.057Z",
+      "bodySha256": "9d894258007eb277b3525e7b3c72fa4aa8c4056768c6fe2bcd1f88c672544490",
+      "count": 16
+    },
+    {
+      "kind": "stockLevels",
+      "at": "2026-10-23T09:57:34.609Z",
+      "bodySha256": "460c0ba030e2655784d0e4ea4362016523ddfd561e7e59a781f835fb852cd8bd",
+      "count": 23
+    },
+    {
+      "kind": "stockLocations",
+      "at": "2026-10-23T09:57:35.072Z",
+      "bodySha256": "13961bc44077b78bd05dd380899209a751de1604e36207474e6a9643aad077aa",
+      "count": 3
+    },
+    {
+      "kind": "members",
+      "at": "2026-10-23T09:57:35.586Z",
+      "bodySha256": "0439e887fc3ae27a3f1b57d543a14b66e3f9d9bdcec3ed37bf240fef23399498",
+      "count": 17
+    },
+    {
+      "kind": "tierVerifications",
+      "at": "2026-10-23T09:57:36.094Z",
+      "bodySha256": "9d894258007eb277b3525e7b3c72fa4aa8c4056768c6fe2bcd1f88c672544490",
+      "count": 16
+    }
+  ],
+  "blockedRequests": [],
+  "browserErrorKinds": [],
+  "requestFailureKinds": [],
+  "readErrors": [],
+  "signInPhases": [
+    {
+      "name": "POS_SIGNIN_CLICK",
+      "at": "2026-10-23T09:56:44.694Z"
+    },
+    {
+      "name": "POS_OPENING_HEADING",
+      "at": "2026-10-23T09:56:44.999Z"
+    },
+    {
+      "name": "POS_HANDOFF_HELD",
+      "at": "2026-10-23T09:56:50.542Z"
+    },
+    {
+      "name": "POS_CANONICAL_ME",
+      "at": "2026-10-23T09:56:50.544Z"
+    }
+  ],
+  "counts": {
+    "signIns": 1,
+    "handoffsHeld": 1,
+    "handoffPosts": 1,
+    "exchanges": 1,
+    "signOuts": 2,
+    "reads": 68,
+    "publicAssetReads": 48,
+    "blockedReads": 0,
+    "blockedWrites": 0,
+    "businessWrites": 0,
+    "smsRequests": 0,
+    "fixturesCreated": 0,
+    "downloads": 0,
+    "stockPhotosSuppressed": 0
+  },
+  "limitations": [
+    "Existing seeded demo only. Native POS redirect, Inventory, new-member controls, tier trail, empty wallet lookup and Station Setup are observed. No business save, search, station selection, creation, payment, check-in, SMS, channel action or fixture is attempted.",
+    "One real POS sign-in, one held-then-issued Console handoff and one Console exchange are allowed. The native redirect performs arrival; no destination or response is substituted.",
+    "The source handoff exchange reuses the same session row. Both origins are explicitly signed out and both /me responses must be 401; branch/preferences fingerprints must match before cleanup.",
+    "Signed-in identity, person/record values and input seeds are masked before captures, including late mutations. Only safe hashes/counts and masked native PNGs are retained.",
+    "Exact stock record photo URLs learned privately from the own-park stock response are privacy-suppressed in the main Console Inventory frame with a fixed transparent PNG. Original record photos are not fetched or verified.",
+    "Request guards prevent all other writes and unknown reads before dispatch. Read-only hashes are observations during this proof, not a lock against other administrators. Write behavior remains automated coverage."
+  ],
+  "binding": {
+    "path": "C:/w/admin627-landed.json",
+    "sha256": "0d2dceb2c21383e23829c75f84111ed07e694172c82031ab43bb364ac50f970c",
+    "sourceManifestSha256": "7c0936842c5203d295a0369e39c93c0cc37b7ed8a88b052e429b158f05883d97",
+    "imageId": "sha256:d13061b03ee962550ca6b2417c99f7b49c1b93932af94e37060f6f6fbdeba57e",
+    "featureSourceSha": "31801788b9015bbfd97d30cf748e93f497f470b5",
+    "featureSourceManifestSha256": "70f7136e1d5fe0d88b30831ca7d117084ac31885221a2dc2231f711f4a02483c",
+    "workflowRepairSha256": "6e7a4be95ce9697c986f405d1dc68f89fcb24319c2979217930ffdc3761fbaa8",
+    "workflowRepair": {
+      "question": "Q12",
+      "featureSourceSha": "31801788b9015bbfd97d30cf748e93f497f470b5",
+      "featureSourceManifestSha256": "70f7136e1d5fe0d88b30831ca7d117084ac31885221a2dc2231f711f4a02483c",
+      "sourceSha": "cd2ed663d725e0fbcb05a3668249a2de5ba0b254",
+      "finalSourceManifestSha256": "7c0936842c5203d295a0369e39c93c0cc37b7ed8a88b052e429b158f05883d97",
+      "originalFeatureOwnedPaths": 141,
+      "supplementalSourcePaths": [
+        ".github/workflows/ci.yml"
+      ],
+      "sourceInputs": 3685,
+      "originalFeatureGateImageRetained": true,
+      "applicationInputsUnchanged": true,
+      "dependencyInputsUnchanged": true,
+      "retiredFilesAbsent": 78
+    }
+  },
+  "review": {
+    "path": "C:/w/admin627-proof-reviewed.json",
+    "sha256": "5ac380bb4acc31a6c057c4c5aaf7b5c2cf9d5b252d42985b1e2c3f232d81fc64"
+  },
+  "ci": {
+    "runId": "39931622118",
+    "sourceSha": "cd2ed663d725e0fbcb05a3668249a2de5ba0b254",
+    "completed": true,
+    "successfulJobs": 6
+  },
+  "signInStatus": 200,
+  "actor": {
+    "knownSeededActor": true,
+    "identitySha256": "eb82efd0fc4b25b4643c274d6c4c6a331422b1cb6641d6777568263c8fadd656",
+    "branchSha256": "ff1408f7b8cf4f693cbd2f6e6a82a0e79e347415fdeb0f1886ea0d49d4ded535",
+    "preferencesSha256": "00df943c543d230f9e93ceca1038b659220a9779f4d70ae1b114715829458881"
+  },
+  "recordPhotoPrivacy": {
+    "sourceKind": "own-park-stock-levels",
+    "knownUrlCount": 0,
+    "knownUrlSetSha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "originalPhotosFetched": false,
+    "originalPhotosVerified": false
+  },
+  "dataReadback": {
+    "initialSha256": "7eb9f48add085619aa482841fffdf88dc7278dd6454d357c2b312dcc138a56e0",
+    "finalSha256": "7eb9f48add085619aa482841fffdf88dc7278dd6454d357c2b312dcc138a56e0",
+    "kinds": [
+      "members",
+      "stockLevels",
+      "stockLocations",
+      "tierVerifications"
+    ],
+    "unchanged": true
+  },
+  "sessionReadback": {
+    "initial": {
+      "pos": {
+        "branchSha256": "ff1408f7b8cf4f693cbd2f6e6a82a0e79e347415fdeb0f1886ea0d49d4ded535",
+        "preferencesSha256": "00df943c543d230f9e93ceca1038b659220a9779f4d70ae1b114715829458881"
+      },
+      "console": {
+        "branchSha256": "ff1408f7b8cf4f693cbd2f6e6a82a0e79e347415fdeb0f1886ea0d49d4ded535",
+        "preferencesSha256": "00df943c543d230f9e93ceca1038b659220a9779f4d70ae1b114715829458881"
+      }
+    },
+    "final": {
+      "pos": {
+        "branchSha256": "ff1408f7b8cf4f693cbd2f6e6a82a0e79e347415fdeb0f1886ea0d49d4ded535",
+        "preferencesSha256": "00df943c543d230f9e93ceca1038b659220a9779f4d70ae1b114715829458881"
+      },
+      "console": {
+        "branchSha256": "ff1408f7b8cf4f693cbd2f6e6a82a0e79e347415fdeb0f1886ea0d49d4ded535",
+        "preferencesSha256": "00df943c543d230f9e93ceca1038b659220a9779f4d70ae1b114715829458881"
+      }
+    }
+  },
+  "authCleanup": {
+    "pos": {
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    },
+    "console": {
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    }
+  },
+  "authState": {
+    "signInAttempted": true,
+    "authUncertain": false,
+    "pendingAuth": 0,
+    "handoffSettled": true
+  },
+  "completedAt": "2026-10-23T09:57:39.869Z"
+}

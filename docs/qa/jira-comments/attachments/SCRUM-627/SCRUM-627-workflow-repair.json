@@ -1,0 +1,45 @@
+{
+  "ticket": "SCRUM-627",
+  "question": "Q12",
+  "featureSourceSha": "31801788b9015bbfd97d30cf748e93f497f470b5",
+  "featureSourceManifestSha256": "70f7136e1d5fe0d88b30831ca7d117084ac31885221a2dc2231f711f4a02483c",
+  "sourceSha": "cd2ed663d725e0fbcb05a3668249a2de5ba0b254",
+  "repairCommitSha": "cd2ed663d725e0fbcb05a3668249a2de5ba0b254",
+  "parentSha": "4b72b842e15dd0d01cfaeea81e3e36696e65cde7",
+  "workflowPath": ".github/workflows/ci.yml",
+  "originalWorkflowSha256": "29df21012d4a5498b806fa164e64f1979f292d2388c1fa9ad0d869e54a9fb8a6",
+  "finalWorkflowSha256": "4de5b7227af662b0653728a097c18da13804a94797a9f8c379a767c5f160b1f4",
+  "finalSourceManifestSha256": "7c0936842c5203d295a0369e39c93c0cc37b7ed8a88b052e429b158f05883d97",
+  "commitDiffFilename": "SCRUM-627-workflow-repair.diff",
+  "commitDiffSha256": "6e58a0de45cc5c03db4c3a2c2327b5d6737df5be11c1c3d7ae7165b462bbf2cf",
+  "originalReceiptSha256": "6e7a4be95ce9697c986f405d1dc68f89fcb24319c2979217930ffdc3761fbaa8",
+  "independentlyValidatedBridge": {
+    "question": "Q12",
+    "featureSourceSha": "31801788b9015bbfd97d30cf748e93f497f470b5",
+    "featureSourceManifestSha256": "70f7136e1d5fe0d88b30831ca7d117084ac31885221a2dc2231f711f4a02483c",
+    "sourceSha": "cd2ed663d725e0fbcb05a3668249a2de5ba0b254",
+    "finalSourceManifestSha256": "7c0936842c5203d295a0369e39c93c0cc37b7ed8a88b052e429b158f05883d97",
+    "originalFeatureOwnedPaths": 141,
+    "supplementalSourcePaths": [
+      ".github/workflows/ci.yml"
+    ],
+    "sourceInputs": 3685,
+    "originalFeatureGateImageRetained": true,
+    "applicationInputsUnchanged": true,
+    "dependencyInputsUnchanged": true,
+    "retiredFilesAbsent": 78
+  },
+  "originalReceiptCreatedBeforePush": true,
+  "originalReceiptSourceLanded": false,
+  "confirmedReleaseSourceLanded": true,
+  "independentReviewSha256": "34042e11af334c5916d11606b14c70fa119e63e89d24718db7b3673a1b0dbd08",
+  "applicationInputsUnchanged": true,
+  "dependencyInputsUnchanged": true,
+  "retiredFilesAbsent": 78,
+  "checks": [
+    "Actual repair commit parent, workflow blob IDs and exact one-line diff verified.",
+    "Both 3685-input manifest hashes verified; only .github/workflows/ci.yml changes.",
+    "Repair commit contains the workflow and the four authorized checkpoint documents only.",
+    "Current final selected inputs match the final manifest and all 78 retired feature paths remain absent."
+  ]
+}

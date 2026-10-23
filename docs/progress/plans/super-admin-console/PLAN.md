@@ -39,11 +39,11 @@ Worktrees: Codex works in `C:/w/<lane>` worktrees on `lane/<topic>` branches as 
 | Overview | `/overview` | `admin:console:overview` (new; in `branch_manager`, `operator_admin`, `platform_admin`) | Today across parks, park filter |
 | People & access | `/people` | `admin:account:read` | Accounts, Roles & scopes, App access, Employees, Departments, Access review |
 | Organisation | `/organisation` | `admin:branch:read` | Operators (platform-wide only), Branches, Holidays |
-| Catalogue & money | `/catalogue` | `catalog:package:read` or `catalog:menu:read` | Tickets, Tiers, Add-ons, Menu, Categories, Modifiers, Merch, Discounts, Tenders, Tax, Voucher types, Voucher campaigns, Event pricing, Drop-off & supervision, Print templates, Staff benefits |
+| Catalogue & money | `/catalogue` | `catalog:package:read` or `catalog:menu:read` | Tickets, Tiers, Add-ons, Menu, Categories, Modifiers, Merch, Discounts, Tenders, Tax, Voucher types, Voucher campaigns, Event pricing, Drop-off & supervision, Print templates, Staff benefits, Inventory, Members, Tier verifications |
 | Devices & places | `/devices` | `admin:station:read` | Boxes, Stations, Devices, Paired screens, Kiosks, Booths (existing pages) |
 | Channels & assistant | `/channels` | `inbox:channel:manage` or `inbox:kb:manage` or `inbox:ai:manage` | Numbers, Templates, Knowledge base, Examples (linked to the Inbox settings until lifted), Teams & routing (new), Assistant settings (P4) |
 | Staff & HR | `/staff` | `app:oto_app:access` + `admin:account:read` | Today's staff summary (read-only), links into the OTO App |
-| Reports | `/reports` | `analytics:read` | Sales, Profitability, Discounts & comps, Tax & VAT, Wallet & promo, Booth report, Radar tile |
+| Reports | `/reports` | `analytics:read` | Sales, Profitability, Discounts & comps, Tax & VAT, Wallet & promo, Wallets (lookup and reactivation), Booth report, Radar tile |
 | Watch | `/watch` | `admin:health:read` or `admin:audit:read` | Health, Failures, Integrations, Activity (existing) |
 | Platform | `/platform` | a platform-wide assignment (`isPlatformAdmin`) | Operators, System roles, Platform alerts & jobs, Environment, Test controls, Operator switch (P4) |
 
@@ -174,6 +174,8 @@ SCRUM-627 owner ruling Q12 (2026-10-23): authorize only the oto-app job runs-on 
 | P2-7 | Reports: the five panels, Wallet & promo, Booth report, the Radar tile |
 | P2-8 | Channels → Teams & routing editor (routes + screen); Numbers/Templates/KB/Examples linked to the Inbox settings |
 | P2-9 | POS `/admin` redirects to Admin; the POS mock Devices panel and dead admin code removed; the POS dependency on `admin-screens` dropped |
+
+P2-9 checkpoint (2026-10-23): SCRUM-627 is Deployed on source `cd2ed663d725e0fbcb05a3668249a2de5ba0b254`, six green CI jobs and six inspected staging images. The [POS redirect and native operations evidence](../../../qa/jira-comments/attachments/SCRUM-627/README.md) binds the one-release same-person redirect and fixed destinations, native Inventory/Members/Tier verifications/Wallets hosts, removed POS admin screens and dependency edge, retained Station Setup and 158 preserved operational bodies. The 13 read-only staging checks preserve demo park/preferences and stock/member/audit fingerprints and finish with both origins sign-out 200/me 401. The original feature local battery remains separate from Q12: the approved one-line OTO App runner repair preserves application/dependency bytes and has its own final six-job CI result. The failed original CI attempt and watcher exit 0 remain recorded as a failure. Saves, refusals, retries, stale replies, readback failures and phone layouts are automated coverage; no staging business write or wallet query is claimed. Parent SCRUM-618 remains In Progress; its actual Till price/tender/tax acceptance below is separate. CI 39931622118.
 
 P2-8 checkpoint (2026-10-23): SCRUM-626 is Deployed on source `ade47aa128f99621c453dfd6188edc1ed04086a4`, six green CI jobs and four inspected staging images. The [Teams and routing evidence](../../../qa/jira-comments/attachments/SCRUM-626/README.md) binds Q10 refusal, scoped team/rule controls, unchanged engine/assignments, safe retries and fresh read-only staging controls/offers. Team/rule fingerprints and demo park/preferences are unchanged, with sign-out 200/me 401. Writes, access refusals, stale lifetimes and handoff navigation have automated coverage; staging saves and Inbox arrival are not claimed. Parent SCRUM-618 remains In Progress; its acceptance below is separate.
 

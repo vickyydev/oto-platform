@@ -1,0 +1,83 @@
+{
+  "passed": true,
+  "ticket": "SCRUM-627",
+  "sourceSha": "cd2ed663d725e0fbcb05a3668249a2de5ba0b254",
+  "proofSha256": "0718836a5f24dcedef62569cb6a43b292d85af08a2de25745f9ea23b3e8b2b2c",
+  "actualStaging": true,
+  "localMock": false,
+  "images": [
+    {
+      "filename": "SCRUM-627-01-pos-admin-opening-phone390.png",
+      "sha256": "e4168c5e965e0e08e4ee4bd90bcda372763606539d0b7265175028f14d4bdb8f",
+      "visuallyInspected": true,
+      "privacyClear": true,
+      "nativeControlsClear": true,
+      "captionClear": true,
+      "capturedAt": "2026-10-23T09:56:52.835Z",
+      "postDeploy": true,
+      "notes": "Viewed the actual390px PNG at original size. Opening Admin, its explanation/status and Back to POS are visible with no horizontal clipping. Top-right UTC/source caption is separate from the controls. No identity, phone, secret or QR is visible."
+    },
+    {
+      "filename": "SCRUM-627-02-console-inventory-native.png",
+      "sha256": "6f8df68fa4dc4e3000c91980186993c1f7c688e6b8e36a516bfb9c0d081c0b11",
+      "visuallyInspected": true,
+      "privacyClear": true,
+      "nativeControlsClear": true,
+      "captionClear": true,
+      "capturedAt": "2026-10-23T09:57:00.672Z",
+      "postDeploy": true,
+      "notes": "Viewed the actual native Inventory PNG at original size. Inventory heading, Items/Locations, Refresh and New item remain clear; park/stock/item/private values and sidebar identity are masked. The existing stock-attention banner body is intentionally private, not evidence of a new error. Caption is above the controls and clear."
+    },
+    {
+      "filename": "SCRUM-627-03-new-member-controls.png",
+      "sha256": "90b56cd8c4ce4b7921bf6cbe78139e4a3dba9568e3c5451e510fb59d644fd83a",
+      "visuallyInspected": true,
+      "privacyClear": true,
+      "nativeControlsClear": true,
+      "captionClear": true,
+      "capturedAt": "2026-10-23T09:57:08.457Z",
+      "postDeploy": true,
+      "notes": "Viewed the actual Add member dialog PNG at original size. Add member heading, Nickname/Full name/Email/Phone/Notes labels, Cancel and Add member controls are clear. Draft fields and tier selection are blank/masked, and background member rows/identity are hidden. TH +66 is the generic country selector, not a person phone. Bottom-right caption does not cover the dialog controls."
+    },
+    {
+      "filename": "SCRUM-627-04-tier-verifications-native.png",
+      "sha256": "af9f0625f33efa5f1587006bddb0093f90bb3b7a598cc7334cd839b2546fbf86",
+      "visuallyInspected": true,
+      "privacyClear": true,
+      "nativeControlsClear": true,
+      "captionClear": true,
+      "capturedAt": "2026-10-23T09:57:15.386Z",
+      "postDeploy": true,
+      "notes": "Viewed the actual Tier verifications PNG at original size. Native heading, both Refresh offers and table column labels are readable; member/document/checker/time row values and sidebar identity are masked. Only aggregate record count remains. Caption is separate from controls; no personal data, secret or QR is visible."
+    },
+    {
+      "filename": "SCRUM-627-05-wallet-lookup-empty.png",
+      "sha256": "658cf893a3881058ebc2c0518c529bd680021705633be8d51396b43ce10a0a9a",
+      "visuallyInspected": true,
+      "privacyClear": true,
+      "nativeControlsClear": true,
+      "captionClear": true,
+      "capturedAt": "2026-10-23T09:57:21.451Z",
+      "postDeploy": true,
+      "notes": "Viewed the actual Wallets PNG at original size. Native heading, blank wallet-key field, disabled Look up and empty-state guidance are clear. No wallet record, key, QR or balance is displayed. Caption does not overlap native controls."
+    },
+    {
+      "filename": "SCRUM-627-06-pos-station-setup-retained.png",
+      "sha256": "ad7f52b86adf10395b3d83595c28e51f62a25a2fcb84f6152e02b3239dc083e1",
+      "visuallyInspected": true,
+      "privacyClear": true,
+      "nativeControlsClear": true,
+      "captionClear": true,
+      "capturedAt": "2026-10-23T09:57:31.368Z",
+      "postDeploy": true,
+      "notes": "Viewed the actual POS Station Setup picker PNG at original size. Which station are you on?, Refresh and Set up a station are clear. Station/box identifiers and names are masked; generic Kept for named staff wording remains. No selected station, claim code, QR or person identity is visible. Caption is clear of all controls."
+    }
+  ],
+  "reviewedAt": "2026-10-23T10:00:13.549Z",
+  "wrapperExitSha256": "bad7cbb4ba2740002559cd9bb9e1319a8bdbcfe66428d4fd10abde0bcc3ae2a8",
+  "latestDeployFinishedAt": "2026-10-23T09:44:12.485Z",
+  "allPngHashesMatch": true,
+  "allCapturesAfterAllThreeDeployments": true,
+  "observedIssues": [],
+  "limits": "Independent visual review of all six actual local staging PNG files and their completed proof/wrapper/deployment/hash binding. No browser, auth, Jira, Git, source/helper or image modification was performed. These images show the stated read-only native controls and masks; saves, stock adjustment, member creation, wallet lookup/reactivation and station selection are not claimed."
+}

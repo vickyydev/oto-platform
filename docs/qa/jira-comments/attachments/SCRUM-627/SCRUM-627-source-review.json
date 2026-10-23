@@ -1,0 +1,459 @@
+{
+  "ticket": "SCRUM-627",
+  "checkedAt": "2026-10-23T08:44:51.386Z",
+  "passed": true,
+  "sourceOnly": true,
+  "sourceManifestSha256": "70f7136e1d5fe0d88b30831ca7d117084ac31885221a2dc2231f711f4a02483c",
+  "deletedManifestSha256": "ee3a4bc42722416363bba1f6a257951bb893ca2275e4f568fab0d1fbcf11e3b8",
+  "dependencyInputsSha256": "e94de931c1b4cdfd13b6f619bb5fae1692afcfb5450c0b3673a16f8725cc35a0",
+  "imageId": "sha256:d13061b03ee962550ca6b2417c99f7b49c1b93932af94e37060f6f6fbdeba57e",
+  "pendingSourceFindings": 0,
+  "sourceScopePaths": 141,
+  "existingSourceScopePaths": 63,
+  "deletedSourceScopePaths": 78,
+  "manifestInputs": 3685,
+  "dependencyInputs": 28,
+  "allManifestInputsMatch": true,
+  "allRetiredPathsAbsent": true,
+  "ownedSetMatchesCurrentDiff": true,
+  "protectedSourceChanges": 0,
+  "reviewedFiles": [
+    {
+      "path": "apps/console/e2e/booth-setup.spec.ts",
+      "sha256": "5e97f9edcf5693f017c2e01c079204d373ddc6a18ca263429890ad557fd9514f"
+    },
+    {
+      "path": "apps/console/e2e/pos-admin-redirect.spec.ts",
+      "sha256": "a09ae325e92fd7f18d5de0e3f4da22aa2e313c9505e0b8c30f0b948538abab2a"
+    },
+    {
+      "path": "apps/console/e2e/run.mjs",
+      "sha256": "da19ae1022c76c2248413817cf602b8b34858907c8305e01427cf6d8e38e1a92"
+    },
+    {
+      "path": "apps/console/playwright.config.ts",
+      "sha256": "6874e9fd55d55fc68908662228da6d80493ba33b532a6fbfa646d7772eb1b60a"
+    },
+    {
+      "path": "apps/console/src/api/operations.ts",
+      "sha256": "8ea0662cfffcac670cb08079949ce595fe86bab071c8be5b5f2b2d6e0b560189"
+    },
+    {
+      "path": "apps/console/src/components/booth/BoothBoxCard.tsx",
+      "sha256": "fbff626e741ec38614be57b493602e2dc1fa0b7edb91b2090c019a304a3900cc"
+    },
+    {
+      "path": "apps/console/src/pages/Operations.tsx",
+      "sha256": "b308d2c45a79c2b8a1d66f93d3696fb59e3143f24f4da95a58f74de0a9780883"
+    },
+    {
+      "path": "apps/pos/src/App.tsx",
+      "sha256": "3a74bd633907a1e509953f59cf0cc663abeb802e8979b37ee3fcb947960f5b45"
+    },
+    {
+      "path": "apps/pos/src/api/admin-entry.ts",
+      "sha256": "18556270c8d1484751c8a897ac4477131b336fcb63b8456b20c8e14c55ba3d05"
+    },
+    {
+      "path": "apps/pos/src/components/auth/LockScreen.tsx",
+      "sha256": "e0a478d91504825b11ee72ec132f31c95f5b4390858a53b3036c337988830261"
+    },
+    {
+      "path": "apps/pos/src/pages/Admin.tsx",
+      "sha256": "7ba6ecea28b084e8d3fa9c80a82a5e5e796a2edde276848746aea6c40f3f248e"
+    },
+    {
+      "path": "apps/pos/test/admin-lift-host.test.ts",
+      "sha256": "c58085b38a78118a3d627efb8ea3192cda3a6e68c5ed2000edc01981745b6c93"
+    },
+    {
+      "path": "apps/pos/test/admin-login-users-link-markup.test.ts",
+      "sha256": "47343e0f24d28f134d0924b6ec9cc957cd647834ba66c3b81ad58d7abb47324e"
+    },
+    {
+      "path": "apps/pos/test/admin-login-users-link-runtime.test.ts",
+      "sha256": "b2b2b80d8366d2e619ec3c1142232c396e0cf1a10a9f5c49dd8466ec6293eeb8"
+    },
+    {
+      "path": "packages/admin-screens/src/lifted/components/admin/inventory/InventoryItemFormDialog.tsx",
+      "sha256": "521caef46e2f5a3bcdd67962da0b3e2cd8c4922763af3ba4ff76c3730d452510"
+    },
+    {
+      "path": "packages/admin-screens/src/lifted/components/admin/inventory/InventoryPanel.tsx",
+      "sha256": "c67fd2ec17cae9c6e12141bc4b3f666752e1d9c5639dd12d29461f702fd1320b"
+    },
+    {
+      "path": "packages/admin-screens/src/lifted/components/admin/inventory/StockLocationsPanel.tsx",
+      "sha256": "d6c69b0aa75abe5a79ba1510264bf1efd1c0c80512ecdf52b593a331a447b0c0"
+    },
+    {
+      "path": "packages/admin-screens/src/lifted/components/admin/members/MemberFormDialog.tsx",
+      "sha256": "c42ddcd71a7a9d08149bedf7f6155b35b12e12cb0d1b96e1a6844c08591ce673"
+    },
+    {
+      "path": "packages/admin-screens/src/lifted/components/admin/members/MembersPanel.tsx",
+      "sha256": "0aec8abe617b2cf4d3857ea0532e5a0e5f81ad56b9e0eb117517117a07e0fe58"
+    },
+    {
+      "path": "packages/admin-screens/src/lifted/components/admin/members/TierVerificationsPanel.tsx",
+      "sha256": "943b563bd1637d4c295f35d7e6ca7fb88dcdea6c0190db19215492b25bd22ca9"
+    },
+    {
+      "path": "packages/admin-screens/src/lifted/components/admin/wallets/WalletLookupPanel.tsx",
+      "sha256": "9d05deed1db0f5c2536a32f3e95b2f18d54d5a9e8779b44e49f34e3b2e01dc3e"
+    },
+    {
+      "path": "packages/admin-screens/src/lifted/lib/stockPresentation.ts",
+      "sha256": "9288da7d2a703d7eeccd22fa30563144bcdf2d708c9457bad01043dd82d80d48"
+    },
+    {
+      "path": "packages/admin-screens/src/lifted/runtime/operations.ts",
+      "sha256": "af5e2ebf632036dea2ed546668755d840553776879242aa738f9fc13e9dfee88"
+    }
+  ],
+  "validatedOwnedFiles": [
+    {
+      "path": "apps/api/test/s619-admin-screen-lift-review.test.ts",
+      "sha256": "7d43d1cf5999dd5daaf1c08f43fd62bb55c3ba79d32373317ce096de87cc44b2"
+    },
+    {
+      "path": "apps/api/test/s627-pos-admin-redirect-review.test.ts",
+      "sha256": "d75e2d76ad8d015e2c4d5396396cfb74441fa448d5ff6ecfb1c2a83b84cc9fd7"
+    },
+    {
+      "path": "apps/console/e2e/booth-setup.spec.ts",
+      "sha256": "5e97f9edcf5693f017c2e01c079204d373ddc6a18ca263429890ad557fd9514f"
+    },
+    {
+      "path": "apps/console/e2e/operations.spec.ts",
+      "sha256": "baf66917c064379265ccfce5a767ded07cd392a9448f707bdc0e209df5f234d7"
+    },
+    {
+      "path": "apps/console/e2e/pos-admin-redirect.spec.ts",
+      "sha256": "a09ae325e92fd7f18d5de0e3f4da22aa2e313c9505e0b8c30f0b948538abab2a"
+    },
+    {
+      "path": "apps/console/e2e/run.mjs",
+      "sha256": "da19ae1022c76c2248413817cf602b8b34858907c8305e01427cf6d8e38e1a92"
+    },
+    {
+      "path": "apps/console/playwright.config.ts",
+      "sha256": "6874e9fd55d55fc68908662228da6d80493ba33b532a6fbfa646d7772eb1b60a"
+    },
+    {
+      "path": "apps/console/src/App.tsx",
+      "sha256": "155b0ee476ae3d1ddecdcb6b03cc756fde5ecf06864d1fb211965637ab10b75f"
+    },
+    {
+      "path": "apps/console/src/api/operations.ts",
+      "sha256": "8ea0662cfffcac670cb08079949ce595fe86bab071c8be5b5f2b2d6e0b560189"
+    },
+    {
+      "path": "apps/console/src/components/ConsoleLayout.tsx",
+      "sha256": "3d893f8143675a6c0626e06ac600c35ae76ced433e9c6d48c9990f5568156e9c"
+    },
+    {
+      "path": "apps/console/src/components/booth/BoothBoxCard.tsx",
+      "sha256": "fbff626e741ec38614be57b493602e2dc1fa0b7edb91b2090c019a304a3900cc"
+    },
+    {
+      "path": "apps/console/src/components/consoleSections.tsx",
+      "sha256": "8b18e681922337fb1c55b8a802539754b61cea8aa75a940cbedf756274b55f3c"
+    },
+    {
+      "path": "apps/console/src/pages/Care.tsx",
+      "sha256": "c0e89be6da84416e318327efdafdc0c9872048ea0e9e994d097216d7c6ff4668"
+    },
+    {
+      "path": "apps/console/src/pages/Operations.tsx",
+      "sha256": "b308d2c45a79c2b8a1d66f93d3696fb59e3143f24f4da95a58f74de0a9780883"
+    },
+    {
+      "path": "apps/console/test/operations-api.test.ts",
+      "sha256": "89954ee3d40470dfa1227559c38641386896053747e9403c774a28f3c53aeaef"
+    },
+    {
+      "path": "apps/pos/package.json",
+      "sha256": "cc66419242c98fabfd4b97a340610a7877ffeae88832bb00f90636bb5df6e3a7"
+    },
+    {
+      "path": "apps/pos/src/App.tsx",
+      "sha256": "3a74bd633907a1e509953f59cf0cc663abeb802e8979b37ee3fcb947960f5b45"
+    },
+    {
+      "path": "apps/pos/src/api/admin-entry.ts",
+      "sha256": "18556270c8d1484751c8a897ac4477131b336fcb63b8456b20c8e14c55ba3d05"
+    },
+    {
+      "path": "apps/pos/src/api/admin-screen-api.ts",
+      "sha256": "9f78455a702cd3f96451625ab6e513eabd75de800b64f2975401c2b04e28b9f3"
+    },
+    {
+      "path": "apps/pos/src/api/benefits.ts",
+      "sha256": "6f94196ae1399f1d752bf1e7e24897378b63ea93847ada00305d45ca6e994c77"
+    },
+    {
+      "path": "apps/pos/src/api/catalogBridge.ts",
+      "sha256": "41920aaf064161ecd070d517463a26179c03481a51c4403ef9990dd243e8af0e"
+    },
+    {
+      "path": "apps/pos/src/api/checkin.ts",
+      "sha256": "033602ede322b47ad87471baec1cc7bd4c373b667784a86ea061b5601e1f5d7a"
+    },
+    {
+      "path": "apps/pos/src/api/events.ts",
+      "sha256": "cf06ef463bcdce9025ac407ecdc3311c8bcc2ca9e9575cece7ab6a6f05e6f245"
+    },
+    {
+      "path": "apps/pos/src/api/menu.ts",
+      "sha256": "e52cfc19b906769b26a966b39fe3a949167760f6819a7604986b2c47c5764b2b"
+    },
+    {
+      "path": "apps/pos/src/api/platform.ts",
+      "sha256": "70594c542dbd6a582739cc39975be8377da99316713f2a8da9eb55e18b88e6b6"
+    },
+    {
+      "path": "apps/pos/src/api/stock.ts",
+      "sha256": "035b370503d29a51ae9d7de742e3850d02240097f56e6b723a254fa913ce7ed1"
+    },
+    {
+      "path": "apps/pos/src/api/wallet.ts",
+      "sha256": "97b520001a16d8b5e98c6f2e7b1ce36647783a947c5ee5aaebf84ee3dd9f4b29"
+    },
+    {
+      "path": "apps/pos/src/components/auth/LockScreen.tsx",
+      "sha256": "e0a478d91504825b11ee72ec132f31c95f5b4390858a53b3036c337988830261"
+    },
+    {
+      "path": "apps/pos/src/pages/Admin.tsx",
+      "sha256": "7ba6ecea28b084e8d3fa9c80a82a5e5e796a2edde276848746aea6c40f3f248e"
+    },
+    {
+      "path": "apps/pos/src/store/CatalogStoreContext.tsx",
+      "sha256": "c3f95aee9a55071b11b554d9ed0cc29795cd10b89b9e2868a002dff4c96fa79f"
+    },
+    {
+      "path": "apps/pos/test/admin-lift-host.test.ts",
+      "sha256": "c58085b38a78118a3d627efb8ea3192cda3a6e68c5ed2000edc01981745b6c93"
+    },
+    {
+      "path": "apps/pos/test/admin-login-users-link-markup.test.ts",
+      "sha256": "47343e0f24d28f134d0924b6ec9cc957cd647834ba66c3b81ad58d7abb47324e"
+    },
+    {
+      "path": "apps/pos/test/admin-login-users-link-runtime.test.ts",
+      "sha256": "b2b2b80d8366d2e619ec3c1142232c396e0cf1a10a9f5c49dd8466ec6293eeb8"
+    },
+    {
+      "path": "apps/pos/test/benefits-admin-api.test.ts",
+      "sha256": "c2104c52a1e767e668e1124ec5b6590af1c4c6b33d8fae286c50046378c124f9"
+    },
+    {
+      "path": "apps/pos/test/one-calculator-parity.test.ts",
+      "sha256": "ec1afba0655bad37c9522581a673acc1cd96710e07a1226ed78d595f2202022b"
+    },
+    {
+      "path": "apps/pos/test/promo-codes.test.ts",
+      "sha256": "c7a95af9c9a83a83a6d1f3b83d97f2347c95f3115f58998f43ce5a5c4e91a56a"
+    },
+    {
+      "path": "apps/pos/test/s216-r4-reports.test.ts",
+      "sha256": "55348dc8d2738e57cbbe51a96dd825d0d55a50cced53e74c68457343eba5e641"
+    },
+    {
+      "path": "apps/pos/test/s216-r6-sweep.test.ts",
+      "sha256": "36381bbe4a781732804990a144ab6a5ec619fa4896c303f0c8929f9bbff3b04f"
+    },
+    {
+      "path": "apps/pos/test/s220-e2-events.test.ts",
+      "sha256": "6c3ada3b27acd0504a11247f34b6959bc376d60ea5f83c7a5423abfdf57321b0"
+    },
+    {
+      "path": "apps/pos/test/s220-e2-review-screens.test.ts",
+      "sha256": "86c393a0934ff4e16ef7061eaacf4dfc515a580bd9067788329ea9c7731a2cf5"
+    },
+    {
+      "path": "apps/pos/test/s221-r1-review-admin.test.ts",
+      "sha256": "5216f61a0dea542ba8f028a32fef760417e7f3eb6f8038881d648ecccfeeefec"
+    },
+    {
+      "path": "apps/pos/test/s221-r2-benefit-qr.test.ts",
+      "sha256": "916588fd6c97b6b2961289c9f0c3b37d62e2f90d0c73d66372108d59b71115fd"
+    },
+    {
+      "path": "apps/pos/test/s221-r3-checkout.test.ts",
+      "sha256": "4815ba30d97ee70b896fc6d2144f1767b8a777518a12d9a8a2a6de92ab0a4797"
+    },
+    {
+      "path": "apps/pos/test/stock-r1.test.ts",
+      "sha256": "b0564e632d6ab4df71ee024713e58180c8867152100a9130280076a76e013f91"
+    },
+    {
+      "path": "apps/pos/test/stock-r2.test.ts",
+      "sha256": "6621a7b62f7614f065ed003e953f43d86d37ad9bd8b4015f9ef037aed1f8733e"
+    },
+    {
+      "path": "apps/pos/test/stock-r4-box-refusals.test.ts",
+      "sha256": "2ace2bd6b001b4d3d0dd6ab220bb672c13c03635dd99e8a6d7c2e0c3a49b6401"
+    },
+    {
+      "path": "apps/pos/test/support/admin-contracts.ts",
+      "sha256": "88faa6894050d43a90459bae69449efe97f9ef5c2bbbc07e7d291249acd89e4e"
+    },
+    {
+      "path": "apps/pos/test/support/reporting.ts",
+      "sha256": "4ea3221889729ea80b85aa742f90a70edc80145048ed89dcc943c7a6eebf86b6"
+    },
+    {
+      "path": "apps/pos/test/vouchers-r5-surfaces.test.ts",
+      "sha256": "784b1ef251362041eec970830dd453a567b0f3832eba65dbdbc9ecc54edcbf5f"
+    },
+    {
+      "path": "apps/pos/test/wallet-r3-view.test.ts",
+      "sha256": "d58da60d43df0a14c79b45f58d1efa9368107a6e5f6cb49a245652669509bd4a"
+    },
+    {
+      "path": "packages/admin-screens/package.json",
+      "sha256": "39a30f46678844f93558ffa26304b0916afe44e96250234938dd6df4a4bb9d7f"
+    },
+    {
+      "path": "packages/admin-screens/src/lifted/components/admin/inventory/InventoryItemFormDialog.tsx",
+      "sha256": "521caef46e2f5a3bcdd67962da0b3e2cd8c4922763af3ba4ff76c3730d452510"
+    },
+    {
+      "path": "packages/admin-screens/src/lifted/components/admin/inventory/InventoryPanel.tsx",
+      "sha256": "c67fd2ec17cae9c6e12141bc4b3f666752e1d9c5639dd12d29461f702fd1320b"
+    },
+    {
+      "path": "packages/admin-screens/src/lifted/components/admin/inventory/StockLocationsPanel.tsx",
+      "sha256": "d6c69b0aa75abe5a79ba1510264bf1efd1c0c80512ecdf52b593a331a447b0c0"
+    },
+    {
+      "path": "packages/admin-screens/src/lifted/components/admin/members/MemberFormDialog.tsx",
+      "sha256": "c42ddcd71a7a9d08149bedf7f6155b35b12e12cb0d1b96e1a6844c08591ce673"
+    },
+    {
+      "path": "packages/admin-screens/src/lifted/components/admin/members/MembersPanel.tsx",
+      "sha256": "0aec8abe617b2cf4d3857ea0532e5a0e5f81ad56b9e0eb117517117a07e0fe58"
+    },
+    {
+      "path": "packages/admin-screens/src/lifted/components/admin/members/TierVerificationsPanel.tsx",
+      "sha256": "943b563bd1637d4c295f35d7e6ca7fb88dcdea6c0190db19215492b25bd22ca9"
+    },
+    {
+      "path": "packages/admin-screens/src/lifted/components/admin/wallets/WalletLookupPanel.tsx",
+      "sha256": "9d05deed1db0f5c2536a32f3e95b2f18d54d5a9e8779b44e49f34e3b2e01dc3e"
+    },
+    {
+      "path": "packages/admin-screens/src/lifted/lib/stockPresentation.ts",
+      "sha256": "9288da7d2a703d7eeccd22fa30563144bcdf2d708c9457bad01043dd82d80d48"
+    },
+    {
+      "path": "packages/admin-screens/src/lifted/runtime/operations.ts",
+      "sha256": "af5e2ebf632036dea2ed546668755d840553776879242aa738f9fc13e9dfee88"
+    },
+    {
+      "path": "packages/admin-screens/test/operations-markup.test.ts",
+      "sha256": "4a65e37674ddc4dd0884d8a2d1271a8d375ff5b4f69ae06ac88b68cf4e1ddf95"
+    },
+    {
+      "path": "packages/api-types/test/migration-list.ts",
+      "sha256": "69dd4a98486dbc7cd8c6ceb039f71a9a01b17fcd1f04b616676ab639a8bbc10e"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "sha256": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+    }
+  ],
+  "refreshedHashes": [
+    {
+      "path": "packages/admin-screens/src/lifted/components/admin/inventory/InventoryPanel.tsx",
+      "priorSha256": "2858b7c40885492ca9e7b3eeb639ad6a1211815a0094d90b2cd8f07ca91e0aca",
+      "sha256": "c67fd2ec17cae9c6e12141bc4b3f666752e1d9c5639dd12d29461f702fd1320b"
+    },
+    {
+      "path": "packages/admin-screens/src/lifted/components/admin/inventory/StockLocationsPanel.tsx",
+      "priorSha256": "f9f98eb9c0444d8d6daad6c86a7cfc0a32733f9cfad4a5d4ff930a205b361b41",
+      "sha256": "d6c69b0aa75abe5a79ba1510264bf1efd1c0c80512ecdf52b593a331a447b0c0"
+    },
+    {
+      "path": "packages/admin-screens/src/lifted/components/admin/members/MembersPanel.tsx",
+      "priorSha256": "28a1347381186aa3b6a223b5e6a8f83392e273ff389c1c3f1660db817b85a654",
+      "sha256": "0aec8abe617b2cf4d3857ea0532e5a0e5f81ad56b9e0eb117517117a07e0fe58"
+    },
+    {
+      "path": "packages/admin-screens/src/lifted/components/admin/members/TierVerificationsPanel.tsx",
+      "priorSha256": "ac4fb74e726bac3328e75c6519d176c3661d4d653ff264ea0a111b4600431603",
+      "sha256": "943b563bd1637d4c295f35d7e6ca7fb88dcdea6c0190db19215492b25bd22ca9"
+    },
+    {
+      "path": "packages/admin-screens/src/lifted/components/admin/wallets/WalletLookupPanel.tsx",
+      "priorSha256": "2b161acac724a61f6dab970b6d760d569f5f353446728c5b3ae49ffe75d0ccb3",
+      "sha256": "9d05deed1db0f5c2536a32f3e95b2f18d54d5a9e8779b44e49f34e3b2e01dc3e"
+    },
+    {
+      "path": "apps/pos/src/pages/Admin.tsx",
+      "priorSha256": "5df835ecfb7aeef3a6cf4e298cdec3eaa1720aff1306f2022bdb61282ef2613d",
+      "sha256": "7ba6ecea28b084e8d3fa9c80a82a5e5e796a2edde276848746aea6c40f3f248e"
+    }
+  ],
+  "independentReports": [
+    {
+      "filename": "admin627-native-ports-review.json",
+      "sha256": "9d6ce57acfbc5c6bc02648c252ad461ebfb17501c48fde3db8178956281f7efe"
+    },
+    {
+      "filename": "admin627-redirect-workflow.json",
+      "sha256": "92e696780104f67760fbb78aaf90d6d4d19546a207447cf79a4f9e8f332d247f"
+    },
+    {
+      "filename": "admin627-adapter-review.json",
+      "sha256": "a2336d689d0fad89e439650aec8f628882934baec61fefb64039982bef829961"
+    }
+  ],
+  "findings": [],
+  "refreshNotes": [
+    {
+      "area": "Stable refs",
+      "paths": [
+        "packages/admin-screens/src/lifted/components/admin/inventory/InventoryPanel.tsx",
+        "packages/admin-screens/src/lifted/components/admin/inventory/StockLocationsPanel.tsx",
+        "packages/admin-screens/src/lifted/components/admin/members/MembersPanel.tsx",
+        "packages/admin-screens/src/lifted/components/admin/members/TierVerificationsPanel.tsx",
+        "packages/admin-screens/src/lifted/components/admin/wallets/WalletLookupPanel.tsx",
+        "apps/pos/src/pages/Admin.tsx"
+      ],
+      "result": "Current ref-object aliases retain the same ref and increment its current counter during cleanup; counters were not copied into primitive snapshots. Existing mounted, epoch, request and before-I/O checks remain."
+    },
+    {
+      "area": "Members detail",
+      "result": "openAdd invalidates the detail serial and clears loadingId before opening the blank form. The earlier independent spinner finding remains corrected."
+    },
+    {
+      "area": "Booth Print templates navigation",
+      "paths": [
+        "apps/console/src/components/booth/BoothBoxCard.tsx",
+        "apps/console/e2e/booth-setup.spec.ts"
+      ],
+      "result": "The approved native Print templates link replaces the POS back-office address. The old browser sentence is updated to the current native wording and a precise /catalogue/print-templates href assertion is added. Receipt/slip content and live-box readiness checks are retained; no assertion is weakened."
+    },
+    {
+      "area": "Built browser harness",
+      "result": "Reviewed Console and POS builds before disposable DB creation, new local ports, random handoff key, exact local origins and strict non-reused servers. No new concrete security or CI blocker found."
+    }
+  ],
+  "limits": "Read-only source/hash/ownership refresh. Earlier source reviews are incorporated by exact report hash; their changed file hashes above are refreshed to the immutable release. No tests, compiler, CI, staging or deployment were executed or established by this review.",
+  "whitespaceCheck": {
+    "command": "git diff --cached --check",
+    "exitCode": 2,
+    "clean": false,
+    "diagnostics": [
+      "packages/admin-screens/src/lifted/lib/stockPresentation.ts:72: new blank line at EOF."
+    ],
+    "diagnosticCount": 1,
+    "path": "packages/admin-screens/src/lifted/lib/stockPresentation.ts",
+    "sha256": "9288da7d2a703d7eeccd22fa30563144bcdf2d708c9457bad01043dd82d80d48",
+    "semanticImpact": "None: the sole diagnostic is an empty line after the completed stockLocationToView expression. It adds no token, behavior, rule or scope change.",
+    "disposition": "Retain exact frozen bytes. This optional whitespace check is reported as nonzero; mandatory release checks and frozen source are not changed."
+  }
+}

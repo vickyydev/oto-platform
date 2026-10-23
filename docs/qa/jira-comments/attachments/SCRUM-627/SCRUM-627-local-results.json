@@ -1,0 +1,825 @@
+{
+  "ticket": "SCRUM-627",
+  "localReleaseChecksPassed": true,
+  "freeze": {
+    "createdAt": "2026-10-23T08:17:33.432Z",
+    "baseSha": "e77ca693300550dded6726a34d7a161e1c68f245",
+    "hostHead": "1b3f5c561e7fa260d1511102ff956653eaea0721",
+    "files": 3685,
+    "ownedFiles": 141,
+    "existingOwnedFiles": 63,
+    "deletedFiles": 78,
+    "dependencyInputs": 28,
+    "image": "oto-admin627-release-freeze:local",
+    "imageId": "sha256:d13061b03ee962550ca6b2417c99f7b49c1b93932af94e37060f6f6fbdeba57e",
+    "sourceManifestSha256": "70f7136e1d5fe0d88b30831ca7d117084ac31885221a2dc2231f711f4a02483c",
+    "deletedManifestSha256": "ee3a4bc42722416363bba1f6a257951bb893ca2275e4f568fab0d1fbcf11e3b8",
+    "dependencyInputsSha256": "e94de931c1b4cdfd13b6f619bb5fae1692afcfb5450c0b3673a16f8725cc35a0",
+    "verifierSha256": "19112b7fe4e2ad85049cc7efa2f8fa6783f3ae18ba1628d70a5d8686a43081da",
+    "ownedFilesSha256": "c0cc5f7ec1918dd80e1b4d38dc366beb647eb24ca64f095a11c99f9652478fa5",
+    "releaseHelperSha256": "9b9a36eb3bd7181bf1b178dd9582896c0aad056649ca23efb018c94f4032e35e",
+    "durableHelperSha256": "c5ca63b5ca8e3978899f20c23de2fc1feea39f1ba043c5e50e9f610fd7a91ae0",
+    "staging": false
+  },
+  "gateAudit": {
+    "schemaVersion": 2,
+    "auditedAt": "2026-10-23T08:44:17.614Z",
+    "localOnly": true,
+    "staging": false,
+    "freeze": {
+      "imageId": "sha256:d13061b03ee962550ca6b2417c99f7b49c1b93932af94e37060f6f6fbdeba57e",
+      "sourceManifestSha256": "70f7136e1d5fe0d88b30831ca7d117084ac31885221a2dc2231f711f4a02483c",
+      "deletedManifestSha256": "ee3a4bc42722416363bba1f6a257951bb893ca2275e4f568fab0d1fbcf11e3b8",
+      "dependencyInputsSha256": "e94de931c1b4cdfd13b6f619bb5fae1692afcfb5450c0b3673a16f8725cc35a0",
+      "releaseHelperSha256": "9b9a36eb3bd7181bf1b178dd9582896c0aad056649ca23efb018c94f4032e35e",
+      "durableHelperSha256": "c5ca63b5ca8e3978899f20c23de2fc1feea39f1ba043c5e50e9f610fd7a91ae0",
+      "sourceFiles": 3685,
+      "ownedFiles": 141,
+      "existingOwnedFiles": 63,
+      "deletedFiles": 78,
+      "dependencyInputs": 28,
+      "manifestMatches": true
+    },
+    "state": "complete",
+    "counts": {
+      "complete": 8,
+      "pending": 0,
+      "failed": 0,
+      "gates": 8
+    },
+    "api": {
+      "receiptCount": 3,
+      "expectedReceipts": 3,
+      "totalsAreFinal": true,
+      "finalizedTests": {
+        "passed": 4803,
+        "failed": 0,
+        "skipped": 401,
+        "todo": 5,
+        "total": 5209
+      },
+      "observedFailedFiles": []
+    },
+    "gates": [
+      {
+        "tag": "full-checks",
+        "state": "complete",
+        "pending": false,
+        "receipt": true,
+        "log": true,
+        "exitCode": 0,
+        "startedAt": "2026-10-23T08:21:09.446Z",
+        "finishedAt": "2026-10-23T08:23:07.952Z",
+        "logSha256": "ed8b5bcb3c2a9cf6237d54b2b51c3abe0ce9782f57a14528f18f676704f1600a",
+        "receiptSha256": "872409c896501459a5f22881f775fa37ed0716418eb27c551474a674de13d600",
+        "processReceiptSha256": "4f9f94017f5afdd686f6922fdefaef5231e4ca87e033062c17b572883720c169",
+        "launchReceiptSha256": "0d2d545f2287546a0a2ed657ca54d0b28c39121125720b1b77c6177ad9a67368",
+        "bindings": {
+          "sourceManifestSha256": true,
+          "deletedManifestSha256": true,
+          "dependencyInputsSha256": true,
+          "imageId": true,
+          "verifierSha256": true,
+          "releaseHelperSha256": true,
+          "durableHelperSha256": true,
+          "logSha256": true,
+          "workerSha256": true,
+          "sourceFiles": true,
+          "deletedFiles": true,
+          "dependencyInputs": true,
+          "tag": true,
+          "mode": true,
+          "command": true,
+          "localOnly": true,
+          "timestamps": true,
+          "processReceipt": true
+        },
+        "sourceVerificationCount": 2,
+        "observedFailure": false,
+        "summary": {
+          "framework": "unfinalized",
+          "tests": null,
+          "files": null,
+          "observedFiles": 0,
+          "failedFiles": []
+        },
+        "packages": [],
+        "issues": [],
+        "quality": {
+          "compilerTasks": {
+            "successful": 16,
+            "total": 16
+          },
+          "compilerDiagnostics": 0,
+          "lint": {
+            "problems": 8,
+            "errors": 0,
+            "warnings": 8
+          },
+          "buildTasks": {
+            "successful": 5,
+            "total": 5
+          },
+          "generatedApiMatches": true,
+          "mockMemberGuardPassed": true,
+          "telemetrySyncPassed": true
+        }
+      },
+      {
+        "tag": "full-other",
+        "state": "complete",
+        "pending": false,
+        "receipt": true,
+        "log": true,
+        "exitCode": 0,
+        "startedAt": "2026-10-23T08:21:09.446Z",
+        "finishedAt": "2026-10-23T08:25:51.375Z",
+        "logSha256": "ccefc270bc5dd4acc73eaf014f064e9eca390852933bc0fa8f9da16485395405",
+        "receiptSha256": "285493cc0215b9aa43979aebe4420249da068e022d8f92f635043e254691e5da",
+        "processReceiptSha256": "0c52b96f7c460826ddc11ccd52682e6038032f1cf141280213755420246be57f",
+        "launchReceiptSha256": "581cb83701c630015493fa7dc7aa85a035f5c6c329242e0a10696afe1ef3e582",
+        "bindings": {
+          "sourceManifestSha256": true,
+          "deletedManifestSha256": true,
+          "dependencyInputsSha256": true,
+          "imageId": true,
+          "verifierSha256": true,
+          "releaseHelperSha256": true,
+          "durableHelperSha256": true,
+          "logSha256": true,
+          "workerSha256": true,
+          "sourceFiles": true,
+          "deletedFiles": true,
+          "dependencyInputs": true,
+          "tag": true,
+          "mode": true,
+          "command": true,
+          "localOnly": true,
+          "timestamps": true,
+          "processReceipt": true
+        },
+        "sourceVerificationCount": 2,
+        "observedFailure": false,
+        "summary": {
+          "framework": "multiple-packages",
+          "tests": {
+            "passed": 2636,
+            "failed": 0,
+            "skipped": 0,
+            "todo": 3,
+            "total": 2639
+          },
+          "files": null,
+          "observedFiles": null,
+          "failedFiles": []
+        },
+        "packages": [
+          {
+            "package": "@oto/console",
+            "framework": "vitest",
+            "tests": {
+              "passed": 251,
+              "failed": 0,
+              "skipped": 0,
+              "todo": 3,
+              "total": 254
+            },
+            "files": {
+              "passed": 32,
+              "failed": 0,
+              "skipped": 0,
+              "todo": 0,
+              "total": 32
+            },
+            "observedFiles": null,
+            "failedFiles": []
+          },
+          {
+            "package": "@oto/api-types",
+            "framework": "vitest",
+            "tests": {
+              "passed": 10,
+              "failed": 0,
+              "skipped": 0,
+              "todo": 0,
+              "total": 10
+            },
+            "files": {
+              "passed": 1,
+              "failed": 0,
+              "skipped": 0,
+              "todo": 0,
+              "total": 1
+            },
+            "observedFiles": null,
+            "failedFiles": []
+          },
+          {
+            "package": "@oto/admin-screens",
+            "framework": "vitest",
+            "tests": {
+              "passed": 120,
+              "failed": 0,
+              "skipped": 0,
+              "todo": 0,
+              "total": 120
+            },
+            "files": {
+              "passed": 16,
+              "failed": 0,
+              "skipped": 0,
+              "todo": 0,
+              "total": 16
+            },
+            "observedFiles": null,
+            "failedFiles": []
+          },
+          {
+            "package": "@oto/shared",
+            "framework": "vitest",
+            "tests": {
+              "passed": 769,
+              "failed": 0,
+              "skipped": 0,
+              "todo": 0,
+              "total": 769
+            },
+            "files": {
+              "passed": 50,
+              "failed": 0,
+              "skipped": 0,
+              "todo": 0,
+              "total": 50
+            },
+            "observedFiles": null,
+            "failedFiles": []
+          },
+          {
+            "package": "@oto/db",
+            "framework": "vitest",
+            "tests": {
+              "passed": 305,
+              "failed": 0,
+              "skipped": 0,
+              "todo": 0,
+              "total": 305
+            },
+            "files": {
+              "passed": 43,
+              "failed": 0,
+              "skipped": 0,
+              "todo": 0,
+              "total": 43
+            },
+            "observedFiles": null,
+            "failedFiles": []
+          },
+          {
+            "package": "@oto/booth",
+            "framework": "node-test",
+            "tests": {
+              "passed": 33,
+              "failed": 0,
+              "skipped": 0,
+              "todo": 0,
+              "total": 33
+            },
+            "files": null,
+            "observedFiles": null,
+            "failedFiles": []
+          },
+          {
+            "package": "@oto/launcher",
+            "framework": "vitest",
+            "tests": {
+              "passed": 72,
+              "failed": 0,
+              "skipped": 0,
+              "todo": 0,
+              "total": 72
+            },
+            "files": {
+              "passed": 5,
+              "failed": 0,
+              "skipped": 0,
+              "todo": 0,
+              "total": 5
+            },
+            "observedFiles": null,
+            "failedFiles": []
+          },
+          {
+            "package": "@oto/inbox",
+            "framework": "vitest",
+            "tests": {
+              "passed": 176,
+              "failed": 0,
+              "skipped": 0,
+              "todo": 0,
+              "total": 176
+            },
+            "files": {
+              "passed": 8,
+              "failed": 0,
+              "skipped": 0,
+              "todo": 0,
+              "total": 8
+            },
+            "observedFiles": null,
+            "failedFiles": []
+          },
+          {
+            "package": "@oto/assistant",
+            "framework": "vitest",
+            "tests": {
+              "passed": 434,
+              "failed": 0,
+              "skipped": 0,
+              "todo": 0,
+              "total": 434
+            },
+            "files": {
+              "passed": 8,
+              "failed": 0,
+              "skipped": 0,
+              "todo": 0,
+              "total": 8
+            },
+            "observedFiles": null,
+            "failedFiles": []
+          },
+          {
+            "package": "@oto/print",
+            "framework": "vitest",
+            "tests": {
+              "passed": 271,
+              "failed": 0,
+              "skipped": 0,
+              "todo": 0,
+              "total": 271
+            },
+            "files": {
+              "passed": 11,
+              "failed": 0,
+              "skipped": 0,
+              "todo": 0,
+              "total": 11
+            },
+            "observedFiles": null,
+            "failedFiles": []
+          },
+          {
+            "package": "@oto/messaging",
+            "framework": "vitest",
+            "tests": {
+              "passed": 78,
+              "failed": 0,
+              "skipped": 0,
+              "todo": 0,
+              "total": 78
+            },
+            "files": {
+              "passed": 6,
+              "failed": 0,
+              "skipped": 0,
+              "todo": 0,
+              "total": 6
+            },
+            "observedFiles": null,
+            "failedFiles": []
+          },
+          {
+            "package": "@oto/payments-2c2p",
+            "framework": "vitest",
+            "tests": {
+              "passed": 81,
+              "failed": 0,
+              "skipped": 0,
+              "todo": 0,
+              "total": 81
+            },
+            "files": {
+              "passed": 6,
+              "failed": 0,
+              "skipped": 0,
+              "todo": 0,
+              "total": 6
+            },
+            "observedFiles": null,
+            "failedFiles": []
+          },
+          {
+            "package": "@oto/telemetry",
+            "framework": "vitest",
+            "tests": {
+              "passed": 36,
+              "failed": 0,
+              "skipped": 0,
+              "todo": 0,
+              "total": 36
+            },
+            "files": {
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0,
+              "todo": 0,
+              "total": 4
+            },
+            "observedFiles": null,
+            "failedFiles": []
+          }
+        ],
+        "issues": []
+      },
+      {
+        "tag": "full-pos",
+        "state": "complete",
+        "pending": false,
+        "receipt": true,
+        "log": true,
+        "exitCode": 0,
+        "startedAt": "2026-10-23T08:21:09.450Z",
+        "finishedAt": "2026-10-23T08:22:55.003Z",
+        "logSha256": "fe0ae01e8c9cace93644cff8a2cffbaf1ea1312acd062c7b8391c9a8145969dd",
+        "receiptSha256": "4755fd288965107388ef5930b144e0d4abc474643900c2d932cc7b0fbdbe2165",
+        "processReceiptSha256": "fce6d61063c27f981bf0346497b6086b52f6ce10330817510b31fc70d812efc2",
+        "launchReceiptSha256": "4e77ba20b8d293cd419c9f6ad9cac5fee476c87e405a2589233e4f1cc5a1409e",
+        "bindings": {
+          "sourceManifestSha256": true,
+          "deletedManifestSha256": true,
+          "dependencyInputsSha256": true,
+          "imageId": true,
+          "verifierSha256": true,
+          "releaseHelperSha256": true,
+          "durableHelperSha256": true,
+          "logSha256": true,
+          "workerSha256": true,
+          "sourceFiles": true,
+          "deletedFiles": true,
+          "dependencyInputs": true,
+          "tag": true,
+          "mode": true,
+          "command": true,
+          "localOnly": true,
+          "timestamps": true,
+          "processReceipt": true
+        },
+        "sourceVerificationCount": 2,
+        "observedFailure": false,
+        "summary": {
+          "framework": "vitest",
+          "tests": {
+            "passed": 1437,
+            "failed": 0,
+            "skipped": 0,
+            "todo": 0,
+            "total": 1437
+          },
+          "files": {
+            "passed": 101,
+            "failed": 0,
+            "skipped": 0,
+            "todo": 0,
+            "total": 101
+          },
+          "observedFiles": null,
+          "failedFiles": []
+        },
+        "packages": [],
+        "issues": []
+      },
+      {
+        "tag": "full-browser",
+        "state": "complete",
+        "pending": false,
+        "receipt": true,
+        "log": true,
+        "exitCode": 0,
+        "startedAt": "2026-10-23T08:21:09.446Z",
+        "finishedAt": "2026-10-23T08:25:31.344Z",
+        "logSha256": "00151f37f97de584cf4020281395c320aa09cfbe82a5bef740d344ef2919e9b9",
+        "receiptSha256": "7d2415607091c887792e7c637079c5970f52ed8a66c75fda911264d1c4dc5321",
+        "processReceiptSha256": "bc5fa437555aa8ed7487cba6a638749f94ad8c4f13ce8aae02dc9803522cefd6",
+        "launchReceiptSha256": "8694cff5261a3b15f6928f150f5fb15e4367ba1decc9bf8b0add2b59bef1deb9",
+        "bindings": {
+          "sourceManifestSha256": true,
+          "deletedManifestSha256": true,
+          "dependencyInputsSha256": true,
+          "imageId": true,
+          "verifierSha256": true,
+          "releaseHelperSha256": true,
+          "durableHelperSha256": true,
+          "logSha256": true,
+          "workerSha256": true,
+          "sourceFiles": true,
+          "deletedFiles": true,
+          "dependencyInputs": true,
+          "tag": true,
+          "mode": true,
+          "command": true,
+          "localOnly": true,
+          "timestamps": true,
+          "processReceipt": true
+        },
+        "sourceVerificationCount": 2,
+        "observedFailure": false,
+        "summary": {
+          "framework": "playwright",
+          "tests": {
+            "passed": 194,
+            "failed": 0,
+            "skipped": 0,
+            "todo": 0,
+            "total": 194
+          },
+          "files": null,
+          "observedFiles": null,
+          "failedFiles": []
+        },
+        "packages": [],
+        "issues": []
+      },
+      {
+        "tag": "full-api1",
+        "state": "complete",
+        "pending": false,
+        "receipt": true,
+        "log": true,
+        "exitCode": 0,
+        "startedAt": "2026-10-23T08:21:09.447Z",
+        "finishedAt": "2026-10-23T08:32:55.744Z",
+        "logSha256": "7c63ff5f9090e639399d24c96e5b8c190985869050de0cdea7bfabc0f6866327",
+        "receiptSha256": "04afbf945f6221b296fee78701a8fd60f5d61dbceceadac405ff1a0ebcda69a4",
+        "processReceiptSha256": "49f25d1ecb95bf23234a127fb6ea6f01ec2328010fc109ce7377473e3bebc239",
+        "launchReceiptSha256": "ff22626ee31466ab63cc21afe9e57d44679db4b7973298b7811848bf479b27be",
+        "bindings": {
+          "sourceManifestSha256": true,
+          "deletedManifestSha256": true,
+          "dependencyInputsSha256": true,
+          "imageId": true,
+          "verifierSha256": true,
+          "releaseHelperSha256": true,
+          "durableHelperSha256": true,
+          "logSha256": true,
+          "workerSha256": true,
+          "sourceFiles": true,
+          "deletedFiles": true,
+          "dependencyInputs": true,
+          "tag": true,
+          "mode": true,
+          "command": true,
+          "localOnly": true,
+          "timestamps": true,
+          "processReceipt": true
+        },
+        "sourceVerificationCount": 2,
+        "observedFailure": false,
+        "summary": {
+          "framework": "vitest",
+          "tests": {
+            "passed": 1652,
+            "failed": 0,
+            "skipped": 106,
+            "todo": 0,
+            "total": 1758
+          },
+          "files": {
+            "passed": 113,
+            "failed": 0,
+            "skipped": 2,
+            "todo": 0,
+            "total": 115
+          },
+          "observedFiles": null,
+          "failedFiles": []
+        },
+        "packages": [],
+        "issues": []
+      },
+      {
+        "tag": "full-api2",
+        "state": "complete",
+        "pending": false,
+        "receipt": true,
+        "log": true,
+        "exitCode": 0,
+        "startedAt": "2026-10-23T08:21:09.451Z",
+        "finishedAt": "2026-10-23T08:32:54.564Z",
+        "logSha256": "1e8b79c781713a99bba19ea4c05b07b2e966a8ce07bef13d54747eaa9829c755",
+        "receiptSha256": "ee30ea4a4d6ec613fcd2963144c90f20c1f84b751e10be50952cfd5da9ae65a1",
+        "processReceiptSha256": "3eb94a4e1e5b856a4d21ffdd0de42806ef01e769674f9e0a67945c095c312479",
+        "launchReceiptSha256": "65c575e20071d53d72a73079d414c6c9d698aee51b1bcf4fac8dbcea3b9b1082",
+        "bindings": {
+          "sourceManifestSha256": true,
+          "deletedManifestSha256": true,
+          "dependencyInputsSha256": true,
+          "imageId": true,
+          "verifierSha256": true,
+          "releaseHelperSha256": true,
+          "durableHelperSha256": true,
+          "logSha256": true,
+          "workerSha256": true,
+          "sourceFiles": true,
+          "deletedFiles": true,
+          "dependencyInputs": true,
+          "tag": true,
+          "mode": true,
+          "command": true,
+          "localOnly": true,
+          "timestamps": true,
+          "processReceipt": true
+        },
+        "sourceVerificationCount": 2,
+        "observedFailure": false,
+        "summary": {
+          "framework": "vitest",
+          "tests": {
+            "passed": 1651,
+            "failed": 0,
+            "skipped": 174,
+            "todo": 4,
+            "total": 1829
+          },
+          "files": {
+            "passed": 111,
+            "failed": 0,
+            "skipped": 4,
+            "todo": 0,
+            "total": 115
+          },
+          "observedFiles": null,
+          "failedFiles": []
+        },
+        "packages": [],
+        "issues": []
+      },
+      {
+        "tag": "full-api3",
+        "state": "complete",
+        "pending": false,
+        "receipt": true,
+        "log": true,
+        "exitCode": 0,
+        "startedAt": "2026-10-23T08:21:09.452Z",
+        "finishedAt": "2026-10-23T08:33:36.836Z",
+        "logSha256": "5a8df167cad0c099f7f800d6443719807b0cec280566b438228ad7745d1473fc",
+        "receiptSha256": "fb48bc258353d7f057dc4e7e1ba8c56b8d1a314f6831737bb311e93ea8f08b40",
+        "processReceiptSha256": "d20a3821385bb4a3af27f282b46d07cfd6ace05c08e9ef4e92817ba70e400fcb",
+        "launchReceiptSha256": "83bb7775b330d9ddc6a976a46f80308abb9c83cccff5c7daeed4a6c09c8c9fa2",
+        "bindings": {
+          "sourceManifestSha256": true,
+          "deletedManifestSha256": true,
+          "dependencyInputsSha256": true,
+          "imageId": true,
+          "verifierSha256": true,
+          "releaseHelperSha256": true,
+          "durableHelperSha256": true,
+          "logSha256": true,
+          "workerSha256": true,
+          "sourceFiles": true,
+          "deletedFiles": true,
+          "dependencyInputs": true,
+          "tag": true,
+          "mode": true,
+          "command": true,
+          "localOnly": true,
+          "timestamps": true,
+          "processReceipt": true
+        },
+        "sourceVerificationCount": 2,
+        "observedFailure": false,
+        "summary": {
+          "framework": "vitest",
+          "tests": {
+            "passed": 1500,
+            "failed": 0,
+            "skipped": 121,
+            "todo": 1,
+            "total": 1622
+          },
+          "files": {
+            "passed": 113,
+            "failed": 0,
+            "skipped": 2,
+            "todo": 0,
+            "total": 115
+          },
+          "observedFiles": null,
+          "failedFiles": []
+        },
+        "packages": [],
+        "issues": []
+      },
+      {
+        "tag": "full-box",
+        "state": "complete",
+        "pending": false,
+        "receipt": true,
+        "log": true,
+        "exitCode": 0,
+        "startedAt": "2026-10-23T08:35:55.909Z",
+        "finishedAt": "2026-10-23T08:37:23.110Z",
+        "logSha256": "25c7ee85332f248fd7f86b1524deb44761d050904a76797a3673f692c9c37b05",
+        "receiptSha256": "f3749d8dcfe83a4a02831498d5a28cc226dd5cfba33263fb8a38bba14a53258e",
+        "processReceiptSha256": "b81feb2bd61c2a6429b7b0e7fe9b571adfee6e3375d76ab078a128976314149e",
+        "launchReceiptSha256": "1076f1c7d11b3697b78c8707ab6641fdc00276cc50bdb09c2f6d63e89e7c5043",
+        "bindings": {
+          "sourceManifestSha256": true,
+          "deletedManifestSha256": true,
+          "dependencyInputsSha256": true,
+          "imageId": true,
+          "verifierSha256": true,
+          "releaseHelperSha256": true,
+          "durableHelperSha256": true,
+          "logSha256": true,
+          "workerSha256": true,
+          "sourceFiles": true,
+          "deletedFiles": true,
+          "dependencyInputs": true,
+          "tag": true,
+          "mode": true,
+          "command": true,
+          "localOnly": true,
+          "timestamps": true,
+          "processReceipt": true
+        },
+        "sourceVerificationCount": 2,
+        "observedFailure": false,
+        "summary": {
+          "framework": "node-test",
+          "tests": {
+            "passed": 749,
+            "failed": 0,
+            "skipped": 0,
+            "todo": 0,
+            "total": 749
+          },
+          "files": null,
+          "observedFiles": null,
+          "failedFiles": []
+        },
+        "packages": [],
+        "issues": []
+      }
+    ],
+    "historicalIncompleteRuns": [],
+    "auxiliaryRechecks": [],
+    "interpretation": "All eight immutable local gates finished successfully. Exact receipt, process, worker, source/deletion/dependency/helper/image bindings and log hashes were independently checked. Focused development failures and corrections remain separate. This result does not establish source landing, CI, Render or staging acceptance.",
+    "issues": []
+  },
+  "independentReview": {
+    "filename": "admin627-source-review.json",
+    "sha256": "6e27ef37df582552a0c2c6d4923f725b091d5557eed8fc971c8b4d7998c7f238",
+    "passed": true
+  },
+  "postRebase": {
+    "tag": "post-rebase",
+    "mode": "post",
+    "container": "oto-admin627-release-gates",
+    "command": "pnpm --filter @oto/api typecheck; pnpm --filter @oto/api-types typecheck; pnpm --filter @oto/admin-screens typecheck; pnpm --filter @oto/console typecheck; pnpm --filter @oto/pos typecheck; pnpm api-types:check; pnpm --filter @oto/api exec vitest run test/s627-pos-admin-redirect-review.test.ts test/s617-login-users-review.test.ts test/s619-admin-screen-lift-review.test.ts test/routes-guarded.test.ts test/route-write-conformance.test.ts test/id-conformance.test.ts test/route-scope-target.test.ts; pnpm --filter @oto/admin-screens test; pnpm --filter @oto/console test; pnpm --filter @oto/api-types test; pnpm exec eslint 'apps/api/test/s619-admin-screen-lift-review.test.ts' 'apps/api/test/s627-pos-admin-redirect-review.test.ts' 'apps/console/e2e/booth-setup.spec.ts' 'apps/console/e2e/operations.spec.ts' 'apps/console/e2e/pos-admin-redirect.spec.ts' 'apps/console/e2e/run.mjs' 'apps/console/playwright.config.ts' 'apps/console/src/App.tsx' 'apps/console/src/api/operations.ts' 'apps/console/src/components/ConsoleLayout.tsx' 'apps/console/src/components/booth/BoothBoxCard.tsx' 'apps/console/src/components/consoleSections.tsx' 'apps/console/src/pages/Care.tsx' 'apps/console/src/pages/Operations.tsx' 'apps/console/test/operations-api.test.ts' 'apps/pos/src/App.tsx' 'apps/pos/src/api/admin-entry.ts' 'apps/pos/src/api/admin-screen-api.ts' 'apps/pos/src/api/benefits.ts' 'apps/pos/src/api/catalogBridge.ts' 'apps/pos/src/api/checkin.ts' 'apps/pos/src/api/events.ts' 'apps/pos/src/api/menu.ts' 'apps/pos/src/api/platform.ts' 'apps/pos/src/api/stock.ts' 'apps/pos/src/api/wallet.ts' 'apps/pos/src/components/auth/LockScreen.tsx' 'apps/pos/src/pages/Admin.tsx' 'apps/pos/src/store/CatalogStoreContext.tsx' 'apps/pos/test/admin-lift-host.test.ts' 'apps/pos/test/admin-login-users-link-markup.test.ts' 'apps/pos/test/admin-login-users-link-runtime.test.ts' 'apps/pos/test/benefits-admin-api.test.ts' 'apps/pos/test/one-calculator-parity.test.ts' 'apps/pos/test/promo-codes.test.ts' 'apps/pos/test/s216-r4-reports.test.ts' 'apps/pos/test/s216-r6-sweep.test.ts' 'apps/pos/test/s220-e2-events.test.ts' 'apps/pos/test/s220-e2-review-screens.test.ts' 'apps/pos/test/s221-r1-review-admin.test.ts' 'apps/pos/test/s221-r2-benefit-qr.test.ts' 'apps/pos/test/s221-r3-checkout.test.ts' 'apps/pos/test/stock-r1.test.ts' 'apps/pos/test/stock-r2.test.ts' 'apps/pos/test/stock-r4-box-refusals.test.ts' 'apps/pos/test/support/admin-contracts.ts' 'apps/pos/test/support/reporting.ts' 'apps/pos/test/vouchers-r5-surfaces.test.ts' 'apps/pos/test/wallet-r3-view.test.ts' 'packages/admin-screens/src/lifted/components/admin/inventory/InventoryItemFormDialog.tsx' 'packages/admin-screens/src/lifted/components/admin/inventory/InventoryPanel.tsx' 'packages/admin-screens/src/lifted/components/admin/inventory/StockLocationsPanel.tsx' 'packages/admin-screens/src/lifted/components/admin/members/MemberFormDialog.tsx' 'packages/admin-screens/src/lifted/components/admin/members/MembersPanel.tsx' 'packages/admin-screens/src/lifted/components/admin/members/TierVerificationsPanel.tsx' 'packages/admin-screens/src/lifted/components/admin/wallets/WalletLookupPanel.tsx' 'packages/admin-screens/src/lifted/lib/stockPresentation.ts' 'packages/admin-screens/src/lifted/runtime/operations.ts' 'packages/admin-screens/test/operations-markup.test.ts' 'packages/api-types/test/migration-list.ts'",
+    "requestedAt": "2026-10-23T08:45:06.648Z",
+    "sourceManifestSha256": "70f7136e1d5fe0d88b30831ca7d117084ac31885221a2dc2231f711f4a02483c",
+    "deletedManifestSha256": "ee3a4bc42722416363bba1f6a257951bb893ca2275e4f568fab0d1fbcf11e3b8",
+    "dependencyInputsSha256": "e94de931c1b4cdfd13b6f619bb5fae1692afcfb5450c0b3673a16f8725cc35a0",
+    "imageId": "sha256:d13061b03ee962550ca6b2417c99f7b49c1b93932af94e37060f6f6fbdeba57e",
+    "verifierSha256": "19112b7fe4e2ad85049cc7efa2f8fa6783f3ae18ba1628d70a5d8686a43081da",
+    "releaseHelperSha256": "9b9a36eb3bd7181bf1b178dd9582896c0aad056649ca23efb018c94f4032e35e",
+    "durableHelperSha256": "c5ca63b5ca8e3978899f20c23de2fc1feea39f1ba043c5e50e9f610fd7a91ae0",
+    "durable": true,
+    "startedAt": "2026-10-23T08:45:07.053Z",
+    "finishedAt": "2026-10-23T08:46:27.760Z",
+    "exitCode": 0,
+    "verifyBeforeExitCode": 0,
+    "gateExitCode": 0,
+    "verifyAfterExitCode": 0,
+    "signal": null,
+    "workerException": false,
+    "suppressedLines": 0,
+    "logRedactedBeforeDisk": true,
+    "passed": true,
+    "logSha256": "c5be85a2e0b4bb1924357bf32e51cc370c9d1fca104163650717734421f57a4d",
+    "sourceFiles": 3685,
+    "deletedFiles": 78,
+    "dependencyInputs": 28,
+    "staging": false,
+    "logRedacted": true
+  },
+  "retainedHistory": "Earlier affected POS and browser fixture/compiler attempts, obsolete Booth wording assertion and private negative variants remain separate. No earlier partial or failed attempt is used as the frozen release result. The native Print templates wording/href correction and ref aliases are included in this exact source manifest.",
+  "optionalWhitespaceCheck": {
+    "command": "git diff --cached --check",
+    "exitCode": 2,
+    "clean": false,
+    "diagnostics": [
+      "packages/admin-screens/src/lifted/lib/stockPresentation.ts:72: new blank line at EOF."
+    ],
+    "diagnosticCount": 1,
+    "path": "packages/admin-screens/src/lifted/lib/stockPresentation.ts",
+    "sha256": "9288da7d2a703d7eeccd22fa30563144bcdf2d708c9457bad01043dd82d80d48",
+    "semanticImpact": "None: the sole diagnostic is an empty line after the completed stockLocationToView expression. It adds no token, behavior, rule or scope change.",
+    "disposition": "Retain exact frozen bytes. This optional whitespace check is reported as nonzero; mandatory release checks and frozen source are not changed."
+  },
+  "limits": [
+    "Only complete immutable-source gates contribute final counts; prior partial/failed attempts remain historical.",
+    "Local checks alone establish neither a live deployment nor staging acceptance."
+  ]
+}
