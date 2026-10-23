@@ -1,0 +1,48 @@
+{
+  "ticket": "SCRUM-626",
+  "passed": true,
+  "sourceSha": "ade47aa128f99621c453dfd6188edc1ed04086a4",
+  "proofSha256": "84def6b9061e8cffcdf8b0bcb1e74a4b110c2d910d6bf7bf99344a4613fa2a21",
+  "inspectedAt": "2026-10-23T05:49:46.530Z",
+  "actualStaging": true,
+  "localMock": false,
+  "images": [
+    {
+      "filename": "SCRUM-626-01-teams-phone390.png",
+      "sha256": "371193955ea753097040406332c1228bafa0d82f1b989d2b20c19571e9bb80ec",
+      "capturedAt": "2026-10-23T05:47:09.435Z",
+      "visuallyInspected": true,
+      "privacyClear": true,
+      "nativeControlsClear": true,
+      "captionClear": true
+    },
+    {
+      "filename": "SCRUM-626-04-channels-settings-offers.png",
+      "sha256": "e686269619d5b6d4bf719c36a8af10d7a12f3e9fde711a133bc7876065f50397",
+      "capturedAt": "2026-10-23T05:47:20.358Z",
+      "visuallyInspected": true,
+      "privacyClear": true,
+      "nativeControlsClear": true,
+      "captionClear": true
+    },
+    {
+      "filename": "SCRUM-626-02-edit-team-controls.png",
+      "sha256": "4f09ed9c313eeaf065dd13b775e24baf85957ba96c13b3be2e4972b1b3a0dfb4",
+      "capturedAt": "2026-10-23T05:47:11.879Z",
+      "visuallyInspected": true,
+      "privacyClear": true,
+      "nativeControlsClear": true,
+      "captionClear": true
+    },
+    {
+      "filename": "SCRUM-626-03-edit-rule-controls.png",
+      "sha256": "a27aeb8cb4000ed663d9989f51c43bb039ba43ff63e36ceb96e77f94918838df",
+      "capturedAt": "2026-10-23T05:47:14.371Z",
+      "visuallyInspected": true,
+      "privacyClear": true,
+      "nativeControlsClear": true,
+      "captionClear": true
+    }
+  ],
+  "limits": "Actual read-only staging screens and open/cancel controls only; saved changes and Inbox arrival are not claimed."
+}

@@ -1,0 +1,111 @@
+{
+  "ticket": "SCRUM-626",
+  "sourceSha": "ade47aa128f99621c453dfd6188edc1ed04086a4",
+  "parentSha": "758246d733ed8b8bc8d82190c723a1a3474a7685",
+  "landedAt": "2026-10-23T05:24:51.862Z",
+  "sourceManifestSha256": "7e5dd283a42ae5a3ecb36837c51c1c66c03c783ab58bc8144ce71fddaf2af606",
+  "imageId": "sha256:8b47de176ec6ee64b95cec1f82523f65156ecce25cd27192418f1a498c18288d",
+  "sourceFiles": 3587,
+  "ownedFiles": 20,
+  "ci": {
+    "runId": "39905618373",
+    "headSha": "ade47aa128f99621c453dfd6188edc1ed04086a4",
+    "status": "completed",
+    "conclusion": "success",
+    "jobs": [
+      {
+        "name": "ci",
+        "status": "completed",
+        "conclusion": "success",
+        "startedAt": "2026-10-23T05:24:55Z",
+        "completedAt": "2026-10-23T05:38:13Z"
+      },
+      {
+        "name": "pos-tests",
+        "status": "completed",
+        "conclusion": "success",
+        "startedAt": "2026-10-23T05:24:55Z",
+        "completedAt": "2026-10-23T05:27:03Z"
+      },
+      {
+        "name": "oto-app",
+        "status": "completed",
+        "conclusion": "success",
+        "startedAt": "2026-10-23T05:24:55Z",
+        "completedAt": "2026-10-23T05:25:26Z"
+      },
+      {
+        "name": "api-tests (3)",
+        "status": "completed",
+        "conclusion": "success",
+        "startedAt": "2026-10-23T05:24:55Z",
+        "completedAt": "2026-10-23T05:42:00Z"
+      },
+      {
+        "name": "api-tests (1)",
+        "status": "completed",
+        "conclusion": "success",
+        "startedAt": "2026-10-23T05:24:55Z",
+        "completedAt": "2026-10-23T05:42:13Z"
+      },
+      {
+        "name": "api-tests (2)",
+        "status": "completed",
+        "conclusion": "success",
+        "startedAt": "2026-10-23T05:24:55Z",
+        "completedAt": "2026-10-23T05:36:23Z"
+      }
+    ]
+  },
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "sourceSha": "ade47aa128f99621c453dfd6188edc1ed04086a4",
+      "deployId": "dep-dbdf7e8u01pc73ckidpg",
+      "finishedAt": "2026-10-23T05:45:46.847433Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "sourceSha": "ade47aa128f99621c453dfd6188edc1ed04086a4",
+      "deployId": "dep-dbdf7e8u01pc73ckif10",
+      "finishedAt": "2026-10-23T05:43:03.745155Z"
+    }
+  ],
+  "jira": {
+    "ticket": "SCRUM-626",
+    "status": "Deployed",
+    "sourceSha": "ade47aa128f99621c453dfd6188edc1ed04086a4",
+    "commentId": "12529",
+    "files": [
+      {
+        "id": "11985",
+        "filename": "SCRUM-626-01-teams-phone390.png",
+        "sha256": "371193955ea753097040406332c1228bafa0d82f1b989d2b20c19571e9bb80ec",
+        "capturedAt": "2026-10-23T05:47:09.435Z"
+      },
+      {
+        "id": "11986",
+        "filename": "SCRUM-626-02-edit-team-controls.png",
+        "sha256": "4f09ed9c313eeaf065dd13b775e24baf85957ba96c13b3be2e4972b1b3a0dfb4",
+        "capturedAt": "2026-10-23T05:47:11.879Z"
+      },
+      {
+        "id": "11987",
+        "filename": "SCRUM-626-03-edit-rule-controls.png",
+        "sha256": "a27aeb8cb4000ed663d9989f51c43bb039ba43ff63e36ceb96e77f94918838df",
+        "capturedAt": "2026-10-23T05:47:14.371Z"
+      },
+      {
+        "id": "11988",
+        "filename": "SCRUM-626-04-channels-settings-offers.png",
+        "sha256": "e686269619d5b6d4bf719c36a8af10d7a12f3e9fde711a133bc7876065f50397",
+        "capturedAt": "2026-10-23T05:47:20.358Z"
+      }
+    ],
+    "parentStatus": "In Progress",
+    "plainOutcomeReadBack": true,
+    "ownerRetainsDone": true,
+    "checkedAt": "2026-10-23T05:49:57.278Z",
+    "proofSha256": "84def6b9061e8cffcdf8b0bcb1e74a4b110c2d910d6bf7bf99344a4613fa2a21"
+  }
+}

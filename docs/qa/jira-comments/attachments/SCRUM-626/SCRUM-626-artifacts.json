@@ -1,0 +1,57 @@
+{
+  "ticket": "SCRUM-626",
+  "sourceSha": "ade47aa128f99621c453dfd6188edc1ed04086a4",
+  "recordedAt": "2026-10-23T05:50:19.439Z",
+  "files": [
+    {
+      "filename": "SCRUM-626-local-results.json",
+      "sha256": "3f02a138f8ad696834cd6a0f11ff1824f1131254bb33014102a6ea26a301ef3a",
+      "repositoryBlobOid": "d8711b3dbe80891ed09245bd2c89833e878c44d9"
+    },
+    {
+      "filename": "SCRUM-626-staging-results.json",
+      "sha256": "84def6b9061e8cffcdf8b0bcb1e74a4b110c2d910d6bf7bf99344a4613fa2a21",
+      "repositoryBlobOid": "8cd9ddc46b1c51e93a635d360e80bfc82e383738"
+    },
+    {
+      "filename": "SCRUM-626-image-review.json",
+      "sha256": "7896b199c1b3d21301574ba06cc57a2efb61b029ea23cd010125c9f741998d9a",
+      "repositoryBlobOid": "c4e836b327e5838e8e9c8c92340b13c9b7791c9a"
+    },
+    {
+      "filename": "SCRUM-626-release.json",
+      "sha256": "6426b63b6846dcde1be8c887038273fbdb92038cac26670ed45f30ef68d0b085",
+      "repositoryBlobOid": "24289c554ef5216543c3ef11919e4e7eae34ffe7"
+    },
+    {
+      "filename": "SCRUM-626-source-review.json",
+      "sha256": "b72e97c2c00d913491d4003a5238f7d26b81529908eabe8c03230f02440c2915",
+      "repositoryBlobOid": "d68c850c0e819cde3ba99bcc5eb23431a1fd51a6"
+    },
+    {
+      "filename": "README.md",
+      "sha256": "f462783a5c8558f4a7a3fdea11d2051b37c4df86e4205c3260a14659283688cc",
+      "repositoryBlobOid": "139457b41e7ee8444078e92c8d3fe2e20ae34004"
+    },
+    {
+      "filename": "SCRUM-626-01-teams-phone390.png",
+      "sha256": "371193955ea753097040406332c1228bafa0d82f1b989d2b20c19571e9bb80ec",
+      "repositoryBlobOid": "31e94ba28babf5da8a2132da984558d749a4fb5d"
+    },
+    {
+      "filename": "SCRUM-626-02-edit-team-controls.png",
+      "sha256": "4f09ed9c313eeaf065dd13b775e24baf85957ba96c13b3be2e4972b1b3a0dfb4",
+      "repositoryBlobOid": "4ed3f3374b0b795536bb8a5492b36fa944906a97"
+    },
+    {
+      "filename": "SCRUM-626-03-edit-rule-controls.png",
+      "sha256": "a27aeb8cb4000ed663d9989f51c43bb039ba43ff63e36ceb96e77f94918838df",
+      "repositoryBlobOid": "4c7ec1b913af624114349acd98d6c216ba46afbd"
+    },
+    {
+      "filename": "SCRUM-626-04-channels-settings-offers.png",
+      "sha256": "e686269619d5b6d4bf719c36a8af10d7a12f3e9fde711a133bc7876065f50397",
+      "repositoryBlobOid": "515db48cb4507c63565673a4398b70e50e548a32"
+    }
+  ]
+}

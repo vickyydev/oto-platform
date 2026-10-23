@@ -1,0 +1,23 @@
+{
+  "ticket": "SCRUM-626",
+  "checkedAt": "2026-10-23T05:18:16.467Z",
+  "passed": true,
+  "pendingSourceFindings": 0,
+  "sourceScopePaths": 20,
+  "dependencyInputsUnchanged": 28,
+  "independentReports": [
+    {
+      "filename": "admin626-house-review.json",
+      "sha256": "f6734b875a04923e6f7c1eeefa71ca6cc2e6c62b26793a294764d83714e2929f"
+    },
+    {
+      "filename": "admin626-runner-review.json",
+      "sha256": "ef657ebcdb1f9a5a220a6d3151d3329fc89785c3dd48c03a1ec77970d4d7dbc0"
+    },
+    {
+      "filename": "admin626-ui-receipt.json",
+      "sha256": "dc928b0a6475ba03efba9dc67eff55897b1b6b4b721055e9d4077a57ae5d8d25"
+    }
+  ],
+  "limits": "Independent house, API/UI source and ownership reviews, with focused results. Does not establish full release, CI, deployment or staging acceptance."
+}

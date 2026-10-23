@@ -1,0 +1,321 @@
+{
+  "ticket": "SCRUM-626",
+  "helperFilename": "admin626-proof.mjs",
+  "helperSha256": "4ef0e499e111b532508025d9dbeb1c3674877240a58f83bd3c35ea9dd51533e6",
+  "sourceSha": "ade47aa128f99621c453dfd6188edc1ed04086a4",
+  "startedAt": "2026-10-23T05:46:37.147Z",
+  "complete": true,
+  "controlsComplete": true,
+  "unchangedReadback": true,
+  "checks": [
+    {
+      "name": "EXACT_ACTIVE_SEEDED_ACTOR_AND_ORIGINAL_BRANCH_PREFERENCES",
+      "passed": true,
+      "at": "2026-10-23T05:47:03.309Z"
+    },
+    {
+      "name": "NATIVE_TEAMS_PHONE390_READ_ONLY",
+      "passed": true,
+      "at": "2026-10-23T05:47:10.639Z"
+    },
+    {
+      "name": "NATIVE_TEAM_EDITOR_OPEN_AND_CANCEL_ONLY",
+      "passed": true,
+      "at": "2026-10-23T05:47:13.107Z"
+    },
+    {
+      "name": "NATIVE_RULE_EDITOR_OPEN_AND_CANCEL_ONLY",
+      "passed": true,
+      "at": "2026-10-23T05:47:16.181Z"
+    },
+    {
+      "name": "NATIVE_FOUR_SETTINGS_OFFERS_NO_HANDOFF",
+      "passed": true,
+      "at": "2026-10-23T05:47:21.575Z"
+    },
+    {
+      "name": "TEAMS_AND_RULES_UNCHANGED",
+      "passed": true,
+      "at": "2026-10-23T05:47:23.059Z"
+    },
+    {
+      "name": "ORIGINAL_BRANCH_AND_PREFERENCES_UNCHANGED",
+      "passed": true,
+      "at": "2026-10-23T05:47:23.655Z"
+    },
+    {
+      "name": "SIGNOUT200_AND_ME401",
+      "passed": true,
+      "at": "2026-10-23T05:47:24.822Z"
+    }
+  ],
+  "screenshots": [
+    {
+      "filename": "SCRUM-626-01-teams-phone390.png",
+      "label": "native Teams editor offer at 390px; no save",
+      "capturedAt": "2026-10-23T05:47:09.435Z",
+      "bounds": [
+        {
+          "name": "route heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "native Teams heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "native Edit team control",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 390,
+        "document": 390
+      },
+      "captionClear": true,
+      "sha256": "371193955ea753097040406332c1228bafa0d82f1b989d2b20c19571e9bb80ec"
+    },
+    {
+      "filename": "SCRUM-626-02-edit-team-controls.png",
+      "label": "native team metadata draft; immutable identity and values hidden; no save",
+      "capturedAt": "2026-10-23T05:47:11.879Z",
+      "bounds": [
+        {
+          "name": "native Edit team heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "native Save team offer; not clicked",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "native Cancel control",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "captionClear": true,
+      "sha256": "4f09ed9c313eeaf065dd13b775e24baf85957ba96c13b3be2e4972b1b3a0dfb4"
+    },
+    {
+      "filename": "SCRUM-626-03-edit-rule-controls.png",
+      "label": "native routing rule draft; person values hidden; no save or archive",
+      "capturedAt": "2026-10-23T05:47:14.371Z",
+      "bounds": [
+        {
+          "name": "native Edit routing rule heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "native Save routing rule offer; not clicked",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "native Cancel control",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "captionClear": true,
+      "sha256": "a27aeb8cb4000ed663d9989f51c43bb039ba43ff63e36ceb96e77f94918838df"
+    },
+    {
+      "filename": "SCRUM-626-04-channels-settings-offers.png",
+      "label": "native Inbox settings offers; no handoff issued",
+      "capturedAt": "2026-10-23T05:47:20.358Z",
+      "bounds": [
+        {
+          "name": "native Channels heading",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "Open Numbers offer; not clicked",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "Open Templates offer; not clicked",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "Open Knowledge base offer; not clicked",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        },
+        {
+          "name": "Open Examples offer; not clicked",
+          "wholeInViewport": true,
+          "clearOfCaption": true
+        }
+      ],
+      "layout": {
+        "viewport": 1440,
+        "document": 1440
+      },
+      "captionClear": true,
+      "sha256": "e686269619d5b6d4bf719c36a8af10d7a12f3e9fde711a133bc7876065f50397"
+    }
+  ],
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "sourceSha": "ade47aa128f99621c453dfd6188edc1ed04086a4",
+      "deployId": "dep-dbdf7e8u01pc73ckidpg",
+      "finishedAt": "2026-10-23T05:45:46.847433Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "sourceSha": "ade47aa128f99621c453dfd6188edc1ed04086a4",
+      "deployId": "dep-dbdf7e8u01pc73ckif10",
+      "finishedAt": "2026-10-23T05:43:03.745155Z"
+    }
+  ],
+  "routingReads": [
+    {
+      "kind": "rules",
+      "at": "2026-10-23T05:47:02.954Z",
+      "bodySha256": "1f513556e3f1037c0276126381a4417205d0a451466f10fda273a08b8e6478a9",
+      "counts": {
+        "rules": 9
+      }
+    },
+    {
+      "kind": "teams",
+      "at": "2026-10-23T05:47:03.227Z",
+      "bodySha256": "b874af25f10239392da152bcc42ab03410111c1f6d1290d316fdc8de09ee3c6d",
+      "counts": {
+        "teams": 5,
+        "branches": 9,
+        "departments": 11,
+        "accounts": 38,
+        "teamReferences": 5
+      }
+    },
+    {
+      "kind": "rules",
+      "at": "2026-10-23T05:47:07.666Z",
+      "bodySha256": "1f513556e3f1037c0276126381a4417205d0a451466f10fda273a08b8e6478a9",
+      "counts": {
+        "rules": 9
+      }
+    },
+    {
+      "kind": "teams",
+      "at": "2026-10-23T05:47:07.743Z",
+      "bodySha256": "b874af25f10239392da152bcc42ab03410111c1f6d1290d316fdc8de09ee3c6d",
+      "counts": {
+        "teams": 5,
+        "branches": 9,
+        "departments": 11,
+        "accounts": 38,
+        "teamReferences": 5
+      }
+    },
+    {
+      "kind": "teams",
+      "at": "2026-10-23T05:47:22.381Z",
+      "bodySha256": "b874af25f10239392da152bcc42ab03410111c1f6d1290d316fdc8de09ee3c6d",
+      "counts": {
+        "teams": 5,
+        "branches": 9,
+        "departments": 11,
+        "accounts": 38,
+        "teamReferences": 5
+      }
+    },
+    {
+      "kind": "rules",
+      "at": "2026-10-23T05:47:23.059Z",
+      "bodySha256": "1f513556e3f1037c0276126381a4417205d0a451466f10fda273a08b8e6478a9",
+      "counts": {
+        "rules": 9
+      }
+    }
+  ],
+  "blockedRequests": [],
+  "browserErrorKinds": [],
+  "requestFailureKinds": [],
+  "readErrors": [],
+  "counts": {
+    "signIns": 1,
+    "signOuts": 1,
+    "reads": 26,
+    "routingReads": 6,
+    "publicAssetReads": 6,
+    "blockedReads": 0,
+    "blockedWrites": 0,
+    "businessWrites": 0,
+    "smsRequests": 0,
+    "fixturesCreated": 0,
+    "csvDownloads": 0,
+    "handoffPosts": 0
+  },
+  "limitations": [
+    "Read-only existing demo editor controls and Console settings offers only. No save/archive/create/delete, Inbox handoff/arrival, channel action, SMS, payment or fixture is attempted.",
+    "Staff/person labels, field values, list-row headings and signed-in identity are hidden, including late changes. Only response hashes/counts and masked PNGs are retained.",
+    "Teams and rules hashes are compared before/after; unchanged configuration is an observation during this proof, not a lock on other administrators.",
+    "Write/refusal/retry/permission behavior is automated coverage. The enabled Save controls are observed without pressing them. GET /me omits station state; no session-context mutation occurs."
+  ],
+  "binding": {
+    "path": "C:/w/admin626-landed.json",
+    "sha256": "852a091705a4c6433f03e158ec6cc2fad54f58007348f152db8f3af17d3a2b0a",
+    "sourceManifestSha256": "7e5dd283a42ae5a3ecb36837c51c1c66c03c783ab58bc8144ce71fddaf2af606",
+    "imageId": "sha256:8b47de176ec6ee64b95cec1f82523f65156ecce25cd27192418f1a498c18288d"
+  },
+  "ci": {
+    "runId": "39905618373",
+    "sourceSha": "ade47aa128f99621c453dfd6188edc1ed04086a4",
+    "completed": true,
+    "successfulJobs": 6
+  },
+  "signInStatus": 200,
+  "actor": {
+    "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+    "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+  },
+  "initial": {
+    "branchSha256": "ff1408f7b8cf4f693cbd2f6e6a82a0e79e347415fdeb0f1886ea0d49d4ded535",
+    "preferencesSha256": "00df943c543d230f9e93ceca1038b659220a9779f4d70ae1b114715829458881"
+  },
+  "initialSettings": {
+    "rules": "1f513556e3f1037c0276126381a4417205d0a451466f10fda273a08b8e6478a9",
+    "teams": "b874af25f10239392da152bcc42ab03410111c1f6d1290d316fdc8de09ee3c6d"
+  },
+  "finalSettings": {
+    "teams": "b874af25f10239392da152bcc42ab03410111c1f6d1290d316fdc8de09ee3c6d",
+    "rules": "1f513556e3f1037c0276126381a4417205d0a451466f10fda273a08b8e6478a9"
+  },
+  "final": {
+    "branchSha256": "ff1408f7b8cf4f693cbd2f6e6a82a0e79e347415fdeb0f1886ea0d49d4ded535",
+    "preferencesSha256": "00df943c543d230f9e93ceca1038b659220a9779f4d70ae1b114715829458881"
+  },
+  "authCleanup": {
+    "signOutStatus": 200,
+    "meStatus": 401,
+    "confirmed": true
+  },
+  "authState": {
+    "signInAttempted": true,
+    "authUncertain": false,
+    "pendingAuth": 0
+  },
+  "completedAt": "2026-10-23T05:47:25.956Z"
+}
