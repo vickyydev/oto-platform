@@ -1,0 +1,27 @@
+{
+  "ticket": "SCRUM-630",
+  "status": "Deployed",
+  "sourceSha": "532e9aab705d873da240ad4b40e77e33fa562d31",
+  "proofSha256": "46b93356ba54ed57b92fe99fd5bc228c0ddaf3e83c3910b33c5a947fdcad1f13",
+  "publishedSha": "e1fa82e8b37b5d9b15820d06539466da7aadded0",
+  "commentId": "12555",
+  "recordedAt": "2026-10-23T22:22:53.634Z",
+  "attachments": [
+    {
+      "id": "12009",
+      "name": "SCRUM-630-01-explicit-flag-off-legacy-staff.png"
+    },
+    {
+      "id": "12010",
+      "name": "SCRUM-630-02-enabled-manager-salary-false.png"
+    },
+    {
+      "id": "12011",
+      "name": "SCRUM-630-03-enabled-same-manager-salary-true.png"
+    },
+    {
+      "id": "12012",
+      "name": "SCRUM-630-04-enabled-same-manager-salary-withdrawn.png"
+    }
+  ]
+}
