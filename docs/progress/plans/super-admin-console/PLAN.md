@@ -153,6 +153,8 @@ Owner question Q10 (2026-10-23, SCRUM-626; parked before implementation): PLAN4.
 
 SCRUM-626 owner ruling Q10 (2026-10-23): keep canonical teams editable and refuse their deletion with a clear reason. Routing-rule deletion uses the existing archived_at field. No persistent team-retirement seam, migration or protected Inbox lifecycle change is authorized or required.
 
+Owner question Q11 (2026-10-23, SCRUM-627; parked before implementation): Q11 / SCRUM-627: may I update only packages/api-types/test/migration-list.ts to relocate and prune the existing legacy response-call counts when live Till and Station Setup calls move back into POS for the approved admin-screens dependency removal? Existing routes without response schemas keep their current contracts; described routes use generated types. No new legacy call or weaker guard is proposed. Existing behavior remains the default until the ruling.
+
 ## 8. P2 — organisation, catalogue, reports (Codex)
 
 | Ticket | Deliverable |
