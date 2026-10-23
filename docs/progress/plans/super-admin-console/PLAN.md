@@ -159,6 +159,8 @@ SCRUM-627 owner ruling Q11 (2026-10-23): authorize only packages/api-types/test/
 
 Owner question Q12 (2026-10-23, SCRUM-627; release parked): exact-source CI39927174350 on31801788b9015bbfd97d30cf748e93f497f470b5 fails in the OTO App setup step: ubuntu-latest selected Ubuntu26.04 (resolute), whose package list cannot install postgresql-client-16. The existing restore check requires /usr/lib/postgresql/16/bin. May627 change only the oto-app job runs-on line in .github/workflows/ci.yml from ubuntu-latest to ubuntu-24.04, preserving every package, test, guard and restore assertion? That workflow file is outside PLAN2. No application source or staging deployment is changed while main is red.
 
+SCRUM-627 owner ruling Q12 (2026-10-23): authorize only the oto-app job runs-on line in .github/workflows/ci.yml from ubuntu-latest to ubuntu-24.04. Every other job, package, test, guard and restore assertion stays unchanged. The runner-package failure is locally reproduced and the proposed image passes the same install command.
+
 ## 8. P2 — organisation, catalogue, reports (Codex)
 
 | Ticket | Deliverable |
