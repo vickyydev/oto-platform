@@ -1,0 +1,23 @@
+{
+  "ticket": "SCRUM-631",
+  "outcomeCommentId": "12556",
+  "mode": "deployed",
+  "status": "Deployed",
+  "evidenceCommit": "c3727880364d9fd998f3e5f1aaa52c89036a0cd4",
+  "sourceSha": "1462f5158f236c957523bd81b40355ad67fbfc49",
+  "at": "2026-10-24T12:49:51.294Z",
+  "images": [
+    {
+      "id": "12014",
+      "filename": "SCRUM-631-01-created-mirror.png"
+    },
+    {
+      "id": "12015",
+      "filename": "SCRUM-631-02-renamed-mirror.png"
+    },
+    {
+      "id": "12016",
+      "filename": "SCRUM-631-03-archived-mirror.png"
+    }
+  ]
+}
