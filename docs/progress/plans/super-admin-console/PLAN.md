@@ -244,6 +244,8 @@ Local release checkpoint (2026-10-24, SCRUM-631): Q16 is applied and its unchang
 | P3-4 | OTO App Users, Permissions, Operators pages read-only with "Managed in Admin" when the flag is on; their write routes answer 409 |
 | P3-5 | Provisioning only from the console; the employee editor's Create Login calls the platform |
 
+Local checkpoint (2026-10-25, SCRUM-633):14 native employee cases and11 app queue/transport checks pass on frozen8a4fb92d inputs. Shared operator serialization and fresh provisioning replay authorization have actual RED/GREEN. App migration0031 is provisional, expand-only and private; existing applied history is untouched. Reverse identity consumer follows its actual missing-route RED; full release and staging acceptance remain. Prepared employee actions survive a fresh-session reload without storing a secret. No SMS or question is pending.
+
 Pickup (2026-10-25, SCRUM-633):632 is Deployed with six attached native screenshots;633 is In Progress/outcome12561. Inspect platform provisioning, employee Create Login, both activation directions and approved missing-route link closures on fresh lane/admin-provisioning. No implementation or acceptance yet; preserve legacy flag, role/branch rules and identity ownership. No SMS or invitation on staging; original shared containers/data remain.
 
 | P3-6 | Staff & HR summary page (on shift, attendance issues, leave today, payroll month status) with links |
