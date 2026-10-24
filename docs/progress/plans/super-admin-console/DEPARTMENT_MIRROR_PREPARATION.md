@@ -1,5 +1,18 @@
 # SCRUM-631 department mirror preparation
 
+**Release checkpoint, 24 October 2026:** Independent work and requested container cleanup are captured. Q16 remains the only known production-edit dependency; the actual seed replay still fails and the feature is unlanded. The three complete API shards recorded4,892 passes/two failures/401 skips/five TODOs; the stale writer-register failure then passed with all57 affected cases. The other13 suites2,653, POS1,437, Box749, browser195, workspace compilers/builds/contracts/schema and scoped OTO install/compiler/29commands/restore all pass. The final source bridge adds only the worker reliability fix and two named test-register updates to the OTO frozen inputs. No631 staging proof exists.
+
+Local receipt pointers (hashes bind the actual retained artifacts):
+
+| Artifact | SHA256 |
+|---|---|
+| C:/w/admin631-source-input-bridge.json | 351e812ad01f5797d29ebc8366a08c5a8243b246ce7bffe9ee93cb344c2b063a |
+| C:/w/admin631-oto-complete-review.json | 37e6e232421d26057035bac98f79772b3070709d17914bcd0c3a95d97355c0db |
+| C:/w/admin631-local/cleanup-result.json | 9560243e0251e41f0717fd6c871819c01e6c9e56f5c3a8a25768bd39a6224dad |
+| C:/w/admin631-worker-final-review.json | 924e2d94235e5e69e99c864241529afd8dd05df98d9e38bb21f37ce26daa4c24 |
+
+The current safe source manifest is 4249af21006e52c3c5afac7115bf36e40512f96ccd24fe7689291300a5b3c1ab (3,716 inputs). Its incremental archives and full command logs are retained under C:/w/admin631-local. Q16’s unapplied patch is C:/w/admin631-q16-proposed.patch. [Next read-only page preparation](READ_ONLY_ADMIN_PREPARATION.md) is a source map, not implementation.
+
 **24 October 2026 update:** Q15 is approved in PLAN section9 and implemented locally. The earlier preparation below remains a historical source map. Core0086/app0030 and the source/worker/directory changes are locally built and checked; full release/staging remain. Q16 asks the planner to authorize only the seed helper change needed to prevent a recreated legacy row after a mirrored rename. The actual regression preserves team/grant references but fails on one extra department row; no protected production file has changed.
 
 Read-only inspection on 24 October 2026, based on main
