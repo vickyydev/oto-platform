@@ -373,6 +373,13 @@ describe('timestamps (SCRUM-292)', () => {
  * `archived_at`.
  */
 const PARTIAL_UNIQUE_EXEMPT: Record<string, string> = {
+  // SCRUM-631 / approved Q15: source identities survive archive so a returning
+  // assignment restores the same row, preserving existing team/grant references.
+  // s631-department-migration.test.ts proves duplicates are refused while archived.
+  'core.department.department_external_branch_unique':
+    'An OTO App department and assigned branch retain one projection identity across archive and restoration; this external identity is never released for reuse.',
+  'core.department.department_external_global_unique':
+    'A zero-assignment OTO App department retains its operator-wide projection identity across archive and restoration; this external identity is never released for reuse.',
   'core.box.box_claim_code_unique':
     'A claim code is a single-use credential with a life of minutes, not a business key somebody re-uses. Its predicate is that the code exists at all, which is the narrower window.',
   // S2-19 I1 (SCRUM-578): the inbox's tenant fence. `(operator_id, id)` is not

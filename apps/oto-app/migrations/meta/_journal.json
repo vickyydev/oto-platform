@@ -204,6 +204,13 @@
       "when": 1792773345454,
       "tag": "0029_platform_roles_enabled",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1792831817751,
+      "tag": "0030_department_read_seam",
+      "breakpoints": true
     }
   ]
 }

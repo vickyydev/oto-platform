@@ -5,8 +5,10 @@ import type { DepartmentDirectory } from '@/api/departments';
 import { DepartmentsContent } from '@/pages/Departments';
 
 const directory: DepartmentDirectory = { departments: [
-  { id: 'reception', name: 'ZZ TEST Reception', branch: { id: 'park', name: 'ZZ TEST Central' }, memberCount: 17 },
-  { id: 'marketing', name: 'ZZ TEST Marketing', branch: null, memberCount: 0 },
+  { id: 'reception', name: 'ZZ TEST Reception', branch: { id: 'park', name: 'ZZ TEST Central' }, memberCount: 17,
+    source: 'otoapp', externalId: 'source-reception', archivedAt: null },
+  { id: 'marketing', name: 'ZZ TEST Marketing', branch: null, memberCount: 0,
+    source: 'platform', externalId: null, archivedAt: '2026-10-24T08:00:00.000Z' },
 ] };
 const noop = () => undefined;
 function markup(data: DepartmentDirectory | null, options: { error?: string; query?: string } = {}) {
@@ -32,6 +34,16 @@ describe('Departments read-only directory', () => {
     const html = markup({ departments: [{ ...directory.departments[0]!, memberCount: 23014 }] });
     expect(html).toContain('23,014');
     expect(html).not.toContain('ZZ TEST Marketing');
+  });
+
+  it('labels mirrored and native records and retains archived departments without exposing opaque source ids', () => {
+    const html = markup(directory);
+    for (const label of ['OTO App', 'Platform', 'Archived', 'ZZ TEST Reception', 'ZZ TEST Marketing']) {
+      expect(html).toContain(label);
+    }
+    expect(html).not.toContain('source-reception');
+    expect(html).not.toContain('<button');
+    expect(html).not.toContain('<a ');
   });
 
   it('keeps pending or failed reads separate from a directory with no reachable departments', () => {

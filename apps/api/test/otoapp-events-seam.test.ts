@@ -755,9 +755,9 @@ describe('H1 — the POS reads OTO App events through otoapp_v only', () => {
     expect(declared.filter((t) => APP_EVENT_TABLES.includes(t!))).toEqual([]);
   });
 
-  it('only the repositories name otoapp_v: the events one and, from S2-17b round 2, the employee one', () => {
+  it('only the exact events, employee and department read repositories name otoapp_v', () => {
     const naming = files.filter(({ text }) => /\botoapp_v\b/.test(code(text))).map((f) => f.file);
-    expect(naming.sort()).toEqual([EMPLOYEE_REPOSITORY, REPOSITORY].sort());
+    expect(naming.sort()).toEqual(['services/otoapp-departments.ts', EMPLOYEE_REPOSITORY, REPOSITORY].sort());
   });
 
   it('the repository reads the four views and nothing else, and writes nothing', () => {

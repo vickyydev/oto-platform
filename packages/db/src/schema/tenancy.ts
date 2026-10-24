@@ -78,9 +78,22 @@ export const department = core.table(
     /** Null = operator-wide department. */
     branchId: uuid('branch_id').references(() => branch.id),
     name: text('name').notNull(),
+    /** The OTO App department id; one stable projection per branch. Null on an unlinked seed. */
+    externalId: text('external_id'),
     ...timestamps,
+    ...archivedAt,
   },
-  (t) => [index('department_operator_idx').on(t.operatorId), index('department_branch_idx').on(t.branchId)],
+  (t) => [
+    index('department_operator_idx').on(t.operatorId),
+    index('department_branch_idx').on(t.branchId),
+    // Archived projections retain their identity so a returning assignment restores the same id.
+    uniqueIndex('department_external_branch_unique')
+      .on(t.operatorId, t.externalId, t.branchId)
+      .where(sql`${t.externalId} IS NOT NULL AND ${t.branchId} IS NOT NULL`),
+    uniqueIndex('department_external_global_unique')
+      .on(t.operatorId, t.externalId)
+      .where(sql`${t.externalId} IS NOT NULL AND ${t.branchId} IS NULL`),
+  ],
 );
 
 export const employee = core.table(

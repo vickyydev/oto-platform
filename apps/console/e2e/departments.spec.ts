@@ -2,11 +2,13 @@ import { expect, test, type Page } from '@playwright/test';
 
 const PARK = '01900000-0000-7000-8000-000000000001';
 const departments = () => [
-  { id: 'reception', name: 'ZZ TEST Reception', branch: { id: PARK, name: 'ZZ TEST Central' }, memberCount: 17 },
-  { id: 'marketing', name: 'ZZ TEST Marketing', branch: null, memberCount: 0 },
+  { id: 'reception', name: 'ZZ TEST Reception', branch: { id: PARK, name: 'ZZ TEST Central' }, memberCount: 17,
+    source: 'otoapp', externalId: 'zz-source-reception', archivedAt: null },
+  { id: 'marketing', name: 'ZZ TEST Marketing', branch: null, memberCount: 0,
+    source: 'platform', externalId: null, archivedAt: '2026-10-24T08:00:00.000Z' },
 ];
 
-async function fixture(page: Page, allowed = true) {
+async function fixture(page: Page, allowed = true, sourceAccess = false) {
   const reads: string[] = [];
   const writes: string[] = [];
   await page.route('**/api/**', (route) => {
@@ -20,7 +22,7 @@ async function fixture(page: Page, allowed = true) {
       isPlatformAdmin: false, photoFileId: null, sessionLocked: false,
     } });
     if (path === '/me/permissions') return route.fulfill({ json: { permissions: [
-      'app:console:access', ...(allowed ? ['admin:account:read'] : []),
+      'app:console:access', ...(allowed ? ['admin:account:read'] : []), ...(sourceAccess ? ['app:oto_app:access'] : []),
     ].map((permission) => ({ permission, scopeType: 'branch', scopeId: PARK })) } });
     if (path === '/departments' || path === '/departments/') {
       reads.push(url.searchParams.get('q') ?? '');
@@ -39,9 +41,12 @@ test('Departments shows current core names, park coverage and returned member co
   const reception = list.getByRole('listitem').filter({ has: page.getByRole('heading', { name: 'ZZ TEST Reception', exact: true }) });
   await expect(reception).toContainText('ZZ TEST Central');
   await expect(reception).toContainText('Member count');
+  await expect(reception.getByText('OTO App', { exact: true })).toBeVisible();
   await expect(reception.getByText('17', { exact: true })).toBeVisible();
   const marketing = list.getByRole('listitem').filter({ has: page.getByRole('heading', { name: 'ZZ TEST Marketing', exact: true }) });
   await expect(marketing).toContainText('Operator-wide · no park');
+  await expect(marketing.getByText('Platform', { exact: true })).toBeVisible();
+  await expect(marketing.getByText('Archived', { exact: true })).toBeVisible();
   await expect(marketing.getByText('0', { exact: true })).toBeVisible();
   await expect(page.getByText(/current employee links/i)).toBeVisible();
   await expect(page.getByRole('link', { name: 'Departments', exact: true })).toHaveAttribute('href', '/people/departments');
@@ -51,6 +56,42 @@ test('Departments shows current core names, park coverage and returned member co
   await page.screenshot({ path: testInfo.outputPath('departments-desktop.png'), fullPage: true });
   await page.goto('/departments');
   await expect(page.getByRole('heading', { name: 'Departments', exact: true })).toBeVisible();
+});
+
+test('source navigation is explicit, single-flight and retryable without changing the directory', async ({ page }) => {
+  const seen = await fixture(page, true, true);
+  let release: (() => void) | undefined;
+  const delayed = new Promise<void>((resolve) => { release = resolve; });
+  const handoffs: Array<{ body: unknown; key: string | undefined }> = [];
+  await page.route('**/api/auth/handoff', async (route) => {
+    handoffs.push({ body: route.request().postDataJSON(), key: route.request().headers()['idempotency-key'] });
+    if (handoffs.length === 1) {
+      await delayed;
+      return route.fulfill({ status: 503, json: { error: { code: 'UNAVAILABLE', message: 'ZZ TEST source unavailable.' } } });
+    }
+    return route.fulfill({ json: { launchUrl: 'https://oto-source.test/#handoff=zz-local-placeholder' } });
+  });
+  await page.route('https://oto-source.test/**', route => route.fulfill({ contentType: 'text/html', body: '<h1>ZZ TEST OTO source</h1>' }));
+  await page.goto('/people/departments');
+  const open = page.getByRole('button', { name: 'Open in OTO App', exact: true });
+  await expect(open).toBeVisible();
+  expect(handoffs).toEqual([]);
+  await open.click();
+  const pending = page.getByRole('button', { name: 'Opening OTO App…', exact: true });
+  await expect(pending).toBeDisabled();
+  await pending.dispatchEvent('click');
+  expect(handoffs).toHaveLength(1);
+  release!();
+  await expect(page.getByRole('alert')).toContainText('ZZ TEST source unavailable.');
+  await expect(page.getByRole('heading', { name: 'ZZ TEST Reception', exact: true })).toBeVisible();
+  await expect(open).toBeEnabled();
+  await open.click();
+  await expect(page).toHaveURL(/https:\/\/oto-source\.test\/#handoff=/);
+  expect(new URLSearchParams(new URL(page.url()).hash.slice(1)).get('to')).toBe('/departments');
+  expect(handoffs).toHaveLength(2);
+  expect(handoffs.every(row => JSON.stringify(row.body) === JSON.stringify({ app: 'oto_app' }) && Boolean(row.key))).toBe(true);
+  expect(handoffs[0]!.key).not.toBe(handoffs[1]!.key);
+  expect(seen.writes).toEqual([]);
 });
 
 test('Departments navigation and direct page keep account-read permission and never read without it', async ({ page }) => {

@@ -13,9 +13,12 @@ export interface DepartmentSummary {
   name: string;
   branch: { id: string; name: string } | null;
   memberCount: number;
+  source: 'platform' | 'otoapp';
+  externalId: string | null;
+  archivedAt: string | null;
 }
 
-/** Current core records only; the department mirror and its copy job are separate work. */
+/** Read the current core copy, including archived projections, without reconciling it. */
 export async function listDepartments(db: Db, reader: DepartmentReader, query: { q?: string }) {
   const reach = branchReach(reader.effective, 'admin:account:read', reader.operatorId);
   if (reach.kind === 'branches' && reach.branchIds.length === 0) return { departments: [] as DepartmentSummary[] };
@@ -39,9 +42,12 @@ export async function listDepartments(db: Db, reader: DepartmentReader, query: {
         : or(isNull(employee.branchId), isNotNull(branch.id))))
     .groupBy(employee.departmentId);
   const memberCounts = new Map(members.map(row => [row.departmentId, row.memberCount]));
-  const departments: DepartmentSummary[] = visible.map(({ team, park }) => ({
+  const departments = visible.map(({ team, park }): DepartmentSummary => ({
     id: team.id, name: team.name, branch: park ? { id: park.id, name: park.name } : null,
     memberCount: memberCounts.get(team.id) ?? 0,
+    source: team.externalId === null ? 'platform' : 'otoapp',
+    externalId: team.externalId,
+    archivedAt: team.archivedAt?.toISOString() ?? null,
   })).sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
   return { departments };
 }

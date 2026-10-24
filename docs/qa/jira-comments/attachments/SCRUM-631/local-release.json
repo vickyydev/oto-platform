@@ -1,0 +1,256 @@
+{
+  "ticket": "SCRUM-631",
+  "recordedAt": "2026-10-24T12:09:33.105Z",
+  "localReleaseGreen": true,
+  "sourceManifestSha256": "d7529fbcaed0acd681a83707e62217bff7b47567e9e2c81ae5a97f69946418cd",
+  "sourceFiles": 3716,
+  "featureLanded": false,
+  "ciPassed": false,
+  "deployed": false,
+  "stagingAccepted": false,
+  "api": {
+    "finalShards": [
+      {
+        "name": "full-api-shard-1-recheck",
+        "passed": 1683,
+        "failed": 0,
+        "skipped": 106,
+        "todo": 0,
+        "summary": "Tests  1683 passed | 106 skipped (1789)"
+      },
+      {
+        "name": "full-api-shard-2",
+        "passed": 1668,
+        "failed": 0,
+        "skipped": 174,
+        "todo": 4,
+        "summary": "Tests  1668 passed | 174 skipped | 4 todo (1846)"
+      },
+      {
+        "name": "full-api-shard-3",
+        "passed": 1549,
+        "failed": 0,
+        "skipped": 121,
+        "todo": 1,
+        "summary": "Tests  1549 passed | 121 skipped | 1 todo (1671)"
+      }
+    ],
+    "totals": {
+      "passed": 4900,
+      "failed": 0,
+      "skipped": 401,
+      "todo": 5
+    },
+    "firstAttempt": {
+      "passed": 4899,
+      "failed": 1,
+      "skipped": 401,
+      "todo": 5,
+      "failedTest": "booth-admin.test.ts:675",
+      "logSha256": "cc9d0dafbdf5945f3486d2737a7e750981e274b0fcae914778dcf8fb5427dc12"
+    },
+    "unchangedWholeSuiteRecheck": {
+      "passed": 39,
+      "failed": 0,
+      "skipped": 0,
+      "todo": 0,
+      "summary": "Tests  39 passed (39)"
+    },
+    "failedWholeShardRechecked": true,
+    "cacheCauseProven": false,
+    "noCacheSourceOrAssertionChange": true
+  },
+  "db": {
+    "passed": 313,
+    "schemaVerifiedAgainst": "0086_snapshot.json"
+  },
+  "compiler": {
+    "workspaceTasks": 16,
+    "apiDiagnostics": 0,
+    "otoDiagnostics": 418,
+    "otoFiles": 54,
+    "otoFileCodeBuckets": 109,
+    "wholeOtoOutputRead": true
+  },
+  "builds": {
+    "workspaceTasks": 5,
+    "otoApp": true
+  },
+  "app": {
+    "actualCommands": 29,
+    "freshNpmCi": true,
+    "restoreReplay": true,
+    "baselineTables": 184,
+    "baselineRows": 1108,
+    "coreMigrations": 87,
+    "appMigrations": 30,
+    "views": 8,
+    "scratchDatabasesBefore": 0,
+    "scratchDatabasesAfter": 0
+  },
+  "lint": {
+    "changedFilesPassed": true,
+    "generatedWarnings": 1
+  },
+  "unchangedEarlierChecks": {
+    "sourceManifestSha256": "4249af21006e52c3c5afac7115bf36e40512f96ccd24fe7689291300a5b3c1ab",
+    "changed": [
+      {
+        "path": "apps/api/test/s631-seed-replay-review.test.ts",
+        "beforeSha256": "31f0648e7178590c02f512986274ee3e9c733dde00ab8f56f8e58cc3602a4ffd",
+        "afterSha256": "63dbdf727f7c25200a12c38cbb80e0c52290ab0070cbe2a7a00bdf56b395b656"
+      },
+      {
+        "path": "packages/db/src/seed/inbox.ts",
+        "beforeSha256": "489bab5031dbdacf12f802f1a53c0f0292e9f3cd8837576fb72a8dda9e8ecc4b",
+        "afterSha256": "0e951214c874784d0d43afeeef32eeda01aa2554b4440e7928e386e134973ee8"
+      }
+    ],
+    "other13PackageCases": 2653,
+    "posCases": 1437,
+    "boxCases": 749,
+    "builtBrowserCases": 195,
+    "scope": "Earlier full-package and browser receipts retain their original inputs. The only later delta is the approved seed helper and expanded API regression; affected full DB/API/compiler/schema/lint gates are rerun above. No earlier receipt is relabelled as a new execution."
+  },
+  "receipts": [
+    {
+      "ticket": "SCRUM-631",
+      "name": "seed-review-green",
+      "command": "pnpm --filter @oto/api exec vitest run test/s631-seed-replay-review.test.ts",
+      "startedAt": "2026-10-24T11:40:52.910Z",
+      "completedAt": "2026-10-24T11:41:05.415Z",
+      "exitCode": 0,
+      "signal": null,
+      "sourceManifestSha256": "d7529fbcaed0acd681a83707e62217bff7b47567e9e2c81ae5a97f69946418cd",
+      "logSha256": "8792d5bddb047bc0733c1f9a8e74549f6e9353eb131ec492e53bf9ab042ac499",
+      "hostSourceUnchanged": true,
+      "staging": false,
+      "receiptSha256": "d1830c7d78439f42dff3e58043225e2cc7de4b5c63c058ad173792eba23c8b5f"
+    },
+    {
+      "ticket": "SCRUM-631",
+      "name": "db-compiler-schema",
+      "command": "pnpm --filter @oto/db typecheck; pnpm --filter @oto/db test; pnpm --filter @oto/db verify-schema",
+      "startedAt": "2026-10-24T11:40:52.910Z",
+      "completedAt": "2026-10-24T11:44:33.186Z",
+      "exitCode": 0,
+      "signal": null,
+      "sourceManifestSha256": "d7529fbcaed0acd681a83707e62217bff7b47567e9e2c81ae5a97f69946418cd",
+      "logSha256": "0cd7baf8e1dec4ed9aad4ceea7409fee74107784069b5841eb865b1b02a1f882",
+      "hostSourceUnchanged": true,
+      "staging": false,
+      "receiptSha256": "67413b02f43274388a130a953dd6f28f59b1355aba742740f5e96e9d63af4269"
+    },
+    {
+      "ticket": "SCRUM-631",
+      "name": "api-compiler-contracts",
+      "command": "pnpm --filter @oto/api typecheck; pnpm --filter @oto/api-types typecheck; pnpm --filter @oto/console typecheck; pnpm api-types:check",
+      "startedAt": "2026-10-24T11:40:52.930Z",
+      "completedAt": "2026-10-24T11:41:56.771Z",
+      "exitCode": 0,
+      "signal": null,
+      "sourceManifestSha256": "d7529fbcaed0acd681a83707e62217bff7b47567e9e2c81ae5a97f69946418cd",
+      "logSha256": "7675c83486c6fb1783e3eb8ffee336fb2170cf34a37426241bb81664132670a1",
+      "hostSourceUnchanged": true,
+      "staging": false,
+      "receiptSha256": "7dfd4ea29c543e43d9b9d3d30eaae81aeab7bd13cbd448a532932d3900bce2d9"
+    },
+    {
+      "ticket": "SCRUM-631",
+      "name": "full-api-shard-1-recheck",
+      "command": "pnpm --filter @oto/api exec vitest run --pool=forks --shard=1/3",
+      "startedAt": "2026-10-24T11:57:09.089Z",
+      "completedAt": "2026-10-24T12:08:08.839Z",
+      "exitCode": 0,
+      "signal": null,
+      "sourceManifestSha256": "d7529fbcaed0acd681a83707e62217bff7b47567e9e2c81ae5a97f69946418cd",
+      "logSha256": "3ee8c507e81bcd7dbf12d21f84c455730782e1ba06909ee2eab6f4f39ab0c43a",
+      "hostSourceUnchanged": true,
+      "staging": false,
+      "receiptSha256": "eecf8ad3a8ccaf960e67fd159eb1b6e375884461df24f93383b8263f4b0e3e41"
+    },
+    {
+      "ticket": "SCRUM-631",
+      "name": "full-api-shard-2",
+      "command": "pnpm --filter @oto/api exec vitest run --pool=forks --shard=2/3",
+      "startedAt": "2026-10-24T11:41:55.503Z",
+      "completedAt": "2026-10-24T11:54:48.829Z",
+      "exitCode": 0,
+      "signal": null,
+      "sourceManifestSha256": "d7529fbcaed0acd681a83707e62217bff7b47567e9e2c81ae5a97f69946418cd",
+      "logSha256": "42f3c4846a3a6315529cd5ab17ed1247e401d6672313b4eabcb421190a1cebd7",
+      "hostSourceUnchanged": true,
+      "staging": false,
+      "receiptSha256": "47442907136f7c933dde0b985e62a976a464d50c144f2e675a35064a51daed25"
+    },
+    {
+      "ticket": "SCRUM-631",
+      "name": "full-api-shard-3",
+      "command": "pnpm --filter @oto/api exec vitest run --pool=forks --shard=3/3",
+      "startedAt": "2026-10-24T11:41:55.499Z",
+      "completedAt": "2026-10-24T11:55:37.592Z",
+      "exitCode": 0,
+      "signal": null,
+      "sourceManifestSha256": "d7529fbcaed0acd681a83707e62217bff7b47567e9e2c81ae5a97f69946418cd",
+      "logSha256": "65767e4d9d679e1334022ffd419cfe61732c797f311fe95504052863c7f115e9",
+      "hostSourceUnchanged": true,
+      "staging": false,
+      "receiptSha256": "536d220ef3c46a98d4795f4468fff26fe734ace5e0f5d9ab0c9e1e6ec623d2cb"
+    },
+    {
+      "ticket": "SCRUM-631",
+      "name": "booth-admin-recheck",
+      "command": "pnpm --filter @oto/api exec vitest run test/booth-admin.test.ts",
+      "startedAt": "2026-10-24T11:56:31.182Z",
+      "completedAt": "2026-10-24T11:56:41.997Z",
+      "exitCode": 0,
+      "signal": null,
+      "sourceManifestSha256": "d7529fbcaed0acd681a83707e62217bff7b47567e9e2c81ae5a97f69946418cd",
+      "logSha256": "c3730030cd482c43c4c4e07508f9376a8d3590c91938c62255000b59e020c843",
+      "hostSourceUnchanged": true,
+      "staging": false,
+      "receiptSha256": "b2e075ec66d44113d6f57b009e289ad550579622f8d00ecaf3ddf7022063c987"
+    },
+    {
+      "ticket": "SCRUM-631",
+      "name": "changed-files-lint-final",
+      "command": "pnpm exec eslint --no-ignore apps/api/src/services/otoapp-department-sync.ts apps/api/src/services/otoapp-departments.ts apps/api/test/s631-department-mirror-review.test.ts apps/api/test/s631-department-seam-view.test.ts apps/api/test/s631-department-source.test.ts apps/api/test/s631-seed-replay-review.test.ts apps/console/test/departments-api.test.ts packages/db/test/s631-department-migration.test.ts apps/api/src/routes/auth.ts apps/api/src/routes/departments.ts apps/api/src/services/departments.ts apps/api/src/services/otoapp-employee-sync.ts apps/api/test/departments.test.ts apps/api/test/g17-round0-review.test.ts apps/api/test/otoapp-events-seam.test.ts apps/api/test/s217b-r2-review.test.ts apps/api/test/s217b-r2.test.ts apps/api/test/s217b-r3-review.test.ts apps/api/test/s220-e1-review.test.ts apps/api/test/s615-departments-review.test.ts apps/console/e2e/departments.spec.ts apps/console/src/api/departments.ts apps/console/src/pages/Departments.tsx apps/console/test/departments-markup.test.ts packages/api-types/src/openapi.ts packages/db/src/schema/tenancy.ts packages/db/src/seed/inbox.ts packages/db/test/schema-shape.test.ts; pnpm exec eslint --no-ignore --global process --global URL --global console apps/oto-app/script/restore-rehearsal.mjs",
+      "startedAt": "2026-10-24T11:49:17.014Z",
+      "completedAt": "2026-10-24T11:49:21.294Z",
+      "exitCode": 0,
+      "signal": null,
+      "sourceManifestSha256": "d7529fbcaed0acd681a83707e62217bff7b47567e9e2c81ae5a97f69946418cd",
+      "logSha256": "bb079199cb297e5537383c9a8898b60bea27b1240991e58a676978d10ae5bb25",
+      "hostSourceUnchanged": true,
+      "staging": false,
+      "receiptSha256": "19b8d4017e8475e481b4c515fc6f50eb012d717ae84a66ef1d6df932ac9dd090"
+    },
+    {
+      "ticket": "SCRUM-631",
+      "name": "final-workspace-compilers-builds",
+      "command": "pnpm typecheck; pnpm build",
+      "startedAt": "2026-10-24T12:02:09.344Z",
+      "completedAt": "2026-10-24T12:03:27.574Z",
+      "exitCode": 0,
+      "signal": null,
+      "sourceManifestSha256": "d7529fbcaed0acd681a83707e62217bff7b47567e9e2c81ae5a97f69946418cd",
+      "logSha256": "51a40a428d4f8d0017c01a2ed081c29cbb628a0e17ecc87b7bbed4822005918a",
+      "hostSourceUnchanged": true,
+      "staging": false,
+      "receiptSha256": "ab5377d92b349cf39240b45258b8c29bdd33ebf1c00f156e1d297737b1f0fe9f"
+    }
+  ],
+  "reviewHashes": {
+    "compiler": "32f0a744c139aa27dcd52f136b9966edc9379045e5f35e8d973d6be5c25ce184",
+    "runtime": "c4fa701a205281e3790d4f75cd645b5d4763c293eeeef52fdd278d4b0d85fd25",
+    "cacheTriage": "8eb5ac5431026a7e9e0252c6a4bd43f19a1e8318bddf9e3060d4b854b615cbdf",
+    "proofReview": "4c909678ee95af1ef44dd0c4aad339b0210c06f26c0f7b424c7eef90de56f8b3"
+  },
+  "limits": [
+    "Local release evidence only; exact landed-SHA CI, latest live API/Admin/OTO deployments and native staging acceptance remain.",
+    "418 inherited OTO compiler diagnostics and inherited skips/TODOs remain.",
+    "The first local full API attempt had an unexplained cache refresh; its red receipt remains and no repair is claimed.",
+    "The new-view API-role readiness must be checked after deployment, before the first staging source fixture write.",
+    "The source department has one stable core projection per assigned park; the OTO App remains its master."
+  ]
+}

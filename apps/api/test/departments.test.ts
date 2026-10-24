@@ -27,6 +27,9 @@ interface DepartmentRow {
   name: string;
   branch: { id: string; name: string } | null;
   memberCount: number;
+  source: 'platform' | 'otoapp';
+  externalId: string | null;
+  archivedAt: string | null;
 }
 
 beforeAll(async () => {
@@ -81,11 +84,29 @@ const get = (query = '', cookie = admin) => ctx.app.inject({ method: 'GET', url:
 const rows = (response: Awaited<ReturnType<typeof get>>): DepartmentRow[] => response.json().departments;
 
 describe('SCRUM-615 read-only department directory', () => {
+  it('shows mirror identity and archived state while retaining the existing visible member count', async () => {
+    const archivedAt = new Date('2026-10-24T08:00:00.000Z');
+    try {
+      await ctx.db.update(department).set({ externalId: 'zz-test-source-department', archivedAt })
+        .where(eq(department.id, ownDepartment));
+      const response = await get();
+      expect(response.statusCode).toBe(200);
+      expect(rows(response).find(row => row.id === ownDepartment)).toMatchObject({
+        source: 'otoapp', externalId: 'zz-test-source-department', archivedAt: archivedAt.toISOString(), memberCount: 4,
+      });
+      expect(rows(response).find(row => row.id === emptyDepartment)).toMatchObject({
+        source: 'platform', externalId: null, archivedAt: null, memberCount: 0,
+      });
+    } finally {
+      await ctx.db.update(department).set({ externalId: null, archivedAt: null }).where(eq(department.id, ownDepartment));
+    }
+  });
   it('shows existing own departments, their valid park or operator scope and zero counts', async () => {
     const response = await get();
     expect(response.statusCode).toBe(200);
     expect(rows(response).find(row => row.id === ownDepartment)).toEqual({ id: ownDepartment,
-      name: 'ZZ TEST Department directory home', branch: { id: central, name: centralName }, memberCount: 4 });
+      name: 'ZZ TEST Department directory home', branch: { id: central, name: centralName }, memberCount: 4,
+      source: 'platform', externalId: null, archivedAt: null });
     expect(rows(response).find(row => row.id === operatorDepartment)).toMatchObject({ branch: null, memberCount: 1 });
     expect(rows(response).find(row => row.id === emptyDepartment)?.memberCount).toBe(0);
     expect(rows(response).find(row => row.id === sameNameDepartment)?.memberCount).toBe(0);

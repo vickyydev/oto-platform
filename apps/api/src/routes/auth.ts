@@ -224,6 +224,10 @@ export async function authRoutes(app: App): Promise<void> {
       schema: {
         description: 'Issue a short-lived signed hand-off token for one app origin',
         body: z.object({ app: z.enum(HANDOFF_APPS) }),
+        response: { 200: z.object({
+          token: z.string(), audience: z.enum(HANDOFF_APPS), origin: z.string(),
+          launchUrl: z.string(), expiresAt: z.string().datetime(),
+        }) },
       },
     },
     async (req) => {

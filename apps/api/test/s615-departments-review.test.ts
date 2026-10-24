@@ -109,7 +109,7 @@ describe('SCRUM-615 Departments adversarial review', () => {
       expect(JSON.stringify(response.json())).not.toContain(hidden);
     }
     for (const item of list) {
-      expect(Object.keys(item).sort()).toEqual(['branch', 'id', 'memberCount', 'name']);
+      expect(Object.keys(item).sort()).toEqual(['archivedAt', 'branch', 'externalId', 'id', 'memberCount', 'name', 'source']);
       expect(Number.isInteger(item.memberCount) && item.memberCount >= 0).toBe(true);
     }
   });

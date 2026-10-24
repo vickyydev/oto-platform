@@ -1,0 +1,4 @@
+ALTER TABLE "core"."department" ADD COLUMN "external_id" text;--> statement-breakpoint
+ALTER TABLE "core"."department" ADD COLUMN "archived_at" timestamp with time zone;--> statement-breakpoint
+CREATE UNIQUE INDEX "department_external_branch_unique" ON "core"."department" USING btree ("operator_id","external_id","branch_id") WHERE "core"."department"."external_id" IS NOT NULL AND "core"."department"."branch_id" IS NOT NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX "department_external_global_unique" ON "core"."department" USING btree ("operator_id","external_id") WHERE "core"."department"."external_id" IS NOT NULL AND "core"."department"."branch_id" IS NULL;

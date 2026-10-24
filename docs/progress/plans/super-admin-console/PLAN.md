@@ -234,6 +234,8 @@ Build checkpoint (2026-10-24, SCRUM-631): Q15 is implemented locally. Source23/c
 |---|---|
 | P3-1 | Role mapping behind the per-operator flag; the hand-off carries the mapped role and `hr:salary:view`; the OTO App applies it |
 | P3-2 | `hr:salary:view` as a platform permission; bundles; the OTO App reads it when the flag is on |
+Local release checkpoint (2026-10-24, SCRUM-631): Q16 is applied and its unchanged real failing regression plus six fence cases pass. Final API4900/401skips/5todo, DB313/schema,16compilers/5builds/contracts/lint, current app fresh install/whole418/54/109 compiler/29commands/restore pass. The original one-off cache failure is retained, with unchanged39-case and whole-shard passes and no claimed cause/fix. [Local release evidence](../../../qa/jira-comments/attachments/SCRUM-631/local-release.json). Source commit/rebase, exact-SHA CI, live rollout, new-view API-role readiness and native staging proof remain.632 source remains isolated until631 is Deployed.
+
 | P3-3 | Departments mirror in the copy job; `core.department.external_id`; the console page wired |
 | P3-4 | OTO App Users, Permissions, Operators pages read-only with "Managed in Admin" when the flag is on; their write routes answer 409 |
 | P3-5 | Provisioning only from the console; the employee editor's Create Login calls the platform |

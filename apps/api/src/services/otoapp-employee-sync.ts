@@ -1,10 +1,16 @@
 import { and, eq, gt, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
-import { account, appTenantAnchors, benefitCredential, branch, employee, opsRun, type Db } from '@oto/db';
+import { account, appTenantAnchors, benefitCredential, branch, department, employee, opsRun, type Db } from '@oto/db';
 import { newId } from '@oto/shared';
 import { AppError } from '../lib/errors';
 import { audit } from './audit';
 import { recordRun } from './ops';
 import { listAppEmployees, otoAppEmployeesInstalled, type AppEmployee } from './otoapp-employees';
+import { readAppDepartmentSnapshot, type AppDepartmentSnapshot } from './otoapp-departments';
+import {
+  DEPARTMENT_SYNC_CASES, DEPARTMENT_SYNC_WORDS, emptyDepartmentCounts,
+  syncDepartmentMembers, syncDepartmentProjections,
+  type DepartmentMirrorCounts, type DepartmentSyncCase,
+} from './otoapp-department-sync';
 import { reconcileOtoAppRole } from './oto-app-users';
 import { withTx, type Exec, type Tx } from './tx';
 
@@ -88,9 +94,10 @@ export const EMPLOYEE_SYNC_CASES = {
   /** A benefit scan named an employee the platform does not have (benefits H17). */
   UNKNOWN_EMPLOYEE: 'OTOAPP_EMPLOYEE_UNKNOWN',
 } as const;
-export type EmployeeSyncCase = (typeof EMPLOYEE_SYNC_CASES)[keyof typeof EMPLOYEE_SYNC_CASES];
+export type EmployeeSyncCase = (typeof EMPLOYEE_SYNC_CASES)[keyof typeof EMPLOYEE_SYNC_CASES] | DepartmentSyncCase;
 
 const CASE_WORDS: Record<EmployeeSyncCase, string> = {
+  ...DEPARTMENT_SYNC_WORDS,
   OTOAPP_TENANT_NO_ANCHOR:
     'An OTO App park group is mapped to no branch of any operator, so its staff were not copied. Join one of its branches on the Console (Branches > OTO App).',
   OTOAPP_TENANT_TWO_OPERATORS:
@@ -158,6 +165,7 @@ export interface EmployeeSyncSummary extends Record<string, unknown> {
   accountsLinked: number;
   cardsRevoked: number;
   raised: number;
+  departments: DepartmentMirrorCounts & { installed: boolean; ready: boolean; source: number };
 }
 
 const emptySummary = (installed: boolean): EmployeeSyncSummary => ({
@@ -174,6 +182,7 @@ const emptySummary = (installed: boolean): EmployeeSyncSummary => ({
   accountsLinked: 0,
   cardsRevoked: 0,
   raised: 0,
+  departments: { ...emptyDepartmentCounts(), installed: false, ready: false, source: 0 },
 });
 
 type EmployeeRow = typeof employee.$inferSelect;
@@ -215,22 +224,34 @@ export async function runOtoAppEmployeeSync(
   const raises: EmployeeSyncRaise[] = [];
 
   const rows = await listAppEmployees(db);
+  const departmentSnapshot = await readAppDepartmentSnapshot(db);
   const anchors = await appTenantAnchors(db);
   summary.employees = rows.length;
+  summary.departments.installed = departmentSnapshot !== null;
+  summary.departments.ready = departmentSnapshot !== null;
+  summary.departments.source = departmentSnapshot?.departments.length ?? 0;
 
   const byTenant = new Map<string, AppEmployee[]>();
   for (const r of rows) byTenant.set(r.tenantId, [...(byTenant.get(r.tenantId) ?? []), r]);
+  for (const r of departmentSnapshot?.departments ?? []) {
+    if (!byTenant.has(r.tenantId)) byTenant.set(r.tenantId, []);
+  }
   summary.tenants = byTenant.size;
 
   /** App ids whose park group was not read this run: their copies are left exactly as they are. */
   const unread = new Set<string>();
+  const unreadDepartments = new Set<string>();
   const byOperator = new Map<string, AppEmployee[]>();
+  const tenantIdsByOperator = new Map<string, Set<string>>();
   for (const [tenantId, list] of [...byTenant].sort(([a], [b]) => (a < b ? -1 : 1))) {
     const operators = anchors.get(tenantId) ?? [];
     if (operators.length !== 1) {
       const reason = operators.length === 0 ? 'no_anchor' : 'two_operators';
       summary.skipped.push({ tenantId, reason, employees: list.length });
       for (const r of list) unread.add(r.id);
+      for (const r of departmentSnapshot?.departments ?? []) {
+        if (r.tenantId === tenantId) unreadDepartments.add(r.id);
+      }
       raises.push({
         case: reason === 'no_anchor' ? EMPLOYEE_SYNC_CASES.NO_ANCHOR : EMPLOYEE_SYNC_CASES.TWO_OPERATORS,
         operatorId: null,
@@ -240,6 +261,9 @@ export async function runOtoAppEmployeeSync(
     }
     const operatorId = operators[0]!;
     byOperator.set(operatorId, [...(byOperator.get(operatorId) ?? []), ...list]);
+    const tenantIds = tenantIdsByOperator.get(operatorId) ?? new Set<string>();
+    tenantIds.add(tenantId);
+    tenantIdsByOperator.set(operatorId, tenantIds);
   }
 
   // Every operator with something to copy, and every operator holding live
@@ -248,7 +272,12 @@ export async function runOtoAppEmployeeSync(
     .selectDistinct({ operatorId: employee.operatorId })
     .from(employee)
     .where(and(eq(employee.source, 'otoapp'), isNull(employee.archivedAt)));
-  const operators = [...new Set([...byOperator.keys(), ...holding.map((h) => h.operatorId)])].sort();
+  const holdingDepartments = departmentSnapshot === null ? [] : await db
+    .selectDistinct({ operatorId: department.operatorId })
+    .from(department)
+    .where(and(isNotNull(department.externalId), isNull(department.archivedAt)));
+  const operators = [...new Set([...byOperator.keys(), ...holding.map((h) => h.operatorId),
+    ...holdingDepartments.map(h => h.operatorId)])].sort();
   summary.operators = operators.length;
 
   /**
@@ -266,6 +295,12 @@ export async function runOtoAppEmployeeSync(
     });
   }
 
+  if (departmentSnapshot !== null && departmentSnapshot.departments.length === 0 && holdingDepartments.length > 0) {
+    summary.departments.ready = false;
+    raises.push({ case: DEPARTMENT_SYNC_CASES.EMPTY_SOURCE, operatorId: null,
+      detail: { operatorsHoldingCopies: holdingDepartments.length } });
+  }
+
   for (const operatorId of operators) {
     const counts = await syncOperator(db, {
       operatorId,
@@ -274,6 +309,9 @@ export async function runOtoAppEmployeeSync(
       archiveGone: !emptySource,
       now,
       raises,
+      departmentSnapshot: summary.departments.ready ? departmentSnapshot : null,
+      tenantIds: tenantIdsByOperator.get(operatorId) ?? new Set<string>(),
+      unreadDepartments,
     });
     summary.created += counts.created;
     summary.adopted += counts.adopted;
@@ -282,6 +320,9 @@ export async function runOtoAppEmployeeSync(
     summary.restored += counts.restored;
     summary.accountsLinked += counts.accountsLinked;
     summary.cardsRevoked += counts.cardsRevoked;
+    for (const field of ['created', 'adopted', 'updated', 'archived', 'restored', 'membersUpdated'] as const) {
+      summary.departments[field] += counts.departments[field];
+    }
   }
 
   for (const raise of raises) await raiseEmployeeSync(db, raise);
@@ -297,6 +338,7 @@ interface OperatorCounts {
   restored: number;
   accountsLinked: number;
   cardsRevoked: number;
+  departments: DepartmentMirrorCounts;
 }
 
 /** One operator's copy, in one transaction under its lock. */
@@ -309,6 +351,9 @@ async function syncOperator(
     archiveGone: boolean;
     now: Date;
     raises: EmployeeSyncRaise[];
+    departmentSnapshot: AppDepartmentSnapshot | null;
+    tenantIds: ReadonlySet<string>;
+    unreadDepartments: ReadonlySet<string>;
   },
 ): Promise<OperatorCounts> {
   const { operatorId, now } = input;
@@ -320,6 +365,7 @@ async function syncOperator(
     restored: 0,
     accountsLinked: 0,
     cardsRevoked: 0,
+    departments: emptyDepartmentCounts(),
   };
   // Raised only once the transaction commits: a rolled-back run raised nothing.
   const pending: EmployeeSyncRaise[] = [];
@@ -361,6 +407,11 @@ async function syncOperator(
       ).map((b) => b.id),
     );
 
+    const departmentState = input.departmentSnapshot === null ? null : await syncDepartmentProjections(tx, {
+      operatorId, snapshot: input.departmentSnapshot, tenantIds: input.tenantIds,
+      unreadDepartmentIds: input.unreadDepartments, ourBranches, now, raise,
+    });
+
     // The accounts the view names, whichever operator they belong to.
     const named = [...new Set(input.rows.flatMap((r) => (r.platformUserId ? [r.platformUserId] : [])))];
     const accounts = new Map(
@@ -388,6 +439,7 @@ async function syncOperator(
     );
 
     const reconciledRoles = new Set<string>();
+    const selectedCopies = new Map<string, string>();
     for (const r of [...input.rows].sort((a, b) => (a.id < b.id ? -1 : 1))) {
       const fields: MirroredFields = {
         name: r.fullName,
@@ -423,6 +475,7 @@ async function syncOperator(
 
       const copy = live.get(r.id) ?? null;
       if (copy) {
+        selectedCopies.set(r.id, copy.id);
         if (ours && ours.employeeId !== null && ours.employeeId !== copy.id) {
           const other = pointed.get(ours.employeeId);
           const conflict = other && other.externalId === null && other.operatorId === operatorId;
@@ -482,6 +535,7 @@ async function syncOperator(
           after: { ...fields, source: 'otoapp', externalId: r.id, accountId: ours!.id },
         });
         counts.adopted += 1;
+        selectedCopies.set(r.id, own.id);
         const adopted = { ...own, ...fields, source: 'otoapp' as const, externalId: r.id };
         live.set(r.id, adopted);
         if (left) await archiveCopy(tx, adopted, { reason: 'left', now, counts });
@@ -491,6 +545,7 @@ async function syncOperator(
       // A rehire: the same app id active again takes back the same row (H25).
       const previous = archived.get(r.id)?.[0];
       if (previous) {
+        selectedCopies.set(r.id, previous.id);
         if (left) continue; // Still gone; the archived row stays as it was.
         await tx
           .update(employee)
@@ -534,6 +589,7 @@ async function syncOperator(
         after: { ...fields, source: 'otoapp', externalId: r.id },
       });
       counts.created += 1;
+      selectedCopies.set(r.id, id);
       live.set(r.id, {
         id,
         operatorId,
@@ -546,6 +602,12 @@ async function syncOperator(
         archivedAt: null,
       });
       await linkAccount(tx, ours, id, { externalId: r.id, operatorId, counts, raise });
+    }
+
+    if (departmentState) {
+      await syncDepartmentMembers(tx, { operatorId, state: departmentState, rows: input.rows,
+        copyIds: selectedCopies, ourBranches, now, raise });
+      counts.departments = departmentState.counts;
     }
 
     // Gone from the app: archived, unless its park group was not read.

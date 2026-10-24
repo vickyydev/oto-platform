@@ -1,0 +1,2447 @@
+{
+  "ticket": "SCRUM-631",
+  "reviewedAt": "2026-10-24T11:53:56.896Z",
+  "passed": true,
+  "staging": false,
+  "finalRelease": false,
+  "sourceManifestSha256": "d7529fbcaed0acd681a83707e62217bff7b47567e9e2c81ae5a97f69946418cd",
+  "sourceFiles": 3716,
+  "dependencyInputs": 28,
+  "checks": {
+    "allModeChecks": true,
+    "sourceManifestHash": true,
+    "hostSourceStable": true,
+    "dependencyInputsStable": true,
+    "sourceFiles3716": true,
+    "compilerBaselineReviewed": true,
+    "exact29Commands": true,
+    "allAppOutcomes": true,
+    "allSixDatabasesRemoved": true,
+    "baseline184Tables1108Rows": true,
+    "baselineAllCountsPreserved": true,
+    "twoIdenticalReplays": true,
+    "exactEightViews": true,
+    "everyAppMigrationHashAndTimestampMatches": true,
+    "expectedMigrationCounts": true,
+    "baselineInputHash": true,
+    "restoreCleanup": true,
+    "seedRedGreenPreserved": true
+  },
+  "reviewMethod": {
+    "all29CommandOutputsRead": true,
+    "fullInnerOutputLines": 763,
+    "fullInnerReadRanges": [
+      [
+        1,
+        210
+      ],
+      [
+        211,
+        420
+      ],
+      [
+        421,
+        630
+      ],
+      [
+        631,
+        763
+      ]
+    ],
+    "all29FootersParsedAndComparedToReceipts": true,
+    "restoreStructuredReportWholeRead": true,
+    "restoreReview": "All source/run1/run2 table counts, all eight view counts and all30 run1/run2 migration rows inspected; independently compared every row/hash to current frozen files.",
+    "noRuntimeExecuted": true
+  },
+  "modes": {
+    "install": {
+      "passed": true,
+      "commands": 1,
+      "startedAt": "2026-10-24T11:43:14.277Z",
+      "completedAt": "2026-10-24T11:43:44.315Z",
+      "receiptSha256": "e4fb0aaebc63d1b2e74687da63e5dbe2124dd79ae4187eb1d49cee49f230c672",
+      "logSha256": "e84fba00d8b811bde0b1e8bffe97933d658664fc05ef027f3a7f557b74843061",
+      "checks": {
+        "wrapperReconstructsWholeLog": true,
+        "commandsCountMatches": true,
+        "outerHashMatches": true,
+        "passed": true,
+        "sourceStable": true,
+        "installedStable": true,
+        "allCommandChecks": true
+      },
+      "commandsReviewed": [
+        {
+          "label": "fresh-npm-ci",
+          "argv": [
+            "npm",
+            "ci",
+            "--ignore-scripts"
+          ],
+          "cwd": "/workspace/apps/oto-app",
+          "exitCode": 0,
+          "signal": null,
+          "logSha256": "e47b740677e6d1182c663d0126cc96065c82625674be7b53497dd2bb9a4b1c1f",
+          "checks": {
+            "matchingLabel": true,
+            "matchingFooter": true,
+            "innerHashMatches": true,
+            "exitZero": true,
+            "sourceStable": true,
+            "shellGuard": true,
+            "installedStable": true
+          }
+        }
+      ]
+    },
+    "ratchet": {
+      "passed": true,
+      "commands": 1,
+      "startedAt": "2026-10-24T11:44:06.874Z",
+      "completedAt": "2026-10-24T11:45:04.609Z",
+      "receiptSha256": "7dbb91387d6a6d5bbec320332db0586f2bb70c29a0684d10297a25ced7294dd4",
+      "logSha256": "dc40074bce089091ed1fc74bdd490d81d3d20bfc62885674d250a577743e4601",
+      "checks": {
+        "wrapperReconstructsWholeLog": true,
+        "commandsCountMatches": true,
+        "outerHashMatches": true,
+        "passed": true,
+        "sourceStable": true,
+        "installedStable": true,
+        "allCommandChecks": true
+      },
+      "commandsReviewed": [
+        {
+          "label": "whole-compiler",
+          "argv": [
+            "npm",
+            "run",
+            "check:ratchet"
+          ],
+          "cwd": "/workspace/apps/oto-app",
+          "exitCode": 0,
+          "signal": null,
+          "logSha256": "158a43b55d91409049ed08dc03b7b35cfb3e3e15cc6cea78206921c5ed524caf",
+          "checks": {
+            "matchingLabel": true,
+            "matchingFooter": true,
+            "innerHashMatches": true,
+            "exitZero": true,
+            "sourceStable": true,
+            "shellGuard": true,
+            "installedStable": true
+          }
+        }
+      ]
+    },
+    "full": {
+      "passed": true,
+      "commands": 29,
+      "startedAt": "2026-10-24T11:45:38.585Z",
+      "completedAt": "2026-10-24T11:47:26.148Z",
+      "receiptSha256": "1a6a8def9dbcb49fa11cdc08dcc2884df0d4491949baed5d84cab7b63da2d831",
+      "logSha256": "2de62506c39d103583d53e87ba74d855e6c8b78ae7b4d7d5687a5144e1fcdbd8",
+      "checks": {
+        "wrapperReconstructsWholeLog": true,
+        "commandsCountMatches": true,
+        "outerHashMatches": true,
+        "passed": true,
+        "sourceStable": true,
+        "installedStable": true,
+        "allCommandChecks": true
+      },
+      "commandsReviewed": [
+        {
+          "label": "build",
+          "argv": [
+            "npm",
+            "run",
+            "build"
+          ],
+          "cwd": "/workspace/apps/oto-app",
+          "exitCode": 0,
+          "signal": null,
+          "logSha256": "d2f19eeed1d33498df8699006a0c3b73c019d4671ca895573b62109bb9ce4489",
+          "checks": {
+            "matchingLabel": true,
+            "matchingFooter": true,
+            "innerHashMatches": true,
+            "exitZero": true,
+            "sourceStable": true,
+            "shellGuard": true,
+            "installedStable": true
+          }
+        },
+        {
+          "label": "platform-sign-on.test.ts",
+          "argv": [
+            "node",
+            "node_modules/tsx/dist/cli.mjs",
+            "tests/platform-sign-on.test.ts"
+          ],
+          "cwd": "/workspace/apps/oto-app",
+          "exitCode": 0,
+          "signal": null,
+          "logSha256": "d20db9aca5be6f43f4df17171a0a6f372affe2e3e7836f337c10fee30f43560a",
+          "checks": {
+            "matchingLabel": true,
+            "matchingFooter": true,
+            "innerHashMatches": true,
+            "exitZero": true,
+            "sourceStable": true,
+            "shellGuard": true,
+            "installedStable": true
+          }
+        },
+        {
+          "label": "handoff-target.check.ts",
+          "argv": [
+            "node",
+            "node_modules/tsx/dist/cli.mjs",
+            "tests/handoff-target.check.ts"
+          ],
+          "cwd": "/workspace/apps/oto-app",
+          "exitCode": 0,
+          "signal": null,
+          "logSha256": "395d9bb1c0f3629f3f74c9d589abf527dcce0131df81325f5f21309d9dd3cad7",
+          "checks": {
+            "matchingLabel": true,
+            "matchingFooter": true,
+            "innerHashMatches": true,
+            "exitZero": true,
+            "sourceStable": true,
+            "shellGuard": true,
+            "installedStable": true
+          }
+        },
+        {
+          "label": "payroll-cutover.check.ts",
+          "argv": [
+            "node",
+            "node_modules/tsx/dist/cli.mjs",
+            "tests/payroll-cutover.check.ts"
+          ],
+          "cwd": "/workspace/apps/oto-app",
+          "exitCode": 0,
+          "signal": null,
+          "logSha256": "0c90c062a5cb91ee8f64e52110d2155910988f1ee4e6dd4676bfeb32caf1737d",
+          "checks": {
+            "matchingLabel": true,
+            "matchingFooter": true,
+            "innerHashMatches": true,
+            "exitZero": true,
+            "sourceStable": true,
+            "shellGuard": true,
+            "installedStable": true
+          }
+        },
+        {
+          "label": "access-escalation-platform-migrate",
+          "argv": [
+            "node",
+            "node_modules/drizzle-kit/bin.cjs",
+            "migrate"
+          ],
+          "cwd": "/workspace/packages/db",
+          "exitCode": 0,
+          "signal": null,
+          "logSha256": "f82fa48c029b01fb005e5d813fd9653fe498d23f58f3010e4e50a87e871b9544",
+          "checks": {
+            "matchingLabel": true,
+            "matchingFooter": true,
+            "innerHashMatches": true,
+            "exitZero": true,
+            "sourceStable": true,
+            "shellGuard": true,
+            "installedStable": true
+          }
+        },
+        {
+          "label": "access-escalation-app-migrate",
+          "argv": [
+            "node",
+            "script/migrate.mjs"
+          ],
+          "cwd": "/workspace/apps/oto-app",
+          "exitCode": 0,
+          "signal": null,
+          "logSha256": "05a4e1b5107880da190a887491e12ed955f4b38ba224e96c38e5ba2841d3a892",
+          "checks": {
+            "matchingLabel": true,
+            "matchingFooter": true,
+            "innerHashMatches": true,
+            "exitZero": true,
+            "sourceStable": true,
+            "shellGuard": true,
+            "installedStable": true
+          }
+        },
+        {
+          "label": "access-escalation-app-noop",
+          "argv": [
+            "node",
+            "script/migrate.mjs"
+          ],
+          "cwd": "/workspace/apps/oto-app",
+          "exitCode": 0,
+          "signal": null,
+          "logSha256": "d80c998c6bf2079c450010990ab6f244eda8ed40608350ed4198e6af04e75f8c",
+          "checks": {
+            "matchingLabel": true,
+            "matchingFooter": true,
+            "innerHashMatches": true,
+            "exitZero": true,
+            "sourceStable": true,
+            "shellGuard": true,
+            "installedStable": true
+          }
+        },
+        {
+          "label": "access-escalation-access-escalation-0",
+          "argv": [
+            "node",
+            "node_modules/tsx/dist/cli.mjs",
+            "tests/access-escalation.check.ts"
+          ],
+          "cwd": "/workspace/apps/oto-app",
+          "exitCode": 0,
+          "signal": null,
+          "logSha256": "b62bacd9e31ce928e3ee2e1245de2e702bad0744deadd39d9208e838a94cf67c",
+          "checks": {
+            "matchingLabel": true,
+            "matchingFooter": true,
+            "innerHashMatches": true,
+            "exitZero": true,
+            "sourceStable": true,
+            "shellGuard": true,
+            "installedStable": true
+          }
+        },
+        {
+          "label": "named-rights-platform-migrate",
+          "argv": [
+            "node",
+            "node_modules/drizzle-kit/bin.cjs",
+            "migrate"
+          ],
+          "cwd": "/workspace/packages/db",
+          "exitCode": 0,
+          "signal": null,
+          "logSha256": "bc740c637f5f57a068afa875ed47f79194d9c36097b7eff5fa384015c39e6812",
+          "checks": {
+            "matchingLabel": true,
+            "matchingFooter": true,
+            "innerHashMatches": true,
+            "exitZero": true,
+            "sourceStable": true,
+            "shellGuard": true,
+            "installedStable": true
+          }
+        },
+        {
+          "label": "named-rights-app-migrate",
+          "argv": [
+            "node",
+            "script/migrate.mjs"
+          ],
+          "cwd": "/workspace/apps/oto-app",
+          "exitCode": 0,
+          "signal": null,
+          "logSha256": "05a4e1b5107880da190a887491e12ed955f4b38ba224e96c38e5ba2841d3a892",
+          "checks": {
+            "matchingLabel": true,
+            "matchingFooter": true,
+            "innerHashMatches": true,
+            "exitZero": true,
+            "sourceStable": true,
+            "shellGuard": true,
+            "installedStable": true
+          }
+        },
+        {
+          "label": "named-rights-app-noop",
+          "argv": [
+            "node",
+            "script/migrate.mjs"
+          ],
+          "cwd": "/workspace/apps/oto-app",
+          "exitCode": 0,
+          "signal": null,
+          "logSha256": "d80c998c6bf2079c450010990ab6f244eda8ed40608350ed4198e6af04e75f8c",
+          "checks": {
+            "matchingLabel": true,
+            "matchingFooter": true,
+            "innerHashMatches": true,
+            "exitZero": true,
+            "sourceStable": true,
+            "shellGuard": true,
+            "installedStable": true
+          }
+        },
+        {
+          "label": "named-rights-named-rights-0",
+          "argv": [
+            "node",
+            "node_modules/tsx/dist/cli.mjs",
+            "tests/named-rights.check.ts"
+          ],
+          "cwd": "/workspace/apps/oto-app",
+          "exitCode": 0,
+          "signal": null,
+          "logSha256": "300b78d6e03aefa8c9dc4b020c10d4a1e38f9f28f2e63036a511556ff53b874f",
+          "checks": {
+            "matchingLabel": true,
+            "matchingFooter": true,
+            "innerHashMatches": true,
+            "exitZero": true,
+            "sourceStable": true,
+            "shellGuard": true,
+            "installedStable": true
+          }
+        },
+        {
+          "label": "tenant-ownership-platform-migrate",
+          "argv": [
+            "node",
+            "node_modules/drizzle-kit/bin.cjs",
+            "migrate"
+          ],
+          "cwd": "/workspace/packages/db",
+          "exitCode": 0,
+          "signal": null,
+          "logSha256": "f82fa48c029b01fb005e5d813fd9653fe498d23f58f3010e4e50a87e871b9544",
+          "checks": {
+            "matchingLabel": true,
+            "matchingFooter": true,
+            "innerHashMatches": true,
+            "exitZero": true,
+            "sourceStable": true,
+            "shellGuard": true,
+            "installedStable": true
+          }
+        },
+        {
+          "label": "tenant-ownership-app-migrate",
+          "argv": [
+            "node",
+            "script/migrate.mjs"
+          ],
+          "cwd": "/workspace/apps/oto-app",
+          "exitCode": 0,
+          "signal": null,
+          "logSha256": "05a4e1b5107880da190a887491e12ed955f4b38ba224e96c38e5ba2841d3a892",
+          "checks": {
+            "matchingLabel": true,
+            "matchingFooter": true,
+            "innerHashMatches": true,
+            "exitZero": true,
+            "sourceStable": true,
+            "shellGuard": true,
+            "installedStable": true
+          }
+        },
+        {
+          "label": "tenant-ownership-app-noop",
+          "argv": [
+            "node",
+            "script/migrate.mjs"
+          ],
+          "cwd": "/workspace/apps/oto-app",
+          "exitCode": 0,
+          "signal": null,
+          "logSha256": "d80c998c6bf2079c450010990ab6f244eda8ed40608350ed4198e6af04e75f8c",
+          "checks": {
+            "matchingLabel": true,
+            "matchingFooter": true,
+            "innerHashMatches": true,
+            "exitZero": true,
+            "sourceStable": true,
+            "shellGuard": true,
+            "installedStable": true
+          }
+        },
+        {
+          "label": "tenant-ownership-tenant-ownership-0",
+          "argv": [
+            "node",
+            "node_modules/tsx/dist/cli.mjs",
+            "tests/tenant-ownership.check.ts"
+          ],
+          "cwd": "/workspace/apps/oto-app",
+          "exitCode": 0,
+          "signal": null,
+          "logSha256": "945a8aeba45161cfa6d9fd83b8a859109e475a69b77a787855e33a5dc34cf7bd",
+          "checks": {
+            "matchingLabel": true,
+            "matchingFooter": true,
+            "innerHashMatches": true,
+            "exitZero": true,
+            "sourceStable": true,
+            "shellGuard": true,
+            "installedStable": true
+          }
+        },
+        {
+          "label": "leave-balance-reach-platform-migrate",
+          "argv": [
+            "node",
+            "node_modules/drizzle-kit/bin.cjs",
+            "migrate"
+          ],
+          "cwd": "/workspace/packages/db",
+          "exitCode": 0,
+          "signal": null,
+          "logSha256": "e538e4d86c960ac4c4a916200cee2e262cae9379269a0c56297db136c9d6dbd9",
+          "checks": {
+            "matchingLabel": true,
+            "matchingFooter": true,
+            "innerHashMatches": true,
+            "exitZero": true,
+            "sourceStable": true,
+            "shellGuard": true,
+            "installedStable": true
+          }
+        },
+        {
+          "label": "leave-balance-reach-app-migrate",
+          "argv": [
+            "node",
+            "script/migrate.mjs"
+          ],
+          "cwd": "/workspace/apps/oto-app",
+          "exitCode": 0,
+          "signal": null,
+          "logSha256": "05a4e1b5107880da190a887491e12ed955f4b38ba224e96c38e5ba2841d3a892",
+          "checks": {
+            "matchingLabel": true,
+            "matchingFooter": true,
+            "innerHashMatches": true,
+            "exitZero": true,
+            "sourceStable": true,
+            "shellGuard": true,
+            "installedStable": true
+          }
+        },
+        {
+          "label": "leave-balance-reach-app-noop",
+          "argv": [
+            "node",
+            "script/migrate.mjs"
+          ],
+          "cwd": "/workspace/apps/oto-app",
+          "exitCode": 0,
+          "signal": null,
+          "logSha256": "d80c998c6bf2079c450010990ab6f244eda8ed40608350ed4198e6af04e75f8c",
+          "checks": {
+            "matchingLabel": true,
+            "matchingFooter": true,
+            "innerHashMatches": true,
+            "exitZero": true,
+            "sourceStable": true,
+            "shellGuard": true,
+            "installedStable": true
+          }
+        },
+        {
+          "label": "leave-balance-reach-leave-balance-reach-0",
+          "argv": [
+            "node",
+            "node_modules/tsx/dist/cli.mjs",
+            "tests/leave-balance-reach.check.ts"
+          ],
+          "cwd": "/workspace/apps/oto-app",
+          "exitCode": 0,
+          "signal": null,
+          "logSha256": "e5197015abddd03bf41513da6f73941448ccae7b6610e4c131324c37608c0f68",
+          "checks": {
+            "matchingLabel": true,
+            "matchingFooter": true,
+            "innerHashMatches": true,
+            "exitZero": true,
+            "sourceStable": true,
+            "shellGuard": true,
+            "installedStable": true
+          }
+        },
+        {
+          "label": "salary-visibility-platform-migrate",
+          "argv": [
+            "node",
+            "node_modules/drizzle-kit/bin.cjs",
+            "migrate"
+          ],
+          "cwd": "/workspace/packages/db",
+          "exitCode": 0,
+          "signal": null,
+          "logSha256": "5ef13769764b9d55f700427c32b36b2ffaeddd6461bdc34c62d54154bb2bb46f",
+          "checks": {
+            "matchingLabel": true,
+            "matchingFooter": true,
+            "innerHashMatches": true,
+            "exitZero": true,
+            "sourceStable": true,
+            "shellGuard": true,
+            "installedStable": true
+          }
+        },
+        {
+          "label": "salary-visibility-app-migrate",
+          "argv": [
+            "node",
+            "script/migrate.mjs"
+          ],
+          "cwd": "/workspace/apps/oto-app",
+          "exitCode": 0,
+          "signal": null,
+          "logSha256": "05a4e1b5107880da190a887491e12ed955f4b38ba224e96c38e5ba2841d3a892",
+          "checks": {
+            "matchingLabel": true,
+            "matchingFooter": true,
+            "innerHashMatches": true,
+            "exitZero": true,
+            "sourceStable": true,
+            "shellGuard": true,
+            "installedStable": true
+          }
+        },
+        {
+          "label": "salary-visibility-app-noop",
+          "argv": [
+            "node",
+            "script/migrate.mjs"
+          ],
+          "cwd": "/workspace/apps/oto-app",
+          "exitCode": 0,
+          "signal": null,
+          "logSha256": "d80c998c6bf2079c450010990ab6f244eda8ed40608350ed4198e6af04e75f8c",
+          "checks": {
+            "matchingLabel": true,
+            "matchingFooter": true,
+            "innerHashMatches": true,
+            "exitZero": true,
+            "sourceStable": true,
+            "shellGuard": true,
+            "installedStable": true
+          }
+        },
+        {
+          "label": "salary-visibility-salary-visibility-0",
+          "argv": [
+            "node",
+            "node_modules/tsx/dist/cli.mjs",
+            "tests/salary-visibility.check.ts"
+          ],
+          "cwd": "/workspace/apps/oto-app",
+          "exitCode": 0,
+          "signal": null,
+          "logSha256": "ced94b015572b06abc33ba1cd8f837c750f88879f12b51e0844de6b206d64808",
+          "checks": {
+            "matchingLabel": true,
+            "matchingFooter": true,
+            "innerHashMatches": true,
+            "exitZero": true,
+            "sourceStable": true,
+            "shellGuard": true,
+            "installedStable": true
+          }
+        },
+        {
+          "label": "salary-visibility-salary-visibility-1",
+          "argv": [
+            "node",
+            "node_modules/tsx/dist/cli.mjs",
+            "tests/payroll-config.check.ts"
+          ],
+          "cwd": "/workspace/apps/oto-app",
+          "exitCode": 0,
+          "signal": null,
+          "logSha256": "5a00cce96805f960b0a44084015523a9ed4c2b1f79093f4deaaab0db4ee19f6e",
+          "checks": {
+            "matchingLabel": true,
+            "matchingFooter": true,
+            "innerHashMatches": true,
+            "exitZero": true,
+            "sourceStable": true,
+            "shellGuard": true,
+            "installedStable": true
+          }
+        },
+        {
+          "label": "administration-platform-migrate",
+          "argv": [
+            "node",
+            "node_modules/drizzle-kit/bin.cjs",
+            "migrate"
+          ],
+          "cwd": "/workspace/packages/db",
+          "exitCode": 0,
+          "signal": null,
+          "logSha256": "e538e4d86c960ac4c4a916200cee2e262cae9379269a0c56297db136c9d6dbd9",
+          "checks": {
+            "matchingLabel": true,
+            "matchingFooter": true,
+            "innerHashMatches": true,
+            "exitZero": true,
+            "sourceStable": true,
+            "shellGuard": true,
+            "installedStable": true
+          }
+        },
+        {
+          "label": "administration-app-migrate",
+          "argv": [
+            "node",
+            "script/migrate.mjs"
+          ],
+          "cwd": "/workspace/apps/oto-app",
+          "exitCode": 0,
+          "signal": null,
+          "logSha256": "05a4e1b5107880da190a887491e12ed955f4b38ba224e96c38e5ba2841d3a892",
+          "checks": {
+            "matchingLabel": true,
+            "matchingFooter": true,
+            "innerHashMatches": true,
+            "exitZero": true,
+            "sourceStable": true,
+            "shellGuard": true,
+            "installedStable": true
+          }
+        },
+        {
+          "label": "administration-app-noop",
+          "argv": [
+            "node",
+            "script/migrate.mjs"
+          ],
+          "cwd": "/workspace/apps/oto-app",
+          "exitCode": 0,
+          "signal": null,
+          "logSha256": "d80c998c6bf2079c450010990ab6f244eda8ed40608350ed4198e6af04e75f8c",
+          "checks": {
+            "matchingLabel": true,
+            "matchingFooter": true,
+            "innerHashMatches": true,
+            "exitZero": true,
+            "sourceStable": true,
+            "shellGuard": true,
+            "installedStable": true
+          }
+        },
+        {
+          "label": "administration-administration-0",
+          "argv": [
+            "node",
+            "node_modules/tsx/dist/cli.mjs",
+            "tests/administration.check.ts"
+          ],
+          "cwd": "/workspace/apps/oto-app",
+          "exitCode": 0,
+          "signal": null,
+          "logSha256": "0102ae91f084c31954aa7f4064d440ede03b8db993c2b2e930b08d56cdec6fdf",
+          "checks": {
+            "matchingLabel": true,
+            "matchingFooter": true,
+            "innerHashMatches": true,
+            "exitZero": true,
+            "sourceStable": true,
+            "shellGuard": true,
+            "installedStable": true
+          }
+        }
+      ]
+    },
+    "restore": {
+      "passed": true,
+      "commands": 1,
+      "startedAt": "2026-10-24T11:49:23.102Z",
+      "completedAt": "2026-10-24T11:49:35.116Z",
+      "receiptSha256": "e6435763c44cf6aa292e28ef27e75757b341043904db1769a1dc2218259dd2d0",
+      "logSha256": "da93c37384a04774fe97f3a52737ff1fef8ecb7dd07d6d25dbb599933ba4b5bc",
+      "checks": {
+        "wrapperReconstructsWholeLog": true,
+        "commandsCountMatches": true,
+        "outerHashMatches": true,
+        "passed": true,
+        "sourceStable": true,
+        "installedStable": true,
+        "allCommandChecks": true
+      },
+      "commandsReviewed": [
+        {
+          "label": "actual-restore-replay",
+          "argv": [
+            "npm",
+            "run",
+            "restore:rehearse"
+          ],
+          "cwd": "/workspace/apps/oto-app",
+          "exitCode": 0,
+          "signal": null,
+          "logSha256": "75e3b5e2e7ceaa88ba1d6cedd1619f7b85726090f817d7869f1229cb2ec26a1e",
+          "checks": {
+            "matchingLabel": true,
+            "matchingFooter": true,
+            "innerHashMatches": true,
+            "exitZero": true,
+            "sourceStable": true,
+            "shellGuard": true,
+            "installedStable": true
+          }
+        }
+      ]
+    }
+  },
+  "fullApp": {
+    "stages": 8,
+    "commands": 29,
+    "buildPassed": true,
+    "buildWarnings": [
+      "Existing stale Browserslist database notice",
+      "Existing PostCSS from-option warning",
+      "Existing chunk-size warning",
+      "Existing duplicate assignedRoleId and assignedDepartmentId object keys"
+    ],
+    "platformSignOn": true,
+    "handoffPrograms": 8,
+    "handoffChecks": 48,
+    "handoffGroupResults": [
+      {
+        "passed": true,
+        "checks": 14,
+        "database": false,
+        "network": false
+      },
+      {
+        "passed": true,
+        "checks": 5,
+        "database": false,
+        "network": false
+      },
+      {
+        "passed": true,
+        "checks": 7,
+        "database": false,
+        "network": false
+      },
+      {
+        "passed": true,
+        "checks": 2,
+        "database": false,
+        "network": false
+      },
+      {
+        "passed": true,
+        "checks": 2,
+        "database": false,
+        "network": false
+      },
+      {
+        "passed": true,
+        "checks": 5,
+        "database": false,
+        "network": false
+      },
+      {
+        "passed": true,
+        "checks": 4,
+        "database": false,
+        "network": false
+      },
+      {
+        "suite": "platform-salary-permission",
+        "passed": 9,
+        "failed": 0,
+        "database": false,
+        "network": false,
+        "clientFunctionsExecuted": true
+      },
+      {
+        "suite": "platform-role-mapping",
+        "programs": 8,
+        "passed": true
+      }
+    ],
+    "payrollCutover": 8,
+    "accessEscalation": 22,
+    "namedRights": 16,
+    "tenantOwnership": 34,
+    "leaveBalanceReach": 18,
+    "salaryVisibility": 72,
+    "payrollConfig": 132,
+    "administration": {
+      "requiredChecks": 15,
+      "results": {
+        "userScopeDefaultsSingle": true,
+        "people": true,
+        "legacyPlacement": false,
+        "anonymousRateAdministration": false,
+        "standingArrangements": true,
+        "permissions": true,
+        "forms": true,
+        "vouchers": true,
+        "userScopeDefaults": true,
+        "dataAdmin": true,
+        "softLinks": true,
+        "privateReferences": true,
+        "presence": true,
+        "sharedRoleMetadataOwnerOnly": false,
+        "roles": true,
+        "camp": true,
+        "payroll": true,
+        "advanceRepayment": true
+      },
+      "failures": {},
+      "falseObservationFlags": [
+        "legacyPlacement",
+        "anonymousRateAdministration",
+        "sharedRoleMetadataOwnerOnly"
+      ],
+      "note": "The15 required checks and command assertions passed. Three observational false flags are not relabeled as passed assertions."
+    },
+    "databases": [
+      {
+        "name": "zz_test_631_oto_0956a7880eb9_access_escalation",
+        "stage": "access-escalation",
+        "created": true,
+        "removed": true
+      },
+      {
+        "name": "zz_test_631_oto_0767c8c94169_named_rights",
+        "stage": "named-rights",
+        "created": true,
+        "removed": true
+      },
+      {
+        "name": "zz_test_631_oto_573e7409eb59_tenant_ownership",
+        "stage": "tenant-ownership",
+        "created": true,
+        "removed": true
+      },
+      {
+        "name": "zz_test_631_oto_cd05b86743a7_leave_balance_reach",
+        "stage": "leave-balance-reach",
+        "created": true,
+        "removed": true
+      },
+      {
+        "name": "zz_test_631_oto_c61ee7adf77d_salary_visibility",
+        "stage": "salary-visibility",
+        "created": true,
+        "removed": true
+      },
+      {
+        "name": "zz_test_631_oto_340357458c6f_administration",
+        "stage": "administration",
+        "created": true,
+        "removed": true
+      }
+    ]
+  },
+  "restore": {
+    "input": "committed baseline",
+    "inputSha256": "76554fc3d6363829688ea17cbe997961fd27196bd90d34c20f580d2c69dd5b7c",
+    "sourceTables": 184,
+    "sourceRows": 1108,
+    "platformMigrations": 87,
+    "appMigrations": 30,
+    "replays": 2,
+    "sourceCounts": [
+      {
+        "table": "access_items",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "access_policies",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "access_view_logs",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "activity_log",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "advisor_attendance_corrections",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "advisor_attendance_sessions",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "advisor_enrollment_sessions",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "announcements",
+        "baseline": "2",
+        "first": "2",
+        "second": "2"
+      },
+      {
+        "table": "ask_oto_messages",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "ask_oto_threads",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "asset_catalog",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "attention_items",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "auth_otp_events",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "auth_rate_limits",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "auth_reset_tokens",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "beo_assignment_targets",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "beo_bar_plans",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "beo_entertainment_assignments",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "beo_entertainment_items",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "beo_entertainment_options",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "beo_entertainment_selections",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "beo_event_billing",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "beo_kitchen_plans",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "beo_locations",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "beo_package_snapshot_items",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "beo_package_snapshots",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "beo_party_host_assignments",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "beo_set_menu_selections",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "beo_set_menu_templates",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "beo_setup_item_options",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "beo_setup_items",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "beo_setup_plans",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "beo_timeline_items",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "birthday_package_templates",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "branch_events",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "branches",
+        "baseline": "3",
+        "first": "3",
+        "second": "3"
+      },
+      {
+        "table": "camp_attendance",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "camp_registrations",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "cash_daily",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "cash_txns",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "casual_workers",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "checklist_attachments",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "checklist_run_items",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "checklist_runs",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "checklist_template_items",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "checklist_templates",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "contract_instances",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "core_events",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "coverage_rules",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "department_branch_assignments",
+        "baseline": "21",
+        "first": "21",
+        "second": "21"
+      },
+      {
+        "table": "departments",
+        "baseline": "11",
+        "first": "11",
+        "second": "11"
+      },
+      {
+        "table": "directory_cache",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "dropoff_checkins",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "dropoff_form_versions",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "dropoff_forms",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "duty_blocks",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "duty_types",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "employee_assets",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "employee_changes",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "employee_documents",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "employee_letters",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "employee_offboarding",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "employee_payroll_profiles",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "employee_presence",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "employee_role_availability",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "employee_roles",
+        "baseline": "16",
+        "first": "16",
+        "second": "16"
+      },
+      {
+        "table": "employee_time_off",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "employees",
+        "baseline": "10",
+        "first": "10",
+        "second": "10"
+      },
+      {
+        "table": "enrollment_sessions",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "entertainment_package_templates",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "escalations",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "event_line_item_templates",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "event_line_items",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "event_statuses",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "files",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "fix_comments",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "fix_reports",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "fix_supplier_tokens",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "guest_invite_tokens",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "hiring_media_assets",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "i18n_translations",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "invitation_designs",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "issues",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "kb_article_versions",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "kb_articles",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "kiosk_auth_attempts",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "kiosk_codes",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "kiosk_devices",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "kiosk_sessions",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "knowledge_chunks",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "knowledge_files",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "leave_policies",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "location_branch_access",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "locations",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "module_completions",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "nanny_reservations",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "notifications",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "offboarding_checklist",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "operators",
+        "baseline": "1",
+        "first": "1",
+        "second": "1"
+      },
+      {
+        "table": "org_nodes",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "package_line_item_templates",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "parent_message_logs",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "parent_portal_tokens",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "payroll_day_reconciliations",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "payroll_employee_summaries",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "payroll_exception_approvals",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "payroll_exceptions",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "payroll_line_items",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "payroll_periods",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "payroll_policy_settings",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "payroll_runs",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "payslips",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "people",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "pl_facts",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "policy_documents",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "public_holidays",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "quiz_attempts",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "quiz_questions",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "role_branch_assignments",
+        "baseline": "24",
+        "first": "24",
+        "second": "24"
+      },
+      {
+        "table": "role_department_map",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "roles",
+        "baseline": "12",
+        "first": "12",
+        "second": "12"
+      },
+      {
+        "table": "rsvp_entries",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "salary_advance_repayments",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "salary_advances",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "schedule_assignments",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "schedule_audit_log",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "schedule_shift_breaks",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "schedule_shift_row_roles",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "schedule_shift_rows",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "schedule_template_assignments",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "schedule_template_duty_blocks",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "schedule_template_row_roles",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "schedule_template_rows",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "schedule_template_time_off",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "schedule_templates",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "schedule_week_plans",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "service_checkins",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "session",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "settings",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "shift_groups",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "shift_required_roles",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "shifts",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "sick_leave_policies",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "sop_articles",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "staff_cost_allocations",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "statutory_calculation_results",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "statutory_rule_sets",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "studio_event_bookings",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "studio_event_details",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "studio_event_form_schema",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "studio_event_info_blocks",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "studio_event_tasks",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "task_activities",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "task_assignments",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "task_attachments",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "task_checklist_items",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "task_comments",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "task_completions",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "task_questions",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "task_template_questions",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "task_templates",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "tasks",
+        "baseline": "49",
+        "first": "49",
+        "second": "49"
+      },
+      {
+        "table": "template_assignments",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "templates",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "tenants",
+        "baseline": "1",
+        "first": "1",
+        "second": "1"
+      },
+      {
+        "table": "time_adjustments",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "time_entries",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "time_events",
+        "baseline": "958",
+        "first": "958",
+        "second": "958"
+      },
+      {
+        "table": "timekeeping_issues",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "training_modules",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "translation_jobs",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "troubleshooting_flows",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "troubleshooting_nodes",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "user_branch_access",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "user_module_overrides",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "user_vouchers",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "users",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "voucher_redemptions",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "voucher_templates",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "xero_reports_raw",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "xero_sync_runs",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "xero_tokens",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "xero_tracking_categories",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      },
+      {
+        "table": "xero_tracking_options",
+        "baseline": "0",
+        "first": "0",
+        "second": "0"
+      }
+    ],
+    "addedTables": [
+      {
+        "table": "camp_family_challenges",
+        "count": "0"
+      },
+      {
+        "table": "checklist_template_assignees",
+        "count": "0"
+      },
+      {
+        "table": "directory_clients",
+        "count": "0"
+      },
+      {
+        "table": "employee_action_receipts",
+        "count": "0"
+      },
+      {
+        "table": "employee_leave_balance_openings",
+        "count": "40"
+      },
+      {
+        "table": "employee_leave_overrides",
+        "count": "0"
+      },
+      {
+        "table": "event_attendee_checkins",
+        "count": "0"
+      },
+      {
+        "table": "event_attendees",
+        "count": "0"
+      },
+      {
+        "table": "leave_types",
+        "count": "7"
+      },
+      {
+        "table": "payroll_branch_details_versions",
+        "count": "0"
+      },
+      {
+        "table": "payroll_ewf_remittances",
+        "count": "0"
+      },
+      {
+        "table": "payroll_ewf_settings_versions",
+        "count": "0"
+      },
+      {
+        "table": "payroll_incentive_assignments",
+        "count": "0"
+      },
+      {
+        "table": "payroll_incentive_rule_versions",
+        "count": "0"
+      },
+      {
+        "table": "payroll_incentive_rules",
+        "count": "0"
+      },
+      {
+        "table": "payroll_leave_valuations",
+        "count": "0"
+      },
+      {
+        "table": "payroll_month_input_changes",
+        "count": "0"
+      },
+      {
+        "table": "payroll_month_inputs",
+        "count": "0"
+      },
+      {
+        "table": "payroll_month_runs",
+        "count": "0"
+      },
+      {
+        "table": "payroll_offboarding",
+        "count": "0"
+      },
+      {
+        "table": "payroll_ot_bank_bookings",
+        "count": "0"
+      },
+      {
+        "table": "payroll_output_files",
+        "count": "0"
+      },
+      {
+        "table": "payroll_paying_accounts",
+        "count": "0"
+      },
+      {
+        "table": "payroll_paying_entities",
+        "count": "0"
+      },
+      {
+        "table": "payroll_profile_advances",
+        "count": "0"
+      },
+      {
+        "table": "payroll_profile_allocations",
+        "count": "0"
+      },
+      {
+        "table": "payroll_profile_changes",
+        "count": "0"
+      },
+      {
+        "table": "payroll_profile_separate_payments",
+        "count": "0"
+      },
+      {
+        "table": "payroll_profiles",
+        "count": "0"
+      },
+      {
+        "table": "payroll_revenue_streams",
+        "count": "0"
+      },
+      {
+        "table": "payroll_rule_lists",
+        "count": "0"
+      },
+      {
+        "table": "payroll_run_attendance_reviews",
+        "count": "0"
+      },
+      {
+        "table": "payroll_run_audit",
+        "count": "0"
+      },
+      {
+        "table": "payroll_run_lines",
+        "count": "0"
+      },
+      {
+        "table": "payroll_run_manual_lines",
+        "count": "0"
+      },
+      {
+        "table": "payroll_run_overrides",
+        "count": "0"
+      },
+      {
+        "table": "payroll_run_overtime_decisions",
+        "count": "0"
+      },
+      {
+        "table": "payroll_run_snapshots",
+        "count": "0"
+      },
+      {
+        "table": "payroll_run_third_party_approvals",
+        "count": "0"
+      },
+      {
+        "table": "payroll_run_versions",
+        "count": "0"
+      },
+      {
+        "table": "payroll_service_policies",
+        "count": "0"
+      },
+      {
+        "table": "payroll_statutory_audit",
+        "count": "0"
+      },
+      {
+        "table": "payroll_statutory_documents",
+        "count": "0"
+      },
+      {
+        "table": "payroll_statutory_filings",
+        "count": "0"
+      },
+      {
+        "table": "presence_notification_deliveries",
+        "count": "0"
+      },
+      {
+        "table": "qa_analysis_attempts",
+        "count": "0"
+      },
+      {
+        "table": "qa_report_attachments",
+        "count": "0"
+      },
+      {
+        "table": "qa_report_messages",
+        "count": "0"
+      },
+      {
+        "table": "qa_reports",
+        "count": "0"
+      },
+      {
+        "table": "sop_article_revisions",
+        "count": "0"
+      },
+      {
+        "table": "user_preferences",
+        "count": "0"
+      }
+    ],
+    "addedTablesCount": 51,
+    "views": {
+      "children": "0",
+      "department_branches": "21",
+      "departments": "11",
+      "employee_departments": "10",
+      "employees": "10",
+      "event_attendance": "0",
+      "event_attendees": "0",
+      "events": "0"
+    },
+    "migrationRows": [
+      {
+        "hash": "76554fc3d6363829688ea17cbe997961fd27196bd90d34c20f580d2c69dd5b7c",
+        "created_at": "1789888010378"
+      },
+      {
+        "hash": "c895cd7c872b5af74e78da5c59aadf8328d3a1b0fc82d459e26ca5905c05e64e",
+        "created_at": "1789888049933"
+      },
+      {
+        "hash": "eaa0f555f30fb04a704979d8061c4c38ec990c5e8c0dda08c67c1ea13b165ffb",
+        "created_at": "1790138278147"
+      },
+      {
+        "hash": "48a6571c1deaa90e21e48a92b7962ee64122f2d7271def6b1861c649efa7d2a0",
+        "created_at": "1791349497533"
+      },
+      {
+        "hash": "0871575f54ca99f9420da2522b351067283ae2def408aa817e34cd6054c7e5ac",
+        "created_at": "1791349499488"
+      },
+      {
+        "hash": "c3015cea6babf2f1f8f3f11d9350d932e93f1f98aba9556863db5d93d7975945",
+        "created_at": "1791440485239"
+      },
+      {
+        "hash": "e2f9c20269d7a508c636e8bc2b84e11ac5f82418df98890fc70b894e5d1e1225",
+        "created_at": "1791474702189"
+      },
+      {
+        "hash": "7c0408d7329f4d19ff26914f0eeaa0d8e855dc20f98f7eba6412279ba40b1a18",
+        "created_at": "1791482998619"
+      },
+      {
+        "hash": "f02a04fec5dc92c6d158bed0b5d15572a938495354dab67bbb31f8c080b87992",
+        "created_at": "1791500483042"
+      },
+      {
+        "hash": "0c0627113533e9acabbda48d47695af7fa199e2571556fdc518d3b4244c7b7e2",
+        "created_at": "1791808258997"
+      },
+      {
+        "hash": "2bd03a63db3272c274300ee17fbe894d5e016a0f51ef393391bca9705f1640ca",
+        "created_at": "1791808614565"
+      },
+      {
+        "hash": "324d884d14b06c41c0d15921e8402e35b5e36813abb1f4969d36f10d5d9a0346",
+        "created_at": "1791833804588"
+      },
+      {
+        "hash": "a5980f80052045d762832e463d9028833d241a28b7af6810b7b7f5574cd672f9",
+        "created_at": "1791833821551"
+      },
+      {
+        "hash": "d3176bfda1115535a44cd20391856e2cbf8d99e240ba1b386518f67fa71984ef",
+        "created_at": "1791833838143"
+      },
+      {
+        "hash": "73b32a634d9336e07ce44aa2b4cfb97ffe69bea8a14cf6ae19c143e857ccfc83",
+        "created_at": "1791833854040"
+      },
+      {
+        "hash": "d29df82b9a5e3d5fe88964fe9e609660f94b642c1dcf5966582318b0bd0409a1",
+        "created_at": "1791834149683"
+      },
+      {
+        "hash": "75d9274b247e7f8aa6572929937d50986e66135ba0a9aff9f2229d378f452d0b",
+        "created_at": "1792313768721"
+      },
+      {
+        "hash": "3e371d8b579ca923089640019aac454ba2a0baef28030d1d577ca2cba65bc7c4",
+        "created_at": "1792363082631"
+      },
+      {
+        "hash": "1c39ee0ab4ab94388b444193c6113e3725672f101b7d2b48c469c212afc90391",
+        "created_at": "1792366254780"
+      },
+      {
+        "hash": "595d38d768d1239653a6e11e8b3790650ce111924c73e5477e8b584a759c887e",
+        "created_at": "1792366259024"
+      },
+      {
+        "hash": "fb41d932a711f9cba5f83e038866163a5a1fde0e15619b9fad70f0eefd5c66d6",
+        "created_at": "1792389954627"
+      },
+      {
+        "hash": "144e7e84b0970f21ed486279bf1dcf86612183d19215d9bc5492d0371075c60f",
+        "created_at": "1792390074707"
+      },
+      {
+        "hash": "5aede6b55203a0d32720e103f0135e1791d0a098fa7f688f453f49f1b98b5820",
+        "created_at": "1792409137901"
+      },
+      {
+        "hash": "c1aec52a1b2c5e832a10560be201f37770c726987962c14ed35362148ad2b9fe",
+        "created_at": "1792409437843"
+      },
+      {
+        "hash": "dbe543be140473a12039e036024f2f6128a581e2411b31bb01bfc4f0c6b1c4bd",
+        "created_at": "1792416726951"
+      },
+      {
+        "hash": "c3acfadcbf033ca8a4b67d240a4ada839091636fd861fb26a5342a40414b0eda",
+        "created_at": "1792420403461"
+      },
+      {
+        "hash": "a6f0f7cd7daab24cd401cecffccab386323b5cc8eb1481fae0c9a1dd417a814d",
+        "created_at": "1792652552993"
+      },
+      {
+        "hash": "71cfb9254cc7d3c8b3befcf7d714938feb79859b842603ddc8984e80a2b20f73",
+        "created_at": "1792652612993"
+      },
+      {
+        "hash": "0b3878921fb9a6f6fc8baa88f1a6c74ec259d4f535426f2ae70bf09deaa67aa4",
+        "created_at": "1792773345454"
+      },
+      {
+        "hash": "2071f6d08724079ccdd8034db3df5834d2720155d05658e9d22a4c8a051dbb46",
+        "created_at": "1792831817751"
+      }
+    ],
+    "rehearsalDatabasesBefore": [],
+    "rehearsalDatabasesAfter": [],
+    "cleanup": "complete"
+  },
+  "seed": {
+    "checks": {
+      "redActualFailure": true,
+      "redLogHash": true,
+      "redSourceManifest": true,
+      "redArchiveHash": true,
+      "redTestArchived": true,
+      "redSeedArchived": true,
+      "r1BodyUnchanged": true,
+      "currentSevenCases": true,
+      "currentTestInFinalManifest": true,
+      "currentSeedInFinalManifest": true,
+      "greenActualPass": true,
+      "greenLogHash": true,
+      "productionFixPresent": true
+    },
+    "redReceiptSha256": "d404a3b7c1bbba265e763d32f27b7a9004e85b3788574071a059af3e67e2e115",
+    "redLogSha256": "f9897690e050d14877b00f980c299aa0c81b2be3dcfc2a49c3af9b2389cceace",
+    "redSourceManifestSha256": "4f2c6d18bf5c8c47768349af767bc72b49bfaeafa47be3eb6aceca777c145170",
+    "redArchivePath": "C:/w/admin631-local/source-1792833547344.tar",
+    "redArchiveSha256": "a32197e5e8e81362a6d7980f8768bd85c027b78a9b40cc894c6c6a51201c3667",
+    "redArchiveMetadataSha256": "cb5c13785840347fe6e74937eaf2fcdbe6414508e28fd87da9c8107685f66244",
+    "redTestSha256": "31f0648e7178590c02f512986274ee3e9c733dde00ab8f56f8e58cc3602a4ffd",
+    "redSeedSha256": "489bab5031dbdacf12f802f1a53c0f0292e9f3cd8837576fb72a8dda9e8ecc4b",
+    "currentTestSha256": "63dbdf727f7c25200a12c38cbb80e0c52290ab0070cbe2a7a00bdf56b395b656",
+    "currentSeedSha256": "0e951214c874784d0d43afeeef32eeda01aa2554b4440e7928e386e134973ee8",
+    "r1BodySha256": "d2708d28d4bd499aec5b73ff8606b91745fd4f7a7484b0a915ba09be61da9c78",
+    "greenReceiptSha256": "d1830c7d78439f42dff3e58043225e2cc7de4b5c63c058ad173792eba23c8b5f",
+    "greenLogSha256": "8792d5bddb047bc0733c1f9a8e74549f6e9353eb131ec492e53bf9ab042ac499",
+    "actualRedCases": 1,
+    "currentGreenCases": 7,
+    "meaning": "The original exact R1 regression and all its assertions are retained in the7-case suite. Its actual earlier failure remains hash-bound to the pre-fix seed and original archive. The current frozen source passes all7. This review did not revert/reexecute the production patch; six additional fence cases are not claimed to have failed on old source."
+  },
+  "inputHashes": {
+    "manifestSha256": "d7529fbcaed0acd681a83707e62217bff7b47567e9e2c81ae5a97f69946418cd",
+    "dependenciesSha256": "f9cdec0d1c9af87316b7572b06f4d51dd92403ff6abb3e3e223da3b02c47de95",
+    "runnerSha256": "f53bdaba34bd0e853d86813d4fcc15925e59d0766cb79f14fb712c9506d77bc0",
+    "compilerReviewSha256": "32f0a744c139aa27dcd52f136b9966edc9379045e5f35e8d973d6be5c25ce184"
+  },
+  "hostChanges": [],
+  "dependencyChanges": [],
+  "anomalies": [],
+  "limitations": [
+    "This is a review of current captured local app gates on d7529f, not an inherited earlier receipt relabeled as current. Every command and log is independently bound to its source/dependency metadata.",
+    "Every184 pre-existing table count is preserved. Later immutable migrations add 51 tables, including their expected leave seed/opening rows; run1 and run2 complete table inventories/counts, view counts and migration rows are identical. Do not claim the final table inventory equals the184-table baseline.",
+    "Six app-stage databases were removed according to per-stage catalog readbacks; the separate restore rehearsal scratch census returns0to0. Container cleanup is a separate coordinator action.",
+    "Actual source-view8-case/API/DB/other-package gates, landed-SHA CI, deployment, three-view API-role privileges, staging mutation/native screenshot and Jira acceptance are outside this app-runtime review.",
+    "The compiler retains418 inherited diagnostics under its unchanged per-file/code ceiling. False observational administration flags remain explicit.",
+    "No runtime, Git, auth or staging operation was performed by this reviewer. One initial read-only restore-report parser assumed a nested state key and errored before producing any output or file; the corrected parser inspected the actual flat runs structure."
+  ]
+}

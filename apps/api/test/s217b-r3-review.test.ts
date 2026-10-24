@@ -773,13 +773,14 @@ describe('6. the seams — the endpoint and its keys stay where they belong', ()
     expect(naming(['apps/pos/src', 'apps/booth/src', 'apps/console/src', 'apps/launcher/src', ...packages], /directory\/jobs|jobs:run|OTOAPP_JOBS_KEYS/)).toEqual([]);
   });
 
-  it('inside the api only the client, the jobs service and env name them; only the two repositories name otoapp_v', () => {
+  it('inside the api only the client, the jobs service and env name them; only the three read repositories name otoapp_v', () => {
     expect(naming(['apps/api/src'], /directory\/jobs|OTOAPP_JOBS_KEYS/)).toEqual([
       'apps/api/src/env.ts',
       'apps/api/src/services/otoapp-directory.ts',
       'apps/api/src/services/otoapp-jobs.ts',
     ]);
     expect(naming(['apps/api/src'], /otoapp_v/)).toEqual([
+      'apps/api/src/services/otoapp-departments.ts',
       'apps/api/src/services/otoapp-employees.ts',
       'apps/api/src/services/otoapp-events.ts',
     ]);

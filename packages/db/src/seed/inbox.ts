@@ -48,7 +48,7 @@
  * default `off` until a person with `inbox:ai:manage` switches it. Nothing here touches a conversation, a contact or a message — the demo
  * conversations are `./inbox-demo.ts`, and never laid by a deploy.
  */
-import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { and, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
 import {
   INBOX_ROLE_BUNDLES,
   INBOX_ROLE_DESCRIPTIONS,
@@ -310,7 +310,18 @@ async function department(
   operatorId: string,
   branchId: string | null,
   name: string,
+  teamKey: InboxTeamKey,
 ): Promise<{ id: string; created: boolean }> {
+  // A mirrored source may rename the existing department. Keep the canonical
+  // team's owned projection rather than recreating its former seed name.
+  const [linked] = await db.select({ id: s.department.id }).from(s.team)
+    .innerJoin(s.department, and(eq(s.department.id, s.team.departmentId),
+      eq(s.department.operatorId, operatorId), isNotNull(s.department.externalId),
+      branchId === null ? isNull(s.department.branchId) : eq(s.department.branchId, branchId)))
+    .where(and(eq(s.team.operatorId, operatorId), eq(s.team.key, teamKey),
+      branchId === null ? isNull(s.team.branchId) : eq(s.team.branchId, branchId)))
+    .limit(1);
+  if (linked) return { id: linked.id, created: false };
   const [found] = await db
     .select({ id: s.department.id })
     .from(s.department)
@@ -542,8 +553,8 @@ export async function syncInboxSetup(db: Db): Promise<InboxSyncCounts> {
     const before = JSON.stringify(counts);
     await syncRoles(db, operatorId, counts);
 
-    const birthdaysDept = await department(db, operatorId, null, INBOX_DEPARTMENTS.birthdays);
-    const marketingDept = await department(db, operatorId, null, INBOX_DEPARTMENTS.marketing);
+    const birthdaysDept = await department(db, operatorId, null, INBOX_DEPARTMENTS.birthdays, 'birthdays');
+    const marketingDept = await department(db, operatorId, null, INBOX_DEPARTMENTS.marketing, 'marketing');
     counts.departments += Number(birthdaysDept.created) + Number(marketingDept.created);
 
     const teams = [
@@ -567,7 +578,7 @@ export async function syncInboxSetup(db: Db): Promise<InboxSyncCounts> {
       .where(and(eq(s.branch.operatorId, operatorId), isNull(s.branch.archivedAt)))
       .orderBy(s.branch.createdAt);
     for (const [i, br] of branches.entries()) {
-      const reception = await department(db, operatorId, br.id, RECEPTION_DEPARTMENT);
+      const reception = await department(db, operatorId, br.id, RECEPTION_DEPARTMENT, 'reception');
       counts.departments += Number(reception.created);
       teams.push(
         await syncTeam(

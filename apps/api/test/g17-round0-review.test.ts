@@ -1338,6 +1338,8 @@ const SRC = fileURLToPath(new URL('../src', import.meta.url));
 const REPOSITORY = 'services/otoapp-events.ts';
 /** S2-17b round 2: the read-only window on the app's staff, `otoapp_v.employees` only. */
 const EMPLOYEE_REPOSITORY = 'services/otoapp-employees.ts';
+/** SCRUM-631: metadata-only departments and membership, never raw HR tables. */
+const DEPARTMENT_REPOSITORY = 'services/otoapp-departments.ts';
 
 /**
  * S2-17b round 2 (H19) — THE DECLARED SEAMS, the only app tables the
@@ -1462,13 +1464,13 @@ describe('D. H1: the POS reads OTO App events through otoapp_v only', () => {
   });
 
   it('only the repositories name otoapp_v, and no packages/db schema declares an app event table', () => {
-    // S2-17b round 2: the employee repository beside the events one.
+    // Exact app-owned read seams; no other API source may name this schema.
     expect(
       files
         .filter(({ text }) => /\botoapp_v\b/.test(text))
         .map((f) => f.file)
         .sort(),
-    ).toEqual([EMPLOYEE_REPOSITORY, REPOSITORY].sort());
+    ).toEqual([DEPARTMENT_REPOSITORY, EMPLOYEE_REPOSITORY, REPOSITORY].sort());
     const schemaDir = fileURLToPath(new URL('../../../packages/db/src/schema', import.meta.url));
     const events = appEventTables();
     for (const f of readdirSync(schemaDir).filter((n) => n.endsWith('.ts'))) {
@@ -1556,6 +1558,16 @@ describe('D. H1: the POS reads OTO App events through otoapp_v only', () => {
       /\b(insert\s+into|update\s+\w|delete\s+from|truncate|merge\s+into|alter\s+|create\s+|drop\s+)/i,
     );
     expect(repo).not.toMatch(/from '@oto\/db'/);
+  });
+
+  it('the department repository reads only its three metadata views and cannot write or import app tables', () => {
+    const repo = files.find((f) => f.file === DEPARTMENT_REPOSITORY)!.text;
+    const relations = [...repo.matchAll(/\b(?:from|join)\s+([a-z_][a-z0-9_.]*)/gi)].map(match => match[1]!);
+    expect(relations.sort()).toEqual([
+      'otoapp_v.department_branches', 'otoapp_v.departments', 'otoapp_v.employee_departments',
+    ]);
+    expect(repo).not.toMatch(/\b(insert\s+into|update\s+\w|delete\s+from|truncate|merge\s+into|alter\s+|create\s+|drop\s+)/i);
+    expect(repo).not.toMatch(/from '@oto\/db'|\botoapp\./);
   });
 
   it('the repository runs entirely inside a READ ONLY transaction', async () => {

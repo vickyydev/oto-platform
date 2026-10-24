@@ -1009,7 +1009,7 @@ describe('D. H5 — PATCH /me refuses the mirrored fields on a copied row', () =
     expect(res.statusCode, res.body).toBe(200);
   });
 
-  it('no other route writes an employee row: only PATCH /me (which refuses a copy) and the copy itself', () => {
+  it('no other route writes an employee row: only PATCH /me and the copy job with its department helper', () => {
     const src = fileURLToPath(new URL('../src', import.meta.url));
     const walk = (dir: string): string[] =>
       readdirSync(dir).flatMap((name) => {
@@ -1020,7 +1020,9 @@ describe('D. H5 — PATCH /me refuses the mirrored fields on a copied row', () =
       .filter((path) => /\.update\(\s*employee\s*\)/.test(readFileSync(path, 'utf8')))
       .map((path) => relative(src, path).split('\\').join('/'))
       .sort();
-    expect(writers).toEqual(['routes/me.ts', 'services/otoapp-employee-sync.ts']);
+    // SCRUM-631 extends this same copy transaction with the department link;
+    // the helper has no independent route, schedule or employee lifecycle.
+    expect(writers).toEqual(['routes/me.ts', 'services/otoapp-department-sync.ts', 'services/otoapp-employee-sync.ts']);
   });
 });
 

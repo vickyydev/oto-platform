@@ -27,7 +27,8 @@ const ROOT = resolve(APP_DIR, '../..');
 const APP_MIGRATIONS = join(APP_DIR, 'migrations');
 const PLATFORM_MIGRATIONS = join(ROOT, 'packages/db/migrations');
 const BASELINE = join(APP_MIGRATIONS, '0000_otoapp_baseline.sql');
-const VIEWS = ['events', 'event_attendees', 'event_attendance', 'children', 'employees'];
+const VIEWS = ['events', 'event_attendees', 'event_attendance', 'children', 'employees',
+  'departments', 'department_branches', 'employee_departments'];
 
 function tool(name, bin) {
   return bin ? join(bin, `${name}${process.platform === 'win32' ? '.exe' : ''}`) : name;

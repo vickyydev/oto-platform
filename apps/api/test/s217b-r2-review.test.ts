@@ -1224,13 +1224,13 @@ describe('7. H5 and the seams', () => {
     expect(hits).toEqual([]);
   });
 
-  it('only the two repositories name otoapp_v in the api, and no client app names it at all', () => {
+  it('only the three declared read repositories name otoapp_v in the api, and no client app names it at all', () => {
     const apiSrc = src('../src');
     const api = walk(apiSrc)
       .filter((path) => readFileSync(path, 'utf8').includes('otoapp_v'))
       .map((path) => relative(apiSrc, path).split('\\').join('/'))
       .sort();
-    expect(api).toEqual(['services/otoapp-employees.ts', 'services/otoapp-events.ts']);
+    expect(api).toEqual(['services/otoapp-departments.ts', 'services/otoapp-employees.ts', 'services/otoapp-events.ts']);
     for (const app of ['pos', 'console', 'booth', 'launcher']) {
       const dir = src(`../../${app}/src`);
       const named = walk(dir).filter((path) =>

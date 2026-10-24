@@ -1,0 +1,1000 @@
+{
+  "ticket": "SCRUM-631",
+  "reviewedAt": "2026-10-24T11:47:31.034Z",
+  "passed": true,
+  "staging": false,
+  "finalRelease": false,
+  "scope": "Independent read of all current compiler output and immutable captured-source, dependency, install and prior diagnostic bindings; no compiler or runtime was executed by this reviewer.",
+  "sourceManifestSha256": "d7529fbcaed0acd681a83707e62217bff7b47567e9e2c81ae5a97f69946418cd",
+  "sourceFiles": 3716,
+  "dependencyInputs": 28,
+  "wholeRead": true,
+  "fullOutputRead": true,
+  "lines": 664,
+  "readRanges": [
+    [
+      1,
+      110
+    ],
+    [
+      111,
+      220
+    ],
+    [
+      221,
+      330
+    ],
+    [
+      331,
+      440
+    ],
+    [
+      441,
+      550
+    ],
+    [
+      551,
+      664
+    ]
+  ],
+  "actualErrors": 418,
+  "files": 54,
+  "fileCodeBuckets": 109,
+  "exitCode": 0,
+  "signal": null,
+  "startedAt": "2026-10-24T11:44:07.610Z",
+  "completedAt": "2026-10-24T11:45:04.436Z",
+  "checks": {
+    "actualExitZero": true,
+    "exactOwnCommand": true,
+    "outerLogHashMatches": true,
+    "innerCompilerLogHashMatches": true,
+    "previousLogHashMatches": true,
+    "fullCompilerBodyExactlyEqual": true,
+    "priorReviewBinding": true,
+    "exactDiagnostics": true,
+    "noUnclassifiedDiagnostics": true,
+    "everyFileCodeCountExactlyEqual": true,
+    "committedBaselineExactly418": true,
+    "capturedBaselineHashMatchesManifest": true,
+    "sourceStable": true,
+    "dependencyInputsStable": true,
+    "installedMetadataStable": true,
+    "freshInstallPassed": true,
+    "runnerHashBound": true,
+    "isolatedLocalScope": true,
+    "expectedSummaryPresent": true
+  },
+  "increased": [],
+  "reduced": [],
+  "bucketDifferences": [],
+  "counts": {
+    "client/src/components/beo/beo-billing-module.tsx|TS2339": 1,
+    "client/src/components/beo/beo-billing-module.tsx|TS2322": 1,
+    "client/src/components/beo/beo-day-of-view.tsx|TS2322": 2,
+    "client/src/components/beo/beo-day-of-view.tsx|TS2551": 6,
+    "client/src/components/beo/beo-event-editor.tsx|TS2304": 1,
+    "client/src/components/beo/beo-event-editor.tsx|TS2322": 7,
+    "client/src/components/branch-selector.tsx|TS2322": 3,
+    "client/src/components/core/TaskBoard.tsx|TS2322": 3,
+    "client/src/components/ops/TaskDetailSheet.tsx|TS2339": 4,
+    "client/src/components/phone-verification.tsx|TS2339": 1,
+    "client/src/pages/analytics-page.tsx|TS2345": 1,
+    "client/src/pages/auth-page.tsx|TS2353": 1,
+    "client/src/pages/auth-page.tsx|TS2345": 1,
+    "client/src/pages/auth-page.tsx|TS2322": 2,
+    "client/src/pages/branches-page.tsx|TS2339": 1,
+    "client/src/pages/contract-wizard-page.tsx|TS2339": 2,
+    "client/src/pages/contract-wizard-page.tsx|TS2551": 2,
+    "client/src/pages/core/checklist-run.tsx|TS2551": 13,
+    "client/src/pages/core/checklist-run.tsx|TS2561": 4,
+    "client/src/pages/core/checklist-run.tsx|TS2322": 4,
+    "client/src/pages/core/dashboard.tsx|TS2724": 2,
+    "client/src/pages/core/dashboard.tsx|TS2339": 48,
+    "client/src/pages/core/dashboard.tsx|TS2769": 2,
+    "client/src/pages/core/dashboard.tsx|TS2322": 2,
+    "client/src/pages/core/escalate.tsx|TS2339": 10,
+    "client/src/pages/core/escalate.tsx|TS2322": 2,
+    "client/src/pages/core/fix-board.tsx|TS2322": 1,
+    "client/src/pages/core/home.tsx|TS2339": 1,
+    "client/src/pages/core/login.tsx|TS2339": 1,
+    "client/src/pages/core/module-chooser.tsx|TS2339": 2,
+    "client/src/pages/core/report-issue.tsx|TS2339": 1,
+    "client/src/pages/core/report-issue.tsx|TS2322": 2,
+    "client/src/pages/core/rota.tsx|TS2339": 3,
+    "client/src/pages/core/rota.tsx|TS7006": 6,
+    "client/src/pages/core/task-detail.tsx|TS2551": 2,
+    "client/src/pages/core/task-detail.tsx|TS2339": 1,
+    "client/src/pages/core/tasks.tsx|TS2339": 4,
+    "client/src/pages/core/tasks.tsx|TS2741": 1,
+    "client/src/pages/core/tasks.tsx|TS2551": 2,
+    "client/src/pages/core/tasks.tsx|TS2322": 2,
+    "client/src/pages/core/today.tsx|TS2724": 1,
+    "client/src/pages/core/today.tsx|TS7006": 1,
+    "client/src/pages/core/today.tsx|TS2339": 4,
+    "client/src/pages/core/troubleshoot.tsx|TS2724": 2,
+    "client/src/pages/core/troubleshoot.tsx|TS2322": 2,
+    "client/src/pages/core/troubleshoot.tsx|TS2339": 1,
+    "client/src/pages/core_admin/branches.tsx|TS2339": 5,
+    "client/src/pages/core_admin/branches.tsx|TS2322": 2,
+    "client/src/pages/core_admin/events.tsx|TS2339": 1,
+    "client/src/pages/core_admin/index.tsx|TS2322": 1,
+    "client/src/pages/core_admin/users.tsx|TS2339": 8,
+    "client/src/pages/core_admin/users.tsx|TS2551": 4,
+    "client/src/pages/core_admin/users.tsx|TS2322": 2,
+    "client/src/pages/employees-page.tsx|TS2322": 4,
+    "client/src/pages/ops/index.tsx|TS18048": 2,
+    "client/src/pages/org-chart-page.tsx|TS2322": 1,
+    "client/src/pages/scheduling-page.tsx|TS2339": 6,
+    "client/src/pages/scheduling-page.tsx|TS2322": 3,
+    "client/src/pages/scheduling-page.tsx|TS2304": 1,
+    "client/src/pages/studio/camp-detail.tsx|TS2322": 1,
+    "client/src/pages/studio/camp-detail.tsx|TS2353": 1,
+    "client/src/pages/studio/checklists.tsx|TS2339": 2,
+    "client/src/pages/studio/checklists.tsx|TS18048": 2,
+    "client/src/pages/studio/checklists.tsx|TS2304": 2,
+    "client/src/pages/studio/departments.tsx|TS2339": 3,
+    "client/src/pages/studio/event-settings.tsx|TS2322": 1,
+    "client/src/pages/studio/knowledge-base.tsx|TS2322": 1,
+    "client/src/pages/studio/knowledge-base.tsx|TS2345": 1,
+    "client/src/pages/studio/troubleshooting.tsx|TS2724": 1,
+    "client/src/pages/studio/troubleshooting.tsx|TS7006": 1,
+    "client/src/pages/studio/users.tsx|TS2339": 8,
+    "client/src/pages/studio/users.tsx|TS2551": 4,
+    "client/src/pages/verify-phone-page.tsx|TS2339": 1,
+    "server/ai-routes.ts|TS2339": 1,
+    "server/attention-engine.ts|TS2339": 3,
+    "server/attention-engine.ts|TS2367": 1,
+    "server/beo-routes.ts|TS2339": 46,
+    "server/beo-routes.ts|TS2353": 1,
+    "server/beo-routes.ts|TS2769": 1,
+    "server/core/tasksRoutes.ts|TS1117": 2,
+    "server/core/tasksRoutes.ts|TS2488": 6,
+    "server/kiosk-auth.ts|TS2769": 1,
+    "server/lib/batch/utils.ts|TS2339": 2,
+    "server/notification-service.ts|TS2322": 1,
+    "server/parent-experience-routes.ts|TS2349": 1,
+    "server/payroll-reconciliation.ts|TS2322": 1,
+    "server/pdf.ts|TS2339": 2,
+    "server/pdf.ts|TS2345": 1,
+    "server/pdf.ts|TS18048": 1,
+    "server/routes.ts|TS2367": 2,
+    "server/routes.ts|TS2345": 6,
+    "server/routes.ts|TS2339": 35,
+    "server/routes.ts|TS2353": 12,
+    "server/routes.ts|TS2739": 1,
+    "server/routes.ts|TS2322": 10,
+    "server/routes.ts|TS2551": 3,
+    "server/routes.ts|TS2769": 3,
+    "server/routes.ts|TS2820": 1,
+    "server/routes.ts|TS2554": 6,
+    "server/routes.ts|TS2561": 1,
+    "server/storage.ts|TS2322": 6,
+    "server/storage.ts|TS2353": 2,
+    "server/storage.ts|TS2769": 10,
+    "server/storage.ts|TS2339": 1,
+    "server/storage.ts|TS2345": 3,
+    "server/storage.ts|TS2416": 2,
+    "server/voucher-routes.ts|TS2339": 3,
+    "server/voucher-routes.ts|TS2322": 2,
+    "server/xero-routes.ts|TS2345": 3
+  },
+  "perBucketComparison": [
+    {
+      "key": "client/src/components/beo/beo-billing-module.tsx|TS2322",
+      "baseline": 1,
+      "previousLog": 1,
+      "previousReview": 1,
+      "current": 1
+    },
+    {
+      "key": "client/src/components/beo/beo-billing-module.tsx|TS2339",
+      "baseline": 1,
+      "previousLog": 1,
+      "previousReview": 1,
+      "current": 1
+    },
+    {
+      "key": "client/src/components/beo/beo-day-of-view.tsx|TS2322",
+      "baseline": 2,
+      "previousLog": 2,
+      "previousReview": 2,
+      "current": 2
+    },
+    {
+      "key": "client/src/components/beo/beo-day-of-view.tsx|TS2551",
+      "baseline": 6,
+      "previousLog": 6,
+      "previousReview": 6,
+      "current": 6
+    },
+    {
+      "key": "client/src/components/beo/beo-event-editor.tsx|TS2304",
+      "baseline": 1,
+      "previousLog": 1,
+      "previousReview": 1,
+      "current": 1
+    },
+    {
+      "key": "client/src/components/beo/beo-event-editor.tsx|TS2322",
+      "baseline": 7,
+      "previousLog": 7,
+      "previousReview": 7,
+      "current": 7
+    },
+    {
+      "key": "client/src/components/branch-selector.tsx|TS2322",
+      "baseline": 3,
+      "previousLog": 3,
+      "previousReview": 3,
+      "current": 3
+    },
+    {
+      "key": "client/src/components/core/TaskBoard.tsx|TS2322",
+      "baseline": 3,
+      "previousLog": 3,
+      "previousReview": 3,
+      "current": 3
+    },
+    {
+      "key": "client/src/components/ops/TaskDetailSheet.tsx|TS2339",
+      "baseline": 4,
+      "previousLog": 4,
+      "previousReview": 4,
+      "current": 4
+    },
+    {
+      "key": "client/src/components/phone-verification.tsx|TS2339",
+      "baseline": 1,
+      "previousLog": 1,
+      "previousReview": 1,
+      "current": 1
+    },
+    {
+      "key": "client/src/pages/analytics-page.tsx|TS2345",
+      "baseline": 1,
+      "previousLog": 1,
+      "previousReview": 1,
+      "current": 1
+    },
+    {
+      "key": "client/src/pages/auth-page.tsx|TS2322",
+      "baseline": 2,
+      "previousLog": 2,
+      "previousReview": 2,
+      "current": 2
+    },
+    {
+      "key": "client/src/pages/auth-page.tsx|TS2345",
+      "baseline": 1,
+      "previousLog": 1,
+      "previousReview": 1,
+      "current": 1
+    },
+    {
+      "key": "client/src/pages/auth-page.tsx|TS2353",
+      "baseline": 1,
+      "previousLog": 1,
+      "previousReview": 1,
+      "current": 1
+    },
+    {
+      "key": "client/src/pages/branches-page.tsx|TS2339",
+      "baseline": 1,
+      "previousLog": 1,
+      "previousReview": 1,
+      "current": 1
+    },
+    {
+      "key": "client/src/pages/contract-wizard-page.tsx|TS2339",
+      "baseline": 2,
+      "previousLog": 2,
+      "previousReview": 2,
+      "current": 2
+    },
+    {
+      "key": "client/src/pages/contract-wizard-page.tsx|TS2551",
+      "baseline": 2,
+      "previousLog": 2,
+      "previousReview": 2,
+      "current": 2
+    },
+    {
+      "key": "client/src/pages/core/checklist-run.tsx|TS2322",
+      "baseline": 4,
+      "previousLog": 4,
+      "previousReview": 4,
+      "current": 4
+    },
+    {
+      "key": "client/src/pages/core/checklist-run.tsx|TS2551",
+      "baseline": 13,
+      "previousLog": 13,
+      "previousReview": 13,
+      "current": 13
+    },
+    {
+      "key": "client/src/pages/core/checklist-run.tsx|TS2561",
+      "baseline": 4,
+      "previousLog": 4,
+      "previousReview": 4,
+      "current": 4
+    },
+    {
+      "key": "client/src/pages/core/dashboard.tsx|TS2322",
+      "baseline": 2,
+      "previousLog": 2,
+      "previousReview": 2,
+      "current": 2
+    },
+    {
+      "key": "client/src/pages/core/dashboard.tsx|TS2339",
+      "baseline": 48,
+      "previousLog": 48,
+      "previousReview": 48,
+      "current": 48
+    },
+    {
+      "key": "client/src/pages/core/dashboard.tsx|TS2724",
+      "baseline": 2,
+      "previousLog": 2,
+      "previousReview": 2,
+      "current": 2
+    },
+    {
+      "key": "client/src/pages/core/dashboard.tsx|TS2769",
+      "baseline": 2,
+      "previousLog": 2,
+      "previousReview": 2,
+      "current": 2
+    },
+    {
+      "key": "client/src/pages/core/escalate.tsx|TS2322",
+      "baseline": 2,
+      "previousLog": 2,
+      "previousReview": 2,
+      "current": 2
+    },
+    {
+      "key": "client/src/pages/core/escalate.tsx|TS2339",
+      "baseline": 10,
+      "previousLog": 10,
+      "previousReview": 10,
+      "current": 10
+    },
+    {
+      "key": "client/src/pages/core/fix-board.tsx|TS2322",
+      "baseline": 1,
+      "previousLog": 1,
+      "previousReview": 1,
+      "current": 1
+    },
+    {
+      "key": "client/src/pages/core/home.tsx|TS2339",
+      "baseline": 1,
+      "previousLog": 1,
+      "previousReview": 1,
+      "current": 1
+    },
+    {
+      "key": "client/src/pages/core/login.tsx|TS2339",
+      "baseline": 1,
+      "previousLog": 1,
+      "previousReview": 1,
+      "current": 1
+    },
+    {
+      "key": "client/src/pages/core/module-chooser.tsx|TS2339",
+      "baseline": 2,
+      "previousLog": 2,
+      "previousReview": 2,
+      "current": 2
+    },
+    {
+      "key": "client/src/pages/core/report-issue.tsx|TS2322",
+      "baseline": 2,
+      "previousLog": 2,
+      "previousReview": 2,
+      "current": 2
+    },
+    {
+      "key": "client/src/pages/core/report-issue.tsx|TS2339",
+      "baseline": 1,
+      "previousLog": 1,
+      "previousReview": 1,
+      "current": 1
+    },
+    {
+      "key": "client/src/pages/core/rota.tsx|TS2339",
+      "baseline": 3,
+      "previousLog": 3,
+      "previousReview": 3,
+      "current": 3
+    },
+    {
+      "key": "client/src/pages/core/rota.tsx|TS7006",
+      "baseline": 6,
+      "previousLog": 6,
+      "previousReview": 6,
+      "current": 6
+    },
+    {
+      "key": "client/src/pages/core/task-detail.tsx|TS2339",
+      "baseline": 1,
+      "previousLog": 1,
+      "previousReview": 1,
+      "current": 1
+    },
+    {
+      "key": "client/src/pages/core/task-detail.tsx|TS2551",
+      "baseline": 2,
+      "previousLog": 2,
+      "previousReview": 2,
+      "current": 2
+    },
+    {
+      "key": "client/src/pages/core/tasks.tsx|TS2322",
+      "baseline": 2,
+      "previousLog": 2,
+      "previousReview": 2,
+      "current": 2
+    },
+    {
+      "key": "client/src/pages/core/tasks.tsx|TS2339",
+      "baseline": 4,
+      "previousLog": 4,
+      "previousReview": 4,
+      "current": 4
+    },
+    {
+      "key": "client/src/pages/core/tasks.tsx|TS2551",
+      "baseline": 2,
+      "previousLog": 2,
+      "previousReview": 2,
+      "current": 2
+    },
+    {
+      "key": "client/src/pages/core/tasks.tsx|TS2741",
+      "baseline": 1,
+      "previousLog": 1,
+      "previousReview": 1,
+      "current": 1
+    },
+    {
+      "key": "client/src/pages/core/today.tsx|TS2339",
+      "baseline": 4,
+      "previousLog": 4,
+      "previousReview": 4,
+      "current": 4
+    },
+    {
+      "key": "client/src/pages/core/today.tsx|TS2724",
+      "baseline": 1,
+      "previousLog": 1,
+      "previousReview": 1,
+      "current": 1
+    },
+    {
+      "key": "client/src/pages/core/today.tsx|TS7006",
+      "baseline": 1,
+      "previousLog": 1,
+      "previousReview": 1,
+      "current": 1
+    },
+    {
+      "key": "client/src/pages/core/troubleshoot.tsx|TS2322",
+      "baseline": 2,
+      "previousLog": 2,
+      "previousReview": 2,
+      "current": 2
+    },
+    {
+      "key": "client/src/pages/core/troubleshoot.tsx|TS2339",
+      "baseline": 1,
+      "previousLog": 1,
+      "previousReview": 1,
+      "current": 1
+    },
+    {
+      "key": "client/src/pages/core/troubleshoot.tsx|TS2724",
+      "baseline": 2,
+      "previousLog": 2,
+      "previousReview": 2,
+      "current": 2
+    },
+    {
+      "key": "client/src/pages/core_admin/branches.tsx|TS2322",
+      "baseline": 2,
+      "previousLog": 2,
+      "previousReview": 2,
+      "current": 2
+    },
+    {
+      "key": "client/src/pages/core_admin/branches.tsx|TS2339",
+      "baseline": 5,
+      "previousLog": 5,
+      "previousReview": 5,
+      "current": 5
+    },
+    {
+      "key": "client/src/pages/core_admin/events.tsx|TS2339",
+      "baseline": 1,
+      "previousLog": 1,
+      "previousReview": 1,
+      "current": 1
+    },
+    {
+      "key": "client/src/pages/core_admin/index.tsx|TS2322",
+      "baseline": 1,
+      "previousLog": 1,
+      "previousReview": 1,
+      "current": 1
+    },
+    {
+      "key": "client/src/pages/core_admin/users.tsx|TS2322",
+      "baseline": 2,
+      "previousLog": 2,
+      "previousReview": 2,
+      "current": 2
+    },
+    {
+      "key": "client/src/pages/core_admin/users.tsx|TS2339",
+      "baseline": 8,
+      "previousLog": 8,
+      "previousReview": 8,
+      "current": 8
+    },
+    {
+      "key": "client/src/pages/core_admin/users.tsx|TS2551",
+      "baseline": 4,
+      "previousLog": 4,
+      "previousReview": 4,
+      "current": 4
+    },
+    {
+      "key": "client/src/pages/employees-page.tsx|TS2322",
+      "baseline": 4,
+      "previousLog": 4,
+      "previousReview": 4,
+      "current": 4
+    },
+    {
+      "key": "client/src/pages/ops/index.tsx|TS18048",
+      "baseline": 2,
+      "previousLog": 2,
+      "previousReview": 2,
+      "current": 2
+    },
+    {
+      "key": "client/src/pages/org-chart-page.tsx|TS2322",
+      "baseline": 1,
+      "previousLog": 1,
+      "previousReview": 1,
+      "current": 1
+    },
+    {
+      "key": "client/src/pages/scheduling-page.tsx|TS2304",
+      "baseline": 1,
+      "previousLog": 1,
+      "previousReview": 1,
+      "current": 1
+    },
+    {
+      "key": "client/src/pages/scheduling-page.tsx|TS2322",
+      "baseline": 3,
+      "previousLog": 3,
+      "previousReview": 3,
+      "current": 3
+    },
+    {
+      "key": "client/src/pages/scheduling-page.tsx|TS2339",
+      "baseline": 6,
+      "previousLog": 6,
+      "previousReview": 6,
+      "current": 6
+    },
+    {
+      "key": "client/src/pages/studio/camp-detail.tsx|TS2322",
+      "baseline": 1,
+      "previousLog": 1,
+      "previousReview": 1,
+      "current": 1
+    },
+    {
+      "key": "client/src/pages/studio/camp-detail.tsx|TS2353",
+      "baseline": 1,
+      "previousLog": 1,
+      "previousReview": 1,
+      "current": 1
+    },
+    {
+      "key": "client/src/pages/studio/checklists.tsx|TS18048",
+      "baseline": 2,
+      "previousLog": 2,
+      "previousReview": 2,
+      "current": 2
+    },
+    {
+      "key": "client/src/pages/studio/checklists.tsx|TS2304",
+      "baseline": 2,
+      "previousLog": 2,
+      "previousReview": 2,
+      "current": 2
+    },
+    {
+      "key": "client/src/pages/studio/checklists.tsx|TS2339",
+      "baseline": 2,
+      "previousLog": 2,
+      "previousReview": 2,
+      "current": 2
+    },
+    {
+      "key": "client/src/pages/studio/departments.tsx|TS2339",
+      "baseline": 3,
+      "previousLog": 3,
+      "previousReview": 3,
+      "current": 3
+    },
+    {
+      "key": "client/src/pages/studio/event-settings.tsx|TS2322",
+      "baseline": 1,
+      "previousLog": 1,
+      "previousReview": 1,
+      "current": 1
+    },
+    {
+      "key": "client/src/pages/studio/knowledge-base.tsx|TS2322",
+      "baseline": 1,
+      "previousLog": 1,
+      "previousReview": 1,
+      "current": 1
+    },
+    {
+      "key": "client/src/pages/studio/knowledge-base.tsx|TS2345",
+      "baseline": 1,
+      "previousLog": 1,
+      "previousReview": 1,
+      "current": 1
+    },
+    {
+      "key": "client/src/pages/studio/troubleshooting.tsx|TS2724",
+      "baseline": 1,
+      "previousLog": 1,
+      "previousReview": 1,
+      "current": 1
+    },
+    {
+      "key": "client/src/pages/studio/troubleshooting.tsx|TS7006",
+      "baseline": 1,
+      "previousLog": 1,
+      "previousReview": 1,
+      "current": 1
+    },
+    {
+      "key": "client/src/pages/studio/users.tsx|TS2339",
+      "baseline": 8,
+      "previousLog": 8,
+      "previousReview": 8,
+      "current": 8
+    },
+    {
+      "key": "client/src/pages/studio/users.tsx|TS2551",
+      "baseline": 4,
+      "previousLog": 4,
+      "previousReview": 4,
+      "current": 4
+    },
+    {
+      "key": "client/src/pages/verify-phone-page.tsx|TS2339",
+      "baseline": 1,
+      "previousLog": 1,
+      "previousReview": 1,
+      "current": 1
+    },
+    {
+      "key": "server/ai-routes.ts|TS2339",
+      "baseline": 1,
+      "previousLog": 1,
+      "previousReview": 1,
+      "current": 1
+    },
+    {
+      "key": "server/attention-engine.ts|TS2339",
+      "baseline": 3,
+      "previousLog": 3,
+      "previousReview": 3,
+      "current": 3
+    },
+    {
+      "key": "server/attention-engine.ts|TS2367",
+      "baseline": 1,
+      "previousLog": 1,
+      "previousReview": 1,
+      "current": 1
+    },
+    {
+      "key": "server/beo-routes.ts|TS2339",
+      "baseline": 46,
+      "previousLog": 46,
+      "previousReview": 46,
+      "current": 46
+    },
+    {
+      "key": "server/beo-routes.ts|TS2353",
+      "baseline": 1,
+      "previousLog": 1,
+      "previousReview": 1,
+      "current": 1
+    },
+    {
+      "key": "server/beo-routes.ts|TS2769",
+      "baseline": 1,
+      "previousLog": 1,
+      "previousReview": 1,
+      "current": 1
+    },
+    {
+      "key": "server/core/tasksRoutes.ts|TS1117",
+      "baseline": 2,
+      "previousLog": 2,
+      "previousReview": 2,
+      "current": 2
+    },
+    {
+      "key": "server/core/tasksRoutes.ts|TS2488",
+      "baseline": 6,
+      "previousLog": 6,
+      "previousReview": 6,
+      "current": 6
+    },
+    {
+      "key": "server/kiosk-auth.ts|TS2769",
+      "baseline": 1,
+      "previousLog": 1,
+      "previousReview": 1,
+      "current": 1
+    },
+    {
+      "key": "server/lib/batch/utils.ts|TS2339",
+      "baseline": 2,
+      "previousLog": 2,
+      "previousReview": 2,
+      "current": 2
+    },
+    {
+      "key": "server/notification-service.ts|TS2322",
+      "baseline": 1,
+      "previousLog": 1,
+      "previousReview": 1,
+      "current": 1
+    },
+    {
+      "key": "server/parent-experience-routes.ts|TS2349",
+      "baseline": 1,
+      "previousLog": 1,
+      "previousReview": 1,
+      "current": 1
+    },
+    {
+      "key": "server/payroll-reconciliation.ts|TS2322",
+      "baseline": 1,
+      "previousLog": 1,
+      "previousReview": 1,
+      "current": 1
+    },
+    {
+      "key": "server/pdf.ts|TS18048",
+      "baseline": 1,
+      "previousLog": 1,
+      "previousReview": 1,
+      "current": 1
+    },
+    {
+      "key": "server/pdf.ts|TS2339",
+      "baseline": 2,
+      "previousLog": 2,
+      "previousReview": 2,
+      "current": 2
+    },
+    {
+      "key": "server/pdf.ts|TS2345",
+      "baseline": 1,
+      "previousLog": 1,
+      "previousReview": 1,
+      "current": 1
+    },
+    {
+      "key": "server/routes.ts|TS2322",
+      "baseline": 10,
+      "previousLog": 10,
+      "previousReview": 10,
+      "current": 10
+    },
+    {
+      "key": "server/routes.ts|TS2339",
+      "baseline": 35,
+      "previousLog": 35,
+      "previousReview": 35,
+      "current": 35
+    },
+    {
+      "key": "server/routes.ts|TS2345",
+      "baseline": 6,
+      "previousLog": 6,
+      "previousReview": 6,
+      "current": 6
+    },
+    {
+      "key": "server/routes.ts|TS2353",
+      "baseline": 12,
+      "previousLog": 12,
+      "previousReview": 12,
+      "current": 12
+    },
+    {
+      "key": "server/routes.ts|TS2367",
+      "baseline": 2,
+      "previousLog": 2,
+      "previousReview": 2,
+      "current": 2
+    },
+    {
+      "key": "server/routes.ts|TS2551",
+      "baseline": 3,
+      "previousLog": 3,
+      "previousReview": 3,
+      "current": 3
+    },
+    {
+      "key": "server/routes.ts|TS2554",
+      "baseline": 6,
+      "previousLog": 6,
+      "previousReview": 6,
+      "current": 6
+    },
+    {
+      "key": "server/routes.ts|TS2561",
+      "baseline": 1,
+      "previousLog": 1,
+      "previousReview": 1,
+      "current": 1
+    },
+    {
+      "key": "server/routes.ts|TS2739",
+      "baseline": 1,
+      "previousLog": 1,
+      "previousReview": 1,
+      "current": 1
+    },
+    {
+      "key": "server/routes.ts|TS2769",
+      "baseline": 3,
+      "previousLog": 3,
+      "previousReview": 3,
+      "current": 3
+    },
+    {
+      "key": "server/routes.ts|TS2820",
+      "baseline": 1,
+      "previousLog": 1,
+      "previousReview": 1,
+      "current": 1
+    },
+    {
+      "key": "server/storage.ts|TS2322",
+      "baseline": 6,
+      "previousLog": 6,
+      "previousReview": 6,
+      "current": 6
+    },
+    {
+      "key": "server/storage.ts|TS2339",
+      "baseline": 1,
+      "previousLog": 1,
+      "previousReview": 1,
+      "current": 1
+    },
+    {
+      "key": "server/storage.ts|TS2345",
+      "baseline": 3,
+      "previousLog": 3,
+      "previousReview": 3,
+      "current": 3
+    },
+    {
+      "key": "server/storage.ts|TS2353",
+      "baseline": 2,
+      "previousLog": 2,
+      "previousReview": 2,
+      "current": 2
+    },
+    {
+      "key": "server/storage.ts|TS2416",
+      "baseline": 2,
+      "previousLog": 2,
+      "previousReview": 2,
+      "current": 2
+    },
+    {
+      "key": "server/storage.ts|TS2769",
+      "baseline": 10,
+      "previousLog": 10,
+      "previousReview": 10,
+      "current": 10
+    },
+    {
+      "key": "server/voucher-routes.ts|TS2322",
+      "baseline": 2,
+      "previousLog": 2,
+      "previousReview": 2,
+      "current": 2
+    },
+    {
+      "key": "server/voucher-routes.ts|TS2339",
+      "baseline": 3,
+      "previousLog": 3,
+      "previousReview": 3,
+      "current": 3
+    },
+    {
+      "key": "server/xero-routes.ts|TS2345",
+      "baseline": 3,
+      "previousLog": 3,
+      "previousReview": 3,
+      "current": 3
+    }
+  ],
+  "sourceChangesAtReview": [],
+  "dependencyChangesAtReview": [],
+  "current": {
+    "receiptPath": "C:/w/admin631-final-oto/ratchet.json",
+    "receiptSha256": "7dbb91387d6a6d5bbec320332db0586f2bb70c29a0684d10297a25ced7294dd4",
+    "logPath": "C:/w/admin631-final-oto/ratchet.log",
+    "logSha256": "dc40074bce089091ed1fc74bdd490d81d3d20bfc62885674d250a577743e4601",
+    "compilerBodySha256": "158a43b55d91409049ed08dc03b7b35cfb3e3e15cc6cea78206921c5ed524caf",
+    "manifestPath": "C:/w/admin631-final-oto/manifest.json",
+    "manifestSha256": "d7529fbcaed0acd681a83707e62217bff7b47567e9e2c81ae5a97f69946418cd",
+    "dependenciesPath": "C:/w/admin631-final-oto/dependencies.json",
+    "dependenciesSha256": "f9cdec0d1c9af87316b7572b06f4d51dd92403ff6abb3e3e223da3b02c47de95",
+    "baselineSha256": "946a7a21ff4497348a063069049cafac2da45039c1eb0e2ab86938044382d826",
+    "runnerSha256": "f53bdaba34bd0e853d86813d4fcc15925e59d0766cb79f14fb712c9506d77bc0",
+    "setupReceiptSha256": "3ba4c2674073af42d5cf4abcf99e98bc0d4cc0ff7dd674403f422b1a8137bfd1",
+    "setupIntentSha256": "6134095fdc560ca0546e3979444a7a887ef9c4ee433a63c6478b00741c5f6e5d"
+  },
+  "previous": {
+    "receiptPath": "C:/w/admin631-oto-results/ratchet.json",
+    "receiptSha256": "09570815c44bc643c3a9df815e2f0e5a14a6f1508a27c5ae22c774fc752bf80d",
+    "logPath": "C:/w/admin631-oto-results/ratchet.log",
+    "logSha256": "93916af00486209020fd8a268fde29d56c51b4d543af07dd3f24b61e6112ab4d",
+    "compilerBodySha256": "158a43b55d91409049ed08dc03b7b35cfb3e3e15cc6cea78206921c5ed524caf",
+    "reviewPath": "C:/w/admin631-oto-ratchet-review.json",
+    "reviewSha256": "386b92e1d4cf6e050b9179d798b67bd5d5cfc8269205cf6c31378d2556e61403",
+    "completeReviewPath": "C:/w/admin631-oto-complete-review.json",
+    "completeReviewSha256": "37e6e232421d26057035bac98f79772b3070709d17914bcd0c3a95d97355c0db"
+  },
+  "install": {
+    "receiptPath": "C:/w/admin631-final-oto/install.json",
+    "receiptSha256": "e4fb0aaebc63d1b2e74687da63e5dbe2124dd79ae4187eb1d49cee49f230c672",
+    "logSha256": "e84fba00d8b811bde0b1e8bffe97933d658664fc05ef027f3a7f557b74843061",
+    "argv": [
+      "npm",
+      "ci",
+      "--ignore-scripts"
+    ],
+    "exitCode": 0,
+    "observedFreshInstall": true,
+    "offlineCache": true,
+    "installedMetadata": {
+      "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+      "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+    }
+  },
+  "anomalies": [],
+  "limitations": [
+    "The OTO App compiler is not diagnostic-free: exactly418 inherited diagnostics remain. Its check:ratchet command exited0 with every file/code bucket unchanged; the old AGENTS467 ceiling is stale.",
+    "The earlier requested C:/w/admin631-oto-results/review.json does not exist. The actual previous compiler review is C:/w/admin631-oto-ratchet-review.json; its hashes match the previous raw log and receipt, and the complete review confirms those bindings.",
+    "All664 current lines, including multiline diagnostic details and command footer, were read in explicit untruncated ranges. The full inner compiler output is byte-identical to the previous inner output; only run/source metadata in the outer wrapper differs.",
+    "Installed metadata and genuine fresh npm ci are verified from captured receipts and whole install output, plus the reviewed runner; this reviewer did not inspect a running container or reexecute installation.",
+    "Host input bytes were independently checked against all3716 manifest rows and28 dependency inputs at review time. This is a local captured-source compiler result, not exact landed-SHA CI, a whole final release battery, deployment or staging acceptance."
+  ]
+}
