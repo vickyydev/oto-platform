@@ -139,8 +139,36 @@
     "offlineRed": "proof-helper-red.json"
   },
   "jira": {
-    "status": "Testing",
+    "status": "Deployed",
     "commentId": "12559",
-    "screenshotsAttached": false
+    "screenshotsAttached": true,
+    "attachments": [
+      {
+        "id": "12017",
+        "name": "SCRUM-632-01-users-flag-off.png"
+      },
+      {
+        "id": "12018",
+        "name": "SCRUM-632-02-permissions-flag-off.png"
+      },
+      {
+        "id": "12019",
+        "name": "SCRUM-632-03-operators-flag-off.png"
+      },
+      {
+        "id": "12020",
+        "name": "SCRUM-632-04-users-managed.png"
+      },
+      {
+        "id": "12021",
+        "name": "SCRUM-632-05-permissions-managed.png"
+      },
+      {
+        "id": "12022",
+        "name": "SCRUM-632-06-operators-managed.png"
+      }
+    ],
+    "readBackAt": "2026-10-24T22:19:25.035Z",
+    "evidenceSha": "6b003fd13f43f7774a8bf0f13a1618135760f3f1"
   }
 }
