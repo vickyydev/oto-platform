@@ -1,0 +1,59 @@
+{
+  "ticket": "SCRUM-631",
+  "purpose": "postdeploy-branch-metadata-only",
+  "sourceSha": "1462f5158f236c957523bd81b40355ad67fbfc49",
+  "ciRunId": "40092931105",
+  "startedAt": "2026-10-24T12:43:41.398Z",
+  "businessWrites": 0,
+  "branches": [
+    {
+      "name": "Oto Play Park, Central Floresta",
+      "coreId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+      "appId": "540f6e5e-e94b-4ce9-a79a-5947e841e1fb"
+    },
+    {
+      "name": "Oto Play Park, Robinson Chalong",
+      "coreId": "01a0c9ae-52cf-7aa1-baca-fc55e449148e",
+      "appId": "81e87667-8cec-4602-9467-bcf3be70e300"
+    }
+  ],
+  "operations": [
+    {
+      "sequence": 1,
+      "label": "census-sign-in",
+      "kind": "auth",
+      "intentAt": "2026-10-24T12:43:41.398Z",
+      "dispatched": true,
+      "httpTerminal": true,
+      "status": 200,
+      "outcome": "confirmed",
+      "cleanup": false,
+      "dispatchedAt": "2026-10-24T12:43:41.400Z",
+      "settledAt": "2026-10-24T12:43:42.460Z"
+    },
+    {
+      "sequence": 2,
+      "label": "census-sign-out",
+      "kind": "auth-cleanup",
+      "intentAt": "2026-10-24T12:43:44.131Z",
+      "dispatched": true,
+      "httpTerminal": true,
+      "status": 200,
+      "outcome": "confirmed",
+      "cleanup": true,
+      "dispatchedAt": "2026-10-24T12:43:44.135Z",
+      "settledAt": "2026-10-24T12:43:44.590Z"
+    }
+  ],
+  "complete": true,
+  "readAt": "2026-10-24T12:43:44.131Z",
+  "authCleanup": {
+    "signOutStatus": 200,
+    "currentUserStatus": 401,
+    "confirmed": true
+  },
+  "uncertain": false,
+  "journalBroken": false,
+  "completedAt": "2026-10-24T12:43:45.130Z",
+  "helperSha256": "96126572fd4d7e5e9b74756f09f1880370123418be3c175698d1ad7f60ed072e"
+}

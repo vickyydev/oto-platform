@@ -1,0 +1,46 @@
+{
+  "approved": true,
+  "ticket": "SCRUM-631",
+  "purpose": "department-mirror-staging-proof",
+  "sourceSha": "1462f5158f236c957523bd81b40355ad67fbfc49",
+  "ciRunId": "40092931105",
+  "helperSha256": "c4bcd6a21ef69df48f17dbcf84117196a5b5e85a48597f6d731de37b541abbe8",
+  "actor": {
+    "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+    "userId": "01a0be02-edd6-726a-aa9c-5204343e636e",
+    "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+    "tenantId": "681b18d1-4c75-415d-9271-5fe3afc30993"
+  },
+  "runId": "ffefbe00-7cec-4932-bf80-8170f30d7af9",
+  "name": "ZZ TEST SCRUM-631 ffefbe00-7cec-4932-bf80-8170f30d7af9",
+  "renamedName": "ZZ TEST SCRUM-631 ffefbe00-7cec-4932-bf80-8170f30d7af9 renamed",
+  "branches": [
+    {
+      "name": "Oto Play Park, Central Floresta",
+      "coreId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+      "appId": "540f6e5e-e94b-4ce9-a79a-5947e841e1fb"
+    },
+    {
+      "name": "Oto Play Park, Robinson Chalong",
+      "coreId": "01a0c9ae-52cf-7aa1-baca-fc55e449148e",
+      "appId": "81e87667-8cec-4602-9467-bcf3be70e300"
+    }
+  ],
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "deployId": "dep-dbeaaqg473hc738sudf0",
+      "finishedAt": "2026-10-24T12:35:50.862284Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "deployId": "dep-dbeaaqg473hc738sug9g",
+      "finishedAt": "2026-10-24T12:33:29.84063Z"
+    },
+    {
+      "name": "oto-app-staging",
+      "deployId": "dep-dbeaaqg473hc738suee0",
+      "finishedAt": "2026-10-24T12:35:19.797903Z"
+    }
+  ]
+}

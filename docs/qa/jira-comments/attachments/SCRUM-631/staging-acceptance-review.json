@@ -1,0 +1,476 @@
+{
+  "ticket": "SCRUM-631",
+  "reviewedAt": "2026-10-24T12:47:32.538Z",
+  "passed": true,
+  "sourceSha": "1462f5158f236c957523bd81b40355ad67fbfc49",
+  "ciRunId": "40092931105",
+  "actualStaging": true,
+  "localMock": false,
+  "fullReceiptRead": true,
+  "fullDurableJournalRead": true,
+  "actualPngsViewed": 3,
+  "reviewerExecutedStagingActions": false,
+  "checks": {
+    "completeActualStaging": true,
+    "exactSourceAndCi": true,
+    "allSixCiJobsGreen": true,
+    "helperBytesBound": true,
+    "exactDeployments": true,
+    "postdeployRun": true,
+    "threePhases": true,
+    "stableTwoExactParkIdentities": true,
+    "postMutationCopyAndCapture": true,
+    "threeActualImages": true,
+    "phaseFramesCapturedBeforeNextWrite": true,
+    "all11ExpectedOperationsConfirmed": true,
+    "durableJournalMatchesAllOperations": true,
+    "threeBusinessWritesAndThreeCopyDispatches": true,
+    "bothOriginAuthCleanup": true,
+    "cleanupAndStableActor": true,
+    "fiveLiveSourceChecks": true,
+    "noUncertaintyOrBrowserErrors": true,
+    "completionAfterCleanup": true
+  },
+  "actor": {
+    "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+    "userId": "01a0be02-edd6-726a-aa9c-5204343e636e",
+    "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+    "tenantId": "681b18d1-4c75-415d-9271-5fe3afc30993"
+  },
+  "fixture": {
+    "sourceId": "87ee670f-aead-4c12-873c-57164d0a908c",
+    "createdName": "ZZ TEST SCRUM-631 ffefbe00-7cec-4932-bf80-8170f30d7af9",
+    "renamedName": "ZZ TEST SCRUM-631 ffefbe00-7cec-4932-bf80-8170f30d7af9 renamed",
+    "appBranchMappings": [
+      {
+        "name": "Oto Play Park, Central Floresta",
+        "coreId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "appId": "540f6e5e-e94b-4ce9-a79a-5947e841e1fb"
+      },
+      {
+        "name": "Oto Play Park, Robinson Chalong",
+        "coreId": "01a0c9ae-52cf-7aa1-baca-fc55e449148e",
+        "appId": "81e87667-8cec-4602-9467-bcf3be70e300"
+      }
+    ],
+    "coreProjectionIdentities": [
+      {
+        "id": "01a16df1-5488-72e3-8d78-d73584c364cd",
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+      },
+      {
+        "id": "01a16df1-5489-7593-95aa-f98ec463cffd",
+        "branchId": "01a0c9ae-52cf-7aa1-baca-fc55e449148e"
+      }
+    ],
+    "finalSourceActive": false,
+    "finalEmployeeCount": 0,
+    "intentionallyRetained": "Exact empty inactive ZZ TEST source department and its two archived core projections; no hard delete or history reparenting."
+  },
+  "startedAt": "2026-10-24T12:44:38.956Z",
+  "completedAt": "2026-10-24T12:45:34.151Z",
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "deployId": "dep-dbeaaqg473hc738sudf0",
+      "finishedAt": "2026-10-24T12:35:50.862284Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "deployId": "dep-dbeaaqg473hc738sug9g",
+      "finishedAt": "2026-10-24T12:33:29.84063Z"
+    },
+    {
+      "name": "oto-app-staging",
+      "deployId": "dep-dbeaaqg473hc738suee0",
+      "finishedAt": "2026-10-24T12:35:19.797903Z"
+    }
+  ],
+  "phaseReadbacks": [
+    {
+      "phase": "created",
+      "sourceId": "87ee670f-aead-4c12-873c-57164d0a908c",
+      "sourceIsActive": true,
+      "sourceEmployeeCount": 0,
+      "identities": [
+        {
+          "id": "01a16df1-5488-72e3-8d78-d73584c364cd",
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+        },
+        {
+          "id": "01a16df1-5489-7593-95aa-f98ec463cffd",
+          "branchId": "01a0c9ae-52cf-7aa1-baca-fc55e449148e"
+        }
+      ],
+      "mutationUpdatedAt": "2026-10-24T12:44:53.808Z",
+      "copiedAt": "2026-10-24T12:44:54.877Z",
+      "readbackAt": "2026-10-24T12:44:55.667Z"
+    },
+    {
+      "phase": "renamed",
+      "sourceId": "87ee670f-aead-4c12-873c-57164d0a908c",
+      "sourceIsActive": true,
+      "sourceEmployeeCount": 0,
+      "identities": [
+        {
+          "id": "01a16df1-5488-72e3-8d78-d73584c364cd",
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+        },
+        {
+          "id": "01a16df1-5489-7593-95aa-f98ec463cffd",
+          "branchId": "01a0c9ae-52cf-7aa1-baca-fc55e449148e"
+        }
+      ],
+      "mutationUpdatedAt": "2026-10-24T12:45:14.403Z",
+      "copiedAt": "2026-10-24T12:45:15.341Z",
+      "readbackAt": "2026-10-24T12:45:16.042Z"
+    },
+    {
+      "phase": "archived",
+      "sourceId": "87ee670f-aead-4c12-873c-57164d0a908c",
+      "sourceIsActive": false,
+      "sourceEmployeeCount": 0,
+      "identities": [
+        {
+          "id": "01a16df1-5488-72e3-8d78-d73584c364cd",
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+        },
+        {
+          "id": "01a16df1-5489-7593-95aa-f98ec463cffd",
+          "branchId": "01a0c9ae-52cf-7aa1-baca-fc55e449148e"
+        }
+      ],
+      "mutationUpdatedAt": "2026-10-24T12:45:22.019Z",
+      "copiedAt": "2026-10-24T12:45:23.017Z",
+      "readbackAt": "2026-10-24T12:45:24.197Z"
+    }
+  ],
+  "screenshots": [
+    {
+      "filename": "SCRUM-631-01-created-mirror.png",
+      "sha256": "3b4c05a4ecb2ed73cd964db67b00c2d5bab4119305706538bd1dd2434cc102ac",
+      "capturedAt": "2026-10-24T12:45:09.892Z",
+      "readbackAt": "2026-10-24T12:44:55.667Z",
+      "sourceSha": "1462f5158f236c957523bd81b40355ad67fbfc49",
+      "sourceId": "87ee670f-aead-4c12-873c-57164d0a908c",
+      "identities": [
+        {
+          "id": "01a16df1-5488-72e3-8d78-d73584c364cd",
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+        },
+        {
+          "id": "01a16df1-5489-7593-95aa-f98ec463cffd",
+          "branchId": "01a0c9ae-52cf-7aa1-baca-fc55e449148e"
+        }
+      ],
+      "nativeSection": true,
+      "path": "C:/w/admin-department-mirror/docs/qa/jira-comments/attachments/SCRUM-631/SCRUM-631-01-created-mirror.png",
+      "actualFileSha256": "3b4c05a4ecb2ed73cd964db67b00c2d5bab4119305706538bd1dd2434cc102ac",
+      "bytes": 42574,
+      "modifiedAt": "2026-10-24T12:45:10.049Z",
+      "width": 1240,
+      "height": 588,
+      "actualViewed": true,
+      "viewTool": "view_image original resolution",
+      "phase": "created",
+      "visualReview": {
+        "nativeDepartmentDirectory": true,
+        "captionReadable": true,
+        "fullSourceShaVisible": true,
+        "postdeployCaptureUtcVisible": true,
+        "exactSyntheticSourceIdVisible": true,
+        "readbackUtcVisible": true,
+        "exactTwoFixtureRowsVisible": true,
+        "bothExpectedParkNamesVisible": true,
+        "otoAppBadges": 2,
+        "zeroMemberCounts": 2,
+        "renamedNamesVisible": false,
+        "archivedBadges": 0,
+        "unclipped": true,
+        "privateAccountOrEmployeeDataVisible": false,
+        "benefitQrVisible": false,
+        "replacementBusinessRows": false
+      }
+    },
+    {
+      "filename": "SCRUM-631-02-renamed-mirror.png",
+      "sha256": "3a447bc48686f39a04df63fbe499b7ef290d8eb4ac98915644e2e690d94f461e",
+      "capturedAt": "2026-10-24T12:45:17.603Z",
+      "readbackAt": "2026-10-24T12:45:16.042Z",
+      "sourceSha": "1462f5158f236c957523bd81b40355ad67fbfc49",
+      "sourceId": "87ee670f-aead-4c12-873c-57164d0a908c",
+      "identities": [
+        {
+          "id": "01a16df1-5488-72e3-8d78-d73584c364cd",
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+        },
+        {
+          "id": "01a16df1-5489-7593-95aa-f98ec463cffd",
+          "branchId": "01a0c9ae-52cf-7aa1-baca-fc55e449148e"
+        }
+      ],
+      "nativeSection": true,
+      "path": "C:/w/admin-department-mirror/docs/qa/jira-comments/attachments/SCRUM-631/SCRUM-631-02-renamed-mirror.png",
+      "actualFileSha256": "3a447bc48686f39a04df63fbe499b7ef290d8eb4ac98915644e2e690d94f461e",
+      "bytes": 43092,
+      "modifiedAt": "2026-10-24T12:45:17.749Z",
+      "width": 1240,
+      "height": 588,
+      "actualViewed": true,
+      "viewTool": "view_image original resolution",
+      "phase": "renamed",
+      "visualReview": {
+        "nativeDepartmentDirectory": true,
+        "captionReadable": true,
+        "fullSourceShaVisible": true,
+        "postdeployCaptureUtcVisible": true,
+        "exactSyntheticSourceIdVisible": true,
+        "readbackUtcVisible": true,
+        "exactTwoFixtureRowsVisible": true,
+        "bothExpectedParkNamesVisible": true,
+        "otoAppBadges": 2,
+        "zeroMemberCounts": 2,
+        "renamedNamesVisible": true,
+        "archivedBadges": 0,
+        "unclipped": true,
+        "privateAccountOrEmployeeDataVisible": false,
+        "benefitQrVisible": false,
+        "replacementBusinessRows": false
+      }
+    },
+    {
+      "filename": "SCRUM-631-03-archived-mirror.png",
+      "sha256": "93a7f3ce096f945f394d7390a3709574ee24b324dd150aaf878506366e1004d2",
+      "capturedAt": "2026-10-24T12:45:25.780Z",
+      "readbackAt": "2026-10-24T12:45:24.197Z",
+      "sourceSha": "1462f5158f236c957523bd81b40355ad67fbfc49",
+      "sourceId": "87ee670f-aead-4c12-873c-57164d0a908c",
+      "identities": [
+        {
+          "id": "01a16df1-5488-72e3-8d78-d73584c364cd",
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+        },
+        {
+          "id": "01a16df1-5489-7593-95aa-f98ec463cffd",
+          "branchId": "01a0c9ae-52cf-7aa1-baca-fc55e449148e"
+        }
+      ],
+      "nativeSection": true,
+      "path": "C:/w/admin-department-mirror/docs/qa/jira-comments/attachments/SCRUM-631/SCRUM-631-03-archived-mirror.png",
+      "actualFileSha256": "93a7f3ce096f945f394d7390a3709574ee24b324dd150aaf878506366e1004d2",
+      "bytes": 44581,
+      "modifiedAt": "2026-10-24T12:45:25.914Z",
+      "width": 1240,
+      "height": 588,
+      "actualViewed": true,
+      "viewTool": "view_image original resolution",
+      "phase": "archived",
+      "visualReview": {
+        "nativeDepartmentDirectory": true,
+        "captionReadable": true,
+        "fullSourceShaVisible": true,
+        "postdeployCaptureUtcVisible": true,
+        "exactSyntheticSourceIdVisible": true,
+        "readbackUtcVisible": true,
+        "exactTwoFixtureRowsVisible": true,
+        "bothExpectedParkNamesVisible": true,
+        "otoAppBadges": 2,
+        "zeroMemberCounts": 2,
+        "renamedNamesVisible": true,
+        "archivedBadges": 2,
+        "unclipped": true,
+        "privateAccountOrEmployeeDataVisible": false,
+        "benefitQrVisible": false,
+        "replacementBusinessRows": false
+      }
+    }
+  ],
+  "operations": [
+    {
+      "sequence": 1,
+      "label": "platform-sign-in",
+      "kind": "auth",
+      "intentAt": "2026-10-24T12:44:45.494Z",
+      "dispatched": true,
+      "httpTerminal": true,
+      "status": 200,
+      "outcome": "confirmed",
+      "cleanup": false,
+      "dispatchedAt": "2026-10-24T12:44:45.498Z",
+      "settledAt": "2026-10-24T12:44:46.147Z"
+    },
+    {
+      "sequence": 2,
+      "label": "app-handoff-issue",
+      "kind": "auth",
+      "intentAt": "2026-10-24T12:44:46.154Z",
+      "dispatched": true,
+      "httpTerminal": true,
+      "status": 200,
+      "outcome": "confirmed",
+      "cleanup": false,
+      "dispatchedAt": "2026-10-24T12:44:46.158Z",
+      "settledAt": "2026-10-24T12:44:46.958Z"
+    },
+    {
+      "sequence": 3,
+      "label": "app-handoff-exchange",
+      "kind": "auth",
+      "intentAt": "2026-10-24T12:44:46.964Z",
+      "dispatched": true,
+      "httpTerminal": true,
+      "status": 200,
+      "outcome": "confirmed",
+      "cleanup": false,
+      "dispatchedAt": "2026-10-24T12:44:46.966Z",
+      "settledAt": "2026-10-24T12:44:47.381Z"
+    },
+    {
+      "sequence": 4,
+      "label": "department-create",
+      "kind": "business",
+      "intentAt": "2026-10-24T12:44:53.234Z",
+      "dispatched": true,
+      "httpTerminal": true,
+      "status": 201,
+      "outcome": "confirmed",
+      "cleanup": false,
+      "dispatchedAt": "2026-10-24T12:44:53.237Z",
+      "settledAt": "2026-10-24T12:44:53.332Z"
+    },
+    {
+      "sequence": 5,
+      "label": "created-copy",
+      "kind": "copy-control",
+      "intentAt": "2026-10-24T12:44:53.968Z",
+      "dispatched": true,
+      "httpTerminal": true,
+      "status": 200,
+      "outcome": "confirmed",
+      "cleanup": false,
+      "dispatchedAt": "2026-10-24T12:44:53.971Z",
+      "settledAt": "2026-10-24T12:44:54.565Z"
+    },
+    {
+      "sequence": 6,
+      "label": "department-rename",
+      "kind": "business",
+      "intentAt": "2026-10-24T12:45:13.825Z",
+      "dispatched": true,
+      "httpTerminal": true,
+      "status": 200,
+      "outcome": "confirmed",
+      "cleanup": false,
+      "dispatchedAt": "2026-10-24T12:45:13.827Z",
+      "settledAt": "2026-10-24T12:45:13.922Z"
+    },
+    {
+      "sequence": 7,
+      "label": "renamed-copy",
+      "kind": "copy-control",
+      "intentAt": "2026-10-24T12:45:14.501Z",
+      "dispatched": true,
+      "httpTerminal": true,
+      "status": 200,
+      "outcome": "confirmed",
+      "cleanup": false,
+      "dispatchedAt": "2026-10-24T12:45:14.505Z",
+      "settledAt": "2026-10-24T12:45:15.022Z"
+    },
+    {
+      "sequence": 8,
+      "label": "department-deactivate",
+      "kind": "business",
+      "intentAt": "2026-10-24T12:45:21.442Z",
+      "dispatched": true,
+      "httpTerminal": true,
+      "status": 200,
+      "outcome": "confirmed",
+      "cleanup": false,
+      "dispatchedAt": "2026-10-24T12:45:21.447Z",
+      "settledAt": "2026-10-24T12:45:21.534Z"
+    },
+    {
+      "sequence": 9,
+      "label": "archived-copy",
+      "kind": "copy-control",
+      "intentAt": "2026-10-24T12:45:22.150Z",
+      "dispatched": true,
+      "httpTerminal": true,
+      "status": 200,
+      "outcome": "confirmed",
+      "cleanup": false,
+      "dispatchedAt": "2026-10-24T12:45:22.154Z",
+      "settledAt": "2026-10-24T12:45:22.716Z"
+    },
+    {
+      "sequence": 10,
+      "label": "app-sign-out",
+      "kind": "auth-cleanup",
+      "intentAt": "2026-10-24T12:45:28.875Z",
+      "dispatched": true,
+      "httpTerminal": true,
+      "status": 200,
+      "outcome": "confirmed",
+      "cleanup": true,
+      "dispatchedAt": "2026-10-24T12:45:28.879Z",
+      "settledAt": "2026-10-24T12:45:28.991Z"
+    },
+    {
+      "sequence": 11,
+      "label": "platform-sign-out",
+      "kind": "auth-cleanup",
+      "intentAt": "2026-10-24T12:45:29.064Z",
+      "dispatched": true,
+      "httpTerminal": true,
+      "status": 200,
+      "outcome": "confirmed",
+      "cleanup": true,
+      "dispatchedAt": "2026-10-24T12:45:29.068Z",
+      "settledAt": "2026-10-24T12:45:29.513Z"
+    }
+  ],
+  "authCleanup": {
+    "app": {
+      "signOutStatus": 200,
+      "currentUserStatus": 401,
+      "confirmed": true
+    },
+    "platform": {
+      "signOutStatus": 200,
+      "currentUserStatus": 401,
+      "confirmed": true
+    }
+  },
+  "cleanup": {
+    "fixtureDeactivatedAndEmpty": true,
+    "originalActorAndMappingUnchanged": true
+  },
+  "censusHashes": {
+    "before": "f49ce727c843ab9560f0dfa082b815ac61a483dd153b75d140999229d79ad273",
+    "after": "f49ce727c843ab9560f0dfa082b815ac61a483dd153b75d140999229d79ad273"
+  },
+  "finalSourceConfirmed": true,
+  "externalFontsSuppressed": 1,
+  "inputHashes": {
+    "receiptPath": "C:/w/admin631-staging-results.json",
+    "receiptSha256": "8abc30221762a9f42f76759d9e548ba11c3c913ff948058366750ba40cb3beb3",
+    "journalPath": "C:/w/admin631-staging-intents.jsonl",
+    "journalSha256": "fa90e7de62877c3e6db6b85130e6dfd5a3abe1abfeb92ffa5594c1cae1b07997",
+    "planPath": "C:/w/admin631-proof-plan.json",
+    "planSha256": "4c58cd384654e7f4af33fe716227f7264121bd134726ec59c891f318a4211a2a",
+    "releaseSha256": "bf2bde6c3fe76ec215a3bba51837aad609c71dc3cc1c56a809a3e6287811e477",
+    "ciSha256": "24924f467f80ebfb58116900b0438186dd6852447418567e14e8ca2ec834a8f4",
+    "preflightReviewSha256": "c0d7bcb9ccd5ee6505ef069f5d8071cd98a05fe72d0c70d09f9465a27a240194",
+    "helperSha256": "c4bcd6a21ef69df48f17dbcf84117196a5b5e85a48597f6d731de37b541abbe8"
+  },
+  "findings": [],
+  "limits": [
+    "This reviewer independently read the safe result and every durable journal record, and viewed all three actual PNG files at original resolution. The coordinator captured the frames; this reviewer performed no network, auth, runtime, Git or source mutation.",
+    "The visible frames prove real native Admin directory create/rename/archive readback for one empty source department projected into two owned parks, with stable IDs from the safe response checks. Membership population, seeded Reception adoption, foreign-source corruption and every existing team/grant invariant remain covered by local tests, not claimed as separate staging cases.",
+    "Original actor/access/mapping/preferences census hashes match. The proof uses the real global employee-copy control; unrelated legitimate source copies may change, so this review does not claim a whole-system no-change census.",
+    "The exact font stylesheet was privacy-suppressed once. Original font rendering and private media are untested; no private account/employee values or benefit QR are visible in the inspected frames.",
+    "The canonical archivedAt value is not persisted in the safe result. The frozen helper validated a finite archivedAt and observed stable active-to-archived projection transitions; a stricter independent archivedAt-versus-mutation timestamp claim is not made.",
+    "Both origins confirmed sign-out200 then current-user401 and no unresolved dispatch remains. The final inactive ZZ TEST fixture and archived projections intentionally remain as evidence. Jira screenshot attachment/status and evidence publication must still be completed by the coordinator; this review alone does not mark a ticket Deployed or Done."
+  ]
+}

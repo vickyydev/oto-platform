@@ -1,0 +1,35 @@
+{
+  "ticket": "SCRUM-631",
+  "passed": true,
+  "helperSha256": "db13e30c5787d5470a5307fc9f90eac325a7323b7e5ed7deffae0e5a37319268",
+  "testSha256": "4e89dbf9a2f0356fd33870d14ab1c621472fd30d5093d454eeb682ef62e3c3fb",
+  "beforeHelperSha256": "ab48bb2bb4514b40cf72511ecea906b2957a7bb77099b724b57c4c11b61b2374",
+  "actualHelperBodyEvaluated": true,
+  "onlyParserChanged": true,
+  "lineEndingsNormalizedForComparison": true,
+  "originalJobBindingUnchanged": true,
+  "originalStartCommandAndReadOnlyTransactionUnchanged": true,
+  "noRedispatch": true,
+  "red": {
+    "receipt": "C:/w/admin631-readiness-parser-1792845748932-red/result.json",
+    "receiptSha256": "7dfd8bc20391d8b0ef6846e2001d779c8a56d598e2ac971f8c89e68092ae87cd",
+    "logSha256": "ee145b941d0120d0500c08bd731f9b362cd7daa123db8b1a6631dfc0da10e0c5",
+    "tests": 11,
+    "passed": 7,
+    "failed": 4
+  },
+  "green": {
+    "receipt": "C:/w/admin631-readiness-parser-1792845790324-green/result.json",
+    "receiptSha256": "d555624a52908dc3611f361bcc9d1442f61f43d889712ea0c951558872e67925",
+    "logSha256": "4c4f3449e97c7d04feff9b19c221cf03557ecebbe8de5d2d464422d505d8a604",
+    "tests": 11,
+    "passed": 11,
+    "failed": 0
+  },
+  "network": false,
+  "auth": false,
+  "database": false,
+  "staging": false,
+  "reviewedAt": "2026-10-24T12:43:47.623Z",
+  "findings": []
+}

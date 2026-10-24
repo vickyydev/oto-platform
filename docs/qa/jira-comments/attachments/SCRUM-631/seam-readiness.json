@@ -1,0 +1,33 @@
+{
+  "ticket": "SCRUM-631",
+  "at": "2026-10-24T12:40:47.803Z",
+  "passed": true,
+  "schemaUsage": true,
+  "views": [
+    {
+      "name": "departments",
+      "select": true
+    },
+    {
+      "name": "department_branches",
+      "select": true
+    },
+    {
+      "name": "employee_departments",
+      "select": true
+    }
+  ],
+  "coreColumns": [
+    "archived_at",
+    "external_id"
+  ],
+  "readOnly": true,
+  "businessRowsRead": 0,
+  "sourceSha": "1462f5158f236c957523bd81b40355ad67fbfc49",
+  "ciRunId": "40092931105",
+  "jobId": "job-dbeae98ae00c73cg7g4g",
+  "jobStatus": "succeeded",
+  "apiDeploymentId": "dep-dbeaaqg473hc738sudf0",
+  "apiFinishedAt": "2026-10-24T12:35:50.862284Z",
+  "recordedAt": "2026-10-24T12:43:27.919Z"
+}

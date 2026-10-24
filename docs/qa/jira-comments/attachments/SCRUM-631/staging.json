@@ -1,0 +1,322 @@
+{
+  "ticket": "SCRUM-631",
+  "sourceSha": "1462f5158f236c957523bd81b40355ad67fbfc49",
+  "ciRunId": "40092931105",
+  "helperSha256": "c4bcd6a21ef69df48f17dbcf84117196a5b5e85a48597f6d731de37b541abbe8",
+  "startedAt": "2026-10-24T12:44:38.956Z",
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "deployId": "dep-dbeaaqg473hc738sudf0",
+      "finishedAt": "2026-10-24T12:35:50.862284Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "deployId": "dep-dbeaaqg473hc738sug9g",
+      "finishedAt": "2026-10-24T12:33:29.84063Z"
+    },
+    {
+      "name": "oto-app-staging",
+      "deployId": "dep-dbeaaqg473hc738suee0",
+      "finishedAt": "2026-10-24T12:35:19.797903Z"
+    }
+  ],
+  "complete": true,
+  "actualStaging": true,
+  "localMock": false,
+  "phase": "archived",
+  "checks": [
+    {
+      "phase": "created",
+      "sourceId": "87ee670f-aead-4c12-873c-57164d0a908c",
+      "sourceIsActive": true,
+      "sourceEmployeeCount": 0,
+      "identities": [
+        {
+          "id": "01a16df1-5488-72e3-8d78-d73584c364cd",
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+        },
+        {
+          "id": "01a16df1-5489-7593-95aa-f98ec463cffd",
+          "branchId": "01a0c9ae-52cf-7aa1-baca-fc55e449148e"
+        }
+      ],
+      "mutationUpdatedAt": "2026-10-24T12:44:53.808Z",
+      "copiedAt": "2026-10-24T12:44:54.877Z",
+      "readbackAt": "2026-10-24T12:44:55.667Z"
+    },
+    {
+      "phase": "renamed",
+      "sourceId": "87ee670f-aead-4c12-873c-57164d0a908c",
+      "sourceIsActive": true,
+      "sourceEmployeeCount": 0,
+      "identities": [
+        {
+          "id": "01a16df1-5488-72e3-8d78-d73584c364cd",
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+        },
+        {
+          "id": "01a16df1-5489-7593-95aa-f98ec463cffd",
+          "branchId": "01a0c9ae-52cf-7aa1-baca-fc55e449148e"
+        }
+      ],
+      "mutationUpdatedAt": "2026-10-24T12:45:14.403Z",
+      "copiedAt": "2026-10-24T12:45:15.341Z",
+      "readbackAt": "2026-10-24T12:45:16.042Z"
+    },
+    {
+      "phase": "archived",
+      "sourceId": "87ee670f-aead-4c12-873c-57164d0a908c",
+      "sourceIsActive": false,
+      "sourceEmployeeCount": 0,
+      "identities": [
+        {
+          "id": "01a16df1-5488-72e3-8d78-d73584c364cd",
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+        },
+        {
+          "id": "01a16df1-5489-7593-95aa-f98ec463cffd",
+          "branchId": "01a0c9ae-52cf-7aa1-baca-fc55e449148e"
+        }
+      ],
+      "mutationUpdatedAt": "2026-10-24T12:45:22.019Z",
+      "copiedAt": "2026-10-24T12:45:23.017Z",
+      "readbackAt": "2026-10-24T12:45:24.197Z"
+    }
+  ],
+  "screenshots": [
+    {
+      "filename": "SCRUM-631-01-created-mirror.png",
+      "sha256": "3b4c05a4ecb2ed73cd964db67b00c2d5bab4119305706538bd1dd2434cc102ac",
+      "capturedAt": "2026-10-24T12:45:09.892Z",
+      "readbackAt": "2026-10-24T12:44:55.667Z",
+      "sourceSha": "1462f5158f236c957523bd81b40355ad67fbfc49",
+      "sourceId": "87ee670f-aead-4c12-873c-57164d0a908c",
+      "identities": [
+        {
+          "id": "01a16df1-5488-72e3-8d78-d73584c364cd",
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+        },
+        {
+          "id": "01a16df1-5489-7593-95aa-f98ec463cffd",
+          "branchId": "01a0c9ae-52cf-7aa1-baca-fc55e449148e"
+        }
+      ],
+      "nativeSection": true
+    },
+    {
+      "filename": "SCRUM-631-02-renamed-mirror.png",
+      "sha256": "3a447bc48686f39a04df63fbe499b7ef290d8eb4ac98915644e2e690d94f461e",
+      "capturedAt": "2026-10-24T12:45:17.603Z",
+      "readbackAt": "2026-10-24T12:45:16.042Z",
+      "sourceSha": "1462f5158f236c957523bd81b40355ad67fbfc49",
+      "sourceId": "87ee670f-aead-4c12-873c-57164d0a908c",
+      "identities": [
+        {
+          "id": "01a16df1-5488-72e3-8d78-d73584c364cd",
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+        },
+        {
+          "id": "01a16df1-5489-7593-95aa-f98ec463cffd",
+          "branchId": "01a0c9ae-52cf-7aa1-baca-fc55e449148e"
+        }
+      ],
+      "nativeSection": true
+    },
+    {
+      "filename": "SCRUM-631-03-archived-mirror.png",
+      "sha256": "93a7f3ce096f945f394d7390a3709574ee24b324dd150aaf878506366e1004d2",
+      "capturedAt": "2026-10-24T12:45:25.780Z",
+      "readbackAt": "2026-10-24T12:45:24.197Z",
+      "sourceSha": "1462f5158f236c957523bd81b40355ad67fbfc49",
+      "sourceId": "87ee670f-aead-4c12-873c-57164d0a908c",
+      "identities": [
+        {
+          "id": "01a16df1-5488-72e3-8d78-d73584c364cd",
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+        },
+        {
+          "id": "01a16df1-5489-7593-95aa-f98ec463cffd",
+          "branchId": "01a0c9ae-52cf-7aa1-baca-fc55e449148e"
+        }
+      ],
+      "nativeSection": true
+    }
+  ],
+  "operations": [
+    {
+      "sequence": 1,
+      "label": "platform-sign-in",
+      "kind": "auth",
+      "intentAt": "2026-10-24T12:44:45.494Z",
+      "dispatched": true,
+      "httpTerminal": true,
+      "status": 200,
+      "outcome": "confirmed",
+      "cleanup": false,
+      "dispatchedAt": "2026-10-24T12:44:45.498Z",
+      "settledAt": "2026-10-24T12:44:46.147Z"
+    },
+    {
+      "sequence": 2,
+      "label": "app-handoff-issue",
+      "kind": "auth",
+      "intentAt": "2026-10-24T12:44:46.154Z",
+      "dispatched": true,
+      "httpTerminal": true,
+      "status": 200,
+      "outcome": "confirmed",
+      "cleanup": false,
+      "dispatchedAt": "2026-10-24T12:44:46.158Z",
+      "settledAt": "2026-10-24T12:44:46.958Z"
+    },
+    {
+      "sequence": 3,
+      "label": "app-handoff-exchange",
+      "kind": "auth",
+      "intentAt": "2026-10-24T12:44:46.964Z",
+      "dispatched": true,
+      "httpTerminal": true,
+      "status": 200,
+      "outcome": "confirmed",
+      "cleanup": false,
+      "dispatchedAt": "2026-10-24T12:44:46.966Z",
+      "settledAt": "2026-10-24T12:44:47.381Z"
+    },
+    {
+      "sequence": 4,
+      "label": "department-create",
+      "kind": "business",
+      "intentAt": "2026-10-24T12:44:53.234Z",
+      "dispatched": true,
+      "httpTerminal": true,
+      "status": 201,
+      "outcome": "confirmed",
+      "cleanup": false,
+      "dispatchedAt": "2026-10-24T12:44:53.237Z",
+      "settledAt": "2026-10-24T12:44:53.332Z"
+    },
+    {
+      "sequence": 5,
+      "label": "created-copy",
+      "kind": "copy-control",
+      "intentAt": "2026-10-24T12:44:53.968Z",
+      "dispatched": true,
+      "httpTerminal": true,
+      "status": 200,
+      "outcome": "confirmed",
+      "cleanup": false,
+      "dispatchedAt": "2026-10-24T12:44:53.971Z",
+      "settledAt": "2026-10-24T12:44:54.565Z"
+    },
+    {
+      "sequence": 6,
+      "label": "department-rename",
+      "kind": "business",
+      "intentAt": "2026-10-24T12:45:13.825Z",
+      "dispatched": true,
+      "httpTerminal": true,
+      "status": 200,
+      "outcome": "confirmed",
+      "cleanup": false,
+      "dispatchedAt": "2026-10-24T12:45:13.827Z",
+      "settledAt": "2026-10-24T12:45:13.922Z"
+    },
+    {
+      "sequence": 7,
+      "label": "renamed-copy",
+      "kind": "copy-control",
+      "intentAt": "2026-10-24T12:45:14.501Z",
+      "dispatched": true,
+      "httpTerminal": true,
+      "status": 200,
+      "outcome": "confirmed",
+      "cleanup": false,
+      "dispatchedAt": "2026-10-24T12:45:14.505Z",
+      "settledAt": "2026-10-24T12:45:15.022Z"
+    },
+    {
+      "sequence": 8,
+      "label": "department-deactivate",
+      "kind": "business",
+      "intentAt": "2026-10-24T12:45:21.442Z",
+      "dispatched": true,
+      "httpTerminal": true,
+      "status": 200,
+      "outcome": "confirmed",
+      "cleanup": false,
+      "dispatchedAt": "2026-10-24T12:45:21.447Z",
+      "settledAt": "2026-10-24T12:45:21.534Z"
+    },
+    {
+      "sequence": 9,
+      "label": "archived-copy",
+      "kind": "copy-control",
+      "intentAt": "2026-10-24T12:45:22.150Z",
+      "dispatched": true,
+      "httpTerminal": true,
+      "status": 200,
+      "outcome": "confirmed",
+      "cleanup": false,
+      "dispatchedAt": "2026-10-24T12:45:22.154Z",
+      "settledAt": "2026-10-24T12:45:22.716Z"
+    },
+    {
+      "sequence": 10,
+      "label": "app-sign-out",
+      "kind": "auth-cleanup",
+      "intentAt": "2026-10-24T12:45:28.875Z",
+      "dispatched": true,
+      "httpTerminal": true,
+      "status": 200,
+      "outcome": "confirmed",
+      "cleanup": true,
+      "dispatchedAt": "2026-10-24T12:45:28.879Z",
+      "settledAt": "2026-10-24T12:45:28.991Z"
+    },
+    {
+      "sequence": 11,
+      "label": "platform-sign-out",
+      "kind": "auth-cleanup",
+      "intentAt": "2026-10-24T12:45:29.064Z",
+      "dispatched": true,
+      "httpTerminal": true,
+      "status": 200,
+      "outcome": "confirmed",
+      "cleanup": true,
+      "dispatchedAt": "2026-10-24T12:45:29.068Z",
+      "settledAt": "2026-10-24T12:45:29.513Z"
+    }
+  ],
+  "authCleanup": {
+    "app": {
+      "signOutStatus": 200,
+      "currentUserStatus": 401,
+      "confirmed": true
+    },
+    "platform": {
+      "signOutStatus": 200,
+      "currentUserStatus": 401,
+      "confirmed": true
+    }
+  },
+  "cleanup": {
+    "fixtureDeactivatedAndEmpty": true,
+    "originalActorAndMappingUnchanged": true
+  },
+  "blockedRequests": 0,
+  "blockedRequestSamples": [],
+  "networkErrors": 0,
+  "pageErrors": 0,
+  "consoleErrors": 0,
+  "externalFontsSuppressed": 1,
+  "sourceChecks": 5,
+  "censusAt": "2026-10-24T12:44:49.671Z",
+  "initialCensusSha256": "f49ce727c843ab9560f0dfa082b815ac61a483dd153b75d140999229d79ad273",
+  "sourceId": "87ee670f-aead-4c12-873c-57164d0a908c",
+  "finalCensusSha256": "f49ce727c843ab9560f0dfa082b815ac61a483dd153b75d140999229d79ad273",
+  "finalSourceConfirmed": true,
+  "uncertain": false,
+  "journalBroken": false,
+  "completedAt": "2026-10-24T12:45:34.151Z"
+}

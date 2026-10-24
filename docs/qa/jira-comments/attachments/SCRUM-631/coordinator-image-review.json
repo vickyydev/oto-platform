@@ -1,0 +1,45 @@
+{
+  "ticket": "SCRUM-631",
+  "reviewedAt": "2026-10-24T12:47:56.510Z",
+  "sourceSha": "1462f5158f236c957523bd81b40355ad67fbfc49",
+  "passed": true,
+  "method": "Each actual PNG viewed with view_image after proof completion",
+  "images": [
+    {
+      "filename": "SCRUM-631-01-created-mirror.png",
+      "sha256": "3b4c05a4ecb2ed73cd964db67b00c2d5bab4119305706538bd1dd2434cc102ac",
+      "capturedAt": "2026-10-24T12:45:09.892Z",
+      "actuallyViewed": true,
+      "readableCaption": true,
+      "bothParkRowsVisible": true,
+      "sourceBadgesAndZeroMembersVisible": true,
+      "archiveStateCorrect": true,
+      "noPrivateContent": true,
+      "noClipping": true
+    },
+    {
+      "filename": "SCRUM-631-02-renamed-mirror.png",
+      "sha256": "3a447bc48686f39a04df63fbe499b7ef290d8eb4ac98915644e2e690d94f461e",
+      "capturedAt": "2026-10-24T12:45:17.603Z",
+      "actuallyViewed": true,
+      "readableCaption": true,
+      "bothParkRowsVisible": true,
+      "sourceBadgesAndZeroMembersVisible": true,
+      "archiveStateCorrect": true,
+      "noPrivateContent": true,
+      "noClipping": true
+    },
+    {
+      "filename": "SCRUM-631-03-archived-mirror.png",
+      "sha256": "93a7f3ce096f945f394d7390a3709574ee24b324dd150aaf878506366e1004d2",
+      "capturedAt": "2026-10-24T12:45:25.780Z",
+      "actuallyViewed": true,
+      "readableCaption": true,
+      "bothParkRowsVisible": true,
+      "sourceBadgesAndZeroMembersVisible": true,
+      "archiveStateCorrect": true,
+      "noPrivateContent": true,
+      "noClipping": true
+    }
+  ]
+}

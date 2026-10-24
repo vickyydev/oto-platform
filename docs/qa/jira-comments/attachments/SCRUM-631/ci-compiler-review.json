@@ -1,0 +1,913 @@
+{
+  "ticket": "SCRUM-631",
+  "reviewedAt": "2026-10-24T12:36:38.129Z",
+  "passed": true,
+  "sourceSha": "1462f5158f236c957523bd81b40355ad67fbfc49",
+  "runId": "40092931105",
+  "jobId": "120869157520",
+  "jobName": "oto-app",
+  "step": "The OTO App's inherited typecheck ceiling",
+  "stepNumber": 8,
+  "stepConclusion": "success",
+  "wholeRead": true,
+  "fullOutputRead": true,
+  "lines": 668,
+  "readRanges": [
+    [
+      1,
+      112
+    ],
+    [
+      113,
+      224
+    ],
+    [
+      225,
+      336
+    ],
+    [
+      337,
+      448
+    ],
+    [
+      449,
+      560
+    ],
+    [
+      561,
+      668
+    ]
+  ],
+  "actualErrors": 418,
+  "files": 54,
+  "fileCodeBuckets": 109,
+  "checks": {
+    "exactRawLogHash": true,
+    "whole668Lines": true,
+    "exactSourceAndRun": true,
+    "allSixActualJobsGreen": true,
+    "exactOtoJob": true,
+    "exactCompilerStep": true,
+    "commandVisible": true,
+    "exact41854And109": true,
+    "noUnclassified": true,
+    "everyBucketUnchanged": true,
+    "everyDiagnosticHeaderLocationCodeAndMessageUnchanged": true,
+    "localReceiptAndReviewBound": true,
+    "summaryMatches": true,
+    "onlyExpectedContinuationDifference": true
+  },
+  "counts": {
+    "client/src/components/beo/beo-billing-module.tsx|TS2339": 1,
+    "client/src/components/beo/beo-billing-module.tsx|TS2322": 1,
+    "client/src/components/beo/beo-day-of-view.tsx|TS2322": 2,
+    "client/src/components/beo/beo-day-of-view.tsx|TS2551": 6,
+    "client/src/components/beo/beo-event-editor.tsx|TS2304": 1,
+    "client/src/components/beo/beo-event-editor.tsx|TS2322": 7,
+    "client/src/components/branch-selector.tsx|TS2322": 3,
+    "client/src/components/core/TaskBoard.tsx|TS2322": 3,
+    "client/src/components/ops/TaskDetailSheet.tsx|TS2339": 4,
+    "client/src/components/phone-verification.tsx|TS2339": 1,
+    "client/src/pages/analytics-page.tsx|TS2345": 1,
+    "client/src/pages/auth-page.tsx|TS2353": 1,
+    "client/src/pages/auth-page.tsx|TS2345": 1,
+    "client/src/pages/auth-page.tsx|TS2322": 2,
+    "client/src/pages/branches-page.tsx|TS2339": 1,
+    "client/src/pages/contract-wizard-page.tsx|TS2339": 2,
+    "client/src/pages/contract-wizard-page.tsx|TS2551": 2,
+    "client/src/pages/core/checklist-run.tsx|TS2551": 13,
+    "client/src/pages/core/checklist-run.tsx|TS2561": 4,
+    "client/src/pages/core/checklist-run.tsx|TS2322": 4,
+    "client/src/pages/core/dashboard.tsx|TS2724": 2,
+    "client/src/pages/core/dashboard.tsx|TS2339": 48,
+    "client/src/pages/core/dashboard.tsx|TS2769": 2,
+    "client/src/pages/core/dashboard.tsx|TS2322": 2,
+    "client/src/pages/core/escalate.tsx|TS2339": 10,
+    "client/src/pages/core/escalate.tsx|TS2322": 2,
+    "client/src/pages/core/fix-board.tsx|TS2322": 1,
+    "client/src/pages/core/home.tsx|TS2339": 1,
+    "client/src/pages/core/login.tsx|TS2339": 1,
+    "client/src/pages/core/module-chooser.tsx|TS2339": 2,
+    "client/src/pages/core/report-issue.tsx|TS2339": 1,
+    "client/src/pages/core/report-issue.tsx|TS2322": 2,
+    "client/src/pages/core/rota.tsx|TS2339": 3,
+    "client/src/pages/core/rota.tsx|TS7006": 6,
+    "client/src/pages/core/task-detail.tsx|TS2551": 2,
+    "client/src/pages/core/task-detail.tsx|TS2339": 1,
+    "client/src/pages/core/tasks.tsx|TS2339": 4,
+    "client/src/pages/core/tasks.tsx|TS2741": 1,
+    "client/src/pages/core/tasks.tsx|TS2551": 2,
+    "client/src/pages/core/tasks.tsx|TS2322": 2,
+    "client/src/pages/core/today.tsx|TS2724": 1,
+    "client/src/pages/core/today.tsx|TS7006": 1,
+    "client/src/pages/core/today.tsx|TS2339": 4,
+    "client/src/pages/core/troubleshoot.tsx|TS2724": 2,
+    "client/src/pages/core/troubleshoot.tsx|TS2322": 2,
+    "client/src/pages/core/troubleshoot.tsx|TS2339": 1,
+    "client/src/pages/core_admin/branches.tsx|TS2339": 5,
+    "client/src/pages/core_admin/branches.tsx|TS2322": 2,
+    "client/src/pages/core_admin/events.tsx|TS2339": 1,
+    "client/src/pages/core_admin/index.tsx|TS2322": 1,
+    "client/src/pages/core_admin/users.tsx|TS2339": 8,
+    "client/src/pages/core_admin/users.tsx|TS2551": 4,
+    "client/src/pages/core_admin/users.tsx|TS2322": 2,
+    "client/src/pages/employees-page.tsx|TS2322": 4,
+    "client/src/pages/ops/index.tsx|TS18048": 2,
+    "client/src/pages/org-chart-page.tsx|TS2322": 1,
+    "client/src/pages/scheduling-page.tsx|TS2339": 6,
+    "client/src/pages/scheduling-page.tsx|TS2322": 3,
+    "client/src/pages/scheduling-page.tsx|TS2304": 1,
+    "client/src/pages/studio/camp-detail.tsx|TS2322": 1,
+    "client/src/pages/studio/camp-detail.tsx|TS2353": 1,
+    "client/src/pages/studio/checklists.tsx|TS2339": 2,
+    "client/src/pages/studio/checklists.tsx|TS18048": 2,
+    "client/src/pages/studio/checklists.tsx|TS2304": 2,
+    "client/src/pages/studio/departments.tsx|TS2339": 3,
+    "client/src/pages/studio/event-settings.tsx|TS2322": 1,
+    "client/src/pages/studio/knowledge-base.tsx|TS2322": 1,
+    "client/src/pages/studio/knowledge-base.tsx|TS2345": 1,
+    "client/src/pages/studio/troubleshooting.tsx|TS2724": 1,
+    "client/src/pages/studio/troubleshooting.tsx|TS7006": 1,
+    "client/src/pages/studio/users.tsx|TS2339": 8,
+    "client/src/pages/studio/users.tsx|TS2551": 4,
+    "client/src/pages/verify-phone-page.tsx|TS2339": 1,
+    "server/ai-routes.ts|TS2339": 1,
+    "server/attention-engine.ts|TS2339": 3,
+    "server/attention-engine.ts|TS2367": 1,
+    "server/beo-routes.ts|TS2339": 46,
+    "server/beo-routes.ts|TS2353": 1,
+    "server/beo-routes.ts|TS2769": 1,
+    "server/core/tasksRoutes.ts|TS1117": 2,
+    "server/core/tasksRoutes.ts|TS2488": 6,
+    "server/kiosk-auth.ts|TS2769": 1,
+    "server/lib/batch/utils.ts|TS2339": 2,
+    "server/notification-service.ts|TS2322": 1,
+    "server/parent-experience-routes.ts|TS2349": 1,
+    "server/payroll-reconciliation.ts|TS2322": 1,
+    "server/pdf.ts|TS2339": 2,
+    "server/pdf.ts|TS2345": 1,
+    "server/pdf.ts|TS18048": 1,
+    "server/routes.ts|TS2367": 2,
+    "server/routes.ts|TS2345": 6,
+    "server/routes.ts|TS2339": 35,
+    "server/routes.ts|TS2353": 12,
+    "server/routes.ts|TS2739": 1,
+    "server/routes.ts|TS2322": 10,
+    "server/routes.ts|TS2551": 3,
+    "server/routes.ts|TS2769": 3,
+    "server/routes.ts|TS2820": 1,
+    "server/routes.ts|TS2554": 6,
+    "server/routes.ts|TS2561": 1,
+    "server/storage.ts|TS2322": 6,
+    "server/storage.ts|TS2353": 2,
+    "server/storage.ts|TS2769": 10,
+    "server/storage.ts|TS2339": 1,
+    "server/storage.ts|TS2345": 3,
+    "server/storage.ts|TS2416": 2,
+    "server/voucher-routes.ts|TS2339": 3,
+    "server/voucher-routes.ts|TS2322": 2,
+    "server/xero-routes.ts|TS2345": 3
+  },
+  "perBucketComparison": [
+    {
+      "key": "client/src/components/beo/beo-billing-module.tsx|TS2322",
+      "ci": 1,
+      "local": 1,
+      "localReviewed": 1
+    },
+    {
+      "key": "client/src/components/beo/beo-billing-module.tsx|TS2339",
+      "ci": 1,
+      "local": 1,
+      "localReviewed": 1
+    },
+    {
+      "key": "client/src/components/beo/beo-day-of-view.tsx|TS2322",
+      "ci": 2,
+      "local": 2,
+      "localReviewed": 2
+    },
+    {
+      "key": "client/src/components/beo/beo-day-of-view.tsx|TS2551",
+      "ci": 6,
+      "local": 6,
+      "localReviewed": 6
+    },
+    {
+      "key": "client/src/components/beo/beo-event-editor.tsx|TS2304",
+      "ci": 1,
+      "local": 1,
+      "localReviewed": 1
+    },
+    {
+      "key": "client/src/components/beo/beo-event-editor.tsx|TS2322",
+      "ci": 7,
+      "local": 7,
+      "localReviewed": 7
+    },
+    {
+      "key": "client/src/components/branch-selector.tsx|TS2322",
+      "ci": 3,
+      "local": 3,
+      "localReviewed": 3
+    },
+    {
+      "key": "client/src/components/core/TaskBoard.tsx|TS2322",
+      "ci": 3,
+      "local": 3,
+      "localReviewed": 3
+    },
+    {
+      "key": "client/src/components/ops/TaskDetailSheet.tsx|TS2339",
+      "ci": 4,
+      "local": 4,
+      "localReviewed": 4
+    },
+    {
+      "key": "client/src/components/phone-verification.tsx|TS2339",
+      "ci": 1,
+      "local": 1,
+      "localReviewed": 1
+    },
+    {
+      "key": "client/src/pages/analytics-page.tsx|TS2345",
+      "ci": 1,
+      "local": 1,
+      "localReviewed": 1
+    },
+    {
+      "key": "client/src/pages/auth-page.tsx|TS2322",
+      "ci": 2,
+      "local": 2,
+      "localReviewed": 2
+    },
+    {
+      "key": "client/src/pages/auth-page.tsx|TS2345",
+      "ci": 1,
+      "local": 1,
+      "localReviewed": 1
+    },
+    {
+      "key": "client/src/pages/auth-page.tsx|TS2353",
+      "ci": 1,
+      "local": 1,
+      "localReviewed": 1
+    },
+    {
+      "key": "client/src/pages/branches-page.tsx|TS2339",
+      "ci": 1,
+      "local": 1,
+      "localReviewed": 1
+    },
+    {
+      "key": "client/src/pages/contract-wizard-page.tsx|TS2339",
+      "ci": 2,
+      "local": 2,
+      "localReviewed": 2
+    },
+    {
+      "key": "client/src/pages/contract-wizard-page.tsx|TS2551",
+      "ci": 2,
+      "local": 2,
+      "localReviewed": 2
+    },
+    {
+      "key": "client/src/pages/core/checklist-run.tsx|TS2322",
+      "ci": 4,
+      "local": 4,
+      "localReviewed": 4
+    },
+    {
+      "key": "client/src/pages/core/checklist-run.tsx|TS2551",
+      "ci": 13,
+      "local": 13,
+      "localReviewed": 13
+    },
+    {
+      "key": "client/src/pages/core/checklist-run.tsx|TS2561",
+      "ci": 4,
+      "local": 4,
+      "localReviewed": 4
+    },
+    {
+      "key": "client/src/pages/core/dashboard.tsx|TS2322",
+      "ci": 2,
+      "local": 2,
+      "localReviewed": 2
+    },
+    {
+      "key": "client/src/pages/core/dashboard.tsx|TS2339",
+      "ci": 48,
+      "local": 48,
+      "localReviewed": 48
+    },
+    {
+      "key": "client/src/pages/core/dashboard.tsx|TS2724",
+      "ci": 2,
+      "local": 2,
+      "localReviewed": 2
+    },
+    {
+      "key": "client/src/pages/core/dashboard.tsx|TS2769",
+      "ci": 2,
+      "local": 2,
+      "localReviewed": 2
+    },
+    {
+      "key": "client/src/pages/core/escalate.tsx|TS2322",
+      "ci": 2,
+      "local": 2,
+      "localReviewed": 2
+    },
+    {
+      "key": "client/src/pages/core/escalate.tsx|TS2339",
+      "ci": 10,
+      "local": 10,
+      "localReviewed": 10
+    },
+    {
+      "key": "client/src/pages/core/fix-board.tsx|TS2322",
+      "ci": 1,
+      "local": 1,
+      "localReviewed": 1
+    },
+    {
+      "key": "client/src/pages/core/home.tsx|TS2339",
+      "ci": 1,
+      "local": 1,
+      "localReviewed": 1
+    },
+    {
+      "key": "client/src/pages/core/login.tsx|TS2339",
+      "ci": 1,
+      "local": 1,
+      "localReviewed": 1
+    },
+    {
+      "key": "client/src/pages/core/module-chooser.tsx|TS2339",
+      "ci": 2,
+      "local": 2,
+      "localReviewed": 2
+    },
+    {
+      "key": "client/src/pages/core/report-issue.tsx|TS2322",
+      "ci": 2,
+      "local": 2,
+      "localReviewed": 2
+    },
+    {
+      "key": "client/src/pages/core/report-issue.tsx|TS2339",
+      "ci": 1,
+      "local": 1,
+      "localReviewed": 1
+    },
+    {
+      "key": "client/src/pages/core/rota.tsx|TS2339",
+      "ci": 3,
+      "local": 3,
+      "localReviewed": 3
+    },
+    {
+      "key": "client/src/pages/core/rota.tsx|TS7006",
+      "ci": 6,
+      "local": 6,
+      "localReviewed": 6
+    },
+    {
+      "key": "client/src/pages/core/task-detail.tsx|TS2339",
+      "ci": 1,
+      "local": 1,
+      "localReviewed": 1
+    },
+    {
+      "key": "client/src/pages/core/task-detail.tsx|TS2551",
+      "ci": 2,
+      "local": 2,
+      "localReviewed": 2
+    },
+    {
+      "key": "client/src/pages/core/tasks.tsx|TS2322",
+      "ci": 2,
+      "local": 2,
+      "localReviewed": 2
+    },
+    {
+      "key": "client/src/pages/core/tasks.tsx|TS2339",
+      "ci": 4,
+      "local": 4,
+      "localReviewed": 4
+    },
+    {
+      "key": "client/src/pages/core/tasks.tsx|TS2551",
+      "ci": 2,
+      "local": 2,
+      "localReviewed": 2
+    },
+    {
+      "key": "client/src/pages/core/tasks.tsx|TS2741",
+      "ci": 1,
+      "local": 1,
+      "localReviewed": 1
+    },
+    {
+      "key": "client/src/pages/core/today.tsx|TS2339",
+      "ci": 4,
+      "local": 4,
+      "localReviewed": 4
+    },
+    {
+      "key": "client/src/pages/core/today.tsx|TS2724",
+      "ci": 1,
+      "local": 1,
+      "localReviewed": 1
+    },
+    {
+      "key": "client/src/pages/core/today.tsx|TS7006",
+      "ci": 1,
+      "local": 1,
+      "localReviewed": 1
+    },
+    {
+      "key": "client/src/pages/core/troubleshoot.tsx|TS2322",
+      "ci": 2,
+      "local": 2,
+      "localReviewed": 2
+    },
+    {
+      "key": "client/src/pages/core/troubleshoot.tsx|TS2339",
+      "ci": 1,
+      "local": 1,
+      "localReviewed": 1
+    },
+    {
+      "key": "client/src/pages/core/troubleshoot.tsx|TS2724",
+      "ci": 2,
+      "local": 2,
+      "localReviewed": 2
+    },
+    {
+      "key": "client/src/pages/core_admin/branches.tsx|TS2322",
+      "ci": 2,
+      "local": 2,
+      "localReviewed": 2
+    },
+    {
+      "key": "client/src/pages/core_admin/branches.tsx|TS2339",
+      "ci": 5,
+      "local": 5,
+      "localReviewed": 5
+    },
+    {
+      "key": "client/src/pages/core_admin/events.tsx|TS2339",
+      "ci": 1,
+      "local": 1,
+      "localReviewed": 1
+    },
+    {
+      "key": "client/src/pages/core_admin/index.tsx|TS2322",
+      "ci": 1,
+      "local": 1,
+      "localReviewed": 1
+    },
+    {
+      "key": "client/src/pages/core_admin/users.tsx|TS2322",
+      "ci": 2,
+      "local": 2,
+      "localReviewed": 2
+    },
+    {
+      "key": "client/src/pages/core_admin/users.tsx|TS2339",
+      "ci": 8,
+      "local": 8,
+      "localReviewed": 8
+    },
+    {
+      "key": "client/src/pages/core_admin/users.tsx|TS2551",
+      "ci": 4,
+      "local": 4,
+      "localReviewed": 4
+    },
+    {
+      "key": "client/src/pages/employees-page.tsx|TS2322",
+      "ci": 4,
+      "local": 4,
+      "localReviewed": 4
+    },
+    {
+      "key": "client/src/pages/ops/index.tsx|TS18048",
+      "ci": 2,
+      "local": 2,
+      "localReviewed": 2
+    },
+    {
+      "key": "client/src/pages/org-chart-page.tsx|TS2322",
+      "ci": 1,
+      "local": 1,
+      "localReviewed": 1
+    },
+    {
+      "key": "client/src/pages/scheduling-page.tsx|TS2304",
+      "ci": 1,
+      "local": 1,
+      "localReviewed": 1
+    },
+    {
+      "key": "client/src/pages/scheduling-page.tsx|TS2322",
+      "ci": 3,
+      "local": 3,
+      "localReviewed": 3
+    },
+    {
+      "key": "client/src/pages/scheduling-page.tsx|TS2339",
+      "ci": 6,
+      "local": 6,
+      "localReviewed": 6
+    },
+    {
+      "key": "client/src/pages/studio/camp-detail.tsx|TS2322",
+      "ci": 1,
+      "local": 1,
+      "localReviewed": 1
+    },
+    {
+      "key": "client/src/pages/studio/camp-detail.tsx|TS2353",
+      "ci": 1,
+      "local": 1,
+      "localReviewed": 1
+    },
+    {
+      "key": "client/src/pages/studio/checklists.tsx|TS18048",
+      "ci": 2,
+      "local": 2,
+      "localReviewed": 2
+    },
+    {
+      "key": "client/src/pages/studio/checklists.tsx|TS2304",
+      "ci": 2,
+      "local": 2,
+      "localReviewed": 2
+    },
+    {
+      "key": "client/src/pages/studio/checklists.tsx|TS2339",
+      "ci": 2,
+      "local": 2,
+      "localReviewed": 2
+    },
+    {
+      "key": "client/src/pages/studio/departments.tsx|TS2339",
+      "ci": 3,
+      "local": 3,
+      "localReviewed": 3
+    },
+    {
+      "key": "client/src/pages/studio/event-settings.tsx|TS2322",
+      "ci": 1,
+      "local": 1,
+      "localReviewed": 1
+    },
+    {
+      "key": "client/src/pages/studio/knowledge-base.tsx|TS2322",
+      "ci": 1,
+      "local": 1,
+      "localReviewed": 1
+    },
+    {
+      "key": "client/src/pages/studio/knowledge-base.tsx|TS2345",
+      "ci": 1,
+      "local": 1,
+      "localReviewed": 1
+    },
+    {
+      "key": "client/src/pages/studio/troubleshooting.tsx|TS2724",
+      "ci": 1,
+      "local": 1,
+      "localReviewed": 1
+    },
+    {
+      "key": "client/src/pages/studio/troubleshooting.tsx|TS7006",
+      "ci": 1,
+      "local": 1,
+      "localReviewed": 1
+    },
+    {
+      "key": "client/src/pages/studio/users.tsx|TS2339",
+      "ci": 8,
+      "local": 8,
+      "localReviewed": 8
+    },
+    {
+      "key": "client/src/pages/studio/users.tsx|TS2551",
+      "ci": 4,
+      "local": 4,
+      "localReviewed": 4
+    },
+    {
+      "key": "client/src/pages/verify-phone-page.tsx|TS2339",
+      "ci": 1,
+      "local": 1,
+      "localReviewed": 1
+    },
+    {
+      "key": "server/ai-routes.ts|TS2339",
+      "ci": 1,
+      "local": 1,
+      "localReviewed": 1
+    },
+    {
+      "key": "server/attention-engine.ts|TS2339",
+      "ci": 3,
+      "local": 3,
+      "localReviewed": 3
+    },
+    {
+      "key": "server/attention-engine.ts|TS2367",
+      "ci": 1,
+      "local": 1,
+      "localReviewed": 1
+    },
+    {
+      "key": "server/beo-routes.ts|TS2339",
+      "ci": 46,
+      "local": 46,
+      "localReviewed": 46
+    },
+    {
+      "key": "server/beo-routes.ts|TS2353",
+      "ci": 1,
+      "local": 1,
+      "localReviewed": 1
+    },
+    {
+      "key": "server/beo-routes.ts|TS2769",
+      "ci": 1,
+      "local": 1,
+      "localReviewed": 1
+    },
+    {
+      "key": "server/core/tasksRoutes.ts|TS1117",
+      "ci": 2,
+      "local": 2,
+      "localReviewed": 2
+    },
+    {
+      "key": "server/core/tasksRoutes.ts|TS2488",
+      "ci": 6,
+      "local": 6,
+      "localReviewed": 6
+    },
+    {
+      "key": "server/kiosk-auth.ts|TS2769",
+      "ci": 1,
+      "local": 1,
+      "localReviewed": 1
+    },
+    {
+      "key": "server/lib/batch/utils.ts|TS2339",
+      "ci": 2,
+      "local": 2,
+      "localReviewed": 2
+    },
+    {
+      "key": "server/notification-service.ts|TS2322",
+      "ci": 1,
+      "local": 1,
+      "localReviewed": 1
+    },
+    {
+      "key": "server/parent-experience-routes.ts|TS2349",
+      "ci": 1,
+      "local": 1,
+      "localReviewed": 1
+    },
+    {
+      "key": "server/payroll-reconciliation.ts|TS2322",
+      "ci": 1,
+      "local": 1,
+      "localReviewed": 1
+    },
+    {
+      "key": "server/pdf.ts|TS18048",
+      "ci": 1,
+      "local": 1,
+      "localReviewed": 1
+    },
+    {
+      "key": "server/pdf.ts|TS2339",
+      "ci": 2,
+      "local": 2,
+      "localReviewed": 2
+    },
+    {
+      "key": "server/pdf.ts|TS2345",
+      "ci": 1,
+      "local": 1,
+      "localReviewed": 1
+    },
+    {
+      "key": "server/routes.ts|TS2322",
+      "ci": 10,
+      "local": 10,
+      "localReviewed": 10
+    },
+    {
+      "key": "server/routes.ts|TS2339",
+      "ci": 35,
+      "local": 35,
+      "localReviewed": 35
+    },
+    {
+      "key": "server/routes.ts|TS2345",
+      "ci": 6,
+      "local": 6,
+      "localReviewed": 6
+    },
+    {
+      "key": "server/routes.ts|TS2353",
+      "ci": 12,
+      "local": 12,
+      "localReviewed": 12
+    },
+    {
+      "key": "server/routes.ts|TS2367",
+      "ci": 2,
+      "local": 2,
+      "localReviewed": 2
+    },
+    {
+      "key": "server/routes.ts|TS2551",
+      "ci": 3,
+      "local": 3,
+      "localReviewed": 3
+    },
+    {
+      "key": "server/routes.ts|TS2554",
+      "ci": 6,
+      "local": 6,
+      "localReviewed": 6
+    },
+    {
+      "key": "server/routes.ts|TS2561",
+      "ci": 1,
+      "local": 1,
+      "localReviewed": 1
+    },
+    {
+      "key": "server/routes.ts|TS2739",
+      "ci": 1,
+      "local": 1,
+      "localReviewed": 1
+    },
+    {
+      "key": "server/routes.ts|TS2769",
+      "ci": 3,
+      "local": 3,
+      "localReviewed": 3
+    },
+    {
+      "key": "server/routes.ts|TS2820",
+      "ci": 1,
+      "local": 1,
+      "localReviewed": 1
+    },
+    {
+      "key": "server/storage.ts|TS2322",
+      "ci": 6,
+      "local": 6,
+      "localReviewed": 6
+    },
+    {
+      "key": "server/storage.ts|TS2339",
+      "ci": 1,
+      "local": 1,
+      "localReviewed": 1
+    },
+    {
+      "key": "server/storage.ts|TS2345",
+      "ci": 3,
+      "local": 3,
+      "localReviewed": 3
+    },
+    {
+      "key": "server/storage.ts|TS2353",
+      "ci": 2,
+      "local": 2,
+      "localReviewed": 2
+    },
+    {
+      "key": "server/storage.ts|TS2416",
+      "ci": 2,
+      "local": 2,
+      "localReviewed": 2
+    },
+    {
+      "key": "server/storage.ts|TS2769",
+      "ci": 10,
+      "local": 10,
+      "localReviewed": 10
+    },
+    {
+      "key": "server/voucher-routes.ts|TS2322",
+      "ci": 2,
+      "local": 2,
+      "localReviewed": 2
+    },
+    {
+      "key": "server/voucher-routes.ts|TS2339",
+      "ci": 3,
+      "local": 3,
+      "localReviewed": 3
+    },
+    {
+      "key": "server/xero-routes.ts|TS2345",
+      "ci": 3,
+      "local": 3,
+      "localReviewed": 3
+    }
+  ],
+  "increased": [],
+  "reduced": [],
+  "diagnosticHeaderDifferences": [],
+  "innerBody": {
+    "ciLines": 660,
+    "localLines": 660,
+    "ciTrimmedSha256": "a7c08193f21e4cc0466a7d9e634124a183485e6b7688815a662e82733e8dec32",
+    "localTrimmedSha256": "9c047febc3e3403ae89425a72070b91e93de7ba060876cbfe93bded6848612ab",
+    "exactlyEqual": false,
+    "differences": [
+      {
+        "bodyLine": 396,
+        "ci": "  Each member of the union type '(<TSelection extends Omit<DBQueryConfig<\"many\", true, ExtractTablesWithRelations<typeof import(\"/home/runner/work/oto-platform/oto-platform/apps/oto-app/shared/schema\")>, { ...; }>, \"limit\">>(config?: KnownKeysOnly<...> | undefined) => PgRelationalQuery<...>) | (<TSelection extends Omit<...>>(config?: KnownKeysOnly<...' has signatures, but none of those signatures are compatible with each other.",
+        "local": "  Each member of the union type '(<TSelection extends Omit<DBQueryConfig<\"many\", true, ExtractTablesWithRelations<typeof import(\"/workspace/apps/oto-app/shared/schema\")>, { tsName: \"parentPortalTokens\"; dbName: \"parent_portal_tokens\"; columns: { ...; }; relations: never; primaryKey: AnyColumn[]; }>, \"limit\">>(config?: KnownKeysOnly<...> | undefined...' has signatures, but none of those signatures are compatible with each other."
+      }
+    ],
+    "explanation": "After removing only GitHub error annotations and outer step/wrapper metadata, the 660-line bodies differ in one multiline continuation. The longer GitHub checkout path changes TypeScript type-display truncation for the existing parent-experience-routes TS2349. All 418 diagnostic headers, exact source locations, codes and messages remain identical. No diagnostic was discarded or matched solely by count."
+  },
+  "jobs": [
+    {
+      "id": "120869157520",
+      "name": "oto-app",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": "120869157658",
+      "name": "ci",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": "120869157675",
+      "name": "pos-tests",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": "120869157713",
+      "name": "api-tests (3)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": "120869157731",
+      "name": "api-tests (1)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": "120869157811",
+      "name": "api-tests (2)",
+      "status": "completed",
+      "conclusion": "success"
+    }
+  ],
+  "actualCompilerStep": {
+    "completedAt": "2026-10-24T12:14:13Z",
+    "conclusion": "success",
+    "name": "The OTO App's inherited typecheck ceiling",
+    "number": 8,
+    "startedAt": "2026-10-24T12:13:09Z",
+    "status": "completed"
+  },
+  "inputHashes": {
+    "capturePath": "C:/w/admin631-ci-compiler.json",
+    "captureSha256": "3f0511f9408f8d7648726777018014b913b6c6ec22c545677ef1166bc39423e6",
+    "logPath": "C:/w/admin631-ci-compiler.log",
+    "logSha256": "44f5b625542b69038b909f2d915ff0aea9835dc5c25c2e3b33b2f67b6f8d58c8",
+    "finalRunPath": "C:/w/admin631-ci-final.json",
+    "finalRunSha256": "24924f467f80ebfb58116900b0438186dd6852447418567e14e8ca2ec834a8f4",
+    "localLogPath": "C:/w/admin631-final-oto/ratchet.log",
+    "localLogSha256": "dc40074bce089091ed1fc74bdd490d81d3d20bfc62885674d250a577743e4601",
+    "localReceiptPath": "C:/w/admin631-final-oto/ratchet.json",
+    "localReceiptSha256": "7dbb91387d6a6d5bbec320332db0586f2bb70c29a0684d10297a25ced7294dd4",
+    "localReviewPath": "C:/w/admin631-final-oto/compiler-review.json",
+    "localReviewSha256": "32f0a744c139aa27dcd52f136b9966edc9379045e5f35e8d973d6be5c25ce184"
+  },
+  "anomalies": [],
+  "limitations": [
+    "All668 actual CI step lines were independently read in six untruncated ranges, including command context and complete multiline diagnostics. The whole final-run capture was parsed and every job/source/step identity and conclusion checked; no live GitHub request was made by this reviewer.",
+    "The raw CI output has GitHub error annotations for inherited TypeScript diagnostics. A successful ratchet step retains exactly 418 diagnostics / 54 files / 109 file-code buckets; it is not a diagnostic-free compiler. The stale AGENTS 467 count does not replace the current committed ceiling.",
+    "No numeric shell exit code is present in the captured GitHub step metadata. Its completed-success conclusion and completed-success oto-app job are confirmed; the local command independently records exit 0.",
+    "CI and local inner bodies are not byte-identical. The one expected path/truncation continuation difference is explicitly preserved; diagnostic identity and every file/code bucket are exactly equal.",
+    "This review certifies the captured exact-source CI compiler step and six-job state. Automatic deployment readiness, database-view privileges, auth/census, staging mutation/native PNGs and Jira Deployed remain separate coordinator work. No auth, runtime, Git or network action was performed."
+  ]
+}

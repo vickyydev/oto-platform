@@ -1,0 +1,24 @@
+{
+  "ticket": "SCRUM-631",
+  "purpose": "exact-source-department-mirror-release",
+  "sourceSha": "1462f5158f236c957523bd81b40355ad67fbfc49",
+  "ciRunId": "40092931105",
+  "recordedAt": "2026-10-24T12:39:51.358Z",
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "deployId": "dep-dbeaaqg473hc738sudf0",
+      "finishedAt": "2026-10-24T12:35:50.862284Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "deployId": "dep-dbeaaqg473hc738sug9g",
+      "finishedAt": "2026-10-24T12:33:29.84063Z"
+    },
+    {
+      "name": "oto-app-staging",
+      "deployId": "dep-dbeaaqg473hc738suee0",
+      "finishedAt": "2026-10-24T12:35:19.797903Z"
+    }
+  ]
+}
