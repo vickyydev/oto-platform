@@ -524,7 +524,10 @@ describe('A. fences and seams', () => {
   });
 
   it('nothing of round 7 in the app: Data Admin’s Attention 503 stands and its four document models are untouched by the round', () => {
-    expect(readFileSync(join(APP_SERVER, 'data-admin', 'router.ts'), 'utf8')).toContain('dataAdminContext.run({ tenantId }, next)');
+    const dataAdminRouter = readFileSync(join(APP_SERVER, 'data-admin', 'router.ts'), 'utf8');
+    expect(dataAdminRouter).toContain('dataAdminContext.run({ tenantId, actorOperatorId: caller.operatorId }, next)');
+    expect(dataAdminRouter).toContain('.select({ id: users.id, operatorId: users.operatorId })');
+    expect(dataAdminRouter).toContain('eq(users.id, req.user.id), userScope(users.id, tenantId)');
     for (const model of ['template.ts', 'policyDocument.ts', 'assetCatalog.ts', 'leavePolicy.ts']) {
       expect(readFileSync(join(APP_SERVER, 'data-admin', 'models', model), 'utf8'), model).not.toMatch(/tenantId|tenant_id/);
     }

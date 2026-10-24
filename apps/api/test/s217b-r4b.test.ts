@@ -694,7 +694,10 @@ describe('C. read off the code', () => {
     expect(routes).not.toMatch(/Attention updates are unavailable until tenant ownership is recorded/);
     expect(routes).not.toMatch(/Attention refresh is unavailable until tenant jobs are isolated/);
     expect(routes).toMatch(/holdNightBatch\(pool, "attention", scope\.tenantId\)/);
-    expect(readFileSync(join(APP_SERVER, 'data-admin', 'router.ts'), 'utf8')).toContain('dataAdminContext.run({ tenantId }, next)');
+    const dataAdminRouter = readFileSync(join(APP_SERVER, 'data-admin', 'router.ts'), 'utf8');
+    expect(dataAdminRouter).toContain('dataAdminContext.run({ tenantId, actorOperatorId: caller.operatorId }, next)');
+    expect(dataAdminRouter).toContain('.select({ id: users.id, operatorId: users.operatorId })');
+    expect(dataAdminRouter).toContain('eq(users.id, req.user.id), userScope(users.id, tenantId)');
     // The time-off approval 503s were round 5's to lift (Q1,
     // apps/api/test/s217b-r5.test.ts), the legacy-table guard round 6's
     // (apps/api/test/s217b-r6.test.ts); Data Admin's Attention 503 is round 7's.

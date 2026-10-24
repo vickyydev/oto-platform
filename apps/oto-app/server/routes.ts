@@ -8,6 +8,8 @@ import { registerQaRoutes } from "./qa/routes";
 import { registerSuiteSignInRoutes, unusablePassword } from "./suite-sign-in-routes";
 import { readPhone } from "./lib/suiteSignIn";
 import { legacyLoginEnabled, legacyPasswordsOnly } from "./middleware/platformSignOn";
+import { loadAdminManagement } from "./lib/adminManagement";
+import { managedInAdminResponse, managedInAdminResponseSchema } from "@shared/adminManagement";
 import _express, { type Express, type Request, type Response, type NextFunction } from "express";
 import { createServer as _createServer, type Server } from "http";
 import { storage, assertScheduleDeleteScope, resolveFixReportStatusFilter, type ActivityParkGroup, type AttentionReadScope } from "./storage";
@@ -988,6 +990,47 @@ export async function registerRoutes(
     return (await managedUserTenant(req.user.id)) === tenantId ? tenantId : undefined;
   };
 
+
+  // These guards run after each route's existing authentication and ownership checks.
+  // Entity ownership stays explicit: an unassigned record does not inherit a tenant flag.
+  const administrationManagement = async (req: Request) => {
+    const tenantId = req.userWithAccess?.tenantId;
+    if (!tenantId) throw new Error("Administration tenant is unavailable");
+    return loadAdminManagement(tenantId, req.userWithAccess?.operatorId, storage);
+  };
+
+  const refuseManagedAdministration = async (
+    req: Request,
+    res: Response,
+    userIds: readonly (string | null | undefined)[] = [],
+    operatorIds: readonly (string | null | undefined)[] = [],
+  ): Promise<boolean> => {
+    const management = await administrationManagement(req);
+    const ids = [...new Set(userIds.filter((id): id is string => typeof id === "string"))];
+    const targets = await Promise.all(ids.map(id => storage.getUser(id)));
+    if (!management.writeManaged([...operatorIds, ...targets.flatMap(user => user ? [user.operatorId] : [])])) return false;
+    res.status(409).json(managedInAdminResponseSchema.parse(managedInAdminResponse));
+    return true;
+  };
+
+  const administrationPersonUsers = async (
+    person: { id: string; email: string | null; personType?: string },
+    emailLookup: "advisor" | "exact" = "advisor",
+  ): Promise<string[]> => {
+    const [policy, linkedEmployees] = await Promise.all([
+      storage.getAccessPolicy(person.id), storage.getEmployeesByPersonId(person.id),
+    ]);
+    // Bulk permissions use an exact email match; single advisor access uses
+    // the existing case-insensitive lookup. Guard the same login as the writer.
+    const fallback = !linkedEmployees[0]?.userId && person.email
+      ? emailLookup === "exact"
+        ? (await storage.getUsers()).find(user => user.email === person.email)
+        : person.personType === "ADVISOR" ? await storage.getUserByEmail(person.email) : undefined
+      : undefined;
+    return [...new Set([policy?.coreUserId, ...linkedEmployees.map(employee => employee.userId), fallback?.id]
+      .filter((id): id is string => typeof id === "string"))];
+  };
+
   const publicManagedUser = <T extends { password: string }>(user: T) => {
     const { password: _password, ...safeUser } = user;
     return safeUser;
@@ -1019,9 +1062,10 @@ export async function registerRoutes(
     try {
       const tenantId = await userManagementTenant(req);
       if (!tenantId) return res.status(403).json({ message: "Access denied" });
+      const management = await administrationManagement(req);
       const allUsers = await storage.getUsersWithBranchAccess();
       const scoped = await Promise.all(allUsers.map(async user =>
-        (await managedUserTenant(user.id)) === tenantId ? publicManagedUser(user) : null));
+        (await managedUserTenant(user.id)) === tenantId ? { ...publicManagedUser(user), managedInAdmin: management.operatorManaged(user.operatorId) } : null));
       res.json(scoped.filter(user => user !== null));
     } catch (error) {
       next(error);
@@ -1052,6 +1096,7 @@ export async function registerRoutes(
       if (!req.body || typeof req.body !== "object" || Array.isArray(req.body)) {
         return res.status(400).json({ message: "Invalid user data" });
       }
+      if (await refuseManagedAdministration(req, res)) return;
       const { email, password, fullName, role, accessScope, branchIds, mustChangePassword = true, phoneNumber } = req.body;
       // SCRUM-539: with this app's own sign-in closed, a password typed here
       // opens nothing, so none is asked for: the person gets a suite sign-in
@@ -1184,6 +1229,7 @@ export async function registerRoutes(
       if (linkedEmployee && linkedEmployee.tenantId !== tenantId) {
         return res.status(409).json({ message: "Linked employee belongs to another tenant" });
       }
+      if (await refuseManagedAdministration(req, res, [req.params.id])) return;
       const updateData: any = {};
       if (email !== undefined) updateData.email = email;
       if (fullName !== undefined) updateData.fullName = fullName;
@@ -1276,6 +1322,7 @@ export async function registerRoutes(
         return res.status(403).json({ message: "This account is managed outside User Management" });
       }
       
+      if (await refuseManagedAdministration(req, res, [req.params.id])) return;
       const hashedPassword = await hashPassword(password);
       await storage.resetUserPassword(req.params.id, hashedPassword, req.user!.id);
       
@@ -1531,6 +1578,7 @@ export async function registerRoutes(
       if ((await managedUserTenant(req.params.id)) !== tenantId) {
         return res.status(404).json({ message: "User not found" });
       }
+      if (await refuseManagedAdministration(req, res, [req.params.id])) return;
       const user = await storage.updateUser(req.params.id, { permissionReviewRequired: false } as any);
       res.json(publicManagedUser(user));
     } catch (error) {
@@ -1664,6 +1712,7 @@ export async function registerRoutes(
       // One transaction, and the same words for the two cases that used to
       // end in a bare 500 or a broken platform link: a user the app still
       // references, and a user the platform has linked (S2-17b round 1).
+      if (await refuseManagedAdministration(req, res, [req.params.id])) return;
       const outcome = await deleteManagedUser(pool, req.params.id);
       if (!outcome.deleted) {
         return res.status(outcome.status).json(
@@ -2125,6 +2174,7 @@ export async function registerRoutes(
       if (!result.success) {
         return res.status(400).json({ message: "Invalid operator data", errors: result.error.flatten() });
       }
+      if (await refuseManagedAdministration(req, res)) return;
       const operator = await storage.createOperator(result.data);
       res.status(201).json(operator);
     } catch (error) {
@@ -2143,6 +2193,7 @@ export async function registerRoutes(
       if (!parsed.success || Object.keys(parsed.data).length === 0) {
         return res.status(400).json({ message: "Invalid operator data" });
       }
+      if (await refuseManagedAdministration(req, res, [], [operator.id])) return;
       const updated = await storage.updateOperator(req.params.id, parsed.data);
       res.json(updated);
     } catch (error) {
@@ -2169,6 +2220,7 @@ export async function registerRoutes(
       if (assignedUsers.length > 0) {
         return res.status(400).json({ message: "Cannot delete operator with assigned users", userCount: assignedUsers.length });
       }
+      if (await refuseManagedAdministration(req, res, [], [operator.id])) return;
       await storage.deleteOperator(req.params.id);
       res.json({ success: true });
     } catch (error) {
@@ -2182,7 +2234,8 @@ export async function registerRoutes(
       const operator = await operatorForUser(req.userWithAccess, req.params.id);
       if (!operator) return res.status(404).json({ message: "Operator not found" });
       const assigned = await usersForOperator(req.params.id, operator.tenantId);
-      res.json(assigned.map(({ password: _password, ...user }) => user));
+      const management = await administrationManagement(req);
+      res.json(assigned.map(({ password: _password, ...user }) => ({ ...user, managedInAdmin: management.operatorManaged(user.operatorId) })));
     } catch (error) {
       next(error);
     }
@@ -2210,6 +2263,7 @@ export async function registerRoutes(
       // First, unassign all branches currently assigned to this operator
       const currentBranches = (await storage.getBranchesByOperator(req.params.id))
         .filter(branch => branch.tenantId === operator.tenantId);
+      if (await refuseManagedAdministration(req, res, [], [operator.id])) return;
       const currentBranchIds = currentBranches.map(b => b.id);
       if (currentBranchIds.length > 0) {
         await storage.assignBranchesToOperator(null, currentBranchIds);
@@ -2253,6 +2307,7 @@ export async function registerRoutes(
       if (scopedCurrentUsers.length !== currentUsers.length) {
         return res.status(409).json({ message: "Operator has users with unresolved tenant access" });
       }
+      if (await refuseManagedAdministration(req, res, [...selected.map(user => user.id), ...currentUsers.map(user => user.id)], [operator.id])) return;
       const currentUserIds = currentUsers.map(u => u.id);
       if (currentUserIds.length > 0) {
         await storage.assignUsersToOperator(null, currentUserIds);
@@ -14877,6 +14932,7 @@ OTO Company Limited`,
       if (linkedUser && !keepsRole && grantedRole === "operator_admin" && !grantedOperatorId) {
         return res.status(403).json({ message: "Your login has no operator, so it cannot grant ADMIN. Ask a global admin." });
       }
+      if (await refuseManagedAdministration(req, res, await administrationPersonUsers(person), [grantedOperatorId])) return;
       let policy;
       if (existingPolicy) {
         policy = await storage.updateAccessPolicy(id, validatedData);
@@ -27517,6 +27573,7 @@ ${context}`;
       for (const override of overrides) {
         if (!(await managedBranchIds(override.branchIds, tenantId))) return res.status(404).json({ message: "Branch not found" });
       }
+      if (await refuseManagedAdministration(req, res, [userId])) return;
       const result = await storage.setModuleOverrides(userId, tenantId, overrides, req.user!.id);
 
       // Log activity
@@ -27545,6 +27602,7 @@ ${context}`;
       const parkGroup = await userManagementTenant(req);
       if (!parkGroup) return res.status(403).json({ message: "Access denied" });
       if ((await managedUserTenant(userId)) !== parkGroup) return res.status(404).json({ message: "User not found" });
+      if (await refuseManagedAdministration(req, res, [userId])) return;
       await storage.deleteModuleOverrides(userId, parkGroup);
       res.json({ success: true });
     } catch (error) {
@@ -27582,6 +27640,7 @@ ${context}`;
         return "STAFF";
       };
 
+      const management = await administrationManagement(req);
       const results = await Promise.all(activePeople.map(async (person) => {
         const accessPolicy = await storage.getAccessPolicy(person.id);
         const employee = allEmployees.find(e => e.personId === person.id);
@@ -27626,6 +27685,8 @@ ${context}`;
 
         return {
           personId: person.id,
+          managedInAdmin: (await Promise.all((await administrationPersonUsers(person, "exact")).map(id => storage.getUser(id))))
+            .some(target => management.operatorManaged(target?.operatorId)),
           fullName: person.fullName,
           preferredName: person.preferredName,
           nickname: employee?.nickname || null,
@@ -27671,6 +27732,13 @@ ${context}`;
       const resolvedTenantId = await userManagementTenant(req);
       if (!resolvedTenantId) return res.status(403).json({ message: "Access denied" });
 
+      const affectedUserIds: string[] = [];
+      for (const personId of personIds) {
+        const person = await storage.getPerson(personId);
+        if (!person || (await personParkGroup(person)) !== resolvedTenantId) continue;
+        affectedUserIds.push(...await administrationPersonUsers(person, "exact"));
+      }
+      if (await refuseManagedAdministration(req, res, affectedUserIds)) return;
       let updated = 0;
       let skipped = 0;
       for (const personId of personIds) {
@@ -27821,7 +27889,8 @@ ${context}`;
       };
 
       const effective = getEffectivePermissions(ctx);
-      res.json(effective);
+      const management = await administrationManagement(req);
+      res.json({ ...effective, managedInAdmin: management.actorManaged });
     } catch (error) {
       next(error);
     }

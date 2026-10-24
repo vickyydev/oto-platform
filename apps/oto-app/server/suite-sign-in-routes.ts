@@ -4,6 +4,8 @@ import { storage } from "./storage";
 import { hashPassword } from "./auth";
 import { legacyLoginEnabled } from "./middleware/platformSignOn";
 import { SUITE_PROVISION_UNCONFIGURED, provisionSuiteSignIn, readPhone, suiteProvisionConfig } from "./lib/suiteSignIn";
+import { loadAdminManagement } from "./lib/adminManagement";
+import { managedInAdminResponse, managedInAdminResponseSchema } from "@shared/adminManagement";
 
 /**
  * "Provision suite sign-in" on the Users screen and on an advisor's Core
@@ -101,6 +103,14 @@ async function provisionFor(
 }
 
 export function registerSuiteSignInRoutes(app: Express, deps: SuiteSignInDeps): void {
+  const refuseManaged = async (req: Request, res: Response, tenantId: string, userIds: readonly (string | null | undefined)[]) => {
+    const ids = [...new Set(userIds.filter((id): id is string => typeof id === "string"))];
+    const targets = await Promise.all(ids.map(id => storage.getUser(id)));
+    const management = await loadAdminManagement(tenantId, req.userWithAccess?.operatorId, storage);
+    if (!management.writeManaged(targets.flatMap(user => user ? [user.operatorId] : []))) return false;
+    res.status(409).json(managedInAdminResponseSchema.parse(managedInAdminResponse));
+    return true;
+  };
   app.post("/api/users/:id/suite-sign-in", deps.requireGlobalAdmin, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const tenantId = await deps.userManagementTenant(req);
@@ -115,6 +125,7 @@ export function registerSuiteSignInRoutes(app: Express, deps: SuiteSignInDeps): 
       if (["global_admin", "operator_admin", "advisor"].includes(user.role)) {
         return res.status(403).json({ message: "This account is managed outside User Management" });
       }
+      if (await refuseManaged(req, res, tenantId, [user.id])) return;
       // An already linked person is the platform's answer to give, not ours: the
       // same press again is its replay, any other press its refusal.
       return await provisionFor(
@@ -166,6 +177,10 @@ export function registerSuiteSignInRoutes(app: Express, deps: SuiteSignInDeps): 
       if (user && user.role !== "advisor") {
         return res.status(409).json({ message: "This email belongs to a user who is not an advisor; give them a sign-in from Setup > Users" });
       }
+      const [policy, linkedEmployees] = await Promise.all([
+        storage.getAccessPolicy(person.id), storage.getEmployeesByPersonId(person.id),
+      ]);
+      if (await refuseManaged(req, res, tenantId, [user?.id, policy?.coreUserId, ...linkedEmployees.map(employee => employee.userId)])) return;
       // An already linked person is the platform's answer to give, not ours: the
       // same press again is its replay, any other press its refusal.
 
@@ -186,7 +201,6 @@ export function registerSuiteSignInRoutes(app: Express, deps: SuiteSignInDeps): 
          * branch access from that policy — with a password nothing accepts,
          * because the launcher is their way in.
          */
-        const policy = await storage.getAccessPolicy(person.id);
         if (!policy) {
           return res.status(409).json({ message: "Set this advisor's access policy (Manage Access) before giving them a sign-in" });
         }

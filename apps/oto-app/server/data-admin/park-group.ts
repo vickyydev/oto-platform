@@ -2,14 +2,21 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import { and, eq, getTableColumns, sql, type SQL } from 'drizzle-orm';
 import { getTableConfig, type AnyPgColumn, type AnyPgTable } from 'drizzle-orm/pg-core';
 import * as schema from '../../shared/schema';
+import { managedInAdminResponse } from '../../shared/adminManagement';
 
-export const dataAdminContext = new AsyncLocalStorage<{ tenantId: string }>();
+export const dataAdminContext = new AsyncLocalStorage<{ tenantId: string; actorOperatorId?: string | null }>();
 export class DataAdminScopeError extends Error {
   constructor(
     readonly status: number,
     message: string,
   ) {
     super(message);
+  }
+}
+
+export class DataAdminManagedError extends DataAdminScopeError {
+  constructor() {
+    super(409, managedInAdminResponse.message);
   }
 }
 

@@ -560,8 +560,9 @@ async function maintenanceRows(
   const at = { tenant_id: tenantId, branch_id: branchId };
   const pending = await employeeRow({ ...at, status: 'pending' });
   const template = newId();
-  await q(`insert into templates (id, name, html_body) values ($1, $2, '<p>ZZ</p>')`, [
+  await q(`insert into templates (id, tenant_id, name, html_body) values ($1, $2, $3, '<p>ZZ</p>')`, [
     template,
+    tenantId,
     `ZZ recheck ${template.slice(-4)}`,
   ]);
   await q(
@@ -956,8 +957,9 @@ describe.skipIf(!HAS_APP_RUNTIME)('B. the app over HTTP: production, staging and
     /** What an employee delete would archive, return and clear — so a refusal that wrote first shows. */
     async function history(employee: string): Promise<void> {
       const template = newId();
-      await q(`insert into templates (id, name, html_body) values ($1, $2, '<p>ZZ</p>')`, [
+      await q(`insert into templates (id, tenant_id, name, html_body) values ($1, $2, $3, '<p>ZZ</p>')`, [
         template,
+        tenantA,
         `ZZ recheck history ${template.slice(-4)}`,
       ]);
       await q(
@@ -1064,6 +1066,13 @@ describe.skipIf(!HAS_APP_RUNTIME)('B. the app over HTTP: production, staging and
           )
         )[0]!.n,
       );
+    // SCRUM-547 names retained history before the login leaving with it.
+    // Every history() fixture above has exactly one contract.
+    const employeeRecordRefusal = (id: string) => ({
+      reason: 'has_records',
+      message: `ZZ recheck employee ${id.slice(-4)} cannot be deleted: they have 1 contract. Their history is kept for the record; offboard them instead to end their employment.`,
+      blocking: [{ label: 'contracts', count: 1 }],
+    });
 
     it('a linked, a referenced and a linked-and-referenced user survive all four doors for every caller, and not one row changes', async () => {
       const appBefore = await appTables();
@@ -1097,10 +1106,20 @@ describe.skipIf(!HAS_APP_RUNTIME)('B. the app over HTTP: production, staging and
           const expected = { none: 401, staffA: 403, adminB: 404, noRow: 403, adminA: 409 }[who];
           expect(res.status, `${door} door, ${reason}, as ${who}: ${res.text}`).toBe(expected);
           if (expected === 409) {
-            expect(res.body, `${door} door as ${who}`).toEqual({
-              message: DEACTIVATE_INSTEAD,
-              reason,
-            });
+            if (door === 'employees') {
+              expect(res.body, `${door} door as ${who}`).toEqual(employeeRecordRefusal(target));
+            } else if ([fixtures.linked, fixtures.referenced, fixtures.both].some((f) => f.person === target)) {
+              expect(res.body, `${door} door as ${who}`).toEqual({
+                reason: 'has_records',
+                message: 'ZZ recheck person has an employee record, so they cannot be deleted here. Delete or offboard them from Employees instead.',
+                blocking: [{ label: 'employee records', count: 1 }],
+              });
+            } else {
+              expect(res.body, `${door} door as ${who}`).toEqual({
+                message: DEACTIVATE_INSTEAD,
+                reason,
+              });
+            }
           }
           if (expected === 404) {
             expect(res.body, `${door} door as ${who}`).toEqual({
@@ -1133,8 +1152,7 @@ describe.skipIf(!HAS_APP_RUNTIME)('B. the app over HTTP: production, staging and
             results: all.map((f) => ({
               id: f.employee,
               status: 'error',
-              message: DEACTIVATE_INSTEAD,
-              reason: f.reason,
+              ...employeeRecordRefusal(f.employee),
             })),
           });
         }
@@ -1229,7 +1247,7 @@ describe.skipIf(!HAS_APP_RUNTIME)('B. the app over HTTP: production, staging and
         deletedCount: 1,
         errorCount: 1,
         results: [
-          { id: fixtures.linked.employee, status: 'error', reason: 'linked_to_platform' },
+          { id: fixtures.linked.employee, status: 'error', ...employeeRecordRefusal(fixtures.linked.employee) },
           { id: viaBulkRow, status: 'deleted' },
         ],
       });

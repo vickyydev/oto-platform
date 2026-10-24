@@ -1,6 +1,6 @@
 // seed: its own, disposable ZZ TEST rows; the caller supplies a migrated scratch database.
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import { createHash, randomBytes, randomUUID, scryptSync } from 'node:crypto';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -1164,4 +1164,13 @@ try {
 } finally {
   child?.kill();
   await pool.end();
+}
+
+// Keep managed administration and alternate-writer checks in the existing
+// migrated-database CI entry, using their own disposable ZZ TEST fixtures.
+for (const file of ['admin-managed.check.ts', 'admin-managed-alternate.check.ts']) {
+  execFileSync(process.execPath, [join(appDir, 'node_modules/tsx/dist/cli.mjs'), join(appDir, 'tests', file)], {
+    cwd: appDir,
+    stdio: 'inherit',
+  });
 }

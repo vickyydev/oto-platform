@@ -7,8 +7,10 @@ import {
   userScope,
   dataAdminContext,
   DataAdminScopeError,
+  DataAdminManagedError,
 } from './park-group';
 import { users } from '../../shared/schema';
+import { managedInAdminResponse, managedInAdminResponseSchema } from '../../shared/adminManagement';
 import attentionAdmin from './models/attentionItem';
 import { register, getAdmin, getAllAdmins, getAdminMap } from './registry';
 import { SettingsWriteRefusedError } from '../lib/parkGroupSettings';
@@ -199,12 +201,12 @@ router.use(async (req: Request, res: Response, next) => {
   if (!tenantId || !req.user?.id) return res.status(403).json({ error: 'Access denied' });
   try {
     const [caller] = await db
-      .select({ id: users.id })
+      .select({ id: users.id, operatorId: users.operatorId })
       .from(users)
       .where(and(eq(users.id, req.user.id), userScope(users.id, tenantId)))
       .limit(1);
     if (!caller) return res.status(403).json({ error: 'Access denied' });
-    dataAdminContext.run({ tenantId }, next);
+    dataAdminContext.run({ tenantId, actorOperatorId: caller.operatorId }, next);
   } catch (error) {
     next(error);
   }
@@ -212,6 +214,10 @@ router.use(async (req: Request, res: Response, next) => {
 
 /** A settings write the Setting model refused (round 4a): the same 409 in words as /api/settings. */
 function answerSettingsRefusal(res: Response, err: unknown): boolean {
+  if (err instanceof DataAdminManagedError) {
+    res.status(409).json(managedInAdminResponseSchema.parse(managedInAdminResponse));
+    return true;
+  }
   if (err instanceof DataAdminScopeError) {
     res.status(err.status).json({ error: err.message });
     return true;

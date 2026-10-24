@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -42,6 +42,10 @@ import { Plus, MoreHorizontal, Pencil, UserX, UserCheck, KeyRound, Search, LogIn
 import { formatDate } from "@/lib/format-utils";
 import { useLegacyLoginOff } from "@/lib/sign-in-options";
 import { LauncherPasswordNote, SuiteSignInDialog } from "@/components/suite-sign-in";
+import { useAdminManagement, type ManagedTarget } from "@/hooks/use-admin-management";
+import { ManagedInAdminNotice } from "@/components/managed-in-admin-notice";
+
+type ManagedUser = UserWithBranchAccess & ManagedTarget;
 
 type UserFormData = {
   email: string;
@@ -55,6 +59,7 @@ type UserFormData = {
 
 export default function UsersPage() {
   const { toast } = useToast();
+  const management = useAdminManagement();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserWithBranchAccess | null>(null);
   const [resetPasswordUser, setResetPasswordUser] = useState<UserWithBranchAccess | null>(null);
@@ -75,7 +80,7 @@ export default function UsersPage() {
     branchIds: [],
   });
 
-  const { data: users = [], isLoading: usersLoading } = useQuery<UserWithBranchAccess[]>({
+  const { data: users = [], isLoading: usersLoading, isFetching: usersFetching, isError: usersError } = useQuery<ManagedUser[]>({
     queryKey: ["/api/users"],
   });
 
@@ -83,8 +88,31 @@ export default function UsersPage() {
     queryKey: ["/api/branches"],
   });
 
+  const usersReady = !usersLoading && !usersFetching && !usersError;
+  const canCreate = usersReady && management.canWrite(false);
+  const userManaged = (id: string) => management.readTarget<ManagedUser>(
+    ["/api/users"], user => user.id === id, user => user.managedInAdmin,
+  );
+  const canManageUser = (id: string) => usersReady && management.canWrite(userManaged(id));
+  const canEdit = !!editingUser && canManageUser(editingUser.id);
+  const canResetPassword = !!resetPasswordUser && canManageUser(resetPasswordUser.id);
+  const canProvision = !!suiteSignInUser && canManageUser(suiteSignInUser.id);
+  const canShowPasswordHelp = !!passwordNoteUser && canManageUser(passwordNoteUser.id);
+
+  useEffect(() => {
+    if (!canCreate) setIsCreateDialogOpen(false);
+    if (!canEdit) setEditingUser(null);
+    if (!canResetPassword) { setResetPasswordUser(null); setNewPassword(""); }
+    if (!canProvision) setSuiteSignInUser(null);
+    if (!canShowPasswordHelp) setPasswordNoteUser(null);
+    if ((!isCreateDialogOpen || !canCreate) && !canEdit) {
+      setFormData(prev => prev.password ? { ...prev, password: "" } : prev);
+    }
+  }, [canCreate, canEdit, canResetPassword, canProvision, canShowPasswordHelp, isCreateDialogOpen]);
+
   const createUserMutation = useMutation({
     mutationFn: async (data: UserFormData) => {
+      management.assertWritable();
       const res = await apiRequest("POST", "/api/users", data);
       return res.json();
     },
@@ -95,12 +123,14 @@ export default function UsersPage() {
       toast({ title: "User created successfully" });
     },
     onError: (error: Error) => {
+      management.handleError(error);
       toast({ title: "Failed to create user", description: error.message, variant: "destructive" });
     },
   });
 
   const updateUserMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<UserFormData> & { isActive?: boolean } }) => {
+      management.assertWritable(() => userManaged(id));
       const res = await apiRequest("PATCH", `/api/users/${id}`, data);
       return res.json();
     },
@@ -111,12 +141,14 @@ export default function UsersPage() {
       toast({ title: "User updated successfully" });
     },
     onError: (error: Error) => {
+      management.handleError(error);
       toast({ title: "Failed to update user", description: error.message, variant: "destructive" });
     },
   });
 
   const resetPasswordMutation = useMutation({
     mutationFn: async ({ id, password }: { id: string; password: string }) => {
+      management.assertWritable(() => userManaged(id));
       const res = await apiRequest("POST", `/api/users/${id}/reset-password`, { password });
       return res.json();
     },
@@ -127,6 +159,7 @@ export default function UsersPage() {
       toast({ title: "Password reset successfully", description: "User will be required to change password on next login." });
     },
     onError: (error: Error) => {
+      management.handleError(error);
       toast({ title: "Failed to reset password", description: error.message, variant: "destructive" });
     },
   });
@@ -144,6 +177,7 @@ export default function UsersPage() {
   };
 
   const openEditDialog = (user: UserWithBranchAccess) => {
+    if (!canManageUser(user.id)) return;
     setEditingUser(user);
     setFormData({
       email: user.email,
@@ -157,6 +191,7 @@ export default function UsersPage() {
   };
 
   const handleSubmit = () => {
+    if (editingUser ? !canManageUser(editingUser.id) : !canCreate) return;
     if (editingUser) {
       const updateData: Partial<UserFormData> = {
         email: formData.email,
@@ -178,6 +213,7 @@ export default function UsersPage() {
   };
 
   const toggleUserActive = (user: UserWithBranchAccess) => {
+    if (!canManageUser(user.id)) return;
     updateUserMutation.mutate({
       id: user.id,
       data: { isActive: !user.isActive },
@@ -233,10 +269,15 @@ export default function UsersPage() {
           <h1 className="text-2xl font-semibold" data-testid="text-page-title">User Management</h1>
           <p className="text-muted-foreground">Manage user accounts and branch access permissions</p>
         </div>
-        <Button onClick={() => setIsCreateDialogOpen(true)} data-testid="button-create-user">
+        {canCreate && <Button onClick={() => setIsCreateDialogOpen(true)} data-testid="button-create-user">
           <Plus className="h-4 w-4 mr-2" /> Create User
-        </Button>
+        </Button>}
       </div>
+      <ManagedInAdminNotice section="accounts"
+        managed={management.actorManaged === true || users.some(user => user.managedInAdmin === true)}
+        checking={management.checking || usersFetching}
+        unavailable={!management.ready || !usersReady || users.some(user => typeof user.managedInAdmin !== "boolean")}
+        onRetry={management.retry} />
 
       <Card>
         <CardHeader>
@@ -311,7 +352,7 @@ export default function UsersPage() {
                     {user.lastLoginAt ? formatDate(user.lastLoginAt) : "Never"}
                   </TableCell>
                   <TableCell>
-                    <DropdownMenu>
+                    {canManageUser(user.id) && <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" data-testid={`button-user-menu-${user.id}`}>
                           <MoreHorizontal className="h-4 w-4" />
@@ -353,7 +394,7 @@ export default function UsersPage() {
                           )}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
-                    </DropdownMenu>
+                    </DropdownMenu>}
                   </TableCell>
                 </TableRow>
               ))}
@@ -363,7 +404,7 @@ export default function UsersPage() {
         </CardContent>
       </Card>
 
-      <Dialog open={isCreateDialogOpen || !!editingUser} onOpenChange={(open) => {
+      <Dialog open={(isCreateDialogOpen && canCreate) || canEdit} onOpenChange={(open) => {
         if (!open) {
           setIsCreateDialogOpen(false);
           setEditingUser(null);
@@ -524,15 +565,17 @@ export default function UsersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <SuiteSignInDialog
+      {canProvision && <SuiteSignInDialog
         open={!!suiteSignInUser}
         onOpenChange={(open) => { if (!open) setSuiteSignInUser(null); }}
         personName={suiteSignInUser?.fullName ?? ""}
         initialPhone={suiteSignInUser?.phoneNumber ?? suiteSignInUser?.phoneE164 ?? null}
         endpoint={`/api/users/${suiteSignInUser?.id}/suite-sign-in`}
         onProvisioned={() => queryClient.invalidateQueries({ queryKey: ["/api/users"] })}
-      />
-      <Dialog open={!!passwordNoteUser} onOpenChange={(open) => { if (!open) setPasswordNoteUser(null); }}>
+        beforeProvision={() => management.assertWritable(() => suiteSignInUser ? userManaged(suiteSignInUser.id) : undefined)}
+        onProvisionError={management.handleError}
+      />}
+      <Dialog open={canShowPasswordHelp} onOpenChange={(open) => { if (!open) setPasswordNoteUser(null); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Password help</DialogTitle>
@@ -551,7 +594,7 @@ export default function UsersPage() {
         </DialogContent>
       </Dialog>
       {/* Reset Password Dialog */}
-      <Dialog open={!!resetPasswordUser} onOpenChange={(open) => {
+      <Dialog open={canResetPassword} onOpenChange={(open) => {
         if (!open) {
           setResetPasswordUser(null);
           setNewPassword("");

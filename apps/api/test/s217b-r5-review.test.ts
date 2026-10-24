@@ -228,7 +228,12 @@ describe('A. fences and seams', () => {
     expect(readFileSync(join(APP_SERVER, 'face-recognition.ts'), 'utf8')).toMatch(
       /const useAWS = process\.env\.USE_AWS_REKOGNITION === "true";\s*if \(useAWS\) \{\s*return new AWSRekognitionService\(\);\s*\}\s*return new MockFaceRecognitionService\(\);/,
     );
-    expect(readFileSync(join(APP_SERVER, 'data-admin', 'router.ts'), 'utf8')).toContain('dataAdminContext.run({ tenantId }, next)');
+    const dataAdmin = readFileSync(join(APP_SERVER, 'data-admin', 'router.ts'), 'utf8');
+    expect(dataAdmin).toContain("if (!tenantId || !req.user?.id) return res.status(403).json({ error: 'Access denied' })");
+    expect(dataAdmin).toContain('.select({ id: users.id, operatorId: users.operatorId })');
+    expect(dataAdmin).toContain('.where(and(eq(users.id, req.user.id), userScope(users.id, tenantId)))');
+    expect(dataAdmin).toContain("if (!caller) return res.status(403).json({ error: 'Access denied' })");
+    expect(dataAdmin).toContain('dataAdminContext.run({ tenantId, actorOperatorId: caller.operatorId }, next)');
   });
 });
 
@@ -1047,6 +1052,14 @@ describe.skipIf(!HAS_APP_RUNTIME)('B to E. over HTTP against the app’s routes'
     // existed, so even X was refused); the ported rule now runs: X yes, Y no.
     expect((await call('GET', `/api/leave-policies?branchId=${A.x}`, { cookie: A.limited.cookie })).status).toBe(200);
     expect((await call('GET', `/api/leave-policies?branchId=${A.y}`, { cookie: A.limited.cookie })).status).toBe(403);
-    expect((await call('GET', `/api/sick-leave-balances?branchId=${A.y}`, { cookie: A.limited.cookie })).status).toBe(200);
+    const refusedSick = await call('GET', `/api/sick-leave-balances?branchId=${A.y}`, { cookie: A.limited.cookie });
+    expect(refusedSick.status, refusedSick.text).toBe(403);
+    expect(refusedSick.body).toEqual({ message: 'Access denied - branch not allowed' });
+    const ownSick = await call('GET', `/api/sick-leave-balances?branchId=${A.x}`, { cookie: A.limited.cookie });
+    expect(ownSick.status, ownSick.text).toBe(200);
+    expect(Array.isArray(ownSick.body)).toBe(true);
+    expect(await q('select id, tenant_id, branch_id from employees where id = $1', [empY])).toEqual([
+      { id: empY, tenant_id: A.tenant, branch_id: A.y },
+    ]);
   });
 });

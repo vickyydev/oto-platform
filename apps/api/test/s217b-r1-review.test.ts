@@ -498,8 +498,9 @@ async function maintenanceRows(
   };
   const pending = await employee({ status: 'pending' });
   const template = newId();
-  await q(`insert into templates (id, name, html_body) values ($1, $2, '<p>ZZ</p>')`, [
+  await q(`insert into templates (id, tenant_id, name, html_body) values ($1, $2, $3, '<p>ZZ</p>')`, [
     template,
+    tenantId,
     `ZZ review ${label} ${template.slice(-4)}`,
   ]);
   await q(

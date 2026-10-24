@@ -48,6 +48,8 @@ export function SuiteSignInDialog({
   initialPhone,
   endpoint,
   onProvisioned,
+  beforeProvision,
+  onProvisionError,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -56,6 +58,8 @@ export function SuiteSignInDialog({
   /** `/api/users/:id/suite-sign-in` or `/api/people/:id/suite-sign-in`. */
   endpoint: string;
   onProvisioned: () => void;
+  beforeProvision?: () => void;
+  onProvisionError?: (error: Error) => void;
 }) {
   const [phone, setPhone] = useState(initialPhone ?? "");
   const [actionId, setActionId] = useState(newActionId);
@@ -71,6 +75,7 @@ export function SuiteSignInDialog({
 
   const provision = useMutation({
     mutationFn: async () => {
+      beforeProvision?.();
       const res = await apiRequest("POST", endpoint, { actionId, ...(phone.trim() ? { phone: phone.trim() } : {}) });
       return (await res.json()) as ProvisionAnswer;
     },
@@ -78,6 +83,7 @@ export function SuiteSignInDialog({
       setAnswer(data);
       onProvisioned();
     },
+    onError: onProvisionError,
   });
 
   const close = (next: boolean) => {

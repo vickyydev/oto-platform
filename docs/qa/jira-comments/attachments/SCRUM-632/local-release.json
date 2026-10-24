@@ -1,0 +1,805 @@
+{
+  "ticket": "SCRUM-632",
+  "localReleaseGreen": true,
+  "preparedAt": "2026-10-24T21:34:04.444Z",
+  "scope": "LOCAL RELEASE EVIDENCE ONLY",
+  "sourceManifestSha256": "b5890d7d8f500c092c08d7a5a2c7f04117b6be5f39a706a96d24ecee7be05c2e",
+  "featureSourceLanded": false,
+  "sourceFiles": 3724,
+  "dependencyInputs": 28,
+  "allHostBytesVerified": true,
+  "sourceBridge": {
+    "from": "054717607dc3f26ec1a10a131a1fc3e510e0f6ecddbaf91fb37ebd1d6af26d7e",
+    "to": "b5890d7d8f500c092c08d7a5a2c7f04117b6be5f39a706a96d24ecee7be05c2e",
+    "delta": [
+      {
+        "path": "apps/api/test/s217b-r1-review-recheck.test.ts",
+        "before": "956bccc9200e046df705f9c45d6629c3d0c03df092e7c1ad23c279a15264066a",
+        "after": "2d807cf0bc5f71f984c17b57cc7b054feddc7cd26a22ac25accab3aa16a724e9"
+      },
+      {
+        "path": "apps/api/test/s217b-r1-review.test.ts",
+        "before": "6c7c31a591a13c3be0a9514673d032d75ff6a78b013d5e5af3bf592e1c7aae20",
+        "after": "5cd5f07057914d261f5e2587719dd15de2bb85a5a8c755e00aac3429db04552e"
+      },
+      {
+        "path": "apps/api/test/s217b-r4b-review.test.ts",
+        "before": "64b97676f98469c0dcf137cae9e61736d3c8c67864a9beaaa11ed7381fd00901",
+        "after": "41c27e64efb228a83491c2788b91bbe6335838ed30b1397960d14f72ad447f73"
+      },
+      {
+        "path": "apps/api/test/s217b-r4b.test.ts",
+        "before": "20952b0cbd469c31de852f41befe60d4cbac4b5f94cbe6931ae3aac34401c438",
+        "after": "957b0c594e2799b7ee4aff29e1a59532ed19dfcbd821080f853e48e4347ceeca"
+      },
+      {
+        "path": "apps/api/test/s217b-r5-review.test.ts",
+        "before": "6f0084b8d6c91077e210f4e0ac59bfac0429de34ac0b519582d8863e402384ac",
+        "after": "3c0f510b3925f8e3ffbf26347573f02a4bb3863dbc2cd9303aceaf00694de1e5"
+      },
+      {
+        "path": "apps/api/test/s217b-r5.test.ts",
+        "before": "11ee2f8f3ed8d93553a55acaf96c1970080f3b13ad48f5d03631fa8bacec241c",
+        "after": "15a31e3e4f11c00cdd6c2e320955530cb6d09494a281180f52c5b4a7fd1029a1"
+      },
+      {
+        "path": "apps/api/test/s217b-r6-review.test.ts",
+        "before": "cafb08547850f96e7a90351eb8b6390e7316809a8ba994adf8f9d18e2b3b4b61",
+        "after": "e0b9218c81587db9ef5c07f507dfb46693c7e85ebbf2cd0252afda25a750cd7b"
+      },
+      {
+        "path": "apps/api/test/s632-administration-review.test.ts",
+        "before": "f7f1509e298abbe939e342177d371166ac5dd9de7855f8b600d1841e9abc5e2e",
+        "after": "7e7321c1a7ffea2d5a1d22f391bc89909535410de545b5ce95ad2c4cdf99d80a"
+      }
+    ],
+    "unchangedOtherInputs": 3716,
+    "allAppProductionDependenciesIdentical": true,
+    "receipt": {
+      "file": "admin632-final-source-bridge-v4.json",
+      "sha256": "4c288e6a95a14988e240c5714e8f35bf33fc6996c10c27678556d6a4cfc1b595"
+    },
+    "independentReview": {
+      "file": "admin632-source-bridge-independent-review-v4.json",
+      "sha256": "01220776f19ebe47c0470a26723da3b08aed690f3d368ab56327157a93388caa"
+    }
+  },
+  "app": {
+    "full": {
+      "receipt": {
+        "file": "full.json",
+        "sha256": "b33972c7ae853bd451b759b1e480e3635b1d74bd8db8f5ffec225eff2bb5353d"
+      },
+      "logSha256": "64c4f7de46a3e3ee0c8a729dcb0923cfab58c4f3ebc9e9f8d42a1847c363814a",
+      "sourceManifestSha256": "054717607dc3f26ec1a10a131a1fc3e510e0f6ecddbaf91fb37ebd1d6af26d7e",
+      "commands": 29,
+      "startedAt": "2026-10-24T20:16:45.495Z",
+      "completedAt": "2026-10-24T20:19:07.746Z",
+      "sixDatabasesRemoved": true
+    },
+    "ratchet": {
+      "receipt": {
+        "file": "ratchet.json",
+        "sha256": "38d5799c2643bac1a0d97ad8e71d56b18aa9092d2b03064c3a1a3fabd584c71e"
+      },
+      "logSha256": "ae7862b87ac37bef94e607ab88758450d54142e895f88ed7c863617dedb25bdb",
+      "sourceManifestSha256": "054717607dc3f26ec1a10a131a1fc3e510e0f6ecddbaf91fb37ebd1d6af26d7e",
+      "commands": 1,
+      "startedAt": "2026-10-24T20:20:48.867Z",
+      "completedAt": "2026-10-24T20:22:02.363Z",
+      "errors": 418,
+      "files": 54,
+      "buckets": 109,
+      "increased": [],
+      "reduced": [],
+      "allOutputRead": true,
+      "review": {
+        "file": "admin632-final-compiler-review.json",
+        "sha256": "bea129d7af3c28182d02b7787625fac7a646cc9662c8c49f8363d73e15a3e7e0"
+      }
+    },
+    "runtimeReview": {
+      "file": "admin632-final-runtime-review.json",
+      "sha256": "310f87e9a06c1a39c695f00880eb93622282cdb87e22c7ad158a6b3e73e81f15"
+    },
+    "finalHttp": {
+      "checks": 46,
+      "passed": 46,
+      "failed": 0
+    },
+    "finalAlternate": {
+      "checks": 30,
+      "passed": 30,
+      "failed": 0
+    },
+    "finalUi": {
+      "checks": 19,
+      "passed": 19,
+      "failed": 0
+    },
+    "administration": {
+      "flags": {
+        "userScopeDefaultsSingle": true,
+        "people": true,
+        "legacyPlacement": false,
+        "anonymousRateAdministration": false,
+        "standingArrangements": true,
+        "permissions": true,
+        "forms": true,
+        "vouchers": true,
+        "userScopeDefaults": true,
+        "dataAdmin": true,
+        "softLinks": true,
+        "privateReferences": true,
+        "presence": true,
+        "sharedRoleMetadataOwnerOnly": false,
+        "roles": true,
+        "camp": true,
+        "payroll": true,
+        "advanceRepayment": true
+      },
+      "failures": {},
+      "note": "The inherited false legacyPlacement,anonymousRateAdministration,sharedRoleMetadataOwnerOnly values are retained; command pass does not relabel them."
+    }
+  },
+  "api": {
+    "supplementalDocInputs": {
+      "digest": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+      "receipt": {
+        "file": "api-doc-inputs.json",
+        "sha256": "ac7b6b5ce4d5feb5a78c87359f5ca04009c7f9a682112658d0d30ee06e643dfb"
+      },
+      "files": 4,
+      "hostAndContainerBeforeAfterVerified": true
+    },
+    "repairedWholeFile": {
+      "name": "api-register-recheck-green",
+      "startedAt": "2026-10-24T21:07:16.556Z",
+      "completedAt": "2026-10-24T21:07:46.652Z",
+      "exitCode": 0,
+      "signal": null,
+      "sourceManifestSha256": "b5890d7d8f500c092c08d7a5a2c7f04117b6be5f39a706a96d24ecee7be05c2e",
+      "logSha256": "0de981f6ec7da0e43960cd643317ca070bb8a63c51eeb9586ba8cb8590691ddc",
+      "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+      "hostAndContainerApiDocsUnchanged": true,
+      "receipt": {
+        "file": "api-register-recheck-green.json",
+        "sha256": "08ecc6a77bc45ab322bc6b4363c7dcad851ca3d7f8843352ac06e2975ac2ffa6"
+      },
+      "tests": {
+        "passed": 17,
+        "failed": 0,
+        "skipped": 0,
+        "todo": 0,
+        "total": 17
+      },
+      "files": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0,
+        "todo": 0,
+        "total": 1
+      }
+    },
+    "house": {
+      "name": "api-house-audit-green-v3",
+      "startedAt": "2026-10-24T21:07:16.557Z",
+      "completedAt": "2026-10-24T21:07:34.664Z",
+      "exitCode": 0,
+      "signal": null,
+      "sourceManifestSha256": "b5890d7d8f500c092c08d7a5a2c7f04117b6be5f39a706a96d24ecee7be05c2e",
+      "logSha256": "3aaa53208992e6ebbcbba17218e165e843563f466a6dd1c3ba8c84cb5ca084e2",
+      "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+      "hostAndContainerApiDocsUnchanged": true,
+      "receipt": {
+        "file": "api-house-audit-green-v3.json",
+        "sha256": "c4aea7b4319966a57dead2056012a3cabd90b31e08bad8824061c97c0086c6f0"
+      },
+      "tests": {
+        "passed": 3,
+        "failed": 0,
+        "skipped": 0,
+        "todo": 0,
+        "total": 3
+      },
+      "files": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0,
+        "todo": 0,
+        "total": 1
+      }
+    },
+    "compilerAndLint": {
+      "name": "final-api-compiler-lint-v3",
+      "startedAt": "2026-10-24T21:07:16.565Z",
+      "completedAt": "2026-10-24T21:08:18.927Z",
+      "exitCode": 0,
+      "signal": null,
+      "sourceManifestSha256": "b5890d7d8f500c092c08d7a5a2c7f04117b6be5f39a706a96d24ecee7be05c2e",
+      "logSha256": "9943599800c855af7f7b46aba1a1dc1f044a99d3178133c91824d6975f0a4ff7",
+      "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+      "hostAndContainerApiDocsUnchanged": true,
+      "receipt": {
+        "file": "final-api-compiler-lint-v3.json",
+        "sha256": "1f92937e157ab9b8a8261e572006183a62528e656743846d4534641ccced3188"
+      },
+      "diagnosticLines": 0
+    },
+    "contracts": {
+      "name": "final-api-contracts-v2",
+      "startedAt": "2026-10-24T21:07:16.557Z",
+      "completedAt": "2026-10-24T21:07:23.357Z",
+      "exitCode": 0,
+      "signal": null,
+      "sourceManifestSha256": "b5890d7d8f500c092c08d7a5a2c7f04117b6be5f39a706a96d24ecee7be05c2e",
+      "logSha256": "d2ab45556e153dd0cf2819b6e0bf6a531b4c7cc916bb4c1ecb457b32417e640a",
+      "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+      "hostAndContainerApiDocsUnchanged": true,
+      "receipt": {
+        "file": "final-api-contracts-v2.json",
+        "sha256": "4ef71613059466a5a42e72390d135f3aca4d20030d50d176a53abcea4f6e9888"
+      },
+      "generatedTypesMatch": true
+    },
+    "shards": [
+      {
+        "name": "api-shard-1-recheck",
+        "startedAt": "2026-10-24T21:08:24.850Z",
+        "completedAt": "2026-10-24T21:28:54.681Z",
+        "exitCode": 0,
+        "signal": null,
+        "sourceManifestSha256": "b5890d7d8f500c092c08d7a5a2c7f04117b6be5f39a706a96d24ecee7be05c2e",
+        "logSha256": "263ca85be8be93c4976ce4352aa0cfae022bb7b5a6c9df15ff02dd3c14eff50b",
+        "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+        "hostAndContainerApiDocsUnchanged": true,
+        "receipt": {
+          "file": "api-shard-1-recheck.json",
+          "sha256": "17bab6f6758704eb1ad3ce49aa457f7982aff348d7363fa0e02087f186e402d5"
+        },
+        "tests": {
+          "passed": 1798,
+          "failed": 0,
+          "skipped": 1,
+          "todo": 0,
+          "total": 1799
+        },
+        "files": {
+          "passed": 119,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "total": 119
+        }
+      },
+      {
+        "name": "api-shard-2-recheck",
+        "startedAt": "2026-10-24T21:08:24.840Z",
+        "completedAt": "2026-10-24T21:28:37.685Z",
+        "exitCode": 0,
+        "signal": null,
+        "sourceManifestSha256": "b5890d7d8f500c092c08d7a5a2c7f04117b6be5f39a706a96d24ecee7be05c2e",
+        "logSha256": "f74b16af3767df099363def485fb53b0e99a318e215ff2055f6b55b24899ba3e",
+        "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+        "hostAndContainerApiDocsUnchanged": true,
+        "receipt": {
+          "file": "api-shard-2-recheck.json",
+          "sha256": "c2e0a2cea06e6f38a9a511cfe7c033b243d9d4b6148008e2a6f9363b229c66cb"
+        },
+        "tests": {
+          "passed": 1874,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 4,
+          "total": 1878
+        },
+        "files": {
+          "passed": 119,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "total": 119
+        }
+      },
+      {
+        "name": "api-shard-3-recheck",
+        "startedAt": "2026-10-24T21:08:24.850Z",
+        "completedAt": "2026-10-24T21:30:23.204Z",
+        "exitCode": 0,
+        "signal": null,
+        "sourceManifestSha256": "b5890d7d8f500c092c08d7a5a2c7f04117b6be5f39a706a96d24ecee7be05c2e",
+        "logSha256": "1051a90ec7175407fc06b9473384b5a2dd1f8e99959715e477114cea806c143f",
+        "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+        "hostAndContainerApiDocsUnchanged": true,
+        "receipt": {
+          "file": "api-shard-3-recheck.json",
+          "sha256": "c72c2c4f6d7f64048edca6d11793b09a331f90fb2e54b5ee70c464d1d0420e11"
+        },
+        "tests": {
+          "passed": 1629,
+          "failed": 0,
+          "skipped": 2,
+          "todo": 1,
+          "total": 1632
+        },
+        "files": {
+          "passed": 117,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0,
+          "total": 117
+        }
+      }
+    ],
+    "totals": {
+      "tests": {
+        "passed": 5301,
+        "failed": 0,
+        "skipped": 3,
+        "todo": 5,
+        "total": 5309
+      },
+      "files": {
+        "passed": 355,
+        "failed": 0,
+        "skipped": 0,
+        "todo": 0,
+        "total": 355
+      }
+    },
+    "retainedC099QuickRun": {
+      "name": "api-register-affected-green",
+      "startedAt": "2026-10-24T20:57:01.933Z",
+      "completedAt": "2026-10-24T21:02:25.820Z",
+      "exitCode": 1,
+      "signal": null,
+      "sourceManifestSha256": "c09987622d5498b86241c54051d0637e37c996db99bf27ad6e5c47b1ba9b202d",
+      "logSha256": "d2d885e2f6b6133b1f4eed0ff980836cd0a91d4ef3cc5932c546dde7012c4e72",
+      "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+      "hostAndContainerApiDocsUnchanged": true,
+      "receipt": {
+        "file": "api-register-affected-green.json",
+        "sha256": "d18caead3196770aeab38aa27d3072849d6e8adc8c287520baea5cb8fdfd702a"
+      },
+      "tests": {
+        "passed": 235,
+        "failed": 2,
+        "skipped": 0,
+        "todo": 0,
+        "total": 237
+      },
+      "files": {
+        "passed": 6,
+        "failed": 1,
+        "skipped": 0,
+        "todo": 0,
+        "total": 7
+      },
+      "passed": false,
+      "retained": true,
+      "sixOtherFiles": {
+        "files": 6,
+        "passedTests": 220,
+        "historicalOnly": true
+      },
+      "note": "The original seven-file237-test run had235pass/2fail; six files220pass remain historical c099 evidence, superseded by the current complete API rechecks."
+    },
+    "retainedFirstFullRun": {
+      "passed": false,
+      "shards": [
+        {
+          "name": "api-shard-1",
+          "startedAt": "2026-10-24T20:31:15.931Z",
+          "completedAt": "2026-10-24T20:51:21.309Z",
+          "exitCode": 1,
+          "signal": null,
+          "sourceManifestSha256": "fc533ee6ead1da2a72a96c46ce2e0bc4f8372583c8bad7b717ca36a590784b2d",
+          "logSha256": "868de33fa79e70db9511d4bad850f509b20aed7fe2b747389e7421533b7149ce",
+          "apiDocInputsSha256": null,
+          "hostAndContainerApiDocsUnchanged": null,
+          "receipt": {
+            "file": "api-shard-1.json",
+            "sha256": "aa3ffdf5fb470eaebbd18d1d60f98defd93c638f9f62a461a802bddc11ce5bae"
+          },
+          "tests": {
+            "passed": 1777,
+            "failed": 1,
+            "skipped": 21,
+            "todo": 0,
+            "total": 1799
+          },
+          "files": {
+            "passed": 117,
+            "failed": 2,
+            "skipped": 0,
+            "todo": 0,
+            "total": 119
+          },
+          "beforeAllFailedSuites": 1,
+          "passed": false,
+          "retained": true
+        },
+        {
+          "name": "api-shard-2",
+          "startedAt": "2026-10-24T20:31:15.931Z",
+          "completedAt": "2026-10-24T20:51:22.430Z",
+          "exitCode": 1,
+          "signal": null,
+          "sourceManifestSha256": "fc533ee6ead1da2a72a96c46ce2e0bc4f8372583c8bad7b717ca36a590784b2d",
+          "logSha256": "cbd7bc5e2685bc2a5384500b14a644e56a6199ff1bf76928ccf7d9ea6dc98eba",
+          "apiDocInputsSha256": null,
+          "hostAndContainerApiDocsUnchanged": null,
+          "receipt": {
+            "file": "api-shard-2.json",
+            "sha256": "9b062b359f2a2bf15a7e018510b444c3957535d79fb291542a64e37187cfe1ca"
+          },
+          "tests": {
+            "passed": 1872,
+            "failed": 2,
+            "skipped": 0,
+            "todo": 4,
+            "total": 1878
+          },
+          "files": {
+            "passed": 117,
+            "failed": 2,
+            "skipped": 0,
+            "todo": 0,
+            "total": 119
+          },
+          "beforeAllFailedSuites": 0,
+          "passed": false,
+          "retained": true
+        },
+        {
+          "name": "api-shard-3",
+          "startedAt": "2026-10-24T20:31:15.930Z",
+          "completedAt": "2026-10-24T20:52:59.881Z",
+          "exitCode": 1,
+          "signal": null,
+          "sourceManifestSha256": "fc533ee6ead1da2a72a96c46ce2e0bc4f8372583c8bad7b717ca36a590784b2d",
+          "logSha256": "118adfd407a25d014bd602ef2d3532d0904307cecb7ccd31624838fec863ef1a",
+          "apiDocInputsSha256": null,
+          "hostAndContainerApiDocsUnchanged": null,
+          "receipt": {
+            "file": "api-shard-3.json",
+            "sha256": "4f6d35f9e0fd91dd9d27f19ae525090cf99e5edb11f4c05e6376280fbc3e4c4b"
+          },
+          "tests": {
+            "passed": 1616,
+            "failed": 3,
+            "skipped": 12,
+            "todo": 1,
+            "total": 1632
+          },
+          "files": {
+            "passed": 114,
+            "failed": 3,
+            "skipped": 0,
+            "todo": 0,
+            "total": 117
+          },
+          "beforeAllFailedSuites": 1,
+          "passed": false,
+          "retained": true
+        }
+      ],
+      "totals": {
+        "tests": {
+          "passed": 5265,
+          "failed": 6,
+          "skipped": 33,
+          "todo": 5,
+          "total": 5309
+        },
+        "files": {
+          "passed": 348,
+          "failed": 7,
+          "skipped": 0,
+          "todo": 0,
+          "total": 355
+        },
+        "beforeAllFailedSuites": 2
+      },
+      "note": "Installed OTO dependencies enabled historical conditional runtime cases. Original skip conditions were not hidden or weakened; seven historical test fixtures/assertions were corrected against approved behavior, then every API shard reran. The failed first run remains failed."
+    }
+  },
+  "redGreen": [
+    {
+      "name": "managed-http-supplemental-red",
+      "startedAt": "2026-10-24T11:33:36.726Z",
+      "completedAt": "2026-10-24T11:33:41.846Z",
+      "exitCode": 1,
+      "signal": null,
+      "sourceManifestSha256": "d217dd1ecb01cf367d90bb02cc93660defccef90253d70a209e820d9ea7fcdbd",
+      "logSha256": "0c7cec600f962f7e2bed9cbeb64cc5c003d0002f7ff7433ab9a133a63e29dc47",
+      "apiDocInputsSha256": null,
+      "hostAndContainerApiDocsUnchanged": null,
+      "receipt": {
+        "file": "managed-http-supplemental-red.json",
+        "sha256": "a2e5933a67d0df3dd68d3e78e893d0f8c2fc975c042d21631d2ed264418ba7ff"
+      },
+      "checks": 31,
+      "passed": 5,
+      "failed": 26
+    },
+    {
+      "name": "red-terminal",
+      "startedAt": "2026-10-24T13:00:01.018Z",
+      "completedAt": "2026-10-24T13:00:10.559Z",
+      "exitCode": 1,
+      "signal": null,
+      "sourceManifestSha256": null,
+      "logSha256": "08e042c35a5902370674682de5a68e963f4b07ff4b2441a2b64f8bf845e8c667",
+      "apiDocInputsSha256": null,
+      "hostAndContainerApiDocsUnchanged": null,
+      "receipt": {
+        "file": "ui-red-terminal.json",
+        "sha256": "39e2074f4e47b2be8796be539b657a49007100099a8e27d89c0b9f36f006418a"
+      },
+      "checks": 16,
+      "passed": 12,
+      "failed": 4
+    },
+    {
+      "name": "green-first",
+      "startedAt": "2026-10-24T13:01:41.818Z",
+      "completedAt": "2026-10-24T13:01:49.418Z",
+      "exitCode": 0,
+      "signal": null,
+      "sourceManifestSha256": null,
+      "logSha256": "640ef60fa087aa421aa0ceb4b4a6e8095e4b87fe291648d81a667ea0e583e0ac",
+      "apiDocInputsSha256": null,
+      "hostAndContainerApiDocsUnchanged": null,
+      "receipt": {
+        "file": "ui-green-first.json",
+        "sha256": "e88cdfaac89792f3870ffbe9887bd0afb3ac9635290f9ebb09ce0895269e56a3"
+      },
+      "checks": 16,
+      "passed": 16,
+      "failed": 0
+    },
+    {
+      "name": "green-final",
+      "startedAt": "2026-10-24T13:02:41.984Z",
+      "completedAt": "2026-10-24T13:02:50.780Z",
+      "exitCode": 0,
+      "signal": null,
+      "sourceManifestSha256": null,
+      "logSha256": "f8542122b1993408332c9b356e3c2dd708df9809746ac0653ed70f4c8aa1b0f5",
+      "apiDocInputsSha256": null,
+      "hostAndContainerApiDocsUnchanged": null,
+      "receipt": {
+        "file": "ui-green-final.json",
+        "sha256": "fd2ac66377bcd76aa278e2fe05d498796e3c59888ea2d661b434060b3fa5ef01"
+      },
+      "checks": 19,
+      "passed": 19,
+      "failed": 0
+    },
+    {
+      "name": "managed-case-red-terminal",
+      "startedAt": "2026-10-24T19:55:35.149Z",
+      "completedAt": "2026-10-24T19:55:47.050Z",
+      "exitCode": 1,
+      "signal": null,
+      "sourceManifestSha256": "4379926491a604935c18fb2589d850376bac2a87d4ecde1c40cf8fb1934cdfdc",
+      "logSha256": "ec50cd27ed27b542f41d532f4f6f07a9820a56307d1ffa5e3a54bea66f14807d",
+      "apiDocInputsSha256": null,
+      "hostAndContainerApiDocsUnchanged": null,
+      "receipt": {
+        "file": "managed-case-red-terminal.json",
+        "sha256": "0623db4090258e8ee3375bd26adda5aa7fd2a76508d4d3df4f24fd82f28bc405"
+      },
+      "checks": 35,
+      "passed": 32,
+      "failed": 3
+    },
+    {
+      "name": "managed-case-green",
+      "startedAt": "2026-10-24T19:56:51.831Z",
+      "completedAt": "2026-10-24T19:56:57.891Z",
+      "exitCode": 0,
+      "signal": null,
+      "sourceManifestSha256": "0f1dafcd8199034f96d13b614e88f1d206713db810afac6141c83ecef9a3c39e",
+      "logSha256": "269e3355e1563108b19e950592d75458b82345fe9de415c5c9525cc96cc243ba",
+      "apiDocInputsSha256": null,
+      "hostAndContainerApiDocsUnchanged": null,
+      "receipt": {
+        "file": "managed-case-green.json",
+        "sha256": "e906d90634a6d19782626637e64bd98f0fa98ba43f5d313dfcb2b04de9ab89d8"
+      },
+      "checks": 35,
+      "passed": 35,
+      "failed": 0
+    },
+    {
+      "name": "red",
+      "startedAt": "2026-10-24T20:01:09.718Z",
+      "completedAt": "2026-10-24T20:01:13.283Z",
+      "exitCode": 1,
+      "signal": null,
+      "sourceManifestSha256": null,
+      "logSha256": "47c8f05c751479c9e079dc23d657a6bf5581937056ddfbd062ae916e8077de09",
+      "apiDocInputsSha256": null,
+      "hostAndContainerApiDocsUnchanged": null,
+      "receipt": {
+        "file": "red.json",
+        "sha256": "f8969002bef1534ff42828327f426b0f1cc3c117d8c3c7c952336dd07458f922"
+      },
+      "checks": 25,
+      "passed": 7,
+      "failed": 18
+    },
+    {
+      "name": "green",
+      "startedAt": "2026-10-24T20:01:14.099Z",
+      "completedAt": "2026-10-24T20:01:17.583Z",
+      "exitCode": 0,
+      "signal": null,
+      "sourceManifestSha256": null,
+      "logSha256": "d3f31bb8c7a69524509243cf83689038cf83c72921744ddc9c90b4f40b53284d",
+      "apiDocInputsSha256": null,
+      "hostAndContainerApiDocsUnchanged": null,
+      "receipt": {
+        "file": "green.json",
+        "sha256": "ad6a84becfdbb936a3c40c54519eb427c5b0becfec73502318f5e3aee5cbacd3"
+      },
+      "checks": 25,
+      "passed": 25,
+      "failed": 0
+    },
+    {
+      "name": "alternate-advisor-red",
+      "startedAt": "2026-10-24T20:04:06.943Z",
+      "completedAt": "2026-10-24T20:04:17.293Z",
+      "exitCode": 1,
+      "signal": null,
+      "sourceManifestSha256": "3b2efd06d364b077777bb05818320401ebecc0bbcb89ce4d7db777d7675e3e31",
+      "logSha256": "8ff412af1a4d22edf42c276738cd879039f8aedcd66095f1291006fa1e9776fe",
+      "apiDocInputsSha256": null,
+      "hostAndContainerApiDocsUnchanged": null,
+      "receipt": {
+        "file": "alternate-advisor-red.json",
+        "sha256": "f4821c4caab4bbc198fe1d6e12e4c615243fb9470cd8f0ed0f640683252ef3fd"
+      },
+      "checks": 29,
+      "passed": 28,
+      "failed": 1
+    },
+    {
+      "name": "alternate-advisor-green",
+      "startedAt": "2026-10-24T20:05:39.675Z",
+      "completedAt": "2026-10-24T20:05:45.204Z",
+      "exitCode": 0,
+      "signal": null,
+      "sourceManifestSha256": "2af169992cc7943555e312eb1702c3073ed07a92de587f52e3099502ee3f20d6",
+      "logSha256": "8693a97999dcbae479a167db0beb6f6c17ece226545ecfff6946304267544006",
+      "apiDocInputsSha256": null,
+      "hostAndContainerApiDocsUnchanged": null,
+      "receipt": {
+        "file": "alternate-advisor-green.json",
+        "sha256": "1966793e58b8640f22e69512d724ce8168ee2ce60e85b3d5cf9903669125eb40"
+      },
+      "checks": 29,
+      "passed": 29,
+      "failed": 0
+    }
+  ],
+  "forcedLint": {
+    "receipt": {
+      "file": "result.json",
+      "sha256": "08d44248342e1673fdef08355d5a2a9680ced6ce559a2a6192f57ef1c2699995"
+    },
+    "files": 19,
+    "baselineErrors": 12,
+    "candidateErrors": 11,
+    "newErrors": 0,
+    "warnings": 374,
+    "status": "No-new-errors comparison;11 inherited errors remain, not clean ESLint."
+  },
+  "retainedEarlierAttempts": [
+    {
+      "name": "api-house-review",
+      "startedAt": "2026-10-24T20:08:18.506Z",
+      "completedAt": "2026-10-24T20:08:40.637Z",
+      "exitCode": 1,
+      "signal": null,
+      "sourceManifestSha256": "2af169992cc7943555e312eb1702c3073ed07a92de587f52e3099502ee3f20d6",
+      "logSha256": "269139502323869c8e5670ec10109e6910d1f97c8adaae29f49955a60587eab5",
+      "apiDocInputsSha256": null,
+      "hostAndContainerApiDocsUnchanged": null,
+      "receipt": {
+        "file": "api-house-review.json",
+        "sha256": "d647901e02bf8b0f0cfd8dcdf8f0eb81d90bdc406a78840e6eb5bba7086c009b"
+      },
+      "passed": false,
+      "retained": true
+    },
+    {
+      "name": "platform-boundary-recheck",
+      "startedAt": "2026-10-24T20:16:09.561Z",
+      "completedAt": "2026-10-24T20:17:28.430Z",
+      "exitCode": 1,
+      "signal": null,
+      "sourceManifestSha256": "054717607dc3f26ec1a10a131a1fc3e510e0f6ecddbaf91fb37ebd1d6af26d7e",
+      "logSha256": "ba805ff1e564a3b11af5ec48fc393eb57a783ecadff9ba7209ddae3802a5c5f4",
+      "apiDocInputsSha256": null,
+      "hostAndContainerApiDocsUnchanged": null,
+      "receipt": {
+        "file": "platform-boundary-recheck.json",
+        "sha256": "0252a0677e0457f69d1d8eee29c847edfedbbb1e592231842d07d0704b1f09f5"
+      },
+      "passed": false,
+      "retained": true
+    },
+    {
+      "name": "final-api-gates",
+      "startedAt": "2026-10-24T20:23:05.022Z",
+      "completedAt": "2026-10-24T20:24:14.865Z",
+      "exitCode": 1,
+      "signal": null,
+      "sourceManifestSha256": "e89f7aebd01bc27f30c66910b72eb148f0ac3ad0963b52e6ce9d991a14501976",
+      "logSha256": "a380473186e3dfad5bcc7ff72454b6b62c3f4c164f9c1cc9c835897b080a4dbe",
+      "apiDocInputsSha256": null,
+      "hostAndContainerApiDocsUnchanged": null,
+      "receipt": {
+        "file": "final-api-gates.json",
+        "sha256": "6ab350a7ea0f7e3f1a7386d0baddad14db35119a9df85b17a7d70e23965d1551"
+      },
+      "passed": false,
+      "retained": true
+    },
+    {
+      "receipt": {
+        "file": "ui-red-first.json",
+        "sha256": "b8eb8110a38c7e0354860a2549337eda92a44bd51aa3146eeb45a2a3c84dcec9"
+      },
+      "exitCode": null,
+      "signal": "SIGTERM",
+      "errorCode": "ETIMEDOUT",
+      "logSha256": "08e042c35a5902370674682de5a68e963f4b07ff4b2441a2b64f8bf845e8c667",
+      "passed": false,
+      "retained": true
+    },
+    {
+      "receipt": {
+        "file": "compiler-first.json",
+        "sha256": "4970922b6c1acb2a7507171839228b3bfde38017d49dcd8d6b69922d21219cc8"
+      },
+      "exitCode": null,
+      "signal": "SIGTERM",
+      "errorCode": null,
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "passed": false,
+      "retained": true
+    },
+    {
+      "receipt": {
+        "file": "full.json",
+        "sha256": "00d6604947057d75e4f90c50d8c1e86b40f1dc450565864b40d06fc8e7652287"
+      },
+      "sourceManifestSha256": "2af169992cc7943555e312eb1702c3073ed07a92de587f52e3099502ee3f20d6",
+      "passed": false,
+      "commandsPassed": 27,
+      "commandsFailed": 2,
+      "logSha256": "d2b7703e409210d2ddd8fb4aedf1d5ef04836e9a68dea59955702de7fd5f193b"
+    }
+  ],
+  "ci": {
+    "verified": false
+  },
+  "deployment": {
+    "verified": false
+  },
+  "staging": {
+    "executed": false,
+    "acceptance": false
+  },
+  "otherTicketsRelabelled": false,
+  "limits": [
+    "Local evidence only; exact main CI, latest live deployments and fresh native staging proof remain required.",
+    "Historical RED and green programs keep their own original input scopes; they are not all reruns on the final global manifest.",
+    "No raw logs,credentials,cookies,phone/contact/user records,workbook contents or complete source manifest are published here."
+  ]
+}

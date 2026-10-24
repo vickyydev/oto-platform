@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +15,10 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Plus, Building, MapPin, Pencil, Archive, Users, UserCog } from "lucide-react";
 import type { Operator, Branch, User } from "@shared/schema";
+import { useAdminManagement, type ManagedTarget } from "@/hooks/use-admin-management";
+import { ManagedInAdminNotice } from "@/components/managed-in-admin-notice";
+
+type ManagedUser = User & ManagedTarget;
 
 type OperatorFormData = {
   name: string;
@@ -25,6 +29,9 @@ type OperatorFormData = {
 
 export default function OperatorsPage() {
   const { toast } = useToast();
+  const management = useAdminManagement();
+  const editEpoch = useRef(0);
+  const [editLoading, setEditLoading] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [editingOperator, setEditingOperator] = useState<Operator | null>(null);
   const [formData, setFormData] = useState<OperatorFormData>({ 
@@ -34,19 +41,64 @@ export default function OperatorsPage() {
     userIds: []
   });
 
-  const { data: operators = [], isLoading } = useQuery<Operator[]>({
+  const { data: operators = [], isLoading, isFetching: operatorsFetching, isError: operatorsError } = useQuery<Operator[]>({
     queryKey: ["/api/admin/operators"],
   });
 
-  const { data: allBranches = [] } = useQuery<Branch[]>({
+  const { data: allBranches = [], isFetching: branchesFetching, isError: branchesError } = useQuery<Branch[]>({
     queryKey: ["/api/branches"],
   });
 
   // SCRUM-604: the park group's logins come from GET /api/users (the same
   // global-admin gate as this page); there is no /api/admin/users route.
-  const { data: allUsers = [] } = useQuery<User[]>({
+  const { data: allUsers = [], isFetching: usersFetching, isError: usersError } = useQuery<ManagedUser[]>({
     queryKey: ["/api/users"],
   });
+
+  const listsReady = !isLoading && !operatorsFetching && !branchesFetching && !usersFetching
+    && !operatorsError && !branchesError && !usersError
+    && management.readList<Operator>(["/api/admin/operators"]) !== undefined
+    && management.readList<ManagedUser>(["/api/users"]) !== undefined
+    && management.readList<Branch>(["/api/branches"]) !== undefined;
+
+  // Only actual legal-entity references are consulted; no tenant or branch
+  // membership is used to guess a person's management authority.
+  const affectedManaged = (operatorId: string | null, userIds: string[] = [], branchIds: string[] = []) => {
+    const liveOperators = management.readList<Operator>(["/api/admin/operators"]);
+    const liveUsers = management.readList<ManagedUser>(["/api/users"]);
+    const liveBranches = management.readList<Branch>(["/api/branches"]);
+    if (!liveOperators || !liveUsers || !liveBranches) return undefined;
+    const flags: unknown[] = [];
+    const entityFlag = (id: string | null) => id === null ? false : liveOperators.find(row => row.id === id)?.platformRolesEnabled;
+    flags.push(entityFlag(operatorId));
+    const affectedUsers = new Set([...userIds, ...liveUsers.filter(row => operatorId !== null && row.operatorId === operatorId).map(row => row.id)]);
+    for (const id of affectedUsers) flags.push(liveUsers.find(row => row.id === id)?.managedInAdmin);
+    const affectedBranches = new Set([...branchIds, ...liveBranches.filter(row => operatorId !== null && row.operatorId === operatorId).map(row => row.id)]);
+    for (const id of affectedBranches) {
+      const branch = liveBranches.find(row => row.id === id);
+      flags.push(branch ? entityFlag(branch.operatorId) : undefined);
+    }
+    return flags.some(value => value === true) ? true : flags.every(value => value === false) ? false : undefined;
+  };
+  const canCreate = listsReady && management.canWrite(false);
+  const canManageOperator = (id: string) => listsReady && management.canWrite(affectedManaged(id));
+  const canEdit = !!editingOperator && canManageOperator(editingOperator.id);
+  const assertOperatorWrite = (id: string | null, data: Pick<OperatorFormData, "userIds" | "branchIds">) =>
+    management.assertWritable(() => affectedManaged(id, data.userIds, data.branchIds));
+
+  useEffect(() => {
+    if (!canCreate) setCreateOpen(false);
+    if (!canEdit) {
+      editEpoch.current++;
+      setEditingOperator(null);
+      setEditLoading(false);
+    }
+    if (!canEdit && (!createOpen || !canCreate)) {
+      setFormData(prev => prev.name || prev.branchIds.length || prev.userIds.length
+        ? { name: "", status: "active", branchIds: [], userIds: [] } : prev);
+    }
+  }, [canCreate, canEdit, createOpen]);
+  useEffect(() => () => { editEpoch.current++; }, []);
 
   const adminUsers = allUsers.filter(u => 
     u.role === "admin" || u.role === "global_admin" || u.role === "operator_admin"
@@ -54,18 +106,27 @@ export default function OperatorsPage() {
 
   const createMutation = useMutation({
     mutationFn: async (data: OperatorFormData) => {
+      const assertCurrent = management.beginWrite(() => affectedManaged(null, data.userIds, data.branchIds));
       const operator = await apiRequest("POST", "/api/admin/operators", { 
         name: data.name, 
         status: data.status 
       });
       const operatorData = await operator.json();
+      assertCurrent();
+      // The real create response carries the new entity's authoritative flag.
+      queryClient.setQueryData<Operator[]>(["/api/admin/operators"], rows =>
+        rows ? [...rows.filter(row => row.id !== operatorData.id), operatorData] : rows);
       
       if (data.branchIds.length > 0) {
+        assertCurrent();
+        assertOperatorWrite(operatorData.id, data);
         await apiRequest("PUT", `/api/admin/operators/${operatorData.id}/branches`, { 
           branchIds: data.branchIds 
         });
       }
       if (data.userIds.length > 0) {
+        assertCurrent();
+        assertOperatorWrite(operatorData.id, data);
         await apiRequest("PUT", `/api/admin/operators/${operatorData.id}/users`, { 
           userIds: data.userIds 
         });
@@ -81,19 +142,23 @@ export default function OperatorsPage() {
       toast({ title: "Operator created successfully" });
     },
     onError: (error: Error) => {
+      management.handleError(error);
       toast({ title: "Error", description: error.message, variant: "destructive" });
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: async (data: OperatorFormData & { id: string }) => {
+      const assertCurrent = management.beginWrite(() => affectedManaged(data.id, data.userIds, data.branchIds));
       await apiRequest("PATCH", `/api/admin/operators/${data.id}`, { 
         name: data.name, 
         status: data.status 
       });
+      assertCurrent();
       await apiRequest("PUT", `/api/admin/operators/${data.id}/branches`, { 
         branchIds: data.branchIds 
       });
+      assertCurrent();
       await apiRequest("PUT", `/api/admin/operators/${data.id}/users`, { 
         userIds: data.userIds 
       });
@@ -106,12 +171,14 @@ export default function OperatorsPage() {
       toast({ title: "Operator updated successfully" });
     },
     onError: (error: Error) => {
+      management.handleError(error);
       toast({ title: "Error", description: error.message, variant: "destructive" });
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
+      assertOperatorWrite(id, { userIds: [], branchIds: [] });
       return apiRequest("DELETE", `/api/admin/operators/${id}`);
     },
     onSuccess: () => {
@@ -119,6 +186,7 @@ export default function OperatorsPage() {
       toast({ title: "Operator deleted" });
     },
     onError: (error: Error) => {
+      management.handleError(error);
       toast({ title: "Error", description: error.message, variant: "destructive" });
     },
   });
@@ -127,6 +195,7 @@ export default function OperatorsPage() {
   const archivedOperators = operators.filter((o) => o.status === "archived");
 
   const handleCreate = () => {
+    if (!canCreate) return;
     if (!formData.name.trim()) {
       toast({ title: "Please enter an operator name", variant: "destructive" });
       return;
@@ -135,7 +204,8 @@ export default function OperatorsPage() {
   };
 
   const handleUpdate = () => {
-    if (!editingOperator || !formData.name.trim()) {
+    if (!editingOperator || !canManageOperator(editingOperator.id) || editLoading) return;
+    if (!formData.name.trim()) {
       toast({ title: "Please fill in operator name", variant: "destructive" });
       return;
     }
@@ -143,6 +213,10 @@ export default function OperatorsPage() {
   };
 
   const openEditDialog = async (op: Operator) => {
+    if (!canManageOperator(op.id)) return;
+    const epoch = ++editEpoch.current;
+    resetForm();
+    setEditLoading(true);
     setEditingOperator(op);
     
     try {
@@ -153,6 +227,21 @@ export default function OperatorsPage() {
       
       const branches = branchesRes.ok ? await branchesRes.json() : [];
       const users = usersRes.ok ? await usersRes.json() : [];
+      if (epoch !== editEpoch.current) return;
+      // These replies are newer than the list snapshot used to open the card.
+      const flags = new Map<string, boolean>(users.filter((user: ManagedUser) => typeof user.managedInAdmin === "boolean")
+        .map((user: ManagedUser) => [user.id, user.managedInAdmin]));
+      queryClient.setQueryData<ManagedUser[]>(["/api/users"], rows => rows?.map(user =>
+        flags.has(user.id) ? { ...user, managedInAdmin: flags.get(user.id)! } : user));
+      if (users.some((user: ManagedUser) => user.managedInAdmin !== false)) {
+        editEpoch.current++;
+        setEditingOperator(null);
+        setEditLoading(false);
+        resetForm();
+        management.retry();
+        return;
+      }
+      assertOperatorWrite(op.id, { userIds: users.map((user: ManagedUser) => user.id), branchIds: branches.map((branch: Branch) => branch.id) });
       
       setFormData({ 
         name: op.name, 
@@ -160,13 +249,17 @@ export default function OperatorsPage() {
         branchIds: branches.map((b: Branch) => b.id),
         userIds: users.map((u: User) => u.id)
       });
-    } catch {
+    } catch (error) {
+      if (epoch !== editEpoch.current || !canManageOperator(op.id)) return;
+      management.handleError(error);
       setFormData({ 
         name: op.name, 
         status: op.status,
         branchIds: [],
         userIds: []
       });
+    } finally {
+      if (epoch === editEpoch.current) setEditLoading(false);
     }
   };
 
@@ -175,6 +268,7 @@ export default function OperatorsPage() {
   };
 
   const toggleBranch = (branchId: string) => {
+    if (!management.canWrite(affectedManaged(editingOperator?.id ?? null, formData.userIds, [branchId]))) return;
     setFormData(prev => ({
       ...prev,
       branchIds: prev.branchIds.includes(branchId)
@@ -184,6 +278,7 @@ export default function OperatorsPage() {
   };
 
   const toggleUser = (userId: string) => {
+    if (!management.canWrite(affectedManaged(editingOperator?.id ?? null, [userId], formData.branchIds))) return;
     setFormData(prev => ({
       ...prev,
       userIds: prev.userIds.includes(userId)
@@ -279,6 +374,7 @@ export default function OperatorsPage() {
                     id={`branch-${branch.id}`}
                     checked={formData.branchIds.includes(branch.id)}
                     onCheckedChange={() => toggleBranch(branch.id)}
+                    disabled={!management.canWrite(affectedManaged(editingOperator?.id ?? null, formData.userIds, [branch.id]))}
                     data-testid={`checkbox-branch-${branch.id}`}
                   />
                   <label
@@ -315,6 +411,7 @@ export default function OperatorsPage() {
                     id={`user-${user.id}`}
                     checked={formData.userIds.includes(user.id)}
                     onCheckedChange={() => toggleUser(user.id)}
+                    disabled={!management.canWrite(affectedManaged(editingOperator?.id ?? null, [user.id], formData.branchIds))}
                     data-testid={`checkbox-user-${user.id}`}
                   />
                   <label
@@ -345,16 +442,16 @@ export default function OperatorsPage() {
             Manage operators and their branch assignments
           </p>
         </div>
-        <Dialog open={createOpen} onOpenChange={(open) => {
-          setCreateOpen(open);
+        <Dialog open={createOpen && canCreate} onOpenChange={(open) => {
+          setCreateOpen(open && canCreate);
           if (!open) resetForm();
         }}>
-          <DialogTrigger asChild>
+          {canCreate && <DialogTrigger asChild>
             <Button data-testid="button-add-operator">
               <Plus className="h-4 w-4 mr-2" />
               Add Operator
             </Button>
-          </DialogTrigger>
+          </DialogTrigger>}
           <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle>Create Operator</DialogTitle>
@@ -376,6 +473,12 @@ export default function OperatorsPage() {
           </DialogContent>
         </Dialog>
       </div>
+
+      <ManagedInAdminNotice section="operators"
+        managed={management.actorManaged === true || operators.some(operator => operator.platformRolesEnabled === true)}
+        checking={management.checking || operatorsFetching || usersFetching || branchesFetching}
+        unavailable={!management.ready || !listsReady || operators.some(operator => typeof operator.platformRolesEnabled !== "boolean")}
+        onRetry={management.retry} />
 
       {activeOperators.length === 0 && archivedOperators.length === 0 ? (
         <Card>
@@ -399,6 +502,7 @@ export default function OperatorsPage() {
                     operator={op}
                     onEdit={openEditDialog}
                     onDelete={(id) => deleteMutation.mutate(id)}
+                    canWrite={canManageOperator(op.id)}
                   />
                 ))}
               </div>
@@ -415,6 +519,7 @@ export default function OperatorsPage() {
                     operator={op}
                     onEdit={openEditDialog}
                     onDelete={(id) => deleteMutation.mutate(id)}
+                    canWrite={canManageOperator(op.id)}
                   />
                 ))}
               </div>
@@ -423,9 +528,11 @@ export default function OperatorsPage() {
         </>
       )}
 
-      <Dialog open={!!editingOperator} onOpenChange={(open) => {
+      <Dialog open={canEdit} onOpenChange={(open) => {
         if (!open) {
+          editEpoch.current++;
           setEditingOperator(null);
+          setEditLoading(false);
           resetForm();
         }
       }}>
@@ -440,10 +547,10 @@ export default function OperatorsPage() {
           {formFields}
           </DialogBody>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditingOperator(null)} data-testid="button-cancel-edit">
+            <Button variant="outline" onClick={() => { editEpoch.current++; setEditingOperator(null); setEditLoading(false); }} data-testid="button-cancel-edit">
               Cancel
             </Button>
-            <Button onClick={handleUpdate} disabled={updateMutation.isPending} data-testid="button-confirm-edit">
+            <Button onClick={handleUpdate} disabled={editLoading || updateMutation.isPending} data-testid="button-confirm-edit">
               {updateMutation.isPending ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>
@@ -455,10 +562,12 @@ export default function OperatorsPage() {
 
 function OperatorCard({ 
   operator, 
+  canWrite,
   onEdit, 
   onDelete 
 }: { 
   operator: Operator; 
+  canWrite: boolean;
   onEdit: (op: Operator) => void; 
   onDelete: (id: string) => void;
 }) {
@@ -518,7 +627,7 @@ function OperatorCard({
             )}
           </div>
         )}
-        <div className="flex gap-2">
+        {canWrite && <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => onEdit(operator)} data-testid={`button-edit-operator-${operator.id}`}>
             <Pencil className="h-4 w-4 mr-1" />
             Edit
@@ -534,7 +643,7 @@ function OperatorCard({
               Archive
             </Button>
           )}
-        </div>
+        </div>}
       </CardContent>
     </Card>
   );

@@ -12,6 +12,7 @@ const files = [
   "platform-role-managed-flag.check.ts",
   "platform-role-permissions.check.ts",
   "platform-salary-permission.check.ts",
+  "admin-managed-ui.check.tsx",
 ];
 
 // Keep these isolated handler/guard checks in the existing handoff CI entry.
@@ -20,6 +21,10 @@ for (const file of files) {
   execFileSync(process.execPath, [cli, "tests/" + file], {
     cwd: app,
     stdio: "inherit",
+    env: file.endsWith(".tsx") ? {
+      ...process.env,
+      TSX_TSCONFIG_PATH: fileURLToPath(new URL("./tsconfig.jsx.json", import.meta.url)),
+    } : process.env,
   });
 }
 console.log(JSON.stringify({ suite: "platform-role-mapping", programs: files.length, passed: true }));

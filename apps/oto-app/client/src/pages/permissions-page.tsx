@@ -33,6 +33,8 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useAdminManagement } from "@/hooks/use-admin-management";
+import { ManagedInAdminNotice } from "@/components/managed-in-admin-notice";
 import {
   Search,
   Shield,
@@ -95,6 +97,7 @@ interface ModuleOverride {
 }
 
 interface PersonPermission {
+  managedInAdmin: boolean;
   personId: string;
   fullName: string;
   preferredName: string | null;
@@ -139,6 +142,7 @@ const ACCESS_LEVEL_COLORS: Record<string, string> = {
 
 export default function PermissionsPage() {
   const { toast } = useToast();
+  const management = useAdminManagement();
   const [filterTags, setFilterTags] = useState<FilterTag[]>([]);
   const [filterInput, setFilterInput] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -154,7 +158,7 @@ export default function PermissionsPage() {
   const [editBranchIds, setEditBranchIds] = useState<string[]>([]);
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
-  const { data: people = [], isLoading } = useQuery<PersonPermission[]>({
+  const { data: people = [], isLoading, isFetching: peopleFetching, isError: peopleError } = useQuery<PersonPermission[]>({
     queryKey: ["/api/permissions/bulk"],
   });
 
@@ -162,8 +166,19 @@ export default function PermissionsPage() {
     queryKey: ["/api/branches"],
   });
 
+  const peopleReady = !isLoading && !peopleFetching && !peopleError;
+  const personManaged = (id: string) => management.readTarget<PersonPermission>(
+    ["/api/permissions/bulk"], person => person.personId === id, person => person.managedInAdmin,
+  );
+  const canManagePerson = (id: string) => peopleReady && management.canWrite(personManaged(id));
+  const canEdit = !!editPerson && canManagePerson(editPerson.personId);
+  useEffect(() => {
+    if (!canEdit) setEditPerson(null);
+  }, [canEdit]);
+
   const updateAccessMutation = useMutation({
     mutationFn: async ({ personId, data }: { personId: string; data: any }) => {
+      management.assertWritable(() => personManaged(personId));
       return apiRequest("PUT", `/api/people/${personId}/access`, data);
     },
     onSuccess: () => {
@@ -172,6 +187,7 @@ export default function PermissionsPage() {
       setEditPerson(null);
     },
     onError: (error: Error) => {
+      management.handleError(error);
       toast({ title: "Error", description: error.message, variant: "destructive" });
     },
   });
@@ -184,6 +200,7 @@ export default function PermissionsPage() {
       branchScope: string;
       branchIds: string[] | null;
     }) => {
+      management.assertWritable(() => personManaged(personId));
       return apiRequest("PUT", `/api/people/${personId}/access`, {
         modules,
         accessLevel,
@@ -195,6 +212,7 @@ export default function PermissionsPage() {
       queryClient.invalidateQueries({ queryKey: ["/api/permissions/bulk"] });
     },
     onError: (error: Error) => {
+      management.handleError(error);
       toast({ title: "Error", description: error.message, variant: "destructive" });
     },
   });
@@ -304,7 +322,11 @@ export default function PermissionsPage() {
     });
   }, [people, filterTags]);
 
+  const bulkPeople = filteredPeople.filter(person => person.accessPolicy);
+  const canBulkUpdate = peopleReady && management.canWrite(false) && bulkPeople.every(person => canManagePerson(person.personId));
+
   const openEditDialog = (person: PersonPermission) => {
+    if (!canManagePerson(person.personId)) return;
     setEditPerson(person);
     if (person.accessPolicy) {
       setEditModules({ ...person.accessPolicy.modules });
@@ -320,7 +342,7 @@ export default function PermissionsPage() {
   };
 
   const handleSave = () => {
-    if (!editPerson) return;
+    if (!editPerson || !canManagePerson(editPerson.personId)) return;
     updateAccessMutation.mutate({
       personId: editPerson.personId,
       data: {
@@ -333,6 +355,7 @@ export default function PermissionsPage() {
   };
 
   const handleQuickModuleToggle = (person: PersonPermission, moduleKey: string, enabled: boolean) => {
+    if (!canManagePerson(person.personId)) return;
     if (!person.accessPolicy) {
       toast({ title: "No access policy", description: "Open the edit dialog to set up access first.", variant: "destructive" });
       return;
@@ -353,6 +376,11 @@ export default function PermissionsPage() {
       moduleKey: string;
       enabled: boolean;
     }) => {
+      management.assertWritable(() => {
+        const states = personIds.map(personManaged);
+        return states.length > 0 && states.every(value => value === false) ? false
+          : states.some(value => value === true) ? true : undefined;
+      });
       return apiRequest("PUT", "/api/permissions/bulk-update", {
         personIds,
         moduleKey,
@@ -365,11 +393,13 @@ export default function PermissionsPage() {
       toast({ title: "Bulk update complete", description: `${data.updated} updated, ${data.skipped} skipped` });
     },
     onError: (error: Error) => {
+      management.handleError(error);
       toast({ title: "Error", description: error.message, variant: "destructive" });
     },
   });
 
   const handleBulkModuleToggle = (moduleKey: string, enabled: boolean) => {
+    if (!canBulkUpdate) return;
     const eligiblePeople = filteredPeople.filter(p => p.accessPolicy);
     if (eligiblePeople.length === 0) {
       toast({ title: "No eligible people", description: "None of the filtered people have access configured.", variant: "destructive" });
@@ -412,6 +442,12 @@ export default function PermissionsPage() {
           <p className="text-sm text-muted-foreground">Manage access levels and module permissions for all employees and advisors</p>
         </div>
       </div>
+
+      <ManagedInAdminNotice section="roles"
+        managed={management.actorManaged === true || people.some(person => person.managedInAdmin === true)}
+        checking={management.checking || peopleFetching}
+        unavailable={!management.ready || !peopleReady || people.some(person => typeof person.managedInAdmin !== "boolean")}
+        onRetry={management.retry} />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card>
@@ -549,7 +585,7 @@ export default function PermissionsPage() {
                     <TableHead className="w-[90px] text-center">Scope</TableHead>
                     <TableHead className="w-[60px]"></TableHead>
                   </TableRow>
-                  {filterTags.length > 0 && filteredPeople.length > 0 && (
+                  {filterTags.length > 0 && filteredPeople.length > 0 && canBulkUpdate && (
                     <TableRow className="bg-muted/50">
                       <TableHead colSpan={2} className="text-xs font-medium py-1.5">
                         <div className="flex items-center gap-1.5">
@@ -624,8 +660,8 @@ export default function PermissionsPage() {
                               <div className="flex justify-center">
                                 <Checkbox
                                   checked={enabled}
-                                  onCheckedChange={(checked) => handleQuickModuleToggle(person, key, !!checked)}
-                                  disabled={!person.accessPolicy || toggleModuleMutation.isPending}
+                                  onCheckedChange={canManagePerson(person.personId) ? (checked) => handleQuickModuleToggle(person, key, !!checked) : undefined}
+                                  disabled={!canManagePerson(person.personId) || !person.accessPolicy || toggleModuleMutation.isPending}
                                   data-testid={`checkbox-module-${person.personId}-${key}`}
                                 />
                               </div>
@@ -642,14 +678,14 @@ export default function PermissionsPage() {
                           )}
                         </TableCell>
                         <TableCell>
-                          <Button
+                          {canManagePerson(person.personId) && <Button
                             size="icon"
                             variant="ghost"
                             onClick={() => openEditDialog(person)}
                             data-testid={`button-edit-permission-${person.personId}`}
                           >
                             <Edit className="h-4 w-4" />
-                          </Button>
+                          </Button>}
                         </TableCell>
                       </TableRow>
                     );
@@ -661,7 +697,7 @@ export default function PermissionsPage() {
         </Card>
       )}
 
-      <Dialog open={!!editPerson} onOpenChange={(open) => !open && setEditPerson(null)}>
+      <Dialog open={canEdit} onOpenChange={(open) => !open && setEditPerson(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>

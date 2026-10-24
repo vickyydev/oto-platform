@@ -1,10 +1,12 @@
 import { db } from '../db';
 import { getTableConfig } from 'drizzle-orm/pg-core';
-import { currentTenant, rowScope, DataAdminScopeError } from './park-group';
+import { currentTenant, rowScope, dataAdminContext, DataAdminScopeError, DataAdminManagedError } from './park-group';
 import { branches, users, userBranchAccess } from '../../shared/schema';
 import { getAdmin } from './registry';
 import * as modelTables from '../../shared/schema';
 import { count, eq, ilike, or, and, asc, desc, inArray, SQL, getTableColumns } from 'drizzle-orm';
+import { loadAdminManagement } from '../lib/adminManagement';
+import { storage } from '../storage';
 
 // ─── Field & form types ──────────────────────────────────────────────────────
 
@@ -465,6 +467,81 @@ export abstract class ModelAdmin {
     return mutable;
   }
 
+  /** Fence only administration rows and identity-link changes, after their existing ownership checks. */
+  private async assertAdminManagementWrite(
+    data: Record<string, unknown>,
+    current?: Record<string, unknown>,
+    deleting = false,
+  ): Promise<void> {
+    const name = getTableConfig(this.table).name;
+    const changed = (key: string) => key in data && data[key] !== current?.[key];
+    const administration = ['users', 'operators', 'access_policies', 'user_branch_access', 'user_module_overrides'].includes(name);
+    const personLink = name === 'people' && (deleting || changed('email') || changed('personType'));
+    const employeeLink = name === 'employees' && (deleting || changed('userId') || changed('personId'));
+    const branchLink = name === 'branches' && (deleting || changed('operatorId'));
+    if (!administration && !personLink && !employeeLink && !branchLink) return;
+
+    const tenantId = currentTenant();
+    const operatorIds = new Set<string>(), userIds = new Set<string>(), personIds = new Set<string>(), fallbackEmails = new Set<string>(), advisorEmails = new Set<string>();
+    const add = (set: Set<string>, value: unknown) => { if (typeof value === 'string' && value) set.add(value); };
+    const addFallback = (email: unknown, personType: unknown) => add(personType === 'ADVISOR' ? advisorEmails : fallbackEmails, email);
+    const versions = current ? [current, { ...current, ...data }] : [data];
+    for (const row of versions) {
+      if (name === 'users' || name === 'branches') add(operatorIds, row.operatorId);
+      if (name === 'operators') add(operatorIds, row.id);
+      if (['user_branch_access', 'user_module_overrides', 'employees'].includes(name)) add(userIds, row.userId);
+      if (name === 'access_policies') add(userIds, row.coreUserId);
+      if (name === 'access_policies' || name === 'employees') add(personIds, row.personId);
+      if (name === 'people') {
+        add(personIds, row.id);
+      }
+    }
+
+    let hasPolicy = name === 'access_policies';
+    if (personIds.size) {
+      const people = await db.select().from(modelTables.people)
+        .where(and(inArray(modelTables.people.id, [...personIds]), rowScope(modelTables.people, tenantId)));
+      const employees = await db.select({ tenantId: modelTables.employees.tenantId, personId: modelTables.employees.personId, userId: modelTables.employees.userId })
+        .from(modelTables.employees).where(and(inArray(modelTables.employees.personId, [...personIds]), eq(modelTables.employees.tenantId, tenantId)));
+      const policies = await db.select({ tenantId: modelTables.accessPolicies.tenantId, coreUserId: modelTables.accessPolicies.coreUserId })
+        .from(modelTables.accessPolicies).where(and(inArray(modelTables.accessPolicies.personId, [...personIds]), eq(modelTables.accessPolicies.tenantId, tenantId)));
+      for (const row of employees) add(userIds, row.userId);
+      for (const row of policies) add(userIds, row.coreUserId);
+      for (const person of people) {
+        if (!employees.find(row => row.personId === person.id)?.userId) {
+          addFallback(person.email, person.personType);
+          if (name === 'people') for (const row of versions) addFallback(row.email, row.personType);
+        }
+      }
+      hasPolicy ||= policies.length > 0;
+    }
+    if (name === 'people' && !current) addFallback(data.email, data.personType);
+    if (fallbackEmails.size) {
+      const logins = await db.select({ id: users.id }).from(users).where(inArray(users.email, [...fallbackEmails]));
+      for (const row of logins) userIds.add(row.id);
+    }
+    for (const email of advisorEmails) {
+      const login = await storage.getUserByEmail(email);
+      if (login) userIds.add(login.id);
+    }
+    let ownedUsers = 0;
+    if (userIds.size) {
+      const logins = await db.select({ id: users.id, operatorId: users.operatorId }).from(users)
+        .where(and(inArray(users.id, [...userIds]), rowScope(users, tenantId)));
+      ownedUsers = logins.length;
+      for (const row of logins) add(operatorIds, row.operatorId);
+    }
+    // Existing validation owns foreign-reference refusals, including permitted
+    // historical-link clearing. Classification considers only owned subjects.
+    if ((personLink || employeeLink) && !hasPolicy && ownedUsers === 0) return;
+    const management = await loadAdminManagement(tenantId, dataAdminContext.getStore()?.actorOperatorId, {
+      getOperators: () => db.select({ id: modelTables.operators.id, tenantId: modelTables.operators.tenantId,
+        platformRolesEnabled: modelTables.operators.platformRolesEnabled })
+        .from(modelTables.operators).where(eq(modelTables.operators.tenantId, tenantId)),
+    });
+    if (management.writeManaged([...operatorIds])) throw new DataAdminManagedError();
+  }
+
   async getList(params: ListParams): Promise<ListResult> {
     const where = this.buildWhere(params);
     const offset = (params.page - 1) * params.pageSize;
@@ -502,6 +579,7 @@ export abstract class ModelAdmin {
 
   async create(data: Record<string, unknown>): Promise<Record<string, unknown>> {
     const safeData = await this.scopedWrite(data);
+    await this.assertAdminManagementWrite(safeData);
     if (this.table === users) {
       return db.transaction(async (tx) => {
         const [row] = await tx
@@ -529,6 +607,7 @@ export abstract class ModelAdmin {
     const current = await this.getById(id);
     if (!current) throw new DataAdminScopeError(404, 'Record not found');
     const safeData = await this.scopedWrite(data, current);
+    await this.assertAdminManagementWrite(safeData, current);
     const rows = (await db
       .update(this.table)
       .set(safeData as any)
@@ -547,6 +626,7 @@ export abstract class ModelAdmin {
         409,
         'This user is linked to the platform and cannot be deleted here',
       );
+    await this.assertAdminManagementWrite({}, current, true);
     await db
       .delete(this.table)
       .where(

@@ -318,7 +318,8 @@ describe.skipIf(!HAS_APP_RUNTIME)('F. the real app: the attendance check over HT
       // 35 = 33 + the two rota-only checks the group-delete fix added (44a15149).
       expect(output).toMatch(/attendance\.check: 35 checks passed/);
       for (const hazard of ['(Q1, H14)', '(Q2, H15)', '(H13)']) expect(output, hazard).toContain(hazard);
-      for (const finding of ['FINDING Q39', 'FINDING Q40', 'FINDING Q41', 'FINDING Q46']) expect(output, finding).toContain(finding);
+      for (const finding of ['FINDING Q39', 'FINDING Q41', 'FINDING Q46']) expect(output, finding).toContain(finding);
+      expect(output).toContain("leave: sick-leave balances, the leave-policy and per-employee balance reads answer branch X and refuse Y (SCRUM-544: they read the user's real branch list; SCRUM-595: sick-leave balances match the original app's rule)");
       const back = spawnSync(process.execPath, [READBACK], { env: { ...process.env, DATABASE_URL: url }, encoding: 'utf8' });
       expect(back.status, `${back.stdout}\n${back.stderr}`).toBe(0);
     } finally {
