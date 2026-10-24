@@ -1,0 +1,2736 @@
+{
+  "ticket": "SCRUM-632",
+  "purpose": "public-static-asset-collection",
+  "complete": true,
+  "reviewed": false,
+  "actualPublicCollection": true,
+  "productionSourceSha": "6b429d4bd8f98b1508a5a785ed78655ec3cc95d5",
+  "ciRunId": "40134954679",
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "deployId": "dep-dbeii8qjnfac73dspd1g",
+      "sourceSha": "6b429d4bd8f98b1508a5a785ed78655ec3cc95d5",
+      "finishedAt": "2026-10-24T21:57:44.330788Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "deployId": "dep-dbeii92jnfac73dspf5g",
+      "sourceSha": "6b429d4bd8f98b1508a5a785ed78655ec3cc95d5",
+      "finishedAt": "2026-10-24T21:55:29.495975Z"
+    },
+    {
+      "name": "oto-app-staging",
+      "deployId": "dep-dbeii8qjnfac73dspe00",
+      "sourceSha": "6b429d4bd8f98b1508a5a785ed78655ec3cc95d5",
+      "finishedAt": "2026-10-24T21:57:35.023933Z"
+    }
+  ],
+  "origin": "https://oto-app-staging.onrender.com",
+  "startedAt": "2026-10-24T22:00:17.809Z",
+  "helperSha256": "49b5a33836453a075331b5df49b9586f6c9dbe98c1b64903020899fb4c4567a7",
+  "planSha256": "44532541edea7d622dc29ebef940b736ebd7df30e3b93aa55c0db35115374d18",
+  "dependencyPins": {
+    "C:/w/admin630-feature-release.mjs": "43b64d3d5455b5d94be5c0829b257f241a968f5015a1e58a31fb3d7fd06dd3e9",
+    "C:/w/admin631-proof.mjs": "c4bcd6a21ef69df48f17dbcf84117196a5b5e85a48597f6d731de37b541abbe8",
+    "C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/render.mjs": "38c0624969c762a5d93de2a0ab0675e98c7a265e8dde750a51c25d1a5a9826b7",
+    "C:/w/admin632-browser-rehearsal/result.json": "3cb4f63d9d5d3c6029fdac716940f096275a12f03db73fda50d2809ffb3d544e",
+    "C:/w/admin632-capture-template.json": "0b18549af0e62dd5995f8536a9fe8dcc224d1921def88b596ef466378cc6cb60"
+  },
+  "limits": {
+    "assets": 1500,
+    "fileBytes": 16000000,
+    "totalBytes": 160000000,
+    "timeoutMs": 30000
+  },
+  "retries": 0,
+  "redirects": 0,
+  "applicationAuthRequests": 0,
+  "applicationApiRequests": 0,
+  "businessWrites": 0,
+  "privatePhotoRequests": 0,
+  "externalFontRequests": 0,
+  "publicRequests": 270,
+  "publicBytesCollected": 5417859,
+  "sourceChecks": 2,
+  "before": {
+    "headSha": "6b429d4bd8f98b1508a5a785ed78655ec3cc95d5",
+    "status": "completed",
+    "conclusion": "success",
+    "jobs": [
+      {
+        "name": "api-tests (1)",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "api-tests (2)",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "api-tests (3)",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "ci",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "oto-app",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "pos-tests",
+        "status": "completed",
+        "conclusion": "success"
+      }
+    ],
+    "deployments": [
+      {
+        "name": "oto-api-staging",
+        "id": "dep-dbeii8qjnfac73dspd1g",
+        "sourceSha": "6b429d4bd8f98b1508a5a785ed78655ec3cc95d5",
+        "status": "live",
+        "finishedAt": "2026-10-24T21:57:44.330788Z"
+      },
+      {
+        "name": "oto-console-staging",
+        "id": "dep-dbeii92jnfac73dspf5g",
+        "sourceSha": "6b429d4bd8f98b1508a5a785ed78655ec3cc95d5",
+        "status": "live",
+        "finishedAt": "2026-10-24T21:55:29.495975Z"
+      },
+      {
+        "name": "oto-app-staging",
+        "id": "dep-dbeii8qjnfac73dspe00",
+        "sourceSha": "6b429d4bd8f98b1508a5a785ed78655ec3cc95d5",
+        "status": "live",
+        "finishedAt": "2026-10-24T21:57:35.023933Z"
+      }
+    ]
+  },
+  "assets": [
+    {
+      "path": "/apple-touch-icon.png",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/apple-touch-icon.png",
+      "sha256": "d4f230cee02964d6efd91af6c2a60f56b5ee9b416551ff24203fed7b828bfa3d",
+      "byteLength": 6414,
+      "contentType": "image/png",
+      "capturedAt": "2026-10-24T22:00:18.352Z"
+    },
+    {
+      "path": "/assets/access-config-page-B80KGZg6.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/access-config-page-B80KGZg6.js",
+      "sha256": "03a0b849c89710abfdf8e22ba8104cca9b0132cc0c1bb4c6897d4dc91913e7df",
+      "byteLength": 9710,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:28.991Z"
+    },
+    {
+      "path": "/assets/access-page-CD4-8XMz.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/access-page-CD4-8XMz.js",
+      "sha256": "85888baf3a2a4b3847e9ab3a633eab7762fe6c41d83d4ddb1863417cf54a7126",
+      "byteLength": 7793,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:28.933Z"
+    },
+    {
+      "path": "/assets/accordion-KW-EGZV4.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/accordion-KW-EGZV4.js",
+      "sha256": "d4ab5923d39d3899f3ef4038894845af0bf6a652a8ce258cb50012f216a6343a",
+      "byteLength": 4503,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:30.589Z"
+    },
+    {
+      "path": "/assets/activity-logbook-page-CRmdUHF7.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/activity-logbook-page-CRmdUHF7.js",
+      "sha256": "3b97a47c9339da78dc3c45a27c2bad998372051a97427818e50f99cc499900e9",
+      "byteLength": 11188,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:25.363Z"
+    },
+    {
+      "path": "/assets/activity-preview-tooltip-ClnbI9Ej.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/activity-preview-tooltip-ClnbI9Ej.js",
+      "sha256": "0e03a9a29e5dfe948ca70cdbbd08edfa81387027c6df940819225c5cff20b145",
+      "byteLength": 6938,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:20.912Z"
+    },
+    {
+      "path": "/assets/addMonths-CFBkmbBo.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/addMonths-CFBkmbBo.js",
+      "sha256": "7309165e8abe140fba8d190b9f5070105f2bdfa94e7c7c708155be0c9b6b36d1",
+      "byteLength": 338,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:21.888Z"
+    },
+    {
+      "path": "/assets/addWeeks-BSihqsie.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/addWeeks-BSihqsie.js",
+      "sha256": "5fde926e84a4c7ae76e2a6f314b3538b0b26efefa3ad33d7a1f986c5a6607a02",
+      "byteLength": 145,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:22.123Z"
+    },
+    {
+      "path": "/assets/advisors-page-DjStJm_n.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/advisors-page-DjStJm_n.js",
+      "sha256": "d722deedcfec192ac2d9501a36323f4b7d1786495efedf94211433353f161094",
+      "byteLength": 21826,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:27.380Z"
+    },
+    {
+      "path": "/assets/alert-8N9mayzi.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/alert-8N9mayzi.js",
+      "sha256": "7366a3f9628169265b4fe45b42629035f89d5c4109eba3dbeb83e461843da788",
+      "byteLength": 952,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:22.308Z"
+    },
+    {
+      "path": "/assets/alert-dialog-CwsxrG26.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/alert-dialog-CwsxrG26.js",
+      "sha256": "d87877c1beec84afd686076cd7bc1d2bef8182dbe67897a940145d1491be0f96",
+      "byteLength": 4848,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:20.851Z"
+    },
+    {
+      "path": "/assets/align-left-CSMlRfRN.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/align-left-CSMlRfRN.js",
+      "sha256": "8eb7e8447f3ac2ac11153bf24f48c1845b4f41472a91294a411dc8326acb01a7",
+      "byteLength": 239,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:20.421Z"
+    },
+    {
+      "path": "/assets/analytics-page-D5W5d0WD.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/analytics-page-D5W5d0WD.js",
+      "sha256": "384818ad7e489bfb8e3fb64482ca39de5554a254b72087b59acae38e40ed26b8",
+      "byteLength": 16939,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:29.168Z"
+    },
+    {
+      "path": "/assets/api--ivKzuts.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/api--ivKzuts.js",
+      "sha256": "3c7a1fc7f9d627a2ef5f6ac57cacd996495ec05b77422920317a42d75ac9dac6",
+      "byteLength": 3055,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:27.558Z"
+    },
+    {
+      "path": "/assets/app-layout-CmdCv9Wy.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/app-layout-CmdCv9Wy.js",
+      "sha256": "902b0f7c223b2bf53b7f18d35b6fe35c0de45bd0be2b1d7b01a65f4545f23e91",
+      "byteLength": 167,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:29.814Z"
+    },
+    {
+      "path": "/assets/archive-BKOwv2kY.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/archive-BKOwv2kY.js",
+      "sha256": "1e33420b9471e489f120c502bfcf19ba8a342cdc9f0cd62f7369b4d035d1d234",
+      "byteLength": 295,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:19.335Z"
+    },
+    {
+      "path": "/assets/archive-restore-D6Mfi5k4.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/archive-restore-D6Mfi5k4.js",
+      "sha256": "92e505eb74f9b1d85081925727ef8f81eba2524a95ae035621a02d30cd8decef",
+      "byteLength": 389,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:19.644Z"
+    },
+    {
+      "path": "/assets/arrow-left-kYg6XSCt.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/arrow-left-kYg6XSCt.js",
+      "sha256": "05b0f3f0f72cffebcc4b6730c4561228491263f6def607fa9dace87eb59a891b",
+      "byteLength": 209,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:19.776Z"
+    },
+    {
+      "path": "/assets/arrow-up-right-Cq-KpxJF.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/arrow-up-right-Cq-KpxJF.js",
+      "sha256": "8b289112c7107082525349d5298bac8ad5e17d85b44fef9995a50b0ab259adc7",
+      "byteLength": 324,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:26.302Z"
+    },
+    {
+      "path": "/assets/ask-BdfnkoA3.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/ask-BdfnkoA3.js",
+      "sha256": "18a3b46dd358c3b35c8d22cfbabe3f5a304c195abb21f97eac1918170a65acd6",
+      "byteLength": 14658,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:31.877Z"
+    },
+    {
+      "path": "/assets/AssignmentSearchBar-BGMylObx.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/AssignmentSearchBar-BGMylObx.js",
+      "sha256": "84e43b535bc4dac33f06cd299083371103e3173ecf90817dcb6c59fb4816a6e0",
+      "byteLength": 6665,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:32.112Z"
+    },
+    {
+      "path": "/assets/attention-page-DjW1UdQe.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/attention-page-DjW1UdQe.js",
+      "sha256": "4f64c56cb0276ed1800c76fec84d97bceeda1b5a0444197f568db09f9e1a88ab",
+      "byteLength": 22919,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:24.634Z"
+    },
+    {
+      "path": "/assets/beo-day-of-view-DGxJ0AHI.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/beo-day-of-view-DGxJ0AHI.js",
+      "sha256": "a6abf47dd72c8d8a58e0453c5257e7b354eeb52082f40e4f361a6cb9efdf2b4b",
+      "byteLength": 50971,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:31.170Z"
+    },
+    {
+      "path": "/assets/birthday-BDSyJLBE.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/birthday-BDSyJLBE.js",
+      "sha256": "53e4e95d3adc64f9eb4a1588e190ed829b04acee1969fbd3b2056e6edf3c1c16",
+      "byteLength": 556,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:21.398Z"
+    },
+    {
+      "path": "/assets/branches-page-Vvwn99KL.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/branches-page-Vvwn99KL.js",
+      "sha256": "5fdc8efe1e0d0710fba8517afd8c8afcd684d153a0d83f5d3a8119ec710a051c",
+      "byteLength": 17406,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:24.038Z"
+    },
+    {
+      "path": "/assets/browser-bGFgy5DM.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/browser-bGFgy5DM.js",
+      "sha256": "fbb2a64d939bd60f39517bbd18f77732a8554c3e836fb93692f35bca04b978ca",
+      "byteLength": 22723,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:20.731Z"
+    },
+    {
+      "path": "/assets/bulk-employee-upload-page-5vrRGQN-.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/bulk-employee-upload-page-5vrRGQN-.js",
+      "sha256": "dce0ee4dcdc756209f5afa335edcca0b0ce48a0dc182ca19b3dc92e3b999fed6",
+      "byteLength": 11411,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:25.483Z"
+    },
+    {
+      "path": "/assets/cake-VfCslhfS.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/cake-VfCslhfS.js",
+      "sha256": "a5e0c7e411902a94b6433d7a94202ee4c3838838ea999dc6ab3a03cb68b95a55",
+      "byteLength": 526,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:30.993Z"
+    },
+    {
+      "path": "/assets/calculator-DDZvuvVW.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/calculator-DDZvuvVW.js",
+      "sha256": "383533eb68048a301f142252cb27df1b1c46c9164c14796a12d369df2ad4c0c2",
+      "byteLength": 575,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:28.571Z"
+    },
+    {
+      "path": "/assets/calendar-CH5GeAf0.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/calendar-CH5GeAf0.js",
+      "sha256": "c50f754cc3d84e06052c0e511518fcf624df0c46102f7e7229f23097dadda715",
+      "byteLength": 1991,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:21.706Z"
+    },
+    {
+      "path": "/assets/calendar-check-BdH0kSVj.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/calendar-check-BdH0kSVj.js",
+      "sha256": "3b47c5e41264e727c1aaae3ba1fb3192558f7552d2cb299788a590d90f343490",
+      "byteLength": 353,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:27.678Z"
+    },
+    {
+      "path": "/assets/calendar-plus-BGmMk1x-.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/calendar-plus-BGmMk1x-.js",
+      "sha256": "d148b50d86e76f854372352cbf46545f798a020e2b4f99884f2dd29aed233c81",
+      "byteLength": 403,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:32.885Z"
+    },
+    {
+      "path": "/assets/camera-CfR9-Dti.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/camera-CfR9-Dti.js",
+      "sha256": "f118f05b38e8b69d05ce6be5cf59639231f7423a4525515b8fbdb60d4969ad64",
+      "byteLength": 289,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:22.543Z"
+    },
+    {
+      "path": "/assets/camp-days-CWwFpNR4.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/camp-days-CWwFpNR4.js",
+      "sha256": "ab3563fe4eff2282f3881a9ac3165d5d95e415c81b010af1d7f595a88e87d30e",
+      "byteLength": 562,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:32.827Z"
+    },
+    {
+      "path": "/assets/camp-detail-DDGVYg-Q.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/camp-detail-DDGVYg-Q.js",
+      "sha256": "48fae3bbfb01e5d70e1095498ab9b16a32079dc0fa3a402701bea0a2cb0b0666",
+      "byteLength": 68842,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:34.205Z"
+    },
+    {
+      "path": "/assets/camp-register-BR5H4Ruc.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/camp-register-BR5H4Ruc.js",
+      "sha256": "fd479ea4e70bbd3fca075483385f9a045a21f73e9743568ecb03d7fa868efadb",
+      "byteLength": 34620,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:32.768Z"
+    },
+    {
+      "path": "/assets/camp-rules-CjbnzaN2.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/camp-rules-CjbnzaN2.js",
+      "sha256": "bc204642b20fb341a471a94eba7942c8335560e3bf4ae5ed8e78a2a30ea5c8db",
+      "byteLength": 9047,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:34.537Z"
+    },
+    {
+      "path": "/assets/casual-workers-page-HEdY31jP.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/casual-workers-page-HEdY31jP.js",
+      "sha256": "cbb1b94933d21a2d94287a51aeab7ae6075d86b103dabaeccf6c7edeac5b8886",
+      "byteLength": 12481,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:25.661Z"
+    },
+    {
+      "path": "/assets/change-password-page-Cbvj885u.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/change-password-page-Cbvj885u.js",
+      "sha256": "cdcf25c1ca8e568c5e3485a303be0ad7fb2048c80aac3a1d0cedfa61f70de265",
+      "byteLength": 3754,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:25.241Z"
+    },
+    {
+      "path": "/assets/chart-pie-BnaZg0Oo.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/chart-pie-BnaZg0Oo.js",
+      "sha256": "98b7901522a76d19e637949ea202b6222313f6435024b97bdc4296cb70e1818e",
+      "byteLength": 316,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:23.004Z"
+    },
+    {
+      "path": "/assets/checkbox-CeRk5mNN.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/checkbox-CeRk5mNN.js",
+      "sha256": "f4c8702f8b9e0a1cd1552080e166a29caad17386701526acaa82404e90f5dd88",
+      "byteLength": 2823,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:18.759Z"
+    },
+    {
+      "path": "/assets/checkin-form-Cn8EC2EX.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/checkin-form-Cn8EC2EX.js",
+      "sha256": "a805f3a1e447fe182b9d371356a23d8b4e9978525d06e6535f47608c2a564e7a",
+      "byteLength": 25648,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:32.645Z"
+    },
+    {
+      "path": "/assets/checkins-Ii_Z5h_V.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/checkins-Ii_Z5h_V.js",
+      "sha256": "22678bd130ec02fcb18fc312946c6b5d9d59f45f8191feb36d76bce84c9cf083",
+      "byteLength": 60931,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:25.865Z"
+    },
+    {
+      "path": "/assets/checklist-employee-picker-D82344E7.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/checklist-employee-picker-D82344E7.js",
+      "sha256": "fafce72dfa8086cc1be305267d00cd78dfc865f6a70f3c771b9f73a51ec224b0",
+      "byteLength": 944,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:33.727Z"
+    },
+    {
+      "path": "/assets/checklist-run-B5imK_JN.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/checklist-run-B5imK_JN.js",
+      "sha256": "fa954ac6d727caf7b0f9f6d31f96bb431679fb706d3cceffc2e876e743340c10",
+      "byteLength": 31561,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:31.462Z"
+    },
+    {
+      "path": "/assets/checklists-BPUolC7E.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/checklists-BPUolC7E.js",
+      "sha256": "d20567f5999b9d12b976bff5c32f00b98aebe1064ca8e1afb01b46d8b685d69f",
+      "byteLength": 57428,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:33.905Z"
+    },
+    {
+      "path": "/assets/chevron-left-1K-4ibeL.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/chevron-left-1K-4ibeL.js",
+      "sha256": "903b84a0f18b2e0484c3a57ae72a07a1325382dcd77afc926a0449473d78a36d",
+      "byteLength": 176,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:22.180Z"
+    },
+    {
+      "path": "/assets/chevron-up-Oj2bkNsA.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/chevron-up-Oj2bkNsA.js",
+      "sha256": "66e98d7c308b3194178ac51ac5209816a731946b68d24ed74f08b631054dc2c4",
+      "byteLength": 172,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:21.586Z"
+    },
+    {
+      "path": "/assets/chevrons-up-down-ziM8t7yY.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/chevrons-up-down-ziM8t7yY.js",
+      "sha256": "de4a610ff0cc40e255297962a7c44b97cd76e01f7b6db88f84a96449a0716164",
+      "byteLength": 223,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:26.359Z"
+    },
+    {
+      "path": "/assets/child-profile-editor-rd6yVfIQ.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/child-profile-editor-rd6yVfIQ.js",
+      "sha256": "c25900635e8074e278e1f4b7c6e91c3c22c04c184b4b4fb821dd1fc67050532b",
+      "byteLength": 6129,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:34.298Z"
+    },
+    {
+      "path": "/assets/children-DrBd2Mq9.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/children-DrBd2Mq9.js",
+      "sha256": "29345ff76072e27874fe9602f5524ed01044aab67887d149541ba355151d3d9e",
+      "byteLength": 28806,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:34.422Z"
+    },
+    {
+      "path": "/assets/circle-help-uJR3KXzl.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/circle-help-uJR3KXzl.js",
+      "sha256": "86dbb9fd204e40997ad006a4dcb04ac4d2d2909cd89a3bcc16010f83581867af",
+      "byteLength": 284,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:32.465Z"
+    },
+    {
+      "path": "/assets/circle-play-B9IUoI0x.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/circle-play-B9IUoI0x.js",
+      "sha256": "c184bca8b7fcc5ffa6aa94311c3cd0b0fbfadc816c8af7eff099d7fd49a91c33",
+      "byteLength": 238,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:27.619Z"
+    },
+    {
+      "path": "/assets/circle-x-C1Vgc72o.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/circle-x-C1Vgc72o.js",
+      "sha256": "2e4997235d51f799077d1c84b23d71f2db992fd30c2a36799b7b84ac3a8e2f74",
+      "byteLength": 249,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:22.660Z"
+    },
+    {
+      "path": "/assets/clickable-employee-avatar-CPj7SOoF.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/clickable-employee-avatar-CPj7SOoF.js",
+      "sha256": "a8adf11babdff24973cebd71cf1b301fd5f248e638d5a7a6af40ad232f6480b8",
+      "byteLength": 1151,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:22.241Z"
+    },
+    {
+      "path": "/assets/collapsible-CavZCA3V.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/collapsible-CavZCA3V.js",
+      "sha256": "658acb48975898a318a4cdf070a86198e557d18c9da641c657286bf7c9b80f31",
+      "byteLength": 154,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:18.959Z"
+    },
+    {
+      "path": "/assets/contract-detail-page-Be-07x4z.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/contract-detail-page-Be-07x4z.js",
+      "sha256": "6d35e32a9e3f55d60cdb2f4b7d3c7c0fedd07f94b90a4b72b709407bf601ae76",
+      "byteLength": 17072,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:23.298Z"
+    },
+    {
+      "path": "/assets/contract-wizard-page-By6le5u5.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/contract-wizard-page-By6le5u5.js",
+      "sha256": "90c2d9214c1daa52d013895f0b0af985250ed9aa4b2c17f2465dfa2f82abeb0f",
+      "byteLength": 20547,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:23.239Z"
+    },
+    {
+      "path": "/assets/contracts-page-Cn3Aj2pW.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/contracts-page-Cn3Aj2pW.js",
+      "sha256": "18363af880b534f47e4dfa27f8c6f4935fa24157dc649b29179bdc63d2e5baae",
+      "byteLength": 12777,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:23.180Z"
+    },
+    {
+      "path": "/assets/copy-BSOXUjru.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/copy-BSOXUjru.js",
+      "sha256": "d3a8e8728294c278ee8da2829c902bebc0fb6df47927fd4c4028f56f629ddad0",
+      "byteLength": 275,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:22.483Z"
+    },
+    {
+      "path": "/assets/credit-card-EjNkh6eh.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/credit-card-EjNkh6eh.js",
+      "sha256": "d86017c17ba6c71c1facad54a15d01bf2a8834a6ff9d4844efafed72dbf02fb9",
+      "byteLength": 252,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:22.780Z"
+    },
+    {
+      "path": "/assets/currency-input-Dlg8ChPF.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/currency-input-Dlg8ChPF.js",
+      "sha256": "2e4740dd8ce84a47f60dfc596da2add87d6806a63ade86b755965d2b7ada7532",
+      "byteLength": 978,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:21.458Z"
+    },
+    {
+      "path": "/assets/dashboard-Bhd20rt6.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/dashboard-Bhd20rt6.js",
+      "sha256": "1369afbf7510af2d34dc130e6c84c3c810a4e6038af3bfa6f07b49af5fe18043",
+      "byteLength": 24898,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:29.876Z"
+    },
+    {
+      "path": "/assets/date-picker-DNd4Djtq.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/date-picker-DNd4Djtq.js",
+      "sha256": "d6fc76ba973b39435be441e36ac4b9fed2c39e98b0e76682ee037f834ce9bce8",
+      "byteLength": 861,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:21.645Z"
+    },
+    {
+      "path": "/assets/departments-page-Bq8Mp6mc.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/departments-page-Bq8Mp6mc.js",
+      "sha256": "482b9c4eb7d4b42b1c49e70f761b1b6813286357bfe7d4eaa5fef8cd20b2ff3a",
+      "byteLength": 11614,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:26.608Z"
+    },
+    {
+      "path": "/assets/differenceInDays-BCu_P8Ci.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/differenceInDays-BCu_P8Ci.js",
+      "sha256": "3e246b2951e1a37224eb5d5e8f1af57e47eb32a351e5e5331b9b6d8cb352e741",
+      "byteLength": 553,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:23.122Z"
+    },
+    {
+      "path": "/assets/differenceInYears-DXpoADNc.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/differenceInYears-DXpoADNc.js",
+      "sha256": "c46801ffce4b234422ef517a84ae993c6c1f8ad3ba67eb8720878726d5943691",
+      "byteLength": 347,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:26.185Z"
+    },
+    {
+      "path": "/assets/dollar-sign-nwVDBass.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/dollar-sign-nwVDBass.js",
+      "sha256": "68a22391c92e20aa9638a70d075f0419445655ea54a11eaaaa044bd771f9776f",
+      "byteLength": 264,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:22.369Z"
+    },
+    {
+      "path": "/assets/dropoff-checkin-CJwGMZZP.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/dropoff-checkin-CJwGMZZP.js",
+      "sha256": "6be781a862ddbb9f3171284e30bba66a2d960415e24d725b807ad042bc19837b",
+      "byteLength": 31874,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:30.169Z"
+    },
+    {
+      "path": "/assets/eachDayOfInterval-CBA7ZGl8.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/eachDayOfInterval-CBA7ZGl8.js",
+      "sha256": "f61bb18d511133d8baa56266bac5b7840ac62d535c32fda4828f6bd3e62c6264",
+      "byteLength": 326,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:26.961Z"
+    },
+    {
+      "path": "/assets/ellipsis-gElSqPLo.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/ellipsis-gElSqPLo.js",
+      "sha256": "d40786231c27cd634f3f2031ce721e454811a6e1fcea3512b88280412b0a1699",
+      "byteLength": 269,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:19.570Z"
+    },
+    {
+      "path": "/assets/employee-editor-page-CRjMmuot.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/employee-editor-page-CRjMmuot.js",
+      "sha256": "9006e54bc404bc757a9faa1a71a4095b3309fac3fe76b957f9c125a2942f0459",
+      "byteLength": 159267,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:21.220Z"
+    },
+    {
+      "path": "/assets/employees-page-rHbYIUE4.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/employees-page-rHbYIUE4.js",
+      "sha256": "b0a0f353d1f37dfec582aaefd3239a9cf0bfe8ff107861f2d11a8f06b3e04957",
+      "byteLength": 30532,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:20.790Z"
+    },
+    {
+      "path": "/assets/empty-state-CYRipaWp.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/empty-state-CYRipaWp.js",
+      "sha256": "589ba5b3de2cf29d5017c83c1cff8abdc56c32def15e052cbd7a3189b61438a2",
+      "byteLength": 671,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:29.990Z"
+    },
+    {
+      "path": "/assets/eraser-BZtzg6Mj.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/eraser-BZtzg6Mj.js",
+      "sha256": "e62430eddebd324b5fe1627b23b33f5508251ed6ec438db2803b26908fb0ce60",
+      "byteLength": 310,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:23.779Z"
+    },
+    {
+      "path": "/assets/escalate-Buq4byBn.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/escalate-Buq4byBn.js",
+      "sha256": "4f52bab9eb03e8a093d08da1469cadf9fe78a39a0babe082eda2aa888c368bc8",
+      "byteLength": 5548,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:30.819Z"
+    },
+    {
+      "path": "/assets/event-detail-Cw5x8FBX.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/event-detail-Cw5x8FBX.js",
+      "sha256": "43b4de6f552b682a57cb570cde5169a8723a9e2820ed7b8b00f7dce69b554b69",
+      "byteLength": 18099,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:31.109Z"
+    },
+    {
+      "path": "/assets/event-settings-Cr1X9Jcl.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/event-settings-Cr1X9Jcl.js",
+      "sha256": "37ec939b291a9da2f7562577fca18c13d7bbc1f7847a4386abe06c82b0421fd3",
+      "byteLength": 54184,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:34.359Z"
+    },
+    {
+      "path": "/assets/events-Bm0Q2BdK.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/events-Bm0Q2BdK.js",
+      "sha256": "30bf9003d926453da59da7ecd5783dcaf4f14cb99ddeb75036ac562cc8f19c6f",
+      "byteLength": 10134,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:30.878Z"
+    },
+    {
+      "path": "/assets/events-GOPFI_y5.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/events-GOPFI_y5.js",
+      "sha256": "f5c1fedf35a9d3c850b19976bf742c72d409ae68816d5483b9873f07c217d183",
+      "byteLength": 219755,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:33.490Z"
+    },
+    {
+      "path": "/assets/external-link-DOT7YWK_.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/external-link-DOT7YWK_.js",
+      "sha256": "79c884aef1491ac89c346ee0a1743ae2a7d55e7c59b609aced49f0ddf3a52d9d",
+      "byteLength": 298,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:19.834Z"
+    },
+    {
+      "path": "/assets/eye-Bm-Myyp2.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/eye-Bm-Myyp2.js",
+      "sha256": "3d86b9c0a6efc58b83f0abfd68bc2818f9c544ea3f69b502ac699ee2e2b887d3",
+      "byteLength": 294,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:19.512Z"
+    },
+    {
+      "path": "/assets/eye-off-w5F2sU2D.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/eye-off-w5F2sU2D.js",
+      "sha256": "9bfc5d96016cf6d789bb315a1ac6469efc5b1e5c2aa3d09537de50d1a099e978",
+      "byteLength": 471,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:28.876Z"
+    },
+    {
+      "path": "/assets/field-renderer-v5f5Kp2Q.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/field-renderer-v5f5Kp2Q.js",
+      "sha256": "9318e2c318f359c8116bbd5e3f78dff6b2ae8ab0a62404d48760e209287e3b19",
+      "byteLength": 1139,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:29.579Z"
+    },
+    {
+      "path": "/assets/file-Dwl7pE3e.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/file-Dwl7pE3e.js",
+      "sha256": "360124285ad3b2b52d3ce0876e960b290850bf76c68a2ec1afe54072fa1406b8",
+      "byteLength": 257,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:31.934Z"
+    },
+    {
+      "path": "/assets/file-image-BjaZD2dc.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/file-image-BjaZD2dc.js",
+      "sha256": "8b8045d64c411f268adefce7209613fff4b5f2e75b9275bf154f75aed187d8a4",
+      "byteLength": 392,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:33.668Z"
+    },
+    {
+      "path": "/assets/file-spreadsheet-BY3zCDyE.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/file-spreadsheet-BY3zCDyE.js",
+      "sha256": "c61fcfbba197473d9a3b914e799b71aaa37ceeb27ea6ac832b24eabf73c62a76",
+      "byteLength": 426,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:25.541Z"
+    },
+    {
+      "path": "/assets/file-video-BG9tfCOd.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/file-video-BG9tfCOd.js",
+      "sha256": "48730858b6c31f05fb75edb7b3e042125c0ab79080a8be0e52588905ccae46ea",
+      "byteLength": 315,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:19.902Z"
+    },
+    {
+      "path": "/assets/filter-DcahfCQ5.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/filter-DcahfCQ5.js",
+      "sha256": "4051a72560b9901d29816aab7f69b40c286dfaf11ee6946fbdf083a0dae2c1dc",
+      "byteLength": 202,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:25.420Z"
+    },
+    {
+      "path": "/assets/find-CAChmUsV.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/find-CAChmUsV.js",
+      "sha256": "7bb069ca84fb8475013d62539b701598bc8576ff0f09321f372d25038b9a1f5d",
+      "byteLength": 5923,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:31.815Z"
+    },
+    {
+      "path": "/assets/fix-activity-feed-CFDtf8ci.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/fix-activity-feed-CFDtf8ci.js",
+      "sha256": "88a3e3d72c9a51f6a24cfff842bd52d179f286f1591ff47e6a24608a94715ff5",
+      "byteLength": 3597,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:32.292Z"
+    },
+    {
+      "path": "/assets/fix-board-CyD1d0gP.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/fix-board-CyD1d0gP.js",
+      "sha256": "f619b56220f7251ef460fa825aa1dbf1f052e30c27d13ee3ea17d90145600aaa",
+      "byteLength": 28035,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:32.351Z"
+    },
+    {
+      "path": "/assets/fix-BU9cx_6m.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/fix-BU9cx_6m.js",
+      "sha256": "c51b78a44c8d3a2ac0b11202a1fd5ab6ff0b37c0449caf26d569fa070a764115",
+      "byteLength": 21538,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:32.232Z"
+    },
+    {
+      "path": "/assets/fix-department-section-B5O4Ft5C.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/fix-department-section-B5O4Ft5C.js",
+      "sha256": "f16e03190bb275ea12ffa24b1d4dc16f3d81e161786d11cd739b4077160512ff",
+      "byteLength": 3414,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:23.723Z"
+    },
+    {
+      "path": "/assets/forgot-password-page-DEt6MIQR.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/forgot-password-page-DEt6MIQR.js",
+      "sha256": "ff16168bf504e550bd17c6b6581ad20e6f2dfe56c0a2f540ebb9d9c0b512883e",
+      "byteLength": 7521,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:24.451Z"
+    },
+    {
+      "path": "/assets/form-builder-DxBbSI7x.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/form-builder-DxBbSI7x.js",
+      "sha256": "d3e68a2f151e88585702bc29be800ee3a44a46cd240fe262d8d5c09d37f025bd",
+      "byteLength": 17605,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:30.532Z"
+    },
+    {
+      "path": "/assets/format-ClU7EJYL.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/format-ClU7EJYL.js",
+      "sha256": "72eb38d98b75f6f5f5c58288b805e7d9f7787e4e2bb4f2e59cb62b138b55c45e",
+      "byteLength": 12225,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:19.086Z"
+    },
+    {
+      "path": "/assets/format-utils-M1HtmJOc.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/format-utils-M1HtmJOc.js",
+      "sha256": "b6e3f4127fe4904aa7fc05533934c315abd5e3fc12ce148afd38d3660925ffdb",
+      "byteLength": 1106,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:19.020Z"
+    },
+    {
+      "path": "/assets/getCountries-VKSOhPP0.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/getCountries-VKSOhPP0.js",
+      "sha256": "99abe555902dfac07b1ccc51520e19da4a4fa124e637835dcf597e9b0668de2b",
+      "byteLength": 154,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:30.356Z"
+    },
+    {
+      "path": "/assets/getCountryCallingCode-BDYe7y7B.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/getCountryCallingCode-BDYe7y7B.js",
+      "sha256": "676226bb4ebc95827bfba522e8c6e43031d506fe424d507d4b818377490e79b4",
+      "byteLength": 252,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:30.703Z"
+    },
+    {
+      "path": "/assets/gift-i2RKqHqO.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/gift-i2RKqHqO.js",
+      "sha256": "d8f0d8dd6ad8baa5b8169739a3e089573e8c7157c18e0ab760a3fce1078d5097",
+      "byteLength": 395,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:24.272Z"
+    },
+    {
+      "path": "/assets/git-fork-Bgr5CWlg.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/git-fork-Bgr5CWlg.js",
+      "sha256": "580759beb27902600f6ae74c771984b4c20a9e5b9e5fd1f02d2d52186ffee3b4",
+      "byteLength": 372,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:19.393Z"
+    },
+    {
+      "path": "/assets/globe-0Zj-5k6S.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/globe-0Zj-5k6S.js",
+      "sha256": "38b3a07fee789c9e8f23bcb456c79af79da7f2e896fccb70e8752b8e1cbcd7f9",
+      "byteLength": 282,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:22.843Z"
+    },
+    {
+      "path": "/assets/grip-vertical-Dsqh_G_B.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/grip-vertical-Dsqh_G_B.js",
+      "sha256": "a40900a7dd7501a0216d554e32278cccc2ad695bf0ac9886e34c954cf8ea9c3b",
+      "byteLength": 418,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:21.099Z"
+    },
+    {
+      "path": "/assets/guest-rsvp-DJPosTcy.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/guest-rsvp-DJPosTcy.js",
+      "sha256": "c47021075b2a308e53914cb62aabbe156b3fd7f943db9b648a3404b7087aef95",
+      "byteLength": 12171,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:33.010Z"
+    },
+    {
+      "path": "/assets/heart-C7NgjtIG.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/heart-C7NgjtIG.js",
+      "sha256": "1126d3e2f606f08d34028596f08af162959dfcfec6ad54782164ff588a7ea35f",
+      "byteLength": 285,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:32.705Z"
+    },
+    {
+      "path": "/assets/home-CmdMI5QT.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/home-CmdMI5QT.js",
+      "sha256": "dce7b48ff16e5d37e6927de96f6e23f63861284473088aacad3b7484d8891e91",
+      "byteLength": 2176,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:29.756Z"
+    },
+    {
+      "path": "/assets/inbox-BNZASO59.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/inbox-BNZASO59.js",
+      "sha256": "ed9ccc7fd73cdd34d0255f44181d4ab69de66186500455c189ff9d0b8dec32a3",
+      "byteLength": 326,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:30.052Z"
+    },
+    {
+      "path": "/assets/index-B2g4m6hJ.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/index-B2g4m6hJ.js",
+      "sha256": "fd5258f45b67d3e4930f6507ea6152ffd5b0f8dbf57fc153da01335dda8dd3f0",
+      "byteLength": 123595,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:33.611Z"
+    },
+    {
+      "path": "/assets/index-BgbjnqRW.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/index-BgbjnqRW.js",
+      "sha256": "60d36b363209287dfa7329ec6daabdb1f74b831212007dd81e30b90c235e7ad1",
+      "byteLength": 894791,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:18.500Z"
+    },
+    {
+      "path": "/assets/index-BSCsEov7.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/index-BSCsEov7.js",
+      "sha256": "73639a56ee87598e1de709f3c5b186cb8791dd6f1b4322ccb5b10aa084949b45",
+      "byteLength": 275,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:18.822Z"
+    },
+    {
+      "path": "/assets/index-BVVwodcD.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/index-BVVwodcD.js",
+      "sha256": "37b007abd395aecc8213bd31683d731c833d02907c64de690fe42f7df3666a30",
+      "byteLength": 2192,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:34.593Z"
+    },
+    {
+      "path": "/assets/index-C3r0FcVI.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/index-C3r0FcVI.js",
+      "sha256": "56f8fb2a43e3b4dd0b99205f93f4d4b9c0ad4fa96b69c3dfc8b9e8b52a653b15",
+      "byteLength": 382441,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:20.297Z"
+    },
+    {
+      "path": "/assets/index-CM5aFKyk.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/index-CM5aFKyk.js",
+      "sha256": "f912643a03e9669bc028135839977d93205283a4cb9d4f04a619cb8038352f52",
+      "byteLength": 16478,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:22.602Z"
+    },
+    {
+      "path": "/assets/index-CqtAqmRM.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/index-CqtAqmRM.js",
+      "sha256": "035ca4b3e52be101387397b3ae511c33c3445d9b686add36c461824348adb394",
+      "byteLength": 10130,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:33.784Z"
+    },
+    {
+      "path": "/assets/index-Dgpt_dBt.css",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/index-Dgpt_dBt.css",
+      "sha256": "eee83fead8c8da9947239254bc180e2b97ec09835484279c92e85c5b9f67120b",
+      "byteLength": 202497,
+      "contentType": "text/css; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:18.569Z"
+    },
+    {
+      "path": "/assets/index-Diva79oe.css",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/index-Diva79oe.css",
+      "sha256": "ed1cd025445357fa94c4bc8562929a939595b96297ba1a72720e04806c480c11",
+      "byteLength": 2183,
+      "contentType": "text/css; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:20.543Z"
+    },
+    {
+      "path": "/assets/index-DqXnQ52o.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/index-DqXnQ52o.js",
+      "sha256": "ed557ab8cd0780bf88ba83238da3ff652ef116635baba6f643c0a022bdbaa396",
+      "byteLength": 5752,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:33.368Z"
+    },
+    {
+      "path": "/assets/index-gotCwelj.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/index-gotCwelj.js",
+      "sha256": "599a4543a510eb3b03167e92903f33186686e20d97eb47a6e2b437255f62bf59",
+      "byteLength": 15264,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:23.604Z"
+    },
+    {
+      "path": "/assets/index-K-Fr-Axt.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/index-K-Fr-Axt.js",
+      "sha256": "4b1da710766a78babba3eeaab1a73ccb012875901af5de81e76b663321855fe1",
+      "byteLength": 972,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:23.665Z"
+    },
+    {
+      "path": "/assets/index-page-DLWG0LNR.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/index-page-DLWG0LNR.js",
+      "sha256": "64f9f85622020ebb446fb6e5f1d2479e53e38e5115b18bd988a6149c880055f1",
+      "byteLength": 1989,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:29.233Z"
+    },
+    {
+      "path": "/assets/index.esm-DDYi0QYY.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/index.esm-DDYi0QYY.js",
+      "sha256": "4a8746fda1638b6bc627a210bfa38bdd14d7d8510926403ee609b4180b6f255a",
+      "byteLength": 31893,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:21.766Z"
+    },
+    {
+      "path": "/assets/info-DOsnXTVm.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/info-DOsnXTVm.js",
+      "sha256": "9ac2919aa40f89348d144b61c762c53d7fe318c6b4d200810af8c62d8efcbde3",
+      "byteLength": 243,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:27.203Z"
+    },
+    {
+      "path": "/assets/input-otp-DF0f-hGu.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/input-otp-DF0f-hGu.js",
+      "sha256": "00e3fca624d7e016d717ec2435e3cd7b426b05b4c7b9d3f199eea3760ddf47c1",
+      "byteLength": 10755,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:24.511Z"
+    },
+    {
+      "path": "/assets/isBefore-Da8T_uGX.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/isBefore-Da8T_uGX.js",
+      "sha256": "32e231b62497bd8c7cbb16762a10d462c2b3dd597d479ff74997679fd63a83a9",
+      "byteLength": 220,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:21.947Z"
+    },
+    {
+      "path": "/assets/isSameDay-CGTPTgB3.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/isSameDay-CGTPTgB3.js",
+      "sha256": "eba43fb5f5c1f839762104fbd2609af362cbd247aeae6eea9a11fcfe1c3d25e4",
+      "byteLength": 153,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:22.005Z"
+    },
+    {
+      "path": "/assets/isToday-CVlN_pP7.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/isToday-CVlN_pP7.js",
+      "sha256": "32b616135db2d44985a5bff9987c1bda3a9c4ad5bf0776b50fdcd53780b5d16f",
+      "byteLength": 172,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:31.052Z"
+    },
+    {
+      "path": "/assets/isWeekend-CnGm9Kt4.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/isWeekend-CnGm9Kt4.js",
+      "sha256": "f6f4e29c3c242311c1a5c6517d91ebc241d13f3497a560afaebfe181e324082b",
+      "byteLength": 160,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:27.141Z"
+    },
+    {
+      "path": "/assets/key-DGuy-aKQ.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/key-DGuy-aKQ.js",
+      "sha256": "021db229eb6a68648bc49e545aae40078622d6535f93c49b60ad2a4888b5c5df",
+      "byteLength": 302,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:23.969Z"
+    },
+    {
+      "path": "/assets/kiosk-page-DvxNxXIM.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/kiosk-page-DvxNxXIM.js",
+      "sha256": "cc4da3af78c6870169be8a3d93c031a3c34a27876d0042715082f7308c1a75ee",
+      "byteLength": 372601,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:25.738Z"
+    },
+    {
+      "path": "/assets/knowledge-base-YXTAnTD7.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/knowledge-base-YXTAnTD7.js",
+      "sha256": "32f9ed443080bd762c6cfe5a079346187872e5457f9be72ede9cbd5b33118c1c",
+      "byteLength": 29503,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:34.026Z"
+    },
+    {
+      "path": "/assets/layout-BG9Mpq_q.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/layout-BG9Mpq_q.js",
+      "sha256": "96fdd3e71c7b0eb29d34ce6ca1998de4ba2bbd53d3a227d16820d6b67e83ca4b",
+      "byteLength": 2731,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:29.292Z"
+    },
+    {
+      "path": "/assets/layout-grid-giJWWqNS.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/layout-grid-giJWWqNS.js",
+      "sha256": "6037db1939c1a87ecae40dfa4458c7a221456967449fa5633ed3158b7e3cadee",
+      "byteLength": 391,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:27.023Z"
+    },
+    {
+      "path": "/assets/learn-o2P9CAnV.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/learn-o2P9CAnV.js",
+      "sha256": "a2264090c2297d9d8f43545cc5ba3c02ef37fd43b8566649df0958bd28b2f811",
+      "byteLength": 6089,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:31.693Z"
+    },
+    {
+      "path": "/assets/letter-signing-page-oZ-01t5a.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/letter-signing-page-oZ-01t5a.js",
+      "sha256": "7dabdf300b94f08dbd51fda880cd603e1b11db8edd6e01e4f8dae5359722ab55",
+      "byteLength": 8988,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:24.389Z"
+    },
+    {
+      "path": "/assets/link-2-wXSEHkHs.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/link-2-wXSEHkHs.js",
+      "sha256": "8419ff520e34c1bbc9c6c7225e1bbaec19a9c0adeded76df544318cbc9d5f354",
+      "byteLength": 282,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:23.481Z"
+    },
+    {
+      "path": "/assets/link-9rad9t1M.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/link-9rad9t1M.js",
+      "sha256": "7b7203ac80f6d92d7b7228950c7dbe082b6892bdb6a7b60aeaa2bcabca05da1b",
+      "byteLength": 295,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:20.482Z"
+    },
+    {
+      "path": "/assets/list-Cas0GuLr.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/list-Cas0GuLr.js",
+      "sha256": "3c9d3ce8b2662716036e63cf650351967086d839c5e7a0c409e9f311632804fc",
+      "byteLength": 341,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:20.357Z"
+    },
+    {
+      "path": "/assets/loading-spinner-BC6-u15h.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/loading-spinner-BC6-u15h.js",
+      "sha256": "e1aa257ac99675f54f5fccad0cdcf2386ea69b39e2f4911108dbe2e98b54bcc0",
+      "byteLength": 619,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:23.904Z"
+    },
+    {
+      "path": "/assets/localization-DjRpVFX2.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/localization-DjRpVFX2.js",
+      "sha256": "27c2e98a1dc6bd1dabee453fd9434cb090c1aafe6158e9a1819005ffe83d1001",
+      "byteLength": 17499,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:33.069Z"
+    },
+    {
+      "path": "/assets/locations-page-a9rraRTN.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/locations-page-a9rraRTN.js",
+      "sha256": "77c6f61ec77532c682eea8d53b841ad467ee59715829ddec43c3be6f55930bdd",
+      "byteLength": 9178,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:26.668Z"
+    },
+    {
+      "path": "/assets/lock-keyhole-C6QDHYxW.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/lock-keyhole-C6QDHYxW.js",
+      "sha256": "d49071517fc35c24c87f0ba9396f83deaae6977bc774d6d5f5f7c2c4761fc09b",
+      "byteLength": 301,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:28.218Z"
+    },
+    {
+      "path": "/assets/log-in-C2hJPN_B.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/log-in-C2hJPN_B.js",
+      "sha256": "ca7d25b72801a4d782a98826d204578344e9f09e1e7734a5fbf861d466332832",
+      "byteLength": 300,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:25.000Z"
+    },
+    {
+      "path": "/assets/managed-in-admin-notice-B9_fRQnV.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/managed-in-admin-notice-B9_fRQnV.js",
+      "sha256": "2ac87028834c1cc826c879dc7cb861a455ed63628ee71dadc2a50dc84e9b55e6",
+      "byteLength": 2960,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:24.879Z"
+    },
+    {
+      "path": "/assets/media-CkC_F0n_.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/media-CkC_F0n_.js",
+      "sha256": "88fd5e70bc25a3d7dd18aa3b8c03fac486e02c4a39eb696e2d8d28609cb67291",
+      "byteLength": 289,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:31.577Z"
+    },
+    {
+      "path": "/assets/MediaPreviewStrip-Ck9-XJIt.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/MediaPreviewStrip-Ck9-XJIt.js",
+      "sha256": "7b1df2a00ad94db325e44c0626bcdad1d10a46a45aba989fa44571cac58f658a",
+      "byteLength": 5165,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:31.520Z"
+    },
+    {
+      "path": "/assets/megaphone-bSKkJaRF.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/megaphone-bSKkJaRF.js",
+      "sha256": "a8b9d38dd64aab431342d516eb12169ddafe802cea7b123cb182350ef836451f",
+      "byteLength": 236,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:28.760Z"
+    },
+    {
+      "path": "/assets/menu-select-DUVqKBQ7.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/menu-select-DUVqKBQ7.js",
+      "sha256": "77232c57316ba3bbbd8b89f153e8687e534d07f83f1988f9a8a5aab2ff90a9d4",
+      "byteLength": 6226,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:33.306Z"
+    },
+    {
+      "path": "/assets/merge-BnGFPOXR.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/merge-BnGFPOXR.js",
+      "sha256": "6cb8380811187bd3dab53be18d130dadcda153d7c57684550236933093c42d7c",
+      "byteLength": 266,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:27.083Z"
+    },
+    {
+      "path": "/assets/message-circle-B2sofyQN.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/message-circle-B2sofyQN.js",
+      "sha256": "de0e35e37c1084ed7cb12c1d23d5002c0ad70edb1678195eaaaa12926d5aa4cb",
+      "byteLength": 196,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:26.057Z"
+    },
+    {
+      "path": "/assets/metadata-Sjrfu28G.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/metadata-Sjrfu28G.js",
+      "sha256": "a7d9a2d48a914f177a488f7da98338db4deca2223fa53cfe42badf47671355e6",
+      "byteLength": 93549,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:30.295Z"
+    },
+    {
+      "path": "/assets/minus-CwoiizXo.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/minus-CwoiizXo.js",
+      "sha256": "5cbf3206feb6155018840a6f5038ba774558371a50fd3464ffde243fcc8c2653",
+      "byteLength": 157,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:25.597Z"
+    },
+    {
+      "path": "/assets/model-detail-page-Do4BSIkc.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/model-detail-page-Do4BSIkc.js",
+      "sha256": "f74cfe0ffba970f94e48f7dbbee36d1833990c46ef55dc83430c06641132c162",
+      "byteLength": 4444,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:29.637Z"
+    },
+    {
+      "path": "/assets/model-form-page-RVOkAggH.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/model-form-page-RVOkAggH.js",
+      "sha256": "33954d29994745855edfe026f4583c8a573ecaff8b1e03454613ecbe0144d95e",
+      "byteLength": 5603,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:29.698Z"
+    },
+    {
+      "path": "/assets/model-list-page-BPvZNQxB.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/model-list-page-BPvZNQxB.js",
+      "sha256": "7aaa5f3833d4e64bce5019965d8ca6708a36cab326711a0ff159a9c6ed773cd3",
+      "byteLength": 5660,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:29.523Z"
+    },
+    {
+      "path": "/assets/module-CGwN8t1j.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/module-CGwN8t1j.js",
+      "sha256": "a2d3f3f074af70b7e76270284a4eff24452c2a48cbed4d59194c9d37f37261a7",
+      "byteLength": 5214,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:31.754Z"
+    },
+    {
+      "path": "/assets/module-chooser-CDiAhIC9.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/module-chooser-CDiAhIC9.js",
+      "sha256": "d5db92b09030219e4f5f0a760286ee74ab116ca092a2e0b1b254292a3b7931ae",
+      "byteLength": 2126,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:34.479Z"
+    },
+    {
+      "path": "/assets/monitor-DLeJuJZc.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/monitor-DLeJuJZc.js",
+      "sha256": "4ca66ffe5008366a5c718f1b469ba75dbef2cce4087c46fbbb67a199094f0c0f",
+      "byteLength": 301,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:24.095Z"
+    },
+    {
+      "path": "/assets/music-DdE8I-dI.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/music-DdE8I-dI.js",
+      "sha256": "6be7c87d5249815ad6c5b3a85cf9b332c5169edc7c7528c3540e44abe10de3af",
+      "byteLength": 259,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:31.227Z"
+    },
+    {
+      "path": "/assets/my-account-page-BqNN8cI0.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/my-account-page-BqNN8cI0.js",
+      "sha256": "75a8f4ecf1a4ea54dee9e728c9299d501f73bc172badf37eecf0af7929acfb34",
+      "byteLength": 18993,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:24.573Z"
+    },
+    {
+      "path": "/assets/my-availability-dc1eBEaj.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/my-availability-dc1eBEaj.js",
+      "sha256": "f17e32fa3af0b6a035c651592805716c767d24fb76e014a07b9dd586d8935c8a",
+      "byteLength": 3182,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:31.400Z"
+    },
+    {
+      "path": "/assets/operators-page-BeYra77W.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/operators-page-BeYra77W.js",
+      "sha256": "6d8a301cf82d9e8077ec765762d8b691ec1e354b2663411fbf7e1a47fae360f1",
+      "byteLength": 14426,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:27.438Z"
+    },
+    {
+      "path": "/assets/org-chart-page-CKIQPNDa.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/org-chart-page-CKIQPNDa.js",
+      "sha256": "9698cba7237aee588418b4bac7f87077242672e1c39f4ca8a9cc6c30065375ce",
+      "byteLength": 252988,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:28.702Z"
+    },
+    {
+      "path": "/assets/other-apps-Bg2F6atx.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/other-apps-Bg2F6atx.js",
+      "sha256": "2352db2258854b70c0a64a96669027af1bc86d803c63bb4e5cbc1dd42f1669ba",
+      "byteLength": 115,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:24.939Z"
+    },
+    {
+      "path": "/assets/oto-invite-card-dB90e5ot.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/oto-invite-card-dB90e5ot.js",
+      "sha256": "33c20fda68441fe81d75bbea8f0ab02033e44d4746b812769ac7612a4c945ad4",
+      "byteLength": 5309,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:33.128Z"
+    },
+    {
+      "path": "/assets/package-Eltr_SDF.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/package-Eltr_SDF.js",
+      "sha256": "343d8e03227ab27fcfcf2a89a5b41446e29ba97d1530e560e1aa11cfa56fa97b",
+      "byteLength": 428,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:22.426Z"
+    },
+    {
+      "path": "/assets/parent-invitation-wizard-elBDpCkf.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/parent-invitation-wizard-elBDpCkf.js",
+      "sha256": "d654ba0d6fba3c6da4c2f54dc6b784753233e723ab012c750c5bae8302fb06ac",
+      "byteLength": 7824,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:33.245Z"
+    },
+    {
+      "path": "/assets/parent-portal-B-5F2pdJ.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/parent-portal-B-5F2pdJ.js",
+      "sha256": "64f6a6ad1797154ac3b95326c2ddaf80ede247cece28392f8d9a91a3ae7dca42",
+      "byteLength": 7940,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:33.185Z"
+    },
+    {
+      "path": "/assets/parseISO-DtTWub5d.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/parseISO-DtTWub5d.js",
+      "sha256": "5360b8fd6d7e47ba80315226023c4078ef95de5a214c5d5a38e6dff8962e489d",
+      "byteLength": 2721,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:19.154Z"
+    },
+    {
+      "path": "/assets/party-popper-BkIc8pzh.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/party-popper-BkIc8pzh.js",
+      "sha256": "eba3f94cee7eb3ef50b1a2dee9d8276db7e204028a78229c512f77c260680c14",
+      "byteLength": 776,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:30.111Z"
+    },
+    {
+      "path": "/assets/payroll-config-Cncz0k3w.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/payroll-config-Cncz0k3w.js",
+      "sha256": "58e96354f935d0ae0fa9bc3e0bf3ba2dbe2571bed24e1b2ac697d3b80b07f7ec",
+      "byteLength": 6764,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:27.796Z"
+    },
+    {
+      "path": "/assets/payroll-downloads-page-CIDW119B.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/payroll-downloads-page-CIDW119B.js",
+      "sha256": "c9d4c5d1e9876581782165dccae0b827ec50d3a1f38e5bd4c67114cc8b25a04d",
+      "byteLength": 6088,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:28.629Z"
+    },
+    {
+      "path": "/assets/payroll-history-page-Y8pBYAUz.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/payroll-history-page-Y8pBYAUz.js",
+      "sha256": "f0ee718925b28abd0b793d9e5b646ab20fdfd491453cc50d527c6294f231a7f6",
+      "byteLength": 7054,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:28.339Z"
+    },
+    {
+      "path": "/assets/payroll-hub-page-CbrR3NJ0.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/payroll-hub-page-CbrR3NJ0.js",
+      "sha256": "aaf38b5a2dae86d9a189b313179733ad1a8f50c12c9d0952449d75de609c2446",
+      "byteLength": 5402,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:27.496Z"
+    },
+    {
+      "path": "/assets/payroll-month-BlGJkn4X.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/payroll-month-BlGJkn4X.js",
+      "sha256": "17cda3aa26640383ee0600f4471c2b29bf76f6d104e40bac39c2bec6dbf57290",
+      "byteLength": 298,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:28.160Z"
+    },
+    {
+      "path": "/assets/payroll-month-end-page-C-KXx4Gf.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/payroll-month-end-page-C-KXx4Gf.js",
+      "sha256": "a119dfc39e5794d5bc6c7293812080e26ab0b44141ef04f50e98ad32bcaa6745",
+      "byteLength": 51487,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:28.100Z"
+    },
+    {
+      "path": "/assets/payroll-my-payslips-page-Di2JYwLS.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/payroll-my-payslips-page-Di2JYwLS.js",
+      "sha256": "ab33bc2d2440a35c323cb1c8b913b831208d16668b0f0f6e12bdc02cb270b704",
+      "byteLength": 2281,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:28.396Z"
+    },
+    {
+      "path": "/assets/payroll-people-page-W8-HWKyZ.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/payroll-people-page-W8-HWKyZ.js",
+      "sha256": "a4a9e9e4a510d708b46c3cf8cc839bff6d482cd97221172fe620f83b2ee68ef4",
+      "byteLength": 8905,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:27.911Z"
+    },
+    {
+      "path": "/assets/payroll-person-page-DC899ELe.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/payroll-person-page-DC899ELe.js",
+      "sha256": "984a4d6552320262574f18949536b76640932cae7b9441fd94fbf1b9cc39d63d",
+      "byteLength": 25393,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:28.032Z"
+    },
+    {
+      "path": "/assets/payroll-rewards-page-Bo9i9i44.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/payroll-rewards-page-Bo9i9i44.js",
+      "sha256": "a0df2488a732f4f60036888471b4ac29e880d2bc75e30303fc375acd47f07f8a",
+      "byteLength": 15430,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:28.279Z"
+    },
+    {
+      "path": "/assets/payroll-setup-page-zKKKyeNn.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/payroll-setup-page-zKKKyeNn.js",
+      "sha256": "577e459b89f878958ca660613c660b417b77e06e715611a41cf6ae849b4df74a",
+      "byteLength": 38303,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:27.737Z"
+    },
+    {
+      "path": "/assets/payroll-statutory-documents-page-BJfWnM6v.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/payroll-statutory-documents-page-BJfWnM6v.js",
+      "sha256": "6e4baf2f8a9723ac59d11a3db4e44ba8801f78046940bbe1e48302818cb8588a",
+      "byteLength": 17145,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:28.455Z"
+    },
+    {
+      "path": "/assets/pen-line-DI6oo1jP.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/pen-line-DI6oo1jP.js",
+      "sha256": "c7487ebadb29456249dc2798e9d970269660070aa3710d0db251a33eb1ab0ddc",
+      "byteLength": 320,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:23.425Z"
+    },
+    {
+      "path": "/assets/pen-tool-cgssn2W6.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/pen-tool-cgssn2W6.js",
+      "sha256": "0e3e6dc809ce699afc2a08ef3879275288fabed121a1b4ec2236740b70539772",
+      "byteLength": 513,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:21.156Z"
+    },
+    {
+      "path": "/assets/pencil-Ce4JThdy.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/pencil-Ce4JThdy.js",
+      "sha256": "0d6a2981a8f1233993457e39896d4ec56c907ea7371e44b51b5f0879589a12fc",
+      "byteLength": 317,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:22.718Z"
+    },
+    {
+      "path": "/assets/permissions-debug-page-D0p7-q41.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/permissions-debug-page-D0p7-q41.js",
+      "sha256": "508f895265bc7b1a1716af692e8c0ca0bf5f0e28e27e81d443e0f6e23c4afcc3",
+      "byteLength": 6723,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:29.052Z"
+    },
+    {
+      "path": "/assets/permissions-page-NEozn-ri.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/permissions-page-NEozn-ri.js",
+      "sha256": "94e9809dc37a1bd15bc85ecaaf63aedf4b2afc479b67ebd204e015661e316650",
+      "byteLength": 17119,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:29.110Z"
+    },
+    {
+      "path": "/assets/person-birthdays-IPjS2Ehp.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/person-birthdays-IPjS2Ehp.js",
+      "sha256": "1affa52f0f435d2170131066db77393f7a33b109d87580812ebd9c57f37dfcd7",
+      "byteLength": 299,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:30.935Z"
+    },
+    {
+      "path": "/assets/plane-D9pWfMWl.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/plane-D9pWfMWl.js",
+      "sha256": "665d0cfa41b3eae41f13ed8610dd389d7a46d5d9ebb0c38d9967839aed68646c",
+      "byteLength": 346,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:24.329Z"
+    },
+    {
+      "path": "/assets/policies-page-MoxxJzCn.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/policies-page-MoxxJzCn.js",
+      "sha256": "f979c1157ff2a92ddcda1463aba0be79b2fa6bc1cb2209731203fd2542a61d44",
+      "byteLength": 25828,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:25.059Z"
+    },
+    {
+      "path": "/assets/policy-editor-page-D_nx4237.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/policy-editor-page-D_nx4237.js",
+      "sha256": "3f2e1e549483e0acd3d4712d1ccef27513a138517d4721c2cd843c672c30c9e0",
+      "byteLength": 6201,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:25.121Z"
+    },
+    {
+      "path": "/assets/policy-preview-page-Ws6AKeDw.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/policy-preview-page-Ws6AKeDw.js",
+      "sha256": "51fb03ed0793d0b1719a99bae4555832c990d1902ba41046ec19a2dcd6aaef22",
+      "byteLength": 2544,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:25.180Z"
+    },
+    {
+      "path": "/assets/printer-BqurYaKd.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/printer-BqurYaKd.js",
+      "sha256": "e9038bf13f948049d15240c914d960c63a3e0af58b63ab55823312a264272e33",
+      "byteLength": 361,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:28.513Z"
+    },
+    {
+      "path": "/assets/qa-reports-page-TeFwvpbF.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/qa-reports-page-TeFwvpbF.js",
+      "sha256": "9cf520058df509d8e18d9d5b7722b0ccd4257b753a6e3fbc9defcf65259d8cf0",
+      "byteLength": 16717,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:19.710Z"
+    },
+    {
+      "path": "/assets/qr-code-BfQ966rD.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/qr-code-BfQ966rD.js",
+      "sha256": "51740cee2ca1daab8318f310f130f7bf64932d7d236aeaa14272b3d78c97f0b5",
+      "byteLength": 691,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:23.065Z"
+    },
+    {
+      "path": "/assets/quizzes-BAHaCKR9.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/quizzes-BAHaCKR9.js",
+      "sha256": "13d087234948a082c4471a9c08760a71d64446d229dca43c276d03498709f362",
+      "byteLength": 8048,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:34.142Z"
+    },
+    {
+      "path": "/assets/radio-group-CIkd3OCk.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/radio-group-CIkd3OCk.js",
+      "sha256": "ed4d4ebc0c292b7df54578dd931ca6f10cf5978c14ad9522ab2b114eb8360bfa",
+      "byteLength": 3895,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:20.211Z"
+    },
+    {
+      "path": "/assets/reason-dialog-Gn5BLkkd.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/reason-dialog-Gn5BLkkd.js",
+      "sha256": "d908a09dcbc09699745c0aa58fc915bc376cfea657c4cf73f53ba0707d6d1304",
+      "byteLength": 1879,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:27.853Z"
+    },
+    {
+      "path": "/assets/reception-HU5Yg6Qp.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/reception-HU5Yg6Qp.js",
+      "sha256": "834b88e89fed6f40848844a924ed4839f16bcbf89b4d7104491b476a01a6d45d",
+      "byteLength": 6177,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:25.798Z"
+    },
+    {
+      "path": "/assets/report-issue-B6DEaeUL.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/report-issue-B6DEaeUL.js",
+      "sha256": "3a03544e0a31e3928dfcef94fac976d350310ec06d047b94da1734bbaad9bf94",
+      "byteLength": 5515,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:30.760Z"
+    },
+    {
+      "path": "/assets/roles-page-CQyzeQKg.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/roles-page-CQyzeQKg.js",
+      "sha256": "5446adca887788a125ce7e6b6a52e2ee7c1a47517600c740ef48f1011dee16ee",
+      "byteLength": 11406,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:26.731Z"
+    },
+    {
+      "path": "/assets/rota-C7Z4nr_o.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/rota-C7Z4nr_o.js",
+      "sha256": "8459ad4512045957177cf693cfe700e281ad4f0575ff38119fcddadd283c641f",
+      "byteLength": 38585,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:32.583Z"
+    },
+    {
+      "path": "/assets/rotate-ccw-PMyGxsbh.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/rotate-ccw-PMyGxsbh.js",
+      "sha256": "2c8f03d2a81530b8051bb17afd516a04d43b484870f9748ed34d611afe5868cc",
+      "byteLength": 244,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:22.903Z"
+    },
+    {
+      "path": "/assets/save-D7290xyn.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/save-D7290xyn.js",
+      "sha256": "c180ea606c2afaa96247326a1e430e6fec980c7913b54941adf82609efedc0b6",
+      "byteLength": 366,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:20.603Z"
+    },
+    {
+      "path": "/assets/scheduling-page-B4gOIw1c.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/scheduling-page-B4gOIw1c.js",
+      "sha256": "2464d25171ad165de1647226722995245e8beb221429efa5297585fe72e6a57d",
+      "byteLength": 167360,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:26.822Z"
+    },
+    {
+      "path": "/assets/schema-page-BHASN2p6.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/schema-page-BHASN2p6.js",
+      "sha256": "68362cf86455b42067e6070f0f221435dfbe54212cbaf49e55b7f8529d47213c",
+      "byteLength": 5053,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:29.407Z"
+    },
+    {
+      "path": "/assets/schema-x30LVMNG.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/schema-x30LVMNG.js",
+      "sha256": "fd0536c47d18b6cb3a094f6c1e6e3f7f65874f7866892afedfd0dad2283957d1",
+      "byteLength": 248429,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:18.700Z"
+    },
+    {
+      "path": "/assets/select-Bun9wJIX.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/select-Bun9wJIX.js",
+      "sha256": "63169a4c78c5832eeb87f7e3f74bc04d430c6f4ecf76867429e9167d8c0e4b2c",
+      "byteLength": 20783,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:21.522Z"
+    },
+    {
+      "path": "/assets/send-DNtP83zi.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/send-DNtP83zi.js",
+      "sha256": "dff0343d3bd8d54770f7a75d01c034343e85d3c139135bb7e5b28af921df6782",
+      "byteLength": 329,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:19.959Z"
+    },
+    {
+      "path": "/assets/service-checkin-DvzuLaHB.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/service-checkin-DvzuLaHB.js",
+      "sha256": "039bcf229681b1aa2449ab0762146193f0461ad8754fbe2d05c5b729a51f0ea9",
+      "byteLength": 20777,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:30.646Z"
+    },
+    {
+      "path": "/assets/settings-page-DGC4DTlA.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/settings-page-DGC4DTlA.js",
+      "sha256": "f44afe979eb09ef14132f7d3b1b392731f2a9ee98cfb46babbdd0164b59c135b",
+      "byteLength": 15169,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:23.539Z"
+    },
+    {
+      "path": "/assets/share-2-DGdvtgbw.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/share-2-DGdvtgbw.js",
+      "sha256": "0c78baef206243f42ad850f01f85df67cfd6d62a699bf63295fd891732d3f533",
+      "byteLength": 398,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:32.523Z"
+    },
+    {
+      "path": "/assets/shield-alert-BWRKc876.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/shield-alert-BWRKc876.js",
+      "sha256": "978ac2c4e73b8aad5c71bde10476b2c702681a739a73f7d188a575237b2fa744",
+      "byteLength": 399,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:32.170Z"
+    },
+    {
+      "path": "/assets/shield-check-C71Ns9eI.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/shield-check-C71Ns9eI.js",
+      "sha256": "c6f67c73cdf03108be989a7d848f01bf59940e2ae1189375010d022ca3b5a06b",
+      "byteLength": 366,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:26.488Z"
+    },
+    {
+      "path": "/assets/sidebar-DZPtHq68.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/sidebar-DZPtHq68.js",
+      "sha256": "c504ce70d87ba57b3c72d6f0aedd5dea57df1d99ee19178b23ea12da72f26dc2",
+      "byteLength": 1381,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:29.350Z"
+    },
+    {
+      "path": "/assets/signature-canvas-DqcMpoTq.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/signature-canvas-DqcMpoTq.js",
+      "sha256": "ad5f7ccebb28eda582a6243adf239f26fbb3f1cbb3e4cd30ee39d21a25a53524",
+      "byteLength": 2038,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:30.474Z"
+    },
+    {
+      "path": "/assets/signature-pad-ClswYgGx.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/signature-pad-ClswYgGx.js",
+      "sha256": "65097a0fb37e0c0bf2385d93d941c19f282c122929c97b45e25609c6cd898e82",
+      "byteLength": 1882,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:24.214Z"
+    },
+    {
+      "path": "/assets/signing-page-BBhDQHoO.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/signing-page-BBhDQHoO.js",
+      "sha256": "f854440fce3e4248a871a6af2a7eefdd5fde7eb2d17d249dca83d291175e06ab",
+      "byteLength": 17296,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:24.155Z"
+    },
+    {
+      "path": "/assets/sop-article-CqHy8hm7.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/sop-article-CqHy8hm7.js",
+      "sha256": "d435bba0b4c57db1d670b41a660ebcf684dc4d769bba11baabe993fb8023e0ad",
+      "byteLength": 6932,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:32.407Z"
+    },
+    {
+      "path": "/assets/sops-BoIjMX04.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/sops-BoIjMX04.js",
+      "sha256": "fa678056a03ba37a09daeaaafdecd2fc8a35e52fb99412a114c3dc19c6f56916",
+      "byteLength": 20379,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:33.966Z"
+    },
+    {
+      "path": "/assets/sortable.esm-Cbnx0JMs.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/sortable.esm-Cbnx0JMs.js",
+      "sha256": "7aa6c5adb68f94c1d80586914e619f422f0efbadbf4c064c29a2a33e845420af",
+      "byteLength": 48503,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:20.979Z"
+    },
+    {
+      "path": "/assets/sparkles-DdMuVeZR.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/sparkles-DdMuVeZR.js",
+      "sha256": "695b9100a979fa208ac02b1c4142960f60844e1882d31b75bbdd5da933aaad1b",
+      "byteLength": 551,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:23.357Z"
+    },
+    {
+      "path": "/assets/square-pen-D37UpIOP.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/square-pen-D37UpIOP.js",
+      "sha256": "f806706b795f1132398eacf3dad2affc6f42641ab2880d8b255f59956c45c2c1",
+      "byteLength": 364,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:19.454Z"
+    },
+    {
+      "path": "/assets/square-xYG9wn0B.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/square-xYG9wn0B.js",
+      "sha256": "0fc149399e0162069c5538eb6b54a5f4edd9bc2d21def9aae7f603560e4e2798",
+      "byteLength": 188,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:26.120Z"
+    },
+    {
+      "path": "/assets/staff-movements-page-D08qVbo2.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/staff-movements-page-D08qVbo2.js",
+      "sha256": "e1448a75451d927ef8207a2e39f6429f2ae583e4c2b931ee365b59fca7620862",
+      "byteLength": 8589,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:24.753Z"
+    },
+    {
+      "path": "/assets/star-nsncNoEe.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/star-nsncNoEe.js",
+      "sha256": "be429f5e2903794a492910f983c1caf31a6355de6a417a840124884a83cd094b",
+      "byteLength": 249,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:28.818Z"
+    },
+    {
+      "path": "/assets/startOfMonth-CQwvifGX.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/startOfMonth-CQwvifGX.js",
+      "sha256": "744ecd3670a3e27d08ea456aa03f34404f157175922b06df2ce2aff6a2f0a6f3",
+      "byteLength": 176,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:21.823Z"
+    },
+    {
+      "path": "/assets/status-badge-D7bWJeis.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/status-badge-D7bWJeis.js",
+      "sha256": "7b7900d6f72a2e6d0f6e9ddd0fbeba8eb59d3a12802228af5e19e262676b636c",
+      "byteLength": 1956,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:29.933Z"
+    },
+    {
+      "path": "/assets/style-Cr3NoRPA.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/style-Cr3NoRPA.js",
+      "sha256": "c6780d563a374535fbae609793074ad9c38ba6e98e98aa84cf33a33841497c5a",
+      "byteLength": 105738,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:30.232Z"
+    },
+    {
+      "path": "/assets/style-DpsRipQV.css",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/style-DpsRipQV.css",
+      "sha256": "71d701a71ff002a81b45b1755f00b477d4f4655de526430e4834d96c220a21ae",
+      "byteLength": 3234,
+      "contentType": "text/css; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:30.416Z"
+    },
+    {
+      "path": "/assets/subDays-HUvMYWw9.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/subDays-HUvMYWw9.js",
+      "sha256": "0be85a921e3c68f60be645d88b72ec7787cb8ca210065492a1cb75e3d3a79ef7",
+      "byteLength": 388,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:22.064Z"
+    },
+    {
+      "path": "/assets/subMonths-B80W8HEc.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/subMonths-B80W8HEc.js",
+      "sha256": "0b9dfe3aca795588b10a94268c30cb8b45a3a905e92a448113c790afcf0cf57f",
+      "byteLength": 138,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:27.320Z"
+    },
+    {
+      "path": "/assets/suite-sign-in-BGtt_07w.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/suite-sign-in-BGtt_07w.js",
+      "sha256": "635d88b6e91f5dfb1d0e70632a69115abe7487960245765c26de70649dd6b8af",
+      "byteLength": 3750,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:21.340Z"
+    },
+    {
+      "path": "/assets/supplier-portal-DMXx8yjW.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/supplier-portal-DMXx8yjW.js",
+      "sha256": "18ce9d7bdd58806054f1e58cdccbe963c6e339a76ca467b1a9a79b58fa5fe88c",
+      "byteLength": 12332,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:32.947Z"
+    },
+    {
+      "path": "/assets/supplier-tokens-page-DcHLYTZi.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/supplier-tokens-page-DcHLYTZi.js",
+      "sha256": "0c06377dc0bb4ec6888483ead43ee2797ec7299da19eb27881bc039ca38689c0",
+      "byteLength": 8717,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:23.838Z"
+    },
+    {
+      "path": "/assets/switch-ByYSj03n.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/switch-ByYSj03n.js",
+      "sha256": "09657174a95acfe6fb8be67fda8fa089a9670c53d1dbab33cb1d2c0668c7c671",
+      "byteLength": 2419,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:20.079Z"
+    },
+    {
+      "path": "/assets/table-Bl6rcmpK.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/table-Bl6rcmpK.js",
+      "sha256": "4d1a40c70807c1fdbfb38edace19e3a51968a20465b3544f63bcd0cfc474cb37",
+      "byteLength": 1530,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:18.888Z"
+    },
+    {
+      "path": "/assets/tabs-CPYa6RW9.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/tabs-CPYa6RW9.js",
+      "sha256": "f1986e44ce0e61592b34e6f4731939456468375bfcd70fc0e0037a94054acc59",
+      "byteLength": 3226,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:20.146Z"
+    },
+    {
+      "path": "/assets/TaskDetailSheet-DEHKf958.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/TaskDetailSheet-DEHKf958.js",
+      "sha256": "464a752c264b23c3a2659a1c2d74d583dd96af0539bf9288f260c842908f155a",
+      "byteLength": 42744,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:32.054Z"
+    },
+    {
+      "path": "/assets/tasks-tjY_A4RB.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/tasks-tjY_A4RB.js",
+      "sha256": "41e1ac2ea981286f3d8a5324f39f06aed2696614b4cb7325b2d73e46e49da063",
+      "byteLength": 20369,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:33.845Z"
+    },
+    {
+      "path": "/assets/template-editor-page-Ckd10o6a.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/template-editor-page-Ckd10o6a.js",
+      "sha256": "f3de71efa93e2d1a1fb25643924eb85111bcce500378d4a99d3e5c32d542936a",
+      "byteLength": 14396,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:20.018Z"
+    },
+    {
+      "path": "/assets/template-preview-page-DQQEp2oo.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/template-preview-page-DQQEp2oo.js",
+      "sha256": "e6e7c68e6b1dd047f664c6f7ce0d2e5a606fa762ba83376ba304b5412b124a64",
+      "byteLength": 109846,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:20.670Z"
+    },
+    {
+      "path": "/assets/templates-page-BG3griJW.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/templates-page-BG3griJW.js",
+      "sha256": "d7f2300c0c53e3ef117ea7a02b12eb92689d20796a73900f2e3def0e33599124",
+      "byteLength": 13042,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:18.631Z"
+    },
+    {
+      "path": "/assets/tent-9m6uQ_Do.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/tent-9m6uQ_Do.js",
+      "sha256": "11cb8feacc590694161a0b9ec3acfa67658a99ce06bd404694953914632527f9",
+      "byteLength": 288,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:25.934Z"
+    },
+    {
+      "path": "/assets/timekeeping-employee-detail-page-CNaKUsoC.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/timekeeping-employee-detail-page-CNaKUsoC.js",
+      "sha256": "cae0f50a80435199015ce49aa81e304e047450040828409d6785c2b423f7515c",
+      "byteLength": 20256,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:26.549Z"
+    },
+    {
+      "path": "/assets/timekeeping-live-page-Db2Oqhxg.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/timekeeping-live-page-Db2Oqhxg.js",
+      "sha256": "19cd867b090cb76564b50068a533142a183d2071f51f70a1c1a229c1956fbaab",
+      "byteLength": 16952,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:26.424Z"
+    },
+    {
+      "path": "/assets/timekeeping-review-page-DwkxVR07.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/timekeeping-review-page-DwkxVR07.js",
+      "sha256": "5f21964d8de6a7b74aecd8558f47fb08dbb909cf9ce74b9d25f03054b9727e5e",
+      "byteLength": 51012,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:26.245Z"
+    },
+    {
+      "path": "/assets/TimelineView-CswHHveV.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/TimelineView-CswHHveV.js",
+      "sha256": "caac6d883f0caeea5cd9352111b308254879cbaf20dca370556588c512141894",
+      "byteLength": 26010,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:26.903Z"
+    },
+    {
+      "path": "/assets/timer-W-K5TPeC.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/timer-W-K5TPeC.js",
+      "sha256": "67098e9a9c731c5a007a1dc30c87dedbed8d12d86f1fd8c950c94590f604b166",
+      "byteLength": 278,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:25.995Z"
+    },
+    {
+      "path": "/assets/today-BqVDXrg6.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/today-BqVDXrg6.js",
+      "sha256": "b78da2abcd1de001dd87c9ed571d3a02805b2e5ceba6cacfc286035f07e6adfe",
+      "byteLength": 30952,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:31.993Z"
+    },
+    {
+      "path": "/assets/trash-2-u3lSVOZm.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/trash-2-u3lSVOZm.js",
+      "sha256": "f802baca1a49ae2ecddea0b764ac32d55fb9287173ee597e93bec67821184894",
+      "byteLength": 399,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:21.040Z"
+    },
+    {
+      "path": "/assets/troubleshoot-DfWUEYNb.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/troubleshoot-DfWUEYNb.js",
+      "sha256": "d43424a0480d43a6b654f7ed0951f8cd79a8956e030ffb4ccefaeb9d58f51960",
+      "byteLength": 3745,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:31.636Z"
+    },
+    {
+      "path": "/assets/troubleshooting-D9MCX9zE.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/troubleshooting-D9MCX9zE.js",
+      "sha256": "c8dce07968ce6ec827069ae5a15633b2e040309daf9fd61268154f11869c175b",
+      "byteLength": 1754,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:34.082Z"
+    },
+    {
+      "path": "/assets/undo-2-CRIlFtAX.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/undo-2-CRIlFtAX.js",
+      "sha256": "18268ada54a74c5bf7c554a58a7323ac5f8b9998289798432e4ae404c15bb5ce",
+      "byteLength": 248,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:27.263Z"
+    },
+    {
+      "path": "/assets/use-is-mobile-CjYQFdiU.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/use-is-mobile-CjYQFdiU.js",
+      "sha256": "2ca34232e8974b4fa9181accd78f628016268043c15108e339f806fbf082829d",
+      "byteLength": 389,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:33.547Z"
+    },
+    {
+      "path": "/assets/use-manager-action-request-Cudcn_fr.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/use-manager-action-request-Cudcn_fr.js",
+      "sha256": "e947e06c449933ac2e2215ab902b412b9ab1e1bd1020630e057c17a869187c58",
+      "byteLength": 374,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:21.281Z"
+    },
+    {
+      "path": "/assets/user-check-DP84VYd5.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/user-check-DP84VYd5.js",
+      "sha256": "f3172f8b40343051d515fa06817f1a194fa1e7e30c859b07a814c5e3062d9f0d",
+      "byteLength": 298,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:24.693Z"
+    },
+    {
+      "path": "/assets/user-minus-CEDTxyID.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/user-minus-CEDTxyID.js",
+      "sha256": "9a9bb2a8823423dd3ef4a7a531c5a753cdbb4af6bbdf40a41b59344d4943f78e",
+      "byteLength": 300,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:19.274Z"
+    },
+    {
+      "path": "/assets/user-x-p_IGxsgt.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/user-x-p_IGxsgt.js",
+      "sha256": "4b4b1b0812d4cf8ef3296fe1afae8e3b5b020b6e325046b959bc857882d0c373",
+      "byteLength": 346,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:19.215Z"
+    },
+    {
+      "path": "/assets/users-page-COlbLpHs.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/users-page-COlbLpHs.js",
+      "sha256": "107cecfe9c96d276b58b927f9486cd92c2f4702dda2315509e565780867fc1ce",
+      "byteLength": 13876,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:24.818Z"
+    },
+    {
+      "path": "/assets/utensils-crossed-CiUj6s3l.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/utensils-crossed-CiUj6s3l.js",
+      "sha256": "624604f86c4925e760355daed316cf2fe5e38d449ab8ec78f77aa6365aeedeca",
+      "byteLength": 412,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:31.285Z"
+    },
+    {
+      "path": "/assets/verify-phone-page-CnTq9IxU.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/verify-phone-page-CnTq9IxU.js",
+      "sha256": "6fec1ae38fd8e8529a44b575371a38f9c223c2582d8c5daaa67119e31eb41ec8",
+      "byteLength": 3900,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:25.302Z"
+    },
+    {
+      "path": "/assets/vouchers-moved-CbVdTkPU.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/vouchers-moved-CbVdTkPU.js",
+      "sha256": "73952fc2d28d511f729125f552b0f3c488281c13d73ac1bf123ed9a451d1d213",
+      "byteLength": 1390,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:31.342Z"
+    },
+    {
+      "path": "/assets/wand-sparkles-D_iaTZV3.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/wand-sparkles-D_iaTZV3.js",
+      "sha256": "031b44378da4e9fe6b658d3c1c4c2a0631bac19a18eff6e3bf104cb4245d569f",
+      "byteLength": 560,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:27.972Z"
+    },
+    {
+      "path": "/assets/zoom-out-DElMZRum.js",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/assets/zoom-out-DElMZRum.js",
+      "sha256": "9807c4163071c80f51d6b8bb97151359cba896dd48a8ef4a2a3dd6d7d818ade5",
+      "byteLength": 539,
+      "contentType": "application/javascript; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:29.465Z"
+    },
+    {
+      "path": "/favicon.png",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/favicon.png",
+      "sha256": "5b4ac1778d0ff13a8e0ca39c93a0e9914cc4af785b415ce226a03364be33c13a",
+      "byteLength": 17410,
+      "contentType": "image/png",
+      "capturedAt": "2026-10-24T22:00:18.122Z"
+    },
+    {
+      "path": "/index.html",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/index.html",
+      "sha256": "ab5f719e201210714c3fe3f16fe92fcac3035f558d7f9764ca1adf6b3250a864",
+      "byteLength": 1043,
+      "contentType": "text/html; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:17.928Z"
+    },
+    {
+      "path": "/manifest.json",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/manifest.json",
+      "sha256": "7a4b01287941e74ce9406877f0c8f3d83e78ad08a12ed34256f85ac1fc23a2b9",
+      "byteLength": 434,
+      "contentType": "application/json; charset=UTF-8",
+      "capturedAt": "2026-10-24T22:00:18.292Z"
+    },
+    {
+      "path": "/oto-logo.png",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/oto-logo.png",
+      "sha256": "5b4ac1778d0ff13a8e0ca39c93a0e9914cc4af785b415ce226a03364be33c13a",
+      "byteLength": 17410,
+      "contentType": "image/png",
+      "capturedAt": "2026-10-24T22:00:18.225Z"
+    }
+  ],
+  "localReferenceAssets": [
+    {
+      "path": "/assets/archive-xsu4XcR9.js",
+      "sha256": "93b977be4f18b25ef9ba0af3583d7b36d0425859294b6bf6f90758f697f847e1",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/assets/checkbox-CcEOtizx.js",
+      "sha256": "2058a7232d0651992866b13435932f1648e656825b0f3019a4d8df81ca84b6d4",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/assets/chevron-up-D8oe4vgJ.js",
+      "sha256": "da722e359638630223ad71d1492df00c8858c21b0c21f6c016e30e6ba91b69e0",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/assets/ellipsis-CrDn6kY-.js",
+      "sha256": "e7b57af0b0c0874e9f337789a21cc98579c71bbdc79a2f2090967f3f073fb34d",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/assets/format-B23bbH_D.js",
+      "sha256": "118dd8db41ffcab04f688d16863bef42ada78f905e9039ceb558dbd7e177acb7",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/assets/format-utils-DIALqgSw.js",
+      "sha256": "ac2c1646dab7e08c2f3fff762174f09d0a79192f4957c4b4f513217b9452ac14",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/assets/index-Bq2kTkIV.js",
+      "sha256": "98d7fd91bda3bada154d9090dcb2e15e387954331e3a026fdcaa313a91e938b7",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/assets/index-C7hA-f0U.js",
+      "sha256": "4f70aa6119a840ddb63a773914f7e0968c4c54570ae142b718d9618f857d530a",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/assets/index-Dgpt_dBt.css",
+      "sha256": "eee83fead8c8da9947239254bc180e2b97ec09835484279c92e85c5b9f67120b",
+      "type": "text/css"
+    },
+    {
+      "path": "/assets/log-in-6GftZDce.js",
+      "sha256": "04af7bdca71c6ca77e9515b9aa2389c9934f4a3e361048133be6aaf1fe416608",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/assets/managed-in-admin-notice-6rEnESJT.js",
+      "sha256": "80e587becf10526311041ab9a9ecfd69b0097f644cca48ceb4798cb5924252e9",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/assets/operators-page-D6vIg3A6.js",
+      "sha256": "0676c37d26b80e90a73719167726343eca5dba165bb5370848ba90e0e4c1ae68",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/assets/other-apps-CfLt9sLM.js",
+      "sha256": "4e5724af8d5f1c3ad5fde9df5cb9ff85e914b1bc009847f345a2f362b886863b",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/assets/parseISO-C75Bq5q-.js",
+      "sha256": "eb4f137ded8358bea91a468cfa9341e6c6ea8f8fd263d9f32221b216d216e680",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/assets/pencil-C7dgF2RA.js",
+      "sha256": "78cae29138a9d9b49ba44af8d604a809d1ceb007c8c99dc6a5860d1d51c8e28d",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/assets/permissions-page-CHPsP_Lv.js",
+      "sha256": "d70d2e7a583cca6ca97eed214b531dd47a76ccb0a32cf6397f255aeac697a2de",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/assets/select-CWLbEHgX.js",
+      "sha256": "3ef234a057cb6679d754e55fdd824243fb87242928a1bce9d7ec80f463ac8d40",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/assets/square-pen-yR1CrX4i.js",
+      "sha256": "490cbf2ee62c0aba1b95c4c92bebd129dbb7bc39d2d47df7097cb1165e70369b",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/assets/suite-sign-in-CypSkh0Q.js",
+      "sha256": "d2397f8aabf6fd2d041a03653a43df9999f36dd01b45cb025d8a0b2b009ea758",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/assets/switch-CcspZc4M.js",
+      "sha256": "5e9a89b6429d75cf831d012ada26941f914cc7e8d4336b2e37b496f39b52c74c",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/assets/table-BrEUFtif.js",
+      "sha256": "e54892304c47909e3e48a4df0645e8c7af3fcbedf27d16c55f0f0881dbbe3ed9",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/assets/user-check-Br9Qw45f.js",
+      "sha256": "094ee5a2cc9c179d3963577db29d2a52ad1db10d6f826a64b67e6711f15261ef",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/assets/user-x-BgeFkdHz.js",
+      "sha256": "df43550997ee0235f632bcf4d29ab17239647d79d782e88b611708ad90e7e65a",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/assets/users-page-D4d78TYv.js",
+      "sha256": "cf81065c0e274ef82c0e87ce1a1645bc85702ac37d8f06d7c4def8c461f42d82",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/favicon.png",
+      "sha256": "5b4ac1778d0ff13a8e0ca39c93a0e9914cc4af785b415ce226a03364be33c13a",
+      "type": "image/png"
+    },
+    {
+      "path": "/index.html",
+      "sha256": "c392b7f05b0c358ecc09d33a503dfaf11b67fcb9c069fa70861bad9274c0bd59",
+      "type": "text/html"
+    },
+    {
+      "path": "/oto-logo.png",
+      "sha256": "5b4ac1778d0ff13a8e0ca39c93a0e9914cc4af785b415ce226a03364be33c13a",
+      "type": "image/png"
+    }
+  ],
+  "referenceCoverage": [
+    {
+      "localPath": "/assets/archive-xsu4XcR9.js",
+      "localSha256": "93b977be4f18b25ef9ba0af3583d7b36d0425859294b6bf6f90758f697f847e1",
+      "family": "/assets/archive.js",
+      "productionPaths": [
+        "/assets/archive-BKOwv2kY.js"
+      ],
+      "exactLocalBytesPresent": false
+    },
+    {
+      "localPath": "/assets/checkbox-CcEOtizx.js",
+      "localSha256": "2058a7232d0651992866b13435932f1648e656825b0f3019a4d8df81ca84b6d4",
+      "family": "/assets/checkbox.js",
+      "productionPaths": [
+        "/assets/checkbox-CeRk5mNN.js"
+      ],
+      "exactLocalBytesPresent": false
+    },
+    {
+      "localPath": "/assets/chevron-up-D8oe4vgJ.js",
+      "localSha256": "da722e359638630223ad71d1492df00c8858c21b0c21f6c016e30e6ba91b69e0",
+      "family": "/assets/chevron-up.js",
+      "productionPaths": [
+        "/assets/chevron-up-Oj2bkNsA.js"
+      ],
+      "exactLocalBytesPresent": false
+    },
+    {
+      "localPath": "/assets/ellipsis-CrDn6kY-.js",
+      "localSha256": "e7b57af0b0c0874e9f337789a21cc98579c71bbdc79a2f2090967f3f073fb34d",
+      "family": "/assets/ellipsis.js",
+      "productionPaths": [
+        "/assets/ellipsis-gElSqPLo.js"
+      ],
+      "exactLocalBytesPresent": false
+    },
+    {
+      "localPath": "/assets/format-B23bbH_D.js",
+      "localSha256": "118dd8db41ffcab04f688d16863bef42ada78f905e9039ceb558dbd7e177acb7",
+      "family": "/assets/format.js",
+      "productionPaths": [
+        "/assets/format-ClU7EJYL.js"
+      ],
+      "exactLocalBytesPresent": false
+    },
+    {
+      "localPath": "/assets/format-utils-DIALqgSw.js",
+      "localSha256": "ac2c1646dab7e08c2f3fff762174f09d0a79192f4957c4b4f513217b9452ac14",
+      "family": "/assets/format-utils.js",
+      "productionPaths": [
+        "/assets/format-utils-M1HtmJOc.js"
+      ],
+      "exactLocalBytesPresent": false
+    },
+    {
+      "localPath": "/assets/index-Bq2kTkIV.js",
+      "localSha256": "98d7fd91bda3bada154d9090dcb2e15e387954331e3a026fdcaa313a91e938b7",
+      "family": "/assets/index.js",
+      "productionPaths": [
+        "/assets/index-B2g4m6hJ.js",
+        "/assets/index-BSCsEov7.js",
+        "/assets/index-BVVwodcD.js",
+        "/assets/index-BgbjnqRW.js",
+        "/assets/index-C3r0FcVI.js",
+        "/assets/index-CM5aFKyk.js",
+        "/assets/index-CqtAqmRM.js",
+        "/assets/index-DqXnQ52o.js",
+        "/assets/index-K-Fr-Axt.js",
+        "/assets/index-gotCwelj.js"
+      ],
+      "exactLocalBytesPresent": false
+    },
+    {
+      "localPath": "/assets/index-C7hA-f0U.js",
+      "localSha256": "4f70aa6119a840ddb63a773914f7e0968c4c54570ae142b718d9618f857d530a",
+      "family": "/assets/index.js",
+      "productionPaths": [
+        "/assets/index-B2g4m6hJ.js",
+        "/assets/index-BSCsEov7.js",
+        "/assets/index-BVVwodcD.js",
+        "/assets/index-BgbjnqRW.js",
+        "/assets/index-C3r0FcVI.js",
+        "/assets/index-CM5aFKyk.js",
+        "/assets/index-CqtAqmRM.js",
+        "/assets/index-DqXnQ52o.js",
+        "/assets/index-K-Fr-Axt.js",
+        "/assets/index-gotCwelj.js"
+      ],
+      "exactLocalBytesPresent": false
+    },
+    {
+      "localPath": "/assets/index-Dgpt_dBt.css",
+      "localSha256": "eee83fead8c8da9947239254bc180e2b97ec09835484279c92e85c5b9f67120b",
+      "family": "/assets/index.css",
+      "productionPaths": [
+        "/assets/index-Dgpt_dBt.css",
+        "/assets/index-Diva79oe.css"
+      ],
+      "exactLocalBytesPresent": true
+    },
+    {
+      "localPath": "/assets/log-in-6GftZDce.js",
+      "localSha256": "04af7bdca71c6ca77e9515b9aa2389c9934f4a3e361048133be6aaf1fe416608",
+      "family": "/assets/log-in.js",
+      "productionPaths": [
+        "/assets/log-in-C2hJPN_B.js"
+      ],
+      "exactLocalBytesPresent": false
+    },
+    {
+      "localPath": "/assets/managed-in-admin-notice-6rEnESJT.js",
+      "localSha256": "80e587becf10526311041ab9a9ecfd69b0097f644cca48ceb4798cb5924252e9",
+      "family": "/assets/managed-in-admin-notice.js",
+      "productionPaths": [
+        "/assets/managed-in-admin-notice-B9_fRQnV.js"
+      ],
+      "exactLocalBytesPresent": false
+    },
+    {
+      "localPath": "/assets/operators-page-D6vIg3A6.js",
+      "localSha256": "0676c37d26b80e90a73719167726343eca5dba165bb5370848ba90e0e4c1ae68",
+      "family": "/assets/operators-page.js",
+      "productionPaths": [
+        "/assets/operators-page-BeYra77W.js"
+      ],
+      "exactLocalBytesPresent": false
+    },
+    {
+      "localPath": "/assets/other-apps-CfLt9sLM.js",
+      "localSha256": "4e5724af8d5f1c3ad5fde9df5cb9ff85e914b1bc009847f345a2f362b886863b",
+      "family": "/assets/other-apps.js",
+      "productionPaths": [
+        "/assets/other-apps-Bg2F6atx.js"
+      ],
+      "exactLocalBytesPresent": false
+    },
+    {
+      "localPath": "/assets/parseISO-C75Bq5q-.js",
+      "localSha256": "eb4f137ded8358bea91a468cfa9341e6c6ea8f8fd263d9f32221b216d216e680",
+      "family": "/assets/parseISO.js",
+      "productionPaths": [
+        "/assets/parseISO-DtTWub5d.js"
+      ],
+      "exactLocalBytesPresent": false
+    },
+    {
+      "localPath": "/assets/pencil-C7dgF2RA.js",
+      "localSha256": "78cae29138a9d9b49ba44af8d604a809d1ceb007c8c99dc6a5860d1d51c8e28d",
+      "family": "/assets/pencil.js",
+      "productionPaths": [
+        "/assets/pencil-Ce4JThdy.js"
+      ],
+      "exactLocalBytesPresent": false
+    },
+    {
+      "localPath": "/assets/permissions-page-CHPsP_Lv.js",
+      "localSha256": "d70d2e7a583cca6ca97eed214b531dd47a76ccb0a32cf6397f255aeac697a2de",
+      "family": "/assets/permissions-page.js",
+      "productionPaths": [
+        "/assets/permissions-page-NEozn-ri.js"
+      ],
+      "exactLocalBytesPresent": false
+    },
+    {
+      "localPath": "/assets/select-CWLbEHgX.js",
+      "localSha256": "3ef234a057cb6679d754e55fdd824243fb87242928a1bce9d7ec80f463ac8d40",
+      "family": "/assets/select.js",
+      "productionPaths": [
+        "/assets/select-Bun9wJIX.js"
+      ],
+      "exactLocalBytesPresent": false
+    },
+    {
+      "localPath": "/assets/square-pen-yR1CrX4i.js",
+      "localSha256": "490cbf2ee62c0aba1b95c4c92bebd129dbb7bc39d2d47df7097cb1165e70369b",
+      "family": "/assets/square-pen.js",
+      "productionPaths": [
+        "/assets/square-pen-D37UpIOP.js"
+      ],
+      "exactLocalBytesPresent": false
+    },
+    {
+      "localPath": "/assets/suite-sign-in-CypSkh0Q.js",
+      "localSha256": "d2397f8aabf6fd2d041a03653a43df9999f36dd01b45cb025d8a0b2b009ea758",
+      "family": "/assets/suite-sign-in.js",
+      "productionPaths": [
+        "/assets/suite-sign-in-BGtt_07w.js"
+      ],
+      "exactLocalBytesPresent": false
+    },
+    {
+      "localPath": "/assets/switch-CcspZc4M.js",
+      "localSha256": "5e9a89b6429d75cf831d012ada26941f914cc7e8d4336b2e37b496f39b52c74c",
+      "family": "/assets/switch.js",
+      "productionPaths": [
+        "/assets/switch-ByYSj03n.js"
+      ],
+      "exactLocalBytesPresent": false
+    },
+    {
+      "localPath": "/assets/table-BrEUFtif.js",
+      "localSha256": "e54892304c47909e3e48a4df0645e8c7af3fcbedf27d16c55f0f0881dbbe3ed9",
+      "family": "/assets/table.js",
+      "productionPaths": [
+        "/assets/table-Bl6rcmpK.js"
+      ],
+      "exactLocalBytesPresent": false
+    },
+    {
+      "localPath": "/assets/user-check-Br9Qw45f.js",
+      "localSha256": "094ee5a2cc9c179d3963577db29d2a52ad1db10d6f826a64b67e6711f15261ef",
+      "family": "/assets/user-check.js",
+      "productionPaths": [
+        "/assets/user-check-DP84VYd5.js"
+      ],
+      "exactLocalBytesPresent": false
+    },
+    {
+      "localPath": "/assets/user-x-BgeFkdHz.js",
+      "localSha256": "df43550997ee0235f632bcf4d29ab17239647d79d782e88b611708ad90e7e65a",
+      "family": "/assets/user-x.js",
+      "productionPaths": [
+        "/assets/user-x-p_IGxsgt.js"
+      ],
+      "exactLocalBytesPresent": false
+    },
+    {
+      "localPath": "/assets/users-page-D4d78TYv.js",
+      "localSha256": "cf81065c0e274ef82c0e87ce1a1645bc85702ac37d8f06d7c4def8c461f42d82",
+      "family": "/assets/users-page.js",
+      "productionPaths": [
+        "/assets/users-page-COlbLpHs.js"
+      ],
+      "exactLocalBytesPresent": false
+    },
+    {
+      "localPath": "/favicon.png",
+      "localSha256": "5b4ac1778d0ff13a8e0ca39c93a0e9914cc4af785b415ce226a03364be33c13a",
+      "family": "/favicon.png",
+      "productionPaths": [
+        "/favicon.png"
+      ],
+      "exactLocalBytesPresent": true
+    },
+    {
+      "localPath": "/index.html",
+      "localSha256": "c392b7f05b0c358ecc09d33a503dfaf11b67fcb9c069fa70861bad9274c0bd59",
+      "family": "/index.html",
+      "productionPaths": [
+        "/index.html"
+      ],
+      "exactLocalBytesPresent": false
+    },
+    {
+      "localPath": "/oto-logo.png",
+      "localSha256": "5b4ac1778d0ff13a8e0ca39c93a0e9914cc4af785b415ce226a03364be33c13a",
+      "family": "/oto-logo.png",
+      "productionPaths": [
+        "/oto-logo.png"
+      ],
+      "exactLocalBytesPresent": true
+    }
+  ],
+  "after": {
+    "headSha": "6b429d4bd8f98b1508a5a785ed78655ec3cc95d5",
+    "status": "completed",
+    "conclusion": "success",
+    "jobs": [
+      {
+        "name": "api-tests (1)",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "api-tests (2)",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "api-tests (3)",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "ci",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "oto-app",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "pos-tests",
+        "status": "completed",
+        "conclusion": "success"
+      }
+    ],
+    "deployments": [
+      {
+        "name": "oto-api-staging",
+        "id": "dep-dbeii8qjnfac73dspd1g",
+        "sourceSha": "6b429d4bd8f98b1508a5a785ed78655ec3cc95d5",
+        "status": "live",
+        "finishedAt": "2026-10-24T21:57:44.330788Z"
+      },
+      {
+        "name": "oto-console-staging",
+        "id": "dep-dbeii92jnfac73dspf5g",
+        "sourceSha": "6b429d4bd8f98b1508a5a785ed78655ec3cc95d5",
+        "status": "live",
+        "finishedAt": "2026-10-24T21:55:29.495975Z"
+      },
+      {
+        "name": "oto-app-staging",
+        "id": "dep-dbeii8qjnfac73dspe00",
+        "sourceSha": "6b429d4bd8f98b1508a5a785ed78655ec3cc95d5",
+        "status": "live",
+        "finishedAt": "2026-10-24T21:57:35.023933Z"
+      }
+    ]
+  },
+  "completedAt": "2026-10-24T22:00:38.947Z",
+  "captureSpecFileSha256": "fb6d1e70c528d7ad7c6092cc6aee658989516860036013c1fe8c8bf6b0f47a0e",
+  "captureSpecDigestSha256": "6e3aba16d1ae3f4f0dfe45a70f34200490b87694d0582a82c50ea8ac169c3722",
+  "bodiesPersisted": false,
+  "limit": "Unauthenticated exact-origin public static GETs only; public response bytes hashed in memory, not persisted. GitHub/Render release metadata checked before/after. No app login, API, external fonts, private photos or business writes."
+}

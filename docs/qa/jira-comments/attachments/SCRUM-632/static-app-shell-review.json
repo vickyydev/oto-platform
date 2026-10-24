@@ -1,0 +1,138 @@
+{
+    "ticket":  "SCRUM-632",
+    "reviewedAt":  "2026-10-24T22:00:51.2632580Z",
+    "reviewKind":  "READ_ONLY_TWO_EXACT_APP_SHELL_PATHS_AND_CAPTURED_RED_GREEN",
+    "passed":  true,
+    "stagingAcceptance":  false,
+    "delta":  {
+                  "collectorOnlyOneExactPublicPathArrayChanged":  true,
+                  "proofOnlyOneExactAssetPathArrayChanged":  true,
+                  "addedPaths":  [
+                                     "/manifest.json",
+                                     "/apple-touch-icon.png"
+                                 ],
+                  "allOtherSourceTextUnchanged":  true,
+                  "priorAuthReviewStillApplicableToUnchangedRemainder":  true,
+                  "authRevocationSourceChanged":  false,
+                  "sourceReleaseGatesChanged":  false,
+                  "mutationGrammarChanged":  false
+              },
+    "evidence":  {
+                     "wholeRedLogRead":  true,
+                     "wholeGreenLogRead":  true,
+                     "wholeNewTestAndRunnerRead":  true,
+                     "logHashesMatchReceipts":  true,
+                     "sameFourTestFilesAndActualCurrentHashes":  true,
+                     "red":  {
+                                 "exitCode":  1,
+                                 "signal":  null,
+                                 "tests":  21,
+                                 "passed":  17,
+                                 "failed":  4,
+                                 "failures":  [
+                                                  "collector manifest path refused",
+                                                  "proof manifest path refused",
+                                                  "collector apple-touch-icon path refused",
+                                                  "proof apple-touch-icon path refused"
+                                              ]
+                             },
+                     "green":  {
+                                   "exitCode":  0,
+                                   "signal":  null,
+                                   "tests":  21,
+                                   "passed":  21,
+                                   "failed":  0
+                               },
+                     "old16PinsRemainGreen":  true,
+                     "new5PinsIncludeStrictNegativePaths":  true,
+                     "fixturesAreOfflineOnly":  true
+                 },
+    "bindings":  [
+                     {
+                         "path":  "C:/w/admin632-collect-assets-before-app-shell.mjs",
+                         "sha256":  "7f578ae0b351712e2526797c13cc1ea9a5ef43c6c0924bb6371c553a525953c5",
+                         "bytes":  13621
+                     },
+                     {
+                         "path":  "C:/w/admin632-collect-assets.mjs",
+                         "sha256":  "49b5a33836453a075331b5df49b9586f6c9dbe98c1b64903020899fb4c4567a7",
+                         "bytes":  13664
+                     },
+                     {
+                         "path":  "C:/w/admin632-proof-before-app-shell.mjs",
+                         "sha256":  "ad0f284a0374963214907b40adb71efd42b99f553fe41eb7033f9299338a85e6",
+                         "bytes":  40769
+                     },
+                     {
+                         "path":  "C:/w/admin632-proof.mjs",
+                         "sha256":  "731a7fa2bb6230c6b9be9dd79dde4ab3fa96f13c7e52be161fb80e6e17c2744d",
+                         "bytes":  40812
+                     },
+                     {
+                         "path":  "C:/w/admin632-static-app-shell.test.mjs",
+                         "sha256":  "73f66ca15b3ca0eab31f34bfe9c98dddf31f4814b398b5ed3b5f8ece2942ea21",
+                         "bytes":  2531
+                     },
+                     {
+                         "path":  "C:/w/admin632-collect-assets.test.mjs",
+                         "sha256":  "be9faf6ea25b23b73fee8863ebed31675508fb7adebd22a432455b07b39558dc",
+                         "bytes":  2453
+                     },
+                     {
+                         "path":  "C:/w/admin632-proof.test.mjs",
+                         "sha256":  "469d2aeeb697501fa98da75366242c17ad6e1c6fd209cba366b85204bf960943",
+                         "bytes":  5167
+                     },
+                     {
+                         "path":  "C:/w/admin632-proof-auth-review.test.mjs",
+                         "sha256":  "d7db1a69554acb95edbff3f23f01bba49831def04d2e5d2b932d1d465b05aa02",
+                         "bytes":  8419
+                     },
+                     {
+                         "path":  "C:/w/admin632-app-shell-red.json",
+                         "sha256":  "291a77fb39ee40d3ecc6c7efbd20dab25226d5027a67bbdd5d3c80644d73b93a",
+                         "bytes":  1188
+                     },
+                     {
+                         "path":  "C:/w/admin632-app-shell-red.log",
+                         "sha256":  "186fbaa8e6654df3c6cd783f968eb52b333d8dd78d92d19a166f4e9757423894",
+                         "bytes":  8360
+                     },
+                     {
+                         "path":  "C:/w/admin632-app-shell-green.json",
+                         "sha256":  "04d9b92f8b8ce4deb2b177641c0f1725e39405a44a966b8f37f9e696c26a3253",
+                         "bytes":  1190
+                     },
+                     {
+                         "path":  "C:/w/admin632-app-shell-green.log",
+                         "sha256":  "1405e48d5226a156c315577a9c1446001002aa9d0ce5786f5c97b98a0dac94b6",
+                         "bytes":  5500
+                     },
+                     {
+                         "path":  "C:/w/admin632-proof-independent-review-v2.json",
+                         "sha256":  "0ecda5cfc9c9a5a282d3d283ff1a9fef620af8ea9b359cf563d0dce3a174bb73",
+                         "bytes":  8347
+                     },
+                     {
+                         "path":  "C:/w/admin632-run-app-shell.mjs",
+                         "sha256":  "2dcf503d590f9e7d92b09e02cee315444f3589fc807c086f2e53c9312ba2b35d",
+                         "bytes":  1380
+                     }
+                 ],
+    "actions":  {
+                    "testsRunByReviewer":  false,
+                    "network":  false,
+                    "authentication":  false,
+                    "staging":  false,
+                    "sourceEdits":  false,
+                    "repositoryEdits":  false,
+                    "onlyExternalReviewWritten":  true
+                },
+    "limits":  [
+                   "Closes only the omission of these two exact public app-shell paths; this is not native staging acceptance.",
+                   "The prior auth closure remains valid because the entire proof source outside the one array replacement is identical; its real RED/GREEN evidence is not relabelled as a new live run.",
+                   "New shell tests exercise actual exported pure guards and hash-bound plan validation; they do not execute live collection or proof.",
+                   "Exact live source/CI/deployments, actual collected asset hashes, reviewed capture spec, safe actor census, cleanup and all six native screenshot reviews remain required.",
+                   "README preparation hashes predate this correction; concrete executable plans must bind current collector49b5a338 and proof731a7fa2 bytes."
+               ]
+}

@@ -1,0 +1,15 @@
+{
+  "ticket": "SCRUM-632",
+  "at": "2026-10-24T21:36:05.852Z",
+  "passed": true,
+  "removed": 2,
+  "removedIds": [
+    "b093419162b70c1a56b74d5adbe44179fb5b4426571dd64514beb734d57e999a",
+    "70bb67836770724857b012d7204fd10648e0809c7b76a40b327995ccbc515225"
+  ],
+  "remaining": 10,
+  "allOriginalTenSharedAndOtherContainerIdsPreserved": true,
+  "allOtherIdsPreserved": true,
+  "noImageVolumeNetworkRemoval": true,
+  "remainingRunning": 3
+}

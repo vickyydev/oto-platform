@@ -1,0 +1,145 @@
+{
+  "ticket": "SCRUM-632",
+  "passed": true,
+  "reviewedAt": "2026-10-24T21:57:49.072Z",
+  "fullOutputRead": true,
+  "linesRead": 668,
+  "lineRangesRead": [
+    [
+      1,
+      200
+    ],
+    [
+      201,
+      400
+    ],
+    [
+      401,
+      600
+    ],
+    [
+      495,
+      519
+    ],
+    [
+      601,
+      668
+    ]
+  ],
+  "sourceSha": "6b429d4bd8f98b1508a5a785ed78655ec3cc95d5",
+  "runId": "40134954679",
+  "jobId": "120994397196",
+  "step": "The OTO App's inherited typecheck ceiling",
+  "sourceManifestSha256": "b5890d7d8f500c092c08d7a5a2c7f04117b6be5f39a706a96d24ecee7be05c2e",
+  "sourceFiles": 3724,
+  "logSha256": "dbca03611c3eeaf4059234cca2a61e19c7b55d1b73ed7dc70db88e2699326c19",
+  "captureReceiptSha256": "929066844dc726ee37cbac8655dd8a3dba36eb3819d2859fa11796a58dff3a64",
+  "captureHelperSha256": "18c9a030f4078b2d9d89fcd600fe9963a2de8566283f19aaf898afdf4ada3eb8",
+  "fullCiReceiptSha256": "eaf0d89f882ede0741716ad8c35e2e030365dc4e0fbeb0ec567dab923cbd6313",
+  "allSixJobsGreen": true,
+  "jobs": [
+    {
+      "name": "api-tests (1)",
+      "id": "120994396980",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "api-tests (3)",
+      "id": "120994397148",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "api-tests (2)",
+      "id": "120994397165",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "oto-app",
+      "id": "120994397196",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "ci",
+      "id": "120994397326",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "pos-tests",
+      "id": "120994397359",
+      "status": "completed",
+      "conclusion": "success"
+    }
+  ],
+  "baselineSha256": "946a7a21ff4497348a063069049cafac2da45039c1eb0e2ab86938044382d826",
+  "actualErrors": 418,
+  "files": 54,
+  "fileCodeBuckets": 109,
+  "unclassifiedDiagnostics": 0,
+  "increased": [],
+  "reduced": [],
+  "perFileCodeCountsExactlyEqual": true,
+  "perFileCodeCountsSha256": "dd31efb5a9772b1540d0db952e93a69969dabc25e801d6f0bb81c40b2ac7c956",
+  "localComparison": {
+    "ratchetReceipt": {
+      "file": "ratchet.json",
+      "sha256": "38d5799c2643bac1a0d97ad8e71d56b18aa9092d2b03064c3a1a3fabd584c71e"
+    },
+    "compilerReview": {
+      "file": "admin632-final-compiler-review.json",
+      "sha256": "bea129d7af3c28182d02b7787625fac7a646cc9662c8c49f8363d73e15a3e7e0"
+    },
+    "sourceManifestSha256": "054717607dc3f26ec1a10a131a1fc3e510e0f6ecddbaf91fb37ebd1d6af26d7e",
+    "compilerSegmentSha256": "829ea9fac8b55321669973489101abdd9f26c119eb1ee3bb64ebb6ee4131a23e",
+    "actualErrors": 418,
+    "files": 54,
+    "fileCodeBuckets": 109,
+    "diagnosticHeadersExactlyEqual": true,
+    "diagnosticBlockLines": 656,
+    "allOther655DiagnosticLinesExactlyEqual": true,
+    "diagnosticBlocksExactlyEqual": false,
+    "checkoutPathNormalizedBlocksExactlyEqual": false,
+    "continuationDifferences": [
+      {
+        "diagnosticBlockLine": 393,
+        "ciCaptureLine": 404,
+        "localBodyLine": 397,
+        "ciContinuationSha256": "577a70608827284e290ef2c7aee9e2e5ef5381e4abc19bda2436ce6d45db7c76",
+        "localContinuationSha256": "ac9f83e96736a5e107a583d6aa5d37149688943efb7bb290841661136c190069",
+        "diagnostic": "server/parent-experience-routes.ts(82,107):TS2349",
+        "ciCheckoutPrefix": "/home/runner/work/oto-platform/oto-platform/apps/oto-app/",
+        "localCheckoutPrefix": "/workspace/apps/oto-app/",
+        "remainingRenderedTypeTextAlsoDiffers": true,
+        "description": "The sole differing continuation includes the checkout path and a different truncation/expansion of the imported schema type. It is not byte-identical after replacing the path alone; all diagnostic header messages and file/code counts remain exactly equal."
+      }
+    ]
+  },
+  "earlierFailedRead": {
+    "receipt": {
+      "file": "admin632-ci-compiler-step-early-failure.json",
+      "sha256": "1993994ed621e604f59b6758ede8eabc6c750f65f4e3843dabb734db690f6e42"
+    },
+    "retained": true,
+    "relabeledAsSuccess": false,
+    "limits": "The earlier unavailable GitHub log read had no compiler capture; this review uses the later guarded complete capture."
+  },
+  "privacy": {
+    "rawFullJobLogStored": false,
+    "onlyFilteredRedactedCompilerStepRead": true
+  },
+  "actions": {
+    "testsRun": false,
+    "compilerRun": false,
+    "sourceChanged": false,
+    "network": false
+  },
+  "limits": [
+    "This verifies inherited compiler debt and exact completed CI metadata; it does not claim a zero-error app compiler.",
+    "One compiler continuation differs in checkout path and displayed type truncation; the report preserves that difference explicitly.",
+    "Deployment and actual staging evidence remain separate prerequisites."
+  ]
+}

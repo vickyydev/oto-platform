@@ -1,0 +1,146 @@
+{
+  "ticket": "SCRUM-632",
+  "sourceSha": "6b429d4bd8f98b1508a5a785ed78655ec3cc95d5",
+  "ciRunId": "40134954679",
+  "allSixCiJobsGreen": true,
+  "latestLiveDeployments": [
+    {
+      "name": "oto-api-staging",
+      "serviceId": "srv-danh2ljtqb8s73bt9en0",
+      "deployId": "dep-dbeii8qjnfac73dspd1g",
+      "sourceSha": "6b429d4bd8f98b1508a5a785ed78655ec3cc95d5",
+      "status": "live",
+      "finishedAt": "2026-10-24T21:57:44.330788Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "serviceId": "srv-danng2p42hec73f38e3g",
+      "deployId": "dep-dbeii92jnfac73dspf5g",
+      "sourceSha": "6b429d4bd8f98b1508a5a785ed78655ec3cc95d5",
+      "status": "live",
+      "finishedAt": "2026-10-24T21:55:29.495975Z"
+    },
+    {
+      "name": "oto-app-staging",
+      "serviceId": "srv-danppvjtqb8s73cnvua0",
+      "deployId": "dep-dbeii8qjnfac73dspe00",
+      "sourceSha": "6b429d4bd8f98b1508a5a785ed78655ec3cc95d5",
+      "status": "live",
+      "finishedAt": "2026-10-24T21:57:35.023933Z"
+    }
+  ],
+  "stagingCompletedAt": "2026-10-24T22:14:42.329Z",
+  "stagingReceiptSha256": "ca119eee4bbfd54393c22e66fc4f7d107ca92902d2fde8940a22d9b832d2126b",
+  "helperSha256": "235f67c8f51adc3bbda309a0f7ed6d332f7972192171ec5a0689f7ed1d57c3e3",
+  "captureSpecSha256": "5883366f076229e7f6f41086f12fa13b42d8faf7a00c297a3a6f1fab3ba5f69b",
+  "operations": {
+    "all": 29,
+    "http": 27,
+    "jobs": 2,
+    "auth": 20,
+    "business": 7
+  },
+  "sourceChecks": 10,
+  "strictUnchanged409Probes": 3,
+  "authSessionsClosed": 8,
+  "cleanup": {
+    "actorRestored": true,
+    "originalHashesMatch": true,
+    "fixtureArchived": true,
+    "fixtureFlagOff": true,
+    "fixtureEmpty": true
+  },
+  "fixture": {
+    "id": "10f438b7-f427-442c-9b27-0d7a1013cc5b",
+    "tenantId": "681b18d1-4c75-415d-9271-5fe3afc30993",
+    "name": "ZZ TEST SCRUM-632 4ec76a67-3e9a-41fa-aeb1-a10f975b6e20",
+    "createdAt": "2026-10-24T22:11:47.254Z"
+  },
+  "network": {
+    "blocked": 0,
+    "failed": 0,
+    "pageErrors": 0,
+    "consoleErrors": 0
+  },
+  "images": [
+    {
+      "filename": "SCRUM-632-01-users-flag-off.png",
+      "sha256": "b7823a963691b228d3948a8d676a9310a2f4d3982d8df83a293c949e85a7f22b",
+      "capturedAt": "2026-10-24T22:12:08.581Z",
+      "actuallyViewed": true,
+      "nativeScreenLegible": true,
+      "personAndContactCellsMasked": true,
+      "fullCaptionPrefixReadable": false,
+      "publicParkLabelsRetained": true
+    },
+    {
+      "filename": "SCRUM-632-02-permissions-flag-off.png",
+      "sha256": "d362992b878c190a06f3c2decb65214f981be48504b0166136217839b072d145",
+      "capturedAt": "2026-10-24T22:12:17.456Z",
+      "actuallyViewed": true,
+      "nativeScreenLegible": true,
+      "personAndContactCellsMasked": true,
+      "fullCaptionPrefixReadable": false,
+      "publicParkLabelsRetained": true
+    },
+    {
+      "filename": "SCRUM-632-03-operators-flag-off.png",
+      "sha256": "0653dc41bf6f03870d1ab7b7b42c61b2371f041d3d156f6b170a3ab24c85427f",
+      "capturedAt": "2026-10-24T22:12:26.616Z",
+      "actuallyViewed": true,
+      "nativeScreenLegible": true,
+      "personAndContactCellsMasked": true,
+      "fullCaptionPrefixReadable": false,
+      "publicParkLabelsRetained": true
+    },
+    {
+      "filename": "SCRUM-632-04-users-managed.png",
+      "sha256": "7cc902478ebb54bfb5479daa0d6a8eba95d5301f4440ec0f98a34b2f1192f815",
+      "capturedAt": "2026-10-24T22:13:34.286Z",
+      "actuallyViewed": true,
+      "nativeScreenLegible": true,
+      "personAndContactCellsMasked": true,
+      "fullCaptionPrefixReadable": false,
+      "publicParkLabelsRetained": true
+    },
+    {
+      "filename": "SCRUM-632-05-permissions-managed.png",
+      "sha256": "b97fb922c26f8f9bdddb81da5c4686b97a1ab3b00e7bd476f59d8201dc0cef90",
+      "capturedAt": "2026-10-24T22:13:42.068Z",
+      "actuallyViewed": true,
+      "nativeScreenLegible": true,
+      "personAndContactCellsMasked": true,
+      "fullCaptionPrefixReadable": false,
+      "publicParkLabelsRetained": true
+    },
+    {
+      "filename": "SCRUM-632-06-operators-managed.png",
+      "sha256": "5dee755ada7b69e8d7c23851c0ddeadeb9b0b0df614722750de2904b9d1ba215",
+      "capturedAt": "2026-10-24T22:13:50.695Z",
+      "actuallyViewed": true,
+      "nativeScreenLegible": true,
+      "personAndContactCellsMasked": true,
+      "fullCaptionPrefixReadable": false,
+      "publicParkLabelsRetained": true
+    }
+  ],
+  "localEvidence": "local-release.json",
+  "sourceManifestSha256": "b5890d7d8f500c092c08d7a5a2c7f04117b6be5f39a706a96d24ecee7be05c2e",
+  "ciCompilerReviewSha256": "3bf4ea243f3b49ab6b753d4ff29e46eb88e990fceda31d3d82932a0898ec1edb",
+  "independentStagingReviewSha256": "479cee812e198865c6df77f079ca287104b19d100767251352c041d3137c8762",
+  "containerCleanupSha256": "01bfd7387840e1570f91dca3a9fab9c3c98e155331a8430db58cc3189eb6cef8",
+  "unmodifiedFlagHelpers": {
+    "builderSha256": "aaf5315fbd9e52386283cded32221d83866868b48544b8c39c8d0f2a3d511e5f",
+    "executorSha256": "e0a6949308d6c9242e4e60d0baacaefc9e60d91a9e3a2d7a2b227868ba63ea8e"
+  },
+  "retainedFailures": {
+    "firstCollection": "first-public-collection.json",
+    "firstNativePreflight": "first-native-preflight.json",
+    "offlineRed": "proof-helper-red.json"
+  },
+  "jira": {
+    "status": "Testing",
+    "commentId": "12559",
+    "screenshotsAttached": false
+  }
+}

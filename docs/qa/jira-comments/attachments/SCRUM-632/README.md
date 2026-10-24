@@ -1,0 +1,26 @@
+# SCRUM-632 managed OTO App administration
+
+Source: `6b429d4bd8f98b1508a5a785ed78655ec3cc95d5`. All six jobs in CI `40134954679` passed. API, Admin and OTO App automatically deployed that exact source. [release.json](release.json) records deployment IDs, exact finish times and proof hashes. Actual native staging proof completed 2026-10-24T22:14:42.329Z.
+
+Users, Access and Operators retain their approved native lists. With management off, their original controls remain. With management enabled, each screen shows Managed in Admin and Open Admin, removes write controls or disables module checkboxes, and retains the same list identities and checkbox values. The executed link checks require the Admin origin and Accounts, Roles or Operators destination; no destination-page arrival is claimed. Local HTTP tests separately cover mixed target flags and the alternate administration writers.
+
+The proof used the existing demo administrator and one empty ZZ TEST legal entity, created after the deployment. It enabled and disabled only that fixture's app-owned flag through source-bound jobs. The three safe native probes were empty POST users, unchanged-name PATCH of the test entity, and a missing-person bulk permission request. Each returned the exact managed409 response and unchanged canonical readbacks. No account invitation or employee edit occurred. The original actor, complete linked employee row, branch reach, grants, identity and preferences hashes match after restoration. The fixture is now archived, flag-off and empty.
+
+All 29 dispatched operations (27 HTTP and two jobs) settled with known outcomes. All eight app/platform contexts signed out200 and then answered current-user401. Ten source checks passed; unknown effects, unresolved dispatches, pending requests and browser/network/console errors are zero. [staging.json](staging.json) records the actual result.
+
+Both reviewers actually viewed all six native PNGs. The relevant lists, managed notice and off/on control differences are legible, with person/contact/last-login cells masked. The fixed sidebar covers the left caption/source prefix; timestamps remain readable and complete source bindings are recorded in JSON. Native internal scrolling means the screenshots do not show every user row. Public park labels remain visible. The exact external font stylesheet and actor photo were privacy-suppressed, so their original rendering is untested. PNG files were not edited; application HTML, JavaScript and API responses retained their deployed bytes and values. Privacy masking and the font/photo suppression above are explicit.
+
+| Actual staging screenshot | Captured UTC |
+|---|---|
+| [SCRUM-632-01-users-flag-off.png](SCRUM-632-01-users-flag-off.png) | 2026-10-24T22:12:08.581Z |
+| [SCRUM-632-02-permissions-flag-off.png](SCRUM-632-02-permissions-flag-off.png) | 2026-10-24T22:12:17.456Z |
+| [SCRUM-632-03-operators-flag-off.png](SCRUM-632-03-operators-flag-off.png) | 2026-10-24T22:12:26.616Z |
+| [SCRUM-632-04-users-managed.png](SCRUM-632-04-users-managed.png) | 2026-10-24T22:13:34.286Z |
+| [SCRUM-632-05-permissions-managed.png](SCRUM-632-05-permissions-managed.png) | 2026-10-24T22:13:42.068Z |
+| [SCRUM-632-06-operators-managed.png](SCRUM-632-06-operators-managed.png) | 2026-10-24T22:13:50.695Z |
+
+Local release: 5,301 API cases pass across 355 files, with 3 skips and 5 todos; all 29 app build/runtime commands, 19 React cases, 46 native HTTP cases and 30 alternate HTTP cases, post-rebase 66 boundary cases and mapping suite pass. API compiler emits zero diagnostics. The whole local and 668-line CI app compiler review retain 418 diagnostics/54files/109buckets with no increase; all diagnostic headers match, with one continuation path/type-display difference recorded. Forced scoped app lint has zero new errors, with 11 inherited errors versus 12 and 374 warnings. The 054-to-b589 bridge changes only eight API tests, retaining exact app/production/dependency bytes. Earlier failed source attempts remain recorded in [local-release.json](local-release.json).
+
+QA helper failures remain separate: the first public collection stopped before auth on two existing app-shell paths; exact path additions have actual 17 passing and 4 failing cases before the fix, then all 21 passing. The first native preflight stopped before fixture creation because the demo administrator had an existing employee link; its sessions closed. The revised helper binds the complete exact own employee row and replaces the profile-edit probe with an invalid empty create request. Actual identical-test 23 passing and 9 failing cases before the fix, then all 32 passing and independent review are recorded. Initial malformed offline fixture and canonical-shadow attempts are retained externally as failures. Application source and guards were unchanged by these QA corrections.
+
+Both own local test containers were removed, preserving all ten other/shared containers (three running), images, volumes and networks. No SMS, payment, check-in, hardware or channel-mode action occurred. Jira remains Testing until the inspected, committed screenshots are attached and named in outcome 12559. The owner retains final acceptance.

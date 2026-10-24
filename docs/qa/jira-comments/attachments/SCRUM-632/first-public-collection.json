@@ -1,0 +1,266 @@
+{
+  "ticket": "SCRUM-632",
+  "purpose": "public-static-asset-collection",
+  "complete": false,
+  "reviewed": false,
+  "actualPublicCollection": true,
+  "productionSourceSha": "6b429d4bd8f98b1508a5a785ed78655ec3cc95d5",
+  "ciRunId": "40134954679",
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "deployId": "dep-dbeii8qjnfac73dspd1g",
+      "sourceSha": "6b429d4bd8f98b1508a5a785ed78655ec3cc95d5",
+      "finishedAt": "2026-10-24T21:57:44.330788Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "deployId": "dep-dbeii92jnfac73dspf5g",
+      "sourceSha": "6b429d4bd8f98b1508a5a785ed78655ec3cc95d5",
+      "finishedAt": "2026-10-24T21:55:29.495975Z"
+    },
+    {
+      "name": "oto-app-staging",
+      "deployId": "dep-dbeii8qjnfac73dspe00",
+      "sourceSha": "6b429d4bd8f98b1508a5a785ed78655ec3cc95d5",
+      "finishedAt": "2026-10-24T21:57:35.023933Z"
+    }
+  ],
+  "origin": "https://oto-app-staging.onrender.com",
+  "startedAt": "2026-10-24T21:58:10.245Z",
+  "helperSha256": "7f578ae0b351712e2526797c13cc1ea9a5ef43c6c0924bb6371c553a525953c5",
+  "planSha256": "27708a412b6888c9e90a0485b456d7508f55bd1981584c2dea7326301bf11d5b",
+  "dependencyPins": {
+    "C:/w/admin630-feature-release.mjs": "43b64d3d5455b5d94be5c0829b257f241a968f5015a1e58a31fb3d7fd06dd3e9",
+    "C:/w/admin631-proof.mjs": "c4bcd6a21ef69df48f17dbcf84117196a5b5e85a48597f6d731de37b541abbe8",
+    "C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/render.mjs": "38c0624969c762a5d93de2a0ab0675e98c7a265e8dde750a51c25d1a5a9826b7",
+    "C:/w/admin632-browser-rehearsal/result.json": "3cb4f63d9d5d3c6029fdac716940f096275a12f03db73fda50d2809ffb3d544e",
+    "C:/w/admin632-capture-template.json": "0b18549af0e62dd5995f8536a9fe8dcc224d1921def88b596ef466378cc6cb60"
+  },
+  "limits": {
+    "assets": 1500,
+    "fileBytes": 16000000,
+    "totalBytes": 160000000,
+    "timeoutMs": 30000
+  },
+  "retries": 0,
+  "redirects": 0,
+  "applicationAuthRequests": 0,
+  "applicationApiRequests": 0,
+  "businessWrites": 0,
+  "privatePhotoRequests": 0,
+  "externalFontRequests": 0,
+  "publicRequests": 1,
+  "publicBytesCollected": 1043,
+  "sourceChecks": 1,
+  "before": {
+    "headSha": "6b429d4bd8f98b1508a5a785ed78655ec3cc95d5",
+    "status": "completed",
+    "conclusion": "success",
+    "jobs": [
+      {
+        "name": "api-tests (1)",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "api-tests (2)",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "api-tests (3)",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "ci",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "oto-app",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "pos-tests",
+        "status": "completed",
+        "conclusion": "success"
+      }
+    ],
+    "deployments": [
+      {
+        "name": "oto-api-staging",
+        "id": "dep-dbeii8qjnfac73dspd1g",
+        "sourceSha": "6b429d4bd8f98b1508a5a785ed78655ec3cc95d5",
+        "status": "live",
+        "finishedAt": "2026-10-24T21:57:44.330788Z"
+      },
+      {
+        "name": "oto-console-staging",
+        "id": "dep-dbeii92jnfac73dspf5g",
+        "sourceSha": "6b429d4bd8f98b1508a5a785ed78655ec3cc95d5",
+        "status": "live",
+        "finishedAt": "2026-10-24T21:55:29.495975Z"
+      },
+      {
+        "name": "oto-app-staging",
+        "id": "dep-dbeii8qjnfac73dspe00",
+        "sourceSha": "6b429d4bd8f98b1508a5a785ed78655ec3cc95d5",
+        "status": "live",
+        "finishedAt": "2026-10-24T21:57:35.023933Z"
+      }
+    ]
+  },
+  "assets": [
+    {
+      "path": "/index.html",
+      "canonicalUrl": "https://oto-app-staging.onrender.com/index.html",
+      "sha256": "ab5f719e201210714c3fe3f16fe92fcac3035f558d7f9764ca1adf6b3250a864",
+      "byteLength": 1043,
+      "contentType": "text/html; charset=UTF-8",
+      "capturedAt": "2026-10-24T21:58:10.396Z"
+    }
+  ],
+  "localReferenceAssets": [
+    {
+      "path": "/assets/archive-xsu4XcR9.js",
+      "sha256": "93b977be4f18b25ef9ba0af3583d7b36d0425859294b6bf6f90758f697f847e1",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/assets/checkbox-CcEOtizx.js",
+      "sha256": "2058a7232d0651992866b13435932f1648e656825b0f3019a4d8df81ca84b6d4",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/assets/chevron-up-D8oe4vgJ.js",
+      "sha256": "da722e359638630223ad71d1492df00c8858c21b0c21f6c016e30e6ba91b69e0",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/assets/ellipsis-CrDn6kY-.js",
+      "sha256": "e7b57af0b0c0874e9f337789a21cc98579c71bbdc79a2f2090967f3f073fb34d",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/assets/format-B23bbH_D.js",
+      "sha256": "118dd8db41ffcab04f688d16863bef42ada78f905e9039ceb558dbd7e177acb7",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/assets/format-utils-DIALqgSw.js",
+      "sha256": "ac2c1646dab7e08c2f3fff762174f09d0a79192f4957c4b4f513217b9452ac14",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/assets/index-Bq2kTkIV.js",
+      "sha256": "98d7fd91bda3bada154d9090dcb2e15e387954331e3a026fdcaa313a91e938b7",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/assets/index-C7hA-f0U.js",
+      "sha256": "4f70aa6119a840ddb63a773914f7e0968c4c54570ae142b718d9618f857d530a",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/assets/index-Dgpt_dBt.css",
+      "sha256": "eee83fead8c8da9947239254bc180e2b97ec09835484279c92e85c5b9f67120b",
+      "type": "text/css"
+    },
+    {
+      "path": "/assets/log-in-6GftZDce.js",
+      "sha256": "04af7bdca71c6ca77e9515b9aa2389c9934f4a3e361048133be6aaf1fe416608",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/assets/managed-in-admin-notice-6rEnESJT.js",
+      "sha256": "80e587becf10526311041ab9a9ecfd69b0097f644cca48ceb4798cb5924252e9",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/assets/operators-page-D6vIg3A6.js",
+      "sha256": "0676c37d26b80e90a73719167726343eca5dba165bb5370848ba90e0e4c1ae68",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/assets/other-apps-CfLt9sLM.js",
+      "sha256": "4e5724af8d5f1c3ad5fde9df5cb9ff85e914b1bc009847f345a2f362b886863b",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/assets/parseISO-C75Bq5q-.js",
+      "sha256": "eb4f137ded8358bea91a468cfa9341e6c6ea8f8fd263d9f32221b216d216e680",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/assets/pencil-C7dgF2RA.js",
+      "sha256": "78cae29138a9d9b49ba44af8d604a809d1ceb007c8c99dc6a5860d1d51c8e28d",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/assets/permissions-page-CHPsP_Lv.js",
+      "sha256": "d70d2e7a583cca6ca97eed214b531dd47a76ccb0a32cf6397f255aeac697a2de",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/assets/select-CWLbEHgX.js",
+      "sha256": "3ef234a057cb6679d754e55fdd824243fb87242928a1bce9d7ec80f463ac8d40",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/assets/square-pen-yR1CrX4i.js",
+      "sha256": "490cbf2ee62c0aba1b95c4c92bebd129dbb7bc39d2d47df7097cb1165e70369b",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/assets/suite-sign-in-CypSkh0Q.js",
+      "sha256": "d2397f8aabf6fd2d041a03653a43df9999f36dd01b45cb025d8a0b2b009ea758",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/assets/switch-CcspZc4M.js",
+      "sha256": "5e9a89b6429d75cf831d012ada26941f914cc7e8d4336b2e37b496f39b52c74c",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/assets/table-BrEUFtif.js",
+      "sha256": "e54892304c47909e3e48a4df0645e8c7af3fcbedf27d16c55f0f0881dbbe3ed9",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/assets/user-check-Br9Qw45f.js",
+      "sha256": "094ee5a2cc9c179d3963577db29d2a52ad1db10d6f826a64b67e6711f15261ef",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/assets/user-x-BgeFkdHz.js",
+      "sha256": "df43550997ee0235f632bcf4d29ab17239647d79d782e88b611708ad90e7e65a",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/assets/users-page-D4d78TYv.js",
+      "sha256": "cf81065c0e274ef82c0e87ce1a1645bc85702ac37d8f06d7c4def8c461f42d82",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/favicon.png",
+      "sha256": "5b4ac1778d0ff13a8e0ca39c93a0e9914cc4af785b415ce226a03364be33c13a",
+      "type": "image/png"
+    },
+    {
+      "path": "/index.html",
+      "sha256": "c392b7f05b0c358ecc09d33a503dfaf11b67fcb9c069fa70861bad9274c0bd59",
+      "type": "text/html"
+    },
+    {
+      "path": "/oto-logo.png",
+      "sha256": "5b4ac1778d0ff13a8e0ca39c93a0e9914cc4af785b415ce226a03364be33c13a",
+      "type": "image/png"
+    }
+  ],
+  "referenceCoverage": [],
+  "failedAt": "2026-10-24T21:58:10.397Z",
+  "failureCode": "NON_ENUMERATED_PUBLIC_STATIC_REFERENCE"
+}

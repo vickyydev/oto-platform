@@ -1,0 +1,40 @@
+{
+  "ticket": "SCRUM-632",
+  "purpose": "offline-linked-employee-proof-adaptation",
+  "mode": "green-final",
+  "startedAt": "2026-10-24T22:09:46.496Z",
+  "completedAt": "2026-10-24T22:09:46.630Z",
+  "exitCode": 0,
+  "signal": null,
+  "logSha256": "260ba90fbae17d5ef201c6a7dcdec2f85b0b36b2fe3ddaaf44074246e611091e",
+  "inputs": [
+    {
+      "file": "admin632-proof-linked-employee.test.mjs",
+      "sha256": "a5c9c508ab7de0de46da9c67d0b06e4d99077e6e03a640e92798803b9085ce1e"
+    },
+    {
+      "file": "admin632-proof.test.mjs",
+      "sha256": "469d2aeeb697501fa98da75366242c17ad6e1c6fd209cba366b85204bf960943"
+    },
+    {
+      "file": "admin632-proof-auth-review.test.mjs",
+      "sha256": "d7db1a69554acb95edbff3f23f01bba49831def04d2e5d2b932d1d465b05aa02"
+    },
+    {
+      "file": "admin632-static-app-shell.test.mjs",
+      "sha256": "73f66ca15b3ca0eab31f34bfe9c98dddf31f4814b398b5ed3b5f8ece2942ea21"
+    },
+    {
+      "file": "admin632-collect-assets.test.mjs",
+      "sha256": "be9faf6ea25b23b73fee8863ebed31675508fb7adebd22a432455b07b39558dc"
+    },
+    {
+      "file": "admin632-proof.mjs",
+      "sha256": "235f67c8f51adc3bbda309a0f7ed6d332f7972192171ec5a0689f7ed1d57c3e3"
+    }
+  ],
+  "inputsUnchanged": true,
+  "offline": true,
+  "staging": false,
+  "network": false
+}

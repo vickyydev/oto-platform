@@ -1,0 +1,43 @@
+{
+  "approved": true,
+  "ticket": "SCRUM-632",
+  "purpose": "native-managed-administration-proof",
+  "sourceSha": "6b429d4bd8f98b1508a5a785ed78655ec3cc95d5",
+  "ciRunId": "40134954679",
+  "helperSha256": "235f67c8f51adc3bbda309a0f7ed6d332f7972192171ec5a0689f7ed1d57c3e3",
+  "actor": {
+    "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+    "userId": "01a0be02-edd6-726a-aa9c-5204343e636e",
+    "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+    "tenantId": "681b18d1-4c75-415d-9271-5fe3afc30993"
+  },
+  "runId": "4ec76a67-3e9a-41fa-aeb1-a10f975b6e20",
+  "fixtureName": "ZZ TEST SCRUM-632 4ec76a67-3e9a-41fa-aeb1-a10f975b6e20",
+  "missingPersonId": "9d416f10-f2de-46c2-a4a0-2db69ebcd5c5",
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "deployId": "dep-dbeii8qjnfac73dspd1g",
+      "sourceSha": "6b429d4bd8f98b1508a5a785ed78655ec3cc95d5",
+      "finishedAt": "2026-10-24T21:57:44.330788Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "deployId": "dep-dbeii92jnfac73dspf5g",
+      "sourceSha": "6b429d4bd8f98b1508a5a785ed78655ec3cc95d5",
+      "finishedAt": "2026-10-24T21:55:29.495975Z"
+    },
+    {
+      "name": "oto-app-staging",
+      "deployId": "dep-dbeii8qjnfac73dspe00",
+      "sourceSha": "6b429d4bd8f98b1508a5a785ed78655ec3cc95d5",
+      "finishedAt": "2026-10-24T21:57:35.023933Z"
+    }
+  ],
+  "appServiceId": "srv-danppvjtqb8s73cnvua0",
+  "databaseRoleSha256": "7b4cc2189b760f3380801bef5afc05b4bce7b23f774c29aec26ac7b44eeb5f20",
+  "captureSpecSha256": "5883366f076229e7f6f41086f12fa13b42d8faf7a00c297a3a6f1fab3ba5f69b",
+  "receiptPath": "C:/w/admin632-staging-results-v2.json",
+  "journalPath": "C:/w/admin632-staging-intents-v2.jsonl",
+  "imageDirectory": "C:/w/admin632-proof-images-v2"
+}

@@ -1,0 +1,434 @@
+{
+  "ticket": "SCRUM-632",
+  "reviewedAt": "2026-10-24T22:17:37.266430+00:00",
+  "reviewKind": "INDEPENDENT_FINAL_NATIVE_IMAGES_AND_TERMINAL_RECEIPT_REVIEW",
+  "passed": true,
+  "scope": "Bounded actual632 native flag-off/managed staging proof and cleanup; not owner Done acceptance.",
+  "sourceSha": "6b429d4bd8f98b1508a5a785ed78655ec3cc95d5",
+  "ciRunId": "40134954679",
+  "startedAt": "2026-10-24T22:11:41.056Z",
+  "completedAt": "2026-10-24T22:14:42.329Z",
+  "wholeTerminalReceiptRead": true,
+  "bindings": [
+    {
+      "path": "C:/w/admin632-staging-results-v2.json",
+      "sha256": "ca119eee4bbfd54393c22e66fc4f7d107ca92902d2fde8940a22d9b832d2126b",
+      "bytes": 22783
+    },
+    {
+      "path": "C:/w/admin632-proof-plan-v2.json",
+      "sha256": "5c85e94a7d44229edcaf1d079fbd95cb82f001d24d6fc01df8a5683ccd963584",
+      "bytes": 1743
+    },
+    {
+      "path": "C:/w/admin632-proof.mjs",
+      "sha256": "235f67c8f51adc3bbda309a0f7ed6d332f7972192171ec5a0689f7ed1d57c3e3",
+      "bytes": 41705
+    },
+    {
+      "path": "C:/w/admin632-capture-reviewed.json",
+      "sha256": "586d688a248730a861618a68f38fb16ed47cfd78b836ae3d1188e251a650f459",
+      "bytes": 59072
+    },
+    {
+      "path": "C:/w/admin632-staging-intents-v2.jsonl",
+      "sha256": "6cbbdbe1d69aa90f1318ba4230eda06b5e8bbc88508f022b86b1cee80ce574a5",
+      "bytes": 24717
+    },
+    {
+      "path": "C:/w/admin632-execute-proof.mjs",
+      "sha256": "22e3b1ff0cd84644064ba17cc0b629a39c2f0d6284d65a48a367174b3fe1c4ef",
+      "bytes": 2071
+    },
+    {
+      "path": "C:/w/admin632-source-pushed.json",
+      "sha256": "99b978ac083c75c8cf8b8dac472bcdfb068afb7f22db6ba07a371d732251d94b",
+      "bytes": 216
+    },
+    {
+      "path": "C:/w/admin632-ci-run.json",
+      "sha256": "eaf0d89f882ede0741716ad8c35e2e030365dc4e0fbeb0ec567dab923cbd6313",
+      "bytes": 40466
+    },
+    {
+      "path": "C:/w/admin632-live-deployments.json",
+      "sha256": "1ade432b6426cac9bbd8973e9c243f189ee5966026d5bf6e889b822f86f9ae57",
+      "bytes": 1032
+    },
+    {
+      "path": "C:/w/admin632-public-assets-v2/receipt.json",
+      "sha256": "b67f5fdfad15f1da841222c06162c34ec4dee9fa969ec495478d1bc711dc247d",
+      "bytes": 120062
+    },
+    {
+      "path": "C:/w/admin632-flag-job.mjs",
+      "sha256": "aaf5315fbd9e52386283cded32221d83866868b48544b8c39c8d0f2a3d511e5f",
+      "bytes": 10670
+    },
+    {
+      "path": "C:/w/admin632-flag-executor.mjs",
+      "sha256": "e0a6949308d6c9242e4e60d0baacaefc9e60d91a9e3a2d7a2b227868ba63ea8e",
+      "bytes": 14984
+    }
+  ],
+  "release": {
+    "sixExactSourceGreenJobs": [
+      {
+        "name": "api-tests (1)",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "api-tests (3)",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "api-tests (2)",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "oto-app",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "ci",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "pos-tests",
+        "status": "completed",
+        "conclusion": "success"
+      }
+    ],
+    "threeLatestLive": [
+      {
+        "name": "oto-api-staging",
+        "serviceId": "srv-danh2ljtqb8s73bt9en0",
+        "deployId": "dep-dbeii8qjnfac73dspd1g",
+        "sourceSha": "6b429d4bd8f98b1508a5a785ed78655ec3cc95d5",
+        "status": "live",
+        "finishedAt": "2026-10-24T21:57:44.330788Z"
+      },
+      {
+        "name": "oto-console-staging",
+        "serviceId": "srv-danng2p42hec73f38e3g",
+        "deployId": "dep-dbeii92jnfac73dspf5g",
+        "sourceSha": "6b429d4bd8f98b1508a5a785ed78655ec3cc95d5",
+        "status": "live",
+        "finishedAt": "2026-10-24T21:55:29.495975Z"
+      },
+      {
+        "name": "oto-app-staging",
+        "serviceId": "srv-danppvjtqb8s73cnvua0",
+        "deployId": "dep-dbeii8qjnfac73dspe00",
+        "sourceSha": "6b429d4bd8f98b1508a5a785ed78655ec3cc95d5",
+        "status": "live",
+        "finishedAt": "2026-10-24T21:57:35.023933Z"
+      }
+    ],
+    "recordedProofSourceChecks": 10,
+    "publicAssetCount": 269,
+    "captureSpecDigestSha256": "5883366f076229e7f6f41086f12fa13b42d8faf7a00c297a3a6f1fab3ba5f69b"
+  },
+  "identities": {
+    "actor": {
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "userId": "01a0be02-edd6-726a-aa9c-5204343e636e",
+      "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+      "tenantId": "681b18d1-4c75-415d-9271-5fe3afc30993"
+    },
+    "runId": "4ec76a67-3e9a-41fa-aeb1-a10f975b6e20",
+    "fixture": {
+      "id": "10f438b7-f427-442c-9b27-0d7a1013cc5b",
+      "tenantId": "681b18d1-4c75-415d-9271-5fe3afc30993",
+      "name": "ZZ TEST SCRUM-632 4ec76a67-3e9a-41fa-aeb1-a10f975b6e20",
+      "createdAt": "2026-10-24T22:11:47.254Z"
+    },
+    "missingPersonId": "9d416f10-f2de-46c2-a4a0-2db69ebcd5c5",
+    "linkedEmployeeContentsPersisted": false,
+    "initialStableHashes": {
+      "raw": "54c6181eb693c56d05b15c21e6adce121d80122588b5d5da2c8a4c649251e584",
+      "role": "admin",
+      "linkedEmployee": "6ff40f187882c25e086214a8a4247779ea4bebf984277405dbed90fad3384244",
+      "branches": "8849595515322b20fea31ca8914abc597c333c93b79f5a1d64b0a8af630ea1d9",
+      "grants": "a4e1d0a281328a513fdc93e83f481786d185a5b441327aad6d969fd4e05496e7",
+      "effective": "3cc009df5bfbc2118629c2572ca65816af55a72f040b8dc1a700cb23f06c5a05",
+      "identity": "d46a794f42b9ce171966b57c324d781f44062b1f32127e87f2e87e3dc1bedd35",
+      "preferences": "04c29acf26b1794899aaef81cd608601b59e9159bbf020d49ac1c1474758738c"
+    }
+  },
+  "operations": {
+    "total": 29,
+    "http": 27,
+    "jobs": [
+      {
+        "label": "flag-on",
+        "kind": "job",
+        "fixtureId": "10f438b7-f427-442c-9b27-0d7a1013cc5b",
+        "jobId": "job-dbeiqlq9lscs73b9ugr0",
+        "outcome": "terminal_known",
+        "settledAt": "2026-10-24T22:13:20.471Z"
+      },
+      {
+        "label": "flag-off",
+        "kind": "job",
+        "fixtureId": "10f438b7-f427-442c-9b27-0d7a1013cc5b",
+        "jobId": "job-dbeireks728c73ccm9b0",
+        "outcome": "terminal_known",
+        "settledAt": "2026-10-24T22:14:32.562Z"
+      }
+    ],
+    "authHttp": 20,
+    "businessHttp": 7,
+    "strictSafeProbes": [
+      {
+        "label": "probe-user",
+        "status": 409,
+        "strictManagedResponse": true,
+        "canonicalUnchanged": true,
+        "checkedAt": "2026-10-24T22:13:58.273Z"
+      },
+      {
+        "label": "probe-operator",
+        "status": 409,
+        "strictManagedResponse": true,
+        "canonicalUnchanged": true,
+        "checkedAt": "2026-10-24T22:14:01.289Z"
+      },
+      {
+        "label": "probe-bulk",
+        "status": 409,
+        "strictManagedResponse": true,
+        "canonicalUnchanged": true,
+        "checkedAt": "2026-10-24T22:14:05.337Z"
+      }
+    ],
+    "userProbeIsOnlyInvalidEmptyPost": true,
+    "employeeOrUserPatchDispatched": false,
+    "allKnownTerminal": true,
+    "durablePotentialDispatches": 21,
+    "allHaveMatchingTerminal": true
+  },
+  "cleanup": {
+    "actorRestored": true,
+    "originalHashesMatch": true,
+    "fixtureArchived": true,
+    "fixtureFlagOff": true,
+    "fixtureEmpty": true,
+    "sessions": 8,
+    "appSessions": 4,
+    "platformSessions": 4,
+    "allSignOut200CurrentUser401": true,
+    "authCleanup": [
+      {
+        "alias": "ADMIN",
+        "app": "app",
+        "contextRef": "06972d7e-3759-47ee-875e-ba87c4e68a37",
+        "attempted": true,
+        "signOutStatus": 200,
+        "meStatus": 401,
+        "confirmed": true
+      },
+      {
+        "alias": "ADMIN",
+        "app": "platform",
+        "contextRef": "75d70a1f-901a-4397-9b2a-bcd40df708b7",
+        "attempted": true,
+        "signOutStatus": 200,
+        "meStatus": 401,
+        "confirmed": true
+      },
+      {
+        "alias": "ADMIN",
+        "app": "app",
+        "contextRef": "9398a29b-864b-4f14-a68c-157e747ff0fb",
+        "attempted": true,
+        "signOutStatus": 200,
+        "meStatus": 401,
+        "confirmed": true
+      },
+      {
+        "alias": "ADMIN",
+        "app": "platform",
+        "contextRef": "5726780b-a1fb-405c-82c4-7831e3d6e42b",
+        "attempted": true,
+        "signOutStatus": 200,
+        "meStatus": 401,
+        "confirmed": true
+      },
+      {
+        "alias": "ADMIN",
+        "app": "app",
+        "contextRef": "771709cb-2d16-46f4-811a-4aae6550da48",
+        "attempted": true,
+        "signOutStatus": 200,
+        "meStatus": 401,
+        "confirmed": true
+      },
+      {
+        "alias": "ADMIN",
+        "app": "platform",
+        "contextRef": "d09ccdb7-6e6a-47c5-963f-f94cee305a89",
+        "attempted": true,
+        "signOutStatus": 200,
+        "meStatus": 401,
+        "confirmed": true
+      },
+      {
+        "alias": "ADMIN",
+        "app": "app",
+        "contextRef": "c05ca4cc-a439-4863-b833-3c118b267047",
+        "attempted": true,
+        "signOutStatus": 200,
+        "meStatus": 401,
+        "confirmed": true
+      },
+      {
+        "alias": "ADMIN",
+        "app": "platform",
+        "contextRef": "28badcea-5056-48e2-a5f0-76c7d6f37815",
+        "attempted": true,
+        "signOutStatus": 200,
+        "meStatus": 401,
+        "confirmed": true
+      }
+    ],
+    "unresolvedDispatches": 0,
+    "unknownEffect": false,
+    "journalBroken": false,
+    "pendingAtEnd": 0,
+    "network": {
+      "blocked": 0,
+      "failed": 0,
+      "pageErrors": 0,
+      "consoleErrors": 0
+    }
+  },
+  "visual": {
+    "images": [
+      {
+        "path": "C:/w/admin632-proof-images-v2/SCRUM-632-01-users-flag-off.png",
+        "sha256": "b7823a963691b228d3948a8d676a9310a2f4d3982d8df83a293c949e85a7f22b",
+        "bytes": 149715,
+        "filename": "SCRUM-632-01-users-flag-off.png",
+        "phase": "off",
+        "pathname": "/users",
+        "capturedAt": "2026-10-24T22:12:08.581Z",
+        "width": 1600,
+        "height": 1262,
+        "actuallyViewedAtOriginalResolution": true,
+        "privacyVisiblePersonalOrContactValuesFound": false,
+        "maskCount": 54,
+        "fontSuppressions": 1,
+        "privatePhotoSuppressions": 1
+      },
+      {
+        "path": "C:/w/admin632-proof-images-v2/SCRUM-632-02-permissions-flag-off.png",
+        "sha256": "d362992b878c190a06f3c2decb65214f981be48504b0166136217839b072d145",
+        "bytes": 106505,
+        "filename": "SCRUM-632-02-permissions-flag-off.png",
+        "phase": "off",
+        "pathname": "/permissions",
+        "capturedAt": "2026-10-24T22:12:17.456Z",
+        "width": 1600,
+        "height": 1262,
+        "actuallyViewedAtOriginalResolution": true,
+        "privacyVisiblePersonalOrContactValuesFound": false,
+        "maskCount": 21,
+        "fontSuppressions": 1,
+        "privatePhotoSuppressions": 1
+      },
+      {
+        "path": "C:/w/admin632-proof-images-v2/SCRUM-632-03-operators-flag-off.png",
+        "sha256": "0653dc41bf6f03870d1ab7b7b42c61b2371f041d3d156f6b170a3ab24c85427f",
+        "bytes": 121976,
+        "filename": "SCRUM-632-03-operators-flag-off.png",
+        "phase": "off",
+        "pathname": "/operators",
+        "capturedAt": "2026-10-24T22:12:26.616Z",
+        "width": 1600,
+        "height": 1262,
+        "actuallyViewedAtOriginalResolution": true,
+        "privacyVisiblePersonalOrContactValuesFound": false,
+        "maskCount": 13,
+        "fontSuppressions": 1,
+        "privatePhotoSuppressions": 1
+      },
+      {
+        "path": "C:/w/admin632-proof-images-v2/SCRUM-632-04-users-managed.png",
+        "sha256": "7cc902478ebb54bfb5479daa0d6a8eba95d5301f4440ec0f98a34b2f1192f815",
+        "bytes": 151899,
+        "filename": "SCRUM-632-04-users-managed.png",
+        "phase": "on",
+        "pathname": "/users",
+        "capturedAt": "2026-10-24T22:13:34.286Z",
+        "width": 1600,
+        "height": 1262,
+        "actuallyViewedAtOriginalResolution": true,
+        "privacyVisiblePersonalOrContactValuesFound": false,
+        "maskCount": 54,
+        "fontSuppressions": 1,
+        "privatePhotoSuppressions": 1
+      },
+      {
+        "path": "C:/w/admin632-proof-images-v2/SCRUM-632-05-permissions-managed.png",
+        "sha256": "b97fb922c26f8f9bdddb81da5c4686b97a1ab3b00e7bd476f59d8201dc0cef90",
+        "bytes": 108401,
+        "filename": "SCRUM-632-05-permissions-managed.png",
+        "phase": "on",
+        "pathname": "/permissions",
+        "capturedAt": "2026-10-24T22:13:42.068Z",
+        "width": 1600,
+        "height": 1262,
+        "actuallyViewedAtOriginalResolution": true,
+        "privacyVisiblePersonalOrContactValuesFound": false,
+        "maskCount": 21,
+        "fontSuppressions": 1,
+        "privatePhotoSuppressions": 1
+      },
+      {
+        "path": "C:/w/admin632-proof-images-v2/SCRUM-632-06-operators-managed.png",
+        "sha256": "5dee755ada7b69e8d7c23851c0ddeadeb9b0b0df614722750de2904b9d1ba215",
+        "bytes": 117378,
+        "filename": "SCRUM-632-06-operators-managed.png",
+        "phase": "on",
+        "pathname": "/operators",
+        "capturedAt": "2026-10-24T22:13:50.695Z",
+        "width": 1600,
+        "height": 1262,
+        "actuallyViewedAtOriginalResolution": true,
+        "privacyVisiblePersonalOrContactValuesFound": false,
+        "maskCount": 13,
+        "fontSuppressions": 1,
+        "privatePhotoSuppressions": 1
+      }
+    ],
+    "allSixActuallyViewed": true,
+    "nativeHeadingsAndListsLegible": true,
+    "flagOffControlsVisible": {
+      "users": "Create User and per-row menus",
+      "permissions": "Edit icons and existing module selections",
+      "operators": "Add/Edit/Archive including exact ZZ TEST fixture"
+    },
+    "managedControlsAbsent": true,
+    "allThreeManagedNoticesAndOpenAdminTextVisible": true,
+    "permissionCheckboxesVisiblyDisabledWithSameSelections": true,
+    "allSixCanonicalListHashesEqual": true,
+    "privacy": "Users name/email/login-date cells, Access names, identity/media areas and other operator titles are blanked; no personal/contact values were seen in any of the six actual images.",
+    "caption": "Fixed sidebar obscures the left caption/source prefix. Capture timestamps are visible. Full source SHA is bound in the receipt/plan/image metadata, not fully legible in the PNG caption.",
+    "publicLabels": "A public park/branch label remains visible on both Operators images; the exact ZZ TEST fixture name remains visible.",
+    "linkTargets": "PNGs show Open Admin link text. Exact Console origin/destinations were asserted by the bound live helper; targets cannot be inferred from pixels alone.",
+    "renderExceptions": "Each image suppresses one exact external font stylesheet and one known actor photo request. Screens show native app layout/data with privacy masks and a caption; they do not demonstrate original font/photo rendering."
+  },
+  "limits": [
+    "Reviewer performed no authentication, network, browser, staging operation, replay or test during this final review; only this external report was written.",
+    "Cleanup and unchanged canonical authority/employee fingerprints are conclusions from the complete terminal receipt and bound executed helper, not a second reviewer-owned staging read.",
+    "The three representative safe denial probes passed; this receipt does not enumerate every protected route or replace the source/CI test suites.",
+    "The approved capture spec retains selector/read-rule provenance from a local synthetic rehearsal; actual269 production public hashes and native screenshots are separately source-bound.",
+    "Prior failed public collection and prefixture actor-assumption attempts remain separate evidence and are not relabelled as this successful run."
+  ]
+}

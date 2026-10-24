@@ -1,0 +1,143 @@
+{
+  "ticket": "SCRUM-632",
+  "sourceSha": "6b429d4bd8f98b1508a5a785ed78655ec3cc95d5",
+  "ciRunId": "40134954679",
+  "helperSha256": "731a7fa2bb6230c6b9be9dd79dde4ab3fa96f13c7e52be161fb80e6e17c2744d",
+  "captureSpecSha256": "5883366f076229e7f6f41086f12fa13b42d8faf7a00c297a3a6f1fab3ba5f69b",
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "deployId": "dep-dbeii8qjnfac73dspd1g",
+      "sourceSha": "6b429d4bd8f98b1508a5a785ed78655ec3cc95d5",
+      "finishedAt": "2026-10-24T21:57:44.330788Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "deployId": "dep-dbeii92jnfac73dspf5g",
+      "sourceSha": "6b429d4bd8f98b1508a5a785ed78655ec3cc95d5",
+      "finishedAt": "2026-10-24T21:55:29.495975Z"
+    },
+    {
+      "name": "oto-app-staging",
+      "deployId": "dep-dbeii8qjnfac73dspe00",
+      "sourceSha": "6b429d4bd8f98b1508a5a785ed78655ec3cc95d5",
+      "finishedAt": "2026-10-24T21:57:35.023933Z"
+    }
+  ],
+  "startedAt": "2026-10-24T22:01:59.871Z",
+  "actualStaging": true,
+  "complete": false,
+  "operations": [
+    {
+      "label": "sign-in",
+      "kind": "auth",
+      "contextRef": "47750d9a-ca74-4018-85ea-35296f78f893",
+      "method": "POST",
+      "pathname": "/api/auth/sign-in",
+      "bodySha256": null,
+      "idempotencyKeySha256": null,
+      "intentAt": "2026-10-24T22:02:01.409Z",
+      "dispatchedAt": "2026-10-24T22:02:01.411Z",
+      "status": 200,
+      "outcome": "terminal_known",
+      "cleanup": false,
+      "settledAt": "2026-10-24T22:02:02.012Z"
+    },
+    {
+      "label": "handoff-issue",
+      "kind": "auth",
+      "contextRef": "47750d9a-ca74-4018-85ea-35296f78f893",
+      "method": "POST",
+      "pathname": "/api/auth/handoff",
+      "bodySha256": null,
+      "idempotencyKeySha256": null,
+      "intentAt": "2026-10-24T22:02:02.014Z",
+      "dispatchedAt": "2026-10-24T22:02:02.016Z",
+      "status": 200,
+      "outcome": "terminal_known",
+      "cleanup": false,
+      "settledAt": "2026-10-24T22:02:02.472Z"
+    },
+    {
+      "label": "handoff-exchange",
+      "kind": "auth",
+      "contextRef": "fe67cc7f-41ec-4b8d-a803-87a8ed1a4c20",
+      "method": "POST",
+      "pathname": "/api/auth/handoff",
+      "bodySha256": null,
+      "idempotencyKeySha256": null,
+      "intentAt": "2026-10-24T22:02:02.474Z",
+      "dispatchedAt": "2026-10-24T22:02:02.475Z",
+      "status": 200,
+      "outcome": "terminal_known",
+      "cleanup": false,
+      "settledAt": "2026-10-24T22:02:02.777Z"
+    },
+    {
+      "label": "sign-out",
+      "kind": "auth",
+      "contextRef": "fe67cc7f-41ec-4b8d-a803-87a8ed1a4c20",
+      "method": "POST",
+      "pathname": "/api/logout",
+      "bodySha256": null,
+      "idempotencyKeySha256": null,
+      "intentAt": "2026-10-24T22:02:07.116Z",
+      "dispatchedAt": "2026-10-24T22:02:07.119Z",
+      "status": 200,
+      "outcome": "terminal_known",
+      "cleanup": false,
+      "settledAt": "2026-10-24T22:02:07.198Z"
+    },
+    {
+      "label": "sign-out",
+      "kind": "auth",
+      "contextRef": "47750d9a-ca74-4018-85ea-35296f78f893",
+      "method": "POST",
+      "pathname": "/api/auth/sign-out",
+      "bodySha256": null,
+      "idempotencyKeySha256": null,
+      "intentAt": "2026-10-24T22:02:07.265Z",
+      "dispatchedAt": "2026-10-24T22:02:07.266Z",
+      "status": 200,
+      "outcome": "terminal_known",
+      "cleanup": false,
+      "settledAt": "2026-10-24T22:02:07.767Z"
+    }
+  ],
+  "screenshots": [],
+  "checks": [],
+  "authCleanup": [
+    {
+      "alias": "ADMIN",
+      "app": "app",
+      "contextRef": "fe67cc7f-41ec-4b8d-a803-87a8ed1a4c20",
+      "attempted": true,
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    },
+    {
+      "alias": "ADMIN",
+      "app": "platform",
+      "contextRef": "47750d9a-ca74-4018-85ea-35296f78f893",
+      "attempted": true,
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    }
+  ],
+  "cleanup": {},
+  "sourceChecks": 2,
+  "failureCode": "EXACT_SAFE_APP_ADMIN_REQUIRED",
+  "unresolvedDispatches": 0,
+  "unknownEffect": false,
+  "journalBroken": false,
+  "pendingAtEnd": 0,
+  "network": {
+    "blocked": 0,
+    "failed": 0,
+    "pageErrors": 0,
+    "consoleErrors": 0
+  },
+  "completedAt": "2026-10-24T22:02:12.096Z"
+}

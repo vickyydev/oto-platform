@@ -1,0 +1,74 @@
+{
+  "ticket": "SCRUM-632",
+  "passed": true,
+  "reviewedAt": "2026-10-24T22:18:07.233Z",
+  "method": "All six actual PNGs viewed with view_image; native controls and privacy checked against off/on pairs.",
+  "sourceSha": "6b429d4bd8f98b1508a5a785ed78655ec3cc95d5",
+  "images": [
+    {
+      "filename": "SCRUM-632-01-users-flag-off.png",
+      "sha256": "b7823a963691b228d3948a8d676a9310a2f4d3982d8df83a293c949e85a7f22b",
+      "capturedAt": "2026-10-24T22:12:08.581Z",
+      "actuallyViewed": true,
+      "nativeScreenLegible": true,
+      "personAndContactCellsMasked": true,
+      "fullCaptionPrefixReadable": false,
+      "publicParkLabelsRetained": true
+    },
+    {
+      "filename": "SCRUM-632-02-permissions-flag-off.png",
+      "sha256": "d362992b878c190a06f3c2decb65214f981be48504b0166136217839b072d145",
+      "capturedAt": "2026-10-24T22:12:17.456Z",
+      "actuallyViewed": true,
+      "nativeScreenLegible": true,
+      "personAndContactCellsMasked": true,
+      "fullCaptionPrefixReadable": false,
+      "publicParkLabelsRetained": true
+    },
+    {
+      "filename": "SCRUM-632-03-operators-flag-off.png",
+      "sha256": "0653dc41bf6f03870d1ab7b7b42c61b2371f041d3d156f6b170a3ab24c85427f",
+      "capturedAt": "2026-10-24T22:12:26.616Z",
+      "actuallyViewed": true,
+      "nativeScreenLegible": true,
+      "personAndContactCellsMasked": true,
+      "fullCaptionPrefixReadable": false,
+      "publicParkLabelsRetained": true
+    },
+    {
+      "filename": "SCRUM-632-04-users-managed.png",
+      "sha256": "7cc902478ebb54bfb5479daa0d6a8eba95d5301f4440ec0f98a34b2f1192f815",
+      "capturedAt": "2026-10-24T22:13:34.286Z",
+      "actuallyViewed": true,
+      "nativeScreenLegible": true,
+      "personAndContactCellsMasked": true,
+      "fullCaptionPrefixReadable": false,
+      "publicParkLabelsRetained": true
+    },
+    {
+      "filename": "SCRUM-632-05-permissions-managed.png",
+      "sha256": "b97fb922c26f8f9bdddb81da5c4686b97a1ab3b00e7bd476f59d8201dc0cef90",
+      "capturedAt": "2026-10-24T22:13:42.068Z",
+      "actuallyViewed": true,
+      "nativeScreenLegible": true,
+      "personAndContactCellsMasked": true,
+      "fullCaptionPrefixReadable": false,
+      "publicParkLabelsRetained": true
+    },
+    {
+      "filename": "SCRUM-632-06-operators-managed.png",
+      "sha256": "5dee755ada7b69e8d7c23851c0ddeadeb9b0b0df614722750de2904b9d1ba215",
+      "capturedAt": "2026-10-24T22:13:50.695Z",
+      "actuallyViewed": true,
+      "nativeScreenLegible": true,
+      "personAndContactCellsMasked": true,
+      "fullCaptionPrefixReadable": false,
+      "publicParkLabelsRetained": true
+    }
+  ],
+  "limits": [
+    "Fixed sidebar covers the caption prefix and part of the source; complete source/deploy facts are in bound JSON.",
+    "Native page internal scrolling means screenshots do not show every user row.",
+    "Public park/branch labels remain. Exact link destinations are asserted by execution, not visually exposed by PNGs."
+  ]
+}

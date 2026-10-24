@@ -1,0 +1,29 @@
+{
+  "ticket": "SCRUM-632",
+  "passed": true,
+  "reviewedAt": "2026-10-24T22:11:34.410Z",
+  "beforeHelperSha256": "731a7fa2bb6230c6b9be9dd79dde4ab3fa96f13c7e52be161fb80e6e17c2744d",
+  "afterHelperSha256": "235f67c8f51adc3bbda309a0f7ed6d332f7972192171ec5a0689f7ed1d57c3e3",
+  "actualDiffAndWholeNewTestsRead": true,
+  "authDispatchFlagAndCleanupBodiesIdentical": true,
+  "red": {
+    "passed": 23,
+    "failed": 9,
+    "receiptSha256": "ee1ca04fefc9571e68d8be0580d59d0995b483a43c06e863cd659b51e50ed67c",
+    "logSha256": "3f41df96462b271f840573ef998d23d293eb51e9b8e0ad60b40be75b35ff77bc"
+  },
+  "green": {
+    "passed": 32,
+    "failed": 0,
+    "receiptSha256": "d6018f5445da34e1e800e347a92829acfde233b29f23f1969dca5ccf73008d92",
+    "logSha256": "260ba90fbae17d5ef201c6a7dcdec2f85b0b36b2fe3ddaaf44074246e611091e"
+  },
+  "exactFiveTestInputs": true,
+  "employeeRowCompleteCanonicalHash": true,
+  "exactEmployeeIdTenantUserRequired": true,
+  "employeeWriteGrammar": false,
+  "userPatchGrammar": false,
+  "userProbe": "POST /api/users {}",
+  "sourceApplicationChanges": false,
+  "stagingAcceptance": false
+}
