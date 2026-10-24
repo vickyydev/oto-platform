@@ -1,5 +1,7 @@
 # SCRUM-631 department mirror preparation
 
+**24 October 2026 update:** Q15 is approved in PLAN section9 and implemented locally. The earlier preparation below remains a historical source map. Core0086/app0030 and the source/worker/directory changes are locally built and checked; full release/staging remain. Q16 asks the planner to authorize only the seed helper change needed to prevent a recreated legacy row after a mirrored rename. The actual regression preserves team/grant references but fails on one extra department row; no protected production file has changed.
+
 Read-only inspection on 24 October 2026, based on main
 `859db77e03af89ed7047bec4631b6a4cbe8bb20a`. This is preparation, not an
 implementation or test result. Q15 in PLAN section 9 awaits the planner.
@@ -68,10 +70,11 @@ API database role. Do not assume that staging ownership grants are portable.
 If changing a helper outside the lane becomes necessary, post that exact
 scope request to the planner before editing it.
 
-Seed convergence is a further review case: name-based seed lookup could
-recreate the old name after an adopted department is renamed, and a later
-team sync could change its department reference. Prove the complete
-copy/seed/replay sequence preserves the original ids. Do not edit protected
+Seed convergence is a further review case: name-based seed lookup recreates
+the old name after an adopted department is renamed. The actual replay
+regression confirms an extra unlinked row; existing teams and grants retain
+their original references. Prove the complete copy/seed/replay sequence
+preserves those ids without recreating a fallback. Do not edit protected
 Inbox services or silently add seed behavior; any necessary outside-lane
 seed fix goes to the planner with the failing case and exact paths.
 
