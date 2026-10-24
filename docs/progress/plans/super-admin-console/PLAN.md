@@ -242,6 +242,9 @@ Local release checkpoint (2026-10-24, SCRUM-631): Q16 is applied and its unchang
 
 | P3-3 | Departments mirror in the copy job; `core.department.external_id`; the console page wired |
 | P3-4 | OTO App Users, Permissions, Operators pages read-only with "Managed in Admin" when the flag is on; their write routes answer 409 |
+
+Local checkpoint (2026-10-25, SCRUM-632): native React19, main HTTP46 and alternate HTTP29 pass. Actual RED/GREEN covers four UI defects, route-specific exact/advisor identity matching and the raw advisor-policy bypass; original failures and source bindings are preserved separately. Initial whole compiler418/54/109 and API0/contracts/API-file lint pass; final advisor compiler,29-command app battery, house seam review and scoped app lint remain. CI entries learn all three new app checks. Source WIP remains isolated on frozen manifest2af16999; no632 landing/CI/deployment/staging proof is claimed. Existing demos only, no invite/SMS. Two own test containers are removed after captured testing, with shared/data preservation.
+
 | P3-5 | Provisioning only from the console; the employee editor's Create Login calls the platform |
 | P3-6 | Staff & HR summary page (on shift, attendance issues, leave today, payroll month status) with links |
 
