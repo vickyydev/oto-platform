@@ -243,6 +243,9 @@ Local release checkpoint (2026-10-24, SCRUM-631): Q16 is applied and its unchang
 | P3-3 | Departments mirror in the copy job; `core.department.external_id`; the console page wired |
 | P3-4 | OTO App Users, Permissions, Operators pages read-only with "Managed in Admin" when the flag is on; their write routes answer 409 |
 | P3-5 | Provisioning only from the console; the employee editor's Create Login calls the platform |
+
+Pickup (2026-10-25, SCRUM-633):632 is Deployed with six attached native screenshots;633 is In Progress/outcome12561. Inspect platform provisioning, employee Create Login, both activation directions and approved missing-route link closures on fresh lane/admin-provisioning. No implementation or acceptance yet; preserve legacy flag, role/branch rules and identity ownership. No SMS or invitation on staging; original shared containers/data remain.
+
 | P3-6 | Staff & HR summary page (on shift, attendance issues, leave today, payroll month status) with links |
 
 Deployed (2026-10-25, SCRUM-632): source6b429d4bd8f98b1508a5a785ed78655ec3cc95d5, all-six CI40134954679, latest automatic API/Admin/OTO App live, six twice-viewed native PNGs attached12017-12022 and outcome12559; Deployed readback2026-10-24T22:19:25.035Z. Three strict409 probes,29 operations/ten source checks/eight closed contexts pass; original actor/complete linked employee hashes match, fixture archived/flag-off/empty. Evidence main6b003fd13f43f7774a8bf0f13a1618135760f3f1 and attachments/SCRUM-632/README.md record limits and earlier QA failures. Own containers removed; all ten others remain. Next633 provisioning; no ruling or SMS pending.
