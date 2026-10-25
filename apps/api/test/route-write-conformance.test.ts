@@ -60,6 +60,19 @@ afterAll(async () => {
 
 const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
+describe('Platform read registration (SCRUM-639)', () => {
+  it('adds exactly three reads without a mutation exemption or a control runner', () => {
+    const paths = ['/platform/alerts', '/platform/jobs', '/platform/environment'];
+    const reads = routes.filter(r => r.path.startsWith('/platform/'));
+    expect(reads.map(r => `${r.method} ${r.path}`).sort()).toEqual(paths.map(path => `GET ${path}`).sort());
+    for (const route of reads) {
+      expect(MUTATING.has(route.method), route.path).toBe(false);
+      expect(route.optionsText, route.path).toContain('querystring:');
+      expect(reachesText(route.handlerText, text => /\b(?:createJobRunner|recordRun|deliverAlert|raiseAlert)\s*\(/.test(text), functions), route.path).toBe(false);
+    }
+  });
+});
+
 describe('Aggregate read registration (SCRUM-636)', () => {
   it('registers exactly five read-only facades without a mutation exemption', () => {
     const expected = [

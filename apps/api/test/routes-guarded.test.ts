@@ -34,6 +34,19 @@ afterAll(async () => {
 const NOT_OURS = new Set(['/*']);
 
 describe('route guards (S2-01b)', () => {
+  it('requires a session and genuine platform authority on all Platform reads (SCRUM-639)', async () => {
+    for (const url of ['/platform/alerts', '/platform/jobs', '/platform/environment']) {
+      const route = ctx.app.routeRegistry.find(r => r.method === 'GET' && r.url === url);
+      expect(route, url).toBeDefined();
+      expect(route?.config.permission, url).toBe('admin:health:read');
+      expect(route?.config.target, url).toEqual({ operator: true });
+      expect(route?.config.platformWide, url).toBe(true);
+      expect(route?.config.public, url).not.toBe(true);
+      expect(route?.config.credential, url).toBeUndefined();
+      expect((await ctx.app.inject({ method: 'GET', url })).statusCode, url).toBe(401);
+    }
+  });
+
   it('requires a session on all five reach-filtered aggregate reads (SCRUM-636)', async () => {
     for (const url of [
       '/aggregates/members', '/aggregates/bookings', '/aggregates/assistant-usage',

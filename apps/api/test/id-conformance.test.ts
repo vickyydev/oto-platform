@@ -362,6 +362,17 @@ describe('every create names its record where OD-12 says (SCRUM-270)', () => {
     await app.close();
   });
 
+  it('Platform list identifiers never mint new records or introduce a write route (SCRUM-639)', () => {
+    for (const path of ['/platform/alerts', '/platform/jobs', '/platform/environment']) {
+      const route = routes.find(r => r.method === 'GET' && r.path === path);
+      expect(route, path).toBeDefined();
+      expect(route!.optionsText, path).toContain('querystring:');
+      expect(route!.optionsText, path).not.toMatch(/\bbody\s*:/);
+      expect(reachesText(route!.handlerText, MINTS_ITS_ID, functions, 2), path).toBe(false);
+      expect(app.routeRegistry.filter(r => r.url === path && !['GET', 'HEAD', 'OPTIONS'].includes(r.method)), path).toEqual([]);
+    }
+  });
+
   it('aggregate park identifiers are read targets, not newly minted record identities (SCRUM-636)', () => {
     for (const path of [
       '/aggregates/members', '/aggregates/bookings', '/aggregates/assistant-usage',

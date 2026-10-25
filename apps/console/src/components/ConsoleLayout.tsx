@@ -12,6 +12,7 @@ import type { MeResponse } from '@/api/platform';
 import { ThemeCycleButton } from '@/components/ThemeCycleButton';
 import { unacknowledgedAlerts, usePlatformStatus } from '@/lib/platformStatus';
 import { cn } from '@/lib/utils';
+import { filterPlatformHealthLinks, usePlatformAuthority } from '@/lib/platformAuthority';
 
 const LAUNCHER_URL = import.meta.env.VITE_LAUNCHER_URL?.trim();
 const POS_URL = import.meta.env.VITE_POS_URL?.trim();
@@ -199,8 +200,8 @@ function Sidebar({
   idPrefix: string;
 }) {
   const { me, has, signOut } = useSession();
-
-  const visible = visibleNavigation(has, me?.isPlatformAdmin ?? false);
+  const platformHealth = usePlatformAuthority('admin:health:read', true);
+  const visible = filterPlatformHealthLinks(visibleNavigation(has, me?.isPlatformAdmin ?? false), platformHealth.allowed);
 
   return (
     <div className="flex min-h-full flex-col gap-[22px] px-4 py-6">

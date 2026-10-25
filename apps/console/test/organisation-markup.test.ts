@@ -6,7 +6,11 @@ import { Holidays } from '@/pages/Holidays';
 
 const session = vi.hoisted(() => ({ platform: true, allowed: new Set(['admin:operator:read', 'catalog:holiday:manage']) }));
 vi.mock('@/auth/SessionContext', () => ({ useSession: () => ({
-  me: { isPlatformAdmin: session.platform, branch: null }, has: (permission: string) => session.allowed.has(permission),
+  state: 'signed-in', authorityEpoch: 1, refreshing: false, isCurrentAuthority: (epoch: number) => epoch === 1,
+  me: { isPlatformAdmin: session.platform, branch: null, sessionLocked: false,
+    account: { id: 'caller', operatorId: 'operator', status: 'active', mustChangePassword: false } },
+  permissions: [...session.allowed].map((permission) => ({ permission, scopeType: 'operator', scopeId: null })),
+  has: (permission: string) => session.allowed.has(permission),
 }) }));
 vi.mock('@/components/redesign/CommandBar', () => ({ CommandBar: ({ sectionId }: { sectionId: string }) => createElement('h1', null, sectionId) }));
 beforeEach(() => { session.platform = true; session.allowed = new Set(['admin:operator:read', 'catalog:holiday:manage']); });

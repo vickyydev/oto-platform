@@ -4,6 +4,7 @@ import { useSession } from '@/auth/SessionContext';
 import { canSeeArea, findArea, visibleNavigation, type ConsoleNavGroup } from '@/components/consoleSections';
 import { CommandBar } from '@/components/redesign/CommandBar';
 import { Panel } from '@/components/Panel';
+import { filterPlatformHealthLinks, usePlatformAuthority } from '@/lib/platformAuthority';
 
 const POS_URL = import.meta.env.VITE_POS_URL?.trim();
 const LAUNCHER_URL = import.meta.env.VITE_LAUNCHER_URL?.trim();
@@ -11,12 +12,13 @@ const LAUNCHER_URL = import.meta.env.VITE_LAUNCHER_URL?.trim();
 /** Navigation only: figures and management panels arrive in their own releases. */
 export function AreaLanding({ id }: { id: string }) {
   const { has, me } = useSession();
+  const platformHealth = usePlatformAuthority('admin:health:read', true);
   const area = findArea(id);
   if (!area) return null;
   if (!canSeeArea(area, has, me?.isPlatformAdmin ?? false)) {
     return <><CommandBar sectionId={id} /><Panel><p>This area is not on your access.</p></Panel></>;
   }
-  const available = visibleNavigation(has, me?.isPlatformAdmin ?? false);
+  const available = filterPlatformHealthLinks(visibleNavigation(has, me?.isPlatformAdmin ?? false), platformHealth.allowed);
   const current = available.find((entry) => entry.id === id)!;
   return <AreaLandingContent area={current} available={available} />;
 }

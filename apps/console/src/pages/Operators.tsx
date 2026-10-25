@@ -1,12 +1,12 @@
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { AdminNotifications, adminToast } from '@oto/admin-screens';
 import { OperatorsPanelWithPorts } from '@oto/admin-screens/lifted/admin/access/OperatorsPanel';
 import { organisationApi } from '@/api/organisation';
-import { useSession } from '@/auth/SessionContext';
 import { Drawer } from '@/components/Drawer';
 import { ErrorNote, PermissionRequired } from '@/components/Panel';
 import { Button } from '@/components/ui/button';
 import { CommandBar } from '@/components/redesign/CommandBar';
+import { usePlatformAuthority } from '@/lib/platformAuthority';
 
 type RenameSelection = {
   id: string;
@@ -14,26 +14,49 @@ type RenameSelection = {
   version: number;
   refresh: () => Promise<unknown>;
 };
-export function Operators() {
-  const { me, has } = useSession();
+export function Operators({ sectionId = 'operators' }: { sectionId?: string }) {
+  const authority = usePlatformAuthority('admin:operator:read');
+  if (!authority.allowed) return <PermissionRequired permission="admin:operator:read (platform-wide)" />;
+  return <OperatorsContent key={authority.key} sectionId={sectionId} isCurrent={authority.isCurrent} />;
+}
+
+function OperatorsContent({ sectionId, isCurrent }: { sectionId: string; isCurrent: () => boolean }) {
   const version = useRef(0);
   const [renaming, setRenaming] = useState<RenameSelection | null>(null);
-  if (!me?.isPlatformAdmin || !has('admin:operator:read')) {
-    return <PermissionRequired permission="admin:operator:read (platform-wide)" />;
-  }
+  // Reuse every native control and body. A retained native callback must not
+  // dispatch its next request under a different session or refresh epoch.
+  const guarded = useMemo(() => {
+    const check = () => { if (!isCurrent()) throw new Error('The signed-in account changed. Open this page again.'); };
+    const call = async <T,>(run: () => Promise<T>) => { check(); const answer = await run(); check(); return answer; };
+    const admin = organisationApi.adminApi;
+    const ops = organisationApi.opsApi;
+    return {
+      adminApi: {
+        operators: () => call(() => admin.operators()),
+        createOperator: (...args: Parameters<typeof admin.createOperator>) => call(() => admin.createOperator(...args)),
+        archiveOperator: (...args: Parameters<typeof admin.archiveOperator>) => call(() => admin.archiveOperator(...args)),
+        assignOperatorAdmin: (...args: Parameters<typeof admin.assignOperatorAdmin>) => call(() => admin.assignOperatorAdmin(...args)),
+      },
+      opsApi: {
+        demoResetStatus: () => call(() => ops.demoResetStatus()),
+        demoReset: (...args: Parameters<typeof ops.demoReset>) => call(() => ops.demoReset(...args)),
+      },
+      rename: (...args: Parameters<typeof admin.renameOperator>) => call(() => admin.renameOperator(...args)),
+    };
+  }, [isCurrent]);
   return (
     <>
-      <CommandBar sectionId="operators" />
+      <CommandBar sectionId={sectionId} />
       <OperatorsPanelWithPorts
         ports={{
-          adminApi: organisationApi.adminApi,
-          opsApi: organisationApi.opsApi,
-          toast: adminToast,
+          adminApi: guarded.adminApi,
+          opsApi: guarded.opsApi,
+          toast: (...args) => { if (isCurrent()) adminToast(...args); },
           renderOperatorActions: (operator, refresh) => (
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setRenaming({ ...operator, refresh, version: ++version.current })}
+              onClick={() => { if (isCurrent()) setRenaming({ ...operator, refresh, version: ++version.current }); }}
             >
               Rename
             </Button>
@@ -44,6 +67,8 @@ export function Operators() {
         <RenameOperator
           key={renaming.version}
           selection={renaming}
+          isCurrent={isCurrent}
+          rename={guarded.rename}
           onClose={() =>
             setRenaming((current) => (current?.version === renaming.version ? null : current))
           }
@@ -56,25 +81,31 @@ export function Operators() {
 function RenameOperator({
   selection,
   onClose,
+  isCurrent,
+  rename,
 }: {
   selection: RenameSelection;
   onClose: () => void;
+  isCurrent: () => boolean;
+  rename: typeof organisationApi.adminApi.renameOperator;
 }) {
   const [name, setName] = useState(selection.name);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const save = async () => {
-    if (saving || !name.trim()) return;
+    if (saving || !name.trim() || !isCurrent()) return;
     setSaving(true);
     setError(null);
     try {
-      await organisationApi.adminApi.renameOperator(selection.id, name.trim());
+      await rename(selection.id, name.trim());
+      if (!isCurrent()) return;
       await selection.refresh();
+      if (!isCurrent()) return;
       onClose();
     } catch (failure) {
-      setError(failure instanceof Error ? failure.message : 'The operator could not be renamed.');
+      if (isCurrent()) setError(failure instanceof Error ? failure.message : 'The operator could not be renamed.');
     } finally {
-      setSaving(false);
+      if (isCurrent()) setSaving(false);
     }
   };
   return (

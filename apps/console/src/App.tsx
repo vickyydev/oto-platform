@@ -32,6 +32,7 @@ import { Employees } from '@/pages/Employees';
 import { Departments } from '@/pages/Departments';
 import { AccessReview } from '@/pages/AccessReview';
 import { Operators } from '@/pages/Operators';
+import { Platform } from '@/pages/Platform';
 import { Holidays } from '@/pages/Holidays';
 import { Catalogue } from '@/pages/Catalogue';
 import { MenuCatalogue } from '@/pages/MenuCatalogue';
@@ -143,6 +144,12 @@ function NotFound() {
 }
 
 const pageElements: Record<string, ReactElement> = {
+  'platform-operators': <Operators sectionId="platform-operators" />,
+  'system-roles': <Platform page="system-roles" />,
+  'platform-alerts': <Platform page="platform-alerts" />,
+  'platform-jobs': <Platform page="platform-jobs" />,
+  'platform-environment': <Platform page="platform-environment" />,
+  'platform-test-controls': <Platform page="platform-test-controls" />,
   inventory: <Operations page="inventory" />,
   members: <Operations page="members" />,
   'tier-verifications': <Operations page="tier-verifications" />,

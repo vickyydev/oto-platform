@@ -19,6 +19,10 @@ type SessionState = 'loading' | 'signed-out' | 'signed-in';
 
 interface SessionValue {
   state: SessionState;
+  /** A canonical session read invalidates callbacks before its response arrives. */
+  authorityEpoch: number;
+  refreshing: boolean;
+  isCurrentAuthority: (epoch: number) => boolean;
   me: MeResponse | null;
   permissions: EffectivePermission[];
   /** The session is alive but locked — by this account's till, or another tab. */
@@ -45,6 +49,7 @@ const SessionContext = createContext<SessionValue | null>(null);
  */
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<SessionState>('loading');
+  const [refreshing, setRefreshing] = useState(true);
   const [me, setMe] = useState<MeResponse | null>(null);
   const [permissions, setPermissions] = useState<EffectivePermission[]>([]);
   const [handoffError, setHandoffError] = useState<string | null>(null);
@@ -53,6 +58,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const load = useCallback(async () => {
     const request = ++sessionRequest.current;
+    setRefreshing(true);
     try {
       const account = await authApi.me();
       if (request !== sessionRequest.current) return null;
@@ -70,8 +76,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       if (request !== sessionRequest.current) return null;
       accountTheme.release();
       throw error;
+    } finally {
+      if (request === sessionRequest.current) setRefreshing(false);
     }
   }, []);
+
+  const isCurrentAuthority = useCallback((epoch: number) => epoch === sessionRequest.current, []);
 
   // On mount, resume a still-valid session. Someone arriving from the launcher
   // carries a hand-off token instead of a cookie, so that exchange has to
@@ -212,6 +222,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     const held = new Set(permissions.map((p) => p.permission));
     return {
       state,
+      authorityEpoch: sessionEpoch,
+      refreshing,
+      isCurrentAuthority,
       me,
       permissions,
       locked: me?.sessionLocked ?? false,
@@ -222,7 +235,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       signOut,
       switchBranch,
     };
-  }, [state, me, permissions, handoffError, signIn, unlock, signOut, switchBranch]);
+  }, [state, sessionEpoch, refreshing, isCurrentAuthority, me, permissions, handoffError, signIn, unlock, signOut, switchBranch]);
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }

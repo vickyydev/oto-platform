@@ -5,6 +5,7 @@ import { overviewOf } from '../services/console';
 import { consoleRoutingRoutes } from './console-routing';
 import { consoleStaffRoutes } from './console-staff';
 import { aggregateRoutes } from './aggregates';
+import { platformRoutes } from './platform';
 
 const count = z.number().int().nonnegative();
 const figures = z.object({
@@ -30,6 +31,7 @@ export async function consoleRoutes(app: App): Promise<void> {
   await app.register(consoleRoutingRoutes);
   await app.register(consoleStaffRoutes);
   await app.register(aggregateRoutes);
+  await app.register(platformRoutes);
   app.get('/overview', {
     config: { dynamicPermission: true },
     schema: {

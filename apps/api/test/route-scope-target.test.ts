@@ -63,6 +63,19 @@ afterAll(async () => {
 /** Routes Fastify or a plugin registers for us, which we do not configure. */
 const NOT_OURS = new Set(['/docs/json', '/*']);
 
+describe('Platform list scope (SCRUM-639)', () => {
+  it('declares the platform boundary and checks fresh null-scope authority before each read', () => {
+    for (const path of ['/platform/alerts', '/platform/jobs', '/platform/environment']) {
+      const route = routes.find(r => r.method === 'GET' && r.path === path);
+      expect(route, path).toBeDefined();
+      expect(configs.get(`GET ${path}`)?.target, path).toEqual({ operator: true });
+      expect(configs.get(`GET ${path}`)?.platformWide, path).toBe(true);
+      expect(reachesText(route!.handlerText, text => /req\.effectivePermissions\s*\(/.test(text), functions), path).toBe(true);
+      expect(reachesText(route!.handlerText, text => /\bisPlatformWide\s*\(/.test(text), functions), path).toBe(true);
+    }
+  });
+});
+
 describe('Aggregate selected parks (SCRUM-636)', () => {
   it('binds every aggregate to the current operator and fresh dynamic authority', () => {
     for (const path of [
@@ -173,6 +186,12 @@ const OPERATOR_WIDE_WRITES = [
   'PUT /benefits/templates/:role',
   'PUT /benefits/profiles/:employeeId',
 ];
+// These platform-global reads also require health permission at operator scope.
+const PLATFORM_WIDE_READS = [
+  'GET /platform/alerts', 'HEAD /platform/alerts',
+  'GET /platform/jobs', 'HEAD /platform/jobs',
+  'GET /platform/environment', 'HEAD /platform/environment',
+];
 
 describe('operator-wide settings are changed at operator scope (SCRUM-606)', () => {
   it('lifecycle scope comes from the credential and immutable owned identity event (SCRUM-633)', () => {
@@ -210,7 +229,7 @@ describe('operator-wide settings are changed at operator scope (SCRUM-606)', () 
       .filter((r) => r.config.target?.operator === true)
       .map((r) => `${r.method} ${r.url}`)
       .sort();
-    expect(declared).toEqual([...OPERATOR_WIDE_WRITES].sort());
+    expect(declared).toEqual([...OPERATOR_WIDE_WRITES, ...PLATFORM_WIDE_READS].sort());
   });
 
   it('the reads beside them keep their gates', () => {

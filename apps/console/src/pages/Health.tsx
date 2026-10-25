@@ -1,14 +1,12 @@
-import { useEffect, useState } from 'react';
-import { BellRing, CalendarClock, FlaskConical, LineChart, Loader2, RefreshCw, Server } from 'lucide-react';
+import { useState } from 'react';
+import { BellRing, CalendarClock, LineChart, Loader2, RefreshCw, Server } from 'lucide-react';
 import {
   healthApi,
-  testControlsApi,
   type AlertRow,
   type HealthCheck,
   type HealthState,
   type JobStatus,
   type Readiness,
-  type TestControl,
 } from '@/api/observability';
 import {
   analyticsFreshnessLines,
@@ -18,6 +16,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { BoothSummary } from '@/components/health/BoothSummary';
 import { KioskSummary } from '@/components/health/KioskSummary';
+import { TestControls } from '@/components/platform/TestControls';
 import { FleetSummary } from '@/components/devices/FleetSummary';
 import { ErrorNote, Loading, RouteUnavailable } from '@/components/Panel';
 import {
@@ -420,79 +419,6 @@ function AlertItem({
     </li>
   );
 }
-
-/**
- * The controls that make something go wrong on purpose. They exist only where
- * `OPS_TEST_CONTROLS` is set AND the caller is platform-wide, which the API
- * answers rather than refuses — so a deployment without them shows no section
- * at all, instead of a row of buttons that always fail.
- */
-function TestControls({ canManage, onRan }: { canManage: boolean; onRan: () => void }) {
-  const [controls, setControls] = useState<TestControl[] | null>(null);
-  const [busyKey, setBusyKey] = useState<string | null>(null);
-  const [note, setNote] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    void testControlsApi
-      .list()
-      .then(({ available, controls: list }) => {
-        if (!cancelled) setControls(available ? list : []);
-      })
-      .catch(() => {
-        // Absent route, or a caller who is not platform-wide. Either way there
-        // is nothing to offer and nothing to explain.
-        if (!cancelled) setControls([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  if (!canManage || !controls || controls.length === 0) return null;
-
-  const run = async (control: TestControl) => {
-    setBusyKey(control.key);
-    setNote(null);
-    try {
-      const result = await testControlsApi.run(control.key);
-      setNote(result.message ?? `${control.label} ran.`);
-      onRan();
-    } catch (err) {
-      setNote(err instanceof Error ? err.message : 'That control failed');
-    } finally {
-      setBusyKey(null);
-    }
-  };
-
-  return (
-    <CardShell
-      span={12}
-      icon={FlaskConical}
-      title="Test controls"
-      note="Staging-only controls add demo scenarios or simulate failures. The demo day is added at Demo Branch 2, never at a live park, and existing records are kept."
-    >
-      <div className="flex flex-wrap gap-2">
-        {controls.map((control) => (
-          <Button
-            key={control.key}
-            variant="outline"
-            size="sm"
-            className="rounded-full"
-            title={control.description ?? undefined}
-            disabled={busyKey !== null}
-            onClick={() => void run(control)}
-          >
-            {busyKey === control.key ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-            {control.label}
-          </Button>
-        ))}
-      </div>
-      {note && <p className="text-sm text-muted-foreground">{note}</p>}
-    </CardShell>
-  );
-}
-
 
 // ---------------------------------------------------------------------------
 
