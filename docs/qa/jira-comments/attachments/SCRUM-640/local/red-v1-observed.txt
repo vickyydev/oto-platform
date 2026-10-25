@@ -1,0 +1,188 @@
+ ❯ test/s640-operator-switch-migration.test.ts (9 tests | 8 failed) 14597ms
+   × SCRUM-640 expand-only session operator override migration > adds a nullable UUID with no default to the session, never the home account 19ms
+     → expected [] to deeply equal [ { table_name: 'session', …(4) } ]
+   × SCRUM-640 expand-only session operator override migration > defaults newly created seated and branchless sessions to null without changing their identity or state 5ms
+     → column "operator_override" does not exist
+   × SCRUM-640 expand-only session operator override migration > references only the new session column to the existing operator primary key 4ms
+     → expected [] to deeply equal [ { …(6) } ]
+   × SCRUM-640 expand-only session operator override migration > accepts an existing other operator and clearing to null without rewriting home, seat or session fields 2ms
+     → column "operator_override" of relation "session" does not exist
+   × SCRUM-640 expand-only session operator override migration > refuses an unknown operator UUID and leaves the complete session unchanged 4ms
+     → expected error: column "operator_override" of rela… { …(15) } to match object { code: '23503' }
+(17 matching properties omitted from actual)
+   × SCRUM-640 expand-only session operator override migration > refuses malformed UUID data rather than storing an untyped context 1ms
+     → expected error: column "operator_override" of rela… { …(15) } to match object { code: '22P02' }
+(17 matching properties omitted from actual)
+   × SCRUM-640 expand-only session operator override migration > extends its predecessor snapshot by exactly this nullable column and one foreign key 1ms
+     → The session override has one native journal entry.: expected undefined to be defined
+   × SCRUM-640 expand-only session operator override migration > migrates a real predecessor database without backfilling or altering existing session data 4370ms
+     → column "operator_override" does not exist
+   ✓ SCRUM-640 expand-only session operator override migration > replays the complete native migration chain without another ledger row or any session/account change  654ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 8 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/s640-operator-switch-migration.test.ts > SCRUM-640 expand-only session operator override migration > adds a nullable UUID with no default to the session, never the home account
+AssertionError: expected [] to deeply equal [ { table_name: 'session', …(4) } ]
+
+- Expected
++ Received
+
+- [
+-   {
+-     "column_default": null,
+-     "column_name": "operator_override",
+-     "data_type": "uuid",
+-     "is_nullable": "YES",
+-     "table_name": "session",
+-   },
+- ]
++ []
+
+ ❯ test/s640-operator-switch-migration.test.ts:81:21
+     79|       from information_schema.columns where table_schema = 'core'
+     80|       and table_name in ('session', 'account') and column_name = 'oper…
+     81|     expect(columns).toEqual([{ table_name: 'session', column_name: 'op…
+       |                     ^
+     82|       is_nullable: 'YES', column_default: null }]);
+     83|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/8]⎯
+
+ FAIL  test/s640-operator-switch-migration.test.ts > SCRUM-640 expand-only session operator override migration > defaults newly created seated and branchless sessions to null without changing their identity or state
+error: column "operator_override" does not exist
+ ❯ ../../node_modules/.pnpm/pg@8.23.0/node_modules/pg/lib/client.js:694:17
+ ❯ test/s640-operator-switch-migration.test.ts:88:20
+     86|     for (const seated of [true, false]) {
+     87|       const id = await addSession(client, fixture, seated);
+     88|       const row = (await client.query(`select id, account_id, token_ha…
+       |                    ^
+     89|         expires_at::text, last_seen_at::text, created_at::text, locked…
+     90|         from core.session where id = $1`, [id])).rows[0]!;
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/8]⎯
+
+ FAIL  test/s640-operator-switch-migration.test.ts > SCRUM-640 expand-only session operator override migration > references only the new session column to the existing operator primary key
+AssertionError: expected [] to deeply equal [ { …(6) } ]
+
+- Expected
++ Received
+
+- [
+-   {
+-     "columns": [
+-       "operator_override",
+-     ],
+-     "delete_action": "a",
+-     "target_columns": [
+-       "id",
+-     ],
+-     "target_schema": "core",
+-     "target_table": "operator",
+-     "update_action": "a",
+-   },
+- ]
++ []
+
+ ❯ test/s640-operator-switch-migration.test.ts:114:24
+    112|       where c.conrelid = 'core.session'::regclass and c.contype = 'f'`…
+    113|       .filter(row => row.columns.includes('operator_override'));
+    114|     expect(references).toEqual([{ columns: ['operator_override'], targ…
+       |                        ^
+    115|       target_columns: ['id'], delete_action: 'a', update_action: 'a' }…
+    116|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/8]⎯
+
+ FAIL  test/s640-operator-switch-migration.test.ts > SCRUM-640 expand-only session operator override migration > accepts an existing other operator and clearing to null without rewriting home, seat or session fields
+error: column "operator_override" of relation "session" does not exist
+ ❯ ../../node_modules/.pnpm/pg@8.23.0/node_modules/pg/lib/client.js:694:17
+ ❯ test/s640-operator-switch-migration.test.ts:120:5
+    118|   it('accepts an existing other operator and clearing to null without …
+    119|     const id = await addSession(client, fixture), before = await rowOf…
+    120|     await client.query('update core.session set operator_override = $2…
+       |     ^
+    121|     expect(fingerprint(await rowOf(client, id))).toBe(fingerprint({ ..…
+    122|     await client.query('update core.session set operator_override = nu…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/8]⎯
+
+ FAIL  test/s640-operator-switch-migration.test.ts > SCRUM-640 expand-only session operator override migration > refuses an unknown operator UUID and leaves the complete session unchanged
+AssertionError: expected error: column "operator_override" of rela… { …(15) } to match object { code: '23503' }
+(17 matching properties omitted from actual)
+
+- Expected
++ Received
+
+- {
+-   "code": "23503",
++ DatabaseError {
++   "code": "42703",
+  }
+
+ ❯ test/s640-operator-switch-migration.test.ts:130:5
+    128|   it('refuses an unknown operator UUID and leaves the complete session…
+    129|     const id = await addSession(client, fixture), before = fingerprint…
+    130|     await expect(client.query('update core.session set operator_overri…
+       |     ^
+    131|       .rejects.toMatchObject({ code: '23503' });
+    132|     expect(fingerprint(await rowOf(client, id))).toBe(before);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/8]⎯
+
+ FAIL  test/s640-operator-switch-migration.test.ts > SCRUM-640 expand-only session operator override migration > refuses malformed UUID data rather than storing an untyped context
+AssertionError: expected error: column "operator_override" of rela… { …(15) } to match object { code: '22P02' }
+(17 matching properties omitted from actual)
+
+- Expected
++ Received
+
+- {
+-   "code": "22P02",
++ DatabaseError {
++   "code": "42703",
+  }
+
+ ❯ test/s640-operator-switch-migration.test.ts:137:5
+    135|   it('refuses malformed UUID data rather than storing an untyped conte…
+    136|     const id = await addSession(client, fixture), before = fingerprint…
+    137|     await expect(client.query('update core.session set operator_overri…
+       |     ^
+    138|       .rejects.toMatchObject({ code: '22P02' });
+    139|     expect(fingerprint(await rowOf(client, id))).toBe(before);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/8]⎯
+
+ FAIL  test/s640-operator-switch-migration.test.ts > SCRUM-640 expand-only session operator override migration > extends its predecessor snapshot by exactly this nullable column and one foreign key
+AssertionError: The session override has one native journal entry.: expected undefined to be defined
+ ❯ test/s640-operator-switch-migration.test.ts:144:72
+    142|   it('extends its predecessor snapshot by exactly this nullable column…
+    143|     const journal = journalOf(), mine = journal.entries.find(entry => …
+    144|     expect(mine, 'The session override has one native journal entry.')…
+       |                                                                        ^
+    145|     const previous = journal.entries[journal.entries.indexOf(mine!) - …
+    146|     expect(mine!.idx).toBe(previous.idx + 1); expect(mine!.when).toBeG…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/8]⎯
+
+ FAIL  test/s640-operator-switch-migration.test.ts > SCRUM-640 expand-only session operator override migration > migrates a real predecessor database without backfilling or altering existing session data
+error: column "operator_override" does not exist
+ ❯ ../../node_modules/.pnpm/pg@8.23.0/node_modules/pg/lib/client.js:694:17
+ ❯ test/s640-operator-switch-migration.test.ts:181:15
+    179|       const previousAccount = fingerprint((await c.query('select to_js…
+    180|       nativeMigrate(url);
+    181|       expect((await c.query('select id, operator_override from core.se…
+       |               ^
+    182|         .toEqual([seated, branchless].sort().map(id => ({ id, operator…
+    183|       const currentRows = await Promise.all([seated, branchless].map(i…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/8]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  8 failed | 1 passed (9)
+   Start at  19:04:50
+   Duration  16.56s (transform 512ms, setup 0ms, collect 1.48s, tests 14.60s, environment 0ms, prepare 301ms)
+
+C:\w\admin-operator-switch\packages\db:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @oto/db@0.1.0 test: `vitest run --no-file-parallelism "test/s640-operator-switch-migration.test.ts"`
+Exit status 1

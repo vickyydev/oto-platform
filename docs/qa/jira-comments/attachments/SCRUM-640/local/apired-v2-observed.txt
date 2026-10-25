@@ -1,0 +1,105 @@
+ ❯ test/operator-switch-review.test.ts (29 tests | 2 failed) 7991ms
+   ✓ SCRUM-640 native operator-switch service house review; central routes and cached replay remain held > R1 [high] options read current context and actual live operators without changing session, home identity or audit 78ms
+   ✓ SCRUM-640 native operator-switch service house review; central routes and cached replay remain held > R2 [critical] switches only this session, clears its seat, and commits one truthful actor/session audit 19ms
+   ✓ SCRUM-640 native operator-switch service house review; central routes and cached replay remain held > R3 [high] returning by null canonicalizes home to null without inventing a branch or changing the account 13ms
+   ✓ SCRUM-640 native operator-switch service house review; central routes and cached replay remain held > R3 [high] returning by home canonicalizes home to null without inventing a branch or changing the account 11ms
+   ✓ SCRUM-640 native operator-switch service house review; central routes and cached replay remain held > R4 [high] current-target selections with the latest revision are audited no-ops retaining the seat; no key-cache replay is claimed 11ms
+   ✓ SCRUM-640 native operator-switch service house review; central routes and cached replay remain held > R5 [critical] an own-operator switch grant or a role named operator_admin cannot replace genuine null operator scope 18ms
+   ✓ SCRUM-640 native operator-switch service house review; central routes and cached replay remain held > R6 [critical] an unrelated null-scope permission plus branch-only switch permission cannot be unioned into switch authority 17ms
+   ✓ SCRUM-640 native operator-switch service house review; central routes and cached replay remain held > R7 [critical] rechecks archived assignment after a previously successful options read 20ms
+   ✓ SCRUM-640 native operator-switch service house review; central routes and cached replay remain held > R7 [critical] rechecks deleted assignment after a previously successful options read 19ms
+   ✓ SCRUM-640 native operator-switch service house review; central routes and cached replay remain held > R7 [critical] rechecks withdrawn permission after a previously successful options read 20ms
+   ✓ SCRUM-640 native operator-switch service house review; central routes and cached replay remain held > R8 [critical] refuses an inactive account without touching another live session 14ms
+   ✓ SCRUM-640 native operator-switch service house review; central routes and cached replay remain held > R8 [critical] refuses an invited account without touching another live session 15ms
+   ✓ SCRUM-640 native operator-switch service house review; central routes and cached replay remain held > R9 [critical] rejects a retired home operator even when the target and grant remain live 19ms
+   ✓ SCRUM-640 native operator-switch service house review; central routes and cached replay remain held > R10 [high] refuses an unknown target without a success audit or partial seat clearing 12ms
+   ✓ SCRUM-640 native operator-switch service house review; central routes and cached replay remain held > R10 [high] refuses an archived target without a success audit or partial seat clearing 9ms
+   ✓ SCRUM-640 native operator-switch service house review; central routes and cached replay remain held > R11 [critical] preserves native expired session refusal 14ms
+   ✓ SCRUM-640 native operator-switch service house review; central routes and cached replay remain held > R11 [critical] preserves native revoked session refusal 12ms
+   ✓ SCRUM-640 native operator-switch service house review; central routes and cached replay remain held > R11 [critical] preserves native locked session refusal 13ms
+   ✓ SCRUM-640 native operator-switch service house review; central routes and cached replay remain held > R11 [critical] preserves native display session refusal 17ms
+   ✓ SCRUM-640 native operator-switch service house review; central routes and cached replay remain held > R11 [critical] preserves native temporary password session refusal 15ms
+   ✓ SCRUM-640 native operator-switch service house review; central routes and cached replay remain held > R11 [critical] preserves native archived seat session refusal 13ms
+   ✓ SCRUM-640 native operator-switch service house review; central routes and cached replay remain held > R12 [critical] never switches or describes a session belonging to another account 11ms
+   ✓ SCRUM-640 native operator-switch service house review; central routes and cached replay remain held > R13 [critical] stale revision refuses both an old target and an apparent home no-op after A-B-A 21ms
+   ✓ SCRUM-640 native operator-switch service house review; central routes and cached replay remain held > R14 [critical] audit failure rolls the override, both seat fields and revision back together 14ms
+   ✓ SCRUM-640 native operator-switch service house review; central routes and cached replay remain held > R15 [critical] concurrent selections at one revision serialize: exactly one commits, the loser conflicts and adds no second audit 87ms
+   ✓ SCRUM-640 native operator-switch service house review; central routes and cached replay remain held > R16 [critical] an existing override pointing at an archived operator fails closed instead of silently returning home 26ms
+   ✓ SCRUM-640 native operator-switch service house review; central routes and cached replay remain held > R17 [critical] a foreign branch/station left in a home session fails closed without normalizing the seat or home employee 15ms
+   × SCRUM-640 native operator-switch service house review; central routes and cached replay remain held > FINDING R18 [high] attribute refusals to verified identity before later checks; ignore spoofed context and keep the session audit branchless 16ms
+     → expected { …(13) } to match object { …(5) }
+(8 matching properties omitted from actual)
+   × SCRUM-640 native operator-switch service house review; central routes and cached replay remain held > FINDING R19 [high] anchor session-level success audits to home with no branch; retain foreign seat facts only in before/after 14ms
+     → expected { …(13) } to match object { …(8) }
+(5 matching properties omitted from actual)
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/operator-switch-review.test.ts > SCRUM-640 native operator-switch service house review; central routes and cached replay remain held > FINDING R18 [high] attribute refusals to verified identity before later checks; ignore spoofed context and keep the session audit branchless
+AssertionError: expected { …(13) } to match object { …(5) }
+(8 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+    "action": "session.operator_switch.failed",
+-   "actorAccountId": "01a1730a-5722-7a78-8d86-7a0a44cd7690",
++   "actorAccountId": null,
+    "after": {
+      "error": "FORBIDDEN",
+    },
+    "branchId": null,
+-   "operatorId": "01a1730a-5722-7a78-8d86-7a0400e1cdb8",
++   "operatorId": null,
+  }
+
+ ❯ test/operator-switch-review.test.ts:184:23
+    182|     const failed = await db.select().from(auditLog).where(eq(auditLog.…
+    183|     expect(failed).toHaveLength(1);
+    184|     expect(failed[0]).toMatchObject({ action: 'session.operator_switch…
+       |                       ^
+    185|       operatorId: f.home, branchId: null, after: { error: 'FORBIDDEN' …
+    186|     expect(await snapshot()).toEqual(before); expect(await audits()).t…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  test/operator-switch-review.test.ts > SCRUM-640 native operator-switch service house review; central routes and cached replay remain held > FINDING R19 [high] anchor session-level success audits to home with no branch; retain foreign seat facts only in before/after
+AssertionError: expected { …(13) } to match object { …(8) }
+(5 matching properties omitted from actual)
+
+- Expected
++ Received
+
+@@ -11,10 +11,10 @@
+      "branchId": "01a1730a-5738-708f-84da-f504e6dab2b3",
+      "effectiveOperatorId": "01a1730a-5732-7921-aa30-b1789ee5cf45",
+      "revision": 1,
+      "stationId": "01a1730a-5738-708f-84da-f50574a821a7",
+    },
+-   "branchId": null,
++   "branchId": "01a1730a-5738-708f-84da-f504e6dab2b3",
+    "entityId": "01a1730a-5732-7921-aa30-b17fc6d10e39",
+    "entityType": "session",
+    "operatorId": "01a1730a-5732-7921-aa30-b17740a30843",
+  }
+
+ ❯ test/operator-switch-review.test.ts:201:25
+    199|     const recorded = await db.select().from(auditLog).where(eq(auditLo…
+    200|     expect(recorded).toHaveLength(1);
+    201|     expect(recorded[0]).toMatchObject({ action: 'session.operator_swit…
+       |                         ^
+    202|       operatorId: f.home, branchId: null, entityType: 'session', entit…
+    203|       before: { effectiveOperatorId: f.target, branchId: b, stationId:…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 27 passed (29)
+   Start at  19:30:11
+   Duration  9.56s (transform 602ms, setup 0ms, collect 1.36s, tests 7.99s, environment 0ms, prepare 81ms)
+
+C:\w\admin-operator-switch\apps\api:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @oto/api@0.1.0 test: `vitest run --pool=forks "test/operator-switch-review.test.ts"`
+Exit status 1

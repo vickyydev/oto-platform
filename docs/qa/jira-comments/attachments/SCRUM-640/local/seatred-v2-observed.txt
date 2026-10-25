@@ -1,0 +1,64 @@
+ ❯ test/operator-switch-seat-review.test.ts (2 tests | 1 failed) 8292ms
+   × SCRUM-640 native station-pick isolation house review > R1 [critical] refuses an authorized A pick resumed after a real B switch, before mint or success audit 88ms
+     → expected { statusCode: 200, …(4) } to deeply equal { statusCode: 409, …(4) }
+   ✓ SCRUM-640 native station-pick isolation house review > R2 [high] the same real key and owned box mint a usable native shift-token response without a context change 35ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/operator-switch-seat-review.test.ts > SCRUM-640 native station-pick isolation house review > R1 [critical] refuses an authorized A pick resumed after a real B switch, before mint or success audit
+AssertionError: expected { statusCode: 200, …(4) } to deeply equal { statusCode: 409, …(4) }
+
+- Expected
++ Received
+
+  {
+-   "errorCode": "SESSION_CONTEXT_CHANGED",
++   "errorCode": null,
+    "seat": {
+      "accountId": "01a17305-3584-7d7e-b7f3-9a0dac942d6b",
+      "branchId": null,
+      "operatorOverride": "01a17305-3584-7d7e-b7f3-9a09282546ec",
+-     "stationId": null,
++     "stationId": "01a17305-3584-7d7e-b7f3-9a0ce77bc0b0",
+    },
+-   "statusCode": 409,
+-   "successActions": [],
+-   "tokens": [],
++   "statusCode": 200,
++   "successActions": [
++     "session.station_pick",
++     "staff_token.mint",
++   ],
++   "tokens": [
++     {
++       "accountId": "01a17305-3584-7d7e-b7f3-9a0dac942d6b",
++       "boxId": "01a17305-3584-7d7e-b7f3-9a0b24a1e470",
++       "branchId": "01a17305-3584-7d7e-b7f3-9a0a0439b8a4",
++       "jti": "01a17305-35cd-7b58-9682-369e49ac8a87",
++       "operatorId": "01a17305-3584-7d7e-b7f3-9a08b7d44245",
++       "revokedAt": null,
++       "sessionId": "01a17305-35b4-7003-a3b1-f9507f11c5a8",
++       "stationId": "01a17305-3584-7d7e-b7f3-9a0ce77bc0b0",
++     },
++   ],
+  }
+
+ ❯ test/operator-switch-seat-review.test.ts:107:23
+    105|         errorCode: (response.json() as { error?: { code?: string } }).…
+    106|         seat: await seat(), tokens: await tokens(), successActions: (a…
+    107|       expect(outcome).toEqual({ statusCode: 409, errorCode: 'SESSION_C…
+       |                       ^
+    108|         seat: switchedSeat, tokens: beforeTokens, successActions: [] }…
+    109|       expect((await ctx.db.select({ operatorId: account.operatorId }).…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 1 passed (2)
+   Start at  19:24:30
+   Duration  13.85s (transform 2.92s, setup 0ms, collect 5.33s, tests 8.29s, environment 0ms, prepare 82ms)
+
+C:\w\admin-operator-switch\apps\api:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @oto/api@0.1.0 test: `vitest run --pool=forks "test/operator-switch-seat-review.test.ts"`
+Exit status 1

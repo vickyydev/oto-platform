@@ -1,0 +1,15 @@
+# SCRUM-640 local groundwork checkpoint
+
+Source 88e99b26ebc159dd952062baf2076bf6f8e5ecc8; fourteen owned files, unchanged across the rebase onto 56efea7abe52d8205df38605c32e993c946995a2. This is an isolated source checkpoint. Q20 central authentication/current-user/handoff/idempotency and protected assistant integration remain held. No active route or picker offer exists; no deployment or Deployed acceptance is claimed.
+
+Native observed coverage: 322 DB cases, 775 shared cases, 205 affected API cases across nine files including all four route guards, and 297 Console cases/three TODO. Schema verification, package compilers, the Console build and touched-file lint pass at their recorded frames. After rebase, the frozen final source repeats nine migration cases, all 775 shared cases, all 31 new API cases, all 297 Console cases, DB/shared/API/three Console compiler configurations and eleven-file lint. Compiler output has zero diagnostics.
+
+Actual REDs precede implementation: missing DB storage8fail/one baseline; permission3fail/one control; service27fail; picker14fail/two controls. The native paused station pick returns200, attaches its old station after B switch, and mints an A token before the narrow UPDATE fence; a normal mint control passes. R18/R19 then produce27pass/two audit failures before verified failure attribution and branchless home-session audits fix them. Their passing pins are included in the final29-case service suite. Excerpts contain safe IDs/metadata only; all complete logs are bound by hash in checks.json.
+
+Retained non-product failures: the SQL test initially mistook native ON DELETE/UPDATE NO ACTION for a destructive statement; exact native FK assertions remain. A cleanup lint issue and a markup capture type error were corrected. The first affected API run has196passes/seven skipped because embedded PostgreSQL could not bind its random port, plus a consequent setup teardown failure. The unchanged ID file passes23 on retry and the final nine-file run passes205. No guard, assertion or timeout is weakened.
+
+The full DB run is scoped evidence, not a frozen whole-workspace release: its DB inputs remained stable while the additive shared permission was prepared. Final post-rebase focused DB/full shared checks pass. The Console build preceded only an EOF blank-line removal; final units/compilers/lint repeat. Full final API/workspace and native built-browser release checks, generated route contracts, migration landing renumbering, exact-SHA CI, automatic deployment and inspected staging screenshots still follow combined integration. Provisional0087 conflicts with held638 and is renumbered at landing.
+
+All databases are isolated local embedded PostgreSQL and stopped by native teardown. No new Docker container or staging fixture, provider/control/job action, SMS, payment, check-in or channel change is used.
+
+Observed excerpts remove reporter trailing horizontal whitespace. Their complete original logs remain unchanged and bound by the receipt hashes.

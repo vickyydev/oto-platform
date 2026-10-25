@@ -1,0 +1,26 @@
+{
+  "recordedAt": "2026-10-25T12:34:38.421Z",
+  "sourceCommit": "88e99b26ebc159dd952062baf2076bf6f8e5ecc8",
+  "baseMain": "56efea7abe52d8205df38605c32e993c946995a2",
+  "branch": "lane/admin-operator-switch",
+  "files": {
+    "apps/api/src/services/operator-switch.ts": "a3bd4707333ce735db408c949c9ced0a2537fb6286a13bcbb739440613235eb7",
+    "apps/api/src/services/fleet.ts": "a0a09556a5411e57a64e0da827217842c0bbe549cf44c7f10dc9e1f50e98f58d",
+    "apps/api/test/operator-switch-review.test.ts": "fd7198fa385b5a7ae9a84c1063ff1f15de4dce5d0adeaf7403456c60f3071d72",
+    "apps/api/test/operator-switch-seat-review.test.ts": "9dabcd90a6936c85a06d7058e5aed8ce5c5c08bd601b012c6212662d9ec660e9",
+    "apps/console/src/components/OperatorSwitchPicker.tsx": "eb82456d93b072e852bfd6266684e1b494abec570f5beb6a17086071664960ae",
+    "apps/console/test/operator-switch-picker-markup.test.ts": "b94634c0ca22de52bb908119c63499517c5ed2662a2d0a7609b77b6412ba5aa7",
+    "packages/db/src/schema/tenancy.ts": "ffe7b37b05a68296ddf87a7f3354b652ffaf99ae36e1a04ec97aeb61c6ea5569",
+    "packages/db/migrations/0087_operator_switch.sql": "40940090aae6caa464ceb992782f8381b4261a560ca7df57bbb5a09ff7853e5f",
+    "packages/db/migrations/meta/0087_snapshot.json": "d32b0d999d37798e323941de74598454b91bd6da3a110f33ac2f0e8c6ad13889",
+    "packages/db/migrations/meta/_journal.json": "dfe294319fb49cc44c2396a8c1f5b59493cd5afee067b48c3b3b602f014fb09f",
+    "packages/db/test/s640-operator-switch-migration.test.ts": "f86de4d6f6d29319d3793e420ab2749afd2024d0090754642501d913565c0d01",
+    "packages/shared/src/permissions.ts": "932b720ee370347ae260f48eeaf751f8186848b5014645911e798ed93e381b28",
+    "packages/shared/src/permission-words.ts": "9eeab3f009f09ef8a87f035082e09645c77e7da011c3606f65dc7111a05a25e2",
+    "packages/shared/test/operator-switch-permission.test.ts": "84d7d4e73267e63136e9fe708bb67d8fde42167767715e0f80f7f316db6a2535"
+  },
+  "unchangedAcrossRebase": true,
+  "sourceFileCount": 14,
+  "releasedToMain": false,
+  "centralIntegrationHeld": "Q20"
+}

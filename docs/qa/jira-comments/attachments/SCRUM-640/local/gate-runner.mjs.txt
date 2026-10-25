@@ -1,0 +1,53 @@
+import { spawn } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+const phase = process.argv[2];
+const attempt = process.argv[3] ?? 'v1';
+if (!/^v[1-9][0-9]*$/.test(attempt)) throw new Error('UNKNOWN_GATE_ATTEMPT');
+const commands = {
+  red: 'pnpm --filter @oto/db test test/s640-operator-switch-migration.test.ts',
+  green: 'pnpm --filter @oto/db test test/s640-operator-switch-migration.test.ts',
+  complete: 'pnpm --filter @oto/db test',
+  schema: 'pnpm --filter @oto/db verify-schema',
+  types: 'pnpm --filter @oto/db typecheck\npnpm --filter @oto/api typecheck',
+  lint: 'pnpm exec eslint packages/db/src/schema/tenancy.ts packages/db/test/s640-operator-switch-migration.test.ts',
+  sharedred: 'pnpm --filter @oto/shared test test/operator-switch-permission.test.ts',
+  shared: 'pnpm --filter @oto/shared test\npnpm --filter @oto/shared typecheck\npnpm exec eslint packages/shared/src/permissions.ts packages/shared/src/permission-words.ts packages/shared/test/operator-switch-permission.test.ts',
+  apired: 'pnpm --filter @oto/api test test/operator-switch-review.test.ts',
+  api: 'pnpm --filter @oto/api test test/operator-switch-review.test.ts\npnpm --filter @oto/api typecheck\npnpm exec eslint apps/api/src/services/operator-switch.ts apps/api/test/operator-switch-review.test.ts',
+  uired: 'pnpm --filter @oto/console test test/operator-switch-picker-markup.test.ts',
+  ui: 'pnpm --filter @oto/console test\npnpm --filter @oto/console typecheck\npnpm --filter @oto/console build\npnpm exec eslint apps/console/src/components/OperatorSwitchPicker.tsx apps/console/test/operator-switch-picker-markup.test.ts',
+  seatred: 'pnpm --filter @oto/api test test/operator-switch-seat-review.test.ts',
+  ids: 'pnpm --filter @oto/api test test/id-conformance.test.ts',
+  post: 'pnpm --filter @oto/db test test/s640-operator-switch-migration.test.ts\npnpm --filter @oto/db typecheck\npnpm --filter @oto/shared test\npnpm --filter @oto/shared typecheck\npnpm --filter @oto/api test test/operator-switch-review.test.ts test/operator-switch-seat-review.test.ts\npnpm --filter @oto/api typecheck\npnpm --filter @oto/console test\npnpm --filter @oto/console typecheck\npnpm exec eslint apps/api/src/services/fleet.ts apps/api/src/services/operator-switch.ts apps/api/test/operator-switch-review.test.ts apps/api/test/operator-switch-seat-review.test.ts apps/console/src/components/OperatorSwitchPicker.tsx apps/console/test/operator-switch-picker-markup.test.ts packages/db/src/schema/tenancy.ts packages/db/test/s640-operator-switch-migration.test.ts packages/shared/src/permissions.ts packages/shared/src/permission-words.ts packages/shared/test/operator-switch-permission.test.ts',
+  seats: 'pnpm --filter @oto/api test test/operator-switch-seat-review.test.ts test/operator-switch-review.test.ts test/session-branch-station.test.ts test/station-session-api.test.ts test/routes-guarded.test.ts test/route-write-conformance.test.ts test/route-scope-target.test.ts test/id-conformance.test.ts test/permissions.test.ts\npnpm --filter @oto/api typecheck\npnpm exec eslint apps/api/src/services/fleet.ts apps/api/src/services/operator-switch.ts apps/api/test/operator-switch-review.test.ts apps/api/test/operator-switch-seat-review.test.ts',
+};
+if (!(phase in commands)) throw new Error('UNKNOWN_DB_GATE');
+const cwd = 'C:/w/admin-operator-switch';
+const prefix = `C:/w/admin640-db-${phase}-${attempt}`;
+if (existsSync(`${prefix}.json`) || existsSync(`${prefix}.log`)) throw new Error('GATE_RECEIPT_ALREADY_EXISTS');
+const digest = bytes => createHash('sha256').update(bytes).digest('hex');
+const inputs = ['packages/db/test/s640-operator-switch-migration.test.ts', 'packages/db/src/schema/tenancy.ts', 'packages/db/migrations/meta/_journal.json', 'packages/shared/test/operator-switch-permission.test.ts', 'packages/shared/src/permissions.ts', 'packages/shared/src/permission-words.ts', 'apps/api/test/operator-switch-review.test.ts', 'apps/api/src/services/operator-switch.ts', 'apps/api/src/services/fleet.ts', 'apps/api/test/operator-switch-seat-review.test.ts', 'apps/console/src/components/OperatorSwitchPicker.tsx', 'apps/console/test/operator-switch-picker-markup.test.ts'].filter(path => existsSync(join(cwd, path)));
+const inputsBefore = Object.fromEntries(inputs.map(path => [path, digest(readFileSync(join(cwd, path)))]));
+const env = { ...process.env, NO_COLOR: '1', FORCE_COLOR: '0' };
+delete env.DATABASE_URL;
+delete env.TEST_DATABASE_URL;
+const startedAt = new Date().toISOString();
+console.log(JSON.stringify({ phase, startedAt, command: commands[phase], isolatedEmbeddedDatabase: true }));
+const child = spawn('C:/Program Files/Git/bin/bash.exe', ['-lc', `set -eo pipefail\n${commands[phase]}`], { cwd, env, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
+const chunks = [];
+child.stdout.on('data', chunk => chunks.push(chunk));
+child.stderr.on('data', chunk => chunks.push(chunk));
+let launchError = null;
+child.on('error', error => { launchError = error.code || 'CHILD_LAUNCH_FAILED'; });
+const { code, signal } = await new Promise(resolve => child.on('close', (code, signal) => resolve({ code, signal })));
+const text = Buffer.concat(chunks).toString('utf8').replace(/postgres(?:ql)?:\/\/[^\s'"<>]+/gi, '[DATABASE_URL_REDACTED]');
+writeFileSync(`${prefix}.log`, text, { flag: 'wx' });
+const inputsAfter = Object.fromEntries(inputs.map(path => [path, digest(readFileSync(join(cwd, path)))]));
+const receipt = { phase, command: commands[phase], startedAt, completedAt: new Date().toISOString(), exitCode: code, signal, launchError, isolatedEmbeddedDatabase: true, inputsBefore, inputsAfter, inputsUnchanged: JSON.stringify(inputsBefore) === JSON.stringify(inputsAfter), logSha256: digest(text), logPath: `${prefix}.log` };
+writeFileSync(`${prefix}.json`, `${JSON.stringify(receipt, null, 2)}\n`, { flag: 'wx' });
+console.log(['complete', 'post'].includes(phase) ? text.split(/\r?\n/).slice(-110).join('\n') : text);
+console.log(JSON.stringify(receipt));
+process.exitCode = code ?? 1;
