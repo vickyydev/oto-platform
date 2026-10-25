@@ -1,0 +1,28 @@
+{
+  "ticket": "SCRUM-634",
+  "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae",
+  "complete": true,
+  "headlinesCompared": true,
+  "allAdminHeadlinesReady": true,
+  "acceptanceReady": true,
+  "screenshots": 3,
+  "links": 4,
+  "closedSessions": 7,
+  "cleanup": {
+    "ownedContexts": 7,
+    "pending": 0,
+    "unresolved": 0,
+    "unknown": false,
+    "journalFailed": false,
+    "businessWrites": 0,
+    "fixturesCreated": 0
+  },
+  "network": {
+    "blocked": 0,
+    "failed": 0,
+    "pageErrors": 0,
+    "consoleErrors": 0
+  },
+  "errorCode": null,
+  "receiptPath": "C:/w/admin634-native-v4/result.json"
+}

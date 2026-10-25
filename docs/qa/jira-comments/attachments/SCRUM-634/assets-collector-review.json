@@ -1,0 +1,90 @@
+{
+  "ticket": "SCRUM-634",
+  "passed": true,
+  "reviewedAt": "2026-10-25T03:13:03.789Z",
+  "collectorSha256": "ac29965d444d72bac7ff5cb0272f63f035039d8fa01671eb6488897de766ca53",
+  "preservedCollectorSha256": "f2b3011b8b2e7fafdd03c52ea72c92266c8c9bae93eee9a9ade6c115b71bf585",
+  "testsSha256": "ed73560955e7aff2e26dcdedf1fa1be94a286951aec91414084c6d097b605b3d",
+  "authorReviewSha256": "4da08e1226417835d958602b673b37cad06701665963d5f802a2acf45c44e7f9",
+  "wholeDeltaRead": true,
+  "actualCapturedOffline": {
+    "passed": 15,
+    "failed": 0,
+    "exitCode": 0,
+    "actualNestedGetHeadersExercised": true,
+    "logPath": "C:/w/admin634-public-assets-image-policy-tests.log",
+    "logSha256": "55e381c5264ed84bde3ea6ff1ae51ac100c42dfa64c3b4169bc833c355c169e5",
+    "wholeOutputRead": true,
+    "executedByReviewer": false
+  },
+  "policy": {
+    "rasterImageAccept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+    "rasterExtensions": [
+      "png",
+      "webp",
+      "jpg",
+      "jpeg"
+    ],
+    "otherAssetAccept": "*/*",
+    "htmlAccept": "text/html",
+    "hashRule": "Exact fetched representation bytes; no alternative hash acceptance."
+  },
+  "correction": "Only raster GET Accept changes to the observed Chromium header; SVG/non-image/HTML request policies remain unchanged. Hashes remain a single exact representation digest with no fallback.",
+  "retained": {
+    "sourceCiAndLatestThreeLive": true,
+    "publicGetOnlyNoCookies": true,
+    "exactUrlAndManualRedirect": true,
+    "byteTimeCountLimits": true,
+    "lexicalClosureAndUnknownRefusal": true,
+    "browserExactHashChecks": true,
+    "noProofHelperChanges": true
+  },
+  "actualCollection": {
+    "path": "C:/w/admin634-assets-collection-v2-result.json",
+    "sha256": "6e8a2ddf2f8f7398521e27a2f1c3929e2b7b8b6ae0b9ee4a8a57637aac048106",
+    "session": 86905,
+    "exitCode": 0,
+    "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae",
+    "ciRunId": "40154287659",
+    "assetCount": 7,
+    "publicBytesRead": 2004578,
+    "startedAt": "2026-10-25T03:11:34.761Z",
+    "completedAt": "2026-10-25T03:11:49.751Z"
+  },
+  "manifest": {
+    "path": "C:/w/admin634-assets-live-v2.json",
+    "sha256": "0ac5485bd8a7ae04358b6dcc976f9d2a90518490ff930a72883d6e1709e32163",
+    "unchangedSevenPaths": true,
+    "changed": [
+      {
+        "path": "/assets/logo-oto-nNYXf9Wy.png",
+        "sha256": "17a3ee3cd02ce9440ecba6ca182c17865c714584d126805d6bd7931e4fbae150"
+      }
+    ]
+  },
+  "evidence": {
+    "publicProbe": {
+      "path": "C:/w/admin634-public-image-variant-result.json",
+      "sha256": "3c05215921190aa366526834275f1622b736fe59858765ee7170c59a757482ce"
+    },
+    "failedNative": {
+      "path": "C:/w/admin634-native-v2/result.json",
+      "sha256": "53281c3a0919254d9989c20ad91359d91ca0c553336cecbdf1b2503af9072d49",
+      "complete": false,
+      "screenshots": 0
+    },
+    "priorManifest": {
+      "path": "C:/w/admin634-assets-live.json",
+      "sha256": "5663a945b91351c11458cf3c8a66cfda6c5fab39659f9b61a05d638c384b9e79"
+    },
+    "priorAssetApproval": {
+      "path": "C:/w/admin634-assets-review.json",
+      "sha256": "75a0d93a4db9bd9d4a32a63a3396b51e717972d5bcf0423420f21fed84a54b91"
+    }
+  },
+  "limits": [
+    "No actual network/auth/browser/runtime/Git or repository edits by reviewer.",
+    "The old native failures and old public manifest remain preserved; no failure is relabelled green.",
+    "Approval concerns only this exact public representation input. Actual native headline, cleanup and PNG acceptance remain separate."
+  ]
+}

@@ -1,0 +1,515 @@
+{
+  "ticket": "SCRUM-634",
+  "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae",
+  "ciRunId": "40154287659",
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "deployId": "dep-dbemorm7bikc73be3a60",
+      "finishedAt": "2026-10-25T02:45:13.564893Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "deployId": "dep-dbemorm7bikc73be3c5g",
+      "finishedAt": "2026-10-25T02:42:35.480841Z"
+    },
+    {
+      "name": "oto-app-staging",
+      "deployId": "dep-dbemorm7bikc73be3b4g",
+      "finishedAt": "2026-10-25T02:44:29.678564Z"
+    }
+  ],
+  "helperSha256": "9697faa121273032ac39b94d50d67304579e8db3dd68d1b08d18a5401b9848ce",
+  "planSha256": "b7b4d62293b871df80c44fe5a391dfdc6cf4e306a16b40eec8b7f5a99e59d012",
+  "assetSpecSha256": "0ac5485bd8a7ae04358b6dcc976f9d2a90518490ff930a72883d6e1709e32163",
+  "startedAt": "2026-10-25T03:19:51.830Z",
+  "actualStaging": true,
+  "complete": true,
+  "businessWrites": 0,
+  "fixturesCreated": 0,
+  "sourceChecks": [
+    {
+      "at": "2026-10-25T03:19:55.054Z",
+      "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae"
+    },
+    {
+      "at": "2026-10-25T03:19:58.805Z",
+      "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae"
+    },
+    {
+      "at": "2026-10-25T03:20:04.539Z",
+      "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae"
+    },
+    {
+      "at": "2026-10-25T03:20:10.989Z",
+      "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae"
+    },
+    {
+      "at": "2026-10-25T03:20:15.727Z",
+      "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae"
+    },
+    {
+      "at": "2026-10-25T03:20:27.403Z",
+      "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae"
+    },
+    {
+      "at": "2026-10-25T03:20:30.170Z",
+      "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae"
+    },
+    {
+      "at": "2026-10-25T03:20:40.217Z",
+      "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae"
+    },
+    {
+      "at": "2026-10-25T03:20:46.651Z",
+      "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae"
+    },
+    {
+      "at": "2026-10-25T03:20:49.800Z",
+      "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae"
+    },
+    {
+      "at": "2026-10-25T03:20:55.888Z",
+      "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae"
+    },
+    {
+      "at": "2026-10-25T03:20:59.103Z",
+      "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae"
+    },
+    {
+      "at": "2026-10-25T03:21:04.895Z",
+      "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae"
+    },
+    {
+      "at": "2026-10-25T03:21:08.573Z",
+      "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae"
+    },
+    {
+      "at": "2026-10-25T03:21:14.883Z",
+      "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae"
+    },
+    {
+      "at": "2026-10-25T03:21:18.185Z",
+      "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae"
+    },
+    {
+      "at": "2026-10-25T03:21:23.904Z",
+      "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae"
+    },
+    {
+      "at": "2026-10-25T03:21:28.660Z",
+      "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae"
+    },
+    {
+      "at": "2026-10-25T03:21:35.498Z",
+      "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae"
+    },
+    {
+      "at": "2026-10-25T03:21:40.072Z",
+      "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae"
+    },
+    {
+      "at": "2026-10-25T03:21:42.734Z",
+      "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae"
+    }
+  ],
+  "operations": [
+    {
+      "label": "sign-in",
+      "app": "platform",
+      "alias": "ADMIN",
+      "contextRef": "f3be26a5-d3b1-4eea-81eb-a62eebf9ea3b",
+      "path": "/api/auth/sign-in",
+      "intentAt": "2026-10-25T03:19:58.807Z"
+    },
+    {
+      "label": "handoff-issue",
+      "app": "platform",
+      "alias": "ADMIN",
+      "contextRef": "f3be26a5-d3b1-4eea-81eb-a62eebf9ea3b",
+      "path": "/api/auth/handoff",
+      "intentAt": "2026-10-25T03:20:04.541Z"
+    },
+    {
+      "label": "handoff-exchange",
+      "app": "app",
+      "alias": "ADMIN",
+      "contextRef": "81129fe2-7b91-4131-8c0a-e65e692cd64d",
+      "path": "/api/auth/handoff",
+      "intentAt": "2026-10-25T03:20:10.991Z"
+    },
+    {
+      "label": "handoff-exchange",
+      "app": "app",
+      "alias": "ADMIN",
+      "contextRef": "b101f6a6-c39e-4b57-805b-874949d2690e",
+      "path": "/api/auth/handoff",
+      "intentAt": "2026-10-25T03:20:49.803Z"
+    },
+    {
+      "label": "sign-out",
+      "app": "app",
+      "alias": "ADMIN",
+      "contextRef": "b101f6a6-c39e-4b57-805b-874949d2690e",
+      "path": "/api/logout",
+      "intentAt": "2026-10-25T03:20:50.119Z"
+    },
+    {
+      "label": "handoff-exchange",
+      "app": "app",
+      "alias": "ADMIN",
+      "contextRef": "600f51e0-0565-465a-9221-4bd31245839c",
+      "path": "/api/auth/handoff",
+      "intentAt": "2026-10-25T03:20:59.106Z"
+    },
+    {
+      "label": "sign-out",
+      "app": "app",
+      "alias": "ADMIN",
+      "contextRef": "600f51e0-0565-465a-9221-4bd31245839c",
+      "path": "/api/logout",
+      "intentAt": "2026-10-25T03:20:59.444Z"
+    },
+    {
+      "label": "handoff-exchange",
+      "app": "app",
+      "alias": "ADMIN",
+      "contextRef": "ab089673-b385-4e3c-8cf4-9011d9822291",
+      "path": "/api/auth/handoff",
+      "intentAt": "2026-10-25T03:21:08.576Z"
+    },
+    {
+      "label": "sign-out",
+      "app": "app",
+      "alias": "ADMIN",
+      "contextRef": "ab089673-b385-4e3c-8cf4-9011d9822291",
+      "path": "/api/logout",
+      "intentAt": "2026-10-25T03:21:08.990Z"
+    },
+    {
+      "label": "handoff-exchange",
+      "app": "app",
+      "alias": "ADMIN",
+      "contextRef": "950cacc7-951a-409c-8f3f-99cc7edc0f4a",
+      "path": "/api/auth/handoff",
+      "intentAt": "2026-10-25T03:21:18.188Z"
+    },
+    {
+      "label": "sign-out",
+      "app": "app",
+      "alias": "ADMIN",
+      "contextRef": "950cacc7-951a-409c-8f3f-99cc7edc0f4a",
+      "path": "/api/logout",
+      "intentAt": "2026-10-25T03:21:18.456Z"
+    },
+    {
+      "label": "sign-out",
+      "app": "app",
+      "alias": "ADMIN",
+      "contextRef": "81129fe2-7b91-4131-8c0a-e65e692cd64d",
+      "path": "/api/logout",
+      "intentAt": "2026-10-25T03:21:20.162Z"
+    },
+    {
+      "label": "sign-out",
+      "app": "platform",
+      "alias": "ADMIN",
+      "contextRef": "f3be26a5-d3b1-4eea-81eb-a62eebf9ea3b",
+      "path": "/api/auth/sign-out",
+      "intentAt": "2026-10-25T03:21:20.290Z"
+    },
+    {
+      "label": "sign-in",
+      "app": "platform",
+      "alias": "RECEPTION",
+      "contextRef": "fdcfa8d0-b235-4177-9176-85a40be828d9",
+      "path": "/api/auth/sign-in",
+      "intentAt": "2026-10-25T03:21:23.906Z"
+    },
+    {
+      "label": "sign-out",
+      "app": "platform",
+      "alias": "RECEPTION",
+      "contextRef": "fdcfa8d0-b235-4177-9176-85a40be828d9",
+      "path": "/api/auth/sign-out",
+      "intentAt": "2026-10-25T03:21:36.539Z"
+    }
+  ],
+  "actors": [
+    {
+      "alias": "ADMIN",
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "summaryStatus": 200,
+      "comparisons": [
+        {
+          "kind": "desktop",
+          "at": "2026-10-25T03:20:23.553Z",
+          "selectedBranchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "date": "2026-10-25",
+          "source": "ready",
+          "values": {
+            "working": {
+              "status": "ready",
+              "count": 0
+            },
+            "attendance": {
+              "status": "ready",
+              "count": 0
+            },
+            "leave": {
+              "status": "ready",
+              "count": 1
+            },
+            "payroll": {
+              "status": "ready",
+              "month": "2026-10",
+              "entities": [
+                {
+                  "id": "33cebf42-3cbe-4160-9854-67b294edab45",
+                  "version": 2,
+                  "status": "draft",
+                  "nameSha256": "07d591c2e9c5e3cf0fc7862ab3c1f7e2e282cc8dd835fac04602b3d4ef2d8dd1"
+                }
+              ]
+            }
+          },
+          "stableNativeSha256": "13a70578c3c8cafa51f76e0b133905234da2d4aeb6b19472065c2ae99e6cca9c"
+        },
+        {
+          "kind": "phone",
+          "at": "2026-10-25T03:20:36.196Z",
+          "selectedBranchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "date": "2026-10-25",
+          "source": "ready",
+          "values": {
+            "working": {
+              "status": "ready",
+              "count": 0
+            },
+            "attendance": {
+              "status": "ready",
+              "count": 0
+            },
+            "leave": {
+              "status": "ready",
+              "count": 1
+            },
+            "payroll": {
+              "status": "ready",
+              "month": "2026-10",
+              "entities": [
+                {
+                  "id": "33cebf42-3cbe-4160-9854-67b294edab45",
+                  "version": 2,
+                  "status": "draft",
+                  "nameSha256": "07d591c2e9c5e3cf0fc7862ab3c1f7e2e282cc8dd835fac04602b3d4ef2d8dd1"
+                }
+              ]
+            }
+          },
+          "stableNativeSha256": "13a70578c3c8cafa51f76e0b133905234da2d4aeb6b19472065c2ae99e6cca9c"
+        }
+      ],
+      "source": "ready",
+      "selectedBranchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+      "date": "2026-10-25",
+      "originalAuthoritySha256": "eebc47576ca4da09253a46a1357dc035b3c8ca69689bbffdd64064e30c5f2478",
+      "originalAuthorityUnchanged": true
+    },
+    {
+      "alias": "RECEPTION",
+      "accountId": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+      "summaryStatus": 403,
+      "comparisons": [],
+      "restrictionObserved": true,
+      "restrictionUi": "console-level"
+    }
+  ],
+  "screenshots": [
+    {
+      "filename": "SCRUM-634-01-admin-staff-desktop.png",
+      "sha256": "270c64d7ec7dec634e9f6456d5e5f71aa604d027b59e954ebca41b8ec2e0ad0f",
+      "capturedAt": "2026-10-25T03:20:23.574Z",
+      "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae",
+      "native": true,
+      "actor": "ADMIN",
+      "kind": "desktop",
+      "restrictionUi": null,
+      "width": 1600,
+      "height": 1200,
+      "fontSuppressed": 1,
+      "companyNamesMasked": true
+    },
+    {
+      "filename": "SCRUM-634-02-admin-staff-phone.png",
+      "sha256": "cc903c62f26e7ac6bf7bb2a2ed6f7fc8992d0acb3b01d10edf6487cc8fe27577",
+      "capturedAt": "2026-10-25T03:20:36.211Z",
+      "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae",
+      "native": true,
+      "actor": "ADMIN",
+      "kind": "phone",
+      "restrictionUi": null,
+      "width": 390,
+      "height": 1589,
+      "fontSuppressed": 1,
+      "companyNamesMasked": true
+    },
+    {
+      "filename": "SCRUM-634-03-reception-staff-desktop.png",
+      "sha256": "089e614ea59513c8e8a4aadf878fabf7c6624bb39a1e92793e9406d5d79a8fcc",
+      "capturedAt": "2026-10-25T03:21:31.409Z",
+      "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae",
+      "native": true,
+      "actor": "RECEPTION",
+      "kind": "desktop",
+      "restrictionUi": "console-level",
+      "width": 1600,
+      "height": 1274,
+      "fontSuppressed": 1,
+      "companyNamesMasked": true
+    }
+  ],
+  "links": [
+    {
+      "actor": "ADMIN",
+      "key": "working",
+      "target": "/timekeeping-review?tab=live",
+      "at": "2026-10-25T03:20:50.253Z",
+      "nativeClicked": true,
+      "freshHandoff": true,
+      "documentAbortedBeforeAppBootstrap": true,
+      "tokenConsumed": true,
+      "appSessionClosed": true,
+      "destinationUiVisited": false
+    },
+    {
+      "actor": "ADMIN",
+      "key": "attendance",
+      "target": "/timekeeping-review?tab=issues",
+      "at": "2026-10-25T03:20:59.587Z",
+      "nativeClicked": true,
+      "freshHandoff": true,
+      "documentAbortedBeforeAppBootstrap": true,
+      "tokenConsumed": true,
+      "appSessionClosed": true,
+      "destinationUiVisited": false
+    },
+    {
+      "actor": "ADMIN",
+      "key": "leave",
+      "target": "/scheduling",
+      "at": "2026-10-25T03:21:09.126Z",
+      "nativeClicked": true,
+      "freshHandoff": true,
+      "documentAbortedBeforeAppBootstrap": true,
+      "tokenConsumed": true,
+      "appSessionClosed": true,
+      "destinationUiVisited": false
+    },
+    {
+      "actor": "ADMIN",
+      "key": "payroll",
+      "target": "/payroll",
+      "at": "2026-10-25T03:21:18.588Z",
+      "nativeClicked": true,
+      "freshHandoff": true,
+      "documentAbortedBeforeAppBootstrap": true,
+      "tokenConsumed": true,
+      "appSessionClosed": true,
+      "destinationUiVisited": false
+    }
+  ],
+  "authCleanup": [
+    {
+      "alias": "ADMIN",
+      "app": "app",
+      "contextRef": "b101f6a6-c39e-4b57-805b-874949d2690e",
+      "attempted": true,
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    },
+    {
+      "alias": "ADMIN",
+      "app": "app",
+      "contextRef": "600f51e0-0565-465a-9221-4bd31245839c",
+      "attempted": true,
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    },
+    {
+      "alias": "ADMIN",
+      "app": "app",
+      "contextRef": "ab089673-b385-4e3c-8cf4-9011d9822291",
+      "attempted": true,
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    },
+    {
+      "alias": "ADMIN",
+      "app": "app",
+      "contextRef": "950cacc7-951a-409c-8f3f-99cc7edc0f4a",
+      "attempted": true,
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    },
+    {
+      "alias": "ADMIN",
+      "app": "app",
+      "contextRef": "81129fe2-7b91-4131-8c0a-e65e692cd64d",
+      "attempted": true,
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    },
+    {
+      "alias": "ADMIN",
+      "app": "platform",
+      "contextRef": "f3be26a5-d3b1-4eea-81eb-a62eebf9ea3b",
+      "attempted": true,
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    },
+    {
+      "alias": "RECEPTION",
+      "app": "platform",
+      "contextRef": "fdcfa8d0-b235-4177-9176-85a40be828d9",
+      "attempted": true,
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    }
+  ],
+  "refusedRequests": [],
+  "browserDiagnostics": [],
+  "diagnosticsOmitted": 0,
+  "limits": [
+    "Native counts are compared only when the same-actor bracket is stable; no guessed zero or salary amount is used.",
+    "Payroll is company / park-group month status, never selected-park filtered.",
+    "Source buttons prove an actual fresh handoff and fixed browser navigation intent; app destination UI is not loaded.",
+    "External font stylesheet is suppressed; payroll company names and the signed-in identity card are privacy-masked.",
+    "Server-internal temporary app-session closure is enforced by the summary endpoint; this proof directly verifies closure only of contexts it owns."
+  ],
+  "finalSource": true,
+  "cleanup": {
+    "ownedContexts": 7,
+    "pending": 0,
+    "unresolved": 0,
+    "unknown": false,
+    "journalFailed": false,
+    "businessWrites": 0,
+    "fixturesCreated": 0
+  },
+  "network": {
+    "blocked": 0,
+    "failed": 0,
+    "pageErrors": 0,
+    "consoleErrors": 0
+  },
+  "completedAt": "2026-10-25T03:21:42.735Z",
+  "headlinesCompared": true
+}

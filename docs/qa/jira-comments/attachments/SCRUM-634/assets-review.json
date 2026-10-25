@@ -1,0 +1,54 @@
+{
+  "ticket": "SCRUM-634",
+  "passed": true,
+  "reviewedAt": "2026-10-25T03:13:03.792Z",
+  "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae",
+  "ciRunId": "40154287659",
+  "assetSpecPath": "C:/w/admin634-assets-live-v2.json",
+  "assetSpecSha256": "0ac5485bd8a7ae04358b6dcc976f9d2a90518490ff930a72883d6e1709e32163",
+  "assetCount": 7,
+  "collectorSha256": "ac29965d444d72bac7ff5cb0272f63f035039d8fa01671eb6488897de766ca53",
+  "collectorIndependentReviewPath": "C:/w/admin634-independent-collector-image-review.json",
+  "collectorIndependentReviewSha256": "4910e9b93781dd0939ada6e91a75bb21cf3c8cb57094d8e06b20997e195ada11",
+  "collectionResultPath": "C:/w/admin634-assets-collection-v2-result.json",
+  "collectionResultSha256": "6e8a2ddf2f8f7398521e27a2f1c3929e2b7b8b6ae0b9ee4a8a57637aac048106",
+  "ciReceiptSha256": "d10f313a6a75bbe17ea0c2a6856e0c9feb76014cfdbd7a175773c000915fc929",
+  "renderReceiptSha256": "65b8470fd7a371e45f1b2eeb81f1c48f5c946317f1f5355e3cc013b1d3844683",
+  "productionDeployments": [
+    {
+      "name": "oto-api-staging",
+      "deployId": "dep-dbemorm7bikc73be3a60",
+      "finishedAt": "2026-10-25T02:45:13.564893Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "deployId": "dep-dbemorm7bikc73be3c5g",
+      "finishedAt": "2026-10-25T02:42:35.480841Z"
+    },
+    {
+      "name": "oto-app-staging",
+      "deployId": "dep-dbemorm7bikc73be3b4g",
+      "finishedAt": "2026-10-25T02:44:29.678564Z"
+    }
+  ],
+  "representationPolicy": {
+    "rasterImageAccept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+    "rasterExtensions": [
+      "png",
+      "webp",
+      "jpg",
+      "jpeg"
+    ],
+    "otherAssetAccept": "*/*",
+    "htmlAccept": "text/html",
+    "hashRule": "Exact fetched representation bytes; no alternative hash acceptance."
+  },
+  "readOnlyCollection": true,
+  "postDeploy": true,
+  "staticPathAndHashGrammarValid": true,
+  "featureAcceptance": false,
+  "limits": [
+    "Approves only exact fresh public image representation and static asset input for the unchanged strict proof helper.",
+    "No staging feature/native PNG acceptance asserted; exact source and asset hash checks still required at execution."
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "ticket": "SCRUM-634",
+  "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae",
+  "passed": true,
+  "reviewer": "coordinator",
+  "reviewedAt": "2026-10-25T03:22:24.155Z",
+  "actualImagesViewed": true,
+  "receiptSha256": "bcd2ad687862ed2e3e53fd9c8488249768548238947f77ec4578e0ec30a4a07d",
+  "summarySha256": "cd3dbe5dd997a0b8134d6c9bca54156259a0b185163b9f292ec8b709de1d420f",
+  "images": [
+    {
+      "filename": "SCRUM-634-01-admin-staff-desktop.png",
+      "sha256": "270c64d7ec7dec634e9f6456d5e5f71aa604d027b59e954ebca41b8ec2e0ad0f",
+      "passed": true,
+      "width": 1600,
+      "height": 1200,
+      "capturedAt": "2026-10-25T03:20:23.574Z",
+      "fullSourceAndUtcCaptionReadable": true,
+      "captionClearOfPrivacyMasks": true,
+      "noHorizontalClipping": true,
+      "privateIdentityAndCompanyNamesMasked": true,
+      "noCredentialsOrBenefitQrVisible": true,
+      "observation": "All four cards and buttons are readable; working0, attendance0, leave entries1 and October2026 Draft/version2 are visible. Payroll is explicitly company-wide."
+    },
+    {
+      "filename": "SCRUM-634-02-admin-staff-phone.png",
+      "sha256": "cc903c62f26e7ac6bf7bb2a2ed6f7fc8992d0acb3b01d10edf6487cc8fe27577",
+      "passed": true,
+      "width": 390,
+      "height": 1589,
+      "capturedAt": "2026-10-25T03:20:36.211Z",
+      "fullSourceAndUtcCaptionReadable": true,
+      "captionClearOfPrivacyMasks": true,
+      "noHorizontalClipping": true,
+      "privateIdentityAndCompanyNamesMasked": true,
+      "noCredentialsOrBenefitQrVisible": true,
+      "observation": "All four cards and buttons are readable; working0, attendance0, leave entries1 and October2026 Draft/version2 are visible. Payroll is explicitly company-wide."
+    },
+    {
+      "filename": "SCRUM-634-03-reception-staff-desktop.png",
+      "sha256": "089e614ea59513c8e8a4aadf878fabf7c6624bb39a1e92793e9406d5d79a8fcc",
+      "passed": true,
+      "width": 1600,
+      "height": 1274,
+      "capturedAt": "2026-10-25T03:21:31.409Z",
+      "fullSourceAndUtcCaptionReadable": true,
+      "captionClearOfPrivacyMasks": true,
+      "noHorizontalClipping": true,
+      "privateIdentityAndCompanyNamesMasked": true,
+      "noCredentialsOrBenefitQrVisible": true,
+      "observation": "The existing console-level refusal heading is visible; its identity paragraph and action row are masked, with no Staff cards or source controls."
+    }
+  ],
+  "completeNativeProof": true,
+  "allSevenOwnedSessionsClosed200401": true,
+  "noBrowserErrors": true,
+  "limits": [
+    "Native counts are compared only when the same-actor bracket is stable; no guessed zero or salary amount is used.",
+    "Payroll is company / park-group month status, never selected-park filtered.",
+    "Source buttons prove an actual fresh handoff and fixed browser navigation intent; app destination UI is not loaded.",
+    "External font stylesheet is suppressed; payroll company names and the signed-in identity card are privacy-masked.",
+    "Server-internal temporary app-session closure is enforced by the summary endpoint; this proof directly verifies closure only of contexts it owns."
+  ],
+  "earlierFailedAttemptsRelabelled": false
+}

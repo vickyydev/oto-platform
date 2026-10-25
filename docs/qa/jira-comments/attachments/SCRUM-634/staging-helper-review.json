@@ -1,0 +1,58 @@
+{
+  "ticket": "SCRUM-634",
+  "passed": true,
+  "reviewedAt": "2026-10-25T03:21:09.287Z",
+  "helperPath": "C:/w/admin634-staging-proof.mjs",
+  "helperSha256": "9697faa121273032ac39b94d50d67304579e8db3dd68d1b08d18a5401b9848ce",
+  "priorHelperPath": "C:/w/admin634-staging-proof-before-console-refusal.mjs",
+  "priorHelperSha256": "7f82429919fd623cc1e7e27c6dc3dc6b5711df4129cb600a62e2bf067c6f15a0",
+  "priorReviewPath": "C:/w/admin634-staging-proof-diagnostic-review.json",
+  "priorReviewSha256": "992012c8dd8e0cdb084711ce12463f9b141fb7b1aac7e17eff90301567788e23",
+  "nativeSource": {
+    "path": "C:/w/admin-staff-summary/apps/console/src/App.tsx",
+    "sha256": "0fed5f9cf5b278aa85f87b4bebf1e1b0d2cc8e0169f35b4268bda32259afb028",
+    "noConsoleAccessLines": "60-87",
+    "shellGuardLine": 212
+  },
+  "wholeDeltaAndPredicateRead": true,
+  "allowedBranch": "Only known RECEPTION alias with actual summary403 and fresh missing app:console:access permission may use the exact NoConsoleAccess screen. Exact native heading, no main/Staff heading/cards/source buttons, and one h1-adjacent identity paragraph containing the permission code are required.",
+  "originalBranch": "Existing page-level refusal still requires console access, Staff heading/main and exact page-refusal text with no cards or source buttons.",
+  "captionAndPrivacy": "Body caption is selected only after rechecking the known console-level DOM immediately before insertion. It is not a generic missing-main fallback. Exact identity paragraph is added to screenshot masks; all existing masks, caption geometry and overlap checks remain.",
+  "retained": {
+    "api403Required": true,
+    "actualActorCensusAndAuthorityHashes": true,
+    "noPermissionOrBusinessWrites": true,
+    "noMockedSuccessOrBypass": true,
+    "adminNativeComparisonsAndFreshSourceLinks": true,
+    "allUnexpectedNetworkCountersFatal": true,
+    "sourceAndAssetBinding": true,
+    "authCleanupAndUnknownLedger": true,
+    "threeFreshFramesStillRequired": true
+  },
+  "tests": {
+    "coordinatorReportedOriginalPassingPins": 12,
+    "coordinatorReportedNewPredicatePins": 2,
+    "coordinatorReportedPassed": 14,
+    "coordinatorReportedFailed": 0,
+    "newTestPath": "C:/w/admin634-staging-proof-restriction.test.mjs",
+    "newTestSha256": "dd948829ef6b4acd45ba4d35c3e9cb769cc3fb2e1d10841ed6be16add2159979",
+    "wholeNewAssertionsRead": true,
+    "executedByReviewer": false,
+    "limits": "Coordinator observed actual14passing pins; reviewer performed source review only, without claiming an independently rerun test receipt."
+  },
+  "history": {
+    "v3ActualResultPath": "C:/w/admin634-native-v3/result.json",
+    "v3ActualResultSha256": "b75430ec4d0513561b8d613bb43e69e585bbfd93e13c3172c4a773e1064f2688",
+    "v3PixelPartialPath": "C:/w/admin634-staging-image-independent-v3-terminal.json",
+    "v3PixelPartialSha256": "d06106ea4414a602a4f6377c6b6f5bb37a969c2928ce8bc5032d0c34605659ad",
+    "v3NotRelabelled": true,
+    "newAttemptMustStandAlone": true
+  },
+  "limits": [
+    "No live call, authentication, browser execution, Git/Jira action or repository edit by reviewer.",
+    "Native NoConsoleAccess is existing behavior and no product or permission rule changed.",
+    "Source review only. Fresh v4 terminal result and all three actual v4 PNGs remain required for acceptance; v3 partials cannot complete v4."
+  ],
+  "actualStaging": false,
+  "acceptance": false
+}

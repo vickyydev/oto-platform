@@ -1,0 +1,133 @@
+{
+  "ticket": "SCRUM-634",
+  "passed": true,
+  "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae",
+  "reviewedAt": "2026-10-25T03:23:51.400Z",
+  "attempt": "native-v4",
+  "actualStagingImages": true,
+  "allThreeActualPngsOpenedAndVisuallyInspected": true,
+  "images": [
+    {
+      "filename": "SCRUM-634-01-admin-staff-desktop.png",
+      "sha256": "270c64d7ec7dec634e9f6456d5e5f71aa604d027b59e954ebca41b8ec2e0ad0f",
+      "passed": true,
+      "visuallyInspected": true,
+      "actor": "ADMIN",
+      "kind": "desktop",
+      "width": 1600,
+      "height": 1200,
+      "capturedAt": "2026-10-25T03:20:23.574Z",
+      "captionClear": true,
+      "sourceAndTimeReadable": true,
+      "privacyClear": true,
+      "nativeControlsClear": true,
+      "noHorizontalOverflowVisible": true,
+      "notes": [
+        "New actualv4 desktop image viewed: all4card headings/counts/source buttons readable; visible0onshift,0issues,1leave; month2026-10,Draft,Version2.",
+        "Company-name mask is complete; no employee/contact/credential/QR exposed. FullSHA/UTCcaption clear and disjoint."
+      ]
+    },
+    {
+      "filename": "SCRUM-634-02-admin-staff-phone.png",
+      "sha256": "cc903c62f26e7ac6bf7bb2a2ed6f7fc8992d0acb3b01d10edf6487cc8fe27577",
+      "passed": true,
+      "visuallyInspected": true,
+      "actor": "ADMIN",
+      "kind": "phone",
+      "width": 390,
+      "height": 1589,
+      "capturedAt": "2026-10-25T03:20:36.211Z",
+      "captionClear": true,
+      "sourceAndTimeReadable": true,
+      "privacyClear": true,
+      "nativeControlsClear": true,
+      "noHorizontalOverflowVisible": true,
+      "notes": [
+        "New actualv4 390px image viewed at original size: all4stacked cards and buttons within image, text wraps without horizontal clipping.",
+        "Visible0/0/1 and month2026-10,Draft,Version2 match desktop; company-name mask complete, mobile menu closed, no private identity. FullSHA/UTCcaption readable."
+      ]
+    },
+    {
+      "filename": "SCRUM-634-03-reception-staff-desktop.png",
+      "sha256": "089e614ea59513c8e8a4aadf878fabf7c6624bb39a1e92793e9406d5d79a8fcc",
+      "passed": true,
+      "visuallyInspected": true,
+      "actor": "RECEPTION",
+      "kind": "desktop",
+      "width": 1600,
+      "height": 1274,
+      "capturedAt": "2026-10-25T03:21:31.409Z",
+      "captionClear": true,
+      "sourceAndTimeReadable": true,
+      "privacyClear": true,
+      "nativeControlsClear": true,
+      "noHorizontalOverflowVisible": true,
+      "notes": [
+        "ActualReceptionv4 image viewed at original1600x1274 resolution. Native refusal heading is clear; no Staff cards, source buttons or people/pay data are exposed.",
+        "Exact identity paragraph and existing button area are fully masked; no contact, credential or QR is visible.",
+        "Full source SHA and captured03:21:31.409Z caption are legible and do not cover the refusal heading."
+      ]
+    }
+  ],
+  "receipt": {
+    "path": "C:/w/admin634-native-v4/result.json",
+    "sha256": "bcd2ad687862ed2e3e53fd9c8488249768548238947f77ec4578e0ec30a4a07d",
+    "complete": true,
+    "startedAt": "2026-10-25T03:19:51.830Z",
+    "completedAt": "2026-10-25T03:21:42.735Z",
+    "helperSha256": "9697faa121273032ac39b94d50d67304579e8db3dd68d1b08d18a5401b9848ce",
+    "assetSpecSha256": "0ac5485bd8a7ae04358b6dcc976f9d2a90518490ff930a72883d6e1709e32163",
+    "ciRunId": "40154287659",
+    "headlinesCompared": true
+  },
+  "summary": {
+    "path": "C:/w/admin634-native-v4-summary.json",
+    "sha256": "cd3dbe5dd997a0b8134d6c9bca54156259a0b185163b9f292ec8b709de1d420f",
+    "acceptanceReady": true,
+    "allAdminHeadlinesReady": true
+  },
+  "coordinatorObservedTerminal": {
+    "session": 93128,
+    "exitCode": 0
+  },
+  "scope": {
+    "adminNativeComparisonFrames": 2,
+    "visibleAdminValues": {
+      "onShift": 0,
+      "attendanceIssues": 0,
+      "leaveEntries": 1,
+      "payrollMonth": "2026-10",
+      "payrollStatus": "draft",
+      "payrollVersion": 2
+    },
+    "receptionHttpStatus": 403,
+    "receptionRestriction": "existing console-level refusal",
+    "freshClickedSourceLinks": 4,
+    "ownedContextsClosed200Current401": 7,
+    "pending": 0,
+    "unresolved": 0,
+    "unknown": false,
+    "businessWrites": 0,
+    "fixturesCreated": 0,
+    "network": {
+      "blocked": 0,
+      "failed": 0,
+      "pageErrors": 0,
+      "consoleErrors": 0
+    }
+  },
+  "priorAttemptsPreserved": {
+    "v3TerminalReviewPath": "C:/w/admin634-staging-image-independent-v3-terminal.json",
+    "v3TerminalReviewSha256": "d06106ea4414a602a4f6377c6b6f5bb37a969c2928ce8bc5032d0c34605659ad",
+    "v4PartialPath": "C:/w/admin634-staging-image-independent-v4-partial.json",
+    "v4PartialSha256": "2e516766b7ec30d2cbc84807426c27d73a38130b6781c8c39b7090980174a2da",
+    "noEarlierImageUsedToCompleteV4": true
+  },
+  "limits": [
+    "Pixel review covers these exact three actualv4 files. Same-actor source comparisons and cleanup are bound to the completed receipt, not proven by pixels alone.",
+    "Fresh handoff and exact destination intent were checked; destination UI was not loaded.",
+    "External font CSS is suppressed; original external font rendering is not tested.",
+    "No live action, authentication, network, browser execution, Git/Jira or repository edit by reviewer.",
+    "This review does not move Jira to Done; owner final acceptance remains separate."
+  ]
+}

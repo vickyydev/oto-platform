@@ -57,5 +57,48 @@
       "complete": false
     }
   ],
-  "latestDiagnosis": "V1/V2 asset mismatch is a negotiated hosting image representation; the corrected collector uses the exact browser raster Accept and retains strict hashes. V3 Admin comparisons, desktop/phone and four source links pass with zero network errors/all seven contexts closed. V3 whole attempt remains failed because the helper expected a Staff-page refusal rather than the existing console-level Reception refusal."
+  "latestDiagnosis": "V1/V2 asset mismatch is a negotiated hosting image representation; the corrected collector uses the exact browser raster Accept and retains strict hashes. V3 Admin comparisons, desktop/phone and four source links pass with zero network errors/all seven contexts closed. V3 whole attempt remains failed because the helper expected a Staff-page refusal rather than the existing console-level Reception refusal.",
+  "followUpCollectorAttempts": [
+    {
+      "ticket": "SCRUM-634",
+      "startedAt": "2026-10-25T02:56:35.991Z",
+      "authenticated": false,
+      "businessWrites": 0,
+      "helperSha256": "1fb75d0ddd357c56df64fe3713ea11557c5af6cf0d7b4b1f6322be459b6b9fa7",
+      "passed": false,
+      "errorCode": "STATIC_REFERENCE_REFUSED",
+      "referenceDiagnostic": {
+        "basePath": "/assets/index-C2S5370C.js",
+        "candidate": null,
+        "rawSha256": "d6afcba0f6fda5148427c6d59c355b37783147c9da416b66b177985c20afcaad",
+        "hasQuery": false,
+        "hasFragment": false
+      },
+      "completedAt": "2026-10-25T02:56:39.990Z"
+    }
+  ],
+  "completedAttempt": {
+    "path": "staging-result.json",
+    "startedAt": "2026-10-25T03:19:51.830Z",
+    "completedAt": "2026-10-25T03:21:42.735Z",
+    "complete": true,
+    "earlierCaptureAttempts": [
+      {
+        "file": "staging-failed-v1.json",
+        "complete": false,
+        "ownedContextsClosed": 2
+      },
+      {
+        "file": "staging-failed-v2.json",
+        "complete": false,
+        "ownedContextsClosed": 2
+      },
+      {
+        "file": "staging-failed-v3.json",
+        "complete": false,
+        "ownedContextsClosed": 7
+      }
+    ],
+    "collectorCorrection": "Actual JavaScript syntax replaces word/string regexes; exact Chromium raster Accept records the negotiated image bytes without alternative hashes. The known console-level refusal is captured only under its exact original permission and DOM guards. Production source is unchanged."
+  }
 }

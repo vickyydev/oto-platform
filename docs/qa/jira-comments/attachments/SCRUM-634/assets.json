@@ -1,0 +1,64 @@
+{
+  "complete": true,
+  "productionSourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae",
+  "productionCiRunId": "40154287659",
+  "productionDeployments": [
+    {
+      "name": "oto-api-staging",
+      "deployId": "dep-dbemorm7bikc73be3a60",
+      "finishedAt": "2026-10-25T02:45:13.564893Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "deployId": "dep-dbemorm7bikc73be3c5g",
+      "finishedAt": "2026-10-25T02:42:35.480841Z"
+    },
+    {
+      "name": "oto-app-staging",
+      "deployId": "dep-dbemorm7bikc73be3b4g",
+      "finishedAt": "2026-10-25T02:44:29.678564Z"
+    }
+  ],
+  "representationPolicy": {
+    "rasterImageAccept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+    "rasterExtensions": [
+      "png",
+      "webp",
+      "jpg",
+      "jpeg"
+    ],
+    "otherAssetAccept": "*/*",
+    "htmlAccept": "text/html",
+    "hashRule": "Exact fetched representation bytes; no alternative hash acceptance."
+  },
+  "assets": [
+    {
+      "path": "/assets/index-C2S5370C.js",
+      "sha256": "2603656f87a854816f59be3731428efa7fc36fb183131716ac2dd2058c59ca41"
+    },
+    {
+      "path": "/assets/index-CaH3r7Z2.css",
+      "sha256": "a582bf11fce339cde03564290522f1fdfaddc50e2e64d8a38e0a4d756b9af77d"
+    },
+    {
+      "path": "/assets/logo-oto-nNYXf9Wy.png",
+      "sha256": "17a3ee3cd02ce9440ecba6ca182c17865c714584d126805d6bd7931e4fbae150"
+    },
+    {
+      "path": "/assets/react-C6LhzTnE.js",
+      "sha256": "3e1ae0f3568d5d60a7b94013f5a4e34a84a077d1989357802a1cb51fcdec575e"
+    },
+    {
+      "path": "/assets/vendor-CurBxI3I.js",
+      "sha256": "eab0b2c5eba76ac15d1bbbf8d2910c4df29b46e3b740491cf65f167f9a48904a"
+    },
+    {
+      "path": "/favicon.svg",
+      "sha256": "8ffbde9092b1fa4de97c9481b76f518b131268c82e7c555041925225b1dab6e0"
+    },
+    {
+      "path": "/index.html",
+      "sha256": "cc5d08bdc82dd17c27ea18bfbe2d1daa5c9e053f4027f8f9a899a108ffc37ad9"
+    }
+  ]
+}
