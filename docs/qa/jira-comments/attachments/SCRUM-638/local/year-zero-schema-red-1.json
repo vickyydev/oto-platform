@@ -1,0 +1,15 @@
+{
+  "ticket": "SCRUM-638",
+  "name": "year-zero-schema-red-1",
+  "command": "cd /workspace/apps/api && node --import tsx /tmp/admin638-year-zero-schema.check.mjs",
+  "startedAt": "2026-10-25T09:11:27.495Z",
+  "completedAt": "2026-10-25T09:11:28.567Z",
+  "exitCode": 1,
+  "signal": null,
+  "sourceManifestSha256": "2d39ecea41b0a21800be2ed550939737d1e46d4c77ccec73216c34df140a07ef",
+  "logSha256": "5e7a491a0e3b0e26ddb32c80b55a19e6a80fb6248cdef840d0429b5bb3e7f6b3",
+  "hostSourceUnchanged": true,
+  "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+  "hostAndContainerApiDocsUnchanged": true,
+  "staging": false
+}

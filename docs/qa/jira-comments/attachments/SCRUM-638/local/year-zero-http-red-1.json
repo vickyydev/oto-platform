@@ -1,0 +1,15 @@
+{
+  "ticket": "SCRUM-638",
+  "name": "year-zero-http-red-1",
+  "command": "cd /workspace/apps/api && pnpm test test/assistant-settings-review.test.ts",
+  "startedAt": "2026-10-25T09:33:48.393Z",
+  "completedAt": "2026-10-25T09:34:10.475Z",
+  "exitCode": 1,
+  "signal": null,
+  "sourceManifestSha256": "c5d9ffb40d1bc73c7d149bcd627a15389bdabe14013d3418ec1afda0c1abf278",
+  "logSha256": "e9c3c9724a48ce37c253f04640cf848f40771eb38111d1759932a0051db5e47d",
+  "hostSourceUnchanged": true,
+  "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+  "hostAndContainerApiDocsUnchanged": true,
+  "staging": false
+}

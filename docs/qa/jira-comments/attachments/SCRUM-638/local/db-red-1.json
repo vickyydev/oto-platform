@@ -1,0 +1,15 @@
+{
+  "ticket": "SCRUM-638",
+  "name": "db-red-1",
+  "command": "cd /workspace/packages/db && pnpm test assistant-settings.test.ts",
+  "startedAt": "2026-10-25T08:40:13.240Z",
+  "completedAt": "2026-10-25T08:40:17.327Z",
+  "exitCode": 1,
+  "signal": null,
+  "sourceManifestSha256": "08a737ec39fa7dfa9607166bbd0a96372fdcf1dde1094b7be6c8432b0aa55153",
+  "logSha256": "70481920cbdfad02c450823a370b8a4871be56f4531139c71f0a5de92427057c",
+  "hostSourceUnchanged": true,
+  "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+  "hostAndContainerApiDocsUnchanged": true,
+  "staging": false
+}

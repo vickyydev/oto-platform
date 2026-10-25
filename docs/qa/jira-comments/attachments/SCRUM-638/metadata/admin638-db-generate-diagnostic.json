@@ -1,0 +1,8 @@
+{
+  "ticket": "SCRUM-638",
+  "diagnosticOnly": true,
+  "exitCode": 1,
+  "signal": null,
+  "outputSha256": "ca89f11e78ad30cea6c05f7160d23c2896edfa19e292643d1f406250e81e8816",
+  "safeDiagnostics": []
+}

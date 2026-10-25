@@ -1,0 +1,7 @@
+{
+  "at": "2026-10-25T08:58:59.619Z",
+  "sourceFrame": "51cc025072b6a750b274793414022a1f20b3a77a9213f5950ca9964d89592d38",
+  "reason": "Fix reviewed positive-cost numeric underflow before full API acceptance",
+  "containerId": "553b50774eeaf17cae4bb8c15e563280fcccbda07696bcba5f9b9225dac01d76",
+  "onlyOwnApiShards": true
+}

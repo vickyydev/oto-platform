@@ -1,0 +1,30 @@
+{
+  "ticket": "SCRUM-638",
+  "startedAt": "2026-10-25T08:43:58.527Z",
+  "completedAt": "2026-10-25T08:44:04.916Z",
+  "command": "node node_modules/drizzle-kit/bin.cjs generate --name=assistant_settings",
+  "placeholderOnly": true,
+  "exitCode": 0,
+  "signal": null,
+  "stdoutSha256": "70de4e70f7ecabda90e63ab4aa0ae132559847ed0aec55ca90b42ed0e7ef2fec",
+  "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "changed": [
+    {
+      "path": "migrations/0087_assistant_settings.sql",
+      "sha256": "cf6da37360ceca531bc9335dee9125684d2929761e297755d6a520f6ccaa6049",
+      "added": true
+    },
+    {
+      "path": "migrations/meta/0087_snapshot.json",
+      "sha256": "2a47cc0041a4a796db7e7afb6f1a36c42a54d8fedf0a2d2e252e2e77744fe580",
+      "added": true
+    },
+    {
+      "path": "migrations/meta/_journal.json",
+      "sha256": "1e7dda0461a01c7a3e72bc381b6085962485040bd0a670387b61430467ba2608",
+      "added": false
+    }
+  ],
+  "oldMigrationBytesPreserved": true,
+  "safeDiagnostics": []
+}

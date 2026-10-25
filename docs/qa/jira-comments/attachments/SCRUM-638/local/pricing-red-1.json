@@ -1,0 +1,15 @@
+{
+  "ticket": "SCRUM-638",
+  "name": "pricing-red-1",
+  "command": "cd /workspace/apps/api && pnpm test test/s638-pricing-review.test.ts",
+  "startedAt": "2026-10-25T08:45:56.274Z",
+  "completedAt": "2026-10-25T08:46:00.729Z",
+  "exitCode": 1,
+  "signal": null,
+  "sourceManifestSha256": "ca73dc44a4cb75ca3889b78e3e1cfa743945e504b2a0088539cccef93144e3f3",
+  "logSha256": "e21d9bf918639c1d162a36dcfb0d4cd40003cca15871e76303677dc50775e0ee",
+  "hostSourceUnchanged": true,
+  "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+  "hostAndContainerApiDocsUnchanged": true,
+  "staging": false
+}

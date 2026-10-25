@@ -1,0 +1,35 @@
+{
+  "ticket": "SCRUM-638",
+  "at": "2026-10-25T09:38:34.183Z",
+  "broadFrame": "2d39ecea41b0a21800be2ed550939737d1e46d4c77ccec73216c34df140a07ef",
+  "finalFrame": "8173e6ed67ff191ded96da79303abdb4ca5cf7a7df7510d429a9224091b1af87",
+  "unchangedInputs": 3772,
+  "differences": [
+    {
+      "path": "apps/api/src/services/assistant-settings.ts",
+      "broadSha256": "57a42c06aa692a9018063b239253bac5b9ffd6364b2c7f6af161e88fcce3b073",
+      "finalSha256": "e3a2a21f86a93fd507b2d08302e871d9471f636e9d399cb8dcf92364a8996b6a",
+      "originalArchive": "source-1792918281573.tar",
+      "exactReplacementVerified": true
+    },
+    {
+      "path": "apps/api/test/assistant-settings-review.test.ts",
+      "broadSha256": "7a71075ae5b288880ba0c99b40d9307073c688db6c6502d4e648a04f104897a6",
+      "finalSha256": "97748e040ad61279f7301a15e03e6dc25703ffcc46e89330a1e3570cd87534f5",
+      "originalArchive": "source-1792918418396.tar",
+      "exactReplacementVerified": true
+    }
+  ],
+  "broadBatteryFreshOnFinalFrame": false,
+  "finalGuardScope": "Reject only ISO year zero, which PostgreSQL cannot price, before immutable history is stored; one actual HTTP regression added.",
+  "regression": "year-zero-http-red-1",
+  "finalChecks": [
+    "final-scope-green-1",
+    "compilers-contracts-lint-final-1"
+  ],
+  "localReleaseGreen": false,
+  "productionConsumersBuilt": false,
+  "plannerQuestion": "Q21",
+  "mainFeatureLanded": false,
+  "actualStaging": false
+}
