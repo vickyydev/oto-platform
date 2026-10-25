@@ -1,0 +1,115 @@
+
+> @oto/api@0.1.0 test /workspace/apps/api
+> vitest run --pool=forks test/aggregates-members.test.ts test/aggregates-domain.test.ts test/aggregates-ai.test.ts test/s636-aggregates-review.test.ts test/routes-guarded.test.ts test/route-write-conformance.test.ts test/id-conformance.test.ts test/route-scope-target.test.ts
+
+
+ RUN  v3.2.7 /workspace/apps/api
+
+stdout | test/aggregates-members.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/aggregates-members.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+ ✓ test/aggregates-members.test.ts (4 tests) 2613ms
+stdout | test/id-conformance.test.ts > a create sent twice under one id is one record (SCRUM-270)
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/id-conformance.test.ts > a create sent twice under one id is one record (SCRUM-270)
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+ ✓ test/id-conformance.test.ts (22 tests) 2931ms
+stdout | test/routes-guarded.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/routes-guarded.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+ ✓ test/routes-guarded.test.ts (19 tests) 2533ms
+stdout | test/aggregates-domain.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/aggregates-domain.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+ ✓ test/aggregates-domain.test.ts (17 tests) 2441ms
+stdout | test/s636-aggregates-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/s636-aggregates-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+ ✓ test/s636-aggregates-review.test.ts (44 tests) 2507ms
+stdout | test/aggregates-ai.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/aggregates-ai.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+ ❯ test/aggregates-ai.test.ts (13 tests | 2 failed) 2300ms
+   ✓ SCRUM-636 AI usage: real native-table projections > assistant preserves count-state predicate separately from sums across all scoped rows 13ms
+   ✓ SCRUM-636 AI usage: real native-table projections > Inbox counts latency including zero/failure/shadow, while token sums include no-latency rows 13ms
+   ✓ SCRUM-636 AI usage: real native-table projections > assistant totals include selected parks plus exactly one authorized branchless bucket 6ms
+   ✓ SCRUM-636 AI usage: real native-table projections > assistant groups half-open Bangkok dates despite the park timezone and trading cutoff 5ms
+   ✓ SCRUM-636 AI usage: real native-table projections > assistant returns dense genuine zero days and supports only the authorized unassigned scope 4ms
+   × SCRUM-636 AI usage: real native-table projections > assistant refuses an archived park even when its selected descriptor was captured live 9ms
+     → expected [ …(2) ] to deeply equal [ Array(1) ]
+   ✓ SCRUM-636 AI usage: real native-table projections > Inbox totals include selected parks plus exactly one authorized branchless bucket 10ms
+   ✓ SCRUM-636 AI usage: real native-table projections > Inbox groups half-open Bangkok dates despite the park timezone and trading cutoff 14ms
+   ✓ SCRUM-636 AI usage: real native-table projections > Inbox returns dense genuine zero days and supports only the authorized unassigned scope 6ms
+   × SCRUM-636 AI usage: real native-table projections > Inbox refuses an archived park even when its selected descriptor was captured live 8ms
+     → expected [ …(2) ] to deeply equal [ Array(1) ]
+   ✓ SCRUM-636 AI usage: real native-table projections > assistant fences referenced account and branch ownership without dropping an inactive own account 4ms
+   ✓ SCRUM-636 AI usage: real native-table projections > Inbox fences both conversation operator and owned branch references 10ms
+   ✓ SCRUM-636 AI usage: real native-table projections > Inbox honestly follows the current conversation branch and never infers the channel park 9ms
+ ✓ test/route-write-conformance.test.ts (17 tests) 379ms
+ ✓ test/route-scope-target.test.ts (17 tests) 340ms
+
+ Test Files  1 failed | 7 passed (8)
+      Tests  2 failed | 151 passed (153)
+   Start at  03:55:52
+   Duration  28.13s (transform 2.52s, setup 0ms, collect 10.91s, tests 16.04s, environment 1ms, prepare 283ms)
+
+ ELIFECYCLE  Test failed. See above for more details.
+(node:571) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:615) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:615) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(node:651) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:687) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:723) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:759) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:795) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:819) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/aggregates-ai.test.ts > SCRUM-636 AI usage: real native-table projections > assistant refuses an archived park even when its selected descriptor was captured live
+ FAIL  test/aggregates-ai.test.ts > SCRUM-636 AI usage: real native-table projections > Inbox refuses an archived park even when its selected descriptor was captured live
+AssertionError: expected [ …(2) ] to deeply equal [ Array(1) ]
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  [[22m
+[31m+   "c728ba61-444d-4452-b522-4896eb21c3f4",[39m
+[2m    "2fdc28cd-f4fd-45f4-8f2f-1dc9ae2afcf3",[22m
+[2m  ][22m
+
+ ❯ test/aggregates-ai.test.ts:128:55
+    126|       await ctx.db.update(branch).set({ archivedAt: new Date('2026-10-…
+    127|       const result = await implementation.read(ctx.db, captured);
+    128|       expect(result.parks.map(park => park.branchId)).toEqual([f.b.id]…
+       |                                                       ^
+    129|       expect(result.parks[0]!.totals).toEqual(metrics(1, 10, 10, 10));
+    130|       expect(result.totals).toEqual(metrics(2, 110, 110, 110));
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+

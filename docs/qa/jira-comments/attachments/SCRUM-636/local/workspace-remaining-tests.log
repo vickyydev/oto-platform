@@ -1,0 +1,131 @@
+
+   • Packages in scope: @oto/admin-screens, @oto/console, @oto/inbox, @oto/launcher
+   • Running test in 4 packages
+   • Remote caching disabled
+
+@oto/admin-screens:test: cache bypass, force executing 002b934c59072cbf
+@oto/admin-screens:test: 
+@oto/admin-screens:test: > @oto/admin-screens@0.1.0 test /workspace/packages/admin-screens
+@oto/admin-screens:test: > vitest run
+@oto/admin-screens:test: 
+@oto/admin-screens:test: 
+@oto/admin-screens:test:  RUN  v3.2.7 /workspace/packages/admin-screens
+@oto/admin-screens:test: 
+@oto/admin-screens:test:  ✓ test/menu-write-recovery.test.ts (6 tests) 17ms
+@oto/admin-screens:test:  ✓ test/lifted-runtime.test.ts (2 tests) 16ms
+@oto/admin-screens:test:  ✓ test/app-identities-api.test.ts (2 tests) 14ms
+@oto/admin-screens:test:  ✓ test/wallet-report-ports.test.ts (6 tests) 450ms
+@oto/admin-screens:test:  ✓ test/care-write-recovery.test.ts (10 tests) 42ms
+@oto/admin-screens:test:  ✓ test/accounts-data.test.ts (3 tests) 30ms
+@oto/admin-screens:test:  ✓ test/lifted-catalogue-api.test.ts (5 tests) 39ms
+@oto/admin-screens:test:  ✓ test/money-write-recovery.test.ts (4 tests) 37ms
+@oto/admin-screens:test:  ✓ test/report-ports.test.ts (7 tests) 310ms
+@oto/admin-screens:test:  ✓ test/money-ports.test.ts (15 tests) 446ms
+@oto/admin-screens:test:  ✓ test/organisation-ports.test.ts (5 tests) 67ms
+@oto/admin-screens:test:  ✓ test/catalogue-ports.test.ts (10 tests) 219ms
+@oto/admin-screens:test:  ✓ test/benefits-ports.test.ts (13 tests) 443ms
+@oto/admin-screens:test:  ✓ test/operations-markup.test.ts (3 tests) 61ms
+@oto/admin-screens:test:  ✓ test/care-ports.test.ts (16 tests) 490ms
+@oto/admin-screens:test:  ✓ test/menu-ports.test.ts (13 tests) 302ms
+@oto/admin-screens:test: 
+@oto/admin-screens:test:  Test Files  16 passed (16)
+@oto/admin-screens:test:       Tests  120 passed (120)
+@oto/admin-screens:test:    Start at  04:15:25
+@oto/admin-screens:test:    Duration  4.49s (transform 6.13s, setup 0ms, collect 37.04s, tests 2.98s, environment 16ms, prepare 3.38s)
+@oto/admin-screens:test: 
+@oto/inbox:test: cache bypass, force executing b3e0e0dd01c28ec7
+@oto/inbox:test: 
+@oto/inbox:test: > @oto/inbox@0.1.0 test /workspace/apps/inbox
+@oto/inbox:test: > vitest run
+@oto/inbox:test: 
+@oto/inbox:test: 
+@oto/inbox:test:  RUN  v3.2.7 /workspace/apps/inbox
+@oto/inbox:test: 
+@oto/inbox:test:  ✓ test/handoff-target.test.ts (10 tests) 8ms
+@oto/inbox:test:  ✓ test/view.test.ts (54 tests) 45ms
+@oto/inbox:test:  ✓ test/assistant.test.ts (31 tests) 58ms
+@oto/inbox:test:  ✓ test/theme.test.ts (12 tests) 23ms
+@oto/inbox:test:  ✓ test/dark-theme.test.ts (7 tests) 52ms
+@oto/inbox:test:  ✓ test/ui-round.test.ts (12 tests) 55ms
+@oto/inbox:test:  ✓ test/testnight.test.ts (26 tests) 275ms
+@oto/inbox:test:  ✓ test/url.test.ts (24 tests) 9ms
+@oto/inbox:test: 
+@oto/inbox:test:  Test Files  8 passed (8)
+@oto/inbox:test:       Tests  176 passed (176)
+@oto/inbox:test:    Start at  04:15:30
+@oto/inbox:test:    Duration  1.76s (transform 1.68s, setup 0ms, collect 5.14s, tests 525ms, environment 2ms, prepare 1.37s)
+@oto/inbox:test: 
+@oto/launcher:test: cache bypass, force executing fc73edd2b55d5037
+@oto/launcher:test: 
+@oto/launcher:test: > @oto/launcher@0.1.0 test /workspace/apps/launcher
+@oto/launcher:test: > vitest run
+@oto/launcher:test: 
+@oto/launcher:test: 
+@oto/launcher:test:  RUN  v3.2.7 /workspace/apps/launcher
+@oto/launcher:test: 
+@oto/launcher:test:  ✓ test/shell.test.ts (11 tests) 11ms
+@oto/launcher:test:  ✓ test/ask.test.ts (28 tests) 16ms
+@oto/launcher:test:  ✓ test/account-theme.test.tsx (7 tests) 21ms
+@oto/launcher:test:  ✓ test/popup.test.tsx (16 tests) 52ms
+@oto/launcher:test:  ✓ test/dock-dom.test.tsx (10 tests) 250ms
+@oto/launcher:test: 
+@oto/launcher:test:  Test Files  5 passed (5)
+@oto/launcher:test:       Tests  72 passed (72)
+@oto/launcher:test:    Start at  04:15:33
+@oto/launcher:test:    Duration  1.88s (transform 776ms, setup 0ms, collect 1.54s, tests 351ms, environment 747ms, prepare 761ms)
+@oto/launcher:test: 
+@oto/console:test: cache bypass, force executing f3f81956fc454389
+@oto/console:test: 
+@oto/console:test: > @oto/console@0.1.0 test /workspace/apps/console
+@oto/console:test: > vitest run
+@oto/console:test: 
+@oto/console:test: 
+@oto/console:test:  RUN  v3.2.7 /workspace/apps/console
+@oto/console:test: 
+@oto/console:test:  ✓ test/odds.test.ts (35 tests | 1 skipped) 76ms
+@oto/console:test:  ✓ test/today-staff.test.ts (3 tests) 26ms
+@oto/console:test:  ✓ test/fleet-words.test.ts (7 tests) 6ms
+@oto/console:test:  ✓ test/departments-api.test.ts (6 tests) 18ms
+@oto/console:test:  ✓ test/inbox-routing-api.test.ts (10 tests) 32ms
+@oto/console:test:  ✓ test/handoff-target.test.ts (10 tests) 22ms
+@oto/console:test:  ✓ test/admin-navigation.test.ts (21 tests) 27ms
+@oto/console:test:  ✓ test/booth-state.test.ts (9 tests) 12ms
+@oto/console:test:  ✓ test/s216-r6-health.test.ts (3 tests) 7ms
+@oto/console:test:  ✓ test/staff-api.test.ts (11 tests) 20ms
+@oto/console:test:  ✓ test/admin-navigation-markup.test.ts (2 tests) 30ms
+@oto/console:test:  ✓ test/organisation-api.test.ts (2 tests) 8ms
+@oto/console:test:  ✓ test/account-theme.test.ts (3 tests) 63ms
+@oto/console:test:  ✓ test/booth-report-lifetime.test.ts (10 tests) 529ms
+@oto/console:test:  ✓ test/job-words.test.ts (5 tests) 8ms
+@oto/console:test:  ✓ test/departments-markup.test.ts (5 tests) 57ms
+@oto/console:test:  ✓ test/teams-routing-markup.test.ts (5 tests) 88ms
+@oto/console:test:  ✓ test/access-review-markup.test.ts (4 tests) 78ms
+@oto/console:test:  ✓ test/employees-markup.test.ts (5 tests) 61ms
+@oto/console:test:  ✓ test/staff-lifetime.test.ts (12 tests) 730ms
+@oto/console:test:  ✓ test/wallet-r4-words.test.ts (2 tests) 5ms
+@oto/console:test:  ✓ test/publish-plan.test.ts (23 tests) 28ms
+@oto/console:test:  ✓ test/voucher-slip.test.ts (9 tests) 10ms
+@oto/console:test:  ✓ test/stock-r3-words.test.ts (2 tests) 8ms
+@oto/console:test:  ✓ test/reports-api.test.ts (7 tests) 29ms
+@oto/console:test:  ✓ test/operations-api.test.ts (8 tests) 21ms
+@oto/console:test:  ✓ test/suite-screens.test.ts (2 tests) 6ms
+@oto/console:test:  ✓ test/s216-r5-booth-report.test.ts (4 tests) 18ms
+@oto/console:test:  ✓ test/care-retry.test.ts (1 test) 97ms
+@oto/console:test:  ✓ test/overview-markup.test.ts (5 tests) 107ms
+@oto/console:test:  ✓ test/voucher-types.test.ts (40 tests | 2 skipped) 277ms
+@oto/console:test:  ✓ test/app-access-markup.test.ts (2 tests) 29ms
+@oto/console:test:  ✓ test/accounts-markup.test.ts (3 tests) 40ms
+@oto/console:test:  ✓ test/roles-markup.test.ts (4 tests) 31ms
+@oto/console:test:  ✓ test/organisation-markup.test.ts (4 tests) 29ms
+@oto/console:test: 
+@oto/console:test:  Test Files  35 passed (35)
+@oto/console:test:       Tests  281 passed | 3 todo (284)
+@oto/console:test:    Start at  04:15:36
+@oto/console:test:    Duration  3.79s (transform 8.43s, setup 0ms, collect 52.32s, tests 2.63s, environment 10ms, prepare 6.73s)
+@oto/console:test: 
+
+ Tasks:    4 successful, 4 total
+Cached:    0 cached, 4 total
+  Time:    15.173s 
+
+• turbo 2.10.12

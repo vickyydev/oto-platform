@@ -1,0 +1,115 @@
+
+> @oto/api@0.1.0 test /workspace/apps/api
+> vitest run --pool=forks test/s636-aggregates-review.test.ts test/aggregates-ai.test.ts
+
+
+ RUN  v3.2.7 /workspace/apps/api
+
+stdout | test/aggregates-ai.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/aggregates-ai.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+ ✓ test/aggregates-ai.test.ts (13 tests) 2622ms
+stdout | test/s636-aggregates-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/s636-aggregates-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+ ❯ test/s636-aggregates-review.test.ts (54 tests | 4 failed) 2767ms
+   ✓ SCRUM-636 /aggregates/members adversarial review > FINDING R1 high: the read must exist and authenticate before returning aggregates; reject an anonymous caller 3ms
+   ✓ SCRUM-636 /aggregates/members adversarial review > FINDING R2 high: Overview reach alone governs the read, independently of the session seat and detail-screen grants 9ms
+   ✓ SCRUM-636 /aggregates/members adversarial review > FINDING R3 high: foreign and absent parks must be indistinguishable, while an owned unreachable park is forbidden 10ms
+   ✓ SCRUM-636 /aggregates/members adversarial review > FINDING R4 high: changing or removing grants must affect the next request; never reuse an earlier broad reach 13ms
+   ✓ SCRUM-636 /aggregates/members adversarial review > FINDING R5 high: another operator or a department grant cannot imply park-wide aggregate authority 10ms
+   ✓ SCRUM-636 /aggregates/members adversarial review > FINDING R6 medium: malformed or duplicate park filters must not fall back to all reachable parks 4ms
+   ✓ SCRUM-636 /aggregates/members adversarial review > FINDING R7 high: archived parks must be absent from both the picker and aggregates even for operator-wide reach 8ms
+   ✓ SCRUM-636 /aggregates/bookings adversarial review > FINDING R1 high: the read must exist and authenticate before returning aggregates; reject an anonymous caller 1ms
+   ✓ SCRUM-636 /aggregates/bookings adversarial review > FINDING R2 high: Overview reach alone governs the read, independently of the session seat and detail-screen grants 6ms
+   ✓ SCRUM-636 /aggregates/bookings adversarial review > FINDING R3 high: foreign and absent parks must be indistinguishable, while an owned unreachable park is forbidden 9ms
+   ✓ SCRUM-636 /aggregates/bookings adversarial review > FINDING R4 high: changing or removing grants must affect the next request; never reuse an earlier broad reach 12ms
+   ✓ SCRUM-636 /aggregates/bookings adversarial review > FINDING R5 high: another operator or a department grant cannot imply park-wide aggregate authority 7ms
+   ✓ SCRUM-636 /aggregates/bookings adversarial review > FINDING R6 medium: malformed or duplicate park filters must not fall back to all reachable parks 3ms
+   ✓ SCRUM-636 /aggregates/bookings adversarial review > FINDING R7 high: archived parks must be absent from both the picker and aggregates even for operator-wide reach 7ms
+   ✓ SCRUM-636 /aggregates/assistant-usage adversarial review > FINDING R1 high: the read must exist and authenticate before returning aggregates; reject an anonymous caller 1ms
+   ✓ SCRUM-636 /aggregates/assistant-usage adversarial review > FINDING R2 high: Overview reach alone governs the read, independently of the session seat and detail-screen grants 7ms
+   ✓ SCRUM-636 /aggregates/assistant-usage adversarial review > FINDING R3 high: foreign and absent parks must be indistinguishable, while an owned unreachable park is forbidden 10ms
+   ✓ SCRUM-636 /aggregates/assistant-usage adversarial review > FINDING R4 high: changing or removing grants must affect the next request; never reuse an earlier broad reach 11ms
+   ✓ SCRUM-636 /aggregates/assistant-usage adversarial review > FINDING R5 high: another operator or a department grant cannot imply park-wide aggregate authority 7ms
+   ✓ SCRUM-636 /aggregates/assistant-usage adversarial review > FINDING R6 medium: malformed or duplicate park filters must not fall back to all reachable parks 3ms
+   ✓ SCRUM-636 /aggregates/assistant-usage adversarial review > FINDING R7 high: archived parks must be absent from both the picker and aggregates even for operator-wide reach 8ms
+   ✓ SCRUM-636 /aggregates/inbox-ai-usage adversarial review > FINDING R1 high: the read must exist and authenticate before returning aggregates; reject an anonymous caller 1ms
+   ✓ SCRUM-636 /aggregates/inbox-ai-usage adversarial review > FINDING R2 high: Overview reach alone governs the read, independently of the session seat and detail-screen grants 7ms
+   ✓ SCRUM-636 /aggregates/inbox-ai-usage adversarial review > FINDING R3 high: foreign and absent parks must be indistinguishable, while an owned unreachable park is forbidden 8ms
+   ✓ SCRUM-636 /aggregates/inbox-ai-usage adversarial review > FINDING R4 high: changing or removing grants must affect the next request; never reuse an earlier broad reach 12ms
+   ✓ SCRUM-636 /aggregates/inbox-ai-usage adversarial review > FINDING R5 high: another operator or a department grant cannot imply park-wide aggregate authority 8ms
+   ✓ SCRUM-636 /aggregates/inbox-ai-usage adversarial review > FINDING R6 medium: malformed or duplicate park filters must not fall back to all reachable parks 4ms
+   ✓ SCRUM-636 /aggregates/inbox-ai-usage adversarial review > FINDING R7 high: archived parks must be absent from both the picker and aggregates even for operator-wide reach 9ms
+   ✓ SCRUM-636 /aggregates/fleet adversarial review > FINDING R1 high: the read must exist and authenticate before returning aggregates; reject an anonymous caller 1ms
+   ✓ SCRUM-636 /aggregates/fleet adversarial review > FINDING R2 high: Overview reach alone governs the read, independently of the session seat and detail-screen grants 4ms
+   ✓ SCRUM-636 /aggregates/fleet adversarial review > FINDING R3 high: foreign and absent parks must be indistinguishable, while an owned unreachable park is forbidden 7ms
+   ✓ SCRUM-636 /aggregates/fleet adversarial review > FINDING R4 high: changing or removing grants must affect the next request; never reuse an earlier broad reach 10ms
+   ✓ SCRUM-636 /aggregates/fleet adversarial review > FINDING R5 high: another operator or a department grant cannot imply park-wide aggregate authority 7ms
+   ✓ SCRUM-636 /aggregates/fleet adversarial review > FINDING R6 medium: malformed or duplicate park filters must not fall back to all reachable parks 3ms
+   ✓ SCRUM-636 /aggregates/fleet adversarial review > FINDING R7 high: archived parks must be absent from both the picker and aggregates even for operator-wide reach 6ms
+   ✓ SCRUM-636 /aggregates/members bounded calendar contract > FINDING R8 medium: require real, ordered dates and at most 31 inclusive days; reject ambiguous or extra query fields 12ms
+   ✓ SCRUM-636 /aggregates/members bounded calendar contract > FINDING R9 medium: accept both a real leap day and the exact 31-day boundary with a typed explicit period 8ms
+   ✓ SCRUM-636 /aggregates/bookings bounded calendar contract > FINDING R8 medium: require real, ordered dates and at most 31 inclusive days; reject ambiguous or extra query fields 11ms
+   ✓ SCRUM-636 /aggregates/bookings bounded calendar contract > FINDING R9 medium: accept both a real leap day and the exact 31-day boundary with a typed explicit period 8ms
+   ✓ SCRUM-636 /aggregates/assistant-usage bounded calendar contract > FINDING R8 medium: require real, ordered dates and at most 31 inclusive days; reject ambiguous or extra query fields 12ms
+   ✓ SCRUM-636 /aggregates/assistant-usage bounded calendar contract > FINDING R9 medium: accept both a real leap day and the exact 31-day boundary with a typed explicit period 10ms
+   ✓ SCRUM-636 /aggregates/inbox-ai-usage bounded calendar contract > FINDING R8 medium: require real, ordered dates and at most 31 inclusive days; reject ambiguous or extra query fields 13ms
+   ✓ SCRUM-636 /aggregates/inbox-ai-usage bounded calendar contract > FINDING R9 medium: accept both a real leap day and the exact 31-day boundary with a typed explicit period 9ms
+   ✓ SCRUM-636 current fleet contract > FINDING R10 medium: fleet is a current snapshot and must refuse historical date filters 6ms
+   × SCRUM-636 /aggregates/members accepted calendar formatting > FINDING R11 medium: preserve four-digit years on every dense row accepted by the date contract 8ms
+     → expected 500 to be 200 // Object.is equality
+   × SCRUM-636 /aggregates/bookings accepted calendar formatting > FINDING R11 medium: preserve four-digit years on every dense row accepted by the date contract 14ms
+     → expected 500 to be 200 // Object.is equality
+   × SCRUM-636 /aggregates/assistant-usage accepted calendar formatting > FINDING R11 medium: preserve four-digit years on every dense row accepted by the date contract 7ms
+     → expected 500 to be 200 // Object.is equality
+   × SCRUM-636 /aggregates/inbox-ai-usage accepted calendar formatting > FINDING R11 medium: preserve four-digit years on every dense row accepted by the date contract 8ms
+     → expected 500 to be 200 // Object.is equality
+   ✓ SCRUM-636 /aggregates/assistant-usage operator-wide bucket authority > FINDING R11 high: only an unfiltered genuine operator grant may expose the separate unassigned bucket 6ms
+   ✓ SCRUM-636 /aggregates/assistant-usage operator-wide bucket authority > FINDING R12 high: a union covering every live owned park must not become operator-wide authority 5ms
+   ✓ SCRUM-636 /aggregates/assistant-usage operator-wide bucket authority > FINDING R13 high: explicitly selecting a park must hide the unassigned bucket even under an operator grant 5ms
+   ✓ SCRUM-636 /aggregates/inbox-ai-usage operator-wide bucket authority > FINDING R11 high: only an unfiltered genuine operator grant may expose the separate unassigned bucket 5ms
+   ✓ SCRUM-636 /aggregates/inbox-ai-usage operator-wide bucket authority > FINDING R12 high: a union covering every live owned park must not become operator-wide authority 5ms
+   ✓ SCRUM-636 /aggregates/inbox-ai-usage operator-wide bucket authority > FINDING R13 high: explicitly selecting a park must hide the unassigned bucket even under an operator grant 5ms
+
+ Test Files  1 failed | 1 passed (2)
+      Tests  4 failed | 63 passed (67)
+   Start at  03:58:16
+   Duration  10.74s (transform 2.45s, setup 0ms, collect 5.03s, tests 5.39s, environment 0ms, prepare 78ms)
+
+ ELIFECYCLE  Test failed. See above for more details.
+(node:950) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:994) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/members accepted calendar formatting > FINDING R11 medium: preserve four-digit years on every dense row accepted by the date contract
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/bookings accepted calendar formatting > FINDING R11 medium: preserve four-digit years on every dense row accepted by the date contract
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/assistant-usage accepted calendar formatting > FINDING R11 medium: preserve four-digit years on every dense row accepted by the date contract
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/inbox-ai-usage accepted calendar formatting > FINDING R11 medium: preserve four-digit years on every dense row accepted by the date contract
+AssertionError: expected 500 to be 200 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 500[39m
+
+ ❯ test/s636-aggregates-review.test.ts:190:33
+    188|   it('FINDING R11 medium: preserve four-digit years on every dense row…
+    189|     const response = await read(path, '?from=0100-01-01&to=0100-01-01'…
+    190|     expect(response.statusCode).toBe(200);
+       |                                 ^
+    191|     expect(response.json().parks[0].rows[0].date).toBe('0100-01-01');
+    192|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+

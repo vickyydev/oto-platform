@@ -1,0 +1,15 @@
+{
+  "ticket": "SCRUM-636",
+  "name": "workspace-other-tests",
+  "command": "pnpm exec turbo run test --env-mode=loose --concurrency=1 --force --filter=!@oto/api --filter=!@oto/pos",
+  "startedAt": "2026-10-25T04:06:45.744Z",
+  "completedAt": "2026-10-25T04:10:33.954Z",
+  "exitCode": 1,
+  "signal": null,
+  "sourceManifestSha256": "c3b68618feb060fc58bdcf77dd1c3f4832df49aee969281d671b9a926e576fb8",
+  "logSha256": "787101300ebba58c8c3eb42678fda66b688430bf75d8c65a3041b63f73327877",
+  "hostSourceUnchanged": true,
+  "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+  "hostAndContainerApiDocsUnchanged": true,
+  "staging": false
+}

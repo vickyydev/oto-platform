@@ -1,0 +1,161 @@
+
+> @oto/api@0.1.0 test /workspace/apps/api
+> vitest run --pool=forks test/aggregates-members.test.ts test/aggregates-domain.test.ts test/aggregates-ai.test.ts test/s636-aggregates-review.test.ts
+
+
+ RUN  v3.2.7 /workspace/apps/api
+
+stdout | test/aggregates-domain.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/aggregates-domain.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+ ✓ test/aggregates-domain.test.ts (17 tests) 2606ms
+stdout | test/aggregates-ai.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/aggregates-ai.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+ ✓ test/aggregates-ai.test.ts (11 tests) 2401ms
+stdout | test/s636-aggregates-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/s636-aggregates-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+ ✓ test/s636-aggregates-review.test.ts (44 tests) 2559ms
+stdout | test/aggregates-members.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/aggregates-members.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+ ❯ test/aggregates-members.test.ts (4 tests | 4 failed) 2279ms
+   × SCRUM-636 visit records and distinct visiting members > keeps every native status and walk-in, uses visit_date and fills genuine zero days 11ms
+     → expected { visits: +0, draftVisits: +0, …(3) } to deeply equal { visits: 3, draftVisits: 1, …(3) }
+   × SCRUM-636 visit records and distinct visiting members > deduplicates members over the whole selected period and parks rather than adding daily distinct counts 4ms
+     → expected { visits: +0, draftVisits: +0, …(3) } to deeply equal { visits: 4, draftVisits: 3, …(3) }
+   × SCRUM-636 visit records and distinct visiting members > fences visit, actual park and referenced member operators without leaking a foreign identity 3ms
+     → expected [ …(3) ] to deeply equal [ …(2) ]
+   × SCRUM-636 visit records and distinct visiting members > revalidates live selected parks and never turns an empty selection into operator totals 3ms
+     → expected [ …(2) ] to deeply equal [ Array(1) ]
+
+ Test Files  1 failed | 3 passed (4)
+      Tests  4 failed | 72 passed (76)
+   Start at  03:53:43
+   Duration  17.68s (transform 2.62s, setup 0ms, collect 7.23s, tests 9.85s, environment 0ms, prepare 149ms)
+
+ ELIFECYCLE  Test failed. See above for more details.
+(node:310) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:355) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:391) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:427) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/aggregates-members.test.ts > SCRUM-636 visit records and distinct visiting members > keeps every native status and walk-in, uses visit_date and fills genuine zero days
+AssertionError: expected { visits: +0, draftVisits: +0, …(3) } to deeply equal { visits: 3, draftVisits: 1, …(3) }
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  {[22m
+[32m-   "activeVisits": 1,[39m
+[32m-   "closedVisits": 1,[39m
+[32m-   "draftVisits": 1,[39m
+[32m-   "visitingMembers": 1,[39m
+[32m-   "visits": 3,[39m
+[31m+   "activeVisits": 0,[39m
+[31m+   "closedVisits": 0,[39m
+[31m+   "draftVisits": 0,[39m
+[31m+   "visitingMembers": 0,[39m
+[31m+   "visits": 0,[39m
+[2m  }[22m
+
+ ❯ test/aggregates-members.test.ts:53:27
+     51|     const result = await membersAggregateOf(ctx.db, e.input);
+     52|     expect(result.basis).toBe('visit-date');
+     53|     expect(result.totals).toEqual({ visits: 3, draftVisits: 1, activeV…
+       |                           ^
+     54|     expect(result.parks[0]!.rows).toEqual([
+     55|       { date: dates[0], ...zero }, { date: dates[1], ...result.totals …
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  test/aggregates-members.test.ts > SCRUM-636 visit records and distinct visiting members > deduplicates members over the whole selected period and parks rather than adding daily distinct counts
+AssertionError: expected { visits: +0, draftVisits: +0, …(3) } to deeply equal { visits: 4, draftVisits: 3, …(3) }
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  {[22m
+[32m-   "activeVisits": 1,[39m
+[31m+   "activeVisits": 0,[39m
+[2m    "closedVisits": 0,[22m
+[32m-   "draftVisits": 3,[39m
+[32m-   "visitingMembers": 2,[39m
+[32m-   "visits": 4,[39m
+[31m+   "draftVisits": 0,[39m
+[31m+   "visitingMembers": 0,[39m
+[31m+   "visits": 0,[39m
+[2m  }[22m
+
+ ❯ test/aggregates-members.test.ts:68:27
+     66|     await ctx.db.update(member).set({ archivedAt: now }).where(eq(memb…
+     67|     const result = await membersAggregateOf(ctx.db, e.input);
+     68|     expect(result.totals).toEqual({ visits: 4, draftVisits: 3, activeV…
+       |                           ^
+     69|     expect(result.parks.map(park => park.totals.visitingMembers)).toEq…
+     70|     const narrowed = await membersAggregateOf(ctx.db, { ...e.input, se…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  test/aggregates-members.test.ts > SCRUM-636 visit records and distinct visiting members > fences visit, actual park and referenced member operators without leaking a foreign identity
+AssertionError: expected [ …(3) ] to deeply equal [ …(2) ]
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  [[22m
+[2m    "01a17131-a471-76d9-8cfc-3803cb2b739e",[22m
+[2m    "01a17131-a471-76d9-8cfc-3804ddcbb31a",[22m
+[31m+   "01a17131-a471-76d9-8cfc-380568ecdb68",[39m
+[2m  ][22m
+
+ ❯ test/aggregates-members.test.ts:81:53
+     79|     await record(e, { memberId: e.people[2]!.id });
+     80|     const result = await membersAggregateOf(ctx.db, { ...e.input, sele…
+     81|     expect(result.parks.map(park => park.branchId)).toEqual(e.parks.sl…
+       |                                                     ^
+     82|     expect(result.totals.visits).toBe(1);
+     83|     expect(result.totals.visitingMembers).toBe(1);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+ FAIL  test/aggregates-members.test.ts > SCRUM-636 visit records and distinct visiting members > revalidates live selected parks and never turns an empty selection into operator totals
+AssertionError: expected [ …(2) ] to deeply equal [ Array(1) ]
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  [[22m
+[31m+   "01a17131-a474-716b-a323-a91777957c8f",[39m
+[2m    "01a17131-a474-716b-a323-a918b4566fc4",[22m
+[2m  ][22m
+
+ ❯ test/aggregates-members.test.ts:92:53
+     90|     await ctx.db.update(branch).set({ archivedAt: now }).where(eq(bran…
+     91|     const result = await membersAggregateOf(ctx.db, e.input);
+     92|     expect(result.parks.map(park => park.branchId)).toEqual([e.parks[1…
+       |                                                     ^
+     93|     expect(result.totals).toEqual(zero);
+     94|     const empty = await membersAggregateOf(ctx.db, { ...e.input, selec…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+

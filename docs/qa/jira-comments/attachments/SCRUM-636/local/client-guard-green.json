@@ -1,0 +1,15 @@
+{
+  "ticket": "SCRUM-636",
+  "name": "client-guard-green",
+  "command": "pnpm --filter @oto/api-types test\npnpm exec eslint packages/api-types/test/seam-walker.test.ts",
+  "startedAt": "2026-10-25T04:19:59.596Z",
+  "completedAt": "2026-10-25T04:20:03.826Z",
+  "exitCode": 0,
+  "signal": null,
+  "sourceManifestSha256": "23146c7d38a08775df6f34b3f8a5a54c0280c6604acdbf2a9b82c962c4d2d615",
+  "logSha256": "62a5720ea06a1ec384de30a23ad938b03a73965ba9279dc90f9e4ca95515b774",
+  "hostSourceUnchanged": true,
+  "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+  "hostAndContainerApiDocsUnchanged": true,
+  "staging": false
+}

@@ -1,0 +1,14 @@
+
+> @oto/api-types@0.1.0 test /workspace/packages/api-types
+> vitest run
+
+
+ RUN  v3.2.7 /workspace/packages/api-types
+
+ ✓ test/seam-walker.test.ts (10 tests) 18ms
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  04:20:00
+   Duration  2.52s (transform 393ms, setup 0ms, collect 2.09s, tests 18ms, environment 0ms, prepare 114ms)
+

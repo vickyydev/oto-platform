@@ -1,0 +1,23 @@
+{
+  "ticket": "SCRUM-636",
+  "mode": "OFFLINE_ONLY",
+  "startedAt": "2026-10-25T04:33:09.930Z",
+  "completedAt": "2026-10-25T04:33:10.067Z",
+  "command": "node --test C:/w/admin636-proof-review.test.mjs",
+  "exitCode": 0,
+  "signal": null,
+  "helperSha256": "dfccde24000259a99911a1918ac3099d91c61cbc8ed3d65a551a0e67ef4c1d3a",
+  "helperAfterSha256": "dfccde24000259a99911a1918ac3099d91c61cbc8ed3d65a551a0e67ef4c1d3a",
+  "helperUnchanged": true,
+  "testsSha256": "57d5dd393d1f5c25d4481b03c2779c38d486f0975a6d6ebc75e2d76a1df41011",
+  "log": "C:/w/admin636-proof-review-green.log",
+  "logSha256": "d877441ab68bca71d8f9a16623e3efb7833323fcbf0bae4978c49f561a69b810",
+  "tests": 17,
+  "pass": 17,
+  "fail": 0,
+  "wholeLogReadRequired": true,
+  "actualFullHelperExecution": false,
+  "productionEdits": false,
+  "networkAllowed": false,
+  "limitation": "Actual pre-import/cleanup/sourceGate closures use synthetic bindings. The full execute function, real TypeScript dependency loader, auth, browser and live metadata are not run."
+}

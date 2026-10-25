@@ -1,0 +1,25 @@
+
+> @oto/api@0.1.0 test /workspace/apps/api
+> vitest run --pool=forks test/booth-admin.test.ts
+
+
+ RUN  v3.2.7 /workspace/apps/api
+
+stdout | test/booth-admin.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/booth-admin.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+ ✓ test/booth-admin.test.ts (39 tests) 8184ms
+   ✓ publishing, and the box that then runs it (S2-07b) > reports the booth as behind while a published version has not reached it  705ms
+   ✓ publishing, and the box that then runs it (S2-07b) > the Apply config command carries a published wheel to the box, and a pull with nothing new is a 304  433ms
+   ✓ the booth PIN (S2-07b) > draws again when the digits are a colleague’s on the same booth, and gives up rather than issue a shared PIN  317ms
+
+ Test Files  1 passed (1)
+      Tests  39 passed (39)
+   Start at  04:05:45
+   Duration  15.34s (transform 4.13s, setup 0ms, collect 6.93s, tests 8.18s, environment 0ms, prepare 50ms)
+
+(node:5163) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)

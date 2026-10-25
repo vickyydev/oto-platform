@@ -1,0 +1,15 @@
+{
+  "ticket": "SCRUM-636",
+  "name": "pos-and-box-full",
+  "command": "pnpm --filter @oto/pos test --maxWorkers=2\npnpm --filter @oto/box-agent test --maxWorkers=2",
+  "startedAt": "2026-10-25T04:15:24.423Z",
+  "completedAt": "2026-10-25T04:16:13.025Z",
+  "exitCode": 9,
+  "signal": null,
+  "sourceManifestSha256": "c3b68618feb060fc58bdcf77dd1c3f4832df49aee969281d671b9a926e576fb8",
+  "logSha256": "c567bb3837c78eac3d3d7ae7a68c38878752ac4620427add9327a7bf323d3a86",
+  "hostSourceUnchanged": true,
+  "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+  "hostAndContainerApiDocsUnchanged": true,
+  "staging": false
+}

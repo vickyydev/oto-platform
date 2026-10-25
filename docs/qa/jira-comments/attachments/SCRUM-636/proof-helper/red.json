@@ -1,0 +1,27 @@
+{
+  "ticket": "SCRUM-636",
+  "mode": "OFFLINE_ONLY",
+  "startedAt": "2026-10-25T04:22:14.037Z",
+  "completedAt": "2026-10-25T04:22:14.160Z",
+  "command": "node --test C:/w/admin636-proof-review.test.mjs",
+  "exitCode": 1,
+  "signal": null,
+  "helperSha256": "7c431f66a948b8de26a06b5c343d93e0264ece07de9f8a99b6c2143fe9821581",
+  "helperAfterSha256": "7c431f66a948b8de26a06b5c343d93e0264ece07de9f8a99b6c2143fe9821581",
+  "helperUnchanged": true,
+  "testsSha256": "8b4e37fc6f4855a4b1a1784ba18e249b9b0455fc4dbf72bb1711ca2b3298cb0b",
+  "log": "C:/w/admin636-proof-review-red.log",
+  "logSha256": "24dde2f4e829f0c3fce8253f3ca22d41796e5d2e99e2fca1b4e934f224487d0a",
+  "tests": 12,
+  "pass": 10,
+  "fail": 2,
+  "wholeLogReadRequired": true,
+  "actualFullHelperExecution": false,
+  "productionEdits": false,
+  "networkAllowed": false,
+  "findings": [
+    "R12 current dependency drift reaches schema import",
+    "R13 logout timeout skips original-cookie current-user probe"
+  ],
+  "limitation": "Actual pre-import/close/sourceGate closures run with explicit synthetic bindings; the full execute function, TypeScript dependency loader, auth, browser and live metadata were not run."
+}

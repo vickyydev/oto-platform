@@ -1,0 +1,28 @@
+{
+  "ticket": "SCRUM-636",
+  "startedAt": "2026-10-25T04:34:35.977Z",
+  "completedAt": "2026-10-25T04:34:57.144Z",
+  "removed": [
+    {
+      "id": "e091f0f3d0b9d64043a9443f0d066f3a1fbdbf4d76f65e1b27a8d93cbdd31b1a",
+      "name": "oto-admin636-integrated-app"
+    },
+    {
+      "id": "9c6d1660ade45db90516c614f0bddde3d0c11c9aae146a5f1497bd67568b8fde",
+      "name": "oto-admin636-integrated-pg"
+    }
+  ],
+  "removedCount": 2,
+  "beforeAppProcesses": [
+    "tail"
+  ],
+  "beforeOtherDbClients": 0,
+  "baselineCount": 10,
+  "allBaselineContainersPreserved": true,
+  "volumeRemoval": false,
+  "networkRemoval": false,
+  "imageRemoval": false,
+  "pruneUsed": false,
+  "forceUsed": false,
+  "staging": false
+}

@@ -1,0 +1,15 @@
+{
+  "ticket": "SCRUM-636",
+  "name": "compiler-contract-lint",
+  "command": "pnpm --filter @oto/api typecheck\npnpm api-types:check\npnpm exec eslint apps/api/src/routes/aggregates.ts apps/api/src/routes/console.ts apps/api/src/services/aggregate-types.ts apps/api/src/services/aggregates.ts apps/api/src/services/aggregates-members.ts apps/api/src/services/aggregates-bookings.ts apps/api/src/services/aggregates-ai.ts apps/api/src/services/aggregates-fleet.ts apps/api/test/aggregates-members.test.ts apps/api/test/aggregates-domain.test.ts apps/api/test/aggregates-ai.test.ts apps/api/test/s636-aggregates-review.test.ts apps/api/test/routes-guarded.test.ts apps/api/test/route-write-conformance.test.ts apps/api/test/route-scope-target.test.ts apps/api/test/id-conformance.test.ts",
+  "startedAt": "2026-10-25T03:59:14.071Z",
+  "completedAt": "2026-10-25T03:59:45.449Z",
+  "exitCode": 2,
+  "signal": null,
+  "sourceManifestSha256": "9ef38ab145814303306f62bc63e926423780e5b7897ebcdf633538c293fea1a0",
+  "logSha256": "78e03ef8ae031cea5bf4a6b68f5811ed1a249cbd5e556564ce35186755333185",
+  "hostSourceUnchanged": true,
+  "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+  "hostAndContainerApiDocsUnchanged": true,
+  "staging": false
+}

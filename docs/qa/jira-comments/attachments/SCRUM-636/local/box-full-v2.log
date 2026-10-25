@@ -1,0 +1,4544 @@
+
+> @oto/box-agent@0.1.0 test /workspace/packages/box-agent
+> node --disable-warning=ExperimentalWarning --experimental-transform-types --import ./harness.mjs --test --test-concurrency=2
+
+TAP version 13
+# Subtest: test/_support.ts
+ok 1 - test/_support.ts
+  ---
+  duration_ms: 607.650906
+  type: 'test'
+  ...
+# Subtest: a benefit QR is the plan’s payload, its key id and a signature — deterministic, and parsed back
+ok 2 - a benefit QR is the plan’s payload, its key id and a signature — deterministic, and parsed back
+  ---
+  duration_ms: 2.634603
+  type: 'test'
+  ...
+# Subtest: H6: altered, invented, wrongly keyed, expired and too-new QRs are each refused for what they are
+ok 3 - H6: altered, invented, wrongly keyed, expired and too-new QRs are each refused for what they are
+  ---
+  duration_ms: 1.290773
+  type: 'test'
+  ...
+# Subtest: nothing else the platform prints is read as a benefit QR, and a benefit QR is read as nothing else
+ok 4 - nothing else the platform prints is read as a benefit QR, and a benefit QR is read as nothing else
+  ---
+  duration_ms: 0.580355
+  type: 'test'
+  ...
+# Subtest: the box answers with the day’s comp and standing percent, and names what stays online only
+ok 5 - the box answers with the day’s comp and standing percent, and names what stays online only
+  ---
+  duration_ms: 1.215944
+  type: 'test'
+  ...
+# Subtest: H7: revoked, left, unknown and not-configured are refused — "Benefit revoked" in the revocation’s own words
+ok 6 - H7: revoked, left, unknown and not-configured are refused — "Benefit revoked" in the revocation’s own words
+  ---
+  duration_ms: 1.75889
+  type: 'test'
+  ...
+# Subtest: the scope is read defensively: a damaged payload is no scope, not a guess
+ok 7 - the scope is read defensively: a damaged payload is no scope, not a guess
+  ---
+  duration_ms: 1.811451
+  type: 'test'
+  ...
+# Subtest: the router claims a benefit QR, checks it on the box, and the code reaches staff screens only
+ok 8 - the router claims a benefit QR, checks it on the box, and the code reaches staff screens only
+  ---
+  duration_ms: 2.732394
+  type: 'test'
+  ...
+# Subtest: a revoked QR is refused through the router, and a box with no list says it cannot check
+ok 9 - a revoked QR is refused through the router, and a box with no list says it cannot check
+  ---
+  duration_ms: 2.529633
+  type: 'test'
+  ...
+# Subtest: the agent checks a benefit QR against the scope in its own store, on its branch’s trading day
+ok 10 - the agent checks a benefit QR against the scope in its own store, on its branch’s trading day
+  ---
+  duration_ms: 7.109926
+  type: 'test'
+  ...
+# Subtest: H8: the gate’s decision refuses a benefit QR as not a band, in either direction
+ok 11 - H8: the gate’s decision refuses a benefit QR as not a band, in either direction
+  ---
+  duration_ms: 0.661132
+  type: 'test'
+  ...
+# Subtest: the Staff row is every name on today’s roster, casuals included
+ok 12 - the Staff row is every name on today’s roster, casuals included
+  ---
+  duration_ms: 20.057267
+  type: 'test'
+  ...
+# Subtest: a single name on the roster prints alone
+ok 13 - a single name on the roster prints alone
+  ---
+  duration_ms: 3.414557
+  type: 'test'
+  ...
+# Subtest: a stand-in who signs in joins the label; the spin records them alone
+ok 14 - a stand-in who signs in joins the label; the spin records them alone
+  ---
+  duration_ms: 5.216527
+  type: 'test'
+  ...
+# Subtest: somebody on the roster who signs in is not said twice
+ok 15 - somebody on the roster who signs in is not said twice
+  ---
+  duration_ms: 3.461656
+  type: 'test'
+  ...
+# Subtest: somebody on neither the standing list nor the roster cannot sign in
+ok 16 - somebody on neither the standing list nor the roster cannot sign in
+  ---
+  duration_ms: 1.68035
+  type: 'test'
+  ...
+# Subtest: yesterday’s roster names nobody today, and gives nobody sign-in
+ok 17 - yesterday’s roster names nobody today, and gives nobody sign-in
+  ---
+  duration_ms: 3.502375
+  type: 'test'
+  ...
+# Subtest: before anyone is attributed today, an empty roster prints exactly the slip an older cloud’s entry prints — signed in or not
+ok 18 - before anyone is attributed today, an empty roster prints exactly the slip an older cloud’s entry prints — signed in or not
+  ---
+  duration_ms: 191.639767
+  type: 'test'
+  ...
+# Subtest: a roster the box cannot read is dropped, never the booth
+ok 19 - a roster the box cannot read is dropped, never the booth
+  ---
+  duration_ms: 4.921268
+  type: 'test'
+  ...
+# Subtest: a box built before the roster reads an entry carrying one
+ok 20 - a box built before the roster reads an entry carrying one
+  ---
+  duration_ms: 0.66893
+  type: 'test'
+  ...
+# Subtest: three spins with no line survive a restart, still pending and still verifiable
+ok 21 - three spins with no line survive a restart, still pending and still verifiable
+  ---
+  duration_ms: 93.297153
+  type: 'test'
+  ...
+# Subtest: a spin after the restart continues the journal rather than reusing sequences
+ok 22 - a spin after the restart continues the journal rather than reusing sequences
+  ---
+  duration_ms: 64.20153
+  type: 'test'
+  ...
+# Subtest: the press guard outlives the power cut, so a retried press is never a second prize
+ok 23 - the press guard outlives the power cut, so a retried press is never a second prize
+  ---
+  duration_ms: 60.572863
+  type: 'test'
+  ...
+# Subtest: the day’s spin cap holds with no line and across the power cut (SCRUM-257)
+ok 24 - the day’s spin cap holds with no line and across the power cut (SCRUM-257)
+  ---
+  duration_ms: 70.946603
+  type: 'test'
+  ...
+# Subtest: an account sign-in the cloud accepts opens a session, and the slip names the person
+ok 25 - an account sign-in the cloud accepts opens a session, and the slip names the person
+  ---
+  duration_ms: 23.146285
+  type: 'test'
+  ...
+# Subtest: with no internet an account sign-in is refused "offline", and the PIN still works
+ok 26 - with no internet an account sign-in is refused "offline", and the PIN still works
+  ---
+  duration_ms: 1.931694
+  type: 'test'
+  ...
+# Subtest: a booth that cannot reach the cloud at all answers "offline" too
+ok 27 - a booth that cannot reach the cloud at all answers "offline" too
+  ---
+  duration_ms: 2.580762
+  type: 'test'
+  ...
+# Subtest: the cloud’s reasons reach the panel: not on this booth, a role that may not, locked
+ok 28 - the cloud’s reasons reach the panel: not on this booth, a role that may not, locked
+  ---
+  duration_ms: 1.570237
+  type: 'test'
+  ...
+# Subtest: a wrong password counts against the booth like a wrong PIN, and the sixth waits
+ok 29 - a wrong password counts against the booth like a wrong PIN, and the sixth waits
+  ---
+  duration_ms: 2.453986
+  type: 'test'
+  ...
+# Subtest: overlapping wrong passwords are taken one at a time, and those the lock refuses never reach the cloud
+ok 30 - overlapping wrong passwords are taken one at a time, and those the lock refuses never reach the cloud
+  ---
+  duration_ms: 2.317337
+  type: 'test'
+  ...
+# Subtest: a session lasts the booth’s session length, survives a restart, and never ends on idle
+ok 31 - a session lasts the booth’s session length, survives a restart, and never ends on idle
+  ---
+  duration_ms: 66.411164
+  type: 'test'
+  ...
+# Subtest: with no length in the published wheel a session runs twelve hours
+ok 32 - with no length in the published wheel a session runs twelve hours
+  ---
+  duration_ms: 1.927752
+  type: 'test'
+  ...
+# Subtest: somebody taken off the booth after signing in is signed out at the next pull
+ok 33 - somebody taken off the booth after signing in is signed out at the next pull
+  ---
+  duration_ms: 2.082877
+  type: 'test'
+  ...
+# Subtest: a list pulled BEFORE an account sign-in does not sign that person out
+ok 34 - a list pulled BEFORE an account sign-in does not sign that person out
+  ---
+  duration_ms: 2.088259
+  type: 'test'
+  ...
+# Subtest: a staff list change reaches the booth without a new publish
+ok 35 - a staff list change reaches the booth without a new publish
+  ---
+  duration_ms: 2.082355
+  type: 'test'
+  ...
+# Subtest: a box with two booths runs the chosen one, and none until one is chosen
+ok 36 - a box with two booths runs the chosen one, and none until one is chosen
+  ---
+  duration_ms: 5.819615
+  type: 'test'
+  ...
+# Subtest: a reprint is staff-only, prints the same code, and never draws a second prize
+ok 37 - a reprint is staff-only, prints the same code, and never draws a second prize
+  ---
+  duration_ms: 9.084174
+  type: 'test'
+  ...
+# Subtest: a reprint of a named spin, one that is not here, and one after a restart
+ok 38 - a reprint of a named spin, one that is not here, and one after a restart
+  ---
+  duration_ms: 55.464625
+  type: 'test'
+  ...
+# Subtest: with no printer a reprint is still recorded, as a skipped print
+ok 39 - with no printer a reprint is still recorded, as a skipped print
+  ---
+  duration_ms: 4.169444
+  type: 'test'
+  ...
+# Subtest: a reprint answers "queued" in time when the printer is slow, and asking again joins the copy on its way
+ok 40 - a reprint answers "queued" in time when the printer is slow, and asking again joins the copy on its way
+  ---
+  duration_ms: 44.203366
+  type: 'test'
+  ...
+# Subtest: a slip a restarted box prints before a booth is chosen is filed under its own booth, by code
+ok 41 - a slip a restarted box prints before a booth is chosen is filed under its own booth, by code
+  ---
+  duration_ms: 56.693076
+  type: 'test'
+  ...
+# Subtest: a booth started again in the same process keeps what it knows about a slip still waiting
+ok 42 - a booth started again in the same process keeps what it knows about a slip still waiting
+  ---
+  duration_ms: 4.443271
+  type: 'test'
+  ...
+# Subtest: the http contract takes an account sign-in and a reprint, and words neither
+ok 43 - the http contract takes an account sign-in and a reprint, and words neither
+  ---
+  duration_ms: 4.022011
+  type: 'test'
+  ...
+# Subtest: the print job carries the slip the booth published
+ok 44 - the print job carries the slip the booth published
+  ---
+  duration_ms: 21.106523
+  type: 'test'
+  ...
+# Subtest: a fixed-code type prints and shows its shared code without a single-use promise
+ok 45 - a fixed-code type prints and shows its shared code without a single-use promise
+  ---
+  duration_ms: 111.854929
+  type: 'test'
+  ...
+# Subtest: a wheel published before the slip fields existed prints today’s slip
+ok 46 - a wheel published before the slip fields existed prints today’s slip
+  ---
+  duration_ms: 141.714555
+  type: 'test'
+  ...
+# Subtest: a reprint after a new publish is the same slip as its first copy
+ok 47 - a reprint after a new publish is the same slip as its first copy
+  ---
+  duration_ms: 8.808671
+  type: 'test'
+  ...
+# Subtest: a published wheel is read from the cache and applied whole
+ok 48 - a published wheel is read from the cache and applied whole
+  ---
+  duration_ms: 5.825218
+  type: 'test'
+  ...
+# Subtest: a newer version replaces the wheel; an older one never does
+ok 49 - a newer version replaces the wheel; an older one never does
+  ---
+  duration_ms: 2.223285
+  type: 'test'
+  ...
+# Subtest: an entry for another booth, and one that does not parse, are both ignored
+ok 50 - an entry for another booth, and one that does not parse, are both ignored
+  ---
+  duration_ms: 2.229238
+  type: 'test'
+  ...
+# Subtest: the weighted pick tests before it subtracts, so a zero-weight prize can never win
+ok 51 - the weighted pick tests before it subtracts, so a zero-weight prize can never win
+  ---
+  duration_ms: 0.617933
+  type: 'test'
+  ...
+# Subtest: a source that answers outside the range throws rather than picking wrongly
+ok 52 - a source that answers outside the range throws rather than picking wrongly
+  ---
+  duration_ms: 0.390535
+  type: 'test'
+  ...
+# Subtest: a prize at its daily cap is excluded from the next draw and the weights renormalise
+ok 53 - a prize at its daily cap is excluded from the next draw and the weights renormalise
+  ---
+  duration_ms: 21.36444
+  type: 'test'
+  ...
+# Subtest: a wheel with nothing winnable refuses the press rather than drawing (D5)
+ok 54 - a wheel with nothing winnable refuses the press rather than drawing (D5)
+  ---
+  duration_ms: 1.854009
+  type: 'test'
+  ...
+# Subtest: a press writes the spin, mints a code, queues the print and moves the counter — together
+ok 55 - a press writes the spin, mints a code, queues the print and moves the counter — together
+  ---
+  duration_ms: 4.605881
+  type: 'test'
+  ...
+# Subtest: the print job is on disk before the printer is touched, so a restart still prints it
+ok 56 - the print job is on disk before the printer is touched, so a restart still prints it
+  ---
+  duration_ms: 7.757559
+  type: 'test'
+  ...
+# Subtest: the slip prints the words and terms as published, not as edited since; an unworded type prints the cached terms and expiry
+ok 57 - the slip prints the words and terms as published, not as edited since; an unworded type prints the cached terms and expiry
+  ---
+  duration_ms: 5.656486
+  type: 'test'
+  ...
+# Subtest: a simulated press changes nothing at all (D16)
+ok 58 - a simulated press changes nothing at all (D16)
+  ---
+  duration_ms: 1.980995
+  type: 'test'
+  ...
+# Subtest: a station with no usable code prefix refuses the press by name, before anything is written
+ok 59 - a station with no usable code prefix refuses the press by name, before anything is written
+  ---
+  duration_ms: 10.040908
+  type: 'test'
+  ...
+# Subtest: a prefix set on the station is taken at the next press, with no publish
+ok 60 - a prefix set on the station is taken at the next press, with no publish
+  ---
+  duration_ms: 3.262837
+  type: 'test'
+  ...
+# Subtest: a voucher runs to the end of the date its slip prints, in the branch’s time zone
+ok 61 - a voucher runs to the end of the date its slip prints, in the branch’s time zone
+  ---
+  duration_ms: 6.626992
+  type: 'test'
+  ...
+# Subtest: the end of the date follows the branch’s own clock, across a daylight-saving change
+ok 62 - the end of the date follows the branch’s own clock, across a daylight-saving change
+  ---
+  duration_ms: 3.57965
+  type: 'test'
+  ...
+# Subtest: a retry carrying the same key is one spin; a second press is two
+ok 63 - a retry carrying the same key is one spin; a second press is two
+  ---
+  duration_ms: 5.145423
+  type: 'test'
+  ...
+# Subtest: a retry of the reveal print joins the first call: one answer, one spin, one slip
+ok 64 - a retry of the reveal print joins the first call: one answer, one spin, one slip
+  ---
+  duration_ms: 3.668243
+  type: 'test'
+  ...
+# Subtest: a retry that arrives while the press is still being written joins it too
+ok 65 - a retry that arrives while the press is still being written joins it too
+  ---
+  duration_ms: 3.821353
+  type: 'test'
+  ...
+# Subtest: a reveal whose printer has not answered in time answers "queued", and the slip still prints
+ok 66 - a reveal whose printer has not answered in time answers "queued", and the slip still prints
+  ---
+  duration_ms: 43.820905
+  type: 'test'
+  ...
+# Subtest: a repeated key the process can no longer answer for is refused, never redrawn
+ok 67 - a repeated key the process can no longer answer for is refused, never redrawn
+  ---
+  duration_ms: 4.727042
+  type: 'test'
+  ...
+# Subtest: a retry that arrives after the trading day rolls over is still one spin
+ok 68 - a retry that arrives after the trading day rolls over is still one spin
+  ---
+  duration_ms: 5.167351
+  type: 'test'
+  ...
+# Subtest: a write that fails refuses the press and leaves nothing behind (D7)
+ok 69 - a write that fails refuses the press and leaves nothing behind (D7)
+  ---
+  duration_ms: 3.505663
+  type: 'test'
+  ...
+# Subtest: a box with no signing key refuses the press rather than drawing unrecordably
+ok 70 - a box with no signing key refuses the press rather than drawing unrecordably
+  ---
+  duration_ms: 1.3137
+  type: 'test'
+  ...
+# Subtest: a code this box has minted before is drawn again — and the memory survives a restart
+ok 71 - a code this box has minted before is drawn again — and the memory survives a restart
+  ---
+  duration_ms: 68.753604
+  type: 'test'
+  ...
+# Subtest: a booth refuses the press once it has given away its spins for the day
+ok 72 - a booth refuses the press once it has given away its spins for the day
+  ---
+  duration_ms: 5.055034
+  type: 'test'
+  ...
+# Subtest: a booth with no cap plays on: null is no limit
+ok 73 - a booth with no cap plays on: null is no limit
+  ---
+  duration_ms: 7.95271
+  type: 'test'
+  ...
+# Subtest: the day’s spins reset at the trading-day boundary, not at midnight
+ok 74 - the day’s spins reset at the trading-day boundary, not at midnight
+  ---
+  duration_ms: 4.152046
+  type: 'test'
+  ...
+# Subtest: a simulated press is refused by the cap as well, and spends none of it
+ok 75 - a simulated press is refused by the cap as well, and spends none of it
+  ---
+  duration_ms: 2.639867
+  type: 'test'
+  ...
+# Subtest: a retry of a press the box already answered is not turned away by the cap
+ok 76 - a retry of a press the box already answered is not turned away by the cap
+  ---
+  duration_ms: 2.273659
+  type: 'test'
+  ...
+# Subtest: a press that read the count a moment too early is still refused by the cap
+ok 77 - a press that read the count a moment too early is still refused by the cap
+  ---
+  duration_ms: 5.021725
+  type: 'test'
+  ...
+# Subtest: the cap’s refusal reaches the page as 409 with a code of its own
+ok 78 - the cap’s refusal reaches the page as 409 with a code of its own
+  ---
+  duration_ms: 2.720099
+  type: 'test'
+  ...
+# Subtest: a clock behind a time the box has lived through is suspect, and the day does not go back
+ok 79 - a clock behind a time the box has lived through is suspect, and the day does not go back
+  ---
+  duration_ms: 2.712978
+  type: 'test'
+  ...
+# Subtest: a clock inside the ten-minute tolerance is not flagged
+ok 80 - a clock inside the ten-minute tolerance is not flagged
+  ---
+  duration_ms: 2.910428
+  type: 'test'
+  ...
+# Subtest: a PIN is verified by iterating the booth’s own staff, and signs somebody in
+ok 81 - a PIN is verified by iterating the booth’s own staff, and signs somebody in
+  ---
+  duration_ms: 3.873121
+  type: 'test'
+  ...
+# Subtest: somebody not on this booth’s list cannot sign in, however good their PIN
+ok 82 - somebody not on this booth’s list cannot sign in, however good their PIN
+  ---
+  duration_ms: 1.655651
+  type: 'test'
+  ...
+# Subtest: five wrong PINs are free; the sixth starts a wait that a restart does not clear
+ok 83 - five wrong PINs are free; the sixth starts a wait that a restart does not clear
+  ---
+  duration_ms: 3.144268
+  type: 'test'
+  ...
+# Subtest: overlapping wrong PINs are taken one at a time, and the lock holds after the allowance
+ok 84 - overlapping wrong PINs are taken one at a time, and the lock holds after the allowance
+  ---
+  duration_ms: 35.648769
+  type: 'test'
+  ...
+# Subtest: a right PIN inside a burst, after the lock has come on, is refused
+ok 85 - a right PIN inside a burst, after the lock has come on, is refused
+  ---
+  duration_ms: 35.339145
+  type: 'test'
+  ...
+# Subtest: the lock follows the count the store returns, not the count read before the check
+ok 86 - the lock follows the count the store returns, not the count read before the check
+  ---
+  duration_ms: 3.304954
+  type: 'test'
+  ...
+# Subtest: a PIN two people hold signs nobody in, is not counted, and the log names neither
+ok 87 - a PIN two people hold signs nobody in, is not counted, and the log names neither
+  ---
+  duration_ms: 127.909387
+  type: 'test'
+  ...
+# Subtest: a sign-in problem never stops the wheel
+ok 88 - a sign-in problem never stops the wheel
+  ---
+  duration_ms: 3.503118
+  type: 'test'
+  ...
+# Subtest: a signed-in booth attributes the spin and prints the staff code
+ok 89 - a signed-in booth attributes the spin and prints the staff code
+  ---
+  duration_ms: 3.053975
+  type: 'test'
+  ...
+# Subtest: a badge is verified the same way, and finds nobody while no badge hash is cached
+ok 90 - a badge is verified the same way, and finds nobody while no badge hash is cached
+  ---
+  duration_ms: 2.393825
+  type: 'test'
+  ...
+# Subtest: a staff benefit QR at the badge path is refused as not a badge, signs nobody in and is never counted (S2-21 round 2, H8)
+ok 91 - a staff benefit QR at the badge path is refused as not a badge, signs nobody in and is never counted (S2-21 round 2, H8)
+  ---
+  duration_ms: 1.614785
+  type: 'test'
+  ...
+# Subtest: the heartbeat block is measured, not defaulted
+ok 92 - the heartbeat block is measured, not defaulted
+  ---
+  duration_ms: 5.053179
+  type: 'test'
+  ...
+# Subtest: the booth reports its own printer from the heartbeat probe before the first voucher (SCRUM-419, L18)
+ok 93 - the booth reports its own printer from the heartbeat probe before the first voucher (SCRUM-419, L18)
+  ---
+  duration_ms: 1.61376
+  type: 'test'
+  ...
+# Subtest: a box with no booth station sends no booth block at all
+ok 94 - a box with no booth station sends no booth block at all
+  ---
+  duration_ms: 0.904772
+  type: 'test'
+  ...
+# Subtest: a print outcome for a booth voucher becomes an outbox fact (D20)
+ok 95 - a print outcome for a booth voucher becomes an outbox fact (D20)
+  ---
+  duration_ms: 3.760552
+  type: 'test'
+  ...
+# Subtest: an outcome that arrives after the job was reported still goes to the outbox
+ok 96 - an outcome that arrives after the job was reported still goes to the outbox
+  ---
+  duration_ms: 4.949646
+  type: 'test'
+  ...
+# Subtest: a voucher a power cut caught on its way to the printer is the booth’s to report after the restart
+ok 97 - a voucher a power cut caught on its way to the printer is the booth’s to report after the restart
+  ---
+  duration_ms: 7.649249
+  type: 'test'
+  ...
+# Subtest: a booth adopts the vouchers a previous process left unprinted, and can still name them
+ok 98 - a booth adopts the vouchers a previous process left unprinted, and can still name them
+  ---
+  duration_ms: 4.835793
+  type: 'test'
+  ...
+# Subtest: the http handler answers the contract the page was written against
+ok 99 - the http handler answers the contract the page was written against
+  ---
+  duration_ms: 3.44313
+  type: 'test'
+  ...
+# Subtest: the handler honours simulate, which is what stops a debug table minting 200 vouchers
+ok 100 - the handler honours simulate, which is what stops a debug table minting 200 vouchers
+  ---
+  duration_ms: 1.62376
+  type: 'test'
+  ...
+# Subtest: a refused press comes back as the platform envelope with a code the page knows
+ok 101 - a refused press comes back as the platform envelope with a code the page knows
+  ---
+  duration_ms: 2.040592
+  type: 'test'
+  ...
+# Subtest: a sign-in refusal is 200 with ok:false, so the panel shows a countdown and not a fault
+ok 102 - a sign-in refusal is 200 with ok:false, so the panel shows a countdown and not a fault
+  ---
+  duration_ms: 2.959974
+  type: 'test'
+  ...
+# Subtest: every fact a press queues verifies against the public half of the box’s key
+ok 103 - every fact a press queues verifies against the public half of the box’s key
+  ---
+  duration_ms: 3.682442
+  type: 'test'
+  ...
+# Subtest: REPRODUCTION: a lost reset_store answer, a heartbeat naming the new epoch, then an offline sale — the sale is sealed on the new epoch and applied
+ok 104 - REPRODUCTION: a lost reset_store answer, a heartbeat naming the new epoch, then an offline sale — the sale is sealed on the new epoch and applied
+  ---
+  duration_ms: 14.556499
+  type: 'test'
+  ...
+# Subtest: the adoption is on disk: a restart after the heartbeat seals on the new epoch, and the sequence carries on
+ok 105 - the adoption is on disk: a restart after the heartbeat seals on the new epoch, and the sequence carries on
+  ---
+  duration_ms: 6.095339
+  type: 'test'
+  ...
+# Subtest: an acknowledgement after the adoption is honoured against the STORE: the same epoch moves nothing, a newer one is adopted
+ok 106 - an acknowledgement after the adoption is honoured against the STORE: the same epoch moves nothing, a newer one is adopted
+  ---
+  duration_ms: 5.613386
+  type: 'test'
+  ...
+# Subtest: the config pull carries the epoch too, and an older epoch than the store holds is never adopted
+ok 107 - the config pull carries the epoch too, and an older epoch than the store holds is never adopted
+  ---
+  duration_ms: 4.146862
+  type: 'test'
+  ...
+# Subtest: a sale sealed BEFORE the adoption and pushed after it is set aside as epoch_regressed — never applied on the wrong journal, never re-sent for ever
+ok 108 - a sale sealed BEFORE the adoption and pushed after it is set aside as epoch_regressed — never applied on the wrong journal, never re-sent for ever
+  ---
+  duration_ms: 8.732589
+  type: 'test'
+  ...
+# Subtest: an outbox on its own (no agent) adopts a newer push-answer epoch and never an older one
+ok 109 - an outbox on its own (no agent) adopts a newer push-answer epoch and never an older one
+  ---
+  duration_ms: 3.446722
+  type: 'test'
+  ...
+# Subtest: a store that WAITS for a minted epoch is not released by a heartbeat: only a reset answer frees it
+ok 110 - a store that WAITS for a minted epoch is not released by a heartbeat: only a reset answer frees it
+  ---
+  duration_ms: 3.363751
+  type: 'test'
+  ...
+# Subtest: advanceEpoch moves only forwards for "newer", to any other value for "different", and says whether it moved
+ok 111 - advanceEpoch moves only forwards for "newer", to any other value for "different", and says whether it moved
+  ---
+  duration_ms: 4.696993
+  type: 'test'
+  ...
+# Subtest: a second adoption of the same epoch, decided on a stale read, does not put the sequence back under a sealed fact
+ok 112 - a second adoption of the same epoch, decided on a stale read, does not put the sequence back under a sealed fact
+  ---
+  duration_ms: 3.875722
+  type: 'test'
+  ...
+# Subtest: an ordinary pull applies everything, deny-list first
+ok 113 - an ordinary pull applies everything, deny-list first
+  ---
+  duration_ms: 1.414848
+  type: 'test'
+  ...
+# Subtest: a staff list with no deny-list beside it is not applied at all
+ok 114 - a staff list with no deny-list beside it is not applied at all
+  ---
+  duration_ms: 0.153527
+  type: 'test'
+  ...
+# Subtest: a truncated deny-list takes the staff list down with it
+ok 115 - a truncated deny-list takes the staff list down with it
+  ---
+  duration_ms: 0.175951
+  type: 'test'
+  ...
+# Subtest: a truncated staff list is skipped on its own, and the deny-list still lands
+ok 116 - a truncated staff list is skipped on its own, and the deny-list still lands
+  ---
+  duration_ms: 0.147745
+  type: 'test'
+  ...
+# Subtest: the deny-list is first in every plan that contains it
+ok 117 - the deny-list is first in every plan that contains it
+  ---
+  duration_ms: 0.142002
+  type: 'test'
+  ...
+# Subtest: a pull with no staff list in it is left alone
+ok 118 - a pull with no staff list in it is left alone
+  ---
+  duration_ms: 0.082088
+  type: 'test'
+  ...
+# Subtest: flags, inline values and positionals are read apart
+ok 119 - flags, inline values and positionals are read apart
+  ---
+  duration_ms: 1.325656
+  type: 'test'
+  ...
+# Subtest: the claim code is read from a line on stdin, trimmed, after a prompt on stderr
+ok 120 - the claim code is read from a line on stdin, trimmed, after a prompt on stderr
+  ---
+  duration_ms: 3.000275
+  type: 'test'
+  ...
+# Subtest: claim without an api, or with no code entered, is a usage error and calls nobody
+ok 121 - claim without an api, or with no code entered, is a usage error and calls nobody
+  ---
+  duration_ms: 1.368276
+  type: 'test'
+  ...
+# Subtest: status names the configured api before a claim, and the claimed one after
+ok 122 - status names the configured api before a claim, and the claimed one after
+  ---
+  duration_ms: 13.663573
+  type: 'test'
+  ...
+# Subtest: version, help and an unknown command
+ok 123 - version, help and an unknown command
+  ---
+  duration_ms: 0.36877
+  type: 'test'
+  ...
+# Subtest: a box that has not heard the platform stamps untrusted and prints its own time; the first answer corrects both
+ok 124 - a box that has not heard the platform stamps untrusted and prints its own time; the first answer corrects both
+  ---
+  duration_ms: 291.823951
+  type: 'test'
+  ...
+# Subtest: a measurement from an earlier boot is set aside; one from this boot survives a restart
+ok 125 - a measurement from an earlier boot is set aside; one from this boot survives a restart
+  ---
+  duration_ms: 15.046978
+  type: 'test'
+  ...
+# Subtest: a restart in the same boot after the clock was stepped while the service was down stamps untrusted
+ok 126 - a restart in the same boot after the clock was stepped while the service was down stamps untrusted
+  ---
+  duration_ms: 70.805456
+  type: 'test'
+  ...
+# Subtest: a clock within the tolerance is trusted with nothing left over, and no spin is flagged
+ok 127 - a clock within the tolerance is trusted with nothing left over, and no spin is flagged
+  ---
+  duration_ms: 7.491269
+  type: 'test'
+  ...
+# Subtest: a spin on a box 9 minutes ahead is not flagged
+ok 128 - a spin on a box 9 minutes ahead is not flagged
+  ---
+  duration_ms: 6.108063
+  type: 'test'
+  ...
+# Subtest: a spin on a box 11 minutes ahead is flagged
+ok 129 - a spin on a box 11 minutes ahead is flagged
+  ---
+  duration_ms: 7.123224
+  type: 'test'
+  ...
+# Subtest: a spin on a box 11 minutes behind is flagged
+ok 130 - a spin on a box 11 minutes behind is flagged
+  ---
+  duration_ms: 6.192186
+  type: 'test'
+  ...
+# Subtest: the measurement is taken against the midpoint of the exchange
+ok 131 - the measurement is taken against the midpoint of the exchange
+  ---
+  duration_ms: 4.724173
+  type: 'test'
+  ...
+# Subtest: a box that booted hours AHEAD is accepted on the heartbeat after the refusal
+ok 132 - a box that booted hours AHEAD is accepted on the heartbeat after the refusal
+  ---
+  duration_ms: 4.81624
+  type: 'test'
+  ...
+# Subtest: a box hours AHEAD whose first heartbeat got no answer at all is accepted on the heartbeat after the refusal
+ok 133 - a box hours AHEAD whose first heartbeat got no answer at all is accepted on the heartbeat after the refusal
+  ---
+  duration_ms: 6.914371
+  type: 'test'
+  ...
+# Subtest: a box hours AHEAD whose first heartbeat got a 503 from the edge is accepted on the heartbeat after the refusal
+ok 134 - a box hours AHEAD whose first heartbeat got a 503 from the edge is accepted on the heartbeat after the refusal
+  ---
+  duration_ms: 6.391025
+  type: 'test'
+  ...
+# Subtest: a floor that may be the platform’s watermark stays through a refusal for the clock
+ok 135 - a floor that may be the platform’s watermark stays through a refusal for the clock
+  ---
+  duration_ms: 5.450625
+  type: 'test'
+  ...
+# Subtest: reportedAt keeps rising when a new measurement moves the clock back a few seconds
+ok 136 - reportedAt keeps rising when a new measurement moves the clock back a few seconds
+  ---
+  duration_ms: 5.687989
+  type: 'test'
+  ...
+# Subtest: a box ten minutes AHEAD that restarts in the same boot is refused as stale at most once, then accepted
+ok 137 - a box ten minutes AHEAD that restarts in the same boot is refused as stale at most once, then accepted
+  ---
+  duration_ms: 8.535934
+  type: 'test'
+  ...
+# Subtest: a corrected box back from a power cut minutes behind is refused as stale once, then measured, trusted and accepted
+ok 138 - a corrected box back from a power cut minutes behind is refused as stale once, then measured, trusted and accepted
+  ---
+  duration_ms: 71.799904
+  type: 'test'
+  ...
+# Subtest: a stale refusal that names nothing measures nothing and moves nothing
+ok 139 - a stale refusal that names nothing measures nothing and moves nothing
+  ---
+  duration_ms: 9.791848
+  type: 'test'
+  ...
+# Subtest: the test control moves the raw clock: declared at once, left over on events, corrected by the answer
+ok 140 - the test control moves the raw clock: declared at once, left over on events, corrected by the answer
+  ---
+  duration_ms: 131.533664
+  type: 'test'
+  ...
+# Subtest: a step of the machine’s clock after the measurement drops it until the next heartbeat
+ok 141 - a step of the machine’s clock after the measurement drops it until the next heartbeat
+  ---
+  duration_ms: 9.110768
+  type: 'test'
+  ...
+# Subtest: a step of the machine’s clock while the first heartbeat is on the wire measures nothing
+ok 142 - a step of the machine’s clock while the first heartbeat is on the wire measures nothing
+  ---
+  duration_ms: 116.987649
+  type: 'test'
+  ...
+# Subtest: a step while a later heartbeat is on the wire drops the measurement the box held
+ok 143 - a step while a later heartbeat is on the wire drops the measurement the box held
+  ---
+  duration_ms: 65.437639
+  type: 'test'
+  ...
+# Subtest: twelve hours behind at 06:30: the trading day, the slip and the daily cap follow the corrected clock
+ok 144 - twelve hours behind at 06:30: the trading day, the slip and the daily cap follow the corrected clock
+  ---
+  duration_ms: 119.650272
+  type: 'test'
+  ...
+# Subtest: three hours AHEAD at 03:30: a press before the measurement does not hold later slips, days or caps ahead
+ok 145 - three hours AHEAD at 03:30: a press before the measurement does not hold later slips, days or caps ahead
+  ---
+  duration_ms: 120.704139
+  type: 'test'
+  ...
+# Subtest: facts deferred before a box twelve hours AHEAD measured itself go on the next flush
+ok 146 - facts deferred before a box twelve hours AHEAD measured itself go on the next flush
+  ---
+  duration_ms: 7.455604
+  type: 'test'
+  ...
+# Subtest: the sync vocabularies match @oto/shared item for item
+ok 147 - the sync vocabularies match @oto/shared item for item
+  ---
+  duration_ms: 1.577264
+  type: 'test'
+  ...
+# Subtest: the station session vocabularies match @oto/shared item for item
+ok 148 - the station session vocabularies match @oto/shared item for item
+  ---
+  duration_ms: 0.126939
+  type: 'test'
+  ...
+# Subtest: both ends canonicalise an envelope to exactly the same bytes
+ok 149 - both ends canonicalise an envelope to exactly the same bytes
+  ---
+  duration_ms: 0.556128
+  type: 'test'
+  ...
+# Subtest: a number that has no JSON form fails loudly rather than signing a null
+ok 150 - a number that has no JSON form fails loudly rather than signing a null
+  ---
+  duration_ms: 0.347692
+  type: 'test'
+  ...
+# Subtest: the scan vocabularies match @oto/shared item for item
+ok 151 - the scan vocabularies match @oto/shared item for item
+  ---
+  duration_ms: 0.105543
+  type: 'test'
+  ...
+# Subtest: a redacted scan payload is exactly what the shared schema accepts
+ok 152 - a redacted scan payload is exactly what the shared schema accepts
+  ---
+  duration_ms: 1.133743
+  type: 'test'
+  ...
+# Subtest: the staff token vocabularies match @oto/shared item for item
+ok 153 - the staff token vocabularies match @oto/shared item for item
+  ---
+  duration_ms: 0.102306
+  type: 'test'
+  ...
+# Subtest: the claims this package signs are exactly what the shared schema validates
+ok 154 - the claims this package signs are exactly what the shared schema validates
+  ---
+  duration_ms: 0.714341
+  type: 'test'
+  ...
+# Subtest: the credential lands owner-only, in a folder made on the way, with nothing left beside it
+ok 155 - the credential lands owner-only, in a folder made on the way, with nothing left beside it
+  ---
+  duration_ms: 16.082979
+  type: 'test'
+  ...
+# Subtest: a write that cannot replace the target leaves it as it was and no temporary behind
+ok 156 - a write that cannot replace the target leaves it as it was and no temporary behind
+  ---
+  duration_ms: 4.326522
+  type: 'test'
+  ...
+# Subtest: test/fixtures/terminal/generate.ts
+ok 15 - test/fixtures/terminal/generate.ts
+  ---
+  duration_ms: 292.740677
+  type: 'test'
+  ...
+# Subtest: a till box never builds a gate host
+ok 158 - a till box never builds a gate host
+  ---
+  duration_ms: 6.275966
+  type: 'test'
+  ...
+# Subtest: a box whose bundle names a gate station runs one: a kid band is refused and journalled to the outbox
+ok 159 - a box whose bundle names a gate station runs one: a kid band is refused and journalled to the outbox
+  ---
+  duration_ms: 10.930431
+  type: 'test'
+  ...
+# Subtest: the window is open duration (L-1) + close delay (L-3) + grace, from what the board said
+ok 160 - the window is open duration (L-1) + close delay (L-3) + grace, from what the board said
+  ---
+  duration_ms: 0.923281
+  type: 'test'
+  ...
+# Subtest: one pending open per side: a second open on that side is refused, the other side is free
+ok 161 - one pending open per side: a second open on that side is refused, the other side is free
+  ---
+  duration_ms: 1.059829
+  type: 'test'
+  ...
+# Subtest: a claim that finds an open past its window hands its timeout back, never drops it
+ok 162 - a claim that finds an open past its window hands its timeout back, never drops it
+  ---
+  duration_ms: 0.230049
+  type: 'test'
+  ...
+# Subtest: the next passed feedback on the side within the window is credited to the pending open
+ok 163 - the next passed feedback on the side within the window is credited to the pending open
+  ---
+  duration_ms: 0.299254
+  type: 'test'
+  ...
+# Subtest: feedback on the OTHER side is not credited to this open
+ok 164 - feedback on the OTHER side is not credited to this open
+  ---
+  duration_ms: 0.144347
+  type: 'test'
+  ...
+# Subtest: feedback outside the window is credited to no one; the open ends as an inferred timeout
+ok 165 - feedback outside the window is credited to no one; the open ends as an inferred timeout
+  ---
+  duration_ms: 0.126268
+  type: 'test'
+  ...
+# Subtest: a board timeout ends the open with nobody credited; "in lane" is kept
+ok 166 - a board timeout ends the open with nobody credited; "in lane" is kept
+  ---
+  duration_ms: 0.144442
+  type: 'test'
+  ...
+# Subtest: reverse and tailgating alarms name the pending open, credit nobody, and leave it pending
+ok 167 - reverse and tailgating alarms name the pending open, credit nobody, and leave it pending
+  ---
+  duration_ms: 0.155635
+  type: 'test'
+  ...
+# Subtest: a claim released after a failed open frees the side
+ok 168 - a claim released after a failed open frees the side
+  ---
+  duration_ms: 0.28643
+  type: 'test'
+  ...
+# Subtest: held open with nothing pending: faulted, passages uncredited, opens refused until the door closes
+ok 169 - held open with nothing pending: faulted, passages uncredited, opens refused until the door closes
+  ---
+  duration_ms: 0.417634
+  type: 'test'
+  ...
+# Subtest: a door open while an open is pending is not held open
+ok 170 - a door open while an open is pending is not held open
+  ---
+  duration_ms: 0.146541
+  type: 'test'
+  ...
+# Subtest: faults are inferred: silence, stuck initialising, a beam that stays broken, opens with no feedback
+ok 171 - faults are inferred: silence, stuck initialising, a beam that stays broken, opens with no feedback
+  ---
+  duration_ms: 0.167306
+  type: 'test'
+  ...
+# Subtest: the startup read: mismatches against config, memory on or polled-only upload make crediting unsound
+ok 172 - the startup read: mismatches against config, memory on or polled-only upload make crediting unsound
+  ---
+  duration_ms: 0.222086
+  type: 'test'
+  ...
+# Subtest: noteReply says when the board came back: once, at the end of a silence
+ok 173 - noteReply says when the board came back: once, at the end of a silence
+  ---
+  duration_ms: 0.628442
+  type: 'test'
+  ...
+# Subtest: an entry is trusted to the crediting rule only when it is shown to hold: read, sound, answering, reporting
+ok 174 - an entry is trusted to the crediting rule only when it is shown to hold: read, sound, answering, reporting
+  ---
+  duration_ms: 0.227828
+  type: 'test'
+  ...
+# Subtest: an adult band enters
+ok 175 - an adult band enters
+  ---
+  duration_ms: 2.828182
+  type: 'test'
+  ...
+# Subtest: the same adult again, after a committed entry, is refused ANTI_PASSBACK
+ok 176 - the same adult again, after a committed entry, is refused ANTI_PASSBACK
+  ---
+  duration_ms: 0.651152
+  type: 'test'
+  ...
+# Subtest: an adult inside exits
+ok 177 - an adult inside exits
+  ---
+  duration_ms: 0.44248
+  type: 'test'
+  ...
+# Subtest: exit without entry is let out and flagged (OD-A4)
+ok 178 - exit without entry is let out and flagged (OD-A4)
+  ---
+  duration_ms: 0.444438
+  type: 'test'
+  ...
+# Subtest: a kid's band never operates the gate, in either direction (C8, OD-A6)
+ok 179 - a kid's band never operates the gate, in either direction (C8, OD-A6)
+  ---
+  duration_ms: 0.694415
+  type: 'test'
+  ...
+# Subtest: a revoked band is refused at the entry, and let out at the exit flagged revoked
+ok 180 - a revoked band is refused at the entry, and let out at the exit flagged revoked
+  ---
+  duration_ms: 0.55839
+  type: 'test'
+  ...
+# Subtest: a band unknown to the copy, offline, is sent to reception (OD-A5); after a refresh it is not found
+ok 181 - a band unknown to the copy, offline, is sent to reception (OD-A5); after a refresh it is not found
+  ---
+  duration_ms: 0.511315
+  type: 'test'
+  ...
+# Subtest: a code that is not a band — a booking QR, a voucher, a card id — is not admissible
+ok 182 - a code that is not a band — a booking QR, a voucher, a card id — is not admissible
+  ---
+  duration_ms: 0.126802
+  type: 'test'
+  ...
+# Subtest: a tampered band — one character changed, or signed with another key — is refused and names no band
+ok 183 - a tampered band — one character changed, or signed with another key — is refused and names no band
+  ---
+  duration_ms: 1.011501
+  type: 'test'
+  ...
+# Subtest: a box with no usable key admits nobody
+ok 184 - a box with no usable key admits nobody
+  ---
+  duration_ms: 0.565717
+  type: 'test'
+  ...
+# Subtest: the copy: active bands from `bands`, revoked ones named by the deny list win over it
+ok 185 - the copy: active bands from `bands`, revoked ones named by the deny list win over it
+  ---
+  duration_ms: 0.46651
+  type: 'test'
+  ...
+# Subtest: anti-passback commits: in counts one, out takes one off, never below zero
+ok 186 - anti-passback commits: in counts one, out takes one off, never below zero
+  ---
+  duration_ms: 0.188127
+  type: 'test'
+  ...
+# Subtest: the journal fact matches the shared wire schema and carries no code
+ok 187 - the journal fact matches the shared wire schema and carries no code
+  ---
+  duration_ms: 1.523153
+  type: 'test'
+  ...
+# Subtest: §1: the open, stay-open, close and machine-read frames carry the documented layout and checksum
+ok 188 - §1: the open, stay-open, close and machine-read frames carry the documented layout and checksum
+  ---
+  duration_ms: 1.042916
+  type: 'test'
+  ...
+# Subtest: §1: the checksum may be sent as the fixed 95 FC
+ok 189 - §1: the checksum may be sent as the fixed 95 FC
+  ---
+  duration_ms: 0.954029
+  type: 'test'
+  ...
+# Subtest: §1: every machine id 1-255 and both sides build a frame the scanner reads back as our own echo
+ok 190 - §1: every machine id 1-255 and both sides build a frame the scanner reads back as our own echo
+  ---
+  duration_ms: 0.929238
+  type: 'test'
+  ...
+# Subtest: §1: a machine id the board cannot hold (L-30 is 1-255) is refused, not truncated
+ok 191 - §1: a machine id the board cannot hold (L-30 is 1-255) is refused, not truncated
+  ---
+  duration_ms: 0.366147
+  type: 'test'
+  ...
+# Subtest: §1: acknowledgements and the machine-number reply parse, including a checksum that contains 7E
+ok 192 - §1: acknowledgements and the machine-number reply parse, including a checksum that contains 7E
+  ---
+  duration_ms: 0.241628
+  type: 'test'
+  ...
+# Subtest: §2: every feedback family on each side round-trips through its byte-7 code
+ok 193 - §2: every feedback family on each side round-trips through its byte-7 code
+  ---
+  duration_ms: 0.421805
+  type: 'test'
+  ...
+# Subtest: §2: the checksum of a board frame is not verified (either byte order, or junk)
+ok 194 - §2: the checksum of a board frame is not verified (either byte order, or junk)
+  ---
+  duration_ms: 0.155078
+  type: 'test'
+  ...
+# Subtest: §2: a doubled leading 7E is ignored, and back-to-back frames share nothing
+ok 195 - §2: a doubled leading 7E is ignored, and back-to-back frames share nothing
+  ---
+  duration_ms: 0.11276
+  type: 'test'
+  ...
+# Subtest: the scanner resynchronises past noise and waits across chunk boundaries
+ok 196 - the scanner resynchronises past noise and waits across chunk boundaries
+  ---
+  duration_ms: 0.284542
+  type: 'test'
+  ...
+# Subtest: a frame that does not end in 7E where its length says is dropped, not trusted
+ok 197 - a frame that does not end in 7E where its length says is dropped, not trusted
+  ---
+  duration_ms: 1.132179
+  type: 'test'
+  ...
+# Subtest: an unlisted board code is surfaced as unknown rather than guessed at
+ok 198 - an unlisted board code is surfaced as unknown rather than guessed at
+  ---
+  duration_ms: 0.178911
+  type: 'test'
+  ...
+# Subtest: §3: the door and infrared queries carry the Modbus checksum
+ok 199 - §3: the door and infrared queries carry the Modbus checksum
+  ---
+  duration_ms: 0.174764
+  type: 'test'
+  ...
+# Subtest: §3.2 / §3.3: every door and infrared value reads to its named state
+ok 200 - §3.2 / §3.3: every door and infrared value reads to its named state
+  ---
+  duration_ms: 0.15429
+  type: 'test'
+  ...
+# Subtest: §3: a status reply is read for the configured address only
+ok 201 - §3: a status reply is read for the configured address only
+  ---
+  duration_ms: 0.054898
+  type: 'test'
+  ...
+# Subtest: §4: an L-menu read is 55 01 nn 00 00 01 AA 55, and its reply is X1 high, X2 low
+ok 202 - §4: an L-menu read is 55 01 nn 00 00 01 AA 55, and its reply is X1 high, X2 low
+  ---
+  duration_ms: 0.149257
+  type: 'test'
+  ...
+# Subtest: §4: the supply-voltage and infrared-pair reads, and the supply voltage in mV
+ok 203 - §4: the supply-voltage and infrared-pair reads, and the supply voltage in mV
+  ---
+  duration_ms: 0.071523
+  type: 'test'
+  ...
+# Subtest: the three families interleave on one line and each is read whole
+ok 204 - the three families interleave on one line and each is read whole
+  ---
+  duration_ms: 0.070324
+  type: 'test'
+  ...
+# Subtest: startup finds the machine and READS the settings that matter — it never writes one
+ok 205 - startup finds the machine and READS the settings that matter — it never writes one
+  ---
+  duration_ms: 5.210943
+  type: 'test'
+  ...
+# Subtest: adult in → credited entry; the same band again → ANTI_PASSBACK; out → credited exit
+ok 206 - adult in → credited entry; the same band again → ANTI_PASSBACK; out → credited exit
+  ---
+  duration_ms: 16.048197
+  type: 'test'
+  ...
+# Subtest: exit without entry is let out, recorded, and the count stays at zero (OD-A4)
+ok 207 - exit without entry is let out, recorded, and the count stays at zero (OD-A4)
+  ---
+  duration_ms: 7.106171
+  type: 'test'
+  ...
+# Subtest: a timeout changes nothing: the band can still enter afterwards
+ok 208 - a timeout changes nothing: the band can still enter afterwards
+  ---
+  duration_ms: 7.473978
+  type: 'test'
+  ...
+# Subtest: tailgating after an open is journalled as an alarm on that band and credits nobody
+ok 209 - tailgating after an open is journalled as an alarm on that band and credits nobody
+  ---
+  duration_ms: 12.445789
+  type: 'test'
+  ...
+# Subtest: a second scan while an open is pending on that side is refused GATE_BUSY
+ok 210 - a second scan while an open is pending on that side is refused GATE_BUSY
+  ---
+  duration_ms: 1.861701
+  type: 'test'
+  ...
+# Subtest: kid, revoked, and non-band codes are refused; only the ones naming a band are journalled
+ok 211 - kid, revoked, and non-band codes are refused; only the ones naming a band are journalled
+  ---
+  duration_ms: 1.864928
+  type: 'test'
+  ...
+# Subtest: a staff benefit QR at the gate reader is not a band: "scan your wristband", nothing opens, nothing is journalled (S2-21 round 2, H8)
+ok 212 - a staff benefit QR at the gate reader is not a band: "scan your wristband", nothing opens, nothing is journalled (S2-21 round 2, H8)
+  ---
+  duration_ms: 2.865908
+  type: 'test'
+  ...
+# Subtest: an unknown band: offline → see reception (OD-A5); online → the box refreshes its copy and admits
+ok 213 - an unknown band: offline → see reception (OD-A5); online → the box refreshes its copy and admits
+  ---
+  duration_ms: 2.403294
+  type: 'test'
+  ...
+# Subtest: the serial opener sends the §1 open and admits on its acknowledgement; a silent board is "not ready"
+ok 214 - the serial opener sends the §1 open and admits on its acknowledgement; a silent board is "not ready"
+  ---
+  duration_ms: 37.389559
+  type: 'test'
+  ...
+# Subtest: a box relay with no driver refuses loudly: "not ready" at the reader and a fault on the controller
+ok 215 - a box relay with no driver refuses loudly: "not ready" at the reader and a fault on the controller
+  ---
+  duration_ms: 1.639189
+  type: 'test'
+  ...
+# Subtest: a board that does not push passages (L-34 = 0): entries refused, exits still let out
+ok 216 - a board that does not push passages (L-34 = 0): entries refused, exits still let out
+  ---
+  duration_ms: 1.655192
+  type: 'test'
+  ...
+# Subtest: a controller that stops answering refuses entries until it answers again
+ok 217 - a controller that stops answering refuses entries until it answers again
+  ---
+  duration_ms: 122.862454
+  type: 'test'
+  ...
+# Subtest: a controller line that cannot be opened refuses entries; the exit still opens
+ok 218 - a controller line that cannot be opened refuses entries; the exit still opens
+  ---
+  duration_ms: 1.143245
+  type: 'test'
+  ...
+# Subtest: opens that keep ending with no passage report (no_feedback): entries refused, exits let out, the next report clears it
+ok 219 - opens that keep ending with no passage report (no_feedback): entries refused, exits let out, the next report clears it
+  ---
+  duration_ms: 9.981117
+  type: 'test'
+  ...
+# Subtest: a crediting setting one lost reply left unread is asked again of a board that answers — spaced, not every tick
+ok 220 - a crediting setting one lost reply left unread is asked again of a board that answers — spaced, not every tick
+  ---
+  duration_ms: 31.158304
+  type: 'test'
+  ...
+# Subtest: an open that expires between ticks is journalled when the next scan claims its side
+ok 221 - an open that expires between ticks is journalled when the next scan claims its side
+  ---
+  duration_ms: 0.85941
+  type: 'test'
+  ...
+# Subtest: who is inside survives a restart of the box: the count holds, and the band inside is still anti-passback (SCRUM-477)
+ok 222 - who is inside survives a restart of the box: the count holds, and the band inside is still anti-passback (SCRUM-477)
+  ---
+  duration_ms: 11.473572
+  type: 'test'
+  ...
+# Subtest: two lanes on one box: a band with an open pending in one lane is GATE_BUSY in the other
+ok 223 - two lanes on one box: a band with an open pending in one lane is GATE_BUSY in the other
+  ---
+  duration_ms: 1.929091
+  type: 'test'
+  ...
+# Subtest: a controller that does not answer is reported unreachable
+ok 224 - a controller that does not answer is reported unreachable
+  ---
+  duration_ms: 424.995222
+  type: 'test'
+  ...
+# Subtest: the reader: heartbeat answers "1", missed heartbeats make it unreachable
+ok 225 - the reader: heartbeat answers "1", missed heartbeats make it unreachable
+  ---
+  duration_ms: 0.797022
+  type: 'test'
+  ...
+# Subtest: a reader this box has no lane for is refused, and malformed calls never open
+ok 226 - a reader this box has no lane for is refused, and malformed calls never open
+  ---
+  duration_ms: 0.534555
+  type: 'test'
+  ...
+# Subtest: the card field: base64 per the spec, raw text tolerated, binary refused
+ok 227 - the card field: base64 per the spec, raw text tolerated, binary refused
+  ---
+  duration_ms: 0.090629
+  type: 'test'
+  ...
+# Subtest: the listener serves the two calls over HTTP, JSON with string values
+ok 228 - the listener serves the two calls over HTTP, JSON with string values
+  ---
+  duration_ms: 28.947136
+  type: 'test'
+  ...
+# Subtest: the relay opener pulses the side line through gpioset, and refuses without wiring
+ok 229 - the relay opener pulses the side line through gpioset, and refuses without wiring
+  ---
+  duration_ms: 0.536972
+  type: 'test'
+  ...
+# Subtest: a controller that cannot report passages must not let one band admit repeatedly
+ok 230 - a controller that cannot report passages must not let one band admit repeatedly
+  ---
+  duration_ms: 81.305922
+  type: 'test'
+  ...
+# Subtest: a late board whose re-read finds L-9 on keeps refusing entries
+ok 231 - a late board whose re-read finds L-9 on keeps refusing entries
+  ---
+  duration_ms: 52.441601
+  type: 'test'
+  ...
+# Subtest: a late board whose re-read finds L-34 = 0 keeps refusing entries
+ok 232 - a late board whose re-read finds L-34 = 0 keeps refusing entries
+  ---
+  duration_ms: 46.107145
+  type: 'test'
+  ...
+# Subtest: a board that answers polls but pushes no passages must not let one band admit repeatedly
+ok 233 - a board that answers polls but pushes no passages must not let one band admit repeatedly
+  ---
+  duration_ms: 54.197414
+  type: 'test'
+  ...
+# Subtest: a board silent at the startup read, then answering with sound settings: entries refused until it is read again, then admitted
+ok 234 - a board silent at the startup read, then answering with sound settings: entries refused until it is read again, then admitted
+  ---
+  duration_ms: 45.843896
+  type: 'test'
+  ...
+# Subtest: a board that comes up part-way through the startup read is read again on the first tick
+ok 235 - a board that comes up part-way through the startup read is read again on the first tick
+  ---
+  duration_ms: 28.321463
+  type: 'test'
+  ...
+# Subtest: a paid booking redeems on the box: its paid lines to the satang, the paid-online tender, bands with allergies, one fact after its sale
+ok 236 - a paid booking redeems on the box: its paid lines to the satang, the paid-online tender, bands with allergies, one fact after its sale
+  ---
+  duration_ms: 293.693411
+  type: 'test'
+  ...
+# Subtest: the local log is idempotent: the same press is answered again; another till on this box is told who and when
+ok 237 - the local log is idempotent: the same press is answered again; another till on this box is told who and when
+  ---
+  duration_ms: 194.218046
+  type: 'test'
+  ...
+# Subtest: a cached pending booking is refused as not paid; an unknown one says see reception; one redeemed online says who and when
+ok 238 - a cached pending booking is refused as not paid; an unknown one says see reception; one redeemed online says who and when
+  ---
+  duration_ms: 4.800811
+  type: 'test'
+  ...
+# Subtest: a restart between the claim and the sale (after fact) recovers to exactly one sale
+ok 239 - a restart between the claim and the sale (after fact) recovers to exactly one sale
+  ---
+  duration_ms: 16.937543
+  type: 'test'
+  ...
+# Subtest: a restart between the claim and the sale (after log) recovers to exactly one sale
+ok 240 - a restart between the claim and the sale (after log) recovers to exactly one sale
+  ---
+  duration_ms: 15.48594
+  type: 'test'
+  ...
+# Subtest: a restart between the sale and its redemption fact queues the fact once, and never a second sale
+ok 241 - a restart between the sale and its redemption fact queues the fact once, and never a second sale
+  ---
+  duration_ms: 164.866737
+  type: 'test'
+  ...
+# Subtest: SCRUM-477: a booking QR typed at the till is checked on the box under the park key
+ok 242 - SCRUM-477: a booking QR typed at the till is checked on the box under the park key
+  ---
+  duration_ms: 3.488808
+  type: 'test'
+  ...
+# Subtest: SCRUM-477: a sale rung before a restart gets its redemption fact when the next till asks, and that till is told who, with the band codes
+ok 243 - SCRUM-477: a sale rung before a restart gets its redemption fact when the next till asks, and that till is told who, with the band codes
+  ---
+  duration_ms: 167.388236
+  type: 'test'
+  ...
+# Subtest: SCRUM-477: a lookup after the restart finishes a sold claim too: its who answer carries the codes, and the fact is queued once
+ok 244 - SCRUM-477: a lookup after the restart finishes a sold claim too: its who answer carries the codes, and the fact is queued once
+  ---
+  duration_ms: 169.390806
+  type: 'test'
+  ...
+# Subtest: AUDIT: an ordinary cash sale cannot carry a booking marker onto the box lane
+ok 245 - AUDIT: an ordinary cash sale cannot carry a booking marker onto the box lane
+  ---
+  duration_ms: 159.943684
+  type: 'test'
+  ...
+# Subtest: AUDIT: a claim a restart left unsold is not finished once the booking is known redeemed elsewhere
+ok 246 - AUDIT: a claim a restart left unsold is not finished once the booking is known redeemed elsewhere
+  ---
+  duration_ms: 6.407189
+  type: 'test'
+  ...
+# Subtest: the gate on the box: one registration, its stays and its consent in one fact, answered again on a second press
+ok 247 - the gate on the box: one registration, its stays and its consent in one fact, answered again on a second press
+  ---
+  duration_ms: 18.994852
+  type: 'test'
+  ...
+# Subtest: s494 prepaid food at the box gate: every item starts unserved, and an amount paid that is not the items’ sum is refused in the platform’s words
+ok 248 - s494 prepaid food at the box gate: every item starts unserved, and an amount paid that is not the items’ sum is refused in the platform’s words
+  ---
+  duration_ms: 15.453029
+  type: 'test'
+  ...
+# Subtest: payment on the box leaves the supervised band for check-in; "Check in now" mints it with the park’s key, prints it, and is answered again on a second press
+ok 249 - payment on the box leaves the supervised band for check-in; "Check in now" mints it with the park’s key, prints it, and is answered again on a second press
+  ---
+  duration_ms: 140.179982
+  type: 'test'
+  ...
+# Subtest: a double power cut inside "Check in now" leaves nothing half-landed; the third press checks the child in once
+ok 250 - a double power cut inside "Check in now" leaves nothing half-landed; the third press checks the child in once
+  ---
+  duration_ms: 89.461817
+  type: 'test'
+  ...
+# Subtest: the board on the box: a nanny must be on shift, edits are recorded, a release names its photo — and survives a restart
+ok 251 - the board on the box: a nanny must be on shift, edits are recorded, a release names its photo — and survives a restart
+  ---
+  duration_ms: 84.272049
+  type: 'test'
+  ...
+# Subtest: CHILD_PHOTOS_ENABLED off: no capture path at all, and a release goes ahead without a photo
+ok 252 - CHILD_PHOTOS_ENABLED off: no capture path at all, and a release goes ahead without a photo
+  ---
+  duration_ms: 88.541515
+  type: 'test'
+  ...
+# Subtest: the photo store’s cap refuses capture in plain words before the disk suffers
+ok 253 - the photo store’s cap refuses capture in plain words before the disk suffers
+  ---
+  duration_ms: 3.540703
+  type: 'test'
+  ...
+# Subtest: the upload worker links a photo exactly once through a crash after the presign, and waits for a row not filed yet
+ok 254 - the upload worker links a photo exactly once through a crash after the presign, and waits for a row not filed yet
+  ---
+  duration_ms: 0.738813
+  type: 'test'
+  ...
+# Subtest: MEASURED: the photo store on a real disk — a week at the park’s volume against the cap
+ok 255 - MEASURED: the photo store on a real disk — a week at the park’s volume against the cap
+  ---
+  duration_ms: 617.423445
+  type: 'test'
+  ...
+# measured 102700 B/photo on disk (image + bookkeeping, 300 B overhead); 260 photos/day x 14 days = 357 MiB worst case; cap 1024 MiB, disk floor 512 MiB
+# Subtest: a Pi’s card from before this round: its overlay table is widened at boot, nothing it held is lost
+ok 256 - a Pi’s card from before this round: its overlay table is widened at boot, nothing it held is lost
+  ---
+  duration_ms: 1.93127
+  type: 'test'
+  ...
+# Subtest: the refusal is one fixed sentence, naming the reason and what to do
+ok 257 - the refusal is one fixed sentence, naming the reason and what to do
+  ---
+  duration_ms: 0.513447
+  type: 'test'
+  ...
+# Subtest: a booth code in promoCodes is a voucher on the cart, flat or nested; nothing else is
+ok 258 - a booth code in promoCodes is a voucher on the cart, flat or nested; nothing else is
+  ---
+  duration_ms: 0.508236
+  type: 'test'
+  ...
+# Subtest: the box refuses an offline sale carrying a voucher, spends no receipt number, queues nothing
+ok 259 - the box refuses an offline sale carrying a voucher, spends no receipt number, queues nothing
+  ---
+  duration_ms: 9.1053
+  type: 'test'
+  ...
+# Subtest: a sale taken offline is on disk with a journal position before anything is sent
+ok 260 - a sale taken offline is on disk with a journal position before anything is sent
+  ---
+  duration_ms: 6.551987
+  type: 'test'
+  ...
+# Subtest: the sale and its money are one transaction: consecutive positions, no gap
+ok 261 - the sale and its money are one transaction: consecutive positions, no gap
+  ---
+  duration_ms: 2.165178
+  type: 'test'
+  ...
+# Subtest: a sale that cannot be signed leaves no position behind it
+ok 262 - a sale that cannot be signed leaves no position behind it
+  ---
+  duration_ms: 1.553286
+  type: 'test'
+  ...
+# Subtest: the cloud’s own check accepts what the box sealed
+ok 263 - the cloud’s own check accepts what the box sealed
+  ---
+  duration_ms: 2.180547
+  type: 'test'
+  ...
+# Subtest: a card tender carries what the terminal said and nothing a Pi should not hold
+ok 264 - a card tender carries what the terminal said and nothing a Pi should not hold
+  ---
+  duration_ms: 1.705084
+  type: 'test'
+  ...
+# Subtest: the link comes back: the batch goes up in order and the queue empties
+ok 265 - the link comes back: the batch goes up in order and the queue empties
+  ---
+  duration_ms: 2.838335
+  type: 'test'
+  ...
+# Subtest: an answer that never arrived is re-sent whole rather than half-forgotten
+ok 266 - an answer that never arrived is re-sent whole rather than half-forgotten
+  ---
+  duration_ms: 2.606863
+  type: 'test'
+  ...
+# Subtest: cash on the box lane: numbered from the mark, banded with the park key, printed from the box queue, one fact
+ok 267 - cash on the box lane: numbered from the mark, banded with the park key, printed from the box queue, one fact
+  ---
+  duration_ms: 204.969135
+  type: 'test'
+  ...
+# Subtest: the same sale sent again is answered from the box log: one sale, one number, one fact
+ok 268 - the same sale sent again is answered from the box log: one sale, one number, one fact
+  ---
+  duration_ms: 234.587761
+  type: 'test'
+  ...
+# Subtest: Other payment stays distinct from cash through box restart and replay
+ok 269 - Other payment stays distinct from cash through box restart and replay
+  ---
+  duration_ms: 115.329559
+  type: 'test'
+  ...
+# Subtest: the box refuses reserved or cash-shaped Other without numbering a sale
+ok 270 - the box refuses reserved or cash-shaped Other without numbering a sale
+  ---
+  duration_ms: 5.043834
+  type: 'test'
+  ...
+# Subtest: a power cut after receipt leaves nothing half-written, and the retry takes the same number
+ok 271 - a power cut after receipt leaves nothing half-written, and the retry takes the same number
+  ---
+  duration_ms: 117.228053
+  type: 'test'
+  ...
+# Subtest: a power cut after bands leaves nothing half-written, and the retry takes the same number
+ok 272 - a power cut after bands leaves nothing half-written, and the retry takes the same number
+  ---
+  duration_ms: 128.793619
+  type: 'test'
+  ...
+# Subtest: a power cut after print jobs leaves nothing half-written, and the retry takes the same number
+ok 273 - a power cut after print jobs leaves nothing half-written, and the retry takes the same number
+  ---
+  duration_ms: 119.307759
+  type: 'test'
+  ...
+# Subtest: a power cut after fact leaves nothing half-written, and the retry takes the same number
+ok 274 - a power cut after fact leaves nothing half-written, and the retry takes the same number
+  ---
+  duration_ms: 119.261431
+  type: 'test'
+  ...
+# Subtest: a power cut after log leaves nothing half-written, and the retry takes the same number
+ok 275 - a power cut after log leaves nothing half-written, and the retry takes the same number
+  ---
+  duration_ms: 112.66733
+  type: 'test'
+  ...
+# Subtest: OD-4: the series continues from the higher of the pulled mark, the observed number and its own
+ok 276 - OD-4: the series continues from the higher of the pulled mark, the observed number and its own
+  ---
+  duration_ms: 425.533521
+  type: 'test'
+  ...
+# Subtest: a ฿0 comp closes with no tender, is numbered and banded
+ok 277 - a ฿0 comp closes with no tender, is numbered and banded
+  ---
+  duration_ms: 96.050713
+  type: 'test'
+  ...
+# Subtest: what the box lane will not take is refused before anything is numbered
+ok 278 - what the box lane will not take is refused before anything is numbered
+  ---
+  duration_ms: 118.19967
+  type: 'test'
+  ...
+# Subtest: an F&B order prints its prep ticket at its station with the pick-up code
+ok 279 - an F&B order prints its prep ticket at its station with the pick-up code
+  ---
+  duration_ms: 45.832466
+  type: 'test'
+  ...
+# Subtest: a late first print of a sale this box printed is refused; a copy asked for is printed
+ok 280 - a late first print of a sale this box printed is refused; a copy asked for is printed
+  ---
+  duration_ms: 119.150669
+  type: 'test'
+  ...
+# Subtest: Reprint: today’s sale from the box’s own log; a sale it did not take is not its to reprint
+ok 281 - Reprint: today’s sale from the box’s own log; a sale it did not take is not its to reprint
+  ---
+  duration_ms: 187.362682
+  type: 'test'
+  ...
+# Subtest: a card on the counter’s own terminal closes the sale with what the terminal said
+ok 282 - a card on the counter’s own terminal closes the sale with what the terminal said
+  ---
+  duration_ms: 110.313633
+  type: 'test'
+  ...
+# Subtest: the PAX QR closes the sale flagged awaiting settlement; with no terminal QR, a QR is the 2C2P one and is refused
+ok 283 - the PAX QR closes the sale flagged awaiting settlement; with no terminal QR, a QR is the 2C2P one and is refused
+  ---
+  duration_ms: 107.027699
+  type: 'test'
+  ...
+# Subtest: OD-3: a GHL card with no answer is held, never charged twice, and closed by staff with the typed approval code
+ok 284 - OD-3: a GHL card with no answer is held, never charged twice, and closed by staff with the typed approval code
+  ---
+  duration_ms: 362.405336
+  type: 'test'
+  ...
+# Subtest: a tender left at sent_to_terminal by a power cut is set down for a person to confirm, and the terminal is sent nothing again
+ok 285 - a tender left at sent_to_terminal by a power cut is set down for a person to confirm, and the terminal is sent nothing again
+  ---
+  duration_ms: 119.402668
+  type: 'test'
+  ...
+# Subtest: a live exchange is not set down: the till asking while the terminal works is told where it stands, and one charge is sent
+ok 286 - a live exchange is not set down: the till asking while the terminal works is told where it stands, and one charge is sent
+  ---
+  duration_ms: 137.313062
+  type: 'test'
+  ...
+# Subtest: a Digio tender cut off mid-exchange: with no reference a person confirms it; cut off mid-inquiry it is asked again
+ok 287 - a Digio tender cut off mid-exchange: with no reference a person confirms it; cut off mid-inquiry it is asked again
+  ---
+  duration_ms: 263.063271
+  type: 'test'
+  ...
+# Subtest: a card the terminal approved is never charged again when its sale was not written: the retry closes it with that tender
+ok 288 - a card the terminal approved is never charged again when its sale was not written: the retry closes it with that tender
+  ---
+  duration_ms: 315.341066
+  type: 'test'
+  ...
+# Subtest: a staff-confirmed card whose sale was not written closes on the retry, still named on who confirmed it
+ok 289 - a staff-confirmed card whose sale was not written closes on the retry, still named on who confirmed it
+  ---
+  duration_ms: 356.894143
+  type: 'test'
+  ...
+# Subtest: a card declined on the terminal leaves the sale open and nothing numbered
+ok 290 - a card declined on the terminal leaves the sale open and nothing numbered
+  ---
+  duration_ms: 127.190936
+  type: 'test'
+  ...
+# Subtest: the paper in the sale log is kept for the trading day it is for, and a late print of an older sale is still refused
+ok 291 - the paper in the sale log is kept for the trading day it is for, and a late print of an older sale is still refused
+  ---
+  duration_ms: 233.024639
+  type: 'test'
+  ...
+# Subtest: available is the snapshot less this box’s own sales the snapshot does not yet reflect, never negative
+ok 292 - available is the snapshot less this box’s own sales the snapshot does not yet reflect, never negative
+  ---
+  duration_ms: 0.662025
+  type: 'test'
+  ...
+# Subtest: reflected or not is the share’s journal position against the snapshot’s filed mark — never a total
+ok 293 - reflected or not is the share’s journal position against the snapshot’s filed mark — never a total
+  ---
+  duration_ms: 0.236335
+  type: 'test'
+  ...
+# Subtest: the open shares are read defensively: junk or a damaged entry is dropped
+ok 294 - the open shares are read defensively: junk or a damaged entry is dropped
+  ---
+  duration_ms: 1.119242
+  type: 'test'
+  ...
+# Subtest: per size: each size against its own count, refused in the counter’s words
+ok 295 - per size: each size against its own count, refused in the counter’s words
+  ---
+  duration_ms: 0.704123
+  type: 'test'
+  ...
+# Subtest: an add-on’s variantBreakdown takes each size it names; a short or long breakdown is refused
+ok 296 - an add-on’s variantBreakdown takes each size it names; a short or long breakdown is refused
+  ---
+  duration_ms: 0.357405
+  type: 'test'
+  ...
+# Subtest: a product the snapshot does not count takes nothing; a one-size item ignores a size it was not sold in
+ok 297 - a product the snapshot does not count takes nothing; a one-size item ignores a size it was not sold in
+  ---
+  duration_ms: 0.117795
+  type: 'test'
+  ...
+# Subtest: the asks a cart makes: items with their size, a ticket line’s socks and add-ons with their breakdown
+ok 298 - the asks a cart makes: items with their size, a ticket line’s socks and add-ons with their breakdown
+  ---
+  duration_ms: 0.306301
+  type: 'test'
+  ...
+# Subtest: the scope is read defensively: no item, or junk, is no snapshot; bad rows are dropped
+ok 299 - the scope is read defensively: no item, or junk, is no snapshot; bad rows are dropped
+  ---
+  duration_ms: 0.441913
+  type: 'test'
+  ...
+# Subtest: the guard per size: more than the snapshot holds is refused in the counter’s words, and nothing is written
+ok 300 - the guard per size: more than the snapshot holds is refused in the counter’s words, and nothing is written
+  ---
+  duration_ms: 33.011401
+  type: 'test'
+  ...
+# Subtest: write-ahead: each sale counts its sizes in its own transaction, and the count survives a restart
+ok 301 - write-ahead: each sale counts its sizes in its own transaction, and the count survives a restart
+  ---
+  duration_ms: 227.118908
+  type: 'test'
+  ...
+# Subtest: an add-on’s breakdown is guarded size by size, and an unsized one is refused
+ok 302 - an add-on’s breakdown is guarded size by size, and an unsized one is refused
+  ---
+  duration_ms: 120.061932
+  type: 'test'
+  ...
+# Subtest: a power cut after receipt leaves the stock count untouched
+ok 303 - a power cut after receipt leaves the stock count untouched
+  ---
+  duration_ms: 49.435901
+  type: 'test'
+  ...
+# Subtest: a power cut after fact leaves the stock count untouched
+ok 304 - a power cut after fact leaves the stock count untouched
+  ---
+  duration_ms: 50.507569
+  type: 'test'
+  ...
+# Subtest: a power cut after log leaves the stock count untouched
+ok 305 - a power cut after log leaves the stock count untouched
+  ---
+  duration_ms: 47.085136
+  type: 'test'
+  ...
+# Subtest: honest when it cannot know: no snapshot or a stale one refuses a marked item; a fresh snapshot alone decides what is counted
+ok 306 - honest when it cannot know: no snapshot or a stale one refuses a marked item; a fresh snapshot alone decides what is counted
+  ---
+  duration_ms: 133.07363
+  type: 'test'
+  ...
+# Subtest: snapshot vs cap: the smaller one wins, before anything is spent
+ok 307 - snapshot vs cap: the smaller one wins, before anything is spent
+  ---
+  duration_ms: 1.573525
+  type: 'test'
+  ...
+# Subtest: the local day: spends on this box come off the cap and, until reflected, off the snapshot
+ok 308 - the local day: spends on this box come off the cap and, until reflected, off the snapshot
+  ---
+  duration_ms: 0.149067
+  type: 'test'
+  ...
+# Subtest: the trading day turns with the link still down: yesterday’s unsynced credit still comes off the snapshot, only the cap starts again
+ok 309 - the trading day turns with the link still down: yesterday’s unsynced credit still comes off the snapshot, only the cap starts again
+  ---
+  duration_ms: 0.141848
+  type: 'test'
+  ...
+# Subtest: the boundary at exactly ฿300: the ฿300th baht is allowed, one satang more is refused as the cap
+ok 310 - the boundary at exactly ฿300: the ฿300th baht is allowed, one satang more is refused as the cap
+  ---
+  duration_ms: 0.203751
+  type: 'test'
+  ...
+# Subtest: use credit takes what can be spent here up to what the order owes; an exact figure is refused, never floored
+ok 311 - use credit takes what can be spent here up to what the order owes; an exact figure is refused, never floored
+  ---
+  duration_ms: 0.109244
+  type: 'test'
+  ...
+# Subtest: the cap refusal is said in the counter’s words
+ok 312 - the cap refusal is said in the counter’s words
+  ---
+  duration_ms: 9.108032
+  type: 'test'
+  ...
+# Subtest: keys travel as digests: the box finds a wallet by what is scanned without ever holding the code
+ok 313 - keys travel as digests: the box finds a wallet by what is scanned without ever holding the code
+  ---
+  duration_ms: 2.260604
+  type: 'test'
+  ...
+# Subtest: a snapshot is read defensively: a damaged row is skipped, a damaged item is none
+ok 314 - a snapshot is read defensively: a damaged row is skipped, a damaged item is none
+  ---
+  duration_ms: 0.298941
+  type: 'test'
+  ...
+# Subtest: GATE (1): one box, one wallet, link down across the trading-day boundary — the box never spends more than its snapshot held
+ok 315 - GATE (1): one box, one wallet, link down across the trading-day boundary — the box never spends more than its snapshot held
+  ---
+  duration_ms: 202.898205
+  type: 'test'
+  ...
+# Subtest: GATE (1): credit held before the trading day turns and closed after it — the box’s days add up to what it closed
+ok 316 - GATE (1): credit held before the trading day turns and closed after it — the box’s days add up to what it closed
+  ---
+  duration_ms: 116.32641
+  type: 'test'
+  ...
+# Subtest: GATE (1): two tills on one box press credit on two orders at the same instant — the cap holds
+ok 317 - GATE (1): two tills on one box press credit on two orders at the same instant — the cap holds
+  ---
+  duration_ms: 55.686434
+  type: 'test'
+  ...
+# Subtest: GATE (4): unknown key, expired status in the snapshot, above the cap — refused in the counter’s words, nothing written
+ok 318 - GATE (4): unknown key, expired status in the snapshot, above the cap — refused in the counter’s words, nothing written
+  ---
+  duration_ms: 59.023366
+  type: 'test'
+  ...
+# Subtest: GATE (2): a credit press that reuses the sale’s or the cash tender’s action id is refused before anything moves
+ok 319 - GATE (2): a credit press that reuses the sale’s or the cash tender’s action id is refused before anything moves
+  ---
+  duration_ms: 62.419912
+  type: 'test'
+  ...
+# Subtest: credit that covers the order closes it on the box: one transaction, the sale then wallet.spent, the day counted
+ok 320 - credit that covers the order closes it on the box: one transaction, the sale then wallet.spent, the day counted
+  ---
+  duration_ms: 130.970852
+  type: 'test'
+  ...
+# Subtest: the cap on the box: exactly ฿300 a day is allowed, the rest of the order is cash, and a satang more is refused in the counter’s words
+ok 321 - the cap on the box: exactly ฿300 a day is allowed, the rest of the order is cash, and a satang more is refused in the counter’s words
+  ---
+  duration_ms: 68.732353
+  type: 'test'
+  ...
+# Subtest: an Other remainder beside held credit stays Other and leaves the drawer shut
+ok 322 - an Other remainder beside held credit stays Other and leaves the drawer shut
+  ---
+  duration_ms: 64.171331
+  type: 'test'
+  ...
+# Subtest: write-ahead: credit held for an order survives a restart, is answered again and never counted twice
+ok 323 - write-ahead: credit held for an order survives a restart, is answered again and never counted twice
+  ---
+  duration_ms: 64.023345
+  type: 'test'
+  ...
+# Subtest: a power cut after receipt in the credit's transaction leaves nothing half-written
+ok 324 - a power cut after receipt in the credit's transaction leaves nothing half-written
+  ---
+  duration_ms: 55.044687
+  type: 'test'
+  ...
+# Subtest: a power cut after fact in the credit's transaction leaves nothing half-written
+ok 325 - a power cut after fact in the credit's transaction leaves nothing half-written
+  ---
+  duration_ms: 56.636292
+  type: 'test'
+  ...
+# Subtest: a power cut after log in the credit's transaction leaves nothing half-written
+ok 326 - a power cut after log in the credit's transaction leaves nothing half-written
+  ---
+  duration_ms: 51.757807
+  type: 'test'
+  ...
+# Subtest: honest refusals: an unknown key, an empty or expired wallet, a stale copy, a ticket sale, a tender named wallet
+ok 327 - honest refusals: an unknown key, an empty or expired wallet, a stale copy, a ticket sale, a tender named wallet
+  ---
+  duration_ms: 7.8755
+  type: 'test'
+  ...
+# Subtest: a station’s own offline cap overrides the branch policy’s
+ok 328 - a station’s own offline cap overrides the branch policy’s
+  ---
+  duration_ms: 4.806421
+  type: 'test'
+  ...
+# Subtest: a snapshot that already reflects this box’s filed spends is not taken off twice
+ok 329 - a snapshot that already reflects this box’s filed spends is not taken off twice
+  ---
+  duration_ms: 50.754155
+  type: 'test'
+  ...
+# Subtest: an offline box still records the fact and sends nothing
+ok 330 - an offline box still records the fact and sends nothing
+  ---
+  duration_ms: 10.489601
+  type: 'test'
+  ...
+# Subtest: a lost link defers the batch with a backoff instead of losing it
+ok 331 - a lost link defers the batch with a backoff instead of losing it
+  ---
+  duration_ms: 7.756385
+  type: 'test'
+  ...
+# Subtest: a five hundred from the cloud is deferred, not treated as accepted
+ok 332 - a five hundred from the cloud is deferred, not treated as accepted
+  ---
+  duration_ms: 3.687151
+  type: 'test'
+  ...
+# Subtest: a replay of an accepted batch is all duplicates and creates nothing
+ok 333 - a replay of an accepted batch is all duplicates and creates nothing
+  ---
+  duration_ms: 6.02343
+  type: 'test'
+  ...
+# Subtest: the box adopts an epoch the cloud has moved on to
+ok 334 - the box adopts an epoch the cloud has moved on to
+  ---
+  duration_ms: 4.007278
+  type: 'test'
+  ...
+# Subtest: two flushes at once send one batch
+ok 335 - two flushes at once send one batch
+  ---
+  duration_ms: 4.129701
+  type: 'test'
+  ...
+# Subtest: a box with no signing key refuses to queue rather than minting unverifiable facts
+ok 336 - a box with no signing key refuses to queue rather than minting unverifiable facts
+  ---
+  duration_ms: 2.095372
+  type: 'test'
+  ...
+# Subtest: SCRUM-404: the prune drops only acknowledged facts past their retention, and never one an overlay still names
+ok 337 - SCRUM-404: the prune drops only acknowledged facts past their retention, and never one an overlay still names
+  ---
+  duration_ms: 9.837151
+  type: 'test'
+  ...
+# Subtest: SCRUM-404: the prune leaves a row "Replay last batch" put back on the queue
+ok 338 - SCRUM-404: the prune leaves a row "Replay last batch" put back on the queue
+  ---
+  duration_ms: 3.688926
+  type: 'test'
+  ...
+# Subtest: SCRUM-404: depth() and takeBatch read the outbox through their own partial indexes
+ok 339 - SCRUM-404: depth() and takeBatch read the outbox through their own partial indexes
+  ---
+  duration_ms: 4.181355
+  type: 'test'
+  ...
+# Subtest: the thermal zone is millidegrees, reported to one decimal, and a broken read is null
+ok 340 - the thermal zone is millidegrees, reported to one decimal, and a broken read is null
+  ---
+  duration_ms: 1.775382
+  type: 'test'
+  ...
+# Subtest: a pointer is a device feeding a mouse handler; a keyboard and the TV remote are not
+ok 341 - a pointer is a device feeding a mouse handler; a keyboard and the TV remote are not
+  ---
+  duration_ms: 0.322982
+  type: 'test'
+  ...
+# Subtest: the readers answer from the files, and null where there is no file to read
+ok 342 - the readers answer from the files, and null where there is no file to read
+  ---
+  duration_ms: 19.056611
+  type: 'test'
+  ...
+# Subtest: the printer on a real socket
+    # Subtest: a printer that answers status prints a slip in well under a second
+    ok 1 - a printer that answers status prints a slip in well under a second
+      ---
+      duration_ms: 224.645933
+      type: 'test'
+      ...
+    # Subtest: a status-silent printer prints a slip in about two seconds, not eight
+    ok 2 - a status-silent printer prints a slip in about two seconds, not eight
+      ---
+      duration_ms: 3042.996712
+      type: 'test'
+      ...
+    # Subtest: a printer that answers only the first two queries costs one timeout a read and loses nothing
+    ok 3 - a printer that answers only the first two queries costs one timeout a read and loses nothing
+      ---
+      duration_ms: 2069.985298
+      type: 'test'
+      ...
+    # Subtest: a printer that answered before the job is given longer for its first reply after it
+    ok 4 - a printer that answered before the job is given longer for its first reply after it
+      ---
+      duration_ms: 1585.871567
+      type: 'test'
+      ...
+    # Subtest: a printer that stops taking the job fails it as partial within the write deadline
+    ok 5 - a printer that stops taking the job fails it as partial within the write deadline
+      ---
+      duration_ms: 5074.211948
+      type: 'test'
+      ...
+    # Subtest: a printer that pauses but keeps taking the job is not cut off, however long it takes
+    ok 6 - a printer that pauses but keeps taking the job is not cut off, however long it takes
+      ---
+      duration_ms: 6320.528965
+      type: 'test'
+      ...
+    # Subtest: a status query that cannot even be sent counts as unanswered at its timeout
+    ok 7 - a status query that cannot even be sent counts as unanswered at its timeout
+      ---
+      duration_ms: 2065.489758
+      type: 'test'
+      ...
+    # Subtest: the heartbeat printer check returns while a job is stuck, and keeps what the printer last said
+    ok 8 - the heartbeat printer check returns while a job is stuck, and keeps what the printer last said
+      ---
+      duration_ms: 5222.427039
+      type: 'test'
+      ...
+    1..8
+ok 343 - the printer on a real socket
+  ---
+  duration_ms: 6323.286979
+  type: 'suite'
+  ...
+# Subtest: a printer that answered while the box was busy
+    # Subtest: a connection made while the box was busy is taken, not failed as unreachable
+    ok 1 - a connection made while the box was busy is taken, not failed as unreachable
+      ---
+      duration_ms: 2543.568176
+      type: 'test'
+      ...
+    # Subtest: a status reply that came while the box was busy is read, not taken for silence
+    ok 2 - a status reply that came while the box was busy is read, not taken for silence
+      ---
+      duration_ms: 1528.03713
+      type: 'test'
+      ...
+    1..2
+ok 344 - a printer that answered while the box was busy
+  ---
+  duration_ms: 4071.790673
+  type: 'suite'
+  ...
+# Subtest: a set prints whole: every job out, nothing queued, nothing reported to the platform
+ok 345 - a set prints whole: every job out, nothing queued, nothing reported to the platform
+  ---
+  duration_ms: 100.180265
+  type: 'test'
+  ...
+# Subtest: paper out on the band printer: called off before a byte, and nothing prints when the roll goes back in
+ok 346 - paper out on the band printer: called off before a byte, and nothing prints when the roll goes back in
+  ---
+  duration_ms: 59.060393
+  type: 'test'
+  ...
+# Subtest: an unreachable printer, a head left open: each named by the printer’s own code
+ok 347 - an unreachable printer, a head left open: each named by the printer’s own code
+  ---
+  duration_ms: 33.464399
+  type: 'test'
+  ...
+# Subtest: a job with no printer for its role stops the set when it must print, and is skipped when it need not
+ok 348 - a job with no printer for its role stops the set when it must print, and is skipped when it need not
+  ---
+  duration_ms: 25.893003
+  type: 'test'
+  ...
+# Subtest: the roll runs out between two jobs: the set stops there and says one came out
+ok 349 - the roll runs out between two jobs: the set stops there and says one came out
+  ---
+  duration_ms: 131.804132
+  type: 'test'
+  ...
+# Subtest: a job failed part-way is marked partial; one refused before a byte is not
+ok 350 - a job failed part-way is marked partial; one refused before a byte is not
+  ---
+  duration_ms: 221.674641
+  type: 'test'
+  ...
+# Subtest: a set called off from outside stops before its next job, and every job that came out was told
+ok 351 - a set called off from outside stops before its next job, and every job that came out was told
+  ---
+  duration_ms: 214.49198
+  type: 'test'
+  ...
+# Subtest: the first hand-over after a boot, of a job whose row is already on the card, prints once
+ok 352 - the first hand-over after a boot, of a job whose row is already on the card, prints once
+  ---
+  duration_ms: 170.088193
+  type: 'test'
+  ...
+# Subtest: a tick that arrives while a slip is on the printer leaves that job alone
+ok 353 - a tick that arrives while a slip is on the printer leaves that job alone
+  ---
+  duration_ms: 57.91947
+  type: 'test'
+  ...
+# Subtest: a hand-over while the tick is printing the same job answers with that attempt
+ok 354 - a hand-over while the tick is printing the same job answers with that attempt
+  ---
+  duration_ms: 57.455025
+  type: 'test'
+  ...
+# Subtest: the heartbeat printer check does not queue behind a slip on the printer
+ok 355 - the heartbeat printer check does not queue behind a slip on the printer
+  ---
+  duration_ms: 61.461984
+  type: 'test'
+  ...
+# Subtest: a retry set before the clock was corrected back is due now; one inside the delay waits
+ok 356 - a retry set before the clock was corrected back is due now; one inside the delay waits
+  ---
+  duration_ms: 112.546112
+  type: 'test'
+  ...
+# Subtest: a sale’s receipt, kids band and kitchen ticket print from the platform’s documents, dot for dot
+ok 357 - a sale’s receipt, kids band and kitchen ticket print from the platform’s documents, dot for dot
+  ---
+  duration_ms: 220.239017
+  type: 'test'
+  ...
+# Subtest: a job whose content the platform will not hand over prints nothing, and says so on the job and the command
+ok 358 - a job whose content the platform will not hand over prints nothing, and says so on the job and the command
+  ---
+  duration_ms: 2.579821
+  type: 'test'
+  ...
+# Subtest: a receipt waiting on an empty roll keeps its document, and prints once paper is back — fetched once
+ok 359 - a receipt waiting on an empty roll keeps its document, and prints once paper is back — fetched once
+  ---
+  duration_ms: 140.605217
+  type: 'test'
+  ...
+# Subtest: three vouchers waiting on paper are still waiting after a restart
+ok 360 - three vouchers waiting on paper are still waiting after a restart
+  ---
+  duration_ms: 166.422171
+  type: 'test'
+  ...
+# Subtest: a job that was going to the printer when the power went is never reprinted
+ok 361 - a job that was going to the printer when the power went is never reprinted
+  ---
+  duration_ms: 203.046035
+  type: 'test'
+  ...
+# Subtest: the two recoveries are opposites, and one restart does both
+ok 362 - the two recoveries are opposites, and one restart does both
+  ---
+  duration_ms: 457.079594
+  type: 'test'
+  ...
+# Subtest: a job that finished leaves nothing behind for the next boot
+ok 363 - a job that finished leaves nothing behind for the next boot
+  ---
+  duration_ms: 59.485454
+  type: 'test'
+  ...
+# Subtest: a sign-in lockout is still in force after somebody pulls the plug
+ok 364 - a sign-in lockout is still in force after somebody pulls the plug
+  ---
+  duration_ms: 80.096244
+  type: 'test'
+  ...
+# Subtest: the booth remembers who is signed in and what it has given away today
+ok 365 - the booth remembers who is signed in and what it has given away today
+  ---
+  duration_ms: 49.81869
+  type: 'test'
+  ...
+# Subtest: the read after a job (SCRUM-429)
+    # Subtest: (a) answered before and after: printed, and its health is the answer
+    ok 1 - (a) answered before and after: printed, and its health is the answer
+      ---
+      duration_ms: 1207.0956
+      type: 'test'
+      ...
+    # Subtest: (b) silent before and after: printed with its status unknown, and not asked again
+    ok 2 - (b) silent before and after: printed with its status unknown, and not asked again
+      ---
+      duration_ms: 2733.766069
+      type: 'test'
+      ...
+    # Subtest: (c) answered before, stopped with the slip in the buffers: asked again, then failed as partial within its wait
+    ok 3 - (c) answered before, stopped with the slip in the buffers: asked again, then failed as partial within its wait
+      ---
+      duration_ms: 9958.751385
+      type: 'test'
+      ...
+    # Subtest: (c) at the queue: failed, the health says why, and nothing sends it again
+    ok 4 - (c) at the queue: failed, the health says why, and nothing sends it again
+      ---
+      duration_ms: 8959.615017
+      type: 'test'
+      ...
+    # Subtest: (c) silent after the job until the last ask, which it answers: printed
+    ok 5 - (c) silent after the job until the last ask, which it answers: printed
+      ---
+      duration_ms: 7959.653651
+      type: 'test'
+      ...
+    # Subtest: (c) stopped with the slip in the buffers, reading again before the asks run out: printed
+    ok 6 - (c) stopped with the slip in the buffers, reading again before the asks run out: printed
+      ---
+      duration_ms: 5941.607387
+      type: 'test'
+      ...
+    # Subtest: (c) three copies, the printer stopping once it has the first: failed, and no copy is sent again
+    ok 7 - (c) three copies, the printer stopping once it has the first: failed, and no copy is sent again
+      ---
+      duration_ms: 10008.123008
+      type: 'test'
+      ...
+    # Subtest: the read before the next job (SCRUM-431)
+        # Subtest: (1) a printer that has answered, silent before the next job: not sent, queued, printed once it answers again
+        ok 1 - (1) a printer that has answered, silent before the next job: not sent, queued, printed once it answers again
+          ---
+          duration_ms: 2363.255036
+          type: 'test'
+          ...
+        # Subtest: (2) a unit never heard to answer still prints blind, job after job: case (b) unchanged
+        ok 2 - (2) a unit never heard to answer still prints blind, job after job: case (b) unchanged
+          ---
+          duration_ms: 5778.209145
+          type: 'test'
+          ...
+        # Subtest: (3) after a job fails silent after it, the next job to the still-stopped printer is held, not printed
+        ok 3 - (3) after a job fails silent after it, the next job to the still-stopped printer is held, not printed
+          ---
+          duration_ms: 10956.853745
+          type: 'test'
+          ...
+        # Subtest: (4) an answer to the heartbeat's probe counts: a job silent before it afterwards is held
+        ok 4 - (4) an answer to the heartbeat's probe counts: a job silent before it afterwards is held
+          ---
+          duration_ms: 2298.322712
+          type: 'test'
+          ...
+        # Subtest: (5) a printer that never answers again: failed at the attempt limit, and no byte of the job ever sent
+        ok 5 - (5) a printer that never answers again: failed at the attempt limit, and no byte of the job ever sent
+          ---
+          duration_ms: 4139.031545
+          type: 'test'
+          ...
+        # Subtest: (6) the band printers keep the same rule
+        ok 6 - (6) the band printers keep the same rule
+          ---
+          duration_ms: 3824.646602
+          type: 'test'
+          ...
+        # Subtest: (7) an answer to the read after a job counts: a unit silent only before it is held at the next job
+        ok 7 - (7) an answer to the read after a job counts: a unit silent only before it is held at the next job
+          ---
+          duration_ms: 2714.728508
+          type: 'test'
+          ...
+        # Subtest: (8) the memory is kept per printer: one never heard from prints blind beside one that is remembered
+        ok 8 - (8) the memory is kept per printer: one never heard from prints blind beside one that is remembered
+          ---
+          duration_ms: 5078.014506
+          type: 'test'
+          ...
+        # Subtest: one attempt a tick on a printer that does not answer (SCRUM-440)
+            # Subtest: (1) five held on a stopped printer and one due on a printer that answers: one attempt on the first, the second’s printed, four left as they were
+            ok 1 - (1) five held on a stopped printer and one due on a printer that answers: one attempt on the first, the second’s printed, four left as they were
+              ---
+              duration_ms: 9691.154575
+              type: 'test'
+              ...
+            # Subtest: (2) once the stopped printer answers again, the one tick prints everything held on it
+            ok 2 - (2) once the stopped printer answers again, the one tick prints everything held on it
+              ---
+              duration_ms: 6786.301343
+              type: 'test'
+              ...
+            # Subtest: (3) the same for a printer that cannot be reached: one connect a tick, the rest left
+            ok 3 - (3) the same for a printer that cannot be reached: one connect a tick, the rest left
+              ---
+              duration_ms: 824.348253
+              type: 'test'
+              ...
+            1..3
+        ok 9 - one attempt a tick on a printer that does not answer (SCRUM-440)
+          ---
+          duration_ms: 9691.291846
+          type: 'suite'
+          ...
+        1..9
+    ok 8 - the read before the next job (SCRUM-431)
+      ---
+      duration_ms: 10957.577857
+      type: 'suite'
+      ...
+    1..8
+ok 366 - the read after a job (SCRUM-429)
+  ---
+  duration_ms: 11066.16028
+  type: 'suite'
+  ...
+# Subtest: three refusals inside the window cost one registration, and the next window costs a second
+ok 367 - three refusals inside the window cost one registration, and the next window costs a second
+  ---
+  duration_ms: 0.539277
+  type: 'test'
+  ...
+# Subtest: a successful registration restarts the count, and the window still holds
+ok 368 - a successful registration restarts the count, and the window still holds
+  ---
+  duration_ms: 0.76528
+  type: 'test'
+  ...
+# Subtest: a registration that fails does not reopen the door
+ok 369 - a registration that fails does not reopen the door
+  ---
+  duration_ms: 0.100632
+  type: 'test'
+  ...
+# Subtest: a clock that steps backwards does not shut the door for hours
+ok 370 - a clock that steps backwards does not shut the door for hours
+  ---
+  duration_ms: 0.072046
+  type: 'test'
+  ...
+# Subtest: claim registers the box with the Console’s code and writes an owner-only credential
+ok 371 - claim registers the box with the Console’s code and writes an owner-only credential
+  ---
+  duration_ms: 150.939797
+  type: 'test'
+  ...
+# Subtest: a box with no credential serves the claim screen, takes the code, and starts
+ok 372 - a box with no credential serves the claim screen, takes the code, and starts
+  ---
+  duration_ms: 106.416719
+  type: 'test'
+  ...
+# Subtest: a claim made in a terminal while the box runs unclaimed restarts it; one typed on the television does not
+ok 373 - a claim made in a terminal while the box runs unclaimed restarts it; one typed on the television does not
+  ---
+  duration_ms: 348.583203
+  type: 'test'
+  ...
+# Subtest: the kiosk serves the page marked as served by a box, and its assets
+ok 374 - the kiosk serves the page marked as served by a box, and its assets
+  ---
+  duration_ms: 45.061752
+  type: 'test'
+  ...
+# Subtest: the kiosk answers only this machine, by its own name, and writes only from its own page
+ok 375 - the kiosk answers only this machine, by its own name, and writes only from its own page
+  ---
+  duration_ms: 43.231269
+  type: 'test'
+  ...
+# Subtest: a request from off the box is refused, and the server will not bind off loopback
+ok 376 - a request from off the box is refused, and the server will not bind off loopback
+  ---
+  duration_ms: 0.558777
+  type: 'test'
+  ...
+# Subtest: a box with two booths asks which one, remembers the choice, and runs that booth
+ok 377 - a box with two booths asks which one, remembers the choice, and runs that booth
+  ---
+  duration_ms: 82.39877
+  type: 'test'
+  ...
+# Subtest: a box that boots with no internet still plays: the config copy on disk carries it
+ok 378 - a box that boots with no internet still plays: the config copy on disk carries it
+  ---
+  duration_ms: 91.322916
+  type: 'test'
+  ...
+# Subtest: a cloud that takes the connection and never answers: the television is up at once and the wheel plays
+ok 379 - a cloud that takes the connection and never answers: the television is up at once and the wheel plays
+  ---
+  duration_ms: 1683.097042
+  type: 'test'
+  ...
+# Subtest: a press while start still waits on a silent cloud prints one slip; the first heartbeat prints no second
+ok 380 - a press while start still waits on a silent cloud prints one slip; the first heartbeat prints no second
+  ---
+  duration_ms: 5091.972053
+  type: 'test'
+  ...
+# Subtest: the Console’s offline switch on at boot: a press, back online, one heartbeat — one slip
+ok 381 - the Console’s offline switch on at boot: a press, back online, one heartbeat — one slip
+  ---
+  duration_ms: 177.111981
+  type: 'test'
+  ...
+# Subtest: an account sign-in goes to the cloud under the box credential, and names the person
+ok 382 - an account sign-in goes to the cloud under the box credential, and names the person
+  ---
+  duration_ms: 86.115562
+  type: 'test'
+  ...
+# Subtest: a sign-in the cloud refuses because of the BOX says so, and is not "no internet"
+ok 383 - a sign-in the cloud refuses because of the BOX says so, and is not "no internet"
+  ---
+  duration_ms: 76.633397
+  type: 'test'
+  ...
+# Subtest: the booth prints over TCP 9100 to the printer config.json names, at its width
+ok 384 - the booth prints over TCP 9100 to the printer config.json names, at its width
+  ---
+  duration_ms: 292.30597
+  type: 'test'
+  ...
+# Subtest: with no printer answering the code goes to the screen and the job waits on disk
+ok 385 - with no printer answering the code goes to the screen and the job waits on disk
+  ---
+  duration_ms: 653.516394
+  type: 'test'
+  ...
+# Subtest: the PIN verifier is @node-rs/argon2, and it checks the hashes the api writes
+ok 386 - the PIN verifier is @node-rs/argon2, and it checks the hashes the api writes
+  ---
+  duration_ms: 39.077537
+  type: 'test'
+  ...
+# Subtest: the genuine QR, on every box state: handled where admitted and refused otherwise, each in its own words
+ok 387 - the genuine QR, on every box state: handled where admitted and refused otherwise, each in its own words
+  ---
+  duration_ms: 4.953295
+  type: 'test'
+  ...
+# Subtest: every shape a counter reads a live QR in, on every box state: the guest never hears its signature, and staff hear it only as a handled benefitCode
+ok 388 - every shape a counter reads a live QR in, on every box state: the guest never hears its signature, and staff hear it only as a handled benefitCode
+  ---
+  duration_ms: 406.602059
+  type: 'test'
+  ...
+# Subtest: the right key id is not enough: a key of another purpose or algorithm under it verifies nothing
+ok 389 - the right key id is not enough: a key of another purpose or algorithm under it verifies nothing
+  ---
+  duration_ms: 1.893772
+  type: 'test'
+  ...
+# Subtest: expiry is exact to the second, by the box’s clock
+ok 390 - expiry is exact to the second, by the box’s clock
+  ---
+  duration_ms: 0.709968
+  type: 'test'
+  ...
+# Subtest: re-encoding the signature cannot dodge a revocation: the list is by credential, not by string
+ok 391 - re-encoding the signature cannot dodge a revocation: the list is by credential, not by string
+  ---
+  duration_ms: 0.653988
+  type: 'test'
+  ...
+# Subtest: no handler registered later takes a benefit QR from the router, however broad it is
+ok 392 - no handler registered later takes a benefit QR from the router, however broad it is
+  ---
+  duration_ms: 2.70966
+  type: 'test'
+  ...
+# Subtest: the screen facing the guest never hears a scannable QR — handled, or refused for a reason that is not the QR’s fault
+ok 393 - the screen facing the guest never hears a scannable QR — handled, or refused for a reason that is not the QR’s fault
+  ---
+  duration_ms: 2.223299
+  type: 'test'
+  ...
+# Subtest: the booth’s badge path, driven over HTTP with a QR the platform signed: not_a_badge, nobody signed in, nothing counted
+ok 394 - the booth’s badge path, driven over HTTP with a QR the platform signed: not_a_badge, nobody signed in, nothing counted
+  ---
+  duration_ms: 5.755411
+  type: 'test'
+  ...
+# Subtest: s221-r3 — offline, the standing percent applies and the free coffee is online only, nothing used
+ok 395 - s221-r3 — offline, the standing percent applies and the free coffee is online only, nothing used
+  ---
+  duration_ms: 121.918572
+  type: 'test'
+  ...
+# Subtest: s221-r3 — offline, an owner’s comp takes the order to ฿0 and closes with no tender
+ok 396 - s221-r3 — offline, an owner’s comp takes the order to ฿0 and closes with no tender
+  ---
+  duration_ms: 53.879939
+  type: 'test'
+  ...
+# Subtest: s221-r3 — offline, free items and credit alone apply nothing and record nothing: “online only”
+ok 397 - s221-r3 — offline, free items and credit alone apply nothing and record nothing: “online only”
+  ---
+  duration_ms: 43.527549
+  type: 'test'
+  ...
+# Subtest: s221-r3 — offline, a revoked QR, a box with no list and a till’s own "Staff benefit" row are refused
+ok 398 - s221-r3 — offline, a revoked QR, a box with no list and a till’s own "Staff benefit" row are refused
+  ---
+  duration_ms: 9.562834
+  type: 'test'
+  ...
+# Subtest: s498 — the food scan reads a child checked in on this box offline, with the counter’s corrections
+ok 399 - s498 — the food scan reads a child checked in on this box offline, with the counter’s corrections
+  ---
+  duration_ms: 148.781488
+  type: 'test'
+  ...
+# Subtest: s494-checkin box: a Drop-Off stay paid as Nanny needs a nanny on shift and goes in as nanny, and the fact carries the service
+ok 400 - s494-checkin box: a Drop-Off stay paid as Nanny needs a nanny on shift and goes in as nanny, and the fact carries the service
+  ---
+  duration_ms: 75.684475
+  type: 'test'
+  ...
+# Subtest: s494-checkin box: a nanny-age stay paid as Drop-Off goes in as drop-off with no nanny instead of being refused
+ok 401 - s494-checkin box: a nanny-age stay paid as Drop-Off goes in as drop-off with no nanny instead of being refused
+  ---
+  duration_ms: 67.258576
+  type: 'test'
+  ...
+# Subtest: s494-checkin box: an entry without a service keeps the stay’s own; an unknown service is refused
+ok 402 - s494-checkin box: an entry without a service keeps the stay’s own; an unknown service is refused
+  ---
+  duration_ms: 68.439341
+  type: 'test'
+  ...
+# Subtest: an adult band without Gate access is refused at entry and at exit
+ok 403 - an adult band without Gate access is refused at entry and at exit
+  ---
+  duration_ms: 2.806257
+  type: 'test'
+  ...
+# Subtest: an adult band with Gate access enters and leaves
+ok 404 - an adult band with Gate access enters and leaves
+  ---
+  duration_ms: 0.650539
+  type: 'test'
+  ...
+# Subtest: a kids band is still refused as a kids band
+ok 405 - a kids band is still refused as a kids band
+  ---
+  duration_ms: 0.437345
+  type: 'test'
+  ...
+# Subtest: a copy with no flag (an older platform) leaves the kind rule to decide
+ok 406 - a copy with no flag (an older platform) leaves the kind rule to decide
+  ---
+  duration_ms: 0.406764
+  type: 'test'
+  ...
+# Subtest: a revoked band keeps its flag from the deny list, or from the bands copy
+ok 407 - a revoked band keeps its flag from the deny list, or from the bands copy
+  ---
+  duration_ms: 0.651572
+  type: 'test'
+  ...
+# Subtest: the box reads each ticket Gate access from its catalogue, and its bands take it
+ok 408 - the box reads each ticket Gate access from its catalogue, and its bands take it
+  ---
+  duration_ms: 0.847214
+  type: 'test'
+  ...
+# Subtest: Gate access on: a revoked adult is refused entry and still let out (OD-A4)
+ok 409 - Gate access on: a revoked adult is refused entry and still let out (OD-A4)
+  ---
+  duration_ms: 2.733637
+  type: 'test'
+  ...
+# Subtest: Gate access off: refused even while the box holds the band as inside
+ok 410 - Gate access off: refused even while the box holds the band as inside
+  ---
+  duration_ms: 0.704068
+  type: 'test'
+  ...
+# Subtest: a line whose adults are all free takes Gate access from its own row; its kids never have it
+ok 411 - a line whose adults are all free takes Gate access from its own row; its kids never have it
+  ---
+  duration_ms: 0.301919
+  type: 'test'
+  ...
+# Subtest: s498 — a scanned band reads the in-park child of this park from the box, as the online scan does
+ok 412 - s498 — a scanned band reads the in-park child of this park from the box, as the online scan does
+  ---
+  duration_ms: 23.186158
+  type: 'test'
+  ...
+# Subtest: s498 — a prepaid meal is served through the box once, at ฿0, to the kitchen ticket and the queue
+ok 413 - s498 — a prepaid meal is served through the box once, at ฿0, to the kitchen ticket and the queue
+  ---
+  duration_ms: 106.308532
+  type: 'test'
+  ...
+# Subtest: s498 — the box counts only what the copy does not reflect yet
+ok 414 - s498 — the box counts only what the copy does not reflect yet
+  ---
+  duration_ms: 109.060814
+  type: 'test'
+  ...
+# Subtest: s498 — the food permission and the prepaid rules refuse in the platform’s words
+ok 415 - s498 — the food permission and the prepaid rules refuse in the platform’s words
+  ---
+  duration_ms: 7.295285
+  type: 'test'
+  ...
+# Subtest: s498 review — the saved allergy line reaches the scan and the kitchen ticket of a paid order
+ok 416 - s498 review — the saved allergy line reaches the scan and the kitchen ticket of a paid order
+  ---
+  duration_ms: 130.376841
+  type: 'test'
+  ...
+# Subtest: s498 review — a no-food child is refused at the press, not only at the quote, and nothing is queued
+ok 417 - s498 review — a no-food child is refused at the press, not only at the quote, and nothing is queued
+  ---
+  duration_ms: 5.017467
+  type: 'test'
+  ...
+# Subtest: s498 review — a prepaid line for another child than the band holder is refused
+ok 418 - s498 review — a prepaid line for another child than the band holder is refused
+  ---
+  duration_ms: 3.211114
+  type: 'test'
+  ...
+# Subtest: s498 review — two presses for the last meal at once serve it once
+ok 419 - s498 review — two presses for the last meal at once serve it once
+  ---
+  duration_ms: 62.486254
+  type: 'test'
+  ...
+# Subtest: SCRUM-502 — three presses at once for two meals: two are served, the third is told the meal was already served
+ok 420 - SCRUM-502 — three presses at once for two meals: two are served, the third is told the meal was already served
+  ---
+  duration_ms: 112.312385
+  type: 'test'
+  ...
+# Subtest: s498 review — the same press resent serves the meal once
+ok 421 - s498 review — the same press resent serves the meal once
+  ---
+  duration_ms: 51.577866
+  type: 'test'
+  ...
+# Subtest: s498 review — the same meal split across lines is counted together, and the pickup counts the box’s meals
+ok 422 - s498 review — the same meal split across lines is counted together, and the pickup counts the box’s meals
+  ---
+  duration_ms: 52.018947
+  type: 'test'
+  ...
+# Subtest: SCRUM-502 review — two presses at once really collide on the Pi’s one connection; the loser waits, is told in the counter’s words, and spends no receipt number
+ok 423 - SCRUM-502 review — two presses at once really collide on the Pi’s one connection; the loser waits, is told in the counter’s words, and spends no receipt number
+  ---
+  duration_ms: 179.233058
+  type: 'test'
+  ...
+# Subtest: SCRUM-502 review — a press carrying money and the last meal: one is served and paid, the other refused in the counter’s words with nothing taken
+ok 424 - SCRUM-502 review — a press carrying money and the last meal: one is served and paid, the other refused in the counter’s words with nothing taken
+  ---
+  duration_ms: 69.713944
+  type: 'test'
+  ...
+# Subtest: SCRUM-502 review — a prepaid press that meets the store held waits its turn and is served once the store frees
+ok 425 - SCRUM-502 review — a prepaid press that meets the store held waits its turn and is served once the store frees
+  ---
+  duration_ms: 254.147952
+  type: 'test'
+  ...
+# Subtest: SCRUM-502 review — a paid order with no prepaid line is answered at once with the store’s own error, as before the fix
+ok 426 - SCRUM-502 review — a paid order with no prepaid line is answered at once with the store’s own error, as before the fix
+  ---
+  duration_ms: 3.826431
+  type: 'test'
+  ...
+# Subtest: SCRUM-502 review — a prepaid press whose store fails for another reason is not waited out
+ok 427 - SCRUM-502 review — a prepaid press whose store fails for another reason is not waited out
+  ---
+  duration_ms: 76.087035
+  type: 'test'
+  ...
+# Subtest: SCRUM-502 review — a store still held after the store’s own five seconds: the press gives up with the store’s error and writes nothing
+ok 428 - SCRUM-502 review — a store still held after the store’s own five seconds: the press gives up with the store’s error and writes nothing
+  ---
+  duration_ms: 5103.398976
+  type: 'test'
+  ...
+# Subtest: SCRUM-502 — a second transaction on the box’s one connection is the store being busy
+ok 429 - SCRUM-502 — a second transaction on the box’s one connection is the store being busy
+  ---
+  duration_ms: 0.801175
+  type: 'test'
+  ...
+# Subtest: SCRUM-502 — a statement SQLite cannot run, a damaged file and a non-SQLite error are not
+ok 430 - SCRUM-502 — a statement SQLite cannot run, a damaged file and a non-SQLite error are not
+  ---
+  duration_ms: 0.2493
+  type: 'test'
+  ...
+# Subtest: the classifier table: band, booking and product codes each reach their own handler
+ok 431 - the classifier table: band, booking and product codes each reach their own handler
+  ---
+  duration_ms: 4.778025
+  type: 'test'
+  ...
+# Subtest: a signed booking QR opens the redeem flow on its booking — and the code does not travel
+ok 432 - a signed booking QR opens the redeem flow on its booking — and the code does not travel
+  ---
+  duration_ms: 1.054118
+  type: 'test'
+  ...
+# Subtest: another park’s QR, a tampered one and a truncated one are refused by name
+ok 433 - another park’s QR, a tampered one and a truncated one are refused by name
+  ---
+  duration_ms: 1.689318
+  type: 'test'
+  ...
+# Subtest: a router with no park key still classifies a booking QR, and says it cannot check it
+ok 434 - a router with no park key still classifies a booking QR, and says it cannot check it
+  ---
+  duration_ms: 1.005293
+  type: 'test'
+  ...
+# Subtest: a wedge burst ending in Enter is one scan
+ok 435 - a wedge burst ending in Enter is one scan
+  ---
+  duration_ms: 0.923755
+  type: 'test'
+  ...
+# Subtest: the slowest keystroke delay the scanner offers is still a scan
+ok 436 - the slowest keystroke delay the scanner offers is still a scan
+  ---
+  duration_ms: 0.182266
+  type: 'test'
+  ...
+# Subtest: a person typing the same code is not a scan
+ok 437 - a person typing the same code is not a scan
+  ---
+  duration_ms: 0.127884
+  type: 'test'
+  ...
+# Subtest: a burst with no suffix is closed by the quiet gap and DISCARDED
+ok 438 - a burst with no suffix is closed by the quiet gap and DISCARDED
+  ---
+  duration_ms: 0.108263
+  type: 'test'
+  ...
+# Subtest: a short burst is dropped rather than delivered as a code
+ok 439 - a short burst is dropped rather than delivered as a code
+  ---
+  duration_ms: 0.128421
+  type: 'test'
+  ...
+# Subtest: a bare Enter passes through untouched — it is somebody submitting a form
+ok 440 - a bare Enter passes through untouched — it is somebody submitting a form
+  ---
+  duration_ms: 0.05726
+  type: 'test'
+  ...
+# Subtest: the counter button is told apart from a scanner’s Enter
+ok 441 - the counter button is told apart from a scanner’s Enter
+  ---
+  duration_ms: 0.149514
+  type: 'test'
+  ...
+# Subtest: a button key arriving inside an open burst loses to the scan
+ok 442 - a button key arriving inside an open burst loses to the scan
+  ---
+  duration_ms: 0.108186
+  type: 'test'
+  ...
+# Subtest: Enter may not be configured as the button
+ok 443 - Enter may not be configured as the button
+  ---
+  duration_ms: 0.383116
+  type: 'test'
+  ...
+# Subtest: a modifier in the middle of a burst does not break the scan
+ok 444 - a modifier in the middle of a burst does not break the scan
+  ---
+  duration_ms: 0.322596
+  type: 'test'
+  ...
+# Subtest: a CDC record ends at CR, LF or CRLF
+ok 445 - a CDC record ends at CR, LF or CRLF
+  ---
+  duration_ms: 0.296068
+  type: 'test'
+  ...
+# Subtest: a CDC record with NO terminator is finished by half a second of silence
+ok 446 - a CDC record with NO terminator is finished by half a second of silence
+  ---
+  duration_ms: 0.763431
+  type: 'test'
+  ...
+# Subtest: two records in one chunk are two scans
+ok 447 - two records in one chunk are two scans
+  ---
+  duration_ms: 0.120797
+  type: 'test'
+  ...
+# Subtest: a record split across chunks is one scan
+ok 448 - a record split across chunks is one scan
+  ---
+  duration_ms: 0.059996
+  type: 'test'
+  ...
+# Subtest: a Symbol code ID prefix is stripped
+ok 449 - a Symbol code ID prefix is stripped
+  ---
+  duration_ms: 0.066259
+  type: 'test'
+  ...
+# Subtest: an eleven-character code with a right check is a voucher, and the code goes to the till
+ok 450 - an eleven-character code with a right check is a voucher, and the code goes to the till
+  ---
+  duration_ms: 3.89317
+  type: 'test'
+  ...
+# Subtest: a ten-character code of the shape printed before the check is a voucher too
+ok 451 - a ten-character code of the shape printed before the check is a voucher too
+  ---
+  duration_ms: 1.054904
+  type: 'test'
+  ...
+# Subtest: a code with one character wrong fails its check and is not a voucher
+ok 452 - a code with one character wrong fails its check and is not a voucher
+  ---
+  duration_ms: 0.966507
+  type: 'test'
+  ...
+# Subtest: read the way the platform reads one: lower case, spaces and dashes are the same code
+ok 453 - read the way the platform reads one: lower case, spaces and dashes are the same code
+  ---
+  duration_ms: 0.822271
+  type: 'test'
+  ...
+# Subtest: a non-code is not a voucher: a band, a barcode, a PIN, a word, or digits alone
+ok 454 - a non-code is not a voucher: a band, a barcode, a PIN, a word, or digits alone
+  ---
+  duration_ms: 0.243969
+  type: 'test'
+  ...
+# Subtest: digits alone stay the shop’s: the product handler gets them, not the voucher
+ok 455 - digits alone stay the shop’s: the product handler gets them, not the voucher
+  ---
+  duration_ms: 0.841229
+  type: 'test'
+  ...
+# Subtest: the router claims a voucher ahead of any registered handler, and lists it first
+ok 456 - the router claims a voucher ahead of any registered handler, and lists it first
+  ---
+  duration_ms: 1.143629
+  type: 'test'
+  ...
+# Subtest: a code with no handler resolves unhandled, and says so
+ok 457 - a code with no handler resolves unhandled, and says so
+  ---
+  duration_ms: 3.002013
+  type: 'test'
+  ...
+# Subtest: the tape gets a fingerprint and never the code
+ok 458 - the tape gets a fingerprint and never the code
+  ---
+  duration_ms: 1.186038
+  type: 'test'
+  ...
+# Subtest: the first handler that claims a code gets it, and only that one
+ok 459 - the first handler that claims a code gets it, and only that one
+  ---
+  duration_ms: 1.771213
+  type: 'test'
+  ...
+# Subtest: a handler that throws is an error outcome, not an exception at the counter
+ok 460 - a handler that throws is an error outcome, not an exception at the counter
+  ---
+  duration_ms: 0.993437
+  type: 'test'
+  ...
+# Subtest: a matcher that throws does not stop the next handler reading the code
+ok 461 - a matcher that throws does not stop the next handler reading the code
+  ---
+  duration_ms: 0.830005
+  type: 'test'
+  ...
+# Subtest: an empty code is refused rather than handled
+ok 462 - an empty code is refused rather than handled
+  ---
+  duration_ms: 0.837133
+  type: 'test'
+  ...
+# Subtest: the screens are told, by fingerprint
+ok 463 - the screens are told, by fingerprint
+  ---
+  duration_ms: 0.895584
+  type: 'test'
+  ...
+# Subtest: a scan whose tape line cannot be written is still a scan
+ok 464 - a scan whose tape line cannot be written is still a scan
+  ---
+  duration_ms: 0.885401
+  type: 'test'
+  ...
+# Subtest: the small helpers say what they claim
+ok 465 - the small helpers say what they claim
+  ---
+  duration_ms: 0.223273
+  type: 'test'
+  ...
+# Subtest: a barcode is claimed by its shape, and nothing else is
+ok 466 - a barcode is claimed by its shape, and nothing else is
+  ---
+  duration_ms: 0.288096
+  type: 'test'
+  ...
+# Subtest: the seeded barcode resolves to the socks in size M, and the till is told what to add
+ok 467 - the seeded barcode resolves to the socks in size M, and the till is told what to add
+  ---
+  duration_ms: 1.141603
+  type: 'test'
+  ...
+# Subtest: an item’s own code names no size, and the answer says so
+ok 468 - an item’s own code names no size, and the answer says so
+  ---
+  duration_ms: 0.830709
+  type: 'test'
+  ...
+# Subtest: a barcode this park does not sell answers "unknown barcode" and adds nothing
+ok 469 - a barcode this park does not sell answers "unknown barcode" and adds nothing
+  ---
+  duration_ms: 0.712788
+  type: 'test'
+  ...
+# Subtest: a malformed code is not a barcode at all, and no lookup is run
+ok 470 - a malformed code is not a barcode at all, and no lookup is run
+  ---
+  duration_ms: 0.741249
+  type: 'test'
+  ...
+# Subtest: a lookup that throws is an error on that scan and not an exception at the counter
+ok 471 - a lookup that throws is an error on that scan and not an exception at the counter
+  ---
+  duration_ms: 0.733645
+  type: 'test'
+  ...
+# Subtest: a band this park printed is checked on the box and answers which band it is
+ok 472 - a band this park printed is checked on the box and answers which band it is
+  ---
+  duration_ms: 1.342035
+  type: 'test'
+  ...
+# Subtest: a band typed by hand in lower case is the same band
+ok 473 - a band typed by hand in lower case is the same band
+  ---
+  duration_ms: 0.952833
+  type: 'test'
+  ...
+# Subtest: one character changed — in the signature, the body or the prefix — is refused, and says why
+ok 474 - one character changed — in the signature, the body or the prefix — is refused, and says why
+  ---
+  duration_ms: 1.372773
+  type: 'test'
+  ...
+# Subtest: a band signed with another park’s key is refused as not this park’s
+ok 475 - a band signed with another park’s key is refused as not this park’s
+  ---
+  duration_ms: 1.04411
+  type: 'test'
+  ...
+# Subtest: a band with a character no band uses, or one missing, is refused as malformed — not unknown
+ok 476 - a band with a character no band uses, or one missing, is refused as malformed — not unknown
+  ---
+  duration_ms: 0.885478
+  type: 'test'
+  ...
+# Subtest: the short code under the QR is a band’s, and opens nothing: scan the QR
+ok 477 - the short code under the QR is a band’s, and opens nothing: scan the QR
+  ---
+  duration_ms: 0.830475
+  type: 'test'
+  ...
+# Subtest: a box with no band key says it cannot check, and never passes a band
+ok 478 - a box with no band key says it cannot check, and never passes a band
+  ---
+  duration_ms: 1.018073
+  type: 'test'
+  ...
+# Subtest: a router with no key leaves band codes to nobody, as a router always has
+ok 479 - a router with no key leaves band codes to nobody, as a router always has
+  ---
+  duration_ms: 0.825098
+  type: 'test'
+  ...
+# Subtest: a band is claimed before any registration, and nothing that is not one is claimed as one
+ok 480 - a band is claimed before any registration, and nothing that is not one is claimed as one
+  ---
+  duration_ms: 1.240711
+  type: 'test'
+  ...
+# Subtest: the box checks bands against the key its configuration brought; a host’s own key wins
+ok 481 - the box checks bands against the key its configuration brought; a host’s own key wins
+  ---
+  duration_ms: 8.057233
+  type: 'test'
+  ...
+# Subtest: the Console’s scanner simulator is told the band a code decoded to, or why it was refused — never the code
+ok 482 - the Console’s scanner simulator is told the band a code decoded to, or why it was refused — never the code
+  ---
+  duration_ms: 3.628681
+  type: 'test'
+  ...
+# Subtest: every basis point maps to exactly the slice it should, at both edges of each
+ok 483 - every basis point maps to exactly the slice it should, at both edges of each
+  ---
+  duration_ms: 11.472368
+  type: 'test'
+  ...
+# Subtest: the boundary between two slices belongs to the later one, not to both
+ok 484 - the boundary between two slices belongs to the later one, not to both
+  ---
+  duration_ms: 0.164196
+  type: 'test'
+  ...
+# Subtest: renormalisation moves the boundaries, which is the whole point of it
+ok 485 - renormalisation moves the boundaries, which is the whole point of it
+  ---
+  duration_ms: 6.499353
+  type: 'test'
+  ...
+# Subtest: 100,000 seeded draws match the published weights (chi-square, df=5)
+ok 486 - 100,000 seeded draws match the published weights (chi-square, df=5)
+  ---
+  duration_ms: 21.48074
+  type: 'test'
+  ...
+# Subtest: a biased source is caught by the same check, which is what makes it worth running
+ok 487 - a biased source is caught by the same check, which is what makes it worth running
+  ---
+  duration_ms: 2.033177
+  type: 'test'
+  ...
+# Subtest: the debug table draws through the same code a real press draws through (D16)
+ok 488 - the debug table draws through the same code a real press draws through (D16)
+  ---
+  duration_ms: 29.142415
+  type: 'test'
+  ...
+# Subtest: a simulated draw HONOURS a cap even though it does not consume one
+ok 489 - a simulated draw HONOURS a cap even though it does not consume one
+  ---
+  duration_ms: 0.581271
+  type: 'test'
+  ...
+# Subtest: a token this box minted verifies here
+ok 490 - a token this box minted verifies here
+  ---
+  duration_ms: 1.861392
+  type: 'test'
+  ...
+# Subtest: a token for the till next door is refused, however well it verifies
+ok 491 - a token for the till next door is refused, however well it verifies
+  ---
+  duration_ms: 0.632917
+  type: 'test'
+  ...
+# Subtest: an expired token is refused, and says what to do about it
+ok 492 - an expired token is refused, and says what to do about it
+  ---
+  duration_ms: 0.352242
+  type: 'test'
+  ...
+# Subtest: a token from the future is refused, but a Pi whose clock is a minute behind is not
+ok 493 - a token from the future is refused, but a Pi whose clock is a minute behind is not
+  ---
+  duration_ms: 0.487209
+  type: 'test'
+  ...
+# Subtest: changed claims do not verify
+ok 494 - changed claims do not verify
+  ---
+  duration_ms: 0.391263
+  type: 'test'
+  ...
+# Subtest: a header naming another algorithm is refused rather than obeyed
+ok 495 - a header naming another algorithm is refused rather than obeyed
+  ---
+  duration_ms: 0.250591
+  type: 'test'
+  ...
+# Subtest: a key this box does not hold is named as that, not as a bad signature
+ok 496 - a key this box does not hold is named as that, not as a bad signature
+  ---
+  duration_ms: 0.430923
+  type: 'test'
+  ...
+# Subtest: a rotation keeps the old tokens working while both keys are shipped
+ok 497 - a rotation keeps the old tokens working while both keys are shipped
+  ---
+  duration_ms: 0.696019
+  type: 'test'
+  ...
+# Subtest: the deny-list refuses a jti and an account
+ok 498 - the deny-list refuses a jti and an account
+  ---
+  duration_ms: 0.661964
+  type: 'test'
+  ...
+# Subtest: a box that cannot check revocation refuses, and says which
+ok 499 - a box that cannot check revocation refuses, and says which
+  ---
+  duration_ms: 0.712345
+  type: 'test'
+  ...
+# Subtest: an expired token is still named expired on a box with no deny-list
+ok 500 - an expired token is still named expired on a box with no deny-list
+  ---
+  duration_ms: 0.349295
+  type: 'test'
+  ...
+# Subtest: a token from a newer platform is refused by name
+ok 501 - a token from a newer platform is refused by name
+  ---
+  duration_ms: 0.199485
+  type: 'test'
+  ...
+# Subtest: rubbish is refused and does not throw
+ok 502 - rubbish is refused and does not throw
+  ---
+  duration_ms: 0.097508
+  type: 'test'
+  ...
+# Subtest: the token and the password are BOTH required, and the unlock is named
+ok 503 - the token and the password are BOTH required, and the unlock is named
+  ---
+  duration_ms: 1.048091
+  type: 'test'
+  ...
+# Subtest: a box that has never pulled a cache knows nobody, and says which
+ok 504 - a box that has never pulled a cache knows nobody, and says which
+  ---
+  duration_ms: 0.336122
+  type: 'test'
+  ...
+# Subtest: an account the box has not cached cannot unlock, even with a good token
+ok 505 - an account the box has not cached cannot unlock, even with a good token
+  ---
+  duration_ms: 0.408281
+  type: 'test'
+  ...
+# Subtest: an account the last bundle deactivated cannot unlock
+ok 506 - an account the last bundle deactivated cannot unlock
+  ---
+  duration_ms: 0.52349
+  type: 'test'
+  ...
+# Subtest: a box whose cache lost the deny-list unlocks nobody, by either door
+ok 507 - a box whose cache lost the deny-list unlocks nobody, by either door
+  ---
+  duration_ms: 0.440205
+  type: 'test'
+  ...
+# Subtest: five wrong passwords close the till, and the sixth is refused without checking
+ok 508 - five wrong passwords close the till, and the sixth is refused without checking
+  ---
+  duration_ms: 1.323137
+  type: 'test'
+  ...
+# Subtest: an expired token is refused by default, whoever is standing there
+ok 509 - an expired token is refused by default, whoever is standing there
+  ---
+  duration_ms: 0.35705
+  type: 'test'
+  ...
+# Subtest: with offline sign-in on, somebody the box has seen this month gets in by password
+ok 510 - with offline sign-in on, somebody the box has seen this month gets in by password
+  ---
+  duration_ms: 0.390357
+  type: 'test'
+  ...
+# Subtest: a revoked token is never a way into the thirty-day sign-in (offline plan OD-6)
+ok 511 - a revoked token is never a way into the thirty-day sign-in (offline plan OD-6)
+  ---
+  duration_ms: 0.33601
+  type: 'test'
+  ...
+# Subtest: and somebody the box has not seen for thirty-one days does not
+ok 512 - and somebody the box has not seen for thirty-one days does not
+  ---
+  duration_ms: 0.104019
+  type: 'test'
+  ...
+# Subtest: a box that has never minted a token for somebody has never seen them
+ok 513 - a box that has never minted a token for somebody has never seen them
+  ---
+  duration_ms: 0.07198
+  type: 'test'
+  ...
+# Subtest: a shared throttle is used when one is given, and the memory one is not
+ok 514 - a shared throttle is used when one is given, and the memory one is not
+  ---
+  duration_ms: 1.310521
+  type: 'test'
+  ...
+# Subtest: unlock with a live token and the password opens a box session bound to the station
+ok 515 - unlock with a live token and the password opens a box session bound to the station
+  ---
+  duration_ms: 5.803953
+  type: 'test'
+  ...
+# Subtest: with no deny-list held, nobody is let in — not even with a perfect token
+ok 516 - with no deny-list held, nobody is let in — not even with a perfect token
+  ---
+  duration_ms: 2.045034
+  type: 'test'
+  ...
+# Subtest: a revoked token is refused, and a revocation pulled after unlock ends the session
+ok 517 - a revoked token is refused, and a revocation pulled after unlock ends the session
+  ---
+  duration_ms: 2.486398
+  type: 'test'
+  ...
+# Subtest: OD-6: a fresh sign-in is admitted for somebody seen here in 30 days while the deny-list is under 72 hours old
+ok 518 - OD-6: a fresh sign-in is admitted for somebody seen here in 30 days while the deny-list is under 72 hours old
+  ---
+  duration_ms: 2.705686
+  type: 'test'
+  ...
+# Subtest: five wrong passwords lock the account out on the store, so a restart does not reset it
+ok 519 - five wrong passwords lock the account out on the store, so a restart does not reset it
+  ---
+  duration_ms: 5.09223
+  type: 'test'
+  ...
+# Subtest: a member signed up offline is a fact and an overlay row, written together, and the next lookup finds it
+ok 520 - a member signed up offline is a fact and an overlay row, written together, and the next lookup finds it
+  ---
+  duration_ms: 21.130319
+  type: 'test'
+  ...
+# Subtest: the alias rule, box side: a child recorded under a merged id is filed under the survivor
+ok 521 - the alias rule, box side: a child recorded under a merged id is filed under the survivor
+  ---
+  duration_ms: 3.562297
+  type: 'test'
+  ...
+# Subtest: a cart is priced from the cached catalogue; after seven days the box refuses to sell
+ok 522 - a cart is priced from the cached catalogue; after seven days the box refuses to sell
+  ---
+  duration_ms: 10.338787
+  type: 'test'
+  ...
+# Subtest: offline tier: a member is priced at their own tier or, when staff pick it, the default tier
+ok 523 - offline tier: a member is priced at their own tier or, when staff pick it, the default tier
+  ---
+  duration_ms: 3.672231
+  type: 'test'
+  ...
+# Subtest: what the capability list refuses on the box lane says why; money with nowhere to write it is refused politely
+ok 524 - what the capability list refuses on the box lane says why; money with nowhere to write it is refused politely
+  ---
+  duration_ms: 2.603316
+  type: 'test'
+  ...
+# Subtest: with no signing key here, a record is refused by name rather than queued unsigned
+ok 525 - with no signing key here, a record is refused by name rather than queued unsigned
+  ---
+  duration_ms: 2.141009
+  type: 'test'
+  ...
+# Subtest: the overlay is pruned once its fact is accepted and a later members pull holds the record
+ok 526 - the overlay is pruned once its fact is accepted and a later members pull holds the record
+  ---
+  duration_ms: 3.958351
+  type: 'test'
+  ...
+# Subtest: OD-11: a tier upgraded on a document at the counter prices the next cart; a downgrade needs its own permission
+ok 527 - OD-11: a tier upgraded on a document at the counter prices the next cart; a downgrade needs its own permission
+  ---
+  duration_ms: 5.999815
+  type: 'test'
+  ...
+# Subtest: OD-11: a document with no expiry date verifies a tier offline; an expired one is refused
+ok 528 - OD-11: a document with no expiry date verifies a tier offline; an expired one is refused
+  ---
+  duration_ms: 3.341191
+  type: 'test'
+  ...
+# Subtest: guest F&B publication keeps captured rows, real payment metadata and settled completion without private records
+ok 529 - guest F&B publication keeps captured rows, real payment metadata and settled completion without private records
+  ---
+  duration_ms: 12.17153
+  type: 'test'
+  ...
+# Subtest: guest F&B refuses wrong stages, private prompt bleed, missing totals/payment and inconsistent completion
+ok 530 - guest F&B refuses wrong stages, private prompt bleed, missing totals/payment and inconsistent completion
+  ---
+  duration_ms: 11.144779
+  type: 'test'
+  ...
+# Subtest: an unsupported guest F&B frame clears the prior visitor and payment even at thank-you
+ok 531 - an unsupported guest F&B frame clears the prior visitor and payment even at thank-you
+  ---
+  duration_ms: 3.058309
+  type: 'test'
+  ...
+# Subtest: guardian acknowledgement exposes finite public facts and never private child fields or log values
+ok 532 - guardian acknowledgement exposes finite public facts and never private child fields or log values
+  ---
+  duration_ms: 3.310311
+  type: 'test'
+  ...
+# Subtest: guardian acknowledgement refuses foreign prompts, stages, sources, checklist fields and premature Done
+ok 533 - guardian acknowledgement refuses foreign prompts, stages, sources, checklist fields and premature Done
+  ---
+  duration_ms: 3.540714
+  type: 'test'
+  ...
+# Subtest: guardian acknowledgement keeps the first action on replay and Done leaves registration to the staff
+ok 534 - guardian acknowledgement keeps the first action on replay and Done leaves registration to the staff
+  ---
+  duration_ms: 4.265909
+  type: 'test'
+  ...
+# Subtest: saved-child review publishes only finite child details and keeps diagnostic events private
+ok 535 - saved-child review publishes only finite child details and keeps diagnostic events private
+  ---
+  duration_ms: 3.242883
+  type: 'test'
+  ...
+# Subtest: saved-child review refuses stale visitor, source, assignment and forged child details
+ok 536 - saved-child review refuses stale visitor, source, assignment and forged child details
+  ---
+  duration_ms: 5.18482
+  type: 'test'
+  ...
+# Subtest: saved-child review is first-answer-wins and preserves the original action through publication and replay
+ok 537 - saved-child review is first-answer-wins and preserves the original action through publication and replay
+  ---
+  duration_ms: 4.465179
+  type: 'test'
+  ...
+# Subtest: saved-child saves freeze edits and require the original failed action, while staff help remains available
+ok 538 - saved-child saves freeze edits and require the original failed action, while staff help remains available
+  ---
+  duration_ms: 6.666278
+  type: 'test'
+  ...
+# Subtest: saved-child publication fails closed for wrong step, stale dates, duplicate assignment and excessive drafts
+ok 539 - saved-child publication fails closed for wrong step, stale dates, duplicate assignment and excessive drafts
+  ---
+  duration_ms: 8.96756
+  type: 'test'
+  ...
+# Subtest: Console display probes use the real stage rules without writing or mutating nested live data
+ok 540 - Console display probes use the real stage rules without writing or mutating nested live data
+  ---
+  duration_ms: 2.673294
+  type: 'test'
+  ...
+# Subtest: two screens on one station see the same snapshot and the same sequence
+ok 541 - two screens on one station see the same snapshot and the same sequence
+  ---
+  duration_ms: 1.552555
+  type: 'test'
+  ...
+# Subtest: a second till on a live lease is refused until a manager takes it over
+ok 542 - a second till on a live lease is refused until a manager takes it over
+  ---
+  duration_ms: 1.453378
+  type: 'test'
+  ...
+# Subtest: copying the holder string off the document is not a renewal
+ok 543 - copying the holder string off the document is not a renewal
+  ---
+  duration_ms: 1.231536
+  type: 'test'
+  ...
+# Subtest: the lease id is published, so it is the account that lets a till use it
+ok 544 - the lease id is published, so it is the account that lets a till use it
+  ---
+  duration_ms: 1.659747
+  type: 'test'
+  ...
+# Subtest: a takeover with nobody behind it is refused rather than audited as somebody
+ok 545 - a takeover with nobody behind it is refused rather than audited as somebody
+  ---
+  duration_ms: 1.139562
+  type: 'test'
+  ...
+# Subtest: a renewal landing mid-claim keeps the station with the till that is alive
+ok 546 - a renewal landing mid-claim keeps the station with the till that is alive
+  ---
+  duration_ms: 1.449918
+  type: 'test'
+  ...
+# Subtest: a watching manager and a customer display cannot change the cart
+ok 547 - a watching manager and a customer display cannot change the cart
+  ---
+  duration_ms: 1.788197
+  type: 'test'
+  ...
+# Subtest: the displaced till is told the session moved, and rehydrates from the refusal
+ok 548 - the displaced till is told the session moved, and rehydrates from the refusal
+  ---
+  duration_ms: 1.289964
+  type: 'test'
+  ...
+# Subtest: an abandoned lease is claimable after the TTL, with no manager
+ok 549 - an abandoned lease is claimable after the TTL, with no manager
+  ---
+  duration_ms: 1.152839
+  type: 'test'
+  ...
+# Subtest: a renewal moves the expiry and not the sequence
+ok 550 - a renewal moves the expiry and not the sequence
+  ---
+  duration_ms: 1.118223
+  type: 'test'
+  ...
+# Subtest: an intent quoting an old sequence is stale even from the lease holder
+ok 551 - an intent quoting an old sequence is stale even from the lease holder
+  ---
+  duration_ms: 1.309668
+  type: 'test'
+  ...
+# Subtest: a second till with no lease cannot make the holder stale
+ok 552 - a second till with no lease cannot make the holder stale
+  ---
+  duration_ms: 1.965229
+  type: 'test'
+  ...
+# Subtest: a lease-free intent may not write a field the sale is made of
+ok 553 - a lease-free intent may not write a field the sale is made of
+  ---
+  duration_ms: 1.286015
+  type: 'test'
+  ...
+# Subtest: the display holds no lease and may still answer what it was asked
+ok 554 - the display holds no lease and may still answer what it was asked
+  ---
+  duration_ms: 1.6006
+  type: 'test'
+  ...
+# Subtest: typed display answers are matched, timestamped and retained until the till moves on
+ok 555 - typed display answers are matched, timestamped and retained until the till moves on
+  ---
+  duration_ms: 4.104751
+  type: 'test'
+  ...
+# Subtest: typed prompts refuse generic bypasses, unkeyed answers and extra contact fields
+ok 556 - typed prompts refuse generic bypasses, unkeyed answers and extra contact fields
+  ---
+  duration_ms: 3.186132
+  type: 'test'
+  ...
+# Subtest: a typed answer survives a simultaneous publish from another manager sharing the store
+ok 557 - a typed answer survives a simultaneous publish from another manager sharing the store
+  ---
+  duration_ms: 2.241576
+  type: 'test'
+  ...
+# Subtest: display publication is till-only and recursively removes presentation-private aliases
+ok 558 - display publication is till-only and recursively removes presentation-private aliases
+  ---
+  duration_ms: 2.668902
+  type: 'test'
+  ...
+# Subtest: malformed public money and full sales are refused without changing the station
+ok 559 - malformed public money and full sales are refused without changing the station
+  ---
+  duration_ms: 4.958109
+  type: 'test'
+  ...
+# Subtest: customer snapshots whitelist cached presentations and omit malformed legacy money
+ok 560 - customer snapshots whitelist cached presentations and omit malformed legacy money
+  ---
+  duration_ms: 2.024071
+  type: 'test'
+  ...
+# Subtest: an intent this box has never heard of is named, not silently dropped
+ok 561 - an intent this box has never heard of is named, not silently dropped
+  ---
+  duration_ms: 1.169454
+  type: 'test'
+  ...
+# Subtest: a mutating intent with no lease is refused before the store is touched
+ok 562 - a mutating intent with no lease is refused before the store is touched
+  ---
+  duration_ms: 0.999158
+  type: 'test'
+  ...
+# Subtest: the customer display never receives a child’s allergy or the till’s step
+ok 563 - the customer display never receives a child’s allergy or the till’s step
+  ---
+  duration_ms: 1.457742
+  type: 'test'
+  ...
+# Subtest: a station that is not on this box is refused rather than invented
+ok 564 - a station that is not on this box is refused rather than invented
+  ---
+  duration_ms: 1.086661
+  type: 'test'
+  ...
+# Subtest: a lease left further from expiring than its length by a clock correction is claimable, with no manager
+ok 565 - a lease left further from expiring than its length by a clock correction is claimable, with no manager
+  ---
+  duration_ms: 1.182697
+  type: 'test'
+  ...
+# Subtest: the compare-and-set claims a stretched lease and refuses one renewed onto the corrected clock
+ok 566 - the compare-and-set claims a stretched lease and refuses one renewed onto the corrected clock
+  ---
+  duration_ms: 1.369628
+  type: 'test'
+  ...
+# Subtest: guest shop publication keeps captured amounts and settled completion without taking money
+ok 567 - guest shop publication keeps captured amounts and settled completion without taking money
+  ---
+  duration_ms: 2.575149
+  type: 'test'
+  ...
+# Subtest: guest shop refuses private prompts, missing totals, bad completion and display-origin publication
+ok 568 - guest shop refuses private prompts, missing totals, bad completion and display-origin publication
+  ---
+  duration_ms: 2.170268
+  type: 'test'
+  ...
+# Subtest: EPOCH E1: a snapshot pulled before an adoption and used after it holds both epochs' sales (cautious)
+ok 569 - EPOCH E1: a snapshot pulled before an adoption and used after it holds both epochs' sales (cautious)
+  ---
+  duration_ms: 156.212063
+  type: 'test'
+  ...
+# Subtest: EPOCH E2: FINAL (2) carried on — adoption between two sales never sells past the level the snapshot reports
+ok 570 - EPOCH E2: FINAL (2) carried on — adoption between two sales never sells past the level the snapshot reports
+  ---
+  duration_ms: 169.295041
+  type: 'test'
+  ...
+# Subtest: EPOCH E3: the new-epoch mark after the adoption — exact
+ok 571 - EPOCH E3: the new-epoch mark after the adoption — exact
+  ---
+  duration_ms: 155.597388
+  type: 'test'
+  ...
+# Subtest: FINAL (1): a sale filed out of journal order — cautious while the hole stands, exact once the mark passes
+ok 572 - FINAL (1): a sale filed out of journal order — cautious while the hole stands, exact once the mark passes
+  ---
+  duration_ms: 208.587208
+  type: 'test'
+  ...
+# Subtest: FINAL (2) REPRO: an epoch change the box has not adopted — a snapshot on the new epoch disables the guard for every sale sealed on the old one
+ok 573 - FINAL (2) REPRO: an epoch change the box has not adopted — a snapshot on the new epoch disables the guard for every sale sealed on the old one
+  ---
+  duration_ms: 47.278279
+  type: 'test'
+  ...
+# Subtest: GATE REPRO: a box sale the platform files but the box did not count swallows a later unreflected sale — the box sells past the shelf
+ok 574 - GATE REPRO: a box sale the platform files but the box did not count swallows a later unreflected sale — the box sells past the shelf
+  ---
+  duration_ms: 159.895446
+  type: 'test'
+  ...
+# Subtest: a sale with no snapshot behind it (uncounted, later filed) leaks nothing: the mark passes it and the shelf is the snapshot
+ok 575 - a sale with no snapshot behind it (uncounted, later filed) leaks nothing: the mark passes it and the shelf is the snapshot
+  ---
+  duration_ms: 136.5614
+  type: 'test'
+  ...
+# Subtest: a counted sale the platform filed aside (quarantined, never applied) stops counting once the mark passes it: no permanent refusal
+ok 576 - a counted sale the platform filed aside (quarantined, never applied) stops counting once the mark passes it: no permanent refusal
+  ---
+  duration_ms: 220.217246
+  type: 'test'
+  ...
+# Subtest: restart: the open shares and their positions survive a power cut
+ok 577 - restart: the open shares and their positions survive a power cut
+  ---
+  duration_ms: 132.788012
+  type: 'test'
+  ...
+# Subtest: midnight: a sale either side of the park's day boundary counts against the same snapshot
+ok 578 - midnight: a sale either side of the park's day boundary counts against the same snapshot
+  ---
+  duration_ms: 86.544414
+  type: 'test'
+  ...
+# Subtest: two boxes: each subtracts only its own sales above its own mark; the other box's filed sales are in the levels
+ok 579 - two boxes: each subtracts only its own sales above its own mark; the other box's filed sales are in the levels
+  ---
+  duration_ms: 317.742132
+  type: 'test'
+  ...
+# Subtest: a re-provisioned store under the same box id starts clean on its new epoch
+ok 580 - a re-provisioned store under the same box id starts clean on its new epoch
+  ---
+  duration_ms: 87.851182
+  type: 'test'
+  ...
+# Subtest: a store overwritten with garbage: the kiosk answers, health is 503 with the reason, the log says so, and the process stays up
+ok 581 - a store overwritten with garbage: the kiosk answers, health is 503 with the reason, the log says so, and the process stays up
+  ---
+  duration_ms: 135.863353
+  type: 'test'
+  ...
+# Subtest: a store with a damaged page: health 503 "damaged", a press refused with the needs-service answer, the heartbeat carries it
+ok 582 - a store with a damaged page: health 503 "damaged", a press refused with the needs-service answer, the heartbeat carries it
+  ---
+  duration_ms: 81.239619
+  type: 'test'
+  ...
+# Subtest: a store that passes the look and fails as it is prepared, "malformed", is named damaged wherever the error comes from
+ok 583 - a store that passes the look and fails as it is prepared, "malformed", is named damaged wherever the error comes from
+  ---
+  duration_ms: 74.850788
+  type: 'test'
+  ...
+# Subtest: a good store: health 200, no notice, a press is recorded, and the heartbeat carries no store fault
+ok 584 - a good store: health 200, no notice, a press is recorded, and the heartbeat carries no store fault
+  ---
+  duration_ms: 110.639897
+  type: 'test'
+  ...
+# Subtest: the unsent outbox is copied out of a damaged store into a salvage file beside it, once, and health counts it
+ok 585 - the unsent outbox is copied out of a damaged store into a salvage file beside it, once, and health counts it
+  ---
+  duration_ms: 152.458604
+  type: 'test'
+  ...
+# Subtest: an outbox that could not be read in full keeps the Console refusing Reset the store: at least one unsent record, of unknown age
+ok 586 - an outbox that could not be read in full keeps the Console refusing Reset the store: at least one unsent record, of unknown age
+  ---
+  duration_ms: 289.304699
+  type: 'test'
+  ...
+# Subtest: the salvage reads the outbox table, not its send index: a damaged index page still gives every unsent row, complete, and the Console hears them all
+ok 587 - the salvage reads the outbox table, not its send index: a damaged index page still gives every unsent row, complete, and the Console hears them all
+  ---
+  duration_ms: 102.210136
+  type: 'test'
+  ...
+# Subtest: a send index the card left stale hides no unsent row: the salvage counts the table, not the "none" the index says
+ok 588 - a send index the card left stale hides no unsent row: the salvage counts the table, not the "none" the index says
+  ---
+  duration_ms: 98.719195
+  type: 'test'
+  ...
+# Subtest: a send index the card left stale, and nothing else wrong, is found at open (SCRUM-446): quick_check passes, the store is damaged with the index named, the booth needs service, and the salvage holds every unsent row
+ok 589 - a send index the card left stale, and nothing else wrong, is found at open (SCRUM-446): quick_check passes, the store is damaged with the index named, the booth needs service, and the salvage holds every unsent row
+  ---
+  duration_ms: 108.205924
+  type: 'test'
+  ...
+# Subtest: a store made by a claim seals under the epoch the registration named, never the default
+ok 590 - a store made by a claim seals under the epoch the registration named, never the default
+  ---
+  duration_ms: 81.314286
+  type: 'test'
+  ...
+# Subtest: a new store under the identity the box already had records nothing until the platform mints a new epoch
+ok 591 - a new store under the identity the box already had records nothing until the platform mints a new epoch
+  ---
+  duration_ms: 216.453516
+  type: 'test'
+  ...
+# Subtest: a claim that registers the same box again onto a new store waits for a new epoch; a new box does not
+ok 592 - a claim that registers the same box again onto a new store waits for a new epoch; a new box does not
+  ---
+  duration_ms: 223.248718
+  type: 'test'
+  ...
+# Subtest: SCRUM-447: a box claimed again with its credential AND store gone starts on the fresh epoch the platform mints, not the old one
+ok 593 - SCRUM-447: a box claimed again with its credential AND store gone starts on the fresh epoch the platform mints, not the old one
+  ---
+  duration_ms: 166.905208
+  type: 'test'
+  ...
+# Subtest: SCRUM-447: a same-box claim with a minted epoch starts on it; a store that keeps the journal is named and keeps its epoch
+ok 594 - SCRUM-447: a same-box claim with a minted epoch starts on it; a store that keeps the journal is named and keeps its epoch
+  ---
+  duration_ms: 224.84738
+  type: 'test'
+  ...
+# Subtest: a same-box claim whose new store the running box made in the moment after the set-aside still waits for a new epoch
+ok 595 - a same-box claim whose new store the running box made in the moment after the set-aside still waits for a new epoch
+  ---
+  duration_ms: 194.55736
+  type: 'test'
+  ...
+# Subtest: the row and its "awaiting" note land together: a note the card refuses takes the row back with it, and the store still waits, after a restart too
+ok 596 - the row and its "awaiting" note land together: a note the card refuses takes the row back with it, and the store still waits, after a restart too
+  ---
+  duration_ms: 259.378405
+  type: 'test'
+  ...
+# Subtest: an "awaiting" note and one read of it the card refuses: no press is ever answered 200 — the box needs service, then waits for its epoch
+ok 597 - an "awaiting" note and one read of it the card refuses: no press is ever answered 200 — the box needs service, then waits for its epoch
+  ---
+  duration_ms: 286.918924
+  type: 'test'
+  ...
+# Subtest: a journal note that is there and cannot be read as one holds the journal, as "awaiting" does
+ok 598 - a journal note that is there and cannot be read as one holds the journal, as "awaiting" does
+  ---
+  duration_ms: 144.499783
+  type: 'test'
+  ...
+# Subtest: a claim typed on the television whose store refuses what the registration writes: the box needs service, never half claimed
+ok 599 - a claim typed on the television whose store refuses what the registration writes: the box needs service, never half claimed
+  ---
+  duration_ms: 65.223959
+  type: 'test'
+  ...
+# Subtest: a claim in a terminal whose new store refuses the journal note, written or read back, says the card may be failing
+ok 600 - a claim in a terminal whose new store refuses the journal note, written or read back, says the card may be failing
+  ---
+  duration_ms: 84.357601
+  type: 'test'
+  ...
+# Subtest: a store that cannot be read and is then replaced by a good one is picked up by the next try, without a restart
+ok 601 - a store that cannot be read and is then replaced by a good one is picked up by the next try, without a restart
+  ---
+  duration_ms: 396.475529
+  type: 'test'
+  ...
+# Subtest: the way back the notice names: claim --force onto a new box while the service needs service; the next try runs as the new box
+ok 602 - the way back the notice names: claim --force onto a new box while the service needs service; the next try runs as the new box
+  ---
+  duration_ms: 308.346554
+  type: 'test'
+  ...
+# Subtest: a claim under way holds the pickup and the start; one that died holding its lock does not
+ok 603 - a claim under way holds the pickup and the start; one that died holding its lock does not
+  ---
+  duration_ms: 1050.878441
+  type: 'test'
+  ...
+# Subtest: the old box refused while a claim is picked up: the new box’s credential is neither taken nor wiped
+ok 604 - the old box refused while a claim is picked up: the new box’s credential is neither taken nor wiped
+  ---
+  duration_ms: 227.355021
+  type: 'test'
+  ...
+# Subtest: a start that fails for a reason other than the store closes the kiosk it opened, so the process can end
+ok 605 - a start that fails for a reason other than the store closes the kiosk it opened, so the process can end
+  ---
+  duration_ms: 105.395684
+  type: 'test'
+  ...
+# Subtest: Reset the store pressed while the box needs service waits for the store: no result, no new epoch; once the store is back it runs there, and the next press seals at the new epoch from 1
+ok 606 - Reset the store pressed while the box needs service waits for the store: no result, no new epoch; once the store is back it runs there, and the next press seals at the new epoch from 1
+  ---
+  duration_ms: 576.153246
+  type: 'test'
+  ...
+# Subtest: claim --force sets a store it cannot use aside even with no identity to replace; without --force it says why
+ok 607 - claim --force sets a store it cannot use aside even with no identity to replace; without --force it says why
+  ---
+  duration_ms: 142.923256
+  type: 'test'
+  ...
+# Subtest: oto-box status names a store that could not be read, and a good one
+ok 608 - oto-box status names a store that could not be read, and a good one
+  ---
+  duration_ms: 115.946934
+  type: 'test'
+  ...
+# Subtest: a queued fact is on disk with a gapless sequence
+ok 609 - a queued fact is on disk with a gapless sequence
+  ---
+  duration_ms: 6.072042
+  type: 'test'
+  ...
+# Subtest: a rolled back enqueue returns its sequence, so the journal has no gap
+ok 610 - a rolled back enqueue returns its sequence, so the journal has no gap
+  ---
+  duration_ms: 2.158256
+  type: 'test'
+  ...
+# Subtest: the envelope is signed over bytes that include the box, and tampering is visible
+ok 611 - the envelope is signed over bytes that include the box, and tampering is visible
+  ---
+  duration_ms: 3.126207
+  type: 'test'
+  ...
+# Subtest: a power cut mid-push puts the batch back on the queue
+ok 612 - a power cut mid-push puts the batch back on the queue
+  ---
+  duration_ms: 4.461676
+  type: 'test'
+  ...
+# Subtest: the offline flag and the epoch survive a restart
+ok 613 - the offline flag and the epoch survive a restart
+  ---
+  duration_ms: 3.316598
+  type: 'test'
+  ...
+# Subtest: a lost answer settles as a duplicate, not as a second member
+ok 614 - a lost answer settles as a duplicate, not as a second member
+  ---
+  duration_ms: 1.914924
+  type: 'test'
+  ...
+# Subtest: the cloud cursor sweeps up a batch whose answer never arrived
+ok 615 - the cloud cursor sweeps up a batch whose answer never arrived
+  ---
+  duration_ms: 3.010213
+  type: 'test'
+  ...
+# Subtest: a cursor that jumped does not sweep events the box never sent
+ok 616 - a cursor that jumped does not sweep events the box never sent
+  ---
+  duration_ms: 2.267375
+  type: 'test'
+  ...
+# Subtest: an answer that says nothing about an event it was sent leaves it to be retried
+ok 617 - an answer that says nothing about an event it was sent leaves it to be retried
+  ---
+  duration_ms: 2.539713
+  type: 'test'
+  ...
+# Subtest: an answer naming an event this batch did not carry moves nothing
+ok 618 - an answer naming an event this batch did not carry moves nothing
+  ---
+  duration_ms: 1.668429
+  type: 'test'
+  ...
+# Subtest: a quarantined event is parked and a rejected one is retried later
+ok 619 - a quarantined event is parked and a rejected one is retried later
+  ---
+  duration_ms: 2.665525
+  type: 'test'
+  ...
+# Subtest: a refusal below the cloud cursor is retried, not swept away
+ok 620 - a refusal below the cloud cursor is retried, not swept away
+  ---
+  duration_ms: 5.730553
+  type: 'test'
+  ...
+# Subtest: a retry time further off than any backoff is due now; one inside it waits
+ok 621 - a retry time further off than any backoff is due now; one inside it waits
+  ---
+  duration_ms: 2.72272
+  type: 'test'
+  ...
+# Subtest: a quarantined event is never picked up again, whatever the clock says
+ok 622 - a quarantined event is never picked up again, whatever the clock says
+  ---
+  duration_ms: 1.723157
+  type: 'test'
+  ...
+# Subtest: a batch is bounded by count and by bytes, and one huge event still goes
+ok 623 - a batch is bounded by count and by bytes, and one huge event still goes
+  ---
+  duration_ms: 3.561214
+  type: 'test'
+  ...
+# Subtest: "Replay last batch" puts accepted events back and the cloud sees duplicates
+ok 624 - "Replay last batch" puts accepted events back and the cloud sees duplicates
+  ---
+  duration_ms: 3.015045
+  type: 'test'
+  ...
+# Subtest: a store no agent has stamped reads the test control’s skew onto the event
+ok 625 - a store no agent has stamped reads the test control’s skew onto the event
+  ---
+  duration_ms: 1.925643
+  type: 'test'
+  ...
+# Subtest: the agent’s stamp decides an event’s trust, inside a transaction too, and the skew does not
+ok 626 - the agent’s stamp decides an event’s trust, inside a transaction too, and the skew does not
+  ---
+  duration_ms: 2.481055
+  type: 'test'
+  ...
+# Subtest: clock trust has the boundaries the comment claims
+ok 627 - clock trust has the boundaries the comment claims
+  ---
+  duration_ms: 0.098986
+  type: 'test'
+  ...
+# Subtest: a cache bundle from a newer agent is dropped rather than half understood
+ok 628 - a cache bundle from a newer agent is dropped rather than half understood
+  ---
+  duration_ms: 1.284968
+  type: 'test'
+  ...
+# Subtest: a cached bundle outlives the store that wrote it
+ok 629 - a cached bundle outlives the store that wrote it
+  ---
+  duration_ms: 0.899942
+  type: 'test'
+  ...
+# Subtest: a spin's two facts get consecutive sequences from one claim
+ok 630 - a spin's two facts get consecutive sequences from one claim
+  ---
+  duration_ms: 2.052575
+  type: 'test'
+  ...
+# Subtest: a pair of facts cannot half-land, and the sequences go back with them
+ok 631 - a pair of facts cannot half-land, and the sequences go back with them
+  ---
+  duration_ms: 2.046311
+  type: 'test'
+  ...
+# Subtest: a spin commits as one thing: facts, the voucher to print, and the counter
+ok 632 - a spin commits as one thing: facts, the voucher to print, and the counter
+  ---
+  duration_ms: 3.113783
+  type: 'test'
+  ...
+# Subtest: counters are per scope, per key and per trading day
+ok 633 - counters are per scope, per key and per trading day
+  ---
+  duration_ms: 1.393032
+  type: 'test'
+  ...
+# Subtest: one station holds one staff session, and signing in replaces it
+ok 634 - one station holds one staff session, and signing in replaces it
+  ---
+  duration_ms: 1.385116
+  type: 'test'
+  ...
+# Subtest: the throttle counts failures and keeps a lock the caller does not mention
+ok 635 - the throttle counts failures and keeps a lock the caller does not mention
+  ---
+  duration_ms: 1.6741
+  type: 'test'
+  ...
+# Subtest: the last time the box believed in only ever moves forward
+ok 636 - the last time the box believed in only ever moves forward
+  ---
+  duration_ms: 1.393977
+  type: 'test'
+  ...
+# Subtest: a job on the printer right now still counts as pending
+ok 637 - a job on the printer right now still counts as pending
+  ---
+  duration_ms: 1.351228
+  type: 'test'
+  ...
+# Subtest: re-submitting a job id replaces the job rather than printing two
+ok 638 - re-submitting a job id replaces the job rather than printing two
+  ---
+  duration_ms: 1.195587
+  type: 'test'
+  ...
+# Subtest: an update changes only the fields it names
+ok 639 - an update changes only the fields it names
+  ---
+  duration_ms: 1.431906
+  type: 'test'
+  ...
+# Subtest: a store with no tables for this says so, rather than losing it quietly
+ok 640 - a store with no tables for this says so, rather than losing it quietly
+  ---
+  duration_ms: 1.541815
+  type: 'test'
+  ...
+# Subtest: a store that was never opened keeps nothing, which is the safe answer
+ok 641 - a store that was never opened keeps nothing, which is the safe answer
+  ---
+  duration_ms: 0.80915
+  type: 'test'
+  ...
+# Subtest: a document written by a newer box is refused rather than misread
+ok 642 - a document written by a newer box is refused rather than misread
+  ---
+  duration_ms: 0.324441
+  type: 'test'
+  ...
+# Subtest: the check counts the send index against the outbox, which quick_check cannot: fewer unsent rows in the index is damage, named by the index
+ok 643 - the check counts the send index against the outbox, which quick_check cannot: fewer unsent rows in the index is damage, named by the index
+  ---
+  duration_ms: 0.795671
+  type: 'test'
+  ...
+# Subtest: a journal index short of rows is damage too, named by that index — and an index with more entries than the table is no better
+ok 644 - a journal index short of rows is damage too, named by that index — and an index with more entries than the table is no better
+  ---
+  duration_ms: 0.185472
+  type: 'test'
+  ...
+# Subtest: a store whose counts agree is fit, looked at in one read transaction: quick_check, the catalogue, one table walk, two index walks
+ok 645 - a store whose counts agree is fit, looked at in one read transaction: quick_check, the catalogue, one table walk, two index walks
+  ---
+  duration_ms: 0.449956
+  type: 'test'
+  ...
+# Subtest: a file with no outbox yet — one made before its first prepare — has nothing to count and is fit; an index the file lacks is not counted either
+ok 646 - a file with no outbox yet — one made before its first prepare — has nothing to count and is fit; an index the file lacks is not counted either
+  ---
+  duration_ms: 0.191582
+  type: 'test'
+  ...
+# Subtest: quick_check's own findings come first, and nothing is counted after them
+ok 647 - quick_check's own findings come first, and nothing is counted after them
+  ---
+  duration_ms: 0.085223
+  type: 'test'
+  ...
+# Subtest: a count the card refuses is named as SQLite names it: malformed is damaged, a refused read is unreadable, and the transaction is ended on the way out
+ok 648 - a count the card refuses is named as SQLite names it: malformed is damaged, a refused read is unreadable, and the transaction is ended on the way out
+  ---
+  duration_ms: 0.210123
+  type: 'test'
+  ...
+# Subtest: on a real store the three counts walk what they say — the table itself, the send index, the journal index — and a healthy store, rows or none, is fit
+ok 649 - on a real store the three counts walk what they say — the table itself, the send index, the journal index — and a healthy store, rows or none, is fit
+  ---
+  duration_ms: 1.70156
+  type: 'test'
+  ...
+# Subtest: the serial path is resolved by id at every open, so a hot-plug is followed
+ok 650 - the serial path is resolved by id at every open, so a hot-plug is followed
+  ---
+  duration_ms: 0.670913
+  type: 'test'
+  ...
+# Subtest: a terminal that is not plugged in is unreachable by name
+ok 651 - a terminal that is not plugged in is unreachable by name
+  ---
+  duration_ms: 0.420255
+  type: 'test'
+  ...
+# Subtest: the line settings come from the dialect and the device row overrides them
+ok 652 - the line settings come from the dialect and the device row overrides them
+  ---
+  duration_ms: 0.151136
+  type: 'test'
+  ...
+# Subtest: a box with no serial driver refuses by name instead of pretending
+ok 653 - a box with no serial driver refuses by name instead of pretending
+  ---
+  duration_ms: 0.25196
+  type: 'test'
+  ...
+# Subtest: a frame split across reads is one frame, and the next one is not lost
+ok 654 - a frame split across reads is one frame, and the next one is not lost
+  ---
+  duration_ms: 0.732202
+  type: 'test'
+  ...
+# Subtest: a read that gets nothing resolves null rather than throwing
+ok 655 - a read that gets nothing resolves null rather than throwing
+  ---
+  duration_ms: 40.649885
+  type: 'test'
+  ...
+# Subtest: discard throws away a half-message, so a new tender starts clean
+ok 656 - discard throws away a half-message, so a new tender starts clean
+  ---
+  duration_ms: 30.8161
+  type: 'test'
+  ...
+# Subtest: the terminal budget is the guest’s, not the printer’s
+ok 657 - the terminal budget is the guest’s, not the printer’s
+  ---
+  duration_ms: 0.205981
+  type: 'test'
+  ...
+# Subtest: a thousand mints on one terminal on one day are a thousand different references
+ok 658 - a thousand mints on one terminal on one day are a thousand different references
+  ---
+  duration_ms: 32.069378
+  type: 'test'
+  ...
+# Subtest: the counter resets when the trading day rolls
+ok 659 - the counter resets when the trading day rolls
+  ---
+  duration_ms: 1.587058
+  type: 'test'
+  ...
+# Subtest: two terminals on one box never mint the same reference on the same day
+ok 660 - two terminals on one box never mint the same reference on the same day
+  ---
+  duration_ms: 9.114137
+  type: 'test'
+  ...
+# Subtest: the two tenders of one sale and its void draw from the same counter
+ok 661 - the two tenders of one sale and its void draw from the same counter
+  ---
+  duration_ms: 1.540237
+  type: 'test'
+  ...
+# Subtest: a reference is shaped for the dialect it is going to
+ok 662 - a reference is shaped for the dialect it is going to
+  ---
+  duration_ms: 0.241876
+  type: 'test'
+  ...
+# Subtest: a day that runs out of references is refused, never wrapped
+ok 663 - a day that runs out of references is refused, never wrapped
+  ---
+  duration_ms: 0.340846
+  type: 'test'
+  ...
+# Subtest: a box with no store refuses to mint rather than counting in memory
+ok 664 - a box with no store refuses to mint rather than counting in memory
+  ---
+  duration_ms: 0.288775
+  type: 'test'
+  ...
+# Subtest: the framing rule reproduces the specification’s own worked example
+ok 665 - the framing rule reproduces the specification’s own worked example
+  ---
+  duration_ms: 0.820575
+  type: 'test'
+  ...
+# Subtest: the SALE request is reproduced byte for byte
+ok 666 - the SALE request is reproduced byte for byte
+  ---
+  duration_ms: 0.339978
+  type: 'test'
+  ...
+# Subtest: the terminal-info pair and the not-found inquiry are reproduced byte for byte
+ok 667 - the terminal-info pair and the not-found inquiry are reproduced byte for byte
+  ---
+  duration_ms: 0.215879
+  type: 'test'
+  ...
+# Subtest: a printed CRC is not evidence: the document contradicts its own rule
+ok 668 - a printed CRC is not evidence: the document contradicts its own rule
+  ---
+  duration_ms: 0.524829
+  type: 'test'
+  ...
+# Subtest: BER lengths round-trip at every boundary the document names
+ok 669 - BER lengths round-trip at every boundary the document names
+  ---
+  duration_ms: 0.274643
+  type: 'test'
+  ...
+# Subtest: a flipped CRC byte is refused rather than read as garbage
+ok 670 - a flipped CRC byte is refused rather than read as garbage
+  ---
+  duration_ms: 0.165643
+  type: 'test'
+  ...
+# Subtest: the named ASCII tags survive a round-trip and generic BER mis-reads them
+ok 671 - the named ASCII tags survive a round-trip and generic BER mis-reads them
+  ---
+  duration_ms: 1.519663
+  type: 'test'
+  ...
+# Subtest: a tag number means different things on different actions
+ok 672 - a tag number means different things on different actions
+  ---
+  duration_ms: 0.09158
+  type: 'test'
+  ...
+# Subtest: a response is read through the table of the action it declares
+ok 673 - a response is read through the table of the action it declares
+  ---
+  duration_ms: 0.405768
+  type: 'test'
+  ...
+# Subtest: an action with no table is still read for the four tags that never move
+ok 674 - an action with no table is still read for the four tags that never move
+  ---
+  duration_ms: 0.315405
+  type: 'test'
+  ...
+# Subtest: amounts are satang as ASCII digits, with no float in the path
+ok 675 - amounts are satang as ASCII digits, with no float in the path
+  ---
+  duration_ms: 0.283427
+  type: 'test'
+  ...
+# Subtest: the frame scanner drops noise, waits for a whole frame and keeps the next one
+ok 676 - the frame scanner drops noise, waits for a whole frame and keeps the next one
+  ---
+  duration_ms: 0.192979
+  type: 'test'
+  ...
+# Subtest: every committed fixture is what the code produces today
+ok 677 - every committed fixture is what the code produces today
+  ---
+  duration_ms: 9.256455
+  type: 'test'
+  ...
+# Subtest: every fixture carries its citation, and every GHL response says it is inferred
+ok 678 - every fixture carries its citation, and every GHL response says it is inferred
+  ---
+  duration_ms: 3.640027
+  type: 'test'
+  ...
+# Subtest: every Digio fixture decodes, re-encodes to itself, and checks its own CRC
+ok 679 - every Digio fixture decodes, re-encodes to itself, and checks its own CRC
+  ---
+  duration_ms: 1.507692
+  type: 'test'
+  ...
+# Subtest: every GHL fixture parses, and a request re-encodes to itself
+ok 680 - every GHL fixture parses, and a request re-encodes to itself
+  ---
+  duration_ms: 0.608499
+  type: 'test'
+  ...
+# Subtest: no fixture carries a password, a PAN or track data
+ok 681 - no fixture carries a password, a PAN or track data
+  ---
+  duration_ms: 3.561043
+  type: 'test'
+  ...
+# Subtest: a request carries the sample’s eight elements, in the sample’s order
+ok 682 - a request carries the sample’s eight elements, in the sample’s order
+  ---
+  duration_ms: 1.726731
+  type: 'test'
+  ...
+# Subtest: parsing is order-independent and survives noise around the message
+ok 683 - parsing is order-independent and survives noise around the message
+  ---
+  duration_ms: 0.604336
+  type: 'test'
+  ...
+# Subtest: amounts are decimal major units and come back as satang
+ok 684 - amounts are decimal major units and come back as satang
+  ---
+  duration_ms: 0.220692
+  type: 'test'
+  ...
+# Subtest: the same response code means opposite things in the two code spaces
+ok 685 - the same response code means opposite things in the two code spaces
+  ---
+  duration_ms: 0.182899
+  type: 'test'
+  ...
+# Subtest: an approved card sale carries the invoice number, the approval code and four digits
+ok 686 - an approved card sale carries the invoice number, the approval code and four digits
+  ---
+  duration_ms: 1.587895
+  type: 'test'
+  ...
+# Subtest: an approval for less than was asked is a partial approval, not a sale
+ok 687 - an approval for less than was asked is a partial approval, not a sale
+  ---
+  duration_ms: 0.458229
+  type: 'test'
+  ...
+# Subtest: a wallet approval for less is caught by the amount, which has no code of its own
+ok 688 - a wallet approval for less is caught by the amount, which has no code of its own
+  ---
+  duration_ms: 0.379255
+  type: 'test'
+  ...
+# Subtest: silence is not a decline
+ok 689 - silence is not a decline
+  ---
+  duration_ms: 61.603121
+  type: 'test'
+  ...
+# Subtest: there is no QUERY for a card, and the adapter writes no byte trying
+ok 690 - there is no QUERY for a card, and the adapter writes no byte trying
+  ---
+  duration_ms: 0.484663
+  type: 'test'
+  ...
+# Subtest: a wallet QUERY is keyed on the ORIGINAL reference and returns the identities
+ok 691 - a wallet QUERY is keyed on the ORIGINAL reference and returns the identities
+  ---
+  duration_ms: 0.946838
+  type: 'test'
+  ...
+# Subtest: an inquiry carries no amount of its own, and its answer is not a shortfall
+ok 692 - an inquiry carries no amount of its own, and its answer is not a shortfall
+  ---
+  duration_ms: 0.535184
+  type: 'test'
+  ...
+# Subtest: a void after a partial approval is approved, and reports what came back
+ok 693 - a void after a partial approval is approved, and reports what came back
+  ---
+  duration_ms: 0.594827
+  type: 'test'
+  ...
+# Subtest: a void is keyed on the invoice number and the approval code, with a fresh reference
+ok 694 - a void is keyed on the invoice number and the approval code, with a fresh reference
+  ---
+  duration_ms: 0.397322
+  type: 'test'
+  ...
+# Subtest: a card void without its approval code is refused before the wire
+ok 695 - a card void without its approval code is refused before the wire
+  ---
+  duration_ms: 0.578397
+  type: 'test'
+  ...
+# Subtest: a Thai QR sale cannot be voided at all
+ok 696 - a Thai QR sale cannot be voided at all
+  ---
+  duration_ms: 0.1039
+  type: 'test'
+  ...
+# Subtest: a void after the terminal’s day has ended is refused
+ok 697 - a void after the terminal’s day has ended is refused
+  ---
+  duration_ms: 0.389445
+  type: 'test'
+  ...
+# Subtest: a reference longer than twelve characters never reaches the terminal
+ok 698 - a reference longer than twelve characters never reaches the terminal
+  ---
+  duration_ms: 0.118617
+  type: 'test'
+  ...
+# Subtest: the health probe answers from a terminal that is there, and says so when it is not
+ok 699 - the health probe answers from a terminal that is there, and says so when it is not
+  ---
+  duration_ms: 40.810301
+  type: 'test'
+  ...
+# Subtest: a response about somebody else’s transaction is inconclusive, not approved
+ok 700 - a response about somebody else’s transaction is inconclusive, not approved
+  ---
+  duration_ms: 0.671023
+  type: 'test'
+  ...
+# Subtest: the panel’s six outcomes are the adapter’s six branches, on both dialects
+ok 701 - the panel’s six outcomes are the adapter’s six branches, on both dialects
+  ---
+  duration_ms: 429.340592
+  type: 'test'
+  ...
+# Subtest: a QR sale hands the payload over before the guest has paid
+ok 702 - a QR sale hands the payload over before the guest has paid
+  ---
+  duration_ms: 1.73031
+  type: 'test'
+  ...
+# Subtest: an inquiry that finds the sale completes it without a second charge
+ok 703 - an inquiry that finds the sale completes it without a second charge
+  ---
+  duration_ms: 2.173132
+  type: 'test'
+  ...
+# Subtest: a void after a partial approval reads approved, whichever amount is passed
+ok 704 - a void after a partial approval reads approved, whichever amount is passed
+  ---
+  duration_ms: 6.616627
+  type: 'test'
+  ...
+# Subtest: a void is refused once the terminal’s batch has settled
+ok 705 - a void is refused once the terminal’s batch has settled
+  ---
+  duration_ms: 2.063257
+  type: 'test'
+  ...
+# Subtest: a Thai QR sale on the PAX cannot be voided
+ok 706 - a Thai QR sale on the PAX cannot be voided
+  ---
+  duration_ms: 1.366435
+  type: 'test'
+  ...
+# Subtest: a void without the configured password never reaches an approval
+ok 707 - a void without the configured password never reaches an approval
+  ---
+  duration_ms: 1.545837
+  type: 'test'
+  ...
+# Subtest: a card sale on the NEXGO cannot be inquired about, and says so
+ok 708 - a card sale on the NEXGO cannot be inquired about, and says so
+  ---
+  duration_ms: 1.1833
+  type: 'test'
+  ...
+# Subtest: both terminals answer a health probe, and each answers what its dialect has
+ok 709 - both terminals answer a health probe, and each answers what its dialect has
+  ---
+  duration_ms: 1.476562
+  type: 'test'
+  ...
+# Subtest: a tender for a station with no such terminal is refused, not guessed at
+ok 710 - a tender for a station with no such terminal is refused, not guessed at
+  ---
+  duration_ms: 1.025499
+  type: 'test'
+  ...
+# Subtest: two tenders for one terminal are taken one at a time
+ok 711 - two tenders for one terminal are taken one at a time
+  ---
+  duration_ms: 1.485593
+  type: 'test'
+  ...
+# Subtest: the simulator keeps a tape of what it was asked and what it withheld
+ok 712 - the simulator keeps a tape of what it was asked and what it withheld
+  ---
+  duration_ms: 80.962186
+  type: 'test'
+  ...
+# Subtest: a Digio card exchange leaves no card number and no frame on the tape
+ok 713 - a Digio card exchange leaves no card number and no frame on the tape
+  ---
+  duration_ms: 1.661664
+  type: 'test'
+  ...
+# Subtest: a GHL card exchange leaves no card_no and no message on the tape
+ok 714 - a GHL card exchange leaves no card_no and no message on the tape
+  ---
+  duration_ms: 1.18069
+  type: 'test'
+  ...
+# Subtest: settlement uses durable terminal facts by business day and replays the same batch after restart
+ok 715 - settlement uses durable terminal facts by business day and replays the same batch after restart
+  ---
+  duration_ms: 5.975799
+  type: 'test'
+  ...
+# Subtest: settlement excludes voids, other terminals and other business days
+ok 716 - settlement excludes voids, other terminals and other business days
+  ---
+  duration_ms: 1.863546
+  type: 'test'
+  ...
+# Subtest: real terminals report unsupported without opening an unverified settlement wire
+ok 717 - real terminals report unsupported without opening an unverified settlement wire
+  ---
+  duration_ms: 0.418142
+  type: 'test'
+  ...
+# Subtest: a lost settlement callback is retried with durable evidence before command acknowledgement
+ok 718 - a lost settlement callback is retried with durable evidence before command acknowledgement
+  ---
+  duration_ms: 11.899051
+  type: 'test'
+  ...
+# Subtest: settlement uses the branch day start and preserves the terminal identity that took the money
+ok 719 - settlement uses the branch day start and preserves the terminal identity that took the money
+  ---
+  duration_ms: 1.442226
+  type: 'test'
+  ...
+# Subtest: settlement includes paid GHL wallet transactions on the QR ledger line
+ok 720 - settlement includes paid GHL wallet transactions on the QR ledger line
+  ---
+  duration_ms: 1.137164
+  type: 'test'
+  ...
+# Subtest: a cloud that takes the connection and never answers is given up on, by name
+ok 721 - a cloud that takes the connection and never answers is given up on, by name
+  ---
+  duration_ms: 207.043457
+  type: 'test'
+  ...
+# Subtest: one call may ask for less than the transport allows, never more
+ok 722 - one call may ask for less than the transport allows, never more
+  ---
+  duration_ms: 503.690022
+  type: 'test'
+  ...
+# Subtest: an answer that has begun may take longer than the answer allowance to finish
+ok 723 - an answer that has begun may take longer than the answer allowance to finish
+  ---
+  duration_ms: 507.276198
+  type: 'test'
+  ...
+# Subtest: a body that stops arriving is given up on too
+ok 724 - a body that stops arriving is given up on too
+  ---
+  duration_ms: 303.250465
+  type: 'test'
+  ...
+1..724
+# tests 749
+# suites 5
+# pass 749
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 48310.138131
