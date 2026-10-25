@@ -1,0 +1,47 @@
+{
+  "approved": true,
+  "ticket": "SCRUM-636",
+  "purpose": "read-only-aggregate-api-proof",
+  "sourceSha": "be94f6c847b2a276167992ce6bcf3c6ec8988f71",
+  "sourceManifestSha256": "29fee2fa40ca0523ce4b2002d19e4ad875e6535d4ff8c3f073b01666f8d71e52",
+  "ciRunId": "40170166041",
+  "apiDeployment": {
+    "name": "oto-api-staging",
+    "serviceId": "srv-danh2ljtqb8s73bt9en0",
+    "id": "dep-dbeqjuijnfac73e2ik30",
+    "finishedAt": "2026-10-25T07:07:46.891936Z"
+  },
+  "helperSha256": "66ab16ec60f6deec78e5c920d01429c1795c151a2c7de3aa068f2a5e55e5fce3",
+  "routeModuleSha256": "a9df4b6541772bcc3286eb94243a76e78f481c9494c83d5c43a3af7fbd35d30a",
+  "localReleaseSha256": "af6dc7be292c68d16eb58cb2390204b5e6e2e0fde446196a0cee74ba335d1860",
+  "runtimeBindingsSha256": "bc8c0a1a070446d90596a8b874b9074d6937802b8fbfe80be3af5e1a821e580a",
+  "actors": {
+    "ADMIN": {
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75"
+    },
+    "MANAGER": {
+      "accountId": "01a0c9ae-5377-7b34-a9ab-22bf8086f5f7",
+      "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75"
+    },
+    "RECEPTION": {
+      "accountId": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+      "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75"
+    }
+  },
+  "period": {
+    "from": "2026-10-01",
+    "to": "2026-10-25"
+  },
+  "rulings": {
+    "Q17": {
+      "resolved": true,
+      "reference": "PLAN Q17 proposal withdrawn - visiting members retain approved scope"
+    },
+    "Q18": {
+      "resolved": true,
+      "reference": "PLAN Q18 ruling - Jira SCRUM-636 comment12568 - main701aa00489c3db6134e6fb34194ff6627e79b600"
+    }
+  },
+  "outputDirectory": "C:/w/admin636-staging-v1-20261025"
+}

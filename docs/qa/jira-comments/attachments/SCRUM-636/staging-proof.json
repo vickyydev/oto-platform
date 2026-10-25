@@ -1,0 +1,2052 @@
+{
+  "ticket": "SCRUM-636",
+  "sourceSha": "be94f6c847b2a276167992ce6bcf3c6ec8988f71",
+  "sourceManifestSha256": "29fee2fa40ca0523ce4b2002d19e4ad875e6535d4ff8c3f073b01666f8d71e52",
+  "ciRunId": "40170166041",
+  "helperSha256": "66ab16ec60f6deec78e5c920d01429c1795c151a2c7de3aa068f2a5e55e5fce3",
+  "planSha256": "2844900bffd1ede18eef239f682e492c3ea0878f76d551e8d9e321f8d37c8c9d",
+  "routeModuleSha256": "a9df4b6541772bcc3286eb94243a76e78f481c9494c83d5c43a3af7fbd35d30a",
+  "localReleaseSha256": "af6dc7be292c68d16eb58cb2390204b5e6e2e0fde446196a0cee74ba335d1860",
+  "initialSourceBinding": {
+    "sourceFiles": 3764,
+    "sourceManifestSha256": "29fee2fa40ca0523ce4b2002d19e4ad875e6535d4ff8c3f073b01666f8d71e52",
+    "featureTreeSha256": "63e99d14a01316740cc7a13bc7e363bbfe2df6b5502040f96cda024dee7a19f3",
+    "runtimeBindingsSha256": "bc8c0a1a070446d90596a8b874b9074d6937802b8fbfe80be3af5e1a821e580a",
+    "dependencyInputs": 28
+  },
+  "apiDeployment": {
+    "name": "oto-api-staging",
+    "serviceId": "srv-danh2ljtqb8s73bt9en0",
+    "id": "dep-dbeqjuijnfac73e2ik30",
+    "finishedAt": "2026-10-25T07:07:46.891936Z"
+  },
+  "rulings": {
+    "Q17": {
+      "resolved": true,
+      "reference": "PLAN Q17 proposal withdrawn - visiting members retain approved scope"
+    },
+    "Q18": {
+      "resolved": true,
+      "reference": "PLAN Q18 ruling - Jira SCRUM-636 comment12568 - main701aa00489c3db6134e6fb34194ff6627e79b600"
+    }
+  },
+  "actualStaging": true,
+  "complete": true,
+  "startedAt": "2026-10-25T07:08:30.249Z",
+  "completedAt": "2026-10-25T07:08:50.218Z",
+  "businessWrites": 0,
+  "fixturesCreated": 0,
+  "sourceChecks": [
+    {
+      "at": "2026-10-25T07:08:33.675Z",
+      "sourceSha": "be94f6c847b2a276167992ce6bcf3c6ec8988f71",
+      "ciRunId": "40170166041",
+      "apiDeployId": "dep-dbeqjuijnfac73e2ik30",
+      "localSourceBinding": {
+        "sourceFiles": 3764,
+        "sourceManifestSha256": "29fee2fa40ca0523ce4b2002d19e4ad875e6535d4ff8c3f073b01666f8d71e52",
+        "featureTreeSha256": "63e99d14a01316740cc7a13bc7e363bbfe2df6b5502040f96cda024dee7a19f3",
+        "runtimeBindingsSha256": "bc8c0a1a070446d90596a8b874b9074d6937802b8fbfe80be3af5e1a821e580a",
+        "dependencyInputs": 28
+      },
+      "ciMetadataSha256": "0dc19efcc6a9e33500f0cdd7730c98104f3309f3634086bcff565d0f289d88e7",
+      "jobs": [
+        {
+          "name": "ci",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "oto-app",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "api-tests (3)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "api-tests (1)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "pos-tests",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "api-tests (2)",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "at": "2026-10-25T07:08:37.439Z",
+      "sourceSha": "be94f6c847b2a276167992ce6bcf3c6ec8988f71",
+      "ciRunId": "40170166041",
+      "apiDeployId": "dep-dbeqjuijnfac73e2ik30",
+      "localSourceBinding": {
+        "sourceFiles": 3764,
+        "sourceManifestSha256": "29fee2fa40ca0523ce4b2002d19e4ad875e6535d4ff8c3f073b01666f8d71e52",
+        "featureTreeSha256": "63e99d14a01316740cc7a13bc7e363bbfe2df6b5502040f96cda024dee7a19f3",
+        "runtimeBindingsSha256": "bc8c0a1a070446d90596a8b874b9074d6937802b8fbfe80be3af5e1a821e580a",
+        "dependencyInputs": 28
+      },
+      "ciMetadataSha256": "0dc19efcc6a9e33500f0cdd7730c98104f3309f3634086bcff565d0f289d88e7",
+      "jobs": [
+        {
+          "name": "ci",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "oto-app",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "api-tests (3)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "api-tests (1)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "pos-tests",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "api-tests (2)",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "at": "2026-10-25T07:08:44.087Z",
+      "sourceSha": "be94f6c847b2a276167992ce6bcf3c6ec8988f71",
+      "ciRunId": "40170166041",
+      "apiDeployId": "dep-dbeqjuijnfac73e2ik30",
+      "localSourceBinding": {
+        "sourceFiles": 3764,
+        "sourceManifestSha256": "29fee2fa40ca0523ce4b2002d19e4ad875e6535d4ff8c3f073b01666f8d71e52",
+        "featureTreeSha256": "63e99d14a01316740cc7a13bc7e363bbfe2df6b5502040f96cda024dee7a19f3",
+        "runtimeBindingsSha256": "bc8c0a1a070446d90596a8b874b9074d6937802b8fbfe80be3af5e1a821e580a",
+        "dependencyInputs": 28
+      },
+      "ciMetadataSha256": "0dc19efcc6a9e33500f0cdd7730c98104f3309f3634086bcff565d0f289d88e7",
+      "jobs": [
+        {
+          "name": "ci",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "oto-app",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "api-tests (3)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "api-tests (1)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "pos-tests",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "api-tests (2)",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "at": "2026-10-25T07:08:50.215Z",
+      "sourceSha": "be94f6c847b2a276167992ce6bcf3c6ec8988f71",
+      "ciRunId": "40170166041",
+      "apiDeployId": "dep-dbeqjuijnfac73e2ik30",
+      "localSourceBinding": {
+        "sourceFiles": 3764,
+        "sourceManifestSha256": "29fee2fa40ca0523ce4b2002d19e4ad875e6535d4ff8c3f073b01666f8d71e52",
+        "featureTreeSha256": "63e99d14a01316740cc7a13bc7e363bbfe2df6b5502040f96cda024dee7a19f3",
+        "runtimeBindingsSha256": "bc8c0a1a070446d90596a8b874b9074d6937802b8fbfe80be3af5e1a821e580a",
+        "dependencyInputs": 28
+      },
+      "ciMetadataSha256": "0dc19efcc6a9e33500f0cdd7730c98104f3309f3634086bcff565d0f289d88e7",
+      "jobs": [
+        {
+          "name": "ci",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "oto-app",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "api-tests (3)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "api-tests (1)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "pos-tests",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "api-tests (2)",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ],
+  "operations": [
+    {
+      "sequence": 1,
+      "actor": "ADMIN",
+      "method": "POST",
+      "path": "/auth/sign-in",
+      "queryKeys": [],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:33.676Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-25T07:08:33.925Z"
+    },
+    {
+      "sequence": 2,
+      "actor": "ADMIN",
+      "method": "GET",
+      "path": "/me",
+      "queryKeys": [],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:33.943Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-25T07:08:34.014Z"
+    },
+    {
+      "sequence": 3,
+      "actor": "ADMIN",
+      "method": "GET",
+      "path": "/me/permissions",
+      "queryKeys": [],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:34.018Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-25T07:08:34.082Z"
+    },
+    {
+      "sequence": 4,
+      "actor": "MANAGER",
+      "method": "POST",
+      "path": "/auth/sign-in",
+      "queryKeys": [],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:34.092Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-25T07:08:34.182Z"
+    },
+    {
+      "sequence": 5,
+      "actor": "MANAGER",
+      "method": "GET",
+      "path": "/me",
+      "queryKeys": [],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:34.184Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-25T07:08:34.249Z"
+    },
+    {
+      "sequence": 6,
+      "actor": "MANAGER",
+      "method": "GET",
+      "path": "/me/permissions",
+      "queryKeys": [],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:34.252Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-25T07:08:34.313Z"
+    },
+    {
+      "sequence": 7,
+      "actor": "RECEPTION",
+      "method": "POST",
+      "path": "/auth/sign-in",
+      "queryKeys": [],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:34.320Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-25T07:08:34.405Z"
+    },
+    {
+      "sequence": 8,
+      "actor": "RECEPTION",
+      "method": "GET",
+      "path": "/me",
+      "queryKeys": [],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:34.408Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-25T07:08:34.471Z"
+    },
+    {
+      "sequence": 9,
+      "actor": "RECEPTION",
+      "method": "GET",
+      "path": "/me/permissions",
+      "queryKeys": [],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:34.474Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-25T07:08:34.536Z"
+    },
+    {
+      "sequence": 10,
+      "actor": "ADMIN",
+      "method": "GET",
+      "path": "/aggregates/members",
+      "queryKeys": [
+        "from",
+        "to"
+      ],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:37.441Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-25T07:08:37.517Z"
+    },
+    {
+      "sequence": 11,
+      "actor": "ADMIN",
+      "method": "GET",
+      "path": "/aggregates/bookings",
+      "queryKeys": [
+        "from",
+        "to"
+      ],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:37.522Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-25T07:08:37.595Z"
+    },
+    {
+      "sequence": 12,
+      "actor": "ADMIN",
+      "method": "GET",
+      "path": "/aggregates/assistant-usage",
+      "queryKeys": [
+        "from",
+        "to"
+      ],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:37.599Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-25T07:08:37.707Z"
+    },
+    {
+      "sequence": 13,
+      "actor": "ADMIN",
+      "method": "GET",
+      "path": "/aggregates/inbox-ai-usage",
+      "queryKeys": [
+        "from",
+        "to"
+      ],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:37.713Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-25T07:08:37.787Z"
+    },
+    {
+      "sequence": 14,
+      "actor": "ADMIN",
+      "method": "GET",
+      "path": "/aggregates/fleet",
+      "queryKeys": [],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:37.791Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-25T07:08:37.859Z"
+    },
+    {
+      "sequence": 15,
+      "actor": "MANAGER",
+      "method": "GET",
+      "path": "/aggregates/members",
+      "queryKeys": [
+        "from",
+        "to"
+      ],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:37.863Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-25T07:08:37.936Z"
+    },
+    {
+      "sequence": 16,
+      "actor": "MANAGER",
+      "method": "GET",
+      "path": "/aggregates/members",
+      "queryKeys": [
+        "from",
+        "to",
+        "branchId"
+      ],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:37.940Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-25T07:08:38.006Z"
+    },
+    {
+      "sequence": 17,
+      "actor": "RECEPTION",
+      "method": "GET",
+      "path": "/aggregates/members",
+      "queryKeys": [
+        "from",
+        "to"
+      ],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:38.010Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 403,
+      "completedAt": "2026-10-25T07:08:38.079Z"
+    },
+    {
+      "sequence": 18,
+      "actor": "MANAGER",
+      "method": "GET",
+      "path": "/aggregates/bookings",
+      "queryKeys": [
+        "from",
+        "to"
+      ],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:38.082Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-25T07:08:38.147Z"
+    },
+    {
+      "sequence": 19,
+      "actor": "MANAGER",
+      "method": "GET",
+      "path": "/aggregates/bookings",
+      "queryKeys": [
+        "from",
+        "to",
+        "branchId"
+      ],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:38.151Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-25T07:08:38.224Z"
+    },
+    {
+      "sequence": 20,
+      "actor": "RECEPTION",
+      "method": "GET",
+      "path": "/aggregates/bookings",
+      "queryKeys": [
+        "from",
+        "to"
+      ],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:38.228Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 403,
+      "completedAt": "2026-10-25T07:08:38.299Z"
+    },
+    {
+      "sequence": 21,
+      "actor": "MANAGER",
+      "method": "GET",
+      "path": "/aggregates/assistant-usage",
+      "queryKeys": [
+        "from",
+        "to"
+      ],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:38.302Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-25T07:08:38.372Z"
+    },
+    {
+      "sequence": 22,
+      "actor": "MANAGER",
+      "method": "GET",
+      "path": "/aggregates/assistant-usage",
+      "queryKeys": [
+        "from",
+        "to",
+        "branchId"
+      ],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:38.376Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-25T07:08:38.444Z"
+    },
+    {
+      "sequence": 23,
+      "actor": "RECEPTION",
+      "method": "GET",
+      "path": "/aggregates/assistant-usage",
+      "queryKeys": [
+        "from",
+        "to"
+      ],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:38.448Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 403,
+      "completedAt": "2026-10-25T07:08:38.513Z"
+    },
+    {
+      "sequence": 24,
+      "actor": "MANAGER",
+      "method": "GET",
+      "path": "/aggregates/inbox-ai-usage",
+      "queryKeys": [
+        "from",
+        "to"
+      ],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:38.515Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-25T07:08:38.584Z"
+    },
+    {
+      "sequence": 25,
+      "actor": "MANAGER",
+      "method": "GET",
+      "path": "/aggregates/inbox-ai-usage",
+      "queryKeys": [
+        "from",
+        "to",
+        "branchId"
+      ],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:38.588Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-25T07:08:38.655Z"
+    },
+    {
+      "sequence": 26,
+      "actor": "RECEPTION",
+      "method": "GET",
+      "path": "/aggregates/inbox-ai-usage",
+      "queryKeys": [
+        "from",
+        "to"
+      ],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:38.659Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 403,
+      "completedAt": "2026-10-25T07:08:38.723Z"
+    },
+    {
+      "sequence": 27,
+      "actor": "MANAGER",
+      "method": "GET",
+      "path": "/aggregates/fleet",
+      "queryKeys": [],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:38.727Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-25T07:08:38.791Z"
+    },
+    {
+      "sequence": 28,
+      "actor": "MANAGER",
+      "method": "GET",
+      "path": "/aggregates/fleet",
+      "queryKeys": [
+        "branchId"
+      ],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:38.795Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-25T07:08:38.860Z"
+    },
+    {
+      "sequence": 29,
+      "actor": "RECEPTION",
+      "method": "GET",
+      "path": "/aggregates/fleet",
+      "queryKeys": [],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:38.864Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 403,
+      "completedAt": "2026-10-25T07:08:38.937Z"
+    },
+    {
+      "sequence": 30,
+      "actor": "ADMIN",
+      "method": "GET",
+      "path": "/aggregates/assistant-usage",
+      "queryKeys": [
+        "from",
+        "to",
+        "branchId"
+      ],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:38.940Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-25T07:08:39.011Z"
+    },
+    {
+      "sequence": 31,
+      "actor": "ADMIN",
+      "method": "GET",
+      "path": "/aggregates/inbox-ai-usage",
+      "queryKeys": [
+        "from",
+        "to",
+        "branchId"
+      ],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:39.015Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-25T07:08:39.085Z"
+    },
+    {
+      "sequence": 32,
+      "actor": "MANAGER",
+      "method": "GET",
+      "path": "/aggregates/members",
+      "queryKeys": [
+        "from",
+        "to",
+        "branchId"
+      ],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:39.090Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 403,
+      "completedAt": "2026-10-25T07:08:39.153Z"
+    },
+    {
+      "sequence": 33,
+      "actor": "MANAGER",
+      "method": "GET",
+      "path": "/aggregates/bookings",
+      "queryKeys": [
+        "from",
+        "to",
+        "branchId"
+      ],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:39.157Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 403,
+      "completedAt": "2026-10-25T07:08:39.221Z"
+    },
+    {
+      "sequence": 34,
+      "actor": "MANAGER",
+      "method": "GET",
+      "path": "/aggregates/assistant-usage",
+      "queryKeys": [
+        "from",
+        "to",
+        "branchId"
+      ],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:39.225Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 403,
+      "completedAt": "2026-10-25T07:08:39.288Z"
+    },
+    {
+      "sequence": 35,
+      "actor": "MANAGER",
+      "method": "GET",
+      "path": "/aggregates/inbox-ai-usage",
+      "queryKeys": [
+        "from",
+        "to",
+        "branchId"
+      ],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:39.291Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 403,
+      "completedAt": "2026-10-25T07:08:39.352Z"
+    },
+    {
+      "sequence": 36,
+      "actor": "MANAGER",
+      "method": "GET",
+      "path": "/aggregates/fleet",
+      "queryKeys": [
+        "branchId"
+      ],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:39.356Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 403,
+      "completedAt": "2026-10-25T07:08:39.422Z"
+    },
+    {
+      "sequence": 37,
+      "actor": "ANONYMOUS",
+      "method": "GET",
+      "path": "/aggregates/members",
+      "queryKeys": [
+        "from",
+        "to"
+      ],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:39.426Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 401,
+      "completedAt": "2026-10-25T07:08:39.481Z"
+    },
+    {
+      "sequence": 38,
+      "actor": "ADMIN",
+      "method": "GET",
+      "path": "/aggregates/members",
+      "queryKeys": [
+        "from",
+        "to",
+        "branchId"
+      ],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:39.485Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 404,
+      "completedAt": "2026-10-25T07:08:39.547Z"
+    },
+    {
+      "sequence": 39,
+      "actor": "ANONYMOUS",
+      "method": "GET",
+      "path": "/aggregates/bookings",
+      "queryKeys": [
+        "from",
+        "to"
+      ],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:39.551Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 401,
+      "completedAt": "2026-10-25T07:08:39.607Z"
+    },
+    {
+      "sequence": 40,
+      "actor": "ADMIN",
+      "method": "GET",
+      "path": "/aggregates/bookings",
+      "queryKeys": [
+        "from",
+        "to",
+        "branchId"
+      ],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:39.611Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 404,
+      "completedAt": "2026-10-25T07:08:39.672Z"
+    },
+    {
+      "sequence": 41,
+      "actor": "ANONYMOUS",
+      "method": "GET",
+      "path": "/aggregates/assistant-usage",
+      "queryKeys": [
+        "from",
+        "to"
+      ],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:39.676Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 401,
+      "completedAt": "2026-10-25T07:08:39.734Z"
+    },
+    {
+      "sequence": 42,
+      "actor": "ADMIN",
+      "method": "GET",
+      "path": "/aggregates/assistant-usage",
+      "queryKeys": [
+        "from",
+        "to",
+        "branchId"
+      ],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:39.737Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 404,
+      "completedAt": "2026-10-25T07:08:39.798Z"
+    },
+    {
+      "sequence": 43,
+      "actor": "ANONYMOUS",
+      "method": "GET",
+      "path": "/aggregates/inbox-ai-usage",
+      "queryKeys": [
+        "from",
+        "to"
+      ],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:39.803Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 401,
+      "completedAt": "2026-10-25T07:08:39.859Z"
+    },
+    {
+      "sequence": 44,
+      "actor": "ADMIN",
+      "method": "GET",
+      "path": "/aggregates/inbox-ai-usage",
+      "queryKeys": [
+        "from",
+        "to",
+        "branchId"
+      ],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:39.862Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 404,
+      "completedAt": "2026-10-25T07:08:39.924Z"
+    },
+    {
+      "sequence": 45,
+      "actor": "ANONYMOUS",
+      "method": "GET",
+      "path": "/aggregates/fleet",
+      "queryKeys": [],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:39.928Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 401,
+      "completedAt": "2026-10-25T07:08:39.986Z"
+    },
+    {
+      "sequence": 46,
+      "actor": "ADMIN",
+      "method": "GET",
+      "path": "/aggregates/fleet",
+      "queryKeys": [
+        "branchId"
+      ],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:39.990Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 404,
+      "completedAt": "2026-10-25T07:08:40.055Z"
+    },
+    {
+      "sequence": 47,
+      "actor": "ADMIN",
+      "method": "GET",
+      "path": "/aggregates/members",
+      "queryKeys": [
+        "from",
+        "to"
+      ],
+      "negative": true,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:40.058Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 400,
+      "completedAt": "2026-10-25T07:08:40.121Z"
+    },
+    {
+      "sequence": 48,
+      "actor": "ADMIN",
+      "method": "GET",
+      "path": "/aggregates/members",
+      "queryKeys": [
+        "from",
+        "to"
+      ],
+      "negative": true,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:40.125Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 400,
+      "completedAt": "2026-10-25T07:08:40.183Z"
+    },
+    {
+      "sequence": 49,
+      "actor": "ADMIN",
+      "method": "GET",
+      "path": "/aggregates/members",
+      "queryKeys": [
+        "from",
+        "to"
+      ],
+      "negative": true,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:40.187Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 400,
+      "completedAt": "2026-10-25T07:08:40.247Z"
+    },
+    {
+      "sequence": 50,
+      "actor": "ADMIN",
+      "method": "GET",
+      "path": "/aggregates/members",
+      "queryKeys": [
+        "from",
+        "to",
+        "branchId",
+        "branchId"
+      ],
+      "negative": true,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:40.250Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 400,
+      "completedAt": "2026-10-25T07:08:40.315Z"
+    },
+    {
+      "sequence": 51,
+      "actor": "ADMIN",
+      "method": "GET",
+      "path": "/aggregates/members",
+      "queryKeys": [
+        "from",
+        "to",
+        "operatorId"
+      ],
+      "negative": true,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:40.319Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 400,
+      "completedAt": "2026-10-25T07:08:40.381Z"
+    },
+    {
+      "sequence": 52,
+      "actor": "ADMIN",
+      "method": "GET",
+      "path": "/aggregates/fleet",
+      "queryKeys": [
+        "from",
+        "to"
+      ],
+      "negative": true,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:40.386Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 400,
+      "completedAt": "2026-10-25T07:08:40.449Z"
+    },
+    {
+      "sequence": 53,
+      "actor": "ADMIN",
+      "method": "GET",
+      "path": "/me",
+      "queryKeys": [],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:40.453Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-25T07:08:40.519Z"
+    },
+    {
+      "sequence": 54,
+      "actor": "ADMIN",
+      "method": "GET",
+      "path": "/me/permissions",
+      "queryKeys": [],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:40.523Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-25T07:08:40.583Z"
+    },
+    {
+      "sequence": 55,
+      "actor": "MANAGER",
+      "method": "GET",
+      "path": "/me",
+      "queryKeys": [],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:40.595Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-25T07:08:40.661Z"
+    },
+    {
+      "sequence": 56,
+      "actor": "MANAGER",
+      "method": "GET",
+      "path": "/me/permissions",
+      "queryKeys": [],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:40.662Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-25T07:08:40.722Z"
+    },
+    {
+      "sequence": 57,
+      "actor": "RECEPTION",
+      "method": "GET",
+      "path": "/me",
+      "queryKeys": [],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:40.728Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-25T07:08:40.791Z"
+    },
+    {
+      "sequence": 58,
+      "actor": "RECEPTION",
+      "method": "GET",
+      "path": "/me/permissions",
+      "queryKeys": [],
+      "negative": false,
+      "cleanup": false,
+      "intentAt": "2026-10-25T07:08:40.795Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-25T07:08:40.853Z"
+    },
+    {
+      "sequence": 59,
+      "actor": "ADMIN",
+      "method": "POST",
+      "path": "/auth/sign-out",
+      "queryKeys": [],
+      "negative": false,
+      "cleanup": true,
+      "intentAt": "2026-10-25T07:08:40.858Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-25T07:08:40.926Z"
+    },
+    {
+      "sequence": 60,
+      "actor": "ADMIN",
+      "method": "GET",
+      "path": "/me",
+      "queryKeys": [],
+      "negative": false,
+      "cleanup": true,
+      "intentAt": "2026-10-25T07:08:40.929Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 401,
+      "completedAt": "2026-10-25T07:08:40.989Z"
+    },
+    {
+      "sequence": 61,
+      "actor": "MANAGER",
+      "method": "POST",
+      "path": "/auth/sign-out",
+      "queryKeys": [],
+      "negative": false,
+      "cleanup": true,
+      "intentAt": "2026-10-25T07:08:40.993Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-25T07:08:41.056Z"
+    },
+    {
+      "sequence": 62,
+      "actor": "MANAGER",
+      "method": "GET",
+      "path": "/me",
+      "queryKeys": [],
+      "negative": false,
+      "cleanup": true,
+      "intentAt": "2026-10-25T07:08:41.059Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 401,
+      "completedAt": "2026-10-25T07:08:41.116Z"
+    },
+    {
+      "sequence": 63,
+      "actor": "RECEPTION",
+      "method": "POST",
+      "path": "/auth/sign-out",
+      "queryKeys": [],
+      "negative": false,
+      "cleanup": true,
+      "intentAt": "2026-10-25T07:08:41.119Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-25T07:08:41.183Z"
+    },
+    {
+      "sequence": 64,
+      "actor": "RECEPTION",
+      "method": "GET",
+      "path": "/me",
+      "queryKeys": [],
+      "negative": false,
+      "cleanup": true,
+      "intentAt": "2026-10-25T07:08:41.185Z",
+      "dispatched": true,
+      "terminal": true,
+      "status": 401,
+      "completedAt": "2026-10-25T07:08:41.246Z"
+    }
+  ],
+  "reads": [
+    {
+      "actor": "ADMIN",
+      "path": "/aggregates/members",
+      "status": 200,
+      "observedAt": "2026-10-25T07:08:37.519Z",
+      "responseSha256": "07dbbd5c87e84e065182812051fc139a1bf1aa92adcc9cb5a35bcaf3d4a44688",
+      "negative": false,
+      "generatedAt": "2026-10-25T07:08:37.724Z",
+      "period": {
+        "from": "2026-10-01",
+        "to": "2026-10-25"
+      },
+      "basis": "visit-date",
+      "selectedParkCount": 3,
+      "availableParkCount": 3,
+      "rowCount": 75,
+      "safeTotals": {
+        "visits": 22,
+        "draftVisits": 22,
+        "activeVisits": 0,
+        "closedVisits": 0,
+        "visitingMembers": 3
+      },
+      "selectedBranchIdsSha256": "486d5022a1e7a6089bd6e0efb440efbf2cce9b4b15940fcedfdbe8b987d064e8",
+      "operatorWideVisible": false
+    },
+    {
+      "actor": "ADMIN",
+      "path": "/aggregates/bookings",
+      "status": 200,
+      "observedAt": "2026-10-25T07:08:37.598Z",
+      "responseSha256": "4e9996d023b9bebbf87e445a0b57f348cde887bb20a7f105c1f7b650bc80ed4d",
+      "negative": false,
+      "generatedAt": "2026-10-25T07:08:37.803Z",
+      "period": {
+        "from": "2026-10-01",
+        "to": "2026-10-25"
+      },
+      "basis": "booking-date",
+      "selectedParkCount": 3,
+      "availableParkCount": 3,
+      "rowCount": 75,
+      "safeTotals": {
+        "bookings": 11,
+        "bookedValueSatang": 1437000,
+        "redeemedBookings": 6
+      },
+      "selectedBranchIdsSha256": "486d5022a1e7a6089bd6e0efb440efbf2cce9b4b15940fcedfdbe8b987d064e8",
+      "operatorWideVisible": false
+    },
+    {
+      "actor": "ADMIN",
+      "path": "/aggregates/assistant-usage",
+      "status": 200,
+      "observedAt": "2026-10-25T07:08:37.710Z",
+      "responseSha256": "a21cad910dd912a1fabeea57c2b5c73804cad3b97f5def8e8c0e38de5a141961",
+      "negative": false,
+      "generatedAt": "2026-10-25T07:08:37.879Z",
+      "period": {
+        "from": "2026-10-01",
+        "to": "2026-10-25"
+      },
+      "basis": "created-at-bangkok",
+      "selectedParkCount": 3,
+      "availableParkCount": 3,
+      "rowCount": 75,
+      "safeTotals": {
+        "count": 57,
+        "inputTokens": 58177,
+        "outputTokens": 12324,
+        "cacheReadTokens": 594456,
+        "totalTokens": 664957,
+        "spendEstimate": null,
+        "reason": "no_rate_configured",
+        "unpricedTokens": 664957
+      },
+      "selectedBranchIdsSha256": "486d5022a1e7a6089bd6e0efb440efbf2cce9b4b15940fcedfdbe8b987d064e8",
+      "operatorWideVisible": true,
+      "currency": "USD",
+      "excludesCacheWrites": true,
+      "priceReason": "no_rate_configured",
+      "metricBuckets": 105
+    },
+    {
+      "actor": "ADMIN",
+      "path": "/aggregates/inbox-ai-usage",
+      "status": 200,
+      "observedAt": "2026-10-25T07:08:37.789Z",
+      "responseSha256": "181bb6345b1d7be0d62dfd321aab77c1c8c10efb3b7dc2cae1352d179646a696",
+      "negative": false,
+      "generatedAt": "2026-10-25T07:08:37.993Z",
+      "period": {
+        "from": "2026-10-01",
+        "to": "2026-10-25"
+      },
+      "basis": "created-at-bangkok",
+      "selectedParkCount": 3,
+      "availableParkCount": 3,
+      "rowCount": 75,
+      "safeTotals": {
+        "count": 61,
+        "inputTokens": 16186,
+        "outputTokens": 10692,
+        "cacheReadTokens": 440123,
+        "totalTokens": 467001,
+        "spendEstimate": null,
+        "reason": "no_rate_configured",
+        "unpricedTokens": 467001
+      },
+      "selectedBranchIdsSha256": "486d5022a1e7a6089bd6e0efb440efbf2cce9b4b15940fcedfdbe8b987d064e8",
+      "operatorWideVisible": true,
+      "currency": "USD",
+      "excludesCacheWrites": true,
+      "priceReason": "no_rate_configured",
+      "metricBuckets": 105
+    },
+    {
+      "actor": "ADMIN",
+      "path": "/aggregates/fleet",
+      "status": 200,
+      "observedAt": "2026-10-25T07:08:37.861Z",
+      "responseSha256": "34c1f4a18632880dd3d8900305bdfb71ad286b0c4e9f8565c9236c39072152ad",
+      "negative": false,
+      "generatedAt": "2026-10-25T07:08:38.071Z",
+      "period": null,
+      "basis": "current-snapshot",
+      "selectedParkCount": 3,
+      "availableParkCount": 3,
+      "rowCount": 0,
+      "safeTotals": {
+        "boxes": 9,
+        "online": 1,
+        "offline": 6,
+        "unclaimed": 2,
+        "disabled": 0
+      },
+      "selectedBranchIdsSha256": "486d5022a1e7a6089bd6e0efb440efbf2cce9b4b15940fcedfdbe8b987d064e8",
+      "operatorWideVisible": false
+    },
+    {
+      "actor": "MANAGER",
+      "path": "/aggregates/members",
+      "status": 200,
+      "observedAt": "2026-10-25T07:08:37.939Z",
+      "responseSha256": "aff04a83458865b8499866204a47f250c83a14c9e603059c270bcfc95e7d8cce",
+      "negative": false,
+      "generatedAt": "2026-10-25T07:08:38.149Z",
+      "period": {
+        "from": "2026-10-01",
+        "to": "2026-10-25"
+      },
+      "basis": "visit-date",
+      "selectedParkCount": 1,
+      "availableParkCount": 1,
+      "rowCount": 25,
+      "safeTotals": {
+        "visits": 22,
+        "draftVisits": 22,
+        "activeVisits": 0,
+        "closedVisits": 0,
+        "visitingMembers": 3
+      },
+      "selectedBranchIdsSha256": "ec57ff7a4b9274f8103c1fa471cf6978be910ff8bddcb230ccfef21d35120278",
+      "operatorWideVisible": false
+    },
+    {
+      "actor": "MANAGER",
+      "path": "/aggregates/members",
+      "status": 200,
+      "observedAt": "2026-10-25T07:08:38.009Z",
+      "responseSha256": "ff695ab4e1b9f7816f0a723a9066749a85a66e3099155f2445623efc6e27201f",
+      "negative": false,
+      "generatedAt": "2026-10-25T07:08:38.220Z",
+      "period": {
+        "from": "2026-10-01",
+        "to": "2026-10-25"
+      },
+      "basis": "visit-date",
+      "selectedParkCount": 1,
+      "availableParkCount": 1,
+      "rowCount": 25,
+      "safeTotals": {
+        "visits": 22,
+        "draftVisits": 22,
+        "activeVisits": 0,
+        "closedVisits": 0,
+        "visitingMembers": 3
+      },
+      "selectedBranchIdsSha256": "ec57ff7a4b9274f8103c1fa471cf6978be910ff8bddcb230ccfef21d35120278",
+      "operatorWideVisible": false
+    },
+    {
+      "actor": "RECEPTION",
+      "path": "/aggregates/members",
+      "status": 403,
+      "observedAt": "2026-10-25T07:08:38.082Z",
+      "responseSha256": "8a55fada242916b56ee6f4166b4ab3ef20b786eb2978e764bfaf5b77457bd14c",
+      "negative": false
+    },
+    {
+      "actor": "MANAGER",
+      "path": "/aggregates/bookings",
+      "status": 200,
+      "observedAt": "2026-10-25T07:08:38.150Z",
+      "responseSha256": "e260519949cb16231ebb2d4697fdca7eed5d8407c7422c739cbc87f36d21dcb6",
+      "negative": false,
+      "generatedAt": "2026-10-25T07:08:38.361Z",
+      "period": {
+        "from": "2026-10-01",
+        "to": "2026-10-25"
+      },
+      "basis": "booking-date",
+      "selectedParkCount": 1,
+      "availableParkCount": 1,
+      "rowCount": 25,
+      "safeTotals": {
+        "bookings": 9,
+        "bookedValueSatang": 1342000,
+        "redeemedBookings": 4
+      },
+      "selectedBranchIdsSha256": "ec57ff7a4b9274f8103c1fa471cf6978be910ff8bddcb230ccfef21d35120278",
+      "operatorWideVisible": false
+    },
+    {
+      "actor": "MANAGER",
+      "path": "/aggregates/bookings",
+      "status": 200,
+      "observedAt": "2026-10-25T07:08:38.227Z",
+      "responseSha256": "3de0b73a057d9c8dfb7cc8e7858c9f8845ca37c258adaeaa9e411e167aca821f",
+      "negative": false,
+      "generatedAt": "2026-10-25T07:08:38.438Z",
+      "period": {
+        "from": "2026-10-01",
+        "to": "2026-10-25"
+      },
+      "basis": "booking-date",
+      "selectedParkCount": 1,
+      "availableParkCount": 1,
+      "rowCount": 25,
+      "safeTotals": {
+        "bookings": 9,
+        "bookedValueSatang": 1342000,
+        "redeemedBookings": 4
+      },
+      "selectedBranchIdsSha256": "ec57ff7a4b9274f8103c1fa471cf6978be910ff8bddcb230ccfef21d35120278",
+      "operatorWideVisible": false
+    },
+    {
+      "actor": "RECEPTION",
+      "path": "/aggregates/bookings",
+      "status": 403,
+      "observedAt": "2026-10-25T07:08:38.301Z",
+      "responseSha256": "8a55fada242916b56ee6f4166b4ab3ef20b786eb2978e764bfaf5b77457bd14c",
+      "negative": false
+    },
+    {
+      "actor": "MANAGER",
+      "path": "/aggregates/assistant-usage",
+      "status": 200,
+      "observedAt": "2026-10-25T07:08:38.375Z",
+      "responseSha256": "e037f566998aff464283157f15504701b246aae89fa252889787272d1bd32f08",
+      "negative": false,
+      "generatedAt": "2026-10-25T07:08:38.584Z",
+      "period": {
+        "from": "2026-10-01",
+        "to": "2026-10-25"
+      },
+      "basis": "created-at-bangkok",
+      "selectedParkCount": 1,
+      "availableParkCount": 1,
+      "rowCount": 25,
+      "safeTotals": {
+        "count": 57,
+        "inputTokens": 58177,
+        "outputTokens": 12324,
+        "cacheReadTokens": 594456,
+        "totalTokens": 664957,
+        "spendEstimate": null,
+        "reason": "no_rate_configured",
+        "unpricedTokens": 664957
+      },
+      "selectedBranchIdsSha256": "ec57ff7a4b9274f8103c1fa471cf6978be910ff8bddcb230ccfef21d35120278",
+      "operatorWideVisible": false,
+      "currency": "USD",
+      "excludesCacheWrites": true,
+      "priceReason": "no_rate_configured",
+      "metricBuckets": 27
+    },
+    {
+      "actor": "MANAGER",
+      "path": "/aggregates/assistant-usage",
+      "status": 200,
+      "observedAt": "2026-10-25T07:08:38.446Z",
+      "responseSha256": "3819e8e00469cc8a94fa4d3a2fa6005ed08707f8f678ee8522477351eb7549c5",
+      "negative": false,
+      "generatedAt": "2026-10-25T07:08:38.656Z",
+      "period": {
+        "from": "2026-10-01",
+        "to": "2026-10-25"
+      },
+      "basis": "created-at-bangkok",
+      "selectedParkCount": 1,
+      "availableParkCount": 1,
+      "rowCount": 25,
+      "safeTotals": {
+        "count": 57,
+        "inputTokens": 58177,
+        "outputTokens": 12324,
+        "cacheReadTokens": 594456,
+        "totalTokens": 664957,
+        "spendEstimate": null,
+        "reason": "no_rate_configured",
+        "unpricedTokens": 664957
+      },
+      "selectedBranchIdsSha256": "ec57ff7a4b9274f8103c1fa471cf6978be910ff8bddcb230ccfef21d35120278",
+      "operatorWideVisible": false,
+      "currency": "USD",
+      "excludesCacheWrites": true,
+      "priceReason": "no_rate_configured",
+      "metricBuckets": 27
+    },
+    {
+      "actor": "RECEPTION",
+      "path": "/aggregates/assistant-usage",
+      "status": 403,
+      "observedAt": "2026-10-25T07:08:38.514Z",
+      "responseSha256": "8a55fada242916b56ee6f4166b4ab3ef20b786eb2978e764bfaf5b77457bd14c",
+      "negative": false
+    },
+    {
+      "actor": "MANAGER",
+      "path": "/aggregates/inbox-ai-usage",
+      "status": 200,
+      "observedAt": "2026-10-25T07:08:38.587Z",
+      "responseSha256": "f00d73ce753cf639c5a4869484eb155da25e07282d78feffede542ccc55e094f",
+      "negative": false,
+      "generatedAt": "2026-10-25T07:08:38.796Z",
+      "period": {
+        "from": "2026-10-01",
+        "to": "2026-10-25"
+      },
+      "basis": "created-at-bangkok",
+      "selectedParkCount": 1,
+      "availableParkCount": 1,
+      "rowCount": 25,
+      "safeTotals": {
+        "count": 59,
+        "inputTokens": 15814,
+        "outputTokens": 10399,
+        "cacheReadTokens": 422401,
+        "totalTokens": 448614,
+        "spendEstimate": null,
+        "reason": "no_rate_configured",
+        "unpricedTokens": 448614
+      },
+      "selectedBranchIdsSha256": "ec57ff7a4b9274f8103c1fa471cf6978be910ff8bddcb230ccfef21d35120278",
+      "operatorWideVisible": false,
+      "currency": "USD",
+      "excludesCacheWrites": true,
+      "priceReason": "no_rate_configured",
+      "metricBuckets": 27
+    },
+    {
+      "actor": "MANAGER",
+      "path": "/aggregates/inbox-ai-usage",
+      "status": 200,
+      "observedAt": "2026-10-25T07:08:38.658Z",
+      "responseSha256": "30ead146edb4efa8f094334798afc9bc4d57cb2a10614d5c78ba49a6aeef4bac",
+      "negative": false,
+      "generatedAt": "2026-10-25T07:08:38.867Z",
+      "period": {
+        "from": "2026-10-01",
+        "to": "2026-10-25"
+      },
+      "basis": "created-at-bangkok",
+      "selectedParkCount": 1,
+      "availableParkCount": 1,
+      "rowCount": 25,
+      "safeTotals": {
+        "count": 59,
+        "inputTokens": 15814,
+        "outputTokens": 10399,
+        "cacheReadTokens": 422401,
+        "totalTokens": 448614,
+        "spendEstimate": null,
+        "reason": "no_rate_configured",
+        "unpricedTokens": 448614
+      },
+      "selectedBranchIdsSha256": "ec57ff7a4b9274f8103c1fa471cf6978be910ff8bddcb230ccfef21d35120278",
+      "operatorWideVisible": false,
+      "currency": "USD",
+      "excludesCacheWrites": true,
+      "priceReason": "no_rate_configured",
+      "metricBuckets": 27
+    },
+    {
+      "actor": "RECEPTION",
+      "path": "/aggregates/inbox-ai-usage",
+      "status": 403,
+      "observedAt": "2026-10-25T07:08:38.726Z",
+      "responseSha256": "8a55fada242916b56ee6f4166b4ab3ef20b786eb2978e764bfaf5b77457bd14c",
+      "negative": false
+    },
+    {
+      "actor": "MANAGER",
+      "path": "/aggregates/fleet",
+      "status": 200,
+      "observedAt": "2026-10-25T07:08:38.794Z",
+      "responseSha256": "427c8ecd58a7c5d2982f63af2e489d5ee04336b85e059df5f6fbeafc4122391a",
+      "negative": false,
+      "generatedAt": "2026-10-25T07:08:39.006Z",
+      "period": null,
+      "basis": "current-snapshot",
+      "selectedParkCount": 1,
+      "availableParkCount": 1,
+      "rowCount": 0,
+      "safeTotals": {
+        "boxes": 7,
+        "online": 1,
+        "offline": 5,
+        "unclaimed": 1,
+        "disabled": 0
+      },
+      "selectedBranchIdsSha256": "ec57ff7a4b9274f8103c1fa471cf6978be910ff8bddcb230ccfef21d35120278",
+      "operatorWideVisible": false
+    },
+    {
+      "actor": "MANAGER",
+      "path": "/aggregates/fleet",
+      "status": 200,
+      "observedAt": "2026-10-25T07:08:38.863Z",
+      "responseSha256": "065d4e340f4128043ef54f16d0c9c45cacefa15dde10d2729fe5b353f3a8b952",
+      "negative": false,
+      "generatedAt": "2026-10-25T07:08:39.075Z",
+      "period": null,
+      "basis": "current-snapshot",
+      "selectedParkCount": 1,
+      "availableParkCount": 1,
+      "rowCount": 0,
+      "safeTotals": {
+        "boxes": 7,
+        "online": 1,
+        "offline": 5,
+        "unclaimed": 1,
+        "disabled": 0
+      },
+      "selectedBranchIdsSha256": "ec57ff7a4b9274f8103c1fa471cf6978be910ff8bddcb230ccfef21d35120278",
+      "operatorWideVisible": false
+    },
+    {
+      "actor": "RECEPTION",
+      "path": "/aggregates/fleet",
+      "status": 403,
+      "observedAt": "2026-10-25T07:08:38.940Z",
+      "responseSha256": "8a55fada242916b56ee6f4166b4ab3ef20b786eb2978e764bfaf5b77457bd14c",
+      "negative": false
+    },
+    {
+      "actor": "ADMIN",
+      "path": "/aggregates/assistant-usage",
+      "status": 200,
+      "observedAt": "2026-10-25T07:08:39.013Z",
+      "responseSha256": "dae2d072b800c438001b97a6d2ba14a122160741dbb93eaccd02a5d65198a47f",
+      "negative": false,
+      "generatedAt": "2026-10-25T07:08:39.220Z",
+      "period": {
+        "from": "2026-10-01",
+        "to": "2026-10-25"
+      },
+      "basis": "created-at-bangkok",
+      "selectedParkCount": 1,
+      "availableParkCount": 3,
+      "rowCount": 25,
+      "safeTotals": {
+        "count": 57,
+        "inputTokens": 58177,
+        "outputTokens": 12324,
+        "cacheReadTokens": 594456,
+        "totalTokens": 664957,
+        "spendEstimate": null,
+        "reason": "no_rate_configured",
+        "unpricedTokens": 664957
+      },
+      "selectedBranchIdsSha256": "ec57ff7a4b9274f8103c1fa471cf6978be910ff8bddcb230ccfef21d35120278",
+      "operatorWideVisible": false,
+      "currency": "USD",
+      "excludesCacheWrites": true,
+      "priceReason": "no_rate_configured",
+      "metricBuckets": 27
+    },
+    {
+      "actor": "ADMIN",
+      "path": "/aggregates/inbox-ai-usage",
+      "status": 200,
+      "observedAt": "2026-10-25T07:08:39.089Z",
+      "responseSha256": "3fab09e8fd379f0a59a5845824f1a9b39ea5ec861115063a403ffab3f646e1d7",
+      "negative": false,
+      "generatedAt": "2026-10-25T07:08:39.295Z",
+      "period": {
+        "from": "2026-10-01",
+        "to": "2026-10-25"
+      },
+      "basis": "created-at-bangkok",
+      "selectedParkCount": 1,
+      "availableParkCount": 3,
+      "rowCount": 25,
+      "safeTotals": {
+        "count": 59,
+        "inputTokens": 15814,
+        "outputTokens": 10399,
+        "cacheReadTokens": 422401,
+        "totalTokens": 448614,
+        "spendEstimate": null,
+        "reason": "no_rate_configured",
+        "unpricedTokens": 448614
+      },
+      "selectedBranchIdsSha256": "ec57ff7a4b9274f8103c1fa471cf6978be910ff8bddcb230ccfef21d35120278",
+      "operatorWideVisible": false,
+      "currency": "USD",
+      "excludesCacheWrites": true,
+      "priceReason": "no_rate_configured",
+      "metricBuckets": 27
+    },
+    {
+      "actor": "MANAGER",
+      "path": "/aggregates/members",
+      "status": 403,
+      "observedAt": "2026-10-25T07:08:39.157Z",
+      "responseSha256": "8a55fada242916b56ee6f4166b4ab3ef20b786eb2978e764bfaf5b77457bd14c",
+      "negative": false
+    },
+    {
+      "actor": "MANAGER",
+      "path": "/aggregates/bookings",
+      "status": 403,
+      "observedAt": "2026-10-25T07:08:39.224Z",
+      "responseSha256": "8a55fada242916b56ee6f4166b4ab3ef20b786eb2978e764bfaf5b77457bd14c",
+      "negative": false
+    },
+    {
+      "actor": "MANAGER",
+      "path": "/aggregates/assistant-usage",
+      "status": 403,
+      "observedAt": "2026-10-25T07:08:39.291Z",
+      "responseSha256": "8a55fada242916b56ee6f4166b4ab3ef20b786eb2978e764bfaf5b77457bd14c",
+      "negative": false
+    },
+    {
+      "actor": "MANAGER",
+      "path": "/aggregates/inbox-ai-usage",
+      "status": 403,
+      "observedAt": "2026-10-25T07:08:39.355Z",
+      "responseSha256": "8a55fada242916b56ee6f4166b4ab3ef20b786eb2978e764bfaf5b77457bd14c",
+      "negative": false
+    },
+    {
+      "actor": "MANAGER",
+      "path": "/aggregates/fleet",
+      "status": 403,
+      "observedAt": "2026-10-25T07:08:39.425Z",
+      "responseSha256": "8a55fada242916b56ee6f4166b4ab3ef20b786eb2978e764bfaf5b77457bd14c",
+      "negative": false
+    },
+    {
+      "actor": "ANONYMOUS",
+      "path": "/aggregates/members",
+      "status": 401,
+      "observedAt": "2026-10-25T07:08:39.484Z",
+      "responseSha256": "5acc541da39e2d57f06d9b6c6a44a8adf7c54de745627e61e2892f46c87024f6",
+      "negative": false
+    },
+    {
+      "actor": "ADMIN",
+      "path": "/aggregates/members",
+      "status": 404,
+      "observedAt": "2026-10-25T07:08:39.550Z",
+      "responseSha256": "abfc3040b7838eb423cc653003acb09c845b7c50a25cc12c032643e36ff17794",
+      "negative": false
+    },
+    {
+      "actor": "ANONYMOUS",
+      "path": "/aggregates/bookings",
+      "status": 401,
+      "observedAt": "2026-10-25T07:08:39.610Z",
+      "responseSha256": "5acc541da39e2d57f06d9b6c6a44a8adf7c54de745627e61e2892f46c87024f6",
+      "negative": false
+    },
+    {
+      "actor": "ADMIN",
+      "path": "/aggregates/bookings",
+      "status": 404,
+      "observedAt": "2026-10-25T07:08:39.675Z",
+      "responseSha256": "abfc3040b7838eb423cc653003acb09c845b7c50a25cc12c032643e36ff17794",
+      "negative": false
+    },
+    {
+      "actor": "ANONYMOUS",
+      "path": "/aggregates/assistant-usage",
+      "status": 401,
+      "observedAt": "2026-10-25T07:08:39.736Z",
+      "responseSha256": "5acc541da39e2d57f06d9b6c6a44a8adf7c54de745627e61e2892f46c87024f6",
+      "negative": false
+    },
+    {
+      "actor": "ADMIN",
+      "path": "/aggregates/assistant-usage",
+      "status": 404,
+      "observedAt": "2026-10-25T07:08:39.801Z",
+      "responseSha256": "abfc3040b7838eb423cc653003acb09c845b7c50a25cc12c032643e36ff17794",
+      "negative": false
+    },
+    {
+      "actor": "ANONYMOUS",
+      "path": "/aggregates/inbox-ai-usage",
+      "status": 401,
+      "observedAt": "2026-10-25T07:08:39.862Z",
+      "responseSha256": "5acc541da39e2d57f06d9b6c6a44a8adf7c54de745627e61e2892f46c87024f6",
+      "negative": false
+    },
+    {
+      "actor": "ADMIN",
+      "path": "/aggregates/inbox-ai-usage",
+      "status": 404,
+      "observedAt": "2026-10-25T07:08:39.927Z",
+      "responseSha256": "abfc3040b7838eb423cc653003acb09c845b7c50a25cc12c032643e36ff17794",
+      "negative": false
+    },
+    {
+      "actor": "ANONYMOUS",
+      "path": "/aggregates/fleet",
+      "status": 401,
+      "observedAt": "2026-10-25T07:08:39.989Z",
+      "responseSha256": "5acc541da39e2d57f06d9b6c6a44a8adf7c54de745627e61e2892f46c87024f6",
+      "negative": false
+    },
+    {
+      "actor": "ADMIN",
+      "path": "/aggregates/fleet",
+      "status": 404,
+      "observedAt": "2026-10-25T07:08:40.057Z",
+      "responseSha256": "abfc3040b7838eb423cc653003acb09c845b7c50a25cc12c032643e36ff17794",
+      "negative": false
+    },
+    {
+      "actor": "ADMIN",
+      "path": "/aggregates/members",
+      "status": 400,
+      "observedAt": "2026-10-25T07:08:40.124Z",
+      "responseSha256": "015dddd4bdc1e26e0dc76209385ad53daf68956bcb12562b8a45798b7714e219",
+      "negative": true
+    },
+    {
+      "actor": "ADMIN",
+      "path": "/aggregates/members",
+      "status": 400,
+      "observedAt": "2026-10-25T07:08:40.186Z",
+      "responseSha256": "6253e169892cc5fd61623bba44ee29bd28fa89136e02ecf1cc7760f5d30fb43e",
+      "negative": true
+    },
+    {
+      "actor": "ADMIN",
+      "path": "/aggregates/members",
+      "status": 400,
+      "observedAt": "2026-10-25T07:08:40.249Z",
+      "responseSha256": "6253e169892cc5fd61623bba44ee29bd28fa89136e02ecf1cc7760f5d30fb43e",
+      "negative": true
+    },
+    {
+      "actor": "ADMIN",
+      "path": "/aggregates/members",
+      "status": 400,
+      "observedAt": "2026-10-25T07:08:40.318Z",
+      "responseSha256": "f8e58a9039dce681a5f0bee67f0b765d2c718a1f3998c8feebbf31e85ff4563c",
+      "negative": true
+    },
+    {
+      "actor": "ADMIN",
+      "path": "/aggregates/members",
+      "status": 400,
+      "observedAt": "2026-10-25T07:08:40.384Z",
+      "responseSha256": "c5a6597e302e7698b9d8fef694fa1b0a3817f9d110da18f3ae6d23642d280ea9",
+      "negative": true
+    },
+    {
+      "actor": "ADMIN",
+      "path": "/aggregates/fleet",
+      "status": 400,
+      "observedAt": "2026-10-25T07:08:40.452Z",
+      "responseSha256": "637091bbe9d3cc898c0e418178768fa111b85afa3543bb834c20603fd2fabac5",
+      "negative": true
+    }
+  ],
+  "checks": [
+    {
+      "name": "ADMIN_GENUINE_OPERATOR_REACH",
+      "passed": true,
+      "at": "2026-10-25T07:08:34.541Z"
+    },
+    {
+      "name": "MANAGER_GENUINE_BRANCH_REACH",
+      "passed": true,
+      "at": "2026-10-25T07:08:34.541Z"
+    },
+    {
+      "name": "RECEPTION_HAS_NO_OVERVIEW_REACH",
+      "passed": true,
+      "at": "2026-10-25T07:08:34.542Z"
+    },
+    {
+      "name": "MANAGER_HAS_LIVE_OWNED_REACH",
+      "passed": true,
+      "at": "2026-10-25T07:08:37.863Z"
+    },
+    {
+      "name": "OWNED_UNREACHABLE_PARK",
+      "passed": true,
+      "available": true,
+      "outcome": "passed",
+      "at": "2026-10-25T07:08:39.426Z"
+    },
+    {
+      "name": "AUTHORITY_UNCHANGED_ADMIN",
+      "passed": true,
+      "at": "2026-10-25T07:08:40.594Z"
+    },
+    {
+      "name": "AUTHORITY_UNCHANGED_MANAGER",
+      "passed": true,
+      "at": "2026-10-25T07:08:40.728Z"
+    },
+    {
+      "name": "AUTHORITY_UNCHANGED_RECEPTION",
+      "passed": true,
+      "at": "2026-10-25T07:08:40.858Z"
+    }
+  ],
+  "authority": [
+    {
+      "actor": "ADMIN",
+      "beforeSha256": "69a6d62453aeba57d16ebd46f34eed046928d23859b8d6853a663983c5688209",
+      "afterSha256": "69a6d62453aeba57d16ebd46f34eed046928d23859b8d6853a663983c5688209",
+      "reachKind": "operator"
+    },
+    {
+      "actor": "MANAGER",
+      "beforeSha256": "d10bcea163cdda74874edb59c49538a393e095388c9e1640fa4fd2ff79058699",
+      "afterSha256": "d10bcea163cdda74874edb59c49538a393e095388c9e1640fa4fd2ff79058699",
+      "reachKind": "branches"
+    },
+    {
+      "actor": "RECEPTION",
+      "beforeSha256": "b2896575325e8992402facffb9f6418fdfa0a5e5ea9055a9017bb7803f213fd1",
+      "afterSha256": "b2896575325e8992402facffb9f6418fdfa0a5e5ea9055a9017bb7803f213fd1",
+      "reachKind": "branches"
+    }
+  ],
+  "authCleanup": [
+    {
+      "actor": "ADMIN",
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    },
+    {
+      "actor": "MANAGER",
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    },
+    {
+      "actor": "RECEPTION",
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    }
+  ],
+  "screenshots": [
+    {
+      "filename": "SCRUM-636-01-aggregate-api-test-run.png",
+      "sha256": "dc71b1df6025f0048a6cdf69bcbcd6361d85d4c4bdfd4168ad8212e365206cd4",
+      "captureStartedAt": "2026-10-25T07:08:46.756Z",
+      "capturedAt": "2026-10-25T07:08:47.234Z",
+      "pageRequests": 0,
+      "pageErrors": 0,
+      "consoleErrors": 0
+    }
+  ],
+  "pending": 0,
+  "unresolvedAuth": 0,
+  "journalHealthy": true,
+  "errorCode": null,
+  "limitations": [
+    "API test-run card; no native Overview UI claim (SCRUM-637).",
+    "No payment/detail comparator, private images, OTO App, handoff, station or business write.",
+    "Real populated formulas, foreign-operator records and union-of-all-parks fixtures are locally covered; staging uses unchanged existing demos.",
+    "Unreachable-park staging proof is conditional on a genuine existing outside-reach park; no grants are altered."
+  ]
+}

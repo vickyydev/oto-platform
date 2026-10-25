@@ -1,3 +1,11 @@
+## Actual staging proof, 25 October 2026
+
+Source be94f6c847b2a276167992ce6bcf3c6ec8988f71 passed all six CI40170166041 jobs and automatically became live on API dep-dbeqjuijnfac73e2ik30 at07:07:46.891936Z. The actual proof completed07:08:50.218Z with43 aggregate reads:17 successes and26 expected refusals. ADMIN reached3 live parks; MANAGER retained only its reachable park(s), including an actual owned-unreachable403, and RECEPTION/anonymous were refused. Invalid dates/ranges/duplicate or unknown filters are refused. All three sessions close200/current-user401 and authority hashes match; no business writes, fixtures, pending or unknown operations.
+
+[SCRUM-636-01-aggregate-api-test-run.png](SCRUM-636-01-aggregate-api-test-run.png) was captured07:08:46.756Z after the exact deployment, visually inspected, and bound to [staging-proof.json](staging-proof.json). This is a labelled actual API test-run card: Overview UI follows in637. The period is2026-10-01 through2026-10-25, current fleet separately as-of its generated time. AI cost is explicitly unavailable in USD, excluding cache writes, and every retained scoped token remains unpriced. Local populated/foreign-operator formulas retain their regression receipts; no staging payment/detail comparator or created cross-tenant fixture is claimed.
+
+The exact reviewed helper and offline test sources are byte-identical .txt archives for review; their original PC paths and hashes are bound in the plan/receipts. They are not portable test-runner entrypoints. Earlier failed QA/local runs remain historical and unchanged below. Jira remains Testing until this committed screenshot is attached/named and Deployed is read back.
+
 ## Q18 local release, 25 October 2026
 
 All368 API files/5510 cases,171 focused cases,16 compilers/five builds, client contracts/10 cases and lint pass on the exact source in [local-release.json](local-release.json). Raw RED/GREEN, compiler and full-shard receipts/logs are in q18-local/. [q18-local/progress.json](q18-local/progress.json) proves the narrow source delta and three line-ending-only differences against original archives. All earlier failed runs and their original source/date remain retained.

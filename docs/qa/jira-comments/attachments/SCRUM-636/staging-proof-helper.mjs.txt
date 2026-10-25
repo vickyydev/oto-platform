@@ -1,0 +1,393 @@
+// HELD. Import is inert; only a reviewed concrete plan and explicit --execute can start a proof.
+import fs from 'node:fs';
+import path from 'node:path';
+import { createHash, randomUUID } from 'node:crypto';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+
+const ROOT = 'C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos';
+const WORKTREE = 'C:/w/admin-aggregates';
+export const ORIGIN = 'https://oto-api-staging.onrender.com';
+export const PATHS = Object.freeze(['/aggregates/members', '/aggregates/bookings', '/aggregates/assistant-usage', '/aggregates/inbox-ai-usage', '/aggregates/fleet']);
+const EXPORTS = ['MembersAggregateSchema', 'BookingsAggregateSchema', 'AssistantUsageAggregateSchema', 'InboxAiUsageAggregateSchema', 'FleetAggregateSchema'];
+const ACTORS = ['ADMIN', 'MANAGER', 'RECEPTION'];
+export const DEMOS = Object.freeze({
+  operatorId: '01a0bbdc-8c41-7204-bd58-2b92bd7dda75',
+  ADMIN: '01a0bbdc-8c64-7283-aa3b-2af7e79c525d',
+  MANAGER: '01a0c9ae-5377-7b34-a9ab-22bf8086f5f7',
+  RECEPTION: '01a0bbdc-8c87-74ca-81c1-61489e34f834',
+});
+const ROUTE = 'apps/api/src/routes/aggregates.ts';
+const RELEASE = 'docs/qa/jira-comments/attachments/SCRUM-636/local-release.json';
+const PNG = 'SCRUM-636-01-aggregate-api-test-run.png';
+const MAX_BODY = 2_000_000;
+const stamp = () => new Date().toISOString();
+const hash = value => createHash('sha256').update(value).digest('hex');
+const canonical = value => JSON.stringify(value, (_key, item) => item && typeof item === 'object' && !Array.isArray(item)
+  ? Object.fromEntries(Object.entries(item).sort(([a], [b]) => a.localeCompare(b))) : item);
+const digest = value => hash(canonical(value));
+const same = (left, right) => digest(left) === digest(right);
+const uuid = value => typeof value === 'string' && /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(value);
+const hex = value => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
+const iso = value => typeof value === 'string' && Number.isFinite(Date.parse(value));
+const exact = (value, keys) => value && typeof value === 'object' && !Array.isArray(value) && same(Object.keys(value).sort(), [...keys].sort());
+class ProofError extends Error { constructor(code) { super(code); this.code = code; } }
+const need = (condition, code) => { if (!condition) throw new ProofError(code); };
+const codeOf = error => error instanceof ProofError ? error.code : 'UNCLASSIFIED_PROOF_ERROR';
+const realDay = value => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
+  && Number.isFinite(Date.parse(`${value}T00:00:00.000Z`)) && new Date(`${value}T00:00:00.000Z`).toISOString().slice(0, 10) === value;
+
+/** Pure and deliberately refuses pending planner choices. Schemas are imported from released source, never copied here. */
+export function validatePlan(plan) {
+  need(exact(plan, ['approved', 'ticket', 'purpose', 'sourceSha', 'sourceManifestSha256', 'ciRunId', 'apiDeployment',
+    'helperSha256', 'routeModuleSha256', 'localReleaseSha256', 'runtimeBindingsSha256', 'actors', 'period', 'rulings', 'outputDirectory']), 'EXACT_REVIEWED_PLAN_REQUIRED');
+  need(plan.approved === true && plan.ticket === 'SCRUM-636' && plan.purpose === 'read-only-aggregate-api-proof', 'REVIEWED_636_PLAN_REQUIRED');
+  need(/^[a-f0-9]{40}$/.test(plan.sourceSha ?? '') && plan.sourceSha !== '0'.repeat(40) && /^\d+$/.test(String(plan.ciRunId))
+    && [plan.sourceManifestSha256, plan.helperSha256, plan.routeModuleSha256, plan.localReleaseSha256, plan.runtimeBindingsSha256].every(hex), 'FUTURE_FEATURE_BINDINGS_REQUIRED');
+  const dep = plan.apiDeployment;
+  need(exact(dep, ['name', 'serviceId', 'id', 'finishedAt']) && dep.name === 'oto-api-staging' && /^srv-[A-Za-z0-9]+$/.test(dep.serviceId ?? '')
+    && /^dep-[A-Za-z0-9]+$/.test(dep.id ?? '') && iso(dep.finishedAt), 'EXACT_LIVE_API_DEPLOYMENT_REQUIRED');
+  need(exact(plan.actors, ACTORS) && ACTORS.every(actor => exact(plan.actors[actor], ['accountId', 'operatorId'])
+    && plan.actors[actor].accountId === DEMOS[actor] && plan.actors[actor].operatorId === DEMOS.operatorId), 'THREE_EXACT_EXISTING_DEMOS_REQUIRED');
+  need(exact(plan.period, ['from', 'to']) && realDay(plan.period.from) && realDay(plan.period.to), 'EXPLICIT_REAL_DATES_REQUIRED');
+  const days = (Date.parse(plan.period.to) - Date.parse(plan.period.from)) / 86_400_000 + 1;
+  need(days >= 1 && days <= 31, 'BOUNDED_ORDERED_PERIOD_REQUIRED');
+  need(exact(plan.rulings, ['Q17', 'Q18']) && ['Q17', 'Q18'].every(key => exact(plan.rulings[key], ['resolved', 'reference'])
+    && plan.rulings[key].resolved === true && typeof plan.rulings[key].reference === 'string'
+    && /^[A-Za-z0-9 .:/#_-]{8,240}$/.test(plan.rulings[key].reference)), 'Q17_Q18_APPROVED_CONTRACT_REQUIRED');
+  need(/^C:\/w\/admin636-staging-[A-Za-z0-9_-]{1,60}$/.test(plan.outputDirectory ?? ''), 'EXCLUSIVE_EXTERNAL_ATTEMPT_REQUIRED');
+  return plan;
+}
+
+/** Pure outbound grammar. Invalid query values are allowed only in the explicitly armed negative-query cases. */
+export function validateRequest({ method, pathname, query = '', body, negative = false }) {
+  if (method === 'POST') return !query && (pathname === '/auth/sign-in'
+    ? exact(body, ['phone', 'password']) && typeof body.phone === 'string' && typeof body.password === 'string' && body.phone.length > 0 && body.password.length > 0
+    : pathname === '/auth/sign-out' && body === undefined);
+  if (method !== 'GET' || body !== undefined) return false;
+  if (['/me', '/me/permissions'].includes(pathname)) return !query;
+  if (!PATHS.includes(pathname) || query.length > 400 || /[\r\n#]/.test(query)) return false;
+  const params = new URLSearchParams(query);
+  if (negative) return [...params.keys()].every(key => ['from', 'to', 'branchId', 'operatorId'].includes(key)) && params.size <= 5;
+  const keys = [...params.keys()];
+  if (new Set(keys).size !== keys.length || keys.some(key => !['from', 'to', 'branchId'].includes(key))) return false;
+  if (params.has('branchId') && !uuid(params.get('branchId'))) return false;
+  if (pathname === '/aggregates/fleet') return keys.every(key => key === 'branchId');
+  if (!realDay(params.get('from')) || !realDay(params.get('to'))) return false;
+  const days = (Date.parse(params.get('to')) - Date.parse(params.get('from'))) / 86_400_000 + 1;
+  return days >= 1 && days <= 31;
+}
+
+export function overviewReach(permissions, operatorId) {
+  need(Array.isArray(permissions), 'FRESH_PERMISSIONS_REQUIRED');
+  const grants = permissions.filter(row => row?.permission === 'console:overview:read');
+  return grants.some(row => row.scopeType === 'operator' && (row.scopeId === null || row.scopeId === operatorId))
+    ? { kind: 'operator', branchIds: [] }
+    : { kind: 'branches', branchIds: [...new Set(grants.filter(row => row.scopeType === 'branch' && uuid(row.scopeId)).map(row => row.scopeId))].sort() };
+}
+
+/** SCRUM-636 has no configured rates. A future schema-valid price is not proof of this release's contract. */
+export function validateCurrentAiSpend(body) {
+  need(body?.currency === 'USD' && body.excludesCacheWrites === true, 'CURRENT_RELEASE_USD_SCOPE_REQUIRED');
+  need(Array.isArray(body.parks) && body.parks.every(park => Array.isArray(park.rows))
+    && (body.operatorWide === null || Array.isArray(body.operatorWide?.rows)), 'CURRENT_RELEASE_METRIC_BUCKETS_REQUIRED');
+  const metrics = [body.totals, ...body.parks.flatMap(park => [park.totals, ...park.rows]),
+    ...(body.operatorWide === null ? [] : [body.operatorWide.totals, ...body.operatorWide.rows])];
+  for (const metric of metrics) {
+    need(metric && metric.spendEstimate === null && metric.reason === 'no_rate_configured', 'CURRENT_RELEASE_UNAVAILABLE_SPEND_REQUIRED');
+    const tokens = [metric.inputTokens, metric.outputTokens, metric.cacheReadTokens];
+    need(tokens.every(value => Number.isSafeInteger(value) && value >= 0), 'CURRENT_RELEASE_NATIVE_TOKENS_REQUIRED');
+    const total = tokens.reduce((sum, value) => sum + value, 0);
+    need(Number.isSafeInteger(total) && metric.totalTokens === total && metric.unpricedTokens === total, 'CURRENT_RELEASE_UNPRICED_REMAINDER_REQUIRED');
+  }
+  return { currency: body.currency, excludesCacheWrites: body.excludesCacheWrites, priceReason: 'no_rate_configured', metricBuckets: metrics.length };
+}
+
+/** Bounded installed metadata/loader entries, not a claim to hash all node_modules. No application import or execution. */
+export function runtimeBindingsOf(root = WORKTREE, io = fs, nodeVersion = process.version) {
+  const files = ['node_modules/.pnpm/lock.yaml', 'node_modules/.modules.yaml',
+    'apps/api/node_modules/tsx/package.json', 'apps/api/node_modules/tsx/dist/cli.mjs',
+    'apps/api/node_modules/tsx/dist/loader.mjs', 'apps/api/node_modules/tsx/dist/preflight.cjs',
+    'apps/api/node_modules/zod/package.json', 'apps/api/node_modules/zod/index.cjs', 'apps/api/node_modules/zod/index.js'];
+  return { nodeVersion, files: files.map(filename => ({ path: filename, sha256: hash(io.readFileSync(path.join(root, filename))) })) };
+}
+export function runtimeBindingsSha256Of(root = WORKTREE, io = fs, nodeVersion = process.version) {
+  return digest(runtimeBindingsOf(root, io, nodeVersion));
+}
+
+async function boundedJson(response) {
+  need(response.body && Number(response.headers.get('content-length') ?? 0) <= MAX_BODY, 'RESPONSE_BODY_LIMIT');
+  const reader = response.body.getReader(), chunks = []; let bytes = 0;
+  try {
+    for (;;) { const value = await reader.read(); if (value.done) break; bytes += value.value.byteLength;
+      need(bytes <= MAX_BODY, 'RESPONSE_BODY_LIMIT'); chunks.push(Buffer.from(value.value)); }
+    try { return JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch { throw new ProofError('RESPONSE_JSON_REQUIRED'); }
+  } finally { await reader.cancel().catch(() => {}); reader.releaseLock(); }
+}
+
+export async function executeReviewedPlan(input, { explicitExecute = false } = {}) {
+  need(explicitExecute === true, 'EXPLICIT_EXECUTE_REQUIRED');
+  const plan = validatePlan(input), helperSha256 = hash(fs.readFileSync(fileURLToPath(import.meta.url)));
+  need(helperSha256 === plan.helperSha256 && !fs.existsSync(plan.outputDirectory), 'FROZEN_HELPER_FRESH_ATTEMPT_REQUIRED');
+  const git = args => { const r = spawnSync('git', args, { cwd: WORKTREE, encoding: 'utf8', timeout: 30_000, maxBuffer: 3_000_000, stdio: ['ignore', 'pipe', 'pipe'] });
+    need(r.status === 0 && !r.signal, 'SOURCE_READ_FAILED'); return r.stdout; };
+  function verifyLocalSource() {
+    // This predicate and row serialization are identical to admin636-integration.mjs sources().
+    const selected = p => !/(?:^|\/)(?:node_modules|dist|\.git|\.env)(?:\/|\.|$)/.test(p) && !/^(?:docs|imports|services)\//.test(p)
+      && (/^(?:apps|packages|scripts)\//.test(p) || /^\.github\/workflows\//.test(p)
+        || /^(?:package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|turbo\.json|eslint\.config\.mjs|tsconfig[^/]*\.json|render\.yaml|\.npmrc|\.pnpmfile\.cjs)$/.test(p));
+    const paths = git(['ls-files', '--cached', '--others', '--exclude-standard', '-z']).split('\0').filter(Boolean).filter(selected).sort();
+    const tree = git(['ls-tree', '-r', '-z', '--full-tree', plan.sourceSha]).split('\0').filter(Boolean).map(line => {
+      const match = /^(\d{6}) (blob|commit) ([a-f0-9]{40})\t(.+)$/.exec(line);
+      need(match, 'FEATURE_TREE_ENTRY_REQUIRED'); return { mode: match[1], type: match[2], blobId: match[3], path: match[4] };
+    }).filter(row => selected(row.path)).sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0);
+    need(same(paths, tree.map(row => row.path)), 'CURRENT_FEATURE_SOURCE_PATHS_DIFFER');
+    const rows = paths.map((filename, index) => {
+      need(/^[A-Za-z0-9_./-]+$/.test(filename) && !filename.split('/').includes('..'), 'SOURCE_PATH_REQUIRED');
+      need(tree[index].type === 'blob' && ['100644', '100755'].includes(tree[index].mode)
+        && fs.lstatSync(path.join(WORKTREE, filename)).isFile(), 'REGULAR_SOURCE_FILE_REQUIRED');
+      const bytes = Buffer.from(fs.readFileSync(path.join(WORKTREE, filename)));
+      const blobId = createHash('sha1').update(Buffer.from(`blob ${bytes.length}\0`)).update(bytes).digest('hex');
+      need(blobId === tree[index].blobId, 'CURRENT_FEATURE_SOURCE_BLOB_DIFFERS');
+      return { path: filename, sha256: hash(bytes) };
+    });
+    const sourceManifestSha256 = hash(JSON.stringify(rows));
+    need(sourceManifestSha256 === plan.sourceManifestSha256, 'CURRENT_FULL_SOURCE_MANIFEST_DIFFERS');
+    // Finite pathspecs avoid expanding thousands of paths into a Windows argv.
+    const changed = git(['diff', '--name-only', '-z', '--no-ext-diff', '--no-textconv', plan.sourceSha, '--',
+      'apps/', 'packages/', 'scripts/', '.github/workflows/', 'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml',
+      'turbo.json', 'eslint.config.mjs', ':(glob)tsconfig*.json', 'render.yaml', '.npmrc', '.pnpmfile.cjs'])
+      .split('\0').filter(Boolean).filter(selected);
+    need(changed.length === 0, 'CURRENT_FEATURE_RUNTIME_DIFFERS');
+    const normalize = value => value.toString().replaceAll('\r\n', '\n').trim();
+    need(normalize(fs.readFileSync(path.join(WORKTREE, 'pnpm-lock.yaml')))
+      === normalize(fs.readFileSync(path.join(WORKTREE, 'node_modules/.pnpm/lock.yaml'))), 'INSTALLED_PNPM_LOCK_DIFFERS');
+    const runtimeBindingsSha256 = runtimeBindingsSha256Of(WORKTREE, fs);
+    need(runtimeBindingsSha256 === plan.runtimeBindingsSha256, 'APPROVED_SCHEMA_RUNTIME_DIFFERS');
+    return { sourceFiles: rows.length, sourceManifestSha256, featureTreeSha256: digest(tree), runtimeBindingsSha256,
+      dependencyInputs: rows.filter(row => /(?:^|\/)(?:package\.json|package-lock\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml)$/.test(row.path)).length };
+  }
+  const routeBytes = fs.readFileSync(path.join(WORKTREE, ROUTE));
+  need(hash(routeBytes) === plan.routeModuleSha256 && hash(git(['show', `${plan.sourceSha}:${ROUTE}`])) === plan.routeModuleSha256, 'RELEASED_ZOD_MODULE_REQUIRED');
+  const releaseBytes = fs.readFileSync(path.join(WORKTREE, RELEASE));
+  need(hash(releaseBytes) === plan.localReleaseSha256 && hash(git(['show', `${plan.sourceSha}:${RELEASE}`])) === plan.localReleaseSha256, 'COMMITTED_LOCAL_RELEASE_REQUIRED');
+  const local = JSON.parse(releaseBytes);
+  need(local.ticket === 'SCRUM-636' && local.localReleaseGreen === true && local.sourceManifestSha256 === plan.sourceManifestSha256, 'GREEN_LOCAL_SOURCE_MANIFEST_REQUIRED');
+  const initialSourceBinding = verifyLocalSource();
+  const schemas = await import(pathToFileURL(path.join(WORKTREE, ROUTE)).href);
+  need(EXPORTS.every(key => typeof schemas[key]?.parse === 'function'), 'FIVE_RELEASED_ZOD_SCHEMAS_REQUIRED');
+  const { need: secret } = await import(pathToFileURL(ROOT + '/scripts/agent/env.mjs').href);
+  fs.mkdirSync(plan.outputDirectory);
+  const file = path.join(plan.outputDirectory, 'result.json'), journal = path.join(plan.outputDirectory, 'intents.jsonl');
+  const receipt = { ticket: 'SCRUM-636', sourceSha: plan.sourceSha, sourceManifestSha256: plan.sourceManifestSha256, ciRunId: String(plan.ciRunId),
+    helperSha256, planSha256: digest(plan), routeModuleSha256: plan.routeModuleSha256, localReleaseSha256: plan.localReleaseSha256,
+    initialSourceBinding,
+    apiDeployment: plan.apiDeployment, rulings: plan.rulings, actualStaging: true, complete: false, startedAt: stamp(), completedAt: null,
+    businessWrites: 0, fixturesCreated: 0, sourceChecks: [], operations: [], reads: [], checks: [], authority: [], authCleanup: [], screenshots: [],
+    pending: 0, unresolvedAuth: 0, journalHealthy: true, errorCode: null,
+    limitations: ['API test-run card; no native Overview UI claim (SCRUM-637).', 'No payment/detail comparator, private images, OTO App, handoff, station or business write.',
+      'Real populated formulas, foreign-operator records and union-of-all-parks fixtures are locally covered; staging uses unchanged existing demos.',
+      'Unreachable-park staging proof is conditional on a genuine existing outside-reach park; no grants are altered.'] };
+  fs.writeFileSync(file, JSON.stringify(receipt, null, 2) + '\n', { flag: 'wx', flush: true });
+  fs.writeFileSync(journal, '', { flag: 'wx', flush: true });
+  const sessions = []; let browser, failed = false;
+  const save = () => { try { fs.writeFileSync(file, JSON.stringify(receipt, null, 2) + '\n', { flush: true }); }
+    catch { receipt.journalHealthy = false; throw new ProofError('RECEIPT_WRITE_FAILED'); } };
+  const persist = row => { let fd; try { fd = fs.openSync(journal, 'a'); fs.writeSync(fd, JSON.stringify(row) + '\n'); fs.fsyncSync(fd); }
+    catch { receipt.journalHealthy = false; throw new ProofError('DURABLE_INTENT_REQUIRED'); } finally { if (fd !== undefined) fs.closeSync(fd); } };
+  const safe = () => need(receipt.journalHealthy && receipt.pending === 0 && receipt.unresolvedAuth === 0, 'UNSETTLED_OR_UNJOURNALED_PROOF');
+  const check = (name, condition) => { need(condition, name); receipt.checks.push({ name, passed: true, at: stamp() }); save(); };
+  const queryFor = (pathname, branchId) => { const q = new URLSearchParams(pathname === '/aggregates/fleet' ? {} : plan.period); if (branchId) q.set('branchId', branchId); return q.toString(); };
+
+  async function sourceGate() {
+    const localSourceBinding = verifyLocalSource();
+    const run = spawnSync('gh', ['run', 'view', String(plan.ciRunId), '--repo', 'vickyydev/oto-platform', '--json', 'headSha,status,conclusion,jobs'],
+      { encoding: 'utf8', timeout: 30_000, maxBuffer: 3_000_000, stdio: ['ignore', 'pipe', 'pipe'] });
+    need(run.status === 0 && !run.signal, 'CI_READ_FAILED'); let ci;
+    try { ci = JSON.parse(run.stdout); } catch { throw new ProofError('CI_JSON_REQUIRED'); }
+    need(ci.headSha === plan.sourceSha && ci.status === 'completed' && ci.conclusion === 'success' && ci.jobs?.length === 6
+      && new Set(ci.jobs.map(row => row.name)).size === 6 && ci.jobs.every(row => row.status === 'completed' && row.conclusion === 'success'), 'SIX_EXACT_GREEN_JOBS_REQUIRED');
+    const get = async suffix => { const response = await fetch('https://api.render.com/v1' + suffix, { method: 'GET', redirect: 'manual', signal: AbortSignal.timeout(30_000),
+      headers: { authorization: `Bearer ${secret('RENDER_API_KEY')}`, accept: 'application/json' } }); need(response.status === 200, 'RENDER_READ_FAILED'); return boundedJson(response); };
+    const serviceRows = await get('/services?limit=50');
+    need(Array.isArray(serviceRows), 'RENDER_SERVICES_REQUIRED');
+    const matches = serviceRows.map(row => row.service ?? row).filter(row => row.name === plan.apiDeployment.name);
+    need(matches.length === 1 && matches[0].id === plan.apiDeployment.serviceId, 'EXACT_API_SERVICE_REQUIRED');
+    const deployments = await get(`/services/${plan.apiDeployment.serviceId}/deploys?limit=1`), current = deployments?.[0]?.deploy;
+    need(current?.id === plan.apiDeployment.id && current.status === 'live' && current.commit?.id === plan.sourceSha
+      && current.finishedAt === plan.apiDeployment.finishedAt, 'LATEST_SAME_SOURCE_API_REQUIRED');
+    receipt.sourceChecks.push({ at: stamp(), sourceSha: plan.sourceSha, ciRunId: String(plan.ciRunId), apiDeployId: current.id,
+      localSourceBinding, ciMetadataSha256: digest(ci), jobs: ci.jobs.map(row => ({ name: row.name, status: row.status, conclusion: row.conclusion })) }); save();
+  }
+
+  // Each object is a private cookie context. Cookie values never enter receipts or errors.
+  function newContext(actor) { const context = { actor, cookie: '', attempted: false, baseline: null, permissions: null, cleanupConfirmed: false }; sessions.push(context); return context; }
+  async function request(context, method, pathname, { query = '', body, negative = false, cleanup = false } = {}) {
+    need(validateRequest({ method, pathname, query, body, negative }), 'REQUEST_GRAMMAR_REFUSED');
+    need(!cleanup || (method === 'POST' && pathname === '/auth/sign-out') || (method === 'GET' && pathname === '/me'), 'CLEANUP_GRAMMAR_REFUSED');
+    if (!cleanup) safe();
+    const auth = method === 'POST', row = { sequence: receipt.operations.length + 1, actor: context.actor, method, path: pathname,
+      queryKeys: [...new URLSearchParams(query).keys()], negative, cleanup, intentAt: stamp(), dispatched: false, terminal: false, status: null };
+    receipt.operations.push(row);
+    try { persist(row); save(); } catch (error) { if (!cleanup) throw error; }
+    if (pathname === '/auth/sign-in') context.attempted = true;
+    receipt.pending += 1; if (auth) receipt.unresolvedAuth += 1;
+    row.dispatched = true;
+    try {
+      const response = await fetch(ORIGIN + pathname + (query ? '?' + query : ''), { method, redirect: 'manual', signal: AbortSignal.timeout(30_000),
+        headers: { accept: 'application/json', ...(context.cookie ? { cookie: context.cookie } : {}), ...(body === undefined ? {} : { 'content-type': 'application/json' }) },
+        body: body === undefined ? undefined : JSON.stringify(body) });
+      // Capture session headers before parsing a possibly malformed/oversized/stalled auth body.
+      for (const value of response.headers.getSetCookie()) { const match = /^oto_session=([^;]*)/.exec(value); if (match) context.cookie = match[1] ? `oto_session=${match[1]}` : ''; }
+      row.status = response.status;
+      const json = await boundedJson(response); row.terminal = true; row.completedAt = stamp();
+      if (auth) receipt.unresolvedAuth -= 1;
+      return { status: response.status, body: json };
+    } catch (error) { row.failureCode = codeOf(error); throw error; }
+    finally { receipt.pending -= 1; try { persist(row); save(); } catch (error) { if (!cleanup) throw error; } }
+  }
+  function authority(me, permissions) {
+    return digest({ account: { id: me.account.id, operatorId: me.account.operatorId, status: me.account.status, mustChangePassword: me.account.mustChangePassword },
+      branchId: me.branch?.id ?? null, preferences: me.preferences, sessionLocked: me.sessionLocked,
+      permissions: [...permissions].sort((a, b) => canonical(a).localeCompare(canonical(b))) });
+  }
+  async function census(context) {
+    const me = await request(context, 'GET', '/me'), grants = await request(context, 'GET', '/me/permissions'), expected = plan.actors[context.actor];
+    need(me.status === 200 && me.body?.account?.id === expected.accountId && me.body.account.operatorId === expected.operatorId
+      && me.body.account.status === 'active' && me.body.account.mustChangePassword === false && me.body.sessionLocked === false
+      && grants.status === 200 && Array.isArray(grants.body?.permissions), 'EXACT_DEMO_AUTHORITY_REQUIRED');
+    return { hash: authority(me.body, grants.body.permissions), reach: overviewReach(grants.body.permissions, expected.operatorId) };
+  }
+  async function aggregate(context, pathname, { branchId, expectedIds, availableIds = expectedIds, operatorWide, expectedStatus = 200, query, negative = false } = {}) {
+    const result = await request(context, 'GET', pathname, { query: query ?? queryFor(pathname, branchId), negative });
+    need(result.status === expectedStatus, 'AGGREGATE_STATUS_MISMATCH');
+    const observed = { actor: context.actor, path: pathname, status: result.status, observedAt: stamp(), responseSha256: digest(result.body), negative };
+    if (result.status === 200) {
+      let body; try { body = schemas[EXPORTS[PATHS.indexOf(pathname)]].parse(result.body); } catch { throw new ProofError('RELEASED_RESPONSE_SCHEMA_MISMATCH'); }
+      const available = body.branches.map(row => row.id), selected = body.selectedBranchIds;
+      // Only the first operator-wide ADMIN read may establish its live owned picker.
+      need(expectedIds !== undefined || (context.actor === 'ADMIN' && !branchId), 'EXPECTED_REACH_REQUIRED');
+      const expectedSelected = expectedIds ?? available, expectedAvailable = availableIds ?? available;
+      need(new Set(available).size === available.length && new Set(selected).size === selected.length && selected.every(id => available.includes(id))
+        && same([...available].sort(), [...expectedAvailable].sort()) && same([...selected].sort(), [...expectedSelected].sort())
+        && same(body.parks.map(row => row.branchId).sort(), [...selected].sort()), 'EXACT_REACHED_PARKS_REQUIRED');
+      need(iso(body.generatedAt) && Date.parse(body.generatedAt) > Date.parse(plan.apiDeployment.finishedAt)
+        && Date.parse(body.generatedAt) >= Date.parse(receipt.startedAt) - 5_000 && Date.parse(body.generatedAt) <= Date.now() + 5_000, 'FRESH_POSTDEPLOY_RESULT_REQUIRED');
+      if (pathname !== '/aggregates/fleet') need(same(body.period, plan.period), 'EXACT_PERIOD_REQUIRED');
+      else need(body.asOf === body.generatedAt, 'CURRENT_FLEET_ASOF_REQUIRED');
+      if (pathname.includes('usage')) need(operatorWide ? body.operatorWide !== null && typeof body.operatorWide === 'object'
+        : body.operatorWide === null, 'OPERATOR_BUCKET_AUTHORITY_MISMATCH');
+      const spend = pathname.includes('usage') ? validateCurrentAiSpend(body) : null;
+      Object.assign(observed, { generatedAt: body.generatedAt, period: body.period ?? null, basis: body.basis, selectedParkCount: selected.length,
+        availableParkCount: available.length, rowCount: body.parks.reduce((sum, park) => sum + (park.rows?.length ?? 0), 0),
+        safeTotals: body.totals, selectedBranchIdsSha256: digest([...selected].sort()), operatorWideVisible: body.operatorWide != null, ...(spend ?? {}) });
+      receipt.reads.push(observed); save(); return body;
+    }
+    need(result.body?.error && typeof result.body.error.code === 'string', 'STRUCTURED_REFUSAL_REQUIRED');
+    receipt.reads.push(observed); save(); return null;
+  }
+  async function closeContext(context) {
+    const row = { actor: context.actor, signOutStatus: null, meStatus: null, confirmed: false };
+    const originalCookie = context.cookie;
+    let logoutOk = false;
+    try { const out = await request(context, 'POST', '/auth/sign-out', { cleanup: true }); row.signOutStatus = out.status;
+      logoutOk = out.status === 200 && out.body?.ok === true; }
+    catch (error) { row.errorCode = codeOf(error); }
+    // Independent best effort even after logout timeout/body failure. This never clears unresolvedAuth.
+    try { context.cookie = originalCookie;
+      const me = await request(context, 'GET', '/me', { cleanup: true }); row.meStatus = me.status; }
+    catch (error) { row.errorCode ??= codeOf(error); }
+    finally { row.confirmed = logoutOk && row.meStatus === 401 && !row.errorCode;
+      context.cookie = ''; context.cleanupConfirmed = row.confirmed; receipt.authCleanup.push(row); try { save(); } catch {} }
+    return row.confirmed;
+  }
+
+  try {
+    need(Date.parse(receipt.startedAt) > Date.parse(plan.apiDeployment.finishedAt), 'POSTDEPLOY_START_REQUIRED');
+    await sourceGate();
+    const state = {};
+    for (const actor of ACTORS) {
+      const context = newContext(actor), signed = await request(context, 'POST', '/auth/sign-in', {
+        body: { phone: secret(`STAGING_${actor}_PHONE`), password: secret(`STAGING_${actor}_PASSWORD`) } });
+      need(signed.status === 200 && signed.body?.accountId === plan.actors[actor].accountId && signed.body.mustChangePassword === false && context.cookie, 'EXPECTED_DEMO_SIGN_IN_REQUIRED');
+      const snapshot = await census(context); context.baseline = snapshot.hash; context.permissions = snapshot.reach;
+      state[actor] = context; receipt.authority.push({ actor, beforeSha256: snapshot.hash, afterSha256: null, reachKind: snapshot.reach.kind }); save();
+    }
+    check('ADMIN_GENUINE_OPERATOR_REACH', state.ADMIN.permissions.kind === 'operator');
+    check('MANAGER_GENUINE_BRANCH_REACH', state.MANAGER.permissions.kind === 'branches' && state.MANAGER.permissions.branchIds.length > 0);
+    check('RECEPTION_HAS_NO_OVERVIEW_REACH', state.RECEPTION.permissions.kind === 'branches' && state.RECEPTION.permissions.branchIds.length === 0);
+    await sourceGate();
+    let ownedIds;
+    for (const pathname of PATHS) {
+      const body = await aggregate(state.ADMIN, pathname, { expectedIds: ownedIds, operatorWide: true });
+      ownedIds ??= body.branches.map(row => row.id);
+      need(ownedIds.length > 0, 'LIVE_OWNED_PICKER_REQUIRED');
+    }
+    const managerIds = ownedIds.filter(id => state.MANAGER.permissions.branchIds.includes(id));
+    check('MANAGER_HAS_LIVE_OWNED_REACH', managerIds.length > 0);
+    for (const pathname of PATHS) {
+      await aggregate(state.MANAGER, pathname, { expectedIds: managerIds, operatorWide: false });
+      await aggregate(state.MANAGER, pathname, { branchId: managerIds[0], expectedIds: [managerIds[0]], availableIds: managerIds, operatorWide: false });
+      await aggregate(state.RECEPTION, pathname, { expectedStatus: 403 });
+    }
+    for (const pathname of PATHS.filter(value => value.includes('usage'))) await aggregate(state.ADMIN, pathname,
+      { branchId: managerIds[0], expectedIds: [managerIds[0]], availableIds: ownedIds, operatorWide: false });
+    const outside = ownedIds.find(id => !managerIds.includes(id));
+    if (outside) for (const pathname of PATHS) await aggregate(state.MANAGER, pathname, { branchId: outside, expectedStatus: 403 });
+    receipt.checks.push({ name: 'OWNED_UNREACHABLE_PARK', passed: outside ? true : null, available: Boolean(outside),
+      outcome: outside ? 'passed' : 'not-available-with-existing-grants', at: stamp() });
+    const absentId = randomUUID(), anonymous = { actor: 'ANONYMOUS', cookie: '' };
+    for (const pathname of PATHS) { await aggregate(anonymous, pathname, { expectedStatus: 401 });
+      await aggregate(state.ADMIN, pathname, { branchId: absentId, expectedStatus: 404 }); }
+    for (const query of ['from=2026-02-30&to=2026-03-01', 'from=2026-10-02&to=2026-10-01',
+      'from=2026-10-01&to=2026-11-01', `from=${plan.period.from}&to=${plan.period.to}&branchId=${managerIds[0]}&branchId=${managerIds[0]}`,
+      `from=${plan.period.from}&to=${plan.period.to}&operatorId=${plan.actors.ADMIN.operatorId}`])
+      await aggregate(state.ADMIN, '/aggregates/members', { query, negative: true, expectedStatus: 400 });
+    await aggregate(state.ADMIN, '/aggregates/fleet', { query: `from=${plan.period.from}&to=${plan.period.to}`, negative: true, expectedStatus: 400 });
+    for (const context of sessions) { const after = await census(context); check('AUTHORITY_UNCHANGED_' + context.actor, after.hash === context.baseline);
+      receipt.authority.find(row => row.actor === context.actor).afterSha256 = after.hash; }
+  } catch (error) { failed = true; receipt.errorCode = codeOf(error); }
+  finally {
+    // Always attempt every independent context, including an uncertain sign-in; never erase the original uncertainty.
+    for (const context of sessions) if (context.attempted && !(await closeContext(context))) failed = true;
+    receipt.completedAt = stamp(); try { save(); } catch { failed = true; }
+  }
+  try {
+    safe(); need(!failed && sessions.length === 3 && sessions.every(row => row.cleanupConfirmed), 'ALL_AUTH_CLEANUP_REQUIRED');
+    await sourceGate();
+    const { launch, card } = await import(pathToFileURL(ROOT + '/scripts/agent/evidence.mjs').href);
+    browser = await launch(); const page = await browser.newPage(); let pageRequests = 0, pageErrors = 0, consoleErrors = 0;
+    page.on('pageerror', () => { pageErrors += 1; }); page.on('console', message => { if (message.type() === 'error') consoleErrors += 1; });
+    await page.route('**/*', route => { pageRequests += 1; return route.abort(); }); await page.goto('about:blank');
+    const positive = PATHS.map(pathname => receipt.reads.find(row => row.actor === 'ADMIN' && row.path === pathname && row.status === 200 && !row.negative));
+    need(positive.every(Boolean), 'FIVE_ACTUAL_RESULTS_REQUIRED');
+    const captureStartedAt = stamp(), filename = path.join(plan.outputDirectory, PNG);
+    await card(page, { title: 'SCRUM-636 — actual staging API test run', subtitle: 'API evidence; Overview UI follows in SCRUM-637',
+      identity: 'Existing seeded ADMIN / MANAGER / RECEPTION; personal details omitted',
+      deploy: `Source ${plan.sourceSha} | CI ${plan.ciRunId} | API ${plan.apiDeployment.id} live ${plan.apiDeployment.finishedAt}`,
+      rows: [...positive.map(row => ({ ok: true, tag: '200', head: 'GET ' + row.path,
+        note: `${row.selectedParkCount} parks; ${row.rowCount} daily rows; generated ${row.generatedAt}`, body: JSON.stringify(row.safeTotals) })),
+      { ok: true, tag: 'LIMIT', head: 'AI price unavailable in USD', note: 'no_rate_configured; estimate excludes cache writes.',
+        body: positive.filter(row => row.path.includes('usage')).map(row => `${row.path}: spendEstimate=null; ${row.safeTotals.unpricedTokens} unpriced tokens.`).join(' | ') },
+      { ok: true, tag: 'PASS', head: 'Current scopes and refusals', note: 'Fresh grants; Manager park scope; Reception403; anonymous401; bounded queries; absent park404.' },
+      { ok: true, tag: 'PASS', head: 'Cleanup and source', note: 'Three logout200/current-user401; branch/preferences/grants unchanged; no business writes or fixtures.' },
+      { ok: true, tag: 'LIMIT', head: 'API test-run evidence', note: `${plan.period.from} through ${plan.period.to}; no native Overview screen, private detail lists or payment reads.` }], images: [] }, filename);
+    need(pageRequests === 0 && pageErrors === 0 && consoleErrors === 0, 'EVIDENCE_PAGE_NETWORK_OR_ERROR');
+    receipt.screenshots.push({ filename: PNG, sha256: hash(fs.readFileSync(filename)), captureStartedAt, capturedAt: stamp(), pageRequests, pageErrors, consoleErrors });
+    await browser.close(); browser = null; await sourceGate();
+    receipt.completedAt = stamp(); receipt.complete = true; save();
+  } catch (error) { receipt.complete = false; receipt.errorCode ??= codeOf(error); }
+  finally { if (browser) try { await browser.close(); } catch { receipt.complete = false; receipt.errorCode ??= 'EVIDENCE_BROWSER_CLOSE_FAILED'; }
+    try { save(); } catch { receipt.complete = false; receipt.errorCode ??= 'RECEIPT_WRITE_FAILED'; } }
+  return receipt;
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  try {
+    const args = process.argv.slice(2); need(args.length === 2 && args[0] === '--execute' && /^C:\/w\/admin636-[A-Za-z0-9_-]+\.json$/.test(args[1]), 'EXPLICIT_CONCRETE_PLAN_FILE_REQUIRED');
+    const receipt = await executeReviewedPlan(JSON.parse(fs.readFileSync(args[1], 'utf8')), { explicitExecute: true });
+    console.log(JSON.stringify({ ticket: receipt.ticket, complete: receipt.complete, reads: receipt.reads.length, screenshots: receipt.screenshots.length,
+      authCleanup: receipt.authCleanup.length, pending: receipt.pending, unresolvedAuth: receipt.unresolvedAuth, businessWrites: receipt.businessWrites, errorCode: receipt.errorCode }));
+    if (!receipt.complete) process.exitCode = 1;
+  } catch (error) { console.log(JSON.stringify({ ticket: 'SCRUM-636', complete: false, errorCode: codeOf(error) })); process.exitCode = 1; }
+}

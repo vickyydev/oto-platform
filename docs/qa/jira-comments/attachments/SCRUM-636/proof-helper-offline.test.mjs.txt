@@ -1,0 +1,282 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { createHash } from 'node:crypto';
+import { fileURLToPath } from 'node:url';
+
+// Offline only. The real helper remains unchanged and executeReviewedPlan is never run.
+let blockedFetchCalls = 0;
+globalThis.fetch = async () => { blockedFetchCalls += 1; throw new Error('OFFLINE_NETWORK_FORBIDDEN'); };
+const source = fs.readFileSync('C:/w/admin636-staging-proof.mjs', 'utf8').replace(/\r\n/g, '\n');
+const helper = await import('./admin636-staging-proof.mjs');
+const oldSource = fs.readFileSync('C:/w/admin636-staging-proof-before-r12-r13.mjs', 'utf8').replace(/\r\n/g, '\n');
+const oldHelper = await import('./admin636-staging-proof-before-r12-r13.mjs');
+const hash = value => createHash('sha256').update(value).digest('hex');
+const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+class ProofError extends Error { constructor(code) { super(code); this.code = code; } }
+const need = (condition, code) => { if (!condition) throw new ProofError(code); };
+const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+const H = 'a'.repeat(64), SHA = 'b'.repeat(40);
+const branchId = '00000000-0000-4000-8000-000000000001';
+function plan() {
+  return { approved: true, ticket: 'SCRUM-636', purpose: 'read-only-aggregate-api-proof', sourceSha: SHA,
+    sourceManifestSha256: H, ciRunId: '123456', apiDeployment: { name: 'oto-api-staging', serviceId: 'srv-SYNTHETIC', id: 'dep-SYNTHETIC', finishedAt: '2026-10-25T00:00:00.000Z' },
+    helperSha256: H, routeModuleSha256: H, localReleaseSha256: H, runtimeBindingsSha256: H,
+    actors: Object.fromEntries(['ADMIN', 'MANAGER', 'RECEPTION'].map(actor => [actor, { accountId: helper.DEMOS[actor], operatorId: helper.DEMOS.operatorId }])),
+    period: { from: '2026-10-24', to: '2026-10-25' }, rulings: { Q17: { resolved: true, reference: 'SYNTHETIC APPROVED CONTRACT' }, Q18: { resolved: true, reference: 'SYNTHETIC APPROVED CONTRACT' } },
+    outputDirectory: 'C:/w/admin636-staging-OFFLINE_ONLY' };
+}
+
+test('import is inert; no network dispatch', () => assert.equal(blockedFetchCalls, 0));
+test('plan refuses missing approval, unresolved rulings, wrong actors, invalid dates and source', () => {
+  assert.equal(helper.validatePlan(plan()).sourceSha, SHA);
+  const mutations = [p => { p.approved = false; }, p => { p.rulings.Q18.resolved = false; },
+    p => { p.actors.ADMIN.accountId = branchId; }, p => { p.period.from = '2026-02-30'; },
+    p => { p.sourceSha = '0'.repeat(40); }, p => { p.period.to = '2026-11-25'; }];
+  for (const mutate of mutations) { const p = plan(); mutate(p); assert.throws(() => helper.validatePlan(p)); }
+});
+test('exact request grammar refuses all business writers, foreign paths and query/body escapes', () => {
+  for (const method of ['POST', 'PUT', 'PATCH', 'DELETE']) for (const pathname of helper.PATHS)
+    assert.equal(helper.validateRequest({ method, pathname, body: {} }), false);
+  for (const pathname of ['/payments', '/api/aggregates/members', '//other.invalid/aggregates/fleet', 'https://other.invalid/aggregates/fleet', '/aggregates/members/../bookings'])
+    assert.equal(helper.validateRequest({ method: 'GET', pathname, query: 'from=2026-10-24&to=2026-10-25' }), false);
+  for (const query of ['from=2026-10-24&to=2026-10-25&operatorId=x', 'from=2026-10-24&to=2026-10-25&branchId=x', 'from=2026-10-24&to=2026-10-25&from=2026-10-24', 'from=2026-10-25&to=2026-10-24'])
+    assert.equal(helper.validateRequest({ method: 'GET', pathname: helper.PATHS[0], query }), false);
+  assert.equal(helper.validateRequest({ method: 'GET', pathname: '/aggregates/fleet', query: 'from=2026-10-24&to=2026-10-25' }), false);
+  assert.equal(helper.validateRequest({ method: 'GET', pathname: '/me', body: {} }), false);
+  assert.equal(helper.validateRequest({ method: 'POST', pathname: '/auth/sign-out', body: {} }), false);
+});
+test('armed negative grammar is limited to aggregate GETs and finite known query keys', () => {
+  assert.equal(helper.validateRequest({ method: 'GET', pathname: helper.PATHS[0], query: 'from=invalid&to=invalid&operatorId=invalid', negative: true }), true);
+  assert.equal(helper.validateRequest({ method: 'GET', pathname: '/payments', query: 'from=invalid', negative: true }), false);
+  assert.equal(helper.validateRequest({ method: 'POST', pathname: helper.PATHS[0], body: {}, negative: true }), false);
+  assert.equal(helper.validateRequest({ method: 'GET', pathname: helper.PATHS[0], query: 'other=invalid', negative: true }), false);
+  assert.equal(helper.validateRequest({ method: 'GET', pathname: helper.PATHS[0], query: 'from=1&from=2&from=3&from=4&from=5&from=6', negative: true }), false);
+});
+test('Overview reach requires the named permission and exact operator or branch scope', () => {
+  const rows = [{ permission: 'console:overview:read', scopeType: 'operator', scopeId: branchId },
+    { permission: 'console:overview:read', scopeType: 'department', scopeId: branchId },
+    { permission: 'console:staff:read', scopeType: 'operator', scopeId: null }];
+  assert.deepEqual(helper.overviewReach(rows, helper.DEMOS.operatorId), { kind: 'branches', branchIds: [] });
+  assert.deepEqual(helper.overviewReach([{ permission: 'console:overview:read', scopeType: 'branch', scopeId: branchId }], helper.DEMOS.operatorId), { kind: 'branches', branchIds: [branchId] });
+});
+
+// Execute each actual pre-import prefix. Only import.meta.url is parameterized for the closure.
+function compilePrefix(text) {
+  const start = text.indexOf('  need(explicitExecute === true,');
+  const end = text.indexOf('  const schemas = await import(', start);
+  assert.ok(start > 0 && end > start);
+  const body = text.slice(start, end).replaceAll('import.meta.url', 'HELPER_URL');
+  return new AsyncFunction('input', 'explicitExecute', 'validatePlan', 'hash', 'fs', 'fileURLToPath', 'HELPER_URL', 'need', 'spawnSync', 'WORKTREE', 'ROUTE', 'RELEASE', 'path', 'createHash', 'same', 'digest', 'runtimeBindingsSha256Of',
+    body + '\nreturn { reachedSchemaImport: true, verifyLocalSource: typeof verifyLocalSource === "function" ? verifyLocalSource : null };');
+}
+const evaluatePrefix = compilePrefix(source), evaluateOldPrefix = compilePrefix(oldSource);
+async function prefixRun({ dependencyChanged = false, routeChanged = false, serviceChanged = false, lockChanged = false,
+  installedChanged = false, extraFile = false, nonFile = false, diffChanged = false, old = false } = {}) {
+  const files = new Map([
+    ['apps/api/src/routes/aggregates.ts', 'SYNTHETIC route with shared dependency'],
+    ['apps/api/src/services/aggregates.ts', 'SYNTHETIC aggregate service'],
+    ['package.json', '{"name":"SYNTHETIC_ONLY"}'],
+    ['packages/shared/src/dates.ts', 'SYNTHETIC released validation dependency'],
+    ['pnpm-lock.yaml', 'lockfileVersion: SYNTHETIC\n'],
+  ]);
+  const released = new Map(files), paths = [...released.keys()].sort();
+  const rows = paths.map(filename => ({ path: filename, sha256: hash(released.get(filename)) }));
+  const p = plan(); p.sourceManifestSha256 = hash(JSON.stringify(rows));
+  if (old) delete p.runtimeBindingsSha256;
+  const release = JSON.stringify({ ticket: 'SCRUM-636', localReleaseGreen: true, sourceManifestSha256: p.sourceManifestSha256 });
+  const route = released.get('apps/api/src/routes/aggregates.ts');
+  p.helperSha256 = hash('SYNTHETIC helper'); p.routeModuleSha256 = hash(route); p.localReleaseSha256 = hash(release);
+  const runtimeFiles = ['node_modules/.pnpm/lock.yaml', 'node_modules/.modules.yaml',
+    'apps/api/node_modules/tsx/package.json', 'apps/api/node_modules/tsx/dist/cli.mjs',
+    'apps/api/node_modules/tsx/dist/loader.mjs', 'apps/api/node_modules/tsx/dist/preflight.cjs',
+    'apps/api/node_modules/zod/package.json', 'apps/api/node_modules/zod/index.cjs', 'apps/api/node_modules/zod/index.js'];
+  for (const filename of runtimeFiles) files.set(filename, filename === 'node_modules/.pnpm/lock.yaml'
+    ? released.get('pnpm-lock.yaml') : 'SYNTHETIC installed metadata ' + filename);
+  const reads = [];
+  const relative = filename => String(filename).replaceAll('\\', '/').replace(/^C:\/w\/SYNTHETIC\//, '');
+  const fakeFs = { existsSync: () => false, lstatSync: () => ({ isFile: () => !nonFile }), readFileSync(filename) {
+    const key = relative(filename); reads.push(key);
+    if (key.endsWith('/synthetic-helper.mjs')) return 'SYNTHETIC helper';
+    if (key.endsWith('/local-release.json')) return release;
+    if (files.has(key)) return files.get(key);
+    throw new Error('UNEXPECTED_OFFLINE_FILE');
+  } };
+  if (!old) p.runtimeBindingsSha256 = helper.runtimeBindingsSha256Of('C:/w/SYNTHETIC', fakeFs);
+  const mutateDependency = () => files.set('packages/shared/src/dates.ts', 'SYNTHETIC CHANGED validation dependency');
+  if (dependencyChanged) mutateDependency();
+  if (routeChanged) files.set('apps/api/src/routes/aggregates.ts', route + ' drift');
+  if (serviceChanged) files.set('apps/api/src/services/aggregates.ts', 'SYNTHETIC changed aggregate service');
+  if (lockChanged) files.set('pnpm-lock.yaml', 'SYNTHETIC changed source lock');
+  if (installedChanged) files.set('apps/api/node_modules/tsx/dist/loader.mjs', 'SYNTHETIC changed installed loader');
+  if (extraFile) files.set('packages/shared/src/untracked.ts', 'SYNTHETIC untracked runtime source');
+  const fakeSpawn = (command, args) => {
+    need(command === 'git', 'UNEXPECTED_OFFLINE_COMMAND');
+    let stdout;
+    if (args[0] === 'show') stdout = args[1].endsWith(':apps/api/src/routes/aggregates.ts') ? route : release;
+    else if (args[0] === 'ls-files') stdout = [...files.keys()].filter(filename => !filename.includes('node_modules/')).sort().join('\0') + '\0';
+    else if (args[0] === 'ls-tree') stdout = paths.map(filename => {
+      const bytes = Buffer.from(released.get(filename));
+      const id = createHash('sha1').update(Buffer.from(`blob ${bytes.length}\0`)).update(bytes).digest('hex');
+      return `100644 blob ${id}\t${filename}`;
+    }).join('\0') + '\0';
+    else if (args[0] === 'diff') stdout = diffChanged ? 'packages/shared/src/dates.ts\0' : '';
+    else throw new Error('UNEXPECTED_OFFLINE_GIT_OPERATION');
+    return { status: 0, stdout };
+  };
+  try { const result = await (old ? evaluateOldPrefix : evaluatePrefix)(p, true, old ? oldHelper.validatePlan : helper.validatePlan, hash, fakeFs, fileURLToPath,
+    'file:///C:/w/synthetic-helper.mjs', need, fakeSpawn, 'C:/w/SYNTHETIC', 'apps/api/src/routes/aggregates.ts',
+    'docs/qa/jira-comments/attachments/SCRUM-636/local-release.json', path, createHash, same, value => hash(JSON.stringify(value)), helper.runtimeBindingsSha256Of);
+    return { ...result, mutateDependency, dependencyWasRead: reads.includes('packages/shared/src/dates.ts') };
+  } catch (error) { if (error instanceof ProofError) return { reachedSchemaImport: false, code: error.code }; throw error; }
+}
+test('actual pre-import prefix accepts an unchanged synthetic source and blocks route drift', async () => {
+  assert.equal((await prefixRun()).reachedSchemaImport, true);
+  assert.equal((await prefixRun({ routeChanged: true })).reachedSchemaImport, false);
+});
+test('FINDING P1 R12: current dependency drift must block before schema import', async () => {
+  const result = await prefixRun({ dependencyChanged: true });
+  assert.equal(result.reachedSchemaImport, false);
+});
+
+function compileClose(text) {
+  const start = text.indexOf('  async function closeContext(');
+  const end = text.indexOf('\n\n  try {', start);
+  assert.ok(start > 0 && end > start);
+  return new AsyncFunction('context', 'request', 'receipt', 'codeOf', 'save', text.slice(start, end) + '\nreturn closeContext(context);');
+}
+const evaluateClose = compileClose(source), evaluateOldClose = compileClose(oldSource);
+async function closeRun({ timeout = false, currentStatus = 401, old = false } = {}) {
+  const context = { actor: 'SYNTHETIC', cookie: 'oto_session=SYNTHETIC_NON_SECRET', cleanupConfirmed: false };
+  const original = context.cookie, calls = [], receipt = { authCleanup: [], unresolvedAuth: 1 };
+  const request = async (ctx, method, pathname, options) => {
+    calls.push({ method, pathname, originalCookie: ctx.cookie === original, cleanup: options.cleanup });
+    if (pathname === '/auth/sign-out') { ctx.cookie = ''; if (timeout) throw new Error('SYNTHETIC_TIMEOUT'); return { status: 200, body: { ok: true } }; }
+    return { status: currentStatus, body: {} };
+  };
+  const confirmed = await (old ? evaluateOldClose : evaluateClose)(context, request, receipt, () => 'SYNTHETIC_FAILURE', () => {});
+  return { calls, confirmed, row: receipt.authCleanup[0], unresolvedAuth: receipt.unresolvedAuth, cookieCleared: context.cookie === '' };
+}
+test('actual close verifies original cookie after successful logout, and refuses a still-live cookie', async () => {
+  const good = await closeRun(); assert.equal(good.confirmed, true); assert.equal(good.calls.length, 2);
+  assert.equal(good.calls.every(row => row.originalCookie && row.cleanup), true); assert.equal(good.cookieCleared, true);
+  const live = await closeRun({ currentStatus: 200 }); assert.equal(live.confirmed, false);
+});
+test('FINDING P2 R13: timeout logout must still attempt independent original-cookie revocation read', async () => {
+  const result = await closeRun({ timeout: true });
+  assert.equal(result.confirmed, false); assert.equal(result.row.signOutStatus, null);
+  assert.equal(result.calls.some(row => row.method === 'GET' && row.pathname === '/me' && row.originalCookie), true);
+});
+test('cleanup after one timeout remains independent for another context', async () => {
+  const receipts = [];
+  for (const timeout of [true, false]) receipts.push(await closeRun({ timeout }));
+  assert.equal(receipts[0].confirmed, false); assert.equal(receipts[1].confirmed, true);
+});
+
+const gateStart = source.indexOf('  async function sourceGate()');
+const gateEnd = source.indexOf('  // Each object is a private cookie context.', gateStart);
+const gateSource = source.slice(gateStart, gateEnd);
+const evaluateGate = new AsyncFunction('plan', 'spawnSync', 'need', 'ProofError', 'secret', 'boundedJson', 'receipt', 'stamp', 'digest', 'save', 'fetch', 'verifyLocalSource', gateSource + '\nreturn sourceGate();');
+test('actual release closure blocks wrong SHA, incomplete CI, duplicate jobs and red jobs before any Render/auth request', async () => {
+  const ci = { headSha: SHA, status: 'completed', conclusion: 'success', jobs: Array.from({ length: 6 }, (_, i) => ({ name: 'SYNTHETIC_' + i, status: 'completed', conclusion: 'success' })) };
+  const mutations = [c => { c.headSha = 'c'.repeat(40); }, c => { c.status = 'in_progress'; },
+    c => { c.jobs[1].name = c.jobs[0].name; }, c => { c.jobs[0].conclusion = 'failure'; }];
+  for (const mutate of mutations) {
+    const copy = structuredClone(ci); mutate(copy); let attemptedFetch = 0;
+    const local = await prefixRun(); assert.equal(local.reachedSchemaImport, true);
+    await assert.rejects(evaluateGate(plan(), () => ({ status: 0, stdout: JSON.stringify(copy) }), need, ProofError,
+      () => { throw new Error('UNEXPECTED_SECRET_READ'); }, () => { throw new Error('UNEXPECTED_BODY_READ'); }, {}, () => 'SYNTHETIC', () => H, () => {},
+      async () => { attemptedFetch += 1; throw new Error('OFFLINE_NETWORK_FORBIDDEN'); }, local.verifyLocalSource), /SIX_EXACT_GREEN_JOBS_REQUIRED/);
+    assert.equal(attemptedFetch, 0);
+  }
+});
+test('R12 calibration: archived old helper accepts dependency drift; current rejects it with unchanged blobs', async () => {
+  assert.equal(hash(fs.readFileSync('C:/w/admin636-staging-proof-before-r12-r13.mjs')), '7c431f66a948b8de26a06b5c343d93e0264ece07de9f8a99b6c2143fe9821581');
+  assert.equal((await prefixRun({ dependencyChanged: true, old: true })).reachedSchemaImport, true);
+  assert.equal((await prefixRun({ dependencyChanged: true })).code, 'CURRENT_FEATURE_SOURCE_BLOB_DIFFERS');
+});
+test('R12 full binding refuses changed service/lock inputs, extra source, nonregular files and Git diff', async () => {
+  for (const change of [{ serviceChanged: true }, { lockChanged: true }, { extraFile: true }, { nonFile: true }, { diffChanged: true }])
+    assert.equal((await prefixRun(change)).reachedSchemaImport, false);
+});
+test('R12 installed schema-loader metadata drift is refused before import', async () => {
+  assert.equal((await prefixRun({ installedChanged: true })).code, 'APPROVED_SCHEMA_RUNTIME_DIFFERS');
+});
+test('R12 sourceGate rechecks actual current local inputs before remote/auth/capture work', async () => {
+  const local = await prefixRun(); assert.equal(local.reachedSchemaImport, true); local.mutateDependency();
+  let commands = 0, network = 0;
+  await assert.rejects(evaluateGate(plan(), () => { commands += 1; throw new Error('UNEXPECTED_REMOTE_COMMAND'); }, need, ProofError,
+    () => { throw new Error('UNEXPECTED_SECRET_READ'); }, () => { throw new Error('UNEXPECTED_BODY_READ'); }, {}, () => 'SYNTHETIC', () => H, () => {},
+    async () => { network += 1; throw new Error('OFFLINE_NETWORK_FORBIDDEN'); }, local.verifyLocalSource), /CURRENT_FEATURE_SOURCE_BLOB_DIFFERS/);
+  assert.equal(commands, 0); assert.equal(network, 0);
+});
+test('R13 calibration: archived old helper skips timeout probe; current probes but retains unknown and incomplete cleanup', async () => {
+  const old = await closeRun({ timeout: true, old: true }), fixed = await closeRun({ timeout: true });
+  assert.equal(old.calls.some(row => row.pathname === '/me'), false);
+  assert.equal(fixed.calls.some(row => row.pathname === '/me' && row.originalCookie), true);
+  assert.equal(fixed.row.meStatus, 401); assert.equal(fixed.confirmed, false); assert.equal(fixed.unresolvedAuth, 1);
+  assert.equal(fixed.row.errorCode, 'SYNTHETIC_FAILURE'); assert.equal(fixed.cookieCleared, true);
+});
+test('offline suite performed no global network dispatch', () => assert.equal(blockedFetchCalls, 0));
+
+function currentUsageBody() {
+  const metric = (inputTokens = 7, outputTokens = 3, cacheReadTokens = 2) => ({ count: inputTokens ? 1 : 0,
+    inputTokens, outputTokens, cacheReadTokens, totalTokens: inputTokens + outputTokens + cacheReadTokens,
+    spendEstimate: null, reason: 'no_rate_configured', unpricedTokens: inputTokens + outputTokens + cacheReadTokens });
+  const rows = () => [{ date: '2026-10-24', ...metric() }, { date: '2026-10-25', ...metric(0, 0, 0) }];
+  return { generatedAt: new Date().toISOString(), branches: [{ id: branchId, name: 'ZZ TEST proof park' }], selectedBranchIds: [branchId],
+    period: { from: '2026-10-24', to: '2026-10-25' }, basis: 'created-at-bangkok', currency: 'USD', excludesCacheWrites: true,
+    totals: metric(14, 6, 4), parks: [{ branchId, totals: metric(), rows: rows() }], operatorWide: { totals: metric(), rows: rows() } };
+}
+const aggregateStart = source.indexOf('  async function aggregate('), aggregateEnd = source.indexOf('  async function closeContext(', aggregateStart);
+assert.ok(aggregateStart > 0 && aggregateEnd > aggregateStart);
+const evaluateAggregate = new AsyncFunction('context', 'pathname', 'options', 'request', 'queryFor', 'need', 'schemas', 'EXPORTS', 'PATHS', 'digest', 'stamp', 'same', 'iso', 'plan', 'receipt', 'save', 'validateCurrentAiSpend',
+  source.slice(aggregateStart, aggregateEnd) + '\nreturn aggregate(context, pathname, options);');
+async function runCurrentAggregate(body, pathname = '/aggregates/assistant-usage') {
+  const receipt = { startedAt: new Date().toISOString(), reads: [] };
+  const schemas = Object.fromEntries(['MembersAggregateSchema', 'BookingsAggregateSchema', 'AssistantUsageAggregateSchema', 'InboxAiUsageAggregateSchema', 'FleetAggregateSchema']
+    .map(key => [key, { parse: value => value }]));
+  const result = await evaluateAggregate({ actor: 'ADMIN' }, pathname, { expectedIds: [branchId], availableIds: [branchId], operatorWide: true },
+    async () => ({ status: 200, body }), () => '', need, schemas, Object.keys(schemas), helper.PATHS,
+    value => hash(JSON.stringify(value)), () => new Date().toISOString(), same, value => Number.isFinite(Date.parse(value)), plan(), receipt, () => {}, helper.validateCurrentAiSpend);
+  return { result, receipt };
+}
+test('Q18 actual aggregate closure accepts genuine unavailable metadata and nonzero/zero-day remainders', async () => {
+  for (const pathname of helper.PATHS.filter(item => item.includes('usage'))) {
+    const result = await runCurrentAggregate(currentUsageBody(), pathname);
+    assert.equal(result.receipt.reads.length, 1); assert.equal(result.result.totals.unpricedTokens, 24);
+  }
+});
+test('Q18 actual aggregate closure refuses wrong/missing currency or cache-write scope', async () => {
+  for (const mutation of [body => { body.currency = 'THB'; }, body => { delete body.currency; },
+    body => { body.excludesCacheWrites = false; }, body => { delete body.excludesCacheWrites; }]) {
+    const body = currentUsageBody(); mutation(body);
+    await assert.rejects(runCurrentAggregate(body));
+  }
+});
+test('Q18 actual aggregate closure refuses priced/null-reason and false remainder in every metric bucket', async () => {
+  for (const position of ['totals', 'park-total', 'park-day', 'operator-total', 'operator-day']) {
+    for (const mutation of [metric => { metric.spendEstimate = 0; }, metric => { metric.spendEstimate = 0.01; },
+      metric => { metric.reason = null; }, metric => { metric.unpricedTokens = 0; }, metric => { metric.totalTokens += 1; }]) {
+      const body = currentUsageBody();
+      const metric = position === 'totals' ? body.totals : position === 'park-total' ? body.parks[0].totals
+        : position === 'park-day' ? body.parks[0].rows[0] : position === 'operator-total' ? body.operatorWide.totals : body.operatorWide.rows[0];
+      mutation(metric); await assert.rejects(runCurrentAggregate(body), position);
+    }
+  }
+});
+const cardStart = source.indexOf('    const positive = PATHS.map('), cardEnd = source.indexOf('    need(pageRequests === 0', cardStart);
+assert.ok(cardStart > 0 && cardEnd > cardStart);
+const evaluateCard = new AsyncFunction('PATHS', 'receipt', 'need', 'stamp', 'path', 'plan', 'PNG', 'card', 'page',
+  source.slice(cardStart, cardEnd));
+test('Q18 actual receipt-only card explicitly labels unavailable USD, no configured rate, unpriced tokens and cache-write exclusion', async () => {
+  let captured;
+  const receipt = { reads: helper.PATHS.map(pathname => ({ actor: 'ADMIN', path: pathname, status: 200, negative: false,
+    selectedParkCount: 1, rowCount: 2, generatedAt: new Date().toISOString(), safeTotals: currentUsageBody().totals })) };
+  await evaluateCard(helper.PATHS, receipt, need, () => new Date().toISOString(), path, plan(), 'SYNTHETIC-NO-WRITE.png',
+    async (_page, spec) => { captured = spec; }, {});
+  const text = JSON.stringify(captured);
+  for (const required of ['USD', 'no_rate_configured', 'unpriced', 'cache writes', 'unavailable']) assert.equal(text.includes(required), true, required);
+});
+test('Q18 additions performed no global network dispatch', () => assert.equal(blockedFetchCalls, 0));

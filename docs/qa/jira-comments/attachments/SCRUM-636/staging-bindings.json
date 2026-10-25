@@ -1,0 +1,45 @@
+{
+  "ticket": "SCRUM-636",
+  "recordedAt": "2026-10-25T07:08:17.975Z",
+  "sourceSha": "be94f6c847b2a276167992ce6bcf3c6ec8988f71",
+  "ciRunId": "40170166041",
+  "jobs": [
+    {
+      "name": "ci",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "oto-app",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "api-tests (3)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "api-tests (1)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "pos-tests",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "api-tests (2)",
+      "status": "completed",
+      "conclusion": "success"
+    }
+  ],
+  "apiDeployment": {
+    "name": "oto-api-staging",
+    "serviceId": "srv-danh2ljtqb8s73bt9en0",
+    "id": "dep-dbeqjuijnfac73e2ik30",
+    "finishedAt": "2026-10-25T07:07:46.891936Z"
+  },
+  "manualDeploy": false
+}
