@@ -4,7 +4,10 @@ import type { App } from '../app';
 import { overviewOf } from '../services/console';
 import { consoleRoutingRoutes } from './console-routing';
 import { consoleStaffRoutes } from './console-staff';
-import { aggregateRoutes } from './aggregates';
+import {
+  aggregateRoutes, AssistantUsageAggregateSchema, BookingsAggregateSchema, FleetAggregateSchema,
+  InboxAiUsageAggregateSchema, MembersAggregateSchema,
+} from './aggregates';
 
 const count = z.number().int().nonnegative();
 const figures = z.object({
@@ -12,6 +15,10 @@ const figures = z.object({
   inboxUnanswered: count, openAlerts: count, boxesOffline: count,
 });
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+const decisionItem = z.object({
+  key: z.enum(['pendingPayments', 'syncQuarantine', 'cashVariances', 'latePayments', 'strandedOccupants', 'erasureRequests', 'approvalRequests']),
+  label: z.string(), status: z.enum(['available', 'not-built', 'unavailable']), count: count.nullable(), basis: z.string(),
+}).strict();
 export const OverviewSchema = z.object({
   generatedAt: z.string().datetime(),
   branches: z.array(z.object({
@@ -24,6 +31,15 @@ export const OverviewSchema = z.object({
     provisional: z.boolean(), lastRolledUpAt: z.string().datetime().nullable(),
     occupancyAsOf: z.string().datetime().nullable(), occupancyStale: z.boolean(),
   })),
+  aggregates: z.object({
+    members: MembersAggregateSchema, bookings: BookingsAggregateSchema,
+    assistantUsage: AssistantUsageAggregateSchema, inboxAiUsage: InboxAiUsageAggregateSchema, fleet: FleetAggregateSchema,
+  }).strict(),
+  decisions: z.object({
+    generatedAt: z.string().datetime(), items: z.array(decisionItem),
+    parks: z.array(z.object({ branchId: z.string().uuid(), items: z.array(decisionItem) }).strict()),
+  }).strict(),
+  statusSummary: z.string(),
 });
 
 export async function consoleRoutes(app: App): Promise<void> {
@@ -44,10 +60,12 @@ export async function consoleRoutes(app: App): Promise<void> {
       querystring: z.object({ branchId: z.string().uuid().optional() }),
       response: { 200: OverviewSchema },
     },
-  }, async (req) => {
+  }, async (req, reply) => {
     const auth = req.requireAuth();
+    reply.header('cache-control', 'private, no-store');
     return overviewOf(app.db, {
       operatorId: auth.operatorId, effective: await req.effectivePermissions(), branchId: req.query.branchId,
+      pendingMinutes: app.env.PAYMENT_PENDING_MIN,
     });
   });
 }
