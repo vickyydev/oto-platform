@@ -1,0 +1,11 @@
+{
+  "ticket": "SCRUM-639",
+  "at": "2026-10-25T09:56:14.919Z",
+  "network": "oto-admin639-integrated",
+  "pgId": "2a76cc5853984f9cba22ccad418a24597fb042a25afc63f613f583e517562536",
+  "apiId": "8a5b5306706af3a9594611730936ab6ead7d3cfedbdb0c22b5327d7a6ba76f46",
+  "image": "sha256:ecfc844d13d36b27adf7f5a1cf705fbe876efba601da39d39bbe64dad85d6b26",
+  "hostPorts": false,
+  "tmpfsDatabase": true,
+  "staging": false
+}

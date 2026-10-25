@@ -1,0 +1,88 @@
+{
+  "ticket": "SCRUM-639",
+  "mode": "LOCAL_SYNTHETIC_REHEARSAL_ONLY",
+  "execute": false,
+  "staging": false,
+  "sourceManifestSha256": "4cd99466485605de5be9a9dd29da683fe7a875e75f617d54a42c7afb87d8c4e7",
+  "fixture": {
+    "source": "apps/console/e2e/platform.spec.ts",
+    "sha256": "f6feb42ef9daaa5fadbac743e48b2c8328027e00a1d9e9104b96bd7c62ebeff0",
+    "reuse": "Use the existing exact fixture/page definitions through the coordinator-owned disposable Console e2e harness. Do not change production or keep a second hand-maintained payload model."
+  },
+  "bundle": "Reuse the current production build served by vite preview; bind actual source and asset hashes when the coordinator captures.",
+  "views": [
+    {
+      "path": "/platform/operators",
+      "heading": "Operators",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "fullPage": true
+    },
+    {
+      "path": "/platform/system-roles",
+      "heading": "System roles",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "fullPage": true
+    },
+    {
+      "path": "/platform/alerts",
+      "heading": "Platform alerts",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "fullPage": true
+    },
+    {
+      "path": "/platform/jobs",
+      "heading": "Platform jobs",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "fullPage": true
+    },
+    {
+      "path": "/platform/environment",
+      "heading": "Environment",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "fullPage": true
+    },
+    {
+      "path": "/platform/test-controls",
+      "heading": "Test controls",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "fullPage": true
+    },
+    {
+      "path": "/platform/environment",
+      "heading": "Environment",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "fullPage": true
+    }
+  ],
+  "settle": [
+    "Wait for the exact native heading and fixture row, or the real server-availability absence state.",
+    "For System roles, expand the native system role details to show permission sentences.",
+    "For each frame require no horizontal page overflow, no clipped primary text and caption disjoint from controls.",
+    "Use LOCAL SYNTHETIC label, current source hash and UTC; never call these staging evidence."
+  ],
+  "actions": "Read-only navigation only. Do not click operator create/rename/archive, control buttons, demo reset or job actions.",
+  "privacy": "Only synthetic ZZ TEST fixture data. Mask identity chrome if a frame is later shared. Environment must show only allowlisted metadata, never injected value/endpoint sentinels.",
+  "cleanup": "The coordinator closes its browser/servers and removes only its own disposable e2e database using the existing harness. No action is executed by this plan.",
+  "limits": "Optional local visual check. The separate held seven-frame staging proof and its fresh source/CI/deploy/auth/privacy gates remain required."
+}

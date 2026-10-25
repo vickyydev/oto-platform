@@ -1,0 +1,384 @@
+{
+  "ticket": "SCRUM-639",
+  "scope": "Hash/location inventory only; raw contents remain external.",
+  "artifacts": [
+    {
+      "path": "C:/w/admin639-integrated/api-all-1.log",
+      "bytes": 132370,
+      "sha256": "a0c278e8d30dc43e26afd84f245261a31d7bb5936caf13876c98a5904df6484b",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/api-all-1.progress.jsonl",
+      "bytes": 18172,
+      "sha256": "abb6fbfeb833e5d527da8406140fc6de5a169f25d50a5cff633f8b4dc8494ad9",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/api-all-2.log",
+      "bytes": 139869,
+      "sha256": "45768a920136e0f0279f94db654605bf91f46350cd29926715b03c20c9d08dc8",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/api-all-2.progress.jsonl",
+      "bytes": 18058,
+      "sha256": "b02d87ffbe36423a3d8c73e37dcbc436fa128fe1a3612b87492bb90bafb08da7",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/api-all-3.log",
+      "bytes": 151317,
+      "sha256": "ee97893319bf24f31d13931eb515fa4b576c8fab882827fdfef3b96ae15fb94b",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/api-all-3.progress.jsonl",
+      "bytes": 18082,
+      "sha256": "57d6a3aa79c1692a407dc9590a5523028c216db192d9e0c446ae9ad909da1d07",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/api-doc-inputs.tar",
+      "bytes": 312832,
+      "sha256": "fade624f6fa281cc44fe2272ef5a9065b9a334c512612961bbb28bcc84521e82",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/api-doc-paths.txt",
+      "bytes": 144,
+      "sha256": "69f3a2ecade3311b5e65686016e0f8378d6c76774abb1b61ede9d7a2480230da",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/api-focused-final-1.log",
+      "bytes": 4686,
+      "sha256": "17368cce8d8b56564f8f74e06c53ad753f0215be506f7ebdbddcadadc8a8316c",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/api-focused-final-1.progress.jsonl",
+      "bytes": 784,
+      "sha256": "8ad21bdf28fc5fca9dd64c3659dc076ed793632f7e2dfba1cf1aca5db1a92792",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/api-green-1.log",
+      "bytes": 4681,
+      "sha256": "f75b35f90d53608ed443883b6ce8c9894af836dde0148cf0f85eb6dc6724b1b3",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/api-green-1.progress.jsonl",
+      "bytes": 744,
+      "sha256": "ff8eefffb9486fe7c641e3d8183d2075ef6ee1fcafec4ed67cfe5eba21e45b37",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/api-post-rebase-1.log",
+      "bytes": 4687,
+      "sha256": "a16e17407e4d3f928c9a500c3437e2ca20b780f77fdfd960c452906dd3db7b40",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/api-post-rebase-1.progress.jsonl",
+      "bytes": 774,
+      "sha256": "4f7fb24850a4326f5a70b146a1584f8a52cd79f50f88f271833da489b33667b7",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/api-red-1.log",
+      "bytes": 38381,
+      "sha256": "6466cc30cb9d1ce55586a8683ff3dd1a5fd01c9c1eb2abfc77040ef99918bf01",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/api-red-1.progress.jsonl",
+      "bytes": 729,
+      "sha256": "3577bd674ca239a862f7167656b780c430a0ed48017b67485d9576a65d93b0bb",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/box-serial-1.log",
+      "bytes": 178457,
+      "sha256": "ff29703989a1801f959c5a48b2d63fc7c5f280eeb731795801090eb885effb34",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/box-serial-1.progress.jsonl",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/browser-focused-final-1.log",
+      "bytes": 10601,
+      "sha256": "23a4e2397179bfe341f953eab2d0e3de7ade5ce6669953f5ce57cbc485bf6566",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/browser-focused-final-1.progress.jsonl",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/browser-green-1.log",
+      "bytes": 10240,
+      "sha256": "84a92a10065c2767b1932890f17301916b5b2380c53f9b4bf44eb62031d9dc3d",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/browser-green-1.progress.jsonl",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/browser-offer-red-1.log",
+      "bytes": 16847,
+      "sha256": "da350e502376e9551788c8f0b12b9efb59bedf71f0c0605f4c6734bd0c1e79d3",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/browser-offer-red-1.progress.jsonl",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/browser-query-green-1.log",
+      "bytes": 10456,
+      "sha256": "8953f334492d051be531de8730f010d15582e11161e026aae1eed1cf31de048b",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/browser-query-green-1.progress.jsonl",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/browser-query-red-1.log",
+      "bytes": 14574,
+      "sha256": "6b2e8b2209bea23426239180664988762fc283a4dbc7c131294040e53533e34d",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/browser-query-red-1.progress.jsonl",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/browser-red-1.log",
+      "bytes": 62133,
+      "sha256": "72b89ac4403c4bb15feb104d2c72887c6980b44a0934b123e6d0d4dbdc81613e",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/browser-red-1.progress.jsonl",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/compilers-contracts-lint-1.log",
+      "bytes": 1222,
+      "sha256": "d6796b39619595335d529fb5ba53e9b46491c5b14bfe445387e9fab05ad474c6",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/compilers-contracts-lint-1.progress.jsonl",
+      "bytes": 158,
+      "sha256": "9aca06194f585f74d22331f6370c475f95e1efe0071cd55e2b4b945e09279caa",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/compilers-contracts-lint-final-1.log",
+      "bytes": 1223,
+      "sha256": "16241f3f8ef9a7378b5ba60084057d0afaa132d41c5aae860575223d5314d58a",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/compilers-contracts-lint-final-1.progress.jsonl",
+      "bytes": 164,
+      "sha256": "75812bdedab1f964fd3a816d7b9fec2bf8f0c03beee7928159edf977115cf5a9",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/compilers-post-rebase-1.log",
+      "bytes": 1223,
+      "sha256": "cbeb1451ba39257ea642f010906a1ca32f76d84c03b61c181739b733995144e4",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/compilers-post-rebase-1.progress.jsonl",
+      "bytes": 155,
+      "sha256": "5eba2ad0719e49de96bcdcb4acf5ce11d75846b3dacefc0b07ea944bf774263f",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/console-browser-all-1.log",
+      "bytes": 42435,
+      "sha256": "1c43e80fcc867332ba550114af9c7d8558a717c93de503f42cf855c32a25c515",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/console-browser-all-1.progress.jsonl",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/console-browser-all-2.log",
+      "bytes": 40067,
+      "sha256": "1330289eb6db18062b6acce0be9c6bb6c28fe7245086d3a7f002c70064530b7e",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/console-browser-all-2.progress.jsonl",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/pos-tests-1.log",
+      "bytes": 6518,
+      "sha256": "a03d45c44a2c82ad109573e9c98e26331eaec50a126777b05969f87337977318",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/pos-tests-1.progress.jsonl",
+      "bytes": 15099,
+      "sha256": "bc90a54cabd5629230a0b34d5d90243fccb1805da6c3a8f2c9e074ffa9a7450a",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/proof-offline-1.log",
+      "bytes": 7040,
+      "sha256": "08644b6ad5a16dbc49efbb8b388fde901fcfbb2eebed202bba891571a02012f1",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/source-1792922609857.tar",
+      "bytes": 156755456,
+      "sha256": "bbb97f25dd5fe567f6ca385c651f7f44c89e71a0b77a9e7ba0620c647fa660ae",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/source-1792922609857.txt",
+      "bytes": 169170,
+      "sha256": "cfd9943d3f7010a4dc5a6b4c31b8b9c4dc54772a3981a121e859c13e6fa9f888",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/source-1792923416177.tar",
+      "bytes": 4610048,
+      "sha256": "d25b8955b06e22f918d4f11fee01dc04a2cb90338a9a0c2df9d26b721a77f995",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/source-1792923416177.txt",
+      "bytes": 640,
+      "sha256": "e224be143c736f6b7b1cb9713ee96b8704bfb40058723e32b2b5b2657be93344",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/source-1792923658705.tar",
+      "bytes": 25600,
+      "sha256": "6575265eefac0c7d8a10f72741ac010c985f8efd4be9a05af62ffb454b8011a2",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/source-1792923658705.txt",
+      "bytes": 34,
+      "sha256": "bd430b32a1b3ba94aa2ea741df7eaf73ee41ef33fc2b47efdda410a9ac25f74f",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/source-1792923875343.tar",
+      "bytes": 12800,
+      "sha256": "f36c95e84baea615e2957ee9f39e0c6e64abde754f3fb1dc694d638dbd8a833f",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/source-1792923875343.txt",
+      "bytes": 36,
+      "sha256": "6d0ac23287394919f8a4e60517887c04fcea30dc9f9c79ac97963c827acdef6d",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/source-1792923979281.tar",
+      "bytes": 26112,
+      "sha256": "084a9258fb7fea8977ca72377899446a3020c2fdd0be99abbe6a2c7ddbbc150f",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/source-1792923979281.txt",
+      "bytes": 34,
+      "sha256": "bd430b32a1b3ba94aa2ea741df7eaf73ee41ef33fc2b47efdda410a9ac25f74f",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/source-1792924133446.tar",
+      "bytes": 24064,
+      "sha256": "0ac3ed0e1347fae6e0981568e012ed230b119ebd67ef03957d8528e10fa2b6b1",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/source-1792924133446.txt",
+      "bytes": 127,
+      "sha256": "cc028e331cfb33639dabd979dc7596e305e5aa5f13b2c63c86fefe513f4c9a63",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/workspace-compilers-builds-1.log",
+      "bytes": 12161,
+      "sha256": "dfb17f68037b38c46df23ca2a38d8439fe828d248709600e0f730721ed84401c",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/workspace-compilers-builds-1.progress.jsonl",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/workspace-package-tests-1.log",
+      "bytes": 39337,
+      "sha256": "1c8dbefe04e263a119bb31f341edcaa67d0098aea51bc6d12a4136016895de5f",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-integrated/workspace-package-tests-1.progress.jsonl",
+      "bytes": 30413,
+      "sha256": "c99150bda4b3ab041c360d027378715df6005caa2200d08712e24e3ff3e2dca4",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-staging-proof.mjs",
+      "bytes": 47414,
+      "sha256": "3f0ea7c66721911a94d38c4cb0e22136500441ca0f9babd23599f61c1643c680",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-staging-proof.test.mjs",
+      "bytes": 35930,
+      "sha256": "b0b74e31ef63b81fc9e34b4b58689bbdeb9b54cbb7618915bd00be8917b56c92",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-staging-proof.md",
+      "bytes": 5751,
+      "sha256": "6165137ac00cc2c011b598a11e36f9a021483d79eab9afc76cd5e39158cae861",
+      "copiedToRepository": false
+    },
+    {
+      "path": "C:/w/admin639-publish-local-evidence.mjs",
+      "bytes": 32580,
+      "sha256": "0e9766e97b55016c94cb7435d64c071c1da25d32694a5e9a6159312184e5c6eb",
+      "copiedToRepository": false
+    }
+  ]
+}

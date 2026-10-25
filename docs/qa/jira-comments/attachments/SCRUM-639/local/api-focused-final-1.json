@@ -1,0 +1,15 @@
+{
+  "ticket": "SCRUM-639",
+  "name": "api-focused-final-1",
+  "command": "cd /workspace/apps/api && pnpm test test/platform-review.test.ts test/routes-guarded.test.ts test/route-write-conformance.test.ts test/id-conformance.test.ts test/route-scope-target.test.ts",
+  "startedAt": "2026-10-25T10:28:55.229Z",
+  "completedAt": "2026-10-25T10:29:30.117Z",
+  "exitCode": 0,
+  "signal": null,
+  "sourceManifestSha256": "4cd99466485605de5be9a9dd29da683fe7a875e75f617d54a42c7afb87d8c4e7",
+  "logSha256": "17368cce8d8b56564f8f74e06c53ad753f0215be506f7ebdbddcadadc8a8316c",
+  "hostSourceUnchanged": true,
+  "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+  "hostAndContainerApiDocsUnchanged": true,
+  "staging": false
+}

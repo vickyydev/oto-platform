@@ -1,0 +1,11 @@
+{
+    "at":  "2026-10-25T10:11:14.2356979Z",
+    "reason":  "Own documentation fetch has stalled before any repository edit",
+    "rootNode":  73544,
+    "gitIds":  [
+                   68048,
+                   33268,
+                   86228
+               ],
+    "onlyOwnFetchStopped":  true
+}

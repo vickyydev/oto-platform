@@ -1,0 +1,15 @@
+{
+  "ticket": "SCRUM-639",
+  "name": "pos-tests-1",
+  "command": "pnpm --filter @oto/pos test",
+  "startedAt": "2026-10-25T10:28:55.231Z",
+  "completedAt": "2026-10-25T10:29:14.636Z",
+  "exitCode": 0,
+  "signal": null,
+  "sourceManifestSha256": "4cd99466485605de5be9a9dd29da683fe7a875e75f617d54a42c7afb87d8c4e7",
+  "logSha256": "a03d45c44a2c82ad109573e9c98e26331eaec50a126777b05969f87337977318",
+  "hostSourceUnchanged": true,
+  "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+  "hostAndContainerApiDocsUnchanged": true,
+  "staging": false
+}

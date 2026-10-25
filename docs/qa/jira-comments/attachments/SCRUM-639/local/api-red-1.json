@@ -1,0 +1,15 @@
+{
+  "ticket": "SCRUM-639",
+  "name": "api-red-1",
+  "command": "cd /workspace/apps/api && pnpm test test/platform-review.test.ts test/routes-guarded.test.ts test/route-write-conformance.test.ts test/id-conformance.test.ts test/route-scope-target.test.ts",
+  "startedAt": "2026-10-25T10:05:13.601Z",
+  "completedAt": "2026-10-25T10:06:26.042Z",
+  "exitCode": 1,
+  "signal": null,
+  "sourceManifestSha256": "5c6cc7b7e56cabc91f26a9f89199c6f784ec397a7c6aea8f123229c945f36729",
+  "logSha256": "6466cc30cb9d1ce55586a8683ff3dd1a5fd01c9c1eb2abfc77040ef99918bf01",
+  "hostSourceUnchanged": true,
+  "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+  "hostAndContainerApiDocsUnchanged": true,
+  "staging": false
+}

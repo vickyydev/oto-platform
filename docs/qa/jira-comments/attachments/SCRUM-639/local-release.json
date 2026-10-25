@@ -1,0 +1,245 @@
+{
+  "ticket": "SCRUM-639",
+  "localReleaseGreen": true,
+  "fullBatteryOnFinalFrame": true,
+  "sourceManifestSha256": "4cd99466485605de5be9a9dd29da683fe7a875e75f617d54a42c7afb87d8c4e7",
+  "sourceInputs": 3772,
+  "recordedAt": "2026-10-25T10:55:18.830Z",
+  "requiredGreenReceipts": [
+    {
+      "name": "api-all-1",
+      "receipt": "local/api-all-1.json",
+      "startedAt": "2026-10-25T10:31:07.371Z",
+      "completedAt": "2026-10-25T10:47:00.434Z",
+      "exitCode": 0,
+      "sourceManifestSha256": "4cd99466485605de5be9a9dd29da683fe7a875e75f617d54a42c7afb87d8c4e7",
+      "logSha256": "a0c278e8d30dc43e26afd84f245261a31d7bb5936caf13876c98a5904df6484b",
+      "receiptSha256": "a70f38df888228c9611797aac6b95fbe73792fd7cbaff4b5064cf3ac9dbc0474"
+    },
+    {
+      "name": "api-all-2",
+      "receipt": "local/api-all-2.json",
+      "startedAt": "2026-10-25T10:31:07.371Z",
+      "completedAt": "2026-10-25T10:46:53.021Z",
+      "exitCode": 0,
+      "sourceManifestSha256": "4cd99466485605de5be9a9dd29da683fe7a875e75f617d54a42c7afb87d8c4e7",
+      "logSha256": "45768a920136e0f0279f94db654605bf91f46350cd29926715b03c20c9d08dc8",
+      "receiptSha256": "0ce0231ff975d3b7df6db37166affd452cebcc560ddab4a7c8f7b0201e30ba5a"
+    },
+    {
+      "name": "api-all-3",
+      "receipt": "local/api-all-3.json",
+      "startedAt": "2026-10-25T10:31:07.370Z",
+      "completedAt": "2026-10-25T10:48:25.789Z",
+      "exitCode": 0,
+      "sourceManifestSha256": "4cd99466485605de5be9a9dd29da683fe7a875e75f617d54a42c7afb87d8c4e7",
+      "logSha256": "ee97893319bf24f31d13931eb515fa4b576c8fab882827fdfef3b96ae15fb94b",
+      "receiptSha256": "8b55bc209fc75d5b171451b84f42972bde259f3e3310abe33c424557a398e784"
+    },
+    {
+      "name": "workspace-compilers-builds-1",
+      "receipt": "local/workspace-compilers-builds-1.json",
+      "startedAt": "2026-10-25T10:31:07.381Z",
+      "completedAt": "2026-10-25T10:34:59.508Z",
+      "exitCode": 0,
+      "sourceManifestSha256": "4cd99466485605de5be9a9dd29da683fe7a875e75f617d54a42c7afb87d8c4e7",
+      "logSha256": "dfb17f68037b38c46df23ca2a38d8439fe828d248709600e0f730721ed84401c",
+      "receiptSha256": "f1d39bb96fc82eca40d44c713788b1e4b4ef252e5a3e1a7af60d08a906b3c8b7"
+    },
+    {
+      "name": "pos-tests-1",
+      "receipt": "local/pos-tests-1.json",
+      "startedAt": "2026-10-25T10:28:55.231Z",
+      "completedAt": "2026-10-25T10:29:14.636Z",
+      "exitCode": 0,
+      "sourceManifestSha256": "4cd99466485605de5be9a9dd29da683fe7a875e75f617d54a42c7afb87d8c4e7",
+      "logSha256": "a03d45c44a2c82ad109573e9c98e26331eaec50a126777b05969f87337977318",
+      "receiptSha256": "50f4454180e1d3baaf5023deae2d6fb416612198804404f48d821246558a21f4"
+    },
+    {
+      "name": "workspace-package-tests-1",
+      "receipt": "local/workspace-package-tests-1.json",
+      "startedAt": "2026-10-25T10:28:55.252Z",
+      "completedAt": "2026-10-25T10:32:55.798Z",
+      "exitCode": 0,
+      "sourceManifestSha256": "4cd99466485605de5be9a9dd29da683fe7a875e75f617d54a42c7afb87d8c4e7",
+      "logSha256": "1c8dbefe04e263a119bb31f341edcaa67d0098aea51bc6d12a4136016895de5f",
+      "receiptSha256": "bd7100fbe4633c0b1c00b908bd339d2f08a101aa4965fbde241d19c47570cada"
+    },
+    {
+      "name": "box-serial-1",
+      "receipt": "local/box-serial-1.json",
+      "startedAt": "2026-10-25T10:31:07.421Z",
+      "completedAt": "2026-10-25T10:33:08.569Z",
+      "exitCode": 0,
+      "sourceManifestSha256": "4cd99466485605de5be9a9dd29da683fe7a875e75f617d54a42c7afb87d8c4e7",
+      "logSha256": "ff29703989a1801f959c5a48b2d63fc7c5f280eeb731795801090eb885effb34",
+      "receiptSha256": "647456608f32e2ae9c43bd5c6b5eeaca5effd22bfd29346040be3002e19e7080"
+    },
+    {
+      "name": "api-focused-final-1",
+      "receipt": "local/api-focused-final-1.json",
+      "startedAt": "2026-10-25T10:28:55.229Z",
+      "completedAt": "2026-10-25T10:29:30.117Z",
+      "exitCode": 0,
+      "sourceManifestSha256": "4cd99466485605de5be9a9dd29da683fe7a875e75f617d54a42c7afb87d8c4e7",
+      "logSha256": "17368cce8d8b56564f8f74e06c53ad753f0215be506f7ebdbddcadadc8a8316c",
+      "receiptSha256": "9155c44fcbeb30ba825419452144913201890befe8fd37e050e171ed365d0343"
+    },
+    {
+      "name": "browser-focused-final-1",
+      "receipt": "local/browser-focused-final-1.json",
+      "startedAt": "2026-10-25T10:28:55.242Z",
+      "completedAt": "2026-10-25T10:29:37.915Z",
+      "exitCode": 0,
+      "sourceManifestSha256": "4cd99466485605de5be9a9dd29da683fe7a875e75f617d54a42c7afb87d8c4e7",
+      "logSha256": "23a4e2397179bfe341f953eab2d0e3de7ade5ce6669953f5ce57cbc485bf6566",
+      "receiptSha256": "766402e188ac874d7314a264a1f3f0806aadde0ff4039228f59330cda100564e"
+    },
+    {
+      "name": "compilers-contracts-lint-final-1",
+      "receipt": "local/compilers-contracts-lint-final-1.json",
+      "startedAt": "2026-10-25T10:28:55.447Z",
+      "completedAt": "2026-10-25T10:30:06.148Z",
+      "exitCode": 0,
+      "sourceManifestSha256": "4cd99466485605de5be9a9dd29da683fe7a875e75f617d54a42c7afb87d8c4e7",
+      "logSha256": "16241f3f8ef9a7378b5ba60084057d0afaa132d41c5aae860575223d5314d58a",
+      "receiptSha256": "3fc253db11ee924b518dafd0ee78cfdd86d09a3b0ccb88822ba6412bad529535"
+    },
+    {
+      "name": "console-browser-all-2",
+      "receipt": "local/console-browser-all-2.json",
+      "startedAt": "2026-10-25T10:39:12.305Z",
+      "completedAt": "2026-10-25T10:43:15.945Z",
+      "exitCode": 0,
+      "sourceManifestSha256": "4cd99466485605de5be9a9dd29da683fe7a875e75f617d54a42c7afb87d8c4e7",
+      "logSha256": "1330289eb6db18062b6acce0be9c6bb6c28fe7245086d3a7f002c70064530b7e",
+      "receiptSha256": "7ab026c618011b417142cfa01cb3f197f4d5790998b248d80334588cf46e585f"
+    },
+    {
+      "name": "api-post-rebase-1",
+      "receipt": "local/api-post-rebase-1.json",
+      "startedAt": "2026-10-25T10:49:35.184Z",
+      "completedAt": "2026-10-25T10:49:57.287Z",
+      "exitCode": 0,
+      "sourceManifestSha256": "4cd99466485605de5be9a9dd29da683fe7a875e75f617d54a42c7afb87d8c4e7",
+      "logSha256": "a16e17407e4d3f928c9a500c3437e2ca20b780f77fdfd960c452906dd3db7b40",
+      "receiptSha256": "3d4d058ac311d452f2c7961725f1be702fbd183bd5480d9267445da12fb33cf5"
+    },
+    {
+      "name": "compilers-post-rebase-1",
+      "receipt": "local/compilers-post-rebase-1.json",
+      "startedAt": "2026-10-25T10:49:35.186Z",
+      "completedAt": "2026-10-25T10:50:27.400Z",
+      "exitCode": 0,
+      "sourceManifestSha256": "4cd99466485605de5be9a9dd29da683fe7a875e75f617d54a42c7afb87d8c4e7",
+      "logSha256": "cbeb1451ba39257ea642f010906a1ca32f76d84c03b61c181739b733995144e4",
+      "receiptSha256": "20d7f4f419867e721f3580da5ce5dba554bcac2f41ec9f3d8f6b13a276037213"
+    }
+  ],
+  "results": {
+    "apiPassed": 5532,
+    "apiFiles": 369,
+    "apiSkipped": 3,
+    "apiTodo": 5,
+    "browserPassed": 233,
+    "posPassed": 1437,
+    "boxPassed": 749,
+    "consoleUnitPassed": 281,
+    "consoleUnitTodo": 3,
+    "compilers": 16,
+    "builds": 5,
+    "focusedApiPassed": 97,
+    "focusedBrowserPassed": 29,
+    "clientPassed": 10,
+    "lintFiles": 21
+  },
+  "apiShards": [
+    {
+      "shard": 1,
+      "files": {
+        "passed": 123,
+        "failed": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "tests": {
+        "passed": 1871,
+        "failed": 0,
+        "skipped": 1,
+        "todo": 0
+      }
+    },
+    {
+      "shard": 2,
+      "files": {
+        "passed": 123,
+        "failed": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "tests": {
+        "passed": 1933,
+        "failed": 0,
+        "skipped": 0,
+        "todo": 4
+      }
+    },
+    {
+      "shard": 3,
+      "files": {
+        "passed": 123,
+        "failed": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "tests": {
+        "passed": 1728,
+        "failed": 0,
+        "skipped": 2,
+        "todo": 1
+      }
+    }
+  ],
+  "remainingPnpmPackages": [
+    "@oto/messaging",
+    "@oto/print",
+    "@oto/shared",
+    "@oto/telemetry",
+    "@oto/booth",
+    "@oto/api-types",
+    "@oto/assistant",
+    "@oto/db",
+    "@oto/payments-2c2p",
+    "@oto/inbox",
+    "@oto/launcher",
+    "@oto/admin-screens",
+    "@oto/console"
+  ],
+  "qualifyingBrowser": "console-browser-all-2",
+  "excludedBrowser": "console-browser-all-1",
+  "browserTwoSequentialAfterBothTerminal": true,
+  "postRebaseFocusedAndCompilerGatesRepeated": true,
+  "sourceCheckpoint": "local/source-checkpoint-local.json",
+  "cleanup": {
+    "receipt": "local/cleanup.json",
+    "exactOwnedContainersRemoved": 2,
+    "baselinePreserved": 10,
+    "completedAt": "2026-10-25T10:55:13.567Z"
+  },
+  "boxFileConcurrency": 1,
+  "boxAssertionsAndTimeoutSourceBytesUnchanged": true,
+  "mainFeatureLanded": false,
+  "actualStaging": false,
+  "deployed": false,
+  "limits": [
+    "Local source release only; exact-source CI, automatic rollout and actual staging proof remain required.",
+    "The legacy OTO App npm suite is not claimed by the pnpm package command.",
+    "Operators screenshot uses the legacy address after checking the new path and six landing links",
+    "System-role details are collapsed; every permission sentence is not a pixel-visibility claim",
+    "Test controls prove native availability and offers only; none is executed",
+    "Environment is the only planned phone screenshot",
+    "Offline checks do not exercise the whole real-browser flow or prove PNG privacy and geometry",
+    "Actual staging execution, screenshot inspection and release acceptance are still required"
+  ]
+}

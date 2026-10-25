@@ -1,0 +1,124 @@
+{
+  "ticket": "SCRUM-639",
+  "review": "Console source acceptance self-review",
+  "passed": true,
+  "readOnly": true,
+  "staging": false,
+  "acceptance": false,
+  "reviewedAt": "2026-10-25T10:36:24.547Z",
+  "sourceManifestSha256": "4cd99466485605de5be9a9dd29da683fe7a875e75f617d54a42c7afb87d8c4e7",
+  "sourceFiles": [
+    {
+      "path": "apps/console/src/App.tsx",
+      "sha256": "4f5bcdd16824dc775c9000e2ffcd8441ad44c9f4be396f401fa620ce49be31f2"
+    },
+    {
+      "path": "apps/console/src/auth/SessionContext.tsx",
+      "sha256": "fbba0713bafb639406f39af40cf49ebea0aa24ad5df61570cdc70bdb80aa853a"
+    },
+    {
+      "path": "apps/console/src/components/consoleSections.tsx",
+      "sha256": "08a565e9d685cc501ab08d1e70cae67d50ceb0c225e3f730f6934c047351dc10"
+    },
+    {
+      "path": "apps/console/src/components/ConsoleLayout.tsx",
+      "sha256": "4a4b6381e1addaeff88711afcb433c83607873ef07bcf6963057fe357aeb4016"
+    },
+    {
+      "path": "apps/console/src/components/platform/TestControls.tsx",
+      "sha256": "fd62db1478280cda80c897b82f4746faa05ff4f5d2698b24f453c0d5ddb9f312"
+    },
+    {
+      "path": "apps/console/src/api/platform-admin.ts",
+      "sha256": "19857a307ef6516c098350b432ee1fa88442a9fc192b9a347bdbdeb8e60b01f9"
+    },
+    {
+      "path": "apps/console/src/lib/platformAuthority.ts",
+      "sha256": "3a9551d00a3d6cd100931a897630a915a8f43047e7b239b4271a05fcabc0d679"
+    },
+    {
+      "path": "apps/console/src/pages/Platform.tsx",
+      "sha256": "49c9063a7dad2bb715bf92753e94a1f556ac732def6196858d10d24e4f8704f3"
+    },
+    {
+      "path": "apps/console/src/pages/AreaLanding.tsx",
+      "sha256": "26f6e2cea568defcdf430ab264c8fdbc8beb9641243881c095b83652d9b90261"
+    },
+    {
+      "path": "apps/console/src/pages/Health.tsx",
+      "sha256": "f94849e6a9b38d2cb9c60b28ddd0642fb0d91d961cba20ec63d72944056e692e"
+    },
+    {
+      "path": "apps/console/src/pages/Operators.tsx",
+      "sha256": "88384045bd62a476cf4d713eb079b7da8351cab2b82f0f8192b0caf8679d589f"
+    },
+    {
+      "path": "apps/console/e2e/platform.spec.ts",
+      "sha256": "f6feb42ef9daaa5fadbac743e48b2c8328027e00a1d9e9104b96bd7c62ebeff0"
+    },
+    {
+      "path": "apps/console/test/organisation-markup.test.ts",
+      "sha256": "8ac06f5aec598b7dc034380f76d9b26739085d75112a9948ae6167e2fc0c60dc"
+    }
+  ],
+  "blockers": [],
+  "checks": {
+    "nativeCommandBarCardsStatusChipsAndButtons": true,
+    "sixPlatformRoutesAndLegacyOperatorsAddress": true,
+    "legacyHealthAddressAndBodiesPreserved": true,
+    "systemRolesFilteredByTrueSystemProvenance": true,
+    "globalHealthOffersAndDispatchRequireGenuinePlatformAndOwnOrNullOperatorGrant": true,
+    "otherNavigationRulesUnchanged": true,
+    "answerAndLateResultsBoundToSessionAndQuery": true,
+    "refreshStartAndABAEpochFence": true,
+    "nativeOperatorsBodiesAndControlsReusedWithDispatchAndResponseGuards": true,
+    "testControlAvailabilityAndManageGatesRetained": true,
+    "jobRowsReadPersistedStatusWithoutExecution": true,
+    "environmentOnlySelectsNamePresencePurposeProviderMetadata": true
+  },
+  "evidence": {
+    "browser-focused-final-1": {
+      "receiptPath": "C:/w/admin639-integrated/browser-focused-final-1.json",
+      "receiptSha256": "766402e188ac874d7314a264a1f3f0806aadde0ff4039228f59330cda100564e",
+      "logSha256": "23a4e2397179bfe341f953eab2d0e3de7ade5ce6669953f5ce57cbc485bf6566",
+      "exitCode": 0,
+      "signal": null,
+      "sourceManifestSha256": "4cd99466485605de5be9a9dd29da683fe7a875e75f617d54a42c7afb87d8c4e7",
+      "hostSourceUnchanged": true,
+      "hostAndContainerApiDocsUnchanged": true,
+      "startedAt": "2026-10-25T10:28:55.242Z",
+      "completedAt": "2026-10-25T10:29:37.915Z"
+    },
+    "compilers-contracts-lint-final-1": {
+      "receiptPath": "C:/w/admin639-integrated/compilers-contracts-lint-final-1.json",
+      "receiptSha256": "3fc253db11ee924b518dafd0ee78cfdd86d09a3b0ccb88822ba6412bad529535",
+      "logSha256": "16241f3f8ef9a7378b5ba60084057d0afaa132d41c5aae860575223d5314d58a",
+      "exitCode": 0,
+      "signal": null,
+      "sourceManifestSha256": "4cd99466485605de5be9a9dd29da683fe7a875e75f617d54a42c7afb87d8c4e7",
+      "hostSourceUnchanged": true,
+      "hostAndContainerApiDocsUnchanged": true,
+      "startedAt": "2026-10-25T10:28:55.447Z",
+      "completedAt": "2026-10-25T10:30:06.148Z"
+    }
+  },
+  "verifiedLocal": {
+    "browserCases": 29,
+    "clientWalkerCases": 10,
+    "apiCompilerDiagnostics": 0,
+    "consoleCompilerDiagnostics": 0,
+    "changedFileLintErrors": 0,
+    "environmentPhoneViewport": {
+      "width": 390,
+      "height": 844,
+      "horizontalOverflow": false
+    }
+  },
+  "limitations": [
+    "Built-browser tests use intercepted synthetic HTTP fixtures, not live staging data.",
+    "The phone bound check covers Environment. Other five pages have source-reviewed native wrapping, not an additional pixel inspection in this review.",
+    "No new PNG was viewed during this read-only review; existing phone screenshot remains a local test artifact.",
+    "Native Operators and Test controls are reused; their staging mutations were not executed.",
+    "Whole release battery is coordinated separately; this is not a full-battery or deployed claim."
+  ]
+}

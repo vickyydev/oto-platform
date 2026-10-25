@@ -1,0 +1,66 @@
+{
+  "ticket": "SCRUM-639",
+  "reviewedAt": "2026-10-25T10:42:19.395Z",
+  "readOnly": true,
+  "sourceChanged": false,
+  "runtimeExecuted": false,
+  "diagnosis": "FIRST_FAILURE_CAUSE_UNLOCALIZED",
+  "concreteSourceRegressionFound": false,
+  "firstRun": {
+    "receiptPath": "C:/w/admin639-integrated/console-browser-all-1.json",
+    "receiptSha256": "94929698da0715eca95bd8a39db03a6e881d81d35d431ec81cee2d80519f3305",
+    "logPath": "C:/w/admin639-integrated/console-browser-all-1.log",
+    "logSha256": "1c43e80fcc867332ba550114af9c7d8558a717c93de503f42cf855c32a25c515",
+    "sourceManifestSha256": "4cd99466485605de5be9a9dd29da683fe7a875e75f617d54a42c7afb87d8c4e7",
+    "exitCode": 1,
+    "passed": 232,
+    "failed": 1,
+    "failingCase": "e2e/reports.spec.ts:205",
+    "failure": "Expected synthetic own Sales item absent after 5 seconds",
+    "startedAt": "2026-10-25T10:31:07.411Z",
+    "completedAt": "2026-10-25T10:35:45.750Z"
+  },
+  "sourceFindings": [
+    "Reports obtains readable park metadata from /analytics/summary, not the branch directory.",
+    "The fixture explicitly provides the current park summary and a successful own Sales item while /branches refuses.",
+    "Exact park analytics checks in Reports remain independent of sibling-only branch-directory permission.",
+    "The new Sidebar scope hook performs no fetch or state update and filters only three new Platform links.",
+    "SessionContext adds refresh/epoch exposure without changing its original request sequence or Reports authority inputs."
+  ],
+  "concurrency": {
+    "workspaceStartedAt": "2026-10-25T10:31:07.381Z",
+    "workspaceCompletedAt": "2026-10-25T10:34:59.508Z",
+    "rangesOverlap": true,
+    "sameEmittedBundleNamesAndSizes": true,
+    "consoleJs": "index-CsBMS-z1.js",
+    "consoleCss": "index-CaH3r7Z2.css",
+    "inference": "Transient rewrite of served dist is plausible but not established by the available failure context."
+  },
+  "limits": [
+    "No request trace, runtime-error array or failed PNG was provided in the inspected copied context.",
+    "Matching emitted names/sizes is not an independent byte hash of the served artifact at failure time.",
+    "The unchanged sequential full rerun is coordinated by root; this receipt does not claim its outcome."
+  ],
+  "sourceFiles": [
+    {
+      "path": "apps/console/src/pages/Reports.tsx",
+      "sha256": "6daad0269b08a0edb71278a88f15d19b63b342b45212b279b8f82ac157739918"
+    },
+    {
+      "path": "apps/console/src/api/reports.ts",
+      "sha256": "fc20393863fc88cb600e437d98e9bcecfa2555ad96eec0a8bcebd73906c2a5c0"
+    },
+    {
+      "path": "apps/console/src/auth/SessionContext.tsx",
+      "sha256": "fbba0713bafb639406f39af40cf49ebea0aa24ad5df61570cdc70bdb80aa853a"
+    },
+    {
+      "path": "apps/console/src/lib/platformAuthority.ts",
+      "sha256": "3a9551d00a3d6cd100931a897630a915a8f43047e7b239b4271a05fcabc0d679"
+    },
+    {
+      "path": "apps/console/src/components/ConsoleLayout.tsx",
+      "sha256": "4a4b6381e1addaeff88711afcb433c83607873ef07bcf6963057fe357aeb4016"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "ticket": "SCRUM-639",
+  "at": "2026-10-25T09:56:09.939Z",
+  "network": "oto-admin639-integrated",
+  "pg": "oto-admin639-integrated-pg",
+  "api": "oto-admin639-integrated-app",
+  "image": "sha256:ecfc844d13d36b27adf7f5a1cf705fbe876efba601da39d39bbe64dad85d6b26"
+}

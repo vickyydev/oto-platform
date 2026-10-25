@@ -1,0 +1,899 @@
+{
+  "ticket": "SCRUM-639",
+  "recordedAt": "2026-10-25T10:55:18.830Z",
+  "kind": "Metadata assembly and receipt integrity checks",
+  "localReleaseGreen": true,
+  "fullBatteryOnFinalFrame": true,
+  "sourceManifestSha256": "4cd99466485605de5be9a9dd29da683fe7a875e75f617d54a42c7afb87d8c4e7",
+  "sourceInputs": 3772,
+  "currentSourceRowsVerified": 3772,
+  "actualStaging": false,
+  "deployed": false,
+  "mainFeatureLanded": false,
+  "acceptance": false,
+  "results": {
+    "apiPassed": 5532,
+    "apiFiles": 369,
+    "apiSkipped": 3,
+    "apiTodo": 5,
+    "browserPassed": 233,
+    "posPassed": 1437,
+    "boxPassed": 749,
+    "consoleUnitPassed": 281,
+    "consoleUnitTodo": 3,
+    "compilers": 16,
+    "builds": 5,
+    "focusedApiPassed": 97,
+    "focusedBrowserPassed": 29,
+    "clientPassed": 10,
+    "lintFiles": 21
+  },
+  "requiredGreenReceipts": [
+    {
+      "name": "api-all-1",
+      "receipt": "local/api-all-1.json",
+      "startedAt": "2026-10-25T10:31:07.371Z",
+      "completedAt": "2026-10-25T10:47:00.434Z",
+      "exitCode": 0,
+      "sourceManifestSha256": "4cd99466485605de5be9a9dd29da683fe7a875e75f617d54a42c7afb87d8c4e7",
+      "logSha256": "a0c278e8d30dc43e26afd84f245261a31d7bb5936caf13876c98a5904df6484b",
+      "receiptSha256": "a70f38df888228c9611797aac6b95fbe73792fd7cbaff4b5064cf3ac9dbc0474"
+    },
+    {
+      "name": "api-all-2",
+      "receipt": "local/api-all-2.json",
+      "startedAt": "2026-10-25T10:31:07.371Z",
+      "completedAt": "2026-10-25T10:46:53.021Z",
+      "exitCode": 0,
+      "sourceManifestSha256": "4cd99466485605de5be9a9dd29da683fe7a875e75f617d54a42c7afb87d8c4e7",
+      "logSha256": "45768a920136e0f0279f94db654605bf91f46350cd29926715b03c20c9d08dc8",
+      "receiptSha256": "0ce0231ff975d3b7df6db37166affd452cebcc560ddab4a7c8f7b0201e30ba5a"
+    },
+    {
+      "name": "api-all-3",
+      "receipt": "local/api-all-3.json",
+      "startedAt": "2026-10-25T10:31:07.370Z",
+      "completedAt": "2026-10-25T10:48:25.789Z",
+      "exitCode": 0,
+      "sourceManifestSha256": "4cd99466485605de5be9a9dd29da683fe7a875e75f617d54a42c7afb87d8c4e7",
+      "logSha256": "ee97893319bf24f31d13931eb515fa4b576c8fab882827fdfef3b96ae15fb94b",
+      "receiptSha256": "8b55bc209fc75d5b171451b84f42972bde259f3e3310abe33c424557a398e784"
+    },
+    {
+      "name": "workspace-compilers-builds-1",
+      "receipt": "local/workspace-compilers-builds-1.json",
+      "startedAt": "2026-10-25T10:31:07.381Z",
+      "completedAt": "2026-10-25T10:34:59.508Z",
+      "exitCode": 0,
+      "sourceManifestSha256": "4cd99466485605de5be9a9dd29da683fe7a875e75f617d54a42c7afb87d8c4e7",
+      "logSha256": "dfb17f68037b38c46df23ca2a38d8439fe828d248709600e0f730721ed84401c",
+      "receiptSha256": "f1d39bb96fc82eca40d44c713788b1e4b4ef252e5a3e1a7af60d08a906b3c8b7"
+    },
+    {
+      "name": "pos-tests-1",
+      "receipt": "local/pos-tests-1.json",
+      "startedAt": "2026-10-25T10:28:55.231Z",
+      "completedAt": "2026-10-25T10:29:14.636Z",
+      "exitCode": 0,
+      "sourceManifestSha256": "4cd99466485605de5be9a9dd29da683fe7a875e75f617d54a42c7afb87d8c4e7",
+      "logSha256": "a03d45c44a2c82ad109573e9c98e26331eaec50a126777b05969f87337977318",
+      "receiptSha256": "50f4454180e1d3baaf5023deae2d6fb416612198804404f48d821246558a21f4"
+    },
+    {
+      "name": "workspace-package-tests-1",
+      "receipt": "local/workspace-package-tests-1.json",
+      "startedAt": "2026-10-25T10:28:55.252Z",
+      "completedAt": "2026-10-25T10:32:55.798Z",
+      "exitCode": 0,
+      "sourceManifestSha256": "4cd99466485605de5be9a9dd29da683fe7a875e75f617d54a42c7afb87d8c4e7",
+      "logSha256": "1c8dbefe04e263a119bb31f341edcaa67d0098aea51bc6d12a4136016895de5f",
+      "receiptSha256": "bd7100fbe4633c0b1c00b908bd339d2f08a101aa4965fbde241d19c47570cada"
+    },
+    {
+      "name": "box-serial-1",
+      "receipt": "local/box-serial-1.json",
+      "startedAt": "2026-10-25T10:31:07.421Z",
+      "completedAt": "2026-10-25T10:33:08.569Z",
+      "exitCode": 0,
+      "sourceManifestSha256": "4cd99466485605de5be9a9dd29da683fe7a875e75f617d54a42c7afb87d8c4e7",
+      "logSha256": "ff29703989a1801f959c5a48b2d63fc7c5f280eeb731795801090eb885effb34",
+      "receiptSha256": "647456608f32e2ae9c43bd5c6b5eeaca5effd22bfd29346040be3002e19e7080"
+    },
+    {
+      "name": "api-focused-final-1",
+      "receipt": "local/api-focused-final-1.json",
+      "startedAt": "2026-10-25T10:28:55.229Z",
+      "completedAt": "2026-10-25T10:29:30.117Z",
+      "exitCode": 0,
+      "sourceManifestSha256": "4cd99466485605de5be9a9dd29da683fe7a875e75f617d54a42c7afb87d8c4e7",
+      "logSha256": "17368cce8d8b56564f8f74e06c53ad753f0215be506f7ebdbddcadadc8a8316c",
+      "receiptSha256": "9155c44fcbeb30ba825419452144913201890befe8fd37e050e171ed365d0343"
+    },
+    {
+      "name": "browser-focused-final-1",
+      "receipt": "local/browser-focused-final-1.json",
+      "startedAt": "2026-10-25T10:28:55.242Z",
+      "completedAt": "2026-10-25T10:29:37.915Z",
+      "exitCode": 0,
+      "sourceManifestSha256": "4cd99466485605de5be9a9dd29da683fe7a875e75f617d54a42c7afb87d8c4e7",
+      "logSha256": "23a4e2397179bfe341f953eab2d0e3de7ade5ce6669953f5ce57cbc485bf6566",
+      "receiptSha256": "766402e188ac874d7314a264a1f3f0806aadde0ff4039228f59330cda100564e"
+    },
+    {
+      "name": "compilers-contracts-lint-final-1",
+      "receipt": "local/compilers-contracts-lint-final-1.json",
+      "startedAt": "2026-10-25T10:28:55.447Z",
+      "completedAt": "2026-10-25T10:30:06.148Z",
+      "exitCode": 0,
+      "sourceManifestSha256": "4cd99466485605de5be9a9dd29da683fe7a875e75f617d54a42c7afb87d8c4e7",
+      "logSha256": "16241f3f8ef9a7378b5ba60084057d0afaa132d41c5aae860575223d5314d58a",
+      "receiptSha256": "3fc253db11ee924b518dafd0ee78cfdd86d09a3b0ccb88822ba6412bad529535"
+    },
+    {
+      "name": "console-browser-all-2",
+      "receipt": "local/console-browser-all-2.json",
+      "startedAt": "2026-10-25T10:39:12.305Z",
+      "completedAt": "2026-10-25T10:43:15.945Z",
+      "exitCode": 0,
+      "sourceManifestSha256": "4cd99466485605de5be9a9dd29da683fe7a875e75f617d54a42c7afb87d8c4e7",
+      "logSha256": "1330289eb6db18062b6acce0be9c6bb6c28fe7245086d3a7f002c70064530b7e",
+      "receiptSha256": "7ab026c618011b417142cfa01cb3f197f4d5790998b248d80334588cf46e585f"
+    },
+    {
+      "name": "api-post-rebase-1",
+      "receipt": "local/api-post-rebase-1.json",
+      "startedAt": "2026-10-25T10:49:35.184Z",
+      "completedAt": "2026-10-25T10:49:57.287Z",
+      "exitCode": 0,
+      "sourceManifestSha256": "4cd99466485605de5be9a9dd29da683fe7a875e75f617d54a42c7afb87d8c4e7",
+      "logSha256": "a16e17407e4d3f928c9a500c3437e2ca20b780f77fdfd960c452906dd3db7b40",
+      "receiptSha256": "3d4d058ac311d452f2c7961725f1be702fbd183bd5480d9267445da12fb33cf5"
+    },
+    {
+      "name": "compilers-post-rebase-1",
+      "receipt": "local/compilers-post-rebase-1.json",
+      "startedAt": "2026-10-25T10:49:35.186Z",
+      "completedAt": "2026-10-25T10:50:27.400Z",
+      "exitCode": 0,
+      "sourceManifestSha256": "4cd99466485605de5be9a9dd29da683fe7a875e75f617d54a42c7afb87d8c4e7",
+      "logSha256": "cbeb1451ba39257ea642f010906a1ca32f76d84c03b61c181739b733995144e4",
+      "receiptSha256": "20d7f4f419867e721f3580da5ce5dba554bcac2f41ec9f3d8f6b13a276037213"
+    }
+  ],
+  "apiShards": [
+    {
+      "shard": 1,
+      "files": {
+        "passed": 123,
+        "failed": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "tests": {
+        "passed": 1871,
+        "failed": 0,
+        "skipped": 1,
+        "todo": 0
+      }
+    },
+    {
+      "shard": 2,
+      "files": {
+        "passed": 123,
+        "failed": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "tests": {
+        "passed": 1933,
+        "failed": 0,
+        "skipped": 0,
+        "todo": 4
+      }
+    },
+    {
+      "shard": 3,
+      "files": {
+        "passed": 123,
+        "failed": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "tests": {
+        "passed": 1728,
+        "failed": 0,
+        "skipped": 2,
+        "todo": 1
+      }
+    }
+  ],
+  "originalHistory": [
+    {
+      "name": "api-red-1",
+      "receipt": "local/api-red-1.json",
+      "passed": 75,
+      "failed": 22,
+      "exitCode": 1,
+      "sourceManifestSha256": "5c6cc7b7e56cabc91f26a9f89199c6f784ec397a7c6aea8f123229c945f36729",
+      "releaseQualifying": false
+    },
+    {
+      "name": "browser-red-1",
+      "receipt": "local/browser-red-1.json",
+      "passed": 0,
+      "failed": 27,
+      "exitCode": 1,
+      "sourceManifestSha256": "5c6cc7b7e56cabc91f26a9f89199c6f784ec397a7c6aea8f123229c945f36729",
+      "releaseQualifying": false
+    },
+    {
+      "name": "browser-query-red-1",
+      "receipt": "local/browser-query-red-1.json",
+      "passed": 27,
+      "failed": 2,
+      "exitCode": 1,
+      "sourceManifestSha256": "07a06e51434b87e5f9f244b1c90e9ca365fb6211392e43ec4d44ae8c80af3be4",
+      "releaseQualifying": false
+    },
+    {
+      "name": "browser-query-green-1",
+      "receipt": "local/browser-query-green-1.json",
+      "passed": 29,
+      "failed": 0,
+      "exitCode": 0,
+      "sourceManifestSha256": "e7bd6ba27cf0a96eb33d01e5c21b197fab7c04d3d5e0dc1950fdec072ba793be",
+      "releaseQualifying": false
+    },
+    {
+      "name": "browser-offer-red-1",
+      "receipt": "local/browser-offer-red-1.json",
+      "passed": 26,
+      "failed": 3,
+      "exitCode": 1,
+      "sourceManifestSha256": "03c6d1c712aaf7d27980822803ce6151b82ba30fbc7d51ba252a8e5bbdc73fda",
+      "releaseQualifying": false
+    },
+    {
+      "name": "console-browser-all-1",
+      "receipt": "local/console-browser-all-1.json",
+      "passed": 232,
+      "failed": 1,
+      "exitCode": 1,
+      "sourceManifestSha256": "4cd99466485605de5be9a9dd29da683fe7a875e75f617d54a42c7afb87d8c4e7",
+      "releaseQualifying": false,
+      "reason": "Overlapped workspace dist writes; one actual Reports failure; cause not assigned."
+    }
+  ],
+  "receiptLogHashChecks": [
+    {
+      "receipt": "local/api-all-1.json",
+      "logPath": "C:/w/admin639-integrated/api-all-1.log",
+      "sha256": "a0c278e8d30dc43e26afd84f245261a31d7bb5936caf13876c98a5904df6484b",
+      "exitCode": 0,
+      "matched": true
+    },
+    {
+      "receipt": "local/api-all-2.json",
+      "logPath": "C:/w/admin639-integrated/api-all-2.log",
+      "sha256": "45768a920136e0f0279f94db654605bf91f46350cd29926715b03c20c9d08dc8",
+      "exitCode": 0,
+      "matched": true
+    },
+    {
+      "receipt": "local/api-all-3.json",
+      "logPath": "C:/w/admin639-integrated/api-all-3.log",
+      "sha256": "ee97893319bf24f31d13931eb515fa4b576c8fab882827fdfef3b96ae15fb94b",
+      "exitCode": 0,
+      "matched": true
+    },
+    {
+      "receipt": "local/api-focused-final-1.json",
+      "logPath": "C:/w/admin639-integrated/api-focused-final-1.log",
+      "sha256": "17368cce8d8b56564f8f74e06c53ad753f0215be506f7ebdbddcadadc8a8316c",
+      "exitCode": 0,
+      "matched": true
+    },
+    {
+      "receipt": "local/api-green-1.json",
+      "logPath": "C:/w/admin639-integrated/api-green-1.log",
+      "sha256": "f75b35f90d53608ed443883b6ce8c9894af836dde0148cf0f85eb6dc6724b1b3",
+      "exitCode": 0,
+      "matched": true
+    },
+    {
+      "receipt": "local/api-post-rebase-1.json",
+      "logPath": "C:/w/admin639-integrated/api-post-rebase-1.log",
+      "sha256": "a16e17407e4d3f928c9a500c3437e2ca20b780f77fdfd960c452906dd3db7b40",
+      "exitCode": 0,
+      "matched": true
+    },
+    {
+      "receipt": "local/api-red-1.json",
+      "logPath": "C:/w/admin639-integrated/api-red-1.log",
+      "sha256": "6466cc30cb9d1ce55586a8683ff3dd1a5fd01c9c1eb2abfc77040ef99918bf01",
+      "exitCode": 1,
+      "matched": true
+    },
+    {
+      "receipt": "local/box-serial-1.json",
+      "logPath": "C:/w/admin639-integrated/box-serial-1.log",
+      "sha256": "ff29703989a1801f959c5a48b2d63fc7c5f280eeb731795801090eb885effb34",
+      "exitCode": 0,
+      "matched": true
+    },
+    {
+      "receipt": "local/browser-focused-final-1.json",
+      "logPath": "C:/w/admin639-integrated/browser-focused-final-1.log",
+      "sha256": "23a4e2397179bfe341f953eab2d0e3de7ade5ce6669953f5ce57cbc485bf6566",
+      "exitCode": 0,
+      "matched": true
+    },
+    {
+      "receipt": "local/browser-green-1.json",
+      "logPath": "C:/w/admin639-integrated/browser-green-1.log",
+      "sha256": "84a92a10065c2767b1932890f17301916b5b2380c53f9b4bf44eb62031d9dc3d",
+      "exitCode": 0,
+      "matched": true
+    },
+    {
+      "receipt": "local/browser-offer-red-1.json",
+      "logPath": "C:/w/admin639-integrated/browser-offer-red-1.log",
+      "sha256": "da350e502376e9551788c8f0b12b9efb59bedf71f0c0605f4c6734bd0c1e79d3",
+      "exitCode": 1,
+      "matched": true
+    },
+    {
+      "receipt": "local/browser-query-green-1.json",
+      "logPath": "C:/w/admin639-integrated/browser-query-green-1.log",
+      "sha256": "8953f334492d051be531de8730f010d15582e11161e026aae1eed1cf31de048b",
+      "exitCode": 0,
+      "matched": true
+    },
+    {
+      "receipt": "local/browser-query-red-1.json",
+      "logPath": "C:/w/admin639-integrated/browser-query-red-1.log",
+      "sha256": "6b2e8b2209bea23426239180664988762fc283a4dbc7c131294040e53533e34d",
+      "exitCode": 1,
+      "matched": true
+    },
+    {
+      "receipt": "local/browser-red-1.json",
+      "logPath": "C:/w/admin639-integrated/browser-red-1.log",
+      "sha256": "72b89ac4403c4bb15feb104d2c72887c6980b44a0934b123e6d0d4dbdc81613e",
+      "exitCode": 1,
+      "matched": true
+    },
+    {
+      "receipt": "local/compilers-contracts-lint-1.json",
+      "logPath": "C:/w/admin639-integrated/compilers-contracts-lint-1.log",
+      "sha256": "d6796b39619595335d529fb5ba53e9b46491c5b14bfe445387e9fab05ad474c6",
+      "exitCode": 0,
+      "matched": true
+    },
+    {
+      "receipt": "local/compilers-contracts-lint-final-1.json",
+      "logPath": "C:/w/admin639-integrated/compilers-contracts-lint-final-1.log",
+      "sha256": "16241f3f8ef9a7378b5ba60084057d0afaa132d41c5aae860575223d5314d58a",
+      "exitCode": 0,
+      "matched": true
+    },
+    {
+      "receipt": "local/compilers-post-rebase-1.json",
+      "logPath": "C:/w/admin639-integrated/compilers-post-rebase-1.log",
+      "sha256": "cbeb1451ba39257ea642f010906a1ca32f76d84c03b61c181739b733995144e4",
+      "exitCode": 0,
+      "matched": true
+    },
+    {
+      "receipt": "local/console-browser-all-1.json",
+      "logPath": "C:/w/admin639-integrated/console-browser-all-1.log",
+      "sha256": "1c43e80fcc867332ba550114af9c7d8558a717c93de503f42cf855c32a25c515",
+      "exitCode": 1,
+      "matched": true
+    },
+    {
+      "receipt": "local/console-browser-all-2.json",
+      "logPath": "C:/w/admin639-integrated/console-browser-all-2.log",
+      "sha256": "1330289eb6db18062b6acce0be9c6bb6c28fe7245086d3a7f002c70064530b7e",
+      "exitCode": 0,
+      "matched": true
+    },
+    {
+      "receipt": "local/pos-tests-1.json",
+      "logPath": "C:/w/admin639-integrated/pos-tests-1.log",
+      "sha256": "a03d45c44a2c82ad109573e9c98e26331eaec50a126777b05969f87337977318",
+      "exitCode": 0,
+      "matched": true
+    },
+    {
+      "receipt": "local/proof-offline-1.json",
+      "logPath": "C:/w/admin639-integrated/proof-offline-1.log",
+      "sha256": "08644b6ad5a16dbc49efbb8b388fde901fcfbb2eebed202bba891571a02012f1",
+      "exitCode": 0,
+      "matched": true
+    },
+    {
+      "receipt": "local/workspace-compilers-builds-1.json",
+      "logPath": "C:/w/admin639-integrated/workspace-compilers-builds-1.log",
+      "sha256": "dfb17f68037b38c46df23ca2a38d8439fe828d248709600e0f730721ed84401c",
+      "exitCode": 0,
+      "matched": true
+    },
+    {
+      "receipt": "local/workspace-package-tests-1.json",
+      "logPath": "C:/w/admin639-integrated/workspace-package-tests-1.log",
+      "sha256": "1c8dbefe04e263a119bb31f341edcaa67d0098aea51bc6d12a4136016895de5f",
+      "exitCode": 0,
+      "matched": true
+    }
+  ],
+  "copiedFiles": [
+    {
+      "source": "C:/w/admin639-integrated/api-all-1.json",
+      "path": "local/api-all-1.json",
+      "bytes": 602,
+      "sha256": "a70f38df888228c9611797aac6b95fbe73792fd7cbaff4b5064cf3ac9dbc0474",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-integrated/api-all-2.json",
+      "path": "local/api-all-2.json",
+      "bytes": 602,
+      "sha256": "0ce0231ff975d3b7df6db37166affd452cebcc560ddab4a7c8f7b0201e30ba5a",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-integrated/api-all-3.json",
+      "path": "local/api-all-3.json",
+      "bytes": 602,
+      "sha256": "8b55bc209fc75d5b171451b84f42972bde259f3e3310abe33c424557a398e784",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-integrated/api-doc-inputs.json",
+      "path": "local/api-doc-inputs.json",
+      "bytes": 567,
+      "sha256": "ac7b6b5ce4d5feb5a78c87359f5ca04009c7f9a682112658d0d30ee06e643dfb",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-integrated/api-focused-final-1.json",
+      "path": "local/api-focused-final-1.json",
+      "bytes": 754,
+      "sha256": "9155c44fcbeb30ba825419452144913201890befe8fd37e050e171ed365d0343",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-integrated/api-green-1.json",
+      "path": "local/api-green-1.json",
+      "bytes": 746,
+      "sha256": "4d3687cb3bea53f8cb693f1492b09efc34109f8d9cee3a4060ce2ac47d552d02",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-integrated/api-post-rebase-1.json",
+      "path": "local/api-post-rebase-1.json",
+      "bytes": 752,
+      "sha256": "3d4d058ac311d452f2c7961725f1be702fbd183bd5480d9267445da12fb33cf5",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-integrated/api-red-1.json",
+      "path": "local/api-red-1.json",
+      "bytes": 744,
+      "sha256": "e09e4f885963837f73db8451ff23c68e2b37390c9aa0442980a920347115c699",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-integrated/box-serial-1.json",
+      "path": "local/box-serial-1.json",
+      "bytes": 612,
+      "sha256": "647456608f32e2ae9c43bd5c6b5eeaca5effd22bfd29346040be3002e19e7080",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-integrated/browser-focused-final-1.json",
+      "path": "local/browser-focused-final-1.json",
+      "bytes": 665,
+      "sha256": "766402e188ac874d7314a264a1f3f0806aadde0ff4039228f59330cda100564e",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-integrated/browser-green-1.json",
+      "path": "local/browser-green-1.json",
+      "bytes": 657,
+      "sha256": "e7662289ce78400a14901d96a3405aee4783e2d8798047e494019e4f67be934f",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-integrated/browser-offer-red-1.json",
+      "path": "local/browser-offer-red-1.json",
+      "bytes": 661,
+      "sha256": "e977e96ffcb0817accd453c54a26036ae2d33565e4886511a7280ec30406c754",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-integrated/browser-query-green-1.json",
+      "path": "local/browser-query-green-1.json",
+      "bytes": 663,
+      "sha256": "0283ee5d3dc2daff0dcc6c634aea48125f548b28aec996a5455329e53df07391",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-integrated/browser-query-red-1.json",
+      "path": "local/browser-query-red-1.json",
+      "bytes": 661,
+      "sha256": "cbf72a79681dda47355ee91331218039c4b3878595e169a9251b66c04e634c5b",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-integrated/browser-red-1.json",
+      "path": "local/browser-red-1.json",
+      "bytes": 655,
+      "sha256": "4213d4aa101ee0ed45d4e97160b2e0e67b23a3707974e29a54e5e8cdc5c9e13a",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-integrated/cleanup-intent.json",
+      "path": "local/cleanup-intent.json",
+      "bytes": 1512,
+      "sha256": "1ca584a1f0f5eaf52b0312994b29217bd8edb91cdce85e95372da5750b74c9b2",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-integrated/cleanup.json",
+      "path": "local/cleanup.json",
+      "bytes": 377,
+      "sha256": "b7601d131d61bc0c0c6c6938a9968b02f877b42d0442e6a42ab8c2c7e83fcdf8",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-integrated/compilers-contracts-lint-1.json",
+      "path": "local/compilers-contracts-lint-1.json",
+      "bytes": 1499,
+      "sha256": "534e3bf7d9dbd75bfee3c8c377caba223312b63bce4edab16d5d3b1d9f545aa4",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-integrated/compilers-contracts-lint-final-1.json",
+      "path": "local/compilers-contracts-lint-final-1.json",
+      "bytes": 1590,
+      "sha256": "3fc253db11ee924b518dafd0ee78cfdd86d09a3b0ccb88822ba6412bad529535",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-integrated/compilers-post-rebase-1.json",
+      "path": "local/compilers-post-rebase-1.json",
+      "bytes": 1581,
+      "sha256": "20d7f4f419867e721f3580da5ce5dba554bcac2f41ec9f3d8f6b13a276037213",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-integrated/console-browser-all-1.json",
+      "path": "local/console-browser-all-1.json",
+      "bytes": 646,
+      "sha256": "94929698da0715eca95bd8a39db03a6e881d81d35d431ec81cee2d80519f3305",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-integrated/console-browser-all-2.json",
+      "path": "local/console-browser-all-2.json",
+      "bytes": 646,
+      "sha256": "7ab026c618011b417142cfa01cb3f197f4d5790998b248d80334588cf46e585f",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-integrated/current.json",
+      "path": "source-manifest.json",
+      "bytes": 595688,
+      "sha256": "52cde7fe3e45b448604f31cbd899fc7105fa6e2587872c2b828f309c3e49e94a",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-integrated/native-catalogue-review.json",
+      "path": "local/native-catalogue-review.json",
+      "bytes": 974,
+      "sha256": "4590424a13f5a8008845e38aa63d4f21c9e5a83f53c32ce07b68cca09d4146cd",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-integrated/pos-tests-1.json",
+      "path": "local/pos-tests-1.json",
+      "bytes": 584,
+      "sha256": "50f4454180e1d3baaf5023deae2d6fb416612198804404f48d821246558a21f4",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-integrated/proof-offline-1.json",
+      "path": "local/proof-offline-1.json",
+      "bytes": 678,
+      "sha256": "21a0adb576d7025a22eae7777125024966fd78f132577d144e3cf195ec99ed2a",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-integrated/runtime-census.json",
+      "path": "local/runtime-census.json",
+      "bytes": 2687,
+      "sha256": "3f52d15e89ab94728255fdfc1591ada77ea40dc3b7e892bbe542ee2cd2fe7a83",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-integrated/setup-intent.json",
+      "path": "local/setup-intent.json",
+      "bytes": 268,
+      "sha256": "81400b135bd2584832435c379e2b090a6cc6965539291a145344b9c7f9f03c51",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-integrated/setup.json",
+      "path": "local/setup.json",
+      "bytes": 414,
+      "sha256": "211040f38c42179bf995dc155e29ab9c3f7517749cb031546e6d1df073de8422",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-integrated/source-1792922609857.json",
+      "path": "local/source-1792922609857.json",
+      "bytes": 790540,
+      "sha256": "62241c9839724deb98083fa56c41216aa0b2bba4f665934adf2eac363591b79e",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-integrated/source-1792923416177.json",
+      "path": "local/source-1792923416177.json",
+      "bytes": 596682,
+      "sha256": "0789ba96a88d48f209bcf0a72c1c04f273fbdae8206cd1c0ec58915c031b3b4e",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-integrated/source-1792923658705.json",
+      "path": "local/source-1792923658705.json",
+      "bytes": 595964,
+      "sha256": "459bf903971efc429b575dd468647a4c44fcd7a4c6b0c406a94b4513c62c9534",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-integrated/source-1792923875343.json",
+      "path": "local/source-1792923875343.json",
+      "bytes": 595966,
+      "sha256": "fe5fb02793742f98d93f44f38713ccb3ddea32a238815a602d6b0562b84ef42d",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-integrated/source-1792923979281.json",
+      "path": "local/source-1792923979281.json",
+      "bytes": 595964,
+      "sha256": "f5533289576e4803c62c3474210587efb550cd55ee25c006a7757590f2e51d6e",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-integrated/source-1792924133446.json",
+      "path": "local/source-1792924133446.json",
+      "bytes": 596071,
+      "sha256": "842b170e49f6280a0cd6d3c9c047ebfa19e0834943ac850bda884d4e5ed40dd2",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-integrated/source-checkpoint-local.json",
+      "path": "local/source-checkpoint-local.json",
+      "bytes": 2049,
+      "sha256": "880f78935e7e55bd46747460a7509d286541afbacb92e4e26932404db1bdb36a",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-integrated/workspace-compilers-builds-1.json",
+      "path": "local/workspace-compilers-builds-1.json",
+      "bytes": 650,
+      "sha256": "f1d39bb96fc82eca40d44c713788b1e4b4ef252e5a3e1a7af60d08a906b3c8b7",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-integrated/workspace-package-tests-1.json",
+      "path": "local/workspace-package-tests-1.json",
+      "bytes": 695,
+      "sha256": "bd7100fbe4633c0b1c00b908bd339d2f08a101aa4965fbde241d19c47570cada",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-proof-local-preflight.json",
+      "path": "metadata/admin639-proof-local-preflight.json",
+      "bytes": 2489,
+      "sha256": "8ca3cc705df33e2f0bbfac0d8485992db009eab223f7e5122337ccac4b5813c2",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-proof-independent-review.json",
+      "path": "metadata/admin639-proof-independent-review.json",
+      "bytes": 1776,
+      "sha256": "e9dce0eb23a1abf947032ecef263bb5fdf0a799225d7d034cfcdd4cfe0824f56",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-console-acceptance-review.json",
+      "path": "metadata/admin639-console-acceptance-review.json",
+      "bytes": 5213,
+      "sha256": "fd13810cc21ca5fbdcfbcb793968d4261b88f913466bad9bc1e7488b6f769534",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-report-browser-first-diagnosis.json",
+      "path": "metadata/admin639-report-browser-first-diagnosis.json",
+      "bytes": 3055,
+      "sha256": "52734941ad5dd71be831b5d8a05d9837d995e3620d47dd4b652ba01a5dcfcf47",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-red-checkpoint.json",
+      "path": "metadata/admin639-red-checkpoint.json",
+      "bytes": 260,
+      "sha256": "d4f5282705946375e638d763f86bebd06b9b00995b23f9263ae1b9bafff0c4ac",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-focused-checkpoint.json",
+      "path": "metadata/admin639-focused-checkpoint.json",
+      "bytes": 259,
+      "sha256": "e695884d5c453a84a4c83a258d828df53911d2545dc3bbdc7dd7d60511cc2c95",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-battery-progress.json",
+      "path": "metadata/admin639-battery-progress.json",
+      "bytes": 3854,
+      "sha256": "3ffb0372108c5bd65ecf5cb87feb1aa0d64712b57ce5d09baf3beae7bbb7a1c8",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-battery-progress-pushed.json",
+      "path": "metadata/admin639-battery-progress-pushed.json",
+      "bytes": 326,
+      "sha256": "47271e72806db2e280f7a815f978b8cd54fb5b3ce6f93c49166ec483012a9937",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-fetch-stall.json",
+      "path": "metadata/admin639-fetch-stall.json",
+      "bytes": 306,
+      "sha256": "042d7a5bfc7bfce9b30aa605eeb744a87caa07b393cec03d16cfaf15e4745c75",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin639-local-capture-plan.json",
+      "path": "metadata/admin639-local-capture-plan.json",
+      "bytes": 3067,
+      "sha256": "0bce31038458b1c6a9a9433bc10c183b808fc75c98752e73df00b131d754d797",
+      "byteIdentical": true
+    }
+  ],
+  "generatedFiles": [
+    {
+      "path": "README.md",
+      "sha256": "33a97e818bd315a028241d9dee39ca1f80f3f893b14bbae3359830e73356e65b"
+    },
+    {
+      "path": "external-artifacts.json",
+      "sha256": "ffecf76b3272e5b8cd5cc68fa3a3fb58ebf5f79acfa9340c111db35d4185e926"
+    },
+    {
+      "path": "file-list.json",
+      "sha256": "198d76bbcf548cdf49924d31f383f9350a1ccab7e3cce5f073d5e35b0f6b8220"
+    },
+    {
+      "path": "local-release.json",
+      "sha256": "6dd44dc309ea7db5390893f39895589f2a85080526a0ffcc7d226adc0288257b"
+    }
+  ],
+  "qualifyingBrowser": {
+    "name": "console-browser-all-2",
+    "scheduled": 233,
+    "passed": 233,
+    "failed": 0,
+    "skipped": 0,
+    "startedAfterBothTerminal": true
+  },
+  "proofPreparation": {
+    "offlinePassed": 25,
+    "schemaPaths": [
+      "/api/operators",
+      "/api/platform/alerts",
+      "/api/platform/environment",
+      "/api/platform/jobs",
+      "/api/roles"
+    ],
+    "networkAttempts": 0,
+    "authAttempts": 0,
+    "releasedSourceBinding": false,
+    "helperSha256": "3f0ea7c66721911a94d38c4cb0e22136500441ca0f9babd23599f61c1643c680",
+    "testSha256": "b0b74e31ef63b81fc9e34b4b58689bbdeb9b54cbb7618915bd00be8917b56c92",
+    "independentReview": "metadata/admin639-proof-independent-review.json",
+    "limits": [
+      "Operators screenshot uses the legacy address after checking the new path and six landing links",
+      "System-role details are collapsed; every permission sentence is not a pixel-visibility claim",
+      "Test controls prove native availability and offers only; none is executed",
+      "Environment is the only planned phone screenshot",
+      "Offline checks do not exercise the whole real-browser flow or prove PNG privacy and geometry",
+      "Actual staging execution, screenshot inspection and release acceptance are still required"
+    ]
+  },
+  "consoleSourceReview": {
+    "path": "metadata/admin639-console-acceptance-review.json",
+    "sourceFiles": 13,
+    "browserCases": 29,
+    "onlyEnvironmentPhoneOverflowExecuted": true,
+    "otherWrappingSourceReviewed": true,
+    "newPixelsViewed": false
+  },
+  "publication": {
+    "byteIdenticalCopies": true,
+    "authoredJsonUtf8NoBomLf": true,
+    "rawLogsArchivesOrPngsCopied": false,
+    "noGitRuntimeNetworkAuthOrJiraActions": true,
+    "noSourceEdits": true,
+    "newFiles": [
+      "docs/qa/jira-comments/attachments/SCRUM-639/README.md",
+      "docs/qa/jira-comments/attachments/SCRUM-639/external-artifacts.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/file-list.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/independent-checks.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/local-release.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/local/api-all-1.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/local/api-all-2.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/local/api-all-3.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/local/api-doc-inputs.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/local/api-focused-final-1.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/local/api-green-1.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/local/api-post-rebase-1.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/local/api-red-1.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/local/box-serial-1.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/local/browser-focused-final-1.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/local/browser-green-1.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/local/browser-offer-red-1.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/local/browser-query-green-1.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/local/browser-query-red-1.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/local/browser-red-1.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/local/cleanup-intent.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/local/cleanup.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/local/compilers-contracts-lint-1.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/local/compilers-contracts-lint-final-1.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/local/compilers-post-rebase-1.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/local/console-browser-all-1.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/local/console-browser-all-2.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/local/native-catalogue-review.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/local/pos-tests-1.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/local/proof-offline-1.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/local/runtime-census.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/local/setup-intent.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/local/setup.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/local/source-1792922609857.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/local/source-1792923416177.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/local/source-1792923658705.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/local/source-1792923875343.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/local/source-1792923979281.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/local/source-1792924133446.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/local/source-checkpoint-local.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/local/workspace-compilers-builds-1.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/local/workspace-package-tests-1.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/metadata/admin639-battery-progress-pushed.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/metadata/admin639-battery-progress.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/metadata/admin639-console-acceptance-review.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/metadata/admin639-fetch-stall.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/metadata/admin639-focused-checkpoint.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/metadata/admin639-local-capture-plan.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/metadata/admin639-proof-independent-review.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/metadata/admin639-proof-local-preflight.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/metadata/admin639-red-checkpoint.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/metadata/admin639-report-browser-first-diagnosis.json",
+      "docs/qa/jira-comments/attachments/SCRUM-639/source-manifest.json"
+    ]
+  },
+  "limits": [
+    "Only terminal recorded local gates qualify; first full browser run remains nonqualifying history.",
+    "No source commit is embedded in local-release; the manifest excludes docs and binds the eventual commit.",
+    "Current listed source bytes are rehashed; the assembler does not run Git or claim a new runtime execution.",
+    "Operators screenshot uses the legacy address after checking the new path and six landing links",
+    "System-role details are collapsed; every permission sentence is not a pixel-visibility claim",
+    "Test controls prove native availability and offers only; none is executed",
+    "Environment is the only planned phone screenshot",
+    "Offline checks do not exercise the whole real-browser flow or prove PNG privacy and geometry",
+    "Actual staging execution, screenshot inspection and release acceptance are still required"
+  ]
+}

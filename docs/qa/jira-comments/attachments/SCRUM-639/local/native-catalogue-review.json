@@ -1,0 +1,40 @@
+{
+  "ticket": "SCRUM-639",
+  "at": "2026-10-25T10:16:55.760Z",
+  "kind": "read-only source review",
+  "nativeCatalogueLiteralIdentical": true,
+  "nativeNames": [
+    "DATABASE_URL",
+    "ALLOWED_ORIGINS",
+    "SMS_ADAPTER",
+    "TWILIO_ACCOUNT_SID",
+    "TWILIO_API_KEY_SID",
+    "TWILIO_API_KEY_SECRET",
+    "TWILIO_AUTH_TOKEN",
+    "TWILIO_FROM",
+    "MINIO_ENDPOINT",
+    "MINIO_PORT",
+    "MINIO_USE_SSL",
+    "MINIO_ACCESS_KEY",
+    "MINIO_SECRET_KEY",
+    "MINIO_BUCKET",
+    "MINIO_REGION",
+    "HANDOFF_SIGNING_KEY",
+    "HANDOFF_APP_ORIGINS",
+    "ALERT_CHANNELS",
+    "SENTRY_DSN"
+  ],
+  "files": [
+    {
+      "path": "apps/api/src/services/ops.ts",
+      "sha256": "43471f25e8e59e8cf59845d5a5234905b5a028333cfaf4ab9645d4025a407148"
+    },
+    {
+      "path": "apps/api/src/services/platform.ts",
+      "sha256": "956364d487680c0ce923413242dcac77148d5564757a23609025c046759cfb47"
+    }
+  ],
+  "runtimeTest": false,
+  "actualStaging": false,
+  "authAttempts": 0
+}

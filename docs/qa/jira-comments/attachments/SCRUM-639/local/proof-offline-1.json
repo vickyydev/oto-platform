@@ -1,0 +1,24 @@
+{
+  "ticket": "SCRUM-639",
+  "name": "proof-offline-1",
+  "startedAt": "2026-10-25T10:25:52.756Z",
+  "completedAt": "2026-10-25T10:25:52.931Z",
+  "exitCode": 0,
+  "source": [
+    {
+      "path": "C:/w/admin639-staging-proof.mjs",
+      "sha256": "3f0ea7c66721911a94d38c4cb0e22136500441ca0f9babd23599f61c1643c680"
+    },
+    {
+      "path": "C:/w/admin639-staging-proof.test.mjs",
+      "sha256": "b0b74e31ef63b81fc9e34b4b58689bbdeb9b54cbb7618915bd00be8917b56c92"
+    }
+  ],
+  "sourceUnchanged": true,
+  "tests": 25,
+  "passed": 25,
+  "failed": 0,
+  "logSha256": "08644b6ad5a16dbc49efbb8b388fde901fcfbb2eebed202bba891571a02012f1",
+  "actualStaging": false,
+  "authAttempts": 0
+}

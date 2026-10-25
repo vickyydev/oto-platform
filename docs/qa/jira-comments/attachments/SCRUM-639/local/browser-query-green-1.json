@@ -1,0 +1,15 @@
+{
+  "ticket": "SCRUM-639",
+  "name": "browser-query-green-1",
+  "command": "CONSOLE_E2E_BROWSER=chromium CONSOLE_E2E_BUILT=1 pnpm --filter @oto/console e2e platform.spec.ts",
+  "startedAt": "2026-10-25T10:24:36.963Z",
+  "completedAt": "2026-10-25T10:25:02.098Z",
+  "exitCode": 0,
+  "signal": null,
+  "sourceManifestSha256": "e7bd6ba27cf0a96eb33d01e5c21b197fab7c04d3d5e0dc1950fdec072ba793be",
+  "logSha256": "8953f334492d051be531de8730f010d15582e11161e026aae1eed1cf31de048b",
+  "hostSourceUnchanged": true,
+  "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+  "hostAndContainerApiDocsUnchanged": true,
+  "staging": false
+}

@@ -1,0 +1,15 @@
+{
+  "ticket": "SCRUM-639",
+  "name": "box-serial-1",
+  "command": "pnpm --filter @oto/box-agent test --test-concurrency=1",
+  "startedAt": "2026-10-25T10:31:07.421Z",
+  "completedAt": "2026-10-25T10:33:08.569Z",
+  "exitCode": 0,
+  "signal": null,
+  "sourceManifestSha256": "4cd99466485605de5be9a9dd29da683fe7a875e75f617d54a42c7afb87d8c4e7",
+  "logSha256": "ff29703989a1801f959c5a48b2d63fc7c5f280eeb731795801090eb885effb34",
+  "hostSourceUnchanged": true,
+  "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+  "hostAndContainerApiDocsUnchanged": true,
+  "staging": false
+}
