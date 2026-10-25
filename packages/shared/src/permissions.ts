@@ -15,6 +15,8 @@ export const PERMISSIONS = [
   'console:overview:read',
   /** Read employee pay in the OTO App when its legal entity enables platform access. */
   'hr:salary:view',
+  /** Select a session's working operator; enforcement also requires a live platform-wide grant. */
+  'platform:operator:switch',
   // Admin console — accounts & access
   'admin:account:create',
   'admin:account:read',

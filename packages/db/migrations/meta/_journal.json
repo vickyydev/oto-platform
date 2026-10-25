@@ -617,6 +617,13 @@
       "when": 1792917844789,
       "tag": "0087_assistant_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 88,
+      "version": "7",
+      "when": 1793017911549,
+      "tag": "0088_operator_switch",
+      "breakpoints": true
     }
   ]
 }
