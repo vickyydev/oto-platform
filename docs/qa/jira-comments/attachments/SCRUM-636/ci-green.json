@@ -1,0 +1,806 @@
+{
+  "ticket": "SCRUM-636",
+  "recordedAt": "2026-10-25T07:07:22.595Z",
+  "sourceSha": "be94f6c847b2a276167992ce6bcf3c6ec8988f71",
+  "runId": "40170166041",
+  "status": "completed",
+  "conclusion": "success",
+  "jobs": [
+    {
+      "name": "ci",
+      "databaseId": 121099212508,
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-25T06:44:26Z",
+      "completedAt": "2026-10-25T06:59:11Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize containers",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "What changed",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run pnpm/action-setup@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Typecheck",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Lint",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "No screen reads mock members",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Generated api types match the api",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Vendored redaction has not drifted",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Migrations apply cleanly from empty (twice)",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Seed",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Console tests",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Print tests",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Test",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Build",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Pi scripts parse",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Working tree before the pack",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Pack the Pi release",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Upload the Pi release",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install Chromium for the Console end-to-end set",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Console end-to-end",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Console end-to-end report",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Post Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run pnpm/action-setup@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Stop containers",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "oto-app",
+      "databaseId": 121099212604,
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-25T06:44:26Z",
+      "completedAt": "2026-10-25T06:45:04Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize containers",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "What changed",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install the OTO App",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Build the OTO App",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The OTO App's inherited typecheck ceiling",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The payroll golden example (engine leg)",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The payroll engine checks",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The suite theme checks",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install PostgreSQL 16 and video evidence tools",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Rehearse the app restore and replay",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Keep the restore counts",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The otoapp schema, as the platform makes it",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The app's migrations apply cleanly from empty (twice)",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The app's route checks",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The app's fix module checks",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The app's night-job checks",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The app's suite sign-in checks",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The app's hand-off target checks",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The app's tenant ownership checks",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The app's Attention checks",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The app's attendance checks",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The app's attendance evidence parser checks",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The app's attendance reviewer transaction checks",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The app's document checks",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The app's finance import checks",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The app's finance ownership checks",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The app's Xero connection ownership checks",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The app's administration and payroll checks",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The app's record deletion checks",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The app's camp cancelled-day checks",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The app's camp creation day-exclusion checks",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The app's salary visibility checks",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The app's checklist media and history checks",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The app's leave type checks",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The app's task assignees in Today checks",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The app's checklist assignees in Today checks",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The app's check-in child card checks",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The app's leave balance reach checks",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The app's access escalation checks",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The app's named rights checks",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The app's kiosk device checks",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The app's birthdays and sidebar checks",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The app's payroll configuration checks",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The app's payroll profile editor check",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The app's payroll cutover check",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The payroll golden example (service and HTTP leg)",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The app's payroll feeds checks",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The app's payroll lifecycle checks",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The app's payroll statutory documents checks",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The app's payroll outputs checks",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Run pnpm/action-setup@v4",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install the focused feature review dependencies",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The app's feature runtime reviews",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The app's issue reporting review",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The app's scheduling park-group review",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The offboarding census",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "The tenant ownership read-back",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Stop containers",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "api-tests (3)",
+      "databaseId": 121099212606,
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-25T06:44:26Z",
+      "completedAt": "2026-10-25T07:02:58Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize containers",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "What changed",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run pnpm/action-setup@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Build the api's dependencies",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Api tests (shard 3 of 3)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run pnpm/action-setup@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Stop containers",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "api-tests (1)",
+      "databaseId": 121099212649,
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-25T06:44:27Z",
+      "completedAt": "2026-10-25T07:04:22Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize containers",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "What changed",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run pnpm/action-setup@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Build the api's dependencies",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Api tests (shard 1 of 3)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run pnpm/action-setup@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Stop containers",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "pos-tests",
+      "databaseId": 121099212666,
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-25T06:44:26Z",
+      "completedAt": "2026-10-25T06:45:55Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "What changed",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run pnpm/action-setup@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Build the POS's dependencies",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "POS tests",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run pnpm/action-setup@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "api-tests (2)",
+      "databaseId": 121099212689,
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-25T06:44:26Z",
+      "completedAt": "2026-10-25T07:02:17Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize containers",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "What changed",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run pnpm/action-setup@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Build the api's dependencies",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Api tests (shard 2 of 3)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run pnpm/action-setup@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Stop containers",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ],
+  "manualDeployment": false
+}
