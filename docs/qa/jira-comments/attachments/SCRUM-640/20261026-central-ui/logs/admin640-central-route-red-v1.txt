@@ -1,0 +1,460 @@
+
+> @oto/api@0.1.0 test C:\w\admin-operator-switch\apps\api
+> vitest run --pool=forks "test/operator-switch-route-review.test.ts"
+
+
+ RUN  v3.2.7 C:/w/admin-operator-switch/apps/api
+
+stdout | test/operator-switch-route-review.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/operator-switch-route-review.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-EhprJu ... ok
+creating subdirectories ...
+
+stdout | test/operator-switch-route-review.test.ts
+ok
+
+
+stdout | test/operator-switch-route-review.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ...
+
+stdout | test/operator-switch-route-review.test.ts
+100
+selecting default shared_buffers ...
+
+stdout | test/operator-switch-route-review.test.ts
+128MB
+selecting default time zone ...
+
+stdout | test/operator-switch-route-review.test.ts
+Asia/Bangkok
+creating configuration files ...
+
+stdout | test/operator-switch-route-review.test.ts
+
+
+stdout | test/operator-switch-route-review.test.ts
+ok
+running bootstrap script ...
+
+stdout | test/operator-switch-route-review.test.ts
+ok
+
+
+stdout | test/operator-switch-route-review.test.ts
+performing post-bootstrap initialization ...
+
+stdout | test/operator-switch-route-review.test.ts
+ok
+syncing data to disk ...
+
+stdout | test/operator-switch-route-review.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\w^\admin^-operator^-switch^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-EhprJu^" -l logfile start
+
+
+
+stdout | test/operator-switch-route-review.test.ts
+2026-10-26 04:36:50.163 +07 [86936] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/operator-switch-route-review.test.ts
+2026-10-26 04:36:50.168 +07 [86936] LOG:  listening on IPv6 address "::1", port 54807
+
+
+stdout | test/operator-switch-route-review.test.ts
+2026-10-26 04:36:50.168 +07 [86936] LOG:  listening on IPv4 address "127.0.0.1", port 54807
+
+
+stdout | test/operator-switch-route-review.test.ts
+2026-10-26 04:36:50.235 +07 [81624] LOG:  database system was shut down at 2026-10-26 04:36:46 +07
+
+
+stdout | test/operator-switch-route-review.test.ts
+2026-10-26 04:36:50.271 +07 [86936] LOG:  database system is ready to accept connections
+
+
+stdout | test/operator-switch-route-review.test.ts
+2026-10-26 04:36:56.728 +07 [89072] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+
+stdout | test/operator-switch-route-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/operator-switch-route-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:1604) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/operator-switch-route-review.test.ts
+2026-10-26 04:36:59.973 +07 [37596] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/operator-switch-route-review.test.ts
+2026-10-26 04:36:59.995 +07 [37596] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.004 s, sync=0.005 s, total=0.023 s; sync files=5, longest=0.002 s, average=0.001 s; distance=15744 kB, estimate=15744 kB; lsn=0/24D82E8, redo lsn=0/24D82B0
+
+
+ ❯ test/operator-switch-route-review.test.ts (26 tests | 26 failed) 18635ms
+   × SCRUM-640 Q20 native operator-selection route and truthful home metadata > R1 exposes the canonical home context without replacing account or employee identity 98ms
+     → expected undefined to deeply equal { …(6) }
+   × SCRUM-640 Q20 native operator-selection route and truthful home metadata > R2 reports an actual switched context beside the same home identity 35ms
+     → expected undefined to deeply equal { …(6) }
+   × SCRUM-640 Q20 native operator-selection route and truthful home metadata > R3 selects through the registered native route, records one transaction and narrows subsequent reads 29ms
+     → expected 404 to be 200 // Object.is equality
+   × SCRUM-640 Q20 native operator-selection route and truthful home metadata > R4 returns home with null and preserves the real actor 31ms
+     → expected 404 to be 200 // Object.is equality
+   × SCRUM-640 Q20 native operator-selection route and truthful home metadata > R4 returns home with explicit-home and preserves the real actor 28ms
+     → expected 404 to be 200 // Object.is equality
+   × SCRUM-640 Q20 native operator-selection route and truthful home metadata > R5 a same-context selection preserves both seats and still advances the confirmed revision 17ms
+     → expected 404 to be 200 // Object.is equality
+   × SCRUM-640 Q20 native operator-selection route and truthful home metadata > R6 refuses an invalid or identity-bearing body 0 before a selection 18ms
+     → expected 404 to be 400 // Object.is equality
+   × SCRUM-640 Q20 native operator-selection route and truthful home metadata > R6 refuses an invalid or identity-bearing body 1 before a selection 17ms
+     → expected 404 to be 400 // Object.is equality
+   × SCRUM-640 Q20 native operator-selection route and truthful home metadata > R6 refuses an invalid or identity-bearing body 2 before a selection 19ms
+     → expected 404 to be 400 // Object.is equality
+   × SCRUM-640 Q20 native operator-selection route and truthful home metadata > R6 refuses an invalid or identity-bearing body 3 before a selection 18ms
+     → expected 404 to be 400 // Object.is equality
+   × SCRUM-640 Q20 native operator-selection route and truthful home metadata > R6 refuses an invalid or identity-bearing body 4 before a selection 17ms
+     → expected 404 to be 400 // Object.is equality
+   × SCRUM-640 Q20 native operator-selection route and truthful home metadata > R6 refuses an invalid or identity-bearing body 5 before a selection 16ms
+     → expected 404 to be 400 // Object.is equality
+   × SCRUM-640 Q20 native operator-selection route and truthful home metadata > R6 refuses an invalid or identity-bearing body 6 before a selection 15ms
+     → expected 404 to be 400 // Object.is equality
+   × SCRUM-640 Q20 native operator-selection route and truthful home metadata > R6 refuses an invalid or identity-bearing body 7 before a selection 15ms
+     → expected 404 to be 400 // Object.is equality
+   × SCRUM-640 Q20 native operator-selection route and truthful home metadata > R6 refuses an invalid or identity-bearing body 8 before a selection 14ms
+     → expected 404 to be 400 // Object.is equality
+   × SCRUM-640 Q20 native operator-selection route and truthful home metadata > R6 refuses an invalid or identity-bearing body 9 before a selection 17ms
+     → expected 404 to be 400 // Object.is equality
+   × SCRUM-640 Q20 native operator-selection route and truthful home metadata > R7 requires a native idempotency key before changing context 14ms
+     → expected 404 to be 400 // Object.is equality
+   × SCRUM-640 Q20 native operator-selection route and truthful home metadata > R8 refuses absent switch authority despite unrelated global reads 18ms
+     → expected 404 to be 403 // Object.is equality
+   × SCRUM-640 Q20 native operator-selection route and truthful home metadata > R8 refuses own-operator switch authority despite unrelated global reads 16ms
+     → expected 404 to be 403 // Object.is equality
+   × SCRUM-640 Q20 native operator-selection route and truthful home metadata > R9 retains native locked refusal 21ms
+     → expected 404 to be 423 // Object.is equality
+   × SCRUM-640 Q20 native operator-selection route and truthful home metadata > R9 retains native temporary refusal 18ms
+     → expected 404 to be 403 // Object.is equality
+   × SCRUM-640 Q20 native operator-selection route and truthful home metadata > R9 retains native nonstaff refusal 17ms
+     → expected 404 to be 403 // Object.is equality
+   × SCRUM-640 Q20 native operator-selection route and truthful home metadata > R10 refuses a stale displayed revision without applying a later choice 27ms
+     → expected 404 to be 409 // Object.is equality
+   × SCRUM-640 Q20 native operator-selection route and truthful home metadata > R11 a same-key lost acknowledgement replays only its current committed confirmation 24ms
+     → expected 404 to be 200 // Object.is equality
+   × SCRUM-640 Q20 native operator-selection route and truthful home metadata > R12 offers the declared operator-wide permission and typed request/response contract 9ms
+     → expected undefined to be defined
+   × SCRUM-640 Q20 native operator-selection route and truthful home metadata > R13 never takes session identity from a second session of the same account 17ms
+     → expected 404 to be 400 // Object.is equality
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 26 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/operator-switch-route-review.test.ts > SCRUM-640 Q20 native operator-selection route and truthful home metadata > R1 exposes the canonical home context without replacing account or employee identity
+AssertionError: expected undefined to deeply equal { …(6) }
+
+- Expected:
+{
+  "branchId": "01a174fe-d1c7-7ff8-af8a-1cdaabda8d31",
+  "effectiveOperatorId": "01a174fe-d1c7-7ff8-af8a-1cd8ef355345",
+  "homeOperatorId": "01a174fe-d1c7-7ff8-af8a-1cd8ef355345",
+  "operatorOverride": null,
+  "revision": 0,
+  "stationId": "01a174fe-d1c7-7ff8-af8a-1cdc6889b7e1",
+}
+
++ Received:
+undefined
+
+ ❯ test/operator-switch-route-review.test.ts:71:45
+     69|     const before = await identity(), response = await me();
+     70|     expect(response.statusCode).toBe(200);
+     71|     expect(response.json().operatorContext).toEqual({ homeOperatorId: …
+       |                                             ^
+     72|       operatorOverride: null, branchId: f.homeBranch, stationId: f.hom…
+     73|     expect(response.json().account).toMatchObject({ id: f.actor, opera…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/26]⎯
+
+ FAIL  test/operator-switch-route-review.test.ts > SCRUM-640 Q20 native operator-selection route and truthful home metadata > R2 reports an actual switched context beside the same home identity
+AssertionError: expected undefined to deeply equal { …(6) }
+
+- Expected:
+{
+  "branchId": null,
+  "effectiveOperatorId": "01a174fe-d228-7457-a5f3-dd63a3108af1",
+  "homeOperatorId": "01a174fe-d228-7457-a5f3-dd625dff14f8",
+  "operatorOverride": "01a174fe-d228-7457-a5f3-dd63a3108af1",
+  "revision": 1,
+  "stationId": null,
+}
+
++ Received:
+undefined
+
+ ❯ test/operator-switch-route-review.test.ts:81:45
+     79|     const before = await identity(), response = await me();
+     80|     expect(response.statusCode).toBe(200);
+     81|     expect(response.json().operatorContext).toEqual({ homeOperatorId: …
+       |                                             ^
+     82|       operatorOverride: f.target, branchId: null, stationId: null, rev…
+     83|     expect(response.json().account.operatorId).toBe(f.home); expect(re…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/26]⎯
+
+ FAIL  test/operator-switch-route-review.test.ts > SCRUM-640 Q20 native operator-selection route and truthful home metadata > R3 selects through the registered native route, records one transaction and narrows subsequent reads
+AssertionError: expected 404 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 404
+
+ ❯ test/operator-switch-route-review.test.ts:88:33
+     86|   it('R3 selects through the registered native route, records one tran…
+     87|     const before = await identity(), response = await select(f.target,…
+     88|     expect(response.statusCode).toBe(200);
+       |                                 ^
+     89|     expect(response.json()).toEqual({ homeOperatorId: f.home, effectiv…
+     90|       operatorOverride: f.target, branchId: null, stationId: null, rev…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/26]⎯
+
+ FAIL  test/operator-switch-route-review.test.ts > SCRUM-640 Q20 native operator-selection route and truthful home metadata > R4 returns home with null and preserves the real actor
+ FAIL  test/operator-switch-route-review.test.ts > SCRUM-640 Q20 native operator-selection route and truthful home metadata > R4 returns home with explicit-home and preserves the real actor
+AssertionError: expected 404 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 404
+
+ ❯ test/operator-switch-route-review.test.ts:102:33
+    100|     await switchSessionOperator(ctx.db, { accountId: f.actor, sessionI…
+    101|     const before = await identity(), response = await select(home === …
+    102|     expect(response.statusCode).toBe(200); expect(response.json()).toE…
+       |                                 ^
+    103|       effectiveOperatorId: f.home, operatorOverride: null, branchId: n…
+    104|     expect(await identity()).toEqual(before); expect(await records()).…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/26]⎯
+
+ FAIL  test/operator-switch-route-review.test.ts > SCRUM-640 Q20 native operator-selection route and truthful home metadata > R5 a same-context selection preserves both seats and still advances the confirmed revision
+AssertionError: expected 404 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 404
+
+ ❯ test/operator-switch-route-review.test.ts:108:33
+    106|   it('R5 a same-context selection preserves both seats and still advan…
+    107|     const response = await select(null, 0);
+    108|     expect(response.statusCode).toBe(200); expect(response.json()).toE…
+       |                                 ^
+    109|       effectiveOperatorId: f.home, operatorOverride: null, branchId: f…
+    110|     expect(await records()).toHaveLength(1);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/26]⎯
+
+ FAIL  test/operator-switch-route-review.test.ts > SCRUM-640 Q20 native operator-selection route and truthful home metadata > R6 refuses an invalid or identity-bearing body 0 before a selection
+ FAIL  test/operator-switch-route-review.test.ts > SCRUM-640 Q20 native operator-selection route and truthful home metadata > R6 refuses an invalid or identity-bearing body 1 before a selection
+ FAIL  test/operator-switch-route-review.test.ts > SCRUM-640 Q20 native operator-selection route and truthful home metadata > R6 refuses an invalid or identity-bearing body 2 before a selection
+ FAIL  test/operator-switch-route-review.test.ts > SCRUM-640 Q20 native operator-selection route and truthful home metadata > R6 refuses an invalid or identity-bearing body 3 before a selection
+ FAIL  test/operator-switch-route-review.test.ts > SCRUM-640 Q20 native operator-selection route and truthful home metadata > R6 refuses an invalid or identity-bearing body 4 before a selection
+ FAIL  test/operator-switch-route-review.test.ts > SCRUM-640 Q20 native operator-selection route and truthful home metadata > R6 refuses an invalid or identity-bearing body 5 before a selection
+ FAIL  test/operator-switch-route-review.test.ts > SCRUM-640 Q20 native operator-selection route and truthful home metadata > R6 refuses an invalid or identity-bearing body 6 before a selection
+ FAIL  test/operator-switch-route-review.test.ts > SCRUM-640 Q20 native operator-selection route and truthful home metadata > R6 refuses an invalid or identity-bearing body 7 before a selection
+ FAIL  test/operator-switch-route-review.test.ts > SCRUM-640 Q20 native operator-selection route and truthful home metadata > R6 refuses an invalid or identity-bearing body 8 before a selection
+ FAIL  test/operator-switch-route-review.test.ts > SCRUM-640 Q20 native operator-selection route and truthful home metadata > R6 refuses an invalid or identity-bearing body 9 before a selection
+AssertionError: expected 404 to be 400 // Object.is equality
+
+- Expected
++ Received
+
+- 400
++ 404
+
+ ❯ test/operator-switch-route-review.test.ts:121:33
+    119|   ])('R6 refuses an invalid or identity-bearing body %# before a selec…
+    120|     const before = await seat(), response = await put(payload);
+    121|     expect(response.statusCode).toBe(400); expect(await seat()).toEqua…
+       |                                 ^
+    122|   });
+    123|   it('R7 requires a native idempotency key before changing context', a…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/26]⎯
+
+ FAIL  test/operator-switch-route-review.test.ts > SCRUM-640 Q20 native operator-selection route and truthful home metadata > R7 requires a native idempotency key before changing context
+AssertionError: expected 404 to be 400 // Object.is equality
+
+- Expected
++ Received
+
+- 400
++ 404
+
+ ❯ test/operator-switch-route-review.test.ts:125:33
+    123|   it('R7 requires a native idempotency key before changing context', a…
+    124|     const before = await seat(), response = await put({ operatorId: f.…
+    125|     expect(response.statusCode).toBe(400); expect(await seat()).toEqua…
+       |                                 ^
+    126|   });
+    127|   it.each(['absent', 'own-operator'] as const)('R8 refuses %s switch a…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/26]⎯
+
+ FAIL  test/operator-switch-route-review.test.ts > SCRUM-640 Q20 native operator-selection route and truthful home metadata > R8 refuses absent switch authority despite unrelated global reads
+ FAIL  test/operator-switch-route-review.test.ts > SCRUM-640 Q20 native operator-selection route and truthful home metadata > R8 refuses own-operator switch authority despite unrelated global reads
+AssertionError: expected 404 to be 403 // Object.is equality
+
+- Expected
++ Received
+
+- 403
++ 404
+
+ ❯ test/operator-switch-route-review.test.ts:131:33
+    129|     else await ctx.db.update(roleAssignment).set({ scopeId: f.home }).…
+    130|     const before = await seat(), response = await select(f.target, 0);
+    131|     expect(response.statusCode).toBe(403); expect(await seat()).toEqua…
+       |                                 ^
+    132|     expect(await records()).toHaveLength(0);
+    133|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/26]⎯
+
+ FAIL  test/operator-switch-route-review.test.ts > SCRUM-640 Q20 native operator-selection route and truthful home metadata > R9 retains native locked refusal
+AssertionError: expected 404 to be 423 // Object.is equality
+
+- Expected
++ Received
+
+- 423
++ 404
+
+ ❯ test/operator-switch-route-review.test.ts:139:33
+    137|     if (mode === 'nonstaff') await ctx.db.update(session).set({ sessio…
+    138|     const before = await seat(), response = await select(f.target, 0);
+    139|     expect(response.statusCode).toBe(mode === 'locked' ? 423 : 403); e…
+       |                                 ^
+    140|   });
+    141|   it('R10 refuses a stale displayed revision without applying a later …
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/26]⎯
+
+ FAIL  test/operator-switch-route-review.test.ts > SCRUM-640 Q20 native operator-selection route and truthful home metadata > R9 retains native temporary refusal
+ FAIL  test/operator-switch-route-review.test.ts > SCRUM-640 Q20 native operator-selection route and truthful home metadata > R9 retains native nonstaff refusal
+AssertionError: expected 404 to be 403 // Object.is equality
+
+- Expected
++ Received
+
+- 403
++ 404
+
+ ❯ test/operator-switch-route-review.test.ts:139:33
+    137|     if (mode === 'nonstaff') await ctx.db.update(session).set({ sessio…
+    138|     const before = await seat(), response = await select(f.target, 0);
+    139|     expect(response.statusCode).toBe(mode === 'locked' ? 423 : 403); e…
+       |                                 ^
+    140|   });
+    141|   it('R10 refuses a stale displayed revision without applying a later …
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/26]⎯
+
+ FAIL  test/operator-switch-route-review.test.ts > SCRUM-640 Q20 native operator-selection route and truthful home metadata > R10 refuses a stale displayed revision without applying a later choice
+AssertionError: expected 404 to be 409 // Object.is equality
+
+- Expected
++ Received
+
+- 409
++ 404
+
+ ❯ test/operator-switch-route-review.test.ts:144:33
+    142|     await switchSessionOperator(ctx.db, { accountId: f.actor, sessionI…
+    143|     const before = await seat(), response = await select(null, 0);
+    144|     expect(response.statusCode).toBe(409); expect(response.json().erro…
+       |                                 ^
+    145|     expect(await seat()).toEqual(before); expect(await records()).toHa…
+    146|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/26]⎯
+
+ FAIL  test/operator-switch-route-review.test.ts > SCRUM-640 Q20 native operator-selection route and truthful home metadata > R11 a same-key lost acknowledgement replays only its current committed confirmation
+AssertionError: expected 404 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 404
+
+ ❯ test/operator-switch-route-review.test.ts:149:30
+    147|   it('R11 a same-key lost acknowledgement replays only its current com…
+    148|     const key = newId(), first = await select(f.target, 0, key), repla…
+    149|     expect(first.statusCode).toBe(200); expect(replay.statusCode).toBe…
+       |                              ^
+    150|     expect(await records()).toHaveLength(1);
+    151|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/26]⎯
+
+ FAIL  test/operator-switch-route-review.test.ts > SCRUM-640 Q20 native operator-selection route and truthful home metadata > R12 offers the declared operator-wide permission and typed request/response contract
+AssertionError: expected undefined to be defined
+ ❯ test/operator-switch-route-review.test.ts:154:19
+    152|   it('R12 offers the declared operator-wide permission and typed reque…
+    153|     const route = ctx.app.routeRegistry.find(row => row.method === 'PU…
+    154|     expect(route).toBeDefined(); expect(route!.config.permission).toBe…
+       |                   ^
+    155|     expect(route!.config.target).toEqual({ operator: true });
+    156|     const schema = ctx.app.swagger().paths?.['/me/session/operator']?.…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/26]⎯
+
+ FAIL  test/operator-switch-route-review.test.ts > SCRUM-640 Q20 native operator-selection route and truthful home metadata > R13 never takes session identity from a second session of the same account
+AssertionError: expected 404 to be 400 // Object.is equality
+
+- Expected
++ Received
+
+- 400
++ 404
+
+ ❯ test/operator-switch-route-review.test.ts:162:33
+    160|     const unchanged = await ctx.db.select().from(session).where(inArra…
+    161|     const response = await put({ operatorId: f.target, expectedRevisio…
+    162|     expect(response.statusCode).toBe(400);
+       |                                 ^
+    163|     expect(await ctx.db.select().from(session).where(inArray(session.i…
+    164|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/26]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  26 failed (26)
+   Start at  04:36:28
+   Duration  32.42s (transform 7.52s, setup 0ms, collect 13.34s, tests 18.64s, environment 0ms, prepare 175ms)
+
+C:\w\admin-operator-switch\apps\api:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @oto/api@0.1.0 test: `vitest run --pool=forks "test/operator-switch-route-review.test.ts"`
+Exit status 1

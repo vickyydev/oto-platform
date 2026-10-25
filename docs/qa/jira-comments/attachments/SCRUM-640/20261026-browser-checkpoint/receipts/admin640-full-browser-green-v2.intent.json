@@ -1,0 +1,17 @@
+{
+  "ticket": "SCRUM-640",
+  "phase": "green",
+  "attempt": "v2",
+  "startedAt": "2026-10-25T23:15:36.157Z",
+  "helperSha256": "ef1d83179bc7598aa70a725f2c024208719273f49926e001c13c3ee4236b1538",
+  "sourceManifestSha256": "d8ac3e28fa84849ed172169da9b35dacbd7180b19fdd0dad55b15ec46e2d6307",
+  "testSha256": "bc603eded4d799fd5c3eabd42e29932709161cf8641fac7025027445ad3eeef7",
+  "nativeHarness": "apps/console/e2e/run.mjs",
+  "spec": null,
+  "selection": "all native Console e2e specs",
+  "expectedCases": 263,
+  "expectedCaseCountBasis": "240 prior native cases plus 23 frozen operator-switch cases; first full execution must verify the count",
+  "builtConsoleAndPos": true,
+  "database": "fresh-embedded-only",
+  "staging": false
+}

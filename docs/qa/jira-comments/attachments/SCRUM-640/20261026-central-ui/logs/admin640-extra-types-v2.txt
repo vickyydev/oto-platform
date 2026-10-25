@@ -1,0 +1,71 @@
+
+> @oto/api@0.1.0 typecheck C:\w\admin-operator-switch\apps\api
+> tsc -p tsconfig.json
+
+
+> @oto/api-types@0.1.0 typecheck C:\w\admin-operator-switch\packages\api-types
+> tsc -p tsconfig.json
+
+
+> oto-platform@0.1.0 api-types:check C:\w\admin-operator-switch
+> pnpm --filter @oto/api api-types --check
+
+
+> @oto/api@0.1.0 api-types C:\w\admin-operator-switch\apps\api
+> tsx scripts/api-types.ts "--check"
+
+(node:88772) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+api-types: packages/api-types matches the api.
+
+> @oto/api-types@0.1.0 test C:\w\admin-operator-switch\packages\api-types
+> vitest run
+
+
+ RUN  v3.2.7 C:/w/admin-operator-switch/packages/api-types
+
+ ❯ test/seam-walker.test.ts (10 tests | 1 failed) 48ms
+   ✓ every front-end call reaches a route the api describes (SCRUM-293) > finds what it is meant to check 3ms
+   ✓ every front-end call reaches a route the api describes (SCRUM-293) > reads every call path, or names it in DYNAMIC 1ms
+   ✓ every front-end call reaches a route the api describes (SCRUM-293) > reads lifted DELETE bodies, file downloads and native download addresses 1ms
+   ✓ every front-end call reaches a route the api describes (SCRUM-293) > keeps the typed POS forwarding adapter to its declared transport methods 0ms
+   ✓ every front-end call reaches a route the api describes (SCRUM-293) > reaches a route that answers the call’s method 11ms
+   ✓ every front-end call reaches a route the api describes (SCRUM-293) > writes only query parameters the route reads 7ms
+   ✓ every front-end call reaches a route the api describes (SCRUM-293) > sends only body fields the route reads 2ms
+   ✓ every front-end call reaches a route the api describes (SCRUM-293) > names, in a generated type, the route the call reaches 3ms
+   × every front-end call reaches a route the api describes (SCRUM-293) > leaves no route without a caller, a machine caller or a NOT_YET_CALLED reason 18ms
+     → expected [ 'PUT /me/session/operator' ] to deeply equal []
+   ✓ every front-end call reaches a route the api describes (SCRUM-293) > does not let hand-typed response types regrow (migration-list.ts) 1ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/seam-walker.test.ts > every front-end call reaches a route the api describes (SCRUM-293) > leaves no route without a caller, a machine caller or a NOT_YET_CALLED reason
+AssertionError: expected [ 'PUT /me/session/operator' ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "PUT /me/session/operator",
++ ]
+
+ ❯ test/seam-walker.test.ts:293:63
+    291|       .filter((r) => !called.has(routeKey(r)) && !machineCaller(r.path…
+    292|       .map(routeKey);
+    293|     expect(orphans.filter((key) => !NOT_YET_CALLED.has(key))).toEqual(…
+       |                                                               ^
+    294|     // A line for a route that now has a caller, or no longer exists, …
+    295|     expect([...NOT_YET_CALLED.keys()].filter((key) => !orphans.include…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 9 passed (10)
+   Start at  04:54:44
+   Duration  5.41s (transform 646ms, setup 0ms, collect 4.65s, tests 48ms, environment 0ms, prepare 276ms)
+
+C:\w\admin-operator-switch\packages\api-types:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @oto/api-types@0.1.0 test: `vitest run`
+Exit status 1

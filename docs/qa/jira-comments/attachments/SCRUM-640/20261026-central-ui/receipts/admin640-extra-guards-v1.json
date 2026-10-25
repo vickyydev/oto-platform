@@ -1,0 +1,20 @@
+{
+  "ticket": "SCRUM-640",
+  "phase": "guards",
+  "attempt": "v1",
+  "startedAt": "2026-10-25T21:43:25.267Z",
+  "completedAt": "2026-10-25T21:47:45.022Z",
+  "command": "pnpm --filter @oto/api test test/routes-guarded.test.ts test/route-write-conformance.test.ts test/id-conformance.test.ts test/route-scope-target.test.ts test/platform-review.test.ts test/console-branch-scope.test.ts test/scrum-607-reach.test.ts test/operator-switch-review.test.ts test/operator-switch-seat-review.test.ts test/operator-switch-session-review.test.ts test/operator-switch-idempotency-review.test.ts test/operator-switch-route-review.test.ts",
+  "exitCode": 1,
+  "signal": null,
+  "launchError": null,
+  "isolatedEmbeddedDatabase": true,
+  "staging": false,
+  "inputsUnchanged": true,
+  "inputCount": 819,
+  "inputsSha256": "9ec82ecef92b24ff770756c00a438a3d2a983ea19e968586a50819014ff4720f",
+  "sourceManifestSha256": "86be3658c8975c3b430e8a67cde2473b5a221edaaf7fbef3ec89400a9389bf2d",
+  "runnerSha256": "b6d078d45b40fbc2d4eb677857c0f7dc2ffe66dd358a5f08756f03707caf2ae4",
+  "logSha256": "3b24685e89983571cc08cee222d0dc2c21e0dbc510fa68b50886adc297bc361b",
+  "logPath": "C:/w/admin640-extra-guards-v1.log"
+}

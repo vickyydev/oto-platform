@@ -1,0 +1,196 @@
+
+> @oto/api@0.1.0 test C:\w\admin-operator-switch\apps\api
+> vitest run --pool=forks "test/operator-switch-request-race-review.test.ts"
+
+
+ RUN  v3.2.7 C:/w/admin-operator-switch/apps/api
+
+stdout | test/operator-switch-request-race-review.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/operator-switch-request-race-review.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-TqBVp6 ... ok
+creating subdirectories ...
+
+stdout | test/operator-switch-request-race-review.test.ts
+ok
+
+
+stdout | test/operator-switch-request-race-review.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ...
+
+stdout | test/operator-switch-request-race-review.test.ts
+100
+selecting default shared_buffers ...
+
+stdout | test/operator-switch-request-race-review.test.ts
+128MB
+selecting default time zone ...
+
+stdout | test/operator-switch-request-race-review.test.ts
+Asia/Bangkok
+
+
+stdout | test/operator-switch-request-race-review.test.ts
+creating configuration files ...
+
+stdout | test/operator-switch-request-race-review.test.ts
+ok
+running bootstrap script ...
+
+stdout | test/operator-switch-request-race-review.test.ts
+ok
+
+
+stdout | test/operator-switch-request-race-review.test.ts
+performing post-bootstrap initialization ...
+
+stdout | test/operator-switch-request-race-review.test.ts
+ok
+syncing data to disk ...
+
+stdout | test/operator-switch-request-race-review.test.ts
+ok
+
+
+stdout | test/operator-switch-request-race-review.test.ts
+
+Success. You can now start the database server using:
+
+    ^"C^:^\w^\admin^-operator^-switch^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-TqBVp6^" -l logfile start
+
+
+
+stdout | test/operator-switch-request-race-review.test.ts
+2026-10-26 05:21:38.313 +07 [62476] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/operator-switch-request-race-review.test.ts
+2026-10-26 05:21:38.316 +07 [62476] LOG:  listening on IPv6 address "::1", port 55146
+
+
+stdout | test/operator-switch-request-race-review.test.ts
+2026-10-26 05:21:38.316 +07 [62476] LOG:  listening on IPv4 address "127.0.0.1", port 55146
+
+
+stdout | test/operator-switch-request-race-review.test.ts
+2026-10-26 05:21:38.351 +07 [89376] LOG:  database system was shut down at 2026-10-26 05:21:36 +07
+
+
+stdout | test/operator-switch-request-race-review.test.ts
+2026-10-26 05:21:38.373 +07 [62476] LOG:  database system is ready to accept connections
+
+
+stdout | test/operator-switch-request-race-review.test.ts
+2026-10-26 05:21:41.144 +07 [42220] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+
+stdout | test/operator-switch-request-race-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/operator-switch-request-race-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:90908) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/operator-switch-request-race-review.test.ts > SCRUM-640 native account/session lock ordering review > R6 [critical] FINDING: branch audit and operator selection must not deadlock; use an account lock compatible with the audit actor FK
+2026-10-26 05:21:43.271 +07 [92568] ERROR:  deadlock detected
+2026-10-26 05:21:43.271 +07 [92568] DETAIL:  Process 92568 waits for ShareLock on transaction 1144; blocked by process 91696.
+	Process 91696 waits for ShareLock on transaction 1145; blocked by process 92568.
+	Process 92568: select "id", "account_id", "operator_override", "token_hash", "branch_id", "station_id", "class", "locked_at", "revoked_at", "revoked_reason", "expires_at", "last_seen_at", "created_at" from "core"."session" where ("core"."session"."id" = $1 and "core"."session"."account_id" = $2) limit $3 for update
+	Process 91696: insert into "core"."audit_log" ("id", "operator_id", "branch_id", "actor_account_id", "request_id", "action", "entity_type", "entity_id", "before", "after", "action_id", "source_event_id", "created_at") values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, default)
+2026-10-26 05:21:43.271 +07 [92568] HINT:  See server log for query details.
+2026-10-26 05:21:43.271 +07 [92568] CONTEXT:  while locking tuple (0,29) in relation "session"
+2026-10-26 05:21:43.271 +07 [92568] STATEMENT:  select "id", "account_id", "operator_override", "token_hash", "branch_id", "station_id", "class", "locked_at", "revoked_at", "revoked_reason", "expires_at", "last_seen_at", "created_at" from "core"."session" where ("core"."session"."id" = $1 and "core"."session"."account_id" = $2) limit $3 for update
+
+
+stdout | test/operator-switch-request-race-review.test.ts > SCRUM-640 native account/session lock ordering review > R7 [critical] FINDING: a native handoff mint waiting behind the branch writer must settle without deadlock and never mint the old seat
+2026-10-26 05:21:44.331 +07 [91696] ERROR:  deadlock detected
+2026-10-26 05:21:44.331 +07 [91696] DETAIL:  Process 91696 waits for ShareLock on transaction 1156; blocked by process 92568.
+	Process 92568 waits for ShareLock on transaction 1157; blocked by process 91696.
+	Process 91696: select "id", "account_id", "operator_override", "token_hash", "branch_id", "station_id", "class", "locked_at", "revoked_at", "revoked_reason", "expires_at", "last_seen_at", "created_at" from "core"."session" where ("core"."session"."id" = $1 and "core"."session"."account_id" = $2) limit $3 for update
+	Process 92568: insert into "core"."audit_log" ("id", "operator_id", "branch_id", "actor_account_id", "request_id", "action", "entity_type", "entity_id", "before", "after", "action_id", "source_event_id", "created_at") values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, default)
+2026-10-26 05:21:44.331 +07 [91696] HINT:  See server log for query details.
+2026-10-26 05:21:44.331 +07 [91696] CONTEXT:  while locking tuple (0,32) in relation "session"
+2026-10-26 05:21:44.331 +07 [91696] STATEMENT:  select "id", "account_id", "operator_override", "token_hash", "branch_id", "station_id", "class", "locked_at", "revoked_at", "revoked_reason", "expires_at", "last_seen_at", "created_at" from "core"."session" where ("core"."session"."id" = $1 and "core"."session"."account_id" = $2) limit $3 for update
+
+
+stdout | test/operator-switch-request-race-review.test.ts
+2026-10-26 05:21:44.377 +07 [75744] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/operator-switch-request-race-review.test.ts
+2026-10-26 05:21:44.387 +07 [75744] LOG:  checkpoint complete: wrote 7 buffers (0.0%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.002 s, sync=0.003 s, total=0.011 s; sync files=6, longest=0.001 s, average=0.001 s; distance=15625 kB, estimate=15625 kB; lsn=0/24BA690, redo lsn=0/24BA658
+
+
+ ❯ test/operator-switch-request-race-review.test.ts (10 tests | 2 failed) 10542ms
+   ✓ SCRUM-640 native request races and accepted UUID representations > R1 [critical] control: preserve the native branch move without a context change 42ms
+   ✓ SCRUM-640 native request races and accepted UUID representations > R1 [critical] FINDING: refuse stale A branch attachment after B switch 16ms
+   ✓ SCRUM-640 native request races and accepted UUID representations > R2 [high] control: same-branch selection retains its valid station 21ms
+   ✓ SCRUM-640 native request races and accepted UUID representations > R2 [high] FINDING: a valid B1-to-B2 move clears the incompatible station 19ms
+   ✓ SCRUM-640 native request races and accepted UUID representations > R3 [critical] control: same-context cached retry preserves its native answer and single audit 20ms
+   ✓ SCRUM-640 native request races and accepted UUID representations > R3 [critical] FINDING: revalidate an ordinary cached answer after request authentication was superseded 21ms
+   ✓ SCRUM-640 native request races and accepted UUID representations > R4 [high] FINDING: an accepted uppercase home UUID canonicalizes to a null no-op and retains the valid native seat 13ms
+   ✓ SCRUM-640 native request races and accepted UUID representations > R5 [high] FINDING: an accepted uppercase target UUID preserves a genuine same-key lost-ack retry and one native audit 18ms
+   × SCRUM-640 native account/session lock ordering review > R6 [critical] FINDING: branch audit and operator selection must not deadlock; use an account lock compatible with the audit actor FK 1063ms
+     → expected { branchStatus: 200, …(3) } to deeply equal { branchStatus: 200, …(3) }
+   × SCRUM-640 native account/session lock ordering review > R7 [critical] FINDING: a native handoff mint waiting behind the branch writer must settle without deadlock and never mint the old seat 1058ms
+     → expected [ 200, 401 ] to include 500
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/operator-switch-request-race-review.test.ts > SCRUM-640 native account/session lock ordering review > R6 [critical] FINDING: branch audit and operator selection must not deadlock; use an account lock compatible with the audit actor FK
+AssertionError: expected { branchStatus: 200, …(3) } to deeply equal { branchStatus: 200, …(3) }
+
+- Expected
++ Received
+
+  {
+    "branchCode": null,
+    "branchStatus": 200,
+    "switchCode": null,
+-   "switchSucceeded": true,
++   "switchSucceeded": false,
+  }
+
+ ❯ test/operator-switch-request-race-review.test.ts:236:21
+    234|       switchSucceeded: run.consumerResult.ok,
+    235|       switchCode: run.consumerResult.ok ? null : (run.consumerResult.e…
+    236|     expect(outcome).toEqual({ branchStatus: 200, branchCode: null, swi…
+       |                     ^
+    237|     const switched = unwrap(run.consumerResult);
+    238|     expect(switched).toMatchObject({ homeOperatorId: f.home, effective…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  test/operator-switch-request-race-review.test.ts > SCRUM-640 native account/session lock ordering review > R7 [critical] FINDING: a native handoff mint waiting behind the branch writer must settle without deadlock and never mint the old seat
+AssertionError: expected [ 200, 401 ] to include 500
+ ❯ test/operator-switch-request-race-review.test.ts:258:24
+    256|     expect({ branchStatus: branchResponse.statusCode, handoffStatus: h…
+    257|       .toMatchObject({ branchStatus: 200, handoffStatus: expect.any(Nu…
+    258|     expect([200, 401]).toContain(handoffResponse.statusCode);
+       |                        ^
+    259|     const body = handoffResponse.json();
+    260|     const safe = { hasToken: typeof body.token === 'string', hasLaunch…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 8 passed (10)
+   Start at  05:21:28
+   Duration  16.29s (transform 3.03s, setup 0ms, collect 5.51s, tests 10.54s, environment 0ms, prepare 84ms)
+
+C:\w\admin-operator-switch\apps\api:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @oto/api@0.1.0 test: `vitest run --pool=forks "test/operator-switch-request-race-review.test.ts"`
+Exit status 1

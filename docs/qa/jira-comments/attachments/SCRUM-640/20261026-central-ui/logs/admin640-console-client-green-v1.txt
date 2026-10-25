@@ -1,0 +1,13 @@
+
+> @oto/console@0.1.0 test C:\w\admin-operator-switch\apps\console
+> vitest run "test/booth-report-lifetime.test.ts"
+
+
+ RUN  v3.2.7 C:/w/admin-operator-switch/apps/console
+
+ ✓ test/booth-report-lifetime.test.ts (61 tests) 184ms
+
+ Test Files  1 passed (1)
+      Tests  61 passed (61)
+   Start at  05:28:38
+   Duration  981ms (transform 59ms, setup 0ms, collect 361ms, tests 184ms, environment 0ms, prepare 155ms)

@@ -1,0 +1,20 @@
+{
+  "ticket": "SCRUM-640",
+  "phase": "types",
+  "attempt": "v2",
+  "startedAt": "2026-10-25T21:53:03.456Z",
+  "completedAt": "2026-10-25T21:54:51.045Z",
+  "command": "pnpm --filter @oto/api typecheck\npnpm --filter @oto/api-types typecheck\npnpm api-types:check\npnpm --filter @oto/api-types test\npnpm exec eslint apps/api/src/plugins/session.ts apps/api/src/plugins/idempotency.ts apps/api/src/services/handoff.ts apps/api/src/routes/me.ts apps/api/test/operator-switch-session-review.test.ts apps/api/test/operator-switch-idempotency-review.test.ts apps/api/test/operator-switch-handoff-review.test.ts apps/api/test/operator-switch-route-review.test.ts apps/api/test/routes-guarded.test.ts apps/api/test/route-write-conformance.test.ts apps/api/test/id-conformance.test.ts apps/api/test/route-scope-target.test.ts",
+  "exitCode": 1,
+  "signal": null,
+  "launchError": null,
+  "isolatedEmbeddedDatabase": true,
+  "staging": false,
+  "inputsUnchanged": true,
+  "inputCount": 820,
+  "inputsSha256": "411363bbd4d9f180099caa8887b083e739cdf142af8b8c4679c0dc40de6b6d3d",
+  "sourceManifestSha256": "0c2b81d0edd0c1d79c4706085ffc6da261ef03dc9c12d62a0d7e435d204d224b",
+  "runnerSha256": "b6d078d45b40fbc2d4eb677857c0f7dc2ffe66dd358a5f08756f03707caf2ae4",
+  "logSha256": "79e2e2c58a9ef0142664d8770047ab3878cbfc2444f1549cff148074c70c0c51",
+  "logPath": "C:/w/admin640-extra-types-v2.log"
+}

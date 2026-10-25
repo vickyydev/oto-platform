@@ -1,0 +1,751 @@
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-vJ4rmF ... ok
+creating subdirectories ...
+ok
+
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ...
+100
+selecting default shared_buffers ...
+128MB
+selecting default time zone ...
+Asia/Bangkok
+
+creating configuration files ...
+ok
+running bootstrap script ...
+ok
+
+performing post-bootstrap initialization ...
+ok
+syncing data to disk ...
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\w^\admin^-operator^-switch^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-vJ4rmF^" -l logfile start
+
+
+2026-10-26 05:02:26.072 +07 [88568] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+2026-10-26 05:02:26.074 +07 [88568] LOG:  listening on IPv6 address "::1", port 54758
+
+2026-10-26 05:02:26.074 +07 [88568] LOG:  listening on IPv4 address "127.0.0.1", port 54758
+
+2026-10-26 05:02:26.111 +07 [54960] LOG:  database system was shut down at 2026-10-26 05:02:23 +07
+
+2026-10-26 05:02:26.133 +07 [88568] LOG:  database system is ready to accept connections
+
+2026-10-26 05:02:28.982 +07 [86688] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+[console-e2e] building the Console (CONSOLE_E2E_BUILT=1): the run serves dist/public through vite preview
+
+> @oto/console@0.1.0 build C:\w\admin-operator-switch\apps\console
+> vite build --config vite.config.ts
+
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 2291 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/public/index.html                        1.33 kB │ gzip:   0.58 kB
+dist/public/assets/logo-oto-nNYXf9Wy.png    173.77 kB
+dist/public/assets/index-CaH3r7Z2.css        98.59 kB │ gzip:  16.04 kB
+dist/public/assets/react-C6LhzTnE.js        185.71 kB │ gzip:  58.56 kB
+dist/public/assets/vendor-DXCL9j3j.js       397.48 kB │ gzip: 116.94 kB
+dist/public/assets/index-DbEQ4qGm.js      1,227.67 kB │ gzip: 330.75 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 4.25s
+
+> @oto/pos@0.1.0 build C:\w\admin-operator-switch\apps\pos
+> vite build --config vite.config.ts
+
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 2384 modules transformed.
+[plugin vite:reporter]
+(!) C:/w/admin-operator-switch/apps/pos/src/api/platform.ts is dynamically imported by C:/w/admin-operator-switch/apps/pos/src/api/catalogBridge.ts but also statically imported by C:/w/admin-operator-switch/apps/pos/src/api/catalogBridge.ts, C:/w/admin-operator-switch/apps/pos/src/api/members.ts, C:/w/admin-operator-switch/apps/pos/src/auth/OperatorContext.tsx, C:/w/admin-operator-switch/apps/pos/src/branch/BranchContext.tsx, C:/w/admin-operator-switch/apps/pos/src/components/auth/LockScreen.tsx, C:/w/admin-operator-switch/apps/pos/src/components/book/BookCheckingPayment.tsx, C:/w/admin-operator-switch/apps/pos/src/components/book/BookIdentify.tsx, C:/w/admin-operator-switch/apps/pos/src/components/book/BookVerifyFamily.tsx, C:/w/admin-operator-switch/apps/pos/src/components/history/SaleDetail.tsx, C:/w/admin-operator-switch/apps/pos/src/components/mobile/MobileTill.tsx, C:/w/admin-operator-switch/apps/pos/src/components/mobile/history/MobileHistory.tsx, C:/w/admin-operator-switch/apps/pos/src/components/shared/PricingModeIndicator.tsx, C:/w/admin-operator-switch/apps/pos/src/components/shared/PrinterHealthIndicator.tsx, C:/w/admin-operator-switch/apps/pos/src/components/shared/VerifyTierModal.tsx, C:/w/admin-operator-switch/apps/pos/src/components/till/VisitChildrenModal.tsx, C:/w/admin-operator-switch/apps/pos/src/lib/deferredTierVerification.ts, C:/w/admin-operator-switch/apps/pos/src/lib/demoControls.ts, C:/w/admin-operator-switch/apps/pos/src/lib/displaySession.ts, C:/w/admin-operator-switch/apps/pos/src/lib/themePref.ts, C:/w/admin-operator-switch/apps/pos/src/pages/Book.tsx, C:/w/admin-operator-switch/apps/pos/src/pages/History.tsx, C:/w/admin-operator-switch/apps/pos/src/pages/StationSetup.tsx, C:/w/admin-operator-switch/apps/pos/src/pages/Till.tsx, C:/w/admin-operator-switch/apps/pos/src/station/StationContext.tsx, dynamic import will not move module into another chunk.
+
+rendering chunks...
+computing gzip size...
+dist/public/index.html                                 1.98 kB │ gzip:   0.81 kB
+dist/public/sw.js                                      7.75 kB
+dist/public/assets/inter-cyrillic-DqGufNeO.woff2      18.75 kB
+dist/public/assets/inter-latin-Dx4kXJAl.woff2         48.26 kB
+dist/public/assets/inter-latin-ext-DO1Apj_S.woff2     85.07 kB
+dist/public/assets/logo-oto-nNYXf9Wy.png             173.77 kB
+dist/public/assets/index-CSvdVv6e.css                200.44 kB │ gzip:  29.32 kB
+dist/public/assets/index-LYnQhDk9.js               2,336.32 kB │ gzip: 645.88 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 5.23s
+[console-e2e] making oto_console_e2e_1792965749097 on the isolated test server
+[console-e2e] applying migrations
+
+> oto-platform@0.1.0 db:migrate C:\w\admin-operator-switch
+> pnpm --filter @oto/db migrate
+
+
+> @oto/db@0.1.0 migrate C:\w\admin-operator-switch\packages\db
+> drizzle-kit migrate
+
+No config path provided, using default 'drizzle.config.ts'
+Reading config file 'C:\w\admin-operator-switch\packages\db\drizzle.config.ts'
+Using 'pg' driver for database querying
+[⣷] applying migrations...[⣯] applying migrations...[⣟] applying migrations...[⡿] applying migrations...[⢿] applying migrations...[⣻] applying migrations...[⣽] applying migrations...[⣷] applying migrations...[⣯] applying migrations...[⣟] applying migrations...[⡿] applying migrations...[⢿] applying migrations...[⣻] applying migrations...[⣽] applying migrations...[⣷] applying migrations...[⣯] applying migrations...[⣟] applying migrations...[⡿] applying migrations...[✓] migrations applied successfully!2026-10-26 05:02:43.855 +07 [2340] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+[console-e2e] seeding (raw seed output omitted)
+[console-e2e] api on 59976, console on 59977
+[WebServer] (node:41836) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 21 tests using 1 worker
+
+(node:92980) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x   1 e2e\operator-switch.spec.ts:120:1 › operator choices use canonical current rather than the first row and keep home identity visible after switching (5.4s)
+(node:36888) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok  2 e2e\operator-switch.spec.ts:135:55 › a missing switch grant offers no operator switch (572ms)
+  ok  3 e2e\operator-switch.spec.ts:135:55 › a own switch grant offers no operator switch (514ms)
+  ok  4 e2e\operator-switch.spec.ts:135:55 › a branch switch grant offers no operator switch (562ms)
+  x   5 e2e\operator-switch.spec.ts:141:1 › a canonical current operator absent from live choices stays unselected and disabled, without a home fallback (5.4s)
+(node:90208) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x   6 e2e\operator-switch.spec.ts:148:1 › an operator switch masks old controls at PUT dispatch, before the held acknowledgement (5.4s)
+(node:6596) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x   7 e2e\operator-switch.spec.ts:160:52 › a held canonical me response cannot leave home data or an optimistic target active (5.4s)
+(node:68592) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x   8 e2e\operator-switch.spec.ts:160:52 › a held canonical permissions response cannot leave home data or an optimistic target active (5.4s)
+(node:72364) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x   9 e2e\operator-switch.spec.ts:172:1 › an uncertain committed switch with failed canonical reads stays unavailable until Retry confirms B (5.4s)
+(node:40484) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  10 e2e\operator-switch.spec.ts:184:1 › an operator-list error has Retry and never selects the first option or dispatches a write (5.4s)
+(node:37036) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  11 e2e\operator-switch.spec.ts:192:1 › an explicit selection refusal preserves its error and cannot claim a confirmed new operator (5.4s)
+(node:86356) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  12 e2e\operator-switch.spec.ts:200:1 › a late B acknowledgement cannot replace a newer canonical home context after A-B-A (5.4s)
+(node:92940) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  13 e2e\operator-switch.spec.ts:208:65 › a held old switch cannot revive authority after signed out (5.4s)
+(node:92580) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  14 e2e\operator-switch.spec.ts:208:65 › a held old switch cannot revive authority after new actor (5.5s)
+(node:88412) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  15 e2e\operator-switch.spec.ts:225:82 › fresh locked state cannot retain active operator controls (5.4s)
+(node:92796) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  16 e2e\operator-switch.spec.ts:225:82 › fresh temporary password state cannot retain active operator controls (5.5s)
+(node:92980) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  17 e2e\operator-switch.spec.ts:225:82 › fresh grant withdrawn state cannot retain active operator controls (5.4s)
+(node:88724) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  18 e2e\operator-switch.spec.ts:237:1 › an old readonly response released after switching cannot replace the new operator directory (5.4s)
+(node:49796) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  19 e2e\operator-switch.spec.ts:251:1 › a held old export cannot download after the operator context changes (5.4s)
+(node:41072) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  20 e2e\operator-switch.spec.ts:265:1 › an old acting-user handoff response cannot navigate after the operator context changes (5.4s)
+(node:75364) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  21 e2e\operator-switch.spec.ts:285:1 › home and canonical operator controls fit a 390px phone without horizontal overflow (5.4s)
+2026-10-26 05:04:53.760 +07 [26976] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+2026-10-26 05:04:53.760 +07 [88372] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+2026-10-26 05:04:53.760 +07 [27364] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+
+
+  1) e2e\operator-switch.spec.ts:120:1 › operator choices use canonical current rather than the first row and keep home identity visible after switching
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator: getByRole('combobox', { name: 'Operator', exact: true })
+    Expected: "01964000-0000-7000-8000-000000000001"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toHaveValue" getByRole('combobox', { name: 'Operator', exact: true }) with timeout 5000ms
+      - waiting for getByRole('combobox', { name: 'Operator', exact: true })
+
+
+      100 | async function start(page: Page) {
+      101 |   await page.goto('/organisation/branches');
+    > 102 |   await expect(picker(page)).toHaveValue(HOME);
+          |                              ^
+      103 |   await expect(parkText(page, 'Home', 0).first()).toBeVisible();
+      104 | }
+      105 | async function select(page: Page, operatorId: string) {
+        at start (C:\w\admin-operator-switch\apps\console\e2e\operator-switch.spec.ts:102:30)
+        at C:\w\admin-operator-switch\apps\console\e2e\operator-switch.spec.ts:121:34
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\operator-switch-operator-c-b2288-ity-visible-after-switching\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\operator-switch-operator-c-b2288-ity-visible-after-switching\error-context.md
+
+  2) e2e\operator-switch.spec.ts:141:1 › a canonical current operator absent from live choices stays unselected and disabled, without a home fallback
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator: getByRole('combobox', { name: 'Operator', exact: true })
+    Expected: ""
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toHaveValue" getByRole('combobox', { name: 'Operator', exact: true }) with timeout 5000ms
+      - waiting for getByRole('combobox', { name: 'Operator', exact: true })
+
+
+      142 |   const f = await fixture(page); f.state.override = OTHER; f.state.branchId = null; f.state.revision = 1;
+      143 |   f.state.choices = [{ id: HOME, name: HOME_NAME }];
+    > 144 |   await page.goto('/organisation/branches'); await expect(picker(page)).toHaveValue(''); await expect(picker(page)).toBeDisabled();
+          |                                                                         ^
+      145 |   expect(selections(f.calls)).toEqual([]);
+      146 | });
+      147 |
+        at C:\w\admin-operator-switch\apps\console\e2e\operator-switch.spec.ts:144:73
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\operator-switch-a-canonica-3d73e-led-without-a-home-fallback\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\operator-switch-a-canonica-3d73e-led-without-a-home-fallback\error-context.md
+
+  3) e2e\operator-switch.spec.ts:148:1 › an operator switch masks old controls at PUT dispatch, before the held acknowledgement
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator: getByRole('combobox', { name: 'Operator', exact: true })
+    Expected: "01964000-0000-7000-8000-000000000001"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toHaveValue" getByRole('combobox', { name: 'Operator', exact: true }) with timeout 5000ms
+      - waiting for getByRole('combobox', { name: 'Operator', exact: true })
+
+
+      100 | async function start(page: Page) {
+      101 |   await page.goto('/organisation/branches');
+    > 102 |   await expect(picker(page)).toHaveValue(HOME);
+          |                              ^
+      103 |   await expect(parkText(page, 'Home', 0).first()).toBeVisible();
+      104 | }
+      105 | async function select(page: Page, operatorId: string) {
+        at start (C:\w\admin-operator-switch\apps\console\e2e\operator-switch.spec.ts:102:30)
+        at C:\w\admin-operator-switch\apps\console\e2e\operator-switch.spec.ts:149:34
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\operator-switch-an-operato-40fad-re-the-held-acknowledgement\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\operator-switch-an-operato-40fad-re-the-held-acknowledgement\error-context.md
+
+  4) e2e\operator-switch.spec.ts:160:52 › a held canonical me response cannot leave home data or an optimistic target active
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator: getByRole('combobox', { name: 'Operator', exact: true })
+    Expected: "01964000-0000-7000-8000-000000000001"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toHaveValue" getByRole('combobox', { name: 'Operator', exact: true }) with timeout 5000ms
+      - waiting for getByRole('combobox', { name: 'Operator', exact: true })
+
+
+      100 | async function start(page: Page) {
+      101 |   await page.goto('/organisation/branches');
+    > 102 |   await expect(picker(page)).toHaveValue(HOME);
+          |                              ^
+      103 |   await expect(parkText(page, 'Home', 0).first()).toBeVisible();
+      104 | }
+      105 | async function select(page: Page, operatorId: string) {
+        at start (C:\w\admin-operator-switch\apps\console\e2e\operator-switch.spec.ts:102:30)
+        at C:\w\admin-operator-switch\apps\console\e2e\operator-switch.spec.ts:161:34
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\operator-switch-a-held-can-e1243-an-optimistic-target-active\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\operator-switch-a-held-can-e1243-an-optimistic-target-active\error-context.md
+
+  5) e2e\operator-switch.spec.ts:160:52 › a held canonical permissions response cannot leave home data or an optimistic target active
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator: getByRole('combobox', { name: 'Operator', exact: true })
+    Expected: "01964000-0000-7000-8000-000000000001"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toHaveValue" getByRole('combobox', { name: 'Operator', exact: true }) with timeout 5000ms
+      - waiting for getByRole('combobox', { name: 'Operator', exact: true })
+
+
+      100 | async function start(page: Page) {
+      101 |   await page.goto('/organisation/branches');
+    > 102 |   await expect(picker(page)).toHaveValue(HOME);
+          |                              ^
+      103 |   await expect(parkText(page, 'Home', 0).first()).toBeVisible();
+      104 | }
+      105 | async function select(page: Page, operatorId: string) {
+        at start (C:\w\admin-operator-switch\apps\console\e2e\operator-switch.spec.ts:102:30)
+        at C:\w\admin-operator-switch\apps\console\e2e\operator-switch.spec.ts:161:34
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\operator-switch-a-held-can-11b46-an-optimistic-target-active\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\operator-switch-a-held-can-11b46-an-optimistic-target-active\error-context.md
+
+  6) e2e\operator-switch.spec.ts:172:1 › an uncertain committed switch with failed canonical reads stays unavailable until Retry confirms B
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator: getByRole('combobox', { name: 'Operator', exact: true })
+    Expected: "01964000-0000-7000-8000-000000000001"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toHaveValue" getByRole('combobox', { name: 'Operator', exact: true }) with timeout 5000ms
+      - waiting for getByRole('combobox', { name: 'Operator', exact: true })
+
+
+      100 | async function start(page: Page) {
+      101 |   await page.goto('/organisation/branches');
+    > 102 |   await expect(picker(page)).toHaveValue(HOME);
+          |                              ^
+      103 |   await expect(parkText(page, 'Home', 0).first()).toBeVisible();
+      104 | }
+      105 | async function select(page: Page, operatorId: string) {
+        at start (C:\w\admin-operator-switch\apps\console\e2e\operator-switch.spec.ts:102:30)
+        at C:\w\admin-operator-switch\apps\console\e2e\operator-switch.spec.ts:173:34
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\operator-switch-an-uncerta-a1188-able-until-Retry-confirms-B\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\operator-switch-an-uncerta-a1188-able-until-Retry-confirms-B\error-context.md
+
+  7) e2e\operator-switch.spec.ts:184:1 › an operator-list error has Retry and never selects the first option or dispatches a write
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('button', { name: /retry/i }).first()
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByRole('button', { name: /retry/i }).first() with timeout 5000ms
+      - waiting for getByRole('button', { name: /retry/i }).first()
+
+
+      185 |   const f = await fixture(page); f.state.operatorsStatus = 503;
+      186 |   await page.goto('/organisation/branches'); await blockedPicker(page);
+    > 187 |   const retry = page.getByRole('button', { name: /retry/i }).first(); await expect(retry).toBeVisible();
+          |                                                                                           ^
+      188 |   f.state.operatorsStatus = 200; await retry.click(); await expect(picker(page)).toHaveValue(HOME); await expect(picker(page)).toBeEnabled();
+      189 |   expect(selections(f.calls)).toEqual([]);
+      190 | });
+        at C:\w\admin-operator-switch\apps\console\e2e\operator-switch.spec.ts:187:91
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\operator-switch-an-operato-59ac4-ption-or-dispatches-a-write\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\operator-switch-an-operato-59ac4-ption-or-dispatches-a-write\error-context.md
+
+  8) e2e\operator-switch.spec.ts:192:1 › an explicit selection refusal preserves its error and cannot claim a confirmed new operator
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator: getByRole('combobox', { name: 'Operator', exact: true })
+    Expected: "01964000-0000-7000-8000-000000000001"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toHaveValue" getByRole('combobox', { name: 'Operator', exact: true }) with timeout 5000ms
+      - waiting for getByRole('combobox', { name: 'Operator', exact: true })
+
+
+      100 | async function start(page: Page) {
+      101 |   await page.goto('/organisation/branches');
+    > 102 |   await expect(picker(page)).toHaveValue(HOME);
+          |                              ^
+      103 |   await expect(parkText(page, 'Home', 0).first()).toBeVisible();
+      104 | }
+      105 | async function select(page: Page, operatorId: string) {
+        at start (C:\w\admin-operator-switch\apps\console\e2e\operator-switch.spec.ts:102:30)
+        at C:\w\admin-operator-switch\apps\console\e2e\operator-switch.spec.ts:193:34
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\operator-switch-an-explici-7b587-im-a-confirmed-new-operator\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\operator-switch-an-explici-7b587-im-a-confirmed-new-operator\error-context.md
+
+  9) e2e\operator-switch.spec.ts:200:1 › a late B acknowledgement cannot replace a newer canonical home context after A-B-A
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator: getByRole('combobox', { name: 'Operator', exact: true })
+    Expected: "01964000-0000-7000-8000-000000000001"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toHaveValue" getByRole('combobox', { name: 'Operator', exact: true }) with timeout 5000ms
+      - waiting for getByRole('combobox', { name: 'Operator', exact: true })
+
+
+      100 | async function start(page: Page) {
+      101 |   await page.goto('/organisation/branches');
+    > 102 |   await expect(picker(page)).toHaveValue(HOME);
+          |                              ^
+      103 |   await expect(parkText(page, 'Home', 0).first()).toBeVisible();
+      104 | }
+      105 | async function select(page: Page, operatorId: string) {
+        at start (C:\w\admin-operator-switch\apps\console\e2e\operator-switch.spec.ts:102:30)
+        at C:\w\admin-operator-switch\apps\console\e2e\operator-switch.spec.ts:201:34
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\operator-switch-a-late-B-a-df5d9-al-home-context-after-A-B-A\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\operator-switch-a-late-B-a-df5d9-al-home-context-after-A-B-A\error-context.md
+
+  10) e2e\operator-switch.spec.ts:208:65 › a held old switch cannot revive authority after signed out
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator: getByRole('combobox', { name: 'Operator', exact: true })
+    Expected: "01964000-0000-7000-8000-000000000001"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toHaveValue" getByRole('combobox', { name: 'Operator', exact: true }) with timeout 5000ms
+      - waiting for getByRole('combobox', { name: 'Operator', exact: true })
+
+
+      100 | async function start(page: Page) {
+      101 |   await page.goto('/organisation/branches');
+    > 102 |   await expect(picker(page)).toHaveValue(HOME);
+          |                              ^
+      103 |   await expect(parkText(page, 'Home', 0).first()).toBeVisible();
+      104 | }
+      105 | async function select(page: Page, operatorId: string) {
+        at start (C:\w\admin-operator-switch\apps\console\e2e\operator-switch.spec.ts:102:30)
+        at C:\w\admin-operator-switch\apps\console\e2e\operator-switch.spec.ts:209:34
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\operator-switch-a-held-old-6f85a--authority-after-signed-out\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\operator-switch-a-held-old-6f85a--authority-after-signed-out\error-context.md
+
+  11) e2e\operator-switch.spec.ts:208:65 › a held old switch cannot revive authority after new actor
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator: getByRole('combobox', { name: 'Operator', exact: true })
+    Expected: "01964000-0000-7000-8000-000000000001"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toHaveValue" getByRole('combobox', { name: 'Operator', exact: true }) with timeout 5000ms
+      - waiting for getByRole('combobox', { name: 'Operator', exact: true })
+
+
+      100 | async function start(page: Page) {
+      101 |   await page.goto('/organisation/branches');
+    > 102 |   await expect(picker(page)).toHaveValue(HOME);
+          |                              ^
+      103 |   await expect(parkText(page, 'Home', 0).first()).toBeVisible();
+      104 | }
+      105 | async function select(page: Page, operatorId: string) {
+        at start (C:\w\admin-operator-switch\apps\console\e2e\operator-switch.spec.ts:102:30)
+        at C:\w\admin-operator-switch\apps\console\e2e\operator-switch.spec.ts:209:34
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\operator-switch-a-held-old-d628a-e-authority-after-new-actor\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\operator-switch-a-held-old-d628a-e-authority-after-new-actor\error-context.md
+
+  12) e2e\operator-switch.spec.ts:225:82 › fresh locked state cannot retain active operator controls
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator: getByRole('combobox', { name: 'Operator', exact: true })
+    Expected: "01964000-0000-7000-8000-000000000001"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toHaveValue" getByRole('combobox', { name: 'Operator', exact: true }) with timeout 5000ms
+      - waiting for getByRole('combobox', { name: 'Operator', exact: true })
+
+
+      100 | async function start(page: Page) {
+      101 |   await page.goto('/organisation/branches');
+    > 102 |   await expect(picker(page)).toHaveValue(HOME);
+          |                              ^
+      103 |   await expect(parkText(page, 'Home', 0).first()).toBeVisible();
+      104 | }
+      105 | async function select(page: Page, operatorId: string) {
+        at start (C:\w\admin-operator-switch\apps\console\e2e\operator-switch.spec.ts:102:30)
+        at C:\w\admin-operator-switch\apps\console\e2e\operator-switch.spec.ts:226:34
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\operator-switch-fresh-lock-67d4f-in-active-operator-controls\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\operator-switch-fresh-lock-67d4f-in-active-operator-controls\error-context.md
+
+  13) e2e\operator-switch.spec.ts:225:82 › fresh temporary password state cannot retain active operator controls
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator: getByRole('combobox', { name: 'Operator', exact: true })
+    Expected: "01964000-0000-7000-8000-000000000001"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toHaveValue" getByRole('combobox', { name: 'Operator', exact: true }) with timeout 5000ms
+      - waiting for getByRole('combobox', { name: 'Operator', exact: true })
+
+
+      100 | async function start(page: Page) {
+      101 |   await page.goto('/organisation/branches');
+    > 102 |   await expect(picker(page)).toHaveValue(HOME);
+          |                              ^
+      103 |   await expect(parkText(page, 'Home', 0).first()).toBeVisible();
+      104 | }
+      105 | async function select(page: Page, operatorId: string) {
+        at start (C:\w\admin-operator-switch\apps\console\e2e\operator-switch.spec.ts:102:30)
+        at C:\w\admin-operator-switch\apps\console\e2e\operator-switch.spec.ts:226:34
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\operator-switch-fresh-temp-e0a62-in-active-operator-controls\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\operator-switch-fresh-temp-e0a62-in-active-operator-controls\error-context.md
+
+  14) e2e\operator-switch.spec.ts:225:82 › fresh grant withdrawn state cannot retain active operator controls
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator: getByRole('combobox', { name: 'Operator', exact: true })
+    Expected: "01964000-0000-7000-8000-000000000001"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toHaveValue" getByRole('combobox', { name: 'Operator', exact: true }) with timeout 5000ms
+      - waiting for getByRole('combobox', { name: 'Operator', exact: true })
+
+
+      100 | async function start(page: Page) {
+      101 |   await page.goto('/organisation/branches');
+    > 102 |   await expect(picker(page)).toHaveValue(HOME);
+          |                              ^
+      103 |   await expect(parkText(page, 'Home', 0).first()).toBeVisible();
+      104 | }
+      105 | async function select(page: Page, operatorId: string) {
+        at start (C:\w\admin-operator-switch\apps\console\e2e\operator-switch.spec.ts:102:30)
+        at C:\w\admin-operator-switch\apps\console\e2e\operator-switch.spec.ts:226:34
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\operator-switch-fresh-gran-97a46-in-active-operator-controls\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\operator-switch-fresh-gran-97a46-in-active-operator-controls\error-context.md
+
+  15) e2e\operator-switch.spec.ts:237:1 › an old readonly response released after switching cannot replace the new operator directory
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator: getByRole('combobox', { name: 'Operator', exact: true })
+    Expected: "01964000-0000-7000-8000-000000000001"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toHaveValue" getByRole('combobox', { name: 'Operator', exact: true }) with timeout 5000ms
+      - waiting for getByRole('combobox', { name: 'Operator', exact: true })
+
+
+      100 | async function start(page: Page) {
+      101 |   await page.goto('/organisation/branches');
+    > 102 |   await expect(picker(page)).toHaveValue(HOME);
+          |                              ^
+      103 |   await expect(parkText(page, 'Home', 0).first()).toBeVisible();
+      104 | }
+      105 | async function select(page: Page, operatorId: string) {
+        at start (C:\w\admin-operator-switch\apps\console\e2e\operator-switch.spec.ts:102:30)
+        at C:\w\admin-operator-switch\apps\console\e2e\operator-switch.spec.ts:238:34
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\operator-switch-an-old-rea-94077--the-new-operator-directory\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\operator-switch-an-old-rea-94077--the-new-operator-directory\error-context.md
+
+  16) e2e\operator-switch.spec.ts:251:1 › a held old export cannot download after the operator context changes
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator: getByRole('combobox', { name: 'Operator', exact: true })
+    Expected: "01964000-0000-7000-8000-000000000001"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toHaveValue" getByRole('combobox', { name: 'Operator', exact: true }) with timeout 5000ms
+      - waiting for getByRole('combobox', { name: 'Operator', exact: true })
+
+
+      250 |
+      251 | test('a held old export cannot download after the operator context changes', async ({ page }) => {
+    > 252 |   await fixture(page); await page.goto('/reports/booths'); await expect(picker(page)).toHaveValue(HOME);
+          |                                                                                       ^
+      253 |   const gate = deferred(); let waiting = false; const downloads: string[] = [];
+      254 |   page.on('download', download => downloads.push(download.suggestedFilename()));
+      255 |   await page.route('**/api/analytics/booths/export?*', async route => {
+        at C:\w\admin-operator-switch\apps\console\e2e\operator-switch.spec.ts:252:87
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\operator-switch-a-held-old-dcb32-he-operator-context-changes\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\operator-switch-a-held-old-dcb32-he-operator-context-changes\error-context.md
+
+  17) e2e\operator-switch.spec.ts:265:1 › an old acting-user handoff response cannot navigate after the operator context changes
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator: getByRole('combobox', { name: 'Operator', exact: true })
+    Expected: "01964000-0000-7000-8000-000000000001"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toHaveValue" getByRole('combobox', { name: 'Operator', exact: true }) with timeout 5000ms
+      - waiting for getByRole('combobox', { name: 'Operator', exact: true })
+
+
+      274 |     return route.fulfill({ json: { launchUrl: new URL('/zz-test-local-source#handoff=synthetic-only', page.url()).href } });
+      275 |   });
+    > 276 |   await page.goto('/people/employees'); await expect(picker(page)).toHaveValue(HOME);
+          |                                                                    ^
+      277 |   await page.getByRole('button', { name: 'Open in OTO App', exact: true }).click(); await expect.poll(() => waiting).toBe(true);
+      278 |   await select(page, OTHER);
+      279 |   const returned = page.waitForResponse(response => new URL(response.url()).pathname === '/api/auth/handoff');
+        at C:\w\admin-operator-switch\apps\console\e2e\operator-switch.spec.ts:276:68
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\operator-switch-an-old-act-56c1e-he-operator-context-changes\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\operator-switch-an-old-act-56c1e-he-operator-context-changes\error-context.md
+
+  18) e2e\operator-switch.spec.ts:285:1 › home and canonical operator controls fit a 390px phone without horizontal overflow
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator: getByRole('combobox', { name: 'Operator', exact: true })
+    Expected: "01964000-0000-7000-8000-000000000001"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toHaveValue" getByRole('combobox', { name: 'Operator', exact: true }) with timeout 5000ms
+      - waiting for getByRole('combobox', { name: 'Operator', exact: true })
+
+
+      100 | async function start(page: Page) {
+      101 |   await page.goto('/organisation/branches');
+    > 102 |   await expect(picker(page)).toHaveValue(HOME);
+          |                              ^
+      103 |   await expect(parkText(page, 'Home', 0).first()).toBeVisible();
+      104 | }
+      105 | async function select(page: Page, operatorId: string) {
+        at start (C:\w\admin-operator-switch\apps\console\e2e\operator-switch.spec.ts:102:30)
+        at C:\w\admin-operator-switch\apps\console\e2e\operator-switch.spec.ts:287:60
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\operator-switch-home-and-c-82972-without-horizontal-overflow\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\operator-switch-home-and-c-82972-without-horizontal-overflow\error-context.md
+
+  18 failed
+    e2e\operator-switch.spec.ts:120:1 › operator choices use canonical current rather than the first row and keep home identity visible after switching
+    e2e\operator-switch.spec.ts:141:1 › a canonical current operator absent from live choices stays unselected and disabled, without a home fallback
+    e2e\operator-switch.spec.ts:148:1 › an operator switch masks old controls at PUT dispatch, before the held acknowledgement
+    e2e\operator-switch.spec.ts:160:52 › a held canonical me response cannot leave home data or an optimistic target active
+    e2e\operator-switch.spec.ts:160:52 › a held canonical permissions response cannot leave home data or an optimistic target active
+    e2e\operator-switch.spec.ts:172:1 › an uncertain committed switch with failed canonical reads stays unavailable until Retry confirms B
+    e2e\operator-switch.spec.ts:184:1 › an operator-list error has Retry and never selects the first option or dispatches a write
+    e2e\operator-switch.spec.ts:192:1 › an explicit selection refusal preserves its error and cannot claim a confirmed new operator
+    e2e\operator-switch.spec.ts:200:1 › a late B acknowledgement cannot replace a newer canonical home context after A-B-A
+    e2e\operator-switch.spec.ts:208:65 › a held old switch cannot revive authority after signed out
+    e2e\operator-switch.spec.ts:208:65 › a held old switch cannot revive authority after new actor ─
+    e2e\operator-switch.spec.ts:225:82 › fresh locked state cannot retain active operator controls ─
+    e2e\operator-switch.spec.ts:225:82 › fresh temporary password state cannot retain active operator controls
+    e2e\operator-switch.spec.ts:225:82 › fresh grant withdrawn state cannot retain active operator controls
+    e2e\operator-switch.spec.ts:237:1 › an old readonly response released after switching cannot replace the new operator directory
+    e2e\operator-switch.spec.ts:251:1 › a held old export cannot download after the operator context changes
+    e2e\operator-switch.spec.ts:265:1 › an old acting-user handoff response cannot navigate after the operator context changes
+    e2e\operator-switch.spec.ts:285:1 › home and canonical operator controls fit a 390px phone without horizontal overflow
+  3 passed (2.1m)
+2026-10-26 05:04:53.834 +07 [12552] LOG:  checkpoint starting: immediate force wait
+
+2026-10-26 05:04:54.749 +07 [12552] LOG:  checkpoint complete: wrote 1778 buffers (10.9%); 0 WAL file(s) added, 0 removed, 2 recycled; write=0.090 s, sync=0.811 s, total=0.915 s; sync files=1865, longest=0.005 s, average=0.001 s; distance=31130 kB, estimate=31130 kB; lsn=0/33DEB50, redo lsn=0/33DEB18
+
+[console-e2e] dropped oto_console_e2e_1792965749097
+2026-10-26 05:04:54.982 +07 [12552] LOG:  checkpoint starting: immediate force wait
+
+2026-10-26 05:04:54.990 +07 [12552] LOG:  checkpoint complete: wrote 2 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.002 s, sync=0.002 s, total=0.008 s; sync files=2, longest=0.001 s, average=0.001 s; distance=1 kB, estimate=28017 kB; lsn=0/33DF050, redo lsn=0/33DF018

@@ -1,0 +1,19 @@
+{
+  "ticket": "SCRUM-640",
+  "phase": "types",
+  "attempt": "v2",
+  "startedAt": "2026-10-25T22:34:36.750Z",
+  "completedAt": "2026-10-25T22:34:49.127Z",
+  "command": "pnpm --filter @oto/console typecheck",
+  "exitCode": 0,
+  "signal": null,
+  "launchError": null,
+  "inputCount": 210,
+  "inputsUnchanged": true,
+  "inputsSha256": "c2e75ac4a01ab4def34347696e6eb660fb7dac44437128fce77125824a8e0fd0",
+  "sourceManifestSha256": "fa310a4a967d5db68c630d1a1bf71a6df72e4d55aae0d72ec8d0a2343f233054",
+  "runnerSha256": "26e93a098f6eb44d52460ef93e802c40a9fdfe8ef6e014ea2b297a46be58930c",
+  "logSha256": "a8026d8bb80dc8018ac6d5c62595a957d071028207ef0f40fd92265ec49dc615",
+  "logPath": "C:/w/admin640-console-types-v2.log",
+  "staging": false
+}

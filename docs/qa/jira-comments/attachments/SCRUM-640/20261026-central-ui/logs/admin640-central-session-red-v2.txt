@@ -1,0 +1,225 @@
+
+> @oto/api@0.1.0 test C:\w\admin-operator-switch\apps\api
+> vitest run --pool=forks "test/operator-switch-session-review.test.ts"
+
+
+ RUN  v3.2.7 C:/w/admin-operator-switch/apps/api
+
+stdout | test/operator-switch-session-review.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/operator-switch-session-review.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-zNtDZ8 ... ok
+creating subdirectories ...
+
+stdout | test/operator-switch-session-review.test.ts
+ok
+
+
+stdout | test/operator-switch-session-review.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ...
+
+stdout | test/operator-switch-session-review.test.ts
+100
+selecting default shared_buffers ...
+
+stdout | test/operator-switch-session-review.test.ts
+128MB
+selecting default time zone ...
+
+stdout | test/operator-switch-session-review.test.ts
+Asia/Bangkok
+creating configuration files ...
+
+stdout | test/operator-switch-session-review.test.ts
+ok
+running bootstrap script ...
+
+stdout | test/operator-switch-session-review.test.ts
+ok
+
+
+stdout | test/operator-switch-session-review.test.ts
+performing post-bootstrap initialization ...
+
+stdout | test/operator-switch-session-review.test.ts
+ok
+syncing data to disk ...
+
+stdout | test/operator-switch-session-review.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\w^\admin^-operator^-switch^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-zNtDZ8^" -l logfile start
+
+
+
+stdout | test/operator-switch-session-review.test.ts
+2026-10-26 04:36:49.660 +07 [31204] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/operator-switch-session-review.test.ts
+2026-10-26 04:36:49.665 +07 [31204] LOG:  listening on IPv6 address "::1", port 54531
+
+
+stdout | test/operator-switch-session-review.test.ts
+2026-10-26 04:36:49.665 +07 [31204] LOG:  listening on IPv4 address "127.0.0.1", port 54531
+
+
+stdout | test/operator-switch-session-review.test.ts
+2026-10-26 04:36:49.738 +07 [56128] LOG:  database system was shut down at 2026-10-26 04:36:46 +07
+
+
+stdout | test/operator-switch-session-review.test.ts
+2026-10-26 04:36:49.774 +07 [31204] LOG:  database system is ready to accept connections
+
+
+stdout | test/operator-switch-session-review.test.ts
+2026-10-26 04:36:56.192 +07 [29716] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+
+stdout | test/operator-switch-session-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/operator-switch-session-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:74664) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/operator-switch-session-review.test.ts
+2026-10-26 04:37:00.208 +07 [51656] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/operator-switch-session-review.test.ts
+2026-10-26 04:37:00.235 +07 [51656] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.005 s, sync=0.006 s, total=0.027 s; sync files=5, longest=0.002 s, average=0.002 s; distance=16020 kB, estimate=16020 kB; lsn=0/251D198, redo lsn=0/251D160
+
+
+ ❯ test/operator-switch-session-review.test.ts (39 tests | 6 failed) 18873ms
+   ✓ SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R1 [critical] FINDING: resolve the live override and audited revision without replacing the real home account or employee 142ms
+   ✓ SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R2 [critical] FINDING: native branch reads narrow to the chosen operator and preserve the exact home grants 57ms
+   ✓ SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R3 [critical] FINDING: explicit home targets cannot escape an active override through a global grant 21ms
+   ✓ SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R3 [critical] FINDING: explicit foreign targets cannot escape an active override through a global grant 19ms
+   ✓ SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R4 [high] keeps a live target-owned seat and leaves the other cookie at its own home context 26ms
+   ✓ SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R5 [critical] FINDING: a now-archived target override refuses without silently returning home 25ms
+   ✓ SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R5 [critical] FINDING: a now-archived home override refuses without silently returning home 24ms
+   ✓ SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R6 [critical] FINDING: validate the effective operator and exact live seat for foreign branch 25ms
+   ✓ SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R6 [critical] FINDING: validate the effective operator and exact live seat for archived branch 25ms
+   ✓ SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R6 [critical] FINDING: validate the effective operator and exact live seat for foreign station 25ms
+   ✓ SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R6 [critical] FINDING: validate the effective operator and exact live seat for wrong station branch 25ms
+   ✓ SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R6 [critical] FINDING: validate the effective operator and exact live seat for archived station 27ms
+   ✓ SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R6 [critical] FINDING: validate the effective operator and exact live seat for missing station 24ms
+   ✓ SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R6 [critical] FINDING: validate the effective operator and exact live seat for unseated station 25ms
+   ✓ SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R7 [critical] FINDING: revalidate the same live null-scope switch assignment on each request after deleted grant 33ms
+   ✓ SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R7 [critical] FINDING: revalidate the same live null-scope switch assignment on each request after archived grant 33ms
+   ✓ SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R7 [critical] FINDING: revalidate the same live null-scope switch assignment on each request after withdrawn permission 29ms
+   ✓ SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R7 [critical] FINDING: revalidate the same live null-scope switch assignment on each request after own scope 34ms
+   ✓ SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R7 [critical] FINDING: revalidate the same live null-scope switch assignment on each request after split assignments 30ms
+   ✓ SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R7 [critical] FINDING: revalidate the same live null-scope switch assignment on each request after foreign role owner 33ms
+   ✓ SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R8 [critical] preserves the native inactive-account refusal under an override 25ms
+   ✓ SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R8 [critical] preserves the native invited-account refusal under an override 23ms
+   ✓ SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R9 [high] retains business refusal and native /me exemptions for locked sessions 41ms
+   ✓ SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R9 [high] retains business refusal and native /me exemptions for temporary password sessions 41ms
+   ✓ SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R10 [critical] FINDING: an override cannot turn a display-class session into a staff context 21ms
+   ✓ SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R10 [critical] FINDING: an override cannot turn a box-class session into a staff context 21ms
+   ✓ SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R10 [critical] FINDING: an override cannot turn a kiosk-class session into a staff context 23ms
+   ✓ SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R11 [critical] FINDING: lazily clear only the exact expired cookie override while retaining both historical session rows 25ms
+   ✓ SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R11 [critical] FINDING: lazily clear only the exact revoked cookie override while retaining both historical session rows 27ms
+   ✓ SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R12 [high] an unknown cookie performs no broad expiry cleanup 17ms
+   ✓ SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R13 [high] ordinary null-override sessions retain home scope and do not need the switch permission 40ms
+   ✓ SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R14 [critical] a target account platform assignment never grants the real caller platform authority 32ms
+   ✓ SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R15 [critical] FINDING: query and headers cannot supply an override or replace the verified context fields 16ms
+   × SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R16 [high] FINDING: public sign-out after withdrawn grant must revoke the exact session and audit it, not merely clear a cookie 36ms
+     → expected 403 to be 200 // Object.is equality
+   × SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R17 [high] FINDING: public native sign-in after withdrawn grant can issue a fresh ordinary session without reviving the invalid override 66ms
+     → expected 403 to be 200 // Object.is equality
+   × SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R18 [high] FINDING: public health/readiness ignore withdrawn grant while business calls still fail closed 36ms
+     → expected 403 to be 200 // Object.is equality
+   × SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R16 [high] FINDING: public sign-out after nonstaff override must revoke the exact session and audit it, not merely clear a cookie 37ms
+     → expected 403 to be 200 // Object.is equality
+   × SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R17 [high] FINDING: public native sign-in after nonstaff override can issue a fresh ordinary session without reviving the invalid override 75ms
+     → expected 403 to be 200 // Object.is equality
+   × SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R18 [high] FINDING: public health/readiness ignore nonstaff override while business calls still fail closed 37ms
+     → expected 403 to be 200 // Object.is equality
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 6 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/operator-switch-session-review.test.ts > SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R16 [high] FINDING: public sign-out after withdrawn grant must revoke the exact session and audit it, not merely clear a cookie
+ FAIL  test/operator-switch-session-review.test.ts > SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R16 [high] FINDING: public sign-out after nonstaff override must revoke the exact session and audit it, not merely clear a cookie
+AssertionError: expected 403 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 403
+
+ ❯ test/operator-switch-session-review.test.ts:226:35
+    224|       await invalidate(); const before = await seat(), other = await s…
+    225|       const response = await ctx.app.inject({ method: 'POST', url: '/a…
+    226|       expect(response.statusCode).toBe(200); expect(response.json()).t…
+       |                                   ^
+    227|       const ended = await seat();
+    228|       expect(ended).toMatchObject({ id: f.live, accountId: f.actor, to…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/6]⎯
+
+ FAIL  test/operator-switch-session-review.test.ts > SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R17 [high] FINDING: public native sign-in after withdrawn grant can issue a fresh ordinary session without reviving the invalid override
+ FAIL  test/operator-switch-session-review.test.ts > SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R17 [high] FINDING: public native sign-in after nonstaff override can issue a fresh ordinary session without reviving the invalid override
+AssertionError: expected 403 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 403
+
+ ❯ test/operator-switch-session-review.test.ts:240:35
+    238|       await invalidate(); const before = await seat(), other = await s…
+    239|       const response = await ctx.app.inject({ method: 'POST', url: '/a…
+    240|       expect(response.statusCode).toBe(200); expect(response.json()).t…
+       |                                   ^
+    241|       const setCookie = response.headers['set-cookie'], nextCookie = (…
+    242|       expect(Boolean(nextCookie?.startsWith('oto_session='))).toBe(tru…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/6]⎯
+
+ FAIL  test/operator-switch-session-review.test.ts > SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R18 [high] FINDING: public health/readiness ignore withdrawn grant while business calls still fail closed
+ FAIL  test/operator-switch-session-review.test.ts > SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R18 [high] FINDING: public health/readiness ignore nonstaff override while business calls still fail closed
+AssertionError: expected 403 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 403
+
+ ❯ test/operator-switch-session-review.test.ts:255:71
+    253|     it(`R18 [high] FINDING: public health/readiness ignore ${invalid} …
+    254|       await invalidate(); const before = await seat(), unchanged = awa…
+    255|       const health = await read('/health'); expect(health.statusCode).…
+       |                                                                       ^
+    256|       const ready = await read('/ready'); expect(ready.statusCode).toB…
+    257|       await refusal(403, probe, 'FORBIDDEN');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/6]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  6 failed | 33 passed (39)
+   Start at  04:36:28
+   Duration  32.68s (transform 7.53s, setup 0ms, collect 13.34s, tests 18.87s, environment 0ms, prepare 178ms)
+
+C:\w\admin-operator-switch\apps\api:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @oto/api@0.1.0 test: `vitest run --pool=forks "test/operator-switch-session-review.test.ts"`
+Exit status 1

@@ -1,0 +1,20 @@
+{
+  "ticket": "SCRUM-640",
+  "phase": "handoff",
+  "attempt": "v4",
+  "startedAt": "2026-10-25T22:23:48.186Z",
+  "completedAt": "2026-10-25T22:25:32.683Z",
+  "command": "pnpm --filter @oto/api test test/handoff.test.ts test/handoff-department.test.ts test/auth-handoff-files-tx.test.ts test/s629-handoff-role.test.ts test/s629-role-mapping-review.test.ts test/operator-switch-handoff-review.test.ts",
+  "exitCode": 0,
+  "signal": null,
+  "launchError": null,
+  "isolatedEmbeddedDatabase": true,
+  "staging": false,
+  "inputsUnchanged": true,
+  "inputCount": 820,
+  "inputsSha256": "690e47b667f7824ad5b1f11aa3afd2011492a9afe068f6995744398f18e74b2f",
+  "sourceManifestSha256": "6f3b6b28606bb2bd8bac60371887019de3aeeedbe6a20a0eb5ab4de242f3c145",
+  "runnerSha256": "b6d078d45b40fbc2d4eb677857c0f7dc2ffe66dd358a5f08756f03707caf2ae4",
+  "logSha256": "5f0f0773c73fc0f2d4faa12e750cbb3bdbbfa5ff66da9a8f398eaf784598aa82",
+  "logPath": "C:/w/admin640-extra-handoff-v4.log"
+}

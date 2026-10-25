@@ -1,0 +1,373 @@
+
+> @oto/console@0.1.0 test C:\w\admin-operator-switch\apps\console
+> vitest run "test/booth-report-lifetime.test.ts"
+
+
+ RUN  v3.2.7 C:/w/admin-operator-switch/apps/console
+
+ ❯ test/booth-report-lifetime.test.ts (61 tests | 50 failed) 189ms
+   ✓ Booth native CSV and read lifetimes > discards a pending CSV after filter, including returning to the original actor/filter 57ms
+   ✓ Booth native CSV and read lifetimes > discards a pending CSV after actor, including returning to the original actor/filter 17ms
+   ✓ Booth native CSV and read lifetimes > discards a pending CSV after unmount, including returning to the original actor/filter 13ms
+   ✓ Booth native CSV and read lifetimes > does not retain displayed figures when canonical authority changes 10ms
+   ✓ Booth native CSV and read lifetimes > does not absorb an old report response after an actor A to B to A transition 11ms
+   ✓ Booth native CSV and read lifetimes > discards a directory response owned by an unmounted page 14ms
+   ✓ Booth native CSV and read lifetimes > the native CSV uses the common client session handling for 401 10ms
+   ✓ Booth native CSV and read lifetimes > the native CSV uses the common client session handling for 423 8ms
+   ✓ Booth native CSV and read lifetimes > preserves successful native filename or its existing fallback (zz-report.csv) 9ms
+   ✓ Booth native CSV and read lifetimes > preserves successful native filename or its existing fallback (null) 7ms
+   ✓ Common Console request authority; real exported client and local fetch only > keeps the existing standalone request behavior when no provider binding is installed 1ms
+   × Common Console request authority; real exported client and local fetch only > captures a non-null epoch before dispatch and preserves an unchanged-context answer 5ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > rejects an unready json request before any fetch 3ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > rejects an unready file request before any fetch 1ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > rejects an unready post-blob request before any fetch 1ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > rejects JSON bytes that finish after the captured epoch was invalidated 1ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > replaces an old fetch rejection with a stale-authority refusal rather than exposing the old error 1ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > rejects file body bytes that finish after invalidation 1ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > rejects get-blob body bytes that finish after invalidation 0ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > rejects post-blob body bytes that finish after invalidation 1ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > late 401 from json cannot sign out or lock a newer context 3ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > late 401 from file cannot sign out or lock a newer context 1ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > late 401 from post-blob cannot sign out or lock a newer context 0ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > late 423 from json cannot sign out or lock a newer context 0ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > late 423 from file cannot sign out or lock a newer context 0ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > late 423 from post-blob cannot sign out or lock a newer context 0ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > current 401 still keeps native error and session-event behavior 1ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > current 423 still keeps native error and session-event behavior 0ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > disposing a binding invalidates already pending answers while restoring standalone behavior for new requests 0ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > a reinstalled binding with the same numeric epoch rejects old promises and an old disposer cannot clear it 1ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > permits only the coordinator operation GET /me while the ordinary scope is unready 0ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > permits only the coordinator operation GET /me/permissions while the ordinary scope is unready 0ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > permits only the coordinator operation PUT /me/session/branch while the ordinary scope is unready 0ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > permits only the coordinator operation PUT /me/session/operator while the ordinary scope is unready 0ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > permits only the coordinator operation POST /auth/sign-in while the ordinary scope is unready 0ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > permits only the coordinator operation POST /auth/sign-out while the ordinary scope is unready 0ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > permits only the coordinator operation POST /auth/unlock while the ordinary scope is unready 0ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > permits only the coordinator operation POST /auth/handoff/exchange while the ordinary scope is unready 0ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > does not widen coordinator authority to GET /me/preferences 0ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > does not widen coordinator authority to GET /me?unexpected=1 0ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > does not widen coordinator authority to POST /me 0ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > does not widen coordinator authority to PUT /me/session/operator/extra 0ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > does not widen coordinator authority to GET /auth/sign-out 0ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > does not widen coordinator authority to POST /auth/handoff/exchange/extra 0ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > does not widen coordinator authority to POST /auth/handoff 0ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > coordinator 401 from GET /me belongs to its caller and cannot fire global session events 0ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > coordinator 401 from GET /me/permissions belongs to its caller and cannot fire global session events 0ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > coordinator 401 from PUT /me/session/branch belongs to its caller and cannot fire global session events 0ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > coordinator 401 from PUT /me/session/operator belongs to its caller and cannot fire global session events 1ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > coordinator 401 from POST /auth/sign-in belongs to its caller and cannot fire global session events 0ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > coordinator 401 from POST /auth/sign-out belongs to its caller and cannot fire global session events 0ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > coordinator 401 from POST /auth/unlock belongs to its caller and cannot fire global session events 0ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > coordinator 401 from POST /auth/handoff/exchange belongs to its caller and cannot fire global session events 0ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > coordinator 423 from GET /me belongs to its caller and cannot fire global session events 0ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > coordinator 423 from GET /me/permissions belongs to its caller and cannot fire global session events 0ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > coordinator 423 from PUT /me/session/branch belongs to its caller and cannot fire global session events 0ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > coordinator 423 from PUT /me/session/operator belongs to its caller and cannot fire global session events 1ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > coordinator 423 from POST /auth/sign-in belongs to its caller and cannot fire global session events 0ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > coordinator 423 from POST /auth/sign-out belongs to its caller and cannot fire global session events 0ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > coordinator 423 from POST /auth/unlock belongs to its caller and cannot fire global session events 0ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+   × Common Console request authority; real exported client and local fetch only > coordinator 423 from POST /auth/handoff/exchange belongs to its caller and cannot fire global session events 0ms
+     → The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 50 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > captures a non-null epoch before dispatch and preserves an unchanged-context answer
+AssertionError: The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+
+Expected: "function"
+Received: "undefined"
+
+ ❯ boundClient test/booth-report-lifetime.test.ts:128:90
+    126|   const client = await import('@/api/client');
+    127|   const install = (client as unknown as { installRequestAuthority?: In…
+    128|   expect(typeof install, 'The actual common client must expose install…
+       |                                                                                          ^
+    129|   if (typeof install !== 'function') throw new Error('ZZ_TEST_REQUEST_…
+    130|   const dispose = install(binding); expect(typeof dispose).toBe('funct…
+ ❯ test/booth-report-lifetime.test.ts:161:24
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/50]⎯
+
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > rejects an unready json request before any fetch
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > rejects an unready file request before any fetch
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > rejects an unready post-blob request before any fetch
+AssertionError: The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+
+Expected: "function"
+Received: "undefined"
+
+ ❯ boundClient test/booth-report-lifetime.test.ts:128:90
+    126|   const client = await import('@/api/client');
+    127|   const install = (client as unknown as { installRequestAuthority?: In…
+    128|   expect(typeof install, 'The actual common client must expose install…
+       |                                                                                          ^
+    129|   if (typeof install !== 'function') throw new Error('ZZ_TEST_REQUEST_…
+    130|   const dispose = install(binding); expect(typeof dispose).toBe('funct…
+ ❯ test/booth-report-lifetime.test.ts:170:24
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/50]⎯
+
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > rejects JSON bytes that finish after the captured epoch was invalidated
+AssertionError: The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+
+Expected: "function"
+Received: "undefined"
+
+ ❯ boundClient test/booth-report-lifetime.test.ts:128:90
+    126|   const client = await import('@/api/client');
+    127|   const install = (client as unknown as { installRequestAuthority?: In…
+    128|   expect(typeof install, 'The actual common client must expose install…
+       |                                                                                          ^
+    129|   if (typeof install !== 'function') throw new Error('ZZ_TEST_REQUEST_…
+    130|   const dispose = install(binding); expect(typeof dispose).toBe('funct…
+ ❯ test/booth-report-lifetime.test.ts:179:24
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/50]⎯
+
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > replaces an old fetch rejection with a stale-authority refusal rather than exposing the old error
+AssertionError: The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+
+Expected: "function"
+Received: "undefined"
+
+ ❯ boundClient test/booth-report-lifetime.test.ts:128:90
+    126|   const client = await import('@/api/client');
+    127|   const install = (client as unknown as { installRequestAuthority?: In…
+    128|   expect(typeof install, 'The actual common client must expose install…
+       |                                                                                          ^
+    129|   if (typeof install !== 'function') throw new Error('ZZ_TEST_REQUEST_…
+    130|   const dispose = install(binding); expect(typeof dispose).toBe('funct…
+ ❯ test/booth-report-lifetime.test.ts:190:24
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/50]⎯
+
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > rejects file body bytes that finish after invalidation
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > rejects get-blob body bytes that finish after invalidation
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > rejects post-blob body bytes that finish after invalidation
+AssertionError: The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+
+Expected: "function"
+Received: "undefined"
+
+ ❯ boundClient test/booth-report-lifetime.test.ts:128:90
+    126|   const client = await import('@/api/client');
+    127|   const install = (client as unknown as { installRequestAuthority?: In…
+    128|   expect(typeof install, 'The actual common client must expose install…
+       |                                                                                          ^
+    129|   if (typeof install !== 'function') throw new Error('ZZ_TEST_REQUEST_…
+    130|   const dispose = install(binding); expect(typeof dispose).toBe('funct…
+ ❯ test/booth-report-lifetime.test.ts:200:24
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/50]⎯
+
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > late 401 from json cannot sign out or lock a newer context
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > late 401 from file cannot sign out or lock a newer context
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > late 401 from post-blob cannot sign out or lock a newer context
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > late 423 from json cannot sign out or lock a newer context
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > late 423 from file cannot sign out or lock a newer context
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > late 423 from post-blob cannot sign out or lock a newer context
+AssertionError: The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+
+Expected: "function"
+Received: "undefined"
+
+ ❯ boundClient test/booth-report-lifetime.test.ts:128:90
+    126|   const client = await import('@/api/client');
+    127|   const install = (client as unknown as { installRequestAuthority?: In…
+    128|   expect(typeof install, 'The actual common client must expose install…
+       |                                                                                          ^
+    129|   if (typeof install !== 'function') throw new Error('ZZ_TEST_REQUEST_…
+    130|   const dispose = install(binding); expect(typeof dispose).toBe('funct…
+ ❯ test/booth-report-lifetime.test.ts:214:26
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/50]⎯
+
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > current 401 still keeps native error and session-event behavior
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > current 423 still keeps native error and session-event behavior
+AssertionError: The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+
+Expected: "function"
+Received: "undefined"
+
+ ❯ boundClient test/booth-report-lifetime.test.ts:128:90
+    126|   const client = await import('@/api/client');
+    127|   const install = (client as unknown as { installRequestAuthority?: In…
+    128|   expect(typeof install, 'The actual common client must expose install…
+       |                                                                                          ^
+    129|   if (typeof install !== 'function') throw new Error('ZZ_TEST_REQUEST_…
+    130|   const dispose = install(binding); expect(typeof dispose).toBe('funct…
+ ❯ test/booth-report-lifetime.test.ts:226:24
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/50]⎯
+
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > disposing a binding invalidates already pending answers while restoring standalone behavior for new requests
+AssertionError: The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+
+Expected: "function"
+Received: "undefined"
+
+ ❯ boundClient test/booth-report-lifetime.test.ts:128:90
+    126|   const client = await import('@/api/client');
+    127|   const install = (client as unknown as { installRequestAuthority?: In…
+    128|   expect(typeof install, 'The actual common client must expose install…
+       |                                                                                          ^
+    129|   if (typeof install !== 'function') throw new Error('ZZ_TEST_REQUEST_…
+    130|   const dispose = install(binding); expect(typeof dispose).toBe('funct…
+ ❯ test/booth-report-lifetime.test.ts:234:33
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/50]⎯
+
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > a reinstalled binding with the same numeric epoch rejects old promises and an old disposer cannot clear it
+AssertionError: The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+
+Expected: "function"
+Received: "undefined"
+
+ ❯ boundClient test/booth-report-lifetime.test.ts:128:90
+    126|   const client = await import('@/api/client');
+    127|   const install = (client as unknown as { installRequestAuthority?: In…
+    128|   expect(typeof install, 'The actual common client must expose install…
+       |                                                                                          ^
+    129|   if (typeof install !== 'function') throw new Error('ZZ_TEST_REQUEST_…
+    130|   const dispose = install(binding); expect(typeof dispose).toBe('funct…
+ ❯ test/booth-report-lifetime.test.ts:243:19
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/50]⎯
+
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > permits only the coordinator operation GET /me while the ordinary scope is unready
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > permits only the coordinator operation GET /me/permissions while the ordinary scope is unready
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > permits only the coordinator operation PUT /me/session/branch while the ordinary scope is unready
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > permits only the coordinator operation PUT /me/session/operator while the ordinary scope is unready
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > permits only the coordinator operation POST /auth/sign-in while the ordinary scope is unready
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > permits only the coordinator operation POST /auth/sign-out while the ordinary scope is unready
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > permits only the coordinator operation POST /auth/unlock while the ordinary scope is unready
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > permits only the coordinator operation POST /auth/handoff/exchange while the ordinary scope is unready
+AssertionError: The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+
+Expected: "function"
+Received: "undefined"
+
+ ❯ boundClient test/booth-report-lifetime.test.ts:128:90
+    126|   const client = await import('@/api/client');
+    127|   const install = (client as unknown as { installRequestAuthority?: In…
+    128|   expect(typeof install, 'The actual common client must expose install…
+       |                                                                                          ^
+    129|   if (typeof install !== 'function') throw new Error('ZZ_TEST_REQUEST_…
+    130|   const dispose = install(binding); expect(typeof dispose).toBe('funct…
+ ❯ test/booth-report-lifetime.test.ts:259:24
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/50]⎯
+
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > does not widen coordinator authority to GET /me/preferences
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > does not widen coordinator authority to GET /me?unexpected=1
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > does not widen coordinator authority to POST /me
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > does not widen coordinator authority to PUT /me/session/operator/extra
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > does not widen coordinator authority to GET /auth/sign-out
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > does not widen coordinator authority to POST /auth/handoff/exchange/extra
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > does not widen coordinator authority to POST /auth/handoff
+AssertionError: The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+
+Expected: "function"
+Received: "undefined"
+
+ ❯ boundClient test/booth-report-lifetime.test.ts:128:90
+    126|   const client = await import('@/api/client');
+    127|   const install = (client as unknown as { installRequestAuthority?: In…
+    128|   expect(typeof install, 'The actual common client must expose install…
+       |                                                                                          ^
+    129|   if (typeof install !== 'function') throw new Error('ZZ_TEST_REQUEST_…
+    130|   const dispose = install(binding); expect(typeof dispose).toBe('funct…
+ ❯ test/booth-report-lifetime.test.ts:273:24
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/50]⎯
+
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > coordinator 401 from GET /me belongs to its caller and cannot fire global session events
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > coordinator 401 from GET /me/permissions belongs to its caller and cannot fire global session events
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > coordinator 401 from PUT /me/session/branch belongs to its caller and cannot fire global session events
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > coordinator 401 from PUT /me/session/operator belongs to its caller and cannot fire global session events
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > coordinator 401 from POST /auth/sign-in belongs to its caller and cannot fire global session events
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > coordinator 401 from POST /auth/sign-out belongs to its caller and cannot fire global session events
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > coordinator 401 from POST /auth/unlock belongs to its caller and cannot fire global session events
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > coordinator 401 from POST /auth/handoff/exchange belongs to its caller and cannot fire global session events
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > coordinator 423 from GET /me belongs to its caller and cannot fire global session events
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > coordinator 423 from GET /me/permissions belongs to its caller and cannot fire global session events
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > coordinator 423 from PUT /me/session/branch belongs to its caller and cannot fire global session events
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > coordinator 423 from PUT /me/session/operator belongs to its caller and cannot fire global session events
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > coordinator 423 from POST /auth/sign-in belongs to its caller and cannot fire global session events
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > coordinator 423 from POST /auth/sign-out belongs to its caller and cannot fire global session events
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > coordinator 423 from POST /auth/unlock belongs to its caller and cannot fire global session events
+ FAIL  test/booth-report-lifetime.test.ts > Common Console request authority; real exported client and local fetch only > coordinator 423 from POST /auth/handoff/exchange belongs to its caller and cannot fire global session events
+AssertionError: The actual common client must expose installRequestAuthority: expected 'undefined' to be 'function' // Object.is equality
+
+Expected: "function"
+Received: "undefined"
+
+ ❯ boundClient test/booth-report-lifetime.test.ts:128:90
+    126|   const client = await import('@/api/client');
+    127|   const install = (client as unknown as { installRequestAuthority?: In…
+    128|   expect(typeof install, 'The actual common client must expose install…
+       |                                                                                          ^
+    129|   if (typeof install !== 'function') throw new Error('ZZ_TEST_REQUEST_…
+    130|   const dispose = install(binding); expect(typeof dispose).toBe('funct…
+ ❯ test/booth-report-lifetime.test.ts:283:24
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/50]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  50 failed | 11 passed (61)
+   Start at  05:28:18
+   Duration  994ms (transform 61ms, setup 0ms, collect 378ms, tests 189ms, environment 0ms, prepare 165ms)
+
+C:\w\admin-operator-switch\apps\console:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @oto/console@0.1.0 test: `vitest run "test/booth-report-lifetime.test.ts"`
+Exit status 1

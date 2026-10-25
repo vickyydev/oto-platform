@@ -1,0 +1,25 @@
+{
+  "ticket": "SCRUM-640",
+  "recordedAt": "2026-10-25T23:26:15.885Z",
+  "staging": false,
+  "acceptance": false,
+  "source": "actual native full-browser v2",
+  "sourceManifestSha256": "d8ac3e28fa84849ed172169da9b35dacbd7180b19fdd0dad55b15ec46e2d6307",
+  "receiptLogSha256": "89cf3f55483f439cfaec9d1715b4f004c5fb185a797f1c3c58d901a0b74d772c",
+  "inspected": true,
+  "privacy": "Synthetic local fixture; no QR, secret or staging record.",
+  "finding": "Reselecting the current permission clears holders without changing the loading effect dependency.",
+  "prescribedFix": "Return before clearing holders/error if the selected permission is unchanged. Retain the existing native browser assertion.",
+  "files": [
+    {
+      "name": "SCRUM-640-local-roles-reselection-failure.png",
+      "sha256": "8c313f2092af9de88e05c1fd67e4b8168c0e1a86d9f4d50d09e1ed1cb9dff1ee"
+    },
+    {
+      "name": "error-context.md",
+      "sha256": "2899d938d11c7c75048e4c9e803248548659d8097ee40adcc3be68e43fa11c83",
+      "originalSha256": "e4dc541c1d3e613f298bb868012ea979bd11721a7737e236ff51f75cb7d14faa",
+      "displayPolicy": "LF; remove only trailing horizontal whitespace and redundant final blank lines. Original context hash retained; assertion text and result unchanged."
+    }
+  ]
+}

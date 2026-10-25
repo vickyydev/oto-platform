@@ -1,0 +1,13 @@
+
+> @oto/console@0.1.0 test C:\w\admin-operator-switch\apps\console
+> vitest run "test/booth-state.test.ts"
+
+
+ RUN  v3.2.7 C:/w/admin-operator-switch/apps/console
+
+ ✓ test/booth-state.test.ts (11 tests) 120ms
+
+ Test Files  1 passed (1)
+      Tests  11 passed (11)
+   Start at  05:57:10
+   Duration  1.78s (transform 113ms, setup 0ms, collect 573ms, tests 120ms, environment 0ms, prepare 623ms)
