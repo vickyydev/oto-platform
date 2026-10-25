@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { and, desc, eq, ne } from 'drizzle-orm';
+import { and, desc, eq, gt, isNull, ne } from 'drizzle-orm';
 import { account, branch, employee, fileObject, session as sessionTable } from '@oto/db';
 import {
   THEME_PREFERENCES,
@@ -13,6 +13,7 @@ import { errors } from '../lib/errors';
 import { holdsGrantAt, outOfBranchScope } from '../services/access-control';
 import { audit } from '../services/audit';
 import { isPlatformWide } from '../services/permissions';
+import { switchSessionOperator } from '../services/operator-switch';
 import { opCtx, withTx } from '../services/tx';
 
 /** What `GET /me` and `PUT /me/preferences` answer as `preferences` (SCRUM-653). */
@@ -21,13 +22,34 @@ const PreferencesShape = z.object({
   language: z.enum(UI_LANGUAGES),
 });
 
+const OperatorContextShape = z.object({
+  homeOperatorId: z.string().uuid(),
+  effectiveOperatorId: z.string().uuid(),
+  operatorOverride: z.string().uuid().nullable(),
+  branchId: z.string().uuid().nullable(),
+  stationId: z.string().uuid().nullable(),
+  revision: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+});
+
+const MeShape = z.object({
+  account: z.object({ id: z.string().uuid(), phone: z.string(), status: z.enum(['invited', 'active', 'inactive']),
+    mustChangePassword: z.boolean(), operatorId: z.string().uuid() }),
+  employee: z.object({ id: z.string().uuid(), name: z.string(), nickname: z.string().nullable() }).nullable(),
+  branch: z.object({ id: z.string().uuid(), name: z.string(), code: z.string(), timezone: z.string() }).nullable(),
+  isPlatformAdmin: z.boolean(),
+  photoFileId: z.string().uuid().nullable(),
+  sessionLocked: z.boolean(),
+  preferences: PreferencesShape,
+  operatorContext: OperatorContextShape.extend({ sessionId: z.string().uuid() }),
+});
+
 function preferencesOf(row: { uiTheme: UiPreferences['theme']; uiLanguage: UiPreferences['language'] }): UiPreferences {
   return { theme: row.uiTheme, language: row.uiLanguage };
 }
 
 export async function meRoutes(app: App): Promise<void> {
   // SCRUM-25 / SCRUM-19 — who am I: account, employee, branch, permissions.
-  app.get('/', { config: { auth: 'session' }, schema: { description: 'Current account profile' } }, async (req) => {
+  app.get('/', { config: { auth: 'session' }, schema: { description: 'Current home account and working session context', response: { 200: MeShape } } }, async (req) => {
     const auth = req.requireAuth();
     const [acc] = await app.db.select().from(account).where(eq(account.id, auth.accountId)).limit(1);
     if (!acc) throw errors.unauthorized();
@@ -62,7 +84,33 @@ export async function meRoutes(app: App): Promise<void> {
       // SCRUM-653 — how every staff app looks for this person, applied by
       // each app as it reads this answer at sign-in.
       preferences: preferencesOf(acc),
+      // Home identity stays factual. Working scope belongs to this verified
+      // session and includes a revision so A-B-A cannot revive stale controls.
+      operatorContext: {
+        sessionId: auth.sessionId,
+        homeOperatorId: acc.operatorId,
+        effectiveOperatorId: auth.operatorId,
+        operatorOverride: auth.operatorOverride ?? null,
+        branchId: auth.branchId,
+        stationId: auth.stationId,
+        revision: auth.operatorRevision ?? 0,
+      },
     };
+  });
+
+  app.put('/session/operator', {
+    config: { permission: 'platform:operator:switch', target: { operator: true } },
+    schema: {
+      description: 'Select the working operator for this staff session, preserving the real home account',
+      headers: z.object({ 'idempotency-key': z.string().min(1).max(200) }).passthrough(),
+      body: z.object({ operatorId: z.string().uuid().nullable(),
+        expectedRevision: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER) }).strict(),
+      response: { 200: OperatorContextShape.extend({ changed: z.boolean() }) },
+    },
+  }, async req => {
+    const auth = req.requireAuth();
+    return switchSessionOperator(app.db, { accountId: auth.accountId, sessionId: auth.sessionId,
+      operatorId: req.body.operatorId, expectedRevision: req.body.expectedRevision }, opCtx(req));
   });
 
   /**
@@ -260,10 +308,18 @@ export async function meRoutes(app: App): Promise<void> {
        */
       const from = auth.branchId;
       await withTx(app.db, opCtx(req), 'session.branch_switch', async (tx) => {
-        await tx
+        const [updated] = await tx
           .update(sessionTable)
-          .set({ branchId: br.id })
-          .where(eq(sessionTable.id, auth.sessionId));
+          .set({ branchId: br.id, ...(from !== br.id ? { stationId: null } : {}) })
+          .where(and(eq(sessionTable.id, auth.sessionId), eq(sessionTable.accountId, auth.accountId),
+            auth.operatorOverride == null ? isNull(sessionTable.operatorOverride) : eq(sessionTable.operatorOverride, auth.operatorOverride),
+            from === null ? isNull(sessionTable.branchId) : eq(sessionTable.branchId, from),
+            auth.stationId === null ? isNull(sessionTable.stationId) : eq(sessionTable.stationId, auth.stationId),
+            isNull(sessionTable.revokedAt), gt(sessionTable.expiresAt, new Date()), isNull(sessionTable.lockedAt)))
+          .returning({ id: sessionTable.id });
+        // The earlier grant/branch checks belong to this exact working seat.
+        // A later operator or seat selection cannot inherit their write.
+        if (!updated) throw errors.conflict('SESSION_CONTEXT_CHANGED', 'The session context changed. Read it again before selecting a branch.');
         await audit.record(tx, {
           actorAccountId: auth.accountId,
           operatorId: auth.operatorId,

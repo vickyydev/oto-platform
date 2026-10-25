@@ -60,6 +60,19 @@ afterAll(async () => {
 
 const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
+describe('Operator selection write registration (SCRUM-640)', () => {
+  it('uses the verified session service and its transaction/audit without a write or replay exemption', () => {
+    const route = routes.find(r => r.method === 'PUT' && r.path === '/me/session/operator');
+    expect(route).toBeDefined();
+    expect(reachesText(route!.handlerText, text => /\bswitchSessionOperator\s*\(/.test(text), functions)).toBe(true);
+    expect(reachesText(route!.handlerText, text => /\bwithTx\s*\(/.test(text), functions)).toBe(true);
+    expect(reachesText(route!.handlerText, text => /\baudit\.record\s*\(/.test(text), functions)).toBe(true);
+    const config = configs.get('PUT /me/session/operator');
+    expect(config?.secretResponse).not.toBe(true); expect(config?.replaysByOwnId).not.toBe(true);
+    expect(config?.credential).toBeUndefined();
+  });
+});
+
 describe('Platform read registration (SCRUM-639)', () => {
   it('adds exactly three reads without a mutation exemption or a control runner', () => {
     const paths = ['/platform/alerts', '/platform/jobs', '/platform/environment'];

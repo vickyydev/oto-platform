@@ -34,6 +34,15 @@ afterAll(async () => {
 const NOT_OURS = new Set(['/*']);
 
 describe('route guards (S2-01b)', () => {
+  it('requires the operator-wide switch permission for the current native session (SCRUM-640)', async () => {
+    const route = ctx.app.routeRegistry.find(r => r.method === 'PUT' && r.url === '/me/session/operator');
+    expect(route?.config.permission).toBe('platform:operator:switch');
+    expect(route?.config.target).toEqual({ operator: true });
+    expect(route?.config.public).not.toBe(true); expect(route?.config.credential).toBeUndefined();
+    expect((await ctx.app.inject({ method: 'PUT', url: '/me/session/operator',
+      headers: { 'idempotency-key': 'zz-test-640-guard' }, payload: { operatorId: null, expectedRevision: 0 } })).statusCode).toBe(401);
+  });
+
   it('requires a session and genuine platform authority on all Platform reads (SCRUM-639)', async () => {
     for (const url of ['/platform/alerts', '/platform/jobs', '/platform/environment']) {
       const route = ctx.app.routeRegistry.find(r => r.method === 'GET' && r.url === url);

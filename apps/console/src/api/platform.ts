@@ -3,26 +3,12 @@
 // Shapes match apps/launcher/src/api/platform.ts where the two call the same
 // route, so a change to a response is felt in one place per app.
 import type { ApiBody, ApiResponse } from '@oto/api-types';
-import type { UiPreferences } from '@oto/shared/ui-preferences';
 import { api, idemKey } from './client';
 
-export interface MeResponse {
-  account: {
-    id: string;
-    phone: string;
-    status: string;
-    mustChangePassword: boolean;
-    operatorId: string;
-  };
-  employee: { id: string; name: string; nickname: string | null } | null;
-  branch: { id: string; name: string; code: string; timezone: string } | null;
-  isPlatformAdmin: boolean;
-  photoFileId: string | null;
-  /** True when this session is locked on inactivity (S2-01a). */
-  sessionLocked: boolean;
-  /** Older deployments may omit the account's theme and language. */
-  preferences?: UiPreferences;
-}
+export type OperatorContext = ApiResponse<'/me/', 'get'>['operatorContext'];
+export type OperatorSelection = ApiResponse<'/me/session/operator', 'put'>;
+
+export type MeResponse = ApiResponse<'/me/', 'get'>;
 
 export interface EffectivePermission {
   permission: string;
@@ -47,10 +33,12 @@ export const authApi = {
    * out of an address bar buys nothing anywhere else.
    */
   handoffExchange: (token: string) => api.post<{ ok: true }>('/auth/handoff/exchange', { token }),
-  me: () => api.get<MeResponse>('/me'),
+  me: () => api.get<ApiResponse<'/me/', 'get'>>('/me'),
   permissions: () => api.get<{ permissions: EffectivePermission[] }>('/me/permissions'),
   switchBranch: (branchId: string, idempotencyKey: string) =>
     api.put<ApiResponse<'/me/session/branch', 'put'>>('/me/session/branch', { branchId }, { idempotencyKey }),
+  switchOperator: (operatorId: string | null, expectedRevision: number, idempotencyKey: string) =>
+    api.put<ApiResponse<'/me/session/operator', 'put'>>('/me/session/operator', { operatorId, expectedRevision }, { idempotencyKey }),
 };
 
 export interface BranchRow {

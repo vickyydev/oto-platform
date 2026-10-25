@@ -18,6 +18,7 @@ import {
 } from '@oto/db';
 import { boothStaffCode, newId, type Permission } from '@oto/shared';
 import { AppError } from '../lib/errors';
+import { resolveSessionAuth, type AuthContext } from '../plugins/session';
 import { audit } from './audit';
 import { holdsAtOwnDepartment } from './access-control';
 import { hasPermission, resolveEffectivePermissions } from './permissions';
@@ -275,16 +276,97 @@ export interface IssuedHandoff {
   launchUrl: string;
 }
 
+interface IssueOptions {
+  sessionId: string;
+  accountId: string;
+  /** The session's own cookie, kept only inside the encrypted row. */
+  sessionToken: string;
+  audience: HandoffApp;
+}
+interface SealedSessionContext {
+  version: 1;
+  cookie: string;
+  homeOperatorId: string;
+  operatorId: string;
+  operatorOverride: string | null;
+  operatorRevision: number;
+}
+const CONTEXT_PREFIX = 'oto-session-context-v1:';
+const UUID = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
+
+function boundContext(auth: AuthContext, cookie: string): SealedSessionContext {
+  if (!auth.homeOperatorId || !UUID.test(auth.homeOperatorId) || !UUID.test(auth.operatorId)
+    || !(auth.operatorOverride === null || typeof auth.operatorOverride === 'string' && UUID.test(auth.operatorOverride))
+    || !Number.isSafeInteger(auth.operatorRevision) || auth.operatorRevision! < 0
+    || auth.operatorId !== (auth.operatorOverride ?? auth.homeOperatorId)) {
+    throw new HandoffRejected('revoked', 'The session context is no longer available');
+  }
+  return { version: 1, cookie, homeOperatorId: auth.homeOperatorId, operatorId: auth.operatorId,
+    operatorOverride: auth.operatorOverride, operatorRevision: auth.operatorRevision! };
+}
+
+function decodedContext(plaintext: string): SealedSessionContext | null {
+  if (!plaintext.startsWith('oto-session-context-')) return null; // Pre-switch, opaque-cookie format.
+  try {
+    if (!plaintext.startsWith(CONTEXT_PREFIX)) throw new Error('Unsupported context version');
+    const value: unknown = JSON.parse(plaintext.slice(CONTEXT_PREFIX.length));
+    if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Invalid context');
+    const row = value as Record<string, unknown>;
+    if (Object.keys(row).sort().join(',') !== 'cookie,homeOperatorId,operatorId,operatorOverride,operatorRevision,version'
+      || row.version !== 1 || typeof row.cookie !== 'string' || row.cookie.length === 0 || row.cookie.length > 8192
+      || typeof row.homeOperatorId !== 'string' || !UUID.test(row.homeOperatorId)
+      || typeof row.operatorId !== 'string' || !UUID.test(row.operatorId)
+      || !(row.operatorOverride === null || typeof row.operatorOverride === 'string' && UUID.test(row.operatorOverride))
+      || !Number.isSafeInteger(row.operatorRevision) || Number(row.operatorRevision) < 0
+      || row.operatorId !== (row.operatorOverride ?? row.homeOperatorId)) throw new Error('Invalid context');
+    return row as unknown as SealedSessionContext;
+  } catch {
+    throw new HandoffRejected('signature', 'This hand-off can no longer be opened');
+  }
+}
+
+/** Match operator-switch/account writers; no lock crosses an HTTP call. */
+async function lockOwnedSession(exec: Exec, accountId: string, sessionId: string) {
+  const [owner] = await exec.select({ id: account.id, status: account.status }).from(account)
+    .where(eq(account.id, accountId)).limit(1).for('no key update');
+  const [seat] = await exec.select().from(sessionTable)
+    .where(and(eq(sessionTable.id, sessionId), eq(sessionTable.accountId, accountId))).limit(1).for('update');
+  if (!owner || !seat) throw new HandoffRejected('revoked', 'The session behind this hand-off has ended');
+  return { owner, seat };
+}
+
+async function liveHandoffAuth(exec: Exec, opts: Pick<IssueOptions, 'accountId' | 'sessionId' | 'sessionToken'>): Promise<AuthContext> {
+  let auth: AuthContext | null;
+  try { auth = await resolveSessionAuth(exec, opts.sessionToken); }
+  catch (error) {
+    if (!(error instanceof AppError)) throw error;
+    throw new HandoffRejected('revoked', 'The session context behind this hand-off is no longer available');
+  }
+  if (!auth || auth.accountId !== opts.accountId || auth.sessionId !== opts.sessionId) {
+    throw new HandoffRejected('revoked', 'The session context behind this hand-off is no longer available');
+  }
+  // Metadata exchanges retain native lock/password flags. Business callers
+  // still go through requireAuth, which applies those existing refusals.
+  return auth;
+}
+
+function requireAppContext(auth: AuthContext, audience: HandoffApp): void {
+  if (audience === 'oto_app' && auth.operatorId !== auth.homeOperatorId) {
+    throw new HandoffRejected('revoked', 'Open the OTO App from the account\'s own park group');
+  }
+}
+
 export async function issueHandoff(
   exec: Exec,
   config: HandoffConfig,
-  opts: {
-    sessionId: string;
-    accountId: string;
-    /** The session's own cookie token, read from the caller's request. */
-    sessionToken: string;
-    audience: HandoffApp;
-  },
+  opts: IssueOptions,
+): Promise<IssuedHandoff> {
+  return exec.transaction(tx => issueBoundHandoff(tx, config, opts));
+}
+
+async function issueBoundHandoff(
+  exec: Exec, config: HandoffConfig, opts: IssueOptions,
+  expected?: { operatorId: string; branchId: string | null },
 ): Promise<IssuedHandoff> {
   const origin = config.origins.get(opts.audience);
   if (!origin) {
@@ -294,6 +376,13 @@ export async function issueHandoff(
       `No origin is configured for the ${opts.audience} app on this deployment`,
     );
   }
+  await lockOwnedSession(exec, opts.accountId, opts.sessionId);
+  const auth = await liveHandoffAuth(exec, opts);
+  if (expected && (auth.operatorId !== expected.operatorId || auth.branchId !== expected.branchId)) {
+    throw new HandoffRejected('revoked', 'The session changed while this hand-off was being issued');
+  }
+  requireAppContext(auth, opts.audience);
+  const context = boundContext(auth, opts.sessionToken);
   const key = config.keys[0]!;
   const jti = newId();
   const now = Date.now();
@@ -306,7 +395,7 @@ export async function issueHandoff(
     audience: opts.audience,
     audienceOrigin: origin,
     keyId: key.kid,
-    sessionSecret: seal(key, jti, opts.sessionToken),
+    sessionSecret: seal(key, jti, CONTEXT_PREFIX + JSON.stringify(context)),
     expiresAt,
   });
 
@@ -358,12 +447,12 @@ export async function issueHandoffAudited(
   },
 ): Promise<IssuedHandoff> {
   return withTx(db, ctx, 'auth.handoff_issue', async (tx) => {
-    const out = await issueHandoff(tx, config, {
+    const out = await issueBoundHandoff(tx, config, {
       sessionId: opts.sessionId,
       accountId: opts.accountId,
       sessionToken: opts.sessionToken,
       audience: opts.audience,
-    });
+    }, { operatorId: opts.operatorId, branchId: opts.branchId });
     await audit.record(tx, {
       actorAccountId: opts.accountId,
       operatorId: opts.operatorId,
@@ -508,53 +597,73 @@ export async function exchangeHandoff(
     throw new HandoffRejected('origin', 'This hand-off was not issued for this app', seen);
   }
 
-  const [live] = await db
-    .select({ s: sessionTable, a: account })
-    .from(sessionTable)
-    .innerJoin(account, eq(sessionTable.accountId, account.id))
-    .where(eq(sessionTable.id, row.sessionId))
-    .limit(1);
-
-  // A dead session covers three cases — revoked, expired, deactivated account
-  // — and they share one reason on purpose: which one it was is the session's
-  // business, not the browser's, and a hand-off must never resurrect any of
-  // them.
-  if (!live || live.s.revokedAt || live.s.expiresAt <= now || live.a.status !== 'active') {
-    throw new HandoffRejected('revoked', 'The session behind this hand-off has ended — sign in again', seen);
+  if (row.sessionId !== claims.sid || row.accountId !== claims.sub) {
+    throw new HandoffRejected('signature', 'This hand-off no longer matches its session', seen);
   }
 
-  const key = config.keys.find((k) => k.kid === row.keyId);
-  const sessionToken = key && row.sessionSecret ? open(key, row.jti, row.sessionSecret) : null;
-  if (!sessionToken) {
-    // The signing key verified the token, so its sealing key is present too;
-    // this is a row we can no longer open, which is a key problem either way.
-    throw new HandoffRejected('signature', 'This hand-off can no longer be opened', seen);
+  try {
+    // The claim above is committed independently. These locks only protect
+    // live context validation and any OTO role reconciliation from a switch.
+    return await db.transaction(async (tx) => {
+      const { owner, seat } = await lockOwnedSession(tx, row.accountId, row.sessionId);
+      if (seat.revokedAt || seat.expiresAt <= new Date() || owner.status !== 'active') {
+        throw new HandoffRejected('revoked', 'The session behind this hand-off has ended', seen);
+      }
+
+      const key = config.keys.find((k) => k.kid === row.keyId);
+      const plaintext = key && row.sessionSecret ? open(key, row.jti, row.sessionSecret) : null;
+      if (!plaintext) {
+        throw new HandoffRejected('signature', 'This hand-off can no longer be opened', seen);
+      }
+      const sealedContext = decodedContext(plaintext);
+      const sessionToken = sealedContext?.cookie ?? plaintext;
+      const auth = await liveHandoffAuth(tx, {
+        accountId: row.accountId, sessionId: row.sessionId, sessionToken,
+      });
+      const liveContext = boundContext(auth, sessionToken);
+      if (sealedContext) {
+        if (sealedContext.homeOperatorId !== liveContext.homeOperatorId
+          || sealedContext.operatorId !== liveContext.operatorId
+          || sealedContext.operatorOverride !== liveContext.operatorOverride
+          || sealedContext.operatorRevision !== liveContext.operatorRevision) {
+          throw new HandoffRejected('revoked', 'The session changed after this hand-off was issued', seen);
+        }
+      } else if (liveContext.operatorOverride !== null || liveContext.operatorRevision !== 0
+        || liveContext.operatorId !== liveContext.homeOperatorId) {
+        // The previous opaque-cookie format never bound a switched context.
+        throw new HandoffRejected('revoked', 'Open the app from the launcher again', seen);
+      }
+      requireAppContext(auth, row.audience);
+
+      const otoApp = row.audience === 'oto_app'
+        ? await reconcileOtoAppRole(tx, {
+          operatorId: liveContext.homeOperatorId,
+          accountId: auth.accountId,
+          actorAccountId: auth.accountId,
+          requestId: opts.requestId,
+        })
+        : null;
+
+      return {
+        jti: row.jti,
+        sessionId: auth.sessionId,
+        accountId: auth.accountId,
+        operatorId: auth.operatorId,
+        audience: row.audience,
+        sessionToken,
+        sessionExpiresAt: seat.expiresAt,
+        branchId: auth.branchId,
+        mustChangePassword: auth.mustChangePassword,
+        sessionLocked: auth.lockedAt !== null,
+        ...(otoApp ? { otoApp } : {}),
+      };
+    });
+  } catch (error) {
+    if (error instanceof HandoffRejected) {
+      throw new HandoffRejected(error.reason, error.message, { ...seen, ...error.context });
+    }
+    throw error;
   }
-
-  // The claim is already committed. Role and audit changes are atomic, but a
-  // failed reconciliation must never make this hand-off usable a second time.
-  const otoApp = row.audience === 'oto_app'
-    ? await db.transaction((tx) => reconcileOtoAppRole(tx, {
-      operatorId: live.a.operatorId,
-      accountId: live.a.id,
-      actorAccountId: live.a.id,
-      requestId: opts.requestId,
-    }))
-    : null;
-
-  return {
-    jti: row.jti,
-    sessionId: live.s.id,
-    accountId: live.a.id,
-    operatorId: live.a.operatorId,
-    audience: row.audience,
-    sessionToken,
-    sessionExpiresAt: live.s.expiresAt,
-    branchId: live.s.branchId,
-    mustChangePassword: live.a.mustChangePassword,
-    sessionLocked: live.s.lockedAt !== null,
-    ...(otoApp ? { otoApp } : {}),
-  };
 }
 
 /** Nothing was claimed: say which of the three reasons it was. */

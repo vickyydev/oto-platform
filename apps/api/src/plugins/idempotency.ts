@@ -3,6 +3,8 @@ import { and, eq, lte, sql } from 'drizzle-orm';
 import fp from 'fastify-plugin';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { idempotencyKey, type Db } from '@oto/db';
+import { errors } from '../lib/errors';
+import { resolveSessionAuth, SESSION_COOKIE } from './session';
 import type { PermissionConfig } from './permission';
 
 const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
@@ -26,6 +28,11 @@ const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
  * Where the handler runs inside `withTx`, the response is stored in that
  * same transaction (see services/tx.ts), so "the work happened" and "this is
  * what we answered" commit together.
+ *
+ * Ordinary answers belong to the working operator. Operator selection is
+ * the one operation whose successful retry crosses that boundary: its hash
+ * belongs to the same session and original request, and its confirmation is
+ * replayed only while the committed revision and seat are still current.
  *
  * **What is NOT stored is a property of the route, not of the caller
  * (S2-04 review).** The store keeps a response body verbatim for
@@ -193,6 +200,48 @@ export async function purgeExpiredIdempotencyKeys(db: Db): Promise<number> {
   return gone.length;
 }
 
+/** This exception belongs to the native operation, never to caller metadata. */
+function isOperatorSelection(req: FastifyRequest): boolean {
+  return req.method === 'PUT' && req.routeOptions.url === '/me/session/operator';
+}
+
+async function requireCurrentSelection(db: Db, req: FastifyRequest, value: unknown): Promise<void> {
+  const auth = req.requireAuth();
+  // Lazy loading avoids a module-initialization cycle through withTx, whose
+  // credential backstop imports this plugin.
+  const { operatorSwitchOptionsOf } = await import('../services/operator-switch');
+  const current = await operatorSwitchOptionsOf(db, { accountId: auth.accountId, sessionId: auth.sessionId });
+  const body = req.body as { operatorId?: unknown; expectedRevision?: unknown } | null | undefined;
+  const answer = value !== null && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown> : null;
+  const requested = body?.operatorId;
+  const expectedRevision = body?.expectedRevision;
+  const selected = typeof requested === 'string' ? requested.toLowerCase() : requested;
+  const target = selected === null || selected === current.homeOperatorId ? current.homeOperatorId : selected;
+  if (!answer || (requested !== null && typeof requested !== 'string')
+    || typeof expectedRevision !== 'number' || !Number.isSafeInteger(expectedRevision) || expectedRevision < 0
+    || answer.revision !== expectedRevision + 1 || answer.revision !== current.revision
+    || answer.homeOperatorId !== current.homeOperatorId || answer.effectiveOperatorId !== current.effectiveOperatorId
+    || target !== current.effectiveOperatorId || answer.operatorOverride !== current.operatorOverride
+    || answer.branchId !== current.branchId || answer.stationId !== current.stationId || typeof answer.changed !== 'boolean') {
+    throw errors.conflict('OPERATOR_SWITCH_STALE', 'The session context changed. Read it again before selecting an operator.');
+  }
+}
+
+/** A request paused after authentication cannot replay its former scope. */
+async function requireCurrentOrdinaryContext(db: Db, req: FastifyRequest): Promise<void> {
+  const auth = req.requireAuth(), token = req.cookies?.[SESSION_COOKIE];
+  const current = token ? await resolveSessionAuth(db, token) : null;
+  if (!current) throw errors.unauthorized();
+  if (current.accountId !== auth.accountId || current.sessionId !== auth.sessionId
+    || current.operatorId !== auth.operatorId || current.homeOperatorId !== auth.homeOperatorId
+    || current.operatorOverride !== auth.operatorOverride || current.operatorRevision !== auth.operatorRevision
+    || current.branchId !== auth.branchId || current.stationId !== auth.stationId
+    || current.mustChangePassword !== auth.mustChangePassword || current.lockedAt?.getTime() !== auth.lockedAt?.getTime()) {
+    throw errors.conflict('SESSION_CONTEXT_CHANGED', 'The session context changed. Read it again before retrying.');
+  }
+}
+
 export const idempotencyPlugin = fp(async (app: FastifyInstance) => {
   app.addHook('preHandler', async (req, reply) => {
     if (!MUTATING.has(req.method)) return;
@@ -238,14 +287,24 @@ export const idempotencyPlugin = fp(async (app: FastifyInstance) => {
      */
     if (!req.auth) return;
     const accountId = req.auth.accountId;
+    const operatorSelection = isOperatorSelection(req);
 
-    const requestHash = createHash('sha256')
+    const legacyHash = createHash('sha256')
       .update(req.method)
       .update('\n')
       .update(req.url)
       .update('\n')
       .update(JSON.stringify(req.body ?? null))
       .digest('hex');
+    const requestHash = createHash('sha256')
+      .update(legacyHash)
+      .update(operatorSelection ? '\noperator-selection-session\n' : '\neffective-operator\n')
+      .update(operatorSelection ? req.auth.sessionId : req.auth.operatorId)
+      .digest('hex');
+    // Old hashes knew only the account. Retain them solely where that old
+    // home context is still truthful; they can never prove a session switch.
+    const acceptsLegacyHome = !operatorSelection && (req.auth.operatorOverride ?? null) === null
+      && req.auth.operatorId === (req.auth.homeOperatorId ?? req.auth.operatorId);
 
     const expiresAt = new Date(Date.now() + app.env.IDEMPOTENCY_TTL_HOURS * 3600_000);
 
@@ -284,7 +343,7 @@ export const idempotencyPlugin = fp(async (app: FastifyInstance) => {
 
       if (!existing) return; // vanished between the two statements: let it run
 
-      if (existing.requestHash !== requestHash) {
+      if (existing.requestHash !== requestHash && !(acceptsLegacyHome && existing.requestHash === legacyHash)) {
         return reply.status(409).send({
           error: {
             code: 'IDEMPOTENCY_MISMATCH',
@@ -293,6 +352,18 @@ export const idempotencyPlugin = fp(async (app: FastifyInstance) => {
         });
       }
       if (existing.statusCode !== null) {
+        if (operatorSelection) {
+          // Refusals have no committed post-selection revision to attest.
+          // Do not delete an existing answer merely because a retry is stale.
+          if (existing.statusCode !== 200) {
+            throw errors.conflict('OPERATOR_SWITCH_STALE', 'Read the session context again before selecting an operator.');
+          }
+          await requireCurrentSelection(app.db, req, existing.responseBody);
+        } else if (!req.routeOptions.config.public) {
+          // Native public authentication keeps its own recovery behavior;
+          // ordinary business replies need a still-current verified context.
+          await requireCurrentOrdinaryContext(app.db, req);
+        }
         reply.header('x-oto-replay', 'true');
         return reply.status(existing.statusCode).send(existing.responseBody);
       }
@@ -315,7 +386,9 @@ export const idempotencyPlugin = fp(async (app: FastifyInstance) => {
 
     // A server fault is never an answer worth replaying for a day: release
     // the key so the next attempt does the work.
-    if (reply.statusCode >= 500) {
+    // A switch refusal must be evaluated afresh on a genuine retry. This
+    // precedes claim.stored because withTx stores its return value as 200.
+    if (reply.statusCode >= 500 || (isOperatorSelection(req) && reply.statusCode !== 200)) {
       await release(app.db, claim.accountId, claim.key);
       return payload;
     }
