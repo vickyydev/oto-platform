@@ -1,0 +1,14 @@
+{
+  "ticket": "SCRUM-640",
+  "phase": "red",
+  "attempt": "v1",
+  "startedAt": "2026-10-25T21:54:18.477Z",
+  "helperSha256": "83ff253de73691fdf0e5f1c3a49f97543bfa391a4b75714bd6340c590787a225",
+  "sourceManifestSha256": "9ca2c5ded319527505939b918a34af6fbee0153c52b3bc3d3f8732f978b2624d",
+  "testSha256": "626e99aaf0abf20fdd8ec7cb7d9d8212a0412db21043585b097b27abc8411a4c",
+  "nativeHarness": "apps/console/e2e/run.mjs",
+  "spec": "operator-switch.spec.ts",
+  "builtConsoleAndPos": true,
+  "database": "fresh-embedded-only",
+  "staging": false
+}

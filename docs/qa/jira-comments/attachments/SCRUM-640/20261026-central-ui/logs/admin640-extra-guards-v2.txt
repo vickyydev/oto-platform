@@ -1,0 +1,1088 @@
+
+> @oto/api@0.1.0 test C:\w\admin-operator-switch\apps\api
+> vitest run --pool=forks "test/routes-guarded.test.ts" "test/route-write-conformance.test.ts" "test/id-conformance.test.ts" "test/route-scope-target.test.ts" "test/platform-review.test.ts" "test/console-branch-scope.test.ts" "test/scrum-607-reach.test.ts" "test/operator-switch-review.test.ts" "test/operator-switch-seat-review.test.ts" "test/operator-switch-session-review.test.ts" "test/operator-switch-idempotency-review.test.ts" "test/operator-switch-route-review.test.ts"
+
+
+ RUN  v3.2.7 C:/w/admin-operator-switch/apps/api
+
+(node:89340) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ test/route-scope-target.test.ts (19 tests) 1582ms
+(node:90804) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/id-conformance.test.ts > a create sent twice under one id is one record (SCRUM-270)
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/id-conformance.test.ts > a create sent twice under one id is one record (SCRUM-270)
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-9hf3Ec ... ok
+
+
+stdout | test/id-conformance.test.ts > a create sent twice under one id is one record (SCRUM-270)
+creating subdirectories ...
+
+stdout | test/id-conformance.test.ts > a create sent twice under one id is one record (SCRUM-270)
+ok
+
+
+stdout | test/id-conformance.test.ts > a create sent twice under one id is one record (SCRUM-270)
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ...
+
+stdout | test/id-conformance.test.ts > a create sent twice under one id is one record (SCRUM-270)
+100
+selecting default shared_buffers ...
+
+stdout | test/id-conformance.test.ts > a create sent twice under one id is one record (SCRUM-270)
+128MB
+selecting default time zone ...
+
+stdout | test/id-conformance.test.ts > a create sent twice under one id is one record (SCRUM-270)
+Asia/Bangkok
+creating configuration files ...
+
+stdout | test/id-conformance.test.ts > a create sent twice under one id is one record (SCRUM-270)
+ok
+running bootstrap script ...
+
+stdout | test/id-conformance.test.ts > a create sent twice under one id is one record (SCRUM-270)
+ok
+
+
+stdout | test/id-conformance.test.ts > a create sent twice under one id is one record (SCRUM-270)
+performing post-bootstrap initialization ...
+
+stdout | test/id-conformance.test.ts > a create sent twice under one id is one record (SCRUM-270)
+ok
+syncing data to disk ...
+
+stdout | test/id-conformance.test.ts > a create sent twice under one id is one record (SCRUM-270)
+ok
+
+
+stdout | test/id-conformance.test.ts > a create sent twice under one id is one record (SCRUM-270)
+
+Success. You can now start the database server using:
+
+    ^"C^:^\w^\admin^-operator^-switch^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-9hf3Ec^" -l logfile start
+
+
+
+stdout | test/id-conformance.test.ts > a create sent twice under one id is one record (SCRUM-270)
+2026-10-26 04:53:33.733 +07 [28972] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/id-conformance.test.ts > a create sent twice under one id is one record (SCRUM-270)
+2026-10-26 04:53:33.738 +07 [28972] LOG:  listening on IPv6 address "::1", port 55032
+
+
+stdout | test/id-conformance.test.ts > a create sent twice under one id is one record (SCRUM-270)
+2026-10-26 04:53:33.738 +07 [28972] LOG:  listening on IPv4 address "127.0.0.1", port 55032
+
+
+stdout | test/id-conformance.test.ts > a create sent twice under one id is one record (SCRUM-270)
+2026-10-26 04:53:33.794 +07 [11832] LOG:  database system was shut down at 2026-10-26 04:53:31 +07
+
+
+stdout | test/id-conformance.test.ts > a create sent twice under one id is one record (SCRUM-270)
+2026-10-26 04:53:33.826 +07 [28972] LOG:  database system is ready to accept connections
+
+
+stdout | test/id-conformance.test.ts > a create sent twice under one id is one record (SCRUM-270)
+2026-10-26 04:53:39.258 +07 [52864] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+
+stdout | test/id-conformance.test.ts > a create sent twice under one id is one record (SCRUM-270)
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/id-conformance.test.ts > a create sent twice under one id is one record (SCRUM-270)
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:90804) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+stdout | test/id-conformance.test.ts > a create sent twice under one id is one record (SCRUM-270)
+2026-10-26 04:53:41.311 +07 [12804] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/id-conformance.test.ts > a create sent twice under one id is one record (SCRUM-270)
+2026-10-26 04:53:41.329 +07 [12804] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.004 s, sync=0.004 s, total=0.018 s; sync files=5, longest=0.002 s, average=0.001 s; distance=15585 kB, estimate=15585 kB; lsn=0/24B07D8, redo lsn=0/24B07A0
+
+
+ ✓ test/id-conformance.test.ts (24 tests) 17227ms
+   ✓ Operator selection identifiers (SCRUM-640) > selects an existing operator for the verified session rather than minting or accepting actor identities  631ms
+stdout | test/console-branch-scope.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/console-branch-scope.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+
+stdout | test/console-branch-scope.test.ts
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-sLSDsV ...
+
+stdout | test/console-branch-scope.test.ts
+ok
+
+
+stdout | test/console-branch-scope.test.ts
+creating subdirectories ...
+
+stdout | test/console-branch-scope.test.ts
+ok
+
+
+stdout | test/console-branch-scope.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ...
+
+stdout | test/console-branch-scope.test.ts
+100
+selecting default shared_buffers ...
+
+stdout | test/console-branch-scope.test.ts
+128MB
+selecting default time zone ...
+
+stdout | test/console-branch-scope.test.ts
+Asia/Bangkok
+creating configuration files ...
+
+stdout | test/console-branch-scope.test.ts
+ok
+
+
+stdout | test/console-branch-scope.test.ts
+running bootstrap script ...
+
+stdout | test/console-branch-scope.test.ts
+ok
+
+
+stdout | test/console-branch-scope.test.ts
+performing post-bootstrap initialization ...
+
+stdout | test/console-branch-scope.test.ts
+ok
+syncing data to disk ...
+
+stdout | test/console-branch-scope.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\w^\admin^-operator^-switch^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-sLSDsV^" -l logfile start
+
+
+
+stdout | test/console-branch-scope.test.ts
+2026-10-26 04:53:52.933 +07 [64616] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/console-branch-scope.test.ts
+2026-10-26 04:53:52.938 +07 [64616] LOG:  listening on IPv6 address "::1", port 55171
+
+
+stdout | test/console-branch-scope.test.ts
+2026-10-26 04:53:52.938 +07 [64616] LOG:  listening on IPv4 address "127.0.0.1", port 55171
+
+
+stdout | test/console-branch-scope.test.ts
+2026-10-26 04:53:52.998 +07 [77016] LOG:  database system was shut down at 2026-10-26 04:53:50 +07
+
+
+stdout | test/console-branch-scope.test.ts
+2026-10-26 04:53:53.032 +07 [64616] LOG:  database system is ready to accept connections
+
+
+stdout | test/console-branch-scope.test.ts
+2026-10-26 04:53:58.051 +07 [64868] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+
+stdout | test/console-branch-scope.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/console-branch-scope.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:88492) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/console-branch-scope.test.ts
+2026-10-26 04:54:01.142 +07 [44256] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/console-branch-scope.test.ts
+2026-10-26 04:54:01.162 +07 [44256] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.005 s, sync=0.004 s, total=0.021 s; sync files=5, longest=0.002 s, average=0.001 s; distance=15566 kB, estimate=15566 kB; lsn=0/24ABAC8, redo lsn=0/24ABA90
+
+
+ ✓ test/console-branch-scope.test.ts (27 tests) 15126ms
+stdout | test/operator-switch-session-review.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/operator-switch-session-review.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-j18gue ... ok
+creating subdirectories ...
+
+stdout | test/operator-switch-session-review.test.ts
+ok
+
+
+stdout | test/operator-switch-session-review.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ...
+
+stdout | test/operator-switch-session-review.test.ts
+100
+selecting default shared_buffers ...
+
+stdout | test/operator-switch-session-review.test.ts
+128MB
+selecting default time zone ...
+
+stdout | test/operator-switch-session-review.test.ts
+Asia/Bangkok
+creating configuration files ...
+
+stdout | test/operator-switch-session-review.test.ts
+ok
+running bootstrap script ...
+
+stdout | test/operator-switch-session-review.test.ts
+ok
+
+
+stdout | test/operator-switch-session-review.test.ts
+performing post-bootstrap initialization ...
+
+stdout | test/operator-switch-session-review.test.ts
+ok
+syncing data to disk ...
+
+stdout | test/operator-switch-session-review.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\w^\admin^-operator^-switch^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-j18gue^" -l logfile start
+
+
+
+stdout | test/operator-switch-session-review.test.ts
+2026-10-26 04:54:10.381 +07 [80948] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/operator-switch-session-review.test.ts
+2026-10-26 04:54:10.384 +07 [80948] LOG:  listening on IPv6 address "::1", port 54678
+
+
+stdout | test/operator-switch-session-review.test.ts
+2026-10-26 04:54:10.384 +07 [80948] LOG:  listening on IPv4 address "127.0.0.1", port 54678
+
+
+stdout | test/operator-switch-session-review.test.ts
+2026-10-26 04:54:10.423 +07 [12004] LOG:  database system was shut down at 2026-10-26 04:54:07 +07
+
+
+stdout | test/operator-switch-session-review.test.ts
+2026-10-26 04:54:10.445 +07 [80948] LOG:  database system is ready to accept connections
+
+
+stdout | test/operator-switch-session-review.test.ts
+2026-10-26 04:54:14.116 +07 [26212] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+
+stdout | test/operator-switch-session-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/operator-switch-session-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:89812) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/operator-switch-session-review.test.ts
+2026-10-26 04:54:16.984 +07 [89440] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/operator-switch-session-review.test.ts
+2026-10-26 04:54:17.003 +07 [89440] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.004 s, sync=0.004 s, total=0.020 s; sync files=5, longest=0.002 s, average=0.001 s; distance=16027 kB, estimate=16027 kB; lsn=0/251EFE0, redo lsn=0/251EFA8
+
+
+ ✓ test/operator-switch-session-review.test.ts (39 tests) 13008ms
+stdout | test/operator-switch-idempotency-review.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-i3zaAf ... ok
+creating subdirectories ...
+
+stdout | test/operator-switch-idempotency-review.test.ts
+ok
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ...
+
+stdout | test/operator-switch-idempotency-review.test.ts
+100
+selecting default shared_buffers ...
+
+stdout | test/operator-switch-idempotency-review.test.ts
+128MB
+selecting default time zone ...
+
+stdout | test/operator-switch-idempotency-review.test.ts
+Asia/Bangkok
+creating configuration files ...
+
+stdout | test/operator-switch-idempotency-review.test.ts
+ok
+running bootstrap script ...
+
+stdout | test/operator-switch-idempotency-review.test.ts
+ok
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+performing post-bootstrap initialization ...
+
+stdout | test/operator-switch-idempotency-review.test.ts
+ok
+syncing data to disk ...
+
+stdout | test/operator-switch-idempotency-review.test.ts
+ok
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+
+Success. You can now start the database server using:
+
+    ^"C^:^\w^\admin^-operator^-switch^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-i3zaAf^" -l logfile start
+
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+2026-10-26 04:54:28.180 +07 [90708] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+2026-10-26 04:54:28.184 +07 [90708] LOG:  listening on IPv6 address "::1", port 54735
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+2026-10-26 04:54:28.184 +07 [90708] LOG:  listening on IPv4 address "127.0.0.1", port 54735
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+2026-10-26 04:54:28.233 +07 [65000] LOG:  database system was shut down at 2026-10-26 04:54:24 +07
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+2026-10-26 04:54:28.264 +07 [90708] LOG:  database system is ready to accept connections
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+2026-10-26 04:54:33.118 +07 [47444] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/operator-switch-idempotency-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:91504) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/operator-switch-idempotency-review.test.ts
+2026-10-26 04:54:35.455 +07 [64616] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+2026-10-26 04:54:35.470 +07 [64616] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.004 s, sync=0.004 s, total=0.015 s; sync files=5, longest=0.002 s, average=0.001 s; distance=15668 kB, estimate=15668 kB; lsn=0/24C5188, redo lsn=0/24C5150
+
+
+ ✓ test/operator-switch-idempotency-review.test.ts (21 tests) 15273ms
+stdout | test/platform-review.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/platform-review.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-wHqsRq ... ok
+creating subdirectories ...
+
+stdout | test/platform-review.test.ts
+ok
+
+
+stdout | test/platform-review.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ...
+
+stdout | test/platform-review.test.ts
+100
+selecting default shared_buffers ...
+
+stdout | test/platform-review.test.ts
+128MB
+selecting default time zone ...
+
+stdout | test/platform-review.test.ts
+Asia/Bangkok
+creating configuration files ...
+
+stdout | test/platform-review.test.ts
+ok
+running bootstrap script ...
+
+stdout | test/platform-review.test.ts
+ok
+
+
+stdout | test/platform-review.test.ts
+performing post-bootstrap initialization ...
+
+stdout | test/platform-review.test.ts
+ok
+syncing data to disk ...
+
+stdout | test/platform-review.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\w^\admin^-operator^-switch^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-wHqsRq^" -l logfile start
+
+
+
+stdout | test/platform-review.test.ts
+2026-10-26 04:54:46.439 +07 [92840] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/platform-review.test.ts
+2026-10-26 04:54:46.443 +07 [92840] LOG:  listening on IPv6 address "::1", port 54407
+
+
+stdout | test/platform-review.test.ts
+2026-10-26 04:54:46.443 +07 [92840] LOG:  listening on IPv4 address "127.0.0.1", port 54407
+
+
+stdout | test/platform-review.test.ts
+2026-10-26 04:54:46.494 +07 [92936] LOG:  database system was shut down at 2026-10-26 04:54:42 +07
+
+
+stdout | test/platform-review.test.ts
+2026-10-26 04:54:46.527 +07 [92840] LOG:  database system is ready to accept connections
+
+
+stdout | test/platform-review.test.ts
+2026-10-26 04:54:54.883 +07 [93168] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+
+stdout | test/platform-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/platform-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:64892) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/platform-review.test.ts
+2026-10-26 04:54:57.440 +07 [92904] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/platform-review.test.ts
+2026-10-26 04:54:57.461 +07 [92904] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.005 s, sync=0.005 s, total=0.021 s; sync files=5, longest=0.002 s, average=0.001 s; distance=15603 kB, estimate=15603 kB; lsn=0/24B4FA0, redo lsn=0/24B4F68
+
+
+ ✓ test/platform-review.test.ts (18 tests) 18678ms
+stdout | test/operator-switch-seat-review.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/operator-switch-seat-review.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-8nEqpR ... ok
+creating subdirectories ...
+
+stdout | test/operator-switch-seat-review.test.ts
+ok
+
+
+stdout | test/operator-switch-seat-review.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ...
+
+stdout | test/operator-switch-seat-review.test.ts
+100
+selecting default shared_buffers ...
+
+stdout | test/operator-switch-seat-review.test.ts
+128MB
+selecting default time zone ...
+
+stdout | test/operator-switch-seat-review.test.ts
+Asia/Bangkok
+creating configuration files ...
+
+stdout | test/operator-switch-seat-review.test.ts
+ok
+running bootstrap script ...
+
+stdout | test/operator-switch-seat-review.test.ts
+ok
+
+
+stdout | test/operator-switch-seat-review.test.ts
+performing post-bootstrap initialization ...
+
+stdout | test/operator-switch-seat-review.test.ts
+ok
+syncing data to disk ...
+
+stdout | test/operator-switch-seat-review.test.ts
+ok
+
+
+stdout | test/operator-switch-seat-review.test.ts
+
+Success. You can now start the database server using:
+
+    ^"C^:^\w^\admin^-operator^-switch^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-8nEqpR^" -l logfile start
+
+
+
+stdout | test/operator-switch-seat-review.test.ts
+2026-10-26 04:55:07.363 +07 [91504] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/operator-switch-seat-review.test.ts
+2026-10-26 04:55:07.367 +07 [91504] LOG:  listening on IPv6 address "::1", port 54905
+
+
+stdout | test/operator-switch-seat-review.test.ts
+2026-10-26 04:55:07.367 +07 [91504] LOG:  listening on IPv4 address "127.0.0.1", port 54905
+
+
+stdout | test/operator-switch-seat-review.test.ts
+2026-10-26 04:55:07.416 +07 [41072] LOG:  database system was shut down at 2026-10-26 04:55:03 +07
+
+
+stdout | test/operator-switch-seat-review.test.ts
+2026-10-26 04:55:07.451 +07 [91504] LOG:  database system is ready to accept connections
+
+
+stdout | test/operator-switch-seat-review.test.ts
+2026-10-26 04:55:11.833 +07 [26688] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+
+stdout | test/operator-switch-seat-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/operator-switch-seat-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:92172) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/operator-switch-seat-review.test.ts
+2026-10-26 04:55:13.706 +07 [77208] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/operator-switch-seat-review.test.ts
+2026-10-26 04:55:13.722 +07 [77208] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.003 s, sync=0.004 s, total=0.016 s; sync files=5, longest=0.002 s, average=0.001 s; distance=15544 kB, estimate=15544 kB; lsn=0/24A6230, redo lsn=0/24A61F8
+
+
+ ✓ test/operator-switch-seat-review.test.ts (2 tests) 13135ms
+stdout | test/routes-guarded.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/routes-guarded.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-EpE81P ... ok
+creating subdirectories ...
+
+stdout | test/routes-guarded.test.ts
+ok
+
+
+stdout | test/routes-guarded.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ...
+
+stdout | test/routes-guarded.test.ts
+100
+selecting default shared_buffers ...
+
+stdout | test/routes-guarded.test.ts
+128MB
+selecting default time zone ...
+
+stdout | test/routes-guarded.test.ts
+Asia/Bangkok
+
+
+stdout | test/routes-guarded.test.ts
+creating configuration files ...
+
+stdout | test/routes-guarded.test.ts
+ok
+running bootstrap script ...
+
+stdout | test/routes-guarded.test.ts
+ok
+
+
+stdout | test/routes-guarded.test.ts
+performing post-bootstrap initialization ...
+
+stdout | test/routes-guarded.test.ts
+ok
+syncing data to disk ...
+
+stdout | test/routes-guarded.test.ts
+ok
+
+
+stdout | test/routes-guarded.test.ts
+
+Success. You can now start the database server using:
+
+    ^"C^:^\w^\admin^-operator^-switch^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-EpE81P^" -l logfile start
+
+
+
+stdout | test/routes-guarded.test.ts
+2026-10-26 04:55:23.111 +07 [2648] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/routes-guarded.test.ts
+2026-10-26 04:55:23.115 +07 [2648] LOG:  listening on IPv6 address "::1", port 55189
+
+
+stdout | test/routes-guarded.test.ts
+2026-10-26 04:55:23.115 +07 [2648] LOG:  listening on IPv4 address "127.0.0.1", port 55189
+
+
+stdout | test/routes-guarded.test.ts
+2026-10-26 04:55:23.163 +07 [84564] LOG:  database system was shut down at 2026-10-26 04:55:20 +07
+
+
+stdout | test/routes-guarded.test.ts
+2026-10-26 04:55:23.200 +07 [2648] LOG:  database system is ready to accept connections
+
+
+stdout | test/routes-guarded.test.ts
+2026-10-26 04:55:28.702 +07 [92532] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+
+stdout | test/routes-guarded.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/routes-guarded.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:92080) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/routes-guarded.test.ts
+2026-10-26 04:55:31.254 +07 [55392] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/routes-guarded.test.ts
+2026-10-26 04:55:31.275 +07 [55392] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.004 s, sync=0.004 s, total=0.021 s; sync files=5, longest=0.002 s, average=0.001 s; distance=15537 kB, estimate=15537 kB; lsn=0/24A4740, redo lsn=0/24A4708
+
+
+ ✓ test/routes-guarded.test.ts (21 tests) 14947ms
+   ✓ route guards (S2-01b) > no route answers an anonymous caller  310ms
+stdout | test/operator-switch-route-review.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/operator-switch-route-review.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-hVVyVd ... ok
+creating subdirectories ...
+
+stdout | test/operator-switch-route-review.test.ts
+ok
+
+
+stdout | test/operator-switch-route-review.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ...
+
+stdout | test/operator-switch-route-review.test.ts
+100
+selecting default shared_buffers ...
+
+stdout | test/operator-switch-route-review.test.ts
+128MB
+selecting default time zone ...
+
+stdout | test/operator-switch-route-review.test.ts
+Asia/Bangkok
+
+
+stdout | test/operator-switch-route-review.test.ts
+creating configuration files ...
+
+stdout | test/operator-switch-route-review.test.ts
+ok
+running bootstrap script ...
+
+stdout | test/operator-switch-route-review.test.ts
+ok
+
+
+stdout | test/operator-switch-route-review.test.ts
+performing post-bootstrap initialization ...
+
+stdout | test/operator-switch-route-review.test.ts
+ok
+syncing data to disk ...
+
+stdout | test/operator-switch-route-review.test.ts
+ok
+
+
+stdout | test/operator-switch-route-review.test.ts
+
+Success. You can now start the database server using:
+
+    ^"C^:^\w^\admin^-operator^-switch^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-hVVyVd^" -l logfile start
+
+
+
+stdout | test/operator-switch-route-review.test.ts
+2026-10-26 04:55:42.631 +07 [73828] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/operator-switch-route-review.test.ts
+2026-10-26 04:55:42.635 +07 [73828] LOG:  listening on IPv6 address "::1", port 54827
+
+
+stdout | test/operator-switch-route-review.test.ts
+2026-10-26 04:55:42.636 +07 [73828] LOG:  listening on IPv4 address "127.0.0.1", port 54827
+
+
+stdout | test/operator-switch-route-review.test.ts
+2026-10-26 04:55:42.697 +07 [73820] LOG:  database system was shut down at 2026-10-26 04:55:39 +07
+
+
+stdout | test/operator-switch-route-review.test.ts
+2026-10-26 04:55:42.733 +07 [73828] LOG:  database system is ready to accept connections
+
+
+stdout | test/operator-switch-route-review.test.ts
+2026-10-26 04:55:51.015 +07 [88116] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+
+stdout | test/operator-switch-route-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/operator-switch-route-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:17324) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/operator-switch-route-review.test.ts
+2026-10-26 04:55:53.655 +07 [40736] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/operator-switch-route-review.test.ts
+2026-10-26 04:55:53.677 +07 [40736] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.005 s, sync=0.005 s, total=0.022 s; sync files=5, longest=0.002 s, average=0.001 s; distance=15756 kB, estimate=15756 kB; lsn=0/24DB210, redo lsn=0/24DB1D8
+
+
+ ✓ test/operator-switch-route-review.test.ts (26 tests) 18380ms
+stdout | test/scrum-607-reach.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/scrum-607-reach.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-dT4ur9 ... ok
+creating subdirectories ...
+
+stdout | test/scrum-607-reach.test.ts
+ok
+
+
+stdout | test/scrum-607-reach.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ...
+
+stdout | test/scrum-607-reach.test.ts
+100
+selecting default shared_buffers ...
+
+stdout | test/scrum-607-reach.test.ts
+128MB
+selecting default time zone ...
+
+stdout | test/scrum-607-reach.test.ts
+Asia/Bangkok
+creating configuration files ...
+
+stdout | test/scrum-607-reach.test.ts
+ok
+running bootstrap script ...
+
+stdout | test/scrum-607-reach.test.ts
+ok
+
+
+stdout | test/scrum-607-reach.test.ts
+performing post-bootstrap initialization ...
+
+stdout | test/scrum-607-reach.test.ts
+ok
+syncing data to disk ...
+
+stdout | test/scrum-607-reach.test.ts
+ok
+
+stdout | test/scrum-607-reach.test.ts
+
+
+
+stdout | test/scrum-607-reach.test.ts
+
+Success. You can now start the database server using:
+
+    ^"C^:^\w^\admin^-operator^-switch^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-dT4ur9^" -l logfile start
+
+
+stdout | test/scrum-607-reach.test.ts
+
+
+
+stdout | test/scrum-607-reach.test.ts
+2026-10-26 04:56:03.026 +07 [79572] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/scrum-607-reach.test.ts
+2026-10-26 04:56:03.029 +07 [79572] LOG:  listening on IPv6 address "::1", port 54518
+
+
+stdout | test/scrum-607-reach.test.ts
+2026-10-26 04:56:03.029 +07 [79572] LOG:  listening on IPv4 address "127.0.0.1", port 54518
+
+
+stdout | test/scrum-607-reach.test.ts
+2026-10-26 04:56:03.074 +07 [85980] LOG:  database system was shut down at 2026-10-26 04:56:00 +07
+
+
+stdout | test/scrum-607-reach.test.ts
+2026-10-26 04:56:03.108 +07 [79572] LOG:  database system is ready to accept connections
+
+
+stdout | test/scrum-607-reach.test.ts
+2026-10-26 04:56:06.759 +07 [89164] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+
+stdout | test/scrum-607-reach.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/scrum-607-reach.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:88068) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/scrum-607-reach.test.ts
+2026-10-26 04:56:09.051 +07 [92888] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/scrum-607-reach.test.ts
+2026-10-26 04:56:09.070 +07 [92888] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.004 s, sync=0.004 s, total=0.019 s; sync files=5, longest=0.001 s, average=0.001 s; distance=15572 kB, estimate=15572 kB; lsn=0/24AD208, redo lsn=0/24AD1D0
+
+
+ ✓ test/scrum-607-reach.test.ts (11 tests) 12016ms
+stdout | test/operator-switch-review.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/operator-switch-review.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-jT1Oih ... ok
+creating subdirectories ...
+
+stdout | test/operator-switch-review.test.ts
+ok
+
+
+stdout | test/operator-switch-review.test.ts
+selecting dynamic shared memory implementation ... windows
+
+
+stdout | test/operator-switch-review.test.ts
+selecting default max_connections ...
+
+stdout | test/operator-switch-review.test.ts
+100
+selecting default shared_buffers ...
+
+stdout | test/operator-switch-review.test.ts
+128MB
+selecting default time zone ...
+
+stdout | test/operator-switch-review.test.ts
+Asia/Bangkok
+creating configuration files ...
+
+stdout | test/operator-switch-review.test.ts
+ok
+running bootstrap script ...
+
+stdout | test/operator-switch-review.test.ts
+ok
+
+
+stdout | test/operator-switch-review.test.ts
+performing post-bootstrap initialization ...
+
+stdout | test/operator-switch-review.test.ts
+ok
+syncing data to disk ...
+
+stdout | test/operator-switch-review.test.ts
+ok
+
+stdout | test/operator-switch-review.test.ts
+
+
+
+stdout | test/operator-switch-review.test.ts
+
+Success. You can now start the database server using:
+
+    ^"C^:^\w^\admin^-operator^-switch^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-jT1Oih^" -l logfile start
+
+
+stdout | test/operator-switch-review.test.ts
+
+
+
+stdout | test/operator-switch-review.test.ts
+2026-10-26 04:56:15.616 +07 [31384] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/operator-switch-review.test.ts
+2026-10-26 04:56:15.619 +07 [31384] LOG:  listening on IPv6 address "::1", port 54597
+
+
+stdout | test/operator-switch-review.test.ts
+2026-10-26 04:56:15.619 +07 [31384] LOG:  listening on IPv4 address "127.0.0.1", port 54597
+
+
+stdout | test/operator-switch-review.test.ts
+2026-10-26 04:56:15.657 +07 [75684] LOG:  database system was shut down at 2026-10-26 04:56:13 +07
+
+
+stdout | test/operator-switch-review.test.ts
+2026-10-26 04:56:15.683 +07 [31384] LOG:  database system is ready to accept connections
+
+
+stdout | test/operator-switch-review.test.ts > SCRUM-640 native operator-switch service house review; central routes and cached replay remain held > R1 [high] options read current context and actual live operators without changing session, home identity or audit
+2026-10-26 04:56:19.418 +07 [92200] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+
+stdout | test/operator-switch-review.test.ts
+2026-10-26 04:56:20.548 +07 [79608] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/operator-switch-review.test.ts
+2026-10-26 04:56:20.567 +07 [79608] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.004 s, sync=0.003 s, total=0.020 s; sync files=5, longest=0.001 s, average=0.001 s; distance=15089 kB, estimate=15089 kB; lsn=0/2434580, redo lsn=0/2434548
+
+
+stdout | test/operator-switch-review.test.ts
+2026-10-26 04:56:21.251 +07 [31384] LOG:  checkpointer process (PID 79608) exited with exit code 1
+
+
+stdout | test/operator-switch-review.test.ts
+2026-10-26 04:56:21.251 +07 [31384] LOG:  terminating any other active server processes
+
+
+ ✓ test/operator-switch-review.test.ts (29 tests) 10442ms
+(node:3776) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ test/route-write-conformance.test.ts (19 tests) 869ms
+
+ Test Files  12 passed (12)
+      Tests  256 passed (256)
+   Start at  04:53:05
+   Duration  198.93s (transform 8.00s, setup 0ms, collect 44.08s, tests 150.68s, environment 2ms, prepare 1.64s)

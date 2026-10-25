@@ -1,0 +1,38 @@
+{
+  "ticket": "SCRUM-640",
+  "phase": "session-checks",
+  "attempt": "v1",
+  "startedAt": "2026-10-25T21:27:19.997Z",
+  "completedAt": "2026-10-25T21:29:09.613Z",
+  "command": "pnpm --filter @oto/api typecheck\npnpm exec eslint apps/api/src/plugins/session.ts apps/api/test/operator-switch-session-review.test.ts",
+  "exitCode": 1,
+  "signal": null,
+  "launchError": null,
+  "isolatedEmbeddedDatabase": true,
+  "staging": false,
+  "before": {
+    "apps/api/test/operator-switch-session-review.test.ts": "1163744f2d3c1d1971cc3b1f3e319943bfae46197775f3417cbd4d60799361bf",
+    "apps/api/src/plugins/session.ts": "e7cfc96efeb727202a0727efd07d537c98947bfd210096be8c5eba469e606f14",
+    "apps/api/src/plugins/idempotency.ts": "fa8ca0c6402b79ff96f67d359c95012659469bfc0e44db5bcc6dfe21a070e55f",
+    "apps/api/src/services/handoff.ts": "3512aac28b6e659217275c95cebf98bba4a661214e817f171547b69f066be65d",
+    "apps/api/src/routes/me.ts": "9f5eb1b3b34ff66e0530c135486f2877f77e58a6e94eb5edccf50c26a7ad4ed1",
+    "apps/api/src/services/operator-switch.ts": "a3bd4707333ce735db408c949c9ced0a2537fb6286a13bcbb739440613235eb7",
+    "packages/db/src/schema/tenancy.ts": "ffe7b37b05a68296ddf87a7f3354b652ffaf99ae36e1a04ec97aeb61c6ea5569",
+    "packages/db/migrations/meta/_journal.json": "dfe294319fb49cc44c2396a8c1f5b59493cd5afee067b48c3b3b602f014fb09f",
+    "pnpm-lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+  },
+  "after": {
+    "apps/api/test/operator-switch-session-review.test.ts": "1163744f2d3c1d1971cc3b1f3e319943bfae46197775f3417cbd4d60799361bf",
+    "apps/api/src/plugins/session.ts": "e7cfc96efeb727202a0727efd07d537c98947bfd210096be8c5eba469e606f14",
+    "apps/api/src/plugins/idempotency.ts": "fa8ca0c6402b79ff96f67d359c95012659469bfc0e44db5bcc6dfe21a070e55f",
+    "apps/api/src/services/handoff.ts": "3512aac28b6e659217275c95cebf98bba4a661214e817f171547b69f066be65d",
+    "apps/api/src/routes/me.ts": "9f5eb1b3b34ff66e0530c135486f2877f77e58a6e94eb5edccf50c26a7ad4ed1",
+    "apps/api/src/services/operator-switch.ts": "a3bd4707333ce735db408c949c9ced0a2537fb6286a13bcbb739440613235eb7",
+    "packages/db/src/schema/tenancy.ts": "ffe7b37b05a68296ddf87a7f3354b652ffaf99ae36e1a04ec97aeb61c6ea5569",
+    "packages/db/migrations/meta/_journal.json": "dfe294319fb49cc44c2396a8c1f5b59493cd5afee067b48c3b3b602f014fb09f",
+    "pnpm-lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+  },
+  "inputsUnchanged": true,
+  "logSha256": "c8f908b281b64bc019a55c0021340578695bd2a56a0212c30393c62491ec747b",
+  "logPath": "C:/w/admin640-central-session-checks-v1.log"
+}

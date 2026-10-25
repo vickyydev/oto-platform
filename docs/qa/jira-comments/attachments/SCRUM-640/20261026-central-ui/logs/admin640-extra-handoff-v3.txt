@@ -1,0 +1,702 @@
+
+> @oto/api@0.1.0 test C:\w\admin-operator-switch\apps\api
+> vitest run --pool=forks "test/handoff.test.ts" "test/handoff-department.test.ts" "test/auth-handoff-files-tx.test.ts" "test/s629-handoff-role.test.ts" "test/s629-role-mapping-review.test.ts" "test/operator-switch-handoff-review.test.ts"
+
+
+ RUN  v3.2.7 C:/w/admin-operator-switch/apps/api
+
+stdout | test/handoff.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/handoff.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-9jXpfk ... ok
+creating subdirectories ...
+
+stdout | test/handoff.test.ts
+ok
+
+
+stdout | test/handoff.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ...
+
+stdout | test/handoff.test.ts
+100
+selecting default shared_buffers ...
+
+stdout | test/handoff.test.ts
+128MB
+selecting default time zone ...
+
+stdout | test/handoff.test.ts
+Asia/Bangkok
+
+
+stdout | test/handoff.test.ts
+creating configuration files ...
+
+stdout | test/handoff.test.ts
+ok
+running bootstrap script ...
+
+stdout | test/handoff.test.ts
+ok
+
+
+stdout | test/handoff.test.ts
+performing post-bootstrap initialization ...
+
+stdout | test/handoff.test.ts
+ok
+syncing data to disk ...
+
+stdout | test/handoff.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\w^\admin^-operator^-switch^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-9jXpfk^" -l logfile start
+
+
+
+stdout | test/handoff.test.ts
+2026-10-26 05:00:31.716 +07 [82792] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/handoff.test.ts
+2026-10-26 05:00:31.719 +07 [82792] LOG:  listening on IPv6 address "::1", port 54536
+
+
+stdout | test/handoff.test.ts
+2026-10-26 05:00:31.719 +07 [82792] LOG:  listening on IPv4 address "127.0.0.1", port 54536
+
+
+stdout | test/handoff.test.ts
+2026-10-26 05:00:31.759 +07 [23756] LOG:  database system was shut down at 2026-10-26 05:00:29 +07
+
+
+stdout | test/handoff.test.ts
+2026-10-26 05:00:31.782 +07 [82792] LOG:  database system is ready to accept connections
+
+
+stdout | test/handoff.test.ts
+2026-10-26 05:00:35.121 +07 [92080] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+
+stdout | test/handoff.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/handoff.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:84564) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:84564) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(node:84564) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+stdout | test/handoff.test.ts
+2026-10-26 05:00:37.206 +07 [88332] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/handoff.test.ts
+2026-10-26 05:00:37.216 +07 [88332] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.002 s, sync=0.003 s, total=0.011 s; sync files=5, longest=0.001 s, average=0.001 s; distance=15633 kB, estimate=15633 kB; lsn=0/24BC818, redo lsn=0/24BC7E0
+
+
+ ✓ test/handoff.test.ts (22 tests) 11087ms
+stdout | test/operator-switch-handoff-review.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/operator-switch-handoff-review.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-dooy84 ... ok
+
+
+stdout | test/operator-switch-handoff-review.test.ts
+creating subdirectories ...
+
+stdout | test/operator-switch-handoff-review.test.ts
+ok
+
+
+stdout | test/operator-switch-handoff-review.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ...
+
+stdout | test/operator-switch-handoff-review.test.ts
+100
+selecting default shared_buffers ...
+
+stdout | test/operator-switch-handoff-review.test.ts
+128MB
+selecting default time zone ...
+
+stdout | test/operator-switch-handoff-review.test.ts
+Asia/Bangkok
+
+
+stdout | test/operator-switch-handoff-review.test.ts
+creating configuration files ...
+
+stdout | test/operator-switch-handoff-review.test.ts
+ok
+running bootstrap script ...
+
+stdout | test/operator-switch-handoff-review.test.ts
+ok
+
+
+stdout | test/operator-switch-handoff-review.test.ts
+performing post-bootstrap initialization ...
+
+stdout | test/operator-switch-handoff-review.test.ts
+ok
+syncing data to disk ...
+
+stdout | test/operator-switch-handoff-review.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\w^\admin^-operator^-switch^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-dooy84^" -l logfile start
+
+
+
+stdout | test/operator-switch-handoff-review.test.ts
+2026-10-26 05:00:44.781 +07 [44772] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/operator-switch-handoff-review.test.ts
+2026-10-26 05:00:44.784 +07 [44772] LOG:  listening on IPv6 address "::1", port 54807
+2026-10-26 05:00:44.784 +07 [44772] LOG:  listening on IPv4 address "127.0.0.1", port 54807
+
+
+stdout | test/operator-switch-handoff-review.test.ts
+2026-10-26 05:00:44.826 +07 [92288] LOG:  database system was shut down at 2026-10-26 05:00:42 +07
+
+
+stdout | test/operator-switch-handoff-review.test.ts
+2026-10-26 05:00:44.848 +07 [44772] LOG:  database system is ready to accept connections
+
+
+stdout | test/operator-switch-handoff-review.test.ts
+2026-10-26 05:00:48.287 +07 [5272] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+
+stdout | test/operator-switch-handoff-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/operator-switch-handoff-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:26716) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/operator-switch-handoff-review.test.ts
+2026-10-26 05:00:52.821 +07 [90700] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/operator-switch-handoff-review.test.ts
+2026-10-26 05:00:52.833 +07 [90700] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.002 s, sync=0.003 s, total=0.012 s; sync files=5, longest=0.001 s, average=0.001 s; distance=25808 kB, estimate=25808 kB; lsn=0/2EAC128, redo lsn=0/2EAC0F0
+
+
+ ✓ test/operator-switch-handoff-review.test.ts (24 tests) 13473ms
+stdout | test/auth-handoff-files-tx.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/auth-handoff-files-tx.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-rTxLlK ... ok
+creating subdirectories ...
+
+stdout | test/auth-handoff-files-tx.test.ts
+ok
+
+
+stdout | test/auth-handoff-files-tx.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ...
+
+stdout | test/auth-handoff-files-tx.test.ts
+100
+selecting default shared_buffers ...
+
+stdout | test/auth-handoff-files-tx.test.ts
+128MB
+selecting default time zone ...
+
+stdout | test/auth-handoff-files-tx.test.ts
+Asia/Bangkok
+creating configuration files ...
+
+stdout | test/auth-handoff-files-tx.test.ts
+ok
+running bootstrap script ...
+
+stdout | test/auth-handoff-files-tx.test.ts
+ok
+
+
+stdout | test/auth-handoff-files-tx.test.ts
+performing post-bootstrap initialization ...
+
+stdout | test/auth-handoff-files-tx.test.ts
+ok
+syncing data to disk ...
+
+stdout | test/auth-handoff-files-tx.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\w^\admin^-operator^-switch^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-rTxLlK^" -l logfile start
+
+
+
+stdout | test/auth-handoff-files-tx.test.ts
+2026-10-26 05:01:00.890 +07 [92760] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/auth-handoff-files-tx.test.ts
+2026-10-26 05:01:00.894 +07 [92760] LOG:  listening on IPv6 address "::1", port 54642
+
+
+stdout | test/auth-handoff-files-tx.test.ts
+2026-10-26 05:01:00.894 +07 [92760] LOG:  listening on IPv4 address "127.0.0.1", port 54642
+
+
+stdout | test/auth-handoff-files-tx.test.ts
+2026-10-26 05:01:00.928 +07 [41768] LOG:  database system was shut down at 2026-10-26 05:00:58 +07
+
+
+stdout | test/auth-handoff-files-tx.test.ts
+2026-10-26 05:01:00.951 +07 [92760] LOG:  database system is ready to accept connections
+
+
+stdout | test/auth-handoff-files-tx.test.ts
+2026-10-26 05:01:05.076 +07 [88280] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+
+stdout | test/auth-handoff-files-tx.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/auth-handoff-files-tx.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:92436) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/auth-handoff-files-tx.test.ts > SCRUM-296 — registering a file (the plain one) > registers nothing when the registration cannot be recorded
+2026-10-26 05:01:06.334 +07 [15944] ERROR:  forced failure
+2026-10-26 05:01:06.334 +07 [15944] CONTEXT:  PL/pgSQL function oto_test_fail() line 3 at RAISE
+2026-10-26 05:01:06.334 +07 [15944] STATEMENT:  insert into "core"."audit_log" ("id", "operator_id", "branch_id", "actor_account_id", "request_id", "action", "entity_type", "entity_id", "before", "after", "action_id", "source_event_id", "created_at") values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, default)
+
+
+stdout | test/auth-handoff-files-tx.test.ts > SCRUM-296 — registering a file (the plain one) > leaves no row in the trail for a file that rolled back at commit
+2026-10-26 05:01:06.406 +07 [53108] ERROR:  forced failure
+2026-10-26 05:01:06.406 +07 [53108] CONTEXT:  PL/pgSQL function oto_test_fail() line 3 at RAISE
+2026-10-26 05:01:06.406 +07 [53108] STATEMENT:  commit
+
+
+stdout | test/auth-handoff-files-tx.test.ts > SCRUM-296 — registering a file (the plain one) > leaves no row in the trail for a file that rolled back at commit
+2026-10-26 05:01:06.407 +07 [53108] WARNING:  there is no transaction in progress
+
+
+stdout | test/auth-handoff-files-tx.test.ts > SCRUM-296 — finishing a setup > does not burn the code when the setup fails at commit
+2026-10-26 05:01:06.477 +07 [15944] ERROR:  forced failure
+2026-10-26 05:01:06.477 +07 [15944] CONTEXT:  PL/pgSQL function oto_test_fail() line 3 at RAISE
+2026-10-26 05:01:06.477 +07 [15944] STATEMENT:  commit
+
+
+stdout | test/auth-handoff-files-tx.test.ts > SCRUM-296 — finishing a setup > does not burn the code when the setup fails at commit
+2026-10-26 05:01:06.477 +07 [15944] WARNING:  there is no transaction in progress
+
+
+stdout | test/auth-handoff-files-tx.test.ts > SCRUM-296 — resetting a password > leaves the old password, its sessions and the code alone when the reset fails at commit
+2026-10-26 05:01:06.658 +07 [53108] ERROR:  forced failure
+2026-10-26 05:01:06.658 +07 [53108] CONTEXT:  PL/pgSQL function oto_test_fail() line 3 at RAISE
+2026-10-26 05:01:06.658 +07 [53108] STATEMENT:  commit
+
+
+stdout | test/auth-handoff-files-tx.test.ts > SCRUM-296 — resetting a password > leaves the old password, its sessions and the code alone when the reset fails at commit
+2026-10-26 05:01:06.658 +07 [53108] WARNING:  there is no transaction in progress
+
+
+stdout | test/auth-handoff-files-tx.test.ts > SCRUM-296 — the hand-off claim > spends nothing when the claim fails at commit, and the token still works
+2026-10-26 05:01:06.774 +07 [15944] ERROR:  forced failure
+2026-10-26 05:01:06.774 +07 [15944] CONTEXT:  PL/pgSQL function oto_test_fail() line 3 at RAISE
+2026-10-26 05:01:06.774 +07 [15944] STATEMENT:  commit
+
+
+stdout | test/auth-handoff-files-tx.test.ts > SCRUM-296 — the hand-off claim > spends nothing when the claim fails at commit, and the token still works
+2026-10-26 05:01:06.774 +07 [15944] WARNING:  there is no transaction in progress
+
+
+stdout | test/auth-handoff-files-tx.test.ts
+2026-10-26 05:01:07.064 +07 [89880] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/auth-handoff-files-tx.test.ts
+2026-10-26 05:01:07.100 +07 [89880] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.004 s, sync=0.005 s, total=0.036 s; sync files=5, longest=0.002 s, average=0.001 s; distance=15615 kB, estimate=15615 kB; lsn=0/24B7E80, redo lsn=0/24B7E48
+
+
+ ✓ test/auth-handoff-files-tx.test.ts (10 tests) 11685ms
+stdout | test/s629-role-mapping-review.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/s629-role-mapping-review.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-ZtNNJh ... ok
+creating subdirectories ...
+
+stdout | test/s629-role-mapping-review.test.ts
+ok
+
+
+stdout | test/s629-role-mapping-review.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ...
+
+stdout | test/s629-role-mapping-review.test.ts
+100
+selecting default shared_buffers ...
+
+stdout | test/s629-role-mapping-review.test.ts
+128MB
+
+
+stdout | test/s629-role-mapping-review.test.ts
+selecting default time zone ...
+
+stdout | test/s629-role-mapping-review.test.ts
+Asia/Bangkok
+
+
+stdout | test/s629-role-mapping-review.test.ts
+creating configuration files ...
+
+stdout | test/s629-role-mapping-review.test.ts
+ok
+running bootstrap script ...
+
+stdout | test/s629-role-mapping-review.test.ts
+ok
+
+
+stdout | test/s629-role-mapping-review.test.ts
+performing post-bootstrap initialization ...
+
+stdout | test/s629-role-mapping-review.test.ts
+ok
+syncing data to disk ...
+
+stdout | test/s629-role-mapping-review.test.ts
+ok
+
+
+stdout | test/s629-role-mapping-review.test.ts
+
+Success. You can now start the database server using:
+
+    ^"C^:^\w^\admin^-operator^-switch^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-ZtNNJh^" -l logfile start
+
+
+
+stdout | test/s629-role-mapping-review.test.ts
+2026-10-26 05:01:15.153 +07 [46436] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/s629-role-mapping-review.test.ts
+2026-10-26 05:01:15.156 +07 [46436] LOG:  listening on IPv6 address "::1", port 54932
+
+
+stdout | test/s629-role-mapping-review.test.ts
+2026-10-26 05:01:15.156 +07 [46436] LOG:  listening on IPv4 address "127.0.0.1", port 54932
+
+
+stdout | test/s629-role-mapping-review.test.ts
+2026-10-26 05:01:15.190 +07 [86124] LOG:  database system was shut down at 2026-10-26 05:01:12 +07
+
+
+stdout | test/s629-role-mapping-review.test.ts
+2026-10-26 05:01:15.213 +07 [46436] LOG:  database system is ready to accept connections
+
+
+stdout | test/s629-role-mapping-review.test.ts
+2026-10-26 05:01:18.322 +07 [64892] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+
+stdout | test/s629-role-mapping-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/s629-role-mapping-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:66644) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/s629-role-mapping-review.test.ts > SCRUM-629 real identity-seam review > R6 [critical] actual role/audit failure rolls both back while the committed jti remains spent; fix: keep claim and role transactions separate
+2026-10-26 05:01:21.347 +07 [92588] ERROR:  ZZ TEST 629 review injected audit failure
+2026-10-26 05:01:21.347 +07 [92588] CONTEXT:  PL/pgSQL function core.s629_review_fail() line 1 at RAISE
+2026-10-26 05:01:21.347 +07 [92588] STATEMENT:  insert into "core"."audit_log" ("id", "operator_id", "branch_id", "actor_account_id", "request_id", "action", "entity_type", "entity_id", "before", "after", "action_id", "source_event_id", "created_at") values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, default)
+
+
+stdout | test/s629-role-mapping-review.test.ts > SCRUM-629 real identity-seam review > R7 [critical] a later real link audit failure undoes stamp, identity, access and mapped role, then exact retry succeeds; fix: retain one provisioning transaction
+2026-10-26 05:01:21.473 +07 [92860] ERROR:  ZZ TEST 629 review injected audit failure
+2026-10-26 05:01:21.473 +07 [92860] CONTEXT:  PL/pgSQL function core.s629_review_fail() line 1 at RAISE
+2026-10-26 05:01:21.473 +07 [92860] STATEMENT:  insert into "core"."audit_log" ("id", "operator_id", "branch_id", "actor_account_id", "request_id", "action", "entity_type", "entity_id", "before", "after", "action_id", "source_event_id", "created_at") values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, default)
+
+
+stdout | test/s629-role-mapping-review.test.ts
+2026-10-26 05:01:21.538 +07 [69760] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/s629-role-mapping-review.test.ts
+2026-10-26 05:01:21.549 +07 [69760] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.002 s, sync=0.003 s, total=0.011 s; sync files=5, longest=0.001 s, average=0.001 s; distance=25546 kB, estimate=25546 kB; lsn=0/2E6AA08, redo lsn=0/2E6A9D0
+
+
+ ✓ test/s629-role-mapping-review.test.ts (7 tests) 11899ms
+stdout | test/handoff-department.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/handoff-department.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-WorD5H ... ok
+creating subdirectories ...
+
+stdout | test/handoff-department.test.ts
+ok
+
+
+stdout | test/handoff-department.test.ts
+selecting dynamic shared memory implementation ... windows
+
+
+stdout | test/handoff-department.test.ts
+selecting default max_connections ...
+
+stdout | test/handoff-department.test.ts
+100
+selecting default shared_buffers ...
+
+stdout | test/handoff-department.test.ts
+128MB
+selecting default time zone ...
+
+stdout | test/handoff-department.test.ts
+Asia/Bangkok
+creating configuration files ...
+
+stdout | test/handoff-department.test.ts
+ok
+running bootstrap script ...
+
+stdout | test/handoff-department.test.ts
+ok
+
+
+stdout | test/handoff-department.test.ts
+performing post-bootstrap initialization ...
+
+stdout | test/handoff-department.test.ts
+ok
+
+stdout | test/handoff-department.test.ts
+
+syncing data to disk ...
+
+stdout | test/handoff-department.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\w^\admin^-operator^-switch^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-WorD5H^" -l logfile start
+
+
+
+stdout | test/handoff-department.test.ts
+2026-10-26 05:01:28.356 +07 [46516] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/handoff-department.test.ts
+2026-10-26 05:01:28.358 +07 [46516] LOG:  listening on IPv6 address "::1", port 54388
+
+
+stdout | test/handoff-department.test.ts
+2026-10-26 05:01:28.359 +07 [46516] LOG:  listening on IPv4 address "127.0.0.1", port 54388
+
+
+stdout | test/handoff-department.test.ts
+2026-10-26 05:01:28.393 +07 [11412] LOG:  database system was shut down at 2026-10-26 05:01:26 +07
+
+
+stdout | test/handoff-department.test.ts
+2026-10-26 05:01:28.414 +07 [46516] LOG:  database system is ready to accept connections
+
+
+stdout | test/handoff-department.test.ts
+2026-10-26 05:01:31.314 +07 [63304] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+
+stdout | test/handoff-department.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/handoff-department.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:36888) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/handoff-department.test.ts
+2026-10-26 05:01:32.577 +07 [69104] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/handoff-department.test.ts
+2026-10-26 05:01:32.587 +07 [69104] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.002 s, sync=0.003 s, total=0.010 s; sync files=5, longest=0.001 s, average=0.001 s; distance=15568 kB, estimate=15568 kB; lsn=0/24AC198, redo lsn=0/24AC160
+
+
+ ✓ test/handoff-department.test.ts (9 tests) 8809ms
+stdout | test/s629-handoff-role.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/s629-handoff-role.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-XCphlC ... ok
+creating subdirectories ...
+
+stdout | test/s629-handoff-role.test.ts
+ok
+
+
+stdout | test/s629-handoff-role.test.ts
+selecting dynamic shared memory implementation ... windows
+
+
+stdout | test/s629-handoff-role.test.ts
+selecting default max_connections ...
+
+stdout | test/s629-handoff-role.test.ts
+100
+selecting default shared_buffers ...
+
+stdout | test/s629-handoff-role.test.ts
+128MB
+selecting default time zone ...
+
+stdout | test/s629-handoff-role.test.ts
+Asia/Bangkok
+creating configuration files ...
+
+stdout | test/s629-handoff-role.test.ts
+ok
+running bootstrap script ...
+
+stdout | test/s629-handoff-role.test.ts
+ok
+
+
+stdout | test/s629-handoff-role.test.ts
+performing post-bootstrap initialization ...
+
+stdout | test/s629-handoff-role.test.ts
+ok
+syncing data to disk ...
+
+stdout | test/s629-handoff-role.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\w^\admin^-operator^-switch^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-XCphlC^" -l logfile start
+
+
+
+stdout | test/s629-handoff-role.test.ts
+2026-10-26 05:01:39.854 +07 [48456] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/s629-handoff-role.test.ts
+2026-10-26 05:01:39.857 +07 [48456] LOG:  listening on IPv6 address "::1", port 54959
+
+
+stdout | test/s629-handoff-role.test.ts
+2026-10-26 05:01:39.857 +07 [48456] LOG:  listening on IPv4 address "127.0.0.1", port 54959
+
+
+stdout | test/s629-handoff-role.test.ts
+2026-10-26 05:01:40.004 +07 [68272] LOG:  database system was shut down at 2026-10-26 05:01:37 +07
+
+
+stdout | test/s629-handoff-role.test.ts
+2026-10-26 05:01:40.027 +07 [48456] LOG:  database system is ready to accept connections
+
+
+stdout | test/s629-handoff-role.test.ts
+2026-10-26 05:01:43.212 +07 [31228] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+
+stdout | test/s629-handoff-role.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/s629-handoff-role.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:40484) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/s629-handoff-role.test.ts
+2026-10-26 05:01:44.395 +07 [91592] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/s629-handoff-role.test.ts
+2026-10-26 05:01:44.406 +07 [91592] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.002 s, sync=0.003 s, total=0.012 s; sync files=5, longest=0.001 s, average=0.001 s; distance=15553 kB, estimate=15553 kB; lsn=0/24A84D8, redo lsn=0/24A84A0
+
+
+ ✓ test/s629-handoff-role.test.ts (4 tests) 9720ms
+
+ Test Files  6 passed (6)
+      Tests  76 passed (76)
+   Start at  05:00:20
+   Duration  85.00s (transform 3.63s, setup 0ms, collect 16.85s, tests 66.67s, environment 1ms, prepare 577ms)

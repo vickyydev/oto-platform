@@ -1,0 +1,56 @@
+
+> @oto/console@0.1.0 test C:\w\admin-operator-switch\apps\console
+> vitest run "test/booth-state.test.ts"
+
+
+ RUN  v3.2.7 C:/w/admin-operator-switch/apps/console
+
+ ❯ test/booth-state.test.ts (11 tests | 1 failed) 73ms
+   ✓ boothSetupSteps — the checklist at the head of the page > ticks all six for a booth that is set up and published, in the order a booth is set up 1ms
+   ✓ boothSetupSteps — the checklist at the head of the page > ticks nothing from a reading that is not in hand 0ms
+   ✓ boothSetupSteps — the checklist at the head of the page > wants a printer, a two-character prefix and a layout 0ms
+   ✓ boothSetupSteps — the checklist at the head of the page > wants everybody on the booth to hold a PIN that has not expired, and at least one person 0ms
+   ✓ boothSetupSteps — the checklist at the head of the page > counts only the prizes switched on toward 100%, and wants the draft published as it stands 0ms
+   ✓ wheelStanding — the header chips > says a booth was never published, once 0ms
+   ✓ wheelStanding — the header chips > names the published version, and whether the draft has moved since 0ms
+   ✓ restoreRefusal — whether an archived prize is offered a Restore > offers it when its voucher type is live, switched off, unknown or absent 0ms
+   ✓ restoreRefusal — whether an archived prize is offered a Restore > refuses it while its voucher type is archived, naming the type and where it comes back 0ms
+   × Booth native Copy PIN working-context lifetime > blocks a retained copy after invalidation without a notice or unhandled rejection 57ms
+     → expected { clipboardCalls: 1, notices: 1, …(1) } to deeply equal { clipboardCalls: +0, …(2) }
+   ✓ Booth native Copy PIN working-context lifetime > preserves the native copy and success notice for the same confirmed context 13ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/booth-state.test.ts > Booth native Copy PIN working-context lifetime > blocks a retained copy after invalidation without a notice or unhandled rejection
+AssertionError: expected { clipboardCalls: 1, notices: 1, …(1) } to deeply equal { clipboardCalls: +0, …(2) }
+
+- Expected
++ Received
+
+  {
+-   "clipboardCalls": 0,
+-   "notices": 0,
++   "clipboardCalls": 1,
++   "notices": 1,
+    "unhandledRejections": 0,
+  }
+
+ ❯ test/booth-state.test.ts:289:50
+    287|       await new Promise<void>(resolve => { setImmediate(resolve); });
+    288|       expect({ clipboardCalls: view.writeText.mock.calls.length, notic…
+    289|         unhandledRejections: unhandled.length }).toEqual({ clipboardCa…
+       |                                                  ^
+    290|     } finally {
+    291|       process.off('unhandledRejection', observe);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 10 passed (11)
+   Start at  05:44:09
+   Duration  842ms (transform 56ms, setup 0ms, collect 352ms, tests 73ms, environment 0ms, prepare 152ms)
+
+C:\w\admin-operator-switch\apps\console:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @oto/console@0.1.0 test: `vitest run "test/booth-state.test.ts"`
+Exit status 1

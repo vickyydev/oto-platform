@@ -1,0 +1,456 @@
+
+> @oto/api@0.1.0 test C:\w\admin-operator-switch\apps\api
+> vitest run --pool=forks "test/operator-switch-session-review.test.ts"
+
+
+ RUN  v3.2.7 C:/w/admin-operator-switch/apps/api
+
+stdout | test/operator-switch-session-review.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/operator-switch-session-review.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+
+stdout | test/operator-switch-session-review.test.ts
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-Wyja9W ...
+
+stdout | test/operator-switch-session-review.test.ts
+ok
+
+
+stdout | test/operator-switch-session-review.test.ts
+creating subdirectories ...
+
+stdout | test/operator-switch-session-review.test.ts
+ok
+
+
+stdout | test/operator-switch-session-review.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ...
+
+stdout | test/operator-switch-session-review.test.ts
+100
+selecting default shared_buffers ...
+
+stdout | test/operator-switch-session-review.test.ts
+128MB
+selecting default time zone ...
+
+stdout | test/operator-switch-session-review.test.ts
+Asia/Bangkok
+creating configuration files ...
+
+stdout | test/operator-switch-session-review.test.ts
+ok
+running bootstrap script ...
+
+stdout | test/operator-switch-session-review.test.ts
+ok
+
+
+stdout | test/operator-switch-session-review.test.ts
+performing post-bootstrap initialization ...
+
+stdout | test/operator-switch-session-review.test.ts
+ok
+syncing data to disk ...
+
+stdout | test/operator-switch-session-review.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\w^\admin^-operator^-switch^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-Wyja9W^" -l logfile start
+
+
+
+stdout | test/operator-switch-session-review.test.ts
+2026-10-26 04:21:49.546 +07 [82588] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/operator-switch-session-review.test.ts
+2026-10-26 04:21:49.550 +07 [82588] LOG:  listening on IPv6 address "::1", port 54759
+
+
+stdout | test/operator-switch-session-review.test.ts
+2026-10-26 04:21:49.551 +07 [82588] LOG:  listening on IPv4 address "127.0.0.1", port 54759
+
+
+stdout | test/operator-switch-session-review.test.ts
+2026-10-26 04:21:49.617 +07 [57760] LOG:  database system was shut down at 2026-10-26 04:21:45 +07
+
+
+stdout | test/operator-switch-session-review.test.ts
+2026-10-26 04:21:49.654 +07 [82588] LOG:  database system is ready to accept connections
+
+
+stdout | test/operator-switch-session-review.test.ts
+2026-10-26 04:21:57.512 +07 [87256] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+
+stdout | test/operator-switch-session-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/operator-switch-session-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:1604) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/operator-switch-session-review.test.ts
+2026-10-26 04:22:04.733 +07 [40736] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/operator-switch-session-review.test.ts
+2026-10-26 04:22:04.760 +07 [40736] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.005 s, sync=0.009 s, total=0.028 s; sync files=5, longest=0.003 s, average=0.002 s; distance=15937 kB, estimate=15937 kB; lsn=0/25085D0, redo lsn=0/2508598
+
+
+ ❯ test/operator-switch-session-review.test.ts (33 tests | 25 failed) 25569ms
+   × SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R1 [critical] FINDING: resolve the live override and audited revision without replacing the real home account or employee 371ms
+     → expected { …(9) } to match object { …(9) }
+(3 matching properties omitted from actual)
+   × SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R2 [critical] FINDING: native branch reads narrow to the chosen operator and preserve the exact home grants 26ms
+     → expected [ Array(1) ] to deeply equal [ …(2) ]
+   × SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R3 [critical] FINDING: explicit home targets cannot escape an active override through a global grant 20ms
+     → expected 200 to be 403 // Object.is equality
+   × SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R3 [critical] FINDING: explicit foreign targets cannot escape an active override through a global grant 15ms
+     → expected 200 to be 403 // Object.is equality
+   × SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R4 [high] keeps a live target-owned seat and leaves the other cookie at its own home context 16ms
+     → expected { …(9) } to match object { …(3) }
+(6 matching properties omitted from actual)
+   × SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R5 [critical] FINDING: a now-archived target override refuses without silently returning home 20ms
+     → expected 200 to be 401 // Object.is equality
+   ✓ SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R5 [critical] FINDING: a now-archived home override refuses without silently returning home 39ms
+   × SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R6 [critical] FINDING: validate the effective operator and exact live seat for foreign branch 22ms
+     → expected 200 to be 401 // Object.is equality
+   ✓ SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R6 [critical] FINDING: validate the effective operator and exact live seat for archived branch 23ms
+   × SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R6 [critical] FINDING: validate the effective operator and exact live seat for foreign station 19ms
+     → expected 200 to be 401 // Object.is equality
+   × SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R6 [critical] FINDING: validate the effective operator and exact live seat for wrong station branch 19ms
+     → expected 200 to be 401 // Object.is equality
+   × SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R6 [critical] FINDING: validate the effective operator and exact live seat for archived station 18ms
+     → expected 200 to be 401 // Object.is equality
+   × SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R6 [critical] FINDING: validate the effective operator and exact live seat for missing station 17ms
+     → expected 200 to be 401 // Object.is equality
+   × SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R6 [critical] FINDING: validate the effective operator and exact live seat for unseated station 18ms
+     → expected 200 to be 401 // Object.is equality
+   × SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R7 [critical] FINDING: revalidate the same live null-scope switch assignment on each request after deleted grant 23ms
+     → expected 200 to be 403 // Object.is equality
+   × SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R7 [critical] FINDING: revalidate the same live null-scope switch assignment on each request after archived grant 19ms
+     → expected 200 to be 403 // Object.is equality
+   × SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R7 [critical] FINDING: revalidate the same live null-scope switch assignment on each request after withdrawn permission 19ms
+     → expected 200 to be 403 // Object.is equality
+   × SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R7 [critical] FINDING: revalidate the same live null-scope switch assignment on each request after own scope 21ms
+     → expected 200 to be 403 // Object.is equality
+   × SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R7 [critical] FINDING: revalidate the same live null-scope switch assignment on each request after split assignments 19ms
+     → expected 200 to be 403 // Object.is equality
+   × SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R7 [critical] FINDING: revalidate the same live null-scope switch assignment on each request after foreign role owner 20ms
+     → expected 200 to be 403 // Object.is equality
+   ✓ SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R8 [critical] preserves the native inactive-account refusal under an override 19ms
+   ✓ SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R8 [critical] preserves the native invited-account refusal under an override 23ms
+   ✓ SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R9 [high] retains business refusal and native /me exemptions for locked sessions 33ms
+   ✓ SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R9 [high] retains business refusal and native /me exemptions for temporary password sessions 30ms
+   × SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R10 [critical] FINDING: an override cannot turn a display-class session into a staff context 15ms
+     → expected 200 to be 403 // Object.is equality
+   × SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R10 [critical] FINDING: an override cannot turn a box-class session into a staff context 16ms
+     → expected 200 to be 403 // Object.is equality
+   × SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R10 [critical] FINDING: an override cannot turn a kiosk-class session into a staff context 17ms
+     → expected 200 to be 403 // Object.is equality
+   × SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R11 [critical] FINDING: lazily clear only the exact expired cookie override while retaining both historical session rows 19ms
+     → expected { …(13) } to deeply equal { …(13) }
+   × SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R11 [critical] FINDING: lazily clear only the exact revoked cookie override while retaining both historical session rows 22ms
+     → expected { …(13) } to deeply equal { …(13) }
+   ✓ SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R12 [high] an unknown cookie performs no broad expiry cleanup 14ms
+   ✓ SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R13 [high] ordinary null-override sessions retain home scope and do not need the switch permission 32ms
+   × SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R14 [critical] a target account platform assignment never grants the real caller platform authority 26ms
+     → expected 200 to be 403 // Object.is equality
+   × SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R15 [critical] FINDING: query and headers cannot supply an override or replace the verified context fields 15ms
+     → expected { …(9) } to match object { …(5) }
+(7 matching properties omitted from actual)
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 25 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/operator-switch-session-review.test.ts > SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R1 [critical] FINDING: resolve the live override and audited revision without replacing the real home account or employee
+AssertionError: expected { …(9) } to match object { …(9) }
+(3 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+    "accountId": "01a174f1-26fa-722f-8300-0787020781d5",
+    "branchId": null,
+-   "homeOperatorId": "01a174f1-26fa-722f-8300-077c4cecda6f",
+-   "isPlatformAdmin": true,
+-   "operatorId": "01a174f1-26fa-722f-8300-077d79004b61",
+-   "operatorOverride": "01a174f1-26fa-722f-8300-077d79004b61",
+-   "operatorRevision": 1,
++   "isPlatformAdmin": false,
++   "operatorId": "01a174f1-26fa-722f-8300-077c4cecda6f",
+    "sessionId": "01a174f1-26fa-722f-8300-078fda64b373",
+    "stationId": null,
+  }
+
+ ❯ test/operator-switch-session-review.test.ts:106:34
+    104|     expect(selected.revision).toBe(1);
+    105|     const response = await read(); expect(response.statusCode).toBe(20…
+    106|     expect(response.json().auth).toMatchObject({ accountId: f.actor, s…
+       |                                  ^
+    107|       homeOperatorId: f.home, operatorOverride: f.target, operatorRevi…
+    108|     const me = await read('/me'); expect(me.statusCode).toBe(200);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/25]⎯
+
+ FAIL  test/operator-switch-session-review.test.ts > SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R2 [critical] FINDING: native branch reads narrow to the chosen operator and preserve the exact home grants
+AssertionError: expected [ Array(1) ] to deeply equal [ …(2) ]
+
+- Expected
++ Received
+
+  [
+-   "01a174f1-286d-74a0-94c1-1787d9145fe0",
+-   "01a174f1-286d-74a0-94c1-1788d742ae88",
++   "01a174f1-286d-74a0-94c1-178656d866bd",
+  ]
+
+ ❯ test/operator-switch-session-review.test.ts:117:76
+    115|     const permissions = (await read('/me/permissions')).json(); await …
+    116|     const result = await read('/branches'); expect(result.statusCode).…
+    117|     expect(result.json().branches.map((b: { id: string }) => b.id).sor…
+       |                                                                            ^
+    118|     expect((await read('/me/permissions')).json()).toEqual(permissions…
+    119|     expect((await target(f.target)).statusCode).toBe(200);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/25]⎯
+
+ FAIL  test/operator-switch-session-review.test.ts > SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R3 [critical] FINDING: explicit home targets cannot escape an active override through a global grant
+ FAIL  test/operator-switch-session-review.test.ts > SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R3 [critical] FINDING: explicit foreign targets cannot escape an active override through a global grant
+AssertionError: expected 200 to be 403 // Object.is equality
+
+- Expected
++ Received
+
+- 403
++ 200
+
+ ❯ test/operator-switch-session-review.test.ts:123:95
+    121|   });
+    122|   it.each(['home', 'foreign'] as const)('R3 [critical] FINDING: explic…
+    123|     await override(); expect((await target(kind === 'home' ? f.home : …
+       |                                                                                               ^
+    124|   });
+    125|   it('R4 [high] keeps a live target-owned seat and leaves the other co…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/25]⎯
+
+ FAIL  test/operator-switch-session-review.test.ts > SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R4 [high] keeps a live target-owned seat and leaves the other cookie at its own home context
+AssertionError: expected { …(9) } to match object { …(3) }
+(6 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+    "branchId": "01a174f1-28aa-7f19-a63d-a0832afcca52",
+-   "operatorId": "01a174f1-28aa-7f19-a63d-a0802c15ed9a",
++   "operatorId": "01a174f1-28aa-7f19-a63d-a07fec49da6c",
+    "stationId": "01a174f1-28aa-7f19-a63d-a0876a5fd8ab",
+  }
+
+ ❯ test/operator-switch-session-review.test.ts:128:34
+    126|     await override({ branchId: f.targetBranch, stationId: f.targetStat…
+    127|     const observed = await read(); expect(observed.statusCode).toBe(20…
+    128|     expect(observed.json().auth).toMatchObject({ operatorId: f.target,…
+       |                                  ^
+    129|     const other = await read(probe, f.otherCookie); expect(other.statu…
+    130|     expect(other.json().auth).toMatchObject({ accountId: f.actor, sess…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/25]⎯
+
+ FAIL  test/operator-switch-session-review.test.ts > SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R5 [critical] FINDING: a now-archived target override refuses without silently returning home
+AssertionError: expected 200 to be 401 // Object.is equality
+
+- Expected
++ Received
+
+- 401
++ 200
+
+ ❯ refusal test/operator-switch-session-review.test.ts:95:31
+     93| async function refusal(status: number, url = probe, code?: string) {
+     94|   const before = await seat(), unchanged = await identity(), response …
+     95|   expect(response.statusCode).toBe(status);
+       |                               ^
+     96|   if (code) expect(response.json().error.code).toBe(code);
+     97|   expect(await seat()).toEqual(before); expect(await identity()).toEqu…
+ ❯ test/operator-switch-session-review.test.ts:136:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/25]⎯
+
+ FAIL  test/operator-switch-session-review.test.ts > SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R6 [critical] FINDING: validate the effective operator and exact live seat for foreign branch
+ FAIL  test/operator-switch-session-review.test.ts > SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R6 [critical] FINDING: validate the effective operator and exact live seat for foreign station
+ FAIL  test/operator-switch-session-review.test.ts > SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R6 [critical] FINDING: validate the effective operator and exact live seat for wrong station branch
+ FAIL  test/operator-switch-session-review.test.ts > SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R6 [critical] FINDING: validate the effective operator and exact live seat for archived station
+ FAIL  test/operator-switch-session-review.test.ts > SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R6 [critical] FINDING: validate the effective operator and exact live seat for missing station
+ FAIL  test/operator-switch-session-review.test.ts > SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R6 [critical] FINDING: validate the effective operator and exact live seat for unseated station
+AssertionError: expected 200 to be 401 // Object.is equality
+
+- Expected
++ Received
+
+- 401
++ 200
+
+ ❯ refusal test/operator-switch-session-review.test.ts:95:31
+     93| async function refusal(status: number, url = probe, code?: string) {
+     94|   const before = await seat(), unchanged = await identity(), response …
+     95|   expect(response.statusCode).toBe(status);
+       |                               ^
+     96|   if (code) expect(response.json().error.code).toBe(code);
+     97|   expect(await seat()).toEqual(before); expect(await identity()).toEqu…
+ ❯ test/operator-switch-session-review.test.ts:148:7
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/25]⎯
+
+ FAIL  test/operator-switch-session-review.test.ts > SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R7 [critical] FINDING: revalidate the same live null-scope switch assignment on each request after deleted grant
+ FAIL  test/operator-switch-session-review.test.ts > SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R7 [critical] FINDING: revalidate the same live null-scope switch assignment on each request after archived grant
+ FAIL  test/operator-switch-session-review.test.ts > SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R7 [critical] FINDING: revalidate the same live null-scope switch assignment on each request after withdrawn permission
+ FAIL  test/operator-switch-session-review.test.ts > SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R7 [critical] FINDING: revalidate the same live null-scope switch assignment on each request after own scope
+ FAIL  test/operator-switch-session-review.test.ts > SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R7 [critical] FINDING: revalidate the same live null-scope switch assignment on each request after split assignments
+ FAIL  test/operator-switch-session-review.test.ts > SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R7 [critical] FINDING: revalidate the same live null-scope switch assignment on each request after foreign role owner
+AssertionError: expected 200 to be 403 // Object.is equality
+
+- Expected
++ Received
+
+- 403
++ 200
+
+ ❯ refusal test/operator-switch-session-review.test.ts:95:31
+     93| async function refusal(status: number, url = probe, code?: string) {
+     94|   const before = await seat(), unchanged = await identity(), response …
+     95|   expect(response.statusCode).toBe(status);
+       |                               ^
+     96|   if (code) expect(response.json().error.code).toBe(code);
+     97|   expect(await seat()).toEqual(before); expect(await identity()).toEqu…
+ ❯ test/operator-switch-session-review.test.ts:159:7
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/25]⎯
+
+ FAIL  test/operator-switch-session-review.test.ts > SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R10 [critical] FINDING: an override cannot turn a display-class session into a staff context
+ FAIL  test/operator-switch-session-review.test.ts > SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R10 [critical] FINDING: an override cannot turn a box-class session into a staff context
+ FAIL  test/operator-switch-session-review.test.ts > SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R10 [critical] FINDING: an override cannot turn a kiosk-class session into a staff context
+AssertionError: expected 200 to be 403 // Object.is equality
+
+- Expected
++ Received
+
+- 403
++ 200
+
+ ❯ refusal test/operator-switch-session-review.test.ts:95:31
+     93| async function refusal(status: number, url = probe, code?: string) {
+     94|   const before = await seat(), unchanged = await identity(), response …
+     95|   expect(response.statusCode).toBe(status);
+       |                               ^
+     96|   if (code) expect(response.json().error.code).toBe(code);
+     97|   expect(await seat()).toEqual(before); expect(await identity()).toEqu…
+ ❯ test/operator-switch-session-review.test.ts:174:39
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/25]⎯
+
+ FAIL  test/operator-switch-session-review.test.ts > SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R11 [critical] FINDING: lazily clear only the exact expired cookie override while retaining both historical session rows
+ FAIL  test/operator-switch-session-review.test.ts > SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R11 [critical] FINDING: lazily clear only the exact revoked cookie override while retaining both historical session rows
+AssertionError: expected { …(13) } to deeply equal { …(13) }
+
+- Expected
++ Received
+
+@@ -4,11 +4,11 @@
+    "createdAt": 2026-10-25T21:22:04.566Z,
+    "expiresAt": 2026-10-25T21:21:04.565Z,
+    "id": "01a174f1-2a8d-77db-b9b0-462673d85a10",
+    "lastSeenAt": 2026-10-25T21:22:04.564Z,
+    "lockedAt": null,
+-   "operatorOverride": null,
++   "operatorOverride": "01a174f1-2a8d-77db-b9b0-461436425b92",
+    "revokedAt": null,
+    "revokedReason": null,
+    "sessionClass": "staff",
+    "stationId": null,
+    "tokenHash": "24bfbc3205439a0419c445f3d8060b52ac1d3042fa5bb7b3993d4fd8e3c7ee0b",
+
+ ❯ test/operator-switch-session-review.test.ts:183:26
+    181|     const before = await seat(), untouched = await seat(f.otherSession…
+    182|     expect((await read('/me')).statusCode).toBe(401);
+    183|     expect(await seat()).toEqual({ ...before, operatorOverride: null }…
+       |                          ^
+    184|     expect(await seat(f.otherSession)).toEqual(untouched); expect(awai…
+    185|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/25]⎯
+
+ FAIL  test/operator-switch-session-review.test.ts > SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R14 [critical] a target account platform assignment never grants the real caller platform authority
+AssertionError: expected 200 to be 403 // Object.is equality
+
+- Expected
++ Received
+
+- 403
++ 200
+
+ ❯ refusal test/operator-switch-session-review.test.ts:95:31
+     93| async function refusal(status: number, url = probe, code?: string) {
+     94|   const before = await seat(), unchanged = await identity(), response …
+     95|   expect(response.statusCode).toBe(status);
+       |                               ^
+     96|   if (code) expect(response.json().error.code).toBe(code);
+     97|   expect(await seat()).toEqual(before); expect(await identity()).toEqu…
+ ❯ test/operator-switch-session-review.test.ts:203:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/25]⎯
+
+ FAIL  test/operator-switch-session-review.test.ts > SCRUM-640 Q20 native session seam; Q22 attribution and sign-out additions remain held > R15 [critical] FINDING: query and headers cannot supply an override or replace the verified context fields
+AssertionError: expected { …(9) } to match object { …(5) }
+(7 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+    "accountId": "01a174f1-2afd-74c7-801e-e9bf5b2cff52",
+-   "homeOperatorId": "01a174f1-2afd-74c7-801e-e9b467d31d70",
+-   "operatorId": "01a174f1-2afd-74c7-801e-e9b532cbeb8d",
+-   "operatorOverride": "01a174f1-2afd-74c7-801e-e9b532cbeb8d",
+-   "operatorRevision": 0,
++   "operatorId": "01a174f1-2afd-74c7-801e-e9b467d31d70",
+  }
+
+ ❯ test/operator-switch-session-review.test.ts:210:34
+    208|       headers: { cookie: f.cookie, 'x-operator-id': f.foreign, 'x-home…
+    209|     expect(response.statusCode).toBe(200);
+    210|     expect(response.json().auth).toMatchObject({ accountId: f.actor, o…
+       |                                  ^
+    211|       operatorOverride: f.target, operatorRevision: 0 });
+    212|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/25]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  25 failed | 8 passed (33)
+   Start at  04:21:15
+   Duration  49.95s (transform 7.81s, setup 0ms, collect 23.48s, tests 25.57s, environment 0ms, prepare 518ms)
+
+C:\w\admin-operator-switch\apps\api:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @oto/api@0.1.0 test: `vitest run --pool=forks "test/operator-switch-session-review.test.ts"`
+Exit status 1

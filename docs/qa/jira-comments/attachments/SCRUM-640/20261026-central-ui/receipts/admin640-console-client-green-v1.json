@@ -1,0 +1,19 @@
+{
+  "ticket": "SCRUM-640",
+  "phase": "client-green",
+  "attempt": "v1",
+  "startedAt": "2026-10-25T22:28:37.765Z",
+  "completedAt": "2026-10-25T22:28:40.091Z",
+  "command": "pnpm --filter @oto/console test test/booth-report-lifetime.test.ts",
+  "exitCode": 0,
+  "signal": null,
+  "launchError": null,
+  "inputCount": 209,
+  "inputsUnchanged": true,
+  "inputsSha256": "60fbb51c970bbfdd9c474b0cd9864cfb6291149b0d89899e0363de318e2754ff",
+  "sourceManifestSha256": "ae085721be6fb1a73435e395444d074aa83924ae8c03ebbe7f13a0386caf7bc3",
+  "runnerSha256": "26e93a098f6eb44d52460ef93e802c40a9fdfe8ef6e014ea2b297a46be58930c",
+  "logSha256": "b500876e31cacae7902c8f33d4d61c714bf081111cee35244004256d3eb65bc5",
+  "logPath": "C:/w/admin640-console-client-green-v1.log",
+  "staging": false
+}

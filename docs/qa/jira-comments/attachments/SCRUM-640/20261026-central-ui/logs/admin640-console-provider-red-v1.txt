@@ -1,0 +1,74 @@
+
+> @oto/console@0.1.0 test C:\w\admin-operator-switch\apps\console
+> vitest run "test/s216-r6-health.test.ts"
+
+
+ RUN  v3.2.7 C:/w/admin-operator-switch/apps/console
+
+ ❯ test/s216-r6-health.test.ts (7 tests | 3 failed) 89ms
+   ✓ Health — the analytics freshness lines > lists each park’s day, then its report figures, then its booth figures 1ms
+   ✓ Health — the analytics freshness lines > reads Radar as fresh as its least recent park, and not refreshed while any park never was (S2-18) 0ms
+   ✓ Health — the analytics freshness lines > leaves out a line an older API does not report, rather than calling it never rolled up 0ms
+   × Health native provider working-context lifetimes > never continues an old readiness read into a new context's health snapshot after it resolved 54ms
+     → The old provider must not start a second request under the replacement binding: expected [ '/api/ready', '/api/ops/health' ] to deeply equal [ '/api/ready' ]
+   × Health native provider working-context lifetimes > never continues an old readiness read into a new context's health snapshot after it rejected 11ms
+     → The old provider must not start a second request under the replacement binding: expected [ '/api/ready', '/api/ops/health' ] to deeply equal [ '/api/ready' ]
+   × Health native provider working-context lifetimes > refuses a retained refresh callback before dispatch after its provider was replaced 11ms
+     → expected [ '/api/ready', '/api/ops/health' ] to deeply equal []
+   ✓ Health native provider working-context lifetimes > preserves the native readiness then snapshot reads for the same confirmed context 10ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/s216-r6-health.test.ts > Health native provider working-context lifetimes > never continues an old readiness read into a new context's health snapshot after it resolved
+ FAIL  test/s216-r6-health.test.ts > Health native provider working-context lifetimes > never continues an old readiness read into a new context's health snapshot after it rejected
+AssertionError: The old provider must not start a second request under the replacement binding: expected [ '/api/ready', '/api/ops/health' ] to deeply equal [ '/api/ready' ]
+
+- Expected
++ Received
+
+  [
+    "/api/ready",
++   "/api/ops/health",
+  ]
+
+ ❯ test/s216-r6-health.test.ts:160:103
+    158|       else pending.reject(new Error('ZZ TEST old readiness refused'));
+    159|       await refresh;
+    160|       expect(paths, 'The old provider must not start a second request …
+       |                                                                                                       ^
+    161|       expect(provider.render().snapshot).toBeNull();
+    162|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  test/s216-r6-health.test.ts > Health native provider working-context lifetimes > refuses a retained refresh callback before dispatch after its provider was replaced
+AssertionError: expected [ '/api/ready', '/api/ops/health' ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "/api/ready",
++   "/api/ops/health",
++ ]
+
+ ❯ test/s216-r6-health.test.ts:179:19
+    177|     disposals.push(installRequestAuthority({ capture: () => currentEpo…
+    178|     await held.refresh();
+    179|     expect(paths).toEqual([]);
+       |                   ^
+    180|   });
+    181|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  3 failed | 4 passed (7)
+   Start at  05:38:46
+   Duration  1.01s (transform 65ms, setup 0ms, collect 421ms, tests 89ms, environment 0ms, prepare 167ms)
+
+C:\w\admin-operator-switch\apps\console:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @oto/console@0.1.0 test: `vitest run "test/s216-r6-health.test.ts"`
+Exit status 1

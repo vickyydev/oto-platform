@@ -1,0 +1,28 @@
+
+> @oto/api@0.1.0 typecheck C:\w\admin-operator-switch\apps\api
+> tsc -p tsconfig.json
+
+test/operator-switch-route-review.test.ts(56,107): error TS2322: Type 'unknown' is not assignable to type 'InjectPayload | undefined'.
+test/operator-switch-route-review.test.ts(88,21): error TS2339: Property 'statusCode' does not exist on type 'void & Promise<Response> & Chain'.
+test/operator-switch-route-review.test.ts(89,21): error TS2339: Property 'json' does not exist on type 'void & Promise<Response> & Chain'.
+test/operator-switch-route-review.test.ts(94,64): error TS2339: Property 'json' does not exist on type 'void & Promise<Response> & Chain'.
+test/operator-switch-route-review.test.ts(102,21): error TS2339: Property 'statusCode' does not exist on type 'void & Promise<Response> & Chain'.
+test/operator-switch-route-review.test.ts(102,60): error TS2339: Property 'json' does not exist on type 'void & Promise<Response> & Chain'.
+test/operator-switch-route-review.test.ts(108,21): error TS2339: Property 'statusCode' does not exist on type 'void & Promise<Response> & Chain'.
+test/operator-switch-route-review.test.ts(108,60): error TS2339: Property 'json' does not exist on type 'void & Promise<Response> & Chain'.
+test/operator-switch-route-review.test.ts(121,21): error TS2339: Property 'statusCode' does not exist on type 'void & Promise<Response> & Chain'.
+test/operator-switch-route-review.test.ts(125,21): error TS2339: Property 'statusCode' does not exist on type 'void & Promise<Response> & Chain'.
+test/operator-switch-route-review.test.ts(131,21): error TS2339: Property 'statusCode' does not exist on type 'void & Promise<Response> & Chain'.
+test/operator-switch-route-review.test.ts(139,21): error TS2339: Property 'statusCode' does not exist on type 'void & Promise<Response> & Chain'.
+test/operator-switch-route-review.test.ts(144,21): error TS2339: Property 'statusCode' does not exist on type 'void & Promise<Response> & Chain'.
+test/operator-switch-route-review.test.ts(144,60): error TS2339: Property 'json' does not exist on type 'void & Promise<Response> & Chain'.
+test/operator-switch-route-review.test.ts(149,18): error TS2339: Property 'statusCode' does not exist on type 'void & Promise<Response> & Chain'.
+test/operator-switch-route-review.test.ts(149,55): error TS2339: Property 'statusCode' does not exist on type 'void & Promise<Response> & Chain'.
+test/operator-switch-route-review.test.ts(149,92): error TS2339: Property 'json' does not exist on type 'void & Promise<Response> & Chain'.
+test/operator-switch-route-review.test.ts(149,114): error TS2339: Property 'json' does not exist on type 'void & Promise<Response> & Chain'.
+test/operator-switch-route-review.test.ts(157,20): error TS2339: Property 'requestBody' does not exist on type '{ tags?: string[] | undefined; summary?: string | undefined; description?: string | undefined; externalDocs?: ExternalDocumentationObject | undefined; ... 7 more ...; servers?: ServerObject[] | undefined; } | { ...; } | ({ ...; } & ... 1 more ... & { ...; })'.
+  Property 'requestBody' does not exist on type '{ tags?: string[] | undefined; summary?: string | undefined; description?: string | undefined; externalDocs?: ExternalDocumentationObject | undefined; ... 7 more ...; security?: SecurityRequirementObject[] | undefined; }'.
+test/operator-switch-route-review.test.ts(162,21): error TS2339: Property 'statusCode' does not exist on type 'void & Promise<Response> & Chain'.
+C:\w\admin-operator-switch\apps\api:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @oto/api@0.1.0 typecheck: `tsc -p tsconfig.json`
+Exit status 2

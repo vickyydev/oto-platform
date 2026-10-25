@@ -1,0 +1,643 @@
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-I9Ue99 ... ok
+
+creating subdirectories ...
+ok
+
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ...
+100
+selecting default shared_buffers ...
+128MB
+
+selecting default time zone ...
+Asia/Bangkok
+
+creating configuration files ...
+ok
+running bootstrap script ...
+ok
+
+
+performing post-bootstrap initialization ...
+ok
+syncing data to disk ...
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\w^\admin^-operator^-switch^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-I9Ue99^" -l logfile start
+
+
+2026-10-26 06:02:16.631 +07 [91344] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+2026-10-26 06:02:16.634 +07 [91344] LOG:  listening on IPv6 address "::1", port 55120
+2026-10-26 06:02:16.634 +07 [91344] LOG:  listening on IPv4 address "127.0.0.1", port 55120
+
+2026-10-26 06:02:16.669 +07 [94120] LOG:  database system was shut down at 2026-10-26 06:02:14 +07
+
+2026-10-26 06:02:16.693 +07 [91344] LOG:  database system is ready to accept connections
+
+2026-10-26 06:02:19.611 +07 [3776] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+[console-e2e] building the Console (CONSOLE_E2E_BUILT=1): the run serves dist/public through vite preview
+
+> @oto/console@0.1.0 build C:\w\admin-operator-switch\apps\console
+> vite build --config vite.config.ts
+
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 2293 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/public/index.html                        1.33 kB │ gzip:   0.58 kB
+dist/public/assets/logo-oto-nNYXf9Wy.png    173.77 kB
+dist/public/assets/index-CaH3r7Z2.css        98.59 kB │ gzip:  16.04 kB
+dist/public/assets/react-C6LhzTnE.js        185.71 kB │ gzip:  58.56 kB
+dist/public/assets/vendor-uAm76TrE.js       397.48 kB │ gzip: 116.94 kB
+dist/public/assets/index-jNppJdqZ.js      1,247.34 kB │ gzip: 335.56 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 4.52s
+
+> @oto/pos@0.1.0 build C:\w\admin-operator-switch\apps\pos
+> vite build --config vite.config.ts
+
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 2384 modules transformed.
+[plugin vite:reporter]
+(!) C:/w/admin-operator-switch/apps/pos/src/api/platform.ts is dynamically imported by C:/w/admin-operator-switch/apps/pos/src/api/catalogBridge.ts but also statically imported by C:/w/admin-operator-switch/apps/pos/src/api/catalogBridge.ts, C:/w/admin-operator-switch/apps/pos/src/api/members.ts, C:/w/admin-operator-switch/apps/pos/src/auth/OperatorContext.tsx, C:/w/admin-operator-switch/apps/pos/src/branch/BranchContext.tsx, C:/w/admin-operator-switch/apps/pos/src/components/auth/LockScreen.tsx, C:/w/admin-operator-switch/apps/pos/src/components/book/BookCheckingPayment.tsx, C:/w/admin-operator-switch/apps/pos/src/components/book/BookIdentify.tsx, C:/w/admin-operator-switch/apps/pos/src/components/book/BookVerifyFamily.tsx, C:/w/admin-operator-switch/apps/pos/src/components/history/SaleDetail.tsx, C:/w/admin-operator-switch/apps/pos/src/components/mobile/MobileTill.tsx, C:/w/admin-operator-switch/apps/pos/src/components/mobile/history/MobileHistory.tsx, C:/w/admin-operator-switch/apps/pos/src/components/shared/PricingModeIndicator.tsx, C:/w/admin-operator-switch/apps/pos/src/components/shared/PrinterHealthIndicator.tsx, C:/w/admin-operator-switch/apps/pos/src/components/shared/VerifyTierModal.tsx, C:/w/admin-operator-switch/apps/pos/src/components/till/VisitChildrenModal.tsx, C:/w/admin-operator-switch/apps/pos/src/lib/deferredTierVerification.ts, C:/w/admin-operator-switch/apps/pos/src/lib/demoControls.ts, C:/w/admin-operator-switch/apps/pos/src/lib/displaySession.ts, C:/w/admin-operator-switch/apps/pos/src/lib/themePref.ts, C:/w/admin-operator-switch/apps/pos/src/pages/Book.tsx, C:/w/admin-operator-switch/apps/pos/src/pages/History.tsx, C:/w/admin-operator-switch/apps/pos/src/pages/StationSetup.tsx, C:/w/admin-operator-switch/apps/pos/src/pages/Till.tsx, C:/w/admin-operator-switch/apps/pos/src/station/StationContext.tsx, dynamic import will not move module into another chunk.
+
+rendering chunks...
+computing gzip size...
+dist/public/index.html                                 1.98 kB │ gzip:   0.81 kB
+dist/public/sw.js                                      7.75 kB
+dist/public/assets/inter-cyrillic-DqGufNeO.woff2      18.75 kB
+dist/public/assets/inter-latin-Dx4kXJAl.woff2         48.26 kB
+dist/public/assets/inter-latin-ext-DO1Apj_S.woff2     85.07 kB
+dist/public/assets/logo-oto-nNYXf9Wy.png             173.77 kB
+dist/public/assets/index-CSvdVv6e.css                200.44 kB │ gzip:  29.32 kB
+dist/public/assets/index-LYnQhDk9.js               2,336.32 kB │ gzip: 645.88 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 5.17s
+[console-e2e] making oto_console_e2e_1792969339728 on the isolated test server
+[console-e2e] applying migrations
+
+> oto-platform@0.1.0 db:migrate C:\w\admin-operator-switch
+> pnpm --filter @oto/db migrate
+
+
+> @oto/db@0.1.0 migrate C:\w\admin-operator-switch\packages\db
+> drizzle-kit migrate
+
+No config path provided, using default 'drizzle.config.ts'
+Reading config file 'C:\w\admin-operator-switch\packages\db\drizzle.config.ts'
+Using 'pg' driver for database querying
+[⣷] applying migrations...[⣯] applying migrations...[⣟] applying migrations...[⡿] applying migrations...[⢿] applying migrations...[⣻] applying migrations...[⣽] applying migrations...[⣷] applying migrations...[⣯] applying migrations...[⣟] applying migrations...[⡿] applying migrations...[⢿] applying migrations...[⣻] applying migrations...[⣽] applying migrations...[⣷] applying migrations...[⣯] applying migrations...[⣟] applying migrations...[⡿] applying migrations...[⢿] applying migrations...[⣻] applying migrations...[✓] migrations applied successfully!2026-10-26 06:02:34.871 +07 [93712] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+[console-e2e] seeding (raw seed output omitted)
+[console-e2e] api on 53292, console on 53293
+[WebServer] (node:26112) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 263 tests using 1 worker
+
+(node:94064) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok   1 e2e\access-review.spec.ts:63:1 › Access review shows all six returned lists, wide roles, real sign-in state and flags without write controls or record IDs (825ms)
+  ok   2 e2e\access-review.spec.ts:94:1 › role-read gates the page while the existing account-read People navigation gate remains unchanged (651ms)
+  ok   3 e2e\access-review.spec.ts:108:1 › pending or failed review does not invent six empty lists and retry can show genuine empty results (503ms)
+  ok   4 e2e\access-review.spec.ts:133:1 › a late earlier refresh cannot replace the currently completed review (596ms)
+  ok   5 e2e\access-review.spec.ts:159:1 › a server refusal is shown as an error without presenting a clean access review (599ms)
+  ok   6 e2e\access-review.spec.ts:170:1 › six review cards and long account, role, employee and park names fit a390px phone (561ms)
+  ok   7 e2e\account-theme.spec.ts:60:1 › Console adopts the account dark theme on resume and reload without saving or changing language (574ms)
+  ok   8 e2e\account-theme.spec.ts:75:1 › System follows the device, the sidebar cycles all three choices, and a save retry keeps its action key and language (2.6s)
+  ok   9 e2e\account-theme.spec.ts:108:1 › sign-out releases write-back and the next account adopts its own preference (572ms)
+  ok  10 e2e\account-theme.spec.ts:129:1 › a preference-save401 releases the account before its retry or a signed-out toggle can write (2.2s)
+  ok  11 e2e\account-theme.spec.ts:146:1 › a legacy me response without preferences adopts defensively and still allows an explicit theme-only save (523ms)
+  ok  12 e2e\account-theme.spec.ts:157:1 › a late permissions response cannot adopt or rebind an account after the unauthorized event (575ms)
+  ok  13 e2e\account-theme.spec.ts:180:1 › an expired handoff keeps its existing explanation after the anonymous me401 and leaves theme writes released (542ms)
+  ok  14 e2e\accounts.spec.ts:84:1 › Accounts retains search and the scoped invitation form through the injected host transport (1.2s)
+  ok  15 e2e\accounts.spec.ts:113:1 › a temporary password requires confirmation, stays masked until asked for and is cleared on close (2.3s)
+  ok  16 e2e\accounts.spec.ts:141:1 › phone changes and deactivate/reactivate keep their original confirmations and server targets (2.2s)
+  ok  17 e2e\accounts.spec.ts:167:1 › sessions, shift-token ending and sign-out-everywhere retain the approved device controls (2.4s)
+  ok  18 e2e\accounts.spec.ts:187:1 › loading, failed reads and genuine empty searches never conceal a data-source failure (542ms)
+  ok  19 e2e\accounts.spec.ts:209:1 › a late earlier search cannot replace current results and the Accounts route retains its read guard (654ms)
+  ok  20 e2e\accounts.spec.ts:232:1 › a delayed account action cannot replace another account’s open session or token details (3.9s)
+  ok  21 e2e\accounts.spec.ts:292:1 › only one temporary password can be issued while a previous rotation is pending (2.0s)
+  ok  22 e2e\admin-navigation.spec.ts:7:1 › Admin opens on Overview, and all ten areas work at desktop and phone width (1.5s)
+  ok  23 e2e\admin-navigation.spec.ts:35:1 › old page addresses open their pages; new navigation keeps the page permissions (2.2s)
+  ok  24 e2e\admin-navigation.spec.ts:49:1 › partial access hides areas and child links; the area gate never replaces an existing page guard (879ms)
+  ok  25 e2e\app-access.spec.ts:102:1 › Accounts and App access share the approved Apps dialog and one-action OTO App provisioning (1.3s)
+  ok  26 e2e\app-access.spec.ts:129:1 › existing-user linking and branch changes retain the approved choices and exact seam payloads (1.2s)
+  ok  27 e2e\app-access.spec.ts:150:1 › unlinked OTO App users claim an existing staff sign-in without inviting or changing their app role (1.0s)
+  ok  28 e2e\app-access.spec.ts:169:1 › reading apps and changing app access retain separate permission offers (665ms)
+  ok  29 e2e\app-access.spec.ts:180:1 › late account app and permission reads cannot replace another account’s dialog (1.6s)
+  ok  30 e2e\app-access.spec.ts:198:1 › a delayed mutation refresh cannot replace the next account’s app identity (1.8s)
+  ok  31 e2e\app-access.spec.ts:222:1 › changing an unlinked-user search clears an invisible previous account choice (828ms)
+  ok  32 e2e\app-access.spec.ts:239:1 › late unlinked-user search results cannot replace the current query (1.1s)
+  ok  33 e2e\app-access.spec.ts:256:1 › a failed unlinked-user search never becomes an empty account match (609ms)
+  ok  34 e2e\app-access.spec.ts:267:1 › a failed permission read never becomes a fictional app access state (589ms)
+  ok  35 e2e\app-access.spec.ts:277:1 › unlink confirmation and refreshed role grants explain access that survives the link (2.0s)
+  ok  36 e2e\app-access.spec.ts:293:1 › an account resource 404 keeps its actual reason instead of claiming app linking is undeployed (612ms)
+  ok  37 e2e\app-access.spec.ts:304:1 › a missing app user keeps the real claim error without marking provisioning unavailable (896ms)
+  ok  38 e2e\app-access.spec.ts:323:1 › an UNKNOWN 404 still shows the original missing-route fallback (611ms)
+  ok  39 e2e\booth-setup.spec.ts:74:1 › Booths: changing booth hides the previous slip while the new draft loads (1.0s)
+  ok  40 e2e\booth-setup.spec.ts:104:1 › Voucher types: a 50 THB off type is created, Kids Pizza is linked and worded with no expiry, and a type is archived (1.8s)
+  ok  41 e2e\booth-setup.spec.ts:191:1 › Voucher types: changing what the 100 THB Voucher is worth asks first, “Keep as it is” puts the amount back, and confirming reprices it (1.5s)
+  ok  42 e2e\booth-setup.spec.ts:252:1 › Booths: somebody is added to Booth 1, given a PIN that is never shown again, and taken off (1.4s)
+  ok  43 e2e\booth-setup.spec.ts:294:1 › Booths: the staff session length is saved as 10 hours, is in the review before publishing, and reaches the staff note with the publish (1.6s)
+  ok  44 e2e\booth-setup.spec.ts:365:3 › The Pi booth, set up in the Console › Devices: a booth station is refused without a two-character code prefix, and the api’s own refusal is shown (1.1s)
+  ok  45 e2e\booth-setup.spec.ts:422:3 › The Pi booth, set up in the Console › Booths: the Pi booth’s Screens panel asks for no pairing, while Booth 1 on the virtual box still offers it (902ms)
+  ok  46 e2e\booth-setup.spec.ts:448:3 › The Pi booth, set up in the Console › Booths: a switched-off prize draws no wedge in the preview, and stays in its list as off the wheel (2.0s)
+  ok  47 e2e\booth-setup.spec.ts:499:3 › The Pi booth, set up in the Console › Booths: an archived prize is found under “Show archived prizes” and restored switched off (1.3s)
+  ok  48 e2e\booth-setup.spec.ts:555:1 › Booths: the prize editor’s pointer to the slip’s words opens its voucher type (1.2s)
+  ok  49 e2e\care-print.spec.ts:95:1 › Care, print and staff benefits open their approved native panels and aliases without writes (1.4s)
+  ok  50 e2e\care-print.spec.ts:106:1 › branch offers retain care and template editing but separate operator benefits and physical-print authority (798ms)
+  ok  51 e2e\care-print.spec.ts:123:1 › pricing refusal preserves exact fractions and a successful old response preserves a newer draft (485ms)
+  ok  52 e2e\care-print.spec.ts:135:1 › a policy save cannot dispatch its confirmation continuation after navigation to another native page (426ms)
+  ok  53 e2e\care-print.spec.ts:146:1 › an old-park pricing response cannot replace the currently selected park (424ms)
+  ok  54 e2e\care-print.spec.ts:156:1 › template failure retains its draft, and retry saves content without a print command (486ms)
+  ok  55 e2e\care-print.spec.ts:166:1 › benefit template uncertain retry retains one key and late override A cannot close editor B (835ms)
+  ok  56 e2e\care-print.spec.ts:182:1 › old employee credential metadata cannot start a QR read or populate a newly opened employee dialog (742ms)
+  ok  57 e2e\care-print.spec.ts:193:1 › print destination requires an explicit owned station and sends that choice without changing the session (474ms)
+  ok  58 e2e\care-print.spec.ts:217:1 › a late previous-park station list cannot replace the current park choices or select a station automatically (355ms)
+  ok  59 e2e\care-print.spec.ts:233:1 › print readers without station-read access retain native previews without listing stations or offering a physical print (1.2s)
+  ok  60 e2e\catalogue.spec.ts:112:1 › Catalogue opens the three native approved pages rather than the old POS placeholder (640ms)
+  ok  61 e2e\catalogue.spec.ts:128:1 › branch-scoped tier and shared add-on offers preserve the existing operator-wide authority (832ms)
+  ok  62 e2e\catalogue.spec.ts:153:1 › ticket price edits preserve hidden rules and exact satang through canonical readback and reload (807ms)
+  ok  63 e2e\catalogue.spec.ts:180:1 › a refused ticket or add-on save keeps its native draft and succeeds only after a confirmed retry (1.3s)
+  ok  64 e2e\catalogue.spec.ts:202:1 › late ticket and add-on saves cannot close or erase a newly reopened native draft (1.7s)
+  ok  65 e2e\catalogue.spec.ts:229:1 › operator tier failures retain a new name while original rename proof and default controls remain native (500ms)
+  ok  66 e2e\catalogue.spec.ts:250:1 › the native Add-ons phone card fits and inherited stock-on remains a local placeholder (772ms)
+  ok  67 e2e\catalogue.spec.ts:273:1 › direct Catalogue addresses preserve each existing read gate without catalogue requests (544ms)
+  ok  68 e2e\catalogue.spec.ts:283:1 › a ticket write from the previous page cannot reload over the current Add-ons catalogue (816ms)
+  ok  69 e2e\catalogue.spec.ts:306:1 › a confirmed ticket creation with a failed readback offers only a refresh retry (706ms)
+  ok  70 e2e\catalogue.spec.ts:327:1 › an old failed post-commit read cannot clear a newer successful read after a park round trip (672ms)
+  ok  71 e2e\console-smoke.spec.ts:12:1 › Integrations: settlement import bounds the file and carries its selected park and day (1.1s)
+  ok  72 e2e\console-smoke.spec.ts:89:1 › Booths: Booth 1 at Central Floresta says how many spins it has had today (794ms)
+  ok  73 e2e\console-smoke.spec.ts:117:1 › Branches: both parks are listed (668ms)
+  ok  74 e2e\console-smoke.spec.ts:141:1 › Devices: a box is added by pressing the dialog, and Cancel adds nothing (915ms)
+  ok  75 e2e\console-smoke.spec.ts:184:1 › Devices: a display code is cleared after refusal and claim, and the paired screen can be revoked (1.0s)
+  ok  76 e2e\console-smoke.spec.ts:295:1 › Devices: a display pairing grant for another branch does not offer this park a claim (844ms)
+  ok  77 e2e\console-smoke.spec.ts:319:1 › Devices: display snapshots retain recorded history, empty records and privacy across selections (1.1s)
+  ok  78 e2e\console-smoke.spec.ts:486:1 › Devices: a station-read grant for another park does not expose a display snapshot (876ms)
+  ok  79 e2e\console-smoke.spec.ts:541:1 › Devices: display rule checks keep the live till unchanged and open the separate refusal log (1.1s)
+  ok  80 e2e\console-smoke.spec.ts:670:1 › Devices: a simulated card terminal can be told what to do with the next tender (748ms)
+  ok  81 e2e\console-smoke.spec.ts:707:1 › a wrong password is refused, and the console stays shut (615ms)
+  ok  82 e2e\departments.spec.ts:48:1 › Departments shows current core names, park coverage and returned member counts without write controls (777ms)
+  ok  83 e2e\departments.spec.ts:73:1 › source navigation is explicit, single-flight and retryable without changing the directory (702ms)
+  ok  84 e2e\departments.spec.ts:109:1 › Departments navigation and direct page keep account-read permission and never read without it (576ms)
+  ok  85 e2e\departments.spec.ts:118:1 › pending, failed, reachable-empty and search-empty department reads remain separate and retryable (568ms)
+  ok  86 e2e\departments.spec.ts:144:1 › department search sends the selected query and a late older result cannot replace it (579ms)
+  ok  87 e2e\departments.spec.ts:175:1 › a server permission refusal remains a visible error and cannot become an empty department count (564ms)
+  ok  88 e2e\departments.spec.ts:187:1 › long department and park names and returned counts fit a 390px phone (564ms)
+  ok  89 e2e\employees.spec.ts:62:1 › Employees shows source, park, department, all linked logins and real sign-in timestamps without edit controls (774ms)
+  ok  90 e2e\employees.spec.ts:92:1 › Employees navigation and direct route retain account-read permission and do not read without it (544ms)
+  ok  91 e2e\employees.spec.ts:100:1 › a pending or failed directory stays distinct from empty and retry refreshes the real source (584ms)
+  ok  92 e2e\employees.spec.ts:126:1 › search sends the exact query and an older response cannot replace the selected search (559ms)
+  ok  93 e2e\employees.spec.ts:159:1 › the source button uses an explicitly requested configured handoff and the existing employee deep target (982ms)
+  ok  94 e2e\employees.spec.ts:185:1 › source access and a valid mirrored identifier are required before offering an OTO App action (679ms)
+  ok  95 e2e\employees.spec.ts:201:1 › handoff failures keep the directory visible, suppress duplicate requests and allow a fresh retry (585ms)
+  ok  96 e2e\employees.spec.ts:226:1 › long real-world employee details and multiple sign-ins fit a 390px phone without hiding source or account state (627ms)
+  ok  97 e2e\fleet-test-print.spec.ts:27:1 › the test print names the station’s receipt printer, and the box reports it succeeded (5.2s)
+  ok  98 e2e\menu.spec.ts:90:1 › Catalogue opens all four native menu administration pages with no write on entry (868ms)
+  ok  99 e2e\menu.spec.ts:100:1 › branch readers see native records but operator category, library and inline-group writes stay withheld (975ms)
+  ok 100 e2e\menu.spec.ts:118:1 › native menu edits accept stored fractional costs and inline deltas while preserving translations and inherited defaults (668ms)
+  ok 101 e2e\menu.spec.ts:136:1 › refused category and modifier edits retain drafts and hidden translations until an explicit successful retry (1.3s)
+  ok 102 e2e\menu.spec.ts:153:1 › Merch keeps native drafts, stable size identifiers and barcodes without creating stock writes (760ms)
+  ok 103 e2e\menu.spec.ts:166:1 › an escaped import preview cannot replace a reopened dialog or submit the old file (859ms)
+  ok 104 e2e\menu.spec.ts:185:1 › confirmed creation with a failed canonical refresh offers read Retry without repeating the write (1.0s)
+  ok 105 e2e\menu.spec.ts:198:1 › native export retains the workbook filename and read gates never offer a cost-bearing download (664ms)
+  ok 106 e2e\money.spec.ts:88:1 › Money opens six approved native surfaces and keeps the old voucher type address (1.1s)
+  ok 107 e2e\money.spec.ts:96:1 › branch grants withhold operator edits but retain own-park campaign and settings authority (1.3s)
+  ok 108 e2e\money.spec.ts:115:1 › an unresolved free item in another park leaves unrelated discount controls usable (391ms)
+  ok 109 e2e\money.spec.ts:131:1 › a refused discount rename keeps the draft and never creates its replacement before the old-code step succeeds (406ms)
+  ok 110 e2e\money.spec.ts:144:1 › tender add and blur-rename refusals retain native fields until a confirmed retry (440ms)
+  ok 111 e2e\money.spec.ts:155:1 › tax save refusal cannot report Saved and retry preserves fractions plus the hidden stored-value rule (423ms)
+  ok 112 e2e\money.spec.ts:166:1 › late event save preserves a newer native draft and another park retains its own exact satang (421ms)
+  ok 113 e2e\money.spec.ts:178:1 › old promotional-rule completion cannot close a different native voucher editor (433ms)
+  ok 114 e2e\money.spec.ts:189:1 › uncertain campaign retry reuses its key and a late successful mint preserves a newer draft (478ms)
+  ok 115 e2e\money.spec.ts:205:1 › the isolated server campaign downloads its real CSV through the native browser link (986ms)
+  ok 116 e2e\operations.spec.ts:130:1 › the four native operations pages, their aliases and phone controls open without the POS runtime (2.5s)
+  ok 117 e2e\operations.spec.ts:157:1 › Inventory keeps native item metadata, exact satang and size identity through a refusal and retry (1.1s)
+  ok 118 e2e\operations.spec.ts:174:1 › native stock places create, rename and retire through their own park routes (1.6s)
+  ok 119 e2e\operations.spec.ts:192:1 › Members creates a native phone profile, patches only entered details and retains an edit refused by the server (1.6s)
+  ok 120 e2e\operations.spec.ts:211:1 › Wallet reactivation keeps one native action key on uncertain retry and sends the trimmed reason (442ms)
+  ok 121 e2e\operations.spec.ts:223:1 › unavailable catalogue and tier metadata stay truthful and do not invent fallback configuration (703ms)
+  ok 122 e2e\operations.spec.ts:236:1 › a readable tier list without a default keeps the native first-by-sort-order fallback (624ms)
+  ok 123 e2e\operations.spec.ts:246:1 › Add and cancel invalidate an older member edit without leaving its spinner or opening its late dialog (1.1s)
+  ok 124 e2e\operations.spec.ts:259:1 › a confirmed stock write with a failed readback stays visibly saved and Refresh does not repeat it (627ms)
+  ok 125 e2e\operations.spec.ts:271:1 › editing a wallet key masks its old holder immediately and rejects the late reactivation display (428ms)
+  ok 126 e2e\operations.spec.ts:286:1 › changing park masks old Inventory immediately and a late old-actor create cannot dispatch its profile PATCH (912ms)
+  ok 127 e2e\operations.spec.ts:303:1 › page guards keep their inherited grants and branch stock readers receive no sibling park choice (624ms)
+  ok 128 e2e\operator-switch.spec.ts:131:1 › operator choices use canonical current rather than the first row and keep home identity visible after switching (725ms)
+  ok 129 e2e\operator-switch.spec.ts:146:55 › a missing switch grant offers no operator switch (567ms)
+  ok 130 e2e\operator-switch.spec.ts:146:55 › a own switch grant offers no operator switch (596ms)
+  ok 131 e2e\operator-switch.spec.ts:146:55 › a branch switch grant offers no operator switch (613ms)
+  ok 132 e2e\operator-switch.spec.ts:152:1 › a canonical current operator absent from live choices stays unselected and disabled, without a home fallback (596ms)
+  ok 133 e2e\operator-switch.spec.ts:159:1 › an operator switch masks old controls at PUT dispatch, before the held acknowledgement (547ms)
+  ok 134 e2e\operator-switch.spec.ts:171:52 › a held canonical me response cannot leave home data or an optimistic target active (655ms)
+  ok 135 e2e\operator-switch.spec.ts:171:52 › a held canonical permissions response cannot leave home data or an optimistic target active (756ms)
+  ok 136 e2e\operator-switch.spec.ts:183:1 › an uncertain committed switch with failed canonical reads stays unavailable until Retry confirms B (570ms)
+  ok 137 e2e\operator-switch.spec.ts:195:1 › an operator-list error has Retry and never selects the first option or dispatches a write (586ms)
+  ok 138 e2e\operator-switch.spec.ts:203:1 › an explicit selection refusal preserves its error and cannot claim a confirmed new operator (626ms)
+  ok 139 e2e\operator-switch.spec.ts:211:1 › a late B acknowledgement cannot replace a newer canonical home context after A-B-A (584ms)
+  ok 140 e2e\operator-switch.spec.ts:219:65 › a held old switch cannot revive authority after signed out (604ms)
+  ok 141 e2e\operator-switch.spec.ts:219:65 › a held old switch cannot revive authority after new actor (574ms)
+  ok 142 e2e\operator-switch.spec.ts:236:82 › fresh locked state cannot retain active operator controls (571ms)
+  ok 143 e2e\operator-switch.spec.ts:236:82 › fresh temporary password state cannot retain active operator controls (568ms)
+  ok 144 e2e\operator-switch.spec.ts:236:82 › fresh grant withdrawn state cannot retain active operator controls (558ms)
+  ok 145 e2e\operator-switch.spec.ts:248:1 › an old readonly response released after switching cannot replace the new operator directory (643ms)
+  ok 146 e2e\operator-switch.spec.ts:262:1 › a held old export cannot download after the operator context changes (662ms)
+  ok 147 e2e\operator-switch.spec.ts:276:1 › an old acting-user handoff response cannot navigate after the operator context changes (615ms)
+  ok 148 e2e\operator-switch.spec.ts:296:1 › home and canonical operator controls fit a 390px phone without horizontal overflow (597ms)
+  ok 149 e2e\operator-switch.spec.ts:307:3 › a mutation canonical read replaced by same actor, new session cannot publish its old refusal into the replacement (871ms)
+  ok 150 e2e\operator-switch.spec.ts:307:3 › a mutation canonical read replaced by new actor, new session cannot publish its old refusal into the replacement (765ms)
+  ok 151 e2e\organisation.spec.ts:75:1 › the platform Organisation page offers the approved operator name edit on the existing native row (749ms)
+  ok 152 e2e\organisation.spec.ts:88:1 › returning to Stored hours keeps an opaque legacy value unchanged when a branch name is saved (758ms)
+  ok 153 e2e\organisation.spec.ts:103:1 › an absent older business-day field is left absent during an unrelated name edit (854ms)
+  ok 154 e2e\organisation.spec.ts:114:1 › a delayed save from the first branch cannot close a newly opened second-branch draft (860ms)
+  ok 155 e2e\organisation.spec.ts:134:1 › an invitation replay without a delivery field does not claim an SMS succeeded or failed (716ms)
+  ok 156 e2e\organisation.spec.ts:146:1 › operator archive requires its exact typed name before dispatch and reads back the hidden row (722ms)
+  ok 157 e2e\organisation.spec.ts:160:1 › branch archive requires the current branch name before dispatch and reloads the branch directory (1.0s)
+  ok 158 e2e\organisation.spec.ts:175:1 › direct Organisation addresses keep platform-only Operators and the Holidays permission without reading refused data (699ms)
+  x  159 e2e\organisation.spec.ts:190:1 › Switch here sends one keyed platform UUID and waits for the canonical session before marking the new park active (5.5s)
+(node:93108) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 160 e2e\organisation.spec.ts:212:1 › a branch-switch response from the old account cannot re-read or reseat a newly signed-in account (619ms)
+  ok 161 e2e\organisation.spec.ts:236:1 › Holidays keeps sold dates fixed and reads back the canonical renamed range at its selected park (574ms)
+  ok 162 e2e\organisation.spec.ts:249:1 › a late holiday save cannot replace the newly selected park with the previous park calendar (551ms)
+  ok 163 e2e\organisation.spec.ts:269:1 › the native branch editor and Holidays controls fit a 390px phone (958ms)
+  x  164 e2e\organisation.spec.ts:286:59 › an accepted branch switch removes stale authority while its canonical me read is pending or fails (5.6s)
+(node:88256) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  165 e2e\organisation.spec.ts:286:59 › an accepted branch switch removes stale authority while its canonical permissions read is pending or fails (5.6s)
+(node:16984) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 166 e2e\organisation.spec.ts:308:1 › a completed holiday save cannot erase a different range draft opened while it was pending (634ms)
+  ok 167 e2e\organisation.spec.ts:326:1 › a completed branch creation cannot discard a new form opened after the first form was cancelled (615ms)
+  x  168 e2e\organisation.spec.ts:350:1 › an explicit switch refusal keeps its native error, while an uncertain accepted write removes the old branch authority (5.5s)
+(node:86072) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 169 e2e\overview.spec.ts:112:1 › Overview displays returned totals, selected parks and source freshness on desktop and phone (846ms)
+  ok 170 e2e\overview.spec.ts:144:1 › Overview-only permission shows numbers while source offers and other page guards retain their permissions (748ms)
+  ok 171 e2e\overview.spec.ts:160:1 › a pending or failed summary has no invented figures and can be retried; no parks is a separate empty state (607ms)
+  ok 172 e2e\overview.spec.ts:188:1 › figure actions use the existing source pages and signed-in cross-app destinations (1.6s)
+  ok 173 e2e\overview.spec.ts:236:1 › Overview v2 renders returned aggregate dates, distinct members and unavailable USD on desktop and phone (544ms)
+  ok 174 e2e\overview.spec.ts:260:1 › decision rows distinguish a real zero, missing cash close and unbuilt requests without an overdue-person claim (540ms)
+  x  175 e2e\overview.spec.ts:272:1 › Copy status summary writes the exact current server text to the native clipboard and makes no business request (5.4s)
+(node:31368) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 176 e2e\overview.spec.ts:290:1 › actor/operator A to B to A discards both earlier reads and masks their figures before effect cleanup (842ms)
+  ok 177 e2e\overview.spec.ts:306:1 › grant narrowing drops an obsolete selected park before reading the current default (673ms)
+  ok 178 e2e\overview.spec.ts:322:3 › a pending source handoff cannot navigate after actor-ABA (687ms)
+  ok 179 e2e\overview.spec.ts:322:3 › a pending source handoff cannot navigate after lock (686ms)
+  ok 180 e2e\platform.spec.ts:145:3 › native Platform pages › Platform navigation offers all six native sections and keeps the old Operators address (719ms)
+  ok 181 e2e\platform.spec.ts:158:5 › native Platform pages › Operators refuses an ordinary operator administrator before its page request (498ms)
+  ok 182 e2e\platform.spec.ts:158:5 › native Platform pages › System roles refuses an ordinary operator administrator before its page request (496ms)
+  ok 183 e2e\platform.spec.ts:158:5 › native Platform pages › Platform alerts refuses an ordinary operator administrator before its page request (481ms)
+  ok 184 e2e\platform.spec.ts:158:5 › native Platform pages › Platform jobs refuses an ordinary operator administrator before its page request (522ms)
+  ok 185 e2e\platform.spec.ts:158:5 › native Platform pages › Environment refuses an ordinary operator administrator before its page request (535ms)
+  ok 186 e2e\platform.spec.ts:158:5 › native Platform pages › Test controls refuses an ordinary operator administrator before its page request (533ms)
+  ok 187 e2e\platform.spec.ts:167:3 › native Platform pages › a system role is selected by provenance and its catalogue never opens a role editor or holder lookup (574ms)
+  ok 188 e2e\platform.spec.ts:181:3 › native Platform pages › a platform caller still needs each page’s own permission (1.1s)
+  ok 189 e2e\platform.spec.ts:191:5 › native Platform pages › Platform alerts does not offer a global read on only a branch health grant (554ms)
+  ok 190 e2e\platform.spec.ts:191:5 › native Platform pages › Platform jobs does not offer a global read on only a branch health grant (588ms)
+  ok 191 e2e\platform.spec.ts:191:5 › native Platform pages › Environment does not offer a global read on only a branch health grant (589ms)
+  ok 192 e2e\platform.spec.ts:205:3 › native Platform pages › alerts preserve acknowledged open rows and use server pagination without an action write (587ms)
+  ok 193 e2e\platform.spec.ts:221:3 › native Platform pages › jobs show the persisted unknown and waiting state without starting or repairing a job (594ms)
+  ok 194 e2e\platform.spec.ts:231:3 › native Platform pages › environment renders only the names and presence metadata, including on a phone (561ms)
+  ok 195 e2e\platform.spec.ts:247:3 › native Platform pages › a failed register read stays a failure until a deliberate successful retry (496ms)
+  ok 196 e2e\platform.spec.ts:259:3 › native Platform pages › test controls require both the server availability offer and the native manage permission (630ms)
+  ok 197 e2e\platform.spec.ts:268:3 › native Platform pages › the declared local test-control key is sent once and a late result is discarded after authority loss (560ms)
+  ok 198 e2e\platform.spec.ts:289:5 › native Platform pages › a late read cannot repopulate the page after actor authority changes (527ms)
+  ok 199 e2e\platform.spec.ts:289:5 › native Platform pages › a late read cannot repopulate the page after operator authority changes (562ms)
+  ok 200 e2e\platform.spec.ts:289:5 › native Platform pages › a late read cannot repopulate the page after branch authority changes (531ms)
+  ok 201 e2e\platform.spec.ts:289:5 › native Platform pages › a late read cannot repopulate the page after grant authority changes (516ms)
+  ok 202 e2e\platform.spec.ts:289:5 › native Platform pages › a late read cannot repopulate the page after platform authority changes (535ms)
+  x  203 e2e\platform.spec.ts:289:5 › native Platform pages › a late read cannot repopulate the page after inactive authority changes (15.5s)
+(node:77260) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 204 e2e\platform.spec.ts:289:5 › native Platform pages › a late read cannot repopulate the page after locked authority changes (606ms)
+  ok 205 e2e\platform.spec.ts:289:5 › native Platform pages › a late read cannot repopulate the page after password authority changes (523ms)
+  ok 206 e2e\platform.spec.ts:331:3 › native Platform pages › an A-to-B-to-A authority round trip still rejects the first A response (586ms)
+  ok 207 e2e\platform.spec.ts:360:5 › native Platform pages › alerts mask the previous answer before dispatching a new filter query (681ms)
+  ok 208 e2e\platform.spec.ts:360:5 › native Platform pages › alerts mask the previous answer before dispatching a new page query (527ms)
+  ok 209 e2e\read-failures.spec.ts:31:1 › Health: a failed /ops/health is not drawn as "Nothing needs you right now" (687ms)
+  ok 210 e2e\read-failures.spec.ts:39:1 › Failures: a failed /ops/failures is not drawn as "Nothing failed in the last 24 hours" (677ms)
+  ok 211 e2e\read-failures.spec.ts:50:1 › Failures rail: a failed /ops/quarantine is not drawn as "Nothing is waiting on a decision" (652ms)
+  ok 212 e2e\read-failures.spec.ts:63:1 › Devices: a failed box read is not drawn as "0 boxes · 0 online" (730ms)
+  ok 213 e2e\read-failures.spec.ts:74:1 › Health: before /ops/health first answers, Alerts says it is loading, not all-clear (714ms)
+  ok 214 e2e\read-failures.spec.ts:92:1 › Quarantine list: a failed read is not drawn as "Nothing is waiting on a decision" (680ms)
+  ok 215 e2e\read-failures.spec.ts:105:1 › Devices: an account refused the box read (403) sees no box count, and the station count still comes from its own read (773ms)
+  ok 216 e2e\read-failures.spec.ts:128:1 › Failures: the command bar counts the groups as a floor while another page remains (716ms)
+  ok 217 e2e\reports.spec.ts:110:1 › the five native reports and old Booth report address render canonical read-only answers (1.2s)
+  ok 218 e2e\reports.spec.ts:121:1 › native Sales CSV keeps integer-satang figures and its current business-date filename (448ms)
+  ok 219 e2e\reports.spec.ts:130:1 › pending new-park Sales hides old rows and disables the relabelled export until its own answer arrives (808ms)
+  ok 220 e2e\reports.spec.ts:142:1 › late Sales data from a previous signed-in actor cannot reappear under the next actor (487ms)
+  ok 221 e2e\reports.spec.ts:153:1 › Tax grouping and native category/payment narrowing export only matching receipts with formula-safe names (1.7s)
+  ok 222 e2e\reports.spec.ts:163:1 › Discounts does not mix old transaction rows with a new summary and shows the real refused-read error (836ms)
+  ok 223 e2e\reports.spec.ts:173:1 › Wallet preserves lifetime promo counters, ranged value and separate foregone revenue and exports its full ledger read (478ms)
+  ok 224 e2e\reports.spec.ts:185:1 › report permissions refuse direct addresses without data reads and branch readers never gain a sibling option (629ms)
+  ok 225 e2e\reports.spec.ts:197:1 › Radar stays gated on the Reports landing and issues its handoff only after an explicit click (417ms)
+  ok 226 e2e\reports.spec.ts:205:1 › native report filters and long-name tables remain bounded on a 390px phone (1.1s)
+  ok 227 e2e\reports.spec.ts:217:1 › analytics at the current park does not inherit a branch-directory requirement held only at another park (793ms)
+  ok 228 e2e\reports.spec.ts:229:1 › an analytics-only reader starts the month on the canonical trading day before a nondefault day start (425ms)
+  ok 229 e2e\roles.spec.ts:95:1 › the role catalogue speaks in sentences and reverse lookup shows the server’s visible people and scopes (601ms)
+  x  230 e2e\roles.spec.ts:114:1 › the full permission catalogue and long park scopes remain usable on a phone (5.3s)
+(node:66476) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 231 e2e\roles.spec.ts:147:1 › the lifted branch grant and removal both require canonical previews before writing (2.3s)
+  ok 232 e2e\roles.spec.ts:180:1 › a refused or pending preview cannot save a role change (839ms)
+  ok 233 e2e\roles.spec.ts:198:1 › an earlier account permission read cannot replace a different account’s drawer (1.7s)
+  ok 234 e2e\roles.spec.ts:217:1 › a canceled earlier preview cannot authorize a new scope choice (2.3s)
+  ok 235 e2e\roles.spec.ts:242:1 › role-read and assignment permissions retain their separate guards and platform scope is explicit (1.0s)
+  ok 236 e2e\roles.spec.ts:258:1 › failed catalogue, reverse lookup and account reads stay visibly failed instead of empty (752ms)
+  ok 237 e2e\roles.spec.ts:279:1 › the server may report no effective change and a pending save cannot be submitted twice (1.4s)
+  ok 238 e2e\staff.spec.ts:83:1 › Staff opens its four read-only headlines at the existing area address with returned source dates (613ms)
+  ok 239 e2e\staff.spec.ts:104:1 › both Staff permissions gate the direct page and prevent all summary or handoff requests (716ms)
+  ok 240 e2e\staff.spec.ts:117:1 › failed summary read is retryable and never presented as a zero or an empty successful source (585ms)
+  ok 241 e2e\staff.spec.ts:131:1 › zero, forbidden and unavailable are distinct and payroll never borrows another headline authority (537ms)
+  ok 242 e2e\staff.spec.ts:148:1 › park A to B to A clears old figures and refuses a delayed B response (784ms)
+  ok 243 e2e\staff.spec.ts:175:1 › Refresh clears the old figures until its fresh canonical answer arrives (553ms)
+  ok 244 e2e\staff.spec.ts:191:1 › each source button issues a fresh acting-user handoff only to its fixed native destination (2.0s)
+  ok 245 e2e\staff.spec.ts:209:1 › Staff cards, long park/company names and source actions fit at phone width without business controls (549ms)
+  ok 246 e2e\staff.spec.ts:226:1 › a narrowed authority resets an explicit unreachable park and recovers the remaining reachable park (631ms)
+  ok 247 e2e\teams-routing.spec.ts:148:1 › canonical team details edit without changing identity or requiring another directory permission (704ms)
+  ok 248 e2e\teams-routing.spec.ts:164:1 › rule creation preserves signed priority, custom language, nullable wildcard and explicit people (609ms)
+  ok 249 e2e\teams-routing.spec.ts:186:1 › archiving retains rule history and creates no team deletion or thread reassignment request (792ms)
+  ok 250 e2e\teams-routing.spec.ts:200:1 › missing canonical identities are the only team creates offered and branch-only routing needs no Channels navigation grant (827ms)
+  ok 251 e2e\teams-routing.spec.ts:219:1 › read refusal and direct-address denial never become an empty successful editor (500ms)
+  ok 252 e2e\teams-routing.spec.ts:232:1 › old lists disappear immediately on filter refresh and late A-to-B-to-A responses cannot overwrite current rows (424ms)
+  ok 253 e2e\teams-routing.spec.ts:261:1 › uncertain saves freeze their payload and key through duplicate presses and an in-flight retry (614ms)
+  ok 254 e2e\teams-routing.spec.ts:284:1 › a definite save refusal permits correction with a new intent and stale authority save completion cannot close a current editor (881ms)
+  ok 255 e2e\teams-routing.spec.ts:308:1 › Channels settings respect their own gates and a deliberate duplicate press issues only one acting-user handoff (339ms)
+2026-10-26 06:07:16.671 +07 [84304] LOG:  checkpoint starting: time
+
+  ok 256 e2e\teams-routing.spec.ts:327:1 › a late Inbox handoff cannot navigate after an actor and grant A-to-B-to-A lifetime (422ms)
+  ok 257 e2e\teams-routing.spec.ts:349:1 › team and rule controls remain bounded on a 390px phone with long native labels (1.3s)
+(node:87064) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 258 e2e\pos-admin-redirect.spec.ts:55:1 › a bookmarked POS admin address reaches the native Admin page as the same actor and park (1.2s)
+  ok 259 e2e\pos-admin-redirect.spec.ts:74:1 › signed-out POS bookmarks retain sign-in and then open Admin without choosing a station (1.6s)
+  ok 260 e2e\pos-admin-redirect.spec.ts:91:1 › the source withholds automatic issuance when the returned app-access offer is absent (894ms)
+  ok 261 e2e\pos-admin-redirect.spec.ts:108:1 › a controlled handoff refusal remains readable at phone width and only an explicit retry makes a real arrival (1.4s)
+  ok 262 e2e\pos-admin-redirect.spec.ts:130:1 › a phone bookmark change invalidates the old real issued response before the current request opens Admin (1.3s)
+  ok 263 e2e\pos-admin-redirect.spec.ts:160:1 › the existing print-template kind is carried to its native Admin editor and close removes that query (1.5s)
+2026-10-26 06:07:28.877 +07 [37704] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+2026-10-26 06:07:28.877 +07 [18168] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+2026-10-26 06:07:28.877 +07 [39028] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+2026-10-26 06:07:28.877 +07 [92940] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+2026-10-26 06:07:28.877 +07 [77988] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+2026-10-26 06:07:28.878 +07 [74696] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+2026-10-26 06:07:28.878 +07 [69108] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+2026-10-26 06:07:28.878 +07 [86688] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+
+
+  1) e2e\organisation.spec.ts:190:1 › Switch here sends one keyed platform UUID and waits for the canonical session before marking the new park active
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: getByText('Active', { exact: true }).locator('..')
+    Expected substring: "ZZ TEST Central"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toContainText" getByText('Active', { exact: true }).locator('..') with timeout 5000ms
+      - waiting for getByText('Active', { exact: true }).locator('..')
+
+
+      203 |   await expect.poll(() => puts.length).toBe(1);
+      204 |   expect(puts[0]).toEqual({ body: { branchId: OTHER_PARK }, key: expect.stringMatching(/^[0-9a-f-]{36}$/i) });
+    > 205 |   await expect(page.getByText('Active', { exact: true }).locator('..')).toContainText('ZZ TEST Central');
+          |                                                                         ^
+      206 |   release();
+      207 |   await expect(page.getByText('Active', { exact: true }).locator('..')).toContainText('ZZ TEST Other park');
+      208 |   expect(calls.filter(call => call.path === '/me')).toHaveLength(2);
+        at C:\w\admin-operator-switch\apps\console\e2e\organisation.spec.ts:205:73
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\organisation-Switch-here-s-1ee82-marking-the-new-park-active\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\organisation-Switch-here-s-1ee82-marking-the-new-park-active\error-context.md
+
+  2) e2e\organisation.spec.ts:286:59 › an accepted branch switch removes stale authority while its canonical me read is pending or fails
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: locator('input[type="password"]')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" locator('input[type="password"]') with timeout 5000ms
+      - waiting for locator('input[type="password"]')
+
+
+      301 |     await expect(page.getByRole('heading', { name: 'Registered branches', exact: true })).toHaveCount(0);
+      302 |   } finally { release(); }
+    > 303 |   await expect(page.locator('input[type="password"]')).toBeVisible();
+          |                                                        ^
+      304 |   await expect(page.getByRole('button', { name: 'Sign in', exact: true })).toBeVisible();
+      305 |   expect(calls.filter(call => call.method === 'POST' && call.path.endsWith('/clone'))).toEqual([]);
+      306 | });
+        at C:\w\admin-operator-switch\apps\console\e2e\organisation.spec.ts:303:56
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\organisation-an-accepted-b-ec341-me-read-is-pending-or-fails\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\organisation-an-accepted-b-ec341-me-read-is-pending-or-fails\error-context.md
+
+  3) e2e\organisation.spec.ts:286:59 › an accepted branch switch removes stale authority while its canonical permissions read is pending or fails
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: locator('input[type="password"]')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" locator('input[type="password"]') with timeout 5000ms
+      - waiting for locator('input[type="password"]')
+
+
+      301 |     await expect(page.getByRole('heading', { name: 'Registered branches', exact: true })).toHaveCount(0);
+      302 |   } finally { release(); }
+    > 303 |   await expect(page.locator('input[type="password"]')).toBeVisible();
+          |                                                        ^
+      304 |   await expect(page.getByRole('button', { name: 'Sign in', exact: true })).toBeVisible();
+      305 |   expect(calls.filter(call => call.method === 'POST' && call.path.endsWith('/clone'))).toEqual([]);
+      306 | });
+        at C:\w\admin-operator-switch\apps\console\e2e\organisation.spec.ts:303:56
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\organisation-an-accepted-b-c1c1d-ns-read-is-pending-or-fails\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\organisation-an-accepted-b-c1c1d-ns-read-is-pending-or-fails\error-context.md
+
+  4) e2e\organisation.spec.ts:350:1 › an explicit switch refusal keeps its native error, while an uncertain accepted write removes the old branch authority
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText('ZZ TEST no access at selected park', { exact: true })
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByText('ZZ TEST no access at selected park', { exact: true }) with timeout 5000ms
+      - waiting for getByText('ZZ TEST no access at selected park', { exact: true })
+
+
+      358 |   await page.goto('/organisation/branches');
+      359 |   await page.getByRole('button', { name: 'Switch here', exact: true }).click();
+    > 360 |   await expect(page.getByText('ZZ TEST no access at selected park', { exact: true })).toBeVisible();
+          |                                                                                       ^
+      361 |   await expect(page.getByText('Active', { exact: true }).locator('..')).toContainText('ZZ TEST Central');
+      362 |   await page.getByRole('button', { name: 'Switch here', exact: true }).click();
+      363 |   await expect.poll(() => state.branchId).toBe(OTHER_PARK);
+        at C:\w\admin-operator-switch\apps\console\e2e\organisation.spec.ts:360:87
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\organisation-an-explicit-s-fbf4f-es-the-old-branch-authority\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\organisation-an-explicit-s-fbf4f-es-the-old-branch-authority\error-context.md
+
+  5) e2e\overview.spec.ts:272:1 › Copy status summary writes the exact current server text to the native clipboard and makes no business request
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+    Call Log:
+    - Timeout 5000ms exceeded while waiting on the predicate
+
+      279 |   const expected = snapshot().statusSummary;
+      280 |   // Return only a boolean: a failed copy must not reveal the machine's unrelated clipboard.
+    > 281 |   await expect.poll(() => page.evaluate(async text => (await navigator.clipboard.readText()) === text, expected)).toBe(true);
+          |                                                                                                                   ^
+      282 |   await expect(page.getByText('Status summary copied.', { exact: true })).toBeVisible();
+      283 |   const picker = page.getByRole('combobox', { name: 'Park', exact: true }); await picker.selectOption(parks[1].id);
+      284 |   await expect(page.getByRole('article', { name: 'Revenue today', exact: true })).toContainText('4,321');
+        at C:\w\admin-operator-switch\apps\console\e2e\overview.spec.ts:281:115
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\overview-Copy-status-summa-882e3-d-makes-no-business-request\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\overview-Copy-status-summa-882e3-d-makes-no-business-request\error-context.md
+
+  6) e2e\platform.spec.ts:289:5 › native Platform pages › a late read cannot repopulate the page after inactive authority changes
+
+    TimeoutError: page.waitForResponse: Timeout 15000ms exceeded while waiting for event "response"
+
+      125 |
+      126 | async function freshAuthority(page: Page) {
+    > 127 |   const loaded = page.waitForResponse((response) => new URL(response.url()).pathname === '/api/me/permissions');
+          |                       ^
+      128 |   await page.evaluate(() => window.dispatchEvent(new Event('oto:session-locked')));
+      129 |   await loaded;
+      130 |   await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+        at freshAuthority (C:\w\admin-operator-switch\apps\console\e2e\platform.spec.ts:127:23)
+        at C:\w\admin-operator-switch\apps\console\e2e\platform.spec.ts:311:13
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\platform-native-Platform-p-31646--inactive-authority-changes\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\platform-native-Platform-p-31646--inactive-authority-changes\error-context.md
+
+  7) e2e\roles.spec.ts:114:1 › the full permission catalogue and long park scopes remain usable on a phone
+
+    Error: expect(locator).toHaveCount(expected) failed
+
+    Locator:  getByRole('combobox', { name: 'Permission', exact: true }).getByRole('option')
+    Expected: 138
+    Received: 139
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveCount" getByRole('combobox', { name: 'Permission', exact: true }).getByRole('option') with timeout 5000ms
+      - waiting for getByRole('combobox', { name: 'Permission', exact: true }).getByRole('option')
+        2 × locator resolved to 0 elements
+          - unexpected value "0"
+        12 × locator resolved to 139 elements
+           - unexpected value "139"
+
+
+      129 |   await page.goto('/people/roles');
+      130 |   const picker = page.getByRole('combobox', { name: 'Permission', exact: true });
+    > 131 |   await expect(picker.getByRole('option')).toHaveCount(138);
+          |                                            ^
+      132 |   await picker.selectOption(longest.permission);
+      133 |   await expect(picker).toHaveValue(longest.permission);
+      134 |   await expect(page.getByRole('list', { name: 'Permission holders', exact: true })).toContainText(scopeName);
+        at C:\w\admin-operator-switch\apps\console\e2e\roles.spec.ts:131:44
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\roles-the-full-permission--7fc2e-es-remain-usable-on-a-phone\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\roles-the-full-permission--7fc2e-es-remain-usable-on-a-phone\error-context.md
+
+  7 failed
+    e2e\organisation.spec.ts:190:1 › Switch here sends one keyed platform UUID and waits for the canonical session before marking the new park active
+    e2e\organisation.spec.ts:286:59 › an accepted branch switch removes stale authority while its canonical me read is pending or fails
+    e2e\organisation.spec.ts:286:59 › an accepted branch switch removes stale authority while its canonical permissions read is pending or fails
+    e2e\organisation.spec.ts:350:1 › an explicit switch refusal keeps its native error, while an uncertain accepted write removes the old branch authority
+    e2e\overview.spec.ts:272:1 › Copy status summary writes the exact current server text to the native clipboard and makes no business request
+    e2e\platform.spec.ts:289:5 › native Platform pages › a late read cannot repopulate the page after inactive authority changes
+    e2e\roles.spec.ts:114:1 › the full permission catalogue and long park scopes remain usable on a phone
+  256 passed (4.8m)
+2026-10-26 06:07:29.588 +07 [84304] LOG:  checkpoint complete: wrote 1882 buffers (11.5%); 0 WAL file(s) added, 0 removed, 2 recycled; write=12.344 s, sync=0.559 s, total=12.917 s; sync files=1865, longest=0.002 s, average=0.001 s; distance=31421 kB, estimate=31421 kB; lsn=0/343EF70, redo lsn=0/3427830
+
+2026-10-26 06:07:29.602 +07 [84304] LOG:  checkpoint starting: immediate force wait
+
+2026-10-26 06:07:29.624 +07 [84304] LOG:  checkpoint complete: wrote 2 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.009 s, sync=0.003 s, total=0.023 s; sync files=2, longest=0.002 s, average=0.002 s; distance=93 kB, estimate=28289 kB; lsn=0/343F020, redo lsn=0/343EFE8
+
+[console-e2e] dropped oto_console_e2e_1792969339728
+2026-10-26 06:07:29.833 +07 [84304] LOG:  checkpoint starting: immediate force wait
+
+2026-10-26 06:07:29.841 +07 [84304] LOG:  checkpoint complete: wrote 2 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.002 s, sync=0.002 s, total=0.008 s; sync files=2, longest=0.001 s, average=0.001 s; distance=1 kB, estimate=25460 kB; lsn=0/343F520, redo lsn=0/343F4E8

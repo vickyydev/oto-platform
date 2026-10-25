@@ -1,0 +1,302 @@
+
+> @oto/api@0.1.0 test C:\w\admin-operator-switch\apps\api
+> vitest run --pool=forks "test/operator-switch-handoff-review.test.ts"
+
+
+ RUN  v3.2.7 C:/w/admin-operator-switch/apps/api
+
+stdout | test/operator-switch-handoff-review.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/operator-switch-handoff-review.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-NNtSAy ... ok
+creating subdirectories ...
+
+stdout | test/operator-switch-handoff-review.test.ts
+ok
+
+
+stdout | test/operator-switch-handoff-review.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ...
+
+stdout | test/operator-switch-handoff-review.test.ts
+100
+selecting default shared_buffers ...
+
+stdout | test/operator-switch-handoff-review.test.ts
+128MB
+selecting default time zone ...
+
+stdout | test/operator-switch-handoff-review.test.ts
+Asia/Bangkok
+creating configuration files ...
+
+stdout | test/operator-switch-handoff-review.test.ts
+ok
+running bootstrap script ...
+
+stdout | test/operator-switch-handoff-review.test.ts
+ok
+
+
+stdout | test/operator-switch-handoff-review.test.ts
+performing post-bootstrap initialization ...
+
+stdout | test/operator-switch-handoff-review.test.ts
+ok
+syncing data to disk ...
+
+stdout | test/operator-switch-handoff-review.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\w^\admin^-operator^-switch^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-NNtSAy^" -l logfile start
+
+
+
+stdout | test/operator-switch-handoff-review.test.ts
+2026-10-26 04:27:59.974 +07 [90708] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/operator-switch-handoff-review.test.ts
+2026-10-26 04:27:59.979 +07 [90708] LOG:  listening on IPv6 address "::1", port 55202
+
+
+stdout | test/operator-switch-handoff-review.test.ts
+2026-10-26 04:27:59.979 +07 [90708] LOG:  listening on IPv4 address "127.0.0.1", port 55202
+
+
+stdout | test/operator-switch-handoff-review.test.ts
+2026-10-26 04:28:00.042 +07 [59944] LOG:  database system was shut down at 2026-10-26 04:27:57 +07
+
+
+stdout | test/operator-switch-handoff-review.test.ts
+2026-10-26 04:28:00.082 +07 [90708] LOG:  database system is ready to accept connections
+
+
+stdout | test/operator-switch-handoff-review.test.ts
+2026-10-26 04:28:07.711 +07 [66140] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+
+stdout | test/operator-switch-handoff-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/operator-switch-handoff-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:86360) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/operator-switch-handoff-review.test.ts
+2026-10-26 04:28:17.954 +07 [91064] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/operator-switch-handoff-review.test.ts
+2026-10-26 04:28:17.977 +07 [91064] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.005 s, sync=0.006 s, total=0.024 s; sync files=5, longest=0.002 s, average=0.001 s; distance=25706 kB, estimate=25706 kB; lsn=0/2E929D8, redo lsn=0/2E929A0
+
+
+ ❯ test/operator-switch-handoff-review.test.ts (17 tests | 9 failed) 26529ms
+   × SCRUM-640 native handoff context house review > R1 [critical] a fresh B handoff exchanges as B while the account and employee remain at home A 230ms
+     → expected { accepted: true, …(7) } to match object { accepted: true, …(5) }
+(2 matching properties omitted from actual)
+   × SCRUM-640 native handoff context house review > R2 [critical] minting at A then switching to B invalidates the original handoff and permanently consumes its claim 130ms
+     → expected { accepted: true, …(7) } to match object { accepted: false, statusCode: 401 }
+(7 matching properties omitted from actual)
+   × SCRUM-640 native handoff context house review > R3 [critical] B to A to B cannot revive a handoff from the original B revision 138ms
+     → expected { accepted: true, …(7) } to match object { accepted: false, statusCode: 401 }
+(7 matching properties omitted from actual)
+   ✓ SCRUM-640 native handoff context house review > R4 [high] the fresh native app cookie sees only B branches while /me still names home account A 160ms
+   × SCRUM-640 native handoff context house review > R5 [critical] rejects B after withdrawn switch permission rather than falling back to home authority 117ms
+     → expected { accepted: true, …(7) } to match object { accepted: false, statusCode: 401 }
+(7 matching properties omitted from actual)
+   × SCRUM-640 native handoff context house review > R5 [critical] rejects B after archived switch assignment rather than falling back to home authority 120ms
+     → expected { accepted: true, …(7) } to match object { accepted: false, statusCode: 401 }
+(7 matching properties omitted from actual)
+   × SCRUM-640 native handoff context house review > R5 [critical] rejects B after archived target rather than falling back to home authority 131ms
+     → expected { accepted: true, …(7) } to match object { accepted: false, statusCode: 401 }
+(7 matching properties omitted from actual)
+   ✓ SCRUM-640 native handoff context house review > R6 [high] retains native revoked liveness refusal after mint 114ms
+   ✓ SCRUM-640 native handoff context house review > R6 [high] retains native expired liveness refusal after mint 110ms
+   ✓ SCRUM-640 native handoff context house review > R6 [high] retains native inactive account liveness refusal after mint 107ms
+   ✓ SCRUM-640 native handoff context house review > R7 [high] preserves existing lock/password exchange flags at override=false; mint and business access still refuse 149ms
+   × SCRUM-640 native handoff context house review > R7 [high] preserves existing lock/password exchange flags at override=true; mint and business access still refuse 104ms
+     → expected { accepted: true, …(7) } to match object { accepted: true, …(3) }
+(4 matching properties omitted from actual)
+   ✓ SCRUM-640 native handoff context house review > R8 [high] home single-use/origin/audience controls stay unchanged and no public claims are added 129ms
+   × SCRUM-640 native handoff context house review > R9 [critical] foreign-effective OTO refuses before role/link/provisioning writes, linked=true 181ms
+     → expected { refused: false, …(2) } to deeply equal { refused: true, …(2) }
+   × SCRUM-640 native handoff context house review > R9 [critical] foreign-effective OTO refuses before role/link/provisioning writes, linked=false 125ms
+     → expected { refused: false, …(2) } to deeply equal { refused: true, …(2) }
+   ✓ SCRUM-640 native handoff context house review > R10 [high] home OTO staff still resolves its actual identity and Q14 raw-role policy 124ms
+   ✓ SCRUM-640 native handoff context house review > R10 [high] home OTO advisor still resolves its actual identity and Q14 raw-role policy 130ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 9 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/operator-switch-handoff-review.test.ts > SCRUM-640 native handoff context house review > R1 [critical] a fresh B handoff exchanges as B while the account and employee remain at home A
+AssertionError: expected { accepted: true, …(7) } to match object { accepted: true, …(5) }
+(2 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+    "accepted": true,
+    "accountId": "01a174f6-d3f4-7366-a9ba-6d10b7d9a308",
+    "branchId": null,
+    "cookieMatches": true,
+-   "operatorId": "01a174f6-d3f4-7366-a9ba-6d0d98842234",
++   "operatorId": "01a174f6-d3f4-7366-a9ba-6d0cacd11abd",
+    "sessionId": "01a174f6-d482-7a35-bd2f-447425ece407",
+  }
+
+ ❯ test/operator-switch-handoff-review.test.ts:111:20
+    109|   it('R1 [critical] a fresh B handoff exchanges as B while the account…
+    110|     await move(); const issued = await mint(), result = await consume(…
+    111|     expect(result).toMatchObject({ accepted: true, accountId: f.actor,…
+       |                    ^
+    112|     expect(await homeIdentity()).toEqual({ operatorId: f.home, employe…
+    113|     expect(await spent(issued.claims.jti)).toEqual({ consumed: true, s…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/9]⎯
+
+ FAIL  test/operator-switch-handoff-review.test.ts > SCRUM-640 native handoff context house review > R2 [critical] minting at A then switching to B invalidates the original handoff and permanently consumes its claim
+AssertionError: expected { accepted: true, …(7) } to match object { accepted: false, statusCode: 401 }
+(7 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "accepted": false,
+-   "statusCode": 401,
++   "accepted": true,
+  }
+
+ ❯ test/operator-switch-handoff-review.test.ts:117:41
+    115|   it('R2 [critical] minting at A then switching to B invalidates the o…
+    116|     const issued = await mint(); await move();
+    117|     expect(await consume(issued.token)).toMatchObject({ accepted: fals…
+       |                                         ^
+    118|     expect(await spent(issued.claims.jti)).toEqual({ consumed: true, s…
+    119|     expect(await consume(issued.token)).toMatchObject({ accepted: fals…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/9]⎯
+
+ FAIL  test/operator-switch-handoff-review.test.ts > SCRUM-640 native handoff context house review > R3 [critical] B to A to B cannot revive a handoff from the original B revision
+AssertionError: expected { accepted: true, …(7) } to match object { accepted: false, statusCode: 401 }
+(7 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "accepted": false,
+-   "statusCode": 401,
++   "accepted": true,
+  }
+
+ ❯ test/operator-switch-handoff-review.test.ts:123:38
+    121|   it('R3 [critical] B to A to B cannot revive a handoff from the origi…
+    122|     await move(); const old = await mint(); await move(null, 1); await…
+    123|     expect(await consume(old.token)).toMatchObject({ accepted: false, …
+       |                                      ^
+    124|     const fresh = await mint(); expect(await consume(fresh.token)).toM…
+    125|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/9]⎯
+
+ FAIL  test/operator-switch-handoff-review.test.ts > SCRUM-640 native handoff context house review > R5 [critical] rejects B after withdrawn switch permission rather than falling back to home authority
+ FAIL  test/operator-switch-handoff-review.test.ts > SCRUM-640 native handoff context house review > R5 [critical] rejects B after archived switch assignment rather than falling back to home authority
+ FAIL  test/operator-switch-handoff-review.test.ts > SCRUM-640 native handoff context house review > R5 [critical] rejects B after archived target rather than falling back to home authority
+AssertionError: expected { accepted: true, …(7) } to match object { accepted: false, statusCode: 401 }
+(7 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "accepted": false,
+-   "statusCode": 401,
++   "accepted": true,
+  }
+
+ ❯ test/operator-switch-handoff-review.test.ts:142:43
+    140|       if (kind === 'archived switch assignment') await ctx.db.update(r…
+    141|       if (kind === 'archived target') await ctx.db.update(operator).se…
+    142|       expect(await consume(issued.token)).toMatchObject({ accepted: fa…
+       |                                           ^
+    143|       expect(await homeIdentity()).toEqual({ operatorId: f.home, emplo…
+    144|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/9]⎯
+
+ FAIL  test/operator-switch-handoff-review.test.ts > SCRUM-640 native handoff context house review > R7 [high] preserves existing lock/password exchange flags at override=true; mint and business access still refuse
+AssertionError: expected { accepted: true, …(7) } to match object { accepted: true, …(3) }
+(4 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+    "accepted": true,
+    "mustChangePassword": false,
+-   "operatorId": "01a174f6-d9d6-7804-af4b-521ad9981a75",
++   "operatorId": "01a174f6-d9d6-7804-af4b-52195a3e3155",
+    "sessionLocked": true,
+  }
+
+ ❯ test/operator-switch-handoff-review.test.ts:155:41
+    153|     if (overridden) await move(); const locked = await mint();
+    154|     await ctx.db.update(session).set({ lockedAt: new Date() }).where(e…
+    155|     expect(await consume(locked.token)).toMatchObject({ accepted: true…
+       |                                         ^
+    156|     expect((await mintResponse()).statusCode).toBe(423);
+    157|     expect((await ctx.app.inject({ method: 'GET', url: '/branches', he…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/9]⎯
+
+ FAIL  test/operator-switch-handoff-review.test.ts > SCRUM-640 native handoff context house review > R9 [critical] foreign-effective OTO refuses before role/link/provisioning writes, linked=true
+ FAIL  test/operator-switch-handoff-review.test.ts > SCRUM-640 native handoff context house review > R9 [critical] foreign-effective OTO refuses before role/link/provisioning writes, linked=false
+AssertionError: expected { refused: false, …(2) } to deeply equal { refused: true, …(2) }
+
+- Expected
++ Received
+
+  {
+-   "cookieIssued": false,
+-   "refused": true,
+-   "unchanged": true,
++   "cookieIssued": true,
++   "refused": false,
++   "unchanged": false,
+  }
+
+ ❯ test/operator-switch-handoff-review.test.ts:179:21
+    177|     const outcome = { refused: response.statusCode === 401 || response…
+    178|       cookieIssued: response.headers['set-cookie'] !== undefined, unch…
+    179|     expect(outcome).toEqual({ refused: true, cookieIssued: false, unch…
+       |                     ^
+    180|   });
+    181|   it.each(['staff', 'advisor'] as const)('R10 [high] home OTO %s still…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/9]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  9 failed | 8 passed (17)
+   Start at  04:27:38
+   Duration  40.44s (transform 7.53s, setup 0ms, collect 13.44s, tests 26.53s, environment 0ms, prepare 183ms)
+
+C:\w\admin-operator-switch\apps\api:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @oto/api@0.1.0 test: `vitest run --pool=forks "test/operator-switch-handoff-review.test.ts"`
+Exit status 1

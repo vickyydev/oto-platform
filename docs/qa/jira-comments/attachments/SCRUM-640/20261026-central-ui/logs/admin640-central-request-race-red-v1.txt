@@ -1,0 +1,321 @@
+
+> @oto/api@0.1.0 test C:\w\admin-operator-switch\apps\api
+> vitest run --pool=forks "test/operator-switch-request-race-review.test.ts"
+
+
+ RUN  v3.2.7 C:/w/admin-operator-switch/apps/api
+
+stdout | test/operator-switch-request-race-review.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/operator-switch-request-race-review.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-iA7WBU ... ok
+creating subdirectories ...
+
+stdout | test/operator-switch-request-race-review.test.ts
+ok
+
+
+stdout | test/operator-switch-request-race-review.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ...
+
+stdout | test/operator-switch-request-race-review.test.ts
+100
+selecting default shared_buffers ...
+
+stdout | test/operator-switch-request-race-review.test.ts
+128MB
+selecting default time zone ...
+
+stdout | test/operator-switch-request-race-review.test.ts
+Asia/Bangkok
+creating configuration files ...
+
+stdout | test/operator-switch-request-race-review.test.ts
+ok
+running bootstrap script ...
+
+stdout | test/operator-switch-request-race-review.test.ts
+ok
+
+
+stdout | test/operator-switch-request-race-review.test.ts
+performing post-bootstrap initialization ...
+
+stdout | test/operator-switch-request-race-review.test.ts
+ok
+syncing data to disk ...
+
+stdout | test/operator-switch-request-race-review.test.ts
+ok
+
+
+stdout | test/operator-switch-request-race-review.test.ts
+
+Success. You can now start the database server using:
+
+    ^"C^:^\w^\admin^-operator^-switch^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-iA7WBU^" -l logfile start
+
+
+
+stdout | test/operator-switch-request-race-review.test.ts
+2026-10-26 04:51:03.554 +07 [90224] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/operator-switch-request-race-review.test.ts
+2026-10-26 04:51:03.559 +07 [90224] LOG:  listening on IPv6 address "::1", port 54542
+
+
+stdout | test/operator-switch-request-race-review.test.ts
+2026-10-26 04:51:03.560 +07 [90224] LOG:  listening on IPv4 address "127.0.0.1", port 54542
+
+
+stdout | test/operator-switch-request-race-review.test.ts
+2026-10-26 04:51:03.625 +07 [78976] LOG:  database system was shut down at 2026-10-26 04:51:00 +07
+
+
+stdout | test/operator-switch-request-race-review.test.ts
+2026-10-26 04:51:03.664 +07 [90224] LOG:  database system is ready to accept connections
+
+
+stdout | test/operator-switch-request-race-review.test.ts
+2026-10-26 04:51:09.954 +07 [91848] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+
+stdout | test/operator-switch-request-race-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/operator-switch-request-race-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:79584) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/operator-switch-request-race-review.test.ts
+2026-10-26 04:51:12.844 +07 [76976] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/operator-switch-request-race-review.test.ts
+2026-10-26 04:51:12.868 +07 [76976] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.005 s, sync=0.005 s, total=0.024 s; sync files=5, longest=0.002 s, average=0.001 s; distance=15602 kB, estimate=15602 kB; lsn=0/24B4B30, redo lsn=0/24B4AF8
+
+
+ ❯ test/operator-switch-request-race-review.test.ts (8 tests | 5 failed) 17692ms
+   ✓ SCRUM-640 native request races and accepted UUID representations > R1 [critical] control: preserve the native branch move without a context change 94ms
+   × SCRUM-640 native request races and accepted UUID representations > R1 [critical] FINDING: refuse stale A branch attachment after B switch 49ms
+     → expected { statusCode: 200, …(3) } to deeply equal { statusCode: 409, …(3) }
+   ✓ SCRUM-640 native request races and accepted UUID representations > R2 [high] control: same-branch selection retains its valid station 49ms
+   × SCRUM-640 native request races and accepted UUID representations > R2 [high] FINDING: a valid B1-to-B2 move clears the incompatible station 39ms
+     → expected { statusCode: 200, …(3) } to deeply equal { statusCode: 200, …(3) }
+   ✓ SCRUM-640 native request races and accepted UUID representations > R3 [critical] control: same-context cached retry preserves its native answer and single audit 43ms
+   × SCRUM-640 native request races and accepted UUID representations > R3 [critical] FINDING: revalidate an ordinary cached answer after request authentication was superseded 42ms
+     → expected { statusCode: 200, …(3) } to match object { statusCode: 409, …(2) }
+(1 matching property omitted from actual)
+   × SCRUM-640 native request races and accepted UUID representations > R4 [high] FINDING: an accepted uppercase home UUID canonicalizes to a null no-op and retains the valid native seat 32ms
+     → expected { statusCode: 200, …(3) } to deeply equal { statusCode: 200, …(3) }
+   × SCRUM-640 native request races and accepted UUID representations > R5 [high] FINDING: an accepted uppercase target UUID preserves a genuine same-key lost-ack retry and one native audit 43ms
+     → expected { firstStatus: 200, …(6) } to deeply equal { firstStatus: 200, …(6) }
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/operator-switch-request-race-review.test.ts > SCRUM-640 native request races and accepted UUID representations > R1 [critical] FINDING: refuse stale A branch attachment after B switch
+AssertionError: expected { statusCode: 200, …(3) } to deeply equal { statusCode: 409, …(3) }
+
+- Expected
++ Received
+
+  {
+-   "errorCode": "SESSION_CONTEXT_CHANGED",
++   "errorCode": null,
+    "seat": {
+      "accountId": "01a1750b-d662-76b3-9f11-8c6f8921f2bb",
+-     "branchId": null,
++     "branchId": "01a1750b-d662-76b3-9f11-8c6a5813567d",
+      "operatorOverride": "01a1750b-d662-76b3-9f11-8c68082bc1e4",
+      "stationId": null,
+    },
+-   "statusCode": 409,
+-   "successCount": 0,
++   "statusCode": 200,
++   "successCount": 1,
+  }
+
+ ❯ test/operator-switch-request-race-review.test.ts:108:23
+    106|       const outcome = { statusCode: response.statusCode, errorCode: re…
+    107|         seat: await seat(), successCount: (await successes('session.br…
+    108|       expect(outcome).toEqual(switchDuringWait
+       |                       ^
+    109|         ? { statusCode: 409, errorCode: 'SESSION_CONTEXT_CHANGED', sea…
+    110|         : { statusCode: 200, errorCode: null, seat: { accountId: f.act…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯
+
+ FAIL  test/operator-switch-request-race-review.test.ts > SCRUM-640 native request races and accepted UUID representations > R2 [high] FINDING: a valid B1-to-B2 move clears the incompatible station
+AssertionError: expected { statusCode: 200, …(3) } to deeply equal { statusCode: 200, …(3) }
+
+- Expected
++ Received
+
+  {
+-   "currentStatus": 200,
++   "currentStatus": 401,
+    "seat": {
+      "accountId": "01a1750b-d6c5-73e0-af8f-58ce37019bff",
+      "branchId": "01a1750b-d6c5-73e0-af8f-58cbb86ddd50",
+      "operatorOverride": "01a1750b-d6c5-73e0-af8f-58c711eb95f1",
+-     "stationId": null,
++     "stationId": "01a1750b-d6c5-73e0-af8f-58cdf3086984",
+    },
+    "statusCode": 200,
+    "successCount": 1,
+  }
+
+ ❯ test/operator-switch-request-race-review.test.ts:121:21
+    119|     const outcome = { statusCode: response.statusCode, seat: await sea…
+    120|       successCount: (await successes('session.branch_switch')).length …
+    121|     expect(outcome).toEqual({ statusCode: 200, seat: { accountId: f.ac…
+       |                     ^
+    122|       branchId: selected, stationId: differentBranch ? null : f.bStati…
+    123|     expect(current.json()).toMatchObject({ account: { id: f.actor, ope…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯
+
+ FAIL  test/operator-switch-request-race-review.test.ts > SCRUM-640 native request races and accepted UUID representations > R3 [critical] FINDING: revalidate an ordinary cached answer after request authentication was superseded
+AssertionError: expected { statusCode: 200, …(3) } to match object { statusCode: 409, …(2) }
+(1 matching property omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "replayed": false,
+-   "statusCode": 409,
++   "replayed": true,
++   "statusCode": 200,
+    "successCount": 1,
+  }
+
+ ❯ test/operator-switch-request-race-review.test.ts:140:25
+    138|         errorCode: response.json().error?.code ?? null, successCount: …
+    139|       if (switchDuringWait) {
+    140|         expect(outcome).toMatchObject({ statusCode: 409, replayed: fal…
+       |                         ^
+    141|         expect(['IDEMPOTENCY_MISMATCH', 'SESSION_CONTEXT_CHANGED']).to…
+    142|       } else {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯
+
+ FAIL  test/operator-switch-request-race-review.test.ts > SCRUM-640 native request races and accepted UUID representations > R4 [high] FINDING: an accepted uppercase home UUID canonicalizes to a null no-op and retains the valid native seat
+AssertionError: expected { statusCode: 200, …(3) } to deeply equal { statusCode: 200, …(3) }
+
+- Expected
++ Received
+
+  {
+    "body": {
+-     "branchId": "01a1750b-d741-79ff-baa9-bf82a55fdcde",
+-     "changed": false,
+-     "effectiveOperatorId": "01a1750b-d741-79ff-baa9-bf808a71bb1f",
++     "branchId": null,
++     "changed": true,
++     "effectiveOperatorId": "01A1750B-D741-79FF-BAA9-BF808A71BB1F",
+      "homeOperatorId": "01a1750b-d741-79ff-baa9-bf808a71bb1f",
+-     "operatorOverride": null,
++     "operatorOverride": "01A1750B-D741-79FF-BAA9-BF808A71BB1F",
+      "revision": 1,
+-     "stationId": "01a1750b-d741-79ff-baa9-bf866a4e97a4",
++     "stationId": null,
+    },
+    "seat": {
+      "accountId": "01a1750b-d741-79ff-baa9-bf88894356ae",
+-     "branchId": "01a1750b-d741-79ff-baa9-bf82a55fdcde",
+-     "operatorOverride": null,
+-     "stationId": "01a1750b-d741-79ff-baa9-bf866a4e97a4",
++     "branchId": null,
++     "operatorOverride": "01a1750b-d741-79ff-baa9-bf808a71bb1f",
++     "stationId": null,
+    },
+    "statusCode": 200,
+    "successCount": 1,
+  }
+
+ ❯ test/operator-switch-request-race-review.test.ts:153:21
+    151|     const outcome = { statusCode: response.statusCode, body: response.…
+    152|       successCount: (await successes('session.operator_switch')).lengt…
+    153|     expect(outcome).toEqual({ statusCode: 200, body: { homeOperatorId:…
+       |                     ^
+    154|       branchId: f.a1, stationId: f.aStation, revision: 1, changed: fal…
+    155|     seat: { accountId: f.actor, operatorOverride: null, branchId: f.a1…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯
+
+ FAIL  test/operator-switch-request-race-review.test.ts > SCRUM-640 native request races and accepted UUID representations > R5 [high] FINDING: an accepted uppercase target UUID preserves a genuine same-key lost-ack retry and one native audit
+AssertionError: expected { firstStatus: 200, …(6) } to deeply equal { firstStatus: 200, …(6) }
+
+- Expected
++ Received
+
+@@ -1,27 +1,24 @@
+  {
+    "first": {
+      "branchId": null,
+      "changed": true,
+-     "effectiveOperatorId": "01a1750b-d761-77ed-abe6-fd2aae219605",
++     "effectiveOperatorId": "01A1750B-D761-77ED-ABE6-FD2AAE219605",
+      "homeOperatorId": "01a1750b-d761-77ed-abe6-fd29395e2c77",
+-     "operatorOverride": "01a1750b-d761-77ed-abe6-fd2aae219605",
++     "operatorOverride": "01A1750B-D761-77ED-ABE6-FD2AAE219605",
+      "revision": 1,
+      "stationId": null,
+    },
+    "firstStatus": 200,
+-   "replayed": true,
++   "replayed": false,
+    "retry": {
+-     "branchId": null,
+-     "changed": true,
+-     "effectiveOperatorId": "01a1750b-d761-77ed-abe6-fd2aae219605",
+-     "homeOperatorId": "01a1750b-d761-77ed-abe6-fd29395e2c77",
+-     "operatorOverride": "01a1750b-d761-77ed-abe6-fd2aae219605",
+-     "revision": 1,
+-     "stationId": null,
++     "error": {
++       "code": "OPERATOR_SWITCH_STALE",
++       "message": "The session context changed. Read it again before selecting an operator.",
++     },
+    },
+-   "retryStatus": 200,
++   "retryStatus": 409,
+    "seat": {
+      "accountId": "01a1750b-d761-77ed-abe6-fd3164ec1508",
+      "branchId": null,
+      "operatorOverride": "01a1750b-d761-77ed-abe6-fd2aae219605",
+      "stationId": null,
+
+ ❯ test/operator-switch-request-race-review.test.ts:166:21
+    164|     const answer = { homeOperatorId: f.home, effectiveOperatorId: f.ta…
+    165|       branchId: null, stationId: null, revision: 1, changed: true };
+    166|     expect(outcome).toEqual({ firstStatus: 200, first: answer, retrySt…
+       |                     ^
+    167|       seat: { accountId: f.actor, operatorOverride: f.target, branchId…
+    168|     expect(await stable()).toEqual(unchanged);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  5 failed | 3 passed (8)
+   Start at  04:50:42
+   Duration  31.52s (transform 7.63s, setup 0ms, collect 13.33s, tests 17.69s, environment 0ms, prepare 206ms)
+
+C:\w\admin-operator-switch\apps\api:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @oto/api@0.1.0 test: `vitest run --pool=forks "test/operator-switch-request-race-review.test.ts"`
+Exit status 1

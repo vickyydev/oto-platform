@@ -1,0 +1,116 @@
+
+> @oto/api@0.1.0 test C:\w\admin-operator-switch\apps\api
+> vitest run --pool=forks "test/operator-switch-session-review.test.ts"
+
+
+ RUN  v3.2.7 C:/w/admin-operator-switch/apps/api
+
+stdout | test/operator-switch-session-review.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/operator-switch-session-review.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-MnnAjJ ... ok
+creating subdirectories ...
+
+stdout | test/operator-switch-session-review.test.ts
+ok
+
+
+stdout | test/operator-switch-session-review.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ...
+
+stdout | test/operator-switch-session-review.test.ts
+100
+selecting default shared_buffers ...
+
+stdout | test/operator-switch-session-review.test.ts
+128MB
+selecting default time zone ...
+
+stdout | test/operator-switch-session-review.test.ts
+Asia/Bangkok
+
+
+stdout | test/operator-switch-session-review.test.ts
+creating configuration files ...
+
+stdout | test/operator-switch-session-review.test.ts
+ok
+running bootstrap script ...
+
+stdout | test/operator-switch-session-review.test.ts
+ok
+
+
+stdout | test/operator-switch-session-review.test.ts
+performing post-bootstrap initialization ...
+
+stdout | test/operator-switch-session-review.test.ts
+ok
+syncing data to disk ...
+
+stdout | test/operator-switch-session-review.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\w^\admin^-operator^-switch^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-MnnAjJ^" -l logfile start
+
+
+
+stdout | test/operator-switch-session-review.test.ts
+2026-10-26 04:26:31.158 +07 [91888] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/operator-switch-session-review.test.ts
+2026-10-26 04:26:31.163 +07 [91888] LOG:  listening on IPv6 address "::1", port 54426
+
+
+stdout | test/operator-switch-session-review.test.ts
+2026-10-26 04:26:31.164 +07 [91888] LOG:  listening on IPv4 address "127.0.0.1", port 54426
+
+
+stdout | test/operator-switch-session-review.test.ts
+2026-10-26 04:26:31.223 +07 [91452] LOG:  database system was shut down at 2026-10-26 04:26:27 +07
+
+
+stdout | test/operator-switch-session-review.test.ts
+2026-10-26 04:26:31.263 +07 [91888] LOG:  database system is ready to accept connections
+
+
+stdout | test/operator-switch-session-review.test.ts
+2026-10-26 04:26:37.216 +07 [60516] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+
+stdout | test/operator-switch-session-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/operator-switch-session-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:46996) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/operator-switch-session-review.test.ts
+2026-10-26 04:26:40.589 +07 [91488] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/operator-switch-session-review.test.ts
+2026-10-26 04:26:40.609 +07 [91488] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.005 s, sync=0.004 s, total=0.020 s; sync files=5, longest=0.002 s, average=0.001 s; distance=15942 kB, estimate=15942 kB; lsn=0/2509C28, redo lsn=0/2509BF0
+
+
+ ✓ test/operator-switch-session-review.test.ts (33 tests) 17795ms
+
+ Test Files  1 passed (1)
+      Tests  33 passed (33)
+   Start at  04:26:10
+   Duration  31.38s (transform 7.41s, setup 0ms, collect 13.15s, tests 17.80s, environment 0ms, prepare 162ms)

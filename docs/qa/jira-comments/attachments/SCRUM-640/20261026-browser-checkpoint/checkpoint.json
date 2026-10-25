@@ -1,0 +1,276 @@
+{
+  "ticket": "SCRUM-640",
+  "recordedAt": "2026-10-25T23:27:08.860Z",
+  "archive": "docs/qa/jira-comments/attachments/SCRUM-640/20261026-browser-checkpoint",
+  "backendCheckpoint": "c71c653b0e6d819cf1fc4d21ec196c5789e9fa0f",
+  "uiCheckpoint": "e6ec2bf324f89cd060a4edf4cc84d0dd987965ec",
+  "sourceManifestSha256": "1b577870f69d94abc4298c5f1bd9b9343ffafa64f1ec93d2f8ade17c50f029f6",
+  "sourceFiles": 3797,
+  "checkpointOnly": true,
+  "release": false,
+  "mainFeature": false,
+  "deployed": false,
+  "stagingAcceptance": false,
+  "blockers": [
+    "Q22 additional native lifecycle/audit scope ruling",
+    "Planner protected assistant creation-time context and attribution patch",
+    "Q21 protected settings consumers, fake-client regressions and initial USD rates for SCRUM-638"
+  ],
+  "results": {
+    "consoleUnitPassed": 357,
+    "existingConsoleTodos": 3,
+    "builtBrowserPassed": 263,
+    "changedSourceLintFiles": 95,
+    "generatedClientWalkerPassed": 10,
+    "ownConsoleCompilerConfigurations": 3,
+    "apiCompilerDiagnostics": 0,
+    "apiTypesCompilerDiagnostics": 0
+  },
+  "limitations": "These are independent integration checkpoints, not the complete combined release. Full release gates, main CI, automatic deploy and inspected staging evidence remain after planner integration.",
+  "firstFullBrowser": "Actual256 passes/seven failures retained; the unchanged native403 assertion first exposes the Layout refusal-message defect. Fixture expectations now match approved masking/recovery, native inactive401 and additive permission. Exact writer bytes remain checked; only OS readback normalizes LF/CRLF.",
+  "secondFullBrowser": "Actual262 passes/one failure retained. Reselecting the same permission cleared holders without changing the effect dependency. The production handler now returns before clearing. The exact browser assertion is unchanged; its inspected synthetic failure image is retained in ../20261026-role-reselection-red.",
+  "archivePolicy": "Original receipt/log hashes retained; displayed copies use LF and remove only trailing horizontal whitespace/redundant EOF blank lines from logs. No result changed.",
+  "earlierHistory": "../20261026-central-ui/archive.json preserves the earlier RED/GREEN and callback frames separately.",
+  "files": [
+    {
+      "source": "admin640-console-types-v6.json",
+      "archive": "receipts/admin640-console-types-v6.json",
+      "kind": "json",
+      "originalSha256": "2a272c30675d86f7ef3458fa5630105cf2f17508f2c3fb2e0f84a02346b9ddeb",
+      "archiveSha256": "2a272c30675d86f7ef3458fa5630105cf2f17508f2c3fb2e0f84a02346b9ddeb",
+      "byteIdentical": true
+    },
+    {
+      "source": "admin640-console-types-v6.inputs.json",
+      "archive": "receipts/admin640-console-types-v6.inputs.json",
+      "kind": "json",
+      "originalSha256": "50114c7adc925ff63dbc642b03457d39c07bfa33b0e1019f66a4f47bec9dcb01",
+      "archiveSha256": "50114c7adc925ff63dbc642b03457d39c07bfa33b0e1019f66a4f47bec9dcb01",
+      "byteIdentical": true
+    },
+    {
+      "source": "admin640-console-types-v6.log",
+      "archive": "logs/admin640-console-types-v6.txt",
+      "kind": "log",
+      "originalSha256": "a8026d8bb80dc8018ac6d5c62595a957d071028207ef0f40fd92265ec49dc615",
+      "archiveSha256": "284e173f57d59a362503c0b8b132df83455ec8cdfb9c823289eaaa262a86c2be",
+      "byteIdentical": false
+    },
+    {
+      "source": "admin640-console-units-v6.json",
+      "archive": "receipts/admin640-console-units-v6.json",
+      "kind": "json",
+      "originalSha256": "f719666e74878481ccc70bbbf3ca7de82dbfc1a62388fbf37794226e3f6298c7",
+      "archiveSha256": "f719666e74878481ccc70bbbf3ca7de82dbfc1a62388fbf37794226e3f6298c7",
+      "byteIdentical": true
+    },
+    {
+      "source": "admin640-console-units-v6.inputs.json",
+      "archive": "receipts/admin640-console-units-v6.inputs.json",
+      "kind": "json",
+      "originalSha256": "50114c7adc925ff63dbc642b03457d39c07bfa33b0e1019f66a4f47bec9dcb01",
+      "archiveSha256": "50114c7adc925ff63dbc642b03457d39c07bfa33b0e1019f66a4f47bec9dcb01",
+      "byteIdentical": true
+    },
+    {
+      "source": "admin640-console-units-v6.log",
+      "archive": "logs/admin640-console-units-v6.txt",
+      "kind": "log",
+      "originalSha256": "16bcc397bdacbdb09986d924c820b590aa1efedbb297e17a889498561c835f31",
+      "archiveSha256": "62c853ae82ab5dad4dd83421566d4250d84743b5bd871083f0f451237e10d382",
+      "byteIdentical": false
+    },
+    {
+      "source": "admin640-final-scoped-v3.json",
+      "archive": "receipts/admin640-final-scoped-v3.json",
+      "kind": "json",
+      "originalSha256": "99ab4745685a3cf051ef5dfad93990a9d89437ff06d03a7596ad72451945663d",
+      "archiveSha256": "99ab4745685a3cf051ef5dfad93990a9d89437ff06d03a7596ad72451945663d",
+      "byteIdentical": true
+    },
+    {
+      "source": "admin640-final-scoped-v3.inputs.json",
+      "archive": "receipts/admin640-final-scoped-v3.inputs.json",
+      "kind": "json",
+      "originalSha256": "2742f52293a15a569a9a7636d3f6102a10025f9ed287c7ea83b7bc5fee954eb4",
+      "archiveSha256": "2742f52293a15a569a9a7636d3f6102a10025f9ed287c7ea83b7bc5fee954eb4",
+      "byteIdentical": true
+    },
+    {
+      "source": "admin640-final-scoped-v3.log",
+      "archive": "logs/admin640-final-scoped-v3.txt",
+      "kind": "log",
+      "originalSha256": "9f73ac5631bf1f162b74ae3fea63b165b9cc65f4e8e69059ac99d611ca3a2ca5",
+      "archiveSha256": "b9362002e0b8c873a8538549f756f7bffa6aa30b25675120b998b0635b4fb950",
+      "byteIdentical": false
+    },
+    {
+      "source": "admin640-console-types-v7.json",
+      "archive": "receipts/admin640-console-types-v7.json",
+      "kind": "json",
+      "originalSha256": "1e93716678863681c68c77830f6d502a0ecb95bc454119a25ca0f88bbe543741",
+      "archiveSha256": "1e93716678863681c68c77830f6d502a0ecb95bc454119a25ca0f88bbe543741",
+      "byteIdentical": true
+    },
+    {
+      "source": "admin640-console-types-v7.inputs.json",
+      "archive": "receipts/admin640-console-types-v7.inputs.json",
+      "kind": "json",
+      "originalSha256": "024b9baa4b9d440b1c397da07dab357152035609136b9de7636949d7fe79fa4b",
+      "archiveSha256": "024b9baa4b9d440b1c397da07dab357152035609136b9de7636949d7fe79fa4b",
+      "byteIdentical": true
+    },
+    {
+      "source": "admin640-console-types-v7.log",
+      "archive": "logs/admin640-console-types-v7.txt",
+      "kind": "log",
+      "originalSha256": "a8026d8bb80dc8018ac6d5c62595a957d071028207ef0f40fd92265ec49dc615",
+      "archiveSha256": "284e173f57d59a362503c0b8b132df83455ec8cdfb9c823289eaaa262a86c2be",
+      "byteIdentical": false
+    },
+    {
+      "source": "admin640-console-units-v7.json",
+      "archive": "receipts/admin640-console-units-v7.json",
+      "kind": "json",
+      "originalSha256": "f6e147dea29d723262ba8b3478f2a89f30700b5e0c62a6f4420b8ce9402a8aba",
+      "archiveSha256": "f6e147dea29d723262ba8b3478f2a89f30700b5e0c62a6f4420b8ce9402a8aba",
+      "byteIdentical": true
+    },
+    {
+      "source": "admin640-console-units-v7.inputs.json",
+      "archive": "receipts/admin640-console-units-v7.inputs.json",
+      "kind": "json",
+      "originalSha256": "024b9baa4b9d440b1c397da07dab357152035609136b9de7636949d7fe79fa4b",
+      "archiveSha256": "024b9baa4b9d440b1c397da07dab357152035609136b9de7636949d7fe79fa4b",
+      "byteIdentical": true
+    },
+    {
+      "source": "admin640-console-units-v7.log",
+      "archive": "logs/admin640-console-units-v7.txt",
+      "kind": "log",
+      "originalSha256": "bc9bfba15540eaa488e92d723d76855a4e740cba68acb2840140c9ab1ff072e6",
+      "archiveSha256": "ef6ee85ae1a46746719a23b76b662133062844e27ea75068704cbeafa8f8678b",
+      "byteIdentical": false
+    },
+    {
+      "source": "admin640-final-scoped-v4.json",
+      "archive": "receipts/admin640-final-scoped-v4.json",
+      "kind": "json",
+      "originalSha256": "29c82282f7b8d30b6f4c7f44975775e5dc01714ff892f2f76c523464b2c5c5af",
+      "archiveSha256": "29c82282f7b8d30b6f4c7f44975775e5dc01714ff892f2f76c523464b2c5c5af",
+      "byteIdentical": true
+    },
+    {
+      "source": "admin640-final-scoped-v4.inputs.json",
+      "archive": "receipts/admin640-final-scoped-v4.inputs.json",
+      "kind": "json",
+      "originalSha256": "855ed42e9e84e325b4c6bdca4edb6577a94cc84af2afd6db52ac2828a8812514",
+      "archiveSha256": "855ed42e9e84e325b4c6bdca4edb6577a94cc84af2afd6db52ac2828a8812514",
+      "byteIdentical": true
+    },
+    {
+      "source": "admin640-final-scoped-v4.log",
+      "archive": "logs/admin640-final-scoped-v4.txt",
+      "kind": "log",
+      "originalSha256": "783028ae8927c93bba96baaf8b9cc6d8238651f753fe4084ab4d2b99727d9783",
+      "archiveSha256": "7b38317c97995056fa132f6efd9deac5d6be63ec12fd84d1d8d98ab73ff8a7e0",
+      "byteIdentical": false
+    },
+    {
+      "source": "admin640-full-browser-green-v1.json",
+      "archive": "receipts/admin640-full-browser-green-v1.json",
+      "kind": "json",
+      "originalSha256": "f0609f6f0edee900c246939622d11630737201ae096a2621b831b33a8d076796",
+      "archiveSha256": "f0609f6f0edee900c246939622d11630737201ae096a2621b831b33a8d076796",
+      "byteIdentical": true
+    },
+    {
+      "source": "admin640-full-browser-green-v1.intent.json",
+      "archive": "receipts/admin640-full-browser-green-v1.intent.json",
+      "kind": "json",
+      "originalSha256": "ba2fefda1e9522ed2f44f3628096006d3848a853809033d8882af55ecc6af344",
+      "archiveSha256": "ba2fefda1e9522ed2f44f3628096006d3848a853809033d8882af55ecc6af344",
+      "byteIdentical": true
+    },
+    {
+      "source": "admin640-full-browser-green-v1.sources.json",
+      "archive": "receipts/admin640-full-browser-green-v1.sources.json",
+      "kind": "json",
+      "originalSha256": "792695aad1f8fc306ac443b1f410510a2ceb88cab58c21a6072adfd6574be93b",
+      "archiveSha256": "792695aad1f8fc306ac443b1f410510a2ceb88cab58c21a6072adfd6574be93b",
+      "byteIdentical": true
+    },
+    {
+      "source": "admin640-full-browser-green-v1.log",
+      "archive": "logs/admin640-full-browser-green-v1.txt",
+      "kind": "log",
+      "originalSha256": "0918b2ab34557dcb5ecbd968ca338456afbd057b0722421befbcbf0d8aa2e1fc",
+      "archiveSha256": "552814ca61f85438adde81736d6ac818fe8e94c06efd39633c0ff153adef8e30",
+      "byteIdentical": false
+    },
+    {
+      "source": "admin640-full-browser-green-v2.json",
+      "archive": "receipts/admin640-full-browser-green-v2.json",
+      "kind": "json",
+      "originalSha256": "a6808fdaa5a40e5f5a9d5609a475638be69af3aa14b17d0e3f66a5af4340955e",
+      "archiveSha256": "a6808fdaa5a40e5f5a9d5609a475638be69af3aa14b17d0e3f66a5af4340955e",
+      "byteIdentical": true
+    },
+    {
+      "source": "admin640-full-browser-green-v2.intent.json",
+      "archive": "receipts/admin640-full-browser-green-v2.intent.json",
+      "kind": "json",
+      "originalSha256": "8a66df62408c298872942deb3c89f0e202a28dcb23a6c5c06352e80ade237a77",
+      "archiveSha256": "8a66df62408c298872942deb3c89f0e202a28dcb23a6c5c06352e80ade237a77",
+      "byteIdentical": true
+    },
+    {
+      "source": "admin640-full-browser-green-v2.sources.json",
+      "archive": "receipts/admin640-full-browser-green-v2.sources.json",
+      "kind": "json",
+      "originalSha256": "8c3c71b5c9f5cf6cc43c56cc05faeb466a684a2a1e7bef1847858c908e358c67",
+      "archiveSha256": "8c3c71b5c9f5cf6cc43c56cc05faeb466a684a2a1e7bef1847858c908e358c67",
+      "byteIdentical": true
+    },
+    {
+      "source": "admin640-full-browser-green-v2.log",
+      "archive": "logs/admin640-full-browser-green-v2.txt",
+      "kind": "log",
+      "originalSha256": "89cf3f55483f439cfaec9d1715b4f004c5fb185a797f1c3c58d901a0b74d772c",
+      "archiveSha256": "75cd1fc3c86003e7e8515638593ddfb709f2cff4cab1c7ecd1387cc7716214a5",
+      "byteIdentical": false
+    },
+    {
+      "source": "admin640-full-browser-green-v3.json",
+      "archive": "receipts/admin640-full-browser-green-v3.json",
+      "kind": "json",
+      "originalSha256": "cc54a57a61c8c2af21aa5d013f3ba6d007ab9598c0a42833ba92616eb00fbfc9",
+      "archiveSha256": "cc54a57a61c8c2af21aa5d013f3ba6d007ab9598c0a42833ba92616eb00fbfc9",
+      "byteIdentical": true
+    },
+    {
+      "source": "admin640-full-browser-green-v3.intent.json",
+      "archive": "receipts/admin640-full-browser-green-v3.intent.json",
+      "kind": "json",
+      "originalSha256": "1ddc882429d5b8d64890be62dbeb6e2f84f23adff777caebd9d8315e9f3cd388",
+      "archiveSha256": "1ddc882429d5b8d64890be62dbeb6e2f84f23adff777caebd9d8315e9f3cd388",
+      "byteIdentical": true
+    },
+    {
+      "source": "admin640-full-browser-green-v3.sources.json",
+      "archive": "receipts/admin640-full-browser-green-v3.sources.json",
+      "kind": "json",
+      "originalSha256": "de6af1ceb2a9cda3476017133dd84fd418d310c178e4a72ba8d6cddd2a84389e",
+      "archiveSha256": "de6af1ceb2a9cda3476017133dd84fd418d310c178e4a72ba8d6cddd2a84389e",
+      "byteIdentical": true
+    },
+    {
+      "source": "admin640-full-browser-green-v3.log",
+      "archive": "logs/admin640-full-browser-green-v3.txt",
+      "kind": "log",
+      "originalSha256": "6da01115c2dae4642e0585f26a4d435761b97a55c7e7c243f1a17c3dfc1a6551",
+      "archiveSha256": "2a8809e54922ef063260d37fa91afa2d0948a30a08e99381e5d5b9962ee43087",
+      "byteIdentical": false
+    }
+  ]
+}

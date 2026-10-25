@@ -1,0 +1,19 @@
+{
+  "ticket": "SCRUM-640",
+  "phase": "copy-red",
+  "attempt": "v1",
+  "startedAt": "2026-10-25T22:44:08.303Z",
+  "completedAt": "2026-10-25T22:44:10.423Z",
+  "command": "pnpm --filter @oto/console test test/booth-state.test.ts",
+  "exitCode": 1,
+  "signal": null,
+  "launchError": null,
+  "inputCount": 210,
+  "inputsUnchanged": true,
+  "inputsSha256": "b208e1cbbd34f022ed824c19064477d44e396f43dcd74a115bf12dffcf218051",
+  "sourceManifestSha256": "e0a74eb35b45856e7bfbec4b18fd03ae10b6884c51082ac21f456a53de6a1097",
+  "runnerSha256": "bd47fa092675e8b815232f1a432df7868c1e3a4fb3d872ff3a01794b5bb98a2a",
+  "logSha256": "7828182701c4bfb569df5f626fc1bd2a2606ed15f35b58c3469bd6c2b5fc87f1",
+  "logPath": "C:/w/admin640-console-copy-red-v1.log",
+  "staging": false
+}

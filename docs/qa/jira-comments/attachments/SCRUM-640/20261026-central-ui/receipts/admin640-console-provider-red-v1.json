@@ -1,0 +1,19 @@
+{
+  "ticket": "SCRUM-640",
+  "phase": "provider-red",
+  "attempt": "v1",
+  "startedAt": "2026-10-25T22:38:44.926Z",
+  "completedAt": "2026-10-25T22:38:47.672Z",
+  "command": "pnpm --filter @oto/console test test/s216-r6-health.test.ts",
+  "exitCode": 1,
+  "signal": null,
+  "launchError": null,
+  "inputCount": 210,
+  "inputsUnchanged": true,
+  "inputsSha256": "27e989673e4d96ca7924d0ba2c26298322d18c67400aa52cc94d1add3ddf8fde",
+  "sourceManifestSha256": "82b23b87d4dc271b1a8daf1b7486ec6501475c219c556f17b78b49c07f9d34a7",
+  "runnerSha256": "bf395ae5330acab0bce3406e8b873fb07b5b86f8c5be0d546389ddea08e6233c",
+  "logSha256": "b13ba4537db0ff8f1fe7ff4e02a60e25a9273cabd2def90e05b46c722a995608",
+  "logPath": "C:/w/admin640-console-provider-red-v1.log",
+  "staging": false
+}

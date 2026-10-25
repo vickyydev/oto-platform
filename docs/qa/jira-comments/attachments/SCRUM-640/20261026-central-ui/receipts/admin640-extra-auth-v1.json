@@ -1,0 +1,20 @@
+{
+  "ticket": "SCRUM-640",
+  "phase": "auth",
+  "attempt": "v1",
+  "startedAt": "2026-10-25T21:43:25.271Z",
+  "completedAt": "2026-10-25T21:46:49.997Z",
+  "command": "pnpm --filter @oto/api test test/auth.test.ts test/auth-codes.test.ts test/auth-enumeration.test.ts test/permissions.test.ts test/archived-tenancy.test.ts test/session-branch-station.test.ts test/transactions.test.ts",
+  "exitCode": 0,
+  "signal": null,
+  "launchError": null,
+  "isolatedEmbeddedDatabase": true,
+  "staging": false,
+  "inputsUnchanged": true,
+  "inputCount": 819,
+  "inputsSha256": "9ec82ecef92b24ff770756c00a438a3d2a983ea19e968586a50819014ff4720f",
+  "sourceManifestSha256": "86be3658c8975c3b430e8a67cde2473b5a221edaaf7fbef3ec89400a9389bf2d",
+  "runnerSha256": "b6d078d45b40fbc2d4eb677857c0f7dc2ffe66dd358a5f08756f03707caf2ae4",
+  "logSha256": "a9003baef057cb6dbc5bfdc5e6bdaff4c57149a7917daff59966af1ce890e630",
+  "logPath": "C:/w/admin640-extra-auth-v1.log"
+}

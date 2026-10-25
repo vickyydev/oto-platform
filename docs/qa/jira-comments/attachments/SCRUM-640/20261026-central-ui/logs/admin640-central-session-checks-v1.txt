@@ -1,0 +1,10 @@
+
+> @oto/api@0.1.0 typecheck C:\w\admin-operator-switch\apps\api
+> tsc -p tsconfig.json
+
+
+C:\w\admin-operator-switch\apps\api\test\operator-switch-session-review.test.ts
+  139:5  error  Unexpected newline between function and ( of function call  no-unexpected-multiline
+  151:5  error  Unexpected newline between function and ( of function call  no-unexpected-multiline
+
+✖ 2 problems (2 errors, 0 warnings)

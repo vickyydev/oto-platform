@@ -1,0 +1,16 @@
+{
+  "ticket": "SCRUM-640",
+  "recordedAt": "2026-10-25T22:02:37Z",
+  "exactDirectory": "C:/Users/waqar/AppData/Local/Temp/oto-pg-u5ZP9U",
+  "sourceFailure": "C:/w/admin640-extra-handoff-v2.log",
+  "allHandoffAssertionsPassed": 76,
+  "nativeSuiteExitCode": 1,
+  "nativeTeardownFailure": "EBUSY removing the temporary directory",
+  "matchingProcessesObservedBeforeAttempt": 0,
+  "directoryObservedPresent": true,
+  "removalExecuted": false,
+  "automaticApprovalReview": "rejected",
+  "statedReason": "blocked by policy",
+  "sharedResourcesTouched": false,
+  "note": "The guard rejected the shell command before execution. The stopped local test database directory is retained; this is not a Docker container or a staging database. No alternative deletion mechanism was attempted."
+}

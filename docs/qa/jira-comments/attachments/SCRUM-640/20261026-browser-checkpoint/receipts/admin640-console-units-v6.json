@@ -1,0 +1,19 @@
+{
+  "ticket": "SCRUM-640",
+  "phase": "units",
+  "attempt": "v6",
+  "startedAt": "2026-10-25T23:14:22.921Z",
+  "completedAt": "2026-10-25T23:14:28.851Z",
+  "command": "pnpm --filter @oto/console test",
+  "exitCode": 0,
+  "signal": null,
+  "launchError": null,
+  "inputCount": 210,
+  "inputsUnchanged": true,
+  "inputsSha256": "50114c7adc925ff63dbc642b03457d39c07bfa33b0e1019f66a4f47bec9dcb01",
+  "sourceManifestSha256": "4648e547f066980ec5c7b1247faa4fbc7e0284e608bb2f7f683f5e70100c321b",
+  "runnerSha256": "bd47fa092675e8b815232f1a432df7868c1e3a4fb3d872ff3a01794b5bb98a2a",
+  "logSha256": "16bcc397bdacbdb09986d924c820b590aa1efedbb297e17a889498561c835f31",
+  "logPath": "C:/w/admin640-console-units-v6.log",
+  "staging": false
+}

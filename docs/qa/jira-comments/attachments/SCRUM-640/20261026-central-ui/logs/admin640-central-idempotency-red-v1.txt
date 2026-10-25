@@ -1,0 +1,262 @@
+
+> @oto/api@0.1.0 test C:\w\admin-operator-switch\apps\api
+> vitest run --pool=forks "test/operator-switch-idempotency-review.test.ts"
+
+
+ RUN  v3.2.7 C:/w/admin-operator-switch/apps/api
+
+stdout | test/operator-switch-idempotency-review.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-44Al52 ... ok
+creating subdirectories ...
+
+stdout | test/operator-switch-idempotency-review.test.ts
+ok
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ...
+
+stdout | test/operator-switch-idempotency-review.test.ts
+100
+selecting default shared_buffers ...
+
+stdout | test/operator-switch-idempotency-review.test.ts
+128MB
+selecting default time zone ...
+
+stdout | test/operator-switch-idempotency-review.test.ts
+Asia/Bangkok
+creating configuration files ...
+
+stdout | test/operator-switch-idempotency-review.test.ts
+ok
+running bootstrap script ...
+
+stdout | test/operator-switch-idempotency-review.test.ts
+ok
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+performing post-bootstrap initialization ...
+
+stdout | test/operator-switch-idempotency-review.test.ts
+ok
+syncing data to disk ...
+
+stdout | test/operator-switch-idempotency-review.test.ts
+ok
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+
+Success. You can now start the database server using:
+
+    ^"C^:^\w^\admin^-operator^-switch^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-44Al52^" -l logfile start
+
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+2026-10-26 04:28:00.527 +07 [87972] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+2026-10-26 04:28:00.534 +07 [87972] LOG:  listening on IPv6 address "::1", port 54653
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+2026-10-26 04:28:00.534 +07 [87972] LOG:  listening on IPv4 address "127.0.0.1", port 54653
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+2026-10-26 04:28:00.607 +07 [75484] LOG:  database system was shut down at 2026-10-26 04:27:57 +07
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+2026-10-26 04:28:00.644 +07 [87972] LOG:  database system is ready to accept connections
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+2026-10-26 04:28:08.225 +07 [50676] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/operator-switch-idempotency-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:90156) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/operator-switch-idempotency-review.test.ts
+2026-10-26 04:28:12.307 +07 [85924] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/operator-switch-idempotency-review.test.ts
+2026-10-26 04:28:12.335 +07 [85924] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.005 s, sync=0.009 s, total=0.028 s; sync files=5, longest=0.004 s, average=0.002 s; distance=15666 kB, estimate=15666 kB; lsn=0/24C4CB0, redo lsn=0/24C4C78
+
+
+ ❯ test/operator-switch-idempotency-review.test.ts (21 tests | 8 failed) 20788ms
+   ✓ SCRUM-640 native HTTP operator-context idempotency house review > R1 [high] same-key home retry preserves the original atomic answer and one write/audit 137ms
+   × SCRUM-640 native HTTP operator-context idempotency house review > R2 [critical] an ordinary cached success from A cannot replay into the same session working in B; bind effective operator 67ms
+     → expected 200 to be 409 // Object.is equality
+   × SCRUM-640 native HTTP operator-context idempotency house review > R2 [critical] an ordinary cached client refusal from A cannot replay into the same session working in B; bind effective operator 53ms
+     → expected 400 to be 409 // Object.is equality
+   ✓ SCRUM-640 native HTTP operator-context idempotency house review > R3 [high] a different key in B performs the write using B without changing the account home 32ms
+   ✓ SCRUM-640 native HTTP operator-context idempotency house review > R4 [critical] a genuine lost selection acknowledgement replays only this live session at the exact committed revision and target 47ms
+   × SCRUM-640 native HTTP operator-context idempotency house review > R5 [critical] refuses an old cached confirmation when current context is home; compare revision rather than target alone 54ms
+     → expected [ 401, 403, 404, 409, 423 ] to include 200
+   × SCRUM-640 native HTTP operator-context idempotency house review > R5 [critical] refuses an old cached confirmation when current context is same target after ABA; compare revision rather than target alone 56ms
+     → expected [ 401, 403, 404, 409, 423 ] to include 200
+   × SCRUM-640 native HTTP operator-context idempotency house review > R6 [critical] an account-shared key cannot replay another session confirmation even when both target and revision coincide 47ms
+     → expected [ 401, 403, 404, 409, 423 ] to include 200
+   ✓ SCRUM-640 native HTTP operator-context idempotency house review > R7 [critical] changing the original selection body cannot reuse a successful selection claim 41ms
+   ✓ SCRUM-640 native HTTP operator-context idempotency house review > R8 [critical] cached success cannot bypass a fresh grant withdrawn refusal 33ms
+   ✓ SCRUM-640 native HTTP operator-context idempotency house review > R8 [critical] cached success cannot bypass a fresh session revoked refusal 34ms
+   ✓ SCRUM-640 native HTTP operator-context idempotency house review > R8 [critical] cached success cannot bypass a fresh session expired refusal 34ms
+   × SCRUM-640 native HTTP operator-context idempotency house review > R8 [critical] cached success cannot bypass a fresh session locked refusal 33ms
+     → expected [ 401, 403, 404, 409, 423 ] to include 200
+   ✓ SCRUM-640 native HTTP operator-context idempotency house review > R8 [critical] cached success cannot bypass a fresh target archived refusal 32ms
+   ✓ SCRUM-640 native HTTP operator-context idempotency house review > R9 [high] preserves a pre-upgrade ordinary hash only for a truthful home session with no override 15ms
+   × SCRUM-640 native HTTP operator-context idempotency house review > R10 [critical] a pre-upgrade ordinary hash cannot be treated as a foreign-operator answer 24ms
+     → expected 200 to be 409 // Object.is equality
+   × SCRUM-640 native HTTP operator-context idempotency house review > R11 [critical] legacy account-only switch hashes are not proof of this session committing a selection 15ms
+     → expected [ 401, 403, 404, 409, 423 ] to include 200
+   ✓ SCRUM-640 native HTTP operator-context idempotency house review > R12 [high] concurrent ordinary retries keep one atomic claim, one committed answer and one audit 39ms
+   ✓ SCRUM-640 native HTTP operator-context idempotency house review > R13 [high] an expired A claim is taken over by actual B work rather than replaying A 46ms
+   ✓ SCRUM-640 native HTTP operator-context idempotency house review > R14 [high] a 5xx still releases its claim and the genuine same-body retry commits normally 143ms
+   ✓ SCRUM-640 native HTTP operator-context idempotency house review > R15 [critical] context binding never turns a credential-shaped response into a cacheable answer 33ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 8 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/operator-switch-idempotency-review.test.ts > SCRUM-640 native HTTP operator-context idempotency house review > R2 [critical] an ordinary cached success from A cannot replay into the same session working in B; bind effective operator
+AssertionError: expected 200 to be 409 // Object.is equality
+
+- Expected
++ Received
+
+- 409
++ 200
+
+ ❯ test/operator-switch-idempotency-review.test.ts:128:30
+    126|     await move(f.target, 0); expect(await options()).toMatchObject({ e…
+    127|     const retry = await ordinary(idempotency, payload);
+    128|     expect(retry.statusCode).toBe(409); expect(retry.json().error.code…
+       |                              ^
+    129|     expect(retry.headers['x-oto-replay']).not.toBe('true'); expect(cal…
+    130|     expect((await stored(idempotency))?.responseBody).toEqual(first.js…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/8]⎯
+
+ FAIL  test/operator-switch-idempotency-review.test.ts > SCRUM-640 native HTTP operator-context idempotency house review > R2 [critical] an ordinary cached client refusal from A cannot replay into the same session working in B; bind effective operator
+AssertionError: expected 400 to be 409 // Object.is equality
+
+- Expected
++ Received
+
+- 409
++ 400
+
+ ❯ test/operator-switch-idempotency-review.test.ts:128:30
+    126|     await move(f.target, 0); expect(await options()).toMatchObject({ e…
+    127|     const retry = await ordinary(idempotency, payload);
+    128|     expect(retry.statusCode).toBe(409); expect(retry.json().error.code…
+       |                              ^
+    129|     expect(retry.headers['x-oto-replay']).not.toBe('true'); expect(cal…
+    130|     expect((await stored(idempotency))?.responseBody).toEqual(first.js…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/8]⎯
+
+ FAIL  test/operator-switch-idempotency-review.test.ts > SCRUM-640 native HTTP operator-context idempotency house review > R5 [critical] refuses an old cached confirmation when current context is home; compare revision rather than target alone
+ FAIL  test/operator-switch-idempotency-review.test.ts > SCRUM-640 native HTTP operator-context idempotency house review > R5 [critical] refuses an old cached confirmation when current context is same target after ABA; compare revision rather than target alone
+AssertionError: expected [ 401, 403, 404, 409, 423 ] to include 200
+ ❯ refusedCached test/operator-switch-idempotency-review.test.ts:106:37
+    104| }
+    105| function refusedCached(response: Awaited<ReturnType<typeof selection>>…
+    106|   expect([401, 403, 404, 409, 423]).toContain(response.statusCode);
+       |                                     ^
+    107|   expect(response.headers['x-oto-replay']).not.toBe('true');
+    108| }
+ ❯ test/operator-switch-idempotency-review.test.ts:156:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/8]⎯
+
+ FAIL  test/operator-switch-idempotency-review.test.ts > SCRUM-640 native HTTP operator-context idempotency house review > R6 [critical] an account-shared key cannot replay another session confirmation even when both target and revision coincide
+AssertionError: expected [ 401, 403, 404, 409, 423 ] to include 200
+ ❯ refusedCached test/operator-switch-idempotency-review.test.ts:106:37
+    104| }
+    105| function refusedCached(response: Awaited<ReturnType<typeof selection>>…
+    106|   expect([401, 403, 404, 409, 423]).toContain(response.statusCode);
+       |                                     ^
+    107|   expect(response.headers['x-oto-replay']).not.toBe('true');
+    108| }
+ ❯ test/operator-switch-idempotency-review.test.ts:164:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/8]⎯
+
+ FAIL  test/operator-switch-idempotency-review.test.ts > SCRUM-640 native HTTP operator-context idempotency house review > R8 [critical] cached success cannot bypass a fresh session locked refusal
+AssertionError: expected [ 401, 403, 404, 409, 423 ] to include 200
+ ❯ refusedCached test/operator-switch-idempotency-review.test.ts:106:37
+    104| }
+    105| function refusedCached(response: Awaited<ReturnType<typeof selection>>…
+    106|   expect([401, 403, 404, 409, 423]).toContain(response.statusCode);
+       |                                     ^
+    107|   expect(response.headers['x-oto-replay']).not.toBe('true');
+    108| }
+ ❯ test/operator-switch-idempotency-review.test.ts:184:7
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/8]⎯
+
+ FAIL  test/operator-switch-idempotency-review.test.ts > SCRUM-640 native HTTP operator-context idempotency house review > R10 [critical] a pre-upgrade ordinary hash cannot be treated as a foreign-operator answer
+AssertionError: expected 200 to be 409 // Object.is equality
+
+- Expected
++ Received
+
+- 409
++ 200
+
+ ❯ test/operator-switch-idempotency-review.test.ts:201:33
+    199|     await putLegacy(idempotency, 'POST', ORDINARY, payload, { operator…
+    200|     const response = await ordinary(idempotency, payload);
+    201|     expect(response.statusCode).toBe(409); expect(response.json().erro…
+       |                                 ^
+    202|     expect(response.headers['x-oto-replay']).not.toBe('true'); expect(…
+    203|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/8]⎯
+
+ FAIL  test/operator-switch-idempotency-review.test.ts > SCRUM-640 native HTTP operator-context idempotency house review > R11 [critical] legacy account-only switch hashes are not proof of this session committing a selection
+AssertionError: expected [ 401, 403, 404, 409, 423 ] to include 200
+ ❯ refusedCached test/operator-switch-idempotency-review.test.ts:106:37
+    104| }
+    105| function refusedCached(response: Awaited<ReturnType<typeof selection>>…
+    106|   expect([401, 403, 404, 409, 423]).toContain(response.statusCode);
+       |                                     ^
+    107|   expect(response.headers['x-oto-replay']).not.toBe('true');
+    108| }
+ ❯ test/operator-switch-idempotency-review.test.ts:209:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/8]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  8 failed | 13 passed (21)
+   Start at  04:27:38
+   Duration  34.70s (transform 7.61s, setup 0ms, collect 13.44s, tests 20.79s, environment 0ms, prepare 180ms)
+
+C:\w\admin-operator-switch\apps\api:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @oto/api@0.1.0 test: `vitest run --pool=forks "test/operator-switch-idempotency-review.test.ts"`
+Exit status 1
