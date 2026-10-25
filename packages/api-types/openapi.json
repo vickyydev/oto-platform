@@ -3040,6 +3040,9 @@
                     },
                     "replayed": {
                       "type": "boolean"
+                    },
+                    "platformManaged": {
+                      "type": "boolean"
                     }
                   },
                   "required": [
@@ -3048,6 +3051,73 @@
                     "phone",
                     "externalUserId",
                     "temporaryPassword",
+                    "replayed",
+                    "platformManaged"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/apps/oto_app/lifecycle-deactivations": {
+      "post": {
+        "description": "OTO App server only: consume an owned durable login-disable event; never grants access or activates an account.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "eventId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "required": [
+                  "eventId"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "eventId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "delivered",
+                        "superseded"
+                      ]
+                    },
+                    "replayed": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "eventId",
+                    "state",
                     "replayed"
                   ],
                   "additionalProperties": false

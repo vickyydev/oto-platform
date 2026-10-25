@@ -34,6 +34,15 @@ afterAll(async () => {
 const NOT_OURS = new Set(['/*']);
 
 describe('route guards (S2-01b)', () => {
+  it('binds lifecycle delivery to the OTO App operator credential before body validation (SCRUM-633)', async () => {
+    const url = '/admin/apps/oto_app/lifecycle-deactivations';
+    const route = ctx.app.routeRegistry.find(r => r.method === 'POST' && r.url === url);
+    expect(route?.config.credential).toBe('otoapp-provision');
+    expect(route?.config.public).not.toBe(true);
+    const response = await ctx.app.inject({ method: 'POST', url, payload: { eventId: 'invalid' } });
+    expect(response.statusCode).toBe(401);
+  });
+
   it('the Console Teams and routing surface declares actual scoped management guards (SCRUM-626)', () => {
     const routes = ctx.app.routeRegistry.filter(r => /^\/inbox\/(teams|routing-rules)(\/|$)/.test(r.url)
       && r.method !== 'HEAD' && r.method !== 'OPTIONS');

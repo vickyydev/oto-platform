@@ -1796,6 +1796,58 @@ export interface paths {
                             externalUserId: string;
                             temporaryPassword: string | null;
                             replayed: boolean;
+                            platformManaged: boolean;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/apps/oto_app/lifecycle-deactivations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description OTO App server only: consume an owned durable login-disable event; never grants access or activates an account. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        eventId: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            ok: true;
+                            /** Format: uuid */
+                            eventId: string;
+                            /** @enum {string} */
+                            state: "delivered" | "superseded";
+                            replayed: boolean;
                         };
                     };
                 };

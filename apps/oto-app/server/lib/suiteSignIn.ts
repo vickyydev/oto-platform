@@ -49,6 +49,8 @@ export type SuiteProvisionResult =
       /** Null on a replay of the same press: it is shown once and never kept. */
       temporaryPassword: string | null;
       replayed: boolean;
+      /** The linked legal entity uses platform roles; local grants are not effective. */
+      platformManaged: boolean;
     }
   | { ok: false; status: number; code: string; message: string };
 
@@ -118,6 +120,7 @@ export async function provisionSuiteSignIn(
     phone,
     temporaryPassword: typeof body?.temporaryPassword === "string" ? body.temporaryPassword : null,
     replayed: body?.replayed === true,
+    platformManaged: body?.platformManaged === true,
   };
 }
 

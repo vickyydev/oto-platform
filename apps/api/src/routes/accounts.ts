@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { randomBytes } from 'node:crypto';
 import { hash } from '@node-rs/argon2';
-import { and, desc, eq, type SQL } from 'drizzle-orm';
+import { and, desc, eq, sql, type SQL } from 'drizzle-orm';
 import { ACCOUNT_STATUSES, account, employee, role, roleAssignment, session } from '@oto/db';
 import { newId, normalizePhone, type Permission } from '@oto/shared';
 import type { App } from '../app';
@@ -10,7 +10,12 @@ import { audit } from '../services/audit';
 import { ClientIdSchema, REPLAY_HEADER, claimClientId } from '../services/client-id';
 import { opCtx, withTx } from '../services/tx';
 import { deliverCode, invalidateAllSessions, mintCode, type PendingCode } from '../services/auth';
-import { deactivateOtoAppUser, type OtoAppUserDeactivation } from '../services/oto-app-users';
+import {
+  activateOtoAppUser,
+  deactivateOtoAppUser,
+  type OtoAppUserActivation,
+  type OtoAppUserDeactivation,
+} from '../services/oto-app-users';
 import { resolveEffectivePermissions, type EffectivePermission } from '../services/permissions';
 import {
   assertDominatesAccount,
@@ -393,11 +398,14 @@ export async function accountRoutes(app: App): Promise<void> {
       // And it must not be the grant the operator's remaining access hangs
       // off — removing a role is the half of SCRUM-239 that already worked,
       // and it worked all the way to a locked-out operator.
-      await assertNotLastOperatorAdmin(app.db, auth.operatorId, {
-        accountId: req.params.id,
-        assignmentId: req.params.assignmentId,
-      });
       return withTx(app.db, opCtx(req), 'role_assignment.delete', async (tx) => {
+        // SCRUM-633: grant removal and account lifecycle changes share one
+        // operator boundary. Re-read the remaining administrators under it.
+        await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${auth.operatorId}, 633))`);
+        await assertNotLastOperatorAdmin(tx as typeof app.db, auth.operatorId, {
+          accountId: req.params.id,
+          assignmentId: req.params.assignmentId,
+        });
         await tx.delete(roleAssignment).where(eq(roleAssignment.id, req.params.assignmentId));
         await audit.record(tx, {
           actorAccountId: auth.accountId,
@@ -436,11 +444,6 @@ export async function accountRoutes(app: App): Promise<void> {
       const effective = await req.effectivePermissions();
       await assertAccountInScope(effective, auth.operatorId, req.params.id, 'admin:account:update');
       await assertDominatesAccount(app.db, effective, auth.operatorId, req.params.id);
-      // Deactivation takes every grant the account holds with it, so it can
-      // empty the operator's administrator set exactly as a removal can.
-      if (req.body.status === 'inactive') {
-        await assertNotLastOperatorAdmin(app.db, auth.operatorId, { accountId: req.params.id });
-      }
       const patch: Partial<typeof account.$inferInsert> = {};
       if (req.body.status) patch.status = req.body.status;
       if (req.body.phone) {
@@ -451,13 +454,26 @@ export async function accountRoutes(app: App): Promise<void> {
       // Deactivating also ends every session: the change and the eviction
       // must not be able to come apart.
       return withTx(app.db, opCtx(req), 'account.update', async (tx) => {
+        if (req.body.status) {
+          // Order both activation and deactivation with app lifecycle events
+          // before locking the account. Two stale checks cannot remove both
+          // remaining administrators.
+          await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${auth.operatorId}, 633))`);
+          if (req.body.status === 'inactive') {
+            await assertNotLastOperatorAdmin(tx as typeof app.db, auth.operatorId, { accountId: req.params.id });
+          }
+        }
         const [after] = await tx.update(account).set(patch).where(eq(account.id, req.params.id)).returning();
         // SCRUM-288: and the OTO App user stamped with this account, with any
         // session open there, in the same transaction.
-        let otoApp: OtoAppUserDeactivation | null = null;
+        let otoApp: OtoAppUserDeactivation | OtoAppUserActivation | null = null;
         if (req.body.status === 'inactive') {
           await invalidateAllSessions(tx, req.params.id, 'deactivated');
           otoApp = await deactivateOtoAppUser(tx, { platformAccountId: req.params.id });
+        } else if (req.body.status === 'active') {
+          // SCRUM-633: explicit reactivation enables the existing app login;
+          // grants, identity and previously ended sessions are not recreated.
+          otoApp = await activateOtoAppUser(tx, { platformAccountId: req.params.id });
         }
         await audit.record(tx, {
           actorAccountId: auth.accountId,

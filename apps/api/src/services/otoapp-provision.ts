@@ -1,12 +1,18 @@
 import { randomBytes } from 'node:crypto';
 import { hash } from '@node-rs/argon2';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { account, appIdentity, employee, type Db } from '@oto/db';
 import { newId, normalizePhone } from '@oto/shared';
 import { AppError } from '../lib/errors';
 import { audit } from './audit';
 import { ensureAppAccessRole, grantAppAccess } from './app-identity';
-import { findOtoAppUser, linkOtoAppUser, otoAppUserIsOperators } from './oto-app-users';
+import {
+  deactivateOtoAppUser, findOtoAppUser, linkOtoAppUser, lockOtoAppLifecycleUser,
+  otoAppLifecycleUserIsOperators, otoAppUserIsOperators, readOtoAppLifecycleEvent,
+  reconcileOtoAppRole, resolveOtoAppRoleContext, settleOtoAppLifecycleEvent,
+} from './oto-app-users';
+import { assertNotLastOperatorAdmin } from './access-control';
+import { invalidateAllSessions } from './auth';
 import { withTx, type OpContext } from './tx';
 
 /**
@@ -29,14 +35,17 @@ import { withTx, type OpContext } from './tx';
  * account is already stamped on can be named — so the audit row carries a
  * real platform account as the actor.
  *
- * **What the key can do, and what it cannot.** It can mint a NEW platform
+ * **What the provisioning endpoint can do, and what it cannot.** It can mint a NEW platform
  * account, holding nothing but the OTO App tile, for an app user of this
  * operator's park groups who has no suite sign-in yet. It cannot touch an
  * account that already exists (a phone already in use is refused, and the
  * POS admin's Link is the way to join the two), cannot re-issue a password,
  * cannot grant anything but `app:oto_app:access`, and cannot reach another
  * operator's park groups. That boundary is the whole security argument for a
- * service key, and `test/s539-suite-sign-in.test.ts` pins every edge of it.
+ * suite-sign-in endpoint, and `test/s539-suite-sign-in.test.ts` pins every edge
+ * of it. The separate lifecycle endpoint can switch off an existing account
+ * only through its app-owned, identity-bound event; it cannot choose an account
+ * from a request body or grant access.
  */
 
 export interface ProvisionOtoAppUserInput {
@@ -60,6 +69,7 @@ export interface ProvisionedSuiteSignIn {
   /** Shown once. Null on a replay of the same action: it was never kept. */
   temporaryPassword: string | null;
   replayed: boolean;
+  platformManaged: boolean;
 }
 
 /** Eight characters, as `POST /accounts/:id/temp-password` issues them. */
@@ -84,37 +94,6 @@ export async function provisionExistingOtoAppUser(
 ): Promise<ProvisionedSuiteSignIn> {
   const phone = normalizePhone(input.phone);
   if (!phone) throw new AppError(400, 'BAD_REQUEST', 'Invalid phone number');
-
-  // A retry of the same press: the identity row carries the action id. The
-  // password is not kept anywhere, so a replay says so instead of minting a
-  // second one.
-  const [prior] = await db
-    .select()
-    .from(appIdentity)
-    .where(eq(appIdentity.id, input.actionId))
-    .limit(1);
-  if (prior) {
-    if (prior.app !== 'oto_app' || prior.externalUserId !== input.appUserId) {
-      throw new AppError(
-        409,
-        'ACTION_ID_REUSED',
-        'That action id was already used for somebody else',
-      );
-    }
-    const [acc] = await db
-      .select({ phone: account.phone })
-      .from(account)
-      .where(eq(account.id, prior.accountId))
-      .limit(1);
-    return {
-      id: prior.id,
-      accountId: prior.accountId,
-      phone: acc?.phone ?? phone,
-      externalUserId: prior.externalUserId,
-      temporaryPassword: null,
-      replayed: true,
-    };
-  }
 
   // The administrator, as a platform account: an app user of the same park
   // groups, stamped with an active account of this operator. Their app role
@@ -158,6 +137,20 @@ export async function provisionExistingOtoAppUser(
       'NOT_FOUND',
       'The OTO App has no user with that id in a park group of this operator',
     );
+  }
+  // A completed press remains private to its live actor, owning operator and
+  // exact user/phone binding. Replays never issue another password or grant.
+  const [prior] = await db.select().from(appIdentity).where(eq(appIdentity.id, input.actionId)).limit(1);
+  if (prior) {
+    const [acc] = await db.select({ id: account.id, phone: account.phone, operatorId: account.operatorId })
+      .from(account).where(eq(account.id, prior.accountId)).limit(1);
+    if (prior.app !== 'oto_app' || prior.externalUserId !== user.id || prior.createdBy !== actorAccount.id
+      || !acc || acc.operatorId !== input.operatorId || user.platformUserId !== acc.id || acc.phone !== phone) {
+      throw new AppError(409, 'ACTION_ID_REUSED', 'That action id was already used for another sign-in request');
+    }
+    const mapped = await resolveOtoAppRoleContext(db, { operatorId: input.operatorId, accountId: acc.id });
+    return { id: prior.id, accountId: acc.id, phone: acc.phone, externalUserId: prior.externalUserId,
+      temporaryPassword: null, replayed: true, platformManaged: mapped !== null };
   }
   if (!user.isActive) {
     throw new AppError(
@@ -235,6 +228,8 @@ export async function provisionExistingOtoAppUser(
       });
       const roleId = await ensureAppAccessRole(tx, input.operatorId, 'oto_app');
       const accessGranted = await grantAppAccess(tx, accountId, roleId, input.operatorId, null);
+      const mapped = await reconcileOtoAppRole(tx, { operatorId: input.operatorId, accountId,
+        actorAccountId: actorAccount.id, requestId: ctx.requestId });
       await audit.record(tx, {
         actorAccountId: actorAccount.id,
         operatorId: input.operatorId,
@@ -262,7 +257,78 @@ export async function provisionExistingOtoAppUser(
         externalUserId: user.id,
         temporaryPassword: temp,
         replayed: false,
+        platformManaged: mapped !== null,
       };
     },
   );
+}
+
+export interface ConsumedLifecycleDeactivation {
+  ok: true;
+  eventId: string;
+  state: 'delivered' | 'superseded';
+  replayed: boolean;
+}
+
+/**
+ * Consume an app-owned switch-off event using its immutable identity targets.
+ * The service key names only the owning operator; no caller supplies an account
+ * or an acting administrator. The event is the durable replay receipt.
+ */
+export async function consumeLifecycleDeactivation(
+  db: Db,
+  ctx: OpContext,
+  input: { operatorId: string; eventId: string },
+): Promise<ConsumedLifecycleDeactivation> {
+  const missing = () => new AppError(404, 'NOT_FOUND', 'That lifecycle event is not available for this operator');
+  const snapshot = await readOtoAppLifecycleEvent(db, input.eventId);
+  if (!snapshot) throw missing();
+
+  return withTx(db, { ...ctx, operatorId: input.operatorId, actorAccountId: null, branchId: null },
+    'app_identity.lifecycle_deactivation', async tx => {
+      // Shared with account PATCH and assignment removal. Keep the order:
+      // operator, platform account, app user, then its event.
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${input.operatorId}, 633))`);
+      // Serialize status changes while allowing an identity insert's FK KEY
+      // SHARE lock: linking already holds the app user before that FK check.
+      const [target] = await tx.select({ id: account.id, operatorId: account.operatorId, status: account.status })
+        .from(account).where(and(eq(account.id, snapshot.platformAccountId), eq(account.operatorId, input.operatorId))).for('no key update');
+      if (!target) throw missing();
+      const user = await lockOtoAppLifecycleUser(tx, snapshot.userId);
+      if (!user) throw missing();
+      const event = await readOtoAppLifecycleEvent(tx, input.eventId, { lock: true });
+      if (!event || event.userId !== snapshot.userId || event.platformAccountId !== snapshot.platformAccountId) throw missing();
+      if (!(await otoAppLifecycleUserIsOperators(tx, { operatorId: input.operatorId, accountId: target.id, user }))) throw missing();
+
+      // Ownership is checked on every replay, but a settled event never changes
+      // the current account or user, including after a later reactivation.
+      if (event.state !== 'pending') {
+        return { ok: true as const, eventId: event.id, state: event.state, replayed: true };
+      }
+      const superseded = user.isActive || user.platformUserId !== target.id;
+      const state = superseded ? 'superseded' as const : 'delivered' as const;
+      let otoApp = { userIds: [] as string[], sessionsEnded: 0 };
+      if (!superseded) {
+        await assertNotLastOperatorAdmin(tx as Db, input.operatorId, { accountId: target.id });
+        if (target.status !== 'inactive') {
+          await tx.update(account).set({ status: 'inactive' }).where(eq(account.id, target.id));
+        }
+        await invalidateAllSessions(tx, target.id, 'deactivated');
+        otoApp = await deactivateOtoAppUser(tx, { platformAccountId: target.id });
+      }
+      await settleOtoAppLifecycleEvent(tx, event.id, state);
+      await audit.record(tx, {
+        actorAccountId: null,
+        operatorId: input.operatorId,
+        action: 'app_identity.lifecycle_deactivation',
+        entityType: 'app_identity',
+        entityId: event.id,
+        actionId: event.id,
+        before: { status: target.status },
+        after: { sourceApp: 'oto_app', accountId: target.id, externalUserId: user.id, state,
+          accountDeactivated: !superseded && target.status !== 'inactive', otoApp },
+        requestId: ctx.requestId,
+      });
+      return { ok: true as const, eventId: event.id, state, replayed: false };
+    });
 }

@@ -211,6 +211,13 @@
       "when": 1792831817751,
       "tag": "0030_department_read_seam",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1792882325212,
+      "tag": "0031_login_lifecycle",
+      "breakpoints": true
     }
   ]
 }

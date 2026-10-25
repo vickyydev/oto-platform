@@ -7,6 +7,7 @@ import { registerEmployeeActionRoutes } from "./employee-action-routes";
 import { registerQaRoutes } from "./qa/routes";
 import { registerSuiteSignInRoutes, unusablePassword } from "./suite-sign-in-routes";
 import { readPhone } from "./lib/suiteSignIn";
+import { registerEmployeeSuiteProvision } from "./lib/employeeSuiteProvision";
 import { legacyLoginEnabled, legacyPasswordsOnly } from "./middleware/platformSignOn";
 import { loadAdminManagement } from "./lib/adminManagement";
 import { managedInAdminResponse, managedInAdminResponseSchema } from "@shared/adminManagement";
@@ -4335,7 +4336,11 @@ export async function registerRoutes(
     }
   });
 
-  // Enable login access for existing employee
+  registerEmployeeSuiteProvision(app, { userManagementTenant, committed: (employeeId) => {
+    evaluateForEmployee(employeeId).catch(err => console.error("[AttentionEngine] Enable login trigger failed:", err));
+  } });
+
+  // Enable login access for existing employee (the legacy password flow).
   app.post("/api/employees/:id/enable-login", requireAuth, requireManager, async (req, res, next) => {
     try {
       const employee = await storage.getEmployee(req.params.id);

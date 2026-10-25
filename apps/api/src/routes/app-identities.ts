@@ -40,7 +40,7 @@ import {
 } from '../services/permissions';
 import { opCtx, withTx } from '../services/tx';
 import { otoAppProvisionerOf } from '../plugins/credential';
-import { provisionExistingOtoAppUser } from '../services/otoapp-provision';
+import { consumeLifecycleDeactivation, provisionExistingOtoAppUser } from '../services/otoapp-provision';
 
 const OtoAppBranchPlacementSchema = z.object({
   branchId: z.string().nullable(),
@@ -550,6 +550,7 @@ export async function appIdentityRoutes(app: App): Promise<void> {
             externalUserId: z.string(),
             temporaryPassword: z.string().nullable(),
             replayed: z.boolean(),
+            platformManaged: z.boolean(),
           }),
         },
       },
@@ -557,6 +558,25 @@ export async function appIdentityRoutes(app: App): Promise<void> {
     async (req) => {
       const { operatorId } = otoAppProvisionerOf(req);
       return provisionExistingOtoAppUser(app.db, opCtx(req), { operatorId, ...req.body });
+    },
+  );
+
+  // The app supplies only its durable event id. The identity seam derives the
+  // account and operator, and commits eviction, audit and the receipt together.
+  app.post(
+    '/oto_app/lifecycle-deactivations',
+    {
+      config: { credential: 'otoapp-provision' },
+      schema: {
+        description: 'OTO App server only: consume an owned durable login-disable event; never grants access or activates an account.',
+        body: z.object({ eventId: z.string().uuid() }).strict(),
+        response: { 200: z.object({ ok: z.literal(true), eventId: z.string().uuid(),
+          state: z.enum(['delivered', 'superseded']), replayed: z.boolean() }).strict() },
+      },
+    },
+    async (req) => {
+      const { operatorId } = otoAppProvisionerOf(req);
+      return consumeLifecycleDeactivation(app.db, opCtx(req), { operatorId, eventId: req.body.eventId });
     },
   );
 

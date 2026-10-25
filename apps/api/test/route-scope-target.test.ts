@@ -151,6 +151,16 @@ const OPERATOR_WIDE_WRITES = [
 ];
 
 describe('operator-wide settings are changed at operator scope (SCRUM-606)', () => {
+  it('lifecycle scope comes from the credential and immutable owned identity event (SCRUM-633)', () => {
+    const key = 'POST /admin/apps/oto_app/lifecycle-deactivations';
+    const route = routes.find(r => `${r.method} ${r.path}` === key);
+    expect(configs.get(key)?.credential).toBe('otoapp-provision');
+    expect(route).toBeDefined();
+    expect(route!.handlerText).toContain('otoAppProvisionerOf(req)');
+    expect(route!.handlerText).toContain('operatorId, eventId: req.body.eventId');
+    expect(reachesText(route!.handlerText, text => /otoAppLifecycleUserIsOperators\s*\(/.test(text), functions, 2)).toBe(true);
+  });
+
   it('new Teams and routing writes resolve old/new row targets before replay instead of a seated-park default (SCRUM-626)', () => {
     const managed = routes.filter(r => /^\/inbox\/(teams|routing-rules)(\/|$)/.test(r.path)
       && ['POST', 'PATCH', 'DELETE'].includes(r.method));

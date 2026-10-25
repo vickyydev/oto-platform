@@ -58,7 +58,7 @@ answer = {
   body: { id: input.actionId, accountId: "acc-1", phone: "+66812345678", externalUserId: "user-1", temporaryPassword: "Ab12Cd34", replayed: false },
 };
 const made = await provisionSuiteSignIn(config, input, "req-1");
-assert.deepEqual(made, { ok: true, accountId: "acc-1", phone: "+66812345678", temporaryPassword: "Ab12Cd34", replayed: false });
+assert.deepEqual(made, { ok: true, accountId: "acc-1", phone: "+66812345678", temporaryPassword: "Ab12Cd34", replayed: false, platformManaged: false });
 assert.equal(seen[0]!.url, "/admin/apps/oto_app/suite-sign-ins");
 assert.equal(seen[0]!.headers.authorization, "Bearer zz-key", "the key travels as a Bearer");
 assert.equal(seen[0]!.headers.cookie, undefined, "no platform session is ever sent");

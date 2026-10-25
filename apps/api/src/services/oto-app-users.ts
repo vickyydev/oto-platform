@@ -178,6 +178,11 @@ export interface OtoAppUserDeactivation {
   sessionsEnded: number;
 }
 
+/** What reactivating a platform account changed on its stamped app user. */
+export interface OtoAppUserActivation {
+  userIds: string[];
+}
+
 /**
  * Switch off the OTO App user a platform account is stamped on, and end their
  * live sessions there (SCRUM-288).
@@ -191,8 +196,8 @@ export interface OtoAppUserDeactivation {
  * `requireAuth` — and removing the session rows closes the second.
  *
  * The stamp stays: the person is still the same person, and the app keeps
- * their history under it. Reactivating the account does not switch the app
- * user back on; that stays the app's own decision.
+ * their history under it. An explicit platform reactivation switches the same
+ * app user back on through `activateOtoAppUser` (SCRUM-633).
  *
  * Runs on the caller's transaction, so it commits with the deactivation or not
  * at all. A database with no OTO App on it answers with nothing done.
@@ -209,6 +214,116 @@ export async function deactivateOtoAppUser(
     .returning({ id: otoappUsers.id });
   const userIds = switchedOff.map((u) => u.id);
   return { userIds, sessionsEnded: await endOtoAppSessions(exec, userIds) };
+}
+
+/**
+ * Enable the same app user when its platform account is explicitly reactivated.
+ * Identity, role, branch access and closed sessions stay as they are. Runs on
+ * the caller's transaction, after the platform account update, so neither side
+ * can commit alone. Databases without the app and accounts without a stamped
+ * user need no provisioning here.
+ */
+export async function activateOtoAppUser(
+  exec: Exec,
+  opts: { platformAccountId: string },
+): Promise<OtoAppUserActivation> {
+  if (!(await relationInstalled(exec, 'otoapp.users'))) return { userIds: [] };
+  const switchedOn = await exec
+    .update(otoappUsers)
+    .set({ isActive: true, updatedAt: new Date() })
+    .where(and(eq(otoappUsers.platformUserId, opts.platformAccountId), eq(otoappUsers.isActive, false)))
+    .returning({ id: otoappUsers.id });
+  return { userIds: switchedOn.map((u) => u.id) };
+}
+
+export type OtoAppLifecycleEventState = 'pending' | 'delivered' | 'superseded';
+
+/** Immutable delivery targets plus the app-owned outbox's current outcome. */
+export type OtoAppLifecycleEvent = {
+  id: string;
+  userId: string;
+  platformAccountId: string;
+  state: OtoAppLifecycleEventState;
+};
+
+export interface OtoAppLifecycleUser {
+  id: string;
+  role: string;
+  operatorId: string | null;
+  platformUserId: string | null;
+  isActive: boolean;
+}
+
+/** Read without a lock to discover the account, then re-read after user locking. */
+export async function readOtoAppLifecycleEvent(
+  exec: Exec,
+  eventId: string,
+  opts: { lock?: boolean } = {},
+): Promise<OtoAppLifecycleEvent | null> {
+  for (const name of ['otoapp.login_lifecycle_events', 'otoapp.users', 'otoapp.branches',
+    'otoapp.user_branch_access', 'otoapp.operators', 'otoapp.tenants']) {
+    if (!(await relationInstalled(exec, name))) {
+      throw new AppError(503, 'OTOAPP_LIFECYCLE_UNAVAILABLE', 'The OTO App lifecycle queue is not available on this database');
+    }
+  }
+  const row = (await exec.execute<OtoAppLifecycleEvent>(sql`
+    select id::text as id, user_id as "userId", platform_account_id::text as "platformAccountId", state
+    from otoapp.login_lifecycle_events where id=${eventId}
+    ${opts.lock ? sql`for update` : sql``}
+  `)).rows[0];
+  if (!row) return null;
+  if (!['pending', 'delivered', 'superseded'].includes(row.state)) {
+    throw new AppError(503, 'OTOAPP_LIFECYCLE_UNAVAILABLE', 'The OTO App lifecycle queue has an unsupported outcome');
+  }
+  return row;
+}
+
+/** The caller already holds the owning operator and platform account locks. */
+export async function lockOtoAppLifecycleUser(exec: Exec, userId: string): Promise<OtoAppLifecycleUser | null> {
+  const [user] = await exec.select({ id: otoappUsers.id, role: otoappUsers.role, operatorId: otoappUsers.operatorId,
+    platformUserId: otoappUsers.platformUserId, isActive: otoappUsers.isActive })
+    .from(otoappUsers).where(eq(otoappUsers.id, userId)).for('update');
+  return user ?? null;
+}
+
+/**
+ * Prove the event's original identity and its user's current tenant ownership.
+ * A changed stamp is handled as superseded by the caller, never as a new target.
+ */
+export async function otoAppLifecycleUserIsOperators(
+  exec: Exec,
+  opts: { operatorId: string; accountId: string; user: OtoAppLifecycleUser },
+): Promise<boolean> {
+  const [identity] = await exec.select({ id: appIdentity.id }).from(appIdentity)
+    .where(and(eq(appIdentity.app, 'oto_app'), eq(appIdentity.accountId, opts.accountId), eq(appIdentity.externalUserId, opts.user.id)))
+    .limit(1);
+  if (!identity) return false;
+  const place = (await placeAppUsers(exec, [opts.user])).get(opts.user.id);
+  if (!place?.tenantId) return false;
+  const anchors = (await appTenantAnchors(exec)).get(place.tenantId);
+  if (anchors?.length !== 1 || anchors[0] !== opts.operatorId) return false;
+  if (opts.user.operatorId) {
+    const entity = (await exec.execute<{ tenant_id: string }>(sql`
+      select tenant_id::text as tenant_id from otoapp.operators where id::text=${opts.user.operatorId}
+    `)).rows[0];
+    if (entity?.tenant_id !== place.tenantId) return false;
+  }
+  return true;
+}
+
+/** Settle only the locked pending event; the app pump owns attempt counting. */
+export async function settleOtoAppLifecycleEvent(
+  exec: Exec,
+  eventId: string,
+  state: Exclude<OtoAppLifecycleEventState, 'pending'>,
+): Promise<void> {
+  const settled = await exec.execute<{ id: string }>(sql`
+    update otoapp.login_lifecycle_events set state=${state}, settled_at=now(), last_error_code=null
+    where id=${eventId} and state='pending' returning id::text as id
+  `);
+  if (settled.rows.length !== 1) {
+    throw new AppError(409, 'OTOAPP_LIFECYCLE_CHANGED', 'That lifecycle event changed before it could be settled');
+  }
 }
 
 /**

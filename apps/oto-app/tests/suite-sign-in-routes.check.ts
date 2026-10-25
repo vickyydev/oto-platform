@@ -238,3 +238,7 @@ try {
   platform.close();
   await pool.end();
 }
+
+if (process.env.CI === "true" || process.env.SCRUM_633_SUITE === "1") {
+  await import("./s633-suite.check");
+}

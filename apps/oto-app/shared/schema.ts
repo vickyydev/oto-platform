@@ -181,6 +181,25 @@ export const users = pgTable("users", {
   index("idx_users_username").on(table.username),
   check("users_birthday_valid", validBirthdayCheck),
 ]);
+
+// Durable app-to-platform disable notifications. These identity snapshots have
+// no user FK: unlink/delete must neither erase an event nor gain a new blocker.
+export const loginLifecycleStates = ["pending", "delivered", "superseded"] as const;
+export const loginLifecycleEvents = pgTable("login_lifecycle_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: varchar("user_id").notNull(),
+  platformAccountId: uuid("platform_account_id").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  state: text("state", { enum: loginLifecycleStates }).notNull().default("pending"),
+  settledAt: timestamp("settled_at", { withTimezone: true }),
+  attemptCount: integer("attempt_count").notNull().default(0),
+  lastErrorCode: text("last_error_code"),
+}, (table) => [
+  index("idx_login_lifecycle_pending").on(table.state, table.createdAt, table.id),
+  check("login_lifecycle_events_state_check", sql`${table.state} IN ('pending', 'delivered', 'superseded')`),
+  check("login_lifecycle_events_attempt_count_check", sql`${table.attemptCount} >= 0`),
+]);
+
 export const session = pgTable("session", {
   sid: text("sid").primaryKey(),
   sess: jsonb("sess").notNull(),

@@ -856,6 +856,7 @@ const SEAMS: Record<string, string[]> = {
     'tenants',
     'operators',
     'session',
+    'login_lifecycle_events',
   ],
   'apps/api/src/services/booth-duty.ts': [
     'schedule_assignments',

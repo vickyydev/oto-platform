@@ -1,0 +1,203 @@
+{
+  "ticket": "SCRUM-633",
+  "recordedAt": "2026-10-25T00:15:55.783Z",
+  "localReleaseGreen": true,
+  "finalSourceManifestSha256": "29d46a6af64025ee2e8701d688009d79e0d0d2f4410f1e483225bdca95f83dd2",
+  "sourceFiles": 3739,
+  "dependencyInputs": 28,
+  "broadGateSourceManifestSha256": "99162fd2de839885ab82652145f20810197293db14407a43da2c3c221972c590",
+  "broadGateSourceFiles": 3738,
+  "sourceBridge": {
+    "path": "C:/w/admin633-final-ci-source-bridge.json",
+    "sha256": "7b993fc5a7f3a28b7a35d34fb18b11d01f2ccc92a4bc0ee7b5b3f945f2e4c235",
+    "independentlyVerified": true,
+    "changed": [
+      {
+        "path": "apps/oto-app/tests/s633-suite.check.ts",
+        "sha256": "86c1a68cbc8202e4b3c241f79230e0dc96df3de3f4596285d4f5c9e4e94af877"
+      },
+      {
+        "path": "apps/oto-app/tests/suite-sign-in-routes.check.ts",
+        "sha256": "e67f7a0d60361558ce1c0902d6e384789f9a4f686aa7de8ccca17f1333348654"
+      }
+    ],
+    "removed": 0,
+    "originalEntryPrefixBytesPreserved": true,
+    "allProductionApiAndDependencyBytesUnchanged": true,
+    "finalHostHashesVerified": true
+  },
+  "ciEntry": {
+    "outer": {
+      "path": "C:/w/admin633-integrated/app-ci-entry-final.json",
+      "sha256": "e1e3eef92b35093dceb439484fd1f55d4a395df20a41f78a45b5723ee0a7ec10"
+    },
+    "innerResult": {
+      "path": "C:/w/admin633-ci-entry-actual/result.json",
+      "sha256": "33813efaa1e49fc2291433e06e6ff66eab2b5c836c0b1d83d2c09d76479b6704"
+    },
+    "innerLog": {
+      "path": "C:/w/admin633-ci-entry-actual/suite-sign-in-routes.log",
+      "sha256": "8f1ebfb005a905de550386317134d104b1740c40cce3d8291b9841407f114028"
+    },
+    "originalRouteChecksPassed": true,
+    "standaloneAppMigrationPassed": true,
+    "childChecks": [
+      {
+        "stage": "s633-employee-suite-sign-in.check.ts",
+        "passed": 15,
+        "total": 15
+      },
+      {
+        "stage": "s633-employee-wizard.check.ts",
+        "passed": 9,
+        "total": 9
+      },
+      {
+        "stage": "s633-lifecycle.check.ts",
+        "passed": 11,
+        "total": 11
+      },
+      {
+        "stage": "s633-lifecycle-privileges.check.ts",
+        "passed": 4,
+        "total": 4
+      }
+    ],
+    "totalChildChecks": 39,
+    "innerScratchDatabaseRemoved": true,
+    "outerScratchDatabaseRemoved": true,
+    "sourceManifestSha256": "29d46a6af64025ee2e8701d688009d79e0d0d2f4410f1e483225bdca95f83dd2"
+  },
+  "api": {
+    "review": {
+      "path": "C:/w/admin633-api-final-review.json",
+      "sha256": "b6e4f8f25dfeaa4f1ed1aa8c592f48ba96f24a48d99defee44de4978a28660c3"
+    },
+    "files": {
+      "passed": 361,
+      "failed": 0,
+      "total": 361
+    },
+    "tests": {
+      "passed": 5339,
+      "failed": 0,
+      "skipped": 3,
+      "todo": 5,
+      "total": 5347
+    },
+    "newLifecycleConcurrencyPassed": true,
+    "booth39Passed": true
+  },
+  "workspace": {
+    "review": {
+      "path": "C:/w/admin633-workspace-review.json",
+      "sha256": "070082724737e8a0c83cc02bc40cb2b921b932dabb1eb35f45a6adbcab8ff2b8"
+    },
+    "testTasks": 13,
+    "testsPassed": 2653,
+    "todo": 3,
+    "typecheckTasks": 16,
+    "apiDiagnostics": 0,
+    "builds": 5,
+    "dbTests": 313,
+    "apiTypesSeamTests": 10,
+    "contractsMatch": true,
+    "schemaSnapshot": "0086_snapshot.json",
+    "publicEmpty": true,
+    "noMockGuard": true
+  },
+  "pos": {
+    "receipt": {
+      "path": "C:/w/admin633-integrated/pos-final-tests.json",
+      "sha256": "471f248207e83840c953c9423a9c8b4a8e10cdbed60353549bc671518c869fe7"
+    },
+    "files": 101,
+    "passed": 1437
+  },
+  "box": {
+    "receipt": {
+      "path": "C:/w/admin633-integrated/box-final-tests.json",
+      "sha256": "b3d1b883fee524fffe49eb21a389ff28adbc2e5a32b565191a96b19871d8696e"
+    },
+    "passed": 749
+  },
+  "app": {
+    "fullReceipt": {
+      "path": "C:/w/admin633-final-release-v2/full.json",
+      "sha256": "f1cf3cb39c9575cc663810f55707a5edcdcc6871e5f9f2edaba7ea9083c3a83d"
+    },
+    "commands": 29,
+    "allPassed": true,
+    "ownDatabasesRemoved": 6,
+    "compilerReview": {
+      "path": "C:/w/admin633-final-compiler-review-v2.json",
+      "sha256": "1b73cecc4ae2cd231db92a96b1aebbd1568d6bef42513c68b45581725e715676"
+    },
+    "wholeCompilerRead": true,
+    "compilerErrors": 418,
+    "compilerFiles": 54,
+    "fileCodeBuckets": 109,
+    "noNewDiagnostics": true,
+    "restoreReceipt": {
+      "path": "C:/w/admin633-final-release-v2/restore.json",
+      "sha256": "634ed032d5aec20c654a6d5302f386b8aab20e08b513b9e4c785fdce6a8fa4ff"
+    },
+    "restore": {
+      "baselineTables": 184,
+      "baselineRows": 1108,
+      "platformMigrations": 87,
+      "appMigrations": 31,
+      "replays": 2,
+      "cleanup": "complete",
+      "scratchBefore": 0,
+      "scratchAfter": 0
+    },
+    "freshNpmCi": {
+      "receipt": {
+        "path": "C:/w/admin633-integrated/fresh-app-install.json",
+        "sha256": "d1f383009f5e3e9ad232dbd86335cbfdc6e6a3343af31b1690e9c1c8d6adc67d"
+      },
+      "genuine": true,
+      "sourceManifestSha256": "06f34e5aa43130c94997fead3f305ac66e46faf4490338825ec6df6981acc160",
+      "dependencyInputsUnchangedSinceInstall": true
+    }
+  },
+  "lint": {
+    "receipt": {
+      "path": "C:/w/admin633-scoped-lint-v4/result.json",
+      "sha256": "12c04f7dc6df40301f491ec2db9f2be99f2015353d6bcba88661519dbcfc4230"
+    },
+    "files": 17,
+    "baselineErrors": 3,
+    "candidateErrors": 3,
+    "newErrors": 0,
+    "inheritedWarnings": 330,
+    "rulesUnchanged": true
+  },
+  "failedHistory": {
+    "originalApiFailureAudit": {
+      "path": "C:/w/admin633-api-failure-audit-final.json",
+      "sha256": "66734e452f5282a825ec28e7659c2cba28dc07a5c2902702fe685abf15a4007e"
+    },
+    "originalBoothFailureRetained": true,
+    "boothFailureCauseProven": false,
+    "interrupted2bcbNotAPass": true,
+    "firstCompiler420Retained": true,
+    "linkScheduleOnlyAttemptRetained": true,
+    "linkProductRedAndFinalCounterfactualRetained": {
+      "path": "C:/w/admin633-final-source-independent-review.json",
+      "sha256": "d8fa61402ac2e53be8801531cb62712e3bb7560b259f03b1e7ae4afd29990621"
+    },
+    "relatedAppHarnessAndFixtureAttemptsRetained": true
+  },
+  "limits": [
+    "Broad gates keep their actual99162 receipts; only two app test-entry files changed and their real armed CI entry passes on29d46",
+    "Inherited418 compiler diagnostics, app lint3 errors/330warnings, API3skips/5TODO and workspace3TODO remain",
+    "Actual Console browser e2e is not claimed by these local receipts",
+    "Local release evidence only; source landing, exact-SHA six-job CI, latest Render rollout and staging proof are separate"
+  ],
+  "sourceLanded": false,
+  "ciPassed": false,
+  "deployed": false,
+  "stagingAccepted": false
+}

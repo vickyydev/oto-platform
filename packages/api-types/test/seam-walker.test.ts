@@ -75,7 +75,7 @@ const DYNAMIC = new Map<string, string>([
  * Routes called by a machine rather than a screen, by path prefix. Each names
  * its caller; none of them is in a front end the walker reads.
  */
-const MACHINE_CALLERS: Array<{ prefix: string; except?: string; caller: string }> = [
+const MACHINE_CALLERS: Array<{ prefix: string; exact?: boolean; except?: string; caller: string }> = [
   {
     prefix: '/box/v1/',
     except: '/box/v1/station/',
@@ -97,6 +97,12 @@ const MACHINE_CALLERS: Array<{ prefix: string; except?: string; caller: string }
     prefix: '/admin/apps/oto_app/suite-sign-ins',
     caller:
       "the OTO App's server (SCRUM-539), with the operator-bound provision key whose digest the api holds",
+  },
+  {
+    prefix: '/admin/apps/oto_app/lifecycle-deactivations',
+    exact: true,
+    caller:
+      "the OTO App outbox pump (server/lib/platformLifecycle.ts, SCRUM-633), posting only an event ID with the operator-bound provision credential",
   },
 ];
 
@@ -165,7 +171,7 @@ const NOT_YET_CALLED = new Map<string, string>([
 
 function machineCaller(path: string): string | null {
   const hit = MACHINE_CALLERS.find(
-    (m) => path.startsWith(m.prefix) && !(m.except && path.startsWith(m.except)),
+    (m) => (m.exact ? path === m.prefix : path.startsWith(m.prefix)) && !(m.except && path.startsWith(m.except)),
   );
   return hit?.caller ?? null;
 }

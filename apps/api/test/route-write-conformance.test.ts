@@ -447,6 +447,9 @@ describe('one operation, one transaction (SCRUM-291)', () => {
  */
 const OUTSIDE_THE_REPLAY_STORE = [
   'POST /accounts/:id/temp-password [secretResponse]',
+  // SCRUM-633: the app-owned event is settled with account eviction and audit
+  // in one transaction. Concurrent delivery and late replay use that durable row.
+  'POST /admin/apps/oto_app/lifecycle-deactivations [credential:otoapp-provision]',
   /**
    * SCRUM-539 — the OTO App's SERVER giving an app-born person a suite
    * sign-in. Its answer is a one-time temporary password and its principal is
@@ -699,6 +702,15 @@ const OPEN_WITHOUT_A_KEY = [
 ];
 
 describe('the idempotency key (SCRUM-291)', () => {
+  it('lifecycle delivery commits its durable event receipt, account change and audit together (SCRUM-633)', () => {
+    const route = routes.find(r => r.method === 'POST' && r.path === '/admin/apps/oto_app/lifecycle-deactivations');
+    expect(route).toBeDefined();
+    expect(configs.get('POST /admin/apps/oto_app/lifecycle-deactivations')?.credential).toBe('otoapp-provision');
+    expect(reachesText(route!.handlerText, text => /withTx\s*\(/.test(text), functions, 2)).toBe(true);
+    expect(reachesText(route!.handlerText, text => /settleOtoAppLifecycleEvent\s*\(/.test(text), functions, 2)).toBe(true);
+    expect(reachesText(route!.handlerText, text => /audit\.record\s*\(/.test(text), functions, 2)).toBe(true);
+  });
+
   it('only these mutating routes are outside the replay store', () => {
     const outside = app.routeRegistry
       .filter((r) => MUTATING.has(r.method))

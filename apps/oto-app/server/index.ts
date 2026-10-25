@@ -10,7 +10,9 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { startScheduledJobs } from "./scheduled-jobs";
-import { assertSearchPath } from "./db";
+import { assertSearchPath, pool } from "./db";
+import { startPlatformLifecycleTransport } from "./lib/platformLifecycle";
+import { suiteProvisionConfig } from "./lib/suiteSignIn";
 import { bindConsole, logger } from "./lib/logger";
 import { registerRequestLogging } from "./middleware/requestLog";
 import path from "path";
@@ -122,6 +124,9 @@ export function log(message: string, source = "express") {
       // through the directory job endpoint and no timer starts here
       // (S2-17b round 3).
       startScheduledJobs();
+      // This is an outbox transport, independent of the business-job owner.
+      const stopLifecycleTransport = startPlatformLifecycleTransport({ database: pool, config: suiteProvisionConfig(), fetch });
+      httpServer.once("close", stopLifecycleTransport);
     },
   );
 })().catch((error) => {

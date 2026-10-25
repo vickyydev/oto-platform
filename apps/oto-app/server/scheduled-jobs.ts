@@ -130,9 +130,9 @@ export async function runStatusTransitions(opts: NightJobOptions = {}): Promise<
  * switches off another's people (S2-17b round 1), and so does the platform's
  * job endpoint, for the park group its key is bound to (round 3).
  *
- * Only the app's own login: a leaver's platform account (the launcher, the
- * till) is not this app's to switch off. The platform's 03:00 run lists the
- * ones still active on its Failures page instead (plan Q4).
+ * The app's active-to-inactive write also queues a durable identity event.
+ * The separate lifecycle transport asks the platform to switch off the linked
+ * account through its identity seam; this batch keeps its existing criteria.
  */
 export async function runDepartedAccountDeactivation(opts: NightJobOptions = {}): Promise<number> {
   console.log("[ACCOUNT_DEACTIVATION] Checking for departed employees with active accounts...");

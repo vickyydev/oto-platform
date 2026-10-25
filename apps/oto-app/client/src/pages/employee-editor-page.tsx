@@ -1,5 +1,5 @@
 import { useManagerActionRequest } from "@/hooks/use-manager-action-request";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
 import { Employee, Branch, insertEmployeeSchema, EmployeeChange, ContractInstance, employeeStatuses, EmployeeAsset, Department, Role, offboardingReasonLabel } from "@shared/schema";
@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLegacyLoginOff } from "@/lib/sign-in-options";
 import { LauncherPasswordNote } from "@/components/suite-sign-in";
 import { useAuth } from "@/hooks/use-auth";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { ApiError, apiRequest, queryClient } from "@/lib/queryClient";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -109,9 +109,34 @@ function AccessStatusSection({ employeeId, personId, employee, forceOpen }: { em
 
   const [wizardStep, setWizardStep] = useState(1);
   const [tempPassword, setTempPassword] = useState("");
-  // SCRUM-539: with this app's own sign-in closed, a password made here opens
-  // nothing: the login is made without one, and passwords live at the launcher.
+  // A launcher sign-in is provisioned as part of this wizard in platform mode.
   const { off: legacyOff, launcherUrl } = useLegacyLoginOff();
+  const [suiteActionId, setSuiteActionId] = useState<string>(() => crypto.randomUUID());
+  const [suitePhone, setSuitePhone] = useState(employee.phone || "");
+  const [suiteRetry, setSuiteRetry] = useState<Record<string, unknown> | null>(null);
+  const [suiteAnswer, setSuiteAnswer] = useState<{
+    phone: string; temporaryPassword: string | null; replayed: boolean; platformManaged: boolean;
+  } | null>(null);
+  const suiteLifetime = useRef({ mounted: true, generation: 0, employeeId });
+  useEffect(() => {
+    const lifetime = suiteLifetime.current;
+    lifetime.mounted = true;
+    lifetime.employeeId = employeeId;
+    setSuiteAnswer(null);
+    setSuiteRetry(null);
+    setEnableLoginModalOpen(false);
+    return () => {
+      lifetime.mounted = false;
+      lifetime.generation++;
+    };
+  }, [employeeId]);
+  const { data: pendingSuiteLogin } = useQuery<{
+    phase: "prepared"; actionId: string; userId: string; personId: string; accessPolicyId: string;
+    request: Record<string, unknown>;
+  } | null>({
+    queryKey: [`/api/employees/${employeeId}/login-provisioning`],
+    enabled: legacyOff && isManager && !!employee.userId,
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [accessLevel, setAccessLevel] = useState<"STAFF" | "MANAGER" | "ADMIN">("STAFF");
   const [enableCoreModule, setEnableCoreModule] = useState(true);
@@ -279,9 +304,13 @@ function AccessStatusSection({ employeeId, personId, employee, forceOpen }: { em
   // Enable login mutation
   const enableLoginMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("POST", `/api/employees/${employeeId}/enable-login`, {
+      const generation = suiteLifetime.current.generation;
+      const requestEmployeeId = employeeId;
+      const isCurrent = () => suiteLifetime.current.mounted
+        && suiteLifetime.current.generation === generation && suiteLifetime.current.employeeId === requestEmployeeId;
+      const request = suiteRetry ?? {
         email: loginEmail,
-        ...(legacyOff ? {} : { password: tempPassword }),
+        ...(legacyOff ? { actionId: suiteActionId, phone: suitePhone } : { password: tempPassword }),
         accessLevel,
         enableCoreModule,
         enableHrModule,
@@ -291,14 +320,34 @@ function AccessStatusSection({ employeeId, personId, employee, forceOpen }: { em
         enableSetupModule,
         branchScope,
         branchIds: employee.branchId ? [employee.branchId] : [],
-      });
-      return res.json();
+      };
+      try {
+        const res = await apiRequest("POST", `/api/employees/${employeeId}/enable-login`, request);
+        const answer = await res.json();
+        if (!legacyOff) return answer;
+        if (isCurrent()) setSuiteAnswer(answer);
+        // MutationCache outlives the dialog. Only the mounted display receives
+        // the password; closed, unmounted and stale requests keep safe metadata.
+        return { ...answer, temporaryPassword: null, wizardGeneration: generation, wizardEmployeeId: requestEmployeeId };
+      } catch (error) {
+        // Keep an uncertain press intact, including after closing and reopening
+        // this wizard. Its reserved user must never be recreated on a retry.
+        if (legacyOff && isCurrent() && (!(error instanceof ApiError) || error.status >= 500)) {
+          setSuiteRetry(request);
+          setSuitePhone(String(request.phone ?? ""));
+        }
+        throw error;
+      }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      if (legacyOff && (!suiteLifetime.current.mounted || data.wizardGeneration !== suiteLifetime.current.generation
+        || data.wizardEmployeeId !== suiteLifetime.current.employeeId)) return;
+      setSuiteRetry(null);
       setWizardStep(3);
       queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
       queryClient.invalidateQueries({ queryKey: ["/api/employees", employeeId] });
       queryClient.invalidateQueries({ queryKey: ["/api/attention-items"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/employees/${employeeId}/login-provisioning`] });
       refetch();
     },
     onError: (error: Error) => {
@@ -312,6 +361,7 @@ function AccessStatusSection({ employeeId, personId, employee, forceOpen }: { em
   
 
   const resetWizard = () => {
+    suiteLifetime.current.generation++;
     setWizardStep(1);
     setTempPassword("");
     setAccessLevel("STAFF");
@@ -323,12 +373,34 @@ function AccessStatusSection({ employeeId, personId, employee, forceOpen }: { em
     setEnableSetupModule(false);
     setBranchScope("SELECTED");
     setLoginEmail(employee.email || "");
+    setSuitePhone(employee.phone || "");
+    setSuiteActionId(crypto.randomUUID());
+    setSuiteAnswer(null);
+    enableLoginMutation.reset();
   };
   
   const openEnableLoginModal = () => {
+    const recovery = suiteRetry ?? pendingSuiteLogin?.request;
+    if (recovery) {
+      setSuiteRetry(recovery);
+      setSuiteActionId(String(recovery.actionId));
+      setSuitePhone(String(recovery.phone ?? ""));
+      setLoginEmail(String(recovery.email ?? employee.email ?? ""));
+      setAccessLevel((recovery.accessLevel ?? "STAFF") as "STAFF" | "MANAGER" | "ADMIN");
+      setWizardStep(2);
+      setEnableLoginModalOpen(true);
+      return;
+    }
     resetWizard();
-    generatePassword();
+    if (!legacyOff) generatePassword();
     setEnableLoginModalOpen(true);
+  };
+
+  const closeEnableLoginModal = () => {
+    if (enableLoginMutation.isPending) return;
+    setSuiteAnswer(null);
+    if (!suiteRetry) resetWizard();
+    setEnableLoginModalOpen(false);
   };
   
   // Quick login generation mutation
@@ -445,6 +517,14 @@ function AccessStatusSection({ employeeId, personId, employee, forceOpen }: { em
           </CollapsibleTrigger>
           <CollapsibleContent>
             <CardContent className="space-y-4">
+              {legacyOff && (pendingSuiteLogin || suiteRetry) && (
+                <div className="space-y-2 rounded-lg border p-3" data-testid="employee-suite-pending">
+                  <p className="text-sm">This employee has a reserved launcher sign-in awaiting its platform answer.</p>
+                  <Button variant="outline" onClick={openEnableLoginModal} data-testid="button-resume-employee-suite-login">
+                    Resume Create Login
+                  </Button>
+                </div>
+              )}
               {!hasLogin && !hasSimpleLogin ? (
                 <div className="space-y-6">
                   <div className="text-center py-4 space-y-4">
@@ -655,15 +735,15 @@ function AccessStatusSection({ employeeId, personId, employee, forceOpen }: { em
       
       {/* Enable Login Modal */}
       <Dialog open={enableLoginModalOpen} onOpenChange={(open) => {
-        if (!open) resetWizard();
-        setEnableLoginModalOpen(open);
+        if (!open) closeEnableLoginModal();
+        else setEnableLoginModalOpen(true);
       }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Enable Login Access</DialogTitle>
             <DialogDescription>
               {wizardStep === 1 && "Configure access level and permissions"}
-              {wizardStep === 2 && "Set temporary password"}
+              {wizardStep === 2 && (legacyOff ? "Give this employee a launcher sign-in" : "Set temporary password")}
               {wizardStep === 3 && "Login access created"}
             </DialogDescription>
           </DialogHeader>
@@ -764,7 +844,7 @@ function AccessStatusSection({ employeeId, personId, employee, forceOpen }: { em
               )}
               
               <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setEnableLoginModalOpen(false)}>
+                <Button variant="outline" onClick={closeEnableLoginModal}>
                   Cancel
                 </Button>
                 <Button onClick={() => setWizardStep(2)} disabled={!loginEmail}>
@@ -777,10 +857,18 @@ function AccessStatusSection({ employeeId, personId, employee, forceOpen }: { em
           {wizardStep === 2 && (
             <div className="space-y-4">
               {legacyOff ? (
-                <p className="text-sm text-muted-foreground" data-testid="text-enable-login-launcher">
-                  No password is set here. Once the login exists, give them a suite sign-in from Setup &gt; Users
-                  ("Provision suite sign-in"); they sign in at the OTO launcher with their phone number.
-                </p>
+                <div className="space-y-2">
+                  <Label htmlFor="employee-suite-phone">Phone number</Label>
+                  <Input id="employee-suite-phone" type="tel" value={suitePhone}
+                    onChange={(event) => setSuitePhone(event.target.value)} disabled={enableLoginMutation.isPending || !!suiteRetry}
+                    placeholder="081 234 5678" data-testid="input-employee-suite-phone" />
+                  <p className="text-sm text-muted-foreground" data-testid="text-enable-login-launcher">
+                    They sign in at the OTO launcher with this phone number. Creating the login shows a temporary password once.
+                  </p>
+                  {suiteRetry && <p className="text-sm" data-testid="text-employee-suite-retry">
+                    The platform answer was uncertain. Retry this same request to finish the reserved sign-in.
+                  </p>}
+                </div>
               ) : (
               <div className="space-y-2">
                 <Label>Temporary Password</Label>
@@ -807,16 +895,16 @@ function AccessStatusSection({ employeeId, personId, employee, forceOpen }: { em
               )}
               
               <div className="flex justify-between gap-2">
-                <Button variant="outline" onClick={() => setWizardStep(1)}>
+                <Button variant="outline" onClick={() => setWizardStep(1)} disabled={enableLoginMutation.isPending || !!suiteRetry}>
                   Back
                 </Button>
                 <Button 
                   onClick={() => enableLoginMutation.mutate()} 
-                  disabled={(!legacyOff && (!tempPassword || tempPassword.length < 6)) || enableLoginMutation.isPending}
+                  disabled={(legacyOff ? !suitePhone.trim() : (!tempPassword || tempPassword.length < 6)) || enableLoginMutation.isPending}
                   data-testid="button-create-login"
                 >
                   {enableLoginMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  Create Login
+                  {suiteRetry ? "Retry Create Login" : "Create Login"}
                 </Button>
               </div>
             </div>
@@ -832,14 +920,26 @@ function AccessStatusSection({ employeeId, personId, employee, forceOpen }: { em
                 <div className="space-y-1 text-sm">
                   <p><span className="text-muted-foreground">Email:</span> {loginEmail}</p>
                   {!legacyOff && <p><span className="text-muted-foreground">Temp Password:</span> <code className="bg-background px-1 py-0.5 rounded">{tempPassword}</code></p>}
-                  <p><span className="text-muted-foreground">Access Level:</span> {accessLevel}</p>
+                  {!(legacyOff && suiteAnswer?.platformManaged) && <p><span className="text-muted-foreground">Access Level:</span> {accessLevel}</p>}
                 </div>
               </div>
               
               {legacyOff ? (
-                <p className="text-sm" data-testid="text-enable-login-done-launcher">
-                  Next: give them a suite sign-in from Setup &gt; Users ("Provision suite sign-in"). They sign in at the OTO launcher with their phone number.
-                </p>
+                <div className="space-y-3" data-testid="text-enable-login-done-launcher">
+                  <p>Launcher sign-in: <span className="font-mono" data-testid="text-employee-suite-phone">{suiteAnswer?.phone}</span></p>
+                  {suiteAnswer?.temporaryPassword ? (
+                    <div className="space-y-1">
+                      <p className="text-sm">Temporary password — shown once</p>
+                      <p className="font-mono text-xl" data-testid="text-employee-suite-password">{suiteAnswer.temporaryPassword}</p>
+                      <p className="text-sm">Write it down and give it to them now. They change it at first sign-in.</p>
+                    </div>
+                  ) : (
+                    <p className="text-sm" data-testid="text-employee-suite-replayed">
+                      This same request already created the sign-in. Its password is not shown again; use Forgot password at the launcher if needed.
+                    </p>
+                  )}
+                  {suiteAnswer?.platformManaged && <p className="text-sm" data-testid="text-employee-suite-managed">Access is controlled in Admin.</p>}
+                </div>
               ) : (
               <>
               <div className="flex items-center gap-2 p-3 bg-amber-50 dark:bg-amber-950 rounded-lg">
@@ -856,7 +956,7 @@ function AccessStatusSection({ employeeId, personId, employee, forceOpen }: { em
               </>
               )}
               
-              <Button variant="outline" className="w-full" onClick={() => setEnableLoginModalOpen(false)}>
+              <Button variant="outline" className="w-full" onClick={closeEnableLoginModal}>
                 Done
               </Button>
             </div>

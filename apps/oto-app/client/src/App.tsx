@@ -107,7 +107,6 @@ const DataAdminDetailPage = lazy(() => import("@/pages/data/model-detail-page"))
 const DataAdminFormPage = lazy(() => import("@/pages/data/model-form-page"));
 
 const _CoreHomePage = lazy(() => import("@/pages/core/home"));
-const CoreDashboardPage = lazy(() => import("@/pages/core/dashboard"));
 const CoreCheckinsPage = lazy(() => import("@/pages/core/checkins"));
 const CoreDropoffCheckinPage = lazy(() => import("@/pages/core/dropoff-checkin"));
 const CoreFormBuilderPage = lazy(() => import("@/pages/core/form-builder"));
@@ -119,7 +118,6 @@ const CoreEventDetailPage = lazy(() => import("@/pages/core/event-detail"));
 const VouchersMovedPage = lazy(() => import("@/pages/vouchers-moved"));
 const CoreMyAvailabilityPage = lazy(() => import("@/pages/core/my-availability"));
 const CoreChecklistRunPage = lazy(() => import("@/pages/core/checklist-run"));
-const CoreTroubleshootPage = lazy(() => import("@/pages/core/troubleshoot"));
 const CoreLearnPage = lazy(() => import("@/pages/core/learn"));
 const CoreModuleChooserPage = lazy(() => import("@/pages/core/module-chooser"));
 const CoreModulePage = lazy(() => import("@/pages/core/module"));
@@ -149,7 +147,6 @@ const StudioTasksPage = lazy(() => import("@/pages/studio/tasks"));
 const StudioChecklistsPage = lazy(() => import("@/pages/studio/checklists"));
 const StudioSopsPage = lazy(() => import("@/pages/studio/sops"));
 const KnowledgeBasePage = lazy(() => import("@/pages/studio/knowledge-base"));
-const StudioTroubleshootingPage = lazy(() => import("@/pages/studio/troubleshooting"));
 const StudioQuizzesPage = lazy(() => import("@/pages/studio/quizzes"));
 const StudioEventsPage = lazy(() => import("@/pages/studio/events"));
 const CampDetailPage = lazy(() => import("@/pages/studio/camp-detail"));
@@ -610,7 +607,7 @@ function Router() {
 
       {/* Core routes - accessible by all authenticated users */}
       <ProtectedRoute path="/core" component={() => <Redirect to="/core/today" />} />
-      <ProtectedRoute path="/core/dashboard" component={() => <CoreProtectedLayout component={CoreDashboardPage} />} />
+      <ProtectedRoute path="/core/dashboard" component={() => <Redirect to="/core/today" replace />} />
       <ProtectedRoute path="/core/checkins" component={() => <CoreProtectedLayout component={CoreCheckinsPage} />} />
       <ProtectedRoute path="/core/checkins/dropoff" component={() => <CoreProtectedLayout component={CoreDropoffCheckinPage} />} />
       <ProtectedRoute path="/core/checkins/service" component={() => <CoreProtectedLayout component={CoreServiceCheckinPage} />} />
@@ -624,7 +621,7 @@ function Router() {
       <ProtectedRoute path="/core/my-availability" component={() => <CoreProtectedLayout component={CoreMyAvailabilityPage} />} />
       <ProtectedRoute path="/core/vouchers/redeem" component={() => <CoreProtectedLayout component={VouchersMovedPage} />} />
       <ProtectedRoute path="/core/checklist/:id" component={() => <CoreProtectedLayout component={CoreChecklistRunPage} />} />
-      <ProtectedRoute path="/core/troubleshoot" component={() => <CoreProtectedLayout component={CoreTroubleshootPage} />} />
+      <ProtectedRoute path="/core/troubleshoot" component={() => <Redirect to="/core/fix" replace />} />
       <ProtectedRoute path="/core/learn" component={() => <CoreProtectedLayout component={CoreLearnPage} />} />
       <ProtectedRoute path="/core/modules" component={() => <CoreProtectedLayout component={CoreModuleChooserPage} />} />
       <ProtectedRoute path="/core/modules/:id" component={() => <CoreProtectedLayout component={CoreModulePage} />} />
@@ -655,7 +652,7 @@ function Router() {
       <ProtectedRoute path="/studio/sops" component={() => <StudioProtectedLayout component={StudioSopsPage} />} requiredRole={["manager", "admin"]} />
       <ProtectedRoute path="/studio/kb" component={() => <StudioProtectedLayout component={KnowledgeBasePage} />} requiredRole={["manager", "admin"]} />
       <ProtectedRoute path="/studio/kb/files" component={() => <StudioProtectedLayout component={KnowledgeBasePage} />} requiredRole={["manager", "admin"]} />
-      <ProtectedRoute path="/studio/troubleshooting" component={() => <StudioProtectedLayout component={StudioTroubleshootingPage} />} requiredRole={["manager", "admin"]} />
+      <ProtectedRoute path="/studio/troubleshooting" component={() => <Redirect to="/studio" replace />} requiredRole={["manager", "admin"]} />
       <ProtectedRoute path="/studio/quizzes" component={() => <StudioProtectedLayout component={StudioQuizzesPage} />} requiredRole={["manager", "admin"]} />
       <ProtectedRoute path="/studio/events/camp/:id" component={() => <StudioProtectedLayout component={CampDetailPage} />} requiredRole={["manager", "admin"]} />
       <ProtectedRoute path="/studio/events/list" component={() => <StudioProtectedLayout component={StudioEventsPage} />} requiredRole={["manager", "admin"]} />
