@@ -1,0 +1,84 @@
+{
+  "ticket": "SCRUM-639",
+  "recordedAt": "2026-10-25T11:52:24.474Z",
+  "status": "Deployed",
+  "sourceSha": "78ff5325e3ac1c9cae2ebd3bd92539bba18346ac",
+  "ciRunId": "40186839556",
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "serviceId": "srv-danh2ljtqb8s73bt9en0",
+      "id": "dep-dbeu9895efls73bcohu0",
+      "finishedAt": "2026-10-25T11:19:10.972953Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "serviceId": "srv-danng2p42hec73f38e3g",
+      "id": "dep-dbeu9895efls73bcoivg",
+      "finishedAt": "2026-10-25T11:15:25.760077Z"
+    }
+  ],
+  "evidenceCommit": "3f141a895c362f1d7c9364aec110451e10dbdfe7",
+  "commentId": "12574",
+  "attachments": [
+    {
+      "id": "12032",
+      "name": "SCRUM-639-01-operators.png"
+    },
+    {
+      "id": "12033",
+      "name": "SCRUM-639-02-system-roles.png"
+    },
+    {
+      "id": "12034",
+      "name": "SCRUM-639-03-platform-alerts.png"
+    },
+    {
+      "id": "12035",
+      "name": "SCRUM-639-04-platform-jobs.png"
+    },
+    {
+      "id": "12036",
+      "name": "SCRUM-639-05-environment-phone.png"
+    },
+    {
+      "id": "12037",
+      "name": "SCRUM-639-06-test-controls.png"
+    },
+    {
+      "id": "12038",
+      "name": "SCRUM-639-07-platform-restricted.png"
+    }
+  ],
+  "screenshotHashes": [
+    {
+      "filename": "SCRUM-639-01-operators.png",
+      "sha256": "9487ffee3495bc5de31f35cd2c8a35c0a09b7ce1bca8af0065945a18d475ba0d"
+    },
+    {
+      "filename": "SCRUM-639-02-system-roles.png",
+      "sha256": "d93887bfdf0d55e63da72c626aecd3a6f972af359417e1f1ebbb11d81e4b7bfa"
+    },
+    {
+      "filename": "SCRUM-639-03-platform-alerts.png",
+      "sha256": "031d29eaad799446d4a073d4b898467e3bab4480260f2cda674407a1519c101a"
+    },
+    {
+      "filename": "SCRUM-639-04-platform-jobs.png",
+      "sha256": "dd6914678dade16368a3a70f9571877b7f0393ab0975bacdc4d1143edbacb54e"
+    },
+    {
+      "filename": "SCRUM-639-05-environment-phone.png",
+      "sha256": "b2fc84a8cc30d54401b2041150874d0e218be10835c2232423414f696ba7f3fe"
+    },
+    {
+      "filename": "SCRUM-639-06-test-controls.png",
+      "sha256": "c0608388142a64eb0563c3c6b961de6253974a286291939899fd4810a231f714"
+    },
+    {
+      "filename": "SCRUM-639-07-platform-restricted.png",
+      "sha256": "d397d2e1bb98d66b29489a56871591092626b40f0432570382c187260aeb9488"
+    }
+  ],
+  "stagingCompletedAt": "2026-10-25T11:45:42.849Z"
+}
