@@ -296,6 +296,12 @@ P3 Deployed (2026-10-25, SCRUM-628): all629–634 children Deployed/23 images. C
 |---|---|
 | P4-1 | The five aggregates |
 
+Planner Q17 (2026-10-25, SCRUM-636; member attribution): crm.member has operator_id/created_at but no branch_id; its register is operator-wide and excludes archived profiles (schema/members.ts:60-106; services/members.ts:171-191). crm.visit separately has branch_id/visit_date/nullable member_id. PLAN§4.1/PROPOSAL§6 ask for members and visits per day/park. May636 keep profile totals explicitly operator-wide and available only to operator-wide Overview reach, while park/day rows report visits and distinct visiting members, with profile totals omitted/null for branch-only readers? No member home park, schema change or repeated operator total per park is proposed. Existing operator-wide member lookup remains unchanged; this field contract waits for the planner.
+
+Planner Q18 (2026-10-25, SCRUM-636; spend availability): ask and ai_turn persist model plus input/output/cache-read tokens but no monetary amount, tariff version or cache-write counter. No runtime rate calculator exists. Ops token fields are redacted, and old build-plan prices are historical estimates, not an executable tariff. May636 return spendEstimate explicitly unavailable/null with a reason while delivering the existing usage counts/tokens, or will the planner supply a priced usage seam? No invented zero/current rate, protected-engine edit or claim of measured spend proceeds before the ruling. Source details are in AGGREGATES_PREPARATION.md.
+
+Preparation: see AGGREGATES_PREPARATION.md. Bounded contracts, reach/guard tests and independent booking/fleet/usage work continue while these two field decisions wait. No later subtask is started.
+
 Pickup (2026-10-25, SCRUM-636): P3 parent628 is Deployed with proof. Begin the five reach-filtered read-only aggregates on a fresh lane. Source definitions, original domain/day rules and operator/branch ownership are inspected before implementation; protected engines remain untouched. No implementation/release/staging acceptance yet;637 waits for636Deployed.
 | P4-2 | Overview v2 with them |
 | P4-3 | Assistant settings: `core.setting`, routes, screen; the engines read the row |
