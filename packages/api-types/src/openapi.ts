@@ -26824,7 +26824,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Read-only counts within console:overview:read reach, independent of the session seat and detail-page grants. Only live parks owned by the current operator are eligible. Foreign, absent or archived park:404; owned unreachable park:403. Optional branchId selects one reachable park. No private record identities or message text are returned. Explicit real from/to calendar dates, inclusive and ordered, at most31 days. Unknown or repeated query fields are refused. Retained internal assistant records, by created_at Bangkok calendar day and the seat recorded at ask time. Count excludes off/capped; token sums retain all scoped records. The90-day retention means this is not a lifetime billing ledger. The unassigned bucket is included once only with an unfiltered operator-wide Overview grant. */
+        /** @description Read-only counts within console:overview:read reach, independent of the session seat and detail-page grants. Only live parks owned by the current operator are eligible. Foreign, absent or archived park:404; owned unreachable park:403. Optional branchId selects one reachable park. No private record identities or message text are returned. Explicit real from/to calendar dates, inclusive and ordered, at most31 days. Unknown or repeated query fields are refused. Spend is an estimate in USD excluding unpersisted cache writes, never satang revenue. No rates are configured: every spendEstimate is null with reason no_rate_configured, including empty buckets; unpricedTokens retains all scoped input, output and cache-read tokens. Retained internal assistant records, by created_at Bangkok calendar day and the seat recorded at ask time. Count excludes off/capped; token sums retain all scoped records. The90-day retention means this is not a lifetime billing ledger. The unassigned bucket is included once only with an unfiltered operator-wide Overview grant. */
         get: {
             parameters: {
                 query: {
@@ -26870,7 +26870,15 @@ export interface paths {
                                 outputTokens: number;
                                 cacheReadTokens: number;
                                 totalTokens: number;
+                                spendEstimate: number | null;
+                                /** @enum {string|null} */
+                                reason: "no_rate_configured" | "unpriced_tokens" | null;
+                                unpricedTokens: number;
                             };
+                            /** @enum {string} */
+                            currency: "USD";
+                            /** @enum {boolean} */
+                            excludesCacheWrites: true;
                             parks: {
                                 /** Format: uuid */
                                 branchId: string;
@@ -26880,6 +26888,10 @@ export interface paths {
                                     outputTokens: number;
                                     cacheReadTokens: number;
                                     totalTokens: number;
+                                    spendEstimate: number | null;
+                                    /** @enum {string|null} */
+                                    reason: "no_rate_configured" | "unpriced_tokens" | null;
+                                    unpricedTokens: number;
                                 };
                                 rows: {
                                     count: number;
@@ -26887,6 +26899,10 @@ export interface paths {
                                     outputTokens: number;
                                     cacheReadTokens: number;
                                     totalTokens: number;
+                                    spendEstimate: number | null;
+                                    /** @enum {string|null} */
+                                    reason: "no_rate_configured" | "unpriced_tokens" | null;
+                                    unpricedTokens: number;
                                     date: string;
                                 }[];
                             }[];
@@ -26897,6 +26913,10 @@ export interface paths {
                                     outputTokens: number;
                                     cacheReadTokens: number;
                                     totalTokens: number;
+                                    spendEstimate: number | null;
+                                    /** @enum {string|null} */
+                                    reason: "no_rate_configured" | "unpriced_tokens" | null;
+                                    unpricedTokens: number;
                                 };
                                 rows: {
                                     count: number;
@@ -26904,6 +26924,10 @@ export interface paths {
                                     outputTokens: number;
                                     cacheReadTokens: number;
                                     totalTokens: number;
+                                    spendEstimate: number | null;
+                                    /** @enum {string|null} */
+                                    reason: "no_rate_configured" | "unpriced_tokens" | null;
+                                    unpricedTokens: number;
                                     date: string;
                                 }[];
                             } | null;
@@ -26931,7 +26955,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Read-only counts within console:overview:read reach, independent of the session seat and detail-page grants. Only live parks owned by the current operator are eligible. Foreign, absent or archived park:404; owned unreachable park:403. Optional branchId selects one reachable park. No private record identities or message text are returned. Explicit real from/to calendar dates, inclusive and ordered, at most31 days. Unknown or repeated query fields are refused. Retained Inbox AI records, by created_at Bangkok calendar day and the conversation current park, which may change after a turn. Count requires non-null latency, including failed/shadow/zero-latency turns; token sums retain all scoped records. The unassigned bucket is included once only with an unfiltered operator-wide Overview grant. No channel default or historical park attribution is invented. */
+        /** @description Read-only counts within console:overview:read reach, independent of the session seat and detail-page grants. Only live parks owned by the current operator are eligible. Foreign, absent or archived park:404; owned unreachable park:403. Optional branchId selects one reachable park. No private record identities or message text are returned. Explicit real from/to calendar dates, inclusive and ordered, at most31 days. Unknown or repeated query fields are refused. Spend is an estimate in USD excluding unpersisted cache writes, never satang revenue. No rates are configured: every spendEstimate is null with reason no_rate_configured, including empty buckets; unpricedTokens retains all scoped input, output and cache-read tokens. Retained Inbox AI records, by created_at Bangkok calendar day and the conversation current park, which may change after a turn. Count requires non-null latency, including failed/shadow/zero-latency turns; token sums retain all scoped records. The unassigned bucket is included once only with an unfiltered operator-wide Overview grant. No channel default or historical park attribution is invented. */
         get: {
             parameters: {
                 query: {
@@ -26977,7 +27001,15 @@ export interface paths {
                                 outputTokens: number;
                                 cacheReadTokens: number;
                                 totalTokens: number;
+                                spendEstimate: number | null;
+                                /** @enum {string|null} */
+                                reason: "no_rate_configured" | "unpriced_tokens" | null;
+                                unpricedTokens: number;
                             };
+                            /** @enum {string} */
+                            currency: "USD";
+                            /** @enum {boolean} */
+                            excludesCacheWrites: true;
                             parks: {
                                 /** Format: uuid */
                                 branchId: string;
@@ -26987,6 +27019,10 @@ export interface paths {
                                     outputTokens: number;
                                     cacheReadTokens: number;
                                     totalTokens: number;
+                                    spendEstimate: number | null;
+                                    /** @enum {string|null} */
+                                    reason: "no_rate_configured" | "unpriced_tokens" | null;
+                                    unpricedTokens: number;
                                 };
                                 rows: {
                                     count: number;
@@ -26994,6 +27030,10 @@ export interface paths {
                                     outputTokens: number;
                                     cacheReadTokens: number;
                                     totalTokens: number;
+                                    spendEstimate: number | null;
+                                    /** @enum {string|null} */
+                                    reason: "no_rate_configured" | "unpriced_tokens" | null;
+                                    unpricedTokens: number;
                                     date: string;
                                 }[];
                             }[];
@@ -27004,6 +27044,10 @@ export interface paths {
                                     outputTokens: number;
                                     cacheReadTokens: number;
                                     totalTokens: number;
+                                    spendEstimate: number | null;
+                                    /** @enum {string|null} */
+                                    reason: "no_rate_configured" | "unpriced_tokens" | null;
+                                    unpricedTokens: number;
                                 };
                                 rows: {
                                     count: number;
@@ -27011,6 +27055,10 @@ export interface paths {
                                     outputTokens: number;
                                     cacheReadTokens: number;
                                     totalTokens: number;
+                                    spendEstimate: number | null;
+                                    /** @enum {string|null} */
+                                    reason: "no_rate_configured" | "unpriced_tokens" | null;
+                                    unpricedTokens: number;
                                     date: string;
                                 }[];
                             } | null;

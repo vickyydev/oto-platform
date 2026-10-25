@@ -66054,7 +66054,7 @@
     },
     "/aggregates/assistant-usage": {
       "get": {
-        "description": "Read-only counts within console:overview:read reach, independent of the session seat and detail-page grants. Only live parks owned by the current operator are eligible. Foreign, absent or archived park:404; owned unreachable park:403. Optional branchId selects one reachable park. No private record identities or message text are returned. Explicit real from/to calendar dates, inclusive and ordered, at most31 days. Unknown or repeated query fields are refused. Retained internal assistant records, by created_at Bangkok calendar day and the seat recorded at ask time. Count excludes off/capped; token sums retain all scoped records. The90-day retention means this is not a lifetime billing ledger. The unassigned bucket is included once only with an unfiltered operator-wide Overview grant.",
+        "description": "Read-only counts within console:overview:read reach, independent of the session seat and detail-page grants. Only live parks owned by the current operator are eligible. Foreign, absent or archived park:404; owned unreachable park:403. Optional branchId selects one reachable park. No private record identities or message text are returned. Explicit real from/to calendar dates, inclusive and ordered, at most31 days. Unknown or repeated query fields are refused. Spend is an estimate in USD excluding unpersisted cache writes, never satang revenue. No rates are configured: every spendEstimate is null with reason no_rate_configured, including empty buckets; unpricedTokens retains all scoped input, output and cache-read tokens. Retained internal assistant records, by created_at Bangkok calendar day and the seat recorded at ask time. Count excludes off/capped; token sums retain all scoped records. The90-day retention means this is not a lifetime billing ledger. The unassigned bucket is included once only with an unfiltered operator-wide Overview grant.",
         "parameters": [
           {
             "schema": {
@@ -66193,6 +66193,24 @@
                           "type": "integer",
                           "minimum": -9007199254740991,
                           "maximum": 9007199254740991
+                        },
+                        "spendEstimate": {
+                          "type": "number",
+                          "minimum": 0,
+                          "nullable": true
+                        },
+                        "reason": {
+                          "type": "string",
+                          "enum": [
+                            "no_rate_configured",
+                            "unpriced_tokens"
+                          ],
+                          "nullable": true
+                        },
+                        "unpricedTokens": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
                         }
                       },
                       "required": [
@@ -66200,9 +66218,24 @@
                         "inputTokens",
                         "outputTokens",
                         "cacheReadTokens",
-                        "totalTokens"
+                        "totalTokens",
+                        "spendEstimate",
+                        "reason",
+                        "unpricedTokens"
                       ],
                       "additionalProperties": false
+                    },
+                    "currency": {
+                      "type": "string",
+                      "enum": [
+                        "USD"
+                      ]
+                    },
+                    "excludesCacheWrites": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
                     },
                     "parks": {
                       "type": "array",
@@ -66240,6 +66273,24 @@
                                 "type": "integer",
                                 "minimum": -9007199254740991,
                                 "maximum": 9007199254740991
+                              },
+                              "spendEstimate": {
+                                "type": "number",
+                                "minimum": 0,
+                                "nullable": true
+                              },
+                              "reason": {
+                                "type": "string",
+                                "enum": [
+                                  "no_rate_configured",
+                                  "unpriced_tokens"
+                                ],
+                                "nullable": true
+                              },
+                              "unpricedTokens": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
                               }
                             },
                             "required": [
@@ -66247,7 +66298,10 @@
                               "inputTokens",
                               "outputTokens",
                               "cacheReadTokens",
-                              "totalTokens"
+                              "totalTokens",
+                              "spendEstimate",
+                              "reason",
+                              "unpricedTokens"
                             ],
                             "additionalProperties": false
                           },
@@ -66281,6 +66335,24 @@
                                   "minimum": -9007199254740991,
                                   "maximum": 9007199254740991
                                 },
+                                "spendEstimate": {
+                                  "type": "number",
+                                  "minimum": 0,
+                                  "nullable": true
+                                },
+                                "reason": {
+                                  "type": "string",
+                                  "enum": [
+                                    "no_rate_configured",
+                                    "unpriced_tokens"
+                                  ],
+                                  "nullable": true
+                                },
+                                "unpricedTokens": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
                                 "date": {
                                   "type": "string",
                                   "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
@@ -66292,6 +66364,9 @@
                                 "outputTokens",
                                 "cacheReadTokens",
                                 "totalTokens",
+                                "spendEstimate",
+                                "reason",
+                                "unpricedTokens",
                                 "date"
                               ],
                               "additionalProperties": false
@@ -66336,6 +66411,24 @@
                               "type": "integer",
                               "minimum": -9007199254740991,
                               "maximum": 9007199254740991
+                            },
+                            "spendEstimate": {
+                              "type": "number",
+                              "minimum": 0,
+                              "nullable": true
+                            },
+                            "reason": {
+                              "type": "string",
+                              "enum": [
+                                "no_rate_configured",
+                                "unpriced_tokens"
+                              ],
+                              "nullable": true
+                            },
+                            "unpricedTokens": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
                             }
                           },
                           "required": [
@@ -66343,7 +66436,10 @@
                             "inputTokens",
                             "outputTokens",
                             "cacheReadTokens",
-                            "totalTokens"
+                            "totalTokens",
+                            "spendEstimate",
+                            "reason",
+                            "unpricedTokens"
                           ],
                           "additionalProperties": false
                         },
@@ -66377,6 +66473,24 @@
                                 "minimum": -9007199254740991,
                                 "maximum": 9007199254740991
                               },
+                              "spendEstimate": {
+                                "type": "number",
+                                "minimum": 0,
+                                "nullable": true
+                              },
+                              "reason": {
+                                "type": "string",
+                                "enum": [
+                                  "no_rate_configured",
+                                  "unpriced_tokens"
+                                ],
+                                "nullable": true
+                              },
+                              "unpricedTokens": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
                               "date": {
                                 "type": "string",
                                 "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
@@ -66388,6 +66502,9 @@
                               "outputTokens",
                               "cacheReadTokens",
                               "totalTokens",
+                              "spendEstimate",
+                              "reason",
+                              "unpricedTokens",
                               "date"
                             ],
                             "additionalProperties": false
@@ -66422,6 +66539,8 @@
                     "basis",
                     "coverage",
                     "totals",
+                    "currency",
+                    "excludesCacheWrites",
                     "parks",
                     "operatorWide",
                     "attribution",
@@ -66437,7 +66556,7 @@
     },
     "/aggregates/inbox-ai-usage": {
       "get": {
-        "description": "Read-only counts within console:overview:read reach, independent of the session seat and detail-page grants. Only live parks owned by the current operator are eligible. Foreign, absent or archived park:404; owned unreachable park:403. Optional branchId selects one reachable park. No private record identities or message text are returned. Explicit real from/to calendar dates, inclusive and ordered, at most31 days. Unknown or repeated query fields are refused. Retained Inbox AI records, by created_at Bangkok calendar day and the conversation current park, which may change after a turn. Count requires non-null latency, including failed/shadow/zero-latency turns; token sums retain all scoped records. The unassigned bucket is included once only with an unfiltered operator-wide Overview grant. No channel default or historical park attribution is invented.",
+        "description": "Read-only counts within console:overview:read reach, independent of the session seat and detail-page grants. Only live parks owned by the current operator are eligible. Foreign, absent or archived park:404; owned unreachable park:403. Optional branchId selects one reachable park. No private record identities or message text are returned. Explicit real from/to calendar dates, inclusive and ordered, at most31 days. Unknown or repeated query fields are refused. Spend is an estimate in USD excluding unpersisted cache writes, never satang revenue. No rates are configured: every spendEstimate is null with reason no_rate_configured, including empty buckets; unpricedTokens retains all scoped input, output and cache-read tokens. Retained Inbox AI records, by created_at Bangkok calendar day and the conversation current park, which may change after a turn. Count requires non-null latency, including failed/shadow/zero-latency turns; token sums retain all scoped records. The unassigned bucket is included once only with an unfiltered operator-wide Overview grant. No channel default or historical park attribution is invented.",
         "parameters": [
           {
             "schema": {
@@ -66576,6 +66695,24 @@
                           "type": "integer",
                           "minimum": -9007199254740991,
                           "maximum": 9007199254740991
+                        },
+                        "spendEstimate": {
+                          "type": "number",
+                          "minimum": 0,
+                          "nullable": true
+                        },
+                        "reason": {
+                          "type": "string",
+                          "enum": [
+                            "no_rate_configured",
+                            "unpriced_tokens"
+                          ],
+                          "nullable": true
+                        },
+                        "unpricedTokens": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
                         }
                       },
                       "required": [
@@ -66583,9 +66720,24 @@
                         "inputTokens",
                         "outputTokens",
                         "cacheReadTokens",
-                        "totalTokens"
+                        "totalTokens",
+                        "spendEstimate",
+                        "reason",
+                        "unpricedTokens"
                       ],
                       "additionalProperties": false
+                    },
+                    "currency": {
+                      "type": "string",
+                      "enum": [
+                        "USD"
+                      ]
+                    },
+                    "excludesCacheWrites": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
                     },
                     "parks": {
                       "type": "array",
@@ -66623,6 +66775,24 @@
                                 "type": "integer",
                                 "minimum": -9007199254740991,
                                 "maximum": 9007199254740991
+                              },
+                              "spendEstimate": {
+                                "type": "number",
+                                "minimum": 0,
+                                "nullable": true
+                              },
+                              "reason": {
+                                "type": "string",
+                                "enum": [
+                                  "no_rate_configured",
+                                  "unpriced_tokens"
+                                ],
+                                "nullable": true
+                              },
+                              "unpricedTokens": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
                               }
                             },
                             "required": [
@@ -66630,7 +66800,10 @@
                               "inputTokens",
                               "outputTokens",
                               "cacheReadTokens",
-                              "totalTokens"
+                              "totalTokens",
+                              "spendEstimate",
+                              "reason",
+                              "unpricedTokens"
                             ],
                             "additionalProperties": false
                           },
@@ -66664,6 +66837,24 @@
                                   "minimum": -9007199254740991,
                                   "maximum": 9007199254740991
                                 },
+                                "spendEstimate": {
+                                  "type": "number",
+                                  "minimum": 0,
+                                  "nullable": true
+                                },
+                                "reason": {
+                                  "type": "string",
+                                  "enum": [
+                                    "no_rate_configured",
+                                    "unpriced_tokens"
+                                  ],
+                                  "nullable": true
+                                },
+                                "unpricedTokens": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
                                 "date": {
                                   "type": "string",
                                   "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
@@ -66675,6 +66866,9 @@
                                 "outputTokens",
                                 "cacheReadTokens",
                                 "totalTokens",
+                                "spendEstimate",
+                                "reason",
+                                "unpricedTokens",
                                 "date"
                               ],
                               "additionalProperties": false
@@ -66719,6 +66913,24 @@
                               "type": "integer",
                               "minimum": -9007199254740991,
                               "maximum": 9007199254740991
+                            },
+                            "spendEstimate": {
+                              "type": "number",
+                              "minimum": 0,
+                              "nullable": true
+                            },
+                            "reason": {
+                              "type": "string",
+                              "enum": [
+                                "no_rate_configured",
+                                "unpriced_tokens"
+                              ],
+                              "nullable": true
+                            },
+                            "unpricedTokens": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
                             }
                           },
                           "required": [
@@ -66726,7 +66938,10 @@
                             "inputTokens",
                             "outputTokens",
                             "cacheReadTokens",
-                            "totalTokens"
+                            "totalTokens",
+                            "spendEstimate",
+                            "reason",
+                            "unpricedTokens"
                           ],
                           "additionalProperties": false
                         },
@@ -66760,6 +66975,24 @@
                                 "minimum": -9007199254740991,
                                 "maximum": 9007199254740991
                               },
+                              "spendEstimate": {
+                                "type": "number",
+                                "minimum": 0,
+                                "nullable": true
+                              },
+                              "reason": {
+                                "type": "string",
+                                "enum": [
+                                  "no_rate_configured",
+                                  "unpriced_tokens"
+                                ],
+                                "nullable": true
+                              },
+                              "unpricedTokens": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
                               "date": {
                                 "type": "string",
                                 "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
@@ -66771,6 +67004,9 @@
                               "outputTokens",
                               "cacheReadTokens",
                               "totalTokens",
+                              "spendEstimate",
+                              "reason",
+                              "unpricedTokens",
                               "date"
                             ],
                             "additionalProperties": false
@@ -66805,6 +67041,8 @@
                     "basis",
                     "coverage",
                     "totals",
+                    "currency",
+                    "excludesCacheWrites",
                     "parks",
                     "operatorWide",
                     "attribution",

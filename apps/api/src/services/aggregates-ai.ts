@@ -10,6 +10,9 @@ export interface AiUsageMetrics {
   outputTokens: number;
   cacheReadTokens: number;
   totalTokens: number;
+  spendEstimate: number | null;
+  reason: 'no_rate_configured' | 'unpriced_tokens' | null;
+  unpricedTokens: number;
 }
 
 export interface AiUsageAggregate<
@@ -20,6 +23,8 @@ export interface AiUsageAggregate<
   attribution: Attribution;
   coverage: 'retained-records';
   retentionDays: RetentionDays;
+  currency: 'USD';
+  excludesCacheWrites: true;
   totals: AiUsageMetrics;
   parks: AggregatePark<AiUsageMetrics>[];
   operatorWide: null | { totals: AiUsageMetrics; rows: Array<AiUsageMetrics & { date: string }> };
@@ -28,7 +33,10 @@ export interface AiUsageAggregate<
 export type AssistantUsageAggregate = AiUsageAggregate<'seat-at-ask', 90>;
 export type InboxAiUsageAggregate = AiUsageAggregate<'current-conversation-branch', null>;
 
-const zero = (): AiUsageMetrics => ({ count: 0, inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, totalTokens: 0 });
+const zero = (): AiUsageMetrics => ({
+  count: 0, inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, totalTokens: 0,
+  spendEstimate: null, reason: 'no_rate_configured', unpricedTokens: 0,
+});
 
 interface GroupRow {
   branchId: string | null;
@@ -42,13 +50,15 @@ interface GroupRow {
 function add(left: AiUsageMetrics, right: AiUsageMetrics): AiUsageMetrics {
   return { count: left.count + right.count, inputTokens: left.inputTokens + right.inputTokens,
     outputTokens: left.outputTokens + right.outputTokens, cacheReadTokens: left.cacheReadTokens + right.cacheReadTokens,
-    totalTokens: left.totalTokens + right.totalTokens };
+    totalTokens: left.totalTokens + right.totalTokens,
+    spendEstimate: null, reason: 'no_rate_configured', unpricedTokens: left.unpricedTokens + right.unpricedTokens };
 }
 
 function projection<Attribution extends AiUsageAggregate['attribution'], RetentionDays extends AiUsageAggregate['retentionDays']>(input: DailyAggregateInput, groups: GroupRow[], attribution: Attribution, retentionDays: RetentionDays): AiUsageAggregate<Attribution, RetentionDays> {
-  const values = new Map(groups.map(row => [`${row.branchId ?? 'unassigned'}:${row.date}`, {
+  const values = new Map<string, AiUsageMetrics>(groups.map(row => [`${row.branchId ?? 'unassigned'}:${row.date}`, {
     count: row.count, inputTokens: row.inputTokens, outputTokens: row.outputTokens, cacheReadTokens: row.cacheReadTokens,
     totalTokens: row.inputTokens + row.outputTokens + row.cacheReadTokens,
+    spendEstimate: null, reason: 'no_rate_configured', unpricedTokens: row.inputTokens + row.outputTokens + row.cacheReadTokens,
   }]));
   const bucket = (branchId: string | null) => {
     const rows = input.period.dates.map(date => ({ date, ...(values.get(`${branchId ?? 'unassigned'}:${date}`) ?? zero()) }));
@@ -58,7 +68,8 @@ function projection<Attribution extends AiUsageAggregate['attribution'], Retenti
   const operatorWide = input.includeOperatorWide ? bucket(null) : null;
   // Overall totals include the selected parks plus one authorized branchless bucket.
   const totals = parks.reduce<AiUsageMetrics>((total, park) => add(total, park.totals), operatorWide?.totals ?? zero());
-  return { basis: 'created-at-bangkok', attribution, coverage: 'retained-records', retentionDays, totals, parks, operatorWide };
+  return { basis: 'created-at-bangkok', attribution, coverage: 'retained-records', retentionDays,
+    currency: 'USD', excludesCacheWrites: true, totals, parks, operatorWide };
 }
 
 function bounds(input: DailyAggregateInput): { from: Date; until: Date } {

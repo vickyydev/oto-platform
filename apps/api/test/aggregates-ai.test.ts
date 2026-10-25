@@ -10,7 +10,17 @@ let ctx: TestContext;
 const dates = ['2026-10-24', '2026-10-25'];
 const dayOne = new Date('2026-10-24T03:00:00.000Z');
 const privateText = 'ZZ TEST private question, customer text and correction';
-const metrics = (count = 0, inputTokens = 0, outputTokens = 0, cacheReadTokens = 0): AiUsageMetrics => ({ count, inputTokens, outputTokens, cacheReadTokens, totalTokens: inputTokens + outputTokens + cacheReadTokens });
+type ExpectedMetrics = AiUsageMetrics & {
+  spendEstimate: null;
+  reason: 'no_rate_configured';
+  unpricedTokens: number;
+};
+const metrics = (count = 0, inputTokens = 0, outputTokens = 0, cacheReadTokens = 0): ExpectedMetrics => ({
+  count, inputTokens, outputTokens, cacheReadTokens, totalTokens: inputTokens + outputTokens + cacheReadTokens,
+  spendEstimate: null, reason: 'no_rate_configured', unpricedTokens: inputTokens + outputTokens + cacheReadTokens,
+});
+const metricKeys = ['cacheReadTokens', 'count', 'inputTokens', 'outputTokens', 'reason', 'spendEstimate', 'totalTokens', 'unpricedTokens'];
+const resultKeys = ['attribution', 'basis', 'coverage', 'currency', 'excludesCacheWrites', 'operatorWide', 'parks', 'retentionDays', 'totals'];
 
 beforeAll(async () => { ctx = await createTestContext(); }, 180_000);
 afterAll(async () => { await ctx?.close(); await teardownAll(); });
@@ -76,8 +86,9 @@ describe('SCRUM-636 AI usage: real native-table projections', () => {
     const result = await assistantUsageAggregateOf(ctx.db, input(f));
     expect(result.totals).toEqual(metrics(3, 19, 34, 48));
     expect(result.parks[0]!.rows).toEqual([{ date: dates[0], ...metrics(3, 19, 34, 48) }, { date: dates[1], ...metrics() }]);
-    expect(result).toMatchObject({ basis: 'created-at-bangkok', attribution: 'seat-at-ask', coverage: 'retained-records', retentionDays: 90, operatorWide: null });
-    expect(Object.keys(result).sort()).toEqual(['attribution', 'basis', 'coverage', 'operatorWide', 'parks', 'retentionDays', 'totals']);
+    expect(result).toMatchObject({ basis: 'created-at-bangkok', attribution: 'seat-at-ask', coverage: 'retained-records', retentionDays: 90, operatorWide: null,
+      currency: 'USD', excludesCacheWrites: true });
+    expect(Object.keys(result).sort()).toEqual(resultKeys);
     expect(JSON.stringify(result)).not.toContain(privateText);
   });
 
@@ -90,12 +101,46 @@ describe('SCRUM-636 AI usage: real native-table projections', () => {
     await turn(t, { state: 'cancelled', latencyMs: null, inputTokens: 3, outputTokens: 6, cacheReadTokens: 9 });
     const result = await inboxAiUsageAggregateOf(ctx.db, input(f));
     expect(result.totals).toEqual(metrics(3, 16, 32, 48));
-    expect(result).toMatchObject({ basis: 'created-at-bangkok', attribution: 'current-conversation-branch', coverage: 'retained-records', retentionDays: null });
-    expect(Object.keys(result.totals).sort()).toEqual(['cacheReadTokens', 'count', 'inputTokens', 'outputTokens', 'totalTokens']);
+    expect(result).toMatchObject({ basis: 'created-at-bangkok', attribution: 'current-conversation-branch', coverage: 'retained-records', retentionDays: null,
+      currency: 'USD', excludesCacheWrites: true });
+    expect(Object.keys(result).sort()).toEqual(resultKeys);
+    expect(Object.keys(result.totals).sort()).toEqual(metricKeys);
     expect(JSON.stringify(result)).not.toContain(privateText);
   });
 
   for (const implementation of implementations) {
+    it(`${implementation.name} reports unavailable spend and exact unpriced tokens in every authorized and empty bucket, never an invented zero`, async () => {
+      const f = await fixture();
+      await implementation.add(f, f.a.id, 2);
+      await implementation.add(f, f.b.id, 200);
+      await implementation.add(f, null, 3);
+      const narrow = await implementation.read(ctx.db, input(f, [f.a], false));
+      expect(narrow.totals).toEqual(metrics(1, 2, 2, 2));
+      expect(narrow.operatorWide).toBeNull();
+      const result = await implementation.read(ctx.db, input(f, [f.a], true));
+      expect(Object.keys(result).sort()).toEqual(resultKeys);
+      expect(result).toMatchObject({ currency: 'USD', excludesCacheWrites: true });
+      expect(result.totals).toEqual(metrics(2, 5, 5, 5));
+      expect(result.parks).toEqual([{
+        branchId: f.a.id, totals: metrics(1, 2, 2, 2),
+        rows: [{ date: dates[0], ...metrics(1, 2, 2, 2) }, { date: dates[1], ...metrics() }],
+      }]);
+      expect(result.operatorWide).toEqual({
+        totals: metrics(1, 3, 3, 3),
+        rows: [{ date: dates[0], ...metrics(1, 3, 3, 3) }, { date: dates[1], ...metrics() }],
+      });
+      const buckets = [result.totals, ...result.parks.flatMap(park => [park.totals, ...park.rows]),
+        result.operatorWide!.totals, ...result.operatorWide!.rows];
+      for (const bucket of buckets) {
+        expect(Object.keys(bucket).filter(key => key !== 'date').sort()).toEqual(metricKeys);
+        expect(bucket).toMatchObject({ spendEstimate: null, reason: 'no_rate_configured' });
+        expect((bucket as ExpectedMetrics).unpricedTokens).toBe(bucket.inputTokens + bucket.outputTokens + bucket.cacheReadTokens);
+      }
+      expect(JSON.stringify(result)).not.toContain(f.b.id);
+      expect(JSON.stringify(result)).not.toContain(f.other.id);
+      expect(JSON.stringify(result)).not.toContain(privateText);
+    });
+
     it(`${implementation.name} totals include selected parks plus exactly one authorized branchless bucket`, async () => {
       const f = await fixture();await implementation.add(f, f.a.id, 1);await implementation.add(f, f.b.id, 10);await implementation.add(f, null, 100);
       const selected = await implementation.read(ctx.db, input(f, [f.a], false));

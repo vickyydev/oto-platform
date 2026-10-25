@@ -1,7 +1,8 @@
 import { and, eq, isNull } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { account, branch, operator, role, roleAssignment, rolePermission } from '@oto/db';
+import { account, aiTurn, ask, branch, channelAccount, contact, conversation, message, operator, role, roleAssignment, rolePermission } from '@oto/db';
 import { newId } from '@oto/shared';
+import { AssistantUsageAggregateSchema, InboxAiUsageAggregateSchema } from '../src/routes/aggregates';
 import {
   BRANCH_MANAGER, CENTRAL_BRANCH_CODE, CHALONG_BRANCH_CODE, branchIdByCode,
   createTestContext, signInAs, teardownAll, type TestContext,
@@ -78,7 +79,7 @@ beforeAll(async () => {
 beforeEach(async () => { await grant('branch', [chalong]); });
 afterAll(async () => { await ctx?.close(); await teardownAll(); });
 
-/** SCRUM-636 house review. Q17/Q18 payload choices are deliberately outside these shared-contract pins. */
+/** SCRUM-636 house review, including the approved Q18 unavailable-spend contract. */
 describe.each(paths)('SCRUM-636 %s adversarial review', (path) => {
   it('FINDING R1 high: the read must exist and authenticate before returning aggregates; reject an anonymous caller', async () => {
     expect((await read(path, queryOf(path), false)).statusCode).toBe(401);
@@ -202,7 +203,9 @@ describe.each(['/aggregates/assistant-usage', '/aggregates/inbox-ai-usage'] as c
       expect(bucket).not.toBeNull();
       expect(Object.keys(bucket).sort()).toEqual(['rows', 'totals']);
       expect(bucket.rows.map((row: { date: string }) => row.date)).toEqual(['2026-10-01', '2026-10-02']);
-      expect(Object.keys(bucket.totals).sort()).toEqual(['cacheReadTokens', 'count', 'inputTokens', 'outputTokens', 'totalTokens']);
+      expect(Object.keys(bucket.totals).sort()).toEqual([
+        'cacheReadTokens', 'count', 'inputTokens', 'outputTokens', 'reason', 'spendEstimate', 'totalTokens', 'unpricedTokens',
+      ]);
     });
 
     it('FINDING R12 high: a union covering every live owned park must not become operator-wide authority', async () => {
@@ -224,3 +227,101 @@ describe.each(['/aggregates/assistant-usage', '/aggregates/inbox-ai-usage'] as c
     });
   },
 );
+
+const aiContracts = [
+  { path: '/aggregates/assistant-usage', schema: AssistantUsageAggregateSchema, attribution: 'seat-at-ask', retentionDays: 90 },
+  { path: '/aggregates/inbox-ai-usage', schema: InboxAiUsageAggregateSchema, attribution: 'current-conversation-branch', retentionDays: null },
+] as const;
+
+async function unpricedUsageRows(path: typeof aiContracts[number]['path']) {
+  const at = new Date('2026-10-01T03:00:00.000Z');
+  for (const [branchId, inputTokens] of [[chalong, 7], [null, 11]] as const) {
+    if (path === '/aggregates/assistant-usage') {
+      await ctx.db.insert(ask).values({
+        id: newId(), operatorId, accountId, branchId, question: 'ZZ TEST Q18 synthetic ask',
+        state: 'answered', inputTokens, outputTokens: 3, cacheReadTokens: 2,
+        model: 'zz-test-unpriced-model', createdAt: at, updatedAt: at,
+      });
+      continue;
+    }
+    const channelId = newId(), contactId = newId(), conversationId = newId(), messageId = newId();
+    await ctx.db.insert(channelAccount).values({ id: channelId, operatorId, branchId: chalong,
+      channel: 'webform', provider: 'simulator', externalId: `ZZ TEST ${channelId}`, displayName: 'ZZ TEST Q18 synthetic channel' });
+    await ctx.db.insert(contact).values({ id: contactId, operatorId, channel: 'webform',
+      externalHandle: `ZZ TEST ${contactId}`, displayName: 'ZZ TEST Q18 synthetic contact' });
+    await ctx.db.insert(conversation).values({ id: conversationId, operatorId, branchId, channelAccountId: channelId, contactId });
+    await ctx.db.insert(message).values({ id: messageId, operatorId, conversationId, channelAccountId: channelId,
+      direction: 'inbound', authorKind: 'customer', body: 'ZZ TEST Q18 synthetic inbound' });
+    await ctx.db.insert(aiTurn).values({ id: newId(), operatorId, conversationId, triggerMessageId: messageId,
+      state: 'answered', inputTokens, outputTokens: 3, cacheReadTokens: 2, latencyMs: 1,
+      model: 'zz-test-unpriced-model', dueAt: at, firstSeenAt: at, createdAt: at, updatedAt: at });
+  }
+}
+
+function futurePricedBody(contract: typeof aiContracts[number]) {
+  const metrics = () => ({ count: 1, inputTokens: 7, outputTokens: 3, cacheReadTokens: 2, totalTokens: 12,
+    spendEstimate: 0.000123, reason: null as string | null, unpricedTokens: 0 });
+  const id = '01900000-0000-7000-8000-000000000636';
+  return {
+    generatedAt: '2026-10-25T00:00:00.000Z',
+    branches: [{ id, name: 'ZZ TEST Q18 future pricing park', timezone: 'Asia/Bangkok', businessDayStart: '00:00', businessDate: '2026-10-25' }],
+    selectedBranchIds: [id], period: { from: '2026-10-01', to: '2026-10-02' },
+    basis: 'created-at-bangkok', coverage: 'retained-records', attribution: contract.attribution,
+    retentionDays: contract.retentionDays, currency: 'USD', excludesCacheWrites: true,
+    totals: metrics(), parks: [{ branchId: id, totals: metrics(), rows: [{ date: '2026-10-01', ...metrics() }] }],
+    operatorWide: { totals: metrics(), rows: [{ date: '2026-10-01', ...metrics() }] },
+  };
+}
+
+describe.each(aiContracts)('SCRUM-636 $path Q18 spend contract', contract => {
+  it('FINDING R14 high: every current metric bucket reports unavailable spend and the complete unpriced-token remainder', async () => {
+    await unpricedUsageRows(contract.path);
+    await grant('operator', [operatorId]);
+    const response = await read(contract.path);
+    expect(response.statusCode).toBe(200);
+    const body = response.json();
+    expect(body.currency).toBe('USD');
+    expect(body.excludesCacheWrites).toBe(true);
+    expect(body.operatorWide).not.toBeNull();
+    const park = body.parks.find((row: { branchId: string }) => row.branchId === chalong);
+    expect(park.totals.totalTokens).toBeGreaterThan(0);
+    expect(park.rows.find((row: { date: string }) => row.date === '2026-10-01').totalTokens).toBeGreaterThan(0);
+    expect(body.operatorWide.totals.totalTokens).toBeGreaterThan(0);
+    expect(body.operatorWide.rows.find((row: { date: string }) => row.date === '2026-10-01').totalTokens).toBeGreaterThan(0);
+    const metrics = [body.totals,
+      ...body.parks.flatMap((row: { totals: unknown; rows: unknown[] }) => [row.totals, ...row.rows]),
+      body.operatorWide.totals, ...body.operatorWide.rows];
+    for (const value of metrics) {
+      expect(value.spendEstimate).toBeNull();
+      expect(value.reason).toBe('no_rate_configured');
+      expect(value.unpricedTokens).toBe(value.totalTokens);
+    }
+    expect(contract.schema.safeParse(body).success).toBe(true);
+    assertNoPrivateDetails(body);
+  });
+
+  it('FINDING R15 medium: the released schema accepts future finite priced USD estimates without a contract replacement', () => {
+    const body = futurePricedBody(contract);
+    expect(contract.schema.safeParse(body).success).toBe(true);
+    body.totals.spendEstimate = 0;
+    expect(contract.schema.safeParse(body).success).toBe(true);
+    body.totals.reason = 'unpriced_tokens';
+    body.totals.unpricedTokens = 4;
+    expect(contract.schema.safeParse(body).success).toBe(true);
+  });
+
+  it('FINDING R16 medium: every future spend bucket rejects negative and nonfinite estimates rather than serializing false money', () => {
+    for (const invalid of [-0.001, Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {
+      for (const position of ['totals', 'park-total', 'park-day', 'operator-total', 'operator-day']) {
+        const body = futurePricedBody(contract);
+        const metric = position === 'totals' ? body.totals
+          : position === 'park-total' ? body.parks[0]!.totals : position === 'park-day' ? body.parks[0]!.rows[0]!
+            : position === 'operator-total' ? body.operatorWide.totals : body.operatorWide.rows[0]!;
+        metric.spendEstimate = invalid;
+        expect(contract.schema.safeParse(body).success, `${position}: invalid numeric estimate`).toBe(false);
+      }
+    }
+    const unknownReason = futurePricedBody(contract); unknownReason.totals.reason = 'invented_zero';
+    expect(contract.schema.safeParse(unknownReason).success).toBe(false);
+  });
+});

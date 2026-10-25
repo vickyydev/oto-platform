@@ -32,9 +32,14 @@ export const BookingsAggregateSchema = dated.extend({
   totals: bookingMetrics,
   parks: z.array(z.object({ branchId: z.string().uuid(), totals: bookingMetrics, rows: z.array(bookingMetrics.extend({ date: day })) }).strict()),
 });
-const usageMetrics = z.object({ count, inputTokens: count, outputTokens: count, cacheReadTokens: count, totalTokens: count }).strict();
+const usageMetrics = z.object({
+  count, inputTokens: count, outputTokens: count, cacheReadTokens: count, totalTokens: count,
+  spendEstimate: z.number().finite().nonnegative().nullable(),
+  reason: z.enum(['no_rate_configured', 'unpriced_tokens']).nullable(), unpricedTokens: count,
+}).strict();
 const usage = dated.extend({
   basis: z.literal('created-at-bangkok'), coverage: z.literal('retained-records'), totals: usageMetrics,
+  currency: z.literal('USD'), excludesCacheWrites: z.literal(true),
   parks: z.array(z.object({ branchId: z.string().uuid(), totals: usageMetrics, rows: z.array(usageMetrics.extend({ date: day })) }).strict()),
   operatorWide: z.object({ totals: usageMetrics, rows: z.array(usageMetrics.extend({ date: day })) }).strict().nullable(),
 });
@@ -50,6 +55,7 @@ const reach = 'Read-only counts within console:overview:read reach, independent 
   'Only live parks owned by the current operator are eligible. Foreign, absent or archived park:404; owned unreachable park:403. ' +
   'Optional branchId selects one reachable park. No private record identities or message text are returned. ';
 const period = 'Explicit real from/to calendar dates, inclusive and ordered, at most31 days. Unknown or repeated query fields are refused. ';
+const pricing = 'Spend is an estimate in USD excluding unpersisted cache writes, never satang revenue. No rates are configured: every spendEstimate is null with reason no_rate_configured, including empty buckets; unpricedTokens retains all scoped input, output and cache-read tokens. ';
 
 export async function aggregateRoutes(app: App): Promise<void> {
   app.get('/aggregates/members', {
@@ -72,7 +78,7 @@ export async function aggregateRoutes(app: App): Promise<void> {
   });
   app.get('/aggregates/assistant-usage', {
     config: { dynamicPermission: true },
-    schema: { description: reach + period + 'Retained internal assistant records, by created_at Bangkok calendar day and the seat recorded at ask time. Count excludes off/capped; token sums retain all scoped records. The90-day retention means this is not a lifetime billing ledger. The unassigned bucket is included once only with an unfiltered operator-wide Overview grant.',
+    schema: { description: reach + period + pricing + 'Retained internal assistant records, by created_at Bangkok calendar day and the seat recorded at ask time. Count excludes off/capped; token sums retain all scoped records. The90-day retention means this is not a lifetime billing ledger. The unassigned bucket is included once only with an unfiltered operator-wide Overview grant.',
       querystring: datedQuery, response: { 200: AssistantUsageAggregateSchema } },
   }, async (req, reply) => {
     const auth = req.requireAuth();
@@ -81,7 +87,7 @@ export async function aggregateRoutes(app: App): Promise<void> {
   });
   app.get('/aggregates/inbox-ai-usage', {
     config: { dynamicPermission: true },
-    schema: { description: reach + period + 'Retained Inbox AI records, by created_at Bangkok calendar day and the conversation current park, which may change after a turn. Count requires non-null latency, including failed/shadow/zero-latency turns; token sums retain all scoped records. The unassigned bucket is included once only with an unfiltered operator-wide Overview grant. No channel default or historical park attribution is invented.',
+    schema: { description: reach + period + pricing + 'Retained Inbox AI records, by created_at Bangkok calendar day and the conversation current park, which may change after a turn. Count requires non-null latency, including failed/shadow/zero-latency turns; token sums retain all scoped records. The unassigned bucket is included once only with an unfiltered operator-wide Overview grant. No channel default or historical park attribution is invented.',
       querystring: datedQuery, response: { 200: InboxAiUsageAggregateSchema } },
   }, async (req, reply) => {
     const auth = req.requireAuth();
