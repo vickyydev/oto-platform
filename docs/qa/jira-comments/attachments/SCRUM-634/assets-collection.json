@@ -1,0 +1,28 @@
+{
+  "ticket": "SCRUM-634",
+  "exitCode": 0,
+  "complete": true,
+  "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae",
+  "ciRunId": "40154287659",
+  "assetCount": 7,
+  "publicBytesRead": 2004578,
+  "manifestSha256": "0ac5485bd8a7ae04358b6dcc976f9d2a90518490ff930a72883d6e1709e32163",
+  "startedAt": "2026-10-25T03:11:34.761Z",
+  "completedAt": "2026-10-25T03:11:49.751Z",
+  "originalExternalFontsFetched": false,
+  "parser": {
+    "path": "C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/typescript.js",
+    "version": "5.9.3",
+    "sha256": "3ae902c92cc44dace175c0e69e13a4b0899f6983c6121d76b9ab8dd5795e7675"
+  },
+  "representationPolicy": {
+    "rasterImageAccept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+    "rasterExtensions": ["png", "webp", "jpg", "jpeg"],
+    "otherAssetAccept": "*/*",
+    "htmlAccept": "text/html",
+    "hashRule": "Exact fetched representation bytes; no alternative hash acceptance."
+  },
+  "authenticationActions": 0,
+  "businessWrites": 0,
+  "actualTerminalSession": 86905
+}

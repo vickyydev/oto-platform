@@ -1,0 +1,27 @@
+{
+  "ticket": "SCRUM-634",
+  "at": "2026-10-25T03:08:07.897Z",
+  "publicPath": "/assets/logo-oto-nNYXf9Wy.png",
+  "authenticationActions": 0,
+  "businessWrites": 0,
+  "rows": [
+    {
+      "accept": "*/*",
+      "status": 200,
+      "contentType": "image/png",
+      "vary": "accept, accept-encoding",
+      "bytes": 73390,
+      "sha256": "599b68cab7b5c010aba5fa31161028e445b244e25b4bb4583992d2fd151ca14d",
+      "format": "PNG"
+    },
+    {
+      "accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+      "status": 200,
+      "contentType": "image/webp",
+      "vary": "accept, accept-encoding",
+      "bytes": 109836,
+      "sha256": "17a3ee3cd02ce9440ecba6ca182c17865c714584d126805d6bd7931e4fbae150",
+      "format": "WEBP"
+    }
+  ]
+}

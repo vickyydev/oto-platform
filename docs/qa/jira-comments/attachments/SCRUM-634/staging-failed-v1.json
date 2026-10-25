@@ -1,0 +1,159 @@
+{
+  "ticket": "SCRUM-634",
+  "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae",
+  "ciRunId": "40154287659",
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "deployId": "dep-dbemorm7bikc73be3a60",
+      "finishedAt": "2026-10-25T02:45:13.564893Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "deployId": "dep-dbemorm7bikc73be3c5g",
+      "finishedAt": "2026-10-25T02:42:35.480841Z"
+    },
+    {
+      "name": "oto-app-staging",
+      "deployId": "dep-dbemorm7bikc73be3b4g",
+      "finishedAt": "2026-10-25T02:44:29.678564Z"
+    }
+  ],
+  "helperSha256": "90d36a46d79b320d520c3fde007a3f2afdef37ac58170d1a5f2efa55fc747ed3",
+  "planSha256": "3269bdf37f76909c0d9292eb1d4dca90840597683aac9792b552727645b544cf",
+  "assetSpecSha256": "5663a945b91351c11458cf3c8a66cfda6c5fab39659f9b61a05d638c384b9e79",
+  "startedAt": "2026-10-25T03:01:29.110Z",
+  "actualStaging": true,
+  "complete": false,
+  "businessWrites": 0,
+  "fixturesCreated": 0,
+  "sourceChecks": [
+    {
+      "at": "2026-10-25T03:01:33.266Z",
+      "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae"
+    },
+    {
+      "at": "2026-10-25T03:01:37.847Z",
+      "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae"
+    },
+    {
+      "at": "2026-10-25T03:01:42.491Z",
+      "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae"
+    },
+    {
+      "at": "2026-10-25T03:01:46.197Z",
+      "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae"
+    },
+    {
+      "at": "2026-10-25T03:01:50.899Z",
+      "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae"
+    },
+    {
+      "at": "2026-10-25T03:02:06.585Z",
+      "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae"
+    }
+  ],
+  "operations": [
+    {
+      "label": "sign-in",
+      "app": "platform",
+      "alias": "ADMIN",
+      "contextRef": "b2531820-54c3-4908-aaf3-1f10d0dd80c0",
+      "path": "/api/auth/sign-in",
+      "intentAt": "2026-10-25T03:01:37.849Z"
+    },
+    {
+      "label": "handoff-issue",
+      "app": "platform",
+      "alias": "ADMIN",
+      "contextRef": "b2531820-54c3-4908-aaf3-1f10d0dd80c0",
+      "path": "/api/auth/handoff",
+      "intentAt": "2026-10-25T03:01:42.492Z"
+    },
+    {
+      "label": "handoff-exchange",
+      "app": "app",
+      "alias": "ADMIN",
+      "contextRef": "e443e448-7b33-475c-9997-9b688362a167",
+      "path": "/api/auth/handoff",
+      "intentAt": "2026-10-25T03:01:46.200Z"
+    },
+    {
+      "label": "sign-out",
+      "app": "app",
+      "alias": "ADMIN",
+      "contextRef": "e443e448-7b33-475c-9997-9b688362a167",
+      "path": "/api/logout",
+      "intentAt": "2026-10-25T03:02:02.670Z"
+    },
+    {
+      "label": "sign-out",
+      "app": "platform",
+      "alias": "ADMIN",
+      "contextRef": "b2531820-54c3-4908-aaf3-1f10d0dd80c0",
+      "path": "/api/auth/sign-out",
+      "intentAt": "2026-10-25T03:02:02.841Z"
+    }
+  ],
+  "actors": [
+    {
+      "alias": "ADMIN",
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "summaryStatus": 200,
+      "comparisons": [],
+      "source": "ready",
+      "selectedBranchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+      "date": "2026-10-25",
+      "originalAuthoritySha256": "eebc47576ca4da09253a46a1357dc035b3c8ca69689bbffdd64064e30c5f2478"
+    }
+  ],
+  "screenshots": [],
+  "links": [],
+  "authCleanup": [
+    {
+      "alias": "ADMIN",
+      "app": "app",
+      "contextRef": "e443e448-7b33-475c-9997-9b688362a167",
+      "attempted": true,
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    },
+    {
+      "alias": "ADMIN",
+      "app": "platform",
+      "contextRef": "b2531820-54c3-4908-aaf3-1f10d0dd80c0",
+      "attempted": true,
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    }
+  ],
+  "refusedRequests": [],
+  "limits": [
+    "Native counts are compared only when the same-actor bracket is stable; no guessed zero or salary amount is used.",
+    "Payroll is company / park-group month status, never selected-park filtered.",
+    "Source buttons prove an actual fresh handoff and fixed browser navigation intent; app destination UI is not loaded.",
+    "External font stylesheet is suppressed; payroll company names and the signed-in identity card are privacy-masked.",
+    "Server-internal temporary app-session closure is enforced by the summary endpoint; this proof directly verifies closure only of contexts it owns."
+  ],
+  "errorCode": "UNEXPECTED_BROWSER_FAILURE",
+  "finalSource": true,
+  "cleanup": {
+    "ownedContexts": 2,
+    "pending": 0,
+    "unresolved": 0,
+    "unknown": false,
+    "journalFailed": false,
+    "businessWrites": 0,
+    "fixturesCreated": 0
+  },
+  "network": {
+    "blocked": 0,
+    "failed": 2,
+    "pageErrors": 0,
+    "consoleErrors": 1
+  },
+  "completedAt": "2026-10-25T03:02:06.588Z",
+  "headlinesCompared": false
+}

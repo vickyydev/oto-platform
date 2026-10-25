@@ -1,0 +1,216 @@
+{
+  "ticket": "SCRUM-634",
+  "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae",
+  "ciRunId": "40154287659",
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "deployId": "dep-dbemorm7bikc73be3a60",
+      "finishedAt": "2026-10-25T02:45:13.564893Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "deployId": "dep-dbemorm7bikc73be3c5g",
+      "finishedAt": "2026-10-25T02:42:35.480841Z"
+    },
+    {
+      "name": "oto-app-staging",
+      "deployId": "dep-dbemorm7bikc73be3b4g",
+      "finishedAt": "2026-10-25T02:44:29.678564Z"
+    }
+  ],
+  "helperSha256": "7f82429919fd623cc1e7e27c6dc3dc6b5711df4129cb600a62e2bf067c6f15a0",
+  "planSha256": "bfb7953be9c441fd3d6207911b5f38034835a9e7eb1a64accc83c0c200f6cefd",
+  "assetSpecSha256": "5663a945b91351c11458cf3c8a66cfda6c5fab39659f9b61a05d638c384b9e79",
+  "startedAt": "2026-10-25T03:06:35.240Z",
+  "actualStaging": true,
+  "complete": false,
+  "businessWrites": 0,
+  "fixturesCreated": 0,
+  "sourceChecks": [
+    {
+      "at": "2026-10-25T03:06:38.891Z",
+      "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae"
+    },
+    {
+      "at": "2026-10-25T03:06:42.086Z",
+      "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae"
+    },
+    {
+      "at": "2026-10-25T03:06:47.356Z",
+      "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae"
+    },
+    {
+      "at": "2026-10-25T03:06:50.461Z",
+      "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae"
+    },
+    {
+      "at": "2026-10-25T03:06:54.775Z",
+      "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae"
+    },
+    {
+      "at": "2026-10-25T03:07:03.814Z",
+      "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae"
+    }
+  ],
+  "operations": [
+    {
+      "label": "sign-in",
+      "app": "platform",
+      "alias": "ADMIN",
+      "contextRef": "a5c59460-d25b-422b-85f9-92adc650042e",
+      "path": "/api/auth/sign-in",
+      "intentAt": "2026-10-25T03:06:42.087Z"
+    },
+    {
+      "label": "handoff-issue",
+      "app": "platform",
+      "alias": "ADMIN",
+      "contextRef": "a5c59460-d25b-422b-85f9-92adc650042e",
+      "path": "/api/auth/handoff",
+      "intentAt": "2026-10-25T03:06:47.358Z"
+    },
+    {
+      "label": "handoff-exchange",
+      "app": "app",
+      "alias": "ADMIN",
+      "contextRef": "5d539c20-34cc-43eb-90e3-e21e9e413d67",
+      "path": "/api/auth/handoff",
+      "intentAt": "2026-10-25T03:06:50.464Z"
+    },
+    {
+      "label": "sign-out",
+      "app": "app",
+      "alias": "ADMIN",
+      "contextRef": "5d539c20-34cc-43eb-90e3-e21e9e413d67",
+      "path": "/api/logout",
+      "intentAt": "2026-10-25T03:06:59.531Z"
+    },
+    {
+      "label": "sign-out",
+      "app": "platform",
+      "alias": "ADMIN",
+      "contextRef": "a5c59460-d25b-422b-85f9-92adc650042e",
+      "path": "/api/auth/sign-out",
+      "intentAt": "2026-10-25T03:06:59.669Z"
+    }
+  ],
+  "actors": [
+    {
+      "alias": "ADMIN",
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "summaryStatus": 200,
+      "comparisons": [],
+      "source": "ready",
+      "selectedBranchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+      "date": "2026-10-25",
+      "originalAuthoritySha256": "eebc47576ca4da09253a46a1357dc035b3c8ca69689bbffdd64064e30c5f2478"
+    }
+  ],
+  "screenshots": [],
+  "links": [],
+  "authCleanup": [
+    {
+      "alias": "ADMIN",
+      "app": "app",
+      "contextRef": "5d539c20-34cc-43eb-90e3-e21e9e413d67",
+      "attempted": true,
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    },
+    {
+      "alias": "ADMIN",
+      "app": "platform",
+      "contextRef": "a5c59460-d25b-422b-85f9-92adc650042e",
+      "attempted": true,
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    }
+  ],
+  "refusedRequests": [],
+  "browserDiagnostics": [
+    {
+      "at": "2026-10-25T03:06:57.696Z",
+      "actor": "ADMIN",
+      "event": "route-error",
+      "stage": "asset",
+      "method": "GET",
+      "type": "image",
+      "mainFrame": true,
+      "path": null,
+      "pathLabel": "REVIEWED_STATIC_ASSET",
+      "pathSha256": "d97aca549da7e9855b5aa0cfcfc826ce607f38028ce0279b8b8e32b56c1bd1c6",
+      "querySha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bodySha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": 200,
+      "code": "DEPLOYED_STATIC_BYTES_CHANGED",
+      "expectedAssetSha256": "5a0b8f6a955104f777c9d287ac91e869e349c24a479dd694d07339d4fa689a02",
+      "actualAssetSha256": "17a3ee3cd02ce9440ecba6ca182c17865c714584d126805d6bd7931e4fbae150"
+    },
+    {
+      "at": "2026-10-25T03:06:57.701Z",
+      "actor": "ADMIN",
+      "event": "requestfailed",
+      "stage": "listener",
+      "method": "GET",
+      "type": "image",
+      "mainFrame": true,
+      "path": null,
+      "pathLabel": "REVIEWED_STATIC_ASSET",
+      "pathSha256": "d97aca549da7e9855b5aa0cfcfc826ce607f38028ce0279b8b8e32b56c1bd1c6",
+      "querySha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bodySha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": null,
+      "code": "ABORTED",
+      "expectedAssetSha256": null,
+      "actualAssetSha256": null
+    },
+    {
+      "at": "2026-10-25T03:06:57.703Z",
+      "actor": "ADMIN",
+      "event": "console-error",
+      "stage": "listener",
+      "method": "OTHER",
+      "type": "other",
+      "mainFrame": false,
+      "path": null,
+      "pathLabel": "REVIEWED_STATIC_ASSET",
+      "pathSha256": "d97aca549da7e9855b5aa0cfcfc826ce607f38028ce0279b8b8e32b56c1bd1c6",
+      "querySha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bodySha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": null,
+      "code": "ABORTED",
+      "expectedAssetSha256": null,
+      "actualAssetSha256": null
+    }
+  ],
+  "diagnosticsOmitted": 0,
+  "limits": [
+    "Native counts are compared only when the same-actor bracket is stable; no guessed zero or salary amount is used.",
+    "Payroll is company / park-group month status, never selected-park filtered.",
+    "Source buttons prove an actual fresh handoff and fixed browser navigation intent; app destination UI is not loaded.",
+    "External font stylesheet is suppressed; payroll company names and the signed-in identity card are privacy-masked.",
+    "Server-internal temporary app-session closure is enforced by the summary endpoint; this proof directly verifies closure only of contexts it owns."
+  ],
+  "errorCode": "UNEXPECTED_BROWSER_FAILURE",
+  "finalSource": true,
+  "cleanup": {
+    "ownedContexts": 2,
+    "pending": 0,
+    "unresolved": 0,
+    "unknown": false,
+    "journalFailed": false,
+    "businessWrites": 0,
+    "fixturesCreated": 0
+  },
+  "network": {
+    "blocked": 0,
+    "failed": 2,
+    "pageErrors": 0,
+    "consoleErrors": 1
+  },
+  "completedAt": "2026-10-25T03:07:03.815Z",
+  "headlinesCompared": false
+}

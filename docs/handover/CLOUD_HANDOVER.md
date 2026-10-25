@@ -17,6 +17,13 @@ work is landed and proven, and the tools. Kept current at every landing._
 
 ## 2. Where the work stands
 
+**25 October 2026, SCRUM-634 ADMIN STAGING VERIFIED; RESTRICTED CAPTURE FINISHING:** Six-green source b91e957c779cb74a0c1495f24257bd69218286ae remains automatically live on API, Admin and OTO App. Actual desktop/phone Staff cards match the same person's stable native results: working0, issues0, leave entries1, company month2026-10 Draft/version2. All four source buttons minted fresh handoffs to their fixed destinations; destination UI was not opened. The two images have passed actual root/independent pixel inspection.
+
+The whole v3 proof remains failed, not relabelled: the Reception API403 is correct, but its browser check expected a Staff-page refusal instead of the existing console-level refusal. Correct only that QA expectation/caption/mask and rerun. V3 has zero network errors and all seven owned sessions closed200/current-user401, with no pending, unresolved or unknown work. V1/V2 and the original collector failures remain in attachments/SCRUM-634/staging-qa-history.json and the three failed receipts. The earlier logo mismatch is proven Accept-dependent image representation; browser-representation collection is reviewed with unchanged strict hashes. No product defect or owner/planner ruling is established.
+
+Jira stays Testing/outcome12562. No staging screenshot attachment or Deployed acceptance is claimed yet. The two exact own test containers are removed; all ten other containers/data remain. Finish the final restricted screenshot, commit/attach reviewed proof and634Deployed, then parent628 acceptance. P4 waits for P3 Deployed; no invitation, SMS or payment is needed.
+
+
 **25 October 2026, SCRUM-634 LIVE; STAGING COLLECTOR CORRECTION:** All six CI40154287659 jobs passed for source b91e957c779cb74a0c1495f24257bd69218286ae. The latest automatic API, Admin and OTO App deployments are now observed live on that same source, with the final deployment finishing2026-10-25T02:45:13.564893Z. No manual deployment was triggered. Rollout evidence is attachments/SCRUM-634/rollout.json.
 
 The first public asset collection failed before authentication: its import regular expression mistook the permission key catalog:menu:import for an actual module import and tried to enqueue a colon. The original failure and safe diagnostic remain in staging-qa-history.json. Correct only this external QA parser, prove its regression and retain all path/source guards, then collect/review assets and run actual same-actor native comparisons and desktop/phone/restricted-demo screenshots. No product failure or owner/planner ruling is established. Jira remains Testing/outcome12562; staging acceptance is not claimed.
