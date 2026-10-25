@@ -1,0 +1,50 @@
+{
+  "ticket": "SCRUM-633",
+  "staging": false,
+  "passed": true,
+  "removed": true,
+  "commands": [
+    {
+      "label": "platform-migrate",
+      "exitCode": 0,
+      "logSha256": "ce24a06a51eb447df7f9b60c6ab85d8701787fb417c8bf1eae8b43614a767cca"
+    },
+    {
+      "label": "app-migrate",
+      "exitCode": 0,
+      "logSha256": "fa8afb46f1613de82c31b3732eacf959284f1be4bc7a263c4c6d2477d0162c82"
+    },
+    {
+      "label": "s633-employee-suite-sign-in",
+      "exitCode": 0,
+      "logSha256": "5f4cdd6c44092c4a1d91115938fdb0cad4c1939fda646c4632ac2e8648292026"
+    },
+    {
+      "label": "s633-employee-wizard",
+      "exitCode": 0,
+      "logSha256": "ddb3382ae529350b9ede7ea65c893c89ec4dddebd28de2a599dfaba340ce0941"
+    },
+    {
+      "label": "s633-lifecycle",
+      "exitCode": 0,
+      "logSha256": "874f9ee5c3f18435859b78c791ddc05ec5503472f0dcdaf8ea7427f4758cc9ae"
+    },
+    {
+      "label": "s633-lifecycle-privileges",
+      "exitCode": 0,
+      "logSha256": "14cce112c7482064a52957620eaa1f9bd371a276f5808efc96b5033ca60275a2"
+    }
+  ],
+  "startedAt": "2026-10-24T23:31:30.325Z",
+  "completedAt": "2026-10-24T23:31:43.755Z",
+  "sourceManifestSha256": "2bcb533a5f1819709f02db237d4ddac400d5a86573c8cb6fbd742145d51f306d",
+  "currentSourceManifestSha256": "29d46a6af64025ee2e8701d688009d79e0d0d2f4410f1e483225bdca95f83dd2",
+  "currentAppProductionBytesIdentical": true,
+  "appProductionInputs": 842,
+  "derivedFromActualTerminalStdout": true,
+  "wrapperReceiptSha256": "256eb5186650516994dbd90c45400ecd62ffcf62e6efeaebf699d8f3c29e435f",
+  "wrapperLogSha256": "b080b8f3645a87cb5c8f1fd62cae9804b8618491be1f030c27a9c10261fba3e5",
+  "limits": [
+    "This is local captured-upstream and actual wizard-closure/MutationCache evidence, not a staging invitation or full rendered React browser."
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "ticket": "SCRUM-633",
+  "jobId": "job-dbel9cvavr4c73b9rohg",
+  "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021",
+  "ciRunId": "40146207019",
+  "deployments": [
+    {
+      "serviceName": "oto-api-staging",
+      "serviceId": "srv-danh2ljtqb8s73bt9en0",
+      "deployId": "dep-dbekul3bc2fs738cavq0",
+      "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021",
+      "finishedAt": "2026-10-25T00:40:47.457261Z"
+    },
+    {
+      "serviceName": "oto-console-staging",
+      "serviceId": "srv-danng2p42hec73f38e3g",
+      "deployId": "dep-dbekulbbc2fs738cb1t0",
+      "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021",
+      "finishedAt": "2026-10-25T00:38:23.683527Z"
+    },
+    {
+      "serviceName": "oto-app-staging",
+      "serviceId": "srv-danppvjtqb8s73cnvua0",
+      "deployId": "dep-dbekul3bc2fs738cb0og",
+      "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021",
+      "finishedAt": "2026-10-25T00:40:31.724651Z"
+    }
+  ],
+  "planSha256": "c28f50d2c06d8f5eaaf65ac58b6aae20066d219ef3e26b2c3be8b1023f98f0eb",
+  "helperSha256": "bd04adadcea26f09162e7edd27dc3fb642cbbd8a7b4e3c3285d4662a4febd376",
+  "lifecycleReceiptSha256": "30c95424abc3df492cf1cae3e30b58e9e2f15bd09cbc41de2fed172866b21bd1",
+  "window": {
+    "start": "2026-10-25T00:59:32.228Z",
+    "end": "2026-10-25T01:00:12.306Z"
+  },
+  "terminal": true,
+  "status": "succeeded",
+  "readOnly": true,
+  "startedAt": "2026-10-25T01:00:33.872Z",
+  "completedAt": "2026-10-25T01:02:10.903Z",
+  "passed": true,
+  "metadata": {
+    "at": "2026-10-25T01:01:32.449Z",
+    "accountId": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+    "appUserId": "01a11b1d-e8e6-7627-bec8-d92e53579c0b",
+    "intervalStart": "2026-10-25T00:59:32.228Z",
+    "intervalEnd": "2026-10-25T01:00:12.306Z",
+    "coreActive": true,
+    "appActive": true,
+    "pendingCount": 0,
+    "eventCount": 1,
+    "auditCount": 1,
+    "events": [
+      {
+        "id": "0ad174dd-2560-4ba6-b539-2c3e52ad04a3",
+        "state": "delivered",
+        "attempts": 1,
+        "createdAt": "2026-10-25T00:59:36.638Z",
+        "settledAt": "2026-10-25T00:59:58.553Z"
+      }
+    ],
+    "audits": [
+      {
+        "id": "01a17092-4cff-7d03-9e4a-57df2d670171",
+        "state": "delivered",
+        "eventId": "0ad174dd-2560-4ba6-b539-2c3e52ad04a3",
+        "actionId": "0ad174dd-2560-4ba6-b539-2c3e52ad04a3",
+        "createdAt": "2026-10-25T00:59:58.553Z"
+      }
+    ]
+  },
+  "evaluation": {
+    "ready": true,
+    "failures": []
+  },
+  "logResponseSha256": "4ab316c4a7171260040f814a3438154b7d28c8b12a6d3f4a4947730dc43d9cef",
+  "after": {
+    "at": "2026-10-25T01:02:15.643Z",
+    "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021",
+    "ciRunId": "40146207019",
+    "greenJobs": 6,
+    "deployments": [
+      {
+        "serviceName": "oto-api-staging",
+        "serviceId": "srv-danh2ljtqb8s73bt9en0",
+        "deployId": "dep-dbekul3bc2fs738cavq0",
+        "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021",
+        "finishedAt": "2026-10-25T00:40:47.457261Z"
+      },
+      {
+        "serviceName": "oto-console-staging",
+        "serviceId": "srv-danng2p42hec73f38e3g",
+        "deployId": "dep-dbekulbbc2fs738cb1t0",
+        "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021",
+        "finishedAt": "2026-10-25T00:38:23.683527Z"
+      },
+      {
+        "serviceName": "oto-app-staging",
+        "serviceId": "srv-danppvjtqb8s73cnvua0",
+        "deployId": "dep-dbekul3bc2fs738cb0og",
+        "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021",
+        "finishedAt": "2026-10-25T00:40:31.724651Z"
+      }
+    ]
+  }
+}

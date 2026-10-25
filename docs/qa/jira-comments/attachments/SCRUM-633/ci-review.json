@@ -1,0 +1,291 @@
+{
+  "ticket": "SCRUM-633",
+  "passed": true,
+  "reviewedAt": "2026-10-25T00:40:22.623Z",
+  "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021",
+  "runId": "40146207019",
+  "sourceManifestSha256": "29d46a6af64025ee2e8701d688009d79e0d0d2f4410f1e483225bdca95f83dd2",
+  "sourceFiles": 3739,
+  "ciStatus": "completed",
+  "ciConclusion": "success",
+  "allSixJobsGreen": true,
+  "metadata": {
+    "path": "C:/w/admin633-ci-terminal-metadata.json",
+    "sha256": "bb57d5b37c852652fd895def89e0c743d5a4b76c11c53b36613c064d423b45e2"
+  },
+  "jobs": [
+    {
+      "id": 121027980490,
+      "name": "ci",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-25T00:18:58Z",
+      "completedAt": "2026-10-25T00:29:56Z",
+      "url": "https://github.com/vickyydev/oto-platform/actions/runs/40146207019/job/121027980490"
+    },
+    {
+      "id": 121027980571,
+      "name": "api-tests (3)",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-25T00:18:58Z",
+      "completedAt": "2026-10-25T00:37:37Z",
+      "url": "https://github.com/vickyydev/oto-platform/actions/runs/40146207019/job/121027980571"
+    },
+    {
+      "id": 121027980619,
+      "name": "oto-app",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-25T00:18:58Z",
+      "completedAt": "2026-10-25T00:29:16Z",
+      "url": "https://github.com/vickyydev/oto-platform/actions/runs/40146207019/job/121027980619"
+    },
+    {
+      "id": 121027980678,
+      "name": "api-tests (2)",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-25T00:18:59Z",
+      "completedAt": "2026-10-25T00:36:44Z",
+      "url": "https://github.com/vickyydev/oto-platform/actions/runs/40146207019/job/121027980678"
+    },
+    {
+      "id": 121027980688,
+      "name": "pos-tests",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-25T00:18:58Z",
+      "completedAt": "2026-10-25T00:20:37Z",
+      "url": "https://github.com/vickyydev/oto-platform/actions/runs/40146207019/job/121027980688"
+    },
+    {
+      "id": 121027980690,
+      "name": "api-tests (1)",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-25T00:18:58Z",
+      "completedAt": "2026-10-25T00:37:02Z",
+      "url": "https://github.com/vickyydev/oto-platform/actions/runs/40146207019/job/121027980690"
+    }
+  ],
+  "consoleBrowser": {
+    "actualCiStep": "Console end-to-end",
+    "status": "completed",
+    "conclusion": "success"
+  },
+  "compiler": {
+    "passed": true,
+    "fullOutputRead": true,
+    "readRanges": [
+      [
+        1,
+        80
+      ],
+      [
+        81,
+        160
+      ],
+      [
+        161,
+        240
+      ],
+      [
+        241,
+        320
+      ],
+      [
+        321,
+        400
+      ],
+      [
+        401,
+        480
+      ],
+      [
+        481,
+        560
+      ],
+      [
+        561,
+        640
+      ],
+      [
+        641,
+        668
+      ]
+    ],
+    "capturedLines": 668,
+    "actualErrors": 418,
+    "files": 54,
+    "fileCodeBuckets": 109,
+    "increased": [],
+    "reduced": [],
+    "perFileCodeCountsExactlyEqual": true,
+    "unclassifiedDiagnostics": 0,
+    "diagnosticHeaders": 418,
+    "allDiagnosticHeadersEqualLocal": true,
+    "continuationLines": 238,
+    "exactDiagnosticBlocks": 417,
+    "displayDifferences": [
+      {
+        "file": "server/parent-experience-routes.ts",
+        "line": 82,
+        "column": 107,
+        "code": "TS2349",
+        "headerIdentical": true,
+        "ciContinuationSha256": "577a70608827284e290ef2c7aee9e2e5ef5381e4abc19bda2436ce6d45db7c76",
+        "localContinuationSha256": "ac9f83e96736a5e107a583d6aa5d37149688943efb7bb290841661136c190069",
+        "ciCheckoutRoot": "/home/runner/work/oto-platform/oto-platform/apps/oto-app/",
+        "localCheckoutRoot": "/workspace/apps/oto-app/",
+        "observation": "Inherited union-signature continuation contains a different absolute checkout path and different printed type elision. The same TS2349 header and final incompatibility message remain; no file/code count changes.",
+        "classification": "Checkout-path/display difference, consistent with TypeScript truncation; not byte-identical output."
+      }
+    ],
+    "perFileCodeCounts": {
+      "client/src/components/beo/beo-billing-module.tsx|TS2339": 1,
+      "client/src/components/beo/beo-billing-module.tsx|TS2322": 1,
+      "client/src/components/beo/beo-day-of-view.tsx|TS2322": 2,
+      "client/src/components/beo/beo-day-of-view.tsx|TS2551": 6,
+      "client/src/components/beo/beo-event-editor.tsx|TS2304": 1,
+      "client/src/components/beo/beo-event-editor.tsx|TS2322": 7,
+      "client/src/components/branch-selector.tsx|TS2322": 3,
+      "client/src/components/core/TaskBoard.tsx|TS2322": 3,
+      "client/src/components/ops/TaskDetailSheet.tsx|TS2339": 4,
+      "client/src/components/phone-verification.tsx|TS2339": 1,
+      "client/src/pages/analytics-page.tsx|TS2345": 1,
+      "client/src/pages/auth-page.tsx|TS2353": 1,
+      "client/src/pages/auth-page.tsx|TS2345": 1,
+      "client/src/pages/auth-page.tsx|TS2322": 2,
+      "client/src/pages/branches-page.tsx|TS2339": 1,
+      "client/src/pages/contract-wizard-page.tsx|TS2339": 2,
+      "client/src/pages/contract-wizard-page.tsx|TS2551": 2,
+      "client/src/pages/core/checklist-run.tsx|TS2551": 13,
+      "client/src/pages/core/checklist-run.tsx|TS2561": 4,
+      "client/src/pages/core/checklist-run.tsx|TS2322": 4,
+      "client/src/pages/core/dashboard.tsx|TS2724": 2,
+      "client/src/pages/core/dashboard.tsx|TS2339": 48,
+      "client/src/pages/core/dashboard.tsx|TS2769": 2,
+      "client/src/pages/core/dashboard.tsx|TS2322": 2,
+      "client/src/pages/core/escalate.tsx|TS2339": 10,
+      "client/src/pages/core/escalate.tsx|TS2322": 2,
+      "client/src/pages/core/fix-board.tsx|TS2322": 1,
+      "client/src/pages/core/home.tsx|TS2339": 1,
+      "client/src/pages/core/login.tsx|TS2339": 1,
+      "client/src/pages/core/module-chooser.tsx|TS2339": 2,
+      "client/src/pages/core/report-issue.tsx|TS2339": 1,
+      "client/src/pages/core/report-issue.tsx|TS2322": 2,
+      "client/src/pages/core/rota.tsx|TS2339": 3,
+      "client/src/pages/core/rota.tsx|TS7006": 6,
+      "client/src/pages/core/task-detail.tsx|TS2551": 2,
+      "client/src/pages/core/task-detail.tsx|TS2339": 1,
+      "client/src/pages/core/tasks.tsx|TS2339": 4,
+      "client/src/pages/core/tasks.tsx|TS2741": 1,
+      "client/src/pages/core/tasks.tsx|TS2551": 2,
+      "client/src/pages/core/tasks.tsx|TS2322": 2,
+      "client/src/pages/core/today.tsx|TS2724": 1,
+      "client/src/pages/core/today.tsx|TS7006": 1,
+      "client/src/pages/core/today.tsx|TS2339": 4,
+      "client/src/pages/core/troubleshoot.tsx|TS2724": 2,
+      "client/src/pages/core/troubleshoot.tsx|TS2322": 2,
+      "client/src/pages/core/troubleshoot.tsx|TS2339": 1,
+      "client/src/pages/core_admin/branches.tsx|TS2339": 5,
+      "client/src/pages/core_admin/branches.tsx|TS2322": 2,
+      "client/src/pages/core_admin/events.tsx|TS2339": 1,
+      "client/src/pages/core_admin/index.tsx|TS2322": 1,
+      "client/src/pages/core_admin/users.tsx|TS2339": 8,
+      "client/src/pages/core_admin/users.tsx|TS2551": 4,
+      "client/src/pages/core_admin/users.tsx|TS2322": 2,
+      "client/src/pages/employees-page.tsx|TS2322": 4,
+      "client/src/pages/ops/index.tsx|TS18048": 2,
+      "client/src/pages/org-chart-page.tsx|TS2322": 1,
+      "client/src/pages/scheduling-page.tsx|TS2339": 6,
+      "client/src/pages/scheduling-page.tsx|TS2322": 3,
+      "client/src/pages/scheduling-page.tsx|TS2304": 1,
+      "client/src/pages/studio/camp-detail.tsx|TS2322": 1,
+      "client/src/pages/studio/camp-detail.tsx|TS2353": 1,
+      "client/src/pages/studio/checklists.tsx|TS2339": 2,
+      "client/src/pages/studio/checklists.tsx|TS18048": 2,
+      "client/src/pages/studio/checklists.tsx|TS2304": 2,
+      "client/src/pages/studio/departments.tsx|TS2339": 3,
+      "client/src/pages/studio/event-settings.tsx|TS2322": 1,
+      "client/src/pages/studio/knowledge-base.tsx|TS2322": 1,
+      "client/src/pages/studio/knowledge-base.tsx|TS2345": 1,
+      "client/src/pages/studio/troubleshooting.tsx|TS2724": 1,
+      "client/src/pages/studio/troubleshooting.tsx|TS7006": 1,
+      "client/src/pages/studio/users.tsx|TS2339": 8,
+      "client/src/pages/studio/users.tsx|TS2551": 4,
+      "client/src/pages/verify-phone-page.tsx|TS2339": 1,
+      "server/ai-routes.ts|TS2339": 1,
+      "server/attention-engine.ts|TS2339": 3,
+      "server/attention-engine.ts|TS2367": 1,
+      "server/beo-routes.ts|TS2339": 46,
+      "server/beo-routes.ts|TS2353": 1,
+      "server/beo-routes.ts|TS2769": 1,
+      "server/core/tasksRoutes.ts|TS1117": 2,
+      "server/core/tasksRoutes.ts|TS2488": 6,
+      "server/kiosk-auth.ts|TS2769": 1,
+      "server/lib/batch/utils.ts|TS2339": 2,
+      "server/notification-service.ts|TS2322": 1,
+      "server/parent-experience-routes.ts|TS2349": 1,
+      "server/payroll-reconciliation.ts|TS2322": 1,
+      "server/pdf.ts|TS2339": 2,
+      "server/pdf.ts|TS2345": 1,
+      "server/pdf.ts|TS18048": 1,
+      "server/routes.ts|TS2367": 2,
+      "server/routes.ts|TS2345": 6,
+      "server/routes.ts|TS2339": 35,
+      "server/routes.ts|TS2353": 12,
+      "server/routes.ts|TS2739": 1,
+      "server/routes.ts|TS2322": 10,
+      "server/routes.ts|TS2551": 3,
+      "server/routes.ts|TS2769": 3,
+      "server/routes.ts|TS2820": 1,
+      "server/routes.ts|TS2554": 6,
+      "server/routes.ts|TS2561": 1,
+      "server/storage.ts|TS2322": 6,
+      "server/storage.ts|TS2353": 2,
+      "server/storage.ts|TS2769": 10,
+      "server/storage.ts|TS2339": 1,
+      "server/storage.ts|TS2345": 3,
+      "server/storage.ts|TS2416": 2,
+      "server/voucher-routes.ts|TS2339": 3,
+      "server/voucher-routes.ts|TS2322": 2,
+      "server/xero-routes.ts|TS2345": 3
+    },
+    "capture": {
+      "path": "C:/w/admin633-ci-compiler.json",
+      "sha256": "c92046c2380413e05863610fb6a35d2256ae24866789c34289606b5c2113faef"
+    },
+    "log": {
+      "path": "C:/w/admin633-ci-compiler.log",
+      "sha256": "1a9cee0e941ff95b17b4701821c2b829c563327bcc2fe16e24e65b74ee4afa3f"
+    },
+    "baseline": {
+      "path": "C:/w/admin-provisioning/apps/oto-app/script/typecheck-baseline.json",
+      "sha256": "946a7a21ff4497348a063069049cafac2da45039c1eb0e2ab86938044382d826"
+    },
+    "parser": {
+      "path": "C:/w/admin-provisioning/apps/oto-app/script/typecheck-ratchet.mjs",
+      "sha256": "bd61f61a83b7aa585f34776313193b3edc972dc00f59a981f46a637591ce4873"
+    },
+    "localOutput": {
+      "path": "C:/w/admin633-integrated/app-ratchet-v2.log",
+      "sha256": "6aff0c71fabd4cec690e12d35434b1380c4c5b46db212070be7cfd45b7709db8"
+    },
+    "localFinalWholeCompilerReview": {
+      "path": "C:/w/admin633-final-compiler-review-v2.json",
+      "sha256": "1b73cecc4ae2cd231db92a96b1aebbd1568d6bef42513c68b45581725e715676"
+    },
+    "helperSha256": "f3862b18cc7d9f4ba5ae0ac1b0039f45eeb57759de09043919df11034734cd3e",
+    "rawJobOutputPersistedByCapture": false,
+    "filteredAndRedactedBeforeDisk": true
+  },
+  "limits": [
+    "Inherited418 OTO diagnostics remain; this is an unchanged ceiling, not zero compiler errors",
+    "One continuation differs in checkout path and printed truncation; full byte equality is not claimed",
+    "No CI rerun, source edit, deployment, staging authentication or business action performed by reviewer"
+  ],
+  "deployed": false,
+  "stagingAccepted": false
+}

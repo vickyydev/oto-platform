@@ -1,0 +1,29 @@
+{
+  "ticket": "SCRUM-633",
+  "approved": true,
+  "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021",
+  "ciRunId": "40146207019",
+  "deployments": [
+    {
+      "serviceName": "oto-api-staging",
+      "serviceId": "srv-danh2ljtqb8s73bt9en0",
+      "deployId": "dep-dbekul3bc2fs738cavq0",
+      "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021",
+      "finishedAt": "2026-10-25T00:40:47.457261Z"
+    },
+    {
+      "serviceName": "oto-console-staging",
+      "serviceId": "srv-danng2p42hec73f38e3g",
+      "deployId": "dep-dbekulbbc2fs738cb1t0",
+      "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021",
+      "finishedAt": "2026-10-25T00:38:23.683527Z"
+    },
+    {
+      "serviceName": "oto-app-staging",
+      "serviceId": "srv-danppvjtqb8s73cnvua0",
+      "deployId": "dep-dbekul3bc2fs738cb0og",
+      "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021",
+      "finishedAt": "2026-10-25T00:40:31.724651Z"
+    }
+  ]
+}

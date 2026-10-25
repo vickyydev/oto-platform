@@ -1,0 +1,154 @@
+{
+  "ticket": "SCRUM-633",
+  "passed": true,
+  "reviewedAt": "2026-10-25T01:19:31.680Z",
+  "helperSha256": "abd04dcab9d99ac26f00a921b89be89b7d63a0f6b721e08c38348edc1e5ac53c",
+  "reviewedFile": "C:/w/admin633-native-proof-v8.mjs",
+  "previousReview": {
+    "path": "C:/w/admin633-native-proof-v7-independent-review.json",
+    "sha256": "37617bbe01ec60ee56ff01efcc137abd716f00135ef3b572820f804f3216cc3b",
+    "passed": true
+  },
+  "scope": "Read-only exact V7?V8 final caption placement review, inheriting the independently reviewed unchanged V5?V7 guards",
+  "delta": {
+    "onlyCssBottomChanged": true,
+    "beforePx": 88,
+    "afterPx": 160,
+    "allOtherHelperBytesIdentical": true,
+    "guardOrAssertionChanges": false
+  },
+  "checks": {
+    "actorStatusRead": {
+      "method": "POST",
+      "path": "/api/avatar-status/batch",
+      "studioInitialPathOnly": true,
+      "originAndMainFrameRequired": true,
+      "fetchOrXhrOnly": true,
+      "exactThreeKeys": [
+        "date",
+        "employeeIds",
+        "scope"
+      ],
+      "scope": "GLOBAL",
+      "dateFromSameBrowserBeforeNavigation": true,
+      "oneEmployeeFromCanonicalApprovedAdminUser": true,
+      "allOtherBrowserWritesStillRefused": true,
+      "sourceHandlerSelectOnly": true
+    },
+    "photoPrivacy": {
+      "sourceBasenameRewrite": true,
+      "safeBasenameRequired": true,
+      "exactOwnOriginKnownActorUrlOnly": true,
+      "transparentFulfillmentBeforeNetworkFetch": true,
+      "unknownMediaStillFatal": true,
+      "originalPhotoAssetsUntested": true
+    },
+    "caption": {
+      "explicitPointerEventsAutoOnQaCaptionOnly": true,
+      "allMaskAndRequiredControlIntersectionGuardUnchanged": true,
+      "fitAndHitTestGuardUnchanged": true,
+      "geometryDiagnosticsSavedBeforeAssertion": true,
+      "diagnosticsNumericRectAndBooleanWhitelistOnly": true
+    },
+    "unknownRequests": {
+      "finiteMethodTypeLabels": true,
+      "pathQueryBodyHashesOnly": true,
+      "noRawUrlsOrBodyValues": true,
+      "bounded100Records": true
+    },
+    "coordinatorRequestBytesUnchangedFromV5": true,
+    "finalCleanupBytesUnchangedFromV5": true,
+    "networkAndPhotoGuardsUnchangedV6ToV7": true
+  },
+  "radixSource": {
+    "files": [
+      {
+        "package": "react-dropdown-menu",
+        "path": "C:/w/admin-readonly-pages/apps/oto-app/node_modules/@radix-ui/react-dropdown-menu/dist/index.mjs",
+        "sha256": "6eb4f9ff23887754604a7ea51ae9fef73d45ea86b84afe7a422c527931af7f58"
+      },
+      {
+        "package": "react-menu",
+        "path": "C:/w/admin-readonly-pages/apps/oto-app/node_modules/@radix-ui/react-menu/dist/index.mjs",
+        "sha256": "bffc0a6550ca26bf9fd923fdd589171a167e68abf0f9b2ea985b310a19146d2e"
+      },
+      {
+        "package": "react-dismissable-layer",
+        "path": "C:/w/admin-readonly-pages/apps/oto-app/node_modules/@radix-ui/react-dismissable-layer/dist/index.mjs",
+        "sha256": "3fe6a43880f78f9f106c1dbcdc7ff4089404b719e4396f47868b6b335adaa7fd"
+      }
+    ],
+    "dropdownModalDefault": true,
+    "menuDisablesOutsidePointerEventsWhileOpen": true,
+    "bodyPointerEventsNoneAndCleanupRestore": true,
+    "layerOwnPointerEventsAuto": true,
+    "locations": [
+      "react-dropdown-menu/dist/index.mjs:29",
+      "react-menu/dist/index.mjs:138",
+      "react-dismissable-layer/dist/index.mjs:73",
+      "react-dismissable-layer/dist/index.mjs:81",
+      "react-dismissable-layer/dist/index.mjs:104"
+    ],
+    "conclusion": "Installed source supports the reported hit-test failure: a body-appended caption can inherit pointer-events:none while the native menu is open. Explicit auto changes only the QA caption hit test.",
+    "actualDomReproducedByReviewer": false
+  },
+  "offlineEvidence": {
+    "unchangedGuardPins": {
+      "receiptPath": "C:/w/admin633-native-proof-v7-offline.json",
+      "receiptSha256": "8905243225538f9178aa6b541492ae0abda7cd26d07d70849062638c6b39d726",
+      "logPath": "C:/w/admin633-native-proof-v7-offline.log",
+      "logSha256": "d84a0bed3fe7af35e976af9caad73d9964eff8c30d49f392fa7bb221c85789d1",
+      "fullTapRead": true,
+      "tests": 12,
+      "passed": 12,
+      "failed": 0,
+      "exitCode": 0,
+      "currentFileHashesMatch": true,
+      "reviewerExecuted": false
+    },
+    "coordinatorReportedV8PinsPassed": 12,
+    "reviewerExecuted": false
+  },
+  "captionEvidence": {
+    "actualV7Reported": {
+      "box": {
+        "x": 272,
+        "y": 1042,
+        "width": 1320,
+        "height": 70
+      },
+      "textFits": true,
+      "unobscured": true,
+      "maskOverlap": {
+        "x": 1481.03125,
+        "y": 1092,
+        "width": 77.96875,
+        "height": 17
+      }
+    },
+    "expectedV8AtSameGeometry": {
+      "x": 272,
+      "y": 970,
+      "width": 1320,
+      "height": 70,
+      "bottom": 1040
+    },
+    "allMaskIntersectionChecksStillMandatory": true,
+    "geometryCalculationOnly": true
+  },
+  "findings": [],
+  "blockers": 0,
+  "retainedHistory": {
+    "v6CaptionHitTestFailureRetained": true,
+    "v7ActualFooterMaskOverlapFailureRetained": true,
+    "priorFailedCapturesNotRelabelled": true
+  },
+  "limits": [
+    "Actual V8 capture, all runtime guards and real PNG visual review must pass independently",
+    "The CSS shift predicts clearance for the observed footer only; existing all-mask/control guards still decide on actual geometry",
+    "No live/browser/authentication/source/Git action performed by reviewer"
+  ],
+  "liveExecuted": false,
+  "productionChanged": false,
+  "stagingAccepted": false
+}

@@ -1,0 +1,236 @@
+{
+  "ticket": "SCRUM-633",
+  "originalFailuresRetained": true,
+  "failures": [
+    {
+      "path": "C:/w/admin633-lifecycle-user-actual.json",
+      "sha256": "93facc5764f45ab1aebbaf38458dd3044d57a71b6b655fe4cb595a0b8b47d04a",
+      "complete": false,
+      "errorCode": "EXACT_SUBJECT_LINK_REQUIRED",
+      "startedAt": "2026-10-25T00:47:19.931Z",
+      "completedAt": "2026-10-25T00:47:34.794Z",
+      "businessOperations": 0,
+      "screenshots": 0,
+      "cleanup": {
+        "finalSource": true,
+        "pending": 0,
+        "unresolved": 0,
+        "unknown": false,
+        "journalFailed": false,
+        "disableDispatched": false,
+        "restoreDispatched": false,
+        "restored": false
+      },
+      "authCleanup": [
+        {
+          "app": "app",
+          "confirmed": true,
+          "signOutStatus": 200,
+          "meStatus": 401
+        },
+        {
+          "app": "platform",
+          "confirmed": true,
+          "signOutStatus": 200,
+          "meStatus": 401
+        }
+      ],
+      "network": null
+    },
+    {
+      "path": "C:/w/admin633-lifecycle-user-v3-actual.json",
+      "sha256": "53dec385f886174244118a5b764730309b344d9f95e197eab90d440357a1a52f",
+      "complete": false,
+      "errorCode": "EXACT_OWN_DERIVED_EMPLOYEE_REQUIRED",
+      "startedAt": "2026-10-25T00:54:38.634Z",
+      "completedAt": "2026-10-25T00:54:50.010Z",
+      "businessOperations": 0,
+      "screenshots": 0,
+      "cleanup": {
+        "finalSource": true,
+        "pending": 0,
+        "unresolved": 0,
+        "unknown": false,
+        "journalFailed": false,
+        "disableDispatched": false,
+        "restoreDispatched": false,
+        "restored": false
+      },
+      "authCleanup": [
+        {
+          "app": "app",
+          "confirmed": true,
+          "signOutStatus": 200,
+          "meStatus": 401
+        },
+        {
+          "app": "platform",
+          "confirmed": true,
+          "signOutStatus": 200,
+          "meStatus": 401
+        }
+      ],
+      "network": null
+    },
+    {
+      "path": "C:/w/admin633-native-user-v4-actual.json",
+      "sha256": "35c11be048e3c46dcb6b142648b79730dcc9bd218a30032d59420c41890dfaae",
+      "complete": false,
+      "errorCode": "NATIVE_EXACT_WRITABLE_DEMO_ROW_REQUIRED",
+      "startedAt": "2026-10-25T01:00:35.161Z",
+      "completedAt": "2026-10-25T01:00:47.426Z",
+      "businessOperations": 0,
+      "screenshots": 0,
+      "cleanup": {
+        "pending": 0,
+        "unresolved": 0,
+        "unknown": false,
+        "journalFailed": false,
+        "businessWrites": 0,
+        "fixturesCreated": 0
+      },
+      "authCleanup": [
+        {
+          "app": "app",
+          "confirmed": true,
+          "signOutStatus": 200,
+          "meStatus": 401
+        },
+        {
+          "app": "platform",
+          "confirmed": true,
+          "signOutStatus": 200,
+          "meStatus": 401
+        }
+      ],
+      "network": {
+        "blocked": 0,
+        "failed": 0,
+        "pageErrors": 0,
+        "consoleErrors": 0
+      }
+    },
+    {
+      "path": "C:/w/admin633-native-user-v5-actual.json",
+      "sha256": "1e9938790acc4b4bcaad7ba3afc982172c6e99873e8fa537a6a9251fed4dc5c3",
+      "complete": false,
+      "errorCode": "UNEXPECTED_BROWSER_FAILURE",
+      "startedAt": "2026-10-25T01:03:13.313Z",
+      "completedAt": "2026-10-25T01:03:45.056Z",
+      "businessOperations": 0,
+      "screenshots": 1,
+      "cleanup": {
+        "pending": 0,
+        "unresolved": 0,
+        "unknown": false,
+        "journalFailed": false,
+        "businessWrites": 0,
+        "fixturesCreated": 0
+      },
+      "authCleanup": [
+        {
+          "app": "app",
+          "confirmed": true,
+          "signOutStatus": 200,
+          "meStatus": 401
+        },
+        {
+          "app": "platform",
+          "confirmed": true,
+          "signOutStatus": 200,
+          "meStatus": 401
+        }
+      ],
+      "network": {
+        "blocked": 1,
+        "failed": 1,
+        "pageErrors": 0,
+        "consoleErrors": 1
+      }
+    },
+    {
+      "path": "C:/w/admin633-native-user-v6-actual.json",
+      "sha256": "ddbf25f93f83ca2716db150f0a3c78d3e8a09fa51359ba2df236b49cabe6d3f2",
+      "complete": false,
+      "errorCode": "NATIVE_CAPTION_CLIPPED_OR_MASKED",
+      "startedAt": "2026-10-25T01:14:00.161Z",
+      "completedAt": "2026-10-25T01:14:23.266Z",
+      "businessOperations": 0,
+      "screenshots": 0,
+      "cleanup": {
+        "pending": 0,
+        "unresolved": 0,
+        "unknown": false,
+        "journalFailed": false,
+        "businessWrites": 0,
+        "fixturesCreated": 0
+      },
+      "authCleanup": [
+        {
+          "app": "app",
+          "confirmed": true,
+          "signOutStatus": 200,
+          "meStatus": 401
+        },
+        {
+          "app": "platform",
+          "confirmed": true,
+          "signOutStatus": 200,
+          "meStatus": 401
+        }
+      ],
+      "network": {
+        "blocked": 0,
+        "failed": 0,
+        "pageErrors": 0,
+        "consoleErrors": 0
+      }
+    },
+    {
+      "path": "C:/w/admin633-native-user-v7-actual.json",
+      "sha256": "5837e2d15b2b28d38e6306ae803d3c029df9f62c2657da78d0f49fc44bcf6f27",
+      "complete": false,
+      "errorCode": "NATIVE_CAPTION_CLIPPED_OR_MASKED",
+      "startedAt": "2026-10-25T01:17:41.432Z",
+      "completedAt": "2026-10-25T01:18:04.020Z",
+      "businessOperations": 0,
+      "screenshots": 0,
+      "cleanup": {
+        "pending": 0,
+        "unresolved": 0,
+        "unknown": false,
+        "journalFailed": false,
+        "businessWrites": 0,
+        "fixturesCreated": 0
+      },
+      "authCleanup": [
+        {
+          "app": "app",
+          "confirmed": true,
+          "signOutStatus": 200,
+          "meStatus": 401
+        },
+        {
+          "app": "platform",
+          "confirmed": true,
+          "signOutStatus": 200,
+          "meStatus": 401
+        }
+      ],
+      "network": {
+        "blocked": 0,
+        "failed": 0,
+        "pageErrors": 0,
+        "consoleErrors": 0
+      }
+    }
+  ],
+  "notes": [
+    "Initial read-only readiness assumed a direct employee link; the existing app derives an email-fallback employee. No link, employee or branch was changed.",
+    "Lifecycle preflights stopped before business writes on derived-reference and branch assumptions; the final proof binds the exact unchanged records and uses the existing Users control.",
+    "Native v4 stopped on a nonexistent top-level tenantId in the list DTO; v5 captured one frame but blocked Studio. Both remain incomplete.",
+    "V8 follows the source-owned read-only avatar POST and exact known photo transformation. Offline guard pins pass; no production source or production guard changed.",
+    "The v5 first-frame caption overlapped a sidebar mask; v6 and v7 stopped before images on caption hit-testing and a masked footer respectively; fresh v8 raises the overlay above the exact footer while retaining every mask/visibility guard.",
+    "Initial public collector cursor correction was external QA-only before the complete 265-asset collection; historical local-release failures remain in local-release.json."
+  ]
+}

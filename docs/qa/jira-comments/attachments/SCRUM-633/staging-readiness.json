@@ -1,0 +1,86 @@
+{
+  "ticket": "SCRUM-633",
+  "jobId": "job-dbel8adg1s2s73fv86dg",
+  "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021",
+  "ciRunId": "40146207019",
+  "planSha256": "dc0d01a1f1a29aea5a9cc3f1dbd5ea398b3f0c1fb6d9663e2b44d9f453f8ec1d",
+  "helperSha256": "690cb228f2394ffc1422385bccbeb85f4378e38afe30967b6967739a64fa5f0b",
+  "terminal": true,
+  "status": "succeeded",
+  "readOnly": true,
+  "startedAt": "2026-10-25T00:58:16.024Z",
+  "completedAt": "2026-10-25T00:59:15.057Z",
+  "passed": true,
+  "metadata": {
+    "at": "2026-10-25T00:58:52.797Z",
+    "accountId": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+    "appUserId": "01a11b1d-e8e6-7627-bec8-d92e53579c0b",
+    "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+    "tenantId": "681b18d1-4c75-415d-9271-5fe3afc30993",
+    "coreOwnerMatchesRuntime": true,
+    "inheritsCoreOwner": true,
+    "appSchemaUsage": true,
+    "queueInstalled": true,
+    "queueSelect": true,
+    "queueInsert": true,
+    "queueUpdate": true,
+    "ordinaryInvokerTrigger": true,
+    "accountCount": 1,
+    "coreActive": true,
+    "coreOperatorMatches": true,
+    "appUserCount": 1,
+    "appActive": true,
+    "rawRole": "staff",
+    "rawOperatorNull": true,
+    "identityCount": 1,
+    "linkedEmployeeCount": 0,
+    "ownEmployeeCount": 0,
+    "employeeTenantMatches": true,
+    "mappedBranchCount": 0,
+    "appEmployeeIds": [],
+    "appBranchIds": [],
+    "coreEmployeeIds": [
+      "01a0bbdc-8c5d-762a-99d4-94eb95b2b903"
+    ],
+    "coreBranchIds": [],
+    "employeeMirrorMatches": false,
+    "coreActiveSessions": 0,
+    "appActiveSessions": 0,
+    "grantRows": 63,
+    "grantsSha256": "2ef71127f889f5481c2ef364bae5de6f16db2829ec8f2100ba2ee74c25a3e9a3"
+  },
+  "evaluation": {
+    "ready": true,
+    "failures": []
+  },
+  "logResponseSha256": "7dc831be517baf04c2dccb1fb96dd3aa394c83e2ca4c0cb15ca66f51cc1c6227",
+  "after": {
+    "at": "2026-10-25T00:59:19.221Z",
+    "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021",
+    "ciRunId": "40146207019",
+    "greenJobs": 6,
+    "deployments": [
+      {
+        "serviceName": "oto-api-staging",
+        "serviceId": "srv-danh2ljtqb8s73bt9en0",
+        "deployId": "dep-dbekul3bc2fs738cavq0",
+        "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021",
+        "finishedAt": "2026-10-25T00:40:47.457261Z"
+      },
+      {
+        "serviceName": "oto-console-staging",
+        "serviceId": "srv-danng2p42hec73f38e3g",
+        "deployId": "dep-dbekulbbc2fs738cb1t0",
+        "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021",
+        "finishedAt": "2026-10-25T00:38:23.683527Z"
+      },
+      {
+        "serviceName": "oto-app-staging",
+        "serviceId": "srv-danppvjtqb8s73cnvua0",
+        "deployId": "dep-dbekul3bc2fs738cb0og",
+        "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021",
+        "finishedAt": "2026-10-25T00:40:31.724651Z"
+      }
+    ]
+  }
+}

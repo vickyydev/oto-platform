@@ -1,0 +1,375 @@
+{
+  "ticket": "SCRUM-633",
+  "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021",
+  "ciRunId": "40146207019",
+  "deployments": [
+    {
+      "serviceName": "oto-api-staging",
+      "serviceId": "srv-danh2ljtqb8s73bt9en0",
+      "deployId": "dep-dbekul3bc2fs738cavq0",
+      "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021",
+      "finishedAt": "2026-10-25T00:40:47.457261Z"
+    },
+    {
+      "serviceName": "oto-console-staging",
+      "serviceId": "srv-danng2p42hec73f38e3g",
+      "deployId": "dep-dbekulbbc2fs738cb1t0",
+      "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021",
+      "finishedAt": "2026-10-25T00:38:23.683527Z"
+    },
+    {
+      "serviceName": "oto-app-staging",
+      "serviceId": "srv-danppvjtqb8s73cnvua0",
+      "deployId": "dep-dbekul3bc2fs738cb0og",
+      "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021",
+      "finishedAt": "2026-10-25T00:40:31.724651Z"
+    }
+  ],
+  "helperSha256": "39f338435260e15e8bc7850fccef943fe2278da71bb0119f0f0fe71117937894",
+  "planSha256": "478cdfe1346a03df2db27a93534937ce3936acf2b00d06ac14b4a92db758c30b",
+  "supportHashes": {
+    "safety": "4c9ad51d5381cc6dee9e6f1811a50c9e3fdb629455d31c86956755bf273069b4",
+    "release": "c4bcd6a21ef69df48f17dbcf84117196a5b5e85a48597f6d731de37b541abbe8",
+    "readiness": "690cb228f2394ffc1422385bccbeb85f4378e38afe30967b6967739a64fa5f0b"
+  },
+  "readinessSha256": "252f0e4f974b4c97838165f38f70ebb7a63c7a73481f8a8d8a16fcfc1c76c2f9",
+  "startedAt": "2026-10-25T00:59:22.924Z",
+  "actualStaging": true,
+  "nativeAcceptance": false,
+  "complete": true,
+  "operations": [
+    {
+      "label": "sign-in",
+      "kind": "auth",
+      "contextRef": "d01fe6ce-acf0-4bbc-b4cb-514694198e81",
+      "method": "POST",
+      "path": "/api/auth/sign-in",
+      "intentAt": "2026-10-25T00:59:26.949Z",
+      "dispatchedAt": "2026-10-25T00:59:26.952Z",
+      "status": 200,
+      "outcome": "terminal_known",
+      "bodySha256": null,
+      "keySha256": null,
+      "settledAt": "2026-10-25T00:59:27.964Z"
+    },
+    {
+      "label": "handoff-issue",
+      "kind": "auth",
+      "contextRef": "d01fe6ce-acf0-4bbc-b4cb-514694198e81",
+      "method": "POST",
+      "path": "/api/auth/handoff",
+      "intentAt": "2026-10-25T00:59:27.964Z",
+      "dispatchedAt": "2026-10-25T00:59:27.966Z",
+      "status": 200,
+      "outcome": "terminal_known",
+      "bodySha256": null,
+      "keySha256": null,
+      "settledAt": "2026-10-25T00:59:28.444Z"
+    },
+    {
+      "label": "handoff-exchange",
+      "kind": "auth",
+      "contextRef": "67e96199-c117-42e3-b0c9-5767af025cdb",
+      "method": "POST",
+      "path": "/api/auth/handoff",
+      "intentAt": "2026-10-25T00:59:28.446Z",
+      "dispatchedAt": "2026-10-25T00:59:28.447Z",
+      "status": 200,
+      "outcome": "terminal_known",
+      "bodySha256": null,
+      "keySha256": null,
+      "settledAt": "2026-10-25T00:59:28.724Z"
+    },
+    {
+      "label": "disable",
+      "kind": "business",
+      "contextRef": "67e96199-c117-42e3-b0c9-5767af025cdb",
+      "method": "PATCH",
+      "path": "/api/users/01a11b1d-e8e6-7627-bec8-d92e53579c0b",
+      "intentAt": "2026-10-25T00:59:35.443Z",
+      "dispatchedAt": "2026-10-25T00:59:35.445Z",
+      "status": 200,
+      "outcome": "terminal_known",
+      "bodySha256": "5ec1ef39624b7e51bdf3164d7d56f669999e2b744720b8633d76e0223a16d164",
+      "keySha256": null,
+      "settledAt": "2026-10-25T00:59:35.552Z"
+    },
+    {
+      "label": "restore",
+      "kind": "business",
+      "contextRef": "d01fe6ce-acf0-4bbc-b4cb-514694198e81",
+      "method": "PATCH",
+      "path": "/api/accounts/01a0bbdc-8c87-74ca-81c1-61489e34f834",
+      "intentAt": "2026-10-25T01:00:06.006Z",
+      "dispatchedAt": "2026-10-25T01:00:06.008Z",
+      "status": 200,
+      "outcome": "terminal_known",
+      "bodySha256": "ffcc9870a751a0241f5f2bdac8e6646c40b92bb226e8efc4af2e29cc242fc176",
+      "keySha256": "5f2931a927876c6b23b9b5e47919ce00affb4d987d6eac3c0b75fa85765f731b",
+      "settledAt": "2026-10-25T01:00:06.455Z"
+    },
+    {
+      "label": "sign-out",
+      "kind": "auth",
+      "contextRef": "67e96199-c117-42e3-b0c9-5767af025cdb",
+      "method": "POST",
+      "path": "/api/logout",
+      "intentAt": "2026-10-25T01:00:12.307Z",
+      "dispatchedAt": "2026-10-25T01:00:12.309Z",
+      "status": 200,
+      "outcome": "terminal_known",
+      "bodySha256": null,
+      "keySha256": null,
+      "settledAt": "2026-10-25T01:00:12.379Z"
+    },
+    {
+      "label": "sign-out",
+      "kind": "auth",
+      "contextRef": "d01fe6ce-acf0-4bbc-b4cb-514694198e81",
+      "method": "POST",
+      "path": "/api/auth/sign-out",
+      "intentAt": "2026-10-25T01:00:12.443Z",
+      "dispatchedAt": "2026-10-25T01:00:12.444Z",
+      "status": 200,
+      "outcome": "terminal_known",
+      "bodySha256": null,
+      "keySha256": null,
+      "settledAt": "2026-10-25T01:00:12.913Z"
+    }
+  ],
+  "snapshots": [
+    {
+      "phase": "original",
+      "at": "2026-10-25T00:59:32.228Z",
+      "appActive": true,
+      "coreStatus": "active",
+      "hashes": {
+        "actor": "bddfd15a34b7f1aecab295de4a5add84478888f43e58dd61e5c842fc13354315",
+        "actorAuthority": "80c11ae3ee0bdd74a3c758d6c78fe8e69f53351315b701b2bf5824c1a604e8ef",
+        "raw": "97fe41ceb73d69ce395e3f06eadb8a7d81f5bec64fd266becf15c3e27fa10f42",
+        "legacyFingerprint": "08c3635a349bb6295c49354d536cd7d5b53c039525673a4fc484090ee4d7ef20",
+        "derivedEmployee": "1cdfec9f1eafa4188e20d8db86cf5dd7f9bb4df4ad0b5e8ac47672fd7f3b5d9b",
+        "derivedBranch": "249ddea1e007e0537b21b162d3371bd3edd62ca657d4053934b577000da54ffd",
+        "derivedReference": "49a27615a95bb77b1b970141ae1e29a1b16f6a0278cafd24eebdcf591a6a4110",
+        "identity": "286200bf426a78d3012fcd1f0c3bb0757d4f8d80d54467158c98ad8248b25fd3",
+        "grants": "dc3d77cc22e9db4ae7b9bebd878d4deb72a843b1049bfe35edad3d6ff8acb007",
+        "effective": "603b80d27c5743cb960bb415e611c38af94927c712f22c76b63a960d1c1985e7",
+        "branches": "07e41c59ba5b34e70ca1deee5f93369e0a847f7a855d990f2de6b1fea90e238c",
+        "account": "1024c79b497c7b280389aeda55cde79a64f6197ba727786879a9386ba00298b9"
+      }
+    },
+    {
+      "phase": "disable-observation",
+      "at": "2026-10-25T00:59:38.032Z",
+      "appActive": false,
+      "coreStatus": "active",
+      "hashes": {
+        "actor": "bddfd15a34b7f1aecab295de4a5add84478888f43e58dd61e5c842fc13354315",
+        "actorAuthority": "80c11ae3ee0bdd74a3c758d6c78fe8e69f53351315b701b2bf5824c1a604e8ef",
+        "raw": "97fe41ceb73d69ce395e3f06eadb8a7d81f5bec64fd266becf15c3e27fa10f42",
+        "legacyFingerprint": "08c3635a349bb6295c49354d536cd7d5b53c039525673a4fc484090ee4d7ef20",
+        "derivedEmployee": "1cdfec9f1eafa4188e20d8db86cf5dd7f9bb4df4ad0b5e8ac47672fd7f3b5d9b",
+        "derivedBranch": "249ddea1e007e0537b21b162d3371bd3edd62ca657d4053934b577000da54ffd",
+        "derivedReference": "49a27615a95bb77b1b970141ae1e29a1b16f6a0278cafd24eebdcf591a6a4110",
+        "identity": "286200bf426a78d3012fcd1f0c3bb0757d4f8d80d54467158c98ad8248b25fd3",
+        "grants": "dc3d77cc22e9db4ae7b9bebd878d4deb72a843b1049bfe35edad3d6ff8acb007",
+        "effective": "603b80d27c5743cb960bb415e611c38af94927c712f22c76b63a960d1c1985e7",
+        "branches": "07e41c59ba5b34e70ca1deee5f93369e0a847f7a855d990f2de6b1fea90e238c",
+        "account": "1024c79b497c7b280389aeda55cde79a64f6197ba727786879a9386ba00298b9"
+      }
+    },
+    {
+      "phase": "disable-observation",
+      "at": "2026-10-25T00:59:44.169Z",
+      "appActive": false,
+      "coreStatus": "active",
+      "hashes": {
+        "actor": "bddfd15a34b7f1aecab295de4a5add84478888f43e58dd61e5c842fc13354315",
+        "actorAuthority": "80c11ae3ee0bdd74a3c758d6c78fe8e69f53351315b701b2bf5824c1a604e8ef",
+        "raw": "97fe41ceb73d69ce395e3f06eadb8a7d81f5bec64fd266becf15c3e27fa10f42",
+        "legacyFingerprint": "08c3635a349bb6295c49354d536cd7d5b53c039525673a4fc484090ee4d7ef20",
+        "derivedEmployee": "1cdfec9f1eafa4188e20d8db86cf5dd7f9bb4df4ad0b5e8ac47672fd7f3b5d9b",
+        "derivedBranch": "249ddea1e007e0537b21b162d3371bd3edd62ca657d4053934b577000da54ffd",
+        "derivedReference": "49a27615a95bb77b1b970141ae1e29a1b16f6a0278cafd24eebdcf591a6a4110",
+        "identity": "286200bf426a78d3012fcd1f0c3bb0757d4f8d80d54467158c98ad8248b25fd3",
+        "grants": "dc3d77cc22e9db4ae7b9bebd878d4deb72a843b1049bfe35edad3d6ff8acb007",
+        "effective": "603b80d27c5743cb960bb415e611c38af94927c712f22c76b63a960d1c1985e7",
+        "branches": "07e41c59ba5b34e70ca1deee5f93369e0a847f7a855d990f2de6b1fea90e238c",
+        "account": "1024c79b497c7b280389aeda55cde79a64f6197ba727786879a9386ba00298b9"
+      }
+    },
+    {
+      "phase": "disable-observation",
+      "at": "2026-10-25T00:59:49.774Z",
+      "appActive": false,
+      "coreStatus": "active",
+      "hashes": {
+        "actor": "bddfd15a34b7f1aecab295de4a5add84478888f43e58dd61e5c842fc13354315",
+        "actorAuthority": "80c11ae3ee0bdd74a3c758d6c78fe8e69f53351315b701b2bf5824c1a604e8ef",
+        "raw": "97fe41ceb73d69ce395e3f06eadb8a7d81f5bec64fd266becf15c3e27fa10f42",
+        "legacyFingerprint": "08c3635a349bb6295c49354d536cd7d5b53c039525673a4fc484090ee4d7ef20",
+        "derivedEmployee": "1cdfec9f1eafa4188e20d8db86cf5dd7f9bb4df4ad0b5e8ac47672fd7f3b5d9b",
+        "derivedBranch": "249ddea1e007e0537b21b162d3371bd3edd62ca657d4053934b577000da54ffd",
+        "derivedReference": "49a27615a95bb77b1b970141ae1e29a1b16f6a0278cafd24eebdcf591a6a4110",
+        "identity": "286200bf426a78d3012fcd1f0c3bb0757d4f8d80d54467158c98ad8248b25fd3",
+        "grants": "dc3d77cc22e9db4ae7b9bebd878d4deb72a843b1049bfe35edad3d6ff8acb007",
+        "effective": "603b80d27c5743cb960bb415e611c38af94927c712f22c76b63a960d1c1985e7",
+        "branches": "07e41c59ba5b34e70ca1deee5f93369e0a847f7a855d990f2de6b1fea90e238c",
+        "account": "1024c79b497c7b280389aeda55cde79a64f6197ba727786879a9386ba00298b9"
+      }
+    },
+    {
+      "phase": "disable-observation",
+      "at": "2026-10-25T00:59:54.700Z",
+      "appActive": false,
+      "coreStatus": "active",
+      "hashes": {
+        "actor": "bddfd15a34b7f1aecab295de4a5add84478888f43e58dd61e5c842fc13354315",
+        "actorAuthority": "80c11ae3ee0bdd74a3c758d6c78fe8e69f53351315b701b2bf5824c1a604e8ef",
+        "raw": "97fe41ceb73d69ce395e3f06eadb8a7d81f5bec64fd266becf15c3e27fa10f42",
+        "legacyFingerprint": "08c3635a349bb6295c49354d536cd7d5b53c039525673a4fc484090ee4d7ef20",
+        "derivedEmployee": "1cdfec9f1eafa4188e20d8db86cf5dd7f9bb4df4ad0b5e8ac47672fd7f3b5d9b",
+        "derivedBranch": "249ddea1e007e0537b21b162d3371bd3edd62ca657d4053934b577000da54ffd",
+        "derivedReference": "49a27615a95bb77b1b970141ae1e29a1b16f6a0278cafd24eebdcf591a6a4110",
+        "identity": "286200bf426a78d3012fcd1f0c3bb0757d4f8d80d54467158c98ad8248b25fd3",
+        "grants": "dc3d77cc22e9db4ae7b9bebd878d4deb72a843b1049bfe35edad3d6ff8acb007",
+        "effective": "603b80d27c5743cb960bb415e611c38af94927c712f22c76b63a960d1c1985e7",
+        "branches": "07e41c59ba5b34e70ca1deee5f93369e0a847f7a855d990f2de6b1fea90e238c",
+        "account": "1024c79b497c7b280389aeda55cde79a64f6197ba727786879a9386ba00298b9"
+      }
+    },
+    {
+      "phase": "disable-observation",
+      "at": "2026-10-25T00:59:59.528Z",
+      "appActive": false,
+      "coreStatus": "inactive",
+      "hashes": {
+        "actor": "bddfd15a34b7f1aecab295de4a5add84478888f43e58dd61e5c842fc13354315",
+        "actorAuthority": "80c11ae3ee0bdd74a3c758d6c78fe8e69f53351315b701b2bf5824c1a604e8ef",
+        "raw": "97fe41ceb73d69ce395e3f06eadb8a7d81f5bec64fd266becf15c3e27fa10f42",
+        "legacyFingerprint": "08c3635a349bb6295c49354d536cd7d5b53c039525673a4fc484090ee4d7ef20",
+        "derivedEmployee": "1cdfec9f1eafa4188e20d8db86cf5dd7f9bb4df4ad0b5e8ac47672fd7f3b5d9b",
+        "derivedBranch": "249ddea1e007e0537b21b162d3371bd3edd62ca657d4053934b577000da54ffd",
+        "derivedReference": "49a27615a95bb77b1b970141ae1e29a1b16f6a0278cafd24eebdcf591a6a4110",
+        "identity": "286200bf426a78d3012fcd1f0c3bb0757d4f8d80d54467158c98ad8248b25fd3",
+        "grants": "dc3d77cc22e9db4ae7b9bebd878d4deb72a843b1049bfe35edad3d6ff8acb007",
+        "effective": "603b80d27c5743cb960bb415e611c38af94927c712f22c76b63a960d1c1985e7",
+        "branches": "07e41c59ba5b34e70ca1deee5f93369e0a847f7a855d990f2de6b1fea90e238c",
+        "account": "1024c79b497c7b280389aeda55cde79a64f6197ba727786879a9386ba00298b9"
+      }
+    },
+    {
+      "phase": "before-restore",
+      "at": "2026-10-25T01:00:02.337Z",
+      "appActive": false,
+      "coreStatus": "inactive",
+      "hashes": {
+        "actor": "bddfd15a34b7f1aecab295de4a5add84478888f43e58dd61e5c842fc13354315",
+        "actorAuthority": "80c11ae3ee0bdd74a3c758d6c78fe8e69f53351315b701b2bf5824c1a604e8ef",
+        "raw": "97fe41ceb73d69ce395e3f06eadb8a7d81f5bec64fd266becf15c3e27fa10f42",
+        "legacyFingerprint": "08c3635a349bb6295c49354d536cd7d5b53c039525673a4fc484090ee4d7ef20",
+        "derivedEmployee": "1cdfec9f1eafa4188e20d8db86cf5dd7f9bb4df4ad0b5e8ac47672fd7f3b5d9b",
+        "derivedBranch": "249ddea1e007e0537b21b162d3371bd3edd62ca657d4053934b577000da54ffd",
+        "derivedReference": "49a27615a95bb77b1b970141ae1e29a1b16f6a0278cafd24eebdcf591a6a4110",
+        "identity": "286200bf426a78d3012fcd1f0c3bb0757d4f8d80d54467158c98ad8248b25fd3",
+        "grants": "dc3d77cc22e9db4ae7b9bebd878d4deb72a843b1049bfe35edad3d6ff8acb007",
+        "effective": "603b80d27c5743cb960bb415e611c38af94927c712f22c76b63a960d1c1985e7",
+        "branches": "07e41c59ba5b34e70ca1deee5f93369e0a847f7a855d990f2de6b1fea90e238c",
+        "account": "1024c79b497c7b280389aeda55cde79a64f6197ba727786879a9386ba00298b9"
+      }
+    },
+    {
+      "phase": "restored",
+      "at": "2026-10-25T01:00:09.492Z",
+      "appActive": true,
+      "coreStatus": "active",
+      "hashes": {
+        "actor": "bddfd15a34b7f1aecab295de4a5add84478888f43e58dd61e5c842fc13354315",
+        "actorAuthority": "80c11ae3ee0bdd74a3c758d6c78fe8e69f53351315b701b2bf5824c1a604e8ef",
+        "raw": "97fe41ceb73d69ce395e3f06eadb8a7d81f5bec64fd266becf15c3e27fa10f42",
+        "legacyFingerprint": "08c3635a349bb6295c49354d536cd7d5b53c039525673a4fc484090ee4d7ef20",
+        "derivedEmployee": "1cdfec9f1eafa4188e20d8db86cf5dd7f9bb4df4ad0b5e8ac47672fd7f3b5d9b",
+        "derivedBranch": "249ddea1e007e0537b21b162d3371bd3edd62ca657d4053934b577000da54ffd",
+        "derivedReference": "49a27615a95bb77b1b970141ae1e29a1b16f6a0278cafd24eebdcf591a6a4110",
+        "identity": "286200bf426a78d3012fcd1f0c3bb0757d4f8d80d54467158c98ad8248b25fd3",
+        "grants": "dc3d77cc22e9db4ae7b9bebd878d4deb72a843b1049bfe35edad3d6ff8acb007",
+        "effective": "603b80d27c5743cb960bb415e611c38af94927c712f22c76b63a960d1c1985e7",
+        "branches": "07e41c59ba5b34e70ca1deee5f93369e0a847f7a855d990f2de6b1fea90e238c",
+        "account": "1024c79b497c7b280389aeda55cde79a64f6197ba727786879a9386ba00298b9"
+      }
+    },
+    {
+      "phase": "final",
+      "at": "2026-10-25T01:00:12.306Z",
+      "appActive": true,
+      "coreStatus": "active",
+      "hashes": {
+        "actor": "bddfd15a34b7f1aecab295de4a5add84478888f43e58dd61e5c842fc13354315",
+        "actorAuthority": "80c11ae3ee0bdd74a3c758d6c78fe8e69f53351315b701b2bf5824c1a604e8ef",
+        "raw": "97fe41ceb73d69ce395e3f06eadb8a7d81f5bec64fd266becf15c3e27fa10f42",
+        "legacyFingerprint": "08c3635a349bb6295c49354d536cd7d5b53c039525673a4fc484090ee4d7ef20",
+        "derivedEmployee": "1cdfec9f1eafa4188e20d8db86cf5dd7f9bb4df4ad0b5e8ac47672fd7f3b5d9b",
+        "derivedBranch": "249ddea1e007e0537b21b162d3371bd3edd62ca657d4053934b577000da54ffd",
+        "derivedReference": "49a27615a95bb77b1b970141ae1e29a1b16f6a0278cafd24eebdcf591a6a4110",
+        "identity": "286200bf426a78d3012fcd1f0c3bb0757d4f8d80d54467158c98ad8248b25fd3",
+        "grants": "dc3d77cc22e9db4ae7b9bebd878d4deb72a843b1049bfe35edad3d6ff8acb007",
+        "effective": "603b80d27c5743cb960bb415e611c38af94927c712f22c76b63a960d1c1985e7",
+        "branches": "07e41c59ba5b34e70ca1deee5f93369e0a847f7a855d990f2de6b1fea90e238c",
+        "account": "1024c79b497c7b280389aeda55cde79a64f6197ba727786879a9386ba00298b9"
+      }
+    }
+  ],
+  "sourceChecks": [
+    {
+      "at": "2026-10-25T00:59:26.140Z",
+      "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021"
+    },
+    {
+      "at": "2026-10-25T00:59:35.440Z",
+      "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021"
+    },
+    {
+      "at": "2026-10-25T01:00:06.005Z",
+      "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021"
+    },
+    {
+      "at": "2026-10-25T01:00:16.759Z",
+      "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021"
+    }
+  ],
+  "authCleanup": [
+    {
+      "alias": "ADMIN",
+      "app": "app",
+      "contextRef": "67e96199-c117-42e3-b0c9-5767af025cdb",
+      "attempted": true,
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    },
+    {
+      "alias": "ADMIN",
+      "app": "platform",
+      "contextRef": "d01fe6ce-acf0-4bbc-b4cb-514694198e81",
+      "attempted": true,
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    }
+  ],
+  "cleanup": {
+    "originalsMatch": true,
+    "active": true,
+    "finalSource": true,
+    "pending": 0,
+    "unresolved": 0,
+    "unknown": false,
+    "journalFailed": false,
+    "disableDispatched": true,
+    "restoreDispatched": true,
+    "restored": true
+  },
+  "errorCode": null,
+  "derivedEmployeeId": "e2744157-d15e-40b0-ad37-28b240675568",
+  "completedAt": "2026-10-25T01:00:16.760Z"
+}

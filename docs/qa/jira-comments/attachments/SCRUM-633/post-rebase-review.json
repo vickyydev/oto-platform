@@ -1,0 +1,21 @@
+{
+  "ticket": "SCRUM-633",
+  "at": "2026-10-25T00:18:43.372Z",
+  "passed": true,
+  "sourceManifestSha256": "29d46a6af64025ee2e8701d688009d79e0d0d2f4410f1e483225bdca95f83dd2",
+  "postRebaseCommit": "704bb3e3aea9f4348762521b886f2f7aef868021",
+  "rebaseChangedSource": false,
+  "wholeOutputRead": true,
+  "method": "All compiler bytes exactly match the previously fully read output, with no other diagnostic outside it",
+  "compilerOutputSha256": "6aff0c71fabd4cec690e12d35434b1380c4c5b46db212070be7cfd45b7709db8",
+  "errors": 418,
+  "files": 54,
+  "fileCodeBuckets": 109,
+  "apiCompilerDiagnostics": 0,
+  "wholeTestFiles": 10,
+  "passedTests": 101,
+  "generatedContracts": true,
+  "platformSchema": true,
+  "receiptSha256": "fe29747e5130dc0e5fb4ce42785fbc77a3e0295bd1c9c8ff5e4f878bcc3f9aeb",
+  "logSha256": "f20024e114c206c6b8fcd8f225d5492112f37551d64d46da4c0618c4c2daaf7d"
+}

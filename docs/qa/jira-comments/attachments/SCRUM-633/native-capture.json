@@ -1,0 +1,265 @@
+{
+  "ticket": "SCRUM-633",
+  "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021",
+  "ciRunId": "40146207019",
+  "deployments": [
+    {
+      "serviceName": "oto-api-staging",
+      "serviceId": "srv-danh2ljtqb8s73bt9en0",
+      "deployId": "dep-dbekul3bc2fs738cavq0",
+      "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021",
+      "finishedAt": "2026-10-25T00:40:47.457261Z"
+    },
+    {
+      "serviceName": "oto-console-staging",
+      "serviceId": "srv-danng2p42hec73f38e3g",
+      "deployId": "dep-dbekulbbc2fs738cb1t0",
+      "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021",
+      "finishedAt": "2026-10-25T00:38:23.683527Z"
+    },
+    {
+      "serviceName": "oto-app-staging",
+      "serviceId": "srv-danppvjtqb8s73cnvua0",
+      "deployId": "dep-dbekul3bc2fs738cb0og",
+      "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021",
+      "finishedAt": "2026-10-25T00:40:31.724651Z"
+    }
+  ],
+  "helperSha256": "abd04dcab9d99ac26f00a921b89be89b7d63a0f6b721e08c38348edc1e5ac53c",
+  "planSha256": "dd3c1bea81d16e712f83911a148c81d1303dc73af91d62cc6000427d94d76b93",
+  "lifecycleReceiptSha256": "30c95424abc3df492cf1cae3e30b58e9e2f15bd09cbc41de2fed172866b21bd1",
+  "localReceiptSha256": "44824f58b8c21b3a346e55460166718f02503e9ac67fa04bc3f50143cb66fb34",
+  "assetSpecSha256": "338bb637a352c3a29725b068744fc2b998debffc760677e6dfc2c09e01093f25",
+  "actualStaging": true,
+  "complete": true,
+  "startedAt": "2026-10-25T01:18:48.507Z",
+  "operations": [
+    {
+      "label": "sign-in",
+      "kind": "auth",
+      "contextRef": "2da94ff7-ac6c-4509-9f6e-9be05e9920eb",
+      "method": "POST",
+      "path": "/api/auth/sign-in",
+      "intentAt": "2026-10-25T01:18:52.900Z"
+    },
+    {
+      "label": "handoff-issue",
+      "kind": "auth",
+      "contextRef": "2da94ff7-ac6c-4509-9f6e-9be05e9920eb",
+      "method": "POST",
+      "path": "/api/auth/handoff",
+      "intentAt": "2026-10-25T01:18:53.478Z"
+    },
+    {
+      "label": "handoff-exchange",
+      "kind": "auth",
+      "contextRef": "d11a8fd2-86e5-4e76-bc35-f5960f32a97a",
+      "method": "POST",
+      "path": "/api/auth/handoff",
+      "intentAt": "2026-10-25T01:18:53.912Z"
+    },
+    {
+      "label": "sign-out",
+      "kind": "auth",
+      "contextRef": "d11a8fd2-86e5-4e76-bc35-f5960f32a97a",
+      "method": "POST",
+      "path": "/api/logout",
+      "intentAt": "2026-10-25T01:19:29.609Z"
+    },
+    {
+      "label": "sign-out",
+      "kind": "auth",
+      "contextRef": "2da94ff7-ac6c-4509-9f6e-9be05e9920eb",
+      "method": "POST",
+      "path": "/api/auth/sign-out",
+      "intentAt": "2026-10-25T01:19:29.797Z"
+    }
+  ],
+  "screenshots": [
+    {
+      "filename": "SCRUM-633-01-existing-demo-user-controls.png",
+      "sha256": "368a4b008a54b2d830d3cc24d00b9f4a48d53fbcf861f439d63ba87d9f9067a8",
+      "capturedAt": "2026-10-25T01:19:05.353Z",
+      "native": true,
+      "openedPath": "/users",
+      "finalPath": "/users",
+      "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021",
+      "fontSuppressed": 1,
+      "photosSuppressed": 1,
+      "originalMediaFetched": 0,
+      "avatarStatusReads": 0,
+      "captionBounds": {
+        "x": 272,
+        "y": 970,
+        "width": 1320,
+        "height": 70,
+        "textFits": true,
+        "unobscured": true
+      },
+      "allowedReadPaths": [
+        "/api/auth/sign-in-options",
+        "/api/branches",
+        "/api/me/sidebar-sections",
+        "/api/notifications/unread-count",
+        "/api/operators",
+        "/api/permissions/me",
+        "/api/qa-reports/config",
+        "/api/sidebar/badges",
+        "/api/user",
+        "/api/users"
+      ],
+      "privacyMaskCount": 55,
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "filename": "SCRUM-633-02-retired-studio-redirect.png",
+      "sha256": "69e3696a7e6debc2535e993e1209a70821cff36f98b7e2826acf90a878a0f1c0",
+      "capturedAt": "2026-10-25T01:19:18.801Z",
+      "native": true,
+      "openedPath": "/studio/troubleshooting",
+      "finalPath": "/studio",
+      "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021",
+      "fontSuppressed": 1,
+      "photosSuppressed": 1,
+      "originalMediaFetched": 0,
+      "avatarStatusReads": 1,
+      "captionBounds": {
+        "x": 272,
+        "y": 970,
+        "width": 1320,
+        "height": 70,
+        "textFits": true,
+        "unobscured": true
+      },
+      "allowedReadPaths": [
+        "/api/avatar-status/batch",
+        "/api/branches",
+        "/api/notifications/unread-count",
+        "/api/operators",
+        "/api/permissions/me",
+        "/api/qa-reports/config",
+        "/api/user"
+      ],
+      "privacyMaskCount": 13,
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "filename": "SCRUM-633-03-lifecycle-and-local-invite-proof.png",
+      "sha256": "e2a292faf62634fae8ffe4c07719aa518edfe869a0c9ea0c35a038cf2bd5872b",
+      "capturedAt": "2026-10-25T01:19:24.861Z",
+      "native": false,
+      "labelledRunCard": true,
+      "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021"
+    }
+  ],
+  "sourceChecks": [
+    {
+      "at": "2026-10-25T01:18:52.360Z",
+      "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021"
+    },
+    {
+      "at": "2026-10-25T01:18:58.800Z",
+      "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021"
+    },
+    {
+      "at": "2026-10-25T01:19:05.350Z",
+      "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021"
+    },
+    {
+      "at": "2026-10-25T01:19:09.710Z",
+      "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021"
+    },
+    {
+      "at": "2026-10-25T01:19:13.202Z",
+      "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021"
+    },
+    {
+      "at": "2026-10-25T01:19:18.798Z",
+      "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021"
+    },
+    {
+      "at": "2026-10-25T01:19:23.645Z",
+      "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021"
+    },
+    {
+      "at": "2026-10-25T01:19:29.608Z",
+      "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021"
+    },
+    {
+      "at": "2026-10-25T01:19:34.170Z",
+      "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021"
+    }
+  ],
+  "authCleanup": [
+    {
+      "alias": "ADMIN",
+      "app": "app",
+      "contextRef": "d11a8fd2-86e5-4e76-bc35-f5960f32a97a",
+      "attempted": true,
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    },
+    {
+      "alias": "ADMIN",
+      "app": "platform",
+      "contextRef": "2da94ff7-ac6c-4509-9f6e-9be05e9920eb",
+      "attempted": true,
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true
+    }
+  ],
+  "refusedRequests": [],
+  "captionDiagnostics": [
+    {
+      "box": {
+        "x": 272,
+        "y": 970,
+        "width": 1320,
+        "height": 70
+      },
+      "textFits": true,
+      "unobscured": true,
+      "maskOverlaps": [],
+      "requiredOverlaps": []
+    },
+    {
+      "box": {
+        "x": 272,
+        "y": 970,
+        "width": 1320,
+        "height": 70
+      },
+      "textFits": true,
+      "unobscured": true,
+      "maskOverlaps": [],
+      "requiredOverlaps": []
+    }
+  ],
+  "errorCode": null,
+  "limits": [
+    "The existing demo uses the app-derived employee reference, preserved unchanged; its Users control is captured. No Create Login submitted; phone-form staging rendering untested.",
+    "Only the retired Studio address is captured here; Today/Fix redirects retain local route-test coverage.",
+    "Invite success and secret handling are local native HTTP/MutationCache checks, not a staged SMS.",
+    "Privacy masks conceal names, contacts and last-login dates; exact private images and external fonts are suppressed."
+  ],
+  "finalSource": true,
+  "cleanup": {
+    "pending": 0,
+    "unresolved": 0,
+    "unknown": false,
+    "journalFailed": false,
+    "businessWrites": 0,
+    "fixturesCreated": 0
+  },
+  "network": {
+    "blocked": 0,
+    "failed": 0,
+    "pageErrors": 0,
+    "consoleErrors": 0
+  },
+  "completedAt": "2026-10-25T01:19:34.173Z"
+}

@@ -1,0 +1,116 @@
+{
+    "ticket":  "SCRUM-633",
+    "approved":  true,
+    "passed":  true,
+    "actualStaging":  true,
+    "localMock":  false,
+    "sourceSha":  "704bb3e3aea9f4348762521b886f2f7aef868021",
+    "ciRunId":  "40146207019",
+    "nativeReceiptPath":  "C:/w/admin633-native-user-v8-actual.json",
+    "nativeReceiptSha256":  "5528d690a0948c2efd1c16fa8bd12f18804eb71056266cf1cf9d7a0ecbcf1e0a",
+    "helperSha256":  "abd04dcab9d99ac26f00a921b89be89b7d63a0f6b721e08c38348edc1e5ac53c",
+    "reviewedAt":  "2026-10-25T01:20:58.1692846Z",
+    "images":  [
+                   {
+                       "filename":  "SCRUM-633-01-existing-demo-user-controls.png",
+                       "sha256":  "368a4b008a54b2d830d3cc24d00b9f4a48d53fbcf861f439d63ba87d9f9067a8",
+                       "visuallyInspected":  true,
+                       "privacyPassed":  true,
+                       "nativeControlsPassed":  true,
+                       "captionTimestampPassed":  true,
+                       "privacyClear":  true,
+                       "nativeControlsClear":  true,
+                       "captionClear":  true,
+                       "native":  true,
+                       "labelledRunCard":  false,
+                       "capturedAt":  "2026-10-25T01:19:05.353Z",
+                       "afterAllThreeDeployments":  true,
+                       "fileWrittenAtUtc":  "2026-10-25T01:19:09.7138786Z",
+                       "width":  1600,
+                       "height":  1200,
+                       "notes":  "User Management heading and single masked row are clear. staff, Active, Suite sign-in and the opened Deactivate menu are readable. Sidebar/header identity, search value, names/email, branch value and last-login data are masked. Caption states menu opened only and shows complete source/ticket/postdeploy time. No contact, credential, secret or QR visible."
+                   },
+                   {
+                       "filename":  "SCRUM-633-02-retired-studio-redirect.png",
+                       "sha256":  "69e3696a7e6debc2535e993e1209a70821cff36f98b7e2826acf90a878a0f1c0",
+                       "visuallyInspected":  true,
+                       "privacyPassed":  true,
+                       "nativeControlsPassed":  true,
+                       "captionTimestampPassed":  true,
+                       "privacyClear":  true,
+                       "nativeControlsClear":  true,
+                       "captionClear":  true,
+                       "native":  true,
+                       "labelledRunCard":  false,
+                       "capturedAt":  "2026-10-25T01:19:18.801Z",
+                       "afterAllThreeDeployments":  true,
+                       "fileWrittenAtUtc":  "2026-10-25T01:19:23.6467656Z",
+                       "width":  1600,
+                       "height":  1200,
+                       "notes":  "OTO Studio heading and Tasks/Events/Children/Checklists/SOPs controls are readable. Caption clearly names the retired Studio address and /studio arrival, corroborated by the bound receipt. Full source/ticket/time are clear and separate from controls. No private content visible."
+                   },
+                   {
+                       "filename":  "SCRUM-633-03-lifecycle-and-local-invite-proof.png",
+                       "sha256":  "e2a292faf62634fae8ffe4c07719aa518edfe869a0c9ea0c35a038cf2bd5872b",
+                       "visuallyInspected":  true,
+                       "privacyPassed":  true,
+                       "nativeControlsPassed":  true,
+                       "captionTimestampPassed":  true,
+                       "privacyClear":  true,
+                       "nativeControlsClear":  true,
+                       "captionClear":  true,
+                       "native":  false,
+                       "labelledRunCard":  true,
+                       "capturedAt":  "2026-10-25T01:19:24.861Z",
+                       "afterAllThreeDeployments":  true,
+                       "fileWrittenAtUtc":  "2026-10-25T01:19:24.8600972Z",
+                       "width":  1400,
+                       "height":  471,
+                       "notes":  "Clearly labelled test-run card distinguishes the actual STAGING disable/restore observation from LOCAL Create Login/once-secret checks. No staged invitation/SMS is claimed. Full source/CI and capture time, account UUID and receipt hashes are readable; scope limits wrap completely without clipping. No secret, contact or QR visible."
+                   }
+               ],
+    "nativeScreens":  2,
+    "labelledRunCards":  1,
+    "allThreeActualImagesViewed":  true,
+    "proofComplete":  true,
+    "businessWrites":  0,
+    "fixturesCreated":  0,
+    "zeroNetworkErrors":  true,
+    "bothAuthOriginsClosed200401":  true,
+    "finalSource":  true,
+    "deployments":  [
+                        {
+                            "serviceName":  "oto-api-staging",
+                            "serviceId":  "srv-danh2ljtqb8s73bt9en0",
+                            "deployId":  "dep-dbekul3bc2fs738cavq0",
+                            "sourceSha":  "704bb3e3aea9f4348762521b886f2f7aef868021",
+                            "finishedAt":  "2026-10-25T00:40:47.457261Z"
+                        },
+                        {
+                            "serviceName":  "oto-console-staging",
+                            "serviceId":  "srv-danng2p42hec73f38e3g",
+                            "deployId":  "dep-dbekulbbc2fs738cb1t0",
+                            "sourceSha":  "704bb3e3aea9f4348762521b886f2f7aef868021",
+                            "finishedAt":  "2026-10-25T00:38:23.683527Z"
+                        },
+                        {
+                            "serviceName":  "oto-app-staging",
+                            "serviceId":  "srv-danppvjtqb8s73cnvua0",
+                            "deployId":  "dep-dbekul3bc2fs738cb0og",
+                            "sourceSha":  "704bb3e3aea9f4348762521b886f2f7aef868021",
+                            "finishedAt":  "2026-10-25T00:40:31.724651Z"
+                        }
+                    ],
+    "errors":  [
+
+               ],
+    "limits":  [
+                   "Two actual native screens: existing Users menu and retired Studio arrival. The third PNG is explicitly a labelled actual-API/local-test card.",
+                   "The redirect is supported by the recorded opened/final path and actual Studio pixels; the screenshot alone is not an independent network trace.",
+                   "Phone-form staging rendering, real SMS/invitation submission and the other two retired address captures are not claimed.",
+                   "Private values/media were masked, and original photos/fonts were suppressed; their original rendering is unverified.",
+                   "Lifecycle/event facts rely on the separate bound actual lifecycle/census audit. No fresh live calls were made by this pixel reviewer."
+               ],
+    "liveCallsByReviewer":  false,
+    "repositoryEdits":  false
+}

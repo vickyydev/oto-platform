@@ -1,0 +1,77 @@
+{
+  "ticket": "SCRUM-633",
+  "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021",
+  "ciRunId": "40146207019",
+  "packagedAt": "2026-10-25T01:21:04.859Z",
+  "actualStaging": true,
+  "complete": true,
+  "jiraStatus": "Testing",
+  "screenshotsInspected": true,
+  "entries": [
+    {
+      "filename": "deployments.json",
+      "sha256": "dcf18b8ea2cdafaf9507bd0a4c520cdf441180120a8dc453d3d5c219fd631581"
+    },
+    {
+      "filename": "staging-readiness.json",
+      "sha256": "252f0e4f974b4c97838165f38f70ebb7a63c7a73481f8a8d8a16fcfc1c76c2f9"
+    },
+    {
+      "filename": "staging-lifecycle.json",
+      "sha256": "30c95424abc3df492cf1cae3e30b58e9e2f15bd09cbc41de2fed172866b21bd1"
+    },
+    {
+      "filename": "event-census.json",
+      "sha256": "6989fc788f1184e0e19f8c087da6d9906fc78fe05ceffe593705b8dfff9b8f5b"
+    },
+    {
+      "filename": "native-capture.json",
+      "sha256": "5528d690a0948c2efd1c16fa8bd12f18804eb71056266cf1cf9d7a0ecbcf1e0a"
+    },
+    {
+      "filename": "staging-review.json",
+      "sha256": "841c9eeab5749178b962a65f41108e6745ce75077c2ab9eb101b1fd23fc91d8d"
+    },
+    {
+      "filename": "native-source-review.json",
+      "sha256": "2e50d1e2983efd8aa934f085e84270b30040dfc071ad48ff25c14a5e3281d9fe"
+    },
+    {
+      "filename": "native-pixel-review.json",
+      "sha256": "0e1b3da0b4ea4f219badff2950c6289a305f72c3746f20d2c899404504a9b3be"
+    },
+    {
+      "filename": "local-invite.json",
+      "sha256": "44824f58b8c21b3a346e55460166718f02503e9ac67fa04bc3f50143cb66fb34"
+    },
+    {
+      "filename": "public-assets.json",
+      "sha256": "338bb637a352c3a29725b068744fc2b998debffc760677e6dfc2c09e01093f25"
+    },
+    {
+      "filename": "SCRUM-633-01-existing-demo-user-controls.png",
+      "sha256": "368a4b008a54b2d830d3cc24d00b9f4a48d53fbcf861f439d63ba87d9f9067a8",
+      "capturedAt": "2026-10-25T01:19:05.353Z"
+    },
+    {
+      "filename": "SCRUM-633-02-retired-studio-redirect.png",
+      "sha256": "69e3696a7e6debc2535e993e1209a70821cff36f98b7e2826acf90a878a0f1c0",
+      "capturedAt": "2026-10-25T01:19:18.801Z"
+    },
+    {
+      "filename": "SCRUM-633-03-lifecycle-and-local-invite-proof.png",
+      "sha256": "e2a292faf62634fae8ffe4c07719aa518edfe869a0c9ea0c35a038cf2bd5872b",
+      "capturedAt": "2026-10-25T01:19:24.861Z"
+    },
+    {
+      "filename": "qa-history.json",
+      "sha256": "114411055782349bd8dc92b2bdf179b383addb6fea5cde8a996767b5eff81306"
+    }
+  ],
+  "limits": [
+    "The existing demo uses the app-derived employee reference, preserved unchanged; its Users control is captured. No Create Login submitted; phone-form staging rendering untested.",
+    "Only the retired Studio address is captured here; Today/Fix redirects retain local route-test coverage.",
+    "Invite success and secret handling are local native HTTP/MutationCache checks, not a staged SMS.",
+    "Privacy masks conceal names, contacts and last-login dates; exact private images and external fonts are suppressed."
+  ]
+}
