@@ -111,12 +111,12 @@ const MACHINE_CALLERS: Array<{ prefix: string; exact?: boolean; except?: string;
  * caller fails until its line is removed, so the list stays the truth.
  */
 const NOT_YET_CALLED = new Map<string, string>([
-  // 2026-10-25, SCRUM-636: the aggregates ship before their Overview v2 caller (SCRUM-637, Console plan section 10).
-  ['GET /aggregates/members', 'Overview v2 (SCRUM-637) will read the member and visit summary'],
-  ['GET /aggregates/bookings', 'Overview v2 (SCRUM-637) will read the booking-date summary'],
-  ['GET /aggregates/assistant-usage', 'Overview v2 (SCRUM-637) will read the internal assistant usage summary'],
-  ['GET /aggregates/inbox-ai-usage', 'Overview v2 (SCRUM-637) will read the Inbox AI usage summary'],
-  ['GET /aggregates/fleet', 'Overview v2 (SCRUM-637) will read the current device-status summary'],
+  // 2026-10-25, SCRUM-637: one Overview read composes the native services; these bounded routes have no separate browser caller.
+  ['GET /aggregates/members', 'Overview v2 composes this native service in GET /overview; the bounded period route has no separate browser caller'],
+  ['GET /aggregates/bookings', 'Overview v2 composes this native service in GET /overview; the bounded period route has no separate browser caller'],
+  ['GET /aggregates/assistant-usage', 'Overview v2 composes this native service in GET /overview; the bounded period route has no separate browser caller'],
+  ['GET /aggregates/inbox-ai-usage', 'Overview v2 composes this native service in GET /overview; the bounded period route has no separate browser caller'],
+  ['GET /aggregates/fleet', 'Overview v2 composes this native service in GET /overview; the independent current-snapshot route has no separate browser caller'],
   // 2026-10-23, SCRUM-626 Q10: canonical teams remain editable, never deletable.
   ['DELETE /inbox/teams/{id}', 'the compatibility route returns the approved team-deletion refusal; the editor explains it without offering a destructive action'],
   // 2026-10-14, the walker's first run.

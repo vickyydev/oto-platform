@@ -27374,6 +27374,340 @@ export interface paths {
                                 occupancyAsOf: string | null;
                                 occupancyStale: boolean;
                             }[];
+                            aggregates: {
+                                members: {
+                                    /** Format: date-time */
+                                    generatedAt: string;
+                                    branches: {
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string;
+                                        timezone: string;
+                                        businessDayStart: string;
+                                        businessDate: string;
+                                    }[];
+                                    selectedBranchIds: string[];
+                                    period: {
+                                        from: string;
+                                        to: string;
+                                    };
+                                    /** @enum {string} */
+                                    basis: "visit-date";
+                                    totals: {
+                                        visits: number;
+                                        draftVisits: number;
+                                        activeVisits: number;
+                                        closedVisits: number;
+                                        visitingMembers: number;
+                                    };
+                                    parks: {
+                                        /** Format: uuid */
+                                        branchId: string;
+                                        totals: {
+                                            visits: number;
+                                            draftVisits: number;
+                                            activeVisits: number;
+                                            closedVisits: number;
+                                            visitingMembers: number;
+                                        };
+                                        rows: {
+                                            visits: number;
+                                            draftVisits: number;
+                                            activeVisits: number;
+                                            closedVisits: number;
+                                            visitingMembers: number;
+                                            date: string;
+                                        }[];
+                                    }[];
+                                };
+                                bookings: {
+                                    /** Format: date-time */
+                                    generatedAt: string;
+                                    branches: {
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string;
+                                        timezone: string;
+                                        businessDayStart: string;
+                                        businessDate: string;
+                                    }[];
+                                    selectedBranchIds: string[];
+                                    period: {
+                                        from: string;
+                                        to: string;
+                                    };
+                                    /** @enum {string} */
+                                    basis: "booking-date";
+                                    /** @enum {string} */
+                                    valueBasis: "priced-booking-value";
+                                    /** @enum {string} */
+                                    redemptionBasis: "booking-date-cohort";
+                                    totals: {
+                                        bookings: number;
+                                        bookedValueSatang: number;
+                                        redeemedBookings: number;
+                                    };
+                                    parks: {
+                                        /** Format: uuid */
+                                        branchId: string;
+                                        totals: {
+                                            bookings: number;
+                                            bookedValueSatang: number;
+                                            redeemedBookings: number;
+                                        };
+                                        rows: {
+                                            bookings: number;
+                                            bookedValueSatang: number;
+                                            redeemedBookings: number;
+                                            date: string;
+                                        }[];
+                                    }[];
+                                };
+                                assistantUsage: {
+                                    /** Format: date-time */
+                                    generatedAt: string;
+                                    branches: {
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string;
+                                        timezone: string;
+                                        businessDayStart: string;
+                                        businessDate: string;
+                                    }[];
+                                    selectedBranchIds: string[];
+                                    period: {
+                                        from: string;
+                                        to: string;
+                                    };
+                                    /** @enum {string} */
+                                    basis: "created-at-bangkok";
+                                    /** @enum {string} */
+                                    coverage: "retained-records";
+                                    totals: {
+                                        count: number;
+                                        inputTokens: number;
+                                        outputTokens: number;
+                                        cacheReadTokens: number;
+                                        totalTokens: number;
+                                        spendEstimate: number | null;
+                                        /** @enum {string|null} */
+                                        reason: "no_rate_configured" | "unpriced_tokens" | null;
+                                        unpricedTokens: number;
+                                    };
+                                    /** @enum {string} */
+                                    currency: "USD";
+                                    /** @enum {boolean} */
+                                    excludesCacheWrites: true;
+                                    parks: {
+                                        /** Format: uuid */
+                                        branchId: string;
+                                        totals: {
+                                            count: number;
+                                            inputTokens: number;
+                                            outputTokens: number;
+                                            cacheReadTokens: number;
+                                            totalTokens: number;
+                                            spendEstimate: number | null;
+                                            /** @enum {string|null} */
+                                            reason: "no_rate_configured" | "unpriced_tokens" | null;
+                                            unpricedTokens: number;
+                                        };
+                                        rows: {
+                                            count: number;
+                                            inputTokens: number;
+                                            outputTokens: number;
+                                            cacheReadTokens: number;
+                                            totalTokens: number;
+                                            spendEstimate: number | null;
+                                            /** @enum {string|null} */
+                                            reason: "no_rate_configured" | "unpriced_tokens" | null;
+                                            unpricedTokens: number;
+                                            date: string;
+                                        }[];
+                                    }[];
+                                    operatorWide: {
+                                        totals: {
+                                            count: number;
+                                            inputTokens: number;
+                                            outputTokens: number;
+                                            cacheReadTokens: number;
+                                            totalTokens: number;
+                                            spendEstimate: number | null;
+                                            /** @enum {string|null} */
+                                            reason: "no_rate_configured" | "unpriced_tokens" | null;
+                                            unpricedTokens: number;
+                                        };
+                                        rows: {
+                                            count: number;
+                                            inputTokens: number;
+                                            outputTokens: number;
+                                            cacheReadTokens: number;
+                                            totalTokens: number;
+                                            spendEstimate: number | null;
+                                            /** @enum {string|null} */
+                                            reason: "no_rate_configured" | "unpriced_tokens" | null;
+                                            unpricedTokens: number;
+                                            date: string;
+                                        }[];
+                                    } | null;
+                                    /** @enum {string} */
+                                    attribution: "seat-at-ask";
+                                    /** @enum {number} */
+                                    retentionDays: 90;
+                                };
+                                inboxAiUsage: {
+                                    /** Format: date-time */
+                                    generatedAt: string;
+                                    branches: {
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string;
+                                        timezone: string;
+                                        businessDayStart: string;
+                                        businessDate: string;
+                                    }[];
+                                    selectedBranchIds: string[];
+                                    period: {
+                                        from: string;
+                                        to: string;
+                                    };
+                                    /** @enum {string} */
+                                    basis: "created-at-bangkok";
+                                    /** @enum {string} */
+                                    coverage: "retained-records";
+                                    totals: {
+                                        count: number;
+                                        inputTokens: number;
+                                        outputTokens: number;
+                                        cacheReadTokens: number;
+                                        totalTokens: number;
+                                        spendEstimate: number | null;
+                                        /** @enum {string|null} */
+                                        reason: "no_rate_configured" | "unpriced_tokens" | null;
+                                        unpricedTokens: number;
+                                    };
+                                    /** @enum {string} */
+                                    currency: "USD";
+                                    /** @enum {boolean} */
+                                    excludesCacheWrites: true;
+                                    parks: {
+                                        /** Format: uuid */
+                                        branchId: string;
+                                        totals: {
+                                            count: number;
+                                            inputTokens: number;
+                                            outputTokens: number;
+                                            cacheReadTokens: number;
+                                            totalTokens: number;
+                                            spendEstimate: number | null;
+                                            /** @enum {string|null} */
+                                            reason: "no_rate_configured" | "unpriced_tokens" | null;
+                                            unpricedTokens: number;
+                                        };
+                                        rows: {
+                                            count: number;
+                                            inputTokens: number;
+                                            outputTokens: number;
+                                            cacheReadTokens: number;
+                                            totalTokens: number;
+                                            spendEstimate: number | null;
+                                            /** @enum {string|null} */
+                                            reason: "no_rate_configured" | "unpriced_tokens" | null;
+                                            unpricedTokens: number;
+                                            date: string;
+                                        }[];
+                                    }[];
+                                    operatorWide: {
+                                        totals: {
+                                            count: number;
+                                            inputTokens: number;
+                                            outputTokens: number;
+                                            cacheReadTokens: number;
+                                            totalTokens: number;
+                                            spendEstimate: number | null;
+                                            /** @enum {string|null} */
+                                            reason: "no_rate_configured" | "unpriced_tokens" | null;
+                                            unpricedTokens: number;
+                                        };
+                                        rows: {
+                                            count: number;
+                                            inputTokens: number;
+                                            outputTokens: number;
+                                            cacheReadTokens: number;
+                                            totalTokens: number;
+                                            spendEstimate: number | null;
+                                            /** @enum {string|null} */
+                                            reason: "no_rate_configured" | "unpriced_tokens" | null;
+                                            unpricedTokens: number;
+                                            date: string;
+                                        }[];
+                                    } | null;
+                                    /** @enum {string} */
+                                    attribution: "current-conversation-branch";
+                                    /** @enum {unknown|null} */
+                                    retentionDays: "null" | null;
+                                };
+                                fleet: {
+                                    /** Format: date-time */
+                                    generatedAt: string;
+                                    branches: {
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string;
+                                        timezone: string;
+                                        businessDayStart: string;
+                                        businessDate: string;
+                                    }[];
+                                    selectedBranchIds: string[];
+                                    /** @enum {string} */
+                                    basis: "current-snapshot";
+                                    /** Format: date-time */
+                                    asOf: string;
+                                    totals: {
+                                        boxes: number;
+                                        online: number;
+                                        offline: number;
+                                        unclaimed: number;
+                                        disabled: number;
+                                    };
+                                    parks: {
+                                        boxes: number;
+                                        online: number;
+                                        offline: number;
+                                        unclaimed: number;
+                                        disabled: number;
+                                        /** Format: uuid */
+                                        branchId: string;
+                                    }[];
+                                };
+                            };
+                            decisions: {
+                                /** Format: date-time */
+                                generatedAt: string;
+                                items: {
+                                    /** @enum {string} */
+                                    key: "pendingPayments" | "syncQuarantine" | "cashVariances" | "latePayments" | "strandedOccupants" | "erasureRequests" | "approvalRequests";
+                                    label: string;
+                                    /** @enum {string} */
+                                    status: "available" | "not-built" | "unavailable";
+                                    count: number | null;
+                                    basis: string;
+                                }[];
+                                parks: {
+                                    /** Format: uuid */
+                                    branchId: string;
+                                    items: {
+                                        /** @enum {string} */
+                                        key: "pendingPayments" | "syncQuarantine" | "cashVariances" | "latePayments" | "strandedOccupants" | "erasureRequests" | "approvalRequests";
+                                        label: string;
+                                        /** @enum {string} */
+                                        status: "available" | "not-built" | "unavailable";
+                                        count: number | null;
+                                        basis: string;
+                                    }[];
+                                }[];
+                            };
+                            statusSummary: string;
                         };
                     };
                 };

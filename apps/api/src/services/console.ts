@@ -10,6 +10,16 @@ import { unansweredSql } from './inbox/read';
 import { liveOccupancy } from './occupancy';
 import { fleetHealth } from './ops';
 import type { EffectivePermission } from './permissions';
+import type { AggregateScope } from './aggregate-types';
+import type {
+  assistantUsageSnapshotOf, bookingsSnapshotOf, fleetSnapshotOf, inboxAiUsageSnapshotOf, membersSnapshotOf,
+} from './aggregates';
+import { assistantUsageAggregateOf, inboxAiUsageAggregateOf } from './aggregates-ai';
+import { bookingAggregateOf } from './aggregates-bookings';
+import { fleetAggregateOf } from './aggregates-fleet';
+import { membersAggregateOf } from './aggregates-members';
+import { consoleDecisionsOf, type ConsoleDecisionsSnapshot } from './console-decisions';
+import { formatOverviewSummary } from './console-summary';
 
 export const OVERVIEW_PERMISSION = 'console:overview:read' as const;
 
@@ -47,6 +57,15 @@ export interface OverviewSnapshot {
   selectedBranchIds: string[];
   totals: OverviewFigures;
   parks: OverviewPark[];
+  aggregates: {
+    members: Awaited<ReturnType<typeof membersSnapshotOf>>;
+    bookings: Awaited<ReturnType<typeof bookingsSnapshotOf>>;
+    assistantUsage: Awaited<ReturnType<typeof assistantUsageSnapshotOf>>;
+    inboxAiUsage: Awaited<ReturnType<typeof inboxAiUsageSnapshotOf>>;
+    fleet: Awaited<ReturnType<typeof fleetSnapshotOf>>;
+  };
+  decisions: ConsoleDecisionsSnapshot;
+  statusSummary: string;
 }
 
 /** The overview grant authorizes these counts, never the linked detail screens. */
@@ -73,7 +92,7 @@ const emptyFigures = (): OverviewFigures => ({
 });
 
 /**
- * Overview v1 over the existing summary rules. Every figure covers selected
+ * Overview over the existing summary rules. Every legacy figure covers selected
  * live parks only: branchless Inbox conversations and operator/platform alerts
  * are deliberately outside this park total. Errors propagate, never turn into
  * a reassuring zero. Reads run sequentially against the platform's small pool.
@@ -83,12 +102,32 @@ export async function overviewOf(db: Db, input: {
   effective: EffectivePermission[];
   branchId?: string;
   now?: Date;
+  pendingMinutes?: number;
 }): Promise<OverviewSnapshot> {
   const now = input.now ?? new Date();
   const { available, selected } = overviewScopeOf({
     ...input,
     branches: await operatorBranches(db, input.operatorId),
   });
+  return overviewForScopeOf(db, {
+    operatorId: input.operatorId, available, selected, now, pendingMinutes: input.pendingMinutes,
+    includeOperatorWide: input.branchId === undefined && branchReach(input.effective, OVERVIEW_PERMISSION, input.operatorId).kind === 'operator',
+  });
+}
+
+/** Trusted internal job seam: explicit owned parks, without constructing human grants. */
+export async function overviewForScopeOf(db: Db, input: AggregateScope & {
+  pendingMinutes?: number;
+}): Promise<OverviewSnapshot> {
+  const { now } = input;
+  const live = new Map((await operatorBranches(db, input.operatorId)).filter(park => park.archivedAt === null).map(park => [park.id, park]));
+  const available = input.available.flatMap(park => live.has(park.id) ? [live.get(park.id)!] : []);
+  const selected = input.selected.map(park => {
+    const current = live.get(park.id);
+    if (!current) throw errors.conflict('OVERVIEW_SCOPE_CHANGED', 'The park scope changed. Refresh the Overview.');
+    return current;
+  });
+  const scope: AggregateScope = { ...input, available, selected };
   const fleet = selected.length === 0 ? { boxes: [] } : await fleetHealth({
     db, operatorId: input.operatorId, reach: { kind: 'branches', branchIds: selected.map((b) => b.id) },
   }, now.getTime());
@@ -123,12 +162,36 @@ export async function overviewOf(db: Db, input: {
   }
   const totals = emptyFigures();
   for (const park of parks) for (const key of Object.keys(totals) as Array<keyof OverviewFigures>) totals[key] += park[key];
-  return {
+  const envelope = {
     generatedAt: now.toISOString(),
     branches: available.map((b) => ({
       id: b.id, name: b.name, timezone: b.timezone, businessDayStart: b.businessDayStart.slice(0, 5),
       businessDate: summaryBranchToday(b, now),
     })),
-    selectedBranchIds: selected.map((b) => b.id), totals, parks,
+    selectedBranchIds: selected.map((b) => b.id),
   };
+  // These four sources use calendar dates, independently of legacy business dates.
+  const date = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
+  const period = { from: date, to: date };
+  const daily = { ...scope, period: { ...period, dates: [date] } };
+  const dated = { ...envelope, period };
+  const aggregates: OverviewSnapshot['aggregates'] = {
+    members: { ...dated, ...await membersAggregateOf(db, daily) },
+    bookings: { ...dated, ...await bookingAggregateOf(db, daily) },
+    assistantUsage: { ...dated, ...await assistantUsageAggregateOf(db, daily) },
+    inboxAiUsage: { ...dated, ...await inboxAiUsageAggregateOf(db, daily) },
+    fleet: { ...envelope, ...await fleetAggregateOf(db, scope) },
+  };
+  const decisions = await consoleDecisionsOf(db, {
+    operatorId: input.operatorId, selected, now,
+    // HTTP and jobs supply typed runtime configuration; direct readers retain its native ten-minute default.
+    pendingMinutes: input.pendingMinutes ?? 10,
+  });
+  const stillLive = new Map((await operatorBranches(db, input.operatorId)).filter(park => park.archivedAt === null).map(park => [park.id, park]));
+  if (available.some(park => {
+    const current = stillLive.get(park.id);
+    return !current || current.timezone !== park.timezone || current.businessDayStart !== park.businessDayStart || current.name !== park.name;
+  })) throw errors.conflict('OVERVIEW_SCOPE_CHANGED', 'The park scope changed. Refresh the Overview.');
+  const snapshot = { ...envelope, totals, parks, aggregates, decisions };
+  return { ...snapshot, statusSummary: formatOverviewSummary(snapshot) };
 }

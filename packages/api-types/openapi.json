@@ -67720,6 +67720,1643 @@
                         ],
                         "additionalProperties": false
                       }
+                    },
+                    "aggregates": {
+                      "type": "object",
+                      "properties": {
+                        "members": {
+                          "type": "object",
+                          "properties": {
+                            "generatedAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "branches": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "timezone": {
+                                    "type": "string"
+                                  },
+                                  "businessDayStart": {
+                                    "type": "string"
+                                  },
+                                  "businessDate": {
+                                    "type": "string",
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name",
+                                  "timezone",
+                                  "businessDayStart",
+                                  "businessDate"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "selectedBranchIds": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "format": "uuid"
+                              }
+                            },
+                            "period": {
+                              "type": "object",
+                              "properties": {
+                                "from": {
+                                  "type": "string",
+                                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                },
+                                "to": {
+                                  "type": "string",
+                                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                }
+                              },
+                              "required": [
+                                "from",
+                                "to"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "basis": {
+                              "type": "string",
+                              "enum": [
+                                "visit-date"
+                              ]
+                            },
+                            "totals": {
+                              "type": "object",
+                              "properties": {
+                                "visits": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "draftVisits": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "activeVisits": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "closedVisits": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "visitingMembers": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "visits",
+                                "draftVisits",
+                                "activeVisits",
+                                "closedVisits",
+                                "visitingMembers"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "parks": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "branchId": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  "totals": {
+                                    "type": "object",
+                                    "properties": {
+                                      "visits": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "draftVisits": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "activeVisits": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "closedVisits": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "visitingMembers": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      }
+                                    },
+                                    "required": [
+                                      "visits",
+                                      "draftVisits",
+                                      "activeVisits",
+                                      "closedVisits",
+                                      "visitingMembers"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "rows": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "visits": {
+                                          "type": "integer",
+                                          "minimum": -9007199254740991,
+                                          "maximum": 9007199254740991
+                                        },
+                                        "draftVisits": {
+                                          "type": "integer",
+                                          "minimum": -9007199254740991,
+                                          "maximum": 9007199254740991
+                                        },
+                                        "activeVisits": {
+                                          "type": "integer",
+                                          "minimum": -9007199254740991,
+                                          "maximum": 9007199254740991
+                                        },
+                                        "closedVisits": {
+                                          "type": "integer",
+                                          "minimum": -9007199254740991,
+                                          "maximum": 9007199254740991
+                                        },
+                                        "visitingMembers": {
+                                          "type": "integer",
+                                          "minimum": -9007199254740991,
+                                          "maximum": 9007199254740991
+                                        },
+                                        "date": {
+                                          "type": "string",
+                                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                        }
+                                      },
+                                      "required": [
+                                        "visits",
+                                        "draftVisits",
+                                        "activeVisits",
+                                        "closedVisits",
+                                        "visitingMembers",
+                                        "date"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "branchId",
+                                  "totals",
+                                  "rows"
+                                ],
+                                "additionalProperties": false
+                              }
+                            }
+                          },
+                          "required": [
+                            "generatedAt",
+                            "branches",
+                            "selectedBranchIds",
+                            "period",
+                            "basis",
+                            "totals",
+                            "parks"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "bookings": {
+                          "type": "object",
+                          "properties": {
+                            "generatedAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "branches": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "timezone": {
+                                    "type": "string"
+                                  },
+                                  "businessDayStart": {
+                                    "type": "string"
+                                  },
+                                  "businessDate": {
+                                    "type": "string",
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name",
+                                  "timezone",
+                                  "businessDayStart",
+                                  "businessDate"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "selectedBranchIds": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "format": "uuid"
+                              }
+                            },
+                            "period": {
+                              "type": "object",
+                              "properties": {
+                                "from": {
+                                  "type": "string",
+                                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                },
+                                "to": {
+                                  "type": "string",
+                                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                }
+                              },
+                              "required": [
+                                "from",
+                                "to"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "basis": {
+                              "type": "string",
+                              "enum": [
+                                "booking-date"
+                              ]
+                            },
+                            "valueBasis": {
+                              "type": "string",
+                              "enum": [
+                                "priced-booking-value"
+                              ]
+                            },
+                            "redemptionBasis": {
+                              "type": "string",
+                              "enum": [
+                                "booking-date-cohort"
+                              ]
+                            },
+                            "totals": {
+                              "type": "object",
+                              "properties": {
+                                "bookings": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "bookedValueSatang": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "redeemedBookings": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "bookings",
+                                "bookedValueSatang",
+                                "redeemedBookings"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "parks": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "branchId": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  "totals": {
+                                    "type": "object",
+                                    "properties": {
+                                      "bookings": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "bookedValueSatang": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "redeemedBookings": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      }
+                                    },
+                                    "required": [
+                                      "bookings",
+                                      "bookedValueSatang",
+                                      "redeemedBookings"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "rows": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "bookings": {
+                                          "type": "integer",
+                                          "minimum": -9007199254740991,
+                                          "maximum": 9007199254740991
+                                        },
+                                        "bookedValueSatang": {
+                                          "type": "integer",
+                                          "minimum": -9007199254740991,
+                                          "maximum": 9007199254740991
+                                        },
+                                        "redeemedBookings": {
+                                          "type": "integer",
+                                          "minimum": -9007199254740991,
+                                          "maximum": 9007199254740991
+                                        },
+                                        "date": {
+                                          "type": "string",
+                                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                        }
+                                      },
+                                      "required": [
+                                        "bookings",
+                                        "bookedValueSatang",
+                                        "redeemedBookings",
+                                        "date"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "branchId",
+                                  "totals",
+                                  "rows"
+                                ],
+                                "additionalProperties": false
+                              }
+                            }
+                          },
+                          "required": [
+                            "generatedAt",
+                            "branches",
+                            "selectedBranchIds",
+                            "period",
+                            "basis",
+                            "valueBasis",
+                            "redemptionBasis",
+                            "totals",
+                            "parks"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "assistantUsage": {
+                          "type": "object",
+                          "properties": {
+                            "generatedAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "branches": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "timezone": {
+                                    "type": "string"
+                                  },
+                                  "businessDayStart": {
+                                    "type": "string"
+                                  },
+                                  "businessDate": {
+                                    "type": "string",
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name",
+                                  "timezone",
+                                  "businessDayStart",
+                                  "businessDate"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "selectedBranchIds": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "format": "uuid"
+                              }
+                            },
+                            "period": {
+                              "type": "object",
+                              "properties": {
+                                "from": {
+                                  "type": "string",
+                                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                },
+                                "to": {
+                                  "type": "string",
+                                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                }
+                              },
+                              "required": [
+                                "from",
+                                "to"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "basis": {
+                              "type": "string",
+                              "enum": [
+                                "created-at-bangkok"
+                              ]
+                            },
+                            "coverage": {
+                              "type": "string",
+                              "enum": [
+                                "retained-records"
+                              ]
+                            },
+                            "totals": {
+                              "type": "object",
+                              "properties": {
+                                "count": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "inputTokens": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "outputTokens": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "cacheReadTokens": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "totalTokens": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "spendEstimate": {
+                                  "type": "number",
+                                  "minimum": 0,
+                                  "nullable": true
+                                },
+                                "reason": {
+                                  "type": "string",
+                                  "enum": [
+                                    "no_rate_configured",
+                                    "unpriced_tokens"
+                                  ],
+                                  "nullable": true
+                                },
+                                "unpricedTokens": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "count",
+                                "inputTokens",
+                                "outputTokens",
+                                "cacheReadTokens",
+                                "totalTokens",
+                                "spendEstimate",
+                                "reason",
+                                "unpricedTokens"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "currency": {
+                              "type": "string",
+                              "enum": [
+                                "USD"
+                              ]
+                            },
+                            "excludesCacheWrites": {
+                              "type": "boolean",
+                              "enum": [
+                                true
+                              ]
+                            },
+                            "parks": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "branchId": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  "totals": {
+                                    "type": "object",
+                                    "properties": {
+                                      "count": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "inputTokens": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "outputTokens": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "cacheReadTokens": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "totalTokens": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "spendEstimate": {
+                                        "type": "number",
+                                        "minimum": 0,
+                                        "nullable": true
+                                      },
+                                      "reason": {
+                                        "type": "string",
+                                        "enum": [
+                                          "no_rate_configured",
+                                          "unpriced_tokens"
+                                        ],
+                                        "nullable": true
+                                      },
+                                      "unpricedTokens": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      }
+                                    },
+                                    "required": [
+                                      "count",
+                                      "inputTokens",
+                                      "outputTokens",
+                                      "cacheReadTokens",
+                                      "totalTokens",
+                                      "spendEstimate",
+                                      "reason",
+                                      "unpricedTokens"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "rows": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "count": {
+                                          "type": "integer",
+                                          "minimum": -9007199254740991,
+                                          "maximum": 9007199254740991
+                                        },
+                                        "inputTokens": {
+                                          "type": "integer",
+                                          "minimum": -9007199254740991,
+                                          "maximum": 9007199254740991
+                                        },
+                                        "outputTokens": {
+                                          "type": "integer",
+                                          "minimum": -9007199254740991,
+                                          "maximum": 9007199254740991
+                                        },
+                                        "cacheReadTokens": {
+                                          "type": "integer",
+                                          "minimum": -9007199254740991,
+                                          "maximum": 9007199254740991
+                                        },
+                                        "totalTokens": {
+                                          "type": "integer",
+                                          "minimum": -9007199254740991,
+                                          "maximum": 9007199254740991
+                                        },
+                                        "spendEstimate": {
+                                          "type": "number",
+                                          "minimum": 0,
+                                          "nullable": true
+                                        },
+                                        "reason": {
+                                          "type": "string",
+                                          "enum": [
+                                            "no_rate_configured",
+                                            "unpriced_tokens"
+                                          ],
+                                          "nullable": true
+                                        },
+                                        "unpricedTokens": {
+                                          "type": "integer",
+                                          "minimum": -9007199254740991,
+                                          "maximum": 9007199254740991
+                                        },
+                                        "date": {
+                                          "type": "string",
+                                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                        }
+                                      },
+                                      "required": [
+                                        "count",
+                                        "inputTokens",
+                                        "outputTokens",
+                                        "cacheReadTokens",
+                                        "totalTokens",
+                                        "spendEstimate",
+                                        "reason",
+                                        "unpricedTokens",
+                                        "date"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "branchId",
+                                  "totals",
+                                  "rows"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "operatorWide": {
+                              "type": "object",
+                              "properties": {
+                                "totals": {
+                                  "type": "object",
+                                  "properties": {
+                                    "count": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "inputTokens": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "outputTokens": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "cacheReadTokens": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "totalTokens": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "spendEstimate": {
+                                      "type": "number",
+                                      "minimum": 0,
+                                      "nullable": true
+                                    },
+                                    "reason": {
+                                      "type": "string",
+                                      "enum": [
+                                        "no_rate_configured",
+                                        "unpriced_tokens"
+                                      ],
+                                      "nullable": true
+                                    },
+                                    "unpricedTokens": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    }
+                                  },
+                                  "required": [
+                                    "count",
+                                    "inputTokens",
+                                    "outputTokens",
+                                    "cacheReadTokens",
+                                    "totalTokens",
+                                    "spendEstimate",
+                                    "reason",
+                                    "unpricedTokens"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "rows": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "count": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "inputTokens": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "outputTokens": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "cacheReadTokens": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "totalTokens": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "spendEstimate": {
+                                        "type": "number",
+                                        "minimum": 0,
+                                        "nullable": true
+                                      },
+                                      "reason": {
+                                        "type": "string",
+                                        "enum": [
+                                          "no_rate_configured",
+                                          "unpriced_tokens"
+                                        ],
+                                        "nullable": true
+                                      },
+                                      "unpricedTokens": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "date": {
+                                        "type": "string",
+                                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                      }
+                                    },
+                                    "required": [
+                                      "count",
+                                      "inputTokens",
+                                      "outputTokens",
+                                      "cacheReadTokens",
+                                      "totalTokens",
+                                      "spendEstimate",
+                                      "reason",
+                                      "unpricedTokens",
+                                      "date"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                }
+                              },
+                              "required": [
+                                "totals",
+                                "rows"
+                              ],
+                              "additionalProperties": false,
+                              "nullable": true
+                            },
+                            "attribution": {
+                              "type": "string",
+                              "enum": [
+                                "seat-at-ask"
+                              ]
+                            },
+                            "retentionDays": {
+                              "type": "number",
+                              "enum": [
+                                90
+                              ]
+                            }
+                          },
+                          "required": [
+                            "generatedAt",
+                            "branches",
+                            "selectedBranchIds",
+                            "period",
+                            "basis",
+                            "coverage",
+                            "totals",
+                            "currency",
+                            "excludesCacheWrites",
+                            "parks",
+                            "operatorWide",
+                            "attribution",
+                            "retentionDays"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "inboxAiUsage": {
+                          "type": "object",
+                          "properties": {
+                            "generatedAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "branches": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "timezone": {
+                                    "type": "string"
+                                  },
+                                  "businessDayStart": {
+                                    "type": "string"
+                                  },
+                                  "businessDate": {
+                                    "type": "string",
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name",
+                                  "timezone",
+                                  "businessDayStart",
+                                  "businessDate"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "selectedBranchIds": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "format": "uuid"
+                              }
+                            },
+                            "period": {
+                              "type": "object",
+                              "properties": {
+                                "from": {
+                                  "type": "string",
+                                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                },
+                                "to": {
+                                  "type": "string",
+                                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                }
+                              },
+                              "required": [
+                                "from",
+                                "to"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "basis": {
+                              "type": "string",
+                              "enum": [
+                                "created-at-bangkok"
+                              ]
+                            },
+                            "coverage": {
+                              "type": "string",
+                              "enum": [
+                                "retained-records"
+                              ]
+                            },
+                            "totals": {
+                              "type": "object",
+                              "properties": {
+                                "count": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "inputTokens": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "outputTokens": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "cacheReadTokens": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "totalTokens": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "spendEstimate": {
+                                  "type": "number",
+                                  "minimum": 0,
+                                  "nullable": true
+                                },
+                                "reason": {
+                                  "type": "string",
+                                  "enum": [
+                                    "no_rate_configured",
+                                    "unpriced_tokens"
+                                  ],
+                                  "nullable": true
+                                },
+                                "unpricedTokens": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "count",
+                                "inputTokens",
+                                "outputTokens",
+                                "cacheReadTokens",
+                                "totalTokens",
+                                "spendEstimate",
+                                "reason",
+                                "unpricedTokens"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "currency": {
+                              "type": "string",
+                              "enum": [
+                                "USD"
+                              ]
+                            },
+                            "excludesCacheWrites": {
+                              "type": "boolean",
+                              "enum": [
+                                true
+                              ]
+                            },
+                            "parks": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "branchId": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  "totals": {
+                                    "type": "object",
+                                    "properties": {
+                                      "count": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "inputTokens": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "outputTokens": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "cacheReadTokens": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "totalTokens": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "spendEstimate": {
+                                        "type": "number",
+                                        "minimum": 0,
+                                        "nullable": true
+                                      },
+                                      "reason": {
+                                        "type": "string",
+                                        "enum": [
+                                          "no_rate_configured",
+                                          "unpriced_tokens"
+                                        ],
+                                        "nullable": true
+                                      },
+                                      "unpricedTokens": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      }
+                                    },
+                                    "required": [
+                                      "count",
+                                      "inputTokens",
+                                      "outputTokens",
+                                      "cacheReadTokens",
+                                      "totalTokens",
+                                      "spendEstimate",
+                                      "reason",
+                                      "unpricedTokens"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "rows": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "count": {
+                                          "type": "integer",
+                                          "minimum": -9007199254740991,
+                                          "maximum": 9007199254740991
+                                        },
+                                        "inputTokens": {
+                                          "type": "integer",
+                                          "minimum": -9007199254740991,
+                                          "maximum": 9007199254740991
+                                        },
+                                        "outputTokens": {
+                                          "type": "integer",
+                                          "minimum": -9007199254740991,
+                                          "maximum": 9007199254740991
+                                        },
+                                        "cacheReadTokens": {
+                                          "type": "integer",
+                                          "minimum": -9007199254740991,
+                                          "maximum": 9007199254740991
+                                        },
+                                        "totalTokens": {
+                                          "type": "integer",
+                                          "minimum": -9007199254740991,
+                                          "maximum": 9007199254740991
+                                        },
+                                        "spendEstimate": {
+                                          "type": "number",
+                                          "minimum": 0,
+                                          "nullable": true
+                                        },
+                                        "reason": {
+                                          "type": "string",
+                                          "enum": [
+                                            "no_rate_configured",
+                                            "unpriced_tokens"
+                                          ],
+                                          "nullable": true
+                                        },
+                                        "unpricedTokens": {
+                                          "type": "integer",
+                                          "minimum": -9007199254740991,
+                                          "maximum": 9007199254740991
+                                        },
+                                        "date": {
+                                          "type": "string",
+                                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                        }
+                                      },
+                                      "required": [
+                                        "count",
+                                        "inputTokens",
+                                        "outputTokens",
+                                        "cacheReadTokens",
+                                        "totalTokens",
+                                        "spendEstimate",
+                                        "reason",
+                                        "unpricedTokens",
+                                        "date"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "branchId",
+                                  "totals",
+                                  "rows"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "operatorWide": {
+                              "type": "object",
+                              "properties": {
+                                "totals": {
+                                  "type": "object",
+                                  "properties": {
+                                    "count": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "inputTokens": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "outputTokens": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "cacheReadTokens": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "totalTokens": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "spendEstimate": {
+                                      "type": "number",
+                                      "minimum": 0,
+                                      "nullable": true
+                                    },
+                                    "reason": {
+                                      "type": "string",
+                                      "enum": [
+                                        "no_rate_configured",
+                                        "unpriced_tokens"
+                                      ],
+                                      "nullable": true
+                                    },
+                                    "unpricedTokens": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    }
+                                  },
+                                  "required": [
+                                    "count",
+                                    "inputTokens",
+                                    "outputTokens",
+                                    "cacheReadTokens",
+                                    "totalTokens",
+                                    "spendEstimate",
+                                    "reason",
+                                    "unpricedTokens"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "rows": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "count": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "inputTokens": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "outputTokens": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "cacheReadTokens": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "totalTokens": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "spendEstimate": {
+                                        "type": "number",
+                                        "minimum": 0,
+                                        "nullable": true
+                                      },
+                                      "reason": {
+                                        "type": "string",
+                                        "enum": [
+                                          "no_rate_configured",
+                                          "unpriced_tokens"
+                                        ],
+                                        "nullable": true
+                                      },
+                                      "unpricedTokens": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "date": {
+                                        "type": "string",
+                                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                      }
+                                    },
+                                    "required": [
+                                      "count",
+                                      "inputTokens",
+                                      "outputTokens",
+                                      "cacheReadTokens",
+                                      "totalTokens",
+                                      "spendEstimate",
+                                      "reason",
+                                      "unpricedTokens",
+                                      "date"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                }
+                              },
+                              "required": [
+                                "totals",
+                                "rows"
+                              ],
+                              "additionalProperties": false,
+                              "nullable": true
+                            },
+                            "attribution": {
+                              "type": "string",
+                              "enum": [
+                                "current-conversation-branch"
+                              ]
+                            },
+                            "retentionDays": {
+                              "enum": [
+                                "null"
+                              ],
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "generatedAt",
+                            "branches",
+                            "selectedBranchIds",
+                            "period",
+                            "basis",
+                            "coverage",
+                            "totals",
+                            "currency",
+                            "excludesCacheWrites",
+                            "parks",
+                            "operatorWide",
+                            "attribution",
+                            "retentionDays"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "fleet": {
+                          "type": "object",
+                          "properties": {
+                            "generatedAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "branches": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "timezone": {
+                                    "type": "string"
+                                  },
+                                  "businessDayStart": {
+                                    "type": "string"
+                                  },
+                                  "businessDate": {
+                                    "type": "string",
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name",
+                                  "timezone",
+                                  "businessDayStart",
+                                  "businessDate"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "selectedBranchIds": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "format": "uuid"
+                              }
+                            },
+                            "basis": {
+                              "type": "string",
+                              "enum": [
+                                "current-snapshot"
+                              ]
+                            },
+                            "asOf": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "totals": {
+                              "type": "object",
+                              "properties": {
+                                "boxes": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "online": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "offline": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "unclaimed": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "disabled": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "boxes",
+                                "online",
+                                "offline",
+                                "unclaimed",
+                                "disabled"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "parks": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "boxes": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "online": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "offline": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "unclaimed": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "disabled": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "branchId": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  }
+                                },
+                                "required": [
+                                  "boxes",
+                                  "online",
+                                  "offline",
+                                  "unclaimed",
+                                  "disabled",
+                                  "branchId"
+                                ],
+                                "additionalProperties": false
+                              }
+                            }
+                          },
+                          "required": [
+                            "generatedAt",
+                            "branches",
+                            "selectedBranchIds",
+                            "basis",
+                            "asOf",
+                            "totals",
+                            "parks"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "members",
+                        "bookings",
+                        "assistantUsage",
+                        "inboxAiUsage",
+                        "fleet"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "decisions": {
+                      "type": "object",
+                      "properties": {
+                        "generatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string",
+                                "enum": [
+                                  "pendingPayments",
+                                  "syncQuarantine",
+                                  "cashVariances",
+                                  "latePayments",
+                                  "strandedOccupants",
+                                  "erasureRequests",
+                                  "approvalRequests"
+                                ]
+                              },
+                              "label": {
+                                "type": "string"
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "available",
+                                  "not-built",
+                                  "unavailable"
+                                ]
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "nullable": true
+                              },
+                              "basis": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "label",
+                              "status",
+                              "count",
+                              "basis"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "parks": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "branchId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "items": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "key": {
+                                      "type": "string",
+                                      "enum": [
+                                        "pendingPayments",
+                                        "syncQuarantine",
+                                        "cashVariances",
+                                        "latePayments",
+                                        "strandedOccupants",
+                                        "erasureRequests",
+                                        "approvalRequests"
+                                      ]
+                                    },
+                                    "label": {
+                                      "type": "string"
+                                    },
+                                    "status": {
+                                      "type": "string",
+                                      "enum": [
+                                        "available",
+                                        "not-built",
+                                        "unavailable"
+                                      ]
+                                    },
+                                    "count": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "nullable": true
+                                    },
+                                    "basis": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "key",
+                                    "label",
+                                    "status",
+                                    "count",
+                                    "basis"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "required": [
+                              "branchId",
+                              "items"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "generatedAt",
+                        "items",
+                        "parks"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "statusSummary": {
+                      "type": "string"
                     }
                   },
                   "required": [
@@ -67727,7 +69364,10 @@
                     "branches",
                     "selectedBranchIds",
                     "totals",
-                    "parks"
+                    "parks",
+                    "aggregates",
+                    "decisions",
+                    "statusSummary"
                   ],
                   "additionalProperties": false
                 }
