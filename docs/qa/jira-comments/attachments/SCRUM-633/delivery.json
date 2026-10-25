@@ -1,0 +1,28 @@
+{
+  "ticket": "SCRUM-633",
+  "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021",
+  "ciRunId": "40146207019",
+  "evidenceCommit": "f50946f8e426217bea4f89a9bd1a0e1dd91c825e",
+  "status": "Deployed",
+  "readBackAt": "2026-10-25T01:21:20.368Z",
+  "commentId": "12561",
+  "attachments": [
+    {
+      "id": "12023",
+      "filename": "SCRUM-633-01-existing-demo-user-controls.png",
+      "sha256": "368a4b008a54b2d830d3cc24d00b9f4a48d53fbcf861f439d63ba87d9f9067a8"
+    },
+    {
+      "id": "12024",
+      "filename": "SCRUM-633-02-retired-studio-redirect.png",
+      "sha256": "69e3696a7e6debc2535e993e1209a70821cff36f98b7e2826acf90a878a0f1c0"
+    },
+    {
+      "id": "12025",
+      "filename": "SCRUM-633-03-lifecycle-and-local-invite-proof.png",
+      "sha256": "e2a292faf62634fae8ffe4c07719aa518edfe869a0c9ea0c35a038cf2bd5872b"
+    }
+  ],
+  "allScreenshotsInspectedBeforeAttach": true,
+  "finalAcceptanceOwnedByOwner": true
+}

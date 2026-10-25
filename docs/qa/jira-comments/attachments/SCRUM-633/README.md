@@ -1,6 +1,6 @@
 # SCRUM-633 — employee sign-in and lifecycle
 
-Staging proof is complete on source `704bb3e3aea9f4348762521b886f2f7aef868021`. Jira remains Testing until the committed screenshots are attached and Deployed is read back. Final acceptance belongs to the owner.
+Staging proof is complete on source `704bb3e3aea9f4348762521b886f2f7aef868021`. Jira Deployed was read back at 2026-10-25T01:21:20.368Z. The three inspected screenshots are attached (12023, 12024, 12025) and named in outcome12561. Final acceptance belongs to the owner.
 
 Employee Create Login uses the owned platform provisioning service, with atomic local reservation, fresh actor/branch checks on retry, recovery after reload and once-only credentials. Existing legacy, advisor, role and branch rules remain. Platform reactivation enables the same linked app user. Every app-side disable queues an event atomically; the identity seam checks ownership and the last-administrator rule, disables the account, evicts sessions, audits and settles together. Old delivery after reactivation is harmless. Expand-only app migration0031 is applied; no core migration or applied-history edit.
 
