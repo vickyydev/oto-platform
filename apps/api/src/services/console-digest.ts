@@ -193,7 +193,7 @@ export function createConsoleDigestSender(
   if (!destination) return undefined;
   try {
     const url = new URL(destination);
-    if (url.protocol !== 'https:' || url.username || url.password || url.hash) return undefined;
+    if (url.protocol !== 'https:' || url.username || url.password || url.href.includes('#')) return undefined;
   } catch { return undefined; }
   const timeoutMs = options.timeoutMs ?? 10_000;
   if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) return undefined;

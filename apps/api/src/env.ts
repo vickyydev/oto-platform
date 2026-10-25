@@ -362,6 +362,18 @@ const EnvSchema = z.object({
    * impossible.
    */
   ALERT_CHANNELS: z.string().default('console'),
+  /** Morning branch status digest; separate from alert-channel delivery. */
+  CONSOLE_DIGEST_ENABLED: z.enum(['true', 'false']).default('false').transform(value => value === 'true'),
+  /** Private destination: never expose its value through status or error text. */
+  ALERT_WEBHOOK_URL: z.preprocess(
+    value => typeof value === 'string' && value.trim() === '' ? undefined : value,
+    z.string().trim().refine(value => {
+      try {
+        const url = new URL(value);
+        return url.protocol === 'https:' && !url.username && !url.password && !url.href.includes('#');
+      } catch { return false; }
+    }, 'ALERT_WEBHOOK_URL must use HTTPS without userinfo or a fragment').optional(),
+  ),
   /**
    * How often the watchdog compares what should have run with what did
    * (S2-03). Everything else records what happened; this is the only check
@@ -1118,6 +1130,10 @@ export function loadEnv(overrides: Partial<Record<keyof Env, string>> = {}): Env
     // And the internal assistant (SCRUM-591), for the same reason.
     if (overrides.INTERNAL_AI_ENABLED === undefined) raw.INTERNAL_AI_ENABLED = 'false';
     if (overrides.INTERNAL_AI_OTOAPP_TOOLS === undefined) raw.INTERNAL_AI_OTOAPP_TOOLS = 'false';
+    // A developer's destination must never turn a test into a real message.
+    // Registration tests opt in explicitly and inject a capturing sender.
+    if (overrides.CONSOLE_DIGEST_ENABLED === undefined) raw.CONSOLE_DIGEST_ENABLED = 'false';
+    if (overrides.ALERT_WEBHOOK_URL === undefined) raw.ALERT_WEBHOOK_URL = '';
   }
   const env = EnvSchema.parse(raw);
   assertProductionSafe(env);

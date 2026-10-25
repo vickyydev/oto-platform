@@ -59,6 +59,8 @@ import { INBOX_RETENTION_JOB, retentionConfigOf, runInboxRetention } from './inb
 import { closeAbandoned } from './assistant/engine';
 import { runAssistantPurge } from './assistant/views';
 import { runWalletExpiryJob, runWalletLiabilityJob } from './wallet';
+import { overviewForScopeOf } from './console';
+import { createConsoleDigestSender, runConsoleDigest, type DigestSender } from './console-digest';
 
 /** S2-14a round 3 — the wallet day-end jobs, named once (the runner, the tests, the Health page). */
 export const WALLET_EXPIRY_JOB = 'job:wallet.expiry';
@@ -101,6 +103,8 @@ const LOCK_NAMESPACE = 0x070a;
 export const WATCHDOG_JOB = 'job:watchdog';
 /** SCRUM-591 — the internal assistant's ask-log retention (plan §D.3, G4). */
 export const ASSISTANT_PURGE_JOB = 'job:assistant.purge';
+/** SCRUM-637: one exclusive sweep, with durable branch/day delivery receipts. */
+export const CONSOLE_DIGEST_JOB = 'job:console.digest';
 
 /**
  * Timers drift, and a tick arriving a few milliseconds early must not be
@@ -238,7 +242,12 @@ export interface JobDeps {
    * the one `job:inbox.ai` asks. Absent, one is built from the env.
    */
   inboxAi?: InboxAiRuntime;
+  /** Tests inject a capturing sender; the configured destination stays private. */
+  consoleDigestSender?: DigestSender;
 }
+
+const consoleDigestConfigured = (env: Env): boolean =>
+  env.CONSOLE_DIGEST_ENABLED === true && Boolean(env.ALERT_WEBHOOK_URL);
 
 // --- The watchdog -----------------------------------------------------------
 
@@ -360,6 +369,15 @@ export async function runWatchdog(deps: JobDeps): Promise<WatchdogSummary> {
    * Declaring an expectation is how something asks to be alerted on.
    */
   for (const expectation of expectations) {
+    // Conditional registration leaves historical expectations intact. Turning
+    // this digest off is not a missed run or a recovered delivery; its existing
+    // alert history says explicitly why those exact conditions no longer apply.
+    if (expectation.name === CONSOLE_DIGEST_JOB && !consoleDigestConfigured(env)) {
+      const clear = { category: 'ops.disabled', reason: 'digest_disabled', summary: 'The branch digest is disabled or has no destination' };
+      await close(`ops.missing:${CONSOLE_DIGEST_JOB}`, 'ops.missing', CONSOLE_DIGEST_JOB, clear);
+      await close(`ops.failing:${CONSOLE_DIGEST_JOB}`, 'ops.failing', CONSOLE_DIGEST_JOB, clear);
+      continue;
+    }
     if (expectation.mutedUntil && expectation.mutedUntil > now) continue;
     const last = byName.get(expectation.name);
     /**
@@ -479,6 +497,24 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
    * deployment never gets this far: `assertProductionSafe` refuses the boot.
    */
   gatewayFor(deps.env, deps.log);
+
+  const digestSender = consoleDigestConfigured(deps.env)
+    ? deps.consoleDigestSender ?? (deps.env.NODE_ENV === 'test'
+      ? undefined
+      : createConsoleDigestSender(deps.env.ALERT_WEBHOOK_URL))
+    : undefined;
+  const digestJobs: JobDefinition[] = digestSender ? [{
+    name: CONSOLE_DIGEST_JOB,
+    description: 'Posts the shared status summary for each live park after its business-day start; ambiguous delivery is held for review',
+    intervalSeconds: deps.env.ROLLUP_INTERVAL_S,
+    exclusive: true,
+    run: async ({ db, env, now }) => ({ detail: { ...await runConsoleDigest(db, {
+      enabled: env.CONSOLE_DIGEST_ENABLED,
+      now,
+      sender: digestSender,
+      snapshot: (source, scope) => overviewForScopeOf(source, { ...scope, pendingMinutes: env.PAYMENT_PENDING_MIN }),
+    }) } }),
+  }] : [];
 
   return [
     {
@@ -897,6 +933,7 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
       }),
     },
     ...buildOtoAppNightJobs(deps),
+    ...digestJobs,
   ];
 }
 

@@ -256,7 +256,7 @@ describe('SCRUM-637 branch morning digest — real receipts, injected transport 
 describe('SCRUM-637 generic private HTTPS adapter — fake fetch only', () => {
   it('R13: absent/non-HTTPS/userinfo/fragment configuration creates no sender and performs zero requests', () => {
     const fetcher = vi.fn<typeof fetch>();
-    for (const url of [undefined, '', 'http://example.invalid/digest', 'https://user@example.invalid/digest', 'https://example.invalid/digest#fragment']) {
+    for (const url of [undefined, '', 'http://example.invalid/digest', 'https://user@example.invalid/digest', 'https://example.invalid/digest#fragment', 'https://example.invalid/digest#']) {
       expect(createConsoleDigestSender(url, { fetch: fetcher })).toBeUndefined();
     }
     expect(fetcher).not.toHaveBeenCalled();
