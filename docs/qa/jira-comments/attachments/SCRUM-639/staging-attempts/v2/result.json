@@ -1,0 +1,229 @@
+{
+  "ticket": "SCRUM-639",
+  "actualStaging": true,
+  "complete": false,
+  "sourceSha": "78ff5325e3ac1c9cae2ebd3bd92539bba18346ac",
+  "sourceManifestSha256": "4cd99466485605de5be9a9dd29da683fe7a875e75f617d54a42c7afb87d8c4e7",
+  "ciRunId": "40186839556",
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "serviceId": "srv-danh2ljtqb8s73bt9en0",
+      "id": "dep-dbeu9895efls73bcohu0",
+      "finishedAt": "2026-10-25T11:19:10.972953Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "serviceId": "srv-danng2p42hec73f38e3g",
+      "id": "dep-dbeu9895efls73bcoivg",
+      "finishedAt": "2026-10-25T11:15:25.760077Z"
+    }
+  ],
+  "helperSha256": "3f0ea7c66721911a94d38c4cb0e22136500441ca0f9babd23599f61c1643c680",
+  "planSha256": "ed03638f2e2000a2513bba27777eba41904f9be4ef74c5c4ad6c3ae74a5633fe",
+  "initialSourceBinding": {
+    "files": 3772,
+    "sourceManifestSha256": "4cd99466485605de5be9a9dd29da683fe7a875e75f617d54a42c7afb87d8c4e7",
+    "featureTreeSha256": "2bf615dd7622e318313b8532d086633856c1d3b7f79d2315b3c483e6c35e2d50",
+    "runtimeBindingsSha256": "2ec95b6fd6a45d7dedeb4d9742f56d1662a1dd100867763c20ca20ed719bae92"
+  },
+  "routeModuleSha256": "ef4d03bab41a747211aa7e7fb023731af2d879fdee3472575790303a6228129a",
+  "localReleaseSha256": "6dd44dc309ea7db5390893f39895589f2a85080526a0ffcc7d226adc0288257b",
+  "assetManifestSha256": "cf65dd8e120b1b334bfd5806cfdaf74cb29023ef983b77f97c716febda388587",
+  "startedAt": "2026-10-25T11:25:19.641Z",
+  "completedAt": null,
+  "sourceChecks": [
+    {
+      "at": "2026-10-25T11:25:23.149Z",
+      "sourceSha": "78ff5325e3ac1c9cae2ebd3bd92539bba18346ac",
+      "ciRunId": "40186839556",
+      "greenJobs": 6,
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "id": "dep-dbeu9895efls73bcohu0",
+          "finishedAt": "2026-10-25T11:19:10.972953Z"
+        },
+        {
+          "name": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "id": "dep-dbeu9895efls73bcoivg",
+          "finishedAt": "2026-10-25T11:15:25.760077Z"
+        }
+      ],
+      "localSourceBinding": {
+        "files": 3772,
+        "sourceManifestSha256": "4cd99466485605de5be9a9dd29da683fe7a875e75f617d54a42c7afb87d8c4e7",
+        "featureTreeSha256": "2bf615dd7622e318313b8532d086633856c1d3b7f79d2315b3c483e6c35e2d50",
+        "runtimeBindingsSha256": "2ec95b6fd6a45d7dedeb4d9742f56d1662a1dd100867763c20ca20ed719bae92"
+      },
+      "ciMetadataSha256": "ddc147c675f239f87326c861a7b3ba8f47701c0f89ee60e688c88c47cb891e74"
+    },
+    {
+      "at": "2026-10-25T11:25:27.269Z",
+      "sourceSha": "78ff5325e3ac1c9cae2ebd3bd92539bba18346ac",
+      "ciRunId": "40186839556",
+      "greenJobs": 6,
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "id": "dep-dbeu9895efls73bcohu0",
+          "finishedAt": "2026-10-25T11:19:10.972953Z"
+        },
+        {
+          "name": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "id": "dep-dbeu9895efls73bcoivg",
+          "finishedAt": "2026-10-25T11:15:25.760077Z"
+        }
+      ],
+      "localSourceBinding": {
+        "files": 3772,
+        "sourceManifestSha256": "4cd99466485605de5be9a9dd29da683fe7a875e75f617d54a42c7afb87d8c4e7",
+        "featureTreeSha256": "2bf615dd7622e318313b8532d086633856c1d3b7f79d2315b3c483e6c35e2d50",
+        "runtimeBindingsSha256": "2ec95b6fd6a45d7dedeb4d9742f56d1662a1dd100867763c20ca20ed719bae92"
+      },
+      "ciMetadataSha256": "ddc147c675f239f87326c861a7b3ba8f47701c0f89ee60e688c88c47cb891e74"
+    },
+    {
+      "at": "2026-10-25T11:25:32.628Z",
+      "sourceSha": "78ff5325e3ac1c9cae2ebd3bd92539bba18346ac",
+      "ciRunId": "40186839556",
+      "greenJobs": 6,
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "id": "dep-dbeu9895efls73bcohu0",
+          "finishedAt": "2026-10-25T11:19:10.972953Z"
+        },
+        {
+          "name": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "id": "dep-dbeu9895efls73bcoivg",
+          "finishedAt": "2026-10-25T11:15:25.760077Z"
+        }
+      ],
+      "localSourceBinding": {
+        "files": 3772,
+        "sourceManifestSha256": "4cd99466485605de5be9a9dd29da683fe7a875e75f617d54a42c7afb87d8c4e7",
+        "featureTreeSha256": "2bf615dd7622e318313b8532d086633856c1d3b7f79d2315b3c483e6c35e2d50",
+        "runtimeBindingsSha256": "2ec95b6fd6a45d7dedeb4d9742f56d1662a1dd100867763c20ca20ed719bae92"
+      },
+      "ciMetadataSha256": "ddc147c675f239f87326c861a7b3ba8f47701c0f89ee60e688c88c47cb891e74"
+    }
+  ],
+  "operations": [
+    {
+      "sequence": 1,
+      "actor": "ADMIN",
+      "method": "POST",
+      "path": "/api/auth/sign-in",
+      "queryKeys": [],
+      "cleanup": false,
+      "intentAt": "2026-10-25T11:25:27.273Z",
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-25T11:25:27.858Z"
+    },
+    {
+      "sequence": 2,
+      "actor": "ADMIN",
+      "method": "GET",
+      "path": "/api/me",
+      "queryKeys": [],
+      "cleanup": false,
+      "intentAt": "2026-10-25T11:25:27.860Z",
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-25T11:25:28.356Z"
+    },
+    {
+      "sequence": 3,
+      "actor": "ADMIN",
+      "method": "GET",
+      "path": "/api/me/permissions",
+      "queryKeys": [],
+      "cleanup": false,
+      "intentAt": "2026-10-25T11:25:28.358Z",
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-25T11:25:28.876Z"
+    },
+    {
+      "sequence": 4,
+      "actor": "ADMIN",
+      "method": "GET",
+      "path": "/api/operators",
+      "queryKeys": [],
+      "cleanup": false,
+      "intentAt": "2026-10-25T11:25:28.889Z",
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-25T11:25:29.397Z"
+    }
+  ],
+  "reads": [
+    {
+      "actor": "ADMIN",
+      "path": "/api/operators",
+      "status": 200,
+      "responseSha256": "d78984729c3c39c1b27ff9be0b6d9268885ddf42da72949ac8672c065da45d9b",
+      "observedAt": "2026-10-25T11:25:29.397Z",
+      "responseAt": "Sun, 25 Oct 2026 11:25:29 GMT",
+      "operatorRows": 2
+    },
+    {
+      "actor": "ADMIN",
+      "path": "/api/operators",
+      "status": 200,
+      "responseSha256": "d78984729c3c39c1b27ff9be0b6d9268885ddf42da72949ac8672c065da45d9b",
+      "observedAt": "2026-10-25T11:25:36.712Z",
+      "responseAt": "Sun, 25 Oct 2026 11:25:37 GMT",
+      "operatorRows": 2
+    },
+    {
+      "actor": "ADMIN",
+      "path": "/api/operators",
+      "status": 200,
+      "responseSha256": "d78984729c3c39c1b27ff9be0b6d9268885ddf42da72949ac8672c065da45d9b",
+      "observedAt": "2026-10-25T11:25:38.728Z",
+      "responseAt": "Sun, 25 Oct 2026 11:25:39 GMT",
+      "operatorRows": 2
+    }
+  ],
+  "authority": [
+    {
+      "actor": "ADMIN",
+      "beforeSha256": "115d14bb29b5fc6fd3a1fa8551f40057b31ceee81f341ee07677b664a75b7cc5",
+      "afterSha256": null
+    }
+  ],
+  "authCleanup": [],
+  "screenshots": [],
+  "network": {
+    "blocked": 0,
+    "failed": 0,
+    "pageErrors": 0,
+    "consoleErrors": 0,
+    "fontSuppressions": 3
+  },
+  "diagnostics": [],
+  "pending": 0,
+  "nativePending": 3,
+  "unresolvedAuth": 0,
+  "journalHealthy": true,
+  "businessWrites": 0,
+  "fixturesCreated": 0,
+  "platformLinks": true,
+  "oldOperatorsAddress": false,
+  "errorCode": null,
+  "limitations": [
+    "Read-only Platform pages/metadata; no operator, role, job, control, provider, message, grant or settings action.",
+    "Three new platform and two existing schemas are collected from actual routes; legacy controls have strict structural postconditions.",
+    "Operators passive demo-reset availability is allowed; its phrase/payload is not retained and no reset is dispatched.",
+    "External font suppression and identity/error masks are deliberate. Official assets are collected independently of a local build."
+  ]
+}

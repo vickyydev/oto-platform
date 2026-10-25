@@ -1,0 +1,21 @@
+{
+  "ticket": "SCRUM-639",
+  "recordedAt": "2026-10-25T11:32:58.205Z",
+  "jobId": "job-dbeuhcnavr4c73c6f0b0",
+  "jobStatus": "succeeded",
+  "sourceSha": "78ff5325e3ac1c9cae2ebd3bd92539bba18346ac",
+  "kind": "SCRUM639_RECOVERY",
+  "mode": "census",
+  "count": 1,
+  "session": {
+    "id": "01a172ce-f4ba-728b-96f2-e1162b89d794",
+    "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+    "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+    "createdAt": "2026-10-25T11:25:28.122Z",
+    "expiresAt": "2026-10-25T23:25:28.122Z",
+    "revokedAt": null,
+    "revokedReason": null,
+    "signInAuditId": "01a172ce-f4bc-7303-ae8f-7af837c052de"
+  },
+  "mutations": 0
+}

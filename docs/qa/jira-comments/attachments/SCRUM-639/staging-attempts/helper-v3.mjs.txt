@@ -1,0 +1,509 @@
+// HELD. Import is inert. Only an internally reviewed concrete plan and --execute may start this proof.
+import fs from 'node:fs';
+import path from 'node:path';
+import { createHash } from 'node:crypto';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+
+export const WORKTREE = 'C:/w/admin-platform';
+const PRIVATE_ROOT = 'C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos';
+export const ORIGIN = 'https://oto-console-staging.onrender.com';
+export const DEMOS = Object.freeze({ operatorId: '01a0bbdc-8c41-7204-bd58-2b92bd7dda75',
+  ADMIN: '01a0bbdc-8c64-7283-aa3b-2af7e79c525d', MANAGER: '01a0c9ae-5377-7b34-a9ab-22bf8086f5f7',
+  RECEPTION: '01a0bbdc-8c87-74ca-81c1-61489e34f834' });
+const ACTORS = ['ADMIN', 'RECEPTION'];
+const SERVICES = ['oto-api-staging', 'oto-console-staging'];
+const ROUTE = 'apps/api/src/routes/platform.ts';
+const RELEASE = 'docs/qa/jira-comments/attachments/SCRUM-639/local-release.json';
+export const PAGES = Object.freeze([
+  { key: 'operators', path: '/platform/operators', read: '/api/operators', title: 'Operators' },
+  { key: 'roles', path: '/platform/system-roles', read: '/api/roles', title: 'System roles' },
+  { key: 'alerts', path: '/platform/alerts', read: '/api/platform/alerts', title: 'Platform alerts' },
+  { key: 'jobs', path: '/platform/jobs', read: '/api/platform/jobs', title: 'Platform jobs' },
+  { key: 'environment', path: '/platform/environment', read: '/api/platform/environment', title: 'Environment', phone: true },
+  { key: 'controls', path: '/platform/test-controls', read: '/api/ops/test-controls', title: 'Test controls' },
+]);
+const DOCUMENTS = ['/platform', '/organisation/operators', ...PAGES.map(p => p.path)];
+const PNGS = ['SCRUM-639-01-operators.png', 'SCRUM-639-02-system-roles.png', 'SCRUM-639-03-platform-alerts.png',
+  'SCRUM-639-04-platform-jobs.png', 'SCRUM-639-05-environment-phone.png', 'SCRUM-639-06-test-controls.png', 'SCRUM-639-07-platform-restricted.png'];
+const FONT = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap';
+const MAX_BODY = 2_000_000, TIMEOUT = 30_000;
+const now = () => new Date().toISOString();
+const hash = value => createHash('sha256').update(value).digest('hex');
+const canonical = value => JSON.stringify(value, (_key, item) => item && typeof item === 'object' && !Array.isArray(item)
+  ? Object.fromEntries(Object.entries(item).sort(([a], [b]) => a.localeCompare(b))) : item);
+export const digest = value => hash(canonical(value));
+const same = (a, b) => digest(a) === digest(b);
+const exact = (v, keys) => !!v && typeof v === 'object' && !Array.isArray(v) && same(Object.keys(v).sort(), [...keys].sort());
+const hex = v => typeof v === 'string' && /^[a-f0-9]{64}$/.test(v);
+const iso = v => typeof v === 'string' && Number.isFinite(Date.parse(v));
+class ProofError extends Error { constructor(code) { super(code); this.code = code; } }
+const need = (condition, code) => { if (!condition) throw new ProofError(code); };
+const codeOf = error => error instanceof ProofError ? error.code : 'UNCLASSIFIED_PROOF_ERROR';
+
+export function publicPath(p) {
+  return typeof p === 'string' && !/[\\%?#\x00-\x20]/.test(p) && !p.split('/').includes('..')
+    && (['/', '/favicon.svg'].includes(p) || /^\/assets\/[A-Za-z0-9_.-]{1,180}\.(?:js|css|svg|png|webp|woff2?)$/.test(p));
+}
+export function validatePlan(plan) {
+  need(exact(plan, ['approved', 'ticket', 'sourceSha', 'sourceManifestSha256', 'ciRunId', 'deployments', 'helperSha256',
+    'routeModuleSha256', 'localReleaseSha256', 'runtimeBindingsSha256', 'actors', 'assets', 'assetManifestSha256', 'outputDirectory']), 'EXACT_REVIEWED_PLAN_REQUIRED');
+  need(plan.approved === true && plan.ticket === 'SCRUM-639' && /^[a-f0-9]{40}$/.test(plan.sourceSha ?? '')
+    && plan.sourceSha !== '0'.repeat(40) && /^\d+$/.test(String(plan.ciRunId)), 'REVIEWED_EXACT_FEATURE_REQUIRED');
+  need([plan.sourceManifestSha256, plan.helperSha256, plan.routeModuleSha256, plan.localReleaseSha256, plan.runtimeBindingsSha256, plan.assetManifestSha256].every(hex), 'EXACT_BINDING_HASHES_REQUIRED');
+  need(Array.isArray(plan.deployments) && plan.deployments.length === 2 && plan.deployments.every((d, i) =>
+    exact(d, ['name', 'serviceId', 'id', 'finishedAt']) && d.name === SERVICES[i] && /^srv-[A-Za-z0-9]+$/.test(d.serviceId ?? '')
+    && /^dep-[A-Za-z0-9]+$/.test(d.id ?? '') && iso(d.finishedAt)), 'EXACT_API_CONSOLE_DEPLOYMENTS_REQUIRED');
+  need(exact(plan.actors, ACTORS) && ACTORS.every(actor => exact(plan.actors[actor], ['accountId', 'operatorId'])
+    && plan.actors[actor].accountId === DEMOS[actor] && plan.actors[actor].operatorId === DEMOS.operatorId), 'TWO_EXACT_EXISTING_DEMOS_REQUIRED');
+  need(Array.isArray(plan.assets) && plan.assets.length > 1 && plan.assets.length <= 100 && plan.assets.some(a => a.path === '/')
+    && new Set(plan.assets.map(a => a.path)).size === plan.assets.length && plan.assets.every(a => exact(a, ['path', 'sha256', 'contentType'])
+      && publicPath(a.path) && hex(a.sha256) && /^(?:text\/html|text\/css|(?:application|text)\/javascript|image\/(?:svg\+xml|png|webp)|font\/(?:woff|woff2))$/.test(a.contentType)), 'REVIEWED_EXACT_PUBLIC_CLOSURE_REQUIRED');
+  need(digest(plan.assets) === plan.assetManifestSha256, 'ASSET_MANIFEST_HASH_REQUIRED');
+  need(/^C:\/w\/admin639-staging-[A-Za-z0-9_-]{1,70}$/.test(plan.outputDirectory ?? ''), 'EXCLUSIVE_FRESH_ATTEMPT_REQUIRED');
+  return plan;
+}
+
+/** No business mutation; the availability read is Operators' native bootstrap only. */
+export function requestAllowed({ url, method, body, auth = false, health = false, assetPaths = [], document = false, documentPath = '' }) {
+  let u; try { u = new URL(url); } catch { return false; }
+  if (u.origin !== ORIGIN || u.username || u.password || u.hash || u.href !== url || u.href !== u.origin + u.pathname + u.search
+    || u.href.includes('%2f') || u.href.includes('%5c')) return false;
+  const p = u.pathname, q = u.searchParams;
+  if (method === 'POST') return auth && !u.search && (p === '/api/auth/sign-in'
+    ? exact(body, ['phone', 'password']) && ['phone', 'password'].every(k => typeof body[k] === 'string' && body[k].length > 0 && body[k].length < 200)
+    : p === '/api/auth/sign-out' && body === undefined);
+  if (method !== 'GET' || body !== undefined) return false;
+  if (['/api/me', '/api/me/permissions', '/api/ready', '/api/operators', '/api/roles', '/api/ops/test-controls',
+    '/api/platform/jobs', '/api/platform/environment'].includes(p)) return !u.search;
+  if (p === '/api/platform/alerts') return !u.search || q.size === 3 && ['state', 'limit', 'offset'].every(k => q.getAll(k).length === 1)
+    && q.get('state') === 'open' && q.get('limit') === '50' && q.get('offset') === '0';
+  if (p === '/api/ops/demo-reset') return !u.search && ['/platform/operators', '/organisation/operators'].includes(documentPath);
+  if (p === '/api/ops/health') return health && !u.search;
+  if (p === '/api/ops/failures') return health && q.size === 2 && q.getAll('windowHours').length === 1 && q.get('windowHours') === '24' && q.getAll('limit').length === 1 && q.get('limit') === '50';
+  return !u.search && ((DOCUMENTS.includes(p) && document) || publicPath(p) && assetPaths.includes(p));
+}
+
+export function releaseFacts(plan, ci, services, latest) {
+  need(ci.headSha === plan.sourceSha && ci.status === 'completed' && ci.conclusion === 'success' && ci.jobs?.length === 6
+    && new Set(ci.jobs.map(j => j.name)).size === 6 && ci.jobs.every(j => j.status === 'completed' && j.conclusion === 'success'), 'SIX_EXACT_GREEN_JOBS_REQUIRED');
+  for (const dep of plan.deployments) {
+    const matches = services.map(s => s.service ?? s).filter(s => s.name === dep.name), live = latest[dep.serviceId]?.[0]?.deploy;
+    need(matches.length === 1 && matches[0].id === dep.serviceId, 'EXACT_RENDER_SERVICE_REQUIRED');
+    need(live?.id === dep.id && live.status === 'live' && live.commit?.id === plan.sourceSha && live.finishedAt === dep.finishedAt, 'LATEST_EXACT_LIVE_DEPLOYMENT_REQUIRED');
+  }
+  return true;
+}
+export function platformAllowed(permissions) { return permissions.some(p => p.scopeType === 'operator' && p.scopeId === null); }
+const ownPermission = (permissions, permission) => permissions.some(p => p.permission === permission && p.scopeType === 'operator'
+  && (p.scopeId === null || p.scopeId === DEMOS.operatorId));
+export const ENV_NAMES = Object.freeze(['DATABASE_URL', 'ALLOWED_ORIGINS', 'SMS_ADAPTER', 'TWILIO_ACCOUNT_SID', 'TWILIO_API_KEY_SID',
+  'TWILIO_API_KEY_SECRET', 'TWILIO_AUTH_TOKEN', 'TWILIO_FROM', 'MINIO_ENDPOINT', 'MINIO_PORT', 'MINIO_USE_SSL', 'MINIO_ACCESS_KEY',
+  'MINIO_SECRET_KEY', 'MINIO_BUCKET', 'MINIO_REGION', 'HANDOFF_SIGNING_KEY', 'HANDOFF_APP_ORIGINS', 'ALERT_CHANNELS', 'SENTRY_DSN']);
+/** Actual released schema is parsed first. Only safe counts/states/times leave RAM. */
+export function validatePlatform(pathname, body, { responseAt, observedAt, after }) {
+  const date = Date.parse(responseAt), observed = Date.parse(observedAt);
+  need(iso(responseAt) && iso(observedAt) && date > Date.parse(after) && observed > Date.parse(after)
+    && date >= observed - 5_000 && date <= observed + 5_000, 'FRESH_POSTDEPLOY_READ_REQUIRED');
+  const result = { observedAt, responseAt };
+  if (pathname.startsWith('/api/platform/')) {
+    const generated = Date.parse(body.generatedAt);
+    need(iso(body.generatedAt) && generated > Date.parse(after) && generated >= observed - 30_000 && generated <= observed + 5_000, 'FRESH_GENERATED_PLATFORM_READ_REQUIRED');
+    result.generatedAt = body.generatedAt;
+  }
+  if (pathname === '/api/platform/alerts') {
+    need(body.limit === 50 && body.offset === 0 && body.total >= body.alerts.length && body.alerts.length <= body.limit
+      && body.alerts.every(a => a.resolvedAt === null), 'EXACT_OPEN_ALERT_PAGE_REQUIRED');
+    return { ...result, total: body.total, pageRows: body.alerts.length, limit: body.limit, offset: body.offset,
+      acknowledgedRows: body.alerts.filter(a => a.acknowledgedAt !== null).length };
+  }
+  if (pathname === '/api/platform/jobs') return { ...result, jobRows: body.jobs.length,
+    states: Object.fromEntries(['ok', 'warn', 'down', 'unknown'].map(state => [state, body.jobs.filter(j => j.status === state).length])),
+    refusedRows: body.jobs.filter(j => j.lastOutcome === 'refused').length, waitingRows: body.jobs.filter(j => j.waitingOn.length > 0).length };
+  if (pathname === '/api/platform/environment') {
+    need(body.variables.length === ENV_NAMES.length && same(body.variables.map(v => v.name).sort(), [...ENV_NAMES].sort()), 'NATIVE_NINETEEN_NAME_CATALOGUE_REQUIRED');
+    return { ...result, variableRows: body.variables.length, configuredRows: body.variables.filter(v => v.present).length,
+      missingRequiredRows: body.variables.filter(v => v.required && !v.present).length };
+  }
+  if (pathname === '/api/roles') return { ...result, systemRoles: body.roles.filter(r => r.system === true).length, operatorRolesExcluded: body.roles.filter(r => r.system === false).length };
+  if (pathname === '/api/operators') { need(body.operators.some(o => o.id === DEMOS.operatorId), 'EXACT_HOME_OPERATOR_PRESENT_REQUIRED'); return { ...result, operatorRows: body.operators.length }; }
+  if (pathname === '/api/ops/test-controls') {
+    need(exact(body, ['available', 'controls']) && typeof body.available === 'boolean' && Array.isArray(body.controls)
+      && (body.available || body.controls.length === 0) && body.controls.every(c => c && ['key', 'label', 'description', 'sticky'].every(k =>
+        k === 'sticky' ? c[k] === undefined || typeof c[k] === 'boolean' : typeof c[k] === 'string')
+        && Object.keys(c).every(k => ['key', 'label', 'description', 'sticky'].includes(k))), 'NATIVE_CONTROL_OFFER_SHAPE_REQUIRED');
+    return { ...result, available: body.available, controlRows: body.controls.length };
+  }
+  throw new ProofError('UNDECLARED_PLATFORM_RESPONSE');
+}
+
+const runtimeFiles = ['node_modules/.pnpm/lock.yaml', 'node_modules/.modules.yaml', 'apps/api/node_modules/tsx/package.json',
+  'apps/api/node_modules/tsx/dist/cli.mjs', 'apps/api/node_modules/tsx/dist/loader.mjs', 'apps/api/node_modules/tsx/dist/preflight.cjs',
+  'apps/api/node_modules/tsx/dist/esm/api/index.mjs', 'apps/api/node_modules/zod/package.json', 'apps/api/node_modules/zod/index.cjs', 'apps/api/node_modules/zod/index.js'];
+export function runtimeBindingsOf(root = WORKTREE, io = fs, nodeVersion = process.version) {
+  return { nodeVersion, files: runtimeFiles.map(p => ({ path: p, sha256: hash(io.readFileSync(path.join(root, p))) })) };
+}
+export const runtimeBindingsSha256Of = (root = WORKTREE, io = fs, nodeVersion = process.version) => digest(runtimeBindingsOf(root, io, nodeVersion));
+export function verifyLocalSource(plan, { io = fs, git, root = WORKTREE, nodeVersion = process.version } = {}) {
+  const selected = p => !/(?:^|\/)(?:node_modules|dist|\.git|\.env)(?:\/|\.|$)/.test(p) && !/^(?:docs|imports|services)\//.test(p)
+    && (/^(?:apps|packages|scripts)\//.test(p) || /^\.github\/workflows\//.test(p)
+      || /^(?:package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|turbo\.json|eslint\.config\.mjs|tsconfig[^/]*\.json|render\.yaml|\.npmrc|\.pnpmfile\.cjs)$/.test(p));
+  const paths = git(['ls-files', '--cached', '--others', '--exclude-standard', '-z']).split('\0').filter(Boolean).filter(selected).sort();
+  const tree = git(['ls-tree', '-r', '-z', '--full-tree', plan.sourceSha]).split('\0').filter(Boolean).map(line => {
+    const m = /^(\d{6}) (blob|commit) ([a-f0-9]{40})\t(.+)$/.exec(line); need(m, 'FEATURE_TREE_ENTRY_REQUIRED');
+    return { mode: m[1], type: m[2], blobId: m[3], path: m[4] };
+  }).filter(r => selected(r.path)).sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0);
+  need(same(paths, tree.map(r => r.path)), 'FEATURE_SOURCE_PATHS_DIFFER');
+  const rows = paths.map((p, i) => {
+    need(/^[A-Za-z0-9_./-]+$/.test(p) && !p.split('/').includes('..') && tree[i].type === 'blob' && ['100644', '100755'].includes(tree[i].mode)
+      && io.lstatSync(path.join(root, p)).isFile(), 'REGULAR_SOURCE_REQUIRED');
+    const b = Buffer.from(io.readFileSync(path.join(root, p)));
+    need(createHash('sha1').update(Buffer.from(`blob ${b.length}\0`)).update(b).digest('hex') === tree[i].blobId, 'FEATURE_SOURCE_BLOB_DIFFERS');
+    return { path: p, sha256: hash(b) };
+  });
+  need(hash(JSON.stringify(rows)) === plan.sourceManifestSha256, 'FULL_SOURCE_MANIFEST_DIFFERS');
+  need(git(['diff', '--name-only', '-z', '--no-ext-diff', '--no-textconv', plan.sourceSha, '--', 'apps/', 'packages/', 'scripts/', '.github/workflows/',
+    'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'turbo.json', 'eslint.config.mjs', ':(glob)tsconfig*.json', 'render.yaml', '.npmrc', '.pnpmfile.cjs'])
+    .split('\0').filter(Boolean).filter(selected).length === 0, 'CURRENT_FEATURE_RUNTIME_DIFFERS');
+  const normalized = b => b.toString().replaceAll('\r\n', '\n').trim();
+  need(normalized(io.readFileSync(path.join(root, 'pnpm-lock.yaml'))) === normalized(io.readFileSync(path.join(root, 'node_modules/.pnpm/lock.yaml'))), 'INSTALLED_LOCK_DIFFERS');
+  need(runtimeBindingsSha256Of(root, io, nodeVersion) === plan.runtimeBindingsSha256, 'INSTALLED_RUNTIME_BINDING_DIFFERS');
+  for (const [p, expected] of [[ROUTE, plan.routeModuleSha256], [RELEASE, plan.localReleaseSha256]])
+    need(hash(io.readFileSync(path.join(root, p))) === expected && hash(git(['show', `${plan.sourceSha}:${p}`])) === expected, 'COMMITTED_ROUTE_RELEASE_REQUIRED');
+  const local = JSON.parse(io.readFileSync(path.join(root, RELEASE)));
+  need(local.ticket === 'SCRUM-639' && local.localReleaseGreen === true && local.sourceManifestSha256 === plan.sourceManifestSha256, 'GREEN_LOCAL_RELEASE_REQUIRED');
+  return { files: rows.length, sourceManifestSha256: plan.sourceManifestSha256, featureTreeSha256: digest(tree), runtimeBindingsSha256: plan.runtimeBindingsSha256 };
+}
+
+/** Always probe the original cookie independently, even after a logout timeout. No uncertainty is cleared here. */
+export async function closeSession(context, request, record) {
+  const original = context.originalCookie || context.cookie, row = { actor: context.actor, signOutStatus: null, meStatus: null,
+    noOriginalCookie: typeof original !== 'string' || original.length === 0, confirmed: false };
+  context.originalCookie = original; context.cookie = original;
+  let logout = false;
+  try { const r = await request(context, 'POST', '/api/auth/sign-out', { cleanup: true }); row.signOutStatus = r.status; logout = r.status === 200 && r.body?.ok === true; }
+  catch (e) { row.errorCode = codeOf(e); }
+  try { context.cookie = original; const r = await request(context, 'GET', '/api/me', { cleanup: true }); row.meStatus = r.status; }
+  catch (e) { row.errorCode ??= codeOf(e); }
+  finally { context.cookie = ''; row.confirmed = !row.noOriginalCookie && logout && row.meStatus === 401 && !row.errorCode; context.closed = row.confirmed;
+    if (row.confirmed) context.originalCookie = ''; record(row); }
+  return row.confirmed;
+}
+async function boundedJson(response) {
+  need(response.body && Number(response.headers.get('content-length') ?? 0) <= MAX_BODY, 'JSON_BODY_LIMIT');
+  const reader = response.body.getReader(), chunks = []; let size = 0;
+  try { for (;;) { const r = await reader.read(); if (r.done) break; size += r.value.byteLength;
+    need(size <= MAX_BODY, 'JSON_BODY_LIMIT'); chunks.push(Buffer.from(r.value)); }
+    try { return JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch { throw new ProofError('JSON_BODY_REQUIRED'); }
+  } finally { await reader.cancel().catch(() => {}); reader.releaseLock(); }
+}
+
+/** Local preflight seam, no auth. The live caller first verifies the full source/runtime binding. */
+export async function loadReleasedPlatformSchemas() {
+  const { tsImport } = await import(pathToFileURL(path.join(WORKTREE, 'apps/api/node_modules/tsx/dist/esm/api/index.mjs')).href);
+  const schemas = {};
+  for (const [file, entry, prefix, wanted] of [
+    [ROUTE, 'platformRoutes', '', ['/platform/alerts', '/platform/jobs', '/platform/environment']],
+    ['apps/api/src/routes/roles.ts', 'roleRoutes', '/roles', ['/roles']],
+    ['apps/api/src/routes/operators.ts', 'operatorRoutes', '/operators', ['/operators']],
+  ]) {
+    const routes = await tsImport(pathToFileURL(path.join(WORKTREE, file)).href,
+      { parentURL: import.meta.url, tsconfig: path.join(WORKTREE, 'apps/api/tsconfig.json') });
+    need(typeof routes[entry] === 'function', 'RELEASED_PLATFORM_ROUTES_REQUIRED');
+    const app = { get(p, options) { const key = prefix + (p === '/' ? '' : p); if (wanted.includes(key)) {
+      need(!schemas['/api' + key] && typeof options.schema?.response?.[200]?.parse === 'function', 'RELEASED_READ_SCHEMA_REQUIRED'); schemas['/api' + key] = options.schema.response[200];
+    } }, post() {}, put() {}, patch() {}, delete() {} };
+    await routes[entry](app); need(wanted.every(p => schemas['/api' + p]), 'EXACT_PLATFORM_SCHEMA_SET_REQUIRED');
+  }
+  return schemas;
+}
+
+export async function executeReviewedPlan(input, { explicitExecute = false } = {}) {
+  need(explicitExecute === true, 'EXPLICIT_EXECUTE_REQUIRED');
+  const plan = validatePlan(input), helperSha256 = hash(fs.readFileSync(fileURLToPath(import.meta.url)));
+  need(plan.helperSha256 === helperSha256 && !fs.existsSync(plan.outputDirectory), 'FROZEN_HELPER_FRESH_DIRECTORY_REQUIRED');
+  const command = (exe, args, cwd) => { const r = spawnSync(exe, args, { cwd, encoding: 'utf8', timeout: TIMEOUT, maxBuffer: 3_000_000, stdio: ['ignore', 'pipe', 'pipe'] });
+    need(r.status === 0 && !r.signal, 'BOUNDED_METADATA_COMMAND_FAILED'); return r.stdout; };
+  const local = () => { const binding = verifyLocalSource(plan, { git: args => command('git', args, WORKTREE) });
+    for (const p of ['scripts/agent/env.mjs', 'scripts/agent/evidence.mjs']) need(hash(fs.readFileSync(path.join(PRIVATE_ROOT, p)))
+      === hash(fs.readFileSync(path.join(WORKTREE, p))), 'BOUND_PRIVATE_ROOT_SUPPORT_REQUIRED'); return binding; };
+  const initialSourceBinding = local(); // No env, credential, application or browser import before current full-source validation.
+  const Schemas = await loadReleasedPlatformSchemas();
+  const { need: secret } = await import(pathToFileURL(path.join(PRIVATE_ROOT, 'scripts/agent/env.mjs')).href);
+  fs.mkdirSync(plan.outputDirectory);
+  const resultFile = path.join(plan.outputDirectory, 'result.json'), journal = path.join(plan.outputDirectory, 'intents.jsonl');
+  const receipt = { ticket: 'SCRUM-639', actualStaging: true, complete: false, sourceSha: plan.sourceSha, sourceManifestSha256: plan.sourceManifestSha256,
+    ciRunId: String(plan.ciRunId), deployments: plan.deployments, helperSha256, planSha256: digest(plan), initialSourceBinding,
+    routeModuleSha256: plan.routeModuleSha256, localReleaseSha256: plan.localReleaseSha256, assetManifestSha256: plan.assetManifestSha256,
+    startedAt: now(), completedAt: null, sourceChecks: [], operations: [], reads: [], authority: [], authCleanup: [], screenshots: [],
+    network: { blocked: 0, failed: 0, pageErrors: 0, consoleErrors: 0, fontSuppressions: 0 }, diagnostics: [],
+    pending: 0, nativePending: 0, unresolvedAuth: 0, journalHealthy: true, businessWrites: 0, fixturesCreated: 0, platformLinks: false, oldOperatorsAddress: false, errorCode: null,
+    limitations: ['Read-only Platform pages/metadata; no operator, role, job, control, provider, message, grant or settings action.',
+      'Three new platform and two existing schemas are collected from actual routes; legacy controls have strict structural postconditions.',
+      'Operators passive demo-reset availability is allowed; its phrase/payload is not retained and no reset is dispatched.',
+      'External font suppression and identity/error masks are deliberate. Official assets are collected independently of a local build.'] };
+  const save = () => { try { fs.writeFileSync(resultFile, JSON.stringify(receipt, null, 2) + '\n', { flush: true }); }
+    catch { receipt.journalHealthy = false; throw new ProofError('RECEIPT_WRITE_FAILED'); } };
+  fs.writeFileSync(journal, '', { flag: 'wx', flush: true }); save();
+  const persist = row => { let fd; try { fd = fs.openSync(journal, 'a'); fs.writeSync(fd, JSON.stringify(row) + '\n'); fs.fsyncSync(fd); }
+    catch { receipt.journalHealthy = false; throw new ProofError('DURABLE_INTENT_REQUIRED'); } finally { if (fd !== undefined) fs.closeSync(fd); } };
+  const safe = () => need(receipt.journalHealthy && receipt.pending === 0 && receipt.nativePending === 0 && receipt.unresolvedAuth === 0 && Object.entries(receipt.network).every(([k, n]) => k === 'fontSuppressions' || n === 0), 'UNSETTLED_PROOF_REFUSED');
+  const lastDeploy = new Date(Math.max(...plan.deployments.map(d => Date.parse(d.finishedAt)))).toISOString();
+  async function sourceGate() {
+    for (const c of sessions) await c.drainNative?.();
+    const binding = local(), ci = JSON.parse(command('gh', ['run', 'view', String(plan.ciRunId), '--repo', 'vickyydev/oto-platform', '--json', 'headSha,status,conclusion,jobs']));
+    const get = async suffix => { const r = await fetch('https://api.render.com/v1' + suffix, { redirect: 'manual', signal: AbortSignal.timeout(TIMEOUT),
+      headers: { authorization: `Bearer ${secret('RENDER_API_KEY')}`, accept: 'application/json' } }); need(r.status === 200, 'RENDER_READ_FAILED'); return boundedJson(r); };
+    const services = await get('/services?limit=50'), latest = {};
+    need(Array.isArray(services), 'RENDER_SERVICES_REQUIRED');
+    for (const d of plan.deployments) latest[d.serviceId] = await get(`/services/${d.serviceId}/deploys?limit=1`);
+    releaseFacts(plan, ci, services, latest);
+    receipt.sourceChecks.push({ at: now(), sourceSha: plan.sourceSha, ciRunId: String(plan.ciRunId), greenJobs: 6, deployments: plan.deployments,
+      localSourceBinding: binding, ciMetadataSha256: digest(ci) }); save();
+  }
+  const sessions = []; let browser, failed = false;
+  async function request(c, method, pathname, { query = '', body, cleanup = false } = {}) {
+    need(requestAllowed({ url: ORIGIN + pathname + (query ? '?' + query : ''), method, body, auth: true }), 'REQUEST_GRAMMAR_REFUSED');
+    need(!cleanup || pathname === '/api/auth/sign-out' && method === 'POST' || pathname === '/api/me' && method === 'GET', 'CLEANUP_GRAMMAR_REFUSED');
+    if (!cleanup) safe();
+    const row = { sequence: receipt.operations.length + 1, actor: c.actor, method, path: pathname, queryKeys: [...new URLSearchParams(query).keys()],
+      cleanup, intentAt: now(), terminal: false, status: null }; receipt.operations.push(row);
+    try { persist(row); save(); } catch (e) { if (!cleanup) throw e; }
+    const auth = method === 'POST'; if (pathname === '/api/auth/sign-in') c.attempted = true;
+    receipt.pending++; if (auth) receipt.unresolvedAuth++;
+    try {
+      const r = await fetch(ORIGIN + pathname + (query ? '?' + query : ''), { method, redirect: 'manual', signal: AbortSignal.timeout(TIMEOUT),
+        headers: { accept: 'application/json', ...(c.cookie ? { cookie: c.cookie } : {}), ...(body === undefined ? {} : { 'content-type': 'application/json' }) },
+        body: body === undefined ? undefined : JSON.stringify(body) });
+      for (const s of r.headers.getSetCookie()) { const m = /^oto_session=([^;]*)/.exec(s); if (m) c.cookie = m[1] ? `oto_session=${m[1]}` : ''; }
+      row.status = r.status; const json = await boundedJson(r); row.terminal = true; row.completedAt = now(); if (auth) receipt.unresolvedAuth--;
+      return { status: r.status, body: json, responseAt: r.headers.get('date'), observedAt: now() };
+    } catch (e) { row.errorCode = codeOf(e); throw e; }
+    finally { receipt.pending--; try { persist(row); save(); } catch (e) { if (!cleanup) throw e; } }
+  }
+  async function census(c) {
+    const m = await request(c, 'GET', '/api/me'), p = await request(c, 'GET', '/api/me/permissions'), me = m.body, permissions = p.body?.permissions;
+    need(m.status === 200 && p.status === 200 && me?.account?.id === DEMOS[c.actor] && me.account.operatorId === DEMOS.operatorId
+      && me.account.status === 'active' && me.account.mustChangePassword === false && me.sessionLocked === false && Array.isArray(permissions), 'EXACT_ACTIVE_DEMO_REQUIRED');
+    const platform = platformAllowed(permissions);
+    need(typeof me.isPlatformAdmin === 'boolean' && me.isPlatformAdmin === platform, 'FRESH_PLATFORM_IDENTITY_AND_ASSIGNMENT_REQUIRED');
+    if (c.actor === 'ADMIN') need(platform && ['app:console:access', 'admin:health:read', 'admin:operator:read', 'admin:role:read', 'admin:ops:manage']
+      .every(permission => ownPermission(permissions, permission)), 'ADMIN_FRESH_PLATFORM_READ_GRANTS_REQUIRED');
+    else need(!platform, 'REFUSAL_DEMO_MUST_REMAIN_NON_PLATFORM');
+    return { hash: digest({ account: { id: me.account.id, operatorId: me.account.operatorId, status: me.account.status, mustChangePassword: me.account.mustChangePassword },
+      branchId: me.branch?.id ?? null, preferences: me.preferences, sessionLocked: me.sessionLocked, isPlatformAdmin: me.isPlatformAdmin,
+      permissions: [...permissions].sort((a, b) => canonical(a).localeCompare(canonical(b))) }), permissions, platform };
+  }
+  const observe = (c, pathname, raw, responseAt, observedAt) => {
+    let body; try { body = Schemas[pathname] ? Schemas[pathname].parse(raw) : raw; } catch { throw new ProofError('RELEASED_PLATFORM_SCHEMA_MISMATCH'); }
+    const counts = validatePlatform(pathname, body, { responseAt, observedAt, after: lastDeploy });
+    receipt.reads.push({ actor: c.actor, path: pathname, status: 200, responseSha256: digest(raw), ...counts }); save(); return body;
+  };
+  async function read(c, pathname) {
+    const query = pathname === '/api/platform/alerts' ? 'state=open&limit=50&offset=0' : '';
+    const r = await request(c, 'GET', pathname, { query }); need(r.status === 200, 'PLATFORM_READ_200_REQUIRED');
+    return observe(c, pathname, r.body, r.responseAt, r.observedAt);
+  }
+  async function capture(c, index, { restricted = false } = {}) {
+    const spec = PAGES[index] ?? PAGES[4], phone = !restricted && spec.phone === true;
+    await c.drainNative?.(); safe(); await sourceGate();
+    const context = await browser.newContext({ viewport: phone ? { width: 390, height: 844 } : { width: 1440, height: 1000 }, serviceWorkers: 'block' }); c.browserContexts.push(context);
+    await context.addCookies([{ name: 'oto_session', value: c.cookie.slice('oto_session='.length), url: ORIGIN, httpOnly: true, secure: true, sameSite: 'Lax' }]);
+    const page = await context.newPage(); page.setDefaultTimeout(TIMEOUT);
+    const assets = new Map(plan.assets.map(a => [a.path, a])); let consumed = null, routeFailure = null;
+    const diagnostic = (stage, request) => { receipt.diagnostics.push({ stage, method: request.method(), type: request.resourceType(),
+      mainFrame: request.frame() === page.mainFrame(), urlSha256: hash(request.url()), bodySha256: hash(request.postData() ?? '') }); saveNative(); };
+    const saveNative = () => { try { save(); }
+      catch (error) { routeFailure ??= codeOf(error); receipt.errorCode ??= codeOf(error); } };
+    page.on('pageerror', () => { receipt.network.pageErrors++; saveNative(); });
+    page.on('console', message => { if (message.type() === 'error') { receipt.network.consoleErrors++; saveNative(); } });
+    page.on('requestfailed', request => { receipt.network.failed++; diagnostic('request-failed', request); });
+    await page.route('**/*', async route => {
+      const request = route.request(); let stage = 'grammar';
+      c.nativeWork ??= new Set();
+      c.drainNative ??= async () => {
+        const deadline = Date.now() + TIMEOUT;
+        while (c.nativeWork.size > 0) {
+          const remaining = deadline - Date.now(); need(remaining > 0, 'NATIVE_DRAIN_TIMEOUT');
+          let timer;
+          try { await Promise.race([Promise.allSettled([...c.nativeWork]), new Promise(resolve => { timer = setTimeout(resolve, remaining); })]); }
+          finally { clearTimeout(timer); }
+          need(c.nativeWork.size === 0 || Date.now() < deadline, 'NATIVE_DRAIN_TIMEOUT');
+        }
+        need(receipt.nativePending === 0 && Object.entries(receipt.network).every(([key, count]) => key === 'fontSuppressions' || count === 0), 'NATIVE_DRAIN_FAILED');
+      };
+      let settled; const work = new Promise(resolve => { settled = resolve; });
+      c.nativeWork.add(work); receipt.nativePending = (receipt.nativePending ?? 0) + 1;
+      try {
+        need(receipt.journalHealthy, 'UNSETTLED_PROOF_REFUSED');
+        save();
+        if (request.url() === FONT && request.method() === 'GET' && request.resourceType() === 'stylesheet') {
+          receipt.network.fontSuppressions++; save(); await route.fulfill({ status: 200, contentType: 'text/css', body: '' }); return;
+        }
+        const url = new URL(request.url()), document = request.resourceType() === 'document';
+        need(request.frame() === page.mainFrame() && requestAllowed({ url: request.url(), method: request.method(),
+          body: request.postData() === null ? undefined : request.postData(), health: c.permissions.some(p => p.permission === 'admin:health:read'),
+          assetPaths: [...assets.keys()], document, documentPath: new URL(page.url()).pathname }), 'BROWSER_REQUEST_REFUSED');
+        if (document) need(DOCUMENTS.includes(url.pathname) && !url.search, 'ONLY_PLATFORM_DOCUMENT_REQUIRED');
+        stage = 'fetch'; const response = await route.fetch({ maxRetries: 0, maxRedirects: 0, timeout: TIMEOUT });
+        stage = 'body'; const bytes = await response.body(); need(bytes.length <= (url.pathname.startsWith('/api/') ? MAX_BODY : 8_000_000), 'NATIVE_BODY_LIMIT');
+        stage = 'status'; need(response.status() === 200, 'NATIVE_ALLOWED_READ_FAILED');
+        if (PAGES.some(p => p.read === url.pathname)) {
+          stage = 'schema'; need(url.pathname === spec.read, 'ONLY_CURRENT_PLATFORM_PAGE_READ_REQUIRED');
+          consumed = observe(c, url.pathname, JSON.parse(bytes.toString('utf8')), response.headers().date, now());
+        } else if (!url.pathname.startsWith('/api/')) {
+          stage = 'static-hash'; const asset = assets.get(document ? '/' : url.pathname);
+          need(asset && hash(bytes) === asset.sha256 && response.headers()['content-type']?.split(';')[0].trim() === asset.contentType, 'PRODUCTION_STATIC_BYTES_DIFFER');
+        }
+        const headers = { ...response.headers() }; for (const h of ['content-encoding', 'content-length', 'transfer-encoding']) delete headers[h];
+        stage = 'fulfill'; await route.fulfill({ status: response.status(), headers, body: bytes });
+      } catch (error) { routeFailure ??= codeOf(error); receipt.network.blocked++; diagnostic(stage, request); await route.abort('blockedbyclient').catch(() => {}); }
+      finally { receipt.nativePending--; c.nativeWork.delete(work); settled(); saveNative(); }
+    });
+    try {
+      if (index === 0 && !restricted) {
+        await page.goto(ORIGIN + '/platform', { waitUntil: 'domcontentloaded', timeout: TIMEOUT });
+        for (const p of PAGES) need(await page.getByRole('main').getByRole('link', { name: new RegExp('^' + p.title) }).getAttribute('href') === p.path, 'SIX_NATIVE_PLATFORM_LINKS_REQUIRED');
+        receipt.platformLinks = true; save();
+      }
+      await page.goto(ORIGIN + spec.path, { waitUntil: 'domcontentloaded', timeout: TIMEOUT });
+      if (restricted) {
+        const consoleDenied = !c.permissions.some(p => p.permission === 'app:console:access');
+        if (consoleDenied) await page.getByRole('heading', { name: 'The console is not on your access', exact: true }).waitFor();
+        else await page.getByText('This page is not on your access', { exact: true }).waitFor();
+        need(consumed === null, 'RESTRICTED_PLATFORM_DATA_LEAK'); receipt.restrictionUi = consoleDenied ? 'console-level' : 'page-level';
+      } else {
+        await page.getByRole('heading', { name: spec.title, exact: true }).waitFor();
+        const main = page.getByRole('main'), card = title => main.locator('section').filter({ has: page.getByRole('heading', { name: title, exact: true }) });
+        if (spec.key === 'operators') {
+          await page.getByText(DEMOS.operatorId, { exact: true }).waitFor(); need(consumed, 'NATIVE_OPERATORS_RESPONSE_REQUIRED');
+          for (const row of consumed.operators) need(await main.getByText(row.id, { exact: true }).count() === 1, 'NATIVE_OPERATOR_ROWS_REQUIRED');
+          consumed = null;
+          await page.goto(ORIGIN + '/organisation/operators', { waitUntil: 'domcontentloaded', timeout: TIMEOUT });
+          await page.getByText(DEMOS.operatorId, { exact: true }).waitFor(); need(consumed, 'NATIVE_OLD_OPERATORS_RESPONSE_REQUIRED');
+          for (const row of consumed.operators) need(await main.getByText(row.id, { exact: true }).count() === 1, 'NATIVE_OLD_OPERATOR_ROWS_REQUIRED');
+          receipt.oldOperatorsAddress = true; save();
+        } else if (spec.key === 'roles') {
+          await page.getByRole('heading', { name: 'System catalogue', exact: true }).waitFor(); need(consumed, 'NATIVE_ROLES_RESPONSE_REQUIRED');
+          const rows = card('System catalogue').locator('details'), names = await rows.locator('summary').allTextContents();
+          need(same(names.map(n => n.trim()).sort(), consumed.roles.filter(r => r.system === true).map(r => r.name).sort()), 'NATIVE_SYSTEM_PROVENANCE_REQUIRED');
+          need(await card('System catalogue').getByRole('button', { name: /edit|grant|add|remove/i }).count() === 0, 'NO_SYSTEM_ROLE_EDITOR_REQUIRED');
+        } else if (spec.key === 'alerts') {
+          await page.getByRole('heading', { name: 'Platform alert register', exact: true }).waitFor(); need(consumed, 'NATIVE_ALERT_RESPONSE_REQUIRED');
+          const rows = card('Platform alert register').locator('ul > li'); need(await rows.count() === consumed.alerts.length, 'NATIVE_ALERT_PAGE_ROWS_REQUIRED');
+          await card('Platform alert register').getByText(consumed.total + ' records', { exact: true }).waitFor();
+          for (let i = 0; i < consumed.alerts.length; i++) {
+            const row = consumed.alerts[i]; need(await rows.nth(i).getByText(row.severity, { exact: true }).count() === 1, 'NATIVE_ALERT_SEVERITY_REQUIRED');
+            need((await rows.nth(i).innerText()).includes(row.count + ' occurrences'), 'NATIVE_ALERT_OCCURRENCES_REQUIRED');
+          }
+        } else if (spec.key === 'jobs') {
+          await page.getByRole('heading', { name: 'Persisted job status', exact: true }).waitFor(); need(consumed, 'NATIVE_JOBS_RESPONSE_REQUIRED');
+          const rows = card('Persisted job status').locator('ul > li'); need(await rows.count() === consumed.jobs.length, 'NATIVE_PERSISTED_JOB_ROWS_REQUIRED');
+          for (let i = 0; i < consumed.jobs.length; i++) {
+            const job = consumed.jobs[i], row = rows.nth(i); need(await row.getByText(job.name, { exact: true }).count() === 1
+              && await row.getByText(job.status, { exact: true }).count() >= 1, 'NATIVE_JOB_NAME_STATE_REQUIRED');
+            if (job.lastOutcome) need(await row.getByText(job.lastOutcome === 'refused' ? 'off' : job.lastOutcome, { exact: true }).count() >= 1, 'NATIVE_JOB_OUTCOME_REQUIRED');
+            for (const name of job.waitingOn) need((await row.innerText()).includes(name), 'NATIVE_JOB_WAITING_REQUIRED');
+          }
+          need(await card('Persisted job status').getByRole('button').count() === 0, 'NO_JOB_RUN_ACTION_REQUIRED');
+        } else if (spec.key === 'environment') {
+          await page.getByRole('heading', { name: 'Variable presence', exact: true }).waitFor(); need(consumed, 'NATIVE_ENV_RESPONSE_REQUIRED');
+          const rows = card('Variable presence').locator('ul > li'); need(await rows.count() === consumed.variables.length, 'NATIVE_NINETEEN_ROWS_REQUIRED');
+          for (const variable of consumed.variables) {
+            const row = rows.filter({ has: page.getByText(variable.name, { exact: true }) }); need(await row.count() === 1, 'NATIVE_VARIABLE_NAME_REQUIRED');
+            await row.getByText(variable.present ? 'Configured' : 'Not configured', { exact: true }).waitFor();
+            await row.getByText(variable.required ? 'Required' : 'Optional', { exact: true }).waitFor();
+          }
+          need(await main.getByRole('textbox').count() === 0, 'NO_ENV_VALUE_EDITOR_REQUIRED');
+        } else {
+          await page.getByRole('heading', { name: 'Available controls', exact: true }).waitFor(); need(consumed, 'NATIVE_CONTROLS_RESPONSE_REQUIRED');
+          const controls = card('Available controls'); need(await controls.getByRole('button').count() === consumed.controls.length, 'NATIVE_CONTROL_OFFER_COUNT_REQUIRED');
+          for (const control of consumed.controls) await controls.getByRole('button', { name: control.label, exact: true }).waitFor();
+          if (!consumed.available) await controls.getByText('Test controls are not available on this deployment for this account.', { exact: true }).waitFor();
+        }
+      }
+      await c.drainNative?.(); need(!routeFailure, 'NATIVE_ROUTE_FAILED'); safe(); await sourceGate(); await c.drainNative?.(); safe();
+      const masks = [], identities = page.getByRole('button', { name: 'Sign out', exact: true }).locator('..');
+      for (let i = 0; i < await identities.count(); i++) if (await identities.nth(i).isVisible()) masks.push(identities.nth(i));
+      if (restricted && receipt.restrictionUi === 'console-level') masks.push(page.getByRole('heading', { name: 'The console is not on your access', exact: true }).locator('..').locator(':scope > p').first());
+      if (!restricted && spec.key === 'operators') for (const row of consumed.operators) {
+        const labels = page.getByRole('main').getByText(row.name, { exact: true });
+        for (let i = 0; i < await labels.count(); i++) if (await labels.nth(i).isVisible()) masks.push(labels.nth(i));
+      }
+      if (!restricted && spec.key === 'alerts') {
+        const rows = page.getByRole('main').locator('section').filter({ has: page.getByRole('heading', { name: 'Platform alert register', exact: true }) }).locator('ul > li');
+        for (let i = 0; i < await rows.count(); i++) for (const locator of [rows.nth(i).locator('p.font-semibold'), rows.nth(i).locator('p.text-sm')])
+          for (let j = 0; j < await locator.count(); j++) if (await locator.nth(j).isVisible()) masks.push(locator.nth(j));
+      }
+      if (!restricted && spec.key === 'jobs') {
+        const errors = page.getByRole('main').locator('section').filter({ has: page.getByRole('heading', { name: 'Persisted job status', exact: true }) }).locator('li > p.text-sm.text-muted-foreground');
+        for (let i = 0; i < await errors.count(); i++) if (await errors.nth(i).isVisible()) masks.push(errors.nth(i));
+      }
+      const capturedAt = now();
+      await page.evaluate(({ text, refusal }) => {
+        const host = document.querySelector('main') ?? (refusal ? document.body : null); if (!host) throw new Error('CAPTION_HOST_REQUIRED');
+        const caption = document.createElement('div'); caption.id = 'zz-639-evidence'; caption.textContent = text;
+        caption.style.cssText = 'position:relative;z-index:999999;pointer-events:auto;white-space:pre-wrap;overflow-wrap:anywhere;box-sizing:border-box;width:100%;padding:12px;margin:0 0 16px;background:#ffffff;color:#111111;border:2px solid #111;font:12px/1.5 monospace;'; host.prepend(caption);
+      }, { text: 'SCRUM-639 · Actual native staging · ' + c.actor + '\n' + capturedAt + '\nSource ' + plan.sourceSha
+        + '\nCI ' + plan.ciRunId + ' · API ' + plan.deployments[0].id + ' · Admin ' + plan.deployments[1].id
+        + '\nRead-only · No control, job or business action', refusal: restricted && receipt.restrictionUi === 'console-level' });
+      need(await page.evaluate(() => { const c = document.getElementById('zz-639-evidence'), box = c.getBoundingClientRect();
+        return box.width > 0 && box.x >= 0 && box.right <= innerWidth + 1 && c.scrollWidth <= c.clientWidth + 1 && c.scrollHeight <= c.clientHeight + 1; }), 'NATIVE_CAPTION_CLIPPED');
+      need(!phone || await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'PHONE_HORIZONTAL_OVERFLOW');
+      const image = path.join(plan.outputDirectory, PNGS[index]); await page.screenshot({ path: image, fullPage: true, mask: masks, animations: 'disabled' });
+      receipt.screenshots.push({ filename: PNGS[index], sha256: hash(fs.readFileSync(image)), actor: c.actor, capturedAt, completedAt: now(),
+        viewport: phone ? { width: 390, height: 844 } : { width: 1440, height: 1000 }, native: true, restricted, page: restricted ? spec.path : spec.key === 'operators' ? '/organisation/operators' : spec.path, readPath: restricted ? null : spec.read,
+        responseSha256: consumed ? digest(consumed) : null, responseAt: consumed ? receipt.reads.at(-1).responseAt : null,
+        generatedAt: consumed?.generatedAt ?? null, identityMasks: masks.length }); save();
+      await c.drainNative?.();
+    } finally { await context.close(); await c.drainNative?.(); c.browserContexts = c.browserContexts.filter(item => item !== context); }
+  }
+  try {
+    need(Date.parse(receipt.startedAt) > Date.parse(lastDeploy), 'POSTDEPLOY_ATTEMPT_REQUIRED'); await sourceGate();
+    const { launch } = await import(pathToFileURL(path.join(PRIVATE_ROOT, 'scripts/agent/evidence.mjs')).href); browser = await launch();
+    for (const actor of ACTORS) {
+      safe(); await sourceGate(); const c = { actor, cookie: '', attempted: false, closed: false, browserContexts: [] }; sessions.push(c);
+      const signed = await request(c, 'POST', '/api/auth/sign-in', { body: { phone: secret('STAGING_' + actor + '_PHONE'), password: secret('STAGING_' + actor + '_PASSWORD') } });
+      need(signed.status === 200 && signed.body?.accountId === DEMOS[actor] && signed.body.mustChangePassword === false && c.cookie, 'EXACT_DEMO_SIGN_IN_REQUIRED');
+      const before = await census(c); c.permissions = before.permissions;
+      const authority = { actor, beforeSha256: before.hash, afterSha256: null }; receipt.authority.push(authority); save();
+      if (actor === 'ADMIN') {
+        for (const [index, spec] of PAGES.entries()) { await read(c, spec.read); await capture(c, index); }
+      } else {
+        for (const pathname of ['/api/platform/alerts', '/api/platform/jobs', '/api/platform/environment', '/api/operators']) {
+          const denied = await request(c, 'GET', pathname); need(denied.status === 403 && typeof denied.body?.error?.code === 'string', 'NON_PLATFORM_STRUCTURED_403_REQUIRED');
+          need(iso(denied.responseAt) && Date.parse(denied.responseAt) > Date.parse(lastDeploy), 'POSTDEPLOY_REFUSAL_REQUIRED');
+          receipt.reads.push({ actor, path: pathname, status: 403, at: denied.observedAt, responseAt: denied.responseAt, responseSha256: digest(denied.body) }); save();
+        }
+        const controls = await read(c, '/api/ops/test-controls'); need(controls.available === false && controls.controls.length === 0, 'NON_PLATFORM_CONTROL_OFFER_MUST_BE_EMPTY');
+        await capture(c, 6, { restricted: true });
+      }
+      authority.afterSha256 = (await census(c)).hash; need(authority.afterSha256 === authority.beforeSha256, 'ACTOR_AUTHORITY_CHANGED'); save();
+      need(await closeSession(c, request, row => { receipt.authCleanup.push(row); save(); }), 'AUTH_CLEANUP_UNCONFIRMED'); safe();
+    }
+  } catch (e) { failed = true; receipt.errorCode ??= codeOf(e); }
+  finally {
+    for (const c of sessions) {
+      for (const b of c.browserContexts) await b.close().catch(() => { failed = true; });
+      try { await c.drainNative?.(); } catch (e) { failed = true; receipt.errorCode ??= codeOf(e); }
+      if (c.attempted && !c.closed) try { if (!await closeSession(c, request, row => { receipt.authCleanup.push(row); save(); })) failed = true; } catch { failed = true; }
+      c.cookie = ''; c.originalCookie = '';
+    }
+    if (browser) await browser.close().catch(() => { failed = true; });
+    for (const c of sessions) try { await c.drainNative?.(); } catch (e) { failed = true; receipt.errorCode ??= codeOf(e); }
+    try { await sourceGate(); } catch (e) { failed = true; receipt.errorCode ??= codeOf(e); }
+    receipt.completedAt = now();
+    receipt.complete = !failed && receipt.screenshots.length === 7 && receipt.platformLinks && receipt.oldOperatorsAddress && sessions.length === 2 && sessions.every(c => c.closed && (!c.nativeWork || c.nativeWork.size === 0))
+      && receipt.authority.length === 2 && receipt.authority.every(a => a.beforeSha256 === a.afterSha256) && receipt.pending === 0 && receipt.nativePending === 0 && receipt.unresolvedAuth === 0
+      && receipt.journalHealthy && Object.entries(receipt.network).every(([k, n]) => k === 'fontSuppressions' || n === 0);
+    save();
+  }
+  return receipt;
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
+  if (process.argv.length !== 4 || process.argv[2] !== '--execute') { process.stderr.write('HELD: reviewed plan and explicit --execute required.\n'); process.exitCode = 2; }
+  else { try { const r = await executeReviewedPlan(JSON.parse(fs.readFileSync(process.argv[3], 'utf8')), { explicitExecute: true });
+    process.stdout.write(JSON.stringify({ complete: r.complete, errorCode: r.errorCode, screenshots: r.screenshots.length }) + '\n'); if (!r.complete) process.exitCode = 1;
+  } catch (e) { process.stderr.write(codeOf(e) + '\n'); process.exitCode = 1; } }
+}

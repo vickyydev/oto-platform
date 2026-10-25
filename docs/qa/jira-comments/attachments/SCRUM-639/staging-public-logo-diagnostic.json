@@ -1,0 +1,22 @@
+{
+  "ticket": "SCRUM-639",
+  "recordedAt": "2026-10-25T11:22:10.078Z",
+  "publicImageOnly": true,
+  "authAttempts": 0,
+  "applicationApiCalls": 0,
+  "browserClosed": true,
+  "blocked": 0,
+  "path": "/assets/logo-oto-nNYXf9Wy.png",
+  "status": 200,
+  "accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36",
+  "responseContentType": "image/webp",
+  "sha256": "17a3ee3cd02ce9440ecba6ca182c17865c714584d126805d6bd7931e4fbae150",
+  "byteLength": 109836,
+  "expectedSha256": "5a0b8f6a955104f777c9d287ac91e869e349c24a479dd694d07339d4fa689a02",
+  "expectedContentType": "image/png",
+  "hashMatches": false,
+  "mimeMatches": false,
+  "hasPngSignature": false,
+  "cookieSent": false
+}

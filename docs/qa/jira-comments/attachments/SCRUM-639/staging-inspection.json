@@ -1,0 +1,74 @@
+{
+  "ticket": "SCRUM-639",
+  "sourceSha": "78ff5325e3ac1c9cae2ebd3bd92539bba18346ac",
+  "attempt": "v4",
+  "inspectedAt": "2026-10-25T11:47:44.857Z",
+  "screenshots": [
+    {
+      "filename": "SCRUM-639-01-operators.png",
+      "sha256": "9487ffee3495bc5de31f35cd2c8a35c0a09b7ce1bca8af0065945a18d475ba0d",
+      "inspectedAt": "2026-10-25T11:47:44.857Z",
+      "privacy": true,
+      "geometry": true,
+      "native": true
+    },
+    {
+      "filename": "SCRUM-639-02-system-roles.png",
+      "sha256": "d93887bfdf0d55e63da72c626aecd3a6f972af359417e1f1ebbb11d81e4b7bfa",
+      "inspectedAt": "2026-10-25T11:47:44.857Z",
+      "privacy": true,
+      "geometry": true,
+      "native": true
+    },
+    {
+      "filename": "SCRUM-639-03-platform-alerts.png",
+      "sha256": "031d29eaad799446d4a073d4b898467e3bab4480260f2cda674407a1519c101a",
+      "inspectedAt": "2026-10-25T11:47:44.857Z",
+      "privacy": true,
+      "geometry": true,
+      "native": true
+    },
+    {
+      "filename": "SCRUM-639-04-platform-jobs.png",
+      "sha256": "dd6914678dade16368a3a70f9571877b7f0393ab0975bacdc4d1143edbacb54e",
+      "inspectedAt": "2026-10-25T11:47:44.857Z",
+      "privacy": true,
+      "geometry": true,
+      "native": true
+    },
+    {
+      "filename": "SCRUM-639-05-environment-phone.png",
+      "sha256": "b2fc84a8cc30d54401b2041150874d0e218be10835c2232423414f696ba7f3fe",
+      "inspectedAt": "2026-10-25T11:47:44.857Z",
+      "privacy": true,
+      "geometry": true,
+      "native": true
+    },
+    {
+      "filename": "SCRUM-639-06-test-controls.png",
+      "sha256": "c0608388142a64eb0563c3c6b961de6253974a286291939899fd4810a231f714",
+      "inspectedAt": "2026-10-25T11:47:44.857Z",
+      "privacy": true,
+      "geometry": true,
+      "native": true
+    },
+    {
+      "filename": "SCRUM-639-07-platform-restricted.png",
+      "sha256": "d397d2e1bb98d66b29489a56871591092626b40f0432570382c187260aeb9488",
+      "inspectedAt": "2026-10-25T11:47:44.857Z",
+      "privacy": true,
+      "geometry": true,
+      "native": true
+    }
+  ],
+  "allSevenInspected": true,
+  "method": "All seven original staging PNGs opened and visually inspected by the coordinator; Jobs and Environment also viewed at original resolution.",
+  "limits": [
+    "Operators PNG is the legacy address after native new-address and six-link checks.",
+    "System roles are collapsed; no every-permission pixel claim.",
+    "Controls show offers only; no action clicked.",
+    "Environment is the phone frame.",
+    "Reception is an honest console-level refusal, plus four direct API 403 checks.",
+    "Identity, operator labels, alert subject/details and raw job errors are masked; known external font is suppressed."
+  ]
+}

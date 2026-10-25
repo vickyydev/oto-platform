@@ -1,0 +1,101 @@
+{
+  "ticket": "SCRUM-639",
+  "recordedAt": "2026-10-25T11:36:36.509Z",
+  "sourceSha": "78ff5325e3ac1c9cae2ebd3bd92539bba18346ac",
+  "ciRunId": "40186839556",
+  "jobs": [
+    {
+      "name": "oto-app",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "ci",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "api-tests (1)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "api-tests (3)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "pos-tests",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "api-tests (2)",
+      "status": "completed",
+      "conclusion": "success"
+    }
+  ],
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "serviceId": "srv-danh2ljtqb8s73bt9en0",
+      "id": "dep-dbeu9895efls73bcohu0",
+      "finishedAt": "2026-10-25T11:19:10.972953Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "serviceId": "srv-danng2p42hec73f38e3g",
+      "id": "dep-dbeu9895efls73bcoivg",
+      "finishedAt": "2026-10-25T11:15:25.760077Z"
+    }
+  ],
+  "assets": [
+    {
+      "path": "/",
+      "sha256": "a789679262b0c06a1ecb311ba0bbb68b7a3d4dd840a3847436772faf841007b2",
+      "contentType": "text/html"
+    },
+    {
+      "path": "/assets/index-B3GhOT-O.js",
+      "sha256": "cf86a26648b5ea8b2472875e6046b045a71f693cde5da52e666a95de50b6f3cc",
+      "contentType": "application/javascript"
+    },
+    {
+      "path": "/assets/index-CaH3r7Z2.css",
+      "sha256": "a582bf11fce339cde03564290522f1fdfaddc50e2e64d8a38e0a4d756b9af77d",
+      "contentType": "text/css"
+    },
+    {
+      "path": "/assets/logo-oto-nNYXf9Wy.png",
+      "sha256": "17a3ee3cd02ce9440ecba6ca182c17865c714584d126805d6bd7931e4fbae150",
+      "contentType": "image/webp"
+    },
+    {
+      "path": "/assets/react-C6LhzTnE.js",
+      "sha256": "3e1ae0f3568d5d60a7b94013f5a4e34a84a077d1989357802a1cb51fcdec575e",
+      "contentType": "application/javascript"
+    },
+    {
+      "path": "/assets/vendor-B9yAQZP-.js",
+      "sha256": "443634e99683b7e574fb5e5abf49fcefcb071a7264269a18b4e127d65f8edbcd",
+      "contentType": "application/javascript"
+    },
+    {
+      "path": "/favicon.svg",
+      "sha256": "8ffbde9092b1fa4de97c9481b76f518b131268c82e7c555041925225b1dab6e0",
+      "contentType": "image/svg+xml"
+    }
+  ],
+  "assetManifestSha256": "cf65dd8e120b1b334bfd5806cfdaf74cb29023ef983b77f97c716febda388587",
+  "localSourceBinding": {
+    "files": 3772,
+    "sourceManifestSha256": "4cd99466485605de5be9a9dd29da683fe7a875e75f617d54a42c7afb87d8c4e7",
+    "featureTreeSha256": "2bf615dd7622e318313b8532d086633856c1d3b7f79d2315b3c483e6c35e2d50",
+    "runtimeBindingsSha256": "2ec95b6fd6a45d7dedeb4d9742f56d1662a1dd100867763c20ca20ed719bae92"
+  },
+  "publicBytesRead": 2013546,
+  "parserVersion": "5.9.3",
+  "manualDeploy": false,
+  "authAttempts": 0,
+  "liveProofStarted": false
+}

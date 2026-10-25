@@ -1,0 +1,471 @@
+// Offline only. These tests never execute the live coordinator or import environment/application modules.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import path from 'node:path';
+import fs from 'node:fs';
+import { pathToFileURL, fileURLToPath } from 'node:url';
+import { ORIGIN, DEMOS, digest, publicPath, validatePlan, requestAllowed, releaseFacts,
+  platformAllowed, validatePlatform, ENV_NAMES, PAGES, verifyLocalSource, runtimeBindingsOf, runtimeBindingsSha256Of, closeSession, executeReviewedPlan } from './admin639-staging-proof.mjs';
+
+const h = value => createHash('sha256').update(value).digest('hex');
+const A = '11111111-1111-4111-8111-111111111111', B = '22222222-2222-4222-8222-222222222222';
+const sourceSha = 'a'.repeat(40), at = '2026-10-25T10:10:00.000Z', after = '2026-10-25T10:09:00.000Z';
+const deps = ['oto-api-staging', 'oto-console-staging'].map((name, i) => ({ name, serviceId: 'srv-test' + i, id: 'dep-test' + i, finishedAt: after }));
+function plan() {
+  const assets = [{ path: '/', sha256: '1'.repeat(64), contentType: 'text/html' }, { path: '/assets/index-test.js', sha256: '2'.repeat(64), contentType: 'application/javascript' }];
+  return { approved: true, ticket: 'SCRUM-639', sourceSha, sourceManifestSha256: '3'.repeat(64), ciRunId: '12345', deployments: structuredClone(deps),
+    helperSha256: '4'.repeat(64), routeModuleSha256: '5'.repeat(64), localReleaseSha256: '6'.repeat(64), runtimeBindingsSha256: '7'.repeat(64),
+    actors: Object.fromEntries(['ADMIN', 'RECEPTION'].map(actor => [actor, { accountId: DEMOS[actor], operatorId: DEMOS.operatorId }])),
+    assets, assetManifestSha256: digest(assets), outputDirectory: 'C:/w/admin639-staging-offline-synthetic' };
+}
+const req = overrides => requestAllowed({ url: ORIGIN + '/api/platform/jobs', method: 'GET', ...overrides });
+const throwsCode = (fn, code) => assert.throws(fn, error => error.code === code);
+
+test('inert import and unarmed execute cannot dispatch, read environment or create an attempt', async () => {
+  const original = globalThis.fetch; let calls = 0;
+  globalThis.fetch = async () => { calls++; throw new Error('OFFLINE_FETCH_REFUSED'); };
+  try { await import('./admin639-staging-proof.mjs?offline-inert-probe');
+    await assert.rejects(executeReviewedPlan(plan()), error => error.code === 'EXPLICIT_EXECUTE_REQUIRED'); assert.equal(calls, 0); }
+  finally { globalThis.fetch = original; }
+});
+test('exact reviewed plan binds both services, two fixed actors and public closure; no old-source/foreign substitution', () => {
+  assert.equal(validatePlan(plan()).ticket, 'SCRUM-639');
+  for (const change of [p => { p.approved = false; }, p => { p.sourceSha = '0'.repeat(40); }, p => { p.deployments.reverse(); },
+    p => { p.actors.RECEPTION.accountId = A; }, p => { p.routeModuleSha256 = null; }, p => { p.assets[1].path = '/api/me'; },
+    p => { p.assetManifestSha256 = '0'.repeat(64); }, p => { p.outputDirectory = 'C:/w/admin639-staging-x/../shared'; }, p => { p.extra = true; }]) {
+    const p = plan(); change(p); assert.throws(() => validatePlan(p));
+  }
+});
+test('auth-only writes: provision/invite/handoff/session/payment/webhook/message mutations are always refused', () => {
+  assert.equal(req({ url: ORIGIN + '/api/auth/sign-in', method: 'POST', auth: true, body: { phone: 'SYNTHETIC', password: 'SYNTHETIC' } }), true);
+  assert.equal(req({ url: ORIGIN + '/api/auth/sign-out', method: 'POST', auth: true }), true);
+  for (const pathname of ['/api/ops/test-controls/zz-test', '/api/ops/demo-reset', '/api/ops/jobs/run', '/api/platform/jobs', '/api/auth/handoff', '/api/admin/accounts', '/api/users', '/api/payments', '/api/inbox/send', '/api/assistant/ask', '/api/webhook', '/api/me/session/branch'])
+    for (const method of ['POST', 'PUT', 'PATCH', 'DELETE']) assert.equal(req({ url: ORIGIN + pathname, method, auth: true, body: {} }), false);
+  assert.equal(req({ url: ORIGIN + '/api/auth/sign-in', method: 'POST', body: { phone: 'SYNTHETIC', password: 'SYNTHETIC' } }), false);
+  assert.equal(req({ url: ORIGIN + '/api/auth/sign-out', method: 'POST', auth: true, body: {} }), false);
+});
+test('GET grammar is exact: no foreign origin, fragments, operator/park/date query or aggregate/detail fan-out', () => {
+  assert.equal(req(), true);
+  for (const url of ['https://example.invalid/api/overview', ORIGIN + '/api/platform/jobs#secret', ORIGIN + '/api/platform/jobs?operatorId=' + DEMOS.operatorId,
+    ORIGIN + '/api/platform/jobs?branchId=' + A, ORIGIN + '/api/platform/jobs?branchId=' + B, ORIGIN + '/api/platform/jobs?branchId=' + A + '&branchId=' + A, ORIGIN + '/api/platform/jobs?from=2026-10-25',
+    ORIGIN + '/api/overview', ORIGIN + '/api/aggregates/members', ORIGIN + '/api/payments/detail', ORIGIN + '/api/platform/jobs/extra', ORIGIN + '/api/me?extra=1']) assert.equal(req({ url }), false);
+  assert.equal(req({ body: {} }), false);
+});
+test('native shell bootstrap allows only exact health badge grammar and reviewed static paths', () => {
+  for (const p of ['/api/me', '/api/me/permissions', '/api/ready']) assert.equal(req({ url: ORIGIN + p }), true);
+  assert.equal(req({ url: ORIGIN + '/api/ops/health', health: true }), true);
+  assert.equal(req({ url: ORIGIN + '/api/ops/health' }), false);
+  assert.equal(req({ url: ORIGIN + '/api/ops/failures?windowHours=24&limit=50', health: true }), true);
+  for (const q of ['windowHours=1&limit=50', 'windowHours=24&limit=50&extra=x', 'windowHours=24&limit=50&limit=50', 'from=2026-10-25'])
+    assert.equal(req({ url: ORIGIN + '/api/ops/failures?' + q, health: true }), false);
+  assert.equal(req({ url: ORIGIN + '/platform/jobs', document: true }), true);
+  assert.equal(req({ url: ORIGIN + '/assets/index-test.js', assetPaths: ['/assets/index-test.js'] }), true);
+  for (const p of ['/assets/unknown.js', '/assets/../api/me', '/assets/foo.js?x=1', '/profile-photos/private.png'])
+    assert.equal(req({ url: ORIGIN + p, assetPaths: ['/assets/index-test.js'] }), false);
+  assert.equal(publicPath('/assets/a.js'), true); assert.equal(publicPath('/assets/%2e%2e/a.js'), false);
+});
+test('exact six green CI jobs and latest same-source API+Console are required, including deploy finish times', () => {
+  const p = plan(), ci = { headSha: sourceSha, status: 'completed', conclusion: 'success', jobs: Array.from({ length: 6 }, (_, i) => ({ name: 'job' + i, status: 'completed', conclusion: 'success' })) };
+  const services = deps.map(d => ({ service: { id: d.serviceId, name: d.name } }));
+  const latest = Object.fromEntries(deps.map(d => [d.serviceId, [{ deploy: { id: d.id, status: 'live', commit: { id: sourceSha }, finishedAt: d.finishedAt } }]]));
+  assert.equal(releaseFacts(p, ci, services, latest), true);
+  for (const change of [c => { c.jobs.pop(); }, c => { c.jobs[1].name = c.jobs[0].name; }, c => { c.jobs[1].conclusion = 'failure'; }, c => { c.headSha = 'b'.repeat(40); }]) {
+    const c = structuredClone(ci); change(c); throwsCode(() => releaseFacts(p, c, services, latest), 'SIX_EXACT_GREEN_JOBS_REQUIRED');
+  }
+  for (const field of ['id', 'finishedAt']) { const l = structuredClone(latest); l[deps[1].serviceId][0].deploy[field] = 'wrong';
+    throwsCode(() => releaseFacts(p, ci, services, l), 'LATEST_EXACT_LIVE_DEPLOYMENT_REQUIRED'); }
+  const l = structuredClone(latest); l[deps[1].serviceId][0].deploy.commit.id = 'b'.repeat(40);
+  throwsCode(() => releaseFacts(p, ci, services, l), 'LATEST_EXACT_LIVE_DEPLOYMENT_REQUIRED');
+});
+const timing = { after, responseAt: at, observedAt: at };
+function platform(pathname = '/api/platform/jobs') {
+  if (pathname === '/api/platform/alerts') return { generatedAt: at, alerts: [{ id: A, key: 'ZZ_TEST_ALERT', severity: 'critical', title: 'ZZ TEST title',
+    detail: 'ZZ TEST masked detail', openedAt: at, acknowledgedAt: at, resolvedAt: null, count: 3 }], total: 123, limit: 50, offset: 0 };
+  if (pathname === '/api/platform/jobs') return { generatedAt: at, jobs: [{ name: 'job:ZZ_TEST_persisted', status: 'unknown', lastRunAt: null,
+    lastOutcome: 'refused', expectedEverySeconds: 60, ageSeconds: null, lastError: 'ZZ TEST masked error', waitingOn: ['ZZ_TEST_DISABLED'] }] };
+  if (pathname === '/api/platform/environment') return { generatedAt: at, variables: ENV_NAMES.map((name, i) => ({ name, present: i !== 0, required: i === 0,
+    purpose: 'ZZ TEST purpose', provider: null })) };
+  if (pathname === '/api/roles') return { roles: [{ id: A, name: 'ZZ TEST system', description: null, system: true, permissions: [] },
+    { id: B, name: 'ZZ TEST lookalike', description: null, system: false, permissions: [] }], permissions: [] };
+  if (pathname === '/api/operators') return { operators: [{ id: DEMOS.operatorId, name: 'ZZ TEST home operator' }] };
+  return { available: true, controls: [{ key: 'ZZ_TEST_control', label: 'ZZ TEST control', description: 'ZZ TEST description', sticky: true }] };
+}
+test('genuine platform assignment cannot be replaced with a role name, own/foreign operator or branch union', () => {
+  assert.equal(platformAllowed([{ permission: 'admin:health:read', scopeType: 'operator', scopeId: null }]), true);
+  for (const rows of [[], [{ permission: 'admin:health:read', scopeType: 'operator', scopeId: DEMOS.operatorId }],
+    [{ permission: 'admin:health:read', scopeType: 'operator', scopeId: B }], [{ permission: 'admin:health:read', scopeType: 'branch', scopeId: A }]]) assert.equal(platformAllowed(rows), false);
+});
+test('only first open alert page is dispatched and its server total is distinct from capped rows', () => {
+  for (const q of ['', '?state=open&limit=50&offset=0']) assert.equal(req({ url: ORIGIN + '/api/platform/alerts' + q }), true);
+  for (const q of ['state=all&limit=50&offset=0', 'state=open&limit=100&offset=0', 'state=open&limit=50&offset=50', 'operatorId=' + DEMOS.operatorId,
+    'state=open&limit=50&offset=0&state=open']) assert.equal(req({ url: ORIGIN + '/api/platform/alerts?' + q }), false);
+  const safe = validatePlatform('/api/platform/alerts', platform('/api/platform/alerts'), timing);
+  assert.equal(safe.total, 123); assert.equal(safe.pageRows, 1); assert.equal(safe.acknowledgedRows, 1);
+  for (const mutate of [b => { b.total = 0; }, b => { b.limit = 100; }, b => { b.offset = 50; }, b => { b.alerts[0].resolvedAt = at; }]) {
+    const body = platform('/api/platform/alerts'); mutate(body); assert.throws(() => validatePlatform('/api/platform/alerts', body, timing));
+  }
+});
+test('nineteen native variable names/presence and job refusal/waiting remain truthful, with no private text persisted', () => {
+  const env = validatePlatform('/api/platform/environment', platform('/api/platform/environment'), timing);
+  assert.equal(env.variableRows, 19); assert.equal(env.missingRequiredRows, 1); assert.equal(env.configuredRows, 18);
+  const body = platform('/api/platform/environment'); body.variables[0].name = 'ZZ_TEST_UNKNOWN';
+  assert.throws(() => validatePlatform('/api/platform/environment', body, timing));
+  const jobs = validatePlatform('/api/platform/jobs', platform(), timing);
+  assert.equal(jobs.states.unknown, 1); assert.equal(jobs.refusedRows, 1); assert.equal(jobs.waitingRows, 1);
+  assert.equal(JSON.stringify(jobs).includes('ZZ TEST masked error'), false);
+  for (const responseAt of [after, null, '2030-01-01T00:00:00.000Z']) assert.throws(() => validatePlatform('/api/platform/jobs', platform(), { ...timing, responseAt }));
+});
+test('system role provenance and legacy control availability are counts only, never role-name promotion or action', () => {
+  assert.deepEqual(validatePlatform('/api/roles', platform('/api/roles'), timing), { observedAt: at, responseAt: at, systemRoles: 1, operatorRolesExcluded: 1 });
+  assert.equal(validatePlatform('/api/ops/test-controls', { available: false, controls: [] }, timing).controlRows, 0);
+  assert.equal(validatePlatform('/api/ops/test-controls', platform('/api/ops/test-controls'), timing).controlRows, 1);
+  assert.throws(() => validatePlatform('/api/ops/test-controls', { available: false, controls: platform('/api/ops/test-controls').controls }, timing));
+  const body = platform('/api/ops/test-controls'); body.value = 'ZZ TEST should not be accepted'; assert.throws(() => validatePlatform('/api/ops/test-controls', body, timing));
+});
+test('only Operators native bootstrap may read demo-reset availability; every reset/control/provider mutation stays refused', () => {
+  for (const documentPath of ['/platform/operators', '/organisation/operators']) assert.equal(req({ url: ORIGIN + '/api/ops/demo-reset', documentPath }), true);
+  for (const documentPath of ['', '/platform', '/platform/test-controls', '/platform/jobs']) assert.equal(req({ url: ORIGIN + '/api/ops/demo-reset', documentPath }), false);
+  assert.equal(req({ url: ORIGIN + '/api/ops/demo-reset?run=1', documentPath: '/platform/operators' }), false);
+  for (const pathname of ['/api/ops/demo-reset', '/api/ops/test-controls/ZZ_TEST_control', '/api/ops/providers/probe', '/api/operators', '/api/roles'])
+    for (const method of ['POST', 'PUT', 'PATCH', 'DELETE']) assert.equal(req({ url: ORIGIN + pathname, method, auth: true, documentPath: '/platform/operators', body: {} }), false);
+});
+
+function sourceFixture() {
+  const root = 'C:/synthetic-no-disk', source = new Map([['apps/api/src/routes/platform.ts', Buffer.from('ZZ TEST route')], ['apps/api/src/services/platform.ts', Buffer.from('ZZ TEST dependency')], ['pnpm-lock.yaml', Buffer.from('ZZ TEST lock')]]);
+  const releasePath = 'docs/qa/jira-comments/attachments/SCRUM-639/local-release.json';
+  const sourceManifestSha256 = h(JSON.stringify([...source].sort(([a], [b]) => a.localeCompare(b)).map(([p, b]) => ({ path: p, sha256: h(b) }))));
+  const original = new Map(source), files = new Map(source), p = { ...plan(), sourceManifestSha256 };
+  const local = Buffer.from(JSON.stringify({ ticket: 'SCRUM-639', localReleaseGreen: true, sourceManifestSha256 })); files.set(releasePath, local); original.set(releasePath, local);
+  const normalized = value => value.replaceAll('\\', '/').slice(root.length + 1);
+  const io = { readFileSync: filename => files.get(normalized(filename)) ?? Buffer.from('ZZ TEST metadata'), lstatSync: () => ({ isFile: () => true }) };
+  files.set('node_modules/.pnpm/lock.yaml', files.get('pnpm-lock.yaml'));
+  p.routeModuleSha256 = h(source.get('apps/api/src/routes/platform.ts')); p.localReleaseSha256 = h(local); p.runtimeBindingsSha256 = runtimeBindingsSha256Of(root, io, 'v22.synthetic');
+  const git = args => {
+    if (args[0] === 'ls-files') return [...source.keys()].join('\0') + '\0';
+    if (args[0] === 'ls-tree') return [...source.keys()].map(filename => { const b = original.get(filename); return `100644 blob ${createHash('sha1').update(Buffer.from(`blob ${b.length}\0`)).update(b).digest('hex')}\t${filename}`; }).join('\0') + '\0';
+    if (args[0] === 'diff') return '';
+    if (args[0] === 'show') return original.get(args[1].slice(sourceSha.length + 1)).toString();
+    throw new Error('UNEXPECTED_SYNTHETIC_GIT_COMMAND');
+  };
+  return { p, files, options: { io, git, root, nodeVersion: 'v22.synthetic' } };
+}
+test('actual full-source verifier refuses an uncommitted imported dependency even when route/local-release bytes remain unchanged', () => {
+  const f = sourceFixture(); assert.equal(verifyLocalSource(f.p, f.options).files, 3);
+  f.files.set('apps/api/src/services/platform.ts', Buffer.from('ZZ TEST changed dependency'));
+  throwsCode(() => verifyLocalSource(f.p, f.options), 'FEATURE_SOURCE_BLOB_DIFFERS');
+});
+test('installed lock/runtime binding cannot silently change under a source-bound schema import', () => {
+  const f = sourceFixture(); assert.equal(runtimeBindingsOf(f.options.root, f.options.io, 'v22.synthetic').files.length, 10);
+  f.files.set('node_modules/.pnpm/lock.yaml', Buffer.from('ZZ TEST changed lock'));
+  throwsCode(() => verifyLocalSource(f.p, f.options), 'INSTALLED_LOCK_DIFFERS');
+  const g = sourceFixture(); g.files.set('apps/api/node_modules/tsx/dist/esm/api/index.mjs', Buffer.from('ZZ TEST changed loader'));
+  throwsCode(() => verifyLocalSource(g.p, g.options), 'INSTALLED_RUNTIME_BINDING_DIFFERS');
+});
+test('original-cookie revocation probe remains independent after logout timeout and blocks later dependent auth', async () => {
+  const context = { actor: 'ADMIN', cookie: 'SYNTHETIC_COOKIE' }, calls = [], rows = []; let laterAuth = false, unresolved = 1;
+  const request = async (c, method, pathname) => { calls.push({ method, pathname, original: c.cookie === 'SYNTHETIC_COOKIE' });
+    if (method === 'POST') { c.cookie = ''; throw new Error('SYNTHETIC_TIMEOUT'); } return { status: 401 }; };
+  const confirmed = await closeSession(context, request, r => rows.push(r));
+  if (confirmed) laterAuth = true;
+  assert.equal(confirmed, false); assert.equal(laterAuth, false); assert.equal(unresolved, 1); assert.equal(context.cookie, '');
+  assert.deepEqual(calls, [{ method: 'POST', pathname: '/api/auth/sign-out', original: true }, { method: 'GET', pathname: '/api/me', original: true }]);
+  assert.equal(rows[0].meStatus, 401); assert.equal(rows[0].signOutStatus, null);
+});
+test('all owned contexts still close after another cleanup fails; only explicit logout200+original401 is confirmed', async () => {
+  const rows = [], contexts = ['ADMIN', 'MANAGER', 'RECEPTION'].map(actor => ({ actor, cookie: 'SYNTHETIC_' + actor }));
+  for (const c of contexts) await closeSession(c, async (_c, method) => method === 'POST'
+    ? c.actor === 'ADMIN' ? { status: 500, body: {} } : { status: 200, body: { ok: true } } : { status: 401 }, row => rows.push(row));
+  assert.deepEqual(rows.map(r => r.confirmed), [false, true, true]); assert.equal(contexts.every(c => c.cookie === ''), true);
+});
+test('failed cleanup retains the original privately for a real retry instead of confirming an anonymous session', async () => {
+  const c = { actor: 'ADMIN', cookie: 'SYNTHETIC_ORIGINAL' }, seen = [];
+  assert.equal(await closeSession(c, async (_c, method) => method === 'POST' ? { status: 500, body: {} } : { status: 200 }, () => {}), false);
+  assert.equal(c.cookie, ''); assert.equal(c.originalCookie === 'SYNTHETIC_ORIGINAL', true);
+  assert.equal(await closeSession(c, async (_c, method) => { seen.push(c.cookie === 'SYNTHETIC_ORIGINAL');
+    c.cookie = ''; return method === 'POST' ? { status: 200, body: { ok: true } } : { status: 401 }; }, () => {}), true);
+  assert.deepEqual(seen, [true, true]); assert.equal(c.originalCookie, '');
+});
+test('FINDING high: ambiguous sign-in with no observed cookie cannot be confirmed by anonymous logout200 and me401', async () => {
+  const c = { actor: 'ADMIN', cookie: '', attempted: true }, calls = [], rows = [];
+  const confirmed = await closeSession(c, async (_c, method, pathname, options) => {
+    calls.push({ method, pathname, cleanup: options.cleanup, noCookie: c.cookie === '' });
+    return method === 'POST' ? { status: 200, body: { ok: true } } : { status: 401 };
+  }, row => rows.push(row));
+  assert.deepEqual(calls, [{ method: 'POST', pathname: '/api/auth/sign-out', cleanup: true, noCookie: true },
+    { method: 'GET', pathname: '/api/me', cleanup: true, noCookie: true }]);
+  assert.equal(confirmed, false, 'No observed original cookie means revocation is unproven even when anonymous cleanup returns expected statuses.');
+  assert.equal(c.closed, false); assert.equal(rows.length, 1); assert.equal(rows[0].confirmed, false);
+  assert.equal(rows[0].noOriginalCookie, true); assert.equal(rows[0].signOutStatus, 200); assert.equal(rows[0].meStatus, 401);
+});
+
+// Execute the actual nested request and bounded body reader; inject transport/receipt sinks only.
+// This intentionally avoids reimplementing cookie capture, unknown-issuance accounting or dispatch order.
+function actualRequestHarness(kind) {
+  const source = fs.readFileSync(new URL('./admin639-staging-proof.mjs', import.meta.url), 'utf8');
+  const requestStart = source.indexOf('  async function request(c, method, pathname,');
+  const requestEnd = source.indexOf('\n  async function census(c)', requestStart);
+  const readerStart = source.indexOf('async function boundedJson(response)');
+  const readerEnd = source.indexOf('\n/** Local preflight seam', readerStart);
+  assert.ok(requestStart >= 0 && requestEnd > requestStart && readerStart >= 0 && readerEnd > readerStart);
+  const requestBody = source.slice(requestStart, requestEnd), readerBody = source.slice(readerStart, readerEnd);
+  const receipt = { operations: [], pending: 0, unresolvedAuth: 0 }, events = [], transport = [];
+  const fetch = async (url, options) => {
+    const pathname = new URL(url).pathname;
+    transport.push({ method: options.method, path: pathname, observedCookie: options.headers.cookie === 'oto_session=ZZ_TEST_SYNTHETIC_COOKIE' });
+    assert.equal(events.at(-1), 'intent', 'The actual request must durably record intent before transport.');
+    if (pathname === '/api/auth/sign-in') {
+      const body = kind === 'malformed' ? 'ZZ TEST non-json response' : new ReadableStream({ start(controller) {
+        controller.enqueue(new TextEncoder().encode('{'));
+        const keepAlive = setTimeout(() => {}, 1_000); // AbortSignal.timeout is unref'ed; keep only this synthetic stalled read alive.
+        options.signal.addEventListener('abort', () => { clearTimeout(keepAlive); controller.error(new Error('SYNTHETIC_BODY_TIMEOUT')); }, { once: true });
+      } });
+      return new Response(body, { status: 200, headers: { 'set-cookie': 'oto_session=ZZ_TEST_SYNTHETIC_COOKIE; Path=/; HttpOnly; Secure' } });
+    }
+    if (pathname === '/api/auth/sign-out') return Response.json({ ok: true });
+    if (pathname === '/api/me') return Response.json({ error: { code: 'UNAUTHENTICATED' } }, { status: 401 });
+    throw new Error('UNEXPECTED_SYNTHETIC_TRANSPORT_PATH');
+  };
+  class SyntheticProofError extends Error { constructor(code) { super(code); this.code = code; } }
+  const factory = new Function('requestAllowed', 'ORIGIN', 'TIMEOUT', 'MAX_BODY', 'ProofError', 'need', 'codeOf', 'now', 'receipt', 'persist', 'save', 'safe', 'fetch',
+    `${readerBody}\nreturn ${requestBody.trim()};`);
+  const request = factory(requestAllowed, ORIGIN, 20, 2_000_000, SyntheticProofError,
+    (condition, code) => { if (!condition) throw new SyntheticProofError(code); }, error => error.code ?? 'UNCLASSIFIED_PROOF_ERROR',
+    () => new Date().toISOString(), receipt, row => events.push(row.terminal ? 'terminal' : 'intent'), () => {},
+    () => { assert.equal(receipt.pending, 0); assert.equal(receipt.unresolvedAuth, 0); }, fetch);
+  return { request, receipt, transport };
+}
+for (const kind of ['malformed', 'stalled']) test(`actual request captures the observed cookie before ${kind} sign-in body failure and preserves unresolved issuance through cleanup`, async () => {
+  const { request, receipt, transport } = actualRequestHarness(kind), c = { actor: 'ADMIN', cookie: '', branchIds: [] }, rows = [];
+  await assert.rejects(request(c, 'POST', '/api/auth/sign-in', { body: { phone: 'SYNTHETIC', password: 'SYNTHETIC' } }));
+  assert.equal(c.attempted, true); assert.equal(c.cookie === 'oto_session=ZZ_TEST_SYNTHETIC_COOKIE', true);
+  assert.equal(receipt.pending, 0); assert.equal(receipt.unresolvedAuth, 1); assert.equal(receipt.operations[0].terminal, false);
+  assert.equal(await closeSession(c, request, row => rows.push(row)), true);
+  assert.equal(rows[0].noOriginalCookie, false); assert.equal(rows[0].signOutStatus, 200); assert.equal(rows[0].meStatus, 401);
+  assert.equal(receipt.unresolvedAuth, 1, 'Observed-cookie revocation cannot resolve the original incomplete issuance body.');
+  assert.equal(receipt.pending, 0); assert.equal(c.cookie, ''); assert.equal(c.originalCookie, '');
+  assert.deepEqual(transport.map(r => [r.method, r.path, r.observedCookie]), [
+    ['POST', '/api/auth/sign-in', false], ['POST', '/api/auth/sign-out', true], ['GET', '/api/me', true] ]);
+});
+test('actual Windows file-URL loader collects all five real GET schemas without calling a handler', async () => {
+  const source = fs.readFileSync(new URL('./admin639-staging-proof.mjs', import.meta.url), 'utf8');
+  const start = source.indexOf('export async function loadReleasedPlatformSchemas()'), end = source.indexOf('\nexport async function executeReviewedPlan', start);
+  assert.ok(start >= 0 && end > start);
+  const actual = source.slice(start, end).replace('export ', '').replace('await import(', 'await importLoader(').replace('import.meta.url', 'parentURL');
+  const root = 'C:/synthetic-no-disk', route = 'apps/api/src/routes/platform.ts', seen = [], expected = {}, marker = { parse: value => value }; let handlers = 0;
+  const importLoader = async url => {
+    assert.equal(new URL(url).protocol, 'file:');
+    return { tsImport: async (url, options) => { assert.equal(new URL(url).protocol, 'file:'); assert.equal(options.tsconfig, path.join(root, 'apps/api/tsconfig.json')); seen.push(url);
+      if (url.endsWith('/platform.ts')) return { platformRoutes: async app => { for (const pathname of ['/platform/alerts', '/platform/jobs', '/platform/environment']) {
+        expected['/api' + pathname] = marker; app.get(pathname, { schema: { response: { 200: marker } } }, () => { handlers++; }); } } };
+      const entry = url.endsWith('/roles.ts') ? 'roleRoutes' : 'operatorRoutes', key = entry === 'roleRoutes' ? '/api/roles' : '/api/operators';
+      expected[key] = marker; return { [entry]: async app => { app.get('/', { schema: { response: { 200: marker } } }, () => { handlers++; }); app.post('/', {}, () => { handlers++; }); } };
+    } };
+  };
+  const load = new Function('path', 'pathToFileURL', 'WORKTREE', 'ROUTE', 'need', 'importLoader', 'parentURL', `${actual}\nreturn loadReleasedPlatformSchemas;`)(
+    path, pathToFileURL, root, route, condition => assert.equal(condition, true), importLoader, import.meta.url);
+  assert.deepEqual(await load(), expected); assert.equal(seen.length, 3); assert.equal(handlers, 0);
+});
+
+// Execute the actual observe function, native route callback, capture cleanup and final predicate.
+// Only browser/transport/filesystem sinks are inert fakes; no callback/status/tracking logic is duplicated.
+async function nativeHarness({ failReceiptWriteAt = 0, pageIndex = 3, controlsView = null } = {}) {
+  const source = fs.readFileSync(new URL('./admin639-staging-proof.mjs', import.meta.url), 'utf8');
+  const observeStart = source.indexOf('  const observe = '), observeEnd = source.indexOf('\n  async function read(c,', observeStart);
+  const routeStart = source.indexOf("    await page.route('**/*', async route => {"), routeEnd = source.indexOf('\n    });\n    try {', routeStart) + '\n    });'.length;
+  const cleanupStart = source.indexOf('    } finally { await context.close();'), cleanupEnd = source.indexOf('\n  }\n  try {', cleanupStart);
+  const completeStart = source.indexOf('    receipt.complete = '), completeEnd = source.indexOf(';\n    save();', completeStart) + 1;
+  assert.ok(observeStart >= 0 && observeEnd > observeStart && routeStart >= 0 && routeEnd > routeStart && cleanupStart >= 0 && cleanupEnd > cleanupStart && completeStart >= 0 && completeEnd > completeStart);
+  const actualObserve = source.slice(observeStart, observeEnd), actualRoute = source.slice(routeStart, routeEnd);
+  const saveStart = source.indexOf('  const save = () => '), saveEnd = source.indexOf('\n  fs.writeFileSync(journal', saveStart);
+  const diagnosticStart = source.indexOf('    const diagnostic = (stage, request) => '), diagnosticEnd = source.indexOf("\n    page.on('pageerror'", diagnosticStart);
+  assert.ok(saveStart >= 0 && saveEnd > saveStart && diagnosticStart >= 0 && diagnosticEnd > diagnosticStart);
+  const actualSave = source.slice(saveStart, saveEnd), actualDiagnostic = source.slice(diagnosticStart, diagnosticEnd);
+  const controlsStart = source.indexOf("          await page.getByRole('heading', { name: 'Available controls', exact: true }).waitFor();");
+  const controlsEnd = source.indexOf('\n        }\n      }\n      await c.drainNative', controlsStart);
+  assert.ok(controlsStart >= 0 && controlsEnd > controlsStart);
+  const actualControls = source.slice(controlsStart, controlsEnd);
+  const actualCleanup = source.slice(cleanupStart, cleanupEnd).replace(/^\s*\} finally \{/, '').replace(/\}\s*$/, '');
+  const actualComplete = source.slice(completeStart, completeEnd);
+  const receipt = { complete: false, platformLinks: true, oldOperatorsAddress: true, screenshots: [{}, {}, {}, {}, {}, {}, {}], authority: [{ beforeSha256: 'ZZ_TEST_A', afterSha256: 'ZZ_TEST_A' }, { beforeSha256: 'ZZ_TEST_B', afterSha256: 'ZZ_TEST_B' }],
+    pending: 0, unresolvedAuth: 0, journalHealthy: true, reads: [], diagnostics: [], authCleanup: [], network: { blocked: 0, failed: 0, pageErrors: 0, consoleErrors: 0, fontSuppressions: 0 } };
+  const frame = {}, c = { actor: 'ADMIN', permissions: [{ permission: 'admin:health:read', scopeType: 'operator', scopeId: DEMOS.operatorId }], browserContexts: [] };
+  let callback; const page = { mainFrame: () => frame, url: () => ORIGIN + PAGES[pageIndex].path, route: async (_pattern, handler) => { callback = handler; },
+    getByRole: (...args) => { assert.ok(controlsView, 'Only the controls readiness case may use the synthetic rendered heading.'); return controlsView.getByRole(...args); } };
+  class SyntheticProofError extends Error { constructor(code) { super(code); this.code = code; } }
+  let receiptWrites = 0;
+  const save = failReceiptWriteAt ? new Function('fs', 'resultFile', 'receipt', 'ProofError', actualSave + '\nreturn save;')({
+    writeFileSync() { receiptWrites++; if (receiptWrites >= failReceiptWriteAt) throw new Error('ZZ_TEST_SYNTHETIC_FILE_SHARING_FAILURE'); },
+  }, 'ZZ_TEST_IN_MEMORY_RESULT', receipt, SyntheticProofError) : () => {};
+  const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+  const factory = new AsyncFunction('receipt', 'c', 'page', 'need', 'codeOf', 'requestAllowed', 'observeSchemas', 'validatePlatform', 'lastDeploy', 'now', 'digest', 'hash',
+    'MAX_BODY', 'TIMEOUT', 'FONT', 'PAGES', 'DOCUMENTS', 'assets', 'save', 'pageIndex',
+    `const Schemas = observeSchemas, spec = PAGES[pageIndex]; let consumed = null, routeFailure = null; ${actualObserve}\n${actualDiagnostic}\n${actualRoute}\nreturn { consumed: () => consumed, failure: () => routeFailure, controls: async card => { ${actualControls} } };`);
+  const stage = await factory(receipt, c, page, (condition, code) => { if (!condition) throw new SyntheticProofError(code); }, error => error.code ?? 'UNCLASSIFIED_PROOF_ERROR',
+    requestAllowed, { '/api/platform/jobs': { parse: value => value } }, validatePlatform, after, () => at, digest, h, 2_000_000, 30_000,
+    'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap', PAGES, ['/platform', '/organisation/operators', ...PAGES.map(p => p.path)], new Map(), save, pageIndex);
+  const cleanup = new AsyncFunction('context', 'c', 'receipt', 'need', actualCleanup);
+  const complete = new Function('receipt', 'sessions', 'failed', `${actualComplete}\nreturn receipt.complete;`);
+  const routeFor = (pathname, transport) => {
+    const effects = { aborted: false, fulfilled: [] };
+    const request = { method: () => 'GET', url: () => ORIGIN + pathname, resourceType: () => 'fetch', frame: () => frame, postData: () => null };
+    return { effects, route: { request: () => request, fetch: transport, abort: async () => { effects.aborted = true; },
+      fulfill: async value => { effects.fulfilled.push(value.status); } } };
+  };
+  return { receipt, c, stage, save, receiptWrites: () => receiptWrites, callback: route => callback(route), routeFor,
+    cleanup: context => cleanup(context, c, receipt, (condition, code) => { if (!condition) throw new SyntheticProofError(code); }),
+    complete: () => complete(receipt, [{ closed: true }, { closed: true }], false) };
+}
+for (const status of [201, 202]) test(`FINDING high: native GET${status} is refused and cannot be relabelled as an observed200 DTO`, async () => {
+  const f = await nativeHarness(), { route, effects } = f.routeFor('/api/platform/jobs', async () => ({ status: () => status,
+    headers: () => ({ date: at, 'content-type': 'application/json' }), body: async () => Buffer.from(JSON.stringify(platform())) }));
+  await f.callback(route);
+  assert.equal(effects.aborted, true, 'Only actual native GET200 may be recorded as an observed200.');
+  assert.equal(f.receipt.reads.length, 0); assert.deepEqual(effects.fulfilled, []); assert.equal(f.stage.consumed(), null);
+  assert.equal(f.stage.failure(), 'NATIVE_ALLOWED_READ_FAILED');
+});
+test('FINDING high: deferred native health failure during context cleanup cannot precede a terminal complete receipt', async () => {
+  const f = await nativeHarness(); let rejectTransport, closeCalled;
+  const pending = new Promise((_resolve, reject) => { rejectTransport = reject; });
+  const closing = new Promise(resolve => { closeCalled = resolve; });
+  const { route, effects } = f.routeFor('/api/ops/health', () => pending), context = { close: async () => { closeCalled(); } };
+  f.c.browserContexts.push(context);
+  const nativeWork = f.callback(route), trackedWhilePending = Number.isInteger(f.receipt.nativePending) && f.receipt.nativePending > 0;
+  let finalized = false, completedBeforeTerminal = false, cleanupError = null;
+  const cleanupWork = f.cleanup(context).then(() => { finalized = true; completedBeforeTerminal = f.complete(); }, error => { finalized = true; cleanupError = error; });
+  await closing; await new Promise(resolve => setImmediate(resolve));
+  const earlyComplete = finalized && completedBeforeTerminal;
+  rejectTransport(new Error('ZZ_TEST_LATE_NATIVE_FAILURE')); await nativeWork; await cleanupWork;
+  assert.equal(earlyComplete, false, 'Native work remains unproven until every dispatched fetch/body/fulfill settles, including context-close cancellation.');
+  assert.equal(trackedWhilePending, true); assert.equal(f.receipt.nativePending, 0);
+  if (cleanupError) assert.match(cleanupError.code ?? '', /^[A-Z][A-Z0-9_]+$/, 'A missing harness dependency or unclassified exception is not a successful guard.');
+  assert.equal(f.receipt.network.blocked, 1); assert.equal(effects.aborted, true); assert.equal(f.receipt.complete, false);
+});
+
+
+test('actual fresh census requires the exact live platform identity and real own/null operator read permissions', async () => {
+  const source = fs.readFileSync(new URL('./admin639-staging-proof.mjs', import.meta.url), 'utf8');
+  const start = source.indexOf('  async function census(c)'), end = source.indexOf('  const observe = ', start);
+  const ownStart = source.indexOf('const ownPermission = '), ownEnd = source.indexOf('export const ENV_NAMES', ownStart);
+  assert.ok(start >= 0 && end > start && ownStart >= 0 && ownEnd > ownStart);
+  const actual = source.slice(ownStart, ownEnd) + source.slice(start, end), AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+  const base = () => ({ me: { account: { id: DEMOS.ADMIN, operatorId: DEMOS.operatorId, status: 'active', mustChangePassword: false },
+    branch: null, preferences: {}, sessionLocked: false, isPlatformAdmin: true },
+    permissions: ['app:console:access', 'admin:health:read', 'admin:operator:read', 'admin:role:read', 'admin:ops:manage'].map(permission => ({ permission, scopeType: 'operator', scopeId: null })) });
+  const run = async state => {
+    const request = async (_c, method, pathname) => { assert.equal(method, 'GET'); assert.ok(['/api/me', '/api/me/permissions'].includes(pathname));
+      return { status: 200, body: pathname === '/api/me' ? state.me : { permissions: state.permissions } }; };
+    const census = await new AsyncFunction('request', 'DEMOS', 'platformAllowed', 'digest', 'canonical', 'need', actual + '\nreturn census;')(
+      request, DEMOS, platformAllowed, digest, JSON.stringify, (condition, code) => { if (!condition) throw Object.assign(new Error(code), { code }); });
+    return census({ actor: 'ADMIN' });
+  };
+  assert.equal((await run(base())).platform, true);
+  for (const mutate of [s => { s.me.account.id = A; }, s => { s.me.account.operatorId = B; }, s => { s.me.account.status = 'inactive'; },
+    s => { s.me.account.mustChangePassword = true; }, s => { s.me.sessionLocked = true; }, s => { s.me.isPlatformAdmin = false; },
+    s => { s.permissions.forEach(p => { p.scopeId = DEMOS.operatorId; }); },
+    s => { const p = s.permissions.find(p => p.permission === 'admin:health:read'); p.scopeType = 'branch'; p.scopeId = A; },
+    s => { s.permissions.find(p => p.permission === 'admin:health:read').scopeId = B; }]) {
+    const state = base(); mutate(state); await assert.rejects(run(state), error => typeof error.code === 'string');
+  }
+});
+test('actual native GET200 records the consumed persisted-job DTO and settles all private native work', async () => {
+  const f = await nativeHarness(), { route, effects } = f.routeFor('/api/platform/jobs', async () => ({ status: () => 200,
+    headers: () => ({ date: at, 'content-type': 'application/json' }), body: async () => Buffer.from(JSON.stringify(platform())) }));
+  await f.callback(route);
+  assert.equal(effects.aborted, false); assert.deepEqual(effects.fulfilled, [200]); assert.equal(f.receipt.reads.length, 1);
+  assert.equal(f.receipt.reads[0].status, 200); assert.equal(f.receipt.reads[0].states.unknown, 1);
+  assert.deepEqual(f.stage.consumed(), platform()); assert.equal(f.receipt.nativePending, 0); assert.equal(f.c.nativeWork.size, 0);
+});
+
+
+// This uses the real native callback/save/diagnostic and the real outer finally body.
+// The filesystem sink and auth transport are synthetic; no file, cookie or request is real.
+for (const failReceiptWriteAt of [1, 2]) test(`FINDING high: native receipt IO failure at write${failReceiptWriteAt} settles without rejection and still revokes every owned session`, async () => {
+  const f = await nativeHarness({ failReceiptWriteAt }), source = fs.readFileSync(new URL('./admin639-staging-proof.mjs', import.meta.url), 'utf8');
+  const finalStart = source.indexOf('\n  finally {\n    for (const c of sessions) {', source.indexOf('export async function executeReviewedPlan'));
+  const finalEnd = source.indexOf('\n  return receipt;', finalStart);
+  assert.ok(finalStart >= 0 && finalEnd > finalStart);
+  const actualFinally = source.slice(finalStart, finalEnd).replace(/^\s*finally \{/, '').replace(/\}\s*$/, '');
+  const calls = [], closed = [];
+  f.c.attempted = true; f.c.closed = false; f.c.cookie = 'ZZ_TEST_SYNTHETIC_ADMIN_COOKIE';
+  f.c.browserContexts.push({ close: async () => { closed.push('ADMIN'); } });
+  const second = { actor: 'RECEPTION', attempted: true, closed: false, cookie: 'ZZ_TEST_SYNTHETIC_RECEPTION_COOKIE',
+    browserContexts: [{ close: async () => { closed.push('RECEPTION'); } }] };
+  const sessions = [f.c, second], { route } = f.routeFor('/api/ops/health', async () => ({ status: () => 200,
+    headers: () => ({ 'content-type': 'application/json' }), body: async () => Buffer.from('{}') }));
+  let callbackError = null;
+  try { await f.callback(route); } catch (error) { callbackError = error; }
+  const request = async (context, method, pathname, options) => {
+    calls.push({ actor: context.actor, method, pathname, cleanup: options.cleanup, originalObserved: context.cookie.startsWith('ZZ_TEST_SYNTHETIC_') });
+    if (method === 'POST') { context.cookie = ''; return { status: 200, body: { ok: true } }; }
+    return { status: 401 };
+  };
+  const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+  const cleanup = new AsyncFunction('sessions', 'receipt', 'browser', 'request', 'closeSession', 'save', 'sourceGate', 'codeOf', 'now',
+    'let failed = false; ' + actualFinally + '\nreturn failed;');
+  let cleanupError = null;
+  try { await cleanup(sessions, f.receipt, { close: async () => { closed.push('BROWSER'); } }, request, closeSession, f.save,
+    async () => {}, error => error.code ?? 'UNCLASSIFIED_PROOF_ERROR', () => at); } catch (error) { cleanupError = error; }
+  assert.deepEqual(closed, ['ADMIN', 'RECEPTION', 'BROWSER']);
+  assert.deepEqual(calls, ['ADMIN', 'RECEPTION'].flatMap(actor => [
+    { actor, method: 'POST', pathname: '/api/auth/sign-out', cleanup: true, originalObserved: true },
+    { actor, method: 'GET', pathname: '/api/me', cleanup: true, originalObserved: true },
+  ]));
+  assert.equal(f.receipt.journalHealthy, false); assert.equal(f.receipt.nativePending, 0); assert.equal(f.c.nativeWork.size, 0);
+  assert.equal(f.receipt.complete, false); assert.equal(f.receipt.authCleanup.length, 2);
+  assert.equal(f.receipt.authCleanup.every(row => row.confirmed && row.signOutStatus === 200 && row.meStatus === 401), true);
+  if (cleanupError) assert.equal(cleanupError.code, 'RECEIPT_WRITE_FAILED', 'Only a classified final receipt write failure is allowed after all cleanup attempts.');
+  assert.ok(f.receiptWrites() >= failReceiptWriteAt);
+  assert.equal(callbackError, null, 'A rejected Playwright route callback can crash before coordinator finally; receipt IO failure must latch and settle locally.');
+});
+
+test('FINDING medium: Test controls waits for the actual deferred native GET and rendered control labels after its early heading', async () => {
+  const events = [], body = platform('/api/ops/test-controls'); let releaseResponse, rendered = false, countCalls = 0;
+  const pendingResponse = new Promise(resolve => { releaseResponse = resolve; });
+  const controls = { getByRole(role, options) {
+    assert.equal(role, 'button');
+    return { count: async () => { countCalls++; events.push('count'); return rendered ? body.controls.length : 0; },
+      waitFor: async () => { assert.equal(rendered, true, 'Control labels must be checked only after the actual native response has been fulfilled.');
+        assert.equal(options.exact, true); assert.ok(body.controls.some(control => control.label === options.name)); events.push('control-label'); } };
+  } };
+  const controlsView = { getByRole(role, options) {
+    assert.equal(role, 'heading'); assert.deepEqual(options, { name: 'Available controls', exact: true });
+    return { waitFor: async () => { events.push('early-heading'); } };
+  } };
+  const f = await nativeHarness({ pageIndex: 5, controlsView });
+  const { route, effects } = f.routeFor('/api/ops/test-controls', () => pendingResponse);
+  const fulfill = route.fulfill; route.fulfill = async value => { await fulfill(value); rendered = true; events.push('native-fulfilled'); };
+  const nativeWork = f.callback(route); let ready = false, branchError = null;
+  const branchWork = f.stage.controls(title => { assert.equal(title, 'Available controls'); return controls; })
+    .then(() => { ready = true; }, error => { branchError = error; });
+  await new Promise(resolve => setImmediate(resolve));
+  const premature = ready || branchError !== null || countCalls !== 0;
+  releaseResponse({ status: () => 200, headers: () => ({ date: at, 'content-type': 'application/json' }), body: async () => Buffer.from(JSON.stringify(body)) });
+  await nativeWork; await branchWork;
+  assert.equal(premature, false, 'An already-visible card heading is not evidence that its native response or rows are ready.');
+  assert.equal(branchError, null); assert.equal(ready, true); assert.equal(f.receipt.nativePending, 0); assert.equal(f.c.nativeWork.size, 0);
+  assert.deepEqual(effects.fulfilled, [200]); assert.deepEqual(f.stage.consumed(), body);
+  assert.ok(events.indexOf('native-fulfilled') < events.indexOf('control-label'));
+  assert.ok(events.indexOf('control-label') < events.indexOf('count'), 'Wait for the existing exact native labels before checking their exact count.');
+  assert.equal(countCalls, 1); assert.equal(f.receipt.reads.length, 1);
+});
+
+test('FINDING medium: capture records its first assertion failure before context-close cancellation can mask it', async () => {
+  const source = fs.readFileSync(new URL('./admin639-staging-proof.mjs', import.meta.url), 'utf8');
+  const captureStart = source.indexOf('  async function capture(c, index,'), captureEnd = source.indexOf('\n  }\n  try {', captureStart);
+  assert.ok(captureStart >= 0 && captureEnd > captureStart);
+  const ending = source.slice(captureStart, captureEnd).match(/\n    \} (?:catch[\s\S]*?)?finally \{ await context\.close\(\);[\s\S]*$/)?.[0];
+  assert.ok(ending, 'Use the actual capture catch/finally rather than a duplicate cleanup implementation.');
+  class SyntheticProofError extends Error { constructor(code) { super(code); this.code = code; } }
+  const receipt = {}, calls = [], context = { close: async () => { calls.push('context-close'); } };
+  const c = { browserContexts: [context], drainNative: async () => { calls.push('cancelled-native-drain'); throw new SyntheticProofError('NATIVE_DRAIN_FAILED'); } };
+  const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+  const run = new AsyncFunction('context', 'c', 'receipt', 'codeOf', 'primary', 'save', 'saveNative',
+    `try { throw primary; ${ending}`);
+  let escaped;
+  try { await run(context, c, receipt, error => error.code ?? 'UNCLASSIFIED_PROOF_ERROR', new SyntheticProofError('NATIVE_CONTROLS_RESPONSE_REQUIRED'), () => {}, () => {}); }
+  catch (error) { escaped = error; }
+  assert.deepEqual(calls, ['context-close', 'cancelled-native-drain']);
+  assert.equal(receipt.errorCode, 'NATIVE_CONTROLS_RESPONSE_REQUIRED', 'The receipt must retain the first capture failure even when closing the page cancels another native GET.');
+  assert.ok(escaped && ['NATIVE_CONTROLS_RESPONSE_REQUIRED', 'NATIVE_DRAIN_FAILED'].includes(escaped.code));
+});

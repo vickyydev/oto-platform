@@ -1,0 +1,166 @@
+{
+  "ticket": "SCRUM-639",
+  "publishedAt": "2026-10-25T11:49:40.718Z",
+  "sourceSha": "78ff5325e3ac1c9cae2ebd3bd92539bba18346ac",
+  "localEvidenceCopyOnly": true,
+  "jiraStatusChanged": false,
+  "gitPublished": false,
+  "resultSha256": "548e31f5eccd2b6a41ba42a15ca7b876f4e0fafa269e14d077cbc8ee4d562473",
+  "inspectionSha256": "0892a519266803b239be08af75b988d8a9f19b7b49fcf089ed486ebb14fa040a",
+  "priorFilesPreserved": 53,
+  "readmePriorSha256": "33a97e818bd315a028241d9dee39ca1f80f3f893b14bbae3359830e73356e65b",
+  "files": [
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-639/SCRUM-639-01-operators.png",
+      "sha256": "9487ffee3495bc5de31f35cd2c8a35c0a09b7ce1bca8af0065945a18d475ba0d"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-639/SCRUM-639-02-system-roles.png",
+      "sha256": "d93887bfdf0d55e63da72c626aecd3a6f972af359417e1f1ebbb11d81e4b7bfa"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-639/SCRUM-639-03-platform-alerts.png",
+      "sha256": "031d29eaad799446d4a073d4b898467e3bab4480260f2cda674407a1519c101a"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-639/SCRUM-639-04-platform-jobs.png",
+      "sha256": "dd6914678dade16368a3a70f9571877b7f0393ab0975bacdc4d1143edbacb54e"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-639/SCRUM-639-05-environment-phone.png",
+      "sha256": "b2fc84a8cc30d54401b2041150874d0e218be10835c2232423414f696ba7f3fe"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-639/SCRUM-639-06-test-controls.png",
+      "sha256": "c0608388142a64eb0563c3c6b961de6253974a286291939899fd4810a231f714"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-639/SCRUM-639-07-platform-restricted.png",
+      "sha256": "d397d2e1bb98d66b29489a56871591092626b40f0432570382c187260aeb9488"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-639/staging-result.json",
+      "sha256": "548e31f5eccd2b6a41ba42a15ca7b876f4e0fafa269e14d077cbc8ee4d562473"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-639/staging-intents.jsonl",
+      "sha256": "cafeb7c2f38232cedc0e1e4a176051c8009499d1b4dec2429f35123f070ef314"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-639/staging-plan.json",
+      "sha256": "507d72e720931438e6a436d6d3d385baebf1608269498ad0821865a4472bd7e0"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-639/staging-bindings.json",
+      "sha256": "a38e2081ea8e8883fc1aa45323664270faf157400481b1b247d6fa3fa43d494a"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-639/staging-inspection.json",
+      "sha256": "0892a519266803b239be08af75b988d8a9f19b7b49fcf089ed486ebb14fa040a"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-639/staging-proof.mjs.txt",
+      "sha256": "fda2c2f11a850f3f44c9980096ef56c1fb08e8c215d5bd1815987ae90d64c7a9"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-639/staging-proof.test.mjs.txt",
+      "sha256": "da1bacdb11d325ec4e74a4af527ca2628acb3cfdc3e2fc96e53fc5a528d1c1ca"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-639/staging-attempts/helper-v1-v2.mjs.txt",
+      "sha256": "3f0ea7c66721911a94d38c4cb0e22136500441ca0f9babd23599f61c1643c680"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-639/staging-attempts/helper-v3.mjs.txt",
+      "sha256": "0809deaaa987db278442113f165ddab4d26ea8dc6dc62f9fcad13c96ec4af29c"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-639/staging-attempts/v2/first-recovery-census-intent.json",
+      "sha256": "062969f7c9f473454a73d450eaff6f491f79f2a1833a64522ccae4b590649f24"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-639/staging-attempts/v1/result.json",
+      "sha256": "b3b84d5a445635b64532f4310d1c2a445c55ee7c1225defe51385705d8cc8706"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-639/staging-attempts/v1/intents.jsonl",
+      "sha256": "dd3877dc36e33ea859a845df20b3c949a18ca4450f2d4cc6610fb42f679002c8"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-639/staging-attempts/v1/plan.json",
+      "sha256": "c0e6cecc622c96cb3c821977f64659ad15cf3f6cb3ec4f3ecde1fc3231a3b1c9"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-639/staging-attempts/v1/bindings.json",
+      "sha256": "3074e8f72377fc38f62bf93099b263d0a57c7740bb8b65c035921054396dc457"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-639/staging-attempts/v2/result.json",
+      "sha256": "cc367b420d619c9a55d6c877cce75146c45c54e53926abca8dbe57df13dfe84d"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-639/staging-attempts/v2/intents.jsonl",
+      "sha256": "1004dedf358d64ded4b29bdd59e79a62137be25e3a79aa99c278fb57c8a346de"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-639/staging-attempts/v2/plan.json",
+      "sha256": "1281197dfdb00469ced00a1af12730ead99c09a5ed5982b4b454c857edd073c9"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-639/staging-attempts/v2/bindings.json",
+      "sha256": "27952cd2a660a5f57c1abeeca540d64cfe228658978328852bd16e6e8ea24e46"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-639/staging-attempts/v3/result.json",
+      "sha256": "f5a9180b46a3524e181db1435949fe82d70c4edcf2febc1c82af41260ae42833"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-639/staging-attempts/v3/intents.jsonl",
+      "sha256": "d97ae837b818edc7760f2c62feafc67242d153de5c66dd984a1c55e629769460"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-639/staging-attempts/v3/plan.json",
+      "sha256": "5fe1901b551758a60795e4d956fe0785280f74204d05c90b0f17901483c6bba9"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-639/staging-attempts/v3/bindings.json",
+      "sha256": "c5f0cf20b322e050cef4930be587ba8db481a061e54ac0cf2a42052b1e926b6e"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-639/staging-helper-io-red.json",
+      "sha256": "febfb35e566ee7d68afd8ef8ffa88af9c76ab1138336af3639c886cc75fa03c6"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-639/staging-helper-io-green.json",
+      "sha256": "e720d0adfb73662a167da014ecc87bd56256052c3737605b7270170da87f050a"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-639/staging-helper-controls-red.json",
+      "sha256": "270d25291e8a4e8cd4b89ef66bd9b0a6d215655a144b704474cdfeaa1c889d22"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-639/staging-helper-controls-green.json",
+      "sha256": "185ffbd4db5a69aabdfe8f68d70e120aecd6b1f54d79927c6cf9ce7fbb4dad0d"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-639/staging-v2-recovery-census-r2.json",
+      "sha256": "b0685bdd3569cd90c8f84a52fa2d85d1d20f814624e9e6bc625ae907cec424c1"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-639/staging-v2-recovery-revoke-r2.json",
+      "sha256": "208e69579299b57753a1c65064cbef66997936d0ec3a5dfe3ed3bcdc456e80a3"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-639/staging-public-logo-diagnostic.json",
+      "sha256": "4b3842726f0c9a29716db8dc8fcd849c9acd5028cb00ba70cb32e1960ab246e4"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-639/README.md",
+      "sha256": "d44d51840c808ac4a3e9761f6946bbac1d2663b11411a4e1148b8730af103e5d"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-639/staging-file-list.json",
+      "self": true
+    }
+  ]
+}

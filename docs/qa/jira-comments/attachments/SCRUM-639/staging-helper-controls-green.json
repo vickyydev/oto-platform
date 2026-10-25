@@ -1,0 +1,15 @@
+{
+  "ticket": "SCRUM-639",
+  "stage": "green",
+  "startedAt": "2026-10-25T11:42:32.220Z",
+  "completedAt": "2026-10-25T11:42:32.407Z",
+  "exitCode": 0,
+  "signal": null,
+  "helperSha256": "fda2c2f11a850f3f44c9980096ef56c1fb08e8c215d5bd1815987ae90d64c7a9",
+  "testSha256": "da1bacdb11d325ec4e74a4af527ca2628acb3cfdc3e2fc96e53fc5a528d1c1ca",
+  "logSha256": "dc371547c06281da9f04249ec726b7c6ec89169b2eff3d922f603224c396c2ee",
+  "helperUnchanged": true,
+  "testUnchanged": true,
+  "localOnly": true,
+  "authAttempts": 0
+}

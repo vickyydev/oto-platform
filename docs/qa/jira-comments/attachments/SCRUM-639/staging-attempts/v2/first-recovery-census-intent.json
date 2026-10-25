@@ -1,0 +1,9 @@
+{
+  "ticket": "SCRUM-639",
+  "recordedAt": "2026-10-25T11:29:28.993Z",
+  "mode": "census",
+  "target": null,
+  "scriptSha256": "6eed85e978508bfa867b0c2340fb08500488292b06d293bc7cf9ff27e0c36f54",
+  "nativeService": "signOut",
+  "accountWideRevocation": false
+}
