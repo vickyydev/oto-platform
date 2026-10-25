@@ -63,6 +63,21 @@ afterAll(async () => {
 /** Routes Fastify or a plugin registers for us, which we do not configure. */
 const NOT_OURS = new Set(['/docs/json', '/*']);
 
+describe('Aggregate selected parks (SCRUM-636)', () => {
+  it('binds every aggregate to the current operator and fresh dynamic authority', () => {
+    for (const path of [
+      '/aggregates/members', '/aggregates/bookings', '/aggregates/assistant-usage',
+      '/aggregates/inbox-ai-usage', '/aggregates/fleet',
+    ]) {
+      const route = routes.find(r => r.method === 'GET' && r.path === path);
+      expect(route, path).toBeDefined();
+      expect(configs.get(`GET ${path}`)?.dynamicPermission, path).toBe(true);
+      expect(reachesText(route!.handlerText, text => /auth\.operatorId/.test(text), functions), path).toBe(true);
+      expect(reachesText(route!.handlerText, text => /req\.effectivePermissions\s*\(/.test(text), functions), path).toBe(true);
+    }
+  });
+});
+
 describe('Staff summary selected park (SCRUM-634)', () => {
   it('declares dynamic authority and reaches owned operator metadata before any app read', () => {
     const route = routes.find(r => r.method === 'GET' && r.path === '/staff/summary');

@@ -60,6 +60,27 @@ afterAll(async () => {
 
 const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
+describe('Aggregate read registration (SCRUM-636)', () => {
+  it('registers exactly five read-only facades without a mutation exemption', () => {
+    const expected = [
+      ['/aggregates/members', 'membersSnapshotOf'],
+      ['/aggregates/bookings', 'bookingsSnapshotOf'],
+      ['/aggregates/assistant-usage', 'assistantUsageSnapshotOf'],
+      ['/aggregates/inbox-ai-usage', 'inboxAiUsageSnapshotOf'],
+      ['/aggregates/fleet', 'fleetSnapshotOf'],
+    ] as const;
+    const aggregateRoutes = routes.filter(r => r.path.startsWith('/aggregates/'));
+    expect(aggregateRoutes.map(r => `${r.method} ${r.path}`).sort())
+      .toEqual(expected.map(([path]) => `GET ${path}`).sort());
+    for (const [path, facade] of expected) {
+      const route = aggregateRoutes.find(r => r.path === path)!;
+      expect(MUTATING.has(route.method), path).toBe(false);
+      expect(configs.get(`GET ${path}`)?.dynamicPermission, path).toBe(true);
+      expect(reachesText(route.handlerText, text => new RegExp(`\\b${facade}\\s*\\(`).test(text), functions), path).toBe(true);
+    }
+  });
+});
+
 describe('Staff summary read registration (SCRUM-634)', () => {
   it('keeps business reads separate from the audited temporary handoff', () => {
     const route = routes.find(r => r.method === 'GET' && r.path === '/staff/summary');

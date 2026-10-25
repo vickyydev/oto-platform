@@ -26651,6 +26651,456 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/aggregates/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read-only counts within console:overview:read reach, independent of the session seat and detail-page grants. Only live parks owned by the current operator are eligible. Foreign, absent or archived park:404; owned unreachable park:403. Optional branchId selects one reachable park. No private record identities or message text are returned. Explicit real from/to calendar dates, inclusive and ordered, at most31 days. Unknown or repeated query fields are refused. Visits use their stored visit_date and retain every native status and walk-in. Visiting members are distinct within each day, park or entire selected period; they are not added as daily distinct counts. */
+        get: {
+            parameters: {
+                query: {
+                    branchId?: string;
+                    from: string;
+                    to: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: date-time */
+                            generatedAt: string;
+                            branches: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                                timezone: string;
+                                businessDayStart: string;
+                                businessDate: string;
+                            }[];
+                            selectedBranchIds: string[];
+                            period: {
+                                from: string;
+                                to: string;
+                            };
+                            /** @enum {string} */
+                            basis: "visit-date";
+                            totals: {
+                                visits: number;
+                                draftVisits: number;
+                                activeVisits: number;
+                                closedVisits: number;
+                                visitingMembers: number;
+                            };
+                            parks: {
+                                /** Format: uuid */
+                                branchId: string;
+                                totals: {
+                                    visits: number;
+                                    draftVisits: number;
+                                    activeVisits: number;
+                                    closedVisits: number;
+                                    visitingMembers: number;
+                                };
+                                rows: {
+                                    visits: number;
+                                    draftVisits: number;
+                                    activeVisits: number;
+                                    closedVisits: number;
+                                    visitingMembers: number;
+                                    date: string;
+                                }[];
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/aggregates/bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read-only counts within console:overview:read reach, independent of the session seat and detail-page grants. Only live parks owned by the current operator are eligible. Foreign, absent or archived park:404; owned unreachable park:403. Optional branchId selects one reachable park. No private record identities or message text are returned. Explicit real from/to calendar dates, inclusive and ordered, at most31 days. Unknown or repeated query fields are refused. Booking-date cohorts count all ledger states, including archived booking records. Value is the priced booking value, never payment revenue. Redeemed bookings require the authoritative same-operator/same-park redemption row, regardless of its redemption timestamp. */
+        get: {
+            parameters: {
+                query: {
+                    branchId?: string;
+                    from: string;
+                    to: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: date-time */
+                            generatedAt: string;
+                            branches: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                                timezone: string;
+                                businessDayStart: string;
+                                businessDate: string;
+                            }[];
+                            selectedBranchIds: string[];
+                            period: {
+                                from: string;
+                                to: string;
+                            };
+                            /** @enum {string} */
+                            basis: "booking-date";
+                            /** @enum {string} */
+                            valueBasis: "priced-booking-value";
+                            /** @enum {string} */
+                            redemptionBasis: "booking-date-cohort";
+                            totals: {
+                                bookings: number;
+                                bookedValueSatang: number;
+                                redeemedBookings: number;
+                            };
+                            parks: {
+                                /** Format: uuid */
+                                branchId: string;
+                                totals: {
+                                    bookings: number;
+                                    bookedValueSatang: number;
+                                    redeemedBookings: number;
+                                };
+                                rows: {
+                                    bookings: number;
+                                    bookedValueSatang: number;
+                                    redeemedBookings: number;
+                                    date: string;
+                                }[];
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/aggregates/assistant-usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read-only counts within console:overview:read reach, independent of the session seat and detail-page grants. Only live parks owned by the current operator are eligible. Foreign, absent or archived park:404; owned unreachable park:403. Optional branchId selects one reachable park. No private record identities or message text are returned. Explicit real from/to calendar dates, inclusive and ordered, at most31 days. Unknown or repeated query fields are refused. Retained internal assistant records, by created_at Bangkok calendar day and the seat recorded at ask time. Count excludes off/capped; token sums retain all scoped records. The90-day retention means this is not a lifetime billing ledger. The unassigned bucket is included once only with an unfiltered operator-wide Overview grant. */
+        get: {
+            parameters: {
+                query: {
+                    branchId?: string;
+                    from: string;
+                    to: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: date-time */
+                            generatedAt: string;
+                            branches: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                                timezone: string;
+                                businessDayStart: string;
+                                businessDate: string;
+                            }[];
+                            selectedBranchIds: string[];
+                            period: {
+                                from: string;
+                                to: string;
+                            };
+                            /** @enum {string} */
+                            basis: "created-at-bangkok";
+                            /** @enum {string} */
+                            coverage: "retained-records";
+                            totals: {
+                                count: number;
+                                inputTokens: number;
+                                outputTokens: number;
+                                cacheReadTokens: number;
+                                totalTokens: number;
+                            };
+                            parks: {
+                                /** Format: uuid */
+                                branchId: string;
+                                totals: {
+                                    count: number;
+                                    inputTokens: number;
+                                    outputTokens: number;
+                                    cacheReadTokens: number;
+                                    totalTokens: number;
+                                };
+                                rows: {
+                                    count: number;
+                                    inputTokens: number;
+                                    outputTokens: number;
+                                    cacheReadTokens: number;
+                                    totalTokens: number;
+                                    date: string;
+                                }[];
+                            }[];
+                            operatorWide: {
+                                totals: {
+                                    count: number;
+                                    inputTokens: number;
+                                    outputTokens: number;
+                                    cacheReadTokens: number;
+                                    totalTokens: number;
+                                };
+                                rows: {
+                                    count: number;
+                                    inputTokens: number;
+                                    outputTokens: number;
+                                    cacheReadTokens: number;
+                                    totalTokens: number;
+                                    date: string;
+                                }[];
+                            } | null;
+                            /** @enum {string} */
+                            attribution: "seat-at-ask";
+                            /** @enum {number} */
+                            retentionDays: 90;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/aggregates/inbox-ai-usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read-only counts within console:overview:read reach, independent of the session seat and detail-page grants. Only live parks owned by the current operator are eligible. Foreign, absent or archived park:404; owned unreachable park:403. Optional branchId selects one reachable park. No private record identities or message text are returned. Explicit real from/to calendar dates, inclusive and ordered, at most31 days. Unknown or repeated query fields are refused. Retained Inbox AI records, by created_at Bangkok calendar day and the conversation current park, which may change after a turn. Count requires non-null latency, including failed/shadow/zero-latency turns; token sums retain all scoped records. The unassigned bucket is included once only with an unfiltered operator-wide Overview grant. No channel default or historical park attribution is invented. */
+        get: {
+            parameters: {
+                query: {
+                    branchId?: string;
+                    from: string;
+                    to: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: date-time */
+                            generatedAt: string;
+                            branches: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                                timezone: string;
+                                businessDayStart: string;
+                                businessDate: string;
+                            }[];
+                            selectedBranchIds: string[];
+                            period: {
+                                from: string;
+                                to: string;
+                            };
+                            /** @enum {string} */
+                            basis: "created-at-bangkok";
+                            /** @enum {string} */
+                            coverage: "retained-records";
+                            totals: {
+                                count: number;
+                                inputTokens: number;
+                                outputTokens: number;
+                                cacheReadTokens: number;
+                                totalTokens: number;
+                            };
+                            parks: {
+                                /** Format: uuid */
+                                branchId: string;
+                                totals: {
+                                    count: number;
+                                    inputTokens: number;
+                                    outputTokens: number;
+                                    cacheReadTokens: number;
+                                    totalTokens: number;
+                                };
+                                rows: {
+                                    count: number;
+                                    inputTokens: number;
+                                    outputTokens: number;
+                                    cacheReadTokens: number;
+                                    totalTokens: number;
+                                    date: string;
+                                }[];
+                            }[];
+                            operatorWide: {
+                                totals: {
+                                    count: number;
+                                    inputTokens: number;
+                                    outputTokens: number;
+                                    cacheReadTokens: number;
+                                    totalTokens: number;
+                                };
+                                rows: {
+                                    count: number;
+                                    inputTokens: number;
+                                    outputTokens: number;
+                                    cacheReadTokens: number;
+                                    totalTokens: number;
+                                    date: string;
+                                }[];
+                            } | null;
+                            /** @enum {string} */
+                            attribution: "current-conversation-branch";
+                            /** @enum {unknown|null} */
+                            retentionDays: "null" | null;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/aggregates/fleet": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read-only counts within console:overview:read reach, independent of the session seat and detail-page grants. Only live parks owned by the current operator are eligible. Foreign, absent or archived park:404; owned unreachable park:403. Optional branchId selects one reachable park. No private record identities or message text are returned. Current non-archived boxes, split by their four persisted statuses. Offline is reported offline status; heartbeat age, watchdog thresholds and alerting hours are unchanged. Historical date filters are refused. */
+        get: {
+            parameters: {
+                query?: {
+                    branchId?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: date-time */
+                            generatedAt: string;
+                            branches: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                                timezone: string;
+                                businessDayStart: string;
+                                businessDate: string;
+                            }[];
+                            selectedBranchIds: string[];
+                            /** @enum {string} */
+                            basis: "current-snapshot";
+                            /** Format: date-time */
+                            asOf: string;
+                            totals: {
+                                boxes: number;
+                                online: number;
+                                offline: number;
+                                unclaimed: number;
+                                disabled: number;
+                            };
+                            parks: {
+                                boxes: number;
+                                online: number;
+                                offline: number;
+                                unclaimed: number;
+                                disabled: number;
+                                /** Format: uuid */
+                                branchId: string;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/overview": {
         parameters: {
             query?: never;

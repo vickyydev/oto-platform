@@ -34,6 +34,21 @@ afterAll(async () => {
 const NOT_OURS = new Set(['/*']);
 
 describe('route guards (S2-01b)', () => {
+  it('requires a session on all five reach-filtered aggregate reads (SCRUM-636)', async () => {
+    for (const url of [
+      '/aggregates/members', '/aggregates/bookings', '/aggregates/assistant-usage',
+      '/aggregates/inbox-ai-usage', '/aggregates/fleet',
+    ]) {
+      const route = ctx.app.routeRegistry.find(r => r.method === 'GET' && r.url === url);
+      expect(route, url).toBeDefined();
+      expect(route?.config.dynamicPermission, url).toBe(true);
+      expect(route?.config.public, url).not.toBe(true);
+      expect(route?.config.credential, url).toBeUndefined();
+      const query = url === '/aggregates/fleet' ? '' : '?from=2026-10-01&to=2026-10-02';
+      expect((await ctx.app.inject({ method: 'GET', url: `${url}${query}` })).statusCode, url).toBe(401);
+    }
+  });
+
   it('requires a session before the Staff summary dynamic two-permission check (SCRUM-634)', async () => {
     const route = ctx.app.routeRegistry.find(r => r.method === 'GET' && r.url === '/staff/summary');
     expect(route?.config.dynamicPermission).toBe(true);
