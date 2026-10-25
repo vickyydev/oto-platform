@@ -1,0 +1,72 @@
+ ❯ test/operator-switch-permission.test.ts (4 tests | 3 failed) 11ms
+   × SCRUM-640 session operator selection permission > declares the new permission exactly once in the public vocabulary 7ms
+     → expected [] to deeply equal [ 'platform:operator:switch' ]
+   × SCRUM-640 session operator selection permission > retains both existing ALL bundles without treating bundle membership as platform-wide authority 2ms
+     → platform_admin: expected [ 'console:overview:read', …(137) ] to include 'platform:operator:switch'
+   ✓ SCRUM-640 session operator selection permission > does not add operator selection to branch manager, reception or staff bundles 0ms
+   × SCRUM-640 session operator selection permission > explains the session context and unchanged account in exactly one plain sentence 1ms
+     → expected undefined to be 'Select the park group this session re…' // Object.is equality
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/operator-switch-permission.test.ts > SCRUM-640 session operator selection permission > declares the new permission exactly once in the public vocabulary
+AssertionError: expected [] to deeply equal [ 'platform:operator:switch' ]
+
+- Expected
++ Received
+
+- [
+-   "platform:operator:switch",
+- ]
++ []
+
+ ❯ test/operator-switch-permission.test.ts:9:86
+      7| describe('SCRUM-640 session operator selection permission', () => {
+      8|   it('declares the new permission exactly once in the public vocabular…
+      9|     expect((PERMISSIONS as readonly string[]).filter(entry => entry ==…
+       |                                                                                      ^
+     10|   });
+     11|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  test/operator-switch-permission.test.ts > SCRUM-640 session operator selection permission > retains both existing ALL bundles without treating bundle membership as platform-wide authority
+AssertionError: platform_admin: expected [ 'console:overview:read', …(137) ] to include 'platform:operator:switch'
+ ❯ test/operator-switch-permission.test.ts:14:40
+     12|   it('retains both existing ALL bundles without treating bundle member…
+     13|     for (const role of ['platform_admin', 'operator_admin'] as const) {
+     14|       expect(ROLE_BUNDLES[role], role).toContain(permission);
+       |                                        ^
+     15|       expect([...ROLE_BUNDLES[role]].sort(), role).toEqual([...PERMISS…
+     16|     }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  test/operator-switch-permission.test.ts > SCRUM-640 session operator selection permission > explains the session context and unchanged account in exactly one plain sentence
+AssertionError: expected undefined to be 'Select the park group this session re…' // Object.is equality
+
+- Expected:
+"Select the park group this session reads and changes while keeping the signed-in account unchanged."
+
++ Received:
+undefined
+
+ ❯ test/operator-switch-permission.test.ts:29:19
+     27|   it('explains the session context and unchanged account in exactly on…
+     28|     const words = (PERMISSION_WORDS as Readonly<Record<string, string>…
+     29|     expect(words).toBe(sentence);
+       |                   ^
+     30|     expect(words).toMatch(/^[A-Z][^\n]+\.$/);
+     31|     expect(words).not.toMatch(/[:_]/);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  3 failed | 1 passed (4)
+   Start at  19:09:44
+   Duration  576ms (transform 77ms, setup 0ms, collect 80ms, tests 11ms, environment 0ms, prepare 176ms)
+
+C:\w\admin-operator-switch\packages\shared:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @oto/shared@0.1.0 test: `vitest run "test/operator-switch-permission.test.ts"`
+Exit status 1

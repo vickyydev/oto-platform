@@ -1,0 +1,234 @@
+ ❯ test/operator-switch-picker-markup.test.ts (16 tests | 14 failed) 17ms
+   ✓ Operator switch picker native markup > offers no switch or operator options without switch authority 4ms
+   × Operator switch picker native markup > keeps the home operator visible and distinct from the current effective operator 4ms
+     → expected '' to contain 'Home operator'
+   × Operator switch picker native markup > selects the canonical current operator rather than the first option 1ms
+     → A permitted picker must render the native select, not disappear.: expected null not to be null
+   × Operator switch picker native markup > continues to use the canonical current value while a switch is pending 1ms
+     → A permitted picker must render the native select, not disappear.: expected null not to be null
+   × Operator switch picker native markup > shows an unselected disabled placeholder when the current context is unknown 1ms
+     → A permitted picker must render the native select, not disappear.: expected null not to be null
+   × Operator switch picker native markup > does not manufacture an option or choose home when the current ID is missing from the confirmed list 0ms
+     → A permitted picker must render the native select, not disappear.: expected null not to be null
+   × Operator switch picker native markup > does not turn an empty directory into a selected home operator 0ms
+     → A permitted picker must render the native select, not disappear.: expected null not to be null
+   × Operator switch picker native markup > disables the canonical select while loading 1ms
+     → A permitted picker must render the native select, not disappear.: expected null not to be null
+   × Operator switch picker native markup > disables the canonical select while switching 1ms
+     → A permitted picker must render the native select, not disappear.: expected null not to be null
+   × Operator switch picker native markup > disables the canonical select while error 0ms
+     → A permitted picker must render the native select, not disappear.: expected null not to be null
+   × Operator switch picker native markup > renders the actual failure with a native Retry offer instead of an empty successful list 0ms
+     → expected '' to contain 'ZZ TEST The operator list could not b…'
+   × Operator switch picker native markup > does not offer Retry for a successful directory 0ms
+     → A permitted picker must render the native select, not disappear.: expected null not to be null
+   × Operator switch picker native markup > offers only supplied confirmed choices, without appending an unknown current context 1ms
+     → A permitted picker must render the native select, not disappear.: expected null not to be null
+   × Operator switch picker native markup > uses the native labelled select and width constraints for narrow screens 1ms
+     → expected '' to match /<label\b[^>]*>[\s\S]*?Operator[\s\S]*…/
+   × Operator switch picker native markup > escapes operator labels rather than rendering supplied names as markup 0ms
+     → expected '' to contain 'ZZ TEST Home &lt;b&gt;unsafe&lt;/b&gt;'
+   ✓ Operator switch picker native markup > never switches or retries during rendering, including pending and error states 1ms
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 14 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/operator-switch-picker-markup.test.ts > Operator switch picker native markup > keeps the home operator visible and distinct from the current effective operator
+AssertionError: expected '' to contain 'Home operator'
+
+- Expected
++ Received
+
+- Home operator
+
+ ❯ test/operator-switch-picker-markup.test.ts:36:18
+     34|   it('keeps the home operator visible and distinct from the current ef…
+     35|     const html = render(fixture());
+     36|     expect(html).toContain('Home operator');
+       |                  ^
+     37|     expect(html).toContain(HOME.name);
+     38|     expect(html).toContain(TARGET.name);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/14]⎯
+
+ FAIL  test/operator-switch-picker-markup.test.ts > Operator switch picker native markup > selects the canonical current operator rather than the first option
+AssertionError: A permitted picker must render the native select, not disappear.: expected null not to be null
+ ❯ select test/operator-switch-picker-markup.test.ts:18:90
+     16| function select(html: string) {
+     17|   const result = html.match(/<select\b[^>]*>[\s\S]*?<\/select>/);
+     18|   expect(result, 'A permitted picker must render the native select, no…
+       |                                                                                          ^
+     19|   return result![0];
+     20| }
+ ❯ options test/operator-switch-picker-markup.test.ts:21:39
+ ❯ selected test/operator-switch-picker-markup.test.ts:23:36
+ ❯ test/operator-switch-picker-markup.test.ts:44:12
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/14]⎯
+
+ FAIL  test/operator-switch-picker-markup.test.ts > Operator switch picker native markup > continues to use the canonical current value while a switch is pending
+AssertionError: A permitted picker must render the native select, not disappear.: expected null not to be null
+ ❯ select test/operator-switch-picker-markup.test.ts:18:90
+     16| function select(html: string) {
+     17|   const result = html.match(/<select\b[^>]*>[\s\S]*?<\/select>/);
+     18|   expect(result, 'A permitted picker must render the native select, no…
+       |                                                                                          ^
+     19|   return result![0];
+     20| }
+ ❯ options test/operator-switch-picker-markup.test.ts:21:39
+ ❯ selected test/operator-switch-picker-markup.test.ts:23:36
+ ❯ test/operator-switch-picker-markup.test.ts:50:12
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/14]⎯
+
+ FAIL  test/operator-switch-picker-markup.test.ts > Operator switch picker native markup > shows an unselected disabled placeholder when the current context is unknown
+AssertionError: A permitted picker must render the native select, not disappear.: expected null not to be null
+ ❯ select test/operator-switch-picker-markup.test.ts:18:90
+     16| function select(html: string) {
+     17|   const result = html.match(/<select\b[^>]*>[\s\S]*?<\/select>/);
+     18|   expect(result, 'A permitted picker must render the native select, no…
+       |                                                                                          ^
+     19|   return result![0];
+     20| }
+ ❯ options test/operator-switch-picker-markup.test.ts:21:39
+ ❯ selected test/operator-switch-picker-markup.test.ts:23:36
+ ❯ test/operator-switch-picker-markup.test.ts:57:12
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/14]⎯
+
+ FAIL  test/operator-switch-picker-markup.test.ts > Operator switch picker native markup > does not manufacture an option or choose home when the current ID is missing from the confirmed list
+AssertionError: A permitted picker must render the native select, not disappear.: expected null not to be null
+ ❯ select test/operator-switch-picker-markup.test.ts:18:90
+     16| function select(html: string) {
+     17|   const result = html.match(/<select\b[^>]*>[\s\S]*?<\/select>/);
+     18|   expect(result, 'A permitted picker must render the native select, no…
+       |                                                                                          ^
+     19|   return result![0];
+     20| }
+ ❯ options test/operator-switch-picker-markup.test.ts:21:39
+ ❯ selected test/operator-switch-picker-markup.test.ts:23:36
+ ❯ test/operator-switch-picker-markup.test.ts:65:12
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/14]⎯
+
+ FAIL  test/operator-switch-picker-markup.test.ts > Operator switch picker native markup > does not turn an empty directory into a selected home operator
+AssertionError: A permitted picker must render the native select, not disappear.: expected null not to be null
+ ❯ select test/operator-switch-picker-markup.test.ts:18:90
+     16| function select(html: string) {
+     17|   const result = html.match(/<select\b[^>]*>[\s\S]*?<\/select>/);
+     18|   expect(result, 'A permitted picker must render the native select, no…
+       |                                                                                          ^
+     19|   return result![0];
+     20| }
+ ❯ options test/operator-switch-picker-markup.test.ts:21:39
+ ❯ selected test/operator-switch-picker-markup.test.ts:23:36
+ ❯ test/operator-switch-picker-markup.test.ts:73:12
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/14]⎯
+
+ FAIL  test/operator-switch-picker-markup.test.ts > Operator switch picker native markup > disables the canonical select while loading
+ FAIL  test/operator-switch-picker-markup.test.ts > Operator switch picker native markup > disables the canonical select while switching
+ FAIL  test/operator-switch-picker-markup.test.ts > Operator switch picker native markup > disables the canonical select while error
+AssertionError: A permitted picker must render the native select, not disappear.: expected null not to be null
+ ❯ select test/operator-switch-picker-markup.test.ts:18:90
+     16| function select(html: string) {
+     17|   const result = html.match(/<select\b[^>]*>[\s\S]*?<\/select>/);
+     18|   expect(result, 'A permitted picker must render the native select, no…
+       |                                                                                          ^
+     19|   return result![0];
+     20| }
+ ❯ disabled test/operator-switch-picker-markup.test.ts:24:78
+ ❯ test/operator-switch-picker-markup.test.ts:84:12
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/14]⎯
+
+ FAIL  test/operator-switch-picker-markup.test.ts > Operator switch picker native markup > renders the actual failure with a native Retry offer instead of an empty successful list
+AssertionError: expected '' to contain 'ZZ TEST The operator list could not b…'
+
+- Expected
++ Received
+
+- ZZ TEST The operator list could not be confirmed.
+
+ ❯ test/operator-switch-picker-markup.test.ts:90:18
+     88|   it('renders the actual failure with a native Retry offer instead of …
+     89|     const html = render(fixture({ error: ERROR }));
+     90|     expect(html).toContain(ERROR);
+       |                  ^
+     91|     expect(html).toMatch(/<button\b[^>]*>Try again<\/button>/);
+     92|     expect(disabled(html)).toBe(true);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/14]⎯
+
+ FAIL  test/operator-switch-picker-markup.test.ts > Operator switch picker native markup > does not offer Retry for a successful directory
+AssertionError: A permitted picker must render the native select, not disappear.: expected null not to be null
+ ❯ select test/operator-switch-picker-markup.test.ts:18:90
+     16| function select(html: string) {
+     17|   const result = html.match(/<select\b[^>]*>[\s\S]*?<\/select>/);
+     18|   expect(result, 'A permitted picker must render the native select, no…
+       |                                                                                          ^
+     19|   return result![0];
+     20| }
+ ❯ test/operator-switch-picker-markup.test.ts:97:12
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/14]⎯
+
+ FAIL  test/operator-switch-picker-markup.test.ts > Operator switch picker native markup > offers only supplied confirmed choices, without appending an unknown current context
+AssertionError: A permitted picker must render the native select, not disappear.: expected null not to be null
+ ❯ select test/operator-switch-picker-markup.test.ts:18:90
+     16| function select(html: string) {
+     17|   const result = html.match(/<select\b[^>]*>[\s\S]*?<\/select>/);
+     18|   expect(result, 'A permitted picker must render the native select, no…
+       |                                                                                          ^
+     19|   return result![0];
+     20| }
+ ❯ options test/operator-switch-picker-markup.test.ts:21:39
+ ❯ test/operator-switch-picker-markup.test.ts:103:12
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/14]⎯
+
+ FAIL  test/operator-switch-picker-markup.test.ts > Operator switch picker native markup > uses the native labelled select and width constraints for narrow screens
+AssertionError: expected '' to match /<label\b[^>]*>[\s\S]*?Operator[\s\S]*…/
+
+- Expected:
+/<label\b[^>]*>[\s\S]*?Operator[\s\S]*?<select\b/
+
++ Received:
+""
+
+ ❯ test/operator-switch-picker-markup.test.ts:109:18
+    107|   it('uses the native labelled select and width constraints for narrow…
+    108|     const html = render(fixture());
+    109|     expect(html).toMatch(/<label\b[^>]*>[\s\S]*?Operator[\s\S]*?<selec…
+       |                  ^
+    110|     expect(select(html)).toMatch(/class="[^"]*min-w-0[^"]*max-w-full[^…
+    111|     expect(html).toContain('flex-wrap');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/14]⎯
+
+ FAIL  test/operator-switch-picker-markup.test.ts > Operator switch picker native markup > escapes operator labels rather than rendering supplied names as markup
+AssertionError: expected '' to contain 'ZZ TEST Home &lt;b&gt;unsafe&lt;/b&gt;'
+
+- Expected
++ Received
+
+- ZZ TEST Home &lt;b&gt;unsafe&lt;/b&gt;
+
+ ❯ test/operator-switch-picker-markup.test.ts:117:18
+    115|   it('escapes operator labels rather than rendering supplied names as …
+    116|     const html = render(fixture({ home: { ...HOME, name: 'ZZ TEST Home…
+    117|     expect(html).toContain('ZZ TEST Home &lt;b&gt;unsafe&lt;/b&gt;');
+       |                  ^
+    118|     expect(html).not.toContain('<b>unsafe</b>');
+    119|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/14]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  14 failed | 2 passed (16)
+   Start at  19:17:40
+   Duration  654ms (transform 51ms, setup 0ms, collect 207ms, tests 17ms, environment 0ms, prepare 176ms)
+
+C:\w\admin-operator-switch\apps\console:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @oto/console@0.1.0 test: `vitest run "test/operator-switch-picker-markup.test.ts"`
+Exit status 1
