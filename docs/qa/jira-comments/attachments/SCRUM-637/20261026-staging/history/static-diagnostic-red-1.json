@@ -1,0 +1,24 @@
+{
+  "ticket": "SCRUM-637",
+  "name": "static-diagnostic-red-1",
+  "startedAt": "2026-10-25T20:47:36.168Z",
+  "completedAt": "2026-10-25T20:47:36.377Z",
+  "exitCode": 1,
+  "source": [
+    {
+      "path": "C:/w/admin637-staging-proof.mjs",
+      "sha256": "85a4a36a0cbeb9bb6a5b58a392a5704c79f042d19c859106f173bda091db9310"
+    },
+    {
+      "path": "C:/w/admin637-staging-proof.test.mjs",
+      "sha256": "d51854bd26ab83c906493f2fd1df49bf4486dce173a6ad9c2469aa5b0bb54b06"
+    }
+  ],
+  "sourceUnchanged": true,
+  "tests": 26,
+  "passed": 24,
+  "failed": 2,
+  "logSha256": "6740bf5fbfd51d9e2849927c59477ca0349b0dbf7a477461ec63229ce701c898",
+  "actualStaging": false,
+  "authAttempts": 0
+}

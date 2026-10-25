@@ -1,0 +1,355 @@
+{
+  "ticket": "SCRUM-637",
+  "attempt": "20261026-v4",
+  "sourceSha": "3202967eb331c28d450e9a1ba5336aaa0693bab8",
+  "ciRunId": "40229665720",
+  "proofSha256": "2bfefe5a8b8cfdb479394f0802c0ef0530fedd16e6e885a7571d30007582d25c",
+  "stagedAt": "2026-10-25T21:07:37.644Z",
+  "files": [
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/SCRUM-637-01-overview-desktop.png",
+      "sha256": "b2add6e2b481e78bc3bde5be7371c1044b0c2d2ecddae5e6945799872011b743"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/SCRUM-637-02-overview-phone.png",
+      "sha256": "ae698643a43f9a0d2c285c73f22ed1a4548684d953757a690c3dcd9d6c0dc06b"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/SCRUM-637-03-overview-manager.png",
+      "sha256": "bf244554636868278145f7f4e3a81d3024617d3b4cd55e20b9fa6135b4f341ee"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/SCRUM-637-04-overview-restricted.png",
+      "sha256": "d0b13a142b948600ae826db6b817f5f5f635be3e015da91c632e04256836a05c"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/result.json",
+      "sha256": "2bfefe5a8b8cfdb479394f0802c0ef0530fedd16e6e885a7571d30007582d25c"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/intents.jsonl",
+      "sha256": "1decbbc3419994700d8c07946c7c12e158628a9b2790e85afa4bf594f2fc14a4"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/plan.json",
+      "sha256": "d0b7c02fba50646637a07582efe79239fea01aefcd83dd329a6a467d836b3110"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/bindings.json",
+      "sha256": "03752d8a064bf5678393aa9cb81ce9596ef6a6cd799dc88ff641b19908a62b86"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/visual-review.json",
+      "sha256": "3e738406839251e0c93a46c4954758ba439056658aae6f73962f6d85a6e1bdca",
+      "originalSourceSha256": "7cc61df3ecaae8ddb465db565aab3ff9c7748a5082063f19b954032cc060fe1f",
+      "originalBytesPath": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/visual-review.json.gz",
+      "formattingNormalization": "CRLF to LF and trailing horizontal whitespace only; original bytes retained losslessly"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/ci-final.json",
+      "sha256": "2ebd04355a0e020a5f083a0d7dea06d61b7b90615be1bdb8f85a45096fbf4d3e"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/main-release.json",
+      "sha256": "32a3e53334e63201d9c86ec9bfd6e7d37756d35068007dcaa8ab96e2f87957a7"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/tools/staging-proof.mjs.txt",
+      "sha256": "267036a7c69fec66e05fa58eacdc3869d6a03882155a68540ced5486659d3814"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/tools/staging-proof.test.mjs.txt",
+      "sha256": "4723adaeab7370a248268d261359cfedbabb6b0a99c1378a3478a2dc055b556a"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/tools/create-proof-plan.mjs.txt",
+      "sha256": "1f426d4e28330ef1c0c64c78f40c21b2c366f445044e52335c61e13a2ce80178"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/tools/public-raster-census.mjs.txt",
+      "sha256": "d97dbb65074c6122ad133e8c62b5e14ce03c796323301e2d65d066442cb9ac30"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/public-raster-census.json",
+      "sha256": "7da7f470266470c98180a34b82fcef39693d59aaf8c5d0ca5c512cff894aeb0a"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/tools/clipboard-diagnostic.mjs.txt",
+      "sha256": "3ddd5e59f69ce81b54eda6a0fd6f70f6d3c7aea13f5268df2926c219b667834c"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/clipboard-diagnostic.json",
+      "sha256": "e2af4841b2d491fa20a5e4d56c976c9da417b268bd2ee57b43bc6a0998885694"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/before-clipboard-line-endings-v1.mjs.txt",
+      "sha256": "e195d34a1bda76c5983a0cca4fd9d8cc6a9d2180dac9245cf2168fc9d1940e5e"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/before-clipboard-line-endings-v1.test.mjs.txt",
+      "sha256": "d51854bd26ab83c906493f2fd1df49bf4486dce173a6ad9c2469aa5b0bb54b06"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/tools/cleanup-owned.mjs.txt",
+      "sha256": "4f8974cf90d83486d65dcb11e2a20add4088b339986505663afcf4a471a3db09"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/cleanup-owned-before-tmpfs-lookup-fix.mjs.txt",
+      "sha256": "34a156910ab53c548c454d784e2151e99ed8bccebba0ffe7912db827cc20e117"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/tools/select-label-diagnostic.mjs.txt",
+      "sha256": "110930a43ce6ddb033319ef9f7b9b4ac68ecec6f83ddffae033280c3bb37b94d"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/select-label-diagnostic.json",
+      "sha256": "399b8545e582d5a2aeaed4f4df7a29ea197e38896dad9301976dcab30a1353d1"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/before-selection-promise-v1.mjs.txt",
+      "sha256": "d4a8bf2e65a1695d2e9f0c5d388060b073a3e041ae4d551b2a2a0d382c343f01"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/before-selection-promise-v1.test.mjs.txt",
+      "sha256": "17f3fe316710db8eda65776ef8104f64629a90fd7efa15c28e019054c3d217a1"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/tools/recover-v3-session.mjs.txt",
+      "sha256": "31bea70dc51ec1f46baadd3406c6b6801502f94ba1fc23e0ac78ea519a95b231"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/20261026-v1/result.json",
+      "sha256": "9db7fdd1a254e04d5c82f5bfecb83905c3a2829caa802372a767fb68ec381f0a"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/20261026-v1/intents.jsonl",
+      "sha256": "d852351a67a311bc7efd1656a0313bd34a78a52e7fbf98178e634e5742ead832"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/20261026-v1/plan.json",
+      "sha256": "a2993e1c5a646a8fe6c93ae6337bbf4dc2492303c29b2d488c244afa33a2831c"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/20261026-v1/bindings.json",
+      "sha256": "35c382e077f134d97504112ee25a882d18251aa728a983ecee2a6457baa30a84"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/20261026-v2/result.json",
+      "sha256": "dcd7ae70eebf438224d4226ef1d07251eaa1b35f2ea29b90a0211a33b9f59ca1"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/20261026-v2/intents.jsonl",
+      "sha256": "aabd89faab2e53a059c4dd47f3ecd0148e1ab4b0a7fb0380f8244a2067938e11"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/20261026-v2/plan.json",
+      "sha256": "72f01ce6ea11575a6aa844d977a14a09bf5e77cd575af29ed0111792aef5bec5"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/20261026-v2/bindings.json",
+      "sha256": "3632f8a3eabca7137d5e70cd58eda1fa7cd60f7151582d3dbb77389353df443b"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/20261026-v3/result.json",
+      "sha256": "7eda8f9c0698536e8e97900c9eb70f78ef8217ed20b568aff85237e74a4a97e4"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/20261026-v3/intents.jsonl",
+      "sha256": "c0881769b09234e008741cc404b980e620b4ee51ea6cc72df8ccfe4a50f96161"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/20261026-v3/plan.json",
+      "sha256": "87ca4845968c630ef53919e682c9d5b8ec6a5a308fd2e20cdf207bd1e4fd094a"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/20261026-v3/bindings.json",
+      "sha256": "89a51d3d0dc17e6447f54a2088f0b92195b621afaecdf01770ab588bee08bb02"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/20261026-v3/SCRUM-637-01-overview-desktop.png",
+      "sha256": "2399a179a644055ec75834e215802bb5609ff3f793e2244946d5c03b41e5ab09"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/20261026-v3/visual-review.json",
+      "sha256": "8c433fa45e520e0e288299d61c18ea578d5f13b385dc38cf62854bd45a940b11",
+      "originalSourceSha256": "274b3cdcce6cfeb33a2f7fba9e20dbe483015ff85c6448d41f49340ab346703b",
+      "originalBytesPath": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/20261026-v3/visual-review.json.gz",
+      "formattingNormalization": "CRLF to LF and trailing horizontal whitespace only; original bytes retained losslessly"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/20261026-v3/recovery/census-intent.json",
+      "sha256": "8db1875f49ddbb051010fc29134807d6a52d788c6ea79a20647db57c9d218731"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/20261026-v3/recovery/census-dispatch.json",
+      "sha256": "a342b550f6ca0958e53a0fecd041b5345bb1923a912e4f88e952e844095ca222"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/20261026-v3/recovery/census-terminal.json",
+      "sha256": "9dfe049dc9adcc380f1aa6bc39a6b26bae96c0001e1146c3850e339feca0d7d8"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/20261026-v3/recovery/census.json",
+      "sha256": "a4f0e1331f4ecf3af1f2e69075098a792b87c00b69959fac4ee07101db2fd3c2"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/20261026-v3/recovery/revoke-intent.json",
+      "sha256": "ac53418f1f21b3194e1103c237bfb82c916f39c468ad03b898e6620d27efcd09"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/20261026-v3/recovery/revoke-dispatch.json",
+      "sha256": "00bcacbcb0c03d1322f01a8942f43300d36d47d04de4bb083353139a66f73375"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/20261026-v3/recovery/revoke-terminal.json",
+      "sha256": "670868dc572b211cf1354c08c3f2d74c3d649fb56c2139119d148e1f7660b09f"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/20261026-v3/recovery/revoke.json",
+      "sha256": "4c30e38a7eb2460ce7cf7c5377d3aff7b4eedad38e0c79e1359195f8af844717"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/proof-receipt-io-red-1.json",
+      "sha256": "eb27f431cb84bb0674dbab70aab67994728ae4e1e4ae5c105a2e9090b102270a"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/proof-receipt-io-red-1.log",
+      "sha256": "fb7d31ebde888bd9853bdb12ff2f5e695c21e4b171c7dc04c396bab8b43b284c",
+      "originalSourceSha256": "c95e339dcf8838c1a0f63bd2bdeab9626829e392aecc7affc2aeaf9df590bc72",
+      "originalBytesPath": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/proof-receipt-io-red-1.log.gz",
+      "formattingNormalization": "CRLF to LF and trailing horizontal whitespace only; original bytes retained losslessly"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/proof-receipt-io-green-1.json",
+      "sha256": "0331d19c068d4a0ff04380eaf1fcf3f30ce88405c5630d51bfad2c1fe04b43cb"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/proof-receipt-io-green-1.log",
+      "sha256": "1ef4e67afe6561faacf882b25e86e775feea2dd98041a5e33c84a0d234872b1a"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/proof-combined-source-red-1.json",
+      "sha256": "cf20efa664eeca7b907afdc210f85b1beda58abdf14794e1189f1f163dabc6c2"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/proof-combined-source-red-1.log",
+      "sha256": "6a62ac631e19577d1df1c164ab5db9ecb42162c924062260bcaa37af8dd4f9e0"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/proof-combined-source-green-1.json",
+      "sha256": "a368c170d5231ccf4df50ef88fd7e793dd5feb5fc178a8979604a12bc42a3967"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/proof-combined-source-green-1.log",
+      "sha256": "6584d7e45f8cac60fc93a25e6a643e7a84b932782ab1d90acdfaf71851a3321f"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/static-diagnostic-red-1.json",
+      "sha256": "1909c79b86ab3e216533f860a5f6470fe3e009d33a82d97c4ca5858f6d6d2160"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/static-diagnostic-red-1.log",
+      "sha256": "5c78f2ad6e95a55b5bc9e5b1fd336f307f07e923c911ae08493642dfede56188",
+      "originalSourceSha256": "6740bf5fbfd51d9e2849927c59477ca0349b0dbf7a477461ec63229ce701c898",
+      "originalBytesPath": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/static-diagnostic-red-1.log.gz",
+      "formattingNormalization": "CRLF to LF and trailing horizontal whitespace only; original bytes retained losslessly"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/static-diagnostic-green-1.json",
+      "sha256": "47afd23ac2004271911ca5fed5e95f8b77ad7c48cfdf9047b0571538f58832d3"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/static-diagnostic-green-1.log",
+      "sha256": "f2991e954d712f85eb769a286206757377d7d73cf4884f931b10c724a4284d5a"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/clipboard-line-endings-red-1.json",
+      "sha256": "8c0e13b702ffd2e8cb81874c1d2d43893c9cfbcacd02276f930e9aed4b29acec"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/clipboard-line-endings-red-1.log",
+      "sha256": "b3cc2cff84feb28f9d9c58d76b6465e35e5ae0585155006d225269c275763927",
+      "originalSourceSha256": "a0fd9c1ac2828299ff80f4623b1d3988fb220926272913d4d848ca62b3882e21",
+      "originalBytesPath": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/clipboard-line-endings-red-1.log.gz",
+      "formattingNormalization": "CRLF to LF and trailing horizontal whitespace only; original bytes retained losslessly"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/clipboard-line-endings-green-1.json",
+      "sha256": "258f91aa3eb9b35913252151eed337ef16e4219a910925cdc61626e5df3764b3"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/clipboard-line-endings-green-1.log",
+      "sha256": "96dcc6f9cc11ca2db65f4eb1a9ba6a2f3d069a76a2e621cc384b9b40329ce2cb"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/selection-promise-red-1.json",
+      "sha256": "3d602c4188c024a7134554c1df06ee1715ea86fae055ebf2b57487105860deee"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/selection-promise-red-1.log",
+      "sha256": "c640ee54c9a18ad6c2f34413e28988f20f942c2eaa8dbf4f222aea5ab32d6011",
+      "originalSourceSha256": "6aa165c18a4554c2c244ee1aef911199b0e1bb6a00b7900fc6949dd3fc37e74e",
+      "originalBytesPath": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/selection-promise-red-1.log.gz",
+      "formattingNormalization": "CRLF to LF and trailing horizontal whitespace only; original bytes retained losslessly"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/selection-promise-green-1.json",
+      "sha256": "5785485a640b7f204cc1be66c06ba519218a1db7dd89ae01825a3aff7c094ecf"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/selection-promise-green-1.log",
+      "sha256": "bcc1af8e72d09ee95a27323e184e9ed716f6681518bb6bc4baaaf16b5ee60457"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/cleanup/owned-cleanup-intent.json",
+      "sha256": "52671244556b3c08b453ed7800224c2b0f70a2d0a95dd1cd13364b1a124d6e2c"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/cleanup/owned-cleanup-result.json",
+      "sha256": "a46c7ed3380a3d0a2ed878271acdbfb0a988a0efed8c9d2950341f38363215e0"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/cleanup/owned-cleanup-failed-attempt-diagnostic-1.json",
+      "sha256": "3e659b2894ccc322b6a45fa2a6f4a54b816d46bbb6649ecc4fc803be4066ee96"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/README.md",
+      "sha256": "5609581f154b5b69ce1b4bbd7c70a2de648c1df1de6d9efb210ad7d5d30cdd4b"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/clipboard-line-endings-red-1.log.gz",
+      "sha256": "a02e8d220af65fcfe44af0c02dbb7c09f11551af7cde941d19d2544187051485",
+      "uncompressedSha256": "a0fd9c1ac2828299ff80f4623b1d3988fb220926272913d4d848ca62b3882e21"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/proof-receipt-io-red-1.log.gz",
+      "sha256": "8cdf606af60d1f140e61a29f29ba5ed3dd6dedcd30956884a297d0566e25ad30",
+      "uncompressedSha256": "c95e339dcf8838c1a0f63bd2bdeab9626829e392aecc7affc2aeaf9df590bc72"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/selection-promise-red-1.log.gz",
+      "sha256": "bd00625c3cdfd1d514b4cfed4683510ee60039a58e2ebcad9a114f7c2d93dde2",
+      "uncompressedSha256": "6aa165c18a4554c2c244ee1aef911199b0e1bb6a00b7900fc6949dd3fc37e74e"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/static-diagnostic-red-1.log.gz",
+      "sha256": "6a6969f893e2a71a915a1ad7b687cfd05f38db0e28457e3cb832eea5ff801483",
+      "uncompressedSha256": "6740bf5fbfd51d9e2849927c59477ca0349b0dbf7a477461ec63229ce701c898"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/visual-review.json.gz",
+      "sha256": "120c73231c4fc116fb3a6620aca1f307cb53829e462f07ecc3188479731b110f",
+      "uncompressedSha256": "7cc61df3ecaae8ddb465db565aab3ff9c7748a5082063f19b954032cc060fe1f"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/20261026-v3/visual-review.json.gz",
+      "sha256": "aaa584517688908d738d473a405c1d7534b5af93c3ca315f08a01efbd975fa1b",
+      "uncompressedSha256": "274b3cdcce6cfeb33a2f7fba9e20dbe483015ff85c6448d41f49340ab346703b"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/archive-formatting.json",
+      "sha256": "0b5665e4009b0a9608eaed1a1050a7a2b37ec2aa649955d1d6138d774108227f"
+    }
+  ],
+  "archiveFormattingReceipt": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/archive-formatting.json"
+}

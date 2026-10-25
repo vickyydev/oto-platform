@@ -1,0 +1,24 @@
+{
+  "ticket": "SCRUM-637",
+  "name": "selection-promise-red-1",
+  "startedAt": "2026-10-25T21:00:32.019Z",
+  "completedAt": "2026-10-25T21:00:32.217Z",
+  "exitCode": 1,
+  "source": [
+    {
+      "path": "C:/w/admin637-staging-proof.mjs",
+      "sha256": "d4a8bf2e65a1695d2e9f0c5d388060b073a3e041ae4d551b2a2a0d382c343f01"
+    },
+    {
+      "path": "C:/w/admin637-staging-proof.test.mjs",
+      "sha256": "4723adaeab7370a248268d261359cfedbabb6b0a99c1378a3478a2dc055b556a"
+    }
+  ],
+  "sourceUnchanged": true,
+  "tests": 36,
+  "passed": 33,
+  "failed": 3,
+  "logSha256": "6aa165c18a4554c2c244ee1aef911199b0e1bb6a00b7900fc6949dd3fc37e74e",
+  "actualStaging": false,
+  "authAttempts": 0
+}

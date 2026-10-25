@@ -1,0 +1,44 @@
+{
+  "ticket": "SCRUM-637",
+  "kind": "synthetic-windows-clipboard-diagnostic",
+  "startedAt": "2026-10-25T20:52:18.871Z",
+  "completedAt": "2026-10-25T20:52:19.898Z",
+  "helperSha256": "3ddd5e59f69ce81b54eda6a0fd6f70f6d3c7aea13f5268df2926c219b667834c",
+  "applicationPageLoaded": false,
+  "authAttempts": 0,
+  "businessWrites": 0,
+  "actualStagingProof": false,
+  "syntheticDocument": {
+    "origin": "https://oto-console-staging.onrender.com",
+    "pathname": "/overview",
+    "fulfilled": 1
+  },
+  "network": {
+    "dispatched": 0,
+    "refused": 0
+  },
+  "expected": {
+    "sha256": "90b253b13742fcd1931c6f070dc6c928d080e22d73eb02c4684bb44ca384c85f",
+    "length": 49,
+    "utf8Bytes": 49,
+    "lfCount": 2,
+    "crlfCount": 0,
+    "crCount": 0
+  },
+  "received": {
+    "sha256": "1482c5d1b562b597f0b717008988792861dc2c071c93c6db2158f132bdf7e139",
+    "length": 51,
+    "utf8Bytes": 51,
+    "lfCount": 2,
+    "crlfCount": 2,
+    "crCount": 2
+  },
+  "exact": false,
+  "normalizedLfExact": true,
+  "initialClipboardCaptured": true,
+  "initialClipboardRestored": true,
+  "contextClosed": true,
+  "browserClosed": true,
+  "errorCode": null,
+  "complete": true
+}

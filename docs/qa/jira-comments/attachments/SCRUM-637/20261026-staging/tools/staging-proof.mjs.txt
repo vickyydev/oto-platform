@@ -1,0 +1,519 @@
+// HELD. Import is inert. Only an internally reviewed concrete plan and --execute may start this proof.
+import fs from 'node:fs';
+import path from 'node:path';
+import { createHash } from 'node:crypto';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+
+export const WORKTREE = 'C:/w/admin-overview-v2';
+const PRIVATE_ROOT = 'C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos';
+export const ORIGIN = 'https://oto-console-staging.onrender.com';
+export const DEMOS = Object.freeze({ operatorId: '01a0bbdc-8c41-7204-bd58-2b92bd7dda75',
+  ADMIN: '01a0bbdc-8c64-7283-aa3b-2af7e79c525d', MANAGER: '01a0c9ae-5377-7b34-a9ab-22bf8086f5f7',
+  RECEPTION: '01a0bbdc-8c87-74ca-81c1-61489e34f834' });
+const ACTORS = ['ADMIN', 'MANAGER', 'RECEPTION'];
+const SERVICES = ['oto-api-staging', 'oto-console-staging'];
+const ROUTE = 'apps/api/src/routes/console.ts';
+const RELEASE = 'docs/qa/jira-comments/attachments/SCRUM-637/local-release.json';
+const GROUPS = ['members', 'bookings', 'assistantUsage', 'inboxAiUsage', 'fleet'];
+const KEYS = ['pendingPayments', 'syncQuarantine', 'cashVariances', 'latePayments', 'strandedOccupants', 'erasureRequests', 'approvalRequests'];
+const PNGS = ['SCRUM-637-01-overview-desktop.png', 'SCRUM-637-02-overview-phone.png', 'SCRUM-637-03-overview-manager.png', 'SCRUM-637-04-overview-restricted.png'];
+const FONT = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap';
+const MAX_BODY = 2_000_000, TIMEOUT = 30_000;
+const now = () => new Date().toISOString();
+const hash = value => createHash('sha256').update(value).digest('hex');
+const canonical = value => JSON.stringify(value, (_key, item) => item && typeof item === 'object' && !Array.isArray(item)
+  ? Object.fromEntries(Object.entries(item).sort(([a], [b]) => a.localeCompare(b))) : item);
+export const digest = value => hash(canonical(value));
+const same = (a, b) => digest(a) === digest(b);
+const exact = (v, keys) => !!v && typeof v === 'object' && !Array.isArray(v) && same(Object.keys(v).sort(), [...keys].sort());
+const uuid = v => typeof v === 'string' && /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(v);
+const hex = v => typeof v === 'string' && /^[a-f0-9]{64}$/.test(v);
+const iso = v => typeof v === 'string' && Number.isFinite(Date.parse(v));
+class ProofError extends Error { constructor(code) { super(code); this.code = code; } }
+const need = (condition, code) => { if (!condition) throw new ProofError(code); };
+const codeOf = error => error instanceof ProofError ? error.code : 'UNCLASSIFIED_PROOF_ERROR';
+const sorted = values => [...values].sort();
+const dayOf = date => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
+
+export function publicPath(p) {
+  return typeof p === 'string' && !/[\\%?#\x00-\x20]/.test(p) && !p.split('/').includes('..')
+    && (['/', '/favicon.svg'].includes(p) || /^\/assets\/[A-Za-z0-9_.-]{1,180}\.(?:js|css|svg|png|webp|woff2?)$/.test(p));
+}
+export function validatePlan(plan) {
+  need(exact(plan, ['approved', 'ticket', 'sourceSha', 'sourceManifestSha256', 'ciRunId', 'deployments', 'helperSha256',
+    'routeModuleSha256', 'localReleaseSha256', 'runtimeBindingsSha256', 'actors', 'assets', 'assetManifestSha256', 'outputDirectory']), 'EXACT_REVIEWED_PLAN_REQUIRED');
+  need(plan.approved === true && plan.ticket === 'SCRUM-637' && /^[a-f0-9]{40}$/.test(plan.sourceSha ?? '')
+    && plan.sourceSha !== '0'.repeat(40) && /^\d+$/.test(String(plan.ciRunId)), 'REVIEWED_EXACT_FEATURE_REQUIRED');
+  need([plan.sourceManifestSha256, plan.helperSha256, plan.routeModuleSha256, plan.localReleaseSha256, plan.runtimeBindingsSha256, plan.assetManifestSha256].every(hex), 'EXACT_BINDING_HASHES_REQUIRED');
+  need(Array.isArray(plan.deployments) && plan.deployments.length === 2 && plan.deployments.every((d, i) =>
+    exact(d, ['name', 'serviceId', 'id', 'finishedAt']) && d.name === SERVICES[i] && /^srv-[A-Za-z0-9]+$/.test(d.serviceId ?? '')
+    && /^dep-[A-Za-z0-9]+$/.test(d.id ?? '') && iso(d.finishedAt)), 'EXACT_API_CONSOLE_DEPLOYMENTS_REQUIRED');
+  need(exact(plan.actors, ACTORS) && ACTORS.every(actor => exact(plan.actors[actor], ['accountId', 'operatorId'])
+    && plan.actors[actor].accountId === DEMOS[actor] && plan.actors[actor].operatorId === DEMOS.operatorId), 'THREE_EXACT_EXISTING_DEMOS_REQUIRED');
+  need(Array.isArray(plan.assets) && plan.assets.length > 1 && plan.assets.length <= 100 && plan.assets.some(a => a.path === '/')
+    && new Set(plan.assets.map(a => a.path)).size === plan.assets.length && plan.assets.every(a => exact(a, ['path', 'sha256', 'contentType'])
+      && publicPath(a.path) && hex(a.sha256) && /^(?:text\/html|text\/css|(?:application|text)\/javascript|image\/(?:svg\+xml|png|webp)|font\/(?:woff|woff2))$/.test(a.contentType)), 'REVIEWED_EXACT_PUBLIC_CLOSURE_REQUIRED');
+  need(digest(plan.assets) === plan.assetManifestSha256, 'ASSET_MANIFEST_HASH_REQUIRED');
+  need(/^C:\/w\/admin637-staging-[A-Za-z0-9_-]{1,70}$/.test(plan.outputDirectory ?? ''), 'EXCLUSIVE_FRESH_ATTEMPT_REQUIRED');
+  return plan;
+}
+
+/** Shared by direct HTTP and browser dispatch; no business write, handoff or aggregate fan-out. */
+export function requestAllowed({ url, method, body, branchIds = [], auth = false, health = false, assetPaths = [], document = false }) {
+  let u; try { u = new URL(url); } catch { return false; }
+  if (u.origin !== ORIGIN || u.username || u.password || u.hash || u.href !== url || u.href !== u.origin + u.pathname + u.search
+    || u.href.includes('%2f') || u.href.includes('%5c')) return false;
+  const p = u.pathname, q = u.searchParams;
+  if (method === 'POST') return auth && !u.search && (p === '/api/auth/sign-in'
+    ? exact(body, ['phone', 'password']) && ['phone', 'password'].every(k => typeof body[k] === 'string' && body[k].length > 0 && body[k].length < 200)
+    : p === '/api/auth/sign-out' && body === undefined);
+  if (method !== 'GET' || body !== undefined) return false;
+  if (['/api/me', '/api/me/permissions', '/api/ready'].includes(p)) return !u.search;
+  if (p === '/api/overview') return !u.search || q.size === 1 && q.has('branchId') && uuid(q.get('branchId')) && branchIds.includes(q.get('branchId'));
+  if (p === '/api/ops/health') return health && !u.search;
+  if (p === '/api/ops/failures') return health && q.size === 2 && q.getAll('windowHours').length === 1 && q.get('windowHours') === '24' && q.getAll('limit').length === 1 && q.get('limit') === '50';
+  return !u.search && ((p === '/overview' && document) || publicPath(p) && assetPaths.includes(p));
+}
+
+export function releaseFacts(plan, ci, services, latest) {
+  need(ci.headSha === plan.sourceSha && ci.status === 'completed' && ci.conclusion === 'success' && ci.jobs?.length === 6
+    && new Set(ci.jobs.map(j => j.name)).size === 6 && ci.jobs.every(j => j.status === 'completed' && j.conclusion === 'success'), 'SIX_EXACT_GREEN_JOBS_REQUIRED');
+  for (const dep of plan.deployments) {
+    const matches = services.map(s => s.service ?? s).filter(s => s.name === dep.name), live = latest[dep.serviceId]?.[0]?.deploy;
+    need(matches.length === 1 && matches[0].id === dep.serviceId, 'EXACT_RENDER_SERVICE_REQUIRED');
+    need(live?.id === dep.id && live.status === 'live' && live.commit?.id === plan.sourceSha && live.finishedAt === dep.finishedAt, 'LATEST_EXACT_LIVE_DEPLOYMENT_REQUIRED');
+  }
+  return true;
+}
+export function reachOf(permissions) {
+  const rows = permissions.filter(p => p.permission === 'console:overview:read');
+  return rows.some(p => p.scopeType === 'operator' && (p.scopeId === null || p.scopeId === DEMOS.operatorId))
+    ? { kind: 'operator', ids: [] } : { kind: 'branches', ids: sorted([...new Set(rows.filter(p => p.scopeType === 'branch' && uuid(p.scopeId)).map(p => p.scopeId))]) };
+}
+export function currentAi(body) {
+  need(body.currency === 'USD' && body.excludesCacheWrites === true, 'Q18_USD_EXCLUDES_CACHE_WRITES_REQUIRED');
+  const metrics = [body.totals, ...body.parks.flatMap(p => [p.totals, ...p.rows]), ...(body.operatorWide === null ? [] : [body.operatorWide.totals, ...body.operatorWide.rows])];
+  for (const m of metrics) need(m.spendEstimate === null && m.reason === 'no_rate_configured' && [m.inputTokens, m.outputTokens, m.cacheReadTokens].every(n => Number.isSafeInteger(n) && n >= 0)
+    && m.totalTokens === m.inputTokens + m.outputTokens + m.cacheReadTokens && m.unpricedTokens === m.totalTokens, 'Q18_CURRENT_UNPRICED_BUCKET_REQUIRED');
+  return metrics.length;
+}
+/** Applied AFTER parsing with the exact released OverviewSchema, to the actual native response. */
+export function validateOverview(body, { availableIds, selectedIds, operatorWide, after, observedAt }) {
+  const eqIds = (a, b) => a.length === new Set(a).size && same(sorted(a), sorted(b));
+  const generated = Date.parse(body.generatedAt), observed = Date.parse(observedAt);
+  need(Number.isFinite(generated) && generated > Date.parse(after) && generated <= observed + 5_000 && generated >= observed - 30_000, 'FRESH_POSTDEPLOY_OVERVIEW_REQUIRED');
+  need(eqIds(body.branches.map(p => p.id), availableIds) && eqIds(body.selectedBranchIds, selectedIds) && eqIds(body.parks.map(p => p.branchId), selectedIds), 'EXACT_OVERVIEW_REACH_REQUIRED');
+  need(body.parks.every(p => body.branches.find(b => b.id === p.branchId)?.businessDate === p.businessDate), 'NATIVE_BUSINESS_DATES_REQUIRED');
+  const day = dayOf(new Date(body.generatedAt)); let metricBuckets = 0;
+  for (const key of GROUPS) {
+    const g = body.aggregates[key];
+    need(g.generatedAt === body.generatedAt && eqIds(g.branches.map(p => p.id), availableIds) && same(g.branches, body.branches)
+      && eqIds(g.selectedBranchIds, selectedIds) && eqIds(g.parks.map(p => p.branchId), selectedIds), 'EXACT_GROUP_ENVELOPES_REQUIRED');
+    if (key === 'fleet') need(g.asOf === body.generatedAt && g.basis === 'current-snapshot', 'FLEET_CURRENT_ASOF_REQUIRED');
+    else {
+      need(g.period.from === day && g.period.to === day && g.parks.every(p => p.rows.every(r => r.date === day)), 'SERVER_BANGKOK_CALENDAR_TODAY_REQUIRED');
+      if (key.endsWith('Usage')) {
+        need(operatorWide ? g.operatorWide !== null : g.operatorWide === null, 'OPERATOR_BUCKET_REACH_REQUIRED');
+        need(g.operatorWide === null || g.operatorWide.rows.every(r => r.date === day), 'OPERATOR_BUCKET_DATE_REQUIRED');
+        metricBuckets += currentAi(g);
+        for (const metric of ['count', 'inputTokens', 'outputTokens', 'cacheReadTokens', 'totalTokens', 'unpricedTokens'])
+          need(g.totals[metric] === g.parks.reduce((n, p) => n + p.totals[metric], 0) + (g.operatorWide?.totals[metric] ?? 0), 'AI_SCOPED_SUM_REQUIRED');
+      }
+    }
+  }
+  need(body.decisions.generatedAt === body.generatedAt && eqIds(body.decisions.parks.map(p => p.branchId), selectedIds), 'DECISION_DATE_REACH_REQUIRED');
+  for (const items of [body.decisions.items, ...body.decisions.parks.map(p => p.items)]) {
+    need(eqIds(items.map(i => i.key), KEYS), 'SEVEN_DECISION_KEYS_REQUIRED');
+    for (const item of items) need(item.status === 'available' ? Number.isSafeInteger(item.count) && item.count >= 0 : item.count === null, 'AVAILABILITY_IS_NOT_ZERO_REQUIRED');
+    for (const key of ['erasureRequests', 'approvalRequests']) need(items.find(i => i.key === key)?.status === 'not-built', 'UNBUILT_QUEUE_REQUIRED');
+    const stranded = items.find(i => i.key === 'strandedOccupants');
+    need(stranded.label === 'End-of-day review rows still inside' && stranded.basis === 'current-business-date-native-end-of-day-rows', 'NATIVE_END_OF_DAY_MEANING_REQUIRED');
+  }
+  need(typeof body.statusSummary === 'string' && body.statusSummary.startsWith('Admin status summary\n') && body.statusSummary.includes(`Checked: ${body.generatedAt}`)
+    && body.statusSummary.includes('Price unavailable: no_rate_configured (USD estimate)') && body.statusSummary.includes('unpriced tokens; excludes unpersisted cache writes.'), 'CURRENT_SERVER_COPY_TEXT_REQUIRED');
+  return { generatedAt: body.generatedAt, calendarDate: day, availableParkCount: availableIds.length, selectedParkCount: selectedIds.length,
+    selectedIdsSha256: digest(sorted(selectedIds)), totals: body.totals, groupTotals: Object.fromEntries(GROUPS.map(k => [k, body.aggregates[k].totals])),
+    decisions: body.decisions.items.map(({ key, status, count, basis }) => ({ key, status, count, basis })), metricBuckets, statusSummarySha256: hash(body.statusSummary) };
+}
+
+const runtimeFiles = ['node_modules/.pnpm/lock.yaml', 'node_modules/.modules.yaml', 'apps/api/node_modules/tsx/package.json',
+  'apps/api/node_modules/tsx/dist/cli.mjs', 'apps/api/node_modules/tsx/dist/loader.mjs', 'apps/api/node_modules/tsx/dist/preflight.cjs',
+  'apps/api/node_modules/tsx/dist/esm/api/index.mjs', 'apps/api/node_modules/zod/package.json', 'apps/api/node_modules/zod/index.cjs', 'apps/api/node_modules/zod/index.js'];
+export function runtimeBindingsOf(root = WORKTREE, io = fs, nodeVersion = process.version) {
+  return { nodeVersion, files: runtimeFiles.map(p => ({ path: p, sha256: hash(io.readFileSync(path.join(root, p))) })) };
+}
+export const runtimeBindingsSha256Of = (root = WORKTREE, io = fs, nodeVersion = process.version) => digest(runtimeBindingsOf(root, io, nodeVersion));
+export function verifyLocalSource(plan, { io = fs, git, root = WORKTREE, nodeVersion = process.version } = {}) {
+  const selected = p => {
+    if (!p || !/^[A-Za-z0-9_./-]+$/.test(p) || p.split('/').includes('..')) return false;
+    if (/^(?:docs|imports|services)\//.test(p) || /(?:^|\/)(?:node_modules|dist|\.git)(?:\/|$)/.test(p)) return false;
+    if (p === '.env.example') return true;
+    if (/(?:^|\/)\.env(?:\.|\/|$)/.test(p)) return false;
+    return path.posix.basename(p) === '.gitignore' || /^(?:apps|packages|scripts)\//.test(p)
+      || /^\.github\/workflows\//.test(p)
+      || /^(?:package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|turbo\.json|eslint\.config\.mjs|tsconfig[^/]*\.json|render\.yaml|\.npmrc|\.pnpmfile\.cjs)$/.test(p);
+  };
+  const paths = git(['ls-files', '--cached', '--others', '--exclude-standard', '-z']).split('\0').filter(Boolean).filter(selected).sort();
+  const tree = git(['ls-tree', '-r', '-z', '--full-tree', plan.sourceSha]).split('\0').filter(Boolean).map(line => {
+    const m = /^(\d{6}) (blob|commit) ([a-f0-9]{40})\t(.+)$/.exec(line); need(m, 'FEATURE_TREE_ENTRY_REQUIRED');
+    return { mode: m[1], type: m[2], blobId: m[3], path: m[4] };
+  }).filter(r => selected(r.path)).sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0);
+  need(same(paths, tree.map(r => r.path)), 'FEATURE_SOURCE_PATHS_DIFFER');
+  const rows = paths.map((p, i) => {
+    need(/^[A-Za-z0-9_./-]+$/.test(p) && !p.split('/').includes('..') && tree[i].type === 'blob' && ['100644', '100755'].includes(tree[i].mode)
+      && io.lstatSync(path.join(root, p)).isFile(), 'REGULAR_SOURCE_REQUIRED');
+    const b = Buffer.from(io.readFileSync(path.join(root, p)));
+    need(createHash('sha1').update(Buffer.from(`blob ${b.length}\0`)).update(b).digest('hex') === tree[i].blobId, 'FEATURE_SOURCE_BLOB_DIFFERS');
+    return { path: p, sha256: hash(b) };
+  });
+  need(hash(JSON.stringify(rows)) === plan.sourceManifestSha256, 'FULL_SOURCE_MANIFEST_DIFFERS');
+  need(git(['diff', '--name-only', '-z', '--no-ext-diff', '--no-textconv', plan.sourceSha, '--', 'apps/', 'packages/', 'scripts/', '.github/workflows/',
+    'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'turbo.json', 'eslint.config.mjs', ':(glob)tsconfig*.json', 'render.yaml', '.npmrc', '.pnpmfile.cjs',
+    '.env.example', '.gitignore', ':(glob)**/.gitignore'])
+    .split('\0').filter(Boolean).filter(selected).length === 0, 'CURRENT_FEATURE_RUNTIME_DIFFERS');
+  const normalized = b => b.toString().replaceAll('\r\n', '\n').trim();
+  need(normalized(io.readFileSync(path.join(root, 'pnpm-lock.yaml'))) === normalized(io.readFileSync(path.join(root, 'node_modules/.pnpm/lock.yaml'))), 'INSTALLED_LOCK_DIFFERS');
+  need(runtimeBindingsSha256Of(root, io, nodeVersion) === plan.runtimeBindingsSha256, 'INSTALLED_RUNTIME_BINDING_DIFFERS');
+  for (const [p, expected] of [[ROUTE, plan.routeModuleSha256], [RELEASE, plan.localReleaseSha256]])
+    need(hash(io.readFileSync(path.join(root, p))) === expected && hash(git(['show', `${plan.sourceSha}:${p}`])) === expected, 'COMMITTED_ROUTE_RELEASE_REQUIRED');
+  const local = JSON.parse(io.readFileSync(path.join(root, RELEASE)));
+  need(local.ticket === 'SCRUM-637' && local.localReleaseGreen === true && local.sourceManifestSha256 === plan.sourceManifestSha256, 'GREEN_LOCAL_RELEASE_REQUIRED');
+  return { files: rows.length, sourceManifestSha256: plan.sourceManifestSha256, featureTreeSha256: digest(tree), runtimeBindingsSha256: plan.runtimeBindingsSha256 };
+}
+
+/** Always probe the original cookie independently, even after a logout timeout. No uncertainty is cleared here. */
+export async function closeSession(context, request, record) {
+  const original = context.originalCookie || context.cookie, row = { actor: context.actor, signOutStatus: null, meStatus: null,
+    noOriginalCookie: typeof original !== 'string' || original.length === 0, confirmed: false };
+  context.originalCookie = original; context.cookie = original;
+  let logout = false;
+  try { const r = await request(context, 'POST', '/api/auth/sign-out', { cleanup: true }); row.signOutStatus = r.status; logout = r.status === 200 && r.body?.ok === true; }
+  catch (e) { row.errorCode = codeOf(e); }
+  try { context.cookie = original; const r = await request(context, 'GET', '/api/me', { cleanup: true }); row.meStatus = r.status; }
+  catch (e) { row.errorCode ??= codeOf(e); }
+  finally { context.cookie = ''; row.confirmed = !row.noOriginalCookie && logout && row.meStatus === 401 && !row.errorCode; context.closed = row.confirmed;
+    if (row.confirmed) context.originalCookie = ''; record(row); }
+  return row.confirmed;
+}
+async function boundedJson(response) {
+  need(response.body && Number(response.headers.get('content-length') ?? 0) <= MAX_BODY, 'JSON_BODY_LIMIT');
+  const reader = response.body.getReader(), chunks = []; let size = 0;
+  try { for (;;) { const r = await reader.read(); if (r.done) break; size += r.value.byteLength;
+    need(size <= MAX_BODY, 'JSON_BODY_LIMIT'); chunks.push(Buffer.from(r.value)); }
+    try { return JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch { throw new ProofError('JSON_BODY_REQUIRED'); }
+  } finally { await reader.cancel().catch(() => {}); reader.releaseLock(); }
+}
+
+/** Local preflight seam, no auth. The live caller first verifies the full source/runtime binding. */
+export async function loadReleasedOverviewSchema() {
+  const { tsImport } = await import(pathToFileURL(path.join(WORKTREE, 'apps/api/node_modules/tsx/dist/esm/api/index.mjs')).href);
+  const { OverviewSchema } = await tsImport(pathToFileURL(path.join(WORKTREE, ROUTE)).href,
+    { parentURL: import.meta.url, tsconfig: path.join(WORKTREE, 'apps/api/tsconfig.json') });
+  need(typeof OverviewSchema?.parse === 'function', 'RELEASED_OVERVIEW_SCHEMA_REQUIRED');
+  return OverviewSchema;
+}
+
+export async function executeReviewedPlan(input, { explicitExecute = false } = {}) {
+  need(explicitExecute === true, 'EXPLICIT_EXECUTE_REQUIRED');
+  const plan = validatePlan(input), helperSha256 = hash(fs.readFileSync(fileURLToPath(import.meta.url)));
+  need(plan.helperSha256 === helperSha256 && !fs.existsSync(plan.outputDirectory), 'FROZEN_HELPER_FRESH_DIRECTORY_REQUIRED');
+  const command = (exe, args, cwd) => { const r = spawnSync(exe, args, { cwd, encoding: 'utf8', timeout: TIMEOUT, maxBuffer: 3_000_000, stdio: ['ignore', 'pipe', 'pipe'] });
+    need(r.status === 0 && !r.signal, 'BOUNDED_METADATA_COMMAND_FAILED'); return r.stdout; };
+  const local = () => { const binding = verifyLocalSource(plan, { git: args => command('git', args, WORKTREE) });
+    for (const p of ['scripts/agent/env.mjs', 'scripts/agent/evidence.mjs']) need(hash(fs.readFileSync(path.join(PRIVATE_ROOT, p)))
+      === hash(fs.readFileSync(path.join(WORKTREE, p))), 'BOUND_PRIVATE_ROOT_SUPPORT_REQUIRED'); return binding; };
+  const initialSourceBinding = local(); // No env, credential, application or browser import before current full-source validation.
+  const OverviewSchema = await loadReleasedOverviewSchema();
+  const { need: secret } = await import(pathToFileURL(path.join(PRIVATE_ROOT, 'scripts/agent/env.mjs')).href);
+  fs.mkdirSync(plan.outputDirectory);
+  const resultFile = path.join(plan.outputDirectory, 'result.json'), journal = path.join(plan.outputDirectory, 'intents.jsonl');
+  const receipt = { ticket: 'SCRUM-637', actualStaging: true, complete: false, sourceSha: plan.sourceSha, sourceManifestSha256: plan.sourceManifestSha256,
+    ciRunId: String(plan.ciRunId), deployments: plan.deployments, helperSha256, planSha256: digest(plan), initialSourceBinding,
+    routeModuleSha256: plan.routeModuleSha256, localReleaseSha256: plan.localReleaseSha256, assetManifestSha256: plan.assetManifestSha256,
+    startedAt: now(), completedAt: null, sourceChecks: [], operations: [], reads: [], authority: [], authCleanup: [], screenshots: [],
+    network: { blocked: 0, failed: 0, pageErrors: 0, consoleErrors: 0, fontSuppressions: 0 }, diagnostics: [],
+    pending: 0, nativePending: 0, unresolvedAuth: 0, journalHealthy: true, businessWrites: 0, fixturesCreated: 0, clipboardExact: false, errorCode: null,
+    limitations: ['Actual Overview and Copy only; no digest/webhook delivery claim. Local fake sender tests remain separate.',
+      'No source-button navigation, detail pages, payment records, OTO App, account creation, grant changes, fixtures or business writes.',
+      'Known external font suppressed; identity masks are deliberate. Production assets are independently collected, not a local build.'] };
+  const save = () => { try { fs.writeFileSync(resultFile, JSON.stringify(receipt, null, 2) + '\n', { flush: true }); }
+    catch { receipt.journalHealthy = false; throw new ProofError('RECEIPT_WRITE_FAILED'); } };
+  fs.writeFileSync(journal, '', { flag: 'wx', flush: true }); save();
+  const persist = row => { let fd; try { fd = fs.openSync(journal, 'a'); fs.writeSync(fd, JSON.stringify(row) + '\n'); fs.fsyncSync(fd); }
+    catch { receipt.journalHealthy = false; throw new ProofError('DURABLE_INTENT_REQUIRED'); } finally { if (fd !== undefined) fs.closeSync(fd); } };
+  const safe = () => need(receipt.journalHealthy && receipt.pending === 0 && receipt.nativePending === 0 && receipt.unresolvedAuth === 0 && Object.entries(receipt.network).every(([k, n]) => k === 'fontSuppressions' || n === 0), 'UNSETTLED_PROOF_REFUSED');
+  const lastDeploy = new Date(Math.max(...plan.deployments.map(d => Date.parse(d.finishedAt)))).toISOString();
+  async function sourceGate() {
+    need(receipt.journalHealthy, 'UNSETTLED_PROOF_REFUSED');
+    for (const c of sessions) await c.drainNative?.();
+    const binding = local(), ci = JSON.parse(command('gh', ['run', 'view', String(plan.ciRunId), '--repo', 'vickyydev/oto-platform', '--json', 'headSha,status,conclusion,jobs']));
+    const get = async suffix => { const r = await fetch('https://api.render.com/v1' + suffix, { redirect: 'manual', signal: AbortSignal.timeout(TIMEOUT),
+      headers: { authorization: `Bearer ${secret('RENDER_API_KEY')}`, accept: 'application/json' } }); need(r.status === 200, 'RENDER_READ_FAILED'); return boundedJson(r); };
+    const services = await get('/services?limit=50'), latest = {};
+    need(Array.isArray(services), 'RENDER_SERVICES_REQUIRED');
+    for (const d of plan.deployments) latest[d.serviceId] = await get(`/services/${d.serviceId}/deploys?limit=1`);
+    releaseFacts(plan, ci, services, latest);
+    receipt.sourceChecks.push({ at: now(), sourceSha: plan.sourceSha, ciRunId: String(plan.ciRunId), greenJobs: 6, deployments: plan.deployments,
+      localSourceBinding: binding, ciMetadataSha256: digest(ci) }); save();
+  }
+  const sessions = []; let browser, failed = false;
+  async function request(c, method, pathname, { query = '', body, cleanup = false } = {}) {
+    need(requestAllowed({ url: ORIGIN + pathname + (query ? '?' + query : ''), method, body, branchIds: c.branchIds, auth: true }), 'REQUEST_GRAMMAR_REFUSED');
+    need(!cleanup || pathname === '/api/auth/sign-out' && method === 'POST' || pathname === '/api/me' && method === 'GET', 'CLEANUP_GRAMMAR_REFUSED');
+    if (!cleanup) safe();
+    const row = { sequence: receipt.operations.length + 1, actor: c.actor, method, path: pathname, queryKeys: [...new URLSearchParams(query).keys()],
+      cleanup, intentAt: now(), terminal: false, status: null }; receipt.operations.push(row);
+    try { persist(row); save(); } catch (e) { if (!cleanup) throw e; }
+    const auth = method === 'POST'; if (pathname === '/api/auth/sign-in') c.attempted = true;
+    receipt.pending++; if (auth) receipt.unresolvedAuth++;
+    try {
+      const r = await fetch(ORIGIN + pathname + (query ? '?' + query : ''), { method, redirect: 'manual', signal: AbortSignal.timeout(TIMEOUT),
+        headers: { accept: 'application/json', ...(c.cookie ? { cookie: c.cookie } : {}), ...(body === undefined ? {} : { 'content-type': 'application/json' }) },
+        body: body === undefined ? undefined : JSON.stringify(body) });
+      for (const s of r.headers.getSetCookie()) { const m = /^oto_session=([^;]*)/.exec(s); if (m) c.cookie = m[1] ? `oto_session=${m[1]}` : ''; }
+      row.status = r.status; const json = await boundedJson(r); row.terminal = true; row.completedAt = now(); if (auth) receipt.unresolvedAuth--;
+      return { status: r.status, body: json };
+    } catch (e) { row.errorCode = codeOf(e); throw e; }
+    finally { receipt.pending--; try { persist(row); save(); } catch (e) { if (!cleanup) throw e; } }
+  }
+  async function census(c) {
+    const m = await request(c, 'GET', '/api/me'), p = await request(c, 'GET', '/api/me/permissions'), me = m.body, permissions = p.body?.permissions;
+    need(m.status === 200 && p.status === 200 && me?.account?.id === DEMOS[c.actor] && me.account.operatorId === DEMOS.operatorId
+      && me.account.status === 'active' && me.account.mustChangePassword === false && me.sessionLocked === false && Array.isArray(permissions), 'EXACT_ACTIVE_DEMO_REQUIRED');
+    return { hash: digest({ account: { id: me.account.id, operatorId: me.account.operatorId, status: me.account.status, mustChangePassword: me.account.mustChangePassword },
+      branchId: me.branch?.id ?? null, preferences: me.preferences, sessionLocked: me.sessionLocked,
+      permissions: [...permissions].sort((a, b) => canonical(a).localeCompare(canonical(b))) }), permissions, reach: reachOf(permissions) };
+  }
+  const observe = (c, raw, selectedIds, availableIds, operatorWide) => {
+    let body; try { body = OverviewSchema.parse(raw); } catch { throw new ProofError('RELEASED_OVERVIEW_SCHEMA_MISMATCH'); }
+    const counts = validateOverview(body, { selectedIds, availableIds, operatorWide, after: lastDeploy, observedAt: now() });
+    receipt.reads.push({ actor: c.actor, at: now(), status: 200, responseSha256: digest(raw), ...counts }); save(); return body;
+  };
+  async function read(c, selectedIds, availableIds, branchId = '') {
+    const r = await request(c, 'GET', '/api/overview', { query: branchId ? new URLSearchParams({ branchId }).toString() : '' });
+    need(r.status === 200, 'OVERVIEW_200_REQUIRED'); return observe(c, r.body, selectedIds, availableIds, c.reach.kind === 'operator' && !branchId);
+  }
+  async function capture(c, index, { branchId = '', availableIds, selectedIds, restricted = false, phone = false }) {
+    await c.drainNative?.(); safe(); await sourceGate();
+    const context = await browser.newContext({ viewport: phone ? { width: 390, height: 844 } : { width: 1440, height: 1000 }, serviceWorkers: 'block' }); c.browserContexts.push(context);
+    await context.addCookies([{ name: 'oto_session', value: c.cookie.slice('oto_session='.length), url: ORIGIN, httpOnly: true, secure: true, sameSite: 'Lax' }]);
+    await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: ORIGIN });
+    const page = await context.newPage(); page.setDefaultTimeout(TIMEOUT);
+    const assets = new Map(plan.assets.map(a => [a.path, a])); let consumed = null, selected = '', routeFailure = null;
+    const recordFailure = (stage, r) => { const staticAsset = staticDiagnostics.get(r); staticDiagnostics.delete(r);
+      receipt.diagnostics.push({ stage, method: r.method(), type: r.resourceType(),
+      mainFrame: r.frame() === page.mainFrame(), urlSha256: hash(r.url()), bodySha256: hash(r.postData() ?? ''),
+      ...(staticAsset ? { staticAsset } : {}) }); saveNative(); };
+    const staticDiagnostics = new WeakMap();
+    const saveNative = () => { try { save(); }
+      catch (error) { routeFailure ??= codeOf(error); receipt.errorCode ??= codeOf(error); } };
+    page.on('pageerror', () => { receipt.network.pageErrors++; saveNative(); });
+    page.on('console', m => { if (m.type() === 'error') { receipt.network.consoleErrors++; saveNative(); } });
+    page.on('requestfailed', r => { receipt.network.failed++; recordFailure('request-failed', r); });
+    await page.route('**/*', async route => {
+      const req = route.request(); let stage = 'grammar';
+      c.nativeWork ??= new Set();
+      c.drainNative ??= async () => {
+        const deadline = Date.now() + TIMEOUT;
+        while (c.nativeWork.size > 0) {
+          const remaining = deadline - Date.now(); need(remaining > 0, 'NATIVE_DRAIN_TIMEOUT');
+          let timer;
+          try { await Promise.race([Promise.allSettled([...c.nativeWork]), new Promise(resolve => { timer = setTimeout(resolve, remaining); })]); }
+          finally { clearTimeout(timer); }
+          need(c.nativeWork.size === 0 || Date.now() < deadline, 'NATIVE_DRAIN_TIMEOUT');
+        }
+        need(receipt.nativePending === 0 && Object.entries(receipt.network).every(([key, count]) => key === 'fontSuppressions' || count === 0), 'NATIVE_DRAIN_FAILED');
+      };
+      let settled; const work = new Promise(resolve => { settled = resolve; });
+      c.nativeWork.add(work); receipt.nativePending = (receipt.nativePending ?? 0) + 1;
+      try {
+        need(receipt.journalHealthy, 'UNSETTLED_PROOF_REFUSED');
+        save();
+        if (req.url() === FONT && req.method() === 'GET' && req.resourceType() === 'stylesheet') {
+          receipt.network.fontSuppressions++; save(); await route.fulfill({ status: 200, contentType: 'text/css', body: '' }); return;
+        }
+        const url = new URL(req.url()), main = req.frame() === page.mainFrame(), isDocument = req.resourceType() === 'document';
+        need(main && requestAllowed({ url: req.url(), method: req.method(), body: req.postData() === null ? undefined : req.postData(), branchIds: c.branchIds,
+          health: c.permissions.some(p => p.permission === 'admin:health:read'), assetPaths: [...assets.keys()], document: isDocument }), 'BROWSER_REQUEST_REFUSED');
+        if (isDocument) need(url.pathname === '/overview' && !url.search, 'ONLY_OVERVIEW_DOCUMENT_REQUIRED');
+        stage = 'fetch'; const response = await route.fetch({ maxRetries: 0, maxRedirects: 0, timeout: TIMEOUT });
+        stage = 'body'; const bytes = await response.body(); need(bytes.length <= (url.pathname.startsWith('/api/') ? MAX_BODY : 8_000_000), 'NATIVE_BODY_LIMIT');
+        stage = 'status'; need(response.status() === 200, 'NATIVE_ALLOWED_READ_FAILED');
+        if (url.pathname.startsWith('/api/')) {
+          if (url.pathname === '/api/overview') {
+            stage = 'schema'; consumed = observe(c, JSON.parse(bytes.toString('utf8')), selected ? [selected] : selectedIds, availableIds, c.reach.kind === 'operator' && !selected);
+          }
+        } else {
+          stage = 'static-hash'; const asset = assets.get(isDocument ? '/' : url.pathname);
+          const receivedSha256 = hash(bytes), receivedContentType = response.headers()['content-type']?.split(';')[0].trim();
+          if (!asset || receivedSha256 !== asset.sha256 || receivedContentType !== asset.contentType) {
+            const diagnostic = { expectedSha256: asset?.sha256 ?? null, receivedSha256,
+              expectedContentType: asset?.contentType ?? null,
+              receivedContentType: typeof receivedContentType === 'string' && receivedContentType.length <= 128 && /^[A-Za-z0-9!#$&^_.+-]+\/[A-Za-z0-9!#$&^_.+-]+$/.test(receivedContentType) ? receivedContentType : null,
+              requestAcceptSha256: null, requestCookiePresent: null };
+            try { const headers = await req.allHeaders(); diagnostic.requestAcceptSha256 = hash(headers.accept ?? '');
+              diagnostic.requestCookiePresent = typeof headers.cookie === 'string' && headers.cookie.length > 0; } catch {}
+            staticDiagnostics.set(req, diagnostic);
+          }
+          need(asset && receivedSha256 === asset.sha256 && receivedContentType === asset.contentType, 'PRODUCTION_STATIC_BYTES_DIFFER');
+        }
+        const headers = { ...response.headers() }; for (const h of ['content-encoding', 'content-length', 'transfer-encoding']) delete headers[h];
+        stage = 'fulfill'; await route.fulfill({ status: response.status(), headers, body: bytes });
+      } catch (e) { routeFailure ??= codeOf(e); receipt.errorCode ??= routeFailure; receipt.network.blocked++; recordFailure(stage, req); await route.abort('blockedbyclient').catch(() => {}); }
+      finally { receipt.nativePending--; c.nativeWork.delete(work); settled(); saveNative(); }
+    });
+    try {
+      await page.goto(ORIGIN + '/overview', { waitUntil: 'domcontentloaded', timeout: TIMEOUT });
+      if (restricted) {
+        const consoleDenied = !c.permissions.some(p => p.permission === 'app:console:access');
+        if (consoleDenied) await page.getByRole('heading', { name: 'The console is not on your access', exact: true }).waitFor();
+        else await page.getByText('This page is not on your access', { exact: true }).waitFor();
+        need(await page.getByRole('button', { name: 'Copy status summary', exact: true }).count() === 0 && consumed === null, 'RESTRICTED_DATA_OR_COPY_LEAK');
+        receipt.restrictionUi = consoleDenied ? 'console-level' : 'page-level';
+      } else {
+        need(c.permissions.some(p => p.permission === 'app:console:access'), 'NATIVE_CONSOLE_GRANT_REQUIRED');
+        await page.getByRole('heading', { name: 'Overview', exact: true }).waitFor();
+        await page.getByRole('heading', { name: 'Needs a decision', exact: true }).waitFor();
+        if (branchId) { selected = branchId; consumed = null;
+          const response = page.waitForResponse(r => r.url() === ORIGIN + '/api/overview?' + new URLSearchParams({ branchId }).toString());
+          void response.then(() => {}, () => {});
+          await Promise.all([response, page.getByRole('combobox', { name: 'Park', exact: true }).selectOption(branchId)]);
+          await page.getByRole('button', { name: 'Copy status summary', exact: true }).waitFor({ state: 'visible' }); }
+        await page.waitForFunction(() => !!document.querySelector('main time[datetime]') && ![...document.querySelectorAll('button')].find(b => b.textContent === 'Copy status summary')?.disabled);
+        need(consumed && !routeFailure && same(sorted(consumed.selectedBranchIds), sorted(branchId ? [branchId] : selectedIds)), 'CURRENT_NATIVE_RESPONSE_REQUIRED');
+        const group = title => page.locator('section').filter({ has: page.getByRole('heading', { name: title, exact: true }) });
+        const metric = async (title, label, value) => { const tile = group(title).locator('span').filter({ hasText: new RegExp('^' + label + '$') }).locator('..');
+          need((await tile.locator('span').nth(1).textContent())?.trim() === value, 'NATIVE_METRIC_MISMATCH'); };
+        const n = value => value.toLocaleString('en-US');
+        const money = value => `฿${(value / 100).toLocaleString('en-US', { minimumFractionDigits: value % 100 === 0 ? 0 : 2, maximumFractionDigits: 2 })}`;
+        for (const [key, title] of [['revenueSatang', 'Revenue today'], ['guests', 'Guests today'], ['inParkNow', 'In park now'], ['bookingsToday', 'Bookings today'], ['inboxUnanswered', 'Inbox unanswered'], ['openAlerts', 'Open alerts'], ['boxesOffline', 'Boxes offline']])
+          need((await page.getByRole('article', { name: title, exact: true }).locator('span').nth(1).textContent())?.trim() === (key === 'revenueSatang' ? money(consumed.totals[key]) : n(consumed.totals[key])), 'NATIVE_LEGACY_FIGURE_MISMATCH');
+        const a = consumed.aggregates;
+        for (const [key, label] of [['visits', 'Visits'], ['visitingMembers', 'Visiting members'], ['draftVisits', 'Draft visits'], ['activeVisits', 'Active visits'], ['closedVisits', 'Closed visits']]) await metric('Members & visits', label, n(a.members.totals[key]));
+        for (const [key, label] of [['bookings', 'Bookings'], ['redeemedBookings', 'Redeemed bookings']]) await metric('Booking activity', label, n(a.bookings.totals[key]));
+        await metric('Booking activity', 'Priced booking value', money(a.bookings.totals.bookedValueSatang));
+        for (const [key, title, countLabel] of [['assistantUsage', 'Internal assistant', 'Asks'], ['inboxAiUsage', 'Inbox AI', 'Turns']]) {
+          for (const [field, label] of [['count', countLabel], ['inputTokens', 'Input tokens'], ['outputTokens', 'Output tokens'], ['cacheReadTokens', 'Cache-read tokens'], ['totalTokens', 'Total tokens']]) await metric(title, label, n(a[key].totals[field]));
+          const text = await group(title).innerText(); need(['Price unavailable', 'USD', 'no_rate_configured', `${n(a[key].totals.unpricedTokens)} unpriced tokens`, 'estimate excludes cache writes'].every(s => text.includes(s)), 'NATIVE_Q18_LABELS_REQUIRED');
+        }
+        for (const [key, label] of [['boxes', 'Boxes'], ['online', 'Online'], ['offline', 'Offline'], ['unclaimed', 'Unclaimed'], ['disabled', 'Disabled']]) await metric('Fleet', label, n(a.fleet.totals[key]));
+        for (const item of consumed.decisions.items) {
+          const row = page.getByRole('list', { name: 'Decision counts', exact: true }).getByRole('listitem').filter({ has: page.getByText(item.label, { exact: true }) });
+          need((await row.locator(':scope > span').innerText()).trim() === (item.status === 'available' ? n(item.count) : item.status === 'not-built' ? 'Not built' : 'Unavailable'), 'NATIVE_DECISION_STATE_REQUIRED');
+        }
+        need(await page.locator(`time[datetime="${consumed.generatedAt}"]`).count() >= 2, 'NATIVE_FRESHNESS_REQUIRED');
+        if (index === 0) {
+          await page.evaluate(() => navigator.clipboard.writeText('ZZ TEST clipboard proof'));
+          try {
+            await page.evaluate(expected => {
+              const clipboard = navigator.clipboard, original = clipboard.writeText, bound = original.bind(clipboard);
+              const state = { descriptor: Object.getOwnPropertyDescriptor(clipboard, 'writeText'), calls: 0,
+                nativeWriterCalled: false, writtenExact: false, written: null };
+              globalThis.__zz637Clipboard = state;
+              Object.defineProperty(clipboard, 'writeText', { configurable: true, writable: true, value(value) {
+                state.calls++; state.nativeWriterCalled = true; state.writtenExact = state.calls === 1 && value === expected;
+                state.written = typeof value === 'string' ? value : null; return bound(value);
+              } });
+            }, consumed.statusSummary);
+            await page.getByRole('button', { name: 'Copy status summary', exact: true }).click();
+            await page.getByRole('status').filter({ hasText: 'Status summary copied.' }).waitFor();
+            receipt.clipboardVerification = await page.evaluate(async expected => {
+              const state = globalThis.__zz637Clipboard, read = await navigator.clipboard.readText();
+              const sha = async value => Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value))))
+                .map(byte => byte.toString(16).padStart(2, '0')).join('');
+              const rawReadExact = read === expected;
+              return { writtenExact: state.writtenExact, nativeWriterCalled: state.nativeWriterCalled, rawReadExact,
+                lineEndingsOnly: !rawReadExact && !expected.includes('\r') && read === expected.replace(/\n/g, '\r\n'),
+                expectedSha256: await sha(expected), writtenSha256: state.written === null ? null : await sha(state.written), readSha256: await sha(read) };
+            }, consumed.statusSummary);
+            const copy = receipt.clipboardVerification;
+            need(copy.writtenExact && copy.nativeWriterCalled && (copy.rawReadExact || copy.lineEndingsOnly), 'ACTUAL_NATIVE_CLIPBOARD_MISMATCH');
+            receipt.clipboardExact = true;
+          } finally {
+            await page.evaluate(() => {
+              const state = globalThis.__zz637Clipboard; if (!state) return;
+              try { if (state.descriptor) Object.defineProperty(navigator.clipboard, 'writeText', state.descriptor);
+                else delete navigator.clipboard.writeText; } finally { delete globalThis.__zz637Clipboard; }
+            });
+          }
+        }
+      }
+      await c.drainNative?.(); need(!routeFailure, 'NATIVE_ROUTE_FAILED'); safe(); await sourceGate();
+      const masks = [];
+      const identities = page.getByRole('button', { name: 'Sign out', exact: true }).locator('..');
+      for (let i = 0; i < await identities.count(); i++) if (await identities.nth(i).isVisible()) masks.push(identities.nth(i));
+      if (restricted && receipt.restrictionUi === 'console-level') masks.push(page.getByRole('heading', { name: 'The console is not on your access', exact: true }).locator('..').locator(':scope > p').first());
+      const capturedAt = now();
+      await page.evaluate(({ text, refusal }) => {
+        const host = document.querySelector('main') ?? (refusal ? document.body : null); if (!host) throw new Error('CAPTION_HOST_REQUIRED');
+        const c = document.createElement('div'); c.id = 'zz-637-evidence'; c.textContent = text;
+        c.style.cssText = 'position:relative;z-index:999999;pointer-events:auto;white-space:pre-wrap;overflow-wrap:anywhere;box-sizing:border-box;width:100%;padding:12px;margin:0 0 16px;background:#ffffff;color:#111111;border:2px solid #111;font:12px/1.5 monospace;'; host.prepend(c);
+      }, { text: `SCRUM-637 · Actual native staging · ${c.actor}${branchId ? ' · Selected park' : ''}\n${capturedAt}\nSource ${plan.sourceSha}\nCI ${plan.ciRunId} · API ${plan.deployments[0].id} · Admin ${plan.deployments[1].id}\nRead-only · No digest delivery claim`, refusal: restricted && receipt.restrictionUi === 'console-level' });
+      need(await page.evaluate(() => { const c = document.getElementById('zz-637-evidence'), r = c.getBoundingClientRect();
+        return r.width > 0 && r.x >= 0 && r.right <= innerWidth + 1 && c.scrollWidth <= c.clientWidth + 1 && c.scrollHeight <= c.clientHeight + 1; }), 'NATIVE_CAPTION_CLIPPED');
+      need(!phone || await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'PHONE_HORIZONTAL_OVERFLOW');
+      const image = path.join(plan.outputDirectory, PNGS[index]); await page.screenshot({ path: image, fullPage: true, mask: masks, animations: 'disabled' });
+      receipt.screenshots.push({ filename: PNGS[index], sha256: hash(fs.readFileSync(image)), actor: c.actor, capturedAt, completedAt: now(),
+        viewport: phone ? { width: 390, height: 844 } : { width: 1440, height: 1000 }, native: true, restricted, selectedPark: !!branchId,
+        responseSha256: consumed ? digest(consumed) : null, identityMasks: masks.length }); save();
+      await c.drainNative?.();
+    } catch (error) {
+      receipt.errorCode ??= codeOf(error); throw error;
+    } finally { await context.close(); await c.drainNative?.(); c.browserContexts = c.browserContexts.filter(x => x !== context); }
+  }
+  try {
+    need(Date.parse(receipt.startedAt) > Date.parse(lastDeploy), 'POSTDEPLOY_ATTEMPT_REQUIRED'); await sourceGate();
+    const { launch } = await import(pathToFileURL(path.join(PRIVATE_ROOT, 'scripts/agent/evidence.mjs')).href); browser = await launch();
+    let ownedIds;
+    for (const actor of ACTORS) {
+      safe(); await sourceGate(); const c = { actor, cookie: '', attempted: false, closed: false, branchIds: ownedIds ?? [], browserContexts: [] }; sessions.push(c);
+      const signIn = await request(c, 'POST', '/api/auth/sign-in', { body: { phone: secret(`STAGING_${actor}_PHONE`), password: secret(`STAGING_${actor}_PASSWORD`) } });
+      need(signIn.status === 200 && signIn.body?.accountId === DEMOS[actor] && signIn.body.mustChangePassword === false && c.cookie, 'EXACT_DEMO_SIGN_IN_REQUIRED');
+      const before = await census(c); c.reach = before.reach; c.permissions = before.permissions;
+      const authority = { actor, beforeSha256: before.hash, afterSha256: null, reach: before.reach.kind }; receipt.authority.push(authority); save();
+      if (actor === 'ADMIN') {
+        need(c.reach.kind === 'operator', 'ADMIN_OPERATOR_REACH_REQUIRED');
+        const first = await request(c, 'GET', '/api/overview'); need(first.status === 200, 'ADMIN_OVERVIEW_REQUIRED');
+        ownedIds = first.body.branches.map(p => p.id); need(ownedIds.length > 0 && ownedIds.every(uuid), 'LIVE_OWNED_PICKER_REQUIRED'); c.branchIds = ownedIds;
+        observe(c, first.body, ownedIds, ownedIds, true); await capture(c, 0, { availableIds: ownedIds, selectedIds: ownedIds });
+        await read(c, [ownedIds[0]], ownedIds, ownedIds[0]); await capture(c, 1, { branchId: ownedIds[0], availableIds: ownedIds, selectedIds: ownedIds, phone: true });
+      } else if (actor === 'MANAGER') {
+        need(c.reach.kind === 'branches', 'MANAGER_BRANCH_REACH_REQUIRED'); const ids = ownedIds.filter(id => c.reach.ids.includes(id));
+        need(ids.length > 0, 'MANAGER_LIVE_OWNED_REACH_REQUIRED'); c.branchIds = ids;
+        await read(c, ids, ids); await read(c, [ids[0]], ids, ids[0]); await capture(c, 2, { availableIds: ids, selectedIds: ids });
+      } else {
+        need(c.reach.kind === 'branches' && c.reach.ids.length === 0, 'RECEPTION_NO_OVERVIEW_REACH_REQUIRED');
+        const refusal = await request(c, 'GET', '/api/overview'); need(refusal.status === 403 && typeof refusal.body?.error?.code === 'string', 'RECEPTION_STRUCTURED_403_REQUIRED');
+        receipt.reads.push({ actor, at: now(), status: 403, responseSha256: digest(refusal.body) }); save();
+        await capture(c, 3, { restricted: true, availableIds: [], selectedIds: [] });
+      }
+      authority.afterSha256 = (await census(c)).hash; need(authority.afterSha256 === authority.beforeSha256, 'ACTOR_AUTHORITY_CHANGED'); save();
+      need(await closeSession(c, request, row => { receipt.authCleanup.push(row); save(); }), 'AUTH_CLEANUP_UNCONFIRMED'); safe();
+    }
+  } catch (e) { failed = true; receipt.errorCode ??= codeOf(e); }
+  finally {
+    for (const c of sessions) {
+      for (const b of c.browserContexts) await b.close().catch(() => { failed = true; });
+      try { await c.drainNative?.(); } catch (e) { failed = true; receipt.errorCode ??= codeOf(e); }
+      if (c.attempted && !c.closed) try { if (!await closeSession(c, request, row => { receipt.authCleanup.push(row); save(); })) failed = true; } catch { failed = true; }
+      c.cookie = ''; c.originalCookie = '';
+    }
+    if (browser) await browser.close().catch(() => { failed = true; });
+    for (const c of sessions) try { await c.drainNative?.(); } catch (e) { failed = true; receipt.errorCode ??= codeOf(e); }
+    try { await sourceGate(); } catch (e) { failed = true; receipt.errorCode ??= codeOf(e); }
+    receipt.completedAt = now();
+    receipt.complete = !failed && receipt.clipboardExact && receipt.screenshots.length === 4 && sessions.length === 3 && sessions.every(c => c.closed && (!c.nativeWork || c.nativeWork.size === 0))
+      && receipt.authority.length === 3 && receipt.authority.every(a => a.beforeSha256 === a.afterSha256) && receipt.pending === 0 && receipt.nativePending === 0 && receipt.unresolvedAuth === 0
+      && receipt.journalHealthy && Object.entries(receipt.network).every(([k, n]) => k === 'fontSuppressions' || n === 0);
+    save();
+  }
+  return receipt;
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
+  if (process.argv.length !== 4 || process.argv[2] !== '--execute') { process.stderr.write('HELD: reviewed plan and explicit --execute required.\n'); process.exitCode = 2; }
+  else { try { const r = await executeReviewedPlan(JSON.parse(fs.readFileSync(process.argv[3], 'utf8')), { explicitExecute: true });
+    process.stdout.write(JSON.stringify({ complete: r.complete, errorCode: r.errorCode, screenshots: r.screenshots.length }) + '\n'); if (!r.complete) process.exitCode = 1;
+  } catch (e) { process.stderr.write(codeOf(e) + '\n'); process.exitCode = 1; } }
+}

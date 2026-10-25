@@ -1,0 +1,17 @@
+import fs from 'node:fs';
+import { launch } from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/evidence.mjs';
+const browser = await launch(); let context;
+const receipt = { ticket: 'SCRUM-637', synthetic: true, authAttempts: 0, networkRequests: 0, startedAt: new Date().toISOString() };
+try {
+  context = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
+  await context.route('**/*', async route => { receipt.networkRequests++; await route.abort(); });
+  const page = await context.newPage();
+  await page.setContent('<label><span>Park</span><select><option value="">All reachable parks</option><option value="zz">ZZ TEST Park</option></select></label>');
+  receipt.exactLabelCount = await page.getByLabel('Park', { exact: true }).count();
+  receipt.exactComboboxCount = await page.getByRole('combobox', { name: 'Park', exact: true }).count();
+  await page.getByRole('combobox', { name: 'Park', exact: true }).selectOption('zz');
+  receipt.nativeSelectionPassed = await page.locator('select').inputValue() === 'zz';
+} finally { await context?.close(); await browser.close(); }
+receipt.completedAt = new Date().toISOString();
+fs.writeFileSync('C:/w/admin637-select-label-diagnostic-20261026.json', JSON.stringify(receipt, null, 2) + '\n', { flag: 'wx' });
+process.stdout.write(JSON.stringify(receipt) + '\n');

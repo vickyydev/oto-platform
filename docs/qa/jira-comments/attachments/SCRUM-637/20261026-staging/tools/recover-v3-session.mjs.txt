@@ -1,0 +1,69 @@
+import fs from 'node:fs';
+import {createHash} from 'node:crypto';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+const need=(v,c)=>{if(!v)throw Error(c);};
+const SOURCE='3202967eb331c28d450e9a1ba5336aaa0693bab8',ACTOR='01a0bbdc-8c64-7283-aa3b-2af7e79c525d',OPERATOR='01a0bbdc-8c41-7204-bd58-2b92bd7dda75';
+const FROM='2026-10-25T20:56:50.000Z',TO='2026-10-25T20:56:55.000Z';
+export async function main(argv=process.argv.slice(2)){
+const mode=argv[0],target=argv[1]??null;
+need((mode==='census'&&argv.length===1)||(mode==='revoke'&&argv.length===2&&/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(target)),'EXACT_RECOVERY_MODE_REQUIRED');
+const prefix='C:/w/admin637-v3-recovery-'+mode+'-r1';
+need(!['-intent.json','-dispatch.json','-terminal.json','.json'].some(suffix=>fs.existsSync(prefix+suffix)),'PRESERVE_RECOVERY_ATTEMPT');
+let censusReceiptSha256=null;
+if(mode==='revoke'){
+ const censusFile='C:/w/admin637-v3-recovery-census-r1.json',bytes=fs.readFileSync(censusFile),c=JSON.parse(bytes);
+ need(c.ticket==='SCRUM-637'&&c.kind==='SCRUM637_V3_RECOVERY'&&c.mode==='census'&&c.count===1&&c.mutations===0
+  &&c.sourceSha===SOURCE&&c.jobStatus==='succeeded'&&c.session?.id===target&&c.session.accountId===ACTOR&&c.session.operatorId===OPERATOR
+  &&c.session.revokedAt===null&&/^[a-f0-9-]{36}$/.test(c.session.signInAuditId??'')
+  &&Date.parse(c.session.createdAt)>=Date.parse(FROM)&&Date.parse(c.session.createdAt)<=Date.parse(TO),'EXACT_PRIOR_CENSUS_REQUIRED');
+ censusReceiptSha256=createHash('sha256').update(bytes).digest('hex');
+}
+const {service,render:nativeRender}=await import('file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/render.mjs');
+const bounded=async promise=>{let timer;try{return await Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('RECOVERY_METADATA_TIMEOUT')),30000);})]);}finally{clearTimeout(timer);}};
+const render=(...args)=>bounded(nativeRender(...args));
+const svc=await bounded(service('oto-api-staging')),dep=(await render('GET',`/services/${svc.id}/deploys?limit=1`))[0]?.deploy;
+need(svc.id==='srv-danh2ljtqb8s73bt9en0'&&dep?.status==='live'&&dep.commit?.id==='3202967eb331c28d450e9a1ba5336aaa0693bab8','EXACT_NATIVE_RUNTIME_REQUIRED');
+const code=String.raw`
+const {getDb,closeDb,session,auditLog,account}=await import("@oto/db");
+const {and,eq,gte,lte,ne}=await import("drizzle-orm");
+const {createHash}=await import("node:crypto");
+const db=getDb(undefined,{max:1,applicationName:"SCRUM-637-v3-session-recovery"});
+const actor="01a0bbdc-8c64-7283-aa3b-2af7e79c525d",operator="01a0bbdc-8c41-7204-bd58-2b92bd7dda75",from=new Date("2026-10-25T20:56:50.000Z"),to=new Date("2026-10-25T20:56:55.000Z");
+const need=(v,c)=>{if(!v)throw Error(c);};
+const hash=v=>createHash("sha256").update(JSON.stringify(v)).digest("hex");
+try{
+ const rows=await db.select({id:session.id,accountId:session.accountId,operatorId:account.operatorId,createdAt:session.createdAt,expiresAt:session.expiresAt,revokedAt:session.revokedAt,revokedReason:session.revokedReason}).from(session).innerJoin(account,eq(account.id,session.accountId)).where(and(eq(session.accountId,actor),eq(account.operatorId,operator),gte(session.createdAt,from),lte(session.createdAt,to))).limit(3);
+ need(rows.length===1,"EXACT_ONE_OWNED_SESSION_REQUIRED");
+ const picked=rows[0],target=${JSON.stringify(target)},mode=${JSON.stringify(mode)};
+ const signIn=await db.select({id:auditLog.id,entityId:auditLog.entityId}).from(auditLog).where(and(eq(auditLog.entityId,picked.id),eq(auditLog.entityType,"session"),eq(auditLog.action,"auth.sign_in"),eq(auditLog.actorAccountId,actor),eq(auditLog.operatorId,operator),gte(auditLog.createdAt,from),lte(auditLog.createdAt,to))).limit(3);need(signIn.length===1,"EXACT_MATCHING_SIGN_IN_AUDIT_REQUIRED");picked.signInAuditId=signIn[0].id;
+ if(mode==="census"){console.log(JSON.stringify({kind:"SCRUM637_V3_RECOVERY",mode,count:rows.length,session:picked,mutations:0}));}
+ else{
+  need(picked.id===target&&picked.revokedAt===null,"EXACT_ACTIVE_PINNED_SESSION_REQUIRED");
+  const others=()=>db.select({id:session.id,revokedAt:session.revokedAt,revokedReason:session.revokedReason}).from(session).where(and(eq(session.accountId,actor),ne(session.id,target))).orderBy(session.id);
+  const before=await others();
+  const {signOut}=await import("./src/services/auth.ts");
+  await db.transaction(async tx=>{const locked=await tx.select({id:session.id,accountId:session.accountId,createdAt:session.createdAt,revokedAt:session.revokedAt}).from(session).where(and(eq(session.id,target),eq(session.accountId,actor),gte(session.createdAt,from),lte(session.createdAt,to))).for("update");need(locked.length===1&&locked[0].revokedAt===null,"LOCKED_EXACT_SESSION_REQUIRED");await signOut(tx,target,actor,"SCRUM-637-v3-recovery");});
+  const after=await others();need(hash(before)===hash(after),"OTHER_ACCOUNT_SESSIONS_CHANGED");
+  const ended=await db.select({id:session.id,accountId:session.accountId,revokedAt:session.revokedAt,revokedReason:session.revokedReason}).from(session).where(eq(session.id,target));
+  const audits=await db.select({id:auditLog.id,action:auditLog.action,entityId:auditLog.entityId,createdAt:auditLog.createdAt}).from(auditLog).where(and(eq(auditLog.entityId,target),eq(auditLog.action,"auth.sign_out"),eq(auditLog.actorAccountId,actor),eq(auditLog.requestId,"SCRUM-637-v3-recovery")));
+  need(ended.length===1&&ended[0].revokedAt!==null&&ended[0].revokedReason==="sign_out"&&audits.length===1,"EXACT_NATIVE_REVOCATION_REQUIRED");
+  console.log(JSON.stringify({kind:"SCRUM637_V3_RECOVERY",mode,session:ended[0],nativeAudit:audits[0],otherSessions:before.length,otherSessionStateBeforeSha256:hash(before),otherSessionStateAfterSha256:hash(after),onlyExactSessionRevoked:true,originalCookieProbeAvailable:false}));
+ }
+}catch(e){console.log(JSON.stringify({kind:"SCRUM637_V3_RECOVERY",mode:${JSON.stringify(mode)},errorCode:/^[A-Z0-9_]+$/.test(e?.message??"")?e.message:"RECOVERY_OPERATION_FAILED"}));process.exitCode=1;}finally{await closeDb();}
+`;
+const shQuote=s=>"'"+s.replaceAll("'","'\"'\"'")+"'",command='cd apps/api && node --import tsx --input-type=module -e '+shQuote(code);
+fs.writeFileSync(prefix+'-intent.json',JSON.stringify({ticket:'SCRUM-637',recordedAt:new Date().toISOString(),mode,target,censusReceiptSha256,actorAccountId:ACTOR,operatorId:OPERATOR,from:FROM,to:TO,sourceSha:SOURCE,scriptSha256:createHash('sha256').update(code).digest('hex'),nativeService:mode==='revoke'?'signOut':null,readOnly:mode==='census',accountWideRevocation:false},null,2)+'\n',{flag:'wx'});
+const job=await render('POST',`/services/${svc.id}/jobs`,{startCommand:command});need(job.id,'RECOVERY_JOB_NOT_CREATED');
+fs.writeFileSync(prefix+'-dispatch.json',JSON.stringify({ticket:'SCRUM-637',at:new Date().toISOString(),mode,target,jobId:job.id},null,2)+'\n',{flag:'wx'});
+let state=job;const deadline=Date.now()+120000;for(let i=0;i<45&&Date.now()<deadline&&!['succeeded','failed','canceled'].includes(state.status);i++){await new Promise(r=>setTimeout(r,2000));state=await render('GET',`/services/${svc.id}/jobs/${job.id}`);}
+let payload;for(let i=0;i<8&&!payload;i++){const q=new URLSearchParams({ownerId:svc.ownerId,resource:job.id,startTime:new Date(Date.now()-10*60_000).toISOString(),limit:'100',direction:'forward'}),logs=await render('GET','/logs?'+q);for(const l of logs.logs??[]){try{const row=JSON.parse(l.message);if(row.kind==='SCRUM637_V3_RECOVERY')payload=row;}catch{}}if(!payload)await new Promise(r=>setTimeout(r,1000));}
+fs.writeFileSync(prefix+'-terminal.json',JSON.stringify({ticket:'SCRUM-637',at:new Date().toISOString(),mode,jobId:job.id,status:state.status,payload:payload??null},null,2)+'\n',{flag:'wx'});
+need(state.status==='succeeded'&&payload&&!payload.errorCode,'RECOVERY_JOB_INCOMPLETE_'+state.status);
+const result={ticket:'SCRUM-637',recordedAt:new Date().toISOString(),jobId:job.id,jobStatus:state.status,sourceSha:dep.commit.id,actorAccountId:ACTOR,operatorId:OPERATOR,from:FROM,to:TO,censusReceiptSha256,...payload};fs.writeFileSync(prefix+'.json',JSON.stringify(result,null,2)+'\n',{flag:'wx'});console.log(JSON.stringify(result));
+
+return result;
+}
+if(process.argv[1]&&path.resolve(process.argv[1]).toLowerCase()===path.resolve(fileURLToPath(import.meta.url)).toLowerCase()){
+main().catch(error=>{process.stderr.write((/^[A-Z][A-Z0-9_]+$/.test(error?.message??'')?error.message:'RECOVERY_FAILED')+'\n');process.exitCode=2;});
+}

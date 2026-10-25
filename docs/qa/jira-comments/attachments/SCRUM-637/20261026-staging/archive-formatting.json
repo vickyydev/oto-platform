@@ -1,0 +1,58 @@
+{
+  "ticket": "SCRUM-637",
+  "recordedAt": "2026-10-25T21:09:53.764Z",
+  "originalEvidenceFileListSha256": "d886a20aa0b59e3e2068c21486d6bad2655e2aab67960fd5c112980108fbd6fe",
+  "productFilesChanged": 0,
+  "proofResultsChanged": 0,
+  "screenshotsChanged": 0,
+  "rows": [
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/clipboard-line-endings-red-1.log",
+      "originalSourceSha256": "a0fd9c1ac2828299ff80f4623b1d3988fb220926272913d4d848ca62b3882e21",
+      "displaySha256": "b3cc2cff84feb28f9d9c58d76b6465e35e5ae0585155006d225269c275763927",
+      "originalBytesPath": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/clipboard-line-endings-red-1.log.gz",
+      "originalCompressedSha256": "a02e8d220af65fcfe44af0c02dbb7c09f11551af7cde941d19d2544187051485",
+      "formatting": "CRLF to LF and trailing horizontal whitespace only; original bytes retained losslessly"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/proof-receipt-io-red-1.log",
+      "originalSourceSha256": "c95e339dcf8838c1a0f63bd2bdeab9626829e392aecc7affc2aeaf9df590bc72",
+      "displaySha256": "fb7d31ebde888bd9853bdb12ff2f5e695c21e4b171c7dc04c396bab8b43b284c",
+      "originalBytesPath": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/proof-receipt-io-red-1.log.gz",
+      "originalCompressedSha256": "8cdf606af60d1f140e61a29f29ba5ed3dd6dedcd30956884a297d0566e25ad30",
+      "formatting": "CRLF to LF and trailing horizontal whitespace only; original bytes retained losslessly"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/selection-promise-red-1.log",
+      "originalSourceSha256": "6aa165c18a4554c2c244ee1aef911199b0e1bb6a00b7900fc6949dd3fc37e74e",
+      "displaySha256": "c640ee54c9a18ad6c2f34413e28988f20f942c2eaa8dbf4f222aea5ab32d6011",
+      "originalBytesPath": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/selection-promise-red-1.log.gz",
+      "originalCompressedSha256": "bd00625c3cdfd1d514b4cfed4683510ee60039a58e2ebcad9a114f7c2d93dde2",
+      "formatting": "CRLF to LF and trailing horizontal whitespace only; original bytes retained losslessly"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/static-diagnostic-red-1.log",
+      "originalSourceSha256": "6740bf5fbfd51d9e2849927c59477ca0349b0dbf7a477461ec63229ce701c898",
+      "displaySha256": "5c78f2ad6e95a55b5bc9e5b1fd336f307f07e923c911ae08493642dfede56188",
+      "originalBytesPath": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/static-diagnostic-red-1.log.gz",
+      "originalCompressedSha256": "6a6969f893e2a71a915a1ad7b687cfd05f38db0e28457e3cb832eea5ff801483",
+      "formatting": "CRLF to LF and trailing horizontal whitespace only; original bytes retained losslessly"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/visual-review.json",
+      "originalSourceSha256": "7cc61df3ecaae8ddb465db565aab3ff9c7748a5082063f19b954032cc060fe1f",
+      "displaySha256": "3e738406839251e0c93a46c4954758ba439056658aae6f73962f6d85a6e1bdca",
+      "originalBytesPath": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/visual-review.json.gz",
+      "originalCompressedSha256": "120c73231c4fc116fb3a6620aca1f307cb53829e462f07ecc3188479731b110f",
+      "formatting": "CRLF to LF and trailing horizontal whitespace only; original bytes retained losslessly"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/20261026-v3/visual-review.json",
+      "originalSourceSha256": "274b3cdcce6cfeb33a2f7fba9e20dbe483015ff85c6448d41f49340ab346703b",
+      "displaySha256": "8c433fa45e520e0e288299d61c18ea578d5f13b385dc38cf62854bd45a940b11",
+      "originalBytesPath": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/history/20261026-v3/visual-review.json.gz",
+      "originalCompressedSha256": "aaa584517688908d738d473a405c1d7534b5af93c3ca315f08a01efbd975fa1b",
+      "formatting": "CRLF to LF and trailing horizontal whitespace only; original bytes retained losslessly"
+    }
+  ]
+}

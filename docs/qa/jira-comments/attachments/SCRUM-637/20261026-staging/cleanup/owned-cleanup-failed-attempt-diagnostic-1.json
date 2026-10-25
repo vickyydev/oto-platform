@@ -1,0 +1,86 @@
+{
+  "ticket": "SCRUM-637",
+  "recordedAt": "2026-10-25T20:55:23.087Z",
+  "coordinatorOriginalAttempt": {
+    "reportedError": "OWNED_CLEANUP_DOCKER_FAILED",
+    "stderrSha256": null,
+    "noIntentOrResultReported": true
+  },
+  "failingCall": {
+    "subcommand": "inspect",
+    "targetId": "7fd9b57eca90a3a4462fc29e073669384d1329cf53a3eed555baacea86e11eae",
+    "projection": "FORMAT",
+    "firstDockerCall": true,
+    "helperSha256": "34a156910ab53c548c454d784e2151e99ed8bccebba0ffe7912db827cc20e117",
+    "readonlyReproduction": {
+      "exitCode": 1,
+      "signal": null,
+      "stdoutSha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "stderrSha256": "9590d03495b71d80252a33cc0df79f4f188733cb65a22ae999f9d0e018a7f0bb",
+      "category": "GO_TEMPLATE_MISSING_OPTIONAL_MAP_KEY_TMPFS",
+      "selected": null
+    }
+  },
+  "fix": {
+    "onlyOptionalTmpfsLookupChanged": true,
+    "lookup": "index .HostConfig Tmpfs",
+    "helperSha256": "4f8974cf90d83486d65dcb11e2a20add4088b339986505663afcf4a471a3db09",
+    "appReadonlyProbe": {
+      "exitCode": 0,
+      "signal": null,
+      "stdoutSha256": "0909a3b9a1d5c9461e52610d38117b0131782a00f742c0026095cf7d8f4f9661",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "category": "VALID_JSON_PROJECTION",
+      "selected": {
+        "id": "7fd9b57eca90a3a4462fc29e073669384d1329cf53a3eed555baacea86e11eae",
+        "imageId": "sha256:ecfc844d13d36b27adf7f5a1cf705fbe876efba601da39d39bbe64dad85d6b26",
+        "running": true,
+        "mountCount": 0,
+        "hasHostPorts": false,
+        "tmpfsMissing": true,
+        "hasPgTmpfs": false
+      }
+    },
+    "pgReadonlyProbe": {
+      "exitCode": 0,
+      "signal": null,
+      "stdoutSha256": "fecf936fe296e07279db84618b250c43b22051890a5b56d5985407eae482d367",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "category": "VALID_JSON_PROJECTION",
+      "selected": {
+        "id": "c9b5a837cf00eaa6e83c4c6ce1dbbcd0617b7cfe6b0e12d0483a295341bd4c63",
+        "imageId": "sha256:a3b7f434b2dc57ce85a67e171163eb8ab1a1ebcb39d27484661f26b1dfbe30d6",
+        "running": true,
+        "mountCount": 0,
+        "hasHostPorts": true,
+        "tmpfsMissing": false,
+        "hasPgTmpfs": true
+      }
+    }
+  },
+  "preservation": {
+    "baselineIds": [
+      "83828b463f0b5ae2a64d70878099d5fe299e4b811decc075333f373d981ec01a",
+      "5b5ad70fd3aecf514625c077214d1fb00979067578e885152706ea3b10a49831",
+      "2b6efe94892891ef608f80f228a9c4c6c3f54d3ee6188267f7131c7205d5db43",
+      "2afc9985eaec2abe07eca6aa58aa15d6078c35a9290bcc2a890d5b2d84b051e3",
+      "81821fc1f43bc8f540c879c5b0fbc381faaec86309f34eafb8df94b4eff659ba",
+      "cf854c43dcd283c35919e1c6a581dbbfd3539636832ff3910adc2e3bf5821af0",
+      "85c6ce32a42aba5581817c6323334afbc808020056311be901039150be47dc13",
+      "ceda2dc3b92a3264a97efc0bb5164abc655403f22846438a00b53cb22059f270",
+      "cbc3eb441a04b866bec0bd92928ff95dec63bb01a3884e98d8cb588a30d68309",
+      "41925d9b0cf1df7647253188f2086c34fbbdcc49b446f2b964e43c6fa3920dbe"
+    ],
+    "baselineExpected": 10,
+    "baselinePresent": 10,
+    "allBaselinePresent": true,
+    "ownAppPresent": true,
+    "ownPgPresent": true,
+    "totalContainers": 12,
+    "baselineConfigurationCompared": false
+  },
+  "cleanupIntentExists": false,
+  "cleanupResultExists": false,
+  "cleanupExecutedByAgent": false,
+  "dockerMutationsByAgent": 0
+}

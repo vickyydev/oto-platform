@@ -1,0 +1,16 @@
+{
+  "ticket": "SCRUM-637",
+  "recordedAt": "2026-10-25T21:02:25.743Z",
+  "mode": "census",
+  "target": null,
+  "censusReceiptSha256": null,
+  "actorAccountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+  "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+  "from": "2026-10-25T20:56:50.000Z",
+  "to": "2026-10-25T20:56:55.000Z",
+  "sourceSha": "3202967eb331c28d450e9a1ba5336aaa0693bab8",
+  "scriptSha256": "d7e43eae369dc51c30700223e60ce65f5cffa91452c8f2f81c5a6347fd2a4814",
+  "nativeService": null,
+  "readOnly": true,
+  "accountWideRevocation": false
+}

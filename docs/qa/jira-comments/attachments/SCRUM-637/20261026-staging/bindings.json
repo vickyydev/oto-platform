@@ -1,0 +1,98 @@
+{
+  "ticket": "SCRUM-637",
+  "startedAt": "2026-10-25T21:01:28.920Z",
+  "completedAt": "2026-10-25T21:01:42.261Z",
+  "sourceSha": "3202967eb331c28d450e9a1ba5336aaa0693bab8",
+  "ciRunId": "40229665720",
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "serviceId": "srv-danh2ljtqb8s73bt9en0",
+      "id": "dep-dbf6f0rbc2fs738sk6gg",
+      "finishedAt": "2026-10-25T20:36:09.734844Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "serviceId": "srv-danng2p42hec73f38e3g",
+      "id": "dep-dbf6f0rbc2fs738sk7og",
+      "finishedAt": "2026-10-25T20:33:44.903251Z"
+    }
+  ],
+  "assets": [
+    {
+      "path": "/",
+      "sha256": "6023ef38f31cdba8f101abc6124363963173404cd384674983ded0cd1c1a5c3c",
+      "contentType": "text/html"
+    },
+    {
+      "path": "/assets/index-c50jgDs6.js",
+      "sha256": "c2484b2e122a14f864fbee94adba50aaf2f9e9a11d0949ed95f5162bdb38503f",
+      "contentType": "application/javascript"
+    },
+    {
+      "path": "/assets/index-CaH3r7Z2.css",
+      "sha256": "a582bf11fce339cde03564290522f1fdfaddc50e2e64d8a38e0a4d756b9af77d",
+      "contentType": "text/css"
+    },
+    {
+      "path": "/assets/logo-oto-nNYXf9Wy.png",
+      "sha256": "17a3ee3cd02ce9440ecba6ca182c17865c714584d126805d6bd7931e4fbae150",
+      "contentType": "image/webp"
+    },
+    {
+      "path": "/assets/react-C6LhzTnE.js",
+      "sha256": "3e1ae0f3568d5d60a7b94013f5a4e34a84a077d1989357802a1cb51fcdec575e",
+      "contentType": "application/javascript"
+    },
+    {
+      "path": "/assets/vendor-B9yAQZP-.js",
+      "sha256": "443634e99683b7e574fb5e5abf49fcefcb071a7264269a18b4e127d65f8edbcd",
+      "contentType": "application/javascript"
+    },
+    {
+      "path": "/favicon.svg",
+      "sha256": "8ffbde9092b1fa4de97c9481b76f518b131268c82e7c555041925225b1dab6e0",
+      "contentType": "image/svg+xml"
+    }
+  ],
+  "assetManifestSha256": "aef813ab30a3a63e98119c8d1111c6af3f3a4c29d10b46ec06561b3bf0f52806",
+  "initialSourceBinding": {
+    "files": 3781,
+    "sourceManifestSha256": "261ac9f76976c5290a7127346136d7edcfc4fe05a94e079ed051425b3b8ebe2c",
+    "featureTreeSha256": "902663dbf97f2da053d33dc6b16bc9028cc219ddb3958a63f41bf5faf60feab7",
+    "runtimeBindingsSha256": "de054588bd36ddafeb42e41b4830e2dcd84d04e95752a07dd81b2f72e7b2e7b8"
+  },
+  "finalSourceBinding": {
+    "files": 3781,
+    "sourceManifestSha256": "261ac9f76976c5290a7127346136d7edcfc4fe05a94e079ed051425b3b8ebe2c",
+    "featureTreeSha256": "902663dbf97f2da053d33dc6b16bc9028cc219ddb3958a63f41bf5faf60feab7",
+    "runtimeBindingsSha256": "de054588bd36ddafeb42e41b4830e2dcd84d04e95752a07dd81b2f72e7b2e7b8"
+  },
+  "helperSha256": "267036a7c69fec66e05fa58eacdc3869d6a03882155a68540ced5486659d3814",
+  "collectorSha256": "1f426d4e28330ef1c0c64c78f40c21b2c366f445044e52335c61e13a2ce80178",
+  "parserModuleSha256": "ac29965d444d72bac7ff5cb0272f63f035039d8fa01671eb6488897de766ca53",
+  "parserBinding": {
+    "path": "C:/w/admin-overview-v2/node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/typescript.js",
+    "version": "5.9.3",
+    "sha256": "3ae902c92cc44dace175c0e69e13a4b0899f6983c6121d76b9ab8dd5795e7675"
+  },
+  "publicBytesRead": 2024992,
+  "rasterReads": [
+    {
+      "path": "/assets/logo-oto-nNYXf9Wy.png",
+      "sha256": "17a3ee3cd02ce9440ecba6ca182c17865c714584d126805d6bd7931e4fbae150",
+      "contentType": "image/webp",
+      "byteLength": 109836,
+      "acceptSha256": "54f235f31b3873cee918ef5abfe8cd3aa4ac55eb21d5bbd9fe8ef2e0a8cf0bc7",
+      "cookieSent": false
+    }
+  ],
+  "rasterPolicy": "Native unauthenticated browser image request; exact returned bytes and MIME only.",
+  "overviewShellMatchesRoot": true,
+  "externalFontsFetched": false,
+  "applicationAuthAttempts": 0,
+  "nativeProofStarted": false,
+  "businessWrites": 0,
+  "manualDeploy": false,
+  "approved": false
+}

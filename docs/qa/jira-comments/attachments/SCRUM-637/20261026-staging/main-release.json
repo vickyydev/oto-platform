@@ -1,0 +1,16 @@
+{
+  "at": "2026-10-25T20:12:24.881Z",
+  "releaseSha": "3202967eb331c28d450e9a1ba5336aaa0693bab8",
+  "sourceManifestSha256": "261ac9f76976c5290a7127346136d7edcfc4fe05a94e079ed051425b3b8ebe2c",
+  "committedSourceBinding": {
+    "files": 3781,
+    "sourceManifestSha256": "261ac9f76976c5290a7127346136d7edcfc4fe05a94e079ed051425b3b8ebe2c",
+    "featureTreeSha256": "902663dbf97f2da053d33dc6b16bc9028cc219ddb3958a63f41bf5faf60feab7",
+    "runtimeBindingsSha256": "de054588bd36ddafeb42e41b4830e2dcd84d04e95752a07dd81b2f72e7b2e7b8"
+  },
+  "key": "SCRUM-637",
+  "status": "Testing",
+  "ci": "pending",
+  "staging": "pending",
+  "files": 79
+}

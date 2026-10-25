@@ -1,0 +1,570 @@
+// Offline only. These tests never execute the live coordinator or import environment/application modules.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import path from 'node:path';
+import fs from 'node:fs';
+import { pathToFileURL, fileURLToPath } from 'node:url';
+import { ORIGIN, DEMOS, digest, publicPath, validatePlan, requestAllowed, releaseFacts, reachOf,
+  currentAi, validateOverview, verifyLocalSource, runtimeBindingsOf, runtimeBindingsSha256Of, closeSession, executeReviewedPlan } from './admin637-staging-proof.mjs';
+
+const h = value => createHash('sha256').update(value).digest('hex');
+const A = '11111111-1111-4111-8111-111111111111', B = '22222222-2222-4222-8222-222222222222';
+const sourceSha = 'a'.repeat(40), at = '2026-10-25T10:10:00.000Z', after = '2026-10-25T10:09:00.000Z';
+const deps = ['oto-api-staging', 'oto-console-staging'].map((name, i) => ({ name, serviceId: 'srv-test' + i, id: 'dep-test' + i, finishedAt: after }));
+function plan() {
+  const assets = [{ path: '/', sha256: '1'.repeat(64), contentType: 'text/html' }, { path: '/assets/index-test.js', sha256: '2'.repeat(64), contentType: 'application/javascript' }];
+  return { approved: true, ticket: 'SCRUM-637', sourceSha, sourceManifestSha256: '3'.repeat(64), ciRunId: '12345', deployments: structuredClone(deps),
+    helperSha256: '4'.repeat(64), routeModuleSha256: '5'.repeat(64), localReleaseSha256: '6'.repeat(64), runtimeBindingsSha256: '7'.repeat(64),
+    actors: Object.fromEntries(['ADMIN', 'MANAGER', 'RECEPTION'].map(actor => [actor, { accountId: DEMOS[actor], operatorId: DEMOS.operatorId }])),
+    assets, assetManifestSha256: digest(assets), outputDirectory: 'C:/w/admin637-staging-offline-synthetic' };
+}
+const req = overrides => requestAllowed({ url: ORIGIN + '/api/overview', method: 'GET', branchIds: [A], ...overrides });
+const throwsCode = (fn, code) => assert.throws(fn, error => error.code === code);
+
+test('inert import and unarmed execute cannot dispatch, read environment or create an attempt', async () => {
+  const original = globalThis.fetch; let calls = 0;
+  globalThis.fetch = async () => { calls++; throw new Error('OFFLINE_FETCH_REFUSED'); };
+  try { await import('./admin637-staging-proof.mjs?offline-inert-probe');
+    await assert.rejects(executeReviewedPlan(plan()), error => error.code === 'EXPLICIT_EXECUTE_REQUIRED'); assert.equal(calls, 0); }
+  finally { globalThis.fetch = original; }
+});
+test('exact reviewed plan binds both services, fixed actors and public closure; no old-source/foreign substitution', () => {
+  assert.equal(validatePlan(plan()).ticket, 'SCRUM-637');
+  for (const change of [p => { p.approved = false; }, p => { p.sourceSha = '0'.repeat(40); }, p => { p.deployments.reverse(); },
+    p => { p.actors.MANAGER.accountId = A; }, p => { p.routeModuleSha256 = null; }, p => { p.assets[1].path = '/api/me'; },
+    p => { p.assetManifestSha256 = '0'.repeat(64); }, p => { p.outputDirectory = 'C:/w/admin637-staging-x/../shared'; }, p => { p.extra = true; }]) {
+    const p = plan(); change(p); assert.throws(() => validatePlan(p));
+  }
+});
+test('auth-only writes: provision/invite/handoff/session/payment/webhook/message mutations are always refused', () => {
+  assert.equal(req({ url: ORIGIN + '/api/auth/sign-in', method: 'POST', auth: true, body: { phone: 'SYNTHETIC', password: 'SYNTHETIC' } }), true);
+  assert.equal(req({ url: ORIGIN + '/api/auth/sign-out', method: 'POST', auth: true }), true);
+  for (const pathname of ['/api/auth/handoff', '/api/admin/accounts', '/api/users', '/api/payments', '/api/inbox/send', '/api/assistant/ask', '/api/webhook', '/api/me/session/branch'])
+    for (const method of ['POST', 'PUT', 'PATCH', 'DELETE']) assert.equal(req({ url: ORIGIN + pathname, method, auth: true, body: {} }), false);
+  assert.equal(req({ url: ORIGIN + '/api/auth/sign-in', method: 'POST', body: { phone: 'SYNTHETIC', password: 'SYNTHETIC' } }), false);
+  assert.equal(req({ url: ORIGIN + '/api/auth/sign-out', method: 'POST', auth: true, body: {} }), false);
+});
+test('GET grammar is exact: no foreign origin, fragments, operators, duplicate/foreign parks, dates or aggregate/detail fan-out', () => {
+  assert.equal(req(), true); assert.equal(req({ url: ORIGIN + '/api/overview?branchId=' + A }), true);
+  for (const url of ['https://example.invalid/api/overview', ORIGIN + '/api/overview#secret', ORIGIN + '/api/overview?operatorId=' + DEMOS.operatorId,
+    ORIGIN + '/api/overview?branchId=' + B, ORIGIN + '/api/overview?branchId=' + A + '&branchId=' + A, ORIGIN + '/api/overview?from=2026-10-25',
+    ORIGIN + '/api/aggregates/members', ORIGIN + '/api/payments/detail', ORIGIN + '/api/overview/extra', ORIGIN + '/api/me?extra=1']) assert.equal(req({ url }), false);
+  assert.equal(req({ body: {} }), false);
+});
+test('native shell bootstrap allows only exact health badge grammar and reviewed static paths', () => {
+  for (const p of ['/api/me', '/api/me/permissions', '/api/ready']) assert.equal(req({ url: ORIGIN + p }), true);
+  assert.equal(req({ url: ORIGIN + '/api/ops/health', health: true }), true);
+  assert.equal(req({ url: ORIGIN + '/api/ops/health' }), false);
+  assert.equal(req({ url: ORIGIN + '/api/ops/failures?windowHours=24&limit=50', health: true }), true);
+  for (const q of ['windowHours=1&limit=50', 'windowHours=24&limit=50&extra=x', 'windowHours=24&limit=50&limit=50', 'from=2026-10-25'])
+    assert.equal(req({ url: ORIGIN + '/api/ops/failures?' + q, health: true }), false);
+  assert.equal(req({ url: ORIGIN + '/overview', document: true }), true);
+  assert.equal(req({ url: ORIGIN + '/assets/index-test.js', assetPaths: ['/assets/index-test.js'] }), true);
+  for (const p of ['/assets/unknown.js', '/assets/../api/me', '/assets/foo.js?x=1', '/profile-photos/private.png'])
+    assert.equal(req({ url: ORIGIN + p, assetPaths: ['/assets/index-test.js'] }), false);
+  assert.equal(publicPath('/assets/a.js'), true); assert.equal(publicPath('/assets/%2e%2e/a.js'), false);
+});
+test('exact six green CI jobs and latest same-source API+Console are required, including deploy finish times', () => {
+  const p = plan(), ci = { headSha: sourceSha, status: 'completed', conclusion: 'success', jobs: Array.from({ length: 6 }, (_, i) => ({ name: 'job' + i, status: 'completed', conclusion: 'success' })) };
+  const services = deps.map(d => ({ service: { id: d.serviceId, name: d.name } }));
+  const latest = Object.fromEntries(deps.map(d => [d.serviceId, [{ deploy: { id: d.id, status: 'live', commit: { id: sourceSha }, finishedAt: d.finishedAt } }]]));
+  assert.equal(releaseFacts(p, ci, services, latest), true);
+  for (const change of [c => { c.jobs.pop(); }, c => { c.jobs[1].name = c.jobs[0].name; }, c => { c.jobs[1].conclusion = 'failure'; }, c => { c.headSha = 'b'.repeat(40); }]) {
+    const c = structuredClone(ci); change(c); throwsCode(() => releaseFacts(p, c, services, latest), 'SIX_EXACT_GREEN_JOBS_REQUIRED');
+  }
+  for (const field of ['id', 'finishedAt']) { const l = structuredClone(latest); l[deps[1].serviceId][0].deploy[field] = 'wrong';
+    throwsCode(() => releaseFacts(p, ci, services, l), 'LATEST_EXACT_LIVE_DEPLOYMENT_REQUIRED'); }
+  const l = structuredClone(latest); l[deps[1].serviceId][0].deploy.commit.id = 'b'.repeat(40);
+  throwsCode(() => releaseFacts(p, ci, services, l), 'LATEST_EXACT_LIVE_DEPLOYMENT_REQUIRED');
+});
+test('overview reach cannot promote branch/foreign/dept grants to operator-wide usage', () => {
+  assert.deepEqual(reachOf([{ permission: 'console:overview:read', scopeType: 'operator', scopeId: DEMOS.operatorId }]), { kind: 'operator', ids: [] });
+  assert.deepEqual(reachOf([{ permission: 'console:overview:read', scopeType: 'branch', scopeId: A }, { permission: 'console:overview:read', scopeType: 'operator', scopeId: B },
+    { permission: 'console:overview:read', scopeType: 'department', scopeId: B }]), { kind: 'branches', ids: [A] });
+});
+
+const metric = () => ({ count: 1, inputTokens: 2, outputTokens: 3, cacheReadTokens: 4, totalTokens: 9, spendEstimate: null, reason: 'no_rate_configured', unpricedTokens: 9 });
+function overview() {
+  const branches = [{ id: A, name: 'ZZ TEST synthetic park', timezone: 'Asia/Bangkok', businessDayStart: '03:00', businessDate: '2026-10-25' }];
+  const envelope = () => ({ generatedAt: at, branches: structuredClone(branches), selectedBranchIds: [A] });
+  const dated = totals => ({ ...envelope(), period: { from: '2026-10-25', to: '2026-10-25' }, totals,
+    parks: [{ branchId: A, totals: structuredClone(totals), rows: [{ ...totals, date: '2026-10-25' }] }] });
+  const usage = () => ({ ...dated(metric()), operatorWide: null, currency: 'USD', excludesCacheWrites: true });
+  const items = ['pendingPayments', 'syncQuarantine', 'cashVariances', 'latePayments', 'strandedOccupants', 'erasureRequests', 'approvalRequests'].map(key => ({ key,
+    label: key === 'strandedOccupants' ? 'End-of-day review rows still inside' : 'ZZ TEST ' + key, status: ['erasureRequests', 'approvalRequests'].includes(key) ? 'not-built' : 'available',
+    count: ['erasureRequests', 'approvalRequests'].includes(key) ? null : 0, basis: key === 'strandedOccupants' ? 'current-business-date-native-end-of-day-rows' : 'ZZ TEST synthetic basis' }));
+  return { ...envelope(), totals: { revenueSatang: 0, guests: 0, inParkNow: 0, bookingsToday: 0, inboxUnanswered: 0, openAlerts: 0, boxesOffline: 0 }, parks: [{ branchId: A, businessDate: '2026-10-25' }],
+    aggregates: { members: dated({ visits: 0 }), bookings: dated({ bookings: 0 }), assistantUsage: usage(), inboxAiUsage: usage(),
+      fleet: { ...envelope(), asOf: at, basis: 'current-snapshot', totals: { boxes: 0 }, parks: [{ branchId: A, boxes: 0 }] } },
+    decisions: { generatedAt: at, items, parks: [{ branchId: A, items: structuredClone(items) }] },
+    statusSummary: `Admin status summary\nChecked: ${at}\nPrice unavailable: no_rate_configured (USD estimate); 9 unpriced tokens; excludes unpersisted cache writes.` };
+}
+const opts = { selectedIds: [A], availableIds: [A], operatorWide: false, after, observedAt: at };
+test('actual-schema postconditions preserve all five same-date scoped groups and honest unavailable/unbuilt states', () => {
+  assert.equal(validateOverview(overview(), opts).metricBuckets, 6);
+  const mutations = [b => { b.aggregates.members.period.from = '2026-10-24'; }, b => { b.aggregates.fleet.asOf = after; },
+    b => { b.aggregates.inboxAiUsage.parks[0].branchId = B; }, b => { b.aggregates.bookings.generatedAt = after; },
+    b => { b.decisions.items[0].status = 'unavailable'; }, b => { b.decisions.items[5].status = 'available'; b.decisions.items[5].count = 0; },
+    b => { b.decisions.parks[0].items[4].label = 'Overdue people'; }, b => { b.statusSummary = 'ZZ TEST fake copy'; },
+    b => { b.generatedAt = after; }, b => { b.selectedBranchIds.push(A); }];
+  for (const mutate of mutations) { const b = overview(); mutate(b); assert.throws(() => validateOverview(b, opts)); }
+});
+test('Q18 refuses schema-valid future prices, wrong currency/cache semantics or omitted/unmatched tokens in every bucket', () => {
+  const ai = overview().aggregates.assistantUsage; assert.equal(currentAi(ai), 3);
+  for (const mutate of [b => { b.currency = 'THB'; }, b => { b.excludesCacheWrites = false; }, b => { b.parks[0].rows[0].spendEstimate = 0; },
+    b => { b.totals.reason = null; }, b => { b.parks[0].totals.unpricedTokens = 0; }, b => { b.totals.totalTokens = 10; }]) {
+    const b = structuredClone(ai); mutate(b); assert.throws(() => currentAi(b));
+  }
+  const b = overview(); b.aggregates.assistantUsage.operatorWide = { totals: metric(), rows: [{ ...metric(), date: '2026-10-25' }] };
+  assert.throws(() => validateOverview(b, opts));
+  b.aggregates.inboxAiUsage.operatorWide = { totals: metric(), rows: [{ ...metric(), date: '2026-10-25' }] };
+  for (const key of ['assistantUsage', 'inboxAiUsage']) for (const field of ['count', 'inputTokens', 'outputTokens', 'cacheReadTokens', 'totalTokens', 'unpricedTokens']) b.aggregates[key].totals[field] *= 2;
+  assert.equal(validateOverview(b, { ...opts, operatorWide: true }).metricBuckets, 10);
+});
+
+function sourceFixture(extraSource = []) {
+  const root = 'C:/synthetic-no-disk', source = new Map([['apps/api/src/routes/console.ts', Buffer.from('ZZ TEST route')], ['apps/api/src/services/console.ts', Buffer.from('ZZ TEST dependency')], ['pnpm-lock.yaml', Buffer.from('ZZ TEST lock')], ...extraSource]);
+  const releasePath = 'docs/qa/jira-comments/attachments/SCRUM-637/local-release.json';
+  const sourceManifestSha256 = h(JSON.stringify([...source].sort(([a], [b]) => a.localeCompare(b)).map(([p, b]) => ({ path: p, sha256: h(b) }))));
+  const original = new Map(source), files = new Map(source), p = { ...plan(), sourceManifestSha256 };
+  const local = Buffer.from(JSON.stringify({ ticket: 'SCRUM-637', localReleaseGreen: true, sourceManifestSha256 })); files.set(releasePath, local); original.set(releasePath, local);
+  const normalized = value => value.replaceAll('\\', '/').slice(root.length + 1);
+  const io = { readFileSync: filename => files.get(normalized(filename)) ?? Buffer.from('ZZ TEST metadata'), lstatSync: () => ({ isFile: () => true }) };
+  files.set('node_modules/.pnpm/lock.yaml', files.get('pnpm-lock.yaml'));
+  p.routeModuleSha256 = h(source.get('apps/api/src/routes/console.ts')); p.localReleaseSha256 = h(local); p.runtimeBindingsSha256 = runtimeBindingsSha256Of(root, io, 'v22.synthetic');
+  const git = args => {
+    if (args[0] === 'ls-files') return [...source.keys()].join('\0') + '\0';
+    if (args[0] === 'ls-tree') return [...source.keys()].map(filename => { const b = original.get(filename); return `100644 blob ${createHash('sha1').update(Buffer.from(`blob ${b.length}\0`)).update(b).digest('hex')}\t${filename}`; }).join('\0') + '\0';
+    if (args[0] === 'diff') return '';
+    if (args[0] === 'show') return original.get(args[1].slice(sourceSha.length + 1)).toString();
+    throw new Error('UNEXPECTED_SYNTHETIC_GIT_COMMAND');
+  };
+  return { p, files, options: { io, git, root, nodeVersion: 'v22.synthetic' } };
+}
+test('actual full-source verifier refuses an uncommitted imported dependency even when route/local-release bytes remain unchanged', () => {
+  const f = sourceFixture(); assert.equal(verifyLocalSource(f.p, f.options).files, 3);
+  f.files.set('apps/api/src/services/console.ts', Buffer.from('ZZ TEST changed dependency'));
+  throwsCode(() => verifyLocalSource(f.p, f.options), 'FEATURE_SOURCE_BLOB_DIFFERS');
+});
+test('installed lock/runtime binding cannot silently change under a source-bound schema import', () => {
+  const f = sourceFixture(); assert.equal(runtimeBindingsOf(f.options.root, f.options.io, 'v22.synthetic').files.length, 10);
+  f.files.set('node_modules/.pnpm/lock.yaml', Buffer.from('ZZ TEST changed lock'));
+  throwsCode(() => verifyLocalSource(f.p, f.options), 'INSTALLED_LOCK_DIFFERS');
+  const g = sourceFixture(); g.files.set('apps/api/node_modules/tsx/dist/esm/api/index.mjs', Buffer.from('ZZ TEST changed loader'));
+  throwsCode(() => verifyLocalSource(g.p, g.options), 'INSTALLED_RUNTIME_BINDING_DIFFERS');
+});
+test('original-cookie revocation probe remains independent after logout timeout and blocks later dependent auth', async () => {
+  const context = { actor: 'ADMIN', cookie: 'SYNTHETIC_COOKIE' }, calls = [], rows = []; let laterAuth = false, unresolved = 1;
+  const request = async (c, method, pathname) => { calls.push({ method, pathname, original: c.cookie === 'SYNTHETIC_COOKIE' });
+    if (method === 'POST') { c.cookie = ''; throw new Error('SYNTHETIC_TIMEOUT'); } return { status: 401 }; };
+  const confirmed = await closeSession(context, request, r => rows.push(r));
+  if (confirmed) laterAuth = true;
+  assert.equal(confirmed, false); assert.equal(laterAuth, false); assert.equal(unresolved, 1); assert.equal(context.cookie, '');
+  assert.deepEqual(calls, [{ method: 'POST', pathname: '/api/auth/sign-out', original: true }, { method: 'GET', pathname: '/api/me', original: true }]);
+  assert.equal(rows[0].meStatus, 401); assert.equal(rows[0].signOutStatus, null);
+});
+test('all owned contexts still close after another cleanup fails; only explicit logout200+original401 is confirmed', async () => {
+  const rows = [], contexts = ['ADMIN', 'MANAGER', 'RECEPTION'].map(actor => ({ actor, cookie: 'SYNTHETIC_' + actor }));
+  for (const c of contexts) await closeSession(c, async (_c, method) => method === 'POST'
+    ? c.actor === 'ADMIN' ? { status: 500, body: {} } : { status: 200, body: { ok: true } } : { status: 401 }, row => rows.push(row));
+  assert.deepEqual(rows.map(r => r.confirmed), [false, true, true]); assert.equal(contexts.every(c => c.cookie === ''), true);
+});
+test('failed cleanup retains the original privately for a real retry instead of confirming an anonymous session', async () => {
+  const c = { actor: 'ADMIN', cookie: 'SYNTHETIC_ORIGINAL' }, seen = [];
+  assert.equal(await closeSession(c, async (_c, method) => method === 'POST' ? { status: 500, body: {} } : { status: 200 }, () => {}), false);
+  assert.equal(c.cookie, ''); assert.equal(c.originalCookie === 'SYNTHETIC_ORIGINAL', true);
+  assert.equal(await closeSession(c, async (_c, method) => { seen.push(c.cookie === 'SYNTHETIC_ORIGINAL');
+    c.cookie = ''; return method === 'POST' ? { status: 200, body: { ok: true } } : { status: 401 }; }, () => {}), true);
+  assert.deepEqual(seen, [true, true]); assert.equal(c.originalCookie, '');
+});
+test('FINDING high: ambiguous sign-in with no observed cookie cannot be confirmed by anonymous logout200 and me401', async () => {
+  const c = { actor: 'ADMIN', cookie: '', attempted: true }, calls = [], rows = [];
+  const confirmed = await closeSession(c, async (_c, method, pathname, options) => {
+    calls.push({ method, pathname, cleanup: options.cleanup, noCookie: c.cookie === '' });
+    return method === 'POST' ? { status: 200, body: { ok: true } } : { status: 401 };
+  }, row => rows.push(row));
+  assert.deepEqual(calls, [{ method: 'POST', pathname: '/api/auth/sign-out', cleanup: true, noCookie: true },
+    { method: 'GET', pathname: '/api/me', cleanup: true, noCookie: true }]);
+  assert.equal(confirmed, false, 'No observed original cookie means revocation is unproven even when anonymous cleanup returns expected statuses.');
+  assert.equal(c.closed, false); assert.equal(rows.length, 1); assert.equal(rows[0].confirmed, false);
+  assert.equal(rows[0].noOriginalCookie, true); assert.equal(rows[0].signOutStatus, 200); assert.equal(rows[0].meStatus, 401);
+});
+
+// Execute the actual nested request and bounded body reader; inject transport/receipt sinks only.
+// This intentionally avoids reimplementing cookie capture, unknown-issuance accounting or dispatch order.
+function actualRequestHarness(kind) {
+  const source = fs.readFileSync(new URL('./admin637-staging-proof.mjs', import.meta.url), 'utf8');
+  const requestStart = source.indexOf('  async function request(c, method, pathname,');
+  const requestEnd = source.indexOf('\n  async function census(c)', requestStart);
+  const readerStart = source.indexOf('async function boundedJson(response)');
+  const readerEnd = source.indexOf('\n/** Local preflight seam', readerStart);
+  assert.ok(requestStart >= 0 && requestEnd > requestStart && readerStart >= 0 && readerEnd > readerStart);
+  const requestBody = source.slice(requestStart, requestEnd), readerBody = source.slice(readerStart, readerEnd);
+  const receipt = { operations: [], pending: 0, unresolvedAuth: 0 }, events = [], transport = [];
+  const fetch = async (url, options) => {
+    const pathname = new URL(url).pathname;
+    transport.push({ method: options.method, path: pathname, observedCookie: options.headers.cookie === 'oto_session=ZZ_TEST_SYNTHETIC_COOKIE' });
+    assert.equal(events.at(-1), 'intent', 'The actual request must durably record intent before transport.');
+    if (pathname === '/api/auth/sign-in') {
+      const body = kind === 'malformed' ? 'ZZ TEST non-json response' : new ReadableStream({ start(controller) {
+        controller.enqueue(new TextEncoder().encode('{'));
+        const keepAlive = setTimeout(() => {}, 1_000); // AbortSignal.timeout is unref'ed; keep only this synthetic stalled read alive.
+        options.signal.addEventListener('abort', () => { clearTimeout(keepAlive); controller.error(new Error('SYNTHETIC_BODY_TIMEOUT')); }, { once: true });
+      } });
+      return new Response(body, { status: 200, headers: { 'set-cookie': 'oto_session=ZZ_TEST_SYNTHETIC_COOKIE; Path=/; HttpOnly; Secure' } });
+    }
+    if (pathname === '/api/auth/sign-out') return Response.json({ ok: true });
+    if (pathname === '/api/me') return Response.json({ error: { code: 'UNAUTHENTICATED' } }, { status: 401 });
+    throw new Error('UNEXPECTED_SYNTHETIC_TRANSPORT_PATH');
+  };
+  class SyntheticProofError extends Error { constructor(code) { super(code); this.code = code; } }
+  const factory = new Function('requestAllowed', 'ORIGIN', 'TIMEOUT', 'MAX_BODY', 'ProofError', 'need', 'codeOf', 'now', 'receipt', 'persist', 'save', 'safe', 'fetch',
+    `${readerBody}\nreturn ${requestBody.trim()};`);
+  const request = factory(requestAllowed, ORIGIN, 20, 2_000_000, SyntheticProofError,
+    (condition, code) => { if (!condition) throw new SyntheticProofError(code); }, error => error.code ?? 'UNCLASSIFIED_PROOF_ERROR',
+    () => new Date().toISOString(), receipt, row => events.push(row.terminal ? 'terminal' : 'intent'), () => {},
+    () => { assert.equal(receipt.pending, 0); assert.equal(receipt.unresolvedAuth, 0); }, fetch);
+  return { request, receipt, transport };
+}
+for (const kind of ['malformed', 'stalled']) test(`actual request captures the observed cookie before ${kind} sign-in body failure and preserves unresolved issuance through cleanup`, async () => {
+  const { request, receipt, transport } = actualRequestHarness(kind), c = { actor: 'ADMIN', cookie: '', branchIds: [] }, rows = [];
+  await assert.rejects(request(c, 'POST', '/api/auth/sign-in', { body: { phone: 'SYNTHETIC', password: 'SYNTHETIC' } }));
+  assert.equal(c.attempted, true); assert.equal(c.cookie === 'oto_session=ZZ_TEST_SYNTHETIC_COOKIE', true);
+  assert.equal(receipt.pending, 0); assert.equal(receipt.unresolvedAuth, 1); assert.equal(receipt.operations[0].terminal, false);
+  assert.equal(await closeSession(c, request, row => rows.push(row)), true);
+  assert.equal(rows[0].noOriginalCookie, false); assert.equal(rows[0].signOutStatus, 200); assert.equal(rows[0].meStatus, 401);
+  assert.equal(receipt.unresolvedAuth, 1, 'Observed-cookie revocation cannot resolve the original incomplete issuance body.');
+  assert.equal(receipt.pending, 0); assert.equal(c.cookie, ''); assert.equal(c.originalCookie, '');
+  assert.deepEqual(transport.map(r => [r.method, r.path, r.observedCookie]), [
+    ['POST', '/api/auth/sign-in', false], ['POST', '/api/auth/sign-out', true], ['GET', '/api/me', true] ]);
+});
+test('actual released-schema loader passes file URLs for Windows ESM while preserving the filesystem tsconfig path', async () => {
+  const source = fs.readFileSync(new URL('./admin637-staging-proof.mjs', import.meta.url), 'utf8');
+  const start = source.indexOf('export async function loadReleasedOverviewSchema()');
+  const end = source.indexOf('\nexport async function executeReviewedPlan', start);
+  assert.ok(start >= 0 && end > start);
+  // Only replace the dynamic module-import boundary with an inert loader spy; execute the actual path conversions.
+  const actual = source.slice(start, end).replace('export ', '').replace('await import(', 'await importLoader(').replace('import.meta.url', 'parentURL');
+  const root = 'C:/w/admin-overview-v2', route = 'apps/api/src/routes/console.ts', seen = [], expected = { parse: value => value };
+  const importLoader = async url => {
+    seen.push('module'); assert.equal(new URL(url).protocol, 'file:');
+    assert.equal(path.resolve(fileURLToPath(url)), path.resolve(root, 'apps/api/node_modules/tsx/dist/esm/api/index.mjs'));
+    return { tsImport: async (url, options) => {
+      seen.push('route'); assert.equal(new URL(url).protocol, 'file:');
+      assert.equal(path.resolve(fileURLToPath(url)), path.resolve(root, route));
+      assert.equal(options.tsconfig, path.join(root, 'apps/api/tsconfig.json')); assert.equal(options.parentURL, import.meta.url);
+      return { OverviewSchema: expected };
+    } };
+  };
+  const load = new Function('path', 'pathToFileURL', 'WORKTREE', 'ROUTE', 'need', 'importLoader', 'parentURL', `${actual}\nreturn loadReleasedOverviewSchema;`)(
+    path, pathToFileURL, root, route, condition => assert.equal(condition, true), importLoader, import.meta.url);
+  assert.equal(await load(), expected); assert.deepEqual(seen, ['module', 'route']);
+});
+
+// Execute the real Overview observe closure, native route callback, capture cleanup and
+// final completion predicate. Only browser/transport/filesystem sinks are inert fakes.
+async function overviewNativeHarness({ failReceiptWriteAt = 0, assets = [] } = {}) {
+  const source = fs.readFileSync(new URL('./admin637-staging-proof.mjs', import.meta.url), 'utf8');
+  const observeStart = source.indexOf('  const observe = '), observeEnd = source.indexOf('\n  async function read(c,', observeStart);
+  const routeStart = source.indexOf("    await page.route('**/*', async route => {"), routeEnd = source.indexOf('\n    });\n    try {', routeStart) + '\n    });'.length;
+  const cleanupStart = source.indexOf('    } finally { await context.close();'), cleanupEnd = source.indexOf('\n  }\n  try {', cleanupStart);
+  const completeStart = source.indexOf('    receipt.complete = '), completeEnd = source.indexOf(';\n    save();', completeStart) + 1;
+  assert.ok(observeStart >= 0 && observeEnd > observeStart && routeStart >= 0 && routeEnd > routeStart && cleanupStart >= 0 && cleanupEnd > cleanupStart && completeStart >= 0 && completeEnd > completeStart);
+  const actualObserve = source.slice(observeStart, observeEnd), actualRoute = source.slice(routeStart, routeEnd);
+  const saveStart = source.indexOf('  const save = () => '), saveEnd = source.indexOf('\n  fs.writeFileSync(journal', saveStart);
+  const diagnosticStart = source.indexOf('    const recordFailure = (stage, r) => '), diagnosticEnd = source.indexOf("\n    page.on('pageerror'", diagnosticStart);
+  assert.ok(saveStart >= 0 && saveEnd > saveStart && diagnosticStart >= 0 && diagnosticEnd > diagnosticStart);
+  const actualSave = source.slice(saveStart, saveEnd), actualDiagnostic = source.slice(diagnosticStart, diagnosticEnd);
+  const actualCleanup = source.slice(cleanupStart, cleanupEnd).replace(/^\s*\} finally \{/, '').replace(/\}\s*$/, '');
+  const actualComplete = source.slice(completeStart, completeEnd);
+  const receipt = { complete: false, clipboardExact: true, screenshots: [{}, {}, {}, {}],
+    authority: ['ZZ_TEST_A', 'ZZ_TEST_B', 'ZZ_TEST_C'].map(value => ({ beforeSha256: value, afterSha256: value })),
+    pending: 0, unresolvedAuth: 0, journalHealthy: true, reads: [], diagnostics: [], authCleanup: [],
+    network: { blocked: 0, failed: 0, pageErrors: 0, consoleErrors: 0, fontSuppressions: 0 } };
+  const frame = {}, c = { actor: 'ADMIN', branchIds: [A], reach: { kind: 'branches', ids: [A] },
+    permissions: [{ permission: 'admin:health:read', scopeType: 'operator', scopeId: DEMOS.operatorId }], browserContexts: [] };
+  let callback;
+  const page = { mainFrame: () => frame, route: async (_pattern, handler) => { callback = handler; } };
+  class SyntheticProofError extends Error { constructor(code) { super(code); this.code = code; } }
+  let receiptWrites = 0;
+  const save = failReceiptWriteAt ? new Function('fs', 'resultFile', 'receipt', 'ProofError', actualSave + '\nreturn save;')({
+    writeFileSync() { receiptWrites++; if (receiptWrites >= failReceiptWriteAt) throw new Error('ZZ_TEST_SYNTHETIC_FILE_SHARING_FAILURE'); },
+  }, 'ZZ_TEST_IN_MEMORY_RESULT', receipt, SyntheticProofError) : () => {};
+  const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+  const factory = new AsyncFunction('receipt', 'c', 'page', 'need', 'codeOf', 'requestAllowed', 'OverviewSchema', 'validateOverview',
+    'lastDeploy', 'now', 'digest', 'hash', 'MAX_BODY', 'TIMEOUT', 'FONT', 'assets', 'save', 'ProofError', 'selectedIds', 'availableIds',
+    `let consumed = null, selected = '', routeFailure = null; ${actualObserve}\n${actualDiagnostic}\n${actualRoute}\nreturn { consumed: () => consumed, failure: () => routeFailure };`);
+  const need = (condition, code) => { if (!condition) throw new SyntheticProofError(code); };
+  const stage = await factory(receipt, c, page, need, error => error.code ?? 'UNCLASSIFIED_PROOF_ERROR', requestAllowed,
+    { parse: value => value }, validateOverview, after, () => at, digest, h, 2_000_000, 30_000,
+    'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap', new Map(assets.map(asset => [asset.path, asset])), save, SyntheticProofError, [A], [A]);
+  const cleanup = new AsyncFunction('context', 'c', 'receipt', 'need', actualCleanup);
+  const complete = new Function('receipt', 'sessions', 'failed', `${actualComplete}\nreturn receipt.complete;`);
+  const routeFor = (pathname, transport, { resourceType = 'fetch', headers = {} } = {}) => {
+    const effects = { aborted: false, fulfilled: [] };
+    const request = { method: () => 'GET', url: () => ORIGIN + pathname, resourceType: () => resourceType, frame: () => frame, postData: () => null,
+      headers: () => ({ ...headers }), allHeaders: async () => ({ ...headers }) };
+    return { effects, route: { request: () => request, fetch: transport, abort: async () => { effects.aborted = true; },
+      fulfill: async value => { effects.fulfilled.push(value.status); } } };
+  };
+  return { receipt, c, stage, save, receiptWrites: () => receiptWrites, callback: route => callback(route), routeFor,
+    cleanup: context => cleanup(context, c, receipt, need),
+    complete: () => complete(receipt, [{ closed: true }, { closed: true }, { closed: true }], false) };
+}
+for (const requestCookiePresent of [true, false]) test(`native static mismatch diagnostics retain safe representation facts only; cookie present=${requestCookiePresent}`, async () => {
+  const pathname = '/assets/zz-test-static.png', expected = Buffer.from('ZZ_TEST_EXPECTED_PUBLIC_IMAGE'),
+    received = Buffer.from('ZZ_TEST_PRIVATE_RESPONSE_BODY_CANARY'), accept = 'ZZ_TEST_SYNTHETIC_IMAGE_ACCEPT',
+    cookie = 'ZZ_TEST_SYNTHETIC_PRIVATE_COOKIE', authorization = 'ZZ_TEST_SYNTHETIC_AUTH_HEADER',
+    privateResponseHeader = 'ZZ_TEST_SYNTHETIC_PRIVATE_RESPONSE_HEADER';
+  const asset = { path: pathname, sha256: h(expected), contentType: 'image/png' },
+    requestHeaders = { accept, authorization, ...(requestCookiePresent ? { cookie } : {}) };
+  const f = await overviewNativeHarness({ assets: [asset] }), { route, effects } = f.routeFor(pathname, async () => ({
+    status: () => 200,
+    headers: () => ({ 'content-type': 'image/webp; charset=binary', 'set-cookie': cookie, 'x-private-header': privateResponseHeader }),
+    body: async () => received,
+  }), { resourceType: 'image', headers: requestHeaders });
+  await f.callback(route);
+  assert.equal(effects.aborted, true); assert.deepEqual(effects.fulfilled, []);
+  assert.equal(f.stage.failure(), 'PRODUCTION_STATIC_BYTES_DIFFER'); assert.equal(f.receipt.reads.length, 0);
+  assert.equal(f.receipt.nativePending, 0); assert.equal(f.c.nativeWork.size, 0); assert.equal(f.receipt.complete, false);
+  assert.equal(f.receipt.diagnostics.length, 1);
+  const diagnostic = f.receipt.diagnostics[0];
+  assert.equal(diagnostic.stage, 'static-hash'); assert.equal(diagnostic.method, 'GET');
+  assert.equal(diagnostic.type, 'image'); assert.equal(diagnostic.mainFrame, true);
+  assert.equal(diagnostic.urlSha256, h(ORIGIN + pathname)); assert.equal(diagnostic.bodySha256, h(''));
+  assert.deepEqual(diagnostic.staticAsset, {
+    expectedSha256: h(expected), receivedSha256: h(received),
+    expectedContentType: 'image/png', receivedContentType: 'image/webp',
+    requestAcceptSha256: h(accept), requestCookiePresent,
+  }, 'A failed native static comparison must record both representations and request negotiation facts without their private values.');
+  assert.deepEqual(Object.keys(diagnostic).sort(), ['stage', 'method', 'type', 'mainFrame', 'urlSha256', 'bodySha256', 'staticAsset'].sort());
+  const serialized = JSON.stringify(f.receipt);
+  for (const privateValue of [received.toString(), accept, cookie, authorization, privateResponseHeader]) {
+    assert.equal(serialized.includes(privateValue), false, 'Native static diagnostics must never persist raw body, negotiation headers or cookies.');
+  }
+});
+for (const status of [201, 202]) test(`FINDING high: native Overview GET${status} is refused without an observed200 record`, async () => {
+  const f = await overviewNativeHarness(), { route, effects } = f.routeFor('/api/overview', async () => ({ status: () => status,
+    headers: () => ({ date: at, 'content-type': 'application/json' }), body: async () => Buffer.from(JSON.stringify(overview())) }));
+  await f.callback(route);
+  assert.equal(effects.aborted, true, 'Only actual native GET200 may be recorded as an observed200.');
+  assert.equal(f.receipt.reads.length, 0); assert.deepEqual(effects.fulfilled, []); assert.equal(f.stage.consumed(), null);
+  assert.equal(f.stage.failure(), 'NATIVE_ALLOWED_READ_FAILED');
+});
+test('FINDING high: delayed native health failure must settle before Overview proof completion', async () => {
+  const f = await overviewNativeHarness(); let rejectTransport, closeCalled;
+  const pending = new Promise((_resolve, reject) => { rejectTransport = reject; });
+  const closing = new Promise(resolve => { closeCalled = resolve; });
+  const { route, effects } = f.routeFor('/api/ops/health', () => pending), context = { close: async () => { closeCalled(); } };
+  f.c.browserContexts.push(context);
+  const nativeWork = f.callback(route), trackedWhilePending = Number.isInteger(f.receipt.nativePending) && f.receipt.nativePending > 0;
+  let finalized = false, completedBeforeTerminal = false, cleanupError = null;
+  const cleanupWork = f.cleanup(context).then(() => { finalized = true; completedBeforeTerminal = f.complete(); }, error => { finalized = true; cleanupError = error; });
+  await closing; await new Promise(resolve => setImmediate(resolve));
+  const earlyComplete = finalized && completedBeforeTerminal;
+  rejectTransport(new Error('ZZ_TEST_LATE_NATIVE_FAILURE')); await nativeWork; await cleanupWork;
+  assert.equal(earlyComplete, false, 'Every native fetch/body/fulfill must settle, including context-close cancellation, before proof completion.');
+  assert.equal(trackedWhilePending, true); assert.equal(f.receipt.nativePending, 0);
+  if (cleanupError) assert.match(cleanupError.code ?? '', /^[A-Z][A-Z0-9_]+$/, 'A harness dependency error is not a successful guard.');
+  assert.equal(f.receipt.network.blocked, 1); assert.equal(effects.aborted, true); assert.equal(f.receipt.complete, false);
+});
+
+
+// Exercise the real native callback/save/diagnostic and the real outer finally.
+// Only the in-memory filesystem sink and auth transport are synthetic.
+for (const failReceiptWriteAt of [1, 2]) test(`FINDING high: native receipt IO failure at write${failReceiptWriteAt} settles and still revokes all three owned sessions`, async () => {
+  const f = await overviewNativeHarness({ failReceiptWriteAt }), source = fs.readFileSync(new URL('./admin637-staging-proof.mjs', import.meta.url), 'utf8');
+  const finalStart = source.indexOf('\n  finally {\n    for (const c of sessions) {', source.indexOf('export async function executeReviewedPlan'));
+  const finalEnd = source.indexOf('\n  return receipt;', finalStart);
+  assert.ok(finalStart >= 0 && finalEnd > finalStart);
+  const actualFinally = source.slice(finalStart, finalEnd).replace(/^\s*finally \{/, '').replace(/\}\s*$/, '');
+  const calls = [], closed = [];
+  f.c.attempted = true; f.c.closed = false; f.c.cookie = 'ZZ_TEST_SYNTHETIC_ADMIN_COOKIE';
+  f.c.browserContexts.push({ close: async () => { closed.push('ADMIN'); } });
+  const sessions = [f.c, ...['MANAGER', 'RECEPTION'].map(actor => ({ actor, attempted: true, closed: false,
+    cookie: 'ZZ_TEST_SYNTHETIC_' + actor + '_COOKIE', browserContexts: [{ close: async () => { closed.push(actor); } }] }))];
+  let transports = 0;
+  const response = async () => { transports++; return { status: () => 200,
+    headers: () => ({ 'content-type': 'application/json' }), body: async () => Buffer.from('{}') }; };
+  const { route } = f.routeFor('/api/ops/health', response);
+  let callbackError = null;
+  try { await f.callback(route); } catch (error) { callbackError = error; }
+  const transportsAfterFailure = transports;
+  let subsequentError = null;
+  try { await f.callback(f.routeFor('/api/ops/health', response).route); } catch (error) { subsequentError = error; }
+  const request = async (context, method, pathname, options) => {
+    calls.push({ actor: context.actor, method, pathname, cleanup: options.cleanup, originalObserved: context.cookie.startsWith('ZZ_TEST_SYNTHETIC_') });
+    if (method === 'POST') { context.cookie = ''; return { status: 200, body: { ok: true } }; }
+    return { status: 401 };
+  };
+  const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+  const cleanup = new AsyncFunction('sessions', 'receipt', 'browser', 'request', 'closeSession', 'save', 'sourceGate', 'codeOf', 'now',
+    'let failed = false; ' + actualFinally + '\nreturn failed;');
+  let cleanupError = null;
+  try { await cleanup(sessions, f.receipt, { close: async () => { closed.push('BROWSER'); } }, request, closeSession, f.save,
+    async () => {}, error => error.code ?? 'UNCLASSIFIED_PROOF_ERROR', () => at); } catch (error) { cleanupError = error; }
+  assert.deepEqual(closed, ['ADMIN', 'MANAGER', 'RECEPTION', 'BROWSER']);
+  assert.deepEqual(calls, ['ADMIN', 'MANAGER', 'RECEPTION'].flatMap(actor => [
+    { actor, method: 'POST', pathname: '/api/auth/sign-out', cleanup: true, originalObserved: true },
+    { actor, method: 'GET', pathname: '/api/me', cleanup: true, originalObserved: true },
+  ]));
+  assert.equal(f.receipt.journalHealthy, false); assert.equal(f.receipt.nativePending, 0); assert.equal(f.c.nativeWork.size, 0);
+  assert.equal(f.receipt.complete, false); assert.equal(f.receipt.authCleanup.length, 3);
+  assert.equal(f.receipt.authCleanup.every(row => row.confirmed && row.signOutStatus === 200 && row.meStatus === 401), true);
+  assert.equal(sessions.every(context => context.closed && context.cookie === '' && context.originalCookie === ''), true);
+  assert.equal(transports, transportsAfterFailure, 'A broken receipt journal must refuse every later native transport.');
+  if (cleanupError) assert.equal(cleanupError.code, 'RECEIPT_WRITE_FAILED', 'Only a classified final receipt-write failure is allowed after all cleanup attempts.');
+  assert.ok(f.receiptWrites() >= failReceiptWriteAt);
+  assert.equal(callbackError, null, 'A rejected Playwright route callback can crash before coordinator finally; receipt IO failure must latch and settle locally.');
+  assert.equal(subsequentError, null, 'A latched receipt failure must also settle later blocked native callbacks locally.');
+});
+
+
+test('FINDING high: native source binding includes combined-manifest example and ignore inputs while refusing private/generated files', () => {
+  const selected = ['.env.example', '.gitignore', 'tools/.gitignore'];
+  const f = sourceFixture(selected.map(filename => [filename, Buffer.from('ZZ TEST names-only source input ' + filename)]));
+  const ignored = ['.env', '.env.local', 'apps/api/.env', 'apps/api/.env.local', 'imports/ZZ_TEST.txt', 'services/ZZ_TEST.txt',
+    'node_modules/ZZ_TEST.js', 'apps/api/node_modules/ZZ_TEST.js', 'apps/console/dist/ZZ_TEST.js', '.git/ZZ_TEST'];
+  const originalGit = f.options.git, originalRead = f.options.io.readFileSync; let diffArgs = null;
+  f.options.git = args => {
+    const result = originalGit(args);
+    if (args[0] === 'ls-files') return result + ignored.join('\0') + '\0';
+    if (args[0] === 'ls-tree') return result + ignored.map(filename => '100644 blob ' + 'd'.repeat(40) + '\t' + filename).join('\0') + '\0';
+    if (args[0] === 'diff') diffArgs = args;
+    return result;
+  };
+  f.options.io.readFileSync = filename => {
+    const relative = filename.replaceAll('\\', '/').slice(f.options.root.length + 1);
+    assert.equal(ignored.includes(relative), false, 'Private/generated paths must never reach the filesystem reader.');
+    return originalRead(filename);
+  };
+  assert.equal(verifyLocalSource(f.p, f.options).files, 6, 'The exact combined release manifest includes the safe root example and every .gitignore.');
+  for (const spec of ['.env.example', '.gitignore', ':(glob)**/.gitignore']) assert.ok(diffArgs.includes(spec), 'The current-source Git diff must cover ' + spec);
+  for (const filename of selected) {
+    const original = f.files.get(filename); f.files.set(filename, Buffer.from('ZZ TEST changed safe input ' + filename));
+    throwsCode(() => verifyLocalSource(f.p, f.options), 'FEATURE_SOURCE_BLOB_DIFFERS'); f.files.set(filename, original);
+  }
+});
+
+// Execute the actual capture clipboard block. The synthetic native writer remains
+// bound beneath any proof-only observer; product click/read sinks are inert.
+async function nativeClipboardHarness({ writerValue, reader = value => value } = {}) {
+  const source = fs.readFileSync(new URL('./admin637-staging-proof.mjs', import.meta.url), 'utf8');
+  const start = source.indexOf('        if (index === 0) {'),
+    end = source.indexOf('\n      }\n      await c.drainNative', start);
+  assert.ok(start >= 0 && end > start, 'The real capture clipboard block must be extracted.');
+  const actualClipboard = source.slice(start, end), expected = 'ZZ TEST Overview\nZZ TEST count: 2\nZZ TEST unavailable',
+    consumed = { statusSummary: expected }, receipt = { clipboardExact: false }, calls = [];
+  let value = '', buttonClicks = 0;
+  const nativeWriter = async written => { calls.push(written); value = written; };
+  const navigator = { clipboard: { writeText: nativeWriter, readText: async () => reader(value) } };
+  const world = { navigator, crypto: globalThis.crypto, TextEncoder, TextDecoder };
+  const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+  const page = {
+    evaluate: async (fn, argument) => new AsyncFunction('navigator', 'window', 'globalThis', 'argument',
+      `return (${fn.toString()})(argument);`)(navigator, world, world, argument),
+    getByRole: role => role === 'button' ? { click: async () => {
+      buttonClicks++; await navigator.clipboard.writeText(writerValue === undefined ? expected : writerValue);
+    } } : { filter: () => ({ waitFor: async () => {} }) },
+  };
+  class SyntheticClipboardError extends Error { constructor(code) { super(code); this.code = code; } }
+  const need = (condition, code) => { if (!condition) throw new SyntheticClipboardError(code); };
+  const execute = new AsyncFunction('index', 'page', 'consumed', 'receipt', 'need', 'hash', actualClipboard);
+  let error = null;
+  try { await execute(0, page, consumed, receipt, need, h); } catch (caught) { error = caught; }
+  return { receipt, expected, calls, buttonClicks, error, nativeRestored: navigator.clipboard.writeText === nativeWriter };
+}
+
+for (const windowsCrlf of [false, true]) test(`native clipboard proves the exact writer argument and permits only observed Windows line endings; CRLF=${windowsCrlf}`, async () => {
+  const f = await nativeClipboardHarness({ reader: value => windowsCrlf ? value.replace(/\n/g, '\r\n') : value });
+  assert.equal(f.error?.code ?? null, null); assert.equal(f.receipt.clipboardExact, true);
+  assert.equal(f.buttonClicks, 1); assert.equal(f.calls.at(-1) === f.expected, true, 'The bound native writer must receive the exact server summary.');
+  assert.equal(f.nativeRestored, true, 'The temporary proof observer must restore the native writer.');
+  assert.deepEqual(f.receipt.clipboardVerification, {
+    writtenExact: true, nativeWriterCalled: true, rawReadExact: !windowsCrlf, lineEndingsOnly: windowsCrlf,
+    expectedSha256: h(f.expected), writtenSha256: h(f.expected),
+    readSha256: h(windowsCrlf ? f.expected.replace(/\n/g, '\r\n') : f.expected),
+  });
+  assert.equal(JSON.stringify(f.receipt).includes(f.expected), false, 'Clipboard telemetry must persist hashes and booleans only.');
+});
+
+test('native clipboard rejects a wrong writer argument even when readback matches the server summary', async () => {
+  const expected = 'ZZ TEST Overview\nZZ TEST count: 2\nZZ TEST unavailable';
+  const f = await nativeClipboardHarness({ writerValue: 'ZZ TEST wrong native writer argument', reader: () => expected });
+  assert.equal(f.calls.at(-1) === expected, false); assert.equal(f.buttonClicks, 1);
+  assert.equal(f.error?.code, 'ACTUAL_NATIVE_CLIPBOARD_MISMATCH'); assert.equal(f.receipt.clipboardExact, false);
+  assert.equal(f.nativeRestored, true);
+});
+
+for (const [label, reader] of [
+  ['changed content', value => value.replace('count: 2', 'count: 3')],
+  ['changed spacing', value => value.replace('count: 2', 'count:  2')],
+  ['bare carriage returns', value => value.replace(/\n/g, '\r')],
+  ['collapsed lines', value => value.replace(/\n/g, ' ')],
+]) test(`native clipboard refuses ${label} rather than broad whitespace normalization`, async () => {
+  const f = await nativeClipboardHarness({ reader });
+  assert.equal(f.calls.at(-1) === f.expected, true);
+  assert.equal(f.error?.code, 'ACTUAL_NATIVE_CLIPBOARD_MISMATCH'); assert.equal(f.receipt.clipboardExact, false);
+  assert.equal(f.nativeRestored, true);
+});
+
+// The guarded underlying Promise prevents the offline test runner itself from
+// crashing; the returned thenable records when the actual capture attaches its
+// own rejection handler. Nothing executes a browser or waits for a real timeout.
+async function nativeSelectionHarness(mode) {
+  const source = fs.readFileSync(new URL('./admin637-staging-proof.mjs', import.meta.url), 'utf8'),
+    start = source.indexOf('        if (branchId) { selected = branchId; consumed = null;'),
+    end = source.indexOf('\n        await page.waitForFunction', start);
+  assert.ok(start >= 0 && end > start, 'The actual selected-park capture block must be extracted.');
+  const actualSelection = source.slice(start, end), branchId = A, selectorCalls = [];
+  const responseError = Object.assign(new Error('ZZ_TEST_RESPONSE_TIMEOUT'), { code: 'ZZ_TEST_RESPONSE_TIMEOUT' }),
+    selectionError = Object.assign(new Error('ZZ_TEST_SELECTION_FAILED'), { code: 'ZZ_TEST_SELECTION_FAILED' });
+  let rejectResponse, resolveResponse, resolveSelection, selectionStarted, responseHandlerAttached = false;
+  const beganSelection = new Promise(resolve => { selectionStarted = resolve; });
+  const nativeResponse = new Promise((resolve, reject) => { resolveResponse = resolve; rejectResponse = reject; });
+  nativeResponse.catch(() => {});
+  const response = { then(onFulfilled, onRejected) { responseHandlerAttached = true; return nativeResponse.then(onFulfilled, onRejected); } };
+  const selectOption = (method, name, value) => {
+    selectorCalls.push({ method, name, value }); selectionStarted();
+    return mode === 'selection-first' ? Promise.reject(selectionError) : new Promise(resolve => { resolveSelection = resolve; });
+  };
+  const page = {
+    waitForResponse: predicate => {
+      const target = ORIGIN + '/api/overview?' + new URLSearchParams({ branchId });
+      assert.equal(predicate({ url: () => target }), true);
+      assert.equal(predicate({ url: () => ORIGIN + '/api/overview' }), false);
+      return response;
+    },
+    getByLabel: name => ({ selectOption: value => selectOption('label', name, value) }),
+    getByRole: (role, options) => ({ selectOption: value => selectOption(role, options.name, value), waitFor: async () => {} }),
+  };
+  const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor,
+    execute = new AsyncFunction('page', 'branchId', 'ORIGIN', `let selected = '', consumed = {}; ${actualSelection}`);
+  let error = null;
+  const running = execute(page, branchId, ORIGIN).catch(caught => { error = caught; });
+  await beganSelection;
+  if (mode === 'success') resolveResponse({}); else rejectResponse(responseError);
+  await new Promise(resolve => setImmediate(resolve));
+  const handlerAttachedBeforeSelectionSettled = responseHandlerAttached;
+  resolveSelection?.(); await running;
+  return { error, responseError, selectionError, selectorCalls, handlerAttachedBeforeSelectionSettled };
+}
+
+test('selected-park capture handles a response timeout immediately while native selection is pending', async () => {
+  const f = await nativeSelectionHarness('response-first');
+  assert.equal(f.handlerAttachedBeforeSelectionSettled, true, 'The response waiter needs its rejection handler before the selection action settles.');
+  assert.equal(f.error === f.responseError, true, 'The actual timeout must propagate to coordinator cleanup rather than becoming an unhandled rejection.');
+});
+
+test('selected-park capture owns its response waiter even when native selection fails first', async () => {
+  const f = await nativeSelectionHarness('selection-first');
+  assert.equal(f.handlerAttachedBeforeSelectionSettled, true, 'A failed selection must not abandon the pending response waiter.');
+  assert.equal(f.error === f.selectionError, true);
+});
+
+test('selected-park capture selects the tested native Park combobox without a mobile menu', async () => {
+  const f = await nativeSelectionHarness('success');
+  assert.equal(f.error, null);
+  assert.deepEqual(f.selectorCalls, [{ method: 'combobox', name: 'Park', value: A }]);
+});

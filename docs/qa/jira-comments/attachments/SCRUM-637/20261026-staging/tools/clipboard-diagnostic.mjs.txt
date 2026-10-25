@@ -1,0 +1,93 @@
+// Inert preparation. Explicit execution uses a synthetic document and no network or authentication.
+import fs from 'node:fs';
+import path from 'node:path';
+import { createHash } from 'node:crypto';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+
+const ROOT = 'C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos';
+const ORIGIN = 'https://oto-console-staging.onrender.com';
+const DOCUMENT = ORIGIN + '/overview';
+const DEFAULT_RECEIPT = 'C:/w/admin637-clipboard-diagnostic-20261026.json';
+const LITERAL = 'ZZ TEST clipboard diagnostic\nZZ TEST second line\n';
+const now = () => new Date().toISOString();
+const sha256 = value => createHash('sha256').update(value).digest('hex');
+const profile = value => ({ sha256: sha256(value), length: value.length,
+  utf8Bytes: Buffer.byteLength(value), lfCount: (value.match(/\n/g) ?? []).length,
+  crlfCount: (value.match(/\r\n/g) ?? []).length, crCount: (value.match(/\r/g) ?? []).length });
+
+export async function execute({ explicitExecute = false, outputFile = DEFAULT_RECEIPT } = {}) {
+  if (!explicitExecute) throw new Error('EXPLICIT_EXECUTE_REQUIRED');
+  const absolute = path.resolve(outputFile), allowedRoot = path.resolve('C:/w') + path.sep;
+  if (!absolute.startsWith(allowedRoot) || path.extname(absolute) !== '.json') throw new Error('EXACT_EXTERNAL_JSON_RECEIPT_REQUIRED');
+  const fd = fs.openSync(absolute, 'wx');
+  const receipt = { ticket: 'SCRUM-637', kind: 'synthetic-windows-clipboard-diagnostic',
+    startedAt: now(), completedAt: null, helperSha256: sha256(fs.readFileSync(fileURLToPath(import.meta.url))),
+    applicationPageLoaded: false, authAttempts: 0, businessWrites: 0, actualStagingProof: false,
+    syntheticDocument: { origin: ORIGIN, pathname: '/overview', fulfilled: 0 },
+    network: { dispatched: 0, refused: 0 }, expected: profile(LITERAL), received: null,
+    exact: null, normalizedLfExact: null, initialClipboardCaptured: false,
+    initialClipboardRestored: false, contextClosed: false, browserClosed: false, errorCode: null, complete: false };
+  let browser, context, page, originalClipboard, stage = 'SUPPORT_IMPORT';
+  try {
+    // The original support locates the installed Windows Chromium. No sign-in helper is called.
+    const { launch } = await import(pathToFileURL(path.join(ROOT, 'scripts/agent/evidence.mjs')).href);
+    stage = 'BROWSER_LAUNCH'; browser = await launch();
+    context = await browser.newContext({ serviceWorkers: 'block' });
+    await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: ORIGIN });
+    page = await context.newPage(); page.setDefaultTimeout(30_000);
+    await context.route('**/*', async route => {
+      const request = route.request();
+      if (request.url() === DOCUMENT && request.method() === 'GET'
+        && request.resourceType() === 'document' && request.frame() === page.mainFrame()
+        && request.postData() === null && receipt.syntheticDocument.fulfilled === 0) {
+        receipt.syntheticDocument.fulfilled++;
+        await route.fulfill({ status: 200, contentType: 'text/html; charset=utf-8',
+          headers: { 'cache-control': 'no-store', 'content-security-policy': "default-src 'none'; frame-src 'none'; form-action 'none'" },
+          body: '<!doctype html><html><head><title>ZZ TEST clipboard diagnostic</title></head><body>ZZ TEST isolated clipboard diagnostic</body></html>' });
+        return;
+      }
+      receipt.network.refused++;
+      await route.abort('blockedbyclient').catch(() => {});
+    });
+    stage = 'SYNTHETIC_DOCUMENT'; await page.goto(DOCUMENT, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+    await page.bringToFront();
+    stage = 'INITIAL_CLIPBOARD_READ'; originalClipboard = await page.evaluate(() => navigator.clipboard.readText());
+    receipt.initialClipboardCaptured = true;
+    stage = 'SYNTHETIC_CLIPBOARD_WRITE'; await page.evaluate(value => navigator.clipboard.writeText(value), LITERAL);
+    stage = 'SYNTHETIC_CLIPBOARD_READ'; const received = await page.evaluate(() => navigator.clipboard.readText());
+    receipt.received = profile(received); receipt.exact = received === LITERAL;
+    receipt.normalizedLfExact = received.replace(/\r\n/g, '\n') === LITERAL;
+  } catch {
+    receipt.errorCode = stage + '_FAILED';
+  } finally {
+    // Original clipboard contents remain in memory only and are never hashed, printed or serialized.
+    if (receipt.initialClipboardCaptured && page) {
+      try {
+        await page.evaluate(value => navigator.clipboard.writeText(value), originalClipboard);
+        receipt.initialClipboardRestored = await page.evaluate(() => navigator.clipboard.readText()) === originalClipboard;
+        if (!receipt.initialClipboardRestored) receipt.errorCode ??= 'INITIAL_CLIPBOARD_RESTORE_MISMATCH';
+      } catch { receipt.errorCode ??= 'INITIAL_CLIPBOARD_RESTORE_FAILED'; }
+    }
+    originalClipboard = undefined;
+    if (context) { try { await context.close(); receipt.contextClosed = true; } catch { receipt.errorCode ??= 'CONTEXT_CLOSE_FAILED'; } }
+    if (browser) { try { await browser.close(); receipt.browserClosed = true; } catch { receipt.errorCode ??= 'BROWSER_CLOSE_FAILED'; } }
+    receipt.complete = receipt.errorCode === null && receipt.initialClipboardCaptured && receipt.initialClipboardRestored
+      && receipt.contextClosed && receipt.browserClosed && receipt.syntheticDocument.fulfilled === 1
+      && receipt.network.dispatched === 0 && receipt.network.refused === 0 && receipt.received !== null;
+    receipt.completedAt = now();
+    try { fs.writeFileSync(fd, JSON.stringify(receipt, null, 2) + '\n', 'utf8'); } finally { fs.closeSync(fd); }
+  }
+  return receipt;
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  if (process.argv[2] !== '--execute' || process.argv.length > 4) {
+    process.stderr.write('EXPLICIT_EXECUTE_REQUIRED\n'); process.exitCode = 1;
+  } else {
+    try { const receipt = await execute({ explicitExecute: true, outputFile: process.argv[3] ?? DEFAULT_RECEIPT });
+      process.stdout.write(JSON.stringify({ complete: receipt.complete, exact: receipt.exact,
+        normalizedLfExact: receipt.normalizedLfExact, initialClipboardRestored: receipt.initialClipboardRestored,
+        errorCode: receipt.errorCode }) + '\n'); if (!receipt.complete) process.exitCode = 1;
+    } catch { process.stderr.write('CLIPBOARD_DIAGNOSTIC_EXECUTION_FAILED\n'); process.exitCode = 1; }
+  }
+}

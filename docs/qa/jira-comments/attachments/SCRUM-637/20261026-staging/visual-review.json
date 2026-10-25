@@ -1,0 +1,32 @@
+{
+    "attempt":  "20261026-v4",
+    "reviewedAt":  "2026-10-25T21:07:35.4922229Z",
+    "screenshots":  [
+                        {
+                            "sha256":  "b2add6e2b481e78bc3bde5be7371c1044b0c2d2ecddae5e6945799872011b743",
+                            "layoutPassed":  true,
+                            "filename":  "SCRUM-637-01-overview-desktop.png",
+                            "privacyPassed":  true
+                        },
+                        {
+                            "sha256":  "ae698643a43f9a0d2c285c73f22ed1a4548684d953757a690c3dcd9d6c0dc06b",
+                            "layoutPassed":  true,
+                            "filename":  "SCRUM-637-02-overview-phone.png",
+                            "privacyPassed":  true
+                        },
+                        {
+                            "sha256":  "bf244554636868278145f7f4e3a81d3024617d3b4cd55e20b9fa6135b4f341ee",
+                            "layoutPassed":  true,
+                            "filename":  "SCRUM-637-03-overview-manager.png",
+                            "privacyPassed":  true
+                        },
+                        {
+                            "sha256":  "d0b13a142b948600ae826db6b817f5f5f635be3e015da91c632e04256836a05c",
+                            "layoutPassed":  true,
+                            "filename":  "SCRUM-637-04-overview-restricted.png",
+                            "privacyPassed":  true
+                        }
+                    ],
+    "reviewer":  "coordinator",
+    "ticket":  "SCRUM-637"
+}

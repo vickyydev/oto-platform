@@ -1,0 +1,723 @@
+{
+  "ticket": "SCRUM-637",
+  "actualStaging": true,
+  "complete": false,
+  "sourceSha": "3202967eb331c28d450e9a1ba5336aaa0693bab8",
+  "sourceManifestSha256": "261ac9f76976c5290a7127346136d7edcfc4fe05a94e079ed051425b3b8ebe2c",
+  "ciRunId": "40229665720",
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "serviceId": "srv-danh2ljtqb8s73bt9en0",
+      "id": "dep-dbf6f0rbc2fs738sk6gg",
+      "finishedAt": "2026-10-25T20:36:09.734844Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "serviceId": "srv-danng2p42hec73f38e3g",
+      "id": "dep-dbf6f0rbc2fs738sk7og",
+      "finishedAt": "2026-10-25T20:33:44.903251Z"
+    }
+  ],
+  "helperSha256": "d4a8bf2e65a1695d2e9f0c5d388060b073a3e041ae4d551b2a2a0d382c343f01",
+  "planSha256": "dedf6ca6bbb25848ce30ede13196dc894b6943b80cd754d4fe70ff66f6203d91",
+  "initialSourceBinding": {
+    "files": 3781,
+    "sourceManifestSha256": "261ac9f76976c5290a7127346136d7edcfc4fe05a94e079ed051425b3b8ebe2c",
+    "featureTreeSha256": "902663dbf97f2da053d33dc6b16bc9028cc219ddb3958a63f41bf5faf60feab7",
+    "runtimeBindingsSha256": "de054588bd36ddafeb42e41b4830e2dcd84d04e95752a07dd81b2f72e7b2e7b8"
+  },
+  "routeModuleSha256": "59d73c5f632bc874cf1b519699ae4a1888d58c3679fbff87186ee734fd22d3d0",
+  "localReleaseSha256": "53d9acc4c00dd283861a7f367e3ffd7eccb1312d24c5eb037016a9895edb7f46",
+  "assetManifestSha256": "aef813ab30a3a63e98119c8d1111c6af3f3a4c29d10b46ec06561b3bf0f52806",
+  "startedAt": "2026-10-25T20:56:43.683Z",
+  "completedAt": null,
+  "sourceChecks": [
+    {
+      "at": "2026-10-25T20:56:47.101Z",
+      "sourceSha": "3202967eb331c28d450e9a1ba5336aaa0693bab8",
+      "ciRunId": "40229665720",
+      "greenJobs": 6,
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "id": "dep-dbf6f0rbc2fs738sk6gg",
+          "finishedAt": "2026-10-25T20:36:09.734844Z"
+        },
+        {
+          "name": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "id": "dep-dbf6f0rbc2fs738sk7og",
+          "finishedAt": "2026-10-25T20:33:44.903251Z"
+        }
+      ],
+      "localSourceBinding": {
+        "files": 3781,
+        "sourceManifestSha256": "261ac9f76976c5290a7127346136d7edcfc4fe05a94e079ed051425b3b8ebe2c",
+        "featureTreeSha256": "902663dbf97f2da053d33dc6b16bc9028cc219ddb3958a63f41bf5faf60feab7",
+        "runtimeBindingsSha256": "de054588bd36ddafeb42e41b4830e2dcd84d04e95752a07dd81b2f72e7b2e7b8"
+      },
+      "ciMetadataSha256": "0f8744100339ad94dbc299db432ae37a3bd4226f42cf37946f7255e7d3f455b9"
+    },
+    {
+      "at": "2026-10-25T20:56:51.522Z",
+      "sourceSha": "3202967eb331c28d450e9a1ba5336aaa0693bab8",
+      "ciRunId": "40229665720",
+      "greenJobs": 6,
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "id": "dep-dbf6f0rbc2fs738sk6gg",
+          "finishedAt": "2026-10-25T20:36:09.734844Z"
+        },
+        {
+          "name": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "id": "dep-dbf6f0rbc2fs738sk7og",
+          "finishedAt": "2026-10-25T20:33:44.903251Z"
+        }
+      ],
+      "localSourceBinding": {
+        "files": 3781,
+        "sourceManifestSha256": "261ac9f76976c5290a7127346136d7edcfc4fe05a94e079ed051425b3b8ebe2c",
+        "featureTreeSha256": "902663dbf97f2da053d33dc6b16bc9028cc219ddb3958a63f41bf5faf60feab7",
+        "runtimeBindingsSha256": "de054588bd36ddafeb42e41b4830e2dcd84d04e95752a07dd81b2f72e7b2e7b8"
+      },
+      "ciMetadataSha256": "0f8744100339ad94dbc299db432ae37a3bd4226f42cf37946f7255e7d3f455b9"
+    },
+    {
+      "at": "2026-10-25T20:56:58.274Z",
+      "sourceSha": "3202967eb331c28d450e9a1ba5336aaa0693bab8",
+      "ciRunId": "40229665720",
+      "greenJobs": 6,
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "id": "dep-dbf6f0rbc2fs738sk6gg",
+          "finishedAt": "2026-10-25T20:36:09.734844Z"
+        },
+        {
+          "name": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "id": "dep-dbf6f0rbc2fs738sk7og",
+          "finishedAt": "2026-10-25T20:33:44.903251Z"
+        }
+      ],
+      "localSourceBinding": {
+        "files": 3781,
+        "sourceManifestSha256": "261ac9f76976c5290a7127346136d7edcfc4fe05a94e079ed051425b3b8ebe2c",
+        "featureTreeSha256": "902663dbf97f2da053d33dc6b16bc9028cc219ddb3958a63f41bf5faf60feab7",
+        "runtimeBindingsSha256": "de054588bd36ddafeb42e41b4830e2dcd84d04e95752a07dd81b2f72e7b2e7b8"
+      },
+      "ciMetadataSha256": "0f8744100339ad94dbc299db432ae37a3bd4226f42cf37946f7255e7d3f455b9"
+    },
+    {
+      "at": "2026-10-25T20:57:04.970Z",
+      "sourceSha": "3202967eb331c28d450e9a1ba5336aaa0693bab8",
+      "ciRunId": "40229665720",
+      "greenJobs": 6,
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "id": "dep-dbf6f0rbc2fs738sk6gg",
+          "finishedAt": "2026-10-25T20:36:09.734844Z"
+        },
+        {
+          "name": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "id": "dep-dbf6f0rbc2fs738sk7og",
+          "finishedAt": "2026-10-25T20:33:44.903251Z"
+        }
+      ],
+      "localSourceBinding": {
+        "files": 3781,
+        "sourceManifestSha256": "261ac9f76976c5290a7127346136d7edcfc4fe05a94e079ed051425b3b8ebe2c",
+        "featureTreeSha256": "902663dbf97f2da053d33dc6b16bc9028cc219ddb3958a63f41bf5faf60feab7",
+        "runtimeBindingsSha256": "de054588bd36ddafeb42e41b4830e2dcd84d04e95752a07dd81b2f72e7b2e7b8"
+      },
+      "ciMetadataSha256": "0f8744100339ad94dbc299db432ae37a3bd4226f42cf37946f7255e7d3f455b9"
+    },
+    {
+      "at": "2026-10-25T20:57:09.075Z",
+      "sourceSha": "3202967eb331c28d450e9a1ba5336aaa0693bab8",
+      "ciRunId": "40229665720",
+      "greenJobs": 6,
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "id": "dep-dbf6f0rbc2fs738sk6gg",
+          "finishedAt": "2026-10-25T20:36:09.734844Z"
+        },
+        {
+          "name": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "id": "dep-dbf6f0rbc2fs738sk7og",
+          "finishedAt": "2026-10-25T20:33:44.903251Z"
+        }
+      ],
+      "localSourceBinding": {
+        "files": 3781,
+        "sourceManifestSha256": "261ac9f76976c5290a7127346136d7edcfc4fe05a94e079ed051425b3b8ebe2c",
+        "featureTreeSha256": "902663dbf97f2da053d33dc6b16bc9028cc219ddb3958a63f41bf5faf60feab7",
+        "runtimeBindingsSha256": "de054588bd36ddafeb42e41b4830e2dcd84d04e95752a07dd81b2f72e7b2e7b8"
+      },
+      "ciMetadataSha256": "0f8744100339ad94dbc299db432ae37a3bd4226f42cf37946f7255e7d3f455b9"
+    }
+  ],
+  "operations": [
+    {
+      "sequence": 1,
+      "actor": "ADMIN",
+      "method": "POST",
+      "path": "/api/auth/sign-in",
+      "queryKeys": [],
+      "cleanup": false,
+      "intentAt": "2026-10-25T20:56:51.525Z",
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-25T20:56:52.500Z"
+    },
+    {
+      "sequence": 2,
+      "actor": "ADMIN",
+      "method": "GET",
+      "path": "/api/me",
+      "queryKeys": [],
+      "cleanup": false,
+      "intentAt": "2026-10-25T20:56:52.504Z",
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-25T20:56:52.995Z"
+    },
+    {
+      "sequence": 3,
+      "actor": "ADMIN",
+      "method": "GET",
+      "path": "/api/me/permissions",
+      "queryKeys": [],
+      "cleanup": false,
+      "intentAt": "2026-10-25T20:56:52.998Z",
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-25T20:56:53.916Z"
+    },
+    {
+      "sequence": 4,
+      "actor": "ADMIN",
+      "method": "GET",
+      "path": "/api/overview",
+      "queryKeys": [],
+      "cleanup": false,
+      "intentAt": "2026-10-25T20:56:53.928Z",
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-25T20:56:54.711Z"
+    },
+    {
+      "sequence": 5,
+      "actor": "ADMIN",
+      "method": "GET",
+      "path": "/api/overview",
+      "queryKeys": [
+        "branchId"
+      ],
+      "cleanup": false,
+      "intentAt": "2026-10-25T20:57:05.148Z",
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-25T20:57:05.734Z"
+    }
+  ],
+  "reads": [
+    {
+      "actor": "ADMIN",
+      "at": "2026-10-25T20:56:54.719Z",
+      "status": 200,
+      "responseSha256": "1b360678cb6857ac071810427b404cc978e691734b5d0c13b1854a995373dc0b",
+      "generatedAt": "2026-10-25T20:56:55.311Z",
+      "calendarDate": "2026-10-26",
+      "availableParkCount": 3,
+      "selectedParkCount": 3,
+      "selectedIdsSha256": "486d5022a1e7a6089bd6e0efb440efbf2cce9b4b15940fcedfdbe8b987d064e8",
+      "totals": {
+        "revenueSatang": 0,
+        "guests": 0,
+        "inParkNow": 0,
+        "bookingsToday": 0,
+        "inboxUnanswered": 13,
+        "openAlerts": 9,
+        "boxesOffline": 6
+      },
+      "groupTotals": {
+        "members": {
+          "visits": 0,
+          "draftVisits": 0,
+          "activeVisits": 0,
+          "closedVisits": 0,
+          "visitingMembers": 0
+        },
+        "bookings": {
+          "bookings": 0,
+          "bookedValueSatang": 0,
+          "redeemedBookings": 0
+        },
+        "assistantUsage": {
+          "count": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "cacheReadTokens": 0,
+          "totalTokens": 0,
+          "spendEstimate": null,
+          "reason": "no_rate_configured",
+          "unpricedTokens": 0
+        },
+        "inboxAiUsage": {
+          "count": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "cacheReadTokens": 0,
+          "totalTokens": 0,
+          "spendEstimate": null,
+          "reason": "no_rate_configured",
+          "unpricedTokens": 0
+        },
+        "fleet": {
+          "boxes": 9,
+          "online": 1,
+          "offline": 6,
+          "unclaimed": 2,
+          "disabled": 0
+        }
+      },
+      "decisions": [
+        {
+          "key": "pendingPayments",
+          "status": "available",
+          "count": 1,
+          "basis": "station-attempts-older-than-native-pending-threshold"
+        },
+        {
+          "key": "syncQuarantine",
+          "status": "available",
+          "count": 2,
+          "basis": "open-quarantine-events-in-selected-parks"
+        },
+        {
+          "key": "cashVariances",
+          "status": "unavailable",
+          "count": null,
+          "basis": "current-business-date-not-reconciled"
+        },
+        {
+          "key": "latePayments",
+          "status": "available",
+          "count": 0,
+          "basis": "unresolved-native-late-payment-alert-rows"
+        },
+        {
+          "key": "strandedOccupants",
+          "status": "available",
+          "count": 0,
+          "basis": "current-business-date-native-end-of-day-rows"
+        },
+        {
+          "key": "erasureRequests",
+          "status": "not-built",
+          "count": null,
+          "basis": "suite-erasure-request-queue-not-built"
+        },
+        {
+          "key": "approvalRequests",
+          "status": "not-built",
+          "count": null,
+          "basis": "dual-control-request-queue-not-built"
+        }
+      ],
+      "metricBuckets": 18,
+      "statusSummarySha256": "942e0eec443179369ef049b492f64d7b99326b5e1b866f532ccf1e0be281444b"
+    },
+    {
+      "actor": "ADMIN",
+      "at": "2026-10-25T20:57:01.105Z",
+      "status": 200,
+      "responseSha256": "14d1d686e885a10b1869bce287b063f9a226b10cd9c704c9fef4ee63320b1a87",
+      "generatedAt": "2026-10-25T20:57:01.727Z",
+      "calendarDate": "2026-10-26",
+      "availableParkCount": 3,
+      "selectedParkCount": 3,
+      "selectedIdsSha256": "486d5022a1e7a6089bd6e0efb440efbf2cce9b4b15940fcedfdbe8b987d064e8",
+      "totals": {
+        "revenueSatang": 0,
+        "guests": 0,
+        "inParkNow": 0,
+        "bookingsToday": 0,
+        "inboxUnanswered": 13,
+        "openAlerts": 9,
+        "boxesOffline": 6
+      },
+      "groupTotals": {
+        "members": {
+          "visits": 0,
+          "draftVisits": 0,
+          "activeVisits": 0,
+          "closedVisits": 0,
+          "visitingMembers": 0
+        },
+        "bookings": {
+          "bookings": 0,
+          "bookedValueSatang": 0,
+          "redeemedBookings": 0
+        },
+        "assistantUsage": {
+          "count": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "cacheReadTokens": 0,
+          "totalTokens": 0,
+          "spendEstimate": null,
+          "reason": "no_rate_configured",
+          "unpricedTokens": 0
+        },
+        "inboxAiUsage": {
+          "count": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "cacheReadTokens": 0,
+          "totalTokens": 0,
+          "spendEstimate": null,
+          "reason": "no_rate_configured",
+          "unpricedTokens": 0
+        },
+        "fleet": {
+          "boxes": 9,
+          "online": 1,
+          "offline": 6,
+          "unclaimed": 2,
+          "disabled": 0
+        }
+      },
+      "decisions": [
+        {
+          "key": "pendingPayments",
+          "status": "available",
+          "count": 1,
+          "basis": "station-attempts-older-than-native-pending-threshold"
+        },
+        {
+          "key": "syncQuarantine",
+          "status": "available",
+          "count": 2,
+          "basis": "open-quarantine-events-in-selected-parks"
+        },
+        {
+          "key": "cashVariances",
+          "status": "unavailable",
+          "count": null,
+          "basis": "current-business-date-not-reconciled"
+        },
+        {
+          "key": "latePayments",
+          "status": "available",
+          "count": 0,
+          "basis": "unresolved-native-late-payment-alert-rows"
+        },
+        {
+          "key": "strandedOccupants",
+          "status": "available",
+          "count": 0,
+          "basis": "current-business-date-native-end-of-day-rows"
+        },
+        {
+          "key": "erasureRequests",
+          "status": "not-built",
+          "count": null,
+          "basis": "suite-erasure-request-queue-not-built"
+        },
+        {
+          "key": "approvalRequests",
+          "status": "not-built",
+          "count": null,
+          "basis": "dual-control-request-queue-not-built"
+        }
+      ],
+      "metricBuckets": 18,
+      "statusSummarySha256": "b3880ed21733b531a15b8adddead4360bf167383da2e335e0e0b4861a83b545f"
+    },
+    {
+      "actor": "ADMIN",
+      "at": "2026-10-25T20:57:05.744Z",
+      "status": 200,
+      "responseSha256": "de1752f635638a1a6d420f3ccca971cafcb4ef2ee91370f5292ec3ab18cb239c",
+      "generatedAt": "2026-10-25T20:57:06.394Z",
+      "calendarDate": "2026-10-26",
+      "availableParkCount": 3,
+      "selectedParkCount": 1,
+      "selectedIdsSha256": "69d8b82294c61ee442b58d9612ac5b3ad1cfcf5432f78fe2c28e80cbf61452e0",
+      "totals": {
+        "revenueSatang": 0,
+        "guests": 0,
+        "inParkNow": 0,
+        "bookingsToday": 0,
+        "inboxUnanswered": 0,
+        "openAlerts": 0,
+        "boxesOffline": 1
+      },
+      "groupTotals": {
+        "members": {
+          "visits": 0,
+          "draftVisits": 0,
+          "activeVisits": 0,
+          "closedVisits": 0,
+          "visitingMembers": 0
+        },
+        "bookings": {
+          "bookings": 0,
+          "bookedValueSatang": 0,
+          "redeemedBookings": 0
+        },
+        "assistantUsage": {
+          "count": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "cacheReadTokens": 0,
+          "totalTokens": 0,
+          "spendEstimate": null,
+          "reason": "no_rate_configured",
+          "unpricedTokens": 0
+        },
+        "inboxAiUsage": {
+          "count": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "cacheReadTokens": 0,
+          "totalTokens": 0,
+          "spendEstimate": null,
+          "reason": "no_rate_configured",
+          "unpricedTokens": 0
+        },
+        "fleet": {
+          "boxes": 1,
+          "online": 0,
+          "offline": 1,
+          "unclaimed": 0,
+          "disabled": 0
+        }
+      },
+      "decisions": [
+        {
+          "key": "pendingPayments",
+          "status": "available",
+          "count": 0,
+          "basis": "station-attempts-older-than-native-pending-threshold"
+        },
+        {
+          "key": "syncQuarantine",
+          "status": "available",
+          "count": 0,
+          "basis": "open-quarantine-events-in-selected-parks"
+        },
+        {
+          "key": "cashVariances",
+          "status": "unavailable",
+          "count": null,
+          "basis": "current-business-date-not-reconciled"
+        },
+        {
+          "key": "latePayments",
+          "status": "available",
+          "count": 0,
+          "basis": "unresolved-native-late-payment-alert-rows"
+        },
+        {
+          "key": "strandedOccupants",
+          "status": "available",
+          "count": 0,
+          "basis": "current-business-date-native-end-of-day-rows"
+        },
+        {
+          "key": "erasureRequests",
+          "status": "not-built",
+          "count": null,
+          "basis": "suite-erasure-request-queue-not-built"
+        },
+        {
+          "key": "approvalRequests",
+          "status": "not-built",
+          "count": null,
+          "basis": "dual-control-request-queue-not-built"
+        }
+      ],
+      "metricBuckets": 6,
+      "statusSummarySha256": "56b51da4069529e882b8f7a93820320058aab319bc5a16ca2cc09eec0e201c3d"
+    },
+    {
+      "actor": "ADMIN",
+      "at": "2026-10-25T20:57:10.927Z",
+      "status": 200,
+      "responseSha256": "108d5fca75f9a8518233778a56830689a7968b7bd4a0795fefc6f314cea7f486",
+      "generatedAt": "2026-10-25T20:57:11.539Z",
+      "calendarDate": "2026-10-26",
+      "availableParkCount": 3,
+      "selectedParkCount": 3,
+      "selectedIdsSha256": "486d5022a1e7a6089bd6e0efb440efbf2cce9b4b15940fcedfdbe8b987d064e8",
+      "totals": {
+        "revenueSatang": 0,
+        "guests": 0,
+        "inParkNow": 0,
+        "bookingsToday": 0,
+        "inboxUnanswered": 13,
+        "openAlerts": 9,
+        "boxesOffline": 6
+      },
+      "groupTotals": {
+        "members": {
+          "visits": 0,
+          "draftVisits": 0,
+          "activeVisits": 0,
+          "closedVisits": 0,
+          "visitingMembers": 0
+        },
+        "bookings": {
+          "bookings": 0,
+          "bookedValueSatang": 0,
+          "redeemedBookings": 0
+        },
+        "assistantUsage": {
+          "count": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "cacheReadTokens": 0,
+          "totalTokens": 0,
+          "spendEstimate": null,
+          "reason": "no_rate_configured",
+          "unpricedTokens": 0
+        },
+        "inboxAiUsage": {
+          "count": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "cacheReadTokens": 0,
+          "totalTokens": 0,
+          "spendEstimate": null,
+          "reason": "no_rate_configured",
+          "unpricedTokens": 0
+        },
+        "fleet": {
+          "boxes": 9,
+          "online": 1,
+          "offline": 6,
+          "unclaimed": 2,
+          "disabled": 0
+        }
+      },
+      "decisions": [
+        {
+          "key": "pendingPayments",
+          "status": "available",
+          "count": 1,
+          "basis": "station-attempts-older-than-native-pending-threshold"
+        },
+        {
+          "key": "syncQuarantine",
+          "status": "available",
+          "count": 2,
+          "basis": "open-quarantine-events-in-selected-parks"
+        },
+        {
+          "key": "cashVariances",
+          "status": "unavailable",
+          "count": null,
+          "basis": "current-business-date-not-reconciled"
+        },
+        {
+          "key": "latePayments",
+          "status": "available",
+          "count": 0,
+          "basis": "unresolved-native-late-payment-alert-rows"
+        },
+        {
+          "key": "strandedOccupants",
+          "status": "available",
+          "count": 0,
+          "basis": "current-business-date-native-end-of-day-rows"
+        },
+        {
+          "key": "erasureRequests",
+          "status": "not-built",
+          "count": null,
+          "basis": "suite-erasure-request-queue-not-built"
+        },
+        {
+          "key": "approvalRequests",
+          "status": "not-built",
+          "count": null,
+          "basis": "dual-control-request-queue-not-built"
+        }
+      ],
+      "metricBuckets": 18,
+      "statusSummarySha256": "62f0e05db45ee7a1ec9aaab055de73eb5295217da77cab95a5b4720302acb8fc"
+    }
+  ],
+  "authority": [
+    {
+      "actor": "ADMIN",
+      "beforeSha256": "69a6d62453aeba57d16ebd46f34eed046928d23859b8d6853a663983c5688209",
+      "afterSha256": null,
+      "reach": "operator"
+    }
+  ],
+  "authCleanup": [],
+  "screenshots": [
+    {
+      "filename": "SCRUM-637-01-overview-desktop.png",
+      "sha256": "2399a179a644055ec75834e215802bb5609ff3f793e2244946d5c03b41e5ab09",
+      "actor": "ADMIN",
+      "capturedAt": "2026-10-25T20:57:04.979Z",
+      "completedAt": "2026-10-25T20:57:05.136Z",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "native": true,
+      "restricted": false,
+      "selectedPark": false,
+      "responseSha256": "14d1d686e885a10b1869bce287b063f9a226b10cd9c704c9fef4ee63320b1a87",
+      "identityMasks": 1
+    }
+  ],
+  "network": {
+    "blocked": 0,
+    "failed": 0,
+    "pageErrors": 0,
+    "consoleErrors": 0,
+    "fontSuppressions": 2
+  },
+  "diagnostics": [],
+  "pending": 0,
+  "nativePending": 1,
+  "unresolvedAuth": 0,
+  "journalHealthy": true,
+  "businessWrites": 0,
+  "fixturesCreated": 0,
+  "clipboardExact": true,
+  "errorCode": null,
+  "limitations": [
+    "Actual Overview and Copy only; no digest/webhook delivery claim. Local fake sender tests remain separate.",
+    "No source-button navigation, detail pages, payment records, OTO App, account creation, grant changes, fixtures or business writes.",
+    "Known external font suppressed; identity masks are deliberate. Production assets are independently collected, not a local build."
+  ],
+  "clipboardVerification": {
+    "writtenExact": true,
+    "nativeWriterCalled": true,
+    "rawReadExact": false,
+    "lineEndingsOnly": true,
+    "expectedSha256": "b3880ed21733b531a15b8adddead4360bf167383da2e335e0e0b4861a83b545f",
+    "writtenSha256": "b3880ed21733b531a15b8adddead4360bf167383da2e335e0e0b4861a83b545f",
+    "readSha256": "8c3387703ee297e23663c6e679c9c766d6fc2ea6e0062224c1ded3b03e5d4c09"
+  }
+}

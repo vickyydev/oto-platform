@@ -1,0 +1,148 @@
+TAP version 13
+# Subtest: inert import and unarmed execute cannot dispatch, read environment or create an attempt
+ok 1 - inert import and unarmed execute cannot dispatch, read environment or create an attempt
+  ---
+  duration_ms: 19.8578
+  type: 'test'
+  ...
+# Subtest: exact reviewed plan binds both services, fixed actors and public closure; no old-source/foreign substitution
+ok 2 - exact reviewed plan binds both services, fixed actors and public closure; no old-source/foreign substitution
+  ---
+  duration_ms: 2.6269
+  type: 'test'
+  ...
+# Subtest: auth-only writes: provision/invite/handoff/session/payment/webhook/message mutations are always refused
+ok 3 - auth-only writes: provision/invite/handoff/session/payment/webhook/message mutations are always refused
+  ---
+  duration_ms: 0.8593
+  type: 'test'
+  ...
+# Subtest: GET grammar is exact: no foreign origin, fragments, operators, duplicate/foreign parks, dates or aggregate/detail fan-out
+ok 4 - GET grammar is exact: no foreign origin, fragments, operators, duplicate/foreign parks, dates or aggregate/detail fan-out
+  ---
+  duration_ms: 0.575
+  type: 'test'
+  ...
+# Subtest: native shell bootstrap allows only exact health badge grammar and reviewed static paths
+ok 5 - native shell bootstrap allows only exact health badge grammar and reviewed static paths
+  ---
+  duration_ms: 0.3481
+  type: 'test'
+  ...
+# Subtest: exact six green CI jobs and latest same-source API+Console are required, including deploy finish times
+ok 6 - exact six green CI jobs and latest same-source API+Console are required, including deploy finish times
+  ---
+  duration_ms: 0.6801
+  type: 'test'
+  ...
+# Subtest: overview reach cannot promote branch/foreign/dept grants to operator-wide usage
+ok 7 - overview reach cannot promote branch/foreign/dept grants to operator-wide usage
+  ---
+  duration_ms: 1.2791
+  type: 'test'
+  ...
+# Subtest: actual-schema postconditions preserve all five same-date scoped groups and honest unavailable/unbuilt states
+ok 8 - actual-schema postconditions preserve all five same-date scoped groups and honest unavailable/unbuilt states
+  ---
+  duration_ms: 15.3736
+  type: 'test'
+  ...
+# Subtest: Q18 refuses schema-valid future prices, wrong currency/cache semantics or omitted/unmatched tokens in every bucket
+ok 9 - Q18 refuses schema-valid future prices, wrong currency/cache semantics or omitted/unmatched tokens in every bucket
+  ---
+  duration_ms: 2.1113
+  type: 'test'
+  ...
+# Subtest: actual full-source verifier refuses an uncommitted imported dependency even when route/local-release bytes remain unchanged
+ok 10 - actual full-source verifier refuses an uncommitted imported dependency even when route/local-release bytes remain unchanged
+  ---
+  duration_ms: 2.7782
+  type: 'test'
+  ...
+# Subtest: installed lock/runtime binding cannot silently change under a source-bound schema import
+ok 11 - installed lock/runtime binding cannot silently change under a source-bound schema import
+  ---
+  duration_ms: 2.0596
+  type: 'test'
+  ...
+# Subtest: original-cookie revocation probe remains independent after logout timeout and blocks later dependent auth
+ok 12 - original-cookie revocation probe remains independent after logout timeout and blocks later dependent auth
+  ---
+  duration_ms: 0.6913
+  type: 'test'
+  ...
+# Subtest: all owned contexts still close after another cleanup fails; only explicit logout200+original401 is confirmed
+ok 13 - all owned contexts still close after another cleanup fails; only explicit logout200+original401 is confirmed
+  ---
+  duration_ms: 0.5063
+  type: 'test'
+  ...
+# Subtest: failed cleanup retains the original privately for a real retry instead of confirming an anonymous session
+ok 14 - failed cleanup retains the original privately for a real retry instead of confirming an anonymous session
+  ---
+  duration_ms: 0.5297
+  type: 'test'
+  ...
+# Subtest: FINDING high: ambiguous sign-in with no observed cookie cannot be confirmed by anonymous logout200 and me401
+ok 15 - FINDING high: ambiguous sign-in with no observed cookie cannot be confirmed by anonymous logout200 and me401
+  ---
+  duration_ms: 0.4774
+  type: 'test'
+  ...
+# Subtest: actual request captures the observed cookie before malformed sign-in body failure and preserves unresolved issuance through cleanup
+ok 16 - actual request captures the observed cookie before malformed sign-in body failure and preserves unresolved issuance through cleanup
+  ---
+  duration_ms: 22.8137
+  type: 'test'
+  ...
+# Subtest: actual request captures the observed cookie before stalled sign-in body failure and preserves unresolved issuance through cleanup
+ok 17 - actual request captures the observed cookie before stalled sign-in body failure and preserves unresolved issuance through cleanup
+  ---
+  duration_ms: 24.3335
+  type: 'test'
+  ...
+# Subtest: actual released-schema loader passes file URLs for Windows ESM while preserving the filesystem tsconfig path
+ok 18 - actual released-schema loader passes file URLs for Windows ESM while preserving the filesystem tsconfig path
+  ---
+  duration_ms: 1.139
+  type: 'test'
+  ...
+# Subtest: FINDING high: native Overview GET201 is refused without an observed200 record
+ok 19 - FINDING high: native Overview GET201 is refused without an observed200 record
+  ---
+  duration_ms: 1.7962
+  type: 'test'
+  ...
+# Subtest: FINDING high: native Overview GET202 is refused without an observed200 record
+ok 20 - FINDING high: native Overview GET202 is refused without an observed200 record
+  ---
+  duration_ms: 1.8688
+  type: 'test'
+  ...
+# Subtest: FINDING high: delayed native health failure must settle before Overview proof completion
+ok 21 - FINDING high: delayed native health failure must settle before Overview proof completion
+  ---
+  duration_ms: 3.0693
+  type: 'test'
+  ...
+# Subtest: FINDING high: native receipt IO failure at write1 settles and still revokes all three owned sessions
+ok 22 - FINDING high: native receipt IO failure at write1 settles and still revokes all three owned sessions
+  ---
+  duration_ms: 2.3368
+  type: 'test'
+  ...
+# Subtest: FINDING high: native receipt IO failure at write2 settles and still revokes all three owned sessions
+ok 23 - FINDING high: native receipt IO failure at write2 settles and still revokes all three owned sessions
+  ---
+  duration_ms: 1.9438
+  type: 'test'
+  ...
+1..23
+# tests 23
+# suites 0
+# pass 23
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 208.8196

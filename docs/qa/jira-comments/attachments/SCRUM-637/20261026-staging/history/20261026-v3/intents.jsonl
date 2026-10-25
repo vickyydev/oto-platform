@@ -1,0 +1,10 @@
+{"sequence":1,"actor":"ADMIN","method":"POST","path":"/api/auth/sign-in","queryKeys":[],"cleanup":false,"intentAt":"2026-10-25T20:56:51.525Z","terminal":false,"status":null}
+{"sequence":1,"actor":"ADMIN","method":"POST","path":"/api/auth/sign-in","queryKeys":[],"cleanup":false,"intentAt":"2026-10-25T20:56:51.525Z","terminal":true,"status":200,"completedAt":"2026-10-25T20:56:52.500Z"}
+{"sequence":2,"actor":"ADMIN","method":"GET","path":"/api/me","queryKeys":[],"cleanup":false,"intentAt":"2026-10-25T20:56:52.504Z","terminal":false,"status":null}
+{"sequence":2,"actor":"ADMIN","method":"GET","path":"/api/me","queryKeys":[],"cleanup":false,"intentAt":"2026-10-25T20:56:52.504Z","terminal":true,"status":200,"completedAt":"2026-10-25T20:56:52.995Z"}
+{"sequence":3,"actor":"ADMIN","method":"GET","path":"/api/me/permissions","queryKeys":[],"cleanup":false,"intentAt":"2026-10-25T20:56:52.998Z","terminal":false,"status":null}
+{"sequence":3,"actor":"ADMIN","method":"GET","path":"/api/me/permissions","queryKeys":[],"cleanup":false,"intentAt":"2026-10-25T20:56:52.998Z","terminal":true,"status":200,"completedAt":"2026-10-25T20:56:53.916Z"}
+{"sequence":4,"actor":"ADMIN","method":"GET","path":"/api/overview","queryKeys":[],"cleanup":false,"intentAt":"2026-10-25T20:56:53.928Z","terminal":false,"status":null}
+{"sequence":4,"actor":"ADMIN","method":"GET","path":"/api/overview","queryKeys":[],"cleanup":false,"intentAt":"2026-10-25T20:56:53.928Z","terminal":true,"status":200,"completedAt":"2026-10-25T20:56:54.711Z"}
+{"sequence":5,"actor":"ADMIN","method":"GET","path":"/api/overview","queryKeys":["branchId"],"cleanup":false,"intentAt":"2026-10-25T20:57:05.148Z","terminal":false,"status":null}
+{"sequence":5,"actor":"ADMIN","method":"GET","path":"/api/overview","queryKeys":["branchId"],"cleanup":false,"intentAt":"2026-10-25T20:57:05.148Z","terminal":true,"status":200,"completedAt":"2026-10-25T20:57:05.734Z"}

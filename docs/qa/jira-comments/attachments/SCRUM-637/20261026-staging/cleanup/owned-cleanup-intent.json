@@ -1,0 +1,90 @@
+{
+  "ticket": "SCRUM-637",
+  "startedAt": "2026-10-25T20:55:43.322Z",
+  "gates": [
+    {
+      "name": "api-all-shard-1",
+      "receiptSha256": "71677897a6a763b9fa2b8d6d72edd265ce150d90b1aed7d2c29fcd7ae0016d3b",
+      "logSha256": "62f6702f27bf3fac27291d54e8339685d595d28bb37ccd1a7b44eb8aab130cbf",
+      "completedAt": "2026-10-25T20:02:11.638Z"
+    },
+    {
+      "name": "api-all-shard-2",
+      "receiptSha256": "8ee76f972c57413984abc9f4e2f0815369ee1097500d82f6e2b280ac4a1e9b6d",
+      "logSha256": "6665612e501aaee36b16719a091b3e3ee6e0eae8b371ed85db8d55683e7d7d85",
+      "completedAt": "2026-10-25T20:02:06.164Z"
+    },
+    {
+      "name": "api-all-shard-3",
+      "receiptSha256": "6b8ae4ce3b75fe01abea5a72ecec00d21447be9df9f5a90837d03c4b5282ed0a",
+      "logSha256": "43e4d932a8d0e9a114b58029189d5c7dab2189cc15d2a8320a01d0000ec6d57b",
+      "completedAt": "2026-10-25T20:03:17.329Z"
+    },
+    {
+      "name": "workspace-compilers-builds-1",
+      "receiptSha256": "44026f71dd1f65d5b821873c0ff4df6172da8f792c0c4a5b5b16a3f1ec0ec331",
+      "logSha256": "979a41a460f74cd210b8012a1359f304849e9be1b9d002fea5750dccdf0b9e77",
+      "completedAt": "2026-10-25T19:50:34.797Z"
+    },
+    {
+      "name": "workspace-package-tests-2",
+      "receiptSha256": "56af3808be82f0521e6939e4f8660f085fe14c9f747b1c46dd000789b0e45d45",
+      "logSha256": "58100f9e5dcd79e150543124d056d3003ddfc1a3009cbdd4e44b3e9b187e0f23",
+      "completedAt": "2026-10-25T19:58:23.839Z"
+    },
+    {
+      "name": "pos-tests-1",
+      "receiptSha256": "ca2c51a325618ef157a030424bac46f4d0c829f6ea10e747bdceccece3ded9b3",
+      "logSha256": "e0f70f7994a66e457cb750bbc84b4073824fa252646d44c747d1792b5a45d7b1",
+      "completedAt": "2026-10-25T19:48:12.222Z"
+    },
+    {
+      "name": "box-serial-1",
+      "receiptSha256": "87539bb738f1db32e484ebc2be51c51bce266d0aaf6649c0576900b564506209",
+      "logSha256": "2cb0ae7a52afb57d3a251074250a43577d8e723e4b9612fc8608eb399e412a80",
+      "completedAt": "2026-10-25T19:50:33.224Z"
+    },
+    {
+      "name": "contracts-lint-1",
+      "receiptSha256": "992d5799c016f51820b9cd14203081430c9f02e77ad481d19b31e6a0e7f61ca1",
+      "logSha256": "b8c1ecd7f55a95f3e2cbe18f837271af782437247958393602e91c81adfe60da",
+      "completedAt": "2026-10-25T19:50:03.147Z"
+    },
+    {
+      "name": "console-browser-all-1",
+      "receiptSha256": "aa902e241587ab95b6ecc73f3425c3ca464e5410536259c4a3e100824e721050",
+      "logSha256": "170477487c79b82de12de1db5cbddf5d7a7b4bc2358967da1b0259ac82c51322",
+      "completedAt": "2026-10-25T19:56:47.936Z"
+    },
+    {
+      "name": "post-rebase-checks-1",
+      "receiptSha256": "7423e8bfae9e95438805614187be48d96dc22987a877bbc3be951c3986266cf0",
+      "logSha256": "020a7fbe6ec5741b06be2e47cb783fae15cfcbcde0bc4691b7533f31e7dd4d23",
+      "completedAt": "2026-10-25T20:06:26.804Z"
+    }
+  ],
+  "resources": {
+    "baselineIds": [
+      "83828b463f0b5ae2a64d70878099d5fe299e4b811decc075333f373d981ec01a",
+      "5b5ad70fd3aecf514625c077214d1fb00979067578e885152706ea3b10a49831",
+      "2b6efe94892891ef608f80f228a9c4c6c3f54d3ee6188267f7131c7205d5db43",
+      "2afc9985eaec2abe07eca6aa58aa15d6078c35a9290bcc2a890d5b2d84b051e3",
+      "81821fc1f43bc8f540c879c5b0fbc381faaec86309f34eafb8df94b4eff659ba",
+      "cf854c43dcd283c35919e1c6a581dbbfd3539636832ff3910adc2e3bf5821af0",
+      "85c6ce32a42aba5581817c6323334afbc808020056311be901039150be47dc13",
+      "ceda2dc3b92a3264a97efc0bb5164abc655403f22846438a00b53cb22059f270",
+      "cbc3eb441a04b866bec0bd92928ff95dec63bb01a3884e98d8cb588a30d68309",
+      "41925d9b0cf1df7647253188f2086c34fbbdcc49b446f2b964e43c6fa3920dbe"
+    ],
+    "appId": "7fd9b57eca90a3a4462fc29e073669384d1329cf53a3eed555baacea86e11eae",
+    "pgId": "c9b5a837cf00eaa6e83c4c6ce1dbbcd0617b7cfe6b0e12d0483a295341bd4c63",
+    "networkId": "5395752fd165a7d4cc967c620362438759367c298e6d95d71b4894b1f5f52a01",
+    "appImageId": "sha256:ecfc844d13d36b27adf7f5a1cf705fbe876efba601da39d39bbe64dad85d6b26",
+    "pgImageId": "sha256:a3b7f434b2dc57ce85a67e171163eb8ab1a1ebcb39d27484661f26b1dfbe30d6",
+    "appIdle": true,
+    "ownPgClients": 0,
+    "noPersistentMounts": true,
+    "apiRuntimeReceiptSha256": "438c3188f86dbdebd6306e69f4fe4bf40d9e749ce8a0a5f9119a3581dccebf6a"
+  },
+  "staging": false
+}

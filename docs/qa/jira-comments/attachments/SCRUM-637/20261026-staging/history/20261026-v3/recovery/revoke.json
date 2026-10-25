@@ -1,0 +1,31 @@
+{
+  "ticket": "SCRUM-637",
+  "recordedAt": "2026-10-25T21:05:15.257Z",
+  "jobId": "job-dbf6tj67bikc73cdgm60",
+  "jobStatus": "succeeded",
+  "sourceSha": "3202967eb331c28d450e9a1ba5336aaa0693bab8",
+  "actorAccountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+  "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+  "from": "2026-10-25T20:56:50.000Z",
+  "to": "2026-10-25T20:56:55.000Z",
+  "censusReceiptSha256": "a4f0e1331f4ecf3af1f2e69075098a792b87c00b69959fac4ee07101db2fd3c2",
+  "kind": "SCRUM637_V3_RECOVERY",
+  "mode": "revoke",
+  "session": {
+    "id": "01a174da-1ae8-7070-b537-b212e9c99b86",
+    "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+    "revokedAt": "2026-10-25T21:04:54.833Z",
+    "revokedReason": "sign_out"
+  },
+  "nativeAudit": {
+    "id": "01a174e1-7437-7b8c-91f3-087245a5ebb0",
+    "action": "auth.sign_out",
+    "entityId": "01a174da-1ae8-7070-b537-b212e9c99b86",
+    "createdAt": "2026-10-25T21:04:54.826Z"
+  },
+  "otherSessions": 2346,
+  "otherSessionStateBeforeSha256": "2ea7e0dc2c9c41c338d65714f79dc4d314eb3f5e0e92236acb752bb366fec3e5",
+  "otherSessionStateAfterSha256": "2ea7e0dc2c9c41c338d65714f79dc4d314eb3f5e0e92236acb752bb366fec3e5",
+  "onlyExactSessionRevoked": true,
+  "originalCookieProbeAvailable": false
+}

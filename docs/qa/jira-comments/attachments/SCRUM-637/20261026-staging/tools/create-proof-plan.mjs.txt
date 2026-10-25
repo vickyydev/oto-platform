@@ -1,0 +1,225 @@
+// Import is inert. Only the coordinator may explicitly prepare a held plan after rollout.
+import fs from 'node:fs';
+import path from 'node:path';
+import { createHash } from 'node:crypto';
+import { spawnSync } from 'node:child_process';
+import { createRequire } from 'node:module';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { validatePlan, releaseFacts, verifyLocalSource, publicPath, digest,
+  runtimeBindingsSha256Of, WORKTREE, DEMOS, ORIGIN } from './admin637-staging-proof.mjs';
+
+const PRIVATE_ROOT = 'C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos';
+const HELPER = 'C:/w/admin637-staging-proof.mjs', PARSERS = 'C:/w/admin634-public-assets.mjs';
+const ROUTE = 'apps/api/src/routes/console.ts';
+const RELEASE = 'docs/qa/jira-comments/attachments/SCRUM-637/local-release.json';
+const FONT = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap';
+const SERVICES = ['oto-api-staging', 'oto-console-staging'];
+const MIME = /^(?:text\/html|text\/css|(?:application|text)\/javascript|image\/(?:svg\+xml|png|webp)|font\/(?:woff|woff2))$/;
+const TIMEOUT = 30_000, MAX_FILE = 8_000_000, MAX_TOTAL = 64_000_000;
+const hash = value => createHash('sha256').update(value).digest('hex');
+const need = (condition, code) => { if (!condition) throw new Error(code); };
+const safeCode = error => /^[A-Z][A-Z0-9_]+$/.test(error?.message ?? '') ? error.message : 'PUBLIC_PLAN_PREPARATION_FAILED';
+
+export function validateInputs(input) {
+  need(input && Object.keys(input).sort().join(',') === 'attempt,ciRunId,sourceSha', 'EXACT_PREPARATION_INPUTS_REQUIRED');
+  need(/^[a-f0-9]{40}$/.test(input.sourceSha ?? '') && input.sourceSha !== '0'.repeat(40)
+    && /^\d+$/.test(String(input.ciRunId)) && /^[a-z0-9][a-z0-9_-]{0,59}$/.test(input.attempt ?? ''), 'FINAL_SOURCE_RUN_FRESH_ATTEMPT_REQUIRED');
+  return { sourceSha: input.sourceSha, ciRunId: String(input.ciRunId), attempt: input.attempt };
+}
+
+/** Metadata and public bytes only. This never approves or executes the native proof. */
+export async function createHeldProofPlan(raw, { explicitExecute = false } = {}) {
+  need(explicitExecute === true, 'EXPLICIT_PREPARATION_REQUIRED');
+  const input = validateInputs(raw), startedAt = new Date().toISOString();
+  const planFile = `C:/w/admin637-proof-plan-${input.attempt}-held.json`;
+  const bindingFile = `C:/w/admin637-staging-bindings-${input.attempt}.json`;
+  const outputDirectory = `C:/w/admin637-staging-${input.attempt}`;
+  for (const file of [planFile, bindingFile, outputDirectory]) need(!fs.existsSync(file), 'PRESERVE_PRIOR_ATTEMPT');
+  const helperSha256 = hash(fs.readFileSync(HELPER)), parserModuleSha256 = hash(fs.readFileSync(PARSERS));
+  const collectorSha256 = hash(fs.readFileSync(fileURLToPath(import.meta.url)));
+  const command = (exe, args, cwd) => {
+    const result = spawnSync(exe, args, { cwd, encoding: 'utf8', timeout: TIMEOUT, maxBuffer: 3_000_000,
+      stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
+    need(result.status === 0 && !result.signal && !result.error, 'BOUNDED_METADATA_COMMAND_FAILED');
+    return result.stdout;
+  };
+  const git = args => command('git', args, WORKTREE);
+  const ciOf = () => JSON.parse(command('gh', ['run', 'view', input.ciRunId, '--repo', 'vickyydev/oto-platform',
+    '--json', 'headSha,status,conclusion,jobs']));
+  const localRelease = JSON.parse(fs.readFileSync(path.join(WORKTREE, RELEASE), 'utf8'));
+  const sourceInputs = { sourceSha: input.sourceSha, sourceManifestSha256: localRelease.sourceManifestSha256,
+    routeModuleSha256: hash(fs.readFileSync(path.join(WORKTREE, ROUTE))),
+    localReleaseSha256: hash(fs.readFileSync(path.join(WORKTREE, RELEASE))), runtimeBindingsSha256: runtimeBindingsSha256Of() };
+  const local = () => {
+    const result = verifyLocalSource(sourceInputs, { git });
+    for (const file of ['scripts/agent/env.mjs', 'scripts/agent/evidence.mjs']) need(
+      hash(fs.readFileSync(path.join(PRIVATE_ROOT, file))) === hash(fs.readFileSync(path.join(WORKTREE, file))), 'BOUND_PRIVATE_SUPPORT_REQUIRED');
+    need(hash(fs.readFileSync(HELPER)) === helperSha256 && hash(fs.readFileSync(PARSERS)) === parserModuleSha256
+      && hash(fs.readFileSync(fileURLToPath(import.meta.url))) === collectorSha256, 'FROZEN_PREPARATION_HELPERS_CHANGED');
+    return result;
+  };
+  const initialSourceBinding = local(), initialCi = ciOf();
+  need(initialCi.headSha === input.sourceSha && initialCi.status === 'completed' && initialCi.conclusion === 'success'
+    && initialCi.jobs?.length === 6 && new Set(initialCi.jobs.map(row => row.name)).size === 6
+    && initialCi.jobs.every(row => row.status === 'completed' && row.conclusion === 'success'), 'WAIT_SIX_EXACT_GREEN_JOBS');
+
+  // Credential-bearing support is loaded only after exact committed source/runtime and CI checks.
+  const { need: secret } = await import(pathToFileURL(path.join(PRIVATE_ROOT, 'scripts/agent/env.mjs')).href);
+  const { launch } = await import(pathToFileURL(path.join(PRIVATE_ROOT, 'scripts/agent/evidence.mjs')).href);
+  const { moduleReferences, assetReferences, publicAccept } = await import(pathToFileURL(PARSERS).href);
+  async function metadata(suffix) {
+    const response = await fetch('https://api.render.com/v1' + suffix, { method: 'GET', redirect: 'manual',
+      signal: AbortSignal.timeout(TIMEOUT), headers: { authorization: 'Bearer ' + secret('RENDER_API_KEY'), accept: 'application/json' } });
+    need(response.status === 200, 'RENDER_READ_FAILED');
+    const chunks = []; let size = 0;
+    for await (const bytes of response.body) { size += bytes.length; need(size <= 3_000_000, 'RENDER_BODY_LIMIT'); chunks.push(bytes); }
+    return JSON.parse(Buffer.concat(chunks).toString('utf8'));
+  }
+  const services = await metadata('/services?limit=50'), latest = {}, deployments = [];
+  need(Array.isArray(services), 'RENDER_SERVICES_REQUIRED');
+  need(services.length < 50, 'TRUNCATED_SERVICE_INVENTORY_REFUSED');
+  for (const name of SERVICES) {
+    const matches = services.map(row => row.service ?? row).filter(row => row.name === name);
+    need(matches.length === 1 && /^srv-[A-Za-z0-9]+$/.test(matches[0].id), 'EXACT_UNIQUE_SERVICE_REQUIRED');
+    const service = matches[0], rows = await metadata(`/services/${service.id}/deploys?limit=1`), deployment = rows?.[0]?.deploy;
+    need(deployment?.status === 'live' && deployment.commit?.id === input.sourceSha
+      && /^dep-[A-Za-z0-9]+$/.test(deployment.id) && Number.isFinite(Date.parse(deployment.finishedAt)), 'WAIT_LATEST_EXACT_LIVE_DEPLOYMENT');
+    latest[service.id] = rows;
+    deployments.push({ name, serviceId: service.id, id: deployment.id, finishedAt: deployment.finishedAt });
+  }
+  releaseFacts({ sourceSha: input.sourceSha, deployments }, initialCi, services, latest);
+
+  const require = createRequire(path.join(WORKTREE, 'apps/console/package.json'));
+  const parserPath = require.resolve('typescript'), parser = require(parserPath);
+  const parserBinding = { path: parserPath.replaceAll('\\', '/'), version: parser.version, sha256: hash(fs.readFileSync(parserPath)) };
+  const assets = new Map(), queue = [], queued = new Set(), rasterReads = [];
+  let total = 0;
+  async function nativeImage(publicName) {
+    const browser = await launch(); let context, bytes, contentType, pending = 0, errorCode = null, failure = null;
+    try {
+      context = await browser.newContext({ serviceWorkers: 'block' }); const page = await context.newPage();
+      await page.route('**/*', async route => {
+        pending++;
+        try {
+          const request = route.request(), headers = await request.allHeaders();
+          need(request.url() === ORIGIN + publicName && request.method() === 'GET' && request.resourceType() === 'image'
+            && request.frame() === page.mainFrame() && !headers.cookie && !headers.authorization, 'PUBLIC_NATIVE_IMAGE_ONLY_REQUIRED');
+          const response = await route.fetch({ maxRetries: 0, maxRedirects: 0, timeout: TIMEOUT });
+          need(response.status() === 200 && response.url() === ORIGIN + publicName, 'PUBLIC_IMAGE_200_REQUIRED');
+          bytes = await response.body(); need(bytes.length > 0 && bytes.length <= MAX_FILE, 'PUBLIC_IMAGE_BYTE_LIMIT');
+          contentType = response.headers()['content-type']?.split(';')[0].trim();
+          need(/^image\/(?:png|webp)$/.test(contentType), 'PUBLIC_IMAGE_MIME_REQUIRED');
+          rasterReads.push({ path: publicName, sha256: hash(bytes), contentType, byteLength: bytes.length,
+            acceptSha256: hash(headers.accept ?? ''), cookieSent: false });
+          const responseHeaders = { ...response.headers() };
+          for (const key of ['content-encoding', 'content-length', 'transfer-encoding']) delete responseHeaders[key];
+          await route.fulfill({ status: 200, headers: responseHeaders, body: bytes });
+        } catch (error) { errorCode ??= safeCode(error); await route.abort('blockedbyclient').catch(() => {}); }
+        finally { pending--; }
+      });
+      await page.setContent('<img src="' + ORIGIN + publicName + '">');
+      await page.waitForFunction(() => document.images.length === 1 && document.images[0].complete
+        && document.images[0].naturalWidth > 0, {}, { timeout: TIMEOUT });
+      need(!errorCode && pending === 0 && bytes, 'PUBLIC_IMAGE_UNSETTLED');
+    } catch (error) { failure = error; }
+    finally {
+      try { await context?.close(); } catch (error) { failure ??= error; }
+      finally { try { await browser.close(); } catch (error) { failure ??= error; } }
+    }
+    if (failure) throw failure;
+    need(!errorCode && pending === 0, 'PUBLIC_IMAGE_CLEANUP_REQUIRED'); return { bytes, contentType };
+  }
+  async function publicGet(publicName) {
+    need(publicPath(publicName) || publicName === '/overview', 'PUBLIC_PATH_REFUSED');
+    let bytes, contentType;
+    if (/\.(?:png|webp)$/.test(publicName)) { ({ bytes, contentType } = await nativeImage(publicName)); total += bytes.length; }
+    else {
+      const response = await fetch(ORIGIN + publicName, { method: 'GET', redirect: 'manual', credentials: 'omit', cache: 'no-store',
+        signal: AbortSignal.timeout(TIMEOUT), headers: { accept: publicAccept(publicName, ['/', '/overview'].includes(publicName)) } });
+      need(response.status === 200 && response.url === ORIGIN + publicName, 'PUBLIC_RESPONSE_REFUSED');
+      const chunks = []; let size = 0;
+      for await (const chunk of response.body) { size += chunk.length; total += chunk.length;
+        need(size <= MAX_FILE && total <= MAX_TOTAL, 'PUBLIC_BYTE_LIMIT'); chunks.push(chunk); }
+      need(size > 0, 'EMPTY_PUBLIC_ASSET'); bytes = Buffer.concat(chunks);
+      contentType = response.headers.get('content-type')?.split(';')[0].trim();
+    }
+    need(total <= MAX_TOTAL && MIME.test(contentType), 'PUBLIC_MIME_OR_TOTAL_REFUSED');
+    if (['/', '/overview'].includes(publicName)) need(contentType === 'text/html', 'PUBLIC_DOCUMENT_REQUIRED');
+    return { bytes, contentType };
+  }
+  async function get(publicName) {
+    const result = await publicGet(publicName);
+    assets.set(publicName, { path: publicName, sha256: hash(result.bytes), contentType: result.contentType });
+    return result.bytes.toString('utf8');
+  }
+  function enqueue(raw, base, viteRoot = false) {
+    if (raw.startsWith('data:') || raw.startsWith('#')) return;
+    need(!/[\\%\s]/.test(raw) && !raw.split(/[/?#]/).includes('..'), 'PUBLIC_REFERENCE_REFUSED');
+    const url = new URL(viteRoot && raw.startsWith('assets/') ? '/' + raw : raw, ORIGIN + base);
+    need(url.origin === ORIGIN && !url.username && !url.password && !url.search && !url.hash
+      && publicPath(url.pathname) && url.pathname !== '/', 'PUBLIC_REFERENCE_REFUSED');
+    if (!queued.has(url.pathname)) { queued.add(url.pathname); queue.push(url.pathname); }
+    need(queued.size < 100, 'PUBLIC_ASSET_COUNT_LIMIT');
+  }
+  function css(text, base) {
+    const rows = [...text.matchAll(/url\(\s*(?:"([^"]*)"|'([^']*)'|([^\s)]+))\s*\)/gi)];
+    need(rows.length === [...text.matchAll(/url\(/gi)].length, 'UNPARSED_CSS_URL');
+    for (const match of rows) enqueue(match[1] ?? match[2] ?? match[3], base);
+    for (const match of text.matchAll(/@import\s+["']([^"']+)["']/g)) enqueue(match[1], base);
+  }
+  function markup(text, base) {
+    need(!/<base\b|<iframe\b|<object\b|<embed\b|http-equiv\s*=\s*["']?refresh/i.test(text), 'UNKNOWN_DOCUMENT_RESOURCE');
+    for (const match of text.matchAll(/<(script|link|img|source|image|use)\b([^>]*)>/gi)) {
+      const attributes = Object.fromEntries([...match[2].matchAll(/([\w:-]+)\s*=\s*(["'])(.*?)\2/g)]
+        .map(row => [row[1].toLowerCase(), row[3].replaceAll('&amp;', '&')]));
+      need(!attributes.srcset, 'UNSUPPORTED_SOURCE_SET');
+      const value = attributes.src ?? attributes.href ?? attributes['xlink:href'];
+      if (!value) { need(match[1].toLowerCase() !== 'script' && !/\b(?:src|href|xlink:href)\s*=/i.test(match[2]), 'UNKNOWN_RESOURCE_ATTRIBUTE'); continue; }
+      if (attributes.rel === 'preconnect') { need(['https://fonts.googleapis.com', 'https://fonts.gstatic.com'].includes(value), 'FOREIGN_PRECONNECT_REFUSED'); continue; }
+      if (value === FONT) { need(attributes.rel === 'stylesheet', 'FONT_CONTEXT_REFUSED'); continue; }
+      enqueue(value, base);
+    }
+    for (const match of text.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi)) css(match[1], base);
+  }
+  const html = await get('/'); markup(html, '/');
+  need(queue.includes('/favicon.svg') && queue.some(name => name.endsWith('.js')) && queue.some(name => name.endsWith('.css')), 'BUILT_CONSOLE_REQUIRED');
+  for (let index = 0; index < queue.length; index++) {
+    const name = queue[index], text = await get(name);
+    if (name.endsWith('.js')) {
+      for (const reference of moduleReferences(text, parser)) enqueue(reference, name);
+      for (const reference of assetReferences(text, parser)) enqueue(reference.value, name, reference.viteRoot);
+    } else if (name.endsWith('.css')) css(text, name);
+    else if (name.endsWith('.svg')) markup(text, name);
+  }
+  const shellSha256 = assets.get('/').sha256;
+  need(hash((await publicGet('/overview')).bytes) === shellSha256, 'OVERVIEW_PUBLIC_SHELL_DIFFERS');
+  await get('/'); need(assets.get('/').sha256 === shellSha256, 'PUBLIC_SHELL_CHANGED');
+  const plan = { approved: false, ticket: 'SCRUM-637', ...sourceInputs, ciRunId: input.ciRunId, deployments, helperSha256,
+    actors: Object.fromEntries(['ADMIN', 'MANAGER', 'RECEPTION'].map(actor => [actor, { accountId: DEMOS[actor], operatorId: DEMOS.operatorId }])),
+    assets: [...assets.values()].sort((a, b) => a.path.localeCompare(b.path)), assetManifestSha256: '', outputDirectory };
+  plan.assetManifestSha256 = digest(plan.assets); validatePlan({ ...plan, approved: true });
+  const finalSourceBinding = local();
+  need(hash(fs.readFileSync(parserPath)) === parserBinding.sha256, 'FROZEN_PARSER_CHANGED');
+  const finalServices = await metadata('/services?limit=50'), finalLatest = {};
+  need(Array.isArray(finalServices) && finalServices.length < 50, 'TRUNCATED_SERVICE_INVENTORY_REFUSED');
+  for (const deployment of deployments) finalLatest[deployment.serviceId] = await metadata(`/services/${deployment.serviceId}/deploys?limit=1`);
+  const finalCi = ciOf(); releaseFacts(plan, finalCi, finalServices, finalLatest);
+  const binding = { ticket: 'SCRUM-637', startedAt, completedAt: new Date().toISOString(), sourceSha: input.sourceSha,
+    ciRunId: input.ciRunId, deployments, assets: plan.assets, assetManifestSha256: plan.assetManifestSha256,
+    initialSourceBinding, finalSourceBinding, helperSha256, collectorSha256, parserModuleSha256, parserBinding,
+    publicBytesRead: total, rasterReads, rasterPolicy: 'Native unauthenticated browser image request; exact returned bytes and MIME only.',
+    overviewShellMatchesRoot: true, externalFontsFetched: false, applicationAuthAttempts: 0, nativeProofStarted: false,
+    businessWrites: 0, manualDeploy: false, approved: false };
+  fs.writeFileSync(planFile, JSON.stringify(plan, null, 2) + '\n', { flag: 'wx', flush: true });
+  fs.writeFileSync(bindingFile, JSON.stringify(binding, null, 2) + '\n', { flag: 'wx', flush: true });
+  return { planFile, bindingFile, sourceSha: input.sourceSha, ciRunId: input.ciRunId, assetCount: assets.size,
+    applicationAuthAttempts: 0, nativeProofStarted: false, approved: false };
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
+  try {
+    need(process.argv.length === 6 && process.argv[2] === '--prepare', 'USAGE_PREPARE_SOURCE_RUN_ATTEMPT');
+    const result = await createHeldProofPlan({ sourceSha: process.argv[3], ciRunId: process.argv[4], attempt: process.argv[5] }, { explicitExecute: true });
+    process.stdout.write(JSON.stringify(result) + '\n');
+  } catch (error) { process.stderr.write(safeCode(error) + '\n'); process.exitCode = 1; }
+}

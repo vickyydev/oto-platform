@@ -1,0 +1,26 @@
+{
+  "ticket": "SCRUM-637",
+  "recordedAt": "2026-10-25T21:03:37.998Z",
+  "jobId": "job-dbf6soivcj2c73f1qmrg",
+  "jobStatus": "succeeded",
+  "sourceSha": "3202967eb331c28d450e9a1ba5336aaa0693bab8",
+  "actorAccountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+  "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+  "from": "2026-10-25T20:56:50.000Z",
+  "to": "2026-10-25T20:56:55.000Z",
+  "censusReceiptSha256": null,
+  "kind": "SCRUM637_V3_RECOVERY",
+  "mode": "census",
+  "count": 1,
+  "session": {
+    "id": "01a174da-1ae8-7070-b537-b212e9c99b86",
+    "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+    "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+    "createdAt": "2026-10-25T20:56:53.225Z",
+    "expiresAt": "2026-10-26T08:56:53.225Z",
+    "revokedAt": null,
+    "revokedReason": null,
+    "signInAuditId": "01a174da-1aeb-7ce0-a772-9236948619f2"
+  },
+  "mutations": 0
+}

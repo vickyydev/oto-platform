@@ -1,0 +1,24 @@
+{
+  "ticket": "SCRUM-637",
+  "name": "clipboard-line-endings-green-1",
+  "startedAt": "2026-10-25T20:56:05.859Z",
+  "completedAt": "2026-10-25T20:56:06.098Z",
+  "exitCode": 0,
+  "source": [
+    {
+      "path": "C:/w/admin637-staging-proof.mjs",
+      "sha256": "d4a8bf2e65a1695d2e9f0c5d388060b073a3e041ae4d551b2a2a0d382c343f01"
+    },
+    {
+      "path": "C:/w/admin637-staging-proof.test.mjs",
+      "sha256": "17f3fe316710db8eda65776ef8104f64629a90fd7efa15c28e019054c3d217a1"
+    }
+  ],
+  "sourceUnchanged": true,
+  "tests": 33,
+  "passed": 33,
+  "failed": 0,
+  "logSha256": "96dcc6f9cc11ca2db65f4eb1a9ba6a2f3d069a76a2e621cc384b9b40329ce2cb",
+  "actualStaging": false,
+  "authAttempts": 0
+}

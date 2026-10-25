@@ -1,0 +1,126 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+
+const OUT = 'C:/w/admin637-release-20261026';
+const APP = '7fd9b57eca90a3a4462fc29e073669384d1329cf53a3eed555baacea86e11eae';
+const PG = 'c9b5a837cf00eaa6e83c4c6ce1dbbcd0617b7cfe6b0e12d0483a295341bd4c63';
+const NET = '5395752fd165a7d4cc967c620362438759367c298e6d95d71b4894b1f5f52a01';
+const APP_IMAGE = 'sha256:ecfc844d13d36b27adf7f5a1cf705fbe876efba601da39d39bbe64dad85d6b26';
+const PG_IMAGE = 'sha256:a3b7f434b2dc57ce85a67e171163eb8ab1a1ebcb39d27484661f26b1dfbe30d6';
+const MANIFEST = '261ac9f76976c5290a7127346136d7edcfc4fe05a94e079ed051425b3b8ebe2c';
+const LABELS = { 'oto.agent.ticket': 'SCRUM-637', 'oto.agent.lane': 'admin-overview-v2', 'oto.agent.run': '20261026r1' };
+const GATES = ['api-all-shard-1', 'api-all-shard-2', 'api-all-shard-3', 'workspace-compilers-builds-1', 'workspace-package-tests-2',
+  'pos-tests-1', 'box-serial-1', 'contracts-lint-1', 'console-browser-all-1', 'post-rebase-checks-1'];
+const need = (ok, code) => { if (!ok) throw new Error(code); };
+const read = file => JSON.parse(fs.readFileSync(file, 'utf8'));
+const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
+const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+const write = (name, value) => fs.writeFileSync(path.join(OUT, name), JSON.stringify(value, null, 2) + '\n', { flag: 'wx' });
+function docker(...args) {
+  const r = spawnSync('docker', args, { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 });
+  need(r.status === 0 && r.signal === null, 'OWNED_CLEANUP_DOCKER_FAILED'); return r.stdout.trim();
+}
+// Projection deliberately excludes Config.Env, process arguments of shared containers and service logs.
+const FORMAT = '{"Id":{{json .Id}},"Name":{{json .Name}},"Image":{{json .Image}},"Running":{{json .State.Running}},'
+  + '"Labels":{{json .Config.Labels}},"WorkingDir":{{json .Config.WorkingDir}},"Path":{{json .Path}},"Args":{{json .Args}},'
+  + '"Mounts":{{json .Mounts}},"RequestedPorts":{{json .HostConfig.PortBindings}},"Ports":{{json .NetworkSettings.Ports}},'
+  + '"Networks":{{json .NetworkSettings.Networks}},"Tmpfs":{{json (index .HostConfig "Tmpfs")}},"AutoRemove":{{json .HostConfig.AutoRemove}}}';
+const inspect = id => JSON.parse(docker('inspect', '--format', FORMAT, id));
+const ids = () => new Set(docker('ps', '-aq', '--no-trunc').split(/\s+/).filter(Boolean));
+const netIds = () => new Set(docker('network', 'ls', '--no-trunc', '--format', '{{.ID}}').split(/\s+/).filter(Boolean));
+const labelled = labels => Object.entries(LABELS).every(([k, v]) => labels?.[k] === v);
+function gateEvidence() {
+  return GATES.map(name => {
+    const file = path.join(OUT, name + '.json'), r = read(file);
+    need(r.ticket === 'SCRUM-637' && r.name === name && r.passed === true && r.exitCode === 0 && r.signal === null
+      && r.gateTerminalKnown === true && !r.childError && !r.outputLimitExceeded && !r.progressWriteError
+      && r.verificationError === null && r.appId === APP && r.image === APP_IMAGE && r.sourceManifestSha256 === MANIFEST
+      && r.staging === false && r.digestDefaultOff === true && equal(r.before, r.after)
+      && r.before.sourceFiles === 3781 && r.before.sourceManifestSha256 === MANIFEST
+      && r.before.hostUnchanged === true && r.before.runtimeUnchanged === true
+      && r.before.supplementalDocsUnchanged === true && r.before.installedDependenciesUnchanged === true
+      && /^[a-f0-9]{64}$/.test(r.before.docsSha256 ?? '') && /^[a-f0-9]{64}$/.test(r.before.dependencyMetadataSha256 ?? '')
+      && Number.isFinite(Date.parse(r.startedAt)) && Date.parse(r.completedAt) >= Date.parse(r.startedAt)
+      && hash(fs.readFileSync(path.join(OUT, name + '.log'))) === r.logSha256, 'TEN_EXACT_GREEN_GATES_REQUIRED');
+    return { name, receiptSha256: hash(fs.readFileSync(file)), logSha256: r.logSha256, completedAt: r.completedAt };
+  });
+}
+function validateResources() {
+  const receiptFile = path.join(OUT, 'api-runtime.json'), r = read(receiptFile), setup = read(path.join(OUT, 'integration-setup.json'));
+  need(r.id === PG && r.name === 'oto-s637-20261026-api' && r.user === 'oto' && r.database === 'postgres'
+    && r.temporary === true && r.ready === true && r.baselineContainerIds?.length === 10
+    && new Set(r.baselineContainerIds).size === 10 && r.baselineContainerIds.every(id => /^[a-f0-9]{64}$/.test(id) && ![APP, PG].includes(id))
+    && setup.appId === APP && setup.networkId === NET && setup.image === APP_IMAGE && setup.pg.id === PG
+    && setup.pg.image === PG_IMAGE && setup.pg.receiptSha256 === hash(fs.readFileSync(receiptFile))
+    && equal(setup.pg.baselineContainerIds, r.baselineContainerIds), 'EXACT_OWN_RESOURCE_RECEIPTS_REQUIRED');
+  const app = inspect(APP), pg = inspect(PG), network = JSON.parse(docker('network', 'inspect', NET))[0], existing = ids();
+  need(r.baselineContainerIds.every(id => existing.has(id)), 'ALL_TEN_BASELINE_CONTAINERS_REQUIRED');
+  need(app.Id === APP && app.Name === '/oto-s637-20261026-app' && app.Image === APP_IMAGE && app.Running
+    && labelled(app.Labels) && app.Mounts.length === 0 && Object.keys(app.RequestedPorts ?? {}).length === 0
+    && Object.values(app.Ports ?? {}).every(v => v === null || v.length === 0) && app.AutoRemove === false
+    && app.WorkingDir === '/workspace' && app.Path === 'bash' && equal(app.Args, ['-c', 'exec tail -f /dev/null'])
+    && Object.keys(app.Networks).length === 1 && app.Networks['oto-s637-20261026r1']?.NetworkID === NET, 'EXACT_IDLE_APP_BOUNDARY_REQUIRED');
+  const processes = docker('top', APP, '-eo', 'pid,comm').split(/\r?\n/).slice(1).map(s => s.trim()).filter(Boolean);
+  need(processes.length === 1 && /^\d+\s+tail$/.test(processes[0]), 'APP_TEST_DESCENDANTS_MUST_BE_FINISHED');
+  need(pg.Id === PG && pg.Name === '/oto-s637-20261026-api' && pg.Image === PG_IMAGE && pg.Running && labelled(pg.Labels)
+    && pg.AutoRemove === true && pg.Mounts.length === 0 && Object.hasOwn(pg.Tmpfs ?? {}, '/var/lib/postgresql/data')
+    && equal(Object.values(pg.Networks).map(n => n.NetworkID).sort(), [...new Set([...setup.pg.priorNetworkIds, NET])].sort())
+    && pg.Networks['oto-s637-20261026r1']?.Aliases?.includes('pg'), 'EXACT_TEMPORARY_PG_BOUNDARY_REQUIRED');
+  const requested = pg.RequestedPorts?.['5432/tcp'], actual = pg.Ports?.['5432/tcp'];
+  need(Object.keys(pg.RequestedPorts ?? {}).length === 1 && requested?.length === 1
+    && requested[0].HostIp === '127.0.0.1' && (requested[0].HostPort === '' || Number(requested[0].HostPort) === r.port)
+    && Object.keys(pg.Ports ?? {}).length === 1 && actual?.length === 1
+    && actual[0].HostIp === '127.0.0.1' && Number(actual[0].HostPort) === r.port, 'ONLY_RECORDED_PG_LOOPBACK_BINDING_ALLOWED');
+  need(network.Id === NET && network.Name === 'oto-s637-20261026r1' && network.Internal === true && labelled(network.Labels)
+    && equal(Object.keys(network.Containers ?? {}).sort(), [APP, PG].sort()), 'ONLY_TWO_OWN_NETWORK_ENDPOINTS_ALLOWED');
+  const clients = docker('exec', PG, 'psql', '-U', 'oto', '-d', 'postgres', '-At', '-c',
+    "select count(*) from pg_stat_activity where backend_type='client backend' and pid<>pg_backend_pid()");
+  need(clients === '0', 'OWN_PG_CLIENTS_MUST_BE_FINISHED');
+  return { baselineIds: r.baselineContainerIds, appId: APP, pgId: PG, networkId: NET, appImageId: APP_IMAGE, pgImageId: PG_IMAGE,
+    appIdle: true, ownPgClients: 0, noPersistentMounts: true, apiRuntimeReceiptSha256: hash(fs.readFileSync(receiptFile)) };
+}
+async function waitForPgRemoval() {
+  for (let i = 0; i < 40; i++) { if (!ids().has(PG)) return; await new Promise(resolve => setTimeout(resolve, 250)); }
+  throw new Error('OWN_PG_AUTOREMOVE_UNCONFIRMED');
+}
+export async function cleanup({ explicitCleanup = false } = {}) {
+  need(explicitCleanup === true && !fs.existsSync(path.join(OUT, 'owned-cleanup-result.json')), 'EXPLICIT_NEW_CLEANUP_REQUIRED');
+  const gates = gateEvidence(), resources = validateResources(), startedAt = new Date().toISOString();
+  write('owned-cleanup-intent.json', { ticket: 'SCRUM-637', startedAt, gates, resources, staging: false });
+  let phase = 'stop', errorCode = null;
+  try {
+    // No force, no volume flags: native stop lets PostgreSQL shut itself down.
+    docker('stop', '--time', '10', APP, PG);
+    phase = 'app-remove';
+    need(inspect(APP).Running === false, 'APP_NATIVE_STOP_UNCONFIRMED');
+    docker('rm', APP);
+    phase = 'pg-autoremove'; await waitForPgRemoval();
+    phase = 'network-remove';
+    const network = JSON.parse(docker('network', 'inspect', NET))[0];
+    need(network.Id === NET && network.Internal === true && labelled(network.Labels)
+      && Object.keys(network.Containers ?? {}).length === 0, 'OWN_NETWORK_MUST_BE_EMPTY');
+    docker('network', 'rm', NET);
+    phase = 'readback';
+    const remaining = ids();
+    need(!remaining.has(APP) && !remaining.has(PG) && !netIds().has(NET)
+      && resources.baselineIds.every(id => remaining.has(id)), 'OWN_REMOVAL_AND_BASELINE_READBACK_REQUIRED');
+    need(docker('image', 'inspect', '--format', '{{.Id}}', APP_IMAGE) === APP_IMAGE
+      && docker('image', 'inspect', '--format', '{{.Id}}', PG_IMAGE) === PG_IMAGE, 'CACHED_IMAGES_MUST_REMAIN');
+  } catch (error) { errorCode = /^[A-Z][A-Z0-9_]+$/.test(error?.message ?? '') ? error.message : 'OWNED_CLEANUP_FAILED'; }
+  const result = { ticket: 'SCRUM-637', startedAt, completedAt: new Date().toISOString(), complete: errorCode === null, phase, errorCode,
+    appId: APP, pgId: PG, networkId: NET, baselineIds: resources.baselineIds, baselineCount: 10,
+    baselinePreserved: errorCode === null, cachedImagesPreserved: errorCode === null, sharedResourcesTargeted: false,
+    forceUsed: false, volumeFlagsUsed: false, staging: false };
+  write('owned-cleanup-result.json', result); return result;
+}
+export async function main(argv = process.argv.slice(2)) {
+  need(argv.length === 1 && argv[0] === '--cleanup', 'EXPLICIT_CLEANUP_MODE_REQUIRED');
+  const result = await cleanup({ explicitCleanup: true }); process.stdout.write(JSON.stringify(result) + '\n');
+  if (!result.complete) process.exitCode = 2; return result;
+}
+if (process.argv[1] && path.resolve(process.argv[1]).toLowerCase() === path.resolve(fileURLToPath(import.meta.url)).toLowerCase()) {
+  main().catch(error => { process.stderr.write((/^[A-Z][A-Z0-9_]+$/.test(error?.message ?? '') ? error.message : 'CLEANUP_REFUSED') + '\n'); process.exitCode = 2; });
+}

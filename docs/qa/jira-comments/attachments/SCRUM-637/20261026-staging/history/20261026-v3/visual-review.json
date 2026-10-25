@@ -1,0 +1,14 @@
+{
+    "attempt":  "20261026-v3",
+    "reviewedAt":  "2026-10-25T21:00:55.8460577Z",
+    "screenshots":  [
+                        {
+                            "sha256":  "2399a179a644055ec75834e215802bb5609ff3f793e2244946d5c03b41e5ab09",
+                            "layoutPassed":  true,
+                            "filename":  "SCRUM-637-01-overview-desktop.png",
+                            "privacyPassed":  true
+                        }
+                    ],
+    "reviewer":  "coordinator",
+    "ticket":  "SCRUM-637"
+}

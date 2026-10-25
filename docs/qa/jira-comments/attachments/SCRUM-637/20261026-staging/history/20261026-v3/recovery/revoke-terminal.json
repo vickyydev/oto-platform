@@ -1,0 +1,28 @@
+{
+  "ticket": "SCRUM-637",
+  "at": "2026-10-25T21:05:15.256Z",
+  "mode": "revoke",
+  "jobId": "job-dbf6tj67bikc73cdgm60",
+  "status": "succeeded",
+  "payload": {
+    "kind": "SCRUM637_V3_RECOVERY",
+    "mode": "revoke",
+    "session": {
+      "id": "01a174da-1ae8-7070-b537-b212e9c99b86",
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "revokedAt": "2026-10-25T21:04:54.833Z",
+      "revokedReason": "sign_out"
+    },
+    "nativeAudit": {
+      "id": "01a174e1-7437-7b8c-91f3-087245a5ebb0",
+      "action": "auth.sign_out",
+      "entityId": "01a174da-1ae8-7070-b537-b212e9c99b86",
+      "createdAt": "2026-10-25T21:04:54.826Z"
+    },
+    "otherSessions": 2346,
+    "otherSessionStateBeforeSha256": "2ea7e0dc2c9c41c338d65714f79dc4d314eb3f5e0e92236acb752bb366fec3e5",
+    "otherSessionStateAfterSha256": "2ea7e0dc2c9c41c338d65714f79dc4d314eb3f5e0e92236acb752bb366fec3e5",
+    "onlyExactSessionRevoked": true,
+    "originalCookieProbeAvailable": false
+  }
+}

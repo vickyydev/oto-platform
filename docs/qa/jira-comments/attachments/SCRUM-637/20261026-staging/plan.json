@@ -1,0 +1,78 @@
+{
+  "approved": true,
+  "ticket": "SCRUM-637",
+  "sourceSha": "3202967eb331c28d450e9a1ba5336aaa0693bab8",
+  "sourceManifestSha256": "261ac9f76976c5290a7127346136d7edcfc4fe05a94e079ed051425b3b8ebe2c",
+  "routeModuleSha256": "59d73c5f632bc874cf1b519699ae4a1888d58c3679fbff87186ee734fd22d3d0",
+  "localReleaseSha256": "53d9acc4c00dd283861a7f367e3ffd7eccb1312d24c5eb037016a9895edb7f46",
+  "runtimeBindingsSha256": "de054588bd36ddafeb42e41b4830e2dcd84d04e95752a07dd81b2f72e7b2e7b8",
+  "ciRunId": "40229665720",
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "serviceId": "srv-danh2ljtqb8s73bt9en0",
+      "id": "dep-dbf6f0rbc2fs738sk6gg",
+      "finishedAt": "2026-10-25T20:36:09.734844Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "serviceId": "srv-danng2p42hec73f38e3g",
+      "id": "dep-dbf6f0rbc2fs738sk7og",
+      "finishedAt": "2026-10-25T20:33:44.903251Z"
+    }
+  ],
+  "helperSha256": "267036a7c69fec66e05fa58eacdc3869d6a03882155a68540ced5486659d3814",
+  "actors": {
+    "ADMIN": {
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75"
+    },
+    "MANAGER": {
+      "accountId": "01a0c9ae-5377-7b34-a9ab-22bf8086f5f7",
+      "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75"
+    },
+    "RECEPTION": {
+      "accountId": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+      "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75"
+    }
+  },
+  "assets": [
+    {
+      "path": "/",
+      "sha256": "6023ef38f31cdba8f101abc6124363963173404cd384674983ded0cd1c1a5c3c",
+      "contentType": "text/html"
+    },
+    {
+      "path": "/assets/index-c50jgDs6.js",
+      "sha256": "c2484b2e122a14f864fbee94adba50aaf2f9e9a11d0949ed95f5162bdb38503f",
+      "contentType": "application/javascript"
+    },
+    {
+      "path": "/assets/index-CaH3r7Z2.css",
+      "sha256": "a582bf11fce339cde03564290522f1fdfaddc50e2e64d8a38e0a4d756b9af77d",
+      "contentType": "text/css"
+    },
+    {
+      "path": "/assets/logo-oto-nNYXf9Wy.png",
+      "sha256": "17a3ee3cd02ce9440ecba6ca182c17865c714584d126805d6bd7931e4fbae150",
+      "contentType": "image/webp"
+    },
+    {
+      "path": "/assets/react-C6LhzTnE.js",
+      "sha256": "3e1ae0f3568d5d60a7b94013f5a4e34a84a077d1989357802a1cb51fcdec575e",
+      "contentType": "application/javascript"
+    },
+    {
+      "path": "/assets/vendor-B9yAQZP-.js",
+      "sha256": "443634e99683b7e574fb5e5abf49fcefcb071a7264269a18b4e127d65f8edbcd",
+      "contentType": "application/javascript"
+    },
+    {
+      "path": "/favicon.svg",
+      "sha256": "8ffbde9092b1fa4de97c9481b76f518b131268c82e7c555041925225b1dab6e0",
+      "contentType": "image/svg+xml"
+    }
+  ],
+  "assetManifestSha256": "aef813ab30a3a63e98119c8d1111c6af3f3a4c29d10b46ec06561b3bf0f52806",
+  "outputDirectory": "C:/w/admin637-staging-20261026-v4"
+}

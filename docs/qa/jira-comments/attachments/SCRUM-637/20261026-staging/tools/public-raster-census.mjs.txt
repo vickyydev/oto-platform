@@ -1,0 +1,142 @@
+// Import is inert. The coordinator alone may explicitly run this public-only census.
+import fs from 'node:fs';
+import path from 'node:path';
+import { createHash } from 'node:crypto';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { validatePlan, verifyLocalSource, WORKTREE, ORIGIN } from './admin637-staging-proof.mjs';
+
+const PRIVATE_ROOT = 'C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos';
+const HELPER = 'C:/w/admin637-staging-proof.mjs', TIMEOUT = 30_000, MAX_BYTES = 8_000_000;
+const hash = value => createHash('sha256').update(value).digest('hex');
+const need = (condition, code) => { if (!condition) throw new Error(code); };
+const codeOf = error => /^[A-Z][A-Z0-9_]+$/.test(error?.message ?? '') ? error.message : 'PUBLIC_RASTER_CENSUS_FAILED';
+
+export function validateCensusInputs(planFile, slug) {
+  need(typeof planFile === 'string' && /^C:\/w\/admin637-proof-plan-[a-z0-9_-]{1,60}-held\.json$/.test(planFile), 'HELD_PLAN_PATH_REQUIRED');
+  need(/^[a-z0-9][a-z0-9_-]{0,59}$/.test(slug ?? ''), 'FRESH_CENSUS_SLUG_REQUIRED');
+  return { planFile, outputFile: `C:/w/admin637-public-raster-${slug}.json` };
+}
+
+export async function censusPublicRaster(planFile, slug, { explicitExecute = false } = {}) {
+  need(explicitExecute === true, 'EXPLICIT_PUBLIC_CENSUS_REQUIRED');
+  const input = validateCensusInputs(planFile, slug);
+  need(!fs.existsSync(input.outputFile), 'PRESERVE_PRIOR_PUBLIC_CENSUS');
+  const raw = JSON.parse(fs.readFileSync(input.planFile, 'utf8'));
+  need(raw.approved === false, 'UNAPPROVED_HELD_PLAN_REQUIRED');
+  const plan = validatePlan({ ...raw, approved: true });
+  need(hash(fs.readFileSync(HELPER)) === plan.helperSha256, 'FROZEN_PROOF_HELPER_REQUIRED');
+  const command = args => {
+    const result = spawnSync('git', args, { cwd: WORKTREE, encoding: 'utf8', timeout: TIMEOUT,
+      maxBuffer: 3_000_000, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
+    need(result.status === 0 && !result.signal && !result.error, 'BOUNDED_LOCAL_SOURCE_READ_FAILED');
+    return result.stdout;
+  };
+  const local = () => {
+    const binding = verifyLocalSource(plan, { git: command });
+    for (const file of ['scripts/agent/env.mjs', 'scripts/agent/evidence.mjs']) need(
+      hash(fs.readFileSync(path.join(PRIVATE_ROOT, file))) === hash(fs.readFileSync(path.join(WORKTREE, file))), 'BOUND_PRIVATE_SUPPORT_REQUIRED');
+    need(hash(fs.readFileSync(HELPER)) === plan.helperSha256, 'FROZEN_PROOF_HELPER_REQUIRED');
+    return binding;
+  };
+  const initialSourceBinding = local();
+  const images = plan.assets.filter(asset => /\.(?:png|webp)$/.test(asset.path));
+  need(images.length === 1, 'ONE_EXACT_REVIEWED_PUBLIC_RASTER_REQUIRED');
+  const asset = images[0], imageUrl = ORIGIN + asset.path, documentUrl = ORIGIN + '/overview';
+  const helperSha256 = hash(fs.readFileSync(fileURLToPath(import.meta.url)));
+  const receipt = { ticket: 'SCRUM-637', publicOnly: true, complete: false, startedAt: new Date().toISOString(), completedAt: null,
+    sourceSha: plan.sourceSha, ciRunId: plan.ciRunId, deployments: plan.deployments, planSha256: hash(fs.readFileSync(input.planFile)),
+    helperSha256, proofHelperSha256: plan.helperSha256, initialSourceBinding, finalSourceBinding: null,
+    asset: { path: asset.path, expectedSha256: asset.sha256, expectedContentType: asset.contentType },
+    viewport: { width: 1440, height: 1000 }, contexts: [], errorCode: null, browserClosed: false,
+    applicationAuthAttempts: 0, applicationApiCalls: 0, businessWrites: 0, rawBodiesSaved: false,
+    limitation: 'Public representation diagnosis only; no native app, authenticated context or acceptance screenshot.' };
+  // Source/route/release/installed runtime are proven before loading the original browser support.
+  const { launch } = await import(pathToFileURL(path.join(PRIVATE_ROOT, 'scripts/agent/evidence.mjs')).href);
+  let browser, firstFailure = null;
+  try {
+    browser = await launch();
+    for (const mode of ['about-blank', 'same-origin-overview']) {
+      const row = { mode, contextClosed: false, pending: 0, blocked: 0, documentFulfilledLocally: false, imageFetches: 0,
+        request: null, response: null, errorCode: null };
+      receipt.contexts.push(row);
+      let context, routeFailure = null, contextFailure = null;
+      const work = new Set();
+      try {
+        context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, serviceWorkers: 'block' });
+        const page = await context.newPage();
+        page.on('pageerror', () => { routeFailure ??= 'PUBLIC_PAGE_ERROR'; });
+        const html = '<!doctype html><html><head><meta name="referrer" content="same-origin">'
+          + '<link rel="icon" href="data:,"></head><body><img src="' + imageUrl + '"></body></html>';
+        await page.route('**/*', async route => {
+          row.pending++; let settle; const item = new Promise(resolve => { settle = resolve; }); work.add(item);
+          try {
+            need(!routeFailure, 'PUBLIC_CENSUS_ALREADY_FAILED');
+            const request = route.request(), headers = await request.allHeaders();
+            need(request.frame() === page.mainFrame() && request.method() === 'GET'
+              && !headers.cookie && !headers.authorization, 'PUBLIC_UNAUTHENTICATED_MAIN_FRAME_GET_REQUIRED');
+            if (mode === 'same-origin-overview' && request.url() === documentUrl && request.resourceType() === 'document') {
+              need(!row.documentFulfilledLocally && row.imageFetches === 0, 'ONE_LOCAL_DOCUMENT_REQUIRED');
+              row.documentFulfilledLocally = true;
+              await route.fulfill({ status: 200, contentType: 'text/html', body: html }); return;
+            }
+            need(request.url() === imageUrl && request.resourceType() === 'image' && row.imageFetches === 0
+              && (mode === 'about-blank' || row.documentFulfilledLocally), 'ONLY_EXACT_PUBLIC_RASTER_FETCH_ALLOWED');
+            const secFetchSite = headers['sec-fetch-site'] ?? 'absent';
+            need(['absent', 'none', 'same-origin', 'same-site', 'cross-site'].includes(secFetchSite), 'FINITE_SEC_FETCH_SITE_REQUIRED');
+            row.request = { acceptSha256: hash(headers.accept ?? ''), referrerSha256: hash(headers.referer ?? ''),
+              userAgentSha256: hash(headers['user-agent'] ?? ''), secFetchSite,
+              cookiePresent: false, authorizationPresent: false };
+            row.imageFetches++;
+            const response = await route.fetch({ maxRetries: 0, maxRedirects: 0, timeout: TIMEOUT });
+            need(response.status() === 200 && response.url() === imageUrl, 'EXACT_PUBLIC_IMAGE_200_REQUIRED');
+            const responseHeaders = response.headers(), declared = responseHeaders['content-length'];
+            need(declared === undefined || /^\d+$/.test(declared) && Number(declared) <= MAX_BYTES, 'PUBLIC_IMAGE_DECLARED_LIMIT');
+            const body = await response.body(); need(body.length > 0 && body.length <= MAX_BYTES, 'PUBLIC_IMAGE_BYTE_LIMIT');
+            const contentType = responseHeaders['content-type']?.split(';')[0].trim();
+            need(/^image\/(?:png|webp)$/.test(contentType), 'PUBLIC_IMAGE_MIME_REQUIRED');
+            row.response = { status: 200, sha256: hash(body), contentType, byteLength: body.length,
+              matchesExpectedHash: hash(body) === asset.sha256, matchesExpectedMime: contentType === asset.contentType };
+            const normalized = { ...responseHeaders };
+            for (const key of ['content-encoding', 'content-length', 'transfer-encoding', 'set-cookie']) delete normalized[key];
+            await route.fulfill({ status: 200, headers: normalized, body });
+          } catch (error) { routeFailure ??= codeOf(error); row.blocked++; await route.abort('blockedbyclient').catch(() => {}); }
+          finally { row.pending--; work.delete(item); settle(); }
+        });
+        if (mode === 'about-blank') await page.setContent(html);
+        else await page.goto(documentUrl, { waitUntil: 'domcontentloaded', timeout: TIMEOUT });
+        await page.waitForFunction(() => document.images.length === 1 && document.images[0].complete
+          && document.images[0].naturalWidth > 0, {}, { timeout: TIMEOUT });
+        need(!routeFailure && row.pending === 0 && row.imageFetches === 1 && row.request && row.response,
+          'PUBLIC_RASTER_OBSERVATION_INCOMPLETE');
+      } catch (error) { contextFailure = routeFailure ?? codeOf(error); }
+      finally {
+        try { if (context) { await context.close(); row.contextClosed = true; } }
+        catch (error) { contextFailure ??= codeOf(error); }
+        finally { await Promise.allSettled([...work]); }
+      }
+      row.errorCode = contextFailure ?? routeFailure;
+      need(!row.errorCode && row.contextClosed && row.pending === 0, row.errorCode ?? 'PUBLIC_CONTEXT_CLEANUP_REQUIRED');
+    }
+  } catch (error) { firstFailure = error; receipt.errorCode ??= codeOf(error); }
+  finally {
+    try { if (browser) { await browser.close(); receipt.browserClosed = true; } }
+    catch (error) { firstFailure ??= error; receipt.errorCode ??= codeOf(error); }
+  }
+  try { receipt.finalSourceBinding = local(); need(hash(fs.readFileSync(fileURLToPath(import.meta.url))) === helperSha256, 'FROZEN_CENSUS_HELPER_CHANGED'); }
+  catch (error) { firstFailure ??= error; receipt.errorCode ??= codeOf(error); }
+  receipt.completedAt = new Date().toISOString();
+  receipt.complete = !firstFailure && receipt.browserClosed && receipt.contexts.length === 2
+    && receipt.contexts.every(row => row.contextClosed && row.pending === 0 && row.blocked === 0 && row.imageFetches === 1 && !row.errorCode);
+  fs.writeFileSync(input.outputFile, JSON.stringify(receipt, null, 2) + '\n', { flag: 'wx', flush: true });
+  return { complete: receipt.complete, outputFile: input.outputFile, errorCode: receipt.errorCode,
+    applicationAuthAttempts: 0, applicationApiCalls: 0, businessWrites: 0 };
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
+  try {
+    need(process.argv.length === 5 && process.argv[2] === '--census', 'USAGE_CENSUS_HELD_PLAN_FRESH_SLUG');
+    const result = await censusPublicRaster(process.argv[3], process.argv[4], { explicitExecute: true });
+    process.stdout.write(JSON.stringify(result) + '\n'); if (!result.complete) process.exitCode = 1;
+  } catch (error) { process.stderr.write(codeOf(error) + '\n'); process.exitCode = 1; }
+}

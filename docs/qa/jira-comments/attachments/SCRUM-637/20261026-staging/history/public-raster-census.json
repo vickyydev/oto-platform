@@ -1,0 +1,106 @@
+{
+  "ticket": "SCRUM-637",
+  "publicOnly": true,
+  "complete": true,
+  "startedAt": "2026-10-25T20:47:37.730Z",
+  "completedAt": "2026-10-25T20:47:40.291Z",
+  "sourceSha": "3202967eb331c28d450e9a1ba5336aaa0693bab8",
+  "ciRunId": "40229665720",
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "serviceId": "srv-danh2ljtqb8s73bt9en0",
+      "id": "dep-dbf6f0rbc2fs738sk6gg",
+      "finishedAt": "2026-10-25T20:36:09.734844Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "serviceId": "srv-danng2p42hec73f38e3g",
+      "id": "dep-dbf6f0rbc2fs738sk7og",
+      "finishedAt": "2026-10-25T20:33:44.903251Z"
+    }
+  ],
+  "planSha256": "9fa1c0dcf40e475abf9ce652475dfcf93e7283a8b0e1b918385174c2cb6e8a6b",
+  "helperSha256": "d97dbb65074c6122ad133e8c62b5e14ce03c796323301e2d65d066442cb9ac30",
+  "proofHelperSha256": "85a4a36a0cbeb9bb6a5b58a392a5704c79f042d19c859106f173bda091db9310",
+  "initialSourceBinding": {
+    "files": 3781,
+    "sourceManifestSha256": "261ac9f76976c5290a7127346136d7edcfc4fe05a94e079ed051425b3b8ebe2c",
+    "featureTreeSha256": "902663dbf97f2da053d33dc6b16bc9028cc219ddb3958a63f41bf5faf60feab7",
+    "runtimeBindingsSha256": "de054588bd36ddafeb42e41b4830e2dcd84d04e95752a07dd81b2f72e7b2e7b8"
+  },
+  "finalSourceBinding": {
+    "files": 3781,
+    "sourceManifestSha256": "261ac9f76976c5290a7127346136d7edcfc4fe05a94e079ed051425b3b8ebe2c",
+    "featureTreeSha256": "902663dbf97f2da053d33dc6b16bc9028cc219ddb3958a63f41bf5faf60feab7",
+    "runtimeBindingsSha256": "de054588bd36ddafeb42e41b4830e2dcd84d04e95752a07dd81b2f72e7b2e7b8"
+  },
+  "asset": {
+    "path": "/assets/logo-oto-nNYXf9Wy.png",
+    "expectedSha256": "5a0b8f6a955104f777c9d287ac91e869e349c24a479dd694d07339d4fa689a02",
+    "expectedContentType": "image/png"
+  },
+  "viewport": {
+    "width": 1440,
+    "height": 1000
+  },
+  "contexts": [
+    {
+      "mode": "about-blank",
+      "contextClosed": true,
+      "pending": 0,
+      "blocked": 0,
+      "documentFulfilledLocally": false,
+      "imageFetches": 1,
+      "request": {
+        "acceptSha256": "54f235f31b3873cee918ef5abfe8cd3aa4ac55eb21d5bbd9fe8ef2e0a8cf0bc7",
+        "referrerSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "userAgentSha256": "d72997d1fbd1e2478b6e633c0414d949e3b1378df3b4771bd73c5917cb4a60d7",
+        "secFetchSite": "absent",
+        "cookiePresent": false,
+        "authorizationPresent": false
+      },
+      "response": {
+        "status": 200,
+        "sha256": "17a3ee3cd02ce9440ecba6ca182c17865c714584d126805d6bd7931e4fbae150",
+        "contentType": "image/webp",
+        "byteLength": 109836,
+        "matchesExpectedHash": false,
+        "matchesExpectedMime": false
+      },
+      "errorCode": null
+    },
+    {
+      "mode": "same-origin-overview",
+      "contextClosed": true,
+      "pending": 0,
+      "blocked": 0,
+      "documentFulfilledLocally": true,
+      "imageFetches": 1,
+      "request": {
+        "acceptSha256": "54f235f31b3873cee918ef5abfe8cd3aa4ac55eb21d5bbd9fe8ef2e0a8cf0bc7",
+        "referrerSha256": "50e92d37463aa88f78c04d008d09924b425b25202b4a1d936f62414f018a44af",
+        "userAgentSha256": "d72997d1fbd1e2478b6e633c0414d949e3b1378df3b4771bd73c5917cb4a60d7",
+        "secFetchSite": "absent",
+        "cookiePresent": false,
+        "authorizationPresent": false
+      },
+      "response": {
+        "status": 200,
+        "sha256": "17a3ee3cd02ce9440ecba6ca182c17865c714584d126805d6bd7931e4fbae150",
+        "contentType": "image/webp",
+        "byteLength": 109836,
+        "matchesExpectedHash": false,
+        "matchesExpectedMime": false
+      },
+      "errorCode": null
+    }
+  ],
+  "errorCode": null,
+  "browserClosed": true,
+  "applicationAuthAttempts": 0,
+  "applicationApiCalls": 0,
+  "businessWrites": 0,
+  "rawBodiesSaved": false,
+  "limitation": "Public representation diagnosis only; no native app, authenticated context or acceptance screenshot."
+}

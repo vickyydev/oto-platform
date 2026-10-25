@@ -1,0 +1,11 @@
+{
+  "ticket": "SCRUM-637",
+  "synthetic": true,
+  "authAttempts": 0,
+  "networkRequests": 0,
+  "startedAt": "2026-10-25T21:00:04.541Z",
+  "exactLabelCount": 0,
+  "exactComboboxCount": 1,
+  "nativeSelectionPassed": true,
+  "completedAt": "2026-10-25T21:00:04.787Z"
+}
