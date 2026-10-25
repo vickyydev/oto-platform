@@ -1,3 +1,9 @@
+## Q18 local release, 25 October 2026
+
+All368 API files/5510 cases,171 focused cases,16 compilers/five builds, client contracts/10 cases and lint pass on the exact source in [local-release.json](local-release.json). Raw RED/GREEN, compiler and full-shard receipts/logs are in q18-local/. [q18-local/progress.json](q18-local/progress.json) proves the narrow source delta and three line-ending-only differences against original archives. All earlier failed runs and their original source/date remain retained.
+
+Q18 permits explicit unavailable spend: null/no_rate_configured, full unpriced remainder, USD and cache-write exclusion. No price/rate is invented. The helper now passes22 offline pins plus the actual five-schema local loader, but no live proof is claimed at this checkpoint. Source CI, automatic rollout and staging screenshot follow.
+
 # SCRUM-636 independent implementation checkpoint
 
 The five reach-filtered read-only aggregate routes are implemented locally. Full story acceptance is held for Q18: the approved proposal asks for a spend estimate, but no approved priced source exists. No monetary estimate or substituted unavailable-cost acceptance is claimed. Q17's additional registered-profile-total proposal is withdrawn; the approved park/day visit records and distinct visiting-member counts are implemented.

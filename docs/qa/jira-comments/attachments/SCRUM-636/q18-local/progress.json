@@ -1,0 +1,114 @@
+{
+  "ticket": "SCRUM-636",
+  "recordedAt": "2026-10-25T06:34:24.337Z",
+  "sourceManifestSha256": "29fee2fa40ca0523ce4b2002d19e4ad875e6535d4ff8c3f073b01666f8d71e52",
+  "previousManifestSha256": "53d5caf7b1f7fc99bc8b6a5a76e5dfde2101b7943112f5edf667532969f77ce5",
+  "runtimeSourceDelta": [
+    "apps/api/src/routes/aggregates.ts",
+    "apps/api/src/services/aggregates-ai.ts",
+    "apps/api/src/services/aggregates-bookings.ts",
+    "apps/api/src/services/aggregates-fleet.ts",
+    "apps/api/test/aggregates-ai.test.ts",
+    "apps/api/test/aggregates-domain.test.ts",
+    "apps/api/test/s636-aggregates-review.test.ts",
+    "packages/api-types/openapi.json",
+    "packages/api-types/src/openapi.ts"
+  ],
+  "lineEndings": [
+    {
+      "path": "apps/api/src/services/aggregates-bookings.ts",
+      "archive": "source-1792900416150.tar",
+      "normalizedBytesIdentical": true
+    },
+    {
+      "path": "apps/api/src/services/aggregates-fleet.ts",
+      "archive": "source-1792900416150.tar",
+      "normalizedBytesIdentical": true
+    },
+    {
+      "path": "apps/api/test/aggregates-domain.test.ts",
+      "archive": "source-1792900195894.tar",
+      "normalizedBytesIdentical": true
+    }
+  ],
+  "allOtherRuntimeSourcesIdentical": true,
+  "unchangedPackageTests": "independent-checks.json and local/ retain their original source frame and date; only API source, API tests and generated declarations differ",
+  "freshFocused": {
+    "files": 8,
+    "passed": 171
+  },
+  "freshTypechecks": 16,
+  "freshBuilds": 5,
+  "fullApiShards": "running; not yet accepted",
+  "pricingRuling": "PLAN Q18; Jira12568; main701aa00489c3db6134e6fb34194ff6627e79b600",
+  "copied": [
+    {
+      "path": "q18-local/q18-red.json",
+      "sha256": "132a01432acab081d267043e7d15962f6e2997f8e23ce83263f0c6d8f0a15a66"
+    },
+    {
+      "path": "q18-local/q18-red.log",
+      "sha256": "b316a5bbdee62c4ad82664c7b4592076aaac0646b56d94e8c164d9d82b4e3974"
+    },
+    {
+      "path": "q18-local/q18-red-v2.json",
+      "sha256": "e08f566d44f37957f8770c234af664d51a1dc6a1f4e17636868efd9f57f2d7ab"
+    },
+    {
+      "path": "q18-local/q18-red-v2.log",
+      "sha256": "f67b93d0c33f2598abb7bcd197ed6b23629c7bf8dbd3840dd44b2688783feba0"
+    },
+    {
+      "path": "q18-local/q18-focused-green.json",
+      "sha256": "38e0d7436bb31ea3b36f8344ad56da7aa0514e447a4a6752efdaa1ef28f2e4df"
+    },
+    {
+      "path": "q18-local/q18-focused-green.log",
+      "sha256": "d910d0dd55c890c8c51fe6291847487b0cb373092ce16bb727dd7aeb6c428c6c"
+    },
+    {
+      "path": "q18-local/q18-compilers-contracts.json",
+      "sha256": "18e40bfb39d69d46873ca2212e0a12d26d8c6fdfebfa5c8767d8b42f2e2ee466"
+    },
+    {
+      "path": "q18-local/q18-compilers-contracts.log",
+      "sha256": "0b470e12a3d1aad738f0576e94d2c5a32d997aba482f40c41eb3593fba67469c"
+    },
+    {
+      "path": "q18-local/q18-lint.json",
+      "sha256": "04f36062f45bba1333c000e067da46cdd394b3547241f5a8c8acd979d6792efa"
+    },
+    {
+      "path": "q18-local/q18-lint.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "q18-local/q18-workspace-typecheck.json",
+      "sha256": "2c542ee56ec98bb84663c4f476f676729ce873c153d8b0b68a482d6947e4c216"
+    },
+    {
+      "path": "q18-local/q18-workspace-typecheck.log",
+      "sha256": "d871573abe9711eb34d8ecfb391b08609352dd3cf914ea25f59cd532fe0ecf06"
+    },
+    {
+      "path": "q18-local/schema-loader.json",
+      "sha256": "1d3e1b1e78dd713f571b4fe6ee31637efb78b84059c3818df6a3e378f5abfb28"
+    },
+    {
+      "path": "q18-local/proof-helper-q18-red.json",
+      "sha256": "2f802aa48c574f051c782b8544f0937238570843ae59a77b8591c305efc47f3b"
+    },
+    {
+      "path": "q18-local/proof-helper-q18-red.log",
+      "sha256": "87bba2355278acbc0b09eac4ee5421f32efe9a97cb0c6366b15513198e013a88"
+    },
+    {
+      "path": "q18-local/proof-helper-q18-green.json",
+      "sha256": "91f3060d779b3489929782cc1a0e2b80c5314b6b2446353471151ecff9c6bc62"
+    },
+    {
+      "path": "q18-local/proof-helper-q18-green.log",
+      "sha256": "829f6f27b4c2dac2a998b60b7b5412f61c11d3b568f654686c0fe2c768348a87"
+    }
+  ]
+}

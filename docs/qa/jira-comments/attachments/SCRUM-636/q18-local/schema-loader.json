@@ -1,0 +1,11 @@
+{
+  "ticket": "SCRUM-636",
+  "at": "2026-10-25T06:32:30.761Z",
+  "mode": "LOCAL_SCHEMA_LOADER_ONLY",
+  "actualSchemas": 5,
+  "runtimeBindingsSha256": "bc8c0a1a070446d90596a8b874b9074d6937802b8fbfe80be3af5e1a821e580a",
+  "helperSha256": "66ab16ec60f6deec78e5c920d01429c1795c151a2c7de3aa068f2a5e55e5fce3",
+  "network": false,
+  "auth": false,
+  "staging": false
+}

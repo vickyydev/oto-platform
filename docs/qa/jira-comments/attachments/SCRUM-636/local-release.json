@@ -1,0 +1,100 @@
+{
+  "ticket": "SCRUM-636",
+  "recordedAt": "2026-10-25T06:43:10.708Z",
+  "localReleaseGreen": true,
+  "sourceManifestSha256": "29fee2fa40ca0523ce4b2002d19e4ad875e6535d4ff8c3f073b01666f8d71e52",
+  "api": {
+    "files": 368,
+    "passed": 5510,
+    "skipped": 3,
+    "todo": 5
+  },
+  "focused": {
+    "files": 8,
+    "passed": 171
+  },
+  "workspace": {
+    "typechecks": 16,
+    "builds": 5,
+    "cached": 0,
+    "compilerDiagnostics": 0
+  },
+  "generatedClient": {
+    "contractMatches": true,
+    "tests": 10
+  },
+  "changedFileLint": true,
+  "postRebaseGates": true,
+  "unchangedPackageTests": {
+    "reference": "independent-checks.json",
+    "deltaReference": "q18-local/progress.json",
+    "note": "Original dates and source frames retained; all other package runtime sources are byte-identical. The six logical changes are API implementation/tests and generated declarations. Three additional API file differences are proven line endings only."
+  },
+  "q18": {
+    "resolved": true,
+    "reference": "PLAN Q18; Jira12568; main701aa00489c3db6134e6fb34194ff6627e79b600",
+    "spendEstimate": null,
+    "reason": "no_rate_configured",
+    "unpricedTokens": "all scoped input + output + cache-read tokens",
+    "currency": "USD",
+    "excludesCacheWrites": true
+  },
+  "proofHelper": {
+    "sha256": "66ab16ec60f6deec78e5c920d01429c1795c151a2c7de3aa068f2a5e55e5fce3",
+    "offlineCases": 22,
+    "actualSchemaLoader": true,
+    "stagingExecuted": false
+  },
+  "gates": [
+    {
+      "name": "q18-api-shard-1",
+      "sourceManifestSha256": "29fee2fa40ca0523ce4b2002d19e4ad875e6535d4ff8c3f073b01666f8d71e52",
+      "logSha256": "254b182d2f640fe48546a3e57f52040f5a4a31565e88107da89ba8ef3decd7bb",
+      "completedAt": "2026-10-25T06:41:26.801Z"
+    },
+    {
+      "name": "q18-api-shard-2",
+      "sourceManifestSha256": "29fee2fa40ca0523ce4b2002d19e4ad875e6535d4ff8c3f073b01666f8d71e52",
+      "logSha256": "4356ca8f7bd333ac32df98c33ad92ff89ed02b0eb12939b661a3732f24406fbd",
+      "completedAt": "2026-10-25T06:41:07.860Z"
+    },
+    {
+      "name": "q18-api-shard-3",
+      "sourceManifestSha256": "29fee2fa40ca0523ce4b2002d19e4ad875e6535d4ff8c3f073b01666f8d71e52",
+      "logSha256": "ce55f3d31b451aa14988ac9b1c80d8c76be19e33f1297afae79008ec93d24314",
+      "completedAt": "2026-10-25T06:42:57.868Z"
+    },
+    {
+      "name": "q18-focused-green",
+      "sourceManifestSha256": "29fee2fa40ca0523ce4b2002d19e4ad875e6535d4ff8c3f073b01666f8d71e52",
+      "logSha256": "d910d0dd55c890c8c51fe6291847487b0cb373092ce16bb727dd7aeb6c428c6c",
+      "completedAt": "2026-10-25T06:27:56.753Z"
+    },
+    {
+      "name": "q18-compilers-contracts",
+      "sourceManifestSha256": "29fee2fa40ca0523ce4b2002d19e4ad875e6535d4ff8c3f073b01666f8d71e52",
+      "logSha256": "0b470e12a3d1aad738f0576e94d2c5a32d997aba482f40c41eb3593fba67469c",
+      "completedAt": "2026-10-25T06:28:31.355Z"
+    },
+    {
+      "name": "q18-lint",
+      "sourceManifestSha256": "29fee2fa40ca0523ce4b2002d19e4ad875e6535d4ff8c3f073b01666f8d71e52",
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "completedAt": "2026-10-25T06:27:37.703Z"
+    },
+    {
+      "name": "q18-workspace-typecheck",
+      "sourceManifestSha256": "29fee2fa40ca0523ce4b2002d19e4ad875e6535d4ff8c3f073b01666f8d71e52",
+      "logSha256": "d871573abe9711eb34d8ecfb391b08609352dd3cf914ea25f59cd532fe0ecf06",
+      "completedAt": "2026-10-25T06:32:08.956Z"
+    },
+    {
+      "name": "post-rebase-gates",
+      "sourceManifestSha256": "29fee2fa40ca0523ce4b2002d19e4ad875e6535d4ff8c3f073b01666f8d71e52",
+      "logSha256": "b835467f9b2c2eb9aec20865efce0c18022aaabe668aa9f7b6950a9fe4a62970",
+      "completedAt": "2026-10-25T06:38:52.785Z"
+    }
+  ],
+  "migration": false,
+  "stagingAccepted": false
+}

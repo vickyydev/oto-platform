@@ -1,0 +1,15 @@
+{
+  "ticket": "SCRUM-636",
+  "name": "q18-red",
+  "command": "cd apps/api && pnpm test test/aggregates-ai.test.ts test/s636-aggregates-review.test.ts",
+  "startedAt": "2026-10-25T06:25:30.233Z",
+  "completedAt": "2026-10-25T06:25:42.223Z",
+  "exitCode": 1,
+  "signal": null,
+  "sourceManifestSha256": "9c444e476973a2b51db73a7e084e9f01fba07454884f0be3fb56e2710d09e3c6",
+  "logSha256": "b316a5bbdee62c4ad82664c7b4592076aaac0646b56d94e8c164d9d82b4e3974",
+  "hostSourceUnchanged": true,
+  "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+  "hostAndContainerApiDocsUnchanged": true,
+  "staging": false
+}

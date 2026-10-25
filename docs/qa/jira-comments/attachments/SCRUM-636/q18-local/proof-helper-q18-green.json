@@ -1,0 +1,21 @@
+{
+  "ticket": "SCRUM-636",
+  "phase": "green",
+  "mode": "OFFLINE_ONLY",
+  "startedAt": "2026-10-25T06:30:59.979Z",
+  "completedAt": "2026-10-25T06:31:00.194Z",
+  "exitCode": 0,
+  "signal": null,
+  "tests": 22,
+  "pass": 22,
+  "fail": 0,
+  "helperSha256": "66ab16ec60f6deec78e5c920d01429c1795c151a2c7de3aa068f2a5e55e5fce3",
+  "helperAfterSha256": "66ab16ec60f6deec78e5c920d01429c1795c151a2c7de3aa068f2a5e55e5fce3",
+  "helperUnchanged": true,
+  "testsSha256": "597aa8c28f6f8f63f13cfa6205e97d4bae6d82ba80889d84d1b3e50eb94230a4",
+  "log": "C:/w/admin636-proof-review-q18-green.log",
+  "logSha256": "829f6f27b4c2dac2a998b60b7b5412f61c11d3b568f654686c0fe2c768348a87",
+  "liveExecution": false,
+  "networkAllowed": false,
+  "note": "Actual extracted aggregate/card/source/cleanup code with synthetic bindings; no full helper, env, application imports, auth, browser or metadata calls."
+}

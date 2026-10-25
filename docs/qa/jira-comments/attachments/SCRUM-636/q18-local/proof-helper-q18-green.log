@@ -1,0 +1,142 @@
+TAP version 13
+# Subtest: import is inert; no network dispatch
+ok 1 - import is inert; no network dispatch
+  ---
+  duration_ms: 0.9238
+  type: 'test'
+  ...
+# Subtest: plan refuses missing approval, unresolved rulings, wrong actors, invalid dates and source
+ok 2 - plan refuses missing approval, unresolved rulings, wrong actors, invalid dates and source
+  ---
+  duration_ms: 2.882
+  type: 'test'
+  ...
+# Subtest: exact request grammar refuses all business writers, foreign paths and query/body escapes
+ok 3 - exact request grammar refuses all business writers, foreign paths and query/body escapes
+  ---
+  duration_ms: 0.7702
+  type: 'test'
+  ...
+# Subtest: armed negative grammar is limited to aggregate GETs and finite known query keys
+ok 4 - armed negative grammar is limited to aggregate GETs and finite known query keys
+  ---
+  duration_ms: 0.8014
+  type: 'test'
+  ...
+# Subtest: Overview reach requires the named permission and exact operator or branch scope
+ok 5 - Overview reach requires the named permission and exact operator or branch scope
+  ---
+  duration_ms: 1.1563
+  type: 'test'
+  ...
+# Subtest: actual pre-import prefix accepts an unchanged synthetic source and blocks route drift
+ok 6 - actual pre-import prefix accepts an unchanged synthetic source and blocks route drift
+  ---
+  duration_ms: 13.7789
+  type: 'test'
+  ...
+# Subtest: FINDING P1 R12: current dependency drift must block before schema import
+ok 7 - FINDING P1 R12: current dependency drift must block before schema import
+  ---
+  duration_ms: 1.3179
+  type: 'test'
+  ...
+# Subtest: actual close verifies original cookie after successful logout, and refuses a still-live cookie
+ok 8 - actual close verifies original cookie after successful logout, and refuses a still-live cookie
+  ---
+  duration_ms: 0.4221
+  type: 'test'
+  ...
+# Subtest: FINDING P2 R13: timeout logout must still attempt independent original-cookie revocation read
+ok 9 - FINDING P2 R13: timeout logout must still attempt independent original-cookie revocation read
+  ---
+  duration_ms: 0.3984
+  type: 'test'
+  ...
+# Subtest: cleanup after one timeout remains independent for another context
+ok 10 - cleanup after one timeout remains independent for another context
+  ---
+  duration_ms: 0.5529
+  type: 'test'
+  ...
+# Subtest: actual release closure blocks wrong SHA, incomplete CI, duplicate jobs and red jobs before any Render/auth request
+ok 11 - actual release closure blocks wrong SHA, incomplete CI, duplicate jobs and red jobs before any Render/auth request
+  ---
+  duration_ms: 4.481
+  type: 'test'
+  ...
+# Subtest: R12 calibration: archived old helper accepts dependency drift; current rejects it with unchanged blobs
+ok 12 - R12 calibration: archived old helper accepts dependency drift; current rejects it with unchanged blobs
+  ---
+  duration_ms: 2.6676
+  type: 'test'
+  ...
+# Subtest: R12 full binding refuses changed service/lock inputs, extra source, nonregular files and Git diff
+ok 13 - R12 full binding refuses changed service/lock inputs, extra source, nonregular files and Git diff
+  ---
+  duration_ms: 1.7399
+  type: 'test'
+  ...
+# Subtest: R12 installed schema-loader metadata drift is refused before import
+ok 14 - R12 installed schema-loader metadata drift is refused before import
+  ---
+  duration_ms: 0.5165
+  type: 'test'
+  ...
+# Subtest: R12 sourceGate rechecks actual current local inputs before remote/auth/capture work
+ok 15 - R12 sourceGate rechecks actual current local inputs before remote/auth/capture work
+  ---
+  duration_ms: 0.6876
+  type: 'test'
+  ...
+# Subtest: R13 calibration: archived old helper skips timeout probe; current probes but retains unknown and incomplete cleanup
+ok 16 - R13 calibration: archived old helper skips timeout probe; current probes but retains unknown and incomplete cleanup
+  ---
+  duration_ms: 0.2881
+  type: 'test'
+  ...
+# Subtest: offline suite performed no global network dispatch
+ok 17 - offline suite performed no global network dispatch
+  ---
+  duration_ms: 0.0632
+  type: 'test'
+  ...
+# Subtest: Q18 actual aggregate closure accepts genuine unavailable metadata and nonzero/zero-day remainders
+ok 18 - Q18 actual aggregate closure accepts genuine unavailable metadata and nonzero/zero-day remainders
+  ---
+  duration_ms: 0.9913
+  type: 'test'
+  ...
+# Subtest: Q18 actual aggregate closure refuses wrong/missing currency or cache-write scope
+ok 19 - Q18 actual aggregate closure refuses wrong/missing currency or cache-write scope
+  ---
+  duration_ms: 0.4761
+  type: 'test'
+  ...
+# Subtest: Q18 actual aggregate closure refuses priced/null-reason and false remainder in every metric bucket
+ok 20 - Q18 actual aggregate closure refuses priced/null-reason and false remainder in every metric bucket
+  ---
+  duration_ms: 2.3145
+  type: 'test'
+  ...
+# Subtest: Q18 actual receipt-only card explicitly labels unavailable USD, no configured rate, unpriced tokens and cache-write exclusion
+ok 21 - Q18 actual receipt-only card explicitly labels unavailable USD, no configured rate, unpriced tokens and cache-write exclusion
+  ---
+  duration_ms: 0.9301
+  type: 'test'
+  ...
+# Subtest: Q18 additions performed no global network dispatch
+ok 22 - Q18 additions performed no global network dispatch
+  ---
+  duration_ms: 0.0623
+  type: 'test'
+  ...
+1..22
+# tests 22
+# suites 0
+# pass 22
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 145.6146
