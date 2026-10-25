@@ -315,6 +315,8 @@ Planner Q19 (2026-10-25, SCRUM-637; digest registration scope): approved PLAN se
 | P4-4 | Platform section: operators, system roles, platform alerts and jobs, environment, test controls |
 | P4-5 | Operator switch: `session.operator_override`, the route, the picker, the audit, every read and write honouring it |
 
+Planner Q20 (2026-10-25, SCRUM-640; effective-operator integration scope): the approved session override needs narrow changes in apps/api/src/plugins/session.ts (live effective context), routes/me.ts (effective operator metadata, home account unchanged), services/handoff.ts (live exchange context), and plugins/idempotency.ts (prevent a cached write result from another operator context, preserving existing retry behavior). May the lane own those scoped changes and their regressions? A picker/column alone cannot fulfil every read/write honoring the override. Protected assistant tool calls re-resolve a captured cookie mid-ask: planner-owned context/attribution tests and any required protected-file changes must accompany this seam; the Console lane will not edit them. This is read-only preparation, not640 pickup, and636 release continues independently.
+
 Acceptance: the owner opens one page and sees the park's day; a second operator can be entered and left, audited.
 
 ## 11. Risks held
