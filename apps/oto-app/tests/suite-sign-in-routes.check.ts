@@ -242,3 +242,7 @@ try {
 if (process.env.CI === "true" || process.env.SCRUM_633_SUITE === "1") {
   await import("./s633-suite.check");
 }
+
+if (process.env.CI === "true" || process.env.SCRUM_634_SUITE === "1") {
+  await import("./s634-suite.check");
+}

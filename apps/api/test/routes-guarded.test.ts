@@ -34,6 +34,14 @@ afterAll(async () => {
 const NOT_OURS = new Set(['/*']);
 
 describe('route guards (S2-01b)', () => {
+  it('requires a session before the Staff summary dynamic two-permission check (SCRUM-634)', async () => {
+    const route = ctx.app.routeRegistry.find(r => r.method === 'GET' && r.url === '/staff/summary');
+    expect(route?.config.dynamicPermission).toBe(true);
+    expect(route?.config.public).not.toBe(true);
+    expect(route?.config.credential).toBeUndefined();
+    expect((await ctx.app.inject({ method: 'GET', url: '/staff/summary' })).statusCode).toBe(401);
+  });
+
   it('binds lifecycle delivery to the OTO App operator credential before body validation (SCRUM-633)', async () => {
     const url = '/admin/apps/oto_app/lifecycle-deactivations';
     const route = ctx.app.routeRegistry.find(r => r.method === 'POST' && r.url === url);

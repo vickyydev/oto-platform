@@ -1,0 +1,214 @@
+{
+  "ticket": "SCRUM-634",
+  "passed": true,
+  "reviewedAt": "2026-10-25T02:07:27.329Z",
+  "sourceManifestSha256": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+  "sourceFiles": 3753,
+  "workspace": {
+    "receiptPath": "C:/w/admin634-integrated/workspace-final-checks.json",
+    "receiptSha256": "6f16c94728c2d32c056162206df149a8c44522f4af28be255e260045fe499385",
+    "logPath": "C:/w/admin634-integrated/workspace-final-checks.log",
+    "logSha256": "357ec8705174b897524239a836e47c348e69c464906aafde9bf28541fe260086",
+    "fullOutputRead": true,
+    "logLines": 228,
+    "readRanges": [
+      [
+        1,
+        84
+      ],
+      [
+        85,
+        168
+      ],
+      [
+        169,
+        228
+      ]
+    ],
+    "exitCode": 0,
+    "signal": null,
+    "startedAt": "2026-10-25T01:59:35.960Z",
+    "completedAt": "2026-10-25T02:03:23.624Z",
+    "hostSourceUnchanged": true,
+    "hostAndContainerApiDocsUnchanged": true,
+    "typecheckTaskCount": 16,
+    "typecheckPackages": [
+      "@oto/shared",
+      "@oto/print",
+      "@oto/telemetry",
+      "@oto/messaging",
+      "@oto/assistant",
+      "@oto/booth",
+      "@oto/db",
+      "@oto/api-types",
+      "@oto/payments-2c2p",
+      "@oto/box-agent",
+      "@oto/pos",
+      "@oto/admin-screens",
+      "@oto/launcher",
+      "@oto/inbox",
+      "@oto/api",
+      "@oto/console"
+    ],
+    "typecheckDiagnostics": 0,
+    "apiDiagnostics": 0,
+    "buildTaskCount": 5,
+    "buildPackages": [
+      "@oto/booth",
+      "@oto/pos",
+      "@oto/inbox",
+      "@oto/launcher",
+      "@oto/console"
+    ],
+    "successfulCombinedTasks": 21,
+    "totalCombinedTasks": 21,
+    "cachedTasks": 0,
+    "buildCompletions": 5,
+    "apiTypesMatch": true,
+    "lintErrors": 0,
+    "lintWarnings": 8,
+    "lintWarningSourceAndConfigUnchangedFromPrior633": true,
+    "priorManifestSha256": "29d46a6af64025ee2e8701d688009d79e0d0d2f4410f1e483225bdca95f83dd2",
+    "lintInputParity": [
+      {
+        "path": "apps/api/test/offline-checkin.test.ts",
+        "sha256": "c192ece36f32385380d0ca87fccf53326f581361b708683b47e2f5cb44c71f38",
+        "priorSha256": "c192ece36f32385380d0ca87fccf53326f581361b708683b47e2f5cb44c71f38"
+      },
+      {
+        "path": "apps/api/test/vouchers-r5-gate.test.ts",
+        "sha256": "5b7bb0386806f53f6d58599405df582336ac893891e4eca62065db4307bc7763",
+        "priorSha256": "5b7bb0386806f53f6d58599405df582336ac893891e4eca62065db4307bc7763"
+      },
+      {
+        "path": "apps/api/test/wallet-r5-closing-audit.test.ts",
+        "sha256": "adaca6f95d79c51ee73835aca147ac897a24beb18045cf713343eecd87e2ca14",
+        "priorSha256": "adaca6f95d79c51ee73835aca147ac897a24beb18045cf713343eecd87e2ca14"
+      },
+      {
+        "path": "packages/admin-screens/src/lifted/components/admin/menu/ImportMenuDialog.tsx",
+        "sha256": "69c3691189b5bea6642849ccd458e7b7a4e5a218684d43f789672c1bec0dfe62",
+        "priorSha256": "69c3691189b5bea6642849ccd458e7b7a4e5a218684d43f789672c1bec0dfe62"
+      },
+      {
+        "path": "packages/admin-screens/src/lifted/components/admin/staff-benefits/BenefitQrDialog.tsx",
+        "sha256": "5aaebedc56fad1285b4145a8d2c5a4536ecce86bb394ac8f27de99b79c3e1fff",
+        "priorSha256": "5aaebedc56fad1285b4145a8d2c5a4536ecce86bb394ac8f27de99b79c3e1fff"
+      },
+      {
+        "path": "packages/admin-screens/src/lifted/components/admin/staff-benefits/StaffBenefitsPanel.tsx",
+        "sha256": "50b2309cc60924b8f7ca3d22052bd29607eaa10ca4711a9b2ea6b2e8db2bd6c0",
+        "priorSha256": "50b2309cc60924b8f7ca3d22052bd29607eaa10ca4711a9b2ea6b2e8db2bd6c0"
+      },
+      {
+        "path": "packages/admin-screens/src/lifted/components/admin/templates/TemplatesPanel.tsx",
+        "sha256": "e6fb71068e91cce6201437ecff37d8c882ce6c440be61c1d307b4bca7f858374",
+        "priorSha256": "e6fb71068e91cce6201437ecff37d8c882ce6c440be61c1d307b4bca7f858374"
+      },
+      {
+        "path": "eslint.config.mjs",
+        "sha256": "e8b581999e0d8243b661be1c86473cfa85c0ecb0846ac4736d20b4bf3ebcf0c2",
+        "priorSha256": "e8b581999e0d8243b661be1c86473cfa85c0ecb0846ac4736d20b4bf3ebcf0c2"
+      }
+    ],
+    "warningEntries": [
+      {
+        "path": "apps/api/test/offline-checkin.test.ts",
+        "warning": "134:97  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any"
+      },
+      {
+        "path": "apps/api/test/vouchers-r5-gate.test.ts",
+        "warning": "90:118  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any"
+      },
+      {
+        "path": "apps/api/test/wallet-r5-closing-audit.test.ts",
+        "warning": "107:103  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any"
+      },
+      {
+        "path": "packages/admin-screens/src/lifted/components/admin/menu/ImportMenuDialog.tsx",
+        "warning": "67:96  warning  The ref value 'generation.current' will likely have changed by the time this effect cleanup function runs. If this ref points to a node rendered by React, copy 'generation.current' to a variable inside the effect, and use that variable in the cleanup function  react-hooks/exhaustive-deps"
+      },
+      {
+        "path": "packages/admin-screens/src/lifted/components/admin/staff-benefits/BenefitQrDialog.tsx",
+        "warning": "47:98  warning  The ref value 'requestEpoch.current' will likely have changed by the time this effect cleanup function runs. If this ref points to a node rendered by React, copy 'requestEpoch.current' to a variable inside the effect, and use that variable in the cleanup function  react-hooks/exhaustive-deps"
+      },
+      {
+        "path": "packages/admin-screens/src/lifted/components/admin/staff-benefits/StaffBenefitsPanel.tsx",
+        "warning": "93:95   warning  The ref value 'readEpoch.current' will likely have changed by the time this effect cleanup function runs. If this ref points to a node rendered by React, copy 'readEpoch.current' to a variable inside the effect, and use that variable in the cleanup function        react-hooks/exhaustive-deps"
+      },
+      {
+        "path": "packages/admin-screens/src/lifted/components/admin/staff-benefits/StaffBenefitsPanel.tsx",
+        "warning": "93:119  warning  The ref value 'historyEpoch.current' will likely have changed by the time this effect cleanup function runs. If this ref points to a node rendered by React, copy 'historyEpoch.current' to a variable inside the effect, and use that variable in the cleanup function  react-hooks/exhaustive-deps"
+      },
+      {
+        "path": "packages/admin-screens/src/lifted/components/admin/templates/TemplatesPanel.tsx",
+        "warning": "61:95  warning  The ref value 'readEpoch.current' will likely have changed by the time this effect cleanup function runs. If this ref points to a node rendered by React, copy 'readEpoch.current' to a variable inside the effect, and use that variable in the cleanup function  react-hooks/exhaustive-deps"
+      }
+    ],
+    "noMockMembers": {
+      "passed": true,
+      "sourceFiles": 368,
+      "guardedFunctions": 13
+    }
+  },
+  "actualCiEntry": {
+    "receiptPath": "C:/w/admin634-integrated/actual-ci-entry.json",
+    "receiptSha256": "54a4b5d3fedd9279d11e7c34bfc1cd907a59b77f7f3617ce7af46f7bdb80f125",
+    "logPath": "C:/w/admin634-integrated/actual-ci-entry.log",
+    "logSha256": "1042bd4798fef7e9ace6de9b3eb232239c2fbd325459ba412404c8ec5e9f1b59",
+    "fullOutputRead": true,
+    "jsonRecords": 3,
+    "exitCode": 0,
+    "signal": null,
+    "sourceManifestSha256": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+    "hostSourceUnchanged": true,
+    "hostAndContainerApiDocsUnchanged": true,
+    "runnerPath": "C:/w/admin634-app-ci-entry.mjs",
+    "currentRunnerSha256": "462339c4abb7ea1a1936d8fa2ca5aa65d1815dd18842f97381d657a5201a76c2",
+    "baseMigratePassed": true,
+    "actualArmedCiEntryPassed": true,
+    "s633Checks": 39,
+    "s634Checks": 9,
+    "childCheckTotal": 48,
+    "childScratchDatabasesRemoved": 2,
+    "ownBaseDatabaseRemoved": true,
+    "limited": false,
+    "timedOut": false,
+    "failedToSpawn": false,
+    "originalRouteAllChecksPassedRequiredByRunner": true,
+    "stdoutHashOnlyCapture": true,
+    "summaryRecords": [
+      {
+        "suite": "s633",
+        "passed": true,
+        "checks": 39,
+        "ownDatabaseRemoved": true
+      },
+      {
+        "suite": "s634",
+        "passed": true,
+        "checks": 9,
+        "ownDatabaseRemoved": true
+      }
+    ]
+  },
+  "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+  "apiDocInputCount": 4,
+  "currentHostSourceManifestMatches": true,
+  "inheritedBuildWarnings": [
+    "POS dynamic/static platform import split.",
+    "POS and Console chunks above500kB.",
+    "Fastify logging-option deprecation."
+  ],
+  "remainingConcerns": [],
+  "limits": [
+    "Workspace command covers16typechecks/5builds/global lint/contracts/no-mock guard, not package/API test totals or verify-schema.",
+    "Prior633 workspace log did not include global lint; inheritance is established by unchanged warning source bytes and root ESLint config, not a fabricated prior warning-output match.",
+    "Actual armed CI entry executes the original entry plus39prior/9new checks. This review read all three safe runner records and source guard; raw child stdout/stderr remain hash-only, not claimed reread.",
+    "Full exact-source CI/Render/staging acceptance and broad test batteries remain separate.",
+    "Earlier RED/compiler/interrupted broad attempts remain preserved."
+  ],
+  "staging": false,
+  "finalRelease": false,
+  "reviewerExecutedRuntime": false
+}

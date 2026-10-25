@@ -1,0 +1,42 @@
+{
+  "ticket": "SCRUM-634",
+  "at": "2026-10-25T02:16:53.187Z",
+  "helperSha256": "90d36a46d79b320d520c3fde007a3f2afdef37ac58170d1a5f2efa55fc747ed3",
+  "passed": true,
+  "rows": [
+    {
+      "name": "syntax",
+      "exitCode": 0,
+      "signal": null,
+      "expectedExit": 0,
+      "expectationMet": true,
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "pure",
+      "exitCode": 0,
+      "signal": null,
+      "expectedExit": 0,
+      "expectationMet": true,
+      "logSha256": "1788d2201a88bd6c52904eba5aa00cc3f691e97df3af66a354243916102cd099"
+    },
+    {
+      "name": "safety",
+      "exitCode": 0,
+      "signal": null,
+      "expectedExit": 0,
+      "expectationMet": true,
+      "logSha256": "fc71d5b6372489c44d174ce0af9953d86b6532ced22bb697f2b937941cb1fbe5"
+    },
+    {
+      "name": "safety-counterfactual",
+      "exitCode": 1,
+      "signal": null,
+      "expectedExit": 1,
+      "expectationMet": true,
+      "logSha256": "02317aa537174057edfcc76d62fa6eac090854af4bc55be57023d30fba88b6d1"
+    }
+  ],
+  "networkUsed": false,
+  "actualStaging": false
+}

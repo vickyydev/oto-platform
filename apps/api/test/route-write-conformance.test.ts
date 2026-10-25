@@ -60,6 +60,16 @@ afterAll(async () => {
 
 const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
+describe('Staff summary read registration (SCRUM-634)', () => {
+  it('keeps business reads separate from the audited temporary handoff', () => {
+    const route = routes.find(r => r.method === 'GET' && r.path === '/staff/summary');
+    expect(route).toBeDefined();
+    expect(MUTATING.has(route!.method)).toBe(false);
+    expect(configs.get('GET /staff/summary')?.dynamicPermission).toBe(true);
+    expect(reachesText(route!.handlerText, text => /\bstaffSummaryOf\s*\(/.test(text), functions)).toBe(true);
+  });
+});
+
 function expectKnownFailures(actual: string[], known: string[], label: string, ticket: string): void {
   const seen = new Set(actual);
   const expected = new Set(known);

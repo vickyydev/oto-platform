@@ -1,0 +1,147 @@
+{
+  "ticket": "SCRUM-634",
+  "reviewVersion": 2,
+  "reviewedAt": "2026-10-25T02:18:36.654Z",
+  "passed": true,
+  "acceptance": false,
+  "actualStaging": false,
+  "scope": "Read-only exact source/delta, existing offline output and public collector review. No helper execution, authentication, live calls or repository mutation by reviewer.",
+  "inputs": {
+    "helper": {
+      "path": "C:/w/admin634-staging-proof.mjs",
+      "sha256": "90d36a46d79b320d520c3fde007a3f2afdef37ac58170d1a5f2efa55fc747ed3"
+    },
+    "tests": {
+      "path": "C:/w/admin634-staging-proof.test.mjs",
+      "sha256": "edce2587886613c0979dee18584be0a7d1c9490be154664cb3edd3c9d4db0a3f"
+    },
+    "safety": {
+      "path": "C:/w/admin634-staging-proof-safety.test.mjs",
+      "sha256": "cd1836e05a52f9efdbead23d758ddf15aaf80bdcf568723f13f8d22a4086bdfc"
+    },
+    "readme": {
+      "path": "C:/w/admin634-staging-proof.README.md",
+      "sha256": "10f303ff45bf649af078f9fd1ad295c30eca39881e618184e5056f8f22af4607"
+    },
+    "collector": {
+      "path": "C:/w/admin634-public-assets.mjs",
+      "sha256": "86d504fcf29cc095f6c9beffa3758acf03357e2fd001e14646e3f2d71b373d7f"
+    },
+    "offline": {
+      "path": "C:/w/admin634-proof-offline/result.json",
+      "sha256": "adbf5655343cd79091adbfd73291d6def2ed0a48d7e8c6dd562264ac65732b01"
+    },
+    "v1": {
+      "path": "C:/w/admin634-staging-proof-independent-review.json",
+      "sha256": "41fe954d259f5a395f0ed98fae89a528ca0c4afa0be11f564f30cebf5419a4ba"
+    }
+  },
+  "sourceRead": {
+    "v1WholeSourceRead": true,
+    "v2ExactDeltaRead": true,
+    "v2AffectedClosuresAndFinallyRead": true,
+    "readmeWholeRead": true,
+    "pureAndSafetyTestSourcesRead": true,
+    "collectorWholeSourceRead": true
+  },
+  "findings": [
+    {
+      "id": "R1",
+      "state": "closed",
+      "severity": "P2",
+      "location": "admin634-staging-proof.mjs:132",
+      "resolution": "close records an unconfirmed result, latches unknown and throws AUTH_CLEANUP_UNCONFIRMED. Every non-signout authentication call now checks safe() first. The final loop catches each close failure and still attempts every remaining owned context; authentication cleanup bypass remains intact.",
+      "evidence": "Actual extracted-close counterfactual performs one later action on archived v1; current identical pin performs zero later actions and still reaches other contexts. Final acceptance retains confirmed sign-out200/current-user401 and zero uncertainty requirements."
+    },
+    {
+      "id": "R2",
+      "state": "closed",
+      "severity": "P2",
+      "location": "admin634-staging-proof.mjs:100-113",
+      "resolution": "gh spawnSync has timeout30000. Render uses exact GET-only paths with AbortSignal.timeout30000, manual redirects, exact response URL/status, streamed two-megabyte body cap and reader cleanup. Unique expected service names and unchanged validateRelease still require exact six green source jobs and latest three live deployments.",
+      "evidence": "Actual closures verify GET/path/redirect/signal/body cap and retained wrong-source refusal; archived v1 lacks the bounded closure and its gh timeout assertion fails. These are synthetic offline pins, not live timeout experiments."
+    }
+  ],
+  "offline": {
+    "path": "C:/w/admin634-proof-offline/result.json",
+    "sha256": "adbf5655343cd79091adbfd73291d6def2ed0a48d7e8c6dd562264ac65732b01",
+    "capturedAt": "2026-10-25T02:16:53.187Z",
+    "runs": [
+      {
+        "name": "syntax",
+        "exitCode": 0,
+        "signal": null,
+        "expectedExit": 0,
+        "expectationMet": true,
+        "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "path": "C:/w/admin634-proof-offline/syntax.log",
+        "wholeOutputRead": true
+      },
+      {
+        "name": "pure",
+        "exitCode": 0,
+        "signal": null,
+        "expectedExit": 0,
+        "expectationMet": true,
+        "logSha256": "1788d2201a88bd6c52904eba5aa00cc3f691e97df3af66a354243916102cd099",
+        "path": "C:/w/admin634-proof-offline/pure.log",
+        "wholeOutputRead": true
+      },
+      {
+        "name": "safety",
+        "exitCode": 0,
+        "signal": null,
+        "expectedExit": 0,
+        "expectationMet": true,
+        "logSha256": "fc71d5b6372489c44d174ce0af9953d86b6532ced22bb697f2b937941cb1fbe5",
+        "path": "C:/w/admin634-proof-offline/safety.log",
+        "wholeOutputRead": true
+      },
+      {
+        "name": "safety-counterfactual",
+        "exitCode": 1,
+        "signal": null,
+        "expectedExit": 1,
+        "expectationMet": true,
+        "logSha256": "02317aa537174057edfcc76d62fa6eac090854af4bc55be57023d30fba88b6d1",
+        "path": "C:/w/admin634-proof-offline/safety-counterfactual.log",
+        "wholeOutputRead": true
+      }
+    ],
+    "actualCounts": {
+      "purePassed": 7,
+      "safetyPassed": 3,
+      "counterfactualFailed": 3,
+      "counterfactualPassed": 0
+    },
+    "counterfactualLimits": "The first counterfactual is an executed unsafe close. The second refuses because v1 has no bounded Render closure; the third exposes absent gh timeout. No live network delay was injected.",
+    "executedByReviewer": false
+  },
+  "publicAssets": {
+    "path": "C:/w/admin634-public-assets.mjs",
+    "sha256": "86d504fcf29cc095f6c9beffa3758acf03357e2fd001e14646e3f2d71b373d7f",
+    "passed": true,
+    "actualCollectionRun": false,
+    "authSessionsCreated": 0,
+    "sourceGates": "Exact six-job CI/full SHA and latest API/Admin/OTO deployments before and after collection. gh timeout30s; each imported Render-helper wait has a30s rejection deadline.",
+    "publicReads": "Only same-origin /staff,/index.html,/favicon.svg and flat /assets files of explicitly allowed types. GET without cookies, manual redirects, exact response URL/status, 30s abort, streamed8MB/file and64MB total caps, <=2999assets; exclusive output.",
+    "closure": "Staff/index bytes must match and remain unchanged at end. JS imports/Vite dependency strings, relative asset strings, CSS URLs/imports and SVG markup are recursively discovered. Built JS/CSS plus referenced favicon required. Only exact source Google stylesheet/preconnects are excluded; no original external font fetch.",
+    "references": "Foreign, query-bearing, escaped/traversal, unsupported extension and unparsed supported resource references reject rather than produce a manifest. Same-document SVG/data references are skipped without network. The known native favicon is self-contained; source index font/favicon match the collector grammar.",
+    "falseGreenBoundary": "This is a conservative static discovery manifest, not a proof of universal dynamic reference completeness. The live browser independently refuses every missing/unknown resource and checks each delivered asset byte hash, so a missed dynamic resource must fail the later proof.",
+    "limits": [
+      "Promise-race bounds the collector wait but does not abort the imported Render fetch/body; the collector has no authenticated app contexts. This does not reproduce the proof cleanup blocker.",
+      "No actual deployed asset collection or browser closure was run by this review.",
+      "Valid local font/SVG references with queries or external fragments are currently refused; this is fail-closed and may require a separately reviewed source-exact adjustment if actually encountered."
+    ]
+  },
+  "retainedGuards": [
+    "Known existing actors only; no business-write routes or fixture creation.",
+    "Durable authentication intent and original dispatch uncertainty remain intact.",
+    "Selected-branch native GETs bracket the actual summary; unavailable/forbidden values cannot become zero.",
+    "Exact minted token/fixed target navigation is observed and aborted before app UI bootstrap.",
+    "Unknown browser activity remains fatal; only hash diagnostics persist.",
+    "Identity/footer and payroll names are masked; captions and actual PNGs still require later visual inspection.",
+    "HeadlinesCompared and actual card availability must be assessed separately from bounded proof complete."
+  ],
+  "disposition": "Source findings closed for this exact helper revision. Actual six-green feature CI, all three latest live deployments, reviewed public assets, explicit execution plan and actual staging evidence remain required. This review is not staging acceptance."
+}

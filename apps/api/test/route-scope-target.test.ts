@@ -63,6 +63,15 @@ afterAll(async () => {
 /** Routes Fastify or a plugin registers for us, which we do not configure. */
 const NOT_OURS = new Set(['/docs/json', '/*']);
 
+describe('Staff summary selected park (SCRUM-634)', () => {
+  it('declares dynamic authority and reaches owned operator metadata before any app read', () => {
+    const route = routes.find(r => r.method === 'GET' && r.path === '/staff/summary');
+    expect(route).toBeDefined();
+    expect(configs.get('GET /staff/summary')?.dynamicPermission).toBe(true);
+    expect(reachesText(route!.handlerText, text => /auth\.operatorId/.test(text), functions)).toBe(true);
+  });
+});
+
 /**
  * What counts as establishing ownership, read out of the handler.
  *

@@ -1,0 +1,83 @@
+{
+  "ticket": "SCRUM-634",
+  "at": "2026-10-25T02:18:08.527Z",
+  "passed": true,
+  "broadManifestSha256": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+  "finalManifestSha256": "55e085b68fedd8a18844a7933b2ea7dbe9819665045d00497e9ee13b807849ed",
+  "sourceFiles": 3753,
+  "changed": [
+    {
+      "path": "apps/api/test/s217b-r7-payroll-cross-review.test.ts",
+      "sha256": "3154d5dd1639fa6a0d70984a9eb8cbc737312483178b78b878620ae71e762f06"
+    }
+  ],
+  "assertionsPreserved": true,
+  "allProductionAndDependencyBytesIdentical": true,
+  "allOtherTestBytesIdentical": true,
+  "fullFrame": {
+    "files": 364,
+    "passed": 5409,
+    "failed": 1,
+    "skipped": 3,
+    "todo": 5
+  },
+  "correctedCurrentCoverage": {
+    "files": 364,
+    "passed": 5410,
+    "failed": 0,
+    "skipped": 3,
+    "todo": 5
+  },
+  "receipts": [
+    {
+      "name": "api-final-shard-1",
+      "receiptSha256": "340d414b61985476519d480e8c44e92a31e926aaa82cdca0be202dce58d71abb",
+      "logSha256": "4b1c79d4fb721d29d033908d6528fd1b02f2ecdeeb7d459a03757c64ff477bbf",
+      "exitCode": 0,
+      "reportedFiles": 122,
+      "counts": {
+        "passed": 1844,
+        "skipped": 1
+      }
+    },
+    {
+      "name": "api-final-shard-2",
+      "receiptSha256": "127e56498f4b9d2cf55c8c57d7eb32ef3336211b19aa38d67b1fc51368db0bce",
+      "logSha256": "a02d4230a53706288cbe0b25398fc77ef2b50f1160a7c51bed00ea1b57ae0327",
+      "exitCode": 0,
+      "reportedFiles": 122,
+      "counts": {
+        "passed": 1919,
+        "todo": 4
+      }
+    },
+    {
+      "name": "api-final-shard-3",
+      "receiptSha256": "9792c5a8f29fcbdf9bd6262e79b35e681640e423ad4511fdc1cff882d4af3420",
+      "logSha256": "fab3378e39787c3a1911fb2dddc1d1b38349072d97d307792b82db1752107d22",
+      "exitCode": 1,
+      "reportedFiles": 120,
+      "counts": {
+        "failed": 1,
+        "passed": 1646,
+        "skipped": 2,
+        "todo": 1
+      }
+    }
+  ],
+  "correctedFileGate": {
+    "receiptSha256": "03eb2370ed9c7a2ff6dac56ed48ade12cac2336c824b3e7b6ecf145efd90a09e",
+    "logSha256": "5a56603eb6046d99f7f8af05ce2b8f7ac2d26b8b5f916a9c6b048ecd7bfa47ce",
+    "files": 8,
+    "passed": 163,
+    "apiCompilerDiagnostics": 0,
+    "consoleCompilerDiagnostics": 0,
+    "contractsMatch": true
+  },
+  "limits": [
+    "The original three-shard command frame has one stale ordered-inventory failure and remains failed.",
+    "Current API coverage combines every full-frame file with the complete corrected25-case file, plus138 focused cases and current compilers/contracts/lint.",
+    "Only one test expectation line changed; production, every other test and all dependency bytes are identical. No full-command rerun is claimed.",
+    "Exact-source full CI, automatic rollout and actual staging proof remain before Deployed."
+  ]
+}

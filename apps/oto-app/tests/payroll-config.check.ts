@@ -179,6 +179,7 @@ try {
   // ── Every route: manager and staff refused; writes refused below admin ──
   const fake = randomUUID();
   const routes: [string, string, "read" | "write" | "draft"][] = [
+    ["GET", "/api/payroll/month-status", "read"],
     ["GET", "/api/payroll/setup", "read"], ["GET", "/api/payroll/setup/changes", "read"],
     ["POST", "/api/payroll/setup/entities", "write"], ["PATCH", `/api/payroll/setup/entities/${fake}`, "write"],
     ["POST", `/api/payroll/setup/entities/${fake}/archive`, "write"], ["POST", "/api/payroll/setup/accounts", "write"],

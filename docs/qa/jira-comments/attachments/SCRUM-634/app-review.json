@@ -1,0 +1,149 @@
+{
+  "ticket": "SCRUM-634",
+  "reviewedAt": "2026-10-25T01:52:36.554Z",
+  "mode": "read-only source and captured-result review",
+  "passed": true,
+  "findings": [],
+  "files": [
+    {
+      "path": "apps/oto-app/server/payroll/month-status.ts",
+      "sha256": "070c96f7d6aa69deabee8ec4d214e64902e66ea8c8315116225bd444c58c4316"
+    },
+    {
+      "path": "apps/oto-app/server/payroll/routes.ts",
+      "sha256": "0dac3ac578e75577a6e96d6735e6a2ba49520647b6744bd36df76caca7d032a3"
+    },
+    {
+      "path": "apps/oto-app/tests/s634-payroll-status.check.ts",
+      "sha256": "f261c88084bf8ea5de4107c75c92af955f9d480dd7924b84e55abaa63ec3cd05"
+    },
+    {
+      "path": "apps/oto-app/tests/s634-suite.check.ts",
+      "sha256": "6f653ebcf7eddebd06c7d718d9ea1d241cd921f4e0ceb7a50949370044a84e7e"
+    },
+    {
+      "path": "apps/oto-app/tests/suite-sign-in-routes.check.ts",
+      "sha256": "c6af6fddd27e81f23c7960d5e5f05cb43cde2d6f3e047bcb176ed88efcdb60ac"
+    },
+    {
+      "path": "apps/api/src/routes/console-staff.ts",
+      "sha256": "3812de793aceaa0b01f439e0361ae951082258f0c43caf1592f679b72c023189"
+    },
+    {
+      "path": "apps/api/src/services/console-staff.ts",
+      "sha256": "f8d39d89b86d966692b14f2b4f73079974b2188f517d121bd8392e7492be3bc2"
+    }
+  ],
+  "actualResults": {
+    "red": {
+      "receipt": "C:/w/admin634-integrated/app-native-red-v3.json",
+      "receiptSha256": "39a26e1c4265a7ac3225ecdf4baed3a39180e2f494eb726e67d048944d65a10d",
+      "log": "C:/w/admin634-integrated/app-native-red-v3.log",
+      "logSha256": "a3a865a11b30eee7eba9bc870edf4048e988b47576b6661e171fa2e50acdd702",
+      "wholeLogRead": true,
+      "exitCode": 1,
+      "sourceManifestSha256": "8a72f1c1558378f03c1405a0954440e9766cb7ff55803c9cbfcd1c98a292d6ec",
+      "migrationExitCode": 0,
+      "nativePassed": 2,
+      "nativeTotal": 9,
+      "meaningfulFailure": "Seven cases reach the missing new GET and receive404; existing raw-advisor and unplaced-tenant guards already pass with403."
+    },
+    "green": {
+      "receipt": "C:/w/admin634-integrated/app-focused-v1.json",
+      "receiptSha256": "a6bd2afcb9752e0f73867ba09bd1076034ad2aa0bc6a85012a92c05b18ec3c81",
+      "log": "C:/w/admin634-integrated/app-focused-v1.log",
+      "logSha256": "7b2b768ebe120bd1c366ae42994e85b335d008a24619d22912252b76d7167849",
+      "wholeLogRead": true,
+      "exitCode": 0,
+      "sourceManifestSha256": "cb3d3b425ee5383f2d3e900cac9f2b7852f13fd71a7a4ad23084476bdf1f59ad",
+      "migrationExitCode": 0,
+      "nativePassed": 9,
+      "nativeTotal": 9,
+      "allNineNamedCasesTrue": true,
+      "hostSourceUnchanged": true,
+      "hostAndContainerApiDocsUnchanged": true,
+      "staging": false
+    },
+    "sourceBinding": "The cb3d3b42 source receipt lists the same hashes for both payroll production files, native9 test, new CI suite and existing CI entry as reviewed here. The native9 test hash is unchanged from meaningful RED to GREEN."
+  },
+  "payrollService": {
+    "selectedColumnsOnly": [
+      "entity.id",
+      "entity.name",
+      "run.id (internal only)",
+      "current-version.version",
+      "current-version.status"
+    ],
+    "joins": "Entity tenant equals caller, run tenant equals caller and entity/month match, current version tenant equals caller and run/currentVersion match.",
+    "archivedEntitiesExcluded": true,
+    "serverMonth": "Existing payrollToday().slice(0,7), proved at Bangkok month rollover while UTC remains October.",
+    "missingRun": "version:null,status:not-started",
+    "missingCurrentVersion": "Fails unavailable rather than inventing not-started; source-reviewed, not directly pinned by the nine cases.",
+    "gates": [
+      "Existing requireAuth",
+      "Existing payroll(hr.view_salary) using validated mapping or legacy role rule",
+      "Existing strict parkGroupOnly caller placement",
+      "Existing earlier raw-advisor payroll-prefix exclusion"
+    ],
+    "noLazyPayrollReads": true,
+    "noSetupWorldEngineCalls": true,
+    "noApplicationWrites": true,
+    "noMigration": true,
+    "output": "Strict zod object: month plus entities containing only id/name/version/status. Internal run ID, financial operands, bank/person/account data and audit details are excluded."
+  },
+  "corruptReferencePins": {
+    "fixtureScope": "One transaction in the disposable test database uses SET LOCAL session_replication_role=replica; no constraint or trigger definition is changed. Its setting is restored by transaction completion/rollback.",
+    "entityRun": "Own active entity has only a foreign-tenant current-month run referencing its ID; expected own result stays not-started, and it is excluded from the foreign entity list.",
+    "runVersion": "Own current run has a valid own draft current version plus a corrupt foreign paid row at the same run/version; expected own result is exactly one draft row.",
+    "nativeAssertions": "Both exact arrays and the separate foreign caller response are asserted; a missing tenant join either leaks/duplicates rows or fails the expected successful response."
+  },
+  "readOnlyPins": {
+    "exactSafeKeys": true,
+    "snapshot": "Canonical hashes cover every payroll_* base table and statutory_rule_sets before/after empty and repeated reads; all data remains identical.",
+    "actualNineCases": [
+      "Bangkok month/all five statuses/exact keys",
+      "No-run/previous-month/archived/foreign",
+      "Both cross-tenant soft references",
+      "Empty list/no default setup or runs",
+      "Repeated reads/no changes",
+      "Anonymous/legacy manager/staff refusals",
+      "Mapped manager salary allow and mapped admin salary deny",
+      "Raw advisor exclusion",
+      "Unplaced admin fallback refusal"
+    ]
+  },
+  "ciWiring": {
+    "existingEntryOnlyConditionalImportAdded": true,
+    "existingEntryReferenceSha256": "e67f7a0d60361558ce1c0902d6e384789f9a4f686aa7de8ccca17f1333348654",
+    "armed": "Existing CI entry imports s634-suite only for CI=true or explicit SCRUM_634_SUITE=1, after its original cleanup. Existing633 conditional import remains intact.",
+    "databaseGuard": "Only explicit CI/634 enablement, PostgreSQL protocol, finite local/private host list, no URL search/hash, and known CI/634 base database names are accepted. Target database has a fresh fixed-prefix random24hex name, checked absent before creation.",
+    "execution": "Creates own database and otoapp schema, runs standalone app migrator, then only the native payroll check with expected9. Child output/time are bounded; raw child stdout/stderr are not forwarded.",
+    "exactNinePin": "Requires exit0, no timeout/output limit/spawn error, exactly one expected summary, passed9/total9, exactly9 cases and every case passing.",
+    "noRecursion": "Child environment disables CI,633 and634 suite flags; no nested suite-sign-in entry is invoked.",
+    "cleanup": "Finally stops the own child/process group, DROP DATABASE IF EXISTS own generated target WITH(FORCE), independently queries pg_database for absence, closes admin client and fails unless both checks and removal succeed.",
+    "runtimeStatus": "Source-reviewed only in this review. The captured GREEN used the external direct-native runner, not an actual invocation of the newly armed suite entry."
+  },
+  "focusedDatabaseCleanup": {
+    "runner": "C:/w/admin634-app-native-run-v2.mjs",
+    "runnerSha256": "5fb8e5ea49f46cc9a27e82aa60d3f50d2dce25539914f87b3b137c70ee5deb72",
+    "actualReceiptReportsRemoved": true,
+    "interpretation": "Runner awaits terminating only connections to its fresh generated database and DROP DATABASE before logging removal and exiting0. This supports completed DROP on the observed GREEN; it does not include a separate final absence query. The new CI wrapper does.",
+    "independentLiveCensusPerformed": false
+  },
+  "rootScopeReview": {
+    "route": "Strict optional branchId UUID query and strict safe response schema; current auth/token required, private/no-store.",
+    "authorization": "Service intersects admin:account:read and app access over live owned core branches, preserving the explicit own-department app-access handoff rule. Requested foreign/archived/absent parks404; own unreachable parks403; no reachable branch opens no app session.",
+    "actingUser": "User platform stamp must match caller; selected app branch mapping must be unique and in the actual app user tenant. Native API gates remain authoritative.",
+    "privacy": "Platform queries only core park metadata, consumes fixed app GET responses and reduces safe counts/status fields; no app HR/payroll SQL or upstream free errors returned.",
+    "cleanup": "All acquired sessions close in finally; unconfirmed close clears every headline to unavailable, including early-return paths.",
+    "limitedTo": "Route schema and summary reducer source. Separate transport implementation/auth audit and actual integration remain root/transport-review responsibilities."
+  },
+  "limits": [
+    "No commands, runtime, network, auth, database operations or Git actions were executed in this review; only source/receipt reads and this external report.",
+    "No full app/compiler/lint/CI/staging acceptance is claimed by focused9 GREEN or this report.",
+    "Earlier migration setup failures remain failed preflights; only the corrected actual9-case RED is used as feature absence evidence.",
+    "Reviewer authored the payroll service and native9 test; this is adversarial self-review of those files and independent review of the root-owned suite wiring, receipts and reducer.",
+    "Windows timeout descendant cleanup is not proven by the Linux-oriented process-group path; native normal cleanup remains source-reviewed. CI uses Linux.",
+    "Actual CI-entry execution, broader release gates and staging proof remain required."
+  ]
+}

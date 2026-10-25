@@ -1,0 +1,126 @@
+{
+  "ticket": "SCRUM-634",
+  "revision": 2,
+  "passed": true,
+  "reviewScope": "Read-only adversarial API source/focused-gate review; not release/staging acceptance",
+  "reviewerAlsoAuthoredTransportAndProjection": true,
+  "previousReview": {
+    "path": "C:/w/admin634-api-independent-review.json",
+    "sha256": "240721acb1e0fe2bcaee579d5b1a9d6f5f4139ebe9e367b970cc3f63150006a0",
+    "preserved": true,
+    "passed": false
+  },
+  "sourceManifestSha256": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+  "sourceFiles": 3753,
+  "bindings": {
+    "review-transport-red.json": "5a0eec1bba4029a12e9b2c4db2e439cd03903c63a6b34b949d7c4d5c8f312065",
+    "review-transport-red.log": "c4d67489ee8bf43a672db385c6a46d293a883b015125c97dbceae7601eb82544",
+    "review-api-green.json": "38bc6b1c58e29dc5ea3f9c0ddaed51d7ea92b67cd56e5f216ffed7de6241d6a5",
+    "review-api-green.log": "d9f6332849d5273f13d8b6d6ff86a631198bfc4d90502b9ecf775858ead7de2f",
+    "apps/api/src/services/console-otoapp.ts": "9fd51a4cb654342b64b965c9a9d888a55c4d59533206b7cdf45d71993883dd00",
+    "apps/api/src/services/console-staff.ts": "3b3a160f8a0f4034ec3f710f69dc20f008772d6e471898df2728ccc36d38ec42",
+    "apps/api/src/routes/console-staff.ts": "3812de793aceaa0b01f439e0361ae951082258f0c43caf1592f679b72c023189",
+    "apps/api/test/console-otoapp.test.ts": "d02272f59c4907a8465aff8a9023f71f5a3ebd1500f2655f5351c5404513d7a4",
+    "snapshots": [
+      {
+        "manifest": "f1d21f7946c63c19b1dea68696454349e7dcadb0e6e6b34c685fbcd711ddeb12",
+        "test": "d02272f59c4907a8465aff8a9023f71f5a3ebd1500f2655f5351c5404513d7a4"
+      },
+      {
+        "manifest": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+        "test": "d02272f59c4907a8465aff8a9023f71f5a3ebd1500f2655f5351c5404513d7a4"
+      }
+    ]
+  },
+  "evidence": {
+    "red": {
+      "path": "C:/w/admin634-integrated/review-transport-red.json",
+      "exitCode": 1,
+      "signal": null,
+      "sourceManifestSha256": "f1d21f7946c63c19b1dea68696454349e7dcadb0e6e6b34c685fbcd711ddeb12",
+      "files": 1,
+      "passed": 31,
+      "failed": 3,
+      "total": 34,
+      "fullOutputRead": true,
+      "logHashVerified": true,
+      "hostSourceUnchanged": true,
+      "hostAndContainerApiDocsUnchanged": true
+    },
+    "green": {
+      "path": "C:/w/admin634-integrated/review-api-green.json",
+      "exitCode": 0,
+      "signal": null,
+      "files": 7,
+      "passed": 138,
+      "failed": 0,
+      "transportInjectedFetch": 34,
+      "projectionInjectedAppSession": 25,
+      "realCoreRoutes": 8,
+      "guardChecks": 71,
+      "fullOutputRead": true,
+      "logHashVerified": true,
+      "hostSourceUnchanged": true,
+      "hostAndContainerApiDocsUnchanged": true
+    },
+    "immutableRegressionTestSha256": "d02272f59c4907a8465aff8a9023f71f5a3ebd1500f2655f5351c5404513d7a4",
+    "sameRegressionTestVerifiedInBothFrozenManifests": true,
+    "priorCompiler": {
+      "sourceManifestSha256": "05fc7f76bb6c19b89e5168339aacfa953cb567bf2732d9a415628f0d095a708d",
+      "apiDiagnostics": 0,
+      "consoleCompilerConfigurations": 3,
+      "consoleDiagnostics": 0,
+      "apiTypesMatch": true,
+      "currentFullWorkspaceCompilerPendingAtReview": true
+    }
+  },
+  "findings": [
+    {
+      "id": "R1",
+      "severity": "P1",
+      "state": "closed",
+      "actualRed": "Three valid-cookie auth responses with malformed, oversized or stalled bodies omitted logout; original31 cases passed.",
+      "fix": "Capture only connect.sid on auth response headers, before parsing/bounding the body. Define existing once-only close before exchange. Exchange read/validation failure closes a captured session; failure to confirm close remains unavailable.",
+      "actualGreen": "The same byte-identical34-case test now passes; all138 focused API checks pass. These3 pins require exact authPOST/logoutPOST sequence, expected private cookie, static503, and no identity/headline reads.",
+      "securityGuardsPreserved": [
+        "fixed origin",
+        "Origin-less exchange",
+        "redirect refusal",
+        "strict GET grammar",
+        "calendar/UUID validation",
+        "1MiB bound",
+        "timeout",
+        "platform stamp",
+        "private cookie",
+        "static errors",
+        "once-only cleanup"
+      ]
+    }
+  ],
+  "sourceChecks": {
+    "upstreamShapesVerified": true,
+    "permissionsIntersectionVerified": true,
+    "departmentAppGrantPreserved": true,
+    "foreignArchivedBranchFencesVerified": true,
+    "sameActorStampAndTenantMappingVerified": true,
+    "noSalaryRoleInference": true,
+    "noDirectHrPayrollSql": true,
+    "payrollOriginalSalaryAdvisorTenantGatesPreserved": true,
+    "unknownDetailsStripped": true,
+    "failuresNotZeros": true,
+    "cleanupFailureClearsAllHeadlines": true,
+    "strongRouteSchemaPreserved": true
+  },
+  "limitations": [
+    "This is the implementation author's source attack, not an independent-author review; filename follows coordinator convention.",
+    "Injected-fetch transport and injected-session projection tests are not combined two-app integration. Eight route tests use real core database authorization.",
+    "Actual staging/native-versus-summary reads, exact-source CI/live rollout, full release batteries and final cleanup remain separate requirements.",
+    "An auth network timeout before any response/cookie is observed is unavailable and cannot claim an app-session logout; the fix covers acknowledged session headers.",
+    "Existing negative-offset time-off date conversion remains unchanged: native Scheduling and this summary both send date-only filters, and the app converts UTC midnight to the branch timezone. Bangkok is correct; universal timezone correction is not claimed.",
+    "Prior failed compiler, interrupted broad run and open-finding review remain preserved; none is relabelled green."
+  ],
+  "releaseAcceptance": false,
+  "staging": false,
+  "liveCallsPerformed": false,
+  "newTestsExecutedByReviewer": false
+}

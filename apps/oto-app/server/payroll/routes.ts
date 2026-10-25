@@ -59,6 +59,7 @@ import { approveThirdParty, confirmRun, lockRun, markPaid, recordOvertimeDecisio
 import { listHistory, loadHistoryVersion, myPayslips, openHistoryFile, openMyPayslip, type ServedFile } from "./payslips";
 import { ewfSurcharge, loadStatutoryView, openDocumentFile, recordFiling, renderDocument } from "./statutory";
 import { loadDownloads } from "./outputs";
+import { loadPayrollMonthStatus } from "./month-status";
 
 export type PayrollPermission = "hr.view_salary" | "hr.manage_payroll" | "payroll.draft_profiles" | "payroll.confirm" | "payroll.lock" | "payroll.own_payslips";
 
@@ -151,6 +152,10 @@ const sendFrozen = (work: (req: Request, res: Response) => Promise<ServedFile>):
 export function registerPayrollRoutes(app: Express, { requireAuth, callerParkGroup }: PayrollRouteDependencies): void {
   const fence = parkGroupOnly(callerParkGroup);
   const subject = (req: Request) => subjectOf(req);
+
+  // Status only for Admin's Staff summary; the existing payroll and advisor gates still apply.
+  app.get("/api/payroll/month-status", requireAuth, payroll("hr.view_salary"), fence, answer(200, (_req, res) =>
+    loadPayrollMonthStatus(parkGroupOf(res), payrollToday().slice(0, 7))));
 
   // ── Setup ──
   app.get("/api/payroll/setup", requireAuth, payroll("hr.view_salary"), fence, answer(200, async (req, res) =>

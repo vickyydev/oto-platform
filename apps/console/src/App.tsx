@@ -42,6 +42,7 @@ import { Reports, ReportsLanding } from '@/pages/Reports';
 import { ChannelsLanding } from '@/pages/Channels';
 import { TeamsRouting } from '@/pages/TeamsRouting';
 import { Operations } from '@/pages/Operations';
+import { Staff } from '@/pages/Staff';
 
 const LAUNCHER_URL = import.meta.env.VITE_LAUNCHER_URL?.trim();
 
@@ -194,7 +195,7 @@ function Routes() {
       )))}
       {consoleNav.filter((area) => !CONSOLE_SECTIONS.some((page) => page.path === `/${area.id}`))
         .map((area) => <Route key={area.id} path={`/${area.id}`}>
-          {area.id === 'overview' ? <Overview /> : area.id === 'reports' ? <ReportsLanding /> : area.id === 'channels' ? <ChannelsLanding /> : <AreaLanding id={area.id} />}
+          {area.id === 'overview' ? <Overview /> : area.id === 'reports' ? <ReportsLanding /> : area.id === 'channels' ? <ChannelsLanding /> : area.id === 'staff' ? <Staff /> : <AreaLanding id={area.id} />}
         </Route>)}
       <Route component={NotFound} />
     </Switch>

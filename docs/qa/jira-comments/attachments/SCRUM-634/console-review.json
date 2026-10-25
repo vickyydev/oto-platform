@@ -1,0 +1,173 @@
+{
+    "ticket":  "SCRUM-634",
+    "passed":  true,
+    "reviewedAt":  "2026-10-25T02:00:35.2817244Z",
+    "reviewKind":  "Read-only independent Console and DTO contract review",
+    "sourceManifestSha256":  "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+    "sourceManifestRawSha256":  "b4bc09360b0bace18732a1c7fae6d8bf4f86ede6d75c6dbfcf6cdb2598cc6ffa",
+    "reviewedFiles":  [
+                          {
+                              "path":  "apps/console/src/api/staff.ts",
+                              "sha256":  "6461fb3200d02b43dab4ff7f10ab76371abb1cff31907e5715f367e7bfc5895a"
+                          },
+                          {
+                              "path":  "apps/console/src/pages/Staff.tsx",
+                              "sha256":  "901d050100e7b15f489d87708c383e5202d518ea9dc14b626a6f173b19291620"
+                          },
+                          {
+                              "path":  "apps/console/src/App.tsx",
+                              "sha256":  "0fed5f9cf5b278aa85f87b4bebf1e1b0d2cc8e0169f35b4268bda32259afb028"
+                          },
+                          {
+                              "path":  "apps/console/src/components/consoleSections.tsx",
+                              "sha256":  "52503e9a645afa67952d3d2679ad2a0d5c5cd0c2b935f409faaf1975838d7abe"
+                          },
+                          {
+                              "path":  "apps/console/test/staff-api.test.ts",
+                              "sha256":  "4218658886a0a457ebc5ceb2ce2b57e2bdcc1d0519531f2c67a1be6b1e0a51d7"
+                          },
+                          {
+                              "path":  "apps/console/test/staff-lifetime.test.ts",
+                              "sha256":  "df55ff3137ab512ec93f91ebcbd6dc60cebad0595142be15a480ea5ea4e21338"
+                          },
+                          {
+                              "path":  "apps/console/e2e/staff.spec.ts",
+                              "sha256":  "1bb06b3bc24c9df8dc3f231c5263d778dc73edf12e16c720047aa922cb6b0301"
+                          },
+                          {
+                              "path":  "apps/console/src/auth/SessionContext.tsx",
+                              "sha256":  "f37a8ab081f7c89af891a6be1fc1bc2530970249cc21dab7daef4f5a73161463"
+                          },
+                          {
+                              "path":  "apps/api/src/routes/console-staff.ts",
+                              "sha256":  "3812de793aceaa0b01f439e0361ae951082258f0c43caf1592f679b72c023189"
+                          },
+                          {
+                              "path":  "apps/api/src/services/console-staff.ts",
+                              "sha256":  "3b3a160f8a0f4034ec3f710f69dc20f008772d6e471898df2728ccc36d38ec42"
+                          },
+                          {
+                              "path":  "apps/api/src/services/console-otoapp.ts",
+                              "sha256":  "9fd51a4cb654342b64b965c9a9d888a55c4d59533206b7cdf45d71993883dd00"
+                          },
+                          {
+                              "path":  "packages/api-types/src/openapi.ts",
+                              "sha256":  "b25430d694e4ee0a571a0a9b148b2f1d7576c1547464a0b8a6aaaa8020527df7"
+                          },
+                          {
+                              "path":  "packages/api-types/openapi.json",
+                              "sha256":  "800c29e493e768277c6f4e6bfbe9edcf6621d91f779e3b1a7148b0954240ba33"
+                          }
+                      ],
+    "findings":  [
+
+                 ],
+    "checks":  {
+                   "bothGatesBeforeRead":  true,
+                   "renderTimeAuthorityInvalidation":  true,
+                   "staleReadsAndNavigationIgnored":  true,
+                   "fixedSourceTargetsOnly":  true,
+                   "freshHandoffIdempotency":  true,
+                   "inaccessibleMetricNotZero":  true,
+                   "payrollScopeLabelHonest":  true,
+                   "serverNoStore":  true,
+                   "serverOwnedReachableBranches":  true,
+                   "serverActingUserMapping":  true,
+                   "upstreamDetailsReduced":  true,
+                   "unconfirmedAppCleanupWithholdsHeadlines":  true,
+                   "sourceChangesMadeDuringReview":  false,
+                   "runtimeExecutedByReviewer":  false
+               },
+    "focusedEvidence":  {
+                            "receipt":  "C:/w/admin634-integrated/console-focused-v1.json",
+                            "receiptSha256":  "747d3ba877aecd93ee6ced23eaba3494cae4506d0523b9eb726fd2dd294df048",
+                            "log":  "C:/w/admin634-integrated/console-focused-v1.log",
+                            "logSha256":  "c0abcc2458066b68cd00c8a9c5ff73d53c77532803f3c9b6160ceb20b3564e85",
+                            "wholeLogRead":  true,
+                            "exitCode":  0,
+                            "staging":  false,
+                            "testedSourceManifestSha256":  "cb3d3b425ee5383f2d3e900cac9f2b7852f13fd71a7a4ad23084476bdf1f59ad",
+                            "unitFiles":  2,
+                            "unitCases":  22,
+                            "builtBrowserCases":  8,
+                            "isolatedBrowserDatabaseDropped":  true,
+                            "hostSourceUnchanged":  true,
+                            "apiDocsUnchanged":  true,
+                            "realBrowserScope":  "Production-built Console UI; mocked canonical /me, permission, summary and handoff responses. Real DOM, navigation to a synthetic receiver, filter/refresh response ordering and390px layout.",
+                            "inertScope":  "11 common client/fixed destination cases plus11 cases executing the native Staff function with inert hook/JSX/API adapters. Actor/grant/lock/seat/unmount timing is covered here, not by the current8 browser cases.",
+                            "supersededForFinalCountsBy":  "redGreenEvidence"
+                        },
+    "bridge":  {
+                   "reviewedCurrentFilesMatchFrozenManifest":  true,
+                   "reviewedFileCount":  13,
+                   "sourceRowCount":  3753,
+                   "currentSourceManifestSha256":  "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+                   "runtimeFix":  "Only the explicit-selection state/derived branchId/setter changed in Staff; source links and all prior browser/unit assertions remain.",
+                   "broaderCompilerGate":  "Pending final root gate"
+               },
+    "drafts":  {
+                   "regressionSource":  "C:/w/admin634-filter-recovery.test-source",
+                   "regressionSha256":  "1bb06b3bc24c9df8dc3f231c5263d778dc73edf12e16c720047aa922cb6b0301",
+                   "productionPatch":  "C:/w/admin634-filter-recovery.patch",
+                   "productionPatchSha256":  "2c916b0725ffc78da0e0f97b10c3c6c6dbf80ddeb3bfa3fb95e59d05808e96df",
+                   "additionalRootReportedToolingFix":  "Use direct ApiResponse generic for staffApi.read so the seam walker recognizes the generated route contract; do not add an allowance."
+               },
+    "materialGaps":  [
+                         "The9 real browser cases use canonical API and handoff fixtures; they do not prove actual OTO App arrival or a real server-to-app session.",
+                         "Actor/grant/lock/seat/unmount request ownership has12 native-function inert cases. The narrowed-authority recovery is additionally demonstrated through the actual React session provider in the ninth built-browser case.",
+                         "No staging evidence is reviewed here. Broader release gates, CI, deploys and actual staging acceptance remain root work.",
+                         "API and Console own compilers plus generated API contract check passed on prior05fc before the3-line filter and direct-generic fixes. Final frozen whole-workspace compilers/contracts/lint are being run by root and are not claimed by this review."
+                     ],
+    "warnings":  [
+                     "Build chunk-size warnings; existing POS dynamic/static import advisory; Fastify deprecation warning. No failure in the focused receipt."
+                 ],
+    "resolvedFindings":  [
+                             {
+                                 "id":  "R1",
+                                 "severity":  "medium",
+                                 "status":  "fixed",
+                                 "path":  "apps/console/src/pages/Staff.tsx",
+                                 "lines":  "25,35-39,116-118",
+                                 "problem":  "An explicit park selection survives an in-place authority change while the directory is cleared. If the selected park is no longer reachable, the next read403s, the selector is disabled, and retry repeats the unreachable park.",
+                                 "impact":  "No old figures are disclosed, but a caller retaining access to another park cannot recover without remounting or reloading.",
+                                 "prescribedFix":  "Associate the explicit park selection with the monotonic authority epoch; a new epoch uses omitted branch selection and the server reachable default.",
+                                 "regression":  "New ninth actual React browser case: select B; narrow canonical permissions to A through the existing session reload event; require next read with no branchId, enabled selector A, no403, and a successful refresh.",
+                                 "fix":  "The explicit selection is bound to a monotonic authorityEpoch. A changed authority reads omitted branchId immediately; an A-to-B-to-A authority return cannot resurrect the prior filter."
+                             }
+                         ],
+    "priorOpenReview":  {
+                            "path":  "C:/w/admin634-console-independent-review.json",
+                            "sha256":  "6dfadc9630b1dfbe5192726cece70c725a4811416964fc22cff3f5bb1447771c",
+                            "preserved":  true
+                        },
+    "fullOutputRead":  true,
+    "redGreenEvidence":  {
+                             "redSourceManifestSha256":  "f1d21f7946c63c19b1dea68696454349e7dcadb0e6e6b34c685fbcd711ddeb12",
+                             "redUnitReceiptSha256":  "2762778545eab406d62154fe04936399f46e79e7c6a67f75376394064731b6e2",
+                             "redUnitLogSha256":  "60c68bec4cd5f7c326baaef70e5052751cc357f5599a8c0701a73478c8ac50bf",
+                             "redUnitResults":  "11 passed,1 functional failure: selected B instead of omitted branch",
+                             "redBrowserReceiptSha256":  "c3a84c6a00321e2bf64d374c32122394792760821603d41ed03a8d49f3eab19b",
+                             "redBrowserLogSha256":  "4dab221ba3f24bc3f8c1a0dbcd573fdc225cdaa243f5a23d97562dafde932cf1",
+                             "redBrowserResults":  "8 passed,1 functional failure in the actual React browser: selected B instead of omitted branch",
+                             "greenReceiptSha256":  "6fa0cc3d3eb26bf4143f134e214f473376d7f57dcaacc2fda9429736fcb4dcd6",
+                             "greenLogSha256":  "88e74797c5a939a16ae9a063e04bcc9a19c7cc86a393f1829b558053d0aba961",
+                             "greenSourceManifestSha256":  "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+                             "greenUnitCases":  23,
+                             "greenBuiltBrowserCases":  9,
+                             "greenExitCode":  0,
+                             "hostSourceUnchanged":  true,
+                             "hostAndContainerApiDocsUnchanged":  true,
+                             "wholeRedAndGreenLogsRead":  true,
+                             "testsUnchangedBetweenRedAndGreen":  true,
+                             "lifetimeTestSha256":  "df55ff3137ab512ec93f91ebcbd6dc60cebad0595142be15a480ea5ea4e21338",
+                             "browserTestSha256":  "1bb06b3bc24c9df8dc3f231c5263d778dc73edf12e16c720047aa922cb6b0301",
+                             "staffSha256":  "901d050100e7b15f489d87708c383e5202d518ea9dc14b626a6f173b19291620",
+                             "apiSha256":  "6461fb3200d02b43dab4ff7f10ab76371abb1cff31907e5715f367e7bfc5895a"
+                         },
+    "directGeneratedContract":  {
+                                    "readUsesDirectApiResponseGeneric":  true,
+                                    "exportedStaffSummaryGeneratedAliasRetained":  true,
+                                    "allowanceAdded":  false,
+                                    "source":  "apps/console/src/api/staff.ts"
+                                }
+}

@@ -362,6 +362,14 @@ describe('every create names its record where OD-12 says (SCRUM-270)', () => {
     await app.close();
   });
 
+  it('Staff summary identifiers are read targets rather than new record identities (SCRUM-634)', () => {
+    const route = routes.find(r => r.method === 'GET' && r.path === '/staff/summary');
+    expect(route).toBeDefined();
+    expect(route!.optionsText).toContain('querystring:');
+    expect(route!.optionsText).not.toMatch(/\bbody\s*:/);
+    expect(app.routeRegistry.some(r => r.url === '/staff/summary' && r.method === 'POST')).toBe(false);
+  });
+
   it('every route on either list is a route the app serves', () => {
     const live = new Set(app.routeRegistry.map((r) => `${r.method} ${r.url}`));
     expect([...CALLER_NAMED, ...Object.keys(PLATFORM_NAMED)].filter((k) => !live.has(k)).sort()).toEqual([]);

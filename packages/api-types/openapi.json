@@ -65144,6 +65144,404 @@
         }
       }
     },
+    "/staff/summary": {
+      "get": {
+        "description": "Read-only Staff and HR headlines through the OTO App as the current caller. Both app:oto_app:access and admin:account:read must cover the selected live owned park; the existing own-department app-access handoff rule remains, and every app API retains its own access checks. Omitting branchId selects the reachable session park, else the first reachable park in name/id order. Foreign, absent and archived parks return404; an own unreachable park returns403. The selected core park must map unambiguously to an accessible app park in the acting user tenant. Working and attendance counts reuse the native app definitions; leave counts existing overlapping entries. Payroll is the app current company month, not a selected-park total, and requires the app salary/advisor gates. A refusal or missing source stays distinct from zero. No HR/payroll tables are read by the platform. One audited handoff and temporary app session are used, with app-only logout before an answer is returned; credentials and upstream personal/financial payloads are never returned.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "query",
+            "name": "branchId",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "generatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "branches": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "timezone": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "timezone"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "selectedBranchId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "date": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                      "nullable": true
+                    },
+                    "source": {
+                      "type": "string",
+                      "enum": [
+                        "ready",
+                        "not-configured",
+                        "not-provisioned",
+                        "unavailable",
+                        "unmapped-branch"
+                      ]
+                    },
+                    "working": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "ready"
+                              ]
+                            },
+                            "count": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "asOf": {
+                              "type": "string",
+                              "format": "date-time",
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "count",
+                            "asOf"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "forbidden",
+                                "unavailable"
+                              ]
+                            },
+                            "count": {
+                              "enum": [
+                                "null"
+                              ],
+                              "nullable": true
+                            },
+                            "asOf": {
+                              "enum": [
+                                "null"
+                              ],
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "count",
+                            "asOf"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ]
+                    },
+                    "attendance": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "ready"
+                              ]
+                            },
+                            "count": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "asOf": {
+                              "type": "string",
+                              "format": "date-time",
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "count",
+                            "asOf"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "forbidden",
+                                "unavailable"
+                              ]
+                            },
+                            "count": {
+                              "enum": [
+                                "null"
+                              ],
+                              "nullable": true
+                            },
+                            "asOf": {
+                              "enum": [
+                                "null"
+                              ],
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "count",
+                            "asOf"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ]
+                    },
+                    "leave": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "ready"
+                              ]
+                            },
+                            "count": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "asOf": {
+                              "type": "string",
+                              "format": "date-time",
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "count",
+                            "asOf"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "forbidden",
+                                "unavailable"
+                              ]
+                            },
+                            "count": {
+                              "enum": [
+                                "null"
+                              ],
+                              "nullable": true
+                            },
+                            "asOf": {
+                              "enum": [
+                                "null"
+                              ],
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "count",
+                            "asOf"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ]
+                    },
+                    "payroll": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "ready"
+                              ]
+                            },
+                            "month": {
+                              "type": "string",
+                              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+                            },
+                            "entities": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "version": {
+                                    "type": "integer",
+                                    "exclusiveMinimum": true,
+                                    "minimum": 0,
+                                    "nullable": true
+                                  },
+                                  "status": {
+                                    "type": "string",
+                                    "enum": [
+                                      "not-started",
+                                      "draft",
+                                      "gm-confirmed",
+                                      "locked",
+                                      "paid",
+                                      "superseded"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name",
+                                  "version",
+                                  "status"
+                                ],
+                                "additionalProperties": false
+                              }
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "month",
+                            "entities"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "forbidden",
+                                "unavailable"
+                              ]
+                            },
+                            "month": {
+                              "enum": [
+                                "null"
+                              ],
+                              "nullable": true
+                            },
+                            "entities": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "version": {
+                                    "type": "integer",
+                                    "exclusiveMinimum": true,
+                                    "minimum": 0,
+                                    "nullable": true
+                                  },
+                                  "status": {
+                                    "type": "string",
+                                    "enum": [
+                                      "not-started",
+                                      "draft",
+                                      "gm-confirmed",
+                                      "locked",
+                                      "paid",
+                                      "superseded"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name",
+                                  "version",
+                                  "status"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "maxItems": 0
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "month",
+                            "entities"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "generatedAt",
+                    "branches",
+                    "selectedBranchId",
+                    "date",
+                    "source",
+                    "working",
+                    "attendance",
+                    "leave",
+                    "payroll"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/overview": {
       "get": {
         "description": "Today at the live parks within console:overview:read reach, independent of the session seat. The optional branchId selects one reachable park. Revenue and guests use each park’s business date, selected analytics source and stored rollup, with its provisional and freshness marks. Bookings count every state for that visit date. Inbox unanswered reuses its existing rule; alerts are unresolved. These park counts exclude branchless Inbox conversations and operator/platform alerts. Offline boxes use their reported offline status at any hour; alerting hours are unchanged. Summary-only authority: linked screens retain their own permissions. Foreign, absent or archived park: 404; own unreachable park: 403.",

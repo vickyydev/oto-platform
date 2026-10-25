@@ -26531,6 +26531,126 @@ export interface paths {
         };
         trace?: never;
     };
+    "/staff/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read-only Staff and HR headlines through the OTO App as the current caller. Both app:oto_app:access and admin:account:read must cover the selected live owned park; the existing own-department app-access handoff rule remains, and every app API retains its own access checks. Omitting branchId selects the reachable session park, else the first reachable park in name/id order. Foreign, absent and archived parks return404; an own unreachable park returns403. The selected core park must map unambiguously to an accessible app park in the acting user tenant. Working and attendance counts reuse the native app definitions; leave counts existing overlapping entries. Payroll is the app current company month, not a selected-park total, and requires the app salary/advisor gates. A refusal or missing source stays distinct from zero. No HR/payroll tables are read by the platform. One audited handoff and temporary app session are used, with app-only logout before an answer is returned; credentials and upstream personal/financial payloads are never returned. */
+        get: {
+            parameters: {
+                query?: {
+                    branchId?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: date-time */
+                            generatedAt: string;
+                            branches: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                                timezone: string;
+                            }[];
+                            /** Format: uuid */
+                            selectedBranchId: string | null;
+                            date: string | null;
+                            /** @enum {string} */
+                            source: "ready" | "not-configured" | "not-provisioned" | "unavailable" | "unmapped-branch";
+                            working: {
+                                /** @enum {string} */
+                                status: "ready";
+                                count: number;
+                                /** Format: date-time */
+                                asOf: string | null;
+                            } | {
+                                /** @enum {string} */
+                                status: "forbidden" | "unavailable";
+                                /** @enum {unknown|null} */
+                                count: "null" | null;
+                                /** @enum {unknown|null} */
+                                asOf: "null" | null;
+                            };
+                            attendance: {
+                                /** @enum {string} */
+                                status: "ready";
+                                count: number;
+                                /** Format: date-time */
+                                asOf: string | null;
+                            } | {
+                                /** @enum {string} */
+                                status: "forbidden" | "unavailable";
+                                /** @enum {unknown|null} */
+                                count: "null" | null;
+                                /** @enum {unknown|null} */
+                                asOf: "null" | null;
+                            };
+                            leave: {
+                                /** @enum {string} */
+                                status: "ready";
+                                count: number;
+                                /** Format: date-time */
+                                asOf: string | null;
+                            } | {
+                                /** @enum {string} */
+                                status: "forbidden" | "unavailable";
+                                /** @enum {unknown|null} */
+                                count: "null" | null;
+                                /** @enum {unknown|null} */
+                                asOf: "null" | null;
+                            };
+                            payroll: {
+                                /** @enum {string} */
+                                status: "ready";
+                                month: string;
+                                entities: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                    version: number | null;
+                                    /** @enum {string} */
+                                    status: "not-started" | "draft" | "gm-confirmed" | "locked" | "paid" | "superseded";
+                                }[];
+                            } | {
+                                /** @enum {string} */
+                                status: "forbidden" | "unavailable";
+                                /** @enum {unknown|null} */
+                                month: "null" | null;
+                                entities: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                    version: number | null;
+                                    /** @enum {string} */
+                                    status: "not-started" | "draft" | "gm-confirmed" | "locked" | "paid" | "superseded";
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/overview": {
         parameters: {
             query?: never;

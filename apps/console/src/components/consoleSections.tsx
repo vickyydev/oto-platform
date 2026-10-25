@@ -271,9 +271,8 @@ export const consoleNav: ConsoleNavGroup[] = [
   },
   {
     id: 'staff', label: 'Staff & HR', icon: CalendarCheck,
-    description: 'Staff operations and HR are managed in the OTO App.',
+    description: 'Read-only staff, attendance, leave and payroll headlines from OTO App, with links to their source pages.',
     gate: { all: ['app:oto_app:access', 'admin:account:read'] }, sections: [],
-    currentHome: { app: 'suite', path: '', label: 'Open the suite to choose OTO App' },
   },
   {
     id: 'reports', label: 'Reports', icon: BarChart3,

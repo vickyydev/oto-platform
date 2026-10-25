@@ -1,0 +1,113 @@
+{
+  "ticket": "SCRUM-634",
+  "passed": true,
+  "reviewedAt": "2026-10-25T02:19:55.988Z",
+  "sourceManifestSha256": "55e085b68fedd8a18844a7933b2ea7dbe9819665045d00497e9ee13b807849ed",
+  "broadManifestSha256": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+  "sourceFiles": 3753,
+  "dependencyInputs": 28,
+  "allFinalHostSourceBytesVerified": true,
+  "allProductionBytesIdentical": true,
+  "allOtherTestBytesIdentical": true,
+  "allDependenciesIdentical": true,
+  "changed": [
+    {
+      "path": "apps/api/test/s217b-r7-payroll-cross-review.test.ts",
+      "sha256": "3154d5dd1639fa6a0d70984a9eb8cbc737312483178b78b878620ae71e762f06"
+    }
+  ],
+  "exactSingleExpectationAddition": "'get /api/payroll/month-status hr.view_salary',",
+  "assertionsAndFixturesPreserved": true,
+  "bridgeSha256": "4e135e516e684463de867b873ee0ea76ee97001c0b876c8102490162c9144bf0",
+  "bridgeGeneratorSha256": "da12d443bd4b44c677441039fbbd7c10364467cb7672108fe5b497fa9c6a3064",
+  "dependenciesSha256": "f9cdec0d1c9af87316b7572b06f4d51dd92403ff6abb3e3e223da3b02c47de95",
+  "originalFullFrame": {
+    "files": 364,
+    "passed": 5409,
+    "failed": 1,
+    "skipped": 3,
+    "todo": 5,
+    "commandFramePassed": false
+  },
+  "originalReceipts": [
+    {
+      "name": "api-final-shard-1",
+      "receiptSha256": "340d414b61985476519d480e8c44e92a31e926aaa82cdca0be202dce58d71abb",
+      "logSha256": "4b1c79d4fb721d29d033908d6528fd1b02f2ecdeeb7d459a03757c64ff477bbf",
+      "exitCode": 0,
+      "files": 122,
+      "counts": {
+        "passed": 1844,
+        "skipped": 1
+      }
+    },
+    {
+      "name": "api-final-shard-2",
+      "receiptSha256": "127e56498f4b9d2cf55c8c57d7eb32ef3336211b19aa38d67b1fc51368db0bce",
+      "logSha256": "a02d4230a53706288cbe0b25398fc77ef2b50f1160a7c51bed00ea1b57ae0327",
+      "exitCode": 0,
+      "files": 122,
+      "counts": {
+        "passed": 1919,
+        "todo": 4
+      }
+    },
+    {
+      "name": "api-final-shard-3",
+      "receiptSha256": "9792c5a8f29fcbdf9bd6262e79b35e681640e423ad4511fdc1cff882d4af3420",
+      "logSha256": "fab3378e39787c3a1911fb2dddc1d1b38349072d97d307792b82db1752107d22",
+      "exitCode": 1,
+      "files": 120,
+      "counts": {
+        "failed": 1,
+        "passed": 1646,
+        "skipped": 2,
+        "todo": 1
+      }
+    }
+  ],
+  "soleOriginalFailure": {
+    "path": "test/s217b-r7-payroll-cross-review.test.ts",
+    "test": "round 7 independent payroll ownership review > censuses the company payroll module: every route, in order, with its permission key (SCRUM-567 R2)"
+  },
+  "distinctDiscoveredFiles": 364,
+  "missingFiles": [],
+  "duplicateFiles": [],
+  "correctedCurrentCoverage": {
+    "files": 364,
+    "passed": 5410,
+    "failed": 0,
+    "skipped": 3,
+    "todo": 5
+  },
+  "aggregationMethod": "Replace the original changed-file24 passing/1 failing cases with its complete25 passing rerun. All7 other focused files overlap the364-file frame and are not added again.",
+  "correctedFileAndFocusedGate": {
+    "receiptSha256": "03eb2370ed9c7a2ff6dac56ed48ade12cac2336c824b3e7b6ecf145efd90a09e",
+    "logSha256": "5a56603eb6046d99f7f8af05ce2b8f7ac2d26b8b5f916a9c6b048ecd7bfa47ce",
+    "exitCode": 0,
+    "files": 8,
+    "wholeChangedFileCases": 25,
+    "otherFocusedCases": 138,
+    "totalCases": 163,
+    "sourceManifestSha256": "55e085b68fedd8a18844a7933b2ea7dbe9819665045d00497e9ee13b807849ed",
+    "wholeOutputRead": true,
+    "apiCompilerDiagnostics": 0,
+    "consoleCompilerDiagnostics": 0,
+    "apiOwnCompiler": true,
+    "consoleOwnProductionTestAndE2eCompilers": true,
+    "generatedContractsMatch": true,
+    "changedFileEslintExitCode": 0,
+    "hostSourceUnchanged": true,
+    "apiDocsUnchanged": true
+  },
+  "findings": [],
+  "warnings": [
+    "Only inherited Fastify deprecation warnings appear in the latest compiler/contract/lint log."
+  ],
+  "limits": [
+    "The original full3-shard command frame remains failed with its single ordered-census failure; it has not been relabelled green.",
+    "No new full3-shard command rerun is claimed. The current coverage aggregate is a source-bound replacement of the complete affected25-case file plus unchanged-file evidence.",
+    "This review does not execute a compiler, test, container, Git mutation, CI or staging action.",
+    "Exact final committed-SHA full CI, automatic deployment and actual staging evidence remain required before Deployed."
+  ]
+}

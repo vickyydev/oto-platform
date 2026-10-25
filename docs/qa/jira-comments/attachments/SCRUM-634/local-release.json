@@ -1,0 +1,1353 @@
+{
+  "ticket": "SCRUM-634",
+  "capturedAt": "2026-10-25T02:20:35.288Z",
+  "localCoverageReady": true,
+  "sourceReleased": false,
+  "actualStaging": false,
+  "finalManifestSha256": "55e085b68fedd8a18844a7933b2ea7dbe9819665045d00497e9ee13b807849ed",
+  "broadManifestSha256": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+  "sourceFiles": 3753,
+  "dependencyInputs": 28,
+  "api": {
+    "files": 364,
+    "passed": 5410,
+    "failed": 0,
+    "skipped": 3,
+    "todo": 5
+  },
+  "apiCoverageMethod": [
+    "The original three-shard command frame has one stale ordered-inventory failure and remains failed.",
+    "Current API coverage combines every full-frame file with the complete corrected25-case file, plus138 focused cases and current compilers/contracts/lint.",
+    "Only one test expectation line changed; production, every other test and all dependency bytes are identical. No full-command rerun is claimed.",
+    "Exact-source full CI, automatic rollout and actual staging proof remain before Deployed."
+  ],
+  "console": {
+    "unitPassed": 281,
+    "todo": 3,
+    "files": 35,
+    "browserPassed": 204,
+    "focusedUnitPassed": 23,
+    "focusedBrowserPassed": 9
+  },
+  "pos": {
+    "passed": 1437,
+    "files": 101
+  },
+  "box": {
+    "passed": 749
+  },
+  "otherPackageTasks": 13,
+  "workspace": {
+    "typecheckTasks": 16,
+    "buildTasks": 5,
+    "lintErrors": 0,
+    "inheritedWarnings": 8,
+    "contractsMatch": true,
+    "noMock": true
+  },
+  "app": {
+    "freshInstall": {
+      "ticket": "SCRUM-634",
+      "name": "app-install",
+      "command": "cd apps/oto-app && npm ci --ignore-scripts --offline --no-audit --no-fund",
+      "startedAt": "2026-10-25T01:37:15.644Z",
+      "completedAt": "2026-10-25T01:37:35.158Z",
+      "exitCode": 0,
+      "signal": null,
+      "sourceManifestSha256": "8a72f1c1558378f03c1405a0954440e9766cb7ff55803c9cbfcd1c98a292d6ec",
+      "logSha256": "3e4ff24845d1a467d69ff0fd2a2738a3028e8b3b16950ce2457fc61e33b4ed90",
+      "hostSourceUnchanged": true,
+      "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+      "hostAndContainerApiDocsUnchanged": true,
+      "staging": false
+    },
+    "native": {
+      "ticket": "SCRUM-634",
+      "name": "app-focused-v1",
+      "command": "node /tmp/admin634-app-native-run-v2.mjs",
+      "startedAt": "2026-10-25T01:48:32.114Z",
+      "completedAt": "2026-10-25T01:48:39.993Z",
+      "exitCode": 0,
+      "signal": null,
+      "sourceManifestSha256": "cb3d3b425ee5383f2d3e900cac9f2b7852f13fd71a7a4ad23084476bdf1f59ad",
+      "logSha256": "7b2b768ebe120bd1c366ae42994e85b335d008a24619d22912252b76d7167849",
+      "hostSourceUnchanged": true,
+      "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+      "hostAndContainerApiDocsUnchanged": true,
+      "staging": false
+    },
+    "full": {
+      "ticket": "SCRUM-634",
+      "mode": "full",
+      "staging": false,
+      "finalRelease": false,
+      "sourceManifestSha256": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+      "sourceFiles": 3753,
+      "dependencyInputs": 28,
+      "runnerSha256": "b317005b25afb5ea10e06ef00fbcdedf335dc4bac76960f50d4eb610afe36465",
+      "bindingSha256": "54e75926df029eb2d1c24297030c4461887124f60fe98c95f7d5951fbbedd10b",
+      "startedAt": "2026-10-25T02:00:41.947Z",
+      "commands": [
+        {
+          "label": "build",
+          "cwd": "/workspace/apps/oto-app",
+          "argv": [
+            "npm",
+            "run",
+            "build"
+          ],
+          "shellGuard": "set -eo pipefail",
+          "startedAt": "2026-10-25T02:00:42.665Z",
+          "completedAt": "2026-10-25T02:00:58.836Z",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "timedOut": false,
+          "sourceBefore": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "sourceAfter": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "installedBefore": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "installedAfter": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "verificationFailure": null,
+          "logSha256": "9167d00a26fc708b49f2ac971034090c43650c263bc28c139756337d0c44f54e",
+          "passed": true
+        },
+        {
+          "label": "platform-sign-on.test.ts",
+          "cwd": "/workspace/apps/oto-app",
+          "argv": [
+            "node",
+            "node_modules/tsx/dist/cli.mjs",
+            "tests/platform-sign-on.test.ts"
+          ],
+          "shellGuard": "set -eo pipefail",
+          "startedAt": "2026-10-25T02:00:58.989Z",
+          "completedAt": "2026-10-25T02:00:59.441Z",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "timedOut": false,
+          "sourceBefore": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "sourceAfter": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "installedBefore": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "installedAfter": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "verificationFailure": null,
+          "logSha256": "d20db9aca5be6f43f4df17171a0a6f372affe2e3e7836f337c10fee30f43560a",
+          "passed": true
+        },
+        {
+          "label": "handoff-target.check.ts",
+          "cwd": "/workspace/apps/oto-app",
+          "argv": [
+            "node",
+            "node_modules/tsx/dist/cli.mjs",
+            "tests/handoff-target.check.ts"
+          ],
+          "shellGuard": "set -eo pipefail",
+          "startedAt": "2026-10-25T02:00:59.586Z",
+          "completedAt": "2026-10-25T02:01:13.777Z",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "timedOut": false,
+          "sourceBefore": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "sourceAfter": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "installedBefore": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "installedAfter": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "verificationFailure": null,
+          "logSha256": "53a526983aed16e90f9272ee287c864403c10fc1cf4a4209f9478e3ea54f9b24",
+          "passed": true
+        },
+        {
+          "label": "payroll-cutover.check.ts",
+          "cwd": "/workspace/apps/oto-app",
+          "argv": [
+            "node",
+            "node_modules/tsx/dist/cli.mjs",
+            "tests/payroll-cutover.check.ts"
+          ],
+          "shellGuard": "set -eo pipefail",
+          "startedAt": "2026-10-25T02:01:13.953Z",
+          "completedAt": "2026-10-25T02:01:14.558Z",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "timedOut": false,
+          "sourceBefore": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "sourceAfter": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "installedBefore": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "installedAfter": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "verificationFailure": null,
+          "logSha256": "0c90c062a5cb91ee8f64e52110d2155910988f1ee4e6dd4676bfeb32caf1737d",
+          "passed": true
+        },
+        {
+          "label": "access-escalation-platform-migrate",
+          "cwd": "/workspace/packages/db",
+          "argv": [
+            "node",
+            "node_modules/drizzle-kit/bin.cjs",
+            "migrate"
+          ],
+          "shellGuard": "set -eo pipefail",
+          "startedAt": "2026-10-25T02:01:14.753Z",
+          "completedAt": "2026-10-25T02:01:17.235Z",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "timedOut": false,
+          "sourceBefore": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "sourceAfter": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "installedBefore": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "installedAfter": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "verificationFailure": null,
+          "logSha256": "c4dbcdb79947aee527ddc9fc200cae54f58060e20c398a8f5e52f31fd3e163a9",
+          "passed": true
+        },
+        {
+          "label": "access-escalation-app-migrate",
+          "cwd": "/workspace/apps/oto-app",
+          "argv": [
+            "node",
+            "script/migrate.mjs"
+          ],
+          "shellGuard": "set -eo pipefail",
+          "startedAt": "2026-10-25T02:01:17.386Z",
+          "completedAt": "2026-10-25T02:01:19.562Z",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "timedOut": false,
+          "sourceBefore": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "sourceAfter": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "installedBefore": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "installedAfter": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "verificationFailure": null,
+          "logSha256": "fa8afb46f1613de82c31b3732eacf959284f1be4bc7a263c4c6d2477d0162c82",
+          "passed": true
+        },
+        {
+          "label": "access-escalation-app-noop",
+          "cwd": "/workspace/apps/oto-app",
+          "argv": [
+            "node",
+            "script/migrate.mjs"
+          ],
+          "shellGuard": "set -eo pipefail",
+          "startedAt": "2026-10-25T02:01:19.713Z",
+          "completedAt": "2026-10-25T02:01:20.148Z",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "timedOut": false,
+          "sourceBefore": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "sourceAfter": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "installedBefore": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "installedAfter": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "verificationFailure": null,
+          "logSha256": "1b52a7d91155c342ee50d3ebacdd910a91930afaadc8a9af1891feb18c47f724",
+          "passed": true
+        },
+        {
+          "label": "access-escalation-access-escalation-0",
+          "cwd": "/workspace/apps/oto-app",
+          "argv": [
+            "node",
+            "node_modules/tsx/dist/cli.mjs",
+            "tests/access-escalation.check.ts"
+          ],
+          "shellGuard": "set -eo pipefail",
+          "startedAt": "2026-10-25T02:01:20.299Z",
+          "completedAt": "2026-10-25T02:01:25.178Z",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "timedOut": false,
+          "sourceBefore": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "sourceAfter": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "installedBefore": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "installedAfter": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "verificationFailure": null,
+          "logSha256": "b62bacd9e31ce928e3ee2e1245de2e702bad0744deadd39d9208e838a94cf67c",
+          "passed": true
+        },
+        {
+          "label": "named-rights-platform-migrate",
+          "cwd": "/workspace/packages/db",
+          "argv": [
+            "node",
+            "node_modules/drizzle-kit/bin.cjs",
+            "migrate"
+          ],
+          "shellGuard": "set -eo pipefail",
+          "startedAt": "2026-10-25T02:01:25.438Z",
+          "completedAt": "2026-10-25T02:01:28.206Z",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "timedOut": false,
+          "sourceBefore": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "sourceAfter": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "installedBefore": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "installedAfter": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "verificationFailure": null,
+          "logSha256": "bc740c637f5f57a068afa875ed47f79194d9c36097b7eff5fa384015c39e6812",
+          "passed": true
+        },
+        {
+          "label": "named-rights-app-migrate",
+          "cwd": "/workspace/apps/oto-app",
+          "argv": [
+            "node",
+            "script/migrate.mjs"
+          ],
+          "shellGuard": "set -eo pipefail",
+          "startedAt": "2026-10-25T02:01:28.371Z",
+          "completedAt": "2026-10-25T02:01:30.812Z",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "timedOut": false,
+          "sourceBefore": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "sourceAfter": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "installedBefore": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "installedAfter": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "verificationFailure": null,
+          "logSha256": "fa8afb46f1613de82c31b3732eacf959284f1be4bc7a263c4c6d2477d0162c82",
+          "passed": true
+        },
+        {
+          "label": "named-rights-app-noop",
+          "cwd": "/workspace/apps/oto-app",
+          "argv": [
+            "node",
+            "script/migrate.mjs"
+          ],
+          "shellGuard": "set -eo pipefail",
+          "startedAt": "2026-10-25T02:01:30.964Z",
+          "completedAt": "2026-10-25T02:01:31.432Z",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "timedOut": false,
+          "sourceBefore": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "sourceAfter": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "installedBefore": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "installedAfter": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "verificationFailure": null,
+          "logSha256": "1b52a7d91155c342ee50d3ebacdd910a91930afaadc8a9af1891feb18c47f724",
+          "passed": true
+        },
+        {
+          "label": "named-rights-named-rights-0",
+          "cwd": "/workspace/apps/oto-app",
+          "argv": [
+            "node",
+            "node_modules/tsx/dist/cli.mjs",
+            "tests/named-rights.check.ts"
+          ],
+          "shellGuard": "set -eo pipefail",
+          "startedAt": "2026-10-25T02:01:31.589Z",
+          "completedAt": "2026-10-25T02:01:36.821Z",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "timedOut": false,
+          "sourceBefore": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "sourceAfter": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "installedBefore": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "installedAfter": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "verificationFailure": null,
+          "logSha256": "300b78d6e03aefa8c9dc4b020c10d4a1e38f9f28f2e63036a511556ff53b874f",
+          "passed": true
+        },
+        {
+          "label": "tenant-ownership-platform-migrate",
+          "cwd": "/workspace/packages/db",
+          "argv": [
+            "node",
+            "node_modules/drizzle-kit/bin.cjs",
+            "migrate"
+          ],
+          "shellGuard": "set -eo pipefail",
+          "startedAt": "2026-10-25T02:01:37.048Z",
+          "completedAt": "2026-10-25T02:01:39.933Z",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "timedOut": false,
+          "sourceBefore": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "sourceAfter": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "installedBefore": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "installedAfter": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "verificationFailure": null,
+          "logSha256": "bc740c637f5f57a068afa875ed47f79194d9c36097b7eff5fa384015c39e6812",
+          "passed": true
+        },
+        {
+          "label": "tenant-ownership-app-migrate",
+          "cwd": "/workspace/apps/oto-app",
+          "argv": [
+            "node",
+            "script/migrate.mjs"
+          ],
+          "shellGuard": "set -eo pipefail",
+          "startedAt": "2026-10-25T02:01:40.107Z",
+          "completedAt": "2026-10-25T02:01:42.781Z",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "timedOut": false,
+          "sourceBefore": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "sourceAfter": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "installedBefore": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "installedAfter": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "verificationFailure": null,
+          "logSha256": "fa8afb46f1613de82c31b3732eacf959284f1be4bc7a263c4c6d2477d0162c82",
+          "passed": true
+        },
+        {
+          "label": "tenant-ownership-app-noop",
+          "cwd": "/workspace/apps/oto-app",
+          "argv": [
+            "node",
+            "script/migrate.mjs"
+          ],
+          "shellGuard": "set -eo pipefail",
+          "startedAt": "2026-10-25T02:01:42.957Z",
+          "completedAt": "2026-10-25T02:01:43.453Z",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "timedOut": false,
+          "sourceBefore": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "sourceAfter": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "installedBefore": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "installedAfter": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "verificationFailure": null,
+          "logSha256": "1b52a7d91155c342ee50d3ebacdd910a91930afaadc8a9af1891feb18c47f724",
+          "passed": true
+        },
+        {
+          "label": "tenant-ownership-tenant-ownership-0",
+          "cwd": "/workspace/apps/oto-app",
+          "argv": [
+            "node",
+            "node_modules/tsx/dist/cli.mjs",
+            "tests/tenant-ownership.check.ts"
+          ],
+          "shellGuard": "set -eo pipefail",
+          "startedAt": "2026-10-25T02:01:43.611Z",
+          "completedAt": "2026-10-25T02:01:50.034Z",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "timedOut": false,
+          "sourceBefore": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "sourceAfter": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "installedBefore": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "installedAfter": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "verificationFailure": null,
+          "logSha256": "945a8aeba45161cfa6d9fd83b8a859109e475a69b77a787855e33a5dc34cf7bd",
+          "passed": true
+        },
+        {
+          "label": "leave-balance-reach-platform-migrate",
+          "cwd": "/workspace/packages/db",
+          "argv": [
+            "node",
+            "node_modules/drizzle-kit/bin.cjs",
+            "migrate"
+          ],
+          "shellGuard": "set -eo pipefail",
+          "startedAt": "2026-10-25T02:01:50.263Z",
+          "completedAt": "2026-10-25T02:01:53.070Z",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "timedOut": false,
+          "sourceBefore": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "sourceAfter": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "installedBefore": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "installedAfter": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "verificationFailure": null,
+          "logSha256": "bc740c637f5f57a068afa875ed47f79194d9c36097b7eff5fa384015c39e6812",
+          "passed": true
+        },
+        {
+          "label": "leave-balance-reach-app-migrate",
+          "cwd": "/workspace/apps/oto-app",
+          "argv": [
+            "node",
+            "script/migrate.mjs"
+          ],
+          "shellGuard": "set -eo pipefail",
+          "startedAt": "2026-10-25T02:01:53.226Z",
+          "completedAt": "2026-10-25T02:01:55.964Z",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "timedOut": false,
+          "sourceBefore": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "sourceAfter": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "installedBefore": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "installedAfter": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "verificationFailure": null,
+          "logSha256": "fa8afb46f1613de82c31b3732eacf959284f1be4bc7a263c4c6d2477d0162c82",
+          "passed": true
+        },
+        {
+          "label": "leave-balance-reach-app-noop",
+          "cwd": "/workspace/apps/oto-app",
+          "argv": [
+            "node",
+            "script/migrate.mjs"
+          ],
+          "shellGuard": "set -eo pipefail",
+          "startedAt": "2026-10-25T02:01:56.189Z",
+          "completedAt": "2026-10-25T02:01:56.740Z",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "timedOut": false,
+          "sourceBefore": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "sourceAfter": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "installedBefore": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "installedAfter": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "verificationFailure": null,
+          "logSha256": "1b52a7d91155c342ee50d3ebacdd910a91930afaadc8a9af1891feb18c47f724",
+          "passed": true
+        },
+        {
+          "label": "leave-balance-reach-leave-balance-reach-0",
+          "cwd": "/workspace/apps/oto-app",
+          "argv": [
+            "node",
+            "node_modules/tsx/dist/cli.mjs",
+            "tests/leave-balance-reach.check.ts"
+          ],
+          "shellGuard": "set -eo pipefail",
+          "startedAt": "2026-10-25T02:01:56.914Z",
+          "completedAt": "2026-10-25T02:02:02.647Z",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "timedOut": false,
+          "sourceBefore": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "sourceAfter": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "installedBefore": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "installedAfter": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "verificationFailure": null,
+          "logSha256": "e5197015abddd03bf41513da6f73941448ccae7b6610e4c131324c37608c0f68",
+          "passed": true
+        },
+        {
+          "label": "salary-visibility-platform-migrate",
+          "cwd": "/workspace/packages/db",
+          "argv": [
+            "node",
+            "node_modules/drizzle-kit/bin.cjs",
+            "migrate"
+          ],
+          "shellGuard": "set -eo pipefail",
+          "startedAt": "2026-10-25T02:02:02.945Z",
+          "completedAt": "2026-10-25T02:02:05.685Z",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "timedOut": false,
+          "sourceBefore": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "sourceAfter": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "installedBefore": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "installedAfter": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "verificationFailure": null,
+          "logSha256": "f82fa48c029b01fb005e5d813fd9653fe498d23f58f3010e4e50a87e871b9544",
+          "passed": true
+        },
+        {
+          "label": "salary-visibility-app-migrate",
+          "cwd": "/workspace/apps/oto-app",
+          "argv": [
+            "node",
+            "script/migrate.mjs"
+          ],
+          "shellGuard": "set -eo pipefail",
+          "startedAt": "2026-10-25T02:02:05.842Z",
+          "completedAt": "2026-10-25T02:02:08.285Z",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "timedOut": false,
+          "sourceBefore": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "sourceAfter": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "installedBefore": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "installedAfter": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "verificationFailure": null,
+          "logSha256": "fa8afb46f1613de82c31b3732eacf959284f1be4bc7a263c4c6d2477d0162c82",
+          "passed": true
+        },
+        {
+          "label": "salary-visibility-app-noop",
+          "cwd": "/workspace/apps/oto-app",
+          "argv": [
+            "node",
+            "script/migrate.mjs"
+          ],
+          "shellGuard": "set -eo pipefail",
+          "startedAt": "2026-10-25T02:02:08.440Z",
+          "completedAt": "2026-10-25T02:02:08.925Z",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "timedOut": false,
+          "sourceBefore": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "sourceAfter": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "installedBefore": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "installedAfter": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "verificationFailure": null,
+          "logSha256": "1b52a7d91155c342ee50d3ebacdd910a91930afaadc8a9af1891feb18c47f724",
+          "passed": true
+        },
+        {
+          "label": "salary-visibility-salary-visibility-0",
+          "cwd": "/workspace/apps/oto-app",
+          "argv": [
+            "node",
+            "node_modules/tsx/dist/cli.mjs",
+            "tests/salary-visibility.check.ts"
+          ],
+          "shellGuard": "set -eo pipefail",
+          "startedAt": "2026-10-25T02:02:09.076Z",
+          "completedAt": "2026-10-25T02:02:15.174Z",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "timedOut": false,
+          "sourceBefore": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "sourceAfter": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "installedBefore": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "installedAfter": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "verificationFailure": null,
+          "logSha256": "ced94b015572b06abc33ba1cd8f837c750f88879f12b51e0844de6b206d64808",
+          "passed": true
+        },
+        {
+          "label": "salary-visibility-salary-visibility-1",
+          "cwd": "/workspace/apps/oto-app",
+          "argv": [
+            "node",
+            "node_modules/tsx/dist/cli.mjs",
+            "tests/payroll-config.check.ts"
+          ],
+          "shellGuard": "set -eo pipefail",
+          "startedAt": "2026-10-25T02:02:15.360Z",
+          "completedAt": "2026-10-25T02:02:21.770Z",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "timedOut": false,
+          "sourceBefore": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "sourceAfter": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "installedBefore": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "installedAfter": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "verificationFailure": null,
+          "logSha256": "4c2603cf3cd478b7fa0ebf416a3376197c2221309659d860e9269db17ae18499",
+          "passed": true
+        },
+        {
+          "label": "administration-platform-migrate",
+          "cwd": "/workspace/packages/db",
+          "argv": [
+            "node",
+            "node_modules/drizzle-kit/bin.cjs",
+            "migrate"
+          ],
+          "shellGuard": "set -eo pipefail",
+          "startedAt": "2026-10-25T02:02:21.987Z",
+          "completedAt": "2026-10-25T02:02:24.920Z",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "timedOut": false,
+          "sourceBefore": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "sourceAfter": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "installedBefore": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "installedAfter": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "verificationFailure": null,
+          "logSha256": "e538e4d86c960ac4c4a916200cee2e262cae9379269a0c56297db136c9d6dbd9",
+          "passed": true
+        },
+        {
+          "label": "administration-app-migrate",
+          "cwd": "/workspace/apps/oto-app",
+          "argv": [
+            "node",
+            "script/migrate.mjs"
+          ],
+          "shellGuard": "set -eo pipefail",
+          "startedAt": "2026-10-25T02:02:25.083Z",
+          "completedAt": "2026-10-25T02:02:27.705Z",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "timedOut": false,
+          "sourceBefore": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "sourceAfter": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "installedBefore": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "installedAfter": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "verificationFailure": null,
+          "logSha256": "fa8afb46f1613de82c31b3732eacf959284f1be4bc7a263c4c6d2477d0162c82",
+          "passed": true
+        },
+        {
+          "label": "administration-app-noop",
+          "cwd": "/workspace/apps/oto-app",
+          "argv": [
+            "node",
+            "script/migrate.mjs"
+          ],
+          "shellGuard": "set -eo pipefail",
+          "startedAt": "2026-10-25T02:02:27.879Z",
+          "completedAt": "2026-10-25T02:02:28.350Z",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "timedOut": false,
+          "sourceBefore": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "sourceAfter": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "installedBefore": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "installedAfter": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "verificationFailure": null,
+          "logSha256": "1b52a7d91155c342ee50d3ebacdd910a91930afaadc8a9af1891feb18c47f724",
+          "passed": true
+        },
+        {
+          "label": "administration-administration-0",
+          "cwd": "/workspace/apps/oto-app",
+          "argv": [
+            "node",
+            "node_modules/tsx/dist/cli.mjs",
+            "tests/administration.check.ts"
+          ],
+          "shellGuard": "set -eo pipefail",
+          "startedAt": "2026-10-25T02:02:28.512Z",
+          "completedAt": "2026-10-25T02:02:46.365Z",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "timedOut": false,
+          "sourceBefore": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "sourceAfter": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "installedBefore": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "installedAfter": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "verificationFailure": null,
+          "logSha256": "cac7f09aaa6595b0ad1f95ac869828416cfc9d05f04b250e69084b8bf5b15265",
+          "passed": true
+        }
+      ],
+      "databases": [
+        {
+          "name": "zz_test_634_oto_3bcf3ecfef52_access_escalation",
+          "stage": "access-escalation",
+          "created": true,
+          "removed": true
+        },
+        {
+          "name": "zz_test_634_oto_8a1bbc01a748_named_rights",
+          "stage": "named-rights",
+          "created": true,
+          "removed": true
+        },
+        {
+          "name": "zz_test_634_oto_6800af5d765f_tenant_ownership",
+          "stage": "tenant-ownership",
+          "created": true,
+          "removed": true
+        },
+        {
+          "name": "zz_test_634_oto_5b449b2211ea_leave_balance_reach",
+          "stage": "leave-balance-reach",
+          "created": true,
+          "removed": true
+        },
+        {
+          "name": "zz_test_634_oto_5fe23c2d26cd_salary_visibility",
+          "stage": "salary-visibility",
+          "created": true,
+          "removed": true
+        },
+        {
+          "name": "zz_test_634_oto_1a8b63a9230f_administration",
+          "stage": "administration",
+          "created": true,
+          "removed": true
+        }
+      ],
+      "sourceBefore": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+      "sourceAfter": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+      "passed": true,
+      "installedBefore": {
+        "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+      },
+      "installedAfter": {
+        "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+      },
+      "completedAt": "2026-10-25T02:02:46.566Z",
+      "logSha256": "a01bba54953b136333637a2f25504ea2edd9bf3e36de206bd96ee6fade6b9b1f"
+    },
+    "compiler": {
+      "ticket": "SCRUM-634",
+      "mode": "ratchet",
+      "staging": false,
+      "finalRelease": false,
+      "sourceManifestSha256": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+      "sourceFiles": 3753,
+      "dependencyInputs": 28,
+      "runnerSha256": "b317005b25afb5ea10e06ef00fbcdedf335dc4bac76960f50d4eb610afe36465",
+      "bindingSha256": "54e75926df029eb2d1c24297030c4461887124f60fe98c95f7d5951fbbedd10b",
+      "startedAt": "2026-10-25T01:59:17.130Z",
+      "commands": [
+        {
+          "label": "whole-compiler",
+          "cwd": "/workspace/apps/oto-app",
+          "argv": [
+            "npm",
+            "run",
+            "check:ratchet"
+          ],
+          "shellGuard": "set -eo pipefail",
+          "startedAt": "2026-10-25T01:59:17.612Z",
+          "completedAt": "2026-10-25T02:00:17.706Z",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "timedOut": false,
+          "sourceBefore": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "sourceAfter": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "installedBefore": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "installedAfter": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "verificationFailure": null,
+          "logSha256": "6aff0c71fabd4cec690e12d35434b1380c4c5b46db212070be7cfd45b7709db8",
+          "passed": true
+        }
+      ],
+      "databases": [],
+      "sourceBefore": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+      "sourceAfter": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+      "passed": true,
+      "installedBefore": {
+        "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+      },
+      "installedAfter": {
+        "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+      },
+      "completedAt": "2026-10-25T02:00:17.929Z",
+      "logSha256": "90eddc35575bc70aed4b7e4adc0f62ff452b3e9eeada686a3b352c74f4804fcf"
+    },
+    "restore": {
+      "ticket": "SCRUM-634",
+      "mode": "restore",
+      "staging": false,
+      "finalRelease": false,
+      "sourceManifestSha256": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+      "sourceFiles": 3753,
+      "dependencyInputs": 28,
+      "runnerSha256": "b317005b25afb5ea10e06ef00fbcdedf335dc4bac76960f50d4eb610afe36465",
+      "bindingSha256": "54e75926df029eb2d1c24297030c4461887124f60fe98c95f7d5951fbbedd10b",
+      "startedAt": "2026-10-25T02:03:24.748Z",
+      "commands": [
+        {
+          "label": "actual-restore-replay",
+          "cwd": "/workspace/apps/oto-app",
+          "argv": [
+            "npm",
+            "run",
+            "restore:rehearse"
+          ],
+          "shellGuard": "set -eo pipefail",
+          "startedAt": "2026-10-25T02:03:25.370Z",
+          "completedAt": "2026-10-25T02:03:34.679Z",
+          "exitCode": 0,
+          "signal": null,
+          "errorCode": null,
+          "timedOut": false,
+          "sourceBefore": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "sourceAfter": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+          "installedBefore": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "installedAfter": {
+            "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+            "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+          },
+          "verificationFailure": null,
+          "logSha256": "effb2a23a7e4e7783524e71b59e833dbacb2f918f08f2b62ae68d7eb197f1f03",
+          "passed": true
+        }
+      ],
+      "databases": [],
+      "sourceBefore": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+      "sourceAfter": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+      "passed": true,
+      "installedBefore": {
+        "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+      },
+      "rehearsalDatabasesBefore": [],
+      "rehearsalDatabasesAfter": [],
+      "installedAfter": {
+        "hiddenLockSha256": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "pnpmMetadataSha256": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771"
+      },
+      "completedAt": "2026-10-25T02:03:34.842Z",
+      "logSha256": "02b08a8ad75e515cd070c34c47de4507737bf2156db084109953b90686bb6f44"
+    },
+    "lint": {
+      "ticket": "SCRUM-634",
+      "purpose": "Forced lint of every touched lifted-app TypeScript file against the same unchanged rules and original main bytes",
+      "rootLiftExclusionUnchanged": true,
+      "rulesOverridden": false,
+      "sourceManifestSha256": "05fc7f76bb6c19b89e5168339aacfa953cb567bf2732d9a415628f0d095a708d",
+      "at": "2026-10-25T01:53:53.583Z",
+      "files": 6,
+      "baselineErrors": 0,
+      "candidateErrors": 0,
+      "candidateWarnings": 0,
+      "newErrors": [],
+      "rows": [
+        {
+          "file": "apps/oto-app/server/payroll/month-status.ts",
+          "candidateSha256": "070c96f7d6aa69deabee8ec4d214e64902e66ea8c8315116225bd444c58c4316",
+          "baselineSha256": null,
+          "baseline": {
+            "errorCount": 0,
+            "warningCount": 0,
+            "messages": []
+          },
+          "candidate": {
+            "errorCount": 0,
+            "warningCount": 0,
+            "messages": []
+          },
+          "newErrors": []
+        },
+        {
+          "file": "apps/oto-app/server/payroll/routes.ts",
+          "candidateSha256": "0dac3ac578e75577a6e96d6735e6a2ba49520647b6744bd36df76caca7d032a3",
+          "baselineSha256": "47abedc8af6965c13f0ef3d784958b5820bac5a513383d1fcafaf76a6190af00",
+          "baseline": {
+            "errorCount": 0,
+            "warningCount": 0,
+            "messages": []
+          },
+          "candidate": {
+            "errorCount": 0,
+            "warningCount": 0,
+            "messages": []
+          },
+          "newErrors": []
+        },
+        {
+          "file": "apps/oto-app/tests/payroll-config.check.ts",
+          "candidateSha256": "1c1901aeb66c6ba6ccca5e1efc54c936ded48b584ef000f1ccb5db27e822929d",
+          "baselineSha256": "d517c8013846deaad96adeb9d8a63f9d791f5521592bee5776c9247f6f12b62f",
+          "baseline": {
+            "errorCount": 0,
+            "warningCount": 0,
+            "messages": []
+          },
+          "candidate": {
+            "errorCount": 0,
+            "warningCount": 0,
+            "messages": []
+          },
+          "newErrors": []
+        },
+        {
+          "file": "apps/oto-app/tests/s634-payroll-status.check.ts",
+          "candidateSha256": "f261c88084bf8ea5de4107c75c92af955f9d480dd7924b84e55abaa63ec3cd05",
+          "baselineSha256": null,
+          "baseline": {
+            "errorCount": 0,
+            "warningCount": 0,
+            "messages": []
+          },
+          "candidate": {
+            "errorCount": 0,
+            "warningCount": 0,
+            "messages": []
+          },
+          "newErrors": []
+        },
+        {
+          "file": "apps/oto-app/tests/s634-suite.check.ts",
+          "candidateSha256": "6f653ebcf7eddebd06c7d718d9ea1d241cd921f4e0ceb7a50949370044a84e7e",
+          "baselineSha256": null,
+          "baseline": {
+            "errorCount": 0,
+            "warningCount": 0,
+            "messages": []
+          },
+          "candidate": {
+            "errorCount": 0,
+            "warningCount": 0,
+            "messages": []
+          },
+          "newErrors": []
+        },
+        {
+          "file": "apps/oto-app/tests/suite-sign-in-routes.check.ts",
+          "candidateSha256": "c6af6fddd27e81f23c7960d5e5f05cb43cde2d6f3e047bcb176ed88efcdb60ac",
+          "baselineSha256": "e67f7a0d60361558ce1c0902d6e384789f9a4f686aa7de8ccca17f1333348654",
+          "baseline": {
+            "errorCount": 0,
+            "warningCount": 0,
+            "messages": []
+          },
+          "candidate": {
+            "errorCount": 0,
+            "warningCount": 0,
+            "messages": []
+          },
+          "newErrors": []
+        }
+      ],
+      "passed": true
+    }
+  },
+  "gates": [
+    {
+      "ticket": "SCRUM-634",
+      "name": "review-api-green",
+      "command": "pnpm --filter @oto/api exec vitest run test/console-otoapp.test.ts test/console-staff.test.ts test/s634-staff-summary-review.test.ts test/routes-guarded.test.ts test/route-write-conformance.test.ts test/id-conformance.test.ts test/route-scope-target.test.ts",
+      "startedAt": "2026-10-25T01:58:25.666Z",
+      "completedAt": "2026-10-25T01:58:48.669Z",
+      "exitCode": 0,
+      "signal": null,
+      "sourceManifestSha256": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+      "logSha256": "d9f6332849d5273f13d8b6d6ff86a631198bfc4d90502b9ecf775858ead7de2f",
+      "hostSourceUnchanged": true,
+      "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+      "hostAndContainerApiDocsUnchanged": true,
+      "staging": false
+    },
+    {
+      "ticket": "SCRUM-634",
+      "name": "review-console-green",
+      "command": "pnpm --filter @oto/console exec vitest run test/staff-api.test.ts test/staff-lifetime.test.ts && CONSOLE_E2E_BUILT=1 pnpm --filter @oto/console e2e -- e2e/staff.spec.ts",
+      "startedAt": "2026-10-25T01:58:25.676Z",
+      "completedAt": "2026-10-25T01:58:51.145Z",
+      "exitCode": 0,
+      "signal": null,
+      "sourceManifestSha256": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+      "logSha256": "88e74797c5a939a16ae9a063e04bcc9a19c7cc86a393f1829b558053d0aba961",
+      "hostSourceUnchanged": true,
+      "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+      "hostAndContainerApiDocsUnchanged": true,
+      "staging": false
+    },
+    {
+      "ticket": "SCRUM-634",
+      "name": "actual-ci-entry",
+      "command": "node /tmp/admin634-app-ci-entry.mjs",
+      "startedAt": "2026-10-25T01:58:25.687Z",
+      "completedAt": "2026-10-25T01:58:53.415Z",
+      "exitCode": 0,
+      "signal": null,
+      "sourceManifestSha256": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+      "logSha256": "1042bd4798fef7e9ace6de9b3eb232239c2fbd325459ba412404c8ec5e9f1b59",
+      "hostSourceUnchanged": true,
+      "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+      "hostAndContainerApiDocsUnchanged": true,
+      "staging": false
+    },
+    {
+      "ticket": "SCRUM-634",
+      "name": "workspace-final-checks",
+      "command": "pnpm exec turbo run typecheck build --env-mode=loose --concurrency=1 && pnpm api-types:check && pnpm lint && node scripts/check-no-mock-members.mjs",
+      "startedAt": "2026-10-25T01:59:35.960Z",
+      "completedAt": "2026-10-25T02:03:23.624Z",
+      "exitCode": 0,
+      "signal": null,
+      "sourceManifestSha256": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+      "logSha256": "357ec8705174b897524239a836e47c348e69c464906aafde9bf28541fe260086",
+      "hostSourceUnchanged": true,
+      "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+      "hostAndContainerApiDocsUnchanged": true,
+      "staging": false
+    },
+    {
+      "ticket": "SCRUM-634",
+      "name": "other-final-tests",
+      "command": "pnpm exec turbo run test --filter=!@oto/api --filter=!@oto/pos --filter=!@oto/box-agent --env-mode=loose --force --concurrency=1",
+      "startedAt": "2026-10-25T02:03:49.666Z",
+      "completedAt": "2026-10-25T02:08:02.426Z",
+      "exitCode": 0,
+      "signal": null,
+      "sourceManifestSha256": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+      "logSha256": "b0bbea42ef62cf6402d95441028e7de94cc79a30bbad6ace779add1e713f0c7f",
+      "hostSourceUnchanged": true,
+      "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+      "hostAndContainerApiDocsUnchanged": true,
+      "staging": false
+    },
+    {
+      "ticket": "SCRUM-634",
+      "name": "pos-final-tests",
+      "command": "pnpm --filter @oto/pos test --maxWorkers=1",
+      "startedAt": "2026-10-25T02:05:08.385Z",
+      "completedAt": "2026-10-25T02:06:29.762Z",
+      "exitCode": 0,
+      "signal": null,
+      "sourceManifestSha256": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+      "logSha256": "b13199fc39a7d0d496ad082dcc85687ce0de58d6f999e69272025e822546db9d",
+      "hostSourceUnchanged": true,
+      "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+      "hostAndContainerApiDocsUnchanged": true,
+      "staging": false
+    },
+    {
+      "ticket": "SCRUM-634",
+      "name": "box-final-tests",
+      "command": "pnpm --filter @oto/box-agent test --test-concurrency=1",
+      "startedAt": "2026-10-25T02:06:49.158Z",
+      "completedAt": "2026-10-25T02:08:34.650Z",
+      "exitCode": 0,
+      "signal": null,
+      "sourceManifestSha256": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+      "logSha256": "10c02ed21c92d9e3c2e2c9c0439842fd034ebac78f83b082b7f3794568a8eca6",
+      "hostSourceUnchanged": true,
+      "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+      "hostAndContainerApiDocsUnchanged": true,
+      "staging": false
+    },
+    {
+      "ticket": "SCRUM-634",
+      "name": "console-final-browser",
+      "command": "CONSOLE_E2E_BUILT=1 pnpm --filter @oto/console e2e",
+      "startedAt": "2026-10-25T02:09:58.722Z",
+      "completedAt": "2026-10-25T02:13:32.576Z",
+      "exitCode": 0,
+      "signal": null,
+      "sourceManifestSha256": "116917f731aa1f54ed592fee0654f141764ed0b0d399180977f6509da603d27a",
+      "logSha256": "123a150144f762741536e4edcb6acf01d64de293fd86d8e0a31ba4aa5bd0d3a5",
+      "hostSourceUnchanged": true,
+      "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+      "hostAndContainerApiDocsUnchanged": true,
+      "staging": false
+    },
+    {
+      "ticket": "SCRUM-634",
+      "name": "inventory-final-checks",
+      "command": "pnpm --filter @oto/api exec vitest run test/s217b-r7-payroll-cross-review.test.ts test/console-otoapp.test.ts test/console-staff.test.ts test/s634-staff-summary-review.test.ts test/routes-guarded.test.ts test/route-write-conformance.test.ts test/id-conformance.test.ts test/route-scope-target.test.ts && pnpm --filter @oto/api typecheck && pnpm --filter @oto/console typecheck && pnpm api-types:check && pnpm exec eslint apps/api/test/s217b-r7-payroll-cross-review.test.ts",
+      "startedAt": "2026-10-25T02:16:12.812Z",
+      "completedAt": "2026-10-25T02:17:19.086Z",
+      "exitCode": 0,
+      "signal": null,
+      "sourceManifestSha256": "55e085b68fedd8a18844a7933b2ea7dbe9819665045d00497e9ee13b807849ed",
+      "logSha256": "5a56603eb6046d99f7f8af05ce2b8f7ac2d26b8b5f916a9c6b048ecd7bfa47ce",
+      "hostSourceUnchanged": true,
+      "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+      "hostAndContainerApiDocsUnchanged": true,
+      "staging": false
+    }
+  ],
+  "migrations": {
+    "changed": false,
+    "platformLast": "0086",
+    "appLast": "0031"
+  },
+  "noProtectedProductionChanges": true,
+  "noLegacyAllowanceAdded": true,
+  "noBusinessStagingWrites": true,
+  "noSms": true,
+  "limits": [
+    "This historical local receipt is written before source landing. CI, automatic rollout, staging and screenshots remain.",
+    "Counts combine the full API frame and complete corrected inventory file under a one-line test-only source bridge; the failed original command remains failed.",
+    "Two ticket-owned containers remain needed until final testing; all ten other containers/data are preserved."
+  ]
+}

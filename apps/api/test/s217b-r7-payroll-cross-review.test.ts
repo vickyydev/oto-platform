@@ -211,6 +211,7 @@ describe.skipIf(!HAS_APP)('round 7 independent payroll ownership review', () => 
     const declared = [...source.matchAll(/app\.(get|post|put|patch|delete)\(\s*"(\/api\/payroll[^"]*)",\s*requireAuth,\s*payroll\("([a-z_.]+)"\),\s*fence,/g)]
       .map((match) => `${match[1]} ${match[2]} ${match[3]}`);
     expect(declared).toEqual([
+      'get /api/payroll/month-status hr.view_salary',
       'get /api/payroll/setup hr.view_salary',
       'get /api/payroll/setup/changes hr.view_salary',
       'post /api/payroll/setup/entities hr.manage_payroll',
