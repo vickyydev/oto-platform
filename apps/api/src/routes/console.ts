@@ -9,6 +9,7 @@ import {
   aggregateRoutes, AssistantUsageAggregateSchema, BookingsAggregateSchema, FleetAggregateSchema,
   InboxAiUsageAggregateSchema, MembersAggregateSchema,
 } from './aggregates';
+import { assistantSettingsRoutes } from './assistant-settings';
 
 const count = z.number().int().nonnegative();
 const figures = z.object({
@@ -48,6 +49,7 @@ export async function consoleRoutes(app: App): Promise<void> {
   await app.register(consoleStaffRoutes);
   await app.register(aggregateRoutes);
   await app.register(platformRoutes);
+  await app.register(assistantSettingsRoutes);
   app.get('/overview', {
     config: { dynamicPermission: true },
     schema: {

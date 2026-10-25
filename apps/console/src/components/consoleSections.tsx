@@ -4,6 +4,7 @@ import {
   TriangleAlert, Users, type LucideIcon,
 } from 'lucide-react';
 import type { Permission } from '@oto/shared/permissions';
+import type { EffectivePermission } from '../api/platform';
 
 export interface ConsoleSection {
   /** The old address remains an alias; path is the area address in navigation. */
@@ -46,6 +47,8 @@ export const CONSOLE_SECTIONS: ConsoleSection[] = [
     description: 'Look up a band or credit voucher and read its balance, expiry and ledger.', permission: 'pos:wallet:read' },
   { id: 'teams-routing', path: '/channels/teams-routing', label: 'Teams & routing', icon: MessagesSquare,
     description: 'System teams and the rules that name the primary owner and backup.', permission: 'inbox:routing:manage' },
+  { id: 'assistant-settings', path: '/channels/assistant-settings', label: 'Assistant settings', icon: MessagesSquare,
+    description: 'Operator-wide daily caps, pacing and versioned USD usage estimates.', permission: 'inbox:ai:manage' },
   { id: 'reports-sales', path: '/reports/sales', label: 'Sales', icon: BarChart3,
     description: 'Revenue by category, payment method, ticket and item over trading days.', permission: 'analytics:read' },
   { id: 'reports-profitability', path: '/reports/profitability', label: 'Profitability', icon: BarChart3,
@@ -278,8 +281,8 @@ export const consoleNav: ConsoleNavGroup[] = [
   },
   {
     id: 'channels', label: 'Channels & assistant', icon: MessagesSquare,
-    description: 'Manage teams and routing here; open Numbers, Templates, Knowledge base and Examples in Inbox.',
-    gate: { any: ['inbox:channel:manage', 'inbox:kb:manage', 'inbox:ai:manage'] }, sections: pages('teams-routing'),
+    description: 'Manage teams, routing, assistant caps and pacing here; open Numbers, Templates, Knowledge base and Examples in Inbox.',
+    gate: { any: ['inbox:channel:manage', 'inbox:kb:manage', 'inbox:ai:manage'] }, sections: pages('teams-routing', 'assistant-settings'),
   },
   {
     id: 'staff', label: 'Staff & HR', icon: CalendarCheck,
@@ -324,6 +327,16 @@ export function visibleNavigation(
 ): ConsoleNavGroup[] {
   return consoleNav.filter((area) => canSeeArea(area, has, isPlatformAdmin))
     .map((area) => ({ ...area, sections: area.sections.filter((page) => (!page.permission || has(page.permission)) && (!page.platformWide || isPlatformAdmin)) }));
+}
+
+/** Only this new operator setting needs a narrower offer than the inherited name-only navigation. */
+export function assistantSettingsNavigation(
+  navigation: ConsoleNavGroup[], operatorId: string | null, permissions: readonly EffectivePermission[],
+): ConsoleNavGroup[] {
+  const offered = operatorId !== null && permissions.some(grant => grant.permission === 'inbox:ai:manage'
+    && grant.scopeType === 'operator' && (grant.scopeId === null || grant.scopeId === operatorId));
+  return navigation.map(area => area.id !== 'channels' ? area : { ...area,
+    sections: area.sections.filter(page => page.id !== 'assistant-settings' || offered) });
 }
 
 export const DEFAULT_SECTION = 'overview';

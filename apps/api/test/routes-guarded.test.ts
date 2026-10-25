@@ -47,6 +47,18 @@ describe('route guards (S2-01b)', () => {
     }
   });
 
+  it('requires operator-wide assistant management for both settings routes (SCRUM-638)', async () => {
+    for (const method of ['GET', 'PUT'] as const) {
+      const route = ctx.app.routeRegistry.find(r => r.method === method && r.url === '/assistant-settings');
+      expect(route).toBeDefined();
+      expect(route!.config.permission).toBe('inbox:ai:manage');
+      expect(route!.config.target).toEqual({ operator: true });
+      expect(route!.config.public).not.toBe(true);
+      expect(route!.config.credential).toBeUndefined();
+      expect((await ctx.app.inject({ method, url: '/assistant-settings' })).statusCode).toBe(401);
+    }
+  });
+
   it('requires a session on all five reach-filtered aggregate reads (SCRUM-636)', async () => {
     for (const url of [
       '/aggregates/members', '/aggregates/bookings', '/aggregates/assistant-usage',

@@ -20,6 +20,24 @@ import { account, branch, operator } from './tenancy';
 // to the boxes and devices it is now defined in terms of; the table itself did
 // not move schema, change name or lose a column.
 
+/** Operator-owned setting documents; each service validates its own fixed key. */
+export const setting = core.table(
+  'setting',
+  {
+    operatorId: uuid('operator_id').notNull().references(() => operator.id),
+    key: text('key').notNull(),
+    value: jsonb('value').notNull(),
+    revision: integer('revision').notNull().default(1),
+    updatedBy: uuid('updated_by').references(() => account.id),
+    ...timestamps,
+  },
+  (t) => [
+    primaryKey({ columns: [t.operatorId, t.key] }),
+    index('setting_updated_by_idx').on(t.updatedBy),
+    check('setting_revision_positive_check', sql`${t.revision} > 0`),
+  ],
+);
+
 /** Append-only audit log (CLAUDE.md §3). Written by audit.record — no exceptions. */
 export const auditLog = core.table(
   'audit_log',

@@ -3,7 +3,7 @@ import { Link, useLocation } from 'wouter';
 import { ExternalLink, LayoutGrid, LogOut, Menu, X } from 'lucide-react';
 import { Backdrop } from '@/components/Backdrop';
 import { StatusMark, type Tone } from '@/components/Status';
-import { sectionForPath, visibleNavigation, type ConsoleSection } from '@/components/consoleSections';
+import { assistantSettingsNavigation, sectionForPath, visibleNavigation, type ConsoleSection } from '@/components/consoleSections';
 import { CommandBar, placeName } from '@/components/redesign/CommandBar';
 import { CountBadge } from '@/components/redesign/chips';
 import { useFailureCount } from '@/components/redesign/useFailureCount';
@@ -199,9 +199,11 @@ function Sidebar({
   /** The rail and the drawer are both mounted on a phone; their ids must differ. */
   idPrefix: string;
 }) {
-  const { me, has, signOut } = useSession();
+  const { state, me, permissions, locked, has, signOut } = useSession();
+
+  const settingsOperator = state === 'signed-in' && !locked && me?.account.status === 'active' && !me.account.mustChangePassword ? me.account.operatorId : null;
   const platformHealth = usePlatformAuthority('admin:health:read', true);
-  const visible = filterPlatformHealthLinks(visibleNavigation(has, me?.isPlatformAdmin ?? false), platformHealth.allowed);
+  const visible = assistantSettingsNavigation(filterPlatformHealthLinks(visibleNavigation(has, me?.isPlatformAdmin ?? false), platformHealth.allowed), settingsOperator, permissions);
 
   return (
     <div className="flex min-h-full flex-col gap-[22px] px-4 py-6">

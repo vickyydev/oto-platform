@@ -1,7 +1,7 @@
 import { Link } from 'wouter';
 import { ArrowRight, ExternalLink } from 'lucide-react';
 import { useSession } from '@/auth/SessionContext';
-import { canSeeArea, findArea, visibleNavigation, type ConsoleNavGroup } from '@/components/consoleSections';
+import { assistantSettingsNavigation, canSeeArea, findArea, visibleNavigation, type ConsoleNavGroup } from '@/components/consoleSections';
 import { CommandBar } from '@/components/redesign/CommandBar';
 import { Panel } from '@/components/Panel';
 import { filterPlatformHealthLinks, usePlatformAuthority } from '@/lib/platformAuthority';
@@ -11,14 +11,15 @@ const LAUNCHER_URL = import.meta.env.VITE_LAUNCHER_URL?.trim();
 
 /** Navigation only: figures and management panels arrive in their own releases. */
 export function AreaLanding({ id }: { id: string }) {
-  const { has, me } = useSession();
+  const { state, has, me, permissions, locked } = useSession();
   const platformHealth = usePlatformAuthority('admin:health:read', true);
   const area = findArea(id);
   if (!area) return null;
   if (!canSeeArea(area, has, me?.isPlatformAdmin ?? false)) {
     return <><CommandBar sectionId={id} /><Panel><p>This area is not on your access.</p></Panel></>;
   }
-  const available = filterPlatformHealthLinks(visibleNavigation(has, me?.isPlatformAdmin ?? false), platformHealth.allowed);
+  const settingsOperator = state === 'signed-in' && !locked && me?.account.status === 'active' && !me.account.mustChangePassword ? me.account.operatorId : null;
+  const available = assistantSettingsNavigation(filterPlatformHealthLinks(visibleNavigation(has, me?.isPlatformAdmin ?? false), platformHealth.allowed), settingsOperator, permissions);
   const current = available.find((entry) => entry.id === id)!;
   return <AreaLandingContent area={current} available={available} />;
 }
