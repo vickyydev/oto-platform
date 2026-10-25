@@ -1,0 +1,12 @@
+{
+  "ticket": "SCRUM-637",
+  "at": "2026-10-25T08:24:59.369Z",
+  "testedSourceManifestSha256": "5dcab101d1720d8b8ed7b5d211653f06b67ff7ad8bb42707a5d9212d4d72872d",
+  "file": "apps/api/test/s637-decisions-review.test.ts",
+  "beforeSha256": "8adb0cd8b7bacf1683f73dfda65bf6f80e9544d94ed7a8ba8dcf745fcd72941a",
+  "afterSha256": "e12c3a2847cb37c64b5f1eff7996568f0399358b536612a1cacd99d76e2674c4",
+  "onlyCrlfNormalization": true,
+  "transpiledJavaScriptIdentical": true,
+  "transpiledJavaScriptSha256": "e9d869bb78c9a9a597b5250583ef1d7e38264ba74fc63b0ceac8bf8d60088ad8",
+  "otherSourceFilesByteIdentical": 3769
+}

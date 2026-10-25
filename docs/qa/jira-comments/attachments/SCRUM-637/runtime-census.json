@@ -1,0 +1,74 @@
+{
+  "ticket": "SCRUM-637",
+  "at": "2026-10-25T08:07:10.626Z",
+  "ownIds": [
+    "fe5170d60bacf511a4311697f4884854c0a2627a1b0ecb8e1b6169e181ac96ed",
+    "5d7fab37721fe6da01bb65886884f2dbfc013be50af90f0c4e66da7547e70be4"
+  ],
+  "baselineIds": [
+    "83828b463f0b5ae2a64d70878099d5fe299e4b811decc075333f373d981ec01a",
+    "5b5ad70fd3aecf514625c077214d1fb00979067578e885152706ea3b10a49831",
+    "2b6efe94892891ef608f80f228a9c4c6c3f54d3ee6188267f7131c7205d5db43",
+    "2afc9985eaec2abe07eca6aa58aa15d6078c35a9290bcc2a890d5b2d84b051e3",
+    "81821fc1f43bc8f540c879c5b0fbc381faaec86309f34eafb8df94b4eff659ba",
+    "cf854c43dcd283c35919e1c6a581dbbfd3539636832ff3910adc2e3bf5821af0",
+    "85c6ce32a42aba5581817c6323334afbc808020056311be901039150be47dc13",
+    "ceda2dc3b92a3264a97efc0bb5164abc655403f22846438a00b53cb22059f270",
+    "cbc3eb441a04b866bec0bd92928ff95dec63bb01a3884e98d8cb588a30d68309",
+    "41925d9b0cf1df7647253188f2086c34fbbdcc49b446f2b964e43c6fa3920dbe"
+  ],
+  "otherContainers": [
+    {
+      "id": "83828b463f0b5ae2a64d70878099d5fe299e4b811decc075333f373d981ec01a",
+      "name": "oto-qa1b-pg",
+      "status": "Up 3 days"
+    },
+    {
+      "id": "5b5ad70fd3aecf514625c077214d1fb00979067578e885152706ea3b10a49831",
+      "name": "oto-qa3b-pg",
+      "status": "Up 3 days"
+    },
+    {
+      "id": "2b6efe94892891ef608f80f228a9c4c6c3f54d3ee6188267f7131c7205d5db43",
+      "name": "oto-admin613-tests",
+      "status": "Up 3 days"
+    },
+    {
+      "id": "2afc9985eaec2abe07eca6aa58aa15d6078c35a9290bcc2a890d5b2d84b051e3",
+      "name": "oto-platform-postgres-1",
+      "status": "Exited (0) 3 days ago"
+    },
+    {
+      "id": "81821fc1f43bc8f540c879c5b0fbc381faaec86309f34eafb8df94b4eff659ba",
+      "name": "oto-platform-minio-1",
+      "status": "Exited (255) 12 days ago"
+    },
+    {
+      "id": "cf854c43dcd283c35919e1c6a581dbbfd3539636832ff3910adc2e3bf5821af0",
+      "name": "tailorsuite-redis",
+      "status": "Exited (0) 3 months ago"
+    },
+    {
+      "id": "85c6ce32a42aba5581817c6323334afbc808020056311be901039150be47dc13",
+      "name": "tailorsuite-caddy",
+      "status": "Exited (0) 3 months ago"
+    },
+    {
+      "id": "ceda2dc3b92a3264a97efc0bb5164abc655403f22846438a00b53cb22059f270",
+      "name": "tailorsuite-postgres",
+      "status": "Exited (0) 3 months ago"
+    },
+    {
+      "id": "cbc3eb441a04b866bec0bd92928ff95dec63bb01a3884e98d8cb588a30d68309",
+      "name": "redis-local",
+      "status": "Exited (0) 8 months ago"
+    },
+    {
+      "id": "41925d9b0cf1df7647253188f2086c34fbbdcc49b446f2b964e43c6fa3920dbe",
+      "name": "n8n-instagram",
+      "status": "Exited (0) 14 months ago"
+    }
+  ],
+  "total": 12,
+  "baselinePreserved": 10
+}

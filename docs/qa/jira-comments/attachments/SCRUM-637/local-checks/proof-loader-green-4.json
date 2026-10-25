@@ -1,0 +1,24 @@
+{
+  "ticket": "SCRUM-637",
+  "name": "proof-loader-green-4",
+  "startedAt": "2026-10-25T08:22:35.245Z",
+  "completedAt": "2026-10-25T08:22:35.433Z",
+  "exitCode": 0,
+  "source": [
+    {
+      "path": "C:/w/admin637-staging-proof.mjs",
+      "sha256": "5f9eda37393a3400900d1ba6264cfdffb0894496e634929cffde8f0ea731c6ae"
+    },
+    {
+      "path": "C:/w/admin637-staging-proof.test.mjs",
+      "sha256": "2d830bd58e4c0c14635ca21307a8d85efbbe13b269101b826f4550e34399b021"
+    }
+  ],
+  "sourceUnchanged": true,
+  "tests": 18,
+  "passed": 18,
+  "failed": 0,
+  "logSha256": "2c297a9456302584df4c975a5c85e8374ed3acddec4d775a99edbc887fafe951",
+  "actualStaging": false,
+  "authAttempts": 0
+}
