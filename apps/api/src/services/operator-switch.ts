@@ -53,7 +53,8 @@ async function requireSwitchGrant(tx: Tx, accountId: string, homeOperatorId: str
 async function contextOf(tx: Tx, identity: OperatorSwitchIdentity, now: Date | undefined, lock: boolean, auditContext?: OpContext): Promise<{ state: OperatorSwitchResult; expiresAt: Date }> {
   // Match account-management lock order. Session ownership is always checked again in SQL.
   const accountQuery = tx.select().from(account).where(eq(account.id, identity.accountId)).limit(1);
-  const [actor] = lock ? await accountQuery.for('update') : await accountQuery;
+  // Account fields stay stable while audit inserts can still take FK KEY SHARE.
+  const [actor] = lock ? await accountQuery.for('no key update') : await accountQuery;
   const sessionQuery = tx.select().from(session).where(and(eq(session.id, identity.sessionId), eq(session.accountId, identity.accountId))).limit(1);
   const [seat] = lock ? await sessionQuery.for('update') : await sessionQuery;
   if (!actor || !seat) throw errors.unauthorized();
@@ -115,7 +116,10 @@ export async function switchSessionOperator(
   return withTx(db, verifiedCtx, ACTION, async tx => {
     const { state: before, expiresAt } = await contextOf(tx, input, now, true, verifiedCtx);
     if (before.revision !== input.expectedRevision) throw errors.conflict('OPERATOR_SWITCH_STALE', 'The session context changed. Read it again before selecting an operator.');
-    const operatorOverride = input.operatorId === null || input.operatorId === before.homeOperatorId ? null : input.operatorId;
+    // PostgreSQL stores UUIDs canonically. Accepted upper-case input must
+    // describe the same operator in the response, audit and replay check.
+    const selectedOperatorId = input.operatorId?.toLowerCase() ?? null;
+    const operatorOverride = selectedOperatorId === null || selectedOperatorId === before.homeOperatorId ? null : selectedOperatorId;
     const effectiveOperatorId = operatorOverride ?? before.homeOperatorId;
     const [target] = await tx.select({ archivedAt: operator.archivedAt }).from(operator)
       .where(eq(operator.id, effectiveOperatorId)).limit(1).for('share');

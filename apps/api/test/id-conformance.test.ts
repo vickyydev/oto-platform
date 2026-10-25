@@ -63,6 +63,18 @@ const UUID_V7 = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f
 /** The 48-bit millisecond timestamp at the front of a UUIDv7. */
 const msOf = (id: string): number => parseInt(id.replace(/-/g, '').slice(0, 12), 16);
 
+describe('Operator selection identifiers (SCRUM-640)', () => {
+  it('selects an existing operator for the verified session rather than minting or accepting actor identities', () => {
+    const route = readRoutes().find(r => r.method === 'PUT' && r.path === '/me/session/operator');
+    expect(route).toBeDefined();
+    expect(route!.optionsText).toMatch(/operatorId:\s*z\.string\(\)\.uuid\(\)\.nullable\(\)/);
+    expect(route!.handlerText).toContain('accountId: auth.accountId');
+    expect(route!.handlerText).toContain('sessionId: auth.sessionId');
+    expect(reachesText(route!.handlerText, text => /\bswitchSessionOperator\s*\(/.test(text), readFunctions())).toBe(true);
+    expect(route!.handlerText).not.toMatch(/\bnewId\s*\(|req\.body\.(?:accountId|sessionId)/);
+  });
+});
+
 // --- 1 · One layout ----------------------------------------------------------
 
 describe('the two UUIDv7 generators lay an id out the same way (SCRUM-279)', () => {

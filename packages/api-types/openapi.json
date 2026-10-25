@@ -594,10 +594,197 @@
     },
     "/me/": {
       "get": {
-        "description": "Current account profile",
+        "description": "Current home account and working session context",
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "account": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "phone": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "invited",
+                            "active",
+                            "inactive"
+                          ]
+                        },
+                        "mustChangePassword": {
+                          "type": "boolean"
+                        },
+                        "operatorId": {
+                          "type": "string",
+                          "format": "uuid"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "phone",
+                        "status",
+                        "mustChangePassword",
+                        "operatorId"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "employee": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "nickname": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "nickname"
+                      ],
+                      "additionalProperties": false,
+                      "nullable": true
+                    },
+                    "branch": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "code": {
+                          "type": "string"
+                        },
+                        "timezone": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "code",
+                        "timezone"
+                      ],
+                      "additionalProperties": false,
+                      "nullable": true
+                    },
+                    "isPlatformAdmin": {
+                      "type": "boolean"
+                    },
+                    "photoFileId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "sessionLocked": {
+                      "type": "boolean"
+                    },
+                    "preferences": {
+                      "type": "object",
+                      "properties": {
+                        "theme": {
+                          "type": "string",
+                          "enum": [
+                            "system",
+                            "light",
+                            "dark"
+                          ]
+                        },
+                        "language": {
+                          "type": "string",
+                          "enum": [
+                            "en",
+                            "th"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "theme",
+                        "language"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "operatorContext": {
+                      "type": "object",
+                      "properties": {
+                        "homeOperatorId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "effectiveOperatorId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "operatorOverride": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "branchId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "stationId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "revision": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "sessionId": {
+                          "type": "string",
+                          "format": "uuid"
+                        }
+                      },
+                      "required": [
+                        "homeOperatorId",
+                        "effectiveOperatorId",
+                        "operatorOverride",
+                        "branchId",
+                        "stationId",
+                        "revision",
+                        "sessionId"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "account",
+                    "employee",
+                    "branch",
+                    "isPlatformAdmin",
+                    "photoFileId",
+                    "sessionLocked",
+                    "preferences",
+                    "operatorContext"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       },
@@ -633,6 +820,105 @@
         "responses": {
           "200": {
             "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/me/session/operator": {
+      "put": {
+        "description": "Select the working operator for this staff session, preserving the real home account",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "operatorId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  },
+                  "expectedRevision": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "operatorId",
+                  "expectedRevision"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "in": "header",
+            "name": "idempotency-key",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "homeOperatorId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "effectiveOperatorId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "operatorOverride": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "branchId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "stationId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "changed": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "homeOperatorId",
+                    "effectiveOperatorId",
+                    "operatorOverride",
+                    "branchId",
+                    "stationId",
+                    "revision",
+                    "changed"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -2211,6 +2497,7 @@
               "enum": [
                 "console:overview:read",
                 "hr:salary:view",
+                "platform:operator:switch",
                 "admin:account:create",
                 "admin:account:read",
                 "admin:account:update",

@@ -63,6 +63,18 @@ afterAll(async () => {
 /** Routes Fastify or a plugin registers for us, which we do not configure. */
 const NOT_OURS = new Set(['/docs/json', '/*']);
 
+describe('Operator selection target (SCRUM-640)', () => {
+  it('targets current-session authority, never a body-selected actor or session', () => {
+    const route = routes.find(r => r.method === 'PUT' && r.path === '/me/session/operator');
+    expect(route).toBeDefined();
+    expect(configs.get('PUT /me/session/operator')?.permission).toBe('platform:operator:switch');
+    expect(configs.get('PUT /me/session/operator')?.target).toEqual({ operator: true });
+    expect(route!.handlerText).toContain('accountId: auth.accountId');
+    expect(route!.handlerText).toContain('sessionId: auth.sessionId');
+    expect(route!.handlerText).not.toMatch(/req\.body\.(?:accountId|sessionId)/);
+  });
+});
+
 describe('Platform list scope (SCRUM-639)', () => {
   it('declares the platform boundary and checks fresh null-scope authority before each read', () => {
     for (const path of ['/platform/alerts', '/platform/jobs', '/platform/environment']) {
@@ -203,6 +215,7 @@ const OPERATOR_WIDE_WRITES = [
   'POST /branches/oto-app/reconcile',
   'PUT /benefits/templates/:role',
   'PUT /benefits/profiles/:employeeId',
+  'PUT /me/session/operator', // SCRUM-640: service also requires a genuine null-scope switch assignment.
 ];
 // These platform-global reads also require health permission at operator scope.
 const PLATFORM_WIDE_READS = [

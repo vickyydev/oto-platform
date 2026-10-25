@@ -1,12 +1,14 @@
 import { createHash, randomBytes } from 'node:crypto';
-import { and, eq, gt, isNull } from 'drizzle-orm';
+import { and, eq, gt, isNotNull, isNull, lte, or, sql } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import fp from 'fastify-plugin';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import { account, branch, operator, session as sessionTable, type Db } from '@oto/db';
+import { account, auditLog, branch, operator, role, roleAssignment, rolePermission, session as sessionTable, station } from '@oto/db';
 import type { Permission } from '@oto/shared';
 import { AppError, errors } from '../lib/errors';
 import { branchScopeRefusal } from '../services/access-control';
 import { hasPermission, resolveEffectivePermissions, type EffectivePermission, type ScopeTarget } from '../services/permissions';
+import type { Exec } from '../services/tx';
 
 export const SESSION_COOKIE = 'oto_session';
 
@@ -29,7 +31,11 @@ export class PermissionDeniedError extends AppError {
 
 export interface AuthContext {
   accountId: string;
+  /** Working scope; never a replacement for the real account's home identity. */
   operatorId: string;
+  homeOperatorId?: string;
+  operatorOverride?: string | null;
+  operatorRevision?: number;
   sessionId: string;
   branchId: string | null;
   stationId: string | null;
@@ -72,8 +78,9 @@ export function clearSessionCookie(reply: FastifyReply, secure: boolean): void {
   reply.clearCookie(SESSION_COOKIE, { path: '/', httpOnly: true, sameSite: 'lax', secure });
 }
 
-async function loadAuth(db: Db, token: string): Promise<AuthContext | null> {
-  const now = new Date();
+async function loadAuth(db: Exec, token: string, signOutCleanupOnly = false): Promise<AuthContext | null> {
+  const now = new Date(), tokenHash = hashToken(token);
+  const effectiveOperator = alias(operator, 'session_effective_operator');
   const rows = await db
     .select({
       s: sessionTable,
@@ -82,21 +89,56 @@ async function loadAuth(db: Db, token: string): Promise<AuthContext | null> {
       // Left-joined: a session may legitimately sit at no branch at all, and
       // null then means "no branch", which is not "an archived branch".
       branchArchivedAt: branch.archivedAt,
+      branchOperatorId: branch.operatorId,
+      effectiveOperatorId: effectiveOperator.id,
+      effectiveOperatorArchivedAt: effectiveOperator.archivedAt,
+      stationId: station.id,
+      stationOperatorId: station.operatorId,
+      stationBranchId: station.branchId,
+      stationArchivedAt: station.archivedAt,
+      // These values share the same statement snapshot as the session. A
+      // switch or grant revocation cannot splice two different contexts.
+      switchGrant: sql<boolean>`exists (
+        select 1 from ${roleAssignment}
+        inner join ${role} on ${role.id} = ${roleAssignment.roleId}
+        inner join ${rolePermission} on ${rolePermission.roleId} = ${role.id}
+        where ${roleAssignment.accountId} = ${account.id}
+          and ${roleAssignment.scopeType} = 'operator' and ${roleAssignment.scopeId} is null
+          and ${roleAssignment.archivedAt} is null and ${rolePermission.permission} = 'platform:operator:switch'
+          and (${role.operatorId} is null or ${role.operatorId} = ${account.operatorId})
+      )`,
+      platformWide: sql<boolean>`exists (
+        select 1 from ${roleAssignment}
+        inner join ${role} on ${role.id} = ${roleAssignment.roleId}
+        inner join ${rolePermission} on ${rolePermission.roleId} = ${role.id}
+        where ${roleAssignment.accountId} = ${account.id}
+          and ${roleAssignment.scopeType} = 'operator' and ${roleAssignment.scopeId} is null
+      )`,
+      revision: sql<string>`(select count(*)::text from ${auditLog}
+        where ${auditLog.action} = 'session.operator_switch'
+          and ${auditLog.entityType} = 'session' and ${auditLog.entityId} = ${sessionTable.id}::text)`,
     })
     .from(sessionTable)
     .innerJoin(account, eq(sessionTable.accountId, account.id))
     .innerJoin(operator, eq(account.operatorId, operator.id))
+    .leftJoin(effectiveOperator, eq(effectiveOperator.id, sql<string>`coalesce(${sessionTable.operatorOverride}, ${account.operatorId})`))
     .leftJoin(branch, eq(sessionTable.branchId, branch.id))
-    .where(
-      and(
-        eq(sessionTable.tokenHash, hashToken(token)),
-        gt(sessionTable.expiresAt, now),
-        isNull(sessionTable.revokedAt), // signed out, or force signed-out
-      ),
-    )
+    .leftJoin(station, eq(sessionTable.stationId, station.id))
+    .where(eq(sessionTable.tokenHash, tokenHash))
     .limit(1);
   const row = rows[0];
   if (!row) return null;
+  if (row.s.expiresAt <= now || row.s.revokedAt) {
+    if (row.s.operatorOverride !== null) {
+      // Lazy clearing touches only the presented expired/revoked cookie's
+      // retained row. It neither deletes history nor sweeps other sessions.
+      await db.update(sessionTable).set({ operatorOverride: null }).where(and(
+        eq(sessionTable.id, row.s.id), eq(sessionTable.accountId, row.a.id), eq(sessionTable.tokenHash, tokenHash),
+        or(lte(sessionTable.expiresAt, now), isNotNull(sessionTable.revokedAt)),
+      ));
+    }
+    return null;
+  }
   if (row.a.status !== 'active') return null; // deactivated mid-session → rejected
   /**
    * SCRUM-253 — AND THE TENANT AND THE PARK ARE STILL OPEN.
@@ -116,22 +158,48 @@ async function loadAuth(db: Db, token: string): Promise<AuthContext | null> {
    * gets back in, and somebody who does not is told why.
    */
   if (row.operatorArchivedAt || row.branchArchivedAt) return null;
+  const operatorId = row.s.operatorOverride ?? row.a.operatorId;
+  if (row.s.operatorOverride !== null) {
+    if (!row.effectiveOperatorId || row.effectiveOperatorArchivedAt) return null;
+    if (row.s.branchId && row.branchOperatorId !== operatorId) return null;
+    if (row.s.stationId && (!row.s.branchId || !row.stationId || row.stationArchivedAt
+      || row.stationOperatorId !== operatorId || row.stationBranchId !== row.s.branchId)) return null;
+    if (!signOutCleanupOnly) {
+      if (row.s.sessionClass !== 'staff') throw errors.forbidden('Operator selection requires a staff session.');
+      if (!row.switchGrant) throw errors.forbidden('A live platform-wide operator-switch grant is required.');
+    }
+  }
+  const revision = BigInt(row.revision);
+  if (revision < 0n || revision >= BigInt(Number.MAX_SAFE_INTEGER)) {
+    throw errors.conflict('OPERATOR_SWITCH_REVISION_EXHAUSTED', 'This session cannot accept another operator selection.');
+  }
   // Sliding last-seen, throttled to one write a minute. A locked session is
   // not "seen": leaving a locked till open must not keep it alive for ever.
   if (!row.s.lockedAt && now.getTime() - row.s.lastSeenAt.getTime() > 60_000) {
-    await db.update(sessionTable).set({ lastSeenAt: now }).where(eq(sessionTable.id, row.s.id));
+    await db.update(sessionTable).set({ lastSeenAt: now }).where(and(eq(sessionTable.id, row.s.id),
+      eq(sessionTable.tokenHash, tokenHash), isNull(sessionTable.revokedAt), gt(sessionTable.expiresAt, now), isNull(sessionTable.lockedAt)));
   }
   return {
     accountId: row.a.id,
-    operatorId: row.a.operatorId,
+    operatorId,
+    homeOperatorId: row.a.operatorId,
+    operatorOverride: row.s.operatorOverride,
+    operatorRevision: Number(revision),
     sessionId: row.s.id,
     branchId: row.s.branchId,
     stationId: row.s.stationId,
     status: row.a.status,
     mustChangePassword: row.a.mustChangePassword,
-    isPlatformAdmin: false, // refined lazily by the permission resolver
+    // Same real-account assignment definition as isPlatformWide on the native
+    // effective permissions; an override never supplies another actor's roles.
+    isPlatformAdmin: row.platformWide,
     lockedAt: row.s.lockedAt,
   };
+}
+
+/** Shared session resolution always enforces working-context eligibility. */
+export async function resolveSessionAuth(exec: Exec, token: string): Promise<AuthContext | null> {
+  return loadAuth(exec, token);
 }
 
 /**
@@ -186,7 +254,20 @@ export const sessionPlugin = fp(async (app: FastifyInstance) => {
 
   app.addHook('onRequest', async (req: FastifyRequest) => {
     const token = req.cookies?.[SESSION_COOKIE];
-    req.auth = token ? await loadAuth(app.db, token) : null;
+    try { req.auth = token ? await resolveSessionAuth(app.db, token) : null; }
+    catch (error) {
+      // An invalid working override must not close a public sign-in or
+      // readiness door. It supplies no authority to their handlers.
+      if (!req.routeOptions.config.public || !(error instanceof AppError)
+        || error.statusCode !== 403 || error.code !== 'FORBIDDEN') throw error;
+      req.auth = null;
+      if (req.method === 'POST' && req.routeOptions.url === '/auth/sign-out') {
+        // This private exception exists only to end the exact verified
+        // session. The public sign-out handler uses native revocation and
+        // home-account audit attribution, never a business permission.
+        req.auth = token ? await loadAuth(app.db, token, true) : null;
+      }
+    }
 
     let cache: EffectivePermission[] | null = null;
     req.effectivePermissions = async () => {
@@ -224,6 +305,11 @@ export const sessionPlugin = fp(async (app: FastifyInstance) => {
             departmentId: target.departmentId,
             recordId: target.recordId,
           };
+      // A platform grant stays a real-account fact, but ordinary business
+      // permission checks cannot use it to escape a chosen working operator.
+      if (auth.operatorOverride != null && fullTarget.operatorId !== auth.operatorId) {
+        throw new PermissionDeniedError(permission);
+      }
       if (!hasPermission(effective, permission, fullTarget)) {
         /**
          * SCRUM-300 — "you do not have this" and "not here" are different
