@@ -1,6 +1,6 @@
-# SCRUM-637 Q19 ? held registration proposal
+# SCRUM-637 Q19 - approved registration proposal
 
-**UNAPPLIED. Planner approval is still pending.** Only this external patch and note are written. No repository files, tests, configuration, sessions, jobs or external destinations were changed or executed. Existing service19 GREEN was reported by the coordinator; this registration patch has not been compiled or tested.
+**APPROVED, 26 October 2026, Q19; UNAPPLIED.** The planner authorizes the reviewed three-file patch with default-off delivery and injected capturing senders in tests. Native registration/config/watchdog tests are being added before application. The test-mode real-adapter fallback must be closed, including explicitly enabled test configuration. Earlier service checks remain historical, not a combined release.
 
 The patch touches exactly `apps/api/src/env.ts`, `apps/api/src/services/jobs.ts`, and `.env.example`. It is based on the current frozen 637 files; recheck the base hashes before any application.
 
