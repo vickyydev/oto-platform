@@ -1,5 +1,7 @@
 # SCRUM-634 — Staff and HR summary
 
+Current: Deployed, read back 2026-10-25T03:24:38.907Z. Application source b91e957c779cb74a0c1495f24257bd69218286ae; all six CI jobs passed and three automatic deployments are live. The three reviewed staging PNGs are attached and the seven owned sessions are closed. Earlier pending statements below describe the recorded local/release stages.
+
 The Staff & HR page reads on-shift, attendance issues, leave entries today and company payroll month status through the OTO App as the signed-in person. Each card opens its fixed native source through a fresh handoff. App salary/advisor rules and both platform section permissions remain. The selected live owned park must map uniquely to a reachable app park. Refusals and failures remain distinct from zero; payroll is explicitly company-wide.
 
 The platform reads no HR/payroll tables. A separate app-owned SELECT-only status endpoint avoids payroll setup reads that lazily create defaults or return financial/person data. No migration, original attendance/leave/payroll calculation, shared dependency or protected production file changes.
@@ -28,4 +30,4 @@ Actual proof completed 2026-10-25T03:21:42.735Z after all three exact-source dep
 - `SCRUM-634-02-admin-staff-phone.png` — 2026-10-25T03:20:36.211Z, SHA256 `cc903c62f26e7ac6bf7bb2a2ed6f7fc8992d0acb3b01d10edf6487cc8fe27577`.
 - `SCRUM-634-03-reception-staff-desktop.png` — 2026-10-25T03:21:31.409Z, SHA256 `089e614ea59513c8e8a4aadf878fabf7c6624bb39a1e92793e9406d5d79a8fcc`.
 
-Receipts: [staging-result.json](staging-result.json), [staging-summary.json](staging-summary.json), [staging-image-review.json](staging-image-review.json), [staging-independent-review.json](staging-independent-review.json). Prior public-collector failure remains in [staging-qa-history.json](staging-qa-history.json). Jira remains Testing until these committed screenshots are attached and Deployed is read back.
+Receipts: [staging-result.json](staging-result.json), [staging-summary.json](staging-summary.json), [staging-image-review.json](staging-image-review.json), [staging-independent-review.json](staging-independent-review.json). Prior public-collector failure remains in [staging-qa-history.json](staging-qa-history.json). Jira Deployed was read back at 2026-10-25T03:24:38.907Z; all three images are attached (12026, 12027, 12028) and named in outcome12562. Final Done acceptance belongs to the owner.

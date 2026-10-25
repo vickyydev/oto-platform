@@ -1,0 +1,598 @@
+{
+  "ticket": "SCRUM-628",
+  "preparedAt": "2026-10-25T03:26:35.453Z",
+  "accepted": false,
+  "allSixChildrenDeployed": true,
+  "children": [
+    {
+      "key": "SCRUM-629",
+      "status": "Deployed",
+      "summary": "P3-1 Role mapping at hand-off and in the copy job, per-operator flag",
+      "images": [
+        {
+          "id": "12005",
+          "filename": "SCRUM-629-01-flag-off-staff.png",
+          "size": 28894,
+          "mimeType": "image/png"
+        },
+        {
+          "id": "12006",
+          "filename": "SCRUM-629-02-enabled-admin.png",
+          "size": 28789,
+          "mimeType": "image/png"
+        },
+        {
+          "id": "12007",
+          "filename": "SCRUM-629-03-enabled-manager.png",
+          "size": 29335,
+          "mimeType": "image/png"
+        },
+        {
+          "id": "12008",
+          "filename": "SCRUM-629-04-enabled-staff.png",
+          "size": 28947,
+          "mimeType": "image/png"
+        }
+      ]
+    },
+    {
+      "key": "SCRUM-630",
+      "status": "Deployed",
+      "summary": "P3-2 hr:salary:view as a platform permission",
+      "images": [
+        {
+          "id": "12009",
+          "filename": "SCRUM-630-01-explicit-flag-off-legacy-staff.png",
+          "size": 30231,
+          "mimeType": "image/png"
+        },
+        {
+          "id": "12010",
+          "filename": "SCRUM-630-02-enabled-manager-salary-false.png",
+          "size": 41291,
+          "mimeType": "image/png"
+        },
+        {
+          "id": "12011",
+          "filename": "SCRUM-630-03-enabled-same-manager-salary-true.png",
+          "size": 61628,
+          "mimeType": "image/png"
+        },
+        {
+          "id": "12012",
+          "filename": "SCRUM-630-04-enabled-same-manager-salary-withdrawn.png",
+          "size": 41405,
+          "mimeType": "image/png"
+        }
+      ]
+    },
+    {
+      "key": "SCRUM-631",
+      "status": "Deployed",
+      "summary": "P3-3 Departments mirror",
+      "images": [
+        {
+          "id": "12014",
+          "filename": "SCRUM-631-01-created-mirror.png",
+          "size": 42574,
+          "mimeType": "image/png"
+        },
+        {
+          "id": "12015",
+          "filename": "SCRUM-631-02-renamed-mirror.png",
+          "size": 43092,
+          "mimeType": "image/png"
+        },
+        {
+          "id": "12016",
+          "filename": "SCRUM-631-03-archived-mirror.png",
+          "size": 44581,
+          "mimeType": "image/png"
+        }
+      ]
+    },
+    {
+      "key": "SCRUM-632",
+      "status": "Deployed",
+      "summary": "P3-4 OTO App Users, Permissions, Operators read-only with Managed in Admin",
+      "images": [
+        {
+          "id": "12017",
+          "filename": "SCRUM-632-01-users-flag-off.png",
+          "size": 149715,
+          "mimeType": "image/png"
+        },
+        {
+          "id": "12018",
+          "filename": "SCRUM-632-02-permissions-flag-off.png",
+          "size": 106505,
+          "mimeType": "image/png"
+        },
+        {
+          "id": "12019",
+          "filename": "SCRUM-632-03-operators-flag-off.png",
+          "size": 121976,
+          "mimeType": "image/png"
+        },
+        {
+          "id": "12020",
+          "filename": "SCRUM-632-04-users-managed.png",
+          "size": 151899,
+          "mimeType": "image/png"
+        },
+        {
+          "id": "12021",
+          "filename": "SCRUM-632-05-permissions-managed.png",
+          "size": 108401,
+          "mimeType": "image/png"
+        },
+        {
+          "id": "12022",
+          "filename": "SCRUM-632-06-operators-managed.png",
+          "size": 117378,
+          "mimeType": "image/png"
+        }
+      ]
+    },
+    {
+      "key": "SCRUM-633",
+      "status": "Deployed",
+      "summary": "P3-5 Provisioning only from the console",
+      "images": [
+        {
+          "id": "12023",
+          "filename": "SCRUM-633-01-existing-demo-user-controls.png",
+          "size": 41416,
+          "mimeType": "image/png"
+        },
+        {
+          "id": "12024",
+          "filename": "SCRUM-633-02-retired-studio-redirect.png",
+          "size": 60187,
+          "mimeType": "image/png"
+        },
+        {
+          "id": "12025",
+          "filename": "SCRUM-633-03-lifecycle-and-local-invite-proof.png",
+          "size": 50785,
+          "mimeType": "image/png"
+        }
+      ]
+    },
+    {
+      "key": "SCRUM-634",
+      "status": "Deployed",
+      "summary": "P3-6 Staff and HR summary page",
+      "images": [
+        {
+          "id": "12026",
+          "filename": "SCRUM-634-01-admin-staff-desktop.png",
+          "size": 95928,
+          "mimeType": "image/png"
+        },
+        {
+          "id": "12027",
+          "filename": "SCRUM-634-02-admin-staff-phone.png",
+          "size": 63693,
+          "mimeType": "image/png"
+        },
+        {
+          "id": "12028",
+          "filename": "SCRUM-634-03-reception-staff-desktop.png",
+          "size": 77982,
+          "mimeType": "image/png"
+        }
+      ]
+    }
+  ],
+  "historicalChildEvidenceAudit": {
+    "ticket": "SCRUM-634",
+    "parentTicket": "SCRUM-628",
+    "preparedAt": "2026-10-25T02:26:44.642Z",
+    "prepared": true,
+    "parentAccepted": false,
+    "parentReadyForDeployed": false,
+    "readOnly": true,
+    "jiraWrites": 0,
+    "stagingOrAuthActions": 0,
+    "repositoryWrites": 0,
+    "laterPhaseStarted": false,
+    "evidenceHead": "b91e957c779cb74a0c1495f24257bd69218286ae",
+    "plan": {
+      "path": "docs/progress/plans/super-admin-console/PLAN.md",
+      "sha256": "9313bb63a475f802251e86f97d731e5b198539f3fabd0d20dfaa6661f963ad23",
+      "section": "9",
+      "acceptanceLine": 285,
+      "exactAcceptance": "a person granted in the console opens the OTO App with the right role on staging with the flag on; nothing can be granted inside the OTO App.",
+      "additionalP3Requirements": [
+        "Close both account lifecycle directions through the identity seam.",
+        "Close unsupported core-dashboard and troubleshooting offers/addresses."
+      ]
+    },
+    "liveJira": {
+      "method": "Read-only Atlassian MCP",
+      "parent": {
+        "key": "SCRUM-628",
+        "status": "In Progress",
+        "attachments": []
+      },
+      "childrenVerifiedDeployed": 5,
+      "totalAttachedChildPngs": 20,
+      "remoteAttachmentBytesDownloaded": false,
+      "attachmentCheck": "Current Jira names/MIME/sizes match the committed reviewed PNGs; all local PNG SHA256s match committed image reviews and Git HEAD.",
+      "initial634Read": {
+        "status": "In Progress",
+        "historicalSnapshot": true
+      },
+      "later634AuthoritativeReadback": {
+        "status": "Testing",
+        "at": "2026-10-25T02:23:57.544Z",
+        "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae",
+        "ciRunId": "40154287659",
+        "ciPending": true,
+        "stagingAcceptance": false,
+        "receiptPath": "C:/w/admin634-source-published.json",
+        "receiptSha256": "b3e83598894c8eb477b2ffa67b02dde703cf10fea4b15b0b7529cd8ccdc0d4fa"
+      }
+    },
+    "children": [
+      {
+        "key": "SCRUM-629",
+        "imageReviewPassed": true,
+        "sourceSha": "699a7555679aee59ee3e210d00b7b977e017af02",
+        "reviewFile": "docs/qa/jira-comments/attachments/SCRUM-629/independent-image-review.json",
+        "reviewSha256": "25cc223f78f9fb9fc4111b52b4fd3926f07b26fa22f3b3a11c517008566a3853",
+        "readme": "docs/qa/jira-comments/attachments/SCRUM-629/README.md",
+        "readmeSha256": "412db02026912ca8f5f3d7f5567a3e6ff3af5088a3c6a1e7451021bc9e78832e",
+        "allEvidenceTrackedAndEqualToHead": true,
+        "screenshots": [
+          {
+            "filename": "SCRUM-629-01-flag-off-staff.png",
+            "sha256": "f96e10e16959ea790fef00fe5b5b0dfda43f3c398e76690e603dfbfa508e7754",
+            "size": 28894,
+            "jiraAttachmentId": "12005",
+            "jiraAttachmentUrl": "https://jira-prod-ap-37-3.prod.atl-paas.net/rest/api/3/attachment/content/12005",
+            "jiraMetadataMatchesCommittedPng": true
+          },
+          {
+            "filename": "SCRUM-629-02-enabled-admin.png",
+            "sha256": "506dcb9e4a1e1a30b71e1103e069d184a2c98eb4e629b5bd6ddcadb77c2a481a",
+            "size": 28789,
+            "jiraAttachmentId": "12006",
+            "jiraAttachmentUrl": "https://jira-prod-ap-37-3.prod.atl-paas.net/rest/api/3/attachment/content/12006",
+            "jiraMetadataMatchesCommittedPng": true
+          },
+          {
+            "filename": "SCRUM-629-03-enabled-manager.png",
+            "sha256": "47c72f2c956342e4323fcd94db5fa48e9f84a079e230227a6af0fdd1cd54fca3",
+            "size": 29335,
+            "jiraAttachmentId": "12007",
+            "jiraAttachmentUrl": "https://jira-prod-ap-37-3.prod.atl-paas.net/rest/api/3/attachment/content/12007",
+            "jiraMetadataMatchesCommittedPng": true
+          },
+          {
+            "filename": "SCRUM-629-04-enabled-staff.png",
+            "sha256": "2800bd7ae6fa8937bdefbcbc8e9bc717cb222cd4c57283766e03454a618f1247",
+            "size": 28947,
+            "jiraAttachmentId": "12008",
+            "jiraAttachmentUrl": "https://jira-prod-ap-37-3.prod.atl-paas.net/rest/api/3/attachment/content/12008",
+            "jiraMetadataMatchesCommittedPng": true
+          }
+        ],
+        "jiraStatus": "Deployed",
+        "jiraUrl": "https://oto-suite-dev.atlassian.net/browse/SCRUM-629",
+        "outcomeCommentId": "12553",
+        "outcomeUrl": "https://oto-suite-dev.atlassian.net/browse/SCRUM-629?focusedCommentId=12553",
+        "outcomeNamesEveryAttachedImage": true,
+        "evidenceUrl": "https://github.com/vickyydev/oto-platform/blob/b91e957c779cb74a0c1495f24257bd69218286ae/docs/qa/jira-comments/attachments/SCRUM-629/README.md",
+        "limits": [
+          "Advisor preservation is local-only; no demo advisor was created.",
+          "Role screenshots belong to the 629 release, not the later 634 release."
+        ]
+      },
+      {
+        "key": "SCRUM-630",
+        "imageReviewPassed": true,
+        "sourceSha": "532e9aab705d873da240ad4b40e77e33fa562d31",
+        "reviewFile": "docs/qa/jira-comments/attachments/SCRUM-630/image-independent-review.json",
+        "reviewSha256": "b19ddc357dc84a01243153213888e9167b44a203a697601794a3374179f349ac",
+        "readme": "docs/qa/jira-comments/attachments/SCRUM-630/README.md",
+        "readmeSha256": "f282b9f323d51e5e5646b9f5eef0cf8b2af9256167bf2f0f7a17b64fe9dbfd45",
+        "allEvidenceTrackedAndEqualToHead": true,
+        "screenshots": [
+          {
+            "filename": "SCRUM-630-01-explicit-flag-off-legacy-staff.png",
+            "sha256": "19837b2503c0b7bb01f2706b284db11f7ee3f3c94e5edc1582ef95a87f1158bc",
+            "size": 30231,
+            "jiraAttachmentId": "12009",
+            "jiraAttachmentUrl": "https://jira-prod-ap-37-3.prod.atl-paas.net/rest/api/3/attachment/content/12009",
+            "jiraMetadataMatchesCommittedPng": true
+          },
+          {
+            "filename": "SCRUM-630-02-enabled-manager-salary-false.png",
+            "sha256": "b5d06106b6d1689a47d6ccd91d2fc90f9975b36a5fa90d0fee1df2c473649a36",
+            "size": 41291,
+            "jiraAttachmentId": "12010",
+            "jiraAttachmentUrl": "https://jira-prod-ap-37-3.prod.atl-paas.net/rest/api/3/attachment/content/12010",
+            "jiraMetadataMatchesCommittedPng": true
+          },
+          {
+            "filename": "SCRUM-630-03-enabled-same-manager-salary-true.png",
+            "sha256": "776d160f47801bd21260057e60c1cbf3c9f1a5ae43e464d00e678d3f9116e1bd",
+            "size": 61628,
+            "jiraAttachmentId": "12011",
+            "jiraAttachmentUrl": "https://jira-prod-ap-37-3.prod.atl-paas.net/rest/api/3/attachment/content/12011",
+            "jiraMetadataMatchesCommittedPng": true
+          },
+          {
+            "filename": "SCRUM-630-04-enabled-same-manager-salary-withdrawn.png",
+            "sha256": "14aeba229a0d4e935a9c66f05f7a99a384751730199b25eb9e53be28f1283fed",
+            "size": 41405,
+            "jiraAttachmentId": "12012",
+            "jiraAttachmentUrl": "https://jira-prod-ap-37-3.prod.atl-paas.net/rest/api/3/attachment/content/12012",
+            "jiraMetadataMatchesCommittedPng": true
+          }
+        ],
+        "jiraStatus": "Deployed",
+        "jiraUrl": "https://oto-suite-dev.atlassian.net/browse/SCRUM-630",
+        "outcomeCommentId": "12555",
+        "outcomeUrl": "https://oto-suite-dev.atlassian.net/browse/SCRUM-630?focusedCommentId=12555",
+        "outcomeNamesEveryAttachedImage": true,
+        "evidenceUrl": "https://github.com/vickyydev/oto-platform/blob/b91e957c779cb74a0c1495f24257bd69218286ae/docs/qa/jira-comments/attachments/SCRUM-630/README.md",
+        "limits": [
+          "Only blank disabled pay fields and generated header presence were shown; no real salary or payroll write.",
+          "Advisor checks are local-only."
+        ]
+      },
+      {
+        "key": "SCRUM-631",
+        "imageReviewPassed": true,
+        "sourceSha": "1462f5158f236c957523bd81b40355ad67fbfc49",
+        "reviewFile": "docs/qa/jira-comments/attachments/SCRUM-631/coordinator-image-review.json",
+        "reviewSha256": "c1e6ff6567477e20d368240d7d3c599240cc5effe99a9751390d9d69dd78dd3b",
+        "readme": "docs/qa/jira-comments/attachments/SCRUM-631/README.md",
+        "readmeSha256": "ba7fa9239726aa65db8d97f7ba1d868c744523f44a9f0c637619db56f94e01c3",
+        "allEvidenceTrackedAndEqualToHead": true,
+        "screenshots": [
+          {
+            "filename": "SCRUM-631-01-created-mirror.png",
+            "sha256": "3b4c05a4ecb2ed73cd964db67b00c2d5bab4119305706538bd1dd2434cc102ac",
+            "size": 42574,
+            "jiraAttachmentId": "12014",
+            "jiraAttachmentUrl": "https://jira-prod-ap-37-3.prod.atl-paas.net/rest/api/3/attachment/content/12014",
+            "jiraMetadataMatchesCommittedPng": true
+          },
+          {
+            "filename": "SCRUM-631-02-renamed-mirror.png",
+            "sha256": "3a447bc48686f39a04df63fbe499b7ef290d8eb4ac98915644e2e690d94f461e",
+            "size": 43092,
+            "jiraAttachmentId": "12015",
+            "jiraAttachmentUrl": "https://jira-prod-ap-37-3.prod.atl-paas.net/rest/api/3/attachment/content/12015",
+            "jiraMetadataMatchesCommittedPng": true
+          },
+          {
+            "filename": "SCRUM-631-03-archived-mirror.png",
+            "sha256": "93a7f3ce096f945f394d7390a3709574ee24b324dd150aaf878506366e1004d2",
+            "size": 44581,
+            "jiraAttachmentId": "12016",
+            "jiraAttachmentUrl": "https://jira-prod-ap-37-3.prod.atl-paas.net/rest/api/3/attachment/content/12016",
+            "jiraMetadataMatchesCommittedPng": true
+          }
+        ],
+        "jiraStatus": "Deployed",
+        "jiraUrl": "https://oto-suite-dev.atlassian.net/browse/SCRUM-631",
+        "outcomeCommentId": "12556",
+        "outcomeUrl": "https://oto-suite-dev.atlassian.net/browse/SCRUM-631?focusedCommentId=12556",
+        "outcomeNamesEveryAttachedImage": true,
+        "evidenceUrl": "https://github.com/vickyydev/oto-platform/blob/b91e957c779cb74a0c1495f24257bd69218286ae/docs/qa/jira-comments/attachments/SCRUM-631/README.md",
+        "limits": [
+          "The unique empty department proves create/rename/archive and stable per-park IDs; broader member/foreign/seed convergence is local coverage.",
+          "Global copy-job unrelated-row stability is not claimed."
+        ]
+      },
+      {
+        "key": "SCRUM-632",
+        "imageReviewPassed": true,
+        "sourceSha": "6b429d4bd8f98b1508a5a785ed78655ec3cc95d5",
+        "reviewFile": "docs/qa/jira-comments/attachments/SCRUM-632/coordinator-image-review.json",
+        "reviewSha256": "fcb1b9983a7acd192ea03fd2c25d31461167124e2a49b8a8d9cef06b92bba146",
+        "readme": "docs/qa/jira-comments/attachments/SCRUM-632/README.md",
+        "readmeSha256": "64eadad91bf23debc7bc0964345690a11bdca0a2c339289b49052e66e2e7d991",
+        "allEvidenceTrackedAndEqualToHead": true,
+        "screenshots": [
+          {
+            "filename": "SCRUM-632-01-users-flag-off.png",
+            "sha256": "b7823a963691b228d3948a8d676a9310a2f4d3982d8df83a293c949e85a7f22b",
+            "size": 149715,
+            "jiraAttachmentId": "12017",
+            "jiraAttachmentUrl": "https://jira-prod-ap-37-3.prod.atl-paas.net/rest/api/3/attachment/content/12017",
+            "jiraMetadataMatchesCommittedPng": true
+          },
+          {
+            "filename": "SCRUM-632-02-permissions-flag-off.png",
+            "sha256": "d362992b878c190a06f3c2decb65214f981be48504b0166136217839b072d145",
+            "size": 106505,
+            "jiraAttachmentId": "12018",
+            "jiraAttachmentUrl": "https://jira-prod-ap-37-3.prod.atl-paas.net/rest/api/3/attachment/content/12018",
+            "jiraMetadataMatchesCommittedPng": true
+          },
+          {
+            "filename": "SCRUM-632-03-operators-flag-off.png",
+            "sha256": "0653dc41bf6f03870d1ab7b7b42c61b2371f041d3d156f6b170a3ab24c85427f",
+            "size": 121976,
+            "jiraAttachmentId": "12019",
+            "jiraAttachmentUrl": "https://jira-prod-ap-37-3.prod.atl-paas.net/rest/api/3/attachment/content/12019",
+            "jiraMetadataMatchesCommittedPng": true
+          },
+          {
+            "filename": "SCRUM-632-04-users-managed.png",
+            "sha256": "7cc902478ebb54bfb5479daa0d6a8eba95d5301f4440ec0f98a34b2f1192f815",
+            "size": 151899,
+            "jiraAttachmentId": "12020",
+            "jiraAttachmentUrl": "https://jira-prod-ap-37-3.prod.atl-paas.net/rest/api/3/attachment/content/12020",
+            "jiraMetadataMatchesCommittedPng": true
+          },
+          {
+            "filename": "SCRUM-632-05-permissions-managed.png",
+            "sha256": "b97fb922c26f8f9bdddb81da5c4686b97a1ab3b00e7bd476f59d8201dc0cef90",
+            "size": 108401,
+            "jiraAttachmentId": "12021",
+            "jiraAttachmentUrl": "https://jira-prod-ap-37-3.prod.atl-paas.net/rest/api/3/attachment/content/12021",
+            "jiraMetadataMatchesCommittedPng": true
+          },
+          {
+            "filename": "SCRUM-632-06-operators-managed.png",
+            "sha256": "5dee755ada7b69e8d7c23851c0ddeadeb9b0b0df614722750de2904b9d1ba215",
+            "size": 117378,
+            "jiraAttachmentId": "12022",
+            "jiraAttachmentUrl": "https://jira-prod-ap-37-3.prod.atl-paas.net/rest/api/3/attachment/content/12022",
+            "jiraMetadataMatchesCommittedPng": true
+          }
+        ],
+        "jiraStatus": "Deployed",
+        "jiraUrl": "https://oto-suite-dev.atlassian.net/browse/SCRUM-632",
+        "outcomeCommentId": "12559",
+        "outcomeUrl": "https://oto-suite-dev.atlassian.net/browse/SCRUM-632?focusedCommentId=12559",
+        "outcomeNamesEveryAttachedImage": true,
+        "evidenceUrl": "https://github.com/vickyydev/oto-platform/blob/b91e957c779cb74a0c1495f24257bd69218286ae/docs/qa/jira-comments/attachments/SCRUM-632/README.md",
+        "limits": [
+          "The managed pages are Users, Access/Permissions and Operators; flag-off native behavior remains.",
+          "Caption prefix is partly covered by the native sidebar; timestamps and complete JSON source bindings remain.",
+          "Link intent is verified; destination-page arrival is not claimed."
+        ]
+      },
+      {
+        "key": "SCRUM-633",
+        "imageReviewPassed": true,
+        "sourceSha": "704bb3e3aea9f4348762521b886f2f7aef868021",
+        "reviewFile": "docs/qa/jira-comments/attachments/SCRUM-633/native-pixel-review.json",
+        "reviewSha256": "f1dd3e5291cd66467f87978f087efc558335e876d043ddfb1e87f48aee834b0b",
+        "readme": "docs/qa/jira-comments/attachments/SCRUM-633/README.md",
+        "readmeSha256": "f3a5d370d3b1904e21daf0c4c563771c2f7e39d108139a01705c223ee077133b",
+        "allEvidenceTrackedAndEqualToHead": true,
+        "screenshots": [
+          {
+            "filename": "SCRUM-633-01-existing-demo-user-controls.png",
+            "sha256": "368a4b008a54b2d830d3cc24d00b9f4a48d53fbcf861f439d63ba87d9f9067a8",
+            "size": 41416,
+            "jiraAttachmentId": "12023",
+            "jiraAttachmentUrl": "https://jira-prod-ap-37-3.prod.atl-paas.net/rest/api/3/attachment/content/12023",
+            "jiraMetadataMatchesCommittedPng": true
+          },
+          {
+            "filename": "SCRUM-633-02-retired-studio-redirect.png",
+            "sha256": "69e3696a7e6debc2535e993e1209a70821cff36f98b7e2826acf90a878a0f1c0",
+            "size": 60187,
+            "jiraAttachmentId": "12024",
+            "jiraAttachmentUrl": "https://jira-prod-ap-37-3.prod.atl-paas.net/rest/api/3/attachment/content/12024",
+            "jiraMetadataMatchesCommittedPng": true
+          },
+          {
+            "filename": "SCRUM-633-03-lifecycle-and-local-invite-proof.png",
+            "sha256": "e2a292faf62634fae8ffe4c07719aa518edfe869a0c9ea0c35a038cf2bd5872b",
+            "size": 50785,
+            "jiraAttachmentId": "12025",
+            "jiraAttachmentUrl": "https://jira-prod-ap-37-3.prod.atl-paas.net/rest/api/3/attachment/content/12025",
+            "jiraMetadataMatchesCommittedPng": true
+          }
+        ],
+        "jiraStatus": "Deployed",
+        "jiraUrl": "https://oto-suite-dev.atlassian.net/browse/SCRUM-633",
+        "outcomeCommentId": "12561",
+        "outcomeUrl": "https://oto-suite-dev.atlassian.net/browse/SCRUM-633?focusedCommentId=12561",
+        "outcomeNamesEveryAttachedImage": true,
+        "evidenceUrl": "https://github.com/vickyydev/oto-platform/blob/b91e957c779cb74a0c1495f24257bd69218286ae/docs/qa/jira-comments/attachments/SCRUM-633/README.md",
+        "limits": [
+          "Actual staging proves existing-demo disable/reactivate and one delivered event/audit with no pending event.",
+          "Positive new-login/once-only credentials are local captured transport and native wizard closures; no staged invitation/SMS.",
+          "Two images are native screens and the third is explicitly an API/local test-run card."
+        ]
+      }
+    ],
+    "clauseCoverage": [
+      {
+        "clause": "Flag-on person receives the platform-mapped app role.",
+        "status": "Covered by deployed child acceptance",
+        "evidence": [
+          "SCRUM-629"
+        ],
+        "detail": "Actual fresh staging flag-off Staff, then flag-on Admin/Manager/Staff; the original single-branch boundary is retained."
+      },
+      {
+        "clause": "Nothing can be granted inside the managed OTO App administration pages.",
+        "status": "Covered by deployed child acceptance",
+        "evidence": [
+          "SCRUM-632",
+          "SCRUM-633"
+        ],
+        "detail": "Managed Users/Access/Operators retain lists but remove or disable write controls; safe native writes return managed409. New employee-login creation delegates to the owned platform boundary; local positive proof avoids real SMS."
+      },
+      {
+        "clause": "Salary permission, mirrored departments and lifecycle/navigation alignment.",
+        "status": "Covered by deployed child acceptance",
+        "evidence": [
+          "SCRUM-630",
+          "SCRUM-631",
+          "SCRUM-633"
+        ],
+        "detail": "Same Manager salary false/true/withdrawn, stable per-park department projections, actual demo two-way activation, and an actual retired Studio redirect; local-only limits remain explicit."
+      },
+      {
+        "clause": "Staff & HR summary and all six child tickets Deployed.",
+        "status": "Pending SCRUM-634",
+        "evidence": [
+          "SCRUM-634"
+        ],
+        "detail": "Source is published and Testing; exact-SHA full CI, automatic rollout, current native staging proof, evidence attachment and Deployed readback still remain."
+      }
+    ],
+    "remainingBeforeParentDeployed": [
+      "Finish exact source b91e957c779cb74a0c1495f24257bd69218286ae CI40154287659 and verify all six successful jobs, then the exact three latest live automatic deployments.",
+      "Complete and inspect SCRUM-634 actual post-deploy Staff desktop/phone and permitted/restricted demo proof with stable native count/status comparison, source-link intent and all auth cleanup; publish/attach its PNGs and read back Deployed.",
+      "Read back all six child statuses as Deployed together. Keep owner final Done acceptance separate.",
+      "Create the parent evidence record and one plain-language outcome, with a named inspected staging screenshot attached to SCRUM-628, then walk the parent through Testing to Deployed and update STATUS/handovers/PLAN in the same delivery turn.",
+      "Do not start P4 until the parent is Deployed."
+    ],
+    "recommendedParentEvidence": {
+      "preferred": "Reuse an inspected fresh SCRUM-634 actual staging desktop PNG byte-for-byte as SCRUM-628-01-staff-current.png, recording its original filename, capture time, source/deploy/proof SHA and unchanged PNG hash. It must be after the final 634 deployment.",
+      "supportingHistoricalReferences": [
+        "SCRUM-629-03-enabled-manager.png or SCRUM-629-02-enabled-admin.png for mapped flag-on role.",
+        "SCRUM-632-04-users-managed.png and SCRUM-632-05-permissions-managed.png for managed controls.",
+        "The existing child lifecycle and department images remain supporting source-bound historical evidence."
+      ],
+      "optionalLabelledCard": "A new SCRUM-628-02-phase-acceptance-card.png may summarize current six-child Deployed readbacks and actual 634 release/proof, with explicit historical source/capture dates for 629–633. Mark it as a labelled evidence card, not a combined native screen. Label local invite/advisor checks local.",
+      "prohibitedClaims": [
+        "Do not relabel 629–633 images as observations made after the 634 deployment.",
+        "Do not claim new-login/SMS delivery, an advisor staging persona, real payroll values, or visited handoff destination screens.",
+        "Do not unarchive old fixture entities or change real grants merely to recreate a phase image.",
+        "Do not write parent Deployed or start P4 while 634 is Testing."
+      ]
+    },
+    "findings": [],
+    "limits": [
+      "This is acceptance preparation only, not parent acceptance or a new staging proof.",
+      "Previously committed image-review records were hash-checked; this audit did not re-open all 20 pixels or download the remote image bytes.",
+      "No Jira, source, documentation, browser, environment or business state was changed."
+    ]
+  },
+  "latestSourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae",
+  "latestCiRunId": "40154287659",
+  "latestChildDeployedReadback": "2026-10-25T03:24:38.907Z",
+  "screenshot": {
+    "filename": "SCRUM-628-01-staff-current.png",
+    "sha256": "270c64d7ec7dec634e9f6456d5e5f71aa604d027b59e954ebca41b8ec2e0ad0f",
+    "capturedAt": "2026-10-25T03:20:23.574Z",
+    "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae",
+    "originalTicket": "SCRUM-634",
+    "originalFilename": "SCRUM-634-01-admin-staff-desktop.png",
+    "byteIdentical": true,
+    "captionUnchanged": true
+  },
+  "limits": [
+    "Role, salary, department, managed-control and lifecycle screenshots retain their individual earlier release dates.",
+    "The parent screenshot is an unchanged copy of the reviewed current Staff desktop frame; its SCRUM-634 caption is deliberately retained.",
+    "New-account invitation success and advisor restrictions have local proof; no staging invitation or real SMS was sent.",
+    "Source buttons prove fresh handoff and destination intent, not destination UI arrival."
+  ],
+  "p4Started": false
+}

@@ -1,0 +1,25 @@
+{
+  "ticket": "SCRUM-634",
+  "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae",
+  "ciRunId": "40154287659",
+  "evidenceCommit": "cd416f2b6712a6d8a9056cf2e1943a2b27faadb7",
+  "status": "Deployed",
+  "readBackAt": "2026-10-25T03:24:38.907Z",
+  "attachments": [
+    {
+      "id": "12026",
+      "name": "SCRUM-634-01-admin-staff-desktop.png"
+    },
+    {
+      "id": "12027",
+      "name": "SCRUM-634-02-admin-staff-phone.png"
+    },
+    {
+      "id": "12028",
+      "name": "SCRUM-634-03-reception-staff-desktop.png"
+    }
+  ],
+  "commentId": "12562",
+  "stagingCompletedAt": "2026-10-25T03:21:42.735Z",
+  "ownedContextsClosed": 7
+}
