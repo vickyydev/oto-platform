@@ -13,6 +13,17 @@ const deferred = () => { let resolve!: () => void; const promise = new Promise<v
 const menuPath = '/branches/' + PARK + '/menu';
 
 async function fixture(page: Page, options: { branchOnly?: boolean; permissions?: string[]; sharedItem?: boolean } = {}) {
+  // Model a backend session separately from its immutable account identity.
+  let fixtureSessionActor: string | null = null, fixtureSessionId = '';
+  const fixtureOperatorContext = (actor: string, operatorId: string, branchId: string | null) => {
+    if (fixtureSessionActor !== actor) {
+      fixtureSessionActor = actor;
+      fixtureSessionId = crypto.randomUUID();
+    }
+    return { sessionId: fixtureSessionId, homeOperatorId: operatorId, effectiveOperatorId: operatorId,
+      operatorOverride: null, branchId, stationId: null, revision: 0 };
+  };
+
   const calls: Array<{ method: string; path: string; body: Record<string, unknown> | undefined; key: string | undefined }> = [];
   const errors: string[] = [];
   const controls = { refused: new Set<string>(), pending: new Map<string, Promise<void>>(), failedReads: new Map<string, number>(), delayedReads: new Map<string, Promise<void>>(), failAfterCreate: false };
@@ -48,7 +59,8 @@ async function fixture(page: Page, options: { branchOnly?: boolean; permissions?
       await controls.pending.get(path);
       if (controls.refused.has(path)) return route.fulfill({ status: 409, json: { error: { code: 'ZZ_TEST_REFUSED', message: 'ZZ TEST Keep this draft.' } } });
     }
-    if (path === '/me') return route.fulfill({ json: { account: { id: ACTOR, operatorId: OPERATOR, phone: '', status: 'active', mustChangePassword: false }, employee: { id: ACTOR, name: 'ZZ TEST Menu administrator', nickname: null }, branch: parks[0], isPlatformAdmin: false, photoFileId: null, sessionLocked: false, preferences: { theme: 'light', language: 'en' } } });
+    if (path === '/me') return route.fulfill({ json: {
+      operatorContext: fixtureOperatorContext(ACTOR, OPERATOR, (parks[0])?.id ?? null), account: { id: ACTOR, operatorId: OPERATOR, phone: '', status: 'active', mustChangePassword: false }, employee: { id: ACTOR, name: 'ZZ TEST Menu administrator', nickname: null }, branch: parks[0], isPlatformAdmin: false, photoFileId: null, sessionLocked: false, preferences: { theme: 'light', language: 'en' } } });
     if (path === '/me/permissions') return route.fulfill({ json: { permissions: (options.permissions ?? grants).map(permission => ({ permission, scopeType: options.branchOnly ? 'branch' : 'operator', scopeId: options.branchOnly ? PARK : OPERATOR })) } });
     if (path === '/branches') return route.fulfill({ json: { branches: parks } });
     if (path === '/menu/discounts') return route.fulfill({ json: { discounts: [] } });

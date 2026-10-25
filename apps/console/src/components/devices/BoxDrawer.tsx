@@ -1,3 +1,4 @@
+import { useWorkingAuthority } from '@/lib/workingAuthority';
 import { useCallback, useEffect, useState } from 'react';
 import { Loader2, Plus, RefreshCw } from 'lucide-react';
 import { SETTINGS_SECTION_FOR_KIND, type EscposDotsPerLine } from '@oto/shared';
@@ -333,15 +334,18 @@ function ClaimCodeRow({
   timezone?: string | null;
   onChanged: () => void;
 }) {
+  const working = useWorkingAuthority();
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
   const [code, setCode] = useState<{ code: string; expiresAt?: string } | null>(null);
 
   const reissue = async () => {
+    if (!working.isCurrent()) return;
     setBusy(true);
     setFailed(null);
     try {
-      const result = await fleetApi.reissueClaimCode(box.id);
+      const result = await working.run(() => fleetApi.reissueClaimCode(box.id));
+      if (!working.isCurrent()) return;
       onChanged();
       if (result.claimCode) {
         setCode({ code: result.claimCode, expiresAt: result.expiresAt });
@@ -352,9 +356,12 @@ function ClaimCodeRow({
         setFailed('That request reached the API twice, so its code cannot be shown. Press again.');
       }
     } catch (err) {
+      if (!working.isCurrent()) return;
       setFailed(err instanceof Error ? err.message : 'Could not issue a claim code');
     } finally {
-      setBusy(false);
+      if (working.isCurrent()) {
+        setBusy(false);
+      }
     }
   };
 
@@ -593,6 +600,7 @@ function AddDeviceForm({
   onClose: () => void;
   onAdded: () => void;
 }) {
+  const working = useWorkingAuthority();
   const [kind, setKind] = useState<DeviceKind>('receipt_printer');
   const [label, setLabel] = useState('');
   const [transport, setTransport] = useState<DeviceTransport>('lan');
@@ -604,10 +612,11 @@ function AddDeviceForm({
   const [failed, setFailed] = useState<string | null>(null);
 
   const submit = async () => {
+    if (!working.isCurrent()) return;
     setBusy(true);
     setFailed(null);
     try {
-      await fleetApi.createDevice(boxId, {
+      await working.run(() => fleetApi.createDevice(boxId, {
         kind,
         label: label.trim(),
         transport,
@@ -615,13 +624,17 @@ function AddDeviceForm({
         model: model.trim() || undefined,
         protocol: protocol.trim() || undefined,
         settings: printsEscpos(kind) ? { escpos: { dotsPerLine } } : undefined,
-      });
+      }));
+      if (!working.isCurrent()) return;
       onAdded();
       onClose();
     } catch (err) {
+      if (!working.isCurrent()) return;
       setFailed(err instanceof Error ? err.message : 'The device could not be added');
     } finally {
-      setBusy(false);
+      if (working.isCurrent()) {
+        setBusy(false);
+      }
     }
   };
 
@@ -679,6 +692,7 @@ function EditDeviceForm({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const working = useWorkingAuthority();
   const [label, setLabel] = useState(device.label);
   const [address, setAddress] = useState(device.address ?? '');
   const [model, setModel] = useState(device.model ?? '');
@@ -693,10 +707,11 @@ function EditDeviceForm({
   const [orphaned, setOrphaned] = useState<StationAssignmentRef[] | null>(null);
 
   const save = async () => {
+    if (!working.isCurrent()) return;
     setBusy(true);
     setFailed(null);
     try {
-      await fleetApi.updateDevice(device.id, {
+      await working.run(() => fleetApi.updateDevice(device.id, {
         label: label.trim(),
         address: address.trim() || null,
         model: model.trim() || null,
@@ -714,21 +729,27 @@ function EditDeviceForm({
               },
             }
           : {}),
-      });
+      }));
+      if (!working.isCurrent()) return;
       onSaved();
       onClose();
     } catch (err) {
+      if (!working.isCurrent()) return;
       setFailed(err instanceof Error ? err.message : 'The device could not be saved');
     } finally {
-      setBusy(false);
+      if (working.isCurrent()) {
+        setBusy(false);
+      }
     }
   };
 
   const archive = async () => {
+    if (!working.isCurrent()) return;
     setBusy(true);
     setFailed(null);
     try {
-      const result = await fleetApi.archiveDevice(device.id);
+      const result = await working.run(() => fleetApi.archiveDevice(device.id));
+      if (!working.isCurrent()) return;
       onSaved();
       const left = result.stillAssignedTo ?? [];
       // A station that was using it has quietly lost that job. The form stays
@@ -737,9 +758,12 @@ function EditDeviceForm({
       if (left.length === 0) onClose();
       else setOrphaned(left);
     } catch (err) {
+      if (!working.isCurrent()) return;
       setFailed(err instanceof Error ? err.message : 'The device could not be archived');
     } finally {
-      setBusy(false);
+      if (working.isCurrent()) {
+        setBusy(false);
+      }
     }
   };
 
@@ -933,6 +957,7 @@ function BoxControls({
   outboxDepth: number | null;
   onSent: (actionId?: string | null) => void;
 }) {
+  const working = useWorkingAuthority();
   /**
    * What somebody CHOSE, in both pickers, with null meaning "still the
    * default". Held as the choice rather than as the resolved id so that the
@@ -949,17 +974,22 @@ function BoxControls({
   const [resetting, setResetting] = useState(false);
 
   const send = async (kind: BoxCommandKind) => {
+    if (!working.isCurrent()) return;
     setBusyKind(kind);
     setNote(null);
     setFailed(null);
     try {
-      const result = await fleetApi.sendCommand(box.id, { kind });
+      const result = await working.run(() => fleetApi.sendCommand(box.id, { kind }));
+      if (!working.isCurrent()) return;
       setNote(`${commandWord(kind)} queued. The box takes it on its next poll.`);
       onSent(result.actionId);
     } catch (err) {
+      if (!working.isCurrent()) return;
       setFailed(err instanceof Error ? err.message : `${commandWord(kind)} could not be queued`);
     } finally {
-      setBusyKind(null);
+      if (working.isCurrent()) {
+        setBusyKind(null);
+      }
     }
   };
 
@@ -980,14 +1010,16 @@ function BoxControls({
    * job at that station, and the cloud resolves the same pair onto the job row.
    */
   const testPrint = async (stationId: string, printer: StationPrinter) => {
+    if (!working.isCurrent()) return;
     setBusyKind('test_print');
     setNote(null);
     setFailed(null);
     try {
-      const { printJob, actionId } = await printApi.stationTestPrint(stationId, {
+      const { printJob, actionId } = await working.run(() => printApi.stationTestPrint(stationId, {
         kind: 'test_page',
         role: printer.role,
-      });
+      }));
+      if (!working.isCurrent()) return;
       setNote(
         /**
          * The button is off when the station has no printer for the role, so
@@ -1001,9 +1033,12 @@ function BoxControls({
       );
       onSent(actionId);
     } catch (err) {
+      if (!working.isCurrent()) return;
       setFailed(err instanceof Error ? err.message : 'Test print could not be queued');
     } finally {
-      setBusyKind(null);
+      if (working.isCurrent()) {
+        setBusyKind(null);
+      }
     }
   };
 
@@ -1115,7 +1150,7 @@ function BoxControls({
               // The confirmation stays up, with its spinner, until the command
               // is actually queued: closing it on the press would leave a
               // failure with nothing on screen that had asked for it.
-              void send('reset_store').finally(() => setResetting(false));
+              void send('reset_store').finally(() => { if (!working.isCurrent()) return; return setResetting(false); });
             }}
           />
         ) : (
@@ -1200,6 +1235,7 @@ function RetireBox({
   onChanged: () => void;
   onArchived: () => void;
 }) {
+  const working = useWorkingAuthority();
   const offer = boxRetirementOffer(box, liveStations, { update: canUpdate, archive: canArchive });
   const [confirming, setConfirming] = useState<'disable' | 'archive' | null>(null);
   const [busy, setBusy] = useState(false);
@@ -1214,33 +1250,38 @@ function RetireBox({
   if (!offer.disable && !offer.restore && !offer.archive) return null;
 
   const run = async (what: () => Promise<unknown>, fallback: string, after: () => void) => {
+    if (!working.isCurrent()) return;
     setBusy(true);
     setFailed(null);
     try {
-      await what();
+      await working.run(what);
+      if (!working.isCurrent()) return;
       setConfirming(null);
       after();
     } catch (err) {
+      if (!working.isCurrent()) return;
       setFailed(err instanceof Error ? err.message : fallback);
     } finally {
-      setBusy(false);
+      if (working.isCurrent()) {
+        setBusy(false);
+      }
     }
   };
 
   const disable = () =>
     run(
-      () => fleetApi.updateBox(box.id, { status: 'disabled' }),
+      () => working.run(() => fleetApi.updateBox(box.id, { status: 'disabled' })),
       'The box could not be taken out of service',
       onChanged,
     );
   const restore = () =>
     run(
-      () => fleetApi.updateBox(box.id, { status: 'offline' }),
+      () => working.run(() => fleetApi.updateBox(box.id, { status: 'offline' })),
       'The box could not be put back in service',
       onChanged,
     );
   const archive = () =>
-    run(() => fleetApi.archiveBox(box.id), 'The box could not be removed', onArchived);
+    run(() => working.run(() => fleetApi.archiveBox(box.id)), 'The box could not be removed', onArchived);
 
   return (
     <section>
@@ -1350,19 +1391,23 @@ function CommandHistory({
   timezone?: string | null;
   onFilterByAction: (actionId: string) => void;
 }) {
+  const working = useWorkingAuthority();
   const [commands, setCommands] = useState<BoxCommandRow[] | null>(null);
   const [missing, setMissing] = useState(false);
 
   const load = useCallback(async () => {
+    if (!working.isCurrent()) return;
     try {
-      const { commands: list } = await fleetApi.commands(boxId);
+      const { commands: list } = await working.run(() => fleetApi.commands(boxId));
+      if (!working.isCurrent()) return;
       setCommands(list);
       setMissing(false);
     } catch (err) {
+      if (!working.isCurrent()) return;
       setCommands([]);
       setMissing(isMissingRoute(err));
     }
-  }, [boxId]);
+  }, [boxId, working.isCurrent, working.run]);
 
   useEffect(() => {
     void load();
@@ -1447,6 +1492,7 @@ function BoxLog({
   refreshedAt: number;
   timezone?: string | null;
 }) {
+  const working = useWorkingAuthority();
   const [lines, setLines] = useState<BoxLogLine[] | null>(null);
   const [missing, setMissing] = useState(false);
   const [truncated, setTruncated] = useState(false);
@@ -1459,22 +1505,27 @@ function BoxLog({
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
+    if (!working.isCurrent()) return;
     setLoading(true);
     try {
-      const result = await fleetApi.log(boxId, {
+      const result = await working.run(() => fleetApi.log(boxId, {
         actionId: actionFilter.trim() || undefined,
-      });
+      }));
+      if (!working.isCurrent()) return;
       setLines(result.lines);
       setTruncated(result.truncated === true);
       setCollectedAt(result.collectedAt ?? null);
       setMissing(false);
     } catch (err) {
+      if (!working.isCurrent()) return;
       setLines([]);
       setMissing(isMissingRoute(err));
     } finally {
-      setLoading(false);
+      if (working.isCurrent()) {
+        setLoading(false);
+      }
     }
-  }, [boxId, actionFilter]);
+  }, [boxId, actionFilter, working.isCurrent, working.run]);
 
   useEffect(() => {
     void load();
@@ -1484,37 +1535,45 @@ function BoxLog({
   // answers a collect_logs command within seconds. So the section re-reads
   // every minute on its own, and Refresh asks the box for a fresh copy first.
   useEffect(() => {
-    const timer = setInterval(() => void load(), 60_000);
+    const timer = setInterval(() => { if (!working.isCurrent()) return; return void load(); }, 60_000);
     return () => clearInterval(timer);
-  }, [load]);
+  }, [load, working.isCurrent]);
 
   const refresh = useCallback(async () => {
+    if (!working.isCurrent()) return;
     setBusy(true);
     setAsking('Asking the box for its latest log…');
     try {
-      const { commandId } = await fleetApi.sendCommand(boxId, {
+      const { commandId } = await working.run(() => fleetApi.sendCommand(boxId, {
         kind: 'collect_logs',
         payload: { lines: 500 },
-      });
+      }));
+      if (!working.isCurrent()) return;
       let answered = false;
       for (let attempt = 0; attempt < 10 && !answered; attempt += 1) {
         await new Promise((resolve) => setTimeout(resolve, 2_000));
-        const { commands } = await fleetApi.commands(boxId, 10);
+        if (!working.isCurrent()) return;
+        const { commands } = await working.run(() => fleetApi.commands(boxId, 10));
+        if (!working.isCurrent()) return;
         const command = commands.find((c) => c.id === commandId);
         answered = command !== undefined && !['queued', 'running'].includes(command.state);
       }
       await load();
+      if (!working.isCurrent()) return;
       setAsking(
         answered
           ? null
           : 'The box has not answered yet — it hands its log over when it is next online, and this section re-reads every minute.',
       );
     } catch (err) {
+      if (!working.isCurrent()) return;
       setAsking(`Could not ask the box: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
-      setBusy(false);
+      if (working.isCurrent()) {
+        setBusy(false);
+      }
     }
-  }, [boxId, load]);
+  }, [boxId, load, working.isCurrent, working.run]);
 
   return (
     <section>
@@ -1645,17 +1704,20 @@ function LogLine({
 // ---------------------------------------------------------------------------
 
 function Heartbeats({ boxId, timezone }: { boxId: string; timezone?: string | null }) {
+  const working = useWorkingAuthority();
   const [rows, setRows] = useState<BoxHeartbeatRow[] | null>(null);
   const [missing, setMissing] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    void fleetApi
-      .heartbeats(boxId)
+    void working.run(() => fleetApi
+      .heartbeats(boxId))
       .then(({ heartbeats }) => {
+        if (!working.isCurrent()) return;
         if (!cancelled) setRows(heartbeats);
       })
       .catch((err: unknown) => {
+        if (!working.isCurrent()) return;
         if (cancelled) return;
         setRows([]);
         setMissing(isMissingRoute(err));
@@ -1663,7 +1725,7 @@ function Heartbeats({ boxId, timezone }: { boxId: string; timezone?: string | nu
     return () => {
       cancelled = true;
     };
-  }, [boxId]);
+  }, [boxId, working.run, working.isCurrent]);
 
   return (
     <section>

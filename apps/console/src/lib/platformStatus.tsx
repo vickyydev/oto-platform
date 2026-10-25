@@ -1,3 +1,4 @@
+import { useWorkingAuthority } from '@/lib/workingAuthority';
 import {
   createContext,
   useCallback,
@@ -49,6 +50,7 @@ export function PlatformStatusProvider({
   enabled: boolean;
   children: ReactNode;
 }) {
+  const working = useWorkingAuthority();
   const [ready, setReady] = useState<Readiness | null>(null);
   const [snapshot, setSnapshot] = useState<HealthSnapshot | null>(null);
   const [snapshotMissing, setSnapshotMissing] = useState(false);
@@ -58,19 +60,23 @@ export function PlatformStatusProvider({
   const inFlight = useRef(false);
 
   const refresh = useCallback(async () => {
-    if (!enabled || inFlight.current) return;
+    if (!working.isCurrent() || !enabled || inFlight.current) return;
     inFlight.current = true;
     setLoading(true);
     try {
       // /ready is public and exists on every deployment, so the top-line verdict
       // never depends on the richer route having landed.
-      const readiness = await healthApi.ready().catch(() => null);
+      const readiness = await working.run(() => healthApi.ready()).catch(() => null);
+      if (!working.isCurrent()) return;
       setReady(readiness);
       try {
-        setSnapshot(await healthApi.snapshot());
+        const next = await working.run(() => healthApi.snapshot());
+        if (!working.isCurrent()) return;
+        setSnapshot(next);
         setSnapshotMissing(false);
         setError(null);
       } catch (err) {
+        if (!working.isCurrent()) return;
         if (isMissingRoute(err)) {
           setSnapshotMissing(true);
           setError(null);
@@ -78,12 +84,12 @@ export function PlatformStatusProvider({
           setError(err instanceof Error ? err.message : 'Could not read the platform status');
         }
       }
-      setLastCheckedAt(Date.now());
+      if (working.isCurrent()) setLastCheckedAt(Date.now());
     } finally {
       inFlight.current = false;
-      setLoading(false);
+      if (working.isCurrent()) setLoading(false);
     }
-  }, [enabled]);
+  }, [enabled, working.isCurrent, working.run]);
 
   useEffect(() => {
     if (!enabled) return;

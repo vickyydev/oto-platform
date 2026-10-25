@@ -10,7 +10,7 @@ const account = (overrides = {}) => ({
   lastSignInAt: signedInAt, mustChangePassword: false, ...overrides,
 });
 const snapshot = () => ({
-  operatorWideHolders: [{ ...account(), assignments: [{ id: 'operator-assignment', roleName: 'operator_admin', scopeId: 'operator' }] }],
+  operatorWideHolders: [{ ...account(), assignments: [{ id: 'operator-assignment', roleName: 'operator_admin', scopeId: '01964000-0000-7000-8000-00000000f012' }] }],
   platformWideHolders: [{ ...account({ id: 'platform-account', employee: { id: 'employee-platform', name: 'ZZ TEST Platform' } }),
     assignments: [{ id: 'platform-assignment', roleName: 'platform_admin', scopeId: null }] }],
   accountsWithoutEmployee: [account({ id: 'unlinked-account', phone: '+66800000002', employee: null, status: 'inactive' })],
@@ -21,14 +21,26 @@ const snapshot = () => ({
 });
 
 async function fixture(page: Page, options: { roleRead?: boolean; accountRead?: boolean } = {}) {
+  // Model a backend session separately from its immutable account identity.
+  let fixtureSessionActor: string | null = null, fixtureSessionId = '';
+  const fixtureOperatorContext = (actor: string, operatorId: string, branchId: string | null) => {
+    if (fixtureSessionActor !== actor) {
+      fixtureSessionActor = actor;
+      fixtureSessionId = crypto.randomUUID();
+    }
+    return { sessionId: fixtureSessionId, homeOperatorId: operatorId, effectiveOperatorId: operatorId,
+      operatorOverride: null, branchId, stationId: null, revision: 0 };
+  };
+
   let reads = 0;
   const writes: string[] = [];
   await page.route('**/api/**', (route) => {
     const request = route.request(), url = new URL(request.url()), path = url.pathname.replace(/^\/api/, '');
     if (request.method() !== 'GET') writes.push(`${request.method()} ${path}`);
     if (path === '/me') return route.fulfill({ json: {
-      account: { id: 'caller', phone: '', status: 'active', mustChangePassword: false, operatorId: 'operator' },
-      employee: { id: 'caller', name: 'ZZ TEST Admin', nickname: null }, branch: null,
+      operatorContext: fixtureOperatorContext('01964000-0000-7000-8000-00000000f011', '01964000-0000-7000-8000-00000000f012', null),
+      account: { id: '01964000-0000-7000-8000-00000000f011', phone: '', status: 'active', mustChangePassword: false, operatorId: '01964000-0000-7000-8000-00000000f012' },
+      employee: { id: '01964000-0000-7000-8000-00000000f011', name: 'ZZ TEST Admin', nickname: null }, branch: null,
       isPlatformAdmin: false, photoFileId: null, sessionLocked: false,
     } });
     if (path === '/me/permissions') return route.fulfill({ json: { permissions: [

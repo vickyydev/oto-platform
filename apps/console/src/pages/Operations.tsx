@@ -1,3 +1,4 @@
+import { useWorkingAuthority } from '@/lib/workingAuthority';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Permission } from '@oto/shared/permissions';
 import { AdminNotifications, adminToast } from '@oto/admin-screens';
@@ -31,13 +32,14 @@ const at = (permissions: EffectivePermission[], operatorId: string, permission: 
 
 /** The inherited Inventory offer has no additional business grant. Routes remain authority. */
 export function Operations({ page }: { page: OperationsPage }) {
+  const working = useWorkingAuthority();
   const { me, permissions, has, locked } = useSession();
-  const key = JSON.stringify([me?.account.id, me?.account.operatorId, me?.branch?.id, locked, page,
+  const key = JSON.stringify([working.epoch, me?.operatorContext, me?.account.id, me?.operatorContext.effectiveOperatorId, me?.branch?.id, locked, page,
     permissions.map(grant => [grant.permission, grant.scopeType, grant.scopeId]).sort()]);
   const owner = useRef({ key, epoch: 0 });
   if (owner.current.key !== key) owner.current = { key, epoch: owner.current.epoch + 1 };
   const epoch = owner.current.epoch;
-  const isCurrent = useCallback(() => owner.current.epoch === epoch, [epoch]);
+  const isCurrent = useCallback(() => working.isCurrent() && owner.current.epoch === epoch, [epoch, working.isCurrent]);
   const permission = pagePermission[page];
   if (!me || locked || permission && !has(permission)) return <PermissionRequired permission={permission ?? 'app:console:access'} />;
   return <OperationsHost key={key} page={page} me={me} permissions={permissions} isCurrent={isCurrent} />;
@@ -46,6 +48,7 @@ export function Operations({ page }: { page: OperationsPage }) {
 function OperationsHost({ page, me, permissions, isCurrent }: {
   page: OperationsPage; me: MeResponse; permissions: EffectivePermission[]; isCurrent: () => boolean;
 }) {
+  const working = useWorkingAuthority();
   const fallback = useMemo(() => {
     const rows: Park[] = me.branch ? [{ id: me.branch.id, name: me.branch.name }] : [];
     for (const grant of permissions) if (grant.permission === 'pos:stock:read' && grant.scopeType === 'branch' && grant.scopeId && !rows.some(row => row.id === grant.scopeId)) {
@@ -57,17 +60,17 @@ function OperationsHost({ page, me, permissions, isCurrent }: {
   const [parkId, setParkId] = useState(fallback[0]?.id ?? '');
   const [notice, setNotice] = useState<string | null>(null);
   const [refresh, setRefresh] = useState(0);
-  const key = JSON.stringify([parkId, refresh]);
+  const key = JSON.stringify([working.epoch, parkId, refresh]);
   const owner = useRef({ key, epoch: 0 });
   if (owner.current.key !== key) owner.current = { key, epoch: owner.current.epoch + 1 };
   const epoch = owner.current.epoch;
-  const current = useCallback(() => isCurrent() && owner.current.epoch === epoch, [isCurrent, epoch]);
+  const current = useCallback(() => working.isCurrent() && isCurrent() && owner.current.epoch === epoch, [isCurrent, epoch, working.isCurrent]);
   useEffect(() => {
     if (page !== 'inventory' || !permissions.some(grant => grant.permission === 'admin:branch:read')) return;
     let live = true;
-    void organisationApi.branchesApi.list().then(answer => {
-      if (!live || !isCurrent()) return;
-      const readable = answer.branches.filter(branch => !branch.archived && at(permissions, me.account.operatorId, 'pos:stock:read', branch.id));
+    void working.run(() => organisationApi.branchesApi.list()).then(answer => {
+      if (!working.isCurrent() || !live || !isCurrent()) return;
+      const readable = answer.branches.filter(branch => !branch.archived && at(permissions, me.operatorContext.effectiveOperatorId, 'pos:stock:read', branch.id));
       const rows = fallback.map(park => ({ ...park }));
       for (const branch of readable) {
         const existing = rows.find(row => row.id === branch.id);
@@ -77,7 +80,7 @@ function OperationsHost({ page, me, permissions, isCurrent }: {
       setParkId(held => rows.some(row => row.id === held) ? held : rows[0]?.id ?? '');
     }).catch(() => { if (live && isCurrent()) setNotice('Park names could not be refreshed. The current park and your explicit park grants remain available.'); });
     return () => { live = false; };
-  }, [page, permissions, me.account.operatorId, isCurrent, fallback]);
+  }, [page, permissions, me.operatorContext.effectiveOperatorId, isCurrent, fallback, working.run, working.isCurrent]);
   return <>
     <CommandBar sectionId={page} actions={<>
       {page === 'inventory' && parks.length > 0 && <SelectChip label="Park" value={parkId} onChange={setParkId}
@@ -96,9 +99,10 @@ type InventorySnapshot = { inventory: InventoryItem[]; locations: StockLocation[
 function OperationsContent({ page, me, permissions, parkId, isCurrent }: {
   page: OperationsPage; me: MeResponse; permissions: EffectivePermission[]; parkId: string; isCurrent: () => boolean;
 }) {
+  const working = useWorkingAuthority();
   const mounted = useRef(false), reads = useRef(0);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; reads.current++; }; }, []);
-  const current = useCallback(() => mounted.current && isCurrent(), [isCurrent]);
+  const current = useCallback(() => working.isCurrent() && mounted.current && isCurrent(), [isCurrent, working.isCurrent]);
   const reread = useRef<(branch: string) => Promise<void>>(async () => {});
   const api = useMemo(() => createOperationsApi(current, branch => reread.current(branch)), [current]);
   const [inventory, setInventory] = useState<InventorySnapshot | null>(null);
@@ -106,7 +110,7 @@ function OperationsContent({ page, me, permissions, parkId, isCurrent }: {
   const [error, setError] = useState<string | null>(null);
   const [metadataError, setMetadataError] = useState<string | null>(null);
   const can = useCallback((permission: Permission) => permissions.some(grant => grant.permission === permission), [permissions]);
-  const canReadMenu = at(permissions, me.account.operatorId, 'catalog:menu:read', parkId);
+  const canReadMenu = at(permissions, me.operatorContext.effectiveOperatorId, 'catalog:menu:read', parkId);
   const loadMenu = useCallback(async () => {
     if (!canReadMenu) {
       if (current()) setMetadataError('Catalogue choices need the existing menu-read access at this park. Item forms are unavailable; stock and locations still use their own server permissions.');
@@ -158,7 +162,7 @@ function OperationsContent({ page, me, permissions, parkId, isCurrent }: {
     getTier: id => tiers?.find(tier => tier.id === id), getDefaultTier: () => tiers?.find(tier => tier.isDefault) ?? tiers?.[0],
   } }), [tiers]);
   if (error) return <div role="alert"><ErrorNote message={error} /></div>;
-  if (page === 'wallets') return <WalletLookupPanelWithPorts ports={{ ...api.walletApi, can, toast: adminToast, isCurrent: current }} />;
+  if (page === 'wallets') return <WalletLookupPanelWithPorts ports={{ ...api.walletApi, can, toast: (...args) => { if (working.isCurrent()) adminToast(...args); }, isCurrent: current }} />;
   if (page === 'inventory') return inventory ? <>
     {metadataError && <p role="status" className="text-sm text-muted-foreground">{metadataError}</p>}
     <InventoryPanelWithPorts ports={{ branch: { id: parkId, apiId: parkId }, stock: { ...inventory, error: null },
@@ -171,9 +175,9 @@ function OperationsContent({ page, me, permissions, parkId, isCurrent }: {
   if (tiers === null) return <Loading what="member tier configuration" />;
   return <>
     {metadataError && <p role="status" className="text-sm text-muted-foreground">{metadataError}</p>}
-    {page === 'members' ? <MembersPanelWithPorts ports={{ membersApi: api.membersApi, toast: adminToast,
+    {page === 'members' ? <MembersPanelWithPorts ports={{ membersApi: api.membersApi, toast: (...args) => { if (working.isCurrent()) adminToast(...args); },
       ...membership, getDefaultTier: () => tiers.find(tier => tier.isDefault) ?? tiers[0], verifiedTiers: () => tiers.filter(tier => tier.requiresVerification).map(tier => tier.id),
       operator: { id: me.account.id, name: displayName(me) }, can, isCurrent: current,
-    }} /> : <TierVerificationsPanelWithPorts ports={{ membersApi: api.membersApi, toast: adminToast, tierLabel: membership.tierLabel, isCurrent: current }} />}
+    }} /> : <TierVerificationsPanelWithPorts ports={{ membersApi: api.membersApi, toast: (...args) => { if (working.isCurrent()) adminToast(...args); }, tierLabel: membership.tierLabel, isCurrent: current }} />}
   </>;
 }

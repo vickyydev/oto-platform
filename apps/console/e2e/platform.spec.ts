@@ -37,6 +37,17 @@ const alert = (id: string, title: string, resolved = false) => ({
 
 /** These fixtures intercept the built Console; no control reaches a real API. */
 async function fixture(page: Page, initial: Partial<Authority> = {}) {
+  // Model a backend session separately from its immutable account identity.
+  let fixtureSessionActor: string | null = null, fixtureSessionId = '';
+  const fixtureOperatorContext = (actor: string, operatorId: string, branchId: string | null) => {
+    if (fixtureSessionActor !== actor) {
+      fixtureSessionActor = actor;
+      fixtureSessionId = crypto.randomUUID();
+    }
+    return { sessionId: fixtureSessionId, homeOperatorId: operatorId, effectiveOperatorId: operatorId,
+      operatorOverride: null, branchId, stationId: null, revision: 0 };
+  };
+
   const authority: Authority = {
     actor: ACTOR, operator: OPERATOR, branch: null, platform: true, active: true,
     locked: false, mustChangePassword: false, permissions: allPermissions(), ...initial,
@@ -50,7 +61,10 @@ async function fixture(page: Page, initial: Partial<Authority> = {}) {
     const url = new URL(request.url());
     const path = url.pathname.replace(/^\/api/, '').replace(/\/$/, '');
     calls.push({ method: request.method(), path, query: url.search, body: request.postData() });
+    if (path === '/me' && !authority.active) return route.fulfill({ status: 401,
+      json: { error: { code: 'UNAUTHORIZED', message: 'Not signed in' } } });
     if (path === '/me') return route.fulfill({ json: {
+      operatorContext: fixtureOperatorContext(authority.actor, authority.operator, (authority.branch ? { id: authority.branch, name: 'ZZ TEST Park', code: 'ZZ', timezone: 'Asia/Bangkok' } : null)?.id ?? null),
       account: { id: authority.actor, operatorId: authority.operator, phone: '',
         status: authority.active ? 'active' : 'inactive', mustChangePassword: authority.mustChangePassword },
       employee: { id: authority.actor, name: authority.actor === ACTOR ? 'ZZ TEST Platform Admin' : 'ZZ TEST Next Admin', nickname: null },
@@ -111,8 +125,9 @@ async function fixture(page: Page, initial: Partial<Authority> = {}) {
   return { authority, calls, featureCalls, reads, jobs, controls };
 }
 
-async function freshAuthority(page: Page) {
-  const loaded = page.waitForResponse((response) => new URL(response.url()).pathname === '/api/me/permissions');
+async function freshAuthority(page: Page, expectedStatus = 200) {
+  const loaded = page.waitForResponse((response) => new URL(response.url()).pathname === '/api/me'
+    && response.status() === expectedStatus);
   await page.evaluate(() => window.dispatchEvent(new Event('oto:session-locked')));
   await loaded;
   await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
@@ -296,7 +311,7 @@ test.describe('native Platform pages', () => {
       if (change === 'inactive') f.authority.active = false;
       if (change === 'locked') f.authority.locked = true;
       if (change === 'password') f.authority.mustChangePassword = true;
-      await freshAuthority(page);
+      await freshAuthority(page, change === 'inactive' ? 401 : 200);
       if (['actor', 'operator', 'branch'].includes(change)) {
         await expect(page.getByText('job:ZZ_TEST_CURRENT_AUTHORITY', { exact: true })).toBeVisible();
       } else if (change === 'locked') {
@@ -304,6 +319,7 @@ test.describe('native Platform pages', () => {
       } else if (change === 'password') {
         await expect(page.getByRole('heading', { name: 'Choose a password first', exact: true })).toBeVisible();
       } else {
+        if (change === 'inactive') await expect(page.getByRole('heading', { name: 'Sign in', exact: true })).toBeVisible();
         await expect(page.getByText('job:ZZ_TEST_CURRENT_AUTHORITY', { exact: true })).toHaveCount(0);
       }
       const completed = page.waitForResponse((response) => new URL(response.url()).pathname === '/api/platform/jobs'

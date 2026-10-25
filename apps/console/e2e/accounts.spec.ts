@@ -12,6 +12,17 @@ const row = (id = SOM, name = 'ZZ TEST Som') => ({
 const fixturePassword = 'fixture-not-a-real-credential';
 
 async function accountsFixture(page: Page, options: { read?: boolean; audit?: boolean } = {}) {
+  // Model a backend session separately from its immutable account identity.
+  let fixtureSessionActor: string | null = null, fixtureSessionId = '';
+  const fixtureOperatorContext = (actor: string, operatorId: string, branchId: string | null) => {
+    if (fixtureSessionActor !== actor) {
+      fixtureSessionActor = actor;
+      fixtureSessionId = crypto.randomUUID();
+    }
+    return { sessionId: fixtureSessionId, homeOperatorId: operatorId, effectiveOperatorId: operatorId,
+      operatorOverride: null, branchId, stationId: null, revision: 0 };
+  };
+
   const calls: Array<{ method: string; path: string; body: unknown; key: string | undefined }> = [];
   let accounts = [row(), row(MAI, 'ZZ TEST Mai')];
   let sessions = [{ id: 'session-one', branchId: BRANCH, stationId: null, lockedAt: '2026-10-22T06:00:00Z',
@@ -25,8 +36,9 @@ async function accountsFixture(page: Page, options: { read?: boolean; audit?: bo
     const method = request.method();
     if (method !== 'GET') calls.push({ method, path, body: request.postDataJSON(), key: request.headers()['idempotency-key'] });
     if (path === '/me') return route.fulfill({ json: {
-      account: { id: 'caller', phone: '', status: 'active', mustChangePassword: false, operatorId: OPERATOR },
-      employee: { id: 'caller', name: 'ZZ TEST Admin', nickname: null }, branch: null,
+      operatorContext: fixtureOperatorContext('01964000-0000-7000-8000-00000000f031', OPERATOR, null),
+      account: { id: '01964000-0000-7000-8000-00000000f031', phone: '', status: 'active', mustChangePassword: false, operatorId: OPERATOR },
+      employee: { id: '01964000-0000-7000-8000-00000000f031', name: 'ZZ TEST Admin', nickname: null }, branch: null,
       isPlatformAdmin: false, photoFileId: null, sessionLocked: false,
     } });
     if (path === '/me/permissions') return route.fulfill({ json: { permissions: [

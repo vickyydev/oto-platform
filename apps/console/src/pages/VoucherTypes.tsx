@@ -1,3 +1,4 @@
+import { useWorkingAuthority } from '@/lib/workingAuthority';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearch } from 'wouter';
 import { PenLine, Plus, RefreshCw, ScrollText, Ticket } from 'lucide-react';
@@ -53,12 +54,13 @@ import { expiryText, isWorded, notSetUp, worthOf } from '@/components/booth/vouc
  * it — and the rules every booth voucher obeys whatever its type.
  */
 export function VoucherTypes() {
+  const working = useWorkingAuthority();
   const { me, permissions } = useSession();
-  const operatorId = me?.account.operatorId;
+  const operatorId = me?.operatorContext.effectiveOperatorId;
   const manageGrants = permissions.filter(grant => grant.permission === 'admin:booth:manage');
   const canManage = Boolean(operatorId) && manageGrants.some(grant =>
     grant.scopeType === 'operator' && (grant.scopeId === null || grant.scopeId === operatorId));
-  const authorityKey = `${me?.account.id ?? ''}:${operatorId ?? ''}:${manageGrants.map(grant => `${grant.scopeType}:${grant.scopeId ?? ''}`).sort().join(',')}`;
+  const authorityKey = `${working.epoch}:${me?.account.id ?? ''}:${operatorId ?? ''}:${manageGrants.map(grant => `${grant.scopeType}:${grant.scopeId ?? ''}`).sort().join(',')}`;
   const authority = useRef(authorityKey);
   const authorityEpoch = useRef(0);
   if (authority.current !== authorityKey) {
@@ -108,12 +110,12 @@ export function VoucherTypes() {
   }, [authorityKey]);
 
   const load = useCallback(async (includeArchived: boolean) => {
-    if (!mounted.current) return;
+    if (!working.isCurrent() || !mounted.current) return;
     const request = ++readEpoch.current;
-    const ownsRead = () => mounted.current && authority.current === authorityKey && readEpoch.current === request;
+    const ownsRead = () => working.isCurrent() && mounted.current && authority.current === authorityKey && readEpoch.current === request;
     setList((held) => reading(held));
     try {
-      const answer = await boothApi.voucherDefinitions(includeArchived);
+      const answer = await working.run(() => boothApi.voucherDefinitions(includeArchived));
       if (ownsRead()) setList(readOk(answer.definitions));
     } catch (reason) {
       if (ownsRead()) setList((held) =>
@@ -122,7 +124,7 @@ export function VoucherTypes() {
           : readFailed(held, readFailureMessage(reason), []),
       );
     }
-  }, [authorityKey]);
+  }, [authorityKey, working.isCurrent, working.run]);
 
   useEffect(() => {
     void load(showArchived);
@@ -148,19 +150,19 @@ export function VoucherTypes() {
   /** The pickers' contents belong to the current account and authority. */
   useEffect(() => {
     let current = true;
-    void boothApi
-      .voucherLinkOptions()
+    void working.run(() => boothApi
+      .voucherLinkOptions())
       .then((options) => {
-        if (current && mounted.current && authority.current === authorityKey) {
+        if (current && working.isCurrent() && mounted.current && authority.current === authorityKey) {
           setLinkOptions(options);
           setLinkOptionsFailed(null);
         }
       })
       .catch((reason: unknown) => {
-        if (current && mounted.current && authority.current === authorityKey) setLinkOptionsFailed(readFailureMessage(reason));
+        if (current && working.isCurrent() && mounted.current && authority.current === authorityKey) setLinkOptionsFailed(readFailureMessage(reason));
       });
     return () => { current = false; };
-  }, [authorityKey]);
+  }, [authorityKey, working.run, working.isCurrent]);
 
   /**
    * Every write ends the same way: the list is read again rather than patched,
@@ -168,20 +170,20 @@ export function VoucherTypes() {
    * cleared by a kind change, blank words stored as not written.
    */
   const write = async (action: () => Promise<unknown>) => {
-    if (!mounted.current || !manageRef.current || busyRef.current) return;
+    if (!working.isCurrent() || !mounted.current || !manageRef.current || busyRef.current) return;
     const owner = authorityEpoch.current, editor = editorEpoch.current;
     busyRef.current = true;
     setBusy(true);
     setWriteError(null);
     try {
-      await action();
-      if (!mounted.current || !manageRef.current || authorityEpoch.current !== owner) return;
+      await working.run(action);
+      if (!working.isCurrent() || !mounted.current || !manageRef.current || authorityEpoch.current !== owner) return;
       if (editorEpoch.current === editor) selectEditor(null);
       await load(showArchivedRef.current);
     } catch (reason) {
-      if (mounted.current && manageRef.current && authorityEpoch.current === owner && editorEpoch.current === editor) setWriteError(readFailureMessage(reason));
+      if (working.isCurrent() && mounted.current && manageRef.current && authorityEpoch.current === owner && editorEpoch.current === editor) setWriteError(readFailureMessage(reason));
     } finally {
-      if (authorityEpoch.current === owner) {
+      if (working.isCurrent() && authorityEpoch.current === owner) {
         busyRef.current = false;
         if (mounted.current) setBusy(false);
       }
@@ -192,8 +194,8 @@ export function VoucherTypes() {
     if (open === null) return;
     void write(() =>
       open === 'new'
-        ? boothApi.createDefinition(input)
-        : boothApi.saveDefinition(open.id, input),
+        ? working.run(() => boothApi.createDefinition(input))
+        : working.run(() => boothApi.saveDefinition(open.id, input)),
     );
   };
 
@@ -203,18 +205,18 @@ export function VoucherTypes() {
    * on the answer so the next park can be set.
    */
   const setParkProduct = async (row: VoucherDefinitionRow, branchId: string, productId: string | null) => {
-    if (!mounted.current || !manageRef.current || busyRef.current) return;
+    if (!working.isCurrent() || !mounted.current || !manageRef.current || busyRef.current) return;
     const owner = authorityEpoch.current, editor = editorEpoch.current;
     busyRef.current = true;
     setBusy(true);
     setWriteError(null);
     try {
-      const answer = await boothApi.setParkProduct(row.id, branchId, productId);
-      if (!mounted.current || !manageRef.current || authorityEpoch.current !== owner) return;
+      const answer = await working.run(() => boothApi.setParkProduct(row.id, branchId, productId));
+      if (!working.isCurrent() || !mounted.current || !manageRef.current || authorityEpoch.current !== owner) return;
       if (editorEpoch.current === editor) selectEditor(answer.definition);
       await load(showArchivedRef.current);
     } catch (reason) {
-      if (mounted.current && manageRef.current && authorityEpoch.current === owner && editorEpoch.current === editor) setWriteError(readFailureMessage(reason));
+      if (working.isCurrent() && mounted.current && manageRef.current && authorityEpoch.current === owner && editorEpoch.current === editor) setWriteError(readFailureMessage(reason));
     } finally {
       if (authorityEpoch.current === owner) {
         busyRef.current = false;
@@ -470,8 +472,8 @@ export function VoucherTypes() {
           readOnly={!canManage}
           error={writeError}
           onSave={save}
-          onArchive={(row) => void write(() => boothApi.archiveDefinition(row.id))}
-          onRestore={(row) => void write(() => boothApi.restoreDefinition(row.id))}
+          onArchive={(row) => void write(() => working.run(() => boothApi.archiveDefinition(row.id)))}
+          onRestore={(row) => void write(() => working.run(() => boothApi.restoreDefinition(row.id)))}
           onSetParkProduct={(row, branchId, productId) => void setParkProduct(row, branchId, productId)}
           onClose={() => selectEditor(null)}
         />

@@ -1,3 +1,4 @@
+import { useWorkingAuthority } from '@/lib/workingAuthority';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Check, Download, RefreshCw, Ticket } from 'lucide-react';
 import { formatTHB } from '@oto/shared';
@@ -77,6 +78,7 @@ function StateChip({ status }: { status: VoucherLedgerStatus }) {
 }
 
 export function Vouchers() {
+  const working = useWorkingAuthority();
   const { me } = useSession();
   const [branches, setBranches] = useState<BranchRow[]>([]);
   const [branchId, setBranchId] = useState(me?.branch?.id ?? '');
@@ -94,25 +96,26 @@ export function Vouchers() {
   const branchName = branches.find((b) => b.id === branchId)?.name ?? me?.branch?.name;
 
   useEffect(() => {
-    void Promise.all([directoryApi.branches(), boothApi.voucherDefinitions(true)])
+    void Promise.all([working.run(() => directoryApi.branches()), working.run(() => boothApi.voucherDefinitions(true))])
       .then(([b, t]) => {
+        if (!working.isCurrent()) return;
         const live = b.branches.filter((row) => !row.archived);
         setBranches(live);
         setBranchId((id) => id || live[0]?.id || '');
         setTypes(t.definitions);
       })
-      .catch((e: unknown) =>
-        setLookupError(e instanceof Error ? e.message : 'Could not load filters.'),
-      );
-  }, []);
+      .catch((e: unknown) => {
+        if (working.isCurrent()) setLookupError(e instanceof Error ? e.message : 'Could not load filters.');
+      });
+  }, [working.run, working.isCurrent]);
 
   useEffect(() => {
     if (!branchId) return;
     let active = true;
     setBooths([]);
     setStaff([]);
-    void Promise.allSettled([boothApi.list(branchId), staffCandidates(branchId)]).then(([b, s]) => {
-      if (!active) return;
+    void Promise.allSettled([working.run(() => boothApi.list(branchId)), working.run(() => staffCandidates(branchId))]).then(([b, s]) => {
+      if (!working.isCurrent() || !active) return;
       if (b.status === 'fulfilled') setBooths(b.value.booths);
       if (s.status === 'fulfilled') setStaff(s.value.staff);
       setLookupError(
@@ -124,54 +127,58 @@ export function Vouchers() {
     return () => {
       active = false;
     };
-  }, [branchId]);
+  }, [branchId, working.run, working.isCurrent]);
 
   useEffect(() => {
     if (!branchId) return;
     let active = true;
     setData(null);
     setError(null);
-    void voucherLedgerApi
-      .list(branchId, filters, offset)
+    void working.run(() => voucherLedgerApi
+      .list(branchId, filters, offset))
       .then((answer) => {
-        if (active) setData(answer);
+        if (working.isCurrent() && active) setData(answer);
       })
       .catch((e: unknown) => {
-        if (active) setError(e instanceof Error ? e.message : 'Could not read vouchers.');
+        if (working.isCurrent() && active) setError(e instanceof Error ? e.message : 'Could not read vouchers.');
       });
     return () => {
       active = false;
     };
-  }, [branchId, filters, offset, refresh]);
+  }, [branchId, filters, offset, refresh, working.run, working.isCurrent]);
 
   const change = (next: Partial<VoucherLedgerFilters>) => {
+    if (!working.isCurrent()) return;
     setOffset(0);
     setFilters((held) => ({ ...held, ...next }));
   };
   const download = async () => {
+    if (!working.isCurrent() || downloading) return;
     setDownloading(true);
     try {
       const response = await fetch(voucherLedgerApi.exportUrl(branchId, filters), {
         credentials: 'same-origin',
       });
+      if (!working.isCurrent()) return;
       if (!response.ok) {
         const body = (await response.json().catch(() => null)) as {
           error?: { message?: string };
         } | null;
         throw new Error(body?.error?.message ?? 'The download failed.');
       }
-      const url = URL.createObjectURL(await response.blob());
+      const blob = await response.blob();
+      if (!working.isCurrent()) return;
+      const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.download =
         response.headers.get('content-disposition')?.match(/filename="([^"]+)"/)?.[1] ??
         'vouchers.csv';
-      link.click();
-      URL.revokeObjectURL(url);
+      try { if (working.isCurrent()) link.click(); } finally { URL.revokeObjectURL(url); }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'The download failed.');
+      if (working.isCurrent()) setError(e instanceof Error ? e.message : 'The download failed.');
     } finally {
-      setDownloading(false);
+      if (working.isCurrent()) setDownloading(false);
     }
   };
 

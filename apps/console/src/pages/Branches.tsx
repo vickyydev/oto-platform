@@ -1,5 +1,7 @@
+import { createOrganisationAdminApi } from '@oto/admin-screens/lifted/api/platform';
+import { useWorkingAuthority } from '@/lib/workingAuthority';
 import { archiveFailureMessage } from '@oto/admin-screens/lifted/organisation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link2, Loader2, RefreshCw } from 'lucide-react';
 import {
   BranchArchiveConfirmation,
@@ -11,7 +13,7 @@ import {
   type BranchAppMappingRow,
   type BranchAppReconcileReport,
 } from '@/api/platform';
-import { apiBranchToBranch, organisationApi, type OrganisationBranch } from '@/api/organisation';
+import { apiBranchToBranch, type OrganisationBranch } from '@/api/organisation';
 import { isMissingRoute } from '@/api/client';
 import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/Drawer';
@@ -24,6 +26,8 @@ import { displayName, useSession } from '@/auth/SessionContext';
 
 /** The original branch controls and the existing mapping, on one branch list. */
 export function Branches() {
+  const working = useWorkingAuthority();
+  const organisationApi = useMemo(() => createOrganisationAdminApi(working.api), [working.api]);
   const { me, has, permissions, switchBranch } = useSession();
   const allowed = has('admin:branch:read');
   const [branches, setBranches] = useState<OrganisationBranch[] | null>(null);
@@ -42,7 +46,7 @@ export function Branches() {
       (grant) =>
         grant.permission === permission &&
         grant.scopeType === 'operator' &&
-        (grant.scopeId === null || grant.scopeId === me?.account.operatorId),
+        (grant.scopeId === null || grant.scopeId === me?.operatorContext.effectiveOperatorId),
     );
   const canUpdate = (id: string) =>
     canOperator('admin:branch:update') ||
@@ -54,15 +58,16 @@ export function Branches() {
     );
 
   const load = useCallback(async () => {
+    if (!working.isCurrent()) return;
     const current = ++request.current;
     setLoading(true);
     setError(null);
     setMappingError(null);
     const [directory, appMapping] = await Promise.allSettled([
-      organisationApi.branchesApi.list(),
-      branchAppApi.mapping(),
+      working.run(() => organisationApi.branchesApi.list()),
+      working.run(() => branchAppApi.mapping()),
     ]);
-    if (current !== request.current) return;
+    if (!working.isCurrent() || current !== request.current) return;
     if (directory.status === 'fulfilled') setBranches(directory.value.branches);
     else
       setError(
@@ -86,7 +91,7 @@ export function Branches() {
     }
     setLoading(false);
     if (directory.status === 'rejected') throw directory.reason;
-  }, []);
+  }, [working.run, working.isCurrent, organisationApi]);
   useEffect(() => {
     if (allowed) void load().catch(() => {});
     return () => {
@@ -95,18 +100,21 @@ export function Branches() {
   }, [allowed, load]);
 
   const reconcile = async () => {
-    if (busy) return;
+    if (!working.isCurrent() || busy) return;
     setBusy(true);
     setMappingError(null);
     try {
-      setReport(await branchAppApi.reconcile());
+      const report = await working.run(() => branchAppApi.reconcile());
+      if (!working.isCurrent()) return;
+      setReport(report);
       await load();
     } catch (failure) {
+      if (!working.isCurrent()) return;
       setMappingError(
         failure instanceof Error ? failure.message : 'The two lists could not be reconciled.',
       );
     } finally {
-      setBusy(false);
+      if (working.isCurrent()) setBusy(false);
     }
   };
 
@@ -169,19 +177,19 @@ export function Branches() {
               canCreate: canOperator('admin:branch:create'),
               branchesApi: organisationApi.branchesApi,
               upsertBranch: async (branch) => {
-                await organisationApi.branchesApi.create({
+                await working.run(() => organisationApi.branchesApi.create({
                   name: branch.name,
                   code: branch.id,
                   timezone: branch.timezone,
                   country: branch.country,
-                });
+                }));
                 await load();
               },
               onSelectBranch: async (slug) => {
                 const target = views.find((row) => row.id === slug);
                 if (!target?.apiId)
                   throw new Error('That branch has not been saved to the platform.');
-                await switchBranch(target.apiId);
+                await working.run(() => switchBranch(target.apiId!));
               },
               afterClone: async () => {
                 await load();
@@ -236,11 +244,11 @@ export function Branches() {
             if (editorRequest.current === editVersion) setEditing(null);
           }}
           onSave={async (body) => {
-            await organisationApi.branchesApi.update(editing.id, body);
+            await working.run(() => organisationApi.branchesApi.update(editing.id, body));
             await load();
           }}
           onArchive={async (confirmName) => {
-            await organisationApi.branchesApi.update(editing.id, { archived: true, confirmName });
+            await working.run(() => organisationApi.branchesApi.update(editing.id, { archived: true, confirmName }));
             await load();
           }}
         />
@@ -318,6 +326,7 @@ function BranchEditor({
   onSave: (body: Record<string, unknown>) => Promise<void>;
   onArchive: (confirmName: string) => Promise<void>;
 }) {
+  const working = useWorkingAuthority();
   const [name, setName] = useState(branch.name);
   const [timezone, setTimezone] = useState(branch.timezone);
   const [dayStart, setDayStart] = useState(branch.businessDayStart ?? '');
@@ -340,7 +349,7 @@ function BranchEditor({
   const fieldClass =
     'w-full min-w-0 rounded-xl border border-input bg-background px-3 py-2 text-sm';
   const save = async () => {
-    if (saving) return;
+    if (!working.isCurrent() || saving) return;
     const body: Record<string, unknown> = {};
     if (!name.trim()) {
       setError('Enter a branch name.');
@@ -366,25 +375,25 @@ function BranchEditor({
     setSaving(true);
     setError(null);
     try {
-      await onSave(body);
+      await working.run(() => onSave(body));
       onClose();
     } catch (failure) {
-      setError(failure instanceof Error ? failure.message : 'The branch could not be saved.');
+      if (working.isCurrent()) setError(failure instanceof Error ? failure.message : 'The branch could not be saved.');
     } finally {
-      setSaving(false);
+      if (working.isCurrent()) setSaving(false);
     }
   };
   const archive = async (confirmName: string) => {
-    if (archiving || confirmName !== branch.name) return;
+    if (!working.isCurrent() || archiving || confirmName !== branch.name) return;
     setArchiving(true);
     setArchiveError(null);
     try {
-      await onArchive(confirmName);
+      await working.run(() => onArchive(confirmName));
       onClose();
     } catch (failure) {
-      setArchiveError(archiveFailureMessage(failure, 'The branch could not be archived.'));
+      if (working.isCurrent()) setArchiveError(archiveFailureMessage(failure, 'The branch could not be archived.'));
     } finally {
-      setArchiving(false);
+      if (working.isCurrent()) setArchiving(false);
     }
   };
   const closeEditor = () => {

@@ -13,6 +13,9 @@ import { ThemeCycleButton } from '@/components/ThemeCycleButton';
 import { unacknowledgedAlerts, usePlatformStatus } from '@/lib/platformStatus';
 import { cn } from '@/lib/utils';
 import { filterPlatformHealthLinks, usePlatformAuthority } from '@/lib/platformAuthority';
+import { OperatorSwitchPicker } from '@/components/OperatorSwitchPicker';
+import { ErrorNote } from '@/components/Panel';
+import { Button } from '@/components/ui/button';
 
 const LAUNCHER_URL = import.meta.env.VITE_LAUNCHER_URL?.trim();
 const POS_URL = import.meta.env.VITE_POS_URL?.trim();
@@ -41,7 +44,8 @@ const PHASE_TWO = new Set<string>();
 export function ConsoleLayout({ children }: { children: ReactNode }) {
   const [navOpen, setNavOpen] = useState(false);
   const [location] = useLocation();
-  const { has } = useSession();
+  const { has, me, permissions, operatorContext, authorityEpoch, operatorChoices,
+    operatorLoading, operatorSwitching, operatorError, switchOperator, refreshSession } = useSession();
   const { snapshot, ready } = usePlatformStatus();
   // Read once for the shell, not once per sidebar: the rail and the phone's
   // drawer are two copies of the same list.
@@ -75,6 +79,25 @@ export function ConsoleLayout({ children }: { children: ReactNode }) {
   const section = sectionForPath(location);
   const activeId = section?.id ?? location.replace(/^\//, '').split('/')[0] ?? '';
   const phaseTwo = section ? PHASE_TWO.has(section.id) : false;
+
+  const offersOperatorSwitch = Boolean(me?.isPlatformAdmin && operatorContext
+    && !me.sessionLocked && !me.account.mustChangePassword
+    && permissions.some(p => p.permission === 'platform:operator:switch'
+      && p.scopeType === 'operator' && p.scopeId === null));
+  const operatorPicker = offersOperatorSwitch && operatorContext ? <div className="flex min-w-0 flex-col gap-3">
+    <OperatorSwitchPicker
+      home={operatorChoices.find(p => p.id === operatorContext.homeOperatorId)
+        ?? { id: operatorContext.homeOperatorId, name: operatorContext.homeOperatorId }}
+      current={operatorChoices.find(p => p.id === operatorContext.effectiveOperatorId) ?? null}
+      options={operatorChoices} epoch={authorityEpoch} canSwitch={offersOperatorSwitch}
+      loading={operatorLoading || operatorError !== null} switching={operatorSwitching} error={null}
+      onSelect={switchOperator} onRetry={() => { void refreshSession().catch(() => {}); }} />
+  </div> : null;
+  const sessionError = operatorError !== null ? <div className="flex min-w-0 flex-col items-start gap-2">
+    <ErrorNote message={operatorError} />
+    <Button variant="outline" disabled={operatorLoading || operatorSwitching}
+      onClick={() => { void refreshSession().catch(() => {}); }}>Retry</Button>
+  </div> : null;
 
   // The drawer is a navigation, not a place: going somewhere closes it.
   useEffect(() => {
@@ -134,6 +157,8 @@ export function ConsoleLayout({ children }: { children: ReactNode }) {
                   </div>
                 </div>
               )}
+              {operatorPicker}
+              {sessionError}
               {children}
             </div>
           </main>
@@ -152,6 +177,8 @@ export function ConsoleLayout({ children }: { children: ReactNode }) {
                   drawn here instead, and the refusal still says whose page it is.
                 */}
                 {section?.permission && !has(section.permission) && <CommandBar sectionId={section.id} />}
+                {operatorPicker}
+                {sessionError}
                 {children}
               </div>
             </div>

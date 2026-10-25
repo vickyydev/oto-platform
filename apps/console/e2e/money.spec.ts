@@ -14,6 +14,17 @@ const tax = (percent = 7.25) => ({ rates: [{ id: 'zz-tax', name: 'ZZ TEST Primar
 const pricing = (first = 12345) => ({ campDay: { weekday: first, weekend: 16789 }, eventDay: { weekday: 23456, weekend: 27890 }, partyGuest: { weekday: 34567, weekend: 38901 } });
 
 async function fixture(page: Page, branchOnly = false) {
+  // Model a backend session separately from its immutable account identity.
+  let fixtureSessionActor: string | null = null, fixtureSessionId = '';
+  const fixtureOperatorContext = (actor: string, operatorId: string, branchId: string | null) => {
+    if (fixtureSessionActor !== actor) {
+      fixtureSessionActor = actor;
+      fixtureSessionId = crypto.randomUUID();
+    }
+    return { sessionId: fixtureSessionId, homeOperatorId: operatorId, effectiveOperatorId: operatorId,
+      operatorOverride: null, branchId, stationId: null, revision: 0 };
+  };
+
   const calls: Array<{ method: string; path: string; body: Record<string, unknown> | undefined; key: string | undefined }> = [];
   const control = { refused: new Set<string>(), pending: new Map<string, Promise<void>>(), failedReads: new Map<string, number>(), uncertainMintOnce: false };
   const parks = [PARK, OTHER].map((id, index) => ({ id, name: index ? 'ZZ TEST Other money park' : 'ZZ TEST Money park', code: 'zz-money-' + index, timezone: 'Asia/Bangkok', country: 'TH', archived: false, openingHours: null, businessDayStart: '05:00:00', address: null }));
@@ -37,7 +48,8 @@ async function fixture(page: Page, branchOnly = false) {
       await control.pending.get(path);
       if (control.refused.has(path)) return route.fulfill({ status: 409, json: { error: { code: 'ZZ_TEST_REFUSED', message: 'ZZ TEST Keep this money draft.' } } });
     }
-    if (path === '/me') return route.fulfill({ json: { account: { id: ACTOR, operatorId: OPERATOR, phone: '', status: 'active', mustChangePassword: false }, employee: { id: ACTOR, name: 'ZZ TEST Money administrator', nickname: null }, branch: parks[0], isPlatformAdmin: false, photoFileId: null, sessionLocked: false, preferences: { theme: 'light', language: 'en' } } });
+    if (path === '/me') return route.fulfill({ json: {
+      operatorContext: fixtureOperatorContext(ACTOR, OPERATOR, (parks[0])?.id ?? null), account: { id: ACTOR, operatorId: OPERATOR, phone: '', status: 'active', mustChangePassword: false }, employee: { id: ACTOR, name: 'ZZ TEST Money administrator', nickname: null }, branch: parks[0], isPlatformAdmin: false, photoFileId: null, sessionLocked: false, preferences: { theme: 'light', language: 'en' } } });
     if (path === '/me/permissions') return route.fulfill({ json: { permissions: permissions.map(permission => ({ permission, scopeType: branchOnly ? 'branch' : 'operator', scopeId: branchOnly ? PARK : OPERATOR })) } });
     if (path === '/branches') return route.fulfill({ json: { branches: parks } });
     if (path === '/menu/discounts') {

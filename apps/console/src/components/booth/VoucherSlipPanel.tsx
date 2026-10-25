@@ -1,3 +1,4 @@
+import { useWorkingAuthority } from '@/lib/workingAuthority';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Loader2, Receipt, RotateCcw } from 'lucide-react';
 import { CONTROL } from '@/components/Filters';
@@ -363,6 +364,7 @@ function SlipPreview({
   slip: VoucherSlipInput;
   compact?: boolean;
 }) {
+  const working = useWorkingAuthority();
   const request = JSON.stringify(slip);
   const [picture, setPicture] = useState<Picture | null>(null);
   const [drawing, setDrawing] = useState(false);
@@ -374,14 +376,17 @@ function SlipPreview({
   useEffect(() => {
     const controller = new AbortController();
     const timer = setTimeout(() => {
+      if (!working.isCurrent()) return;
       setDrawing(true);
       void (async () => {
+        if (!working.isCurrent()) return;
         try {
-          const drawn = await boothApi.voucherPreview(
+          const drawn = await working.run(() => boothApi.voucherPreview(
             boothId,
             JSON.parse(request) as VoucherSlipInput,
             controller.signal,
-          );
+          ));
+          if (!working.isCurrent()) return;
           if (controller.signal.aborted) return;
           const url = URL.createObjectURL(drawn.blob);
           if (held.current) URL.revokeObjectURL(held.current);
@@ -389,6 +394,7 @@ function SlipPreview({
           setPicture({ url, dots: drawn.widthDots });
           setFailed(null);
         } catch (err) {
+          if (!working.isCurrent()) return;
           if (controller.signal.aborted) return;
           setFailed(
             isMissingRoute(err)
@@ -398,15 +404,17 @@ function SlipPreview({
                 : 'The preview could not be drawn.',
           );
         } finally {
-          if (!controller.signal.aborted) setDrawing(false);
-        }
+      if (working.isCurrent()) {
+        if (!controller.signal.aborted) setDrawing(false);
+      }
+    }
       })();
     }, DEBOUNCE_MS);
     return () => {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [boothId, request]);
+  }, [boothId, request, working.isCurrent, working.run]);
 
   // Release the last picture when the card goes.
   useEffect(

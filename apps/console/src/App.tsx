@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ConsoleLayout } from '@/components/ConsoleLayout';
 import { LockedPanel } from '@/components/LockedPanel';
 import { SignInPanel } from '@/components/SignInPanel';
-import { PermissionRequired } from '@/components/Panel';
+import { ErrorNote, PermissionRequired } from '@/components/Panel';
 import { CONSOLE_SECTIONS, consoleNav, DEFAULT_SECTION, findSection } from '@/components/consoleSections';
 import { SessionProvider, useSession, displayName } from '@/auth/SessionContext';
 import { PlatformStatusProvider } from '@/lib/platformStatus';
@@ -209,11 +209,27 @@ function Routes() {
   );
 }
 
+function SessionRecovery() {
+  const { operatorError, refreshSession, signOut } = useSession();
+  return <div className="min-h-[100dvh] flex flex-col items-center justify-center px-4 py-10">
+    <Backdrop />
+    <div className="w-full max-w-lg flex flex-col gap-4">
+      <h1 className="text-2xl font-black tracking-tight">Confirm the current operator</h1>
+      <ErrorNote message={operatorError ?? 'The current session could not be confirmed.'} />
+      <div className="flex flex-wrap gap-3">
+        <Button onClick={() => { void refreshSession().catch(() => {}); }}>Retry</Button>
+        <Button variant="outline" onClick={() => { void signOut(); }}>Sign out</Button>
+      </div>
+    </div>
+  </div>;
+}
+
 function Shell() {
-  const { state, me, locked, has } = useSession();
+  const { state, me, locked, has, operatorContext, authorityEpoch } = useSession();
 
   if (state === 'loading') return <Splash />;
   if (state === 'signed-out') return <SignInPanel />;
+  if (!me || !operatorContext) return <SessionRecovery />;
   if (locked) return <LockedPanel />;
   if (me?.account.mustChangePassword) return <MustChangePassword />;
   if (!has('app:console:access')) return <NoConsoleAccess />;
@@ -222,7 +238,10 @@ function Shell() {
     // The status poll is what puts an alert count in the sidebar from any page,
     // so it belongs above the routes — and it is off for anyone who may not read
     // health, rather than polling a route that would refuse them every 30s.
-    <PlatformStatusProvider enabled={has('admin:health:read')}>
+    <PlatformStatusProvider
+      key={JSON.stringify([me.account.id, operatorContext.sessionId,
+        operatorContext.effectiveOperatorId, operatorContext.revision, authorityEpoch])}
+      enabled={has('admin:health:read')}>
       <ConsoleLayout>
         <Routes />
       </ConsoleLayout>

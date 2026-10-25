@@ -41,6 +41,7 @@ describe('native Care host command retry identity', () => {
     const contextApi = createConsoleCare();
     let snapshot: { api: ReturnType<typeof createConsoleCare> } | null = null;
     const reload = runInNewContext(nativeReload(), {
+      working: { epoch: 1, isCurrent: () => true },
       allowed: true, parkId: branchId, page: 'print-templates', version: 1,
       current: () => true, requests: { current: 0 }, createConsoleCare, contextApi,
       setError: vi.fn(), setStored: (next: typeof snapshot) => { snapshot = next; },

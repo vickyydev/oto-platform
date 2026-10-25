@@ -1,3 +1,4 @@
+import { useWorkingAuthority } from '@/lib/workingAuthority';
 import { useCallback, useEffect, useState } from 'react';
 import { Loader2, Printer, RefreshCw } from 'lucide-react';
 import { api, apiUrl, ApiError } from '@/api/client';
@@ -90,6 +91,7 @@ export function PrintPanel({
   deviceList: BoxDeviceList;
   onRetryDevices: () => void;
 }) {
+  const working = useWorkingAuthority();
   const simulatedPrinters = deviceList.devices.filter(
     (d) => !d.archived && d.transport === 'simulated' && d.kind.endsWith('printer'),
   );
@@ -130,14 +132,17 @@ export function PrintPanel({
   // rather than as one banner over the panel: a queue that could not be read
   // and previews that could not be read are different things to be told.
   const load = useCallback(async () => {
+    if (!working.isCurrent()) return;
     setBusy(true);
     try {
-      const { jobs: rows } = await printApi.jobs(box.id);
+      const { jobs: rows } = await working.run(() => printApi.jobs(box.id));
+      if (!working.isCurrent()) return;
       setJobs(rows);
       setJobsReadAt(Date.now());
       setJobsFailed(null);
       setMissing(false);
     } catch (err) {
+      if (!working.isCurrent()) return;
       if (isMissingRoute(err)) {
         setMissing(true);
       } else {
@@ -156,12 +161,14 @@ export function PrintPanel({
       return;
     }
     try {
-      const { printouts: rows, events: noted } = await printApi.printouts(selected);
+      const { printouts: rows, events: noted } = await working.run(() => printApi.printouts(selected));
+      if (!working.isCurrent()) return;
       setPrintouts(rows);
       setEvents(noted);
       setElsewhere(false);
       setPreviewsFailed(null);
     } catch (err) {
+      if (!working.isCurrent()) return;
       setPrintouts(null);
       // "This paper is not here" is a claim about WHERE the printout is, and
       // only two answers establish it: the 409s the API raises for a box that
@@ -177,9 +184,11 @@ export function PrintPanel({
         notHere ? null : err instanceof Error ? err.message : 'The previews could not be read.',
       );
     } finally {
-      setBusy(false);
+      if (working.isCurrent()) {
+        setBusy(false);
+      }
     }
-  }, [box.id, selected]);
+  }, [box.id, selected, working.isCurrent, working.run]);
 
   /**
    * Adopt a printer as soon as there is one, and let go of one that has gone.

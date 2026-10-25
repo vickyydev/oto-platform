@@ -5,7 +5,18 @@ type Preferences = { theme: Theme; language: 'en' | 'th' };
 type Write = { body: Record<string, unknown>; key: string | undefined };
 
 async function fixture(page: Page, initial: Preferences, options: { rejectPreference?: number; omitPreferences?: boolean } = {}) {
-  let preferences = { ...initial }, accountId = 'theme-account-a', signedIn = true;
+  // Model a backend session separately from its immutable account identity.
+  let fixtureSessionActor: string | null = null, fixtureSessionId = '';
+  const fixtureOperatorContext = (actor: string, operatorId: string, branchId: string | null) => {
+    if (fixtureSessionActor !== actor) {
+      fixtureSessionActor = actor;
+      fixtureSessionId = crypto.randomUUID();
+    }
+    return { sessionId: fixtureSessionId, homeOperatorId: operatorId, effectiveOperatorId: operatorId,
+      operatorOverride: null, branchId, stationId: null, revision: 0 };
+  };
+
+  let preferences = { ...initial }, accountId = '01964000-0000-7000-8000-00000000f021', signedIn = true;
   let preferenceRequests = 0;
   const writes: Write[] = [];
   const otherWrites: string[] = [];
@@ -14,13 +25,14 @@ async function fixture(page: Page, initial: Preferences, options: { rejectPrefer
     if (path === '/me' && request.method() === 'GET') {
       if (!signedIn) return route.fulfill({ status: 401, json: { error: { code: 'UNAUTHORIZED', message: 'Sign in again.' } } });
       return route.fulfill({ json: {
-        account: { id: accountId, phone: '', status: 'active', mustChangePassword: false, operatorId: 'theme-operator' },
-        employee: { id: 'theme-employee', name: 'ZZ TEST Theme', nickname: null }, branch: null,
+      operatorContext: fixtureOperatorContext(accountId, '01964000-0000-7000-8000-00000000f023', null),
+        account: { id: accountId, phone: '', status: 'active', mustChangePassword: false, operatorId: '01964000-0000-7000-8000-00000000f023' },
+        employee: { id: '01964000-0000-7000-8000-00000000f024', name: 'ZZ TEST Theme', nickname: null }, branch: null,
         isPlatformAdmin: false, photoFileId: null, sessionLocked: false,
         ...(options.omitPreferences ? {} : { preferences }),
       } });
     }
-    if (path === '/me/permissions') return route.fulfill({ json: { permissions: ['app:console:access', 'admin:audit:read'].map(permission => ({ permission, scopeType: 'operator', scopeId: 'theme-operator' })) } });
+    if (path === '/me/permissions') return route.fulfill({ json: { permissions: ['app:console:access', 'admin:audit:read'].map(permission => ({ permission, scopeType: 'operator', scopeId: '01964000-0000-7000-8000-00000000f023' })) } });
     if (path === '/me/preferences' && request.method() === 'PUT') {
       writes.push({ body: request.postDataJSON() as Record<string, unknown>, key: request.headers()['idempotency-key'] });
       if (++preferenceRequests === 1 && options.rejectPreference) {
@@ -34,12 +46,13 @@ async function fixture(page: Page, initial: Preferences, options: { rejectPrefer
       signedIn = false; return route.fulfill({ json: { ok: true } });
     }
     if (path === '/auth/sign-in' && request.method() === 'POST') {
+      fixtureSessionActor = null;
       signedIn = true; return route.fulfill({ json: { accountId, mustChangePassword: false } });
     }
     if (request.method() !== 'GET') otherWrites.push(`${request.method()} ${path}`);
     return route.fulfill({ status: 403, json: { error: { code: 'FORBIDDEN', message: 'Outside this theme fixture.' } } });
   });
-  return { writes, otherWrites, preferences: () => preferences, nextAccount: (next: Preferences) => { accountId = 'theme-account-b'; preferences = { ...next }; } };
+  return { writes, otherWrites, preferences: () => preferences, nextAccount: (next: Preferences) => { accountId = '01964000-0000-7000-8000-00000000f022'; preferences = { ...next }; } };
 }
 
 const themeButton = (page: Page) => page.getByRole('button', { name: /^Theme:/ }).filter({ visible: true }).first();
@@ -147,7 +160,7 @@ test('a late permissions response cannot adopt or rebind an account after the un
   const pending = new Promise<void>(resolve => { release = resolve; });
   await page.route('**/api/me/permissions', async route => {
     waiting = true; await pending;
-    await route.fulfill({ json: { permissions: ['app:console:access', 'admin:audit:read'].map(permission => ({ permission, scopeType: 'operator', scopeId: 'theme-operator' })) } });
+    await route.fulfill({ json: { permissions: ['app:console:access', 'admin:audit:read'].map(permission => ({ permission, scopeType: 'operator', scopeId: '01964000-0000-7000-8000-00000000f023' })) } });
   });
   await page.goto('/watch');
   await expect.poll(() => waiting).toBe(true);

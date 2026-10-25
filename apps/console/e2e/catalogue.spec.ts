@@ -21,6 +21,17 @@ interface Product {
 }
 
 async function fixture(page: Page, options: { scope?: 'branch' | 'operator'; scopeId?: string | null; permissions?: string[]; globalAddOn?: boolean } = {}) {
+  // Model a backend session separately from its immutable account identity.
+  let fixtureSessionActor: string | null = null, fixtureSessionId = '';
+  const fixtureOperatorContext = (actor: string, operatorId: string, branchId: string | null) => {
+    if (fixtureSessionActor !== actor) {
+      fixtureSessionActor = actor;
+      fixtureSessionId = crypto.randomUUID();
+    }
+    return { sessionId: fixtureSessionId, homeOperatorId: operatorId, effectiveOperatorId: operatorId,
+      operatorOverride: null, branchId, stationId: null, revision: 0 };
+  };
+
   const calls: Array<{ method: string; path: string; body: unknown; key: string | undefined }> = [];
   const runtimeErrors: string[] = [];
   const control = { refused: new Set<string>(), pending: new Map<string, Promise<void>>(), failedReads: new Map<string, number>(), delayedReads: new Map<string, Promise<void>>(), failReadbackAfterCreate: false, heldReadbackAfterCreate: null as Promise<void> | null };
@@ -59,7 +70,8 @@ async function fixture(page: Page, options: { scope?: 'branch' | 'operator'; sco
       await control.pending.get(path);
       if (control.refused.has(path)) return route.fulfill({ status: 409, json: { error: { code: 'ZZ_TEST_REFUSED', message: 'ZZ TEST save was refused; keep the draft.' } } });
     }
-    if (path === '/me') return route.fulfill({ json: { account: { id: ACTOR, operatorId: OPERATOR, phone: '', status: 'active', mustChangePassword: false }, employee: { id: ACTOR, name: 'ZZ TEST Catalogue administrator', nickname: null }, branch: parks[0], isPlatformAdmin: false, photoFileId: null, sessionLocked: false, preferences: { theme: 'light', language: 'en' } } });
+    if (path === '/me') return route.fulfill({ json: {
+      operatorContext: fixtureOperatorContext(ACTOR, OPERATOR, (parks[0])?.id ?? null), account: { id: ACTOR, operatorId: OPERATOR, phone: '', status: 'active', mustChangePassword: false }, employee: { id: ACTOR, name: 'ZZ TEST Catalogue administrator', nickname: null }, branch: parks[0], isPlatformAdmin: false, photoFileId: null, sessionLocked: false, preferences: { theme: 'light', language: 'en' } } });
     if (path === '/me/permissions') return route.fulfill({ json: { permissions: (options.permissions ?? access).map(permission => ({ permission, scopeType: options.scope ?? 'operator', scopeId: options.scopeId !== undefined ? options.scopeId : options.scope === 'branch' ? PARK : OPERATOR })) } });
     if (path === '/branches') return route.fulfill({ json: { branches: parks } });
     if (path === '/menu/discounts' && method === 'GET') return route.fulfill({ json: { discounts: [] } });

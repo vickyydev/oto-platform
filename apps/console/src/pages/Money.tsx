@@ -1,3 +1,6 @@
+import { createMoneyAdminApi } from '@oto/admin-screens/lifted/api/money';
+import { apiUrl } from '@/api/client';
+import { useWorkingAuthority } from '@/lib/workingAuthority';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { EventDropInPricing } from '@oto/shared';
 import type { Permission } from '@oto/shared/permissions';
@@ -51,21 +54,22 @@ const messageOf = (failure: unknown) => failure instanceof Error ? failure.messa
 
 /** Native money controls bound to one authenticated snapshot and its canonical reads. */
 export function Money({ page }: { page: MoneyPage }) {
+  const working = useWorkingAuthority();
   const { me, permissions, has } = useSession();
   const permission = readPermission[page], allowed = has(permission), parkRequired = page === 'tax' || page === 'event-pricing';
-  const owner = me?.account.id, operatorId = me?.account.operatorId;
+  const owner = me?.account.id, operatorId = me?.operatorContext.effectiveOperatorId;
   const authority = permissions.map(grant => [grant.permission, grant.scopeType, grant.scopeId].join(':')).sort().join('|');
   const [parks, setParks] = useState<Park[] | null>(null), [parkId, setParkId] = useState('');
   const [storedSnapshot, setSnapshot] = useState<Snapshot | null>(null), [error, setError] = useState<string | null>(null);
   const [parksError, setParksError] = useState<string | null>(null), [refresh, setRefresh] = useState(0);
   const [reasons, setReasons] = useState<string[]>([]);
   const mounted = useRef(false), requests = useRef(0);
-  const contextKey = [owner, operatorId, authority, page, parkId].join('|');
+  const contextKey = [working.epoch, owner, operatorId, authority, page, parkId].join('|');
   const active = useRef({ key: contextKey, version: 0 });
   if (active.current.key !== contextKey) active.current = { key: contextKey, version: active.current.version + 1 };
   const version = active.current.version;
   const snapshot = storedSnapshot?.contextVersion === version ? storedSnapshot : null;
-  const current = useCallback(() => mounted.current && active.current.version === version, [version]);
+  const current = useCallback(() => working.isCurrent() && mounted.current && active.current.version === version, [version, working.isCurrent]);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; requests.current++; }; }, []);
   useEffect(() => { setReasons([]); }, [owner]);
   const can = useCallback((held: Permission, branchId?: string) => permissions.some(grant => grant.permission === held && (
@@ -74,26 +78,26 @@ export function Money({ page }: { page: MoneyPage }) {
   )), [permissions, operatorId]);
 
   useEffect(() => {
-    if (!allowed) return;
+    if (!working.isCurrent() || !allowed) return;
     if (page === 'tenders') { setParks([]); setParksError(null); return; }
     let live = true;
     setParks(null); setParksError(null);
     const own = me?.branch;
-    const read = has('admin:branch:read') ? organisationApi.branchesApi.list().then(answer => answer.branches.filter(row => !row.archived)) : Promise.resolve(own ? [own] : []);
+    const read = has('admin:branch:read') ? working.run(() => organisationApi.branchesApi.list()).then(answer => answer.branches.filter(row => !row.archived)) : Promise.resolve(own ? [own] : []);
     void read.then(rows => {
-      if (!live) return;
+      if (!working.isCurrent() || !live) return;
       const reachable = rows.filter(row => can(permission, row.id));
       setParks(reachable);
       setParkId(previous => reachable.some(row => row.id === previous) ? previous : reachable.find(row => row.id === own?.id)?.id ?? reachable[0]?.id ?? '');
-    }).catch(failure => { if (live) setParksError(messageOf(failure)); });
+    }).catch(failure => { if (working.isCurrent() && live) setParksError(messageOf(failure)); });
     return () => { live = false; };
-  }, [allowed, page, permission, owner, me?.branch, has, can, refresh]);
+  }, [allowed, page, permission, owner, me?.branch, has, can, refresh, working.isCurrent, working.run]);
 
   const reload = useCallback(async (saved = false) => {
-    if (!allowed || parkRequired && !parkId) return;
+    if (!working.isCurrent() || !allowed || parkRequired && !parkId) return;
     const request = ++requests.current, live = () => current() && request === requests.current;
     setError(null);
-    const api = createConsoleMoney();
+    const api = createMoneyAdminApi({ ...working.api, href: apiUrl });
     const next: Snapshot = { contextVersion: version, api, discounts: [], discountIds: new Map(), methods: [], attempts: new Map(),
       targets: { ticketTypes: [], addOns: [], menuItems: [], menuCategories: [] }, merchItems: [], taxConfig: null,
       pricing: null, definitions: [], campaigns: [], links: { products: [], packages: [] }, categories: [], notice: null };
@@ -147,7 +151,7 @@ export function Money({ page }: { page: MoneyPage }) {
       if (live()) { setSnapshot(null); setError((saved ? 'Saved, but the money settings could not be refreshed. ' : '') + messageOf(failure)); }
       throw failure;
     }
-  }, [allowed, parkRequired, parkId, page, current, can, version]);
+  }, [allowed, parkRequired, parkId, page, current, can, version, working.isCurrent, working.api]);
   useEffect(() => { setSnapshot(null); void reload().catch(() => {}); return () => { requests.current++; }; }, [reload]);
 
   const afterWrite = async <T,>(write: () => Promise<T>): Promise<T> => {
@@ -205,7 +209,7 @@ export function Money({ page }: { page: MoneyPage }) {
         }} />}
         {page === 'voucher-campaigns' && <VoucherPromotionsPanelWithPorts ports={{
           definitions: snapshot.definitions, campaigns: snapshot.campaigns, links: snapshot.links, categories: snapshot.categories,
-          branches: (parks ?? []).map(park => ({ ...park, apiId: park.id })), toast: adminToast,
+          branches: (parks ?? []).map(park => ({ ...park, apiId: park.id })), toast: (...args) => { if (working.isCurrent()) adminToast(...args); },
           canManageRules, canMintCampaign: id => can('admin:booth:manage', id), canDownloadCodes: campaign => can('admin:booth:manage', campaign.branchId),
           authorityMessage: canManageRules ? undefined : 'Operator-wide access is needed to change voucher rules. Campaign actions use their own park access.',
           saveRules: (id, patch) => mutate(() => snapshot.api.voucherPromotionsApi.saveRules(id, patch)),

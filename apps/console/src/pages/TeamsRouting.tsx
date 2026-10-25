@@ -1,3 +1,4 @@
+import { useWorkingAuthority } from '@/lib/workingAuthority';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Archive, Pencil, Plus, RefreshCw, Route, Users } from 'lucide-react';
 import { ApiError, idemKey } from '@/api/client';
@@ -34,22 +35,24 @@ function hasTarget(permissions: EffectivePermission[], operatorId: string, branc
 
 /** Actor, grants, seating and lock own the complete editor lifetime. */
 export function TeamsRouting() {
+  const working = useWorkingAuthority();
   const { me, permissions, locked } = useSession();
-  const authority = JSON.stringify([me?.account.id, me?.account.operatorId, me?.branch?.id, locked,
+  const authority = JSON.stringify([working.epoch, me?.operatorContext, me?.account.id, me?.operatorContext.effectiveOperatorId, me?.branch?.id, locked,
     permissions.map(grant => [grant.permission, grant.scopeType, grant.scopeId]).sort()]);
   const lifetime = useRef({ key: authority, epoch: 0 });
   if (lifetime.current.key !== authority) lifetime.current = { key: authority, epoch: lifetime.current.epoch + 1 };
   const authorityEpoch = lifetime.current.epoch;
-  const isCurrent = useCallback(() => lifetime.current.epoch === authorityEpoch, [authorityEpoch]);
+  const isCurrent = useCallback(() => working.isCurrent() && lifetime.current.epoch === authorityEpoch, [authorityEpoch, working.isCurrent]);
   const allowed = !!me && permissions.some(grant => grant.permission === 'inbox:routing:manage' && (
-    grant.scopeType === 'operator' && (grant.scopeId === null || grant.scopeId === me.account.operatorId) ||
+    grant.scopeType === 'operator' && (grant.scopeId === null || grant.scopeId === me.operatorContext.effectiveOperatorId) ||
     grant.scopeType === 'branch' && grant.scopeId !== null
   ));
   if (!me || !allowed || locked) return <PermissionRequired permission="inbox:routing:manage" />;
-  return <RoutingHost key={authority} isCurrent={isCurrent} canAt={branchId => hasTarget(permissions, me.account.operatorId, branchId)} />;
+  return <RoutingHost key={authority} isCurrent={isCurrent} canAt={branchId => hasTarget(permissions, me.operatorContext.effectiveOperatorId, branchId)} />;
 }
 
 function RoutingHost({ canAt, isCurrent }: { canAt: (branchId: string | null) => boolean; isCurrent: () => boolean }) {
+  const working = useWorkingAuthority();
   const [refresh, setRefresh] = useState(0);
   const [scope, setScope] = useState('all');
   const [archived, setArchived] = useState(false);
@@ -63,14 +66,14 @@ function RoutingHost({ canAt, isCurrent }: { canAt: (branchId: string | null) =>
   const error = result?.epoch === epoch ? result.error : null;
   useEffect(() => {
     let live = true;
-    void Promise.all([inboxRoutingApi.teams(), inboxRoutingApi.rules()]).then(([teams, rules]) => {
+    void working.run(() => Promise.all([inboxRoutingApi.teams(), inboxRoutingApi.rules()])).then(([teams, rules]) => {
       if (live && isCurrent() && owner.current.epoch === epoch) setResult({ epoch, data: { ...teams, ...rules }, error: null });
     }).catch((failure: unknown) => {
       if (live && isCurrent() && owner.current.epoch === epoch) setResult({ epoch, data: null,
         error: message(failure, 'Teams and routing could not be read.') });
     });
     return () => { live = false; };
-  }, [epoch, isCurrent]);
+  }, [epoch, isCurrent, working.run]);
   const reload = () => setRefresh(value => value + 1);
   const selectScope = (value: string) => { setSelection(null); setScope(value || 'all'); };
   return <>
@@ -183,6 +186,7 @@ async function perform(intent: Intent, key: string) {
 
 /** An uncertain reply retains the exact intent and key; edits cannot alter a retry. */
 function useRoutingWrite(onSaved: () => void, isCurrent: () => boolean) {
+  const working = useWorkingAuthority();
   const mounted = useRef(false);
   const inFlight = useRef(false);
   const pending = useRef<{ intent: Intent; key: string } | null>(null);
@@ -191,16 +195,16 @@ function useRoutingWrite(onSaved: () => void, isCurrent: () => boolean) {
   const [error, setError] = useState<string | null>(null);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   const save = async (intent: Intent) => {
-    if (!mounted.current || !isCurrent() || inFlight.current) return;
+    if (!working.isCurrent() || !mounted.current || !isCurrent() || inFlight.current) return;
     pending.current ??= { intent: structuredClone(intent), key: idemKey() };
     const held = pending.current;
     inFlight.current = true; setBusy(true); setError(null);
     try {
-      await perform(held.intent, held.key);
-      if (!mounted.current || !isCurrent()) return;
+      await working.run(() => perform(held.intent, held.key));
+      if (!working.isCurrent() || !mounted.current || !isCurrent()) return;
       pending.current = null; setUncertain(false); onSaved();
     } catch (failure) {
-      if (!mounted.current || !isCurrent()) return;
+      if (!working.isCurrent() || !mounted.current || !isCurrent()) return;
       const definite = failure instanceof ApiError && failure.status < 500 &&
         ![408, 429].includes(failure.status) && failure.code !== 'IDEMPOTENCY_IN_FLIGHT';
       if (definite) pending.current = null;
@@ -208,7 +212,7 @@ function useRoutingWrite(onSaved: () => void, isCurrent: () => boolean) {
       setError(message(failure, 'The save did not return a confirmed result.'));
     } finally {
       inFlight.current = false;
-      if (mounted.current && isCurrent()) setBusy(false);
+      if (working.isCurrent() && mounted.current && isCurrent()) setBusy(false);
     }
   };
   return { save, busy, uncertain, error, disabled: busy || uncertain };

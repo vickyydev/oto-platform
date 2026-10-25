@@ -18,6 +18,17 @@ const NOW = '2026-10-23T00:00:00.000Z';
 const pause = () => { let release!: () => void; const promise = new Promise<void>(done => { release = done; }); return { promise, release }; };
 
 async function fixture(page: Page, options: { branchOnly?: boolean; routing?: boolean; missingTeam?: boolean } = {}) {
+  // Model a backend session separately from its immutable account identity.
+  let fixtureSessionActor: string | null = null, fixtureSessionId = '';
+  const fixtureOperatorContext = (actor: string, operatorId: string, branchId: string | null) => {
+    if (fixtureSessionActor !== actor) {
+      fixtureSessionActor = actor;
+      fixtureSessionId = crypto.randomUUID();
+    }
+    return { sessionId: fixtureSessionId, homeOperatorId: operatorId, effectiveOperatorId: operatorId,
+      operatorOverride: null, branchId, stationId: null, revision: 0 };
+  };
+
   const branches = [{ id: PARK, name: 'ZZ TEST Routing park' }, { id: OTHER, name: 'ZZ TEST Sibling park' }];
   const teams: RoutingTeams['teams'] = [
     { id: TEAM, key: 'reception', name: 'ZZ TEST Reception', branchId: PARK, branchName: branches[0]!.name,
@@ -53,14 +64,15 @@ async function fixture(page: Page, options: { branchOnly?: boolean; routing?: bo
     const actor = control.actor;
     const body = method === 'GET' ? null : request.postDataJSON() as Record<string, unknown> | null;
     calls.push({ path, method, actor, body, key: request.headers()['idempotency-key'] ?? null });
-    if (path === '/me') return route.fulfill({ json: { account: { id: actor, operatorId: OPERATOR, phone: '', status: 'active', mustChangePassword: false },
+    if (path === '/me') return route.fulfill({ json: {
+      operatorContext: fixtureOperatorContext(actor, OPERATOR, ({ ...branches[0], code: 'zz-routing', timezone: 'Asia/Bangkok' })?.id ?? null), account: { id: actor, operatorId: OPERATOR, phone: '', status: 'active', mustChangePassword: false },
       employee: { id: actor, name: actor === ACTOR ? 'ZZ TEST Manager A' : 'ZZ TEST Manager B', nickname: null },
       branch: { ...branches[0], code: 'zz-routing', timezone: 'Asia/Bangkok' }, isPlatformAdmin: false, photoFileId: null,
       sessionLocked: false, preferences: { theme: 'light', language: 'en' } } });
     if (path === '/me/permissions') return route.fulfill({ json: { permissions: control.grants.map(permission => ({ permission,
       scopeType: options.branchOnly && permission === 'inbox:routing:manage' || control.kbBranchOnly && permission === 'inbox:kb:manage' ? 'branch' : 'operator',
       scopeId: options.branchOnly && permission === 'inbox:routing:manage' || control.kbBranchOnly && permission === 'inbox:kb:manage' ? PARK : OPERATOR })) } });
-    if (path === '/auth/sign-in') return route.fulfill({ json: { accountId: actor, mustChangePassword: false } });
+    if (path === '/auth/sign-in') { fixtureSessionActor = null; return route.fulfill({ json: { accountId: actor, mustChangePassword: false } }); }
     if (path === '/auth/sign-out') return route.fulfill({ json: { ok: true } });
     if (path === '/inbox/teams' && method === 'GET') {
       if (control.readRefused) return route.fulfill({ status: 403, json: { error: { code: 'PERMISSION_DENIED', message: 'ZZ TEST Routing source refused.' } } });

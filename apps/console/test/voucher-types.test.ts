@@ -24,7 +24,13 @@ import {
 
 const voucherSession = vi.hoisted(() => ({ scopeType: 'operator', scopeId: 'zz-operator' as string | null }));
 vi.mock('@/auth/SessionContext', () => ({ useSession: () => ({
-  me: { account: { id: 'zz-account', operatorId: 'zz-operator' } },
+  state: 'signed-in', authorityEpoch: 1, refreshing: false, locked: false,
+  isCurrentAuthority: (epoch: number) => epoch === 1,
+  me: { account: { id: 'zz-account', operatorId: 'zz-operator', status: 'active', mustChangePassword: false },
+    sessionLocked: false, branch: null,
+    operatorContext: { sessionId: '01964000-0000-7000-8000-000000000009',
+      homeOperatorId: 'zz-operator', effectiveOperatorId: 'zz-operator', operatorOverride: null,
+      branchId: null, stationId: null, revision: 0 } },
   has: () => true,
   permissions: [{ permission: 'admin:booth:manage', scopeType: voucherSession.scopeType, scopeId: voucherSession.scopeId }],
 }) }));
@@ -52,9 +58,21 @@ function voucherPending() {
 
 function voucherLifecycle() {
   const editorEpoch = { current: 1 }, authorityEpoch = { current: 1 };
+  const mounted = { current: true }, manageRef = { current: true };
+  const heldAuthority = authorityEpoch.current;
+  const isCurrent = () => mounted.current && manageRef.current && authorityEpoch.current === heldAuthority;
+  const working = {
+    epoch: heldAuthority, isCurrent,
+    run: async <T,>(action: () => Promise<T>): Promise<T> => {
+      if (!isCurrent()) throw new Error('ZZ TEST stale fixture authority');
+      const answer = await action();
+      if (!isCurrent()) throw new Error('ZZ TEST stale fixture authority');
+      return answer;
+    },
+  };
   const setOpen = vi.fn(), load = vi.fn(async () => {});
   const context = {
-    mounted: { current: true }, manageRef: { current: true }, busyRef: { current: false }, editorEpoch, authorityEpoch,
+    mounted, manageRef, working, busyRef: { current: false }, editorEpoch, authorityEpoch,
     showArchived: false, showArchivedRef: { current: false }, setOpen, setBusy: vi.fn(), setWriteError: vi.fn(), load,
     selectEditor: (next: unknown) => { editorEpoch.current++; setOpen(next); },
     readFailureMessage: (reason: unknown) => reason instanceof Error ? reason.message : 'Not saved',

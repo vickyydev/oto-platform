@@ -18,6 +18,17 @@ const person = (id = PERSON, nickname = 'ZZ TEST Ada'): ApiMember => ({ id, nick
   email: null, tierCode: 'regular', preferredChannel: null, notes: null, tierVerification: null, children: [] });
 
 async function fixture(page: Page, options: { branchOnly?: boolean; omitted?: Permission[] } = {}) {
+  // Model a backend session separately from its immutable account identity.
+  let fixtureSessionActor: string | null = null, fixtureSessionId = '';
+  const fixtureOperatorContext = (actor: string, operatorId: string, branchId: string | null) => {
+    if (fixtureSessionActor !== actor) {
+      fixtureSessionActor = actor;
+      fixtureSessionId = crypto.randomUUID();
+    }
+    return { sessionId: fixtureSessionId, homeOperatorId: operatorId, effectiveOperatorId: operatorId,
+      operatorOverride: null, branchId, stationId: null, revision: 0 };
+  };
+
   const calls: Array<{ method: string; path: string; query: string; body: Body | undefined; key: string | undefined }> = [];
   const runtimeErrors: string[] = [], alerts: string[] = [];
   page.on('pageerror', error => runtimeErrors.push(error.message));
@@ -52,7 +63,8 @@ async function fixture(page: Page, options: { branchOnly?: boolean; omitted?: Pe
     await control.pending.get(operation + url.search); await control.pending.get(operation);
     if (control.refused.has(operation)) return route.fulfill({ status: 409, json: { error: { code: 'ZZ_TEST_REFUSED', message: 'ZZ TEST Keep this operations draft.' } } });
     if (control.uncertainOnce.delete(operation)) return route.abort('failed');
-    if (path === '/me') return route.fulfill({ json: { account: { id: control.actor, operatorId: OPERATOR, phone: '', status: 'active', mustChangePassword: false },
+    if (path === '/me') return route.fulfill({ json: {
+      operatorContext: fixtureOperatorContext(control.actor, OPERATOR, (parks[0])?.id ?? null), account: { id: control.actor, operatorId: OPERATOR, phone: '', status: 'active', mustChangePassword: false },
       employee: { id: control.actor, name: 'ZZ TEST Operations administrator', nickname: null }, branch: parks[0],
       isPlatformAdmin: false, photoFileId: null, sessionLocked: false, preferences: { theme: 'light', language: 'en' } } });
     if (path === '/me/permissions') return route.fulfill({ json: { permissions: access.filter(permission => !options.omitted?.includes(permission))

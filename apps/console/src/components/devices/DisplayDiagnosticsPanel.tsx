@@ -1,3 +1,4 @@
+import { useWorkingAuthority } from '@/lib/workingAuthority';
 import { useEffect, useRef, useState } from 'react';
 import {
   DISPLAY_TEST_INTENTS, DISPLAY_TEST_STAGES, fleetApi, isMissingRoute,
@@ -11,6 +12,7 @@ import { formatExact } from '@/lib/time';
 export function DisplayIntentTestPanel({ stationId, displayId, onOpenBoxLog }: {
   stationId: string; displayId: string; onOpenBoxLog?: () => void;
 }) {
+  const working = useWorkingAuthority();
   const [stage, setStage] = useState<DisplayTestIntent['stage']>('identify');
   const [intent, setIntent] = useState<DisplayTestIntent['intent']>('identify');
   const [busy, setBusy] = useState(false);
@@ -25,6 +27,7 @@ export function DisplayIntentTestPanel({ stationId, displayId, onOpenBoxLog }: {
   }, [stationId, displayId]);
   const reset = () => { pending.current = null; setResult(null); setFailed(null); };
   const send = async () => {
+    if (!working.isCurrent()) return;
     if (inFlight.current) return;
     const currentGeneration = generation.current;
     const body = pending.current ?? { stage, intent, actionId: crypto.randomUUID() };
@@ -32,7 +35,8 @@ export function DisplayIntentTestPanel({ stationId, displayId, onOpenBoxLog }: {
     inFlight.current = true;
     setBusy(true); setFailed(null); setResult(null);
     try {
-      const answer = await fleetApi.displayTestIntent(stationId, displayId, body);
+      const answer = await working.run(() => fleetApi.displayTestIntent(stationId, displayId, body));
+      if (!working.isCurrent()) return;
       if (generation.current !== currentGeneration) return;
       if (answer.actionId !== body.actionId || answer.testStage !== body.stage
         || typeof answer.accepted !== 'boolean' || typeof answer.message !== 'string'
@@ -44,10 +48,13 @@ export function DisplayIntentTestPanel({ stationId, displayId, onOpenBoxLog }: {
       pending.current = null;
       setResult(answer);
     } catch {
+      if (!working.isCurrent()) return;
       if (generation.current === currentGeneration) setFailed('The test result could not be read. Retry sends the same diagnostic check.');
     } finally {
       inFlight.current = false;
-      if (generation.current === currentGeneration) setBusy(false);
+      if (working.isCurrent()) {
+        if (generation.current === currentGeneration) setBusy(false);
+      }
     }
   };
   return <div className="space-y-3">
@@ -72,6 +79,7 @@ export function DisplayIntentTestPanel({ stationId, displayId, onOpenBoxLog }: {
 }
 
 export function StationRefusalsPanel({ boxId, timezone }: { boxId: string; timezone?: string | null }) {
+  const working = useWorkingAuthority();
   const [events, setEvents] = useState<StationRefusalEvent[] | null>(null);
   const [truncated, setTruncated] = useState(false);
   const [busy, setBusy] = useState(true);
@@ -81,7 +89,8 @@ export function StationRefusalsPanel({ boxId, timezone }: { boxId: string; timez
   useEffect(() => {
     let stopped = false;
     setEvents(null); setBusy(true); setFailed(false); setMissing(false);
-    void fleetApi.stationRefusals(boxId).then(result => {
+    void working.run(() => fleetApi.stationRefusals(boxId)).then(result => {
+      if (!working.isCurrent()) return;
       if (stopped) return;
       const scalar = (value: unknown) => value === null || typeof value === 'string' && value.length <= 200;
       if (!Array.isArray(result.events) || result.events.length > 50 || !result.events.every(event =>
@@ -91,11 +100,13 @@ export function StationRefusalsPanel({ boxId, timezone }: { boxId: string; timez
           event.errorCode, event.actionId, event.testStage].every(scalar))) throw new Error('Unverified refusal list');
       setEvents(result.events); setTruncated(result.truncated === true);
     }).catch(error => {
+      if (!working.isCurrent()) return;
       if (stopped) return;
       setMissing(isMissingRoute(error)); setFailed(true);
-    }).finally(() => { if (!stopped) setBusy(false); });
+    }).finally(() => {
+    if (!working.isCurrent()) return; if (!stopped) setBusy(false); });
     return () => { stopped = true; };
-  }, [boxId, refresh]);
+  }, [boxId, refresh, working.run, working.isCurrent]);
   return <section aria-label="Station refusal events">
     <div className="flex items-center justify-between gap-2 mb-2">
       <h3 className="text-sm font-bold">Display and station refusals</h3>

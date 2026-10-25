@@ -1,3 +1,4 @@
+import { useWorkingAuthority } from '@/lib/workingAuthority';
 import { useState } from 'react';
 import { Clock, CreditCard, Loader2 } from 'lucide-react';
 import { TERMINAL_OUTCOMES, type TerminalOutcome } from '@oto/shared';
@@ -109,6 +110,7 @@ export function TerminalSimulatorPanel({
   devices: DeviceRow[];
   canCommand: boolean;
 }) {
+  const working = useWorkingAuthority();
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
@@ -123,20 +125,25 @@ export function TerminalSimulatorPanel({
     action: Parameters<typeof simulatorApi.terminal>[0],
     said: string,
   ) => {
+    if (!working.isCurrent()) return;
     setBusy(key);
     setNote(null);
     setFailed(null);
     try {
-      await simulatorApi.terminal(action);
+      await working.run(() => simulatorApi.terminal(action));
+      if (!working.isCurrent()) return;
       setNote(said);
       if (action.action === 'terminal.outcome') {
         setSet((held) => ({ ...held, [action.deviceId]: action.outcome }));
       }
     } catch (err) {
+      if (!working.isCurrent()) return;
       if (isMissingRoute(err)) setMissing(true);
       else setFailed(err instanceof Error ? err.message : 'That could not be sent');
     } finally {
-      setBusy(null);
+      if (working.isCurrent()) {
+        setBusy(null);
+      }
     }
   };
 

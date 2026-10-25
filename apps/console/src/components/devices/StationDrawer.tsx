@@ -1,3 +1,4 @@
+import { useWorkingAuthority } from '@/lib/workingAuthority';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { BOOTH_CODE_PREFIX_LENGTH } from '@oto/shared';
@@ -75,6 +76,7 @@ export function StationDrawer({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const working = useWorkingAuthority();
   const [boxId, setBoxId] = useState(station?.boxId ?? boxes[0]?.id ?? '');
   const [name, setName] = useState(station?.name ?? '');
   const [kind, setKind] = useState<StationKind>((station?.kind as StationKind) ?? 'till');
@@ -142,30 +144,40 @@ export function StationDrawer({
   });
 
   const save = async () => {
+    if (!working.isCurrent()) return;
     setBusy(true);
     setFailed(null);
     try {
-      if (station) await fleetApi.updateStation(station.id, write());
-      else await fleetApi.createStation(branchId, write());
+      if (station) await working.run(() => fleetApi.updateStation(station.id, write()));
+      else await working.run(() => fleetApi.createStation(branchId, write()));
+      if (!working.isCurrent()) return;
       onSaved();
     } catch (err) {
+      if (!working.isCurrent()) return;
       setFailed(err instanceof Error ? err.message : 'The station could not be saved');
     } finally {
-      setBusy(false);
+      if (working.isCurrent()) {
+        setBusy(false);
+      }
     }
   };
 
   const archive = async () => {
+    if (!working.isCurrent()) return;
     if (!station) return;
     setBusy(true);
     setFailed(null);
     try {
-      await fleetApi.archiveStation(station.id);
+      await working.run(() => fleetApi.archiveStation(station.id));
+      if (!working.isCurrent()) return;
       onSaved();
     } catch (err) {
+      if (!working.isCurrent()) return;
       setFailed(err instanceof Error ? err.message : 'The station could not be archived');
     } finally {
-      setBusy(false);
+      if (working.isCurrent()) {
+        setBusy(false);
+      }
     }
   };
 
@@ -508,6 +520,7 @@ function StaffList({
   onChange: (next: string[]) => void;
   disabled: boolean;
 }) {
+  const working = useWorkingAuthority();
   const [candidates, setCandidates] = useState<BranchStaffMember[] | null>(null);
   const [branchFiltered, setBranchFiltered] = useState(true);
   const [failed, setFailed] = useState<string | null>(null);
@@ -515,13 +528,15 @@ function StaffList({
 
   useEffect(() => {
     let cancelled = false;
-    void staffCandidates(branchId)
+    void working.run(() => staffCandidates(branchId))
       .then((result) => {
+        if (!working.isCurrent()) return;
         if (cancelled) return;
         setCandidates(result.staff);
         setBranchFiltered(result.branchFiltered);
       })
       .catch((err: unknown) => {
+        if (!working.isCurrent()) return;
         if (cancelled) return;
         setCandidates([]);
         setFailed(err instanceof Error ? err.message : 'Could not read the staff list');
@@ -529,7 +544,7 @@ function StaffList({
     return () => {
       cancelled = true;
     };
-  }, [branchId]);
+  }, [branchId, working.run, working.isCurrent]);
 
   const shown = (candidates ?? []).filter((account) => {
     const q = query.trim().toLowerCase();
