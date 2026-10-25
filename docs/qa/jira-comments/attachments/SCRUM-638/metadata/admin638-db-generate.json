@@ -1,0 +1,13 @@
+{
+  "ticket": "SCRUM-638",
+  "startedAt": "2026-10-25T08:43:07.222Z",
+  "completedAt": "2026-10-25T08:43:08.073Z",
+  "command": "node node_modules/drizzle-kit/bin.cjs generate --name=assistant_settings",
+  "exitCode": 1,
+  "signal": null,
+  "errorCode": null,
+  "stdoutSha256": "860bbc2f0eac89dd3731cd6dbcfbb6937f3f73b93164a7acd2583aa6e657f6f7",
+  "stderrSha256": "e40fc1bb5ef8bebbaf813b28c50ab44fa5819bd10bbe786f395acbff159c11a1",
+  "changed": [],
+  "oldMigrationBytesPreserved": true
+}

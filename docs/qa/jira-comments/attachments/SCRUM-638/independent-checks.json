@@ -1,0 +1,1148 @@
+{
+  "ticket": "SCRUM-638",
+  "reviewedAt": "2026-10-25T10:00:16.9817907Z",
+  "reviewScope": "Read-only receipt review and checkpoint metadata publication; no test or staging execution.",
+  "sourceCommit": "cd8b38b7bdccd0737bac307aa5eecd699ad55f44",
+  "branch": "lane/admin-assistant-settings",
+  "remoteSourceCheckpoint": "local/source-checkpoint-pushed.json",
+  "broadFrame": "2d39ecea41b0a21800be2ed550939737d1e46d4c77ccec73216c34df140a07ef",
+  "finalFrame": "8173e6ed67ff191ded96da79303abdb4ca5cf7a7df7510d429a9224091b1af87",
+  "sourceInputs": 3774,
+  "unchangedBridgeInputs": 3772,
+  "fullBatteryOnFinalFrame": false,
+  "localReleaseGreen": false,
+  "protectedConsumersBuilt": false,
+  "mainFeatureLanded": false,
+  "actualStaging": false,
+  "deployed": false,
+  "releaseAccepted": false,
+  "blockingWork": [
+    "Q21: planner-owned three protected consumer integrations",
+    "Planner-provided initial rates",
+    "Fresh complete combined release gates on the final combined source",
+    "Exact-source CI, automatic rollout and new staging acceptance"
+  ],
+  "broadResults": {
+    "apiPassed": 5582,
+    "apiFiles": 370,
+    "apiSkipped": 3,
+    "apiTodo": 5,
+    "consoleBrowserPassed": 220,
+    "posPassed": 1437,
+    "posFiles": 101,
+    "typechecks": 16,
+    "builds": 5,
+    "turboTasks": 21,
+    "cachedTasks": 0,
+    "remainingPnpmPackageCommandExitCode": 0,
+    "boxDefaultAttempts": [
+      {
+        "receipt": "local/box-tests-1.json",
+        "passed": 747,
+        "failed": 2,
+        "exitCode": 1
+      },
+      {
+        "receipt": "local/box-idle-1.json",
+        "passed": 747,
+        "failed": 2,
+        "exitCode": 1
+      }
+    ],
+    "boxSerial": {
+      "receipt": "local/box-serial-1.json",
+      "passed": 749,
+      "failed": 0,
+      "exitCode": 0,
+      "assertionsAndTimeoutsUnchanged": true
+    }
+  },
+  "finalResults": {
+    "guard": "Reject ISO year zero before history storage",
+    "realHttpRed": {
+      "receipt": "local/year-zero-http-red-1.json",
+      "actualStatus": 200,
+      "expectedStatus": 400,
+      "passed": 48,
+      "failed": 1
+    },
+    "focusedApiPassed": 223,
+    "focusedApiFiles": 8,
+    "nodeRegressionPassed": 1,
+    "clientTestsPassed": 10,
+    "lintFiles": 20,
+    "compilers": [
+      "@oto/api",
+      "@oto/console",
+      "@oto/api-types"
+    ],
+    "contractsPassed": true,
+    "postRebaseFocusedAndCompilerContractLintPassed": true,
+    "broadBatteryRerun": false,
+    "bridge": "local/final-guard-bridge.json"
+  },
+  "proofPreparation": {
+    "initialOfflinePassed": 19,
+    "nativeReviewRed": {
+      "passed": 19,
+      "failed": 3
+    },
+    "nativeReviewGreen": {
+      "passed": 22,
+      "failed": 0
+    },
+    "localLoaderPassed": true,
+    "releasedSourceBinding": false,
+    "authAttempts": 0,
+    "actualStaging": false,
+    "proofSourceSha256": "a0da559d81c17e5c659f6accaecbd30fd471dd4cd48581acae38efdc434381d5",
+    "proofTestSha256": "babc42e920771a38dcae1b39be994923c252cf01c9ea48409bed009711f986f5"
+  },
+  "cleanup": {
+    "terminalReceipt": "local/cleanup.json",
+    "completedAt": "2026-10-25T09:50:44.884Z",
+    "exactOwnedContainersRemoved": 2,
+    "baselineContainersPreserved": 10,
+    "remainingContainers": 10,
+    "volumesImagesNetworksAndBindsRemoved": false
+  },
+  "publicationIntegrity": {
+    "copiedMetadataFiles": 73,
+    "integratedJsonFiles": 65,
+    "extraMetadataFiles": 8,
+    "byteIdenticalCopies": true,
+    "receiptLogHashesVerified": 41,
+    "nonzeroExitReceiptsRetained": 20,
+    "externalRawArtifacts": 103,
+    "externalHeldProofSources": 3,
+    "frozenSourceFiles": 25,
+    "sourceBytesUnchanged": true,
+    "rawLogsArchivesPngsOrSecretsCopied": false,
+    "noGitRuntimeNetworkJiraOrAuthActions": true,
+    "passed": true,
+    "nativeJsonParseCount": 75,
+    "authoredJsonUtf8WithoutBom": true,
+    "authoredJsonLf": true
+  },
+  "sourceFilesVerifiedBeforeAndAfter": [
+    {
+      "path": "apps/api/src/routes/aggregates.ts",
+      "sha256": "3fd815f1c294baaa9134e0f22eae0221643d658b762820b0039d3ab5badaeeca"
+    },
+    {
+      "path": "apps/api/src/routes/console.ts",
+      "sha256": "c49b966b6ec9d4c3024b03f1077bb6f6831f9a7168c61a8ee71e10ab32ebd80c"
+    },
+    {
+      "path": "apps/api/src/routes/assistant-settings.ts",
+      "sha256": "62a63c0433a2fec3b8ca668da4c5e29d6bc4921bf45cbd1273ee39ad3dae8b93"
+    },
+    {
+      "path": "apps/api/src/services/aggregates-ai.ts",
+      "sha256": "10c243b25f85b7f622629fd344a8794aac34e757385079dc23bfe31ee28b7dee"
+    },
+    {
+      "path": "apps/api/src/services/assistant-settings.ts",
+      "sha256": "e3a2a21f86a93fd507b2d08302e871d9471f636e9d399cb8dcf92364a8996b6a"
+    },
+    {
+      "path": "apps/api/test/id-conformance.test.ts",
+      "sha256": "bf26782e2fd3d3e961f831c25c9ada8831a81065fbaeb760a3de2607d543fe91"
+    },
+    {
+      "path": "apps/api/test/route-scope-target.test.ts",
+      "sha256": "5413c36b59bab2aeb9c10eb8187cab5e535417424d2156fe7956bd6edec5a379"
+    },
+    {
+      "path": "apps/api/test/route-write-conformance.test.ts",
+      "sha256": "28ae20c8d0b973d13ee577ad6289aab530bbd8b7a57f6677112c6bcc29c5f421"
+    },
+    {
+      "path": "apps/api/test/routes-guarded.test.ts",
+      "sha256": "64b50f1a5d435faed2c604547198e7b382042f53c89373155c4cfe0dd5c2869d"
+    },
+    {
+      "path": "apps/api/test/assistant-settings-review.test.ts",
+      "sha256": "97748e040ad61279f7301a15e03e6dc25703ffcc46e89330a1e3570cd87534f5"
+    },
+    {
+      "path": "apps/api/test/s638-pricing-review.test.ts",
+      "sha256": "f1ae70b176d36f6c565af9ea8d9c54c39ce3a02044070dec0c329cee2468dcbc"
+    },
+    {
+      "path": "apps/console/src/App.tsx",
+      "sha256": "28e7c4ac7e513b0e299edb910b67aa3260d28efc52f074be95c6a60c99aff511"
+    },
+    {
+      "path": "apps/console/src/components/ConsoleLayout.tsx",
+      "sha256": "fde85a09532d54a12e79029bb2ed843648437f0b118f5826bfc6e691287f7270"
+    },
+    {
+      "path": "apps/console/src/components/consoleSections.tsx",
+      "sha256": "59dd3bab2b959405cf92f9c83d93e550726d18cd0c3b357d930ae065dbb0b9ec"
+    },
+    {
+      "path": "apps/console/src/pages/AreaLanding.tsx",
+      "sha256": "5fd8f523acce7f222e68b0e34fc0fe4b88981e593013ecf21e676c1456417baf"
+    },
+    {
+      "path": "apps/console/src/pages/AssistantSettings.tsx",
+      "sha256": "da5a2e9979d960fb33c1836b016537e0a959528ca20fa729169aeb993aae57fd"
+    },
+    {
+      "path": "apps/console/src/api/assistant-settings.ts",
+      "sha256": "24d6fa0d23a8ad95cdad623e4517ab7b23ce75cc9b4706faa6596d43243b4198"
+    },
+    {
+      "path": "apps/console/e2e/assistant-settings.spec.ts",
+      "sha256": "57f1554a7d7951ad4c655e373b3201740db0aab53e7ce947f3cefe5509e0c694"
+    },
+    {
+      "path": "packages/api-types/openapi.json",
+      "sha256": "735de43d837f737b6c2efcc786da0a5dabf98e857b826399b544b885c7bb1c66"
+    },
+    {
+      "path": "packages/api-types/src/openapi.ts",
+      "sha256": "795052a7518388c89df79c47218496bcef580a3566981f8fbe33e90e45dc33e4"
+    },
+    {
+      "path": "packages/db/src/schema/platform.ts",
+      "sha256": "4b3df79fd758495cf398075627f4e4c0718ad11e3ad25c0c781ead6abe6aeb2e"
+    },
+    {
+      "path": "packages/db/migrations/meta/_journal.json",
+      "sha256": "1e7dda0461a01c7a3e72bc381b6085962485040bd0a670387b61430467ba2608"
+    },
+    {
+      "path": "packages/db/migrations/0087_assistant_settings.sql",
+      "sha256": "cf6da37360ceca531bc9335dee9125684d2929761e297755d6a520f6ccaa6049"
+    },
+    {
+      "path": "packages/db/migrations/meta/0087_snapshot.json",
+      "sha256": "2a47cc0041a4a796db7e7afb6f1a36c42a54d8fedf0a2d2e252e2e77744fe580"
+    },
+    {
+      "path": "packages/db/test/assistant-settings.test.ts",
+      "sha256": "03ae8d6c80dc84320ba0f67fc008964970eaeb77a20028aec29154a5f683c46a"
+    }
+  ],
+  "copiedFiles": [
+    {
+      "source": "C:/w/admin638-integrated/api-all-1.json",
+      "path": "local/api-all-1.json",
+      "bytes": 602,
+      "sha256": "60b294deb9a47ce291bbfb116e968453c41a8bc9aba6fa9a2f1ecc4c0d374e5f",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/api-all-1-final.json",
+      "path": "local/api-all-1-final.json",
+      "bytes": 608,
+      "sha256": "dfa1b3cc4a5dc5de58c349a17309c88c3ac1cb01c1b30d734d48f73e9bc851f8",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/api-all-2.json",
+      "path": "local/api-all-2.json",
+      "bytes": 602,
+      "sha256": "0479e4e921444022b5cf876bc8c52b1f894ba7b38f89c433fc19f2fba13ee102",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/api-all-2-final.json",
+      "path": "local/api-all-2-final.json",
+      "bytes": 608,
+      "sha256": "59380fea44b73dda11a4ca42c48aecbe9025ae17bd0d6b1f04aeb29741ccf364",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/api-all-3.json",
+      "path": "local/api-all-3.json",
+      "bytes": 602,
+      "sha256": "8dd2c3b2f8f209f0275a9b7cab4ef1a5d0b5a22395c822c130dcc4033a663014",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/api-all-3-final.json",
+      "path": "local/api-all-3-final.json",
+      "bytes": 608,
+      "sha256": "0a5730e33ae5b841933ea149be40bacb21032dafa2be9bb8954a0da451980792",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/api-doc-inputs.json",
+      "path": "local/api-doc-inputs.json",
+      "bytes": 567,
+      "sha256": "ac7b6b5ce4d5feb5a78c87359f5ca04009c7f9a682112658d0d30ee06e643dfb",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/api-green-1.json",
+      "path": "local/api-green-1.json",
+      "bytes": 756,
+      "sha256": "6478e00db044ebe6c20a7cf33f323b8e76fcea48920653f492082447156b0f24",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/api-pricing-green-1.json",
+      "path": "local/api-pricing-green-1.json",
+      "bytes": 860,
+      "sha256": "535f4f284c65601ca2b32cb64691ac0cca38faededc3da43195f83f489bbab2f",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/api-red-1.json",
+      "path": "local/api-red-1.json",
+      "bytes": 629,
+      "sha256": "3734d5dc73239cbcb8fab3136478105b1ee3aca8bae7c5812e1a3efbbddad48d",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/api-review-red-2.json",
+      "path": "local/api-review-red-2.json",
+      "bytes": 761,
+      "sha256": "dbbec3d39960811bbaedbcc88423db4bed7d5963a78533598930d18c9859e8da",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/api-supersede-intent.json",
+      "path": "local/api-supersede-intent.json",
+      "bytes": 324,
+      "sha256": "4fff787bfa1720bdbe0aaa5d7469c15ff9a7ff56ea84a9e9a2af9f5a67273323",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/api-supersede-intent-v2.json",
+      "path": "local/api-supersede-intent-v2.json",
+      "bytes": 324,
+      "sha256": "ab014e7b1dd9dbbdadb2adee519382a952f6e4f718c7f810505d2d813c3a23f0",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/api-supersede-v2.json",
+      "path": "local/api-supersede-v2.json",
+      "bytes": 318,
+      "sha256": "2aa2e6c90bb543f6d557ad7bc8a6d02115066f1ed848912c2fc0ce9c10970133",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/box-idle-1.json",
+      "path": "local/box-idle-1.json",
+      "bytes": 589,
+      "sha256": "92dd68b13af4064f6f7b7b5de5a4a543b78eb81a71ac468ce3d77e5f9e4d8130",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/box-serial-1.json",
+      "path": "local/box-serial-1.json",
+      "bytes": 612,
+      "sha256": "46eb5605696696f528ff272c15334994cc16823596b0d43b83eef14b9adeae92",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/box-tests-1.json",
+      "path": "local/box-tests-1.json",
+      "bytes": 590,
+      "sha256": "df53d945aa50830a83ba36a25d0e0e58beffa03a6eb6286bf42a4ef23beb75e1",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/browser-green-1.json",
+      "path": "local/browser-green-1.json",
+      "bytes": 667,
+      "sha256": "dd7b5addc90da8f54e79aae0210f4251130db7efa4ab3d3b9d7b2851862d8815",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/browser-green-2.json",
+      "path": "local/browser-green-2.json",
+      "bytes": 667,
+      "sha256": "5fcf9a599feb56be2724457002727885d3762e714713d161cd229e175eb19805",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/browser-offer-red-1.json",
+      "path": "local/browser-offer-red-1.json",
+      "bytes": 671,
+      "sha256": "308470cd61173612371472e1c9adabd3ac467fd7ccaabcd4cec66fc0cab26df7",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/browser-red-1.json",
+      "path": "local/browser-red-1.json",
+      "bytes": 665,
+      "sha256": "50e6dd079ba2a2e447e7a608e9c35f96e66e65ed04ae93cd65b3e6b70adec897",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/cleanup.json",
+      "path": "local/cleanup.json",
+      "bytes": 377,
+      "sha256": "d52046ce83f64bc3bb8c1333546eac51a002883a3a13131edaaae71089624bdc",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/cleanup-intent.json",
+      "path": "local/cleanup-intent.json",
+      "bytes": 1522,
+      "sha256": "28d3d832aea16655f0c77d5a42f0002fe09bea7e0966d40e0583deb04244705d",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/compilers-contracts-1.json",
+      "path": "local/compilers-contracts-1.json",
+      "bytes": 700,
+      "sha256": "f8d6b70ab58d2fed9b6a702bbf1ab8e8e0cbdee95e5a6f0b3f07d5b67160af93",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/compilers-contracts-2.json",
+      "path": "local/compilers-contracts-2.json",
+      "bytes": 700,
+      "sha256": "5090e5f51481a05b216f8458309bd9cfecdb23e264fae7556e44bac3a1347328",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/compilers-contracts-lint-final-1.json",
+      "path": "local/compilers-contracts-lint-final-1.json",
+      "bytes": 1583,
+      "sha256": "bd614878d988bca96165bc946b0bc5e8bdf0e63d6ae24221a798f84c31ae325e",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/console-browser-all-1.json",
+      "path": "local/console-browser-all-1.json",
+      "bytes": 646,
+      "sha256": "c472f6ed0ffc3fb53d762b2fa0f13a93eb823eaf890f27793fdadb09cfceaba2",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/contracts-lint-1.json",
+      "path": "local/contracts-lint-1.json",
+      "bytes": 1415,
+      "sha256": "a92e0e655734bf7b84e0702c5a264b01d48cad1094602b692c36106c50594981",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/db-green-1.json",
+      "path": "local/db-green-1.json",
+      "bytes": 661,
+      "sha256": "cc595c221c3f4dbe3d34f8eeacb02c1b0c461652b71ff96b0931e26e4aa26b79",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/db-red-1.json",
+      "path": "local/db-red-1.json",
+      "bytes": 619,
+      "sha256": "951b64c3f2fa3c0c6f3490709bde73bbe796a85ad4781450a70e79692b8b9c67",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/final-guard-bridge.json",
+      "path": "local/final-guard-bridge.json",
+      "bytes": 1449,
+      "sha256": "33739c5a830520706ce8651328e6adc7389762e96fafef1f4efa47111956e190",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/final-scope-green-1.json",
+      "path": "local/final-scope-green-1.json",
+      "bytes": 922,
+      "sha256": "1a53b8d5b121f886231156e52e99ebad8908eb13f5d1956440a8e4317f80cbcb",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/focused-final-1.json",
+      "path": "local/focused-final-1.json",
+      "bytes": 856,
+      "sha256": "066b0cf083eed9a76afb46e85c2ae94830b1521b23825dd75d2965e9e08772ae",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/pos-tests-1.json",
+      "path": "local/pos-tests-1.json",
+      "bytes": 584,
+      "sha256": "3bf3e6160916ea770a902d66e4231f3228d9d1fcd3e707418d8396983878d07d",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/post-rebase-api-focused-1.json",
+      "path": "local/post-rebase-api-focused-1.json",
+      "bytes": 928,
+      "sha256": "1e58dbd505c663da9751c7d436eca1eb2fccf0b2f452d16eed845c003d6db9de",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/post-rebase-compilers-contracts-lint-1.json",
+      "path": "local/post-rebase-compilers-contracts-lint-1.json",
+      "bytes": 1589,
+      "sha256": "976e270ed189b217346c09d9732f9ca56d6ecf049c914ef8a82c941ea422d04c",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/pricing-red-1.json",
+      "path": "local/pricing-red-1.json",
+      "bytes": 627,
+      "sha256": "acaf7c0022e561f80717ffb776c36eabdd434a64458393bb8e4ca76fb0a56913",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/pricing-red-2.json",
+      "path": "local/pricing-red-2.json",
+      "bytes": 627,
+      "sha256": "431bb87569ccdcaa8d9dfa1b9691e94b4fff33a5613a3214867c094ddfd5904e",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/pricing-underflow-green-1.json",
+      "path": "local/pricing-underflow-green-1.json",
+      "bytes": 639,
+      "sha256": "707e24b39050e697bb307049b770794a48718203eafb4ff8e31a3ac20b055611",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/pricing-underflow-red-1.json",
+      "path": "local/pricing-underflow-red-1.json",
+      "bytes": 637,
+      "sha256": "08dd865004f764ab93cb6fdf209c18f3d8e2995438625705891fb6277109ed83",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/proof-native-review-green-1.json",
+      "path": "local/proof-native-review-green-1.json",
+      "bytes": 690,
+      "sha256": "f159944a82da54d970922997348b79b1f978631c0e832f04fbf342ef8c3c82ff",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/proof-native-review-red-1.json",
+      "path": "local/proof-native-review-red-1.json",
+      "bytes": 688,
+      "sha256": "db43c2ec5732dc350aa2dd97f97c8123533d0739b0b33dc2e4ed6432dab73365",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/proof-offline-1.json",
+      "path": "local/proof-offline-1.json",
+      "bytes": 678,
+      "sha256": "8763208fb91b2fb7f79ef2b0625898f3d8982d5a09d8dffaed371752c912514b",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/runtime-census.json",
+      "path": "local/runtime-census.json",
+      "bytes": 2687,
+      "sha256": "6eca5f93a6a0c29ea0d208cf2e13e2a1a58f3d9e896b20217ed2685d7a7a9fda",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/setup.json",
+      "path": "local/setup.json",
+      "bytes": 414,
+      "sha256": "ec6862f8a50b3c22ccc0cc8196e6e133ba0110caeac726032bb9c7f25f407f08",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/setup-intent.json",
+      "path": "local/setup-intent.json",
+      "bytes": 268,
+      "sha256": "1a704e78dc80a5cfeb543af6bdf3d20fbddb2975f6a2fa2067dc166c020c3d98",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/source-1792917604000.json",
+      "path": "local/source-1792917604000.json",
+      "bytes": 790788,
+      "sha256": "9bcbb460cccabcb963c5095c272c07e6e0859e4a37d296786a9473e2cb2c5ba9",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/source-1792917940921.json",
+      "path": "local/source-1792917940921.json",
+      "bytes": 597109,
+      "sha256": "763f2a8362d61b9f0ab7fdc6de1b40f1773d3944fe03f8d2ac40e34d6ef42b8e",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/source-1792918109339.json",
+      "path": "local/source-1792918109339.json",
+      "bytes": 596619,
+      "sha256": "df0b73ecc5ff85f7312dd808d9b0757df65af66c005e7d898b2bda5d1f9ef4c3",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/source-1792918281573.json",
+      "path": "local/source-1792918281573.json",
+      "bytes": 596438,
+      "sha256": "9742a8a99511c6870442b15a7e5812cddf47ce8912cbac711f90a11320e7e9ea",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/source-1792918418396.json",
+      "path": "local/source-1792918418396.json",
+      "bytes": 596499,
+      "sha256": "8afb7191ce1edfcf669ca31f6dc5adf15463b6112b0568eaf71249e6262e65f2",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/source-1792918533222.json",
+      "path": "local/source-1792918533222.json",
+      "bytes": 596340,
+      "sha256": "53ec6544363b16a3f818af7c637c405eef1ff25713fb9b2e8f6a0fc9453dc825",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/source-1792918806866.json",
+      "path": "local/source-1792918806866.json",
+      "bytes": 596339,
+      "sha256": "d5c814ea1a2cd25054e48c1c258241afd3b502a741fbb0761471e59c4e530520",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/source-1792918866706.json",
+      "path": "local/source-1792918866706.json",
+      "bytes": 596512,
+      "sha256": "6ceab5154b4e258d55706cf711f1567e9b15bb5f316881145dfe701dd1bb07bb",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/source-1792920823972.json",
+      "path": "local/source-1792920823972.json",
+      "bytes": 596345,
+      "sha256": "90dfbf17277d2bfd61ce6445b5a66ed31e8f7cad9d6c1ff888ee06ff23bdf025",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/source-1792920908146.json",
+      "path": "local/source-1792920908146.json",
+      "bytes": 596341,
+      "sha256": "9961418e7d349642a08fe3ae9e9a5f30d6e3448e67dba904ad406672f93fd1a7",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/source-checkpoint-local.json",
+      "path": "local/source-checkpoint-local.json",
+      "bytes": 1935,
+      "sha256": "94fecba9d61eb093a9c9f2e9b49d97a02eb1f3bbb70dbaa609a6f4fa0fedabc7",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/source-checkpoint-pushed.json",
+      "path": "local/source-checkpoint-pushed.json",
+      "bytes": 589,
+      "sha256": "28780d8f7ebd4497102a1272d59a3f45368567a0caf23e2e366a6eb25ed208a6",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/workspace-compilers-builds-1.json",
+      "path": "local/workspace-compilers-builds-1.json",
+      "bytes": 650,
+      "sha256": "e5e85387b326734b2aa24c74e8ee0f9cca720c6af91792714faec9b20c9ec1be",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/workspace-compilers-builds-2.json",
+      "path": "local/workspace-compilers-builds-2.json",
+      "bytes": 650,
+      "sha256": "ac7c8b0ab37093937ba9c331689d54de91fed0e02fc6e6125909e5b535f1c5a3",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/workspace-package-tests-1.json",
+      "path": "local/workspace-package-tests-1.json",
+      "bytes": 695,
+      "sha256": "a42305d968b400a55618d51a582c25df047859f6c85c9a2245c511b46f2642ed",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/year-zero-http-red-1.json",
+      "path": "local/year-zero-http-red-1.json",
+      "bytes": 640,
+      "sha256": "b94754ab67bae912c328c0df2d8d969585ea74522c889e804912ea9a1eead687",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/year-zero-review.json",
+      "path": "local/year-zero-review.json",
+      "bytes": 161,
+      "sha256": "d2654fb2135c18d8bbc8b8adb52718f4993e97a823f45023119c3b701c0141d2",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/year-zero-schema-red-1.json",
+      "path": "local/year-zero-schema-red-1.json",
+      "bytes": 652,
+      "sha256": "18e792d931a82821b916e1b3e8a81b221a7775fef2236952c33db79f7523c260",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-db-generate.json",
+      "path": "metadata/admin638-db-generate.json",
+      "bytes": 488,
+      "sha256": "5ecf4c3fdf39aa47cf69b648b086e81247a7c4498503b5f174bce92d0c567d50",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-db-generate-diagnostic.json",
+      "path": "metadata/admin638-db-generate-diagnostic.json",
+      "bytes": 200,
+      "sha256": "220a3c944e59a11426fd4e548bda3003165ab7060e977ae20231f1be74dc8a52",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-db-generate-v3.json",
+      "path": "metadata/admin638-db-generate-v3.json",
+      "bytes": 1028,
+      "sha256": "80aa2a7c12e4cb83ac5d87dc5b519e36f8c294ee807729e44243dee9ddb23ddb",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-green-checkpoint.json",
+      "path": "metadata/admin638-green-checkpoint.json",
+      "bytes": 2501,
+      "sha256": "7512076237d9092e9995c327362881be656afce59a2b07f23e7c0e49e9cc7507",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-proof-local-preflight.json",
+      "path": "metadata/admin638-proof-local-preflight.json",
+      "bytes": 2489,
+      "sha256": "19065ea4b7b8d070d1823c67059d73472dac5a82401c08123a44dd414c94011b",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-proof-local-preflight-v2.json",
+      "path": "metadata/admin638-proof-local-preflight-v2.json",
+      "bytes": 2489,
+      "sha256": "b6da723af48f3d5d8a02da373afb315fc5762cd6b7061667bcc10f0200cb8b3f",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-red-checkpoint.json",
+      "path": "metadata/admin638-red-checkpoint.json",
+      "bytes": 2035,
+      "sha256": "c711737c5561a876cb401b4d28dc7d9b01f80d87f65763120afdb5e16a8a00d8",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-workspace-checkpoint.json",
+      "path": "metadata/admin638-workspace-checkpoint.json",
+      "bytes": 175,
+      "sha256": "d4eed4a808881261aae416a1f8bfa9aaf7f26ef155f21769b4c5ef876388f841",
+      "byteIdentical": true
+    },
+    {
+      "source": "C:/w/admin638-integrated/current.json",
+      "path": "source-manifest.json",
+      "bytes": 596055,
+      "sha256": "d82f8c8c9c17273073e74ddf7cd2fe7391164963c21160f02386fbd54a7219b1",
+      "byteIdentical": true
+    }
+  ],
+  "receiptLogHashChecks": [
+    {
+      "receipt": "local/api-all-1.json",
+      "logPath": "C:/w/admin638-integrated/api-all-1.log",
+      "sha256": "f349e048a8cbd400e5b1587f953daaaac8846efcda4ffc4ce5e66ded3d2764b0",
+      "exitCode": 1,
+      "matched": true
+    },
+    {
+      "receipt": "local/api-all-1-final.json",
+      "logPath": "C:/w/admin638-integrated/api-all-1-final.log",
+      "sha256": "4355e212d200d219a4f77b2a75c16b6eb5b4a3443f2fbfe1c28ec84192d28a2e",
+      "exitCode": 0,
+      "matched": true
+    },
+    {
+      "receipt": "local/api-all-2.json",
+      "logPath": "C:/w/admin638-integrated/api-all-2.log",
+      "sha256": "f5987d6cbb8758e87f4e6cdbfce1fee0d919e8ae1826ece67cdf0832ab6c54c4",
+      "exitCode": 1,
+      "matched": true
+    },
+    {
+      "receipt": "local/api-all-2-final.json",
+      "logPath": "C:/w/admin638-integrated/api-all-2-final.log",
+      "sha256": "42638f5f52f0427a41224eaafe9534959517e73ab11e2807d4a556dcdfee7a81",
+      "exitCode": 0,
+      "matched": true
+    },
+    {
+      "receipt": "local/api-all-3.json",
+      "logPath": "C:/w/admin638-integrated/api-all-3.log",
+      "sha256": "4e98881f00d77c950e288fca6ef9e2c173d17cb4af9a6f7dc8082f3262140b1f",
+      "exitCode": 1,
+      "matched": true
+    },
+    {
+      "receipt": "local/api-all-3-final.json",
+      "logPath": "C:/w/admin638-integrated/api-all-3-final.log",
+      "sha256": "dd61263981dccca905d66e1e15ac067fe723cf336785462738b9f5c6eabd8fb2",
+      "exitCode": 0,
+      "matched": true
+    },
+    {
+      "receipt": "local/api-green-1.json",
+      "logPath": "C:/w/admin638-integrated/api-green-1.log",
+      "sha256": "280bb03b74fba6f76e5dcda574982d4adbb388fcfa5b4bb2ac754dbb9ab88366",
+      "exitCode": 1,
+      "matched": true
+    },
+    {
+      "receipt": "local/api-pricing-green-1.json",
+      "logPath": "C:/w/admin638-integrated/api-pricing-green-1.log",
+      "sha256": "93f302aace8ea9d26aaa79bc2365806a1b3a6bfc9c952b677f4734eff3d37cca",
+      "exitCode": 0,
+      "matched": true
+    },
+    {
+      "receipt": "local/api-red-1.json",
+      "logPath": "C:/w/admin638-integrated/api-red-1.log",
+      "sha256": "84636afe6c304a6b0b4d9cb88d50cad04257e8fdebc50ae61a39bf6806e64234",
+      "exitCode": 1,
+      "matched": true
+    },
+    {
+      "receipt": "local/api-review-red-2.json",
+      "logPath": "C:/w/admin638-integrated/api-review-red-2.log",
+      "sha256": "ce519394d31943acb81c7829385ad07c8a74f612ff582b113409a41438c0f324",
+      "exitCode": 1,
+      "matched": true
+    },
+    {
+      "receipt": "local/box-idle-1.json",
+      "logPath": "C:/w/admin638-integrated/box-idle-1.log",
+      "sha256": "5ba8820428ae279811a84bf802d0e893946bce7609cbf590a76e5435d057723c",
+      "exitCode": 1,
+      "matched": true
+    },
+    {
+      "receipt": "local/box-serial-1.json",
+      "logPath": "C:/w/admin638-integrated/box-serial-1.log",
+      "sha256": "3495517c717fd4349143f58f7fe00524914609efc4dab373a5ef5c3fcdff59e9",
+      "exitCode": 0,
+      "matched": true
+    },
+    {
+      "receipt": "local/box-tests-1.json",
+      "logPath": "C:/w/admin638-integrated/box-tests-1.log",
+      "sha256": "f736bbabde084bcb75e48ae5eb9efdc42cf6cf2528ae513c9d0adb7538922df7",
+      "exitCode": 1,
+      "matched": true
+    },
+    {
+      "receipt": "local/browser-green-1.json",
+      "logPath": "C:/w/admin638-integrated/browser-green-1.log",
+      "sha256": "7b443e7a269e5890e0040ed44bd6dc6f5d391bb55aa45befca8a9b5de3e712c3",
+      "exitCode": 0,
+      "matched": true
+    },
+    {
+      "receipt": "local/browser-green-2.json",
+      "logPath": "C:/w/admin638-integrated/browser-green-2.log",
+      "sha256": "3ba6b2982c49ce7a21872731f06d84faeff5ca33f5bd5cc91f56e57323d321aa",
+      "exitCode": 0,
+      "matched": true
+    },
+    {
+      "receipt": "local/browser-offer-red-1.json",
+      "logPath": "C:/w/admin638-integrated/browser-offer-red-1.log",
+      "sha256": "de19db7e15a88201d5f1af3040a0a0045e82ab1c0a38ccf5167924b2c8c77a90",
+      "exitCode": 1,
+      "matched": true
+    },
+    {
+      "receipt": "local/browser-red-1.json",
+      "logPath": "C:/w/admin638-integrated/browser-red-1.log",
+      "sha256": "e1864b63843b06b5f9a2ba62cdd80c2757c4cc2964d0ab1488416fae1ff7eaa3",
+      "exitCode": 1,
+      "matched": true
+    },
+    {
+      "receipt": "local/compilers-contracts-1.json",
+      "logPath": "C:/w/admin638-integrated/compilers-contracts-1.log",
+      "sha256": "e4d7c0e37b77f2f114e6b3cb0a4161b509713bcb32992c3174cf951e7e1cc83b",
+      "exitCode": 2,
+      "matched": true
+    },
+    {
+      "receipt": "local/compilers-contracts-2.json",
+      "logPath": "C:/w/admin638-integrated/compilers-contracts-2.log",
+      "sha256": "d3dd7ba1a787097f686c5b9c504b5597989bd4a599ce437f3bbc301ac91b1ac5",
+      "exitCode": 1,
+      "matched": true
+    },
+    {
+      "receipt": "local/compilers-contracts-lint-final-1.json",
+      "logPath": "C:/w/admin638-integrated/compilers-contracts-lint-final-1.log",
+      "sha256": "c44edeca9be7055f0c272141aef71210645589ca6de6273012bfa49c9f651cad",
+      "exitCode": 0,
+      "matched": true
+    },
+    {
+      "receipt": "local/console-browser-all-1.json",
+      "logPath": "C:/w/admin638-integrated/console-browser-all-1.log",
+      "sha256": "bef5f34c58ee24a945737465bfb54a4143b3e6486c4dcca314fb993840c6bdd0",
+      "exitCode": 0,
+      "matched": true
+    },
+    {
+      "receipt": "local/contracts-lint-1.json",
+      "logPath": "C:/w/admin638-integrated/contracts-lint-1.log",
+      "sha256": "adadb695538bad2e89e325af7c6163205e38d35a8816526f9e7741e88e01d60d",
+      "exitCode": 0,
+      "matched": true
+    },
+    {
+      "receipt": "local/db-green-1.json",
+      "logPath": "C:/w/admin638-integrated/db-green-1.log",
+      "sha256": "c3e84e05c42b37bb5f4d03af23859781e15627b26ff78076690d4188419e3cf5",
+      "exitCode": 0,
+      "matched": true
+    },
+    {
+      "receipt": "local/db-red-1.json",
+      "logPath": "C:/w/admin638-integrated/db-red-1.log",
+      "sha256": "70481920cbdfad02c450823a370b8a4871be56f4531139c71f0a5de92427057c",
+      "exitCode": 1,
+      "matched": true
+    },
+    {
+      "receipt": "local/final-scope-green-1.json",
+      "logPath": "C:/w/admin638-integrated/final-scope-green-1.log",
+      "sha256": "e9e013d2630de666ab3c5bcc7afd1004b5dcec579d6bdca8c178f622a61a7a0d",
+      "exitCode": 0,
+      "matched": true
+    },
+    {
+      "receipt": "local/focused-final-1.json",
+      "logPath": "C:/w/admin638-integrated/focused-final-1.log",
+      "sha256": "0791b4be53b70226c4c30f3a28bb7770765ab3a7f925303ee11d7744f4b7b3c5",
+      "exitCode": 0,
+      "matched": true
+    },
+    {
+      "receipt": "local/pos-tests-1.json",
+      "logPath": "C:/w/admin638-integrated/pos-tests-1.log",
+      "sha256": "c3c54a9a637162de75afb6069f2a581652e67106d88503c5edfd6fd7002bf41b",
+      "exitCode": 0,
+      "matched": true
+    },
+    {
+      "receipt": "local/post-rebase-api-focused-1.json",
+      "logPath": "C:/w/admin638-integrated/post-rebase-api-focused-1.log",
+      "sha256": "2260dbf9eb596fde4e7b38082deca14d452afc75bea9fd2cd0dfae7791f6d283",
+      "exitCode": 0,
+      "matched": true
+    },
+    {
+      "receipt": "local/post-rebase-compilers-contracts-lint-1.json",
+      "logPath": "C:/w/admin638-integrated/post-rebase-compilers-contracts-lint-1.log",
+      "sha256": "483404d432f42148250d076bf55a572d05c757511ea3d243b109c5e595a6de02",
+      "exitCode": 0,
+      "matched": true
+    },
+    {
+      "receipt": "local/pricing-red-1.json",
+      "logPath": "C:/w/admin638-integrated/pricing-red-1.log",
+      "sha256": "e21d9bf918639c1d162a36dcfb0d4cd40003cca15871e76303677dc50775e0ee",
+      "exitCode": 1,
+      "matched": true
+    },
+    {
+      "receipt": "local/pricing-red-2.json",
+      "logPath": "C:/w/admin638-integrated/pricing-red-2.log",
+      "sha256": "e564d6430650f1b278d8eaac4d8682d10efe2d9073d158667065d8f7e85af3ac",
+      "exitCode": 1,
+      "matched": true
+    },
+    {
+      "receipt": "local/pricing-underflow-green-1.json",
+      "logPath": "C:/w/admin638-integrated/pricing-underflow-green-1.log",
+      "sha256": "4261ba90f35001333edb57dcca96dfdcc8ea1c2662b5144bf1373c3c4c3bb4a0",
+      "exitCode": 0,
+      "matched": true
+    },
+    {
+      "receipt": "local/pricing-underflow-red-1.json",
+      "logPath": "C:/w/admin638-integrated/pricing-underflow-red-1.log",
+      "sha256": "36fea16899643f301c2dc072713c5c2d9ab1ed08681e99017d76a791365021e9",
+      "exitCode": 1,
+      "matched": true
+    },
+    {
+      "receipt": "local/proof-native-review-green-1.json",
+      "logPath": "C:/w/admin638-integrated/proof-native-review-green-1.log",
+      "sha256": "2fc50e1fb66579a6a8a6bf1db36382df1edd42c1fb67b2295cd795a36e58fc49",
+      "exitCode": 0,
+      "matched": true
+    },
+    {
+      "receipt": "local/proof-native-review-red-1.json",
+      "logPath": "C:/w/admin638-integrated/proof-native-review-red-1.log",
+      "sha256": "dbee3c1d98aa966adf424006aa8ec43b64b67d385ee61268f34847f5e76d77fa",
+      "exitCode": 1,
+      "matched": true
+    },
+    {
+      "receipt": "local/proof-offline-1.json",
+      "logPath": "C:/w/admin638-integrated/proof-offline-1.log",
+      "sha256": "22c79dc9ae1b46ceb7e83d20fb2a12ed331916fe7494fb0541c107e4bc10d4fa",
+      "exitCode": 0,
+      "matched": true
+    },
+    {
+      "receipt": "local/workspace-compilers-builds-1.json",
+      "logPath": "C:/w/admin638-integrated/workspace-compilers-builds-1.log",
+      "sha256": "730203d6105f47dd17ffa6268241a9614d80dd2f66e60b8f0e07f8ae5f4368af",
+      "exitCode": 2,
+      "matched": true
+    },
+    {
+      "receipt": "local/workspace-compilers-builds-2.json",
+      "logPath": "C:/w/admin638-integrated/workspace-compilers-builds-2.log",
+      "sha256": "9e19adb6f378a4dcb07fadeebae6045a07f483ffc43aa5c9cc437578324ec65c",
+      "exitCode": 0,
+      "matched": true
+    },
+    {
+      "receipt": "local/workspace-package-tests-1.json",
+      "logPath": "C:/w/admin638-integrated/workspace-package-tests-1.log",
+      "sha256": "f60df3640d7ffa5923c025d9dd7fefc1f6e4faabb12524001ba450d45f5a097e",
+      "exitCode": 0,
+      "matched": true
+    },
+    {
+      "receipt": "local/year-zero-http-red-1.json",
+      "logPath": "C:/w/admin638-integrated/year-zero-http-red-1.log",
+      "sha256": "e9c3c9724a48ce37c253f04640cf848f40771eb38111d1759932a0051db5e47d",
+      "exitCode": 1,
+      "matched": true
+    },
+    {
+      "receipt": "local/year-zero-schema-red-1.json",
+      "logPath": "C:/w/admin638-integrated/year-zero-schema-red-1.log",
+      "sha256": "5e7a491a0e3b0e26ddb32c80b55a19e6a80fb6248cdef840d0429b5bb3e7f6b3",
+      "exitCode": 1,
+      "matched": true
+    }
+  ],
+  "nonzeroExitReceipts": [
+    "local/api-all-1.json",
+    "local/api-all-2.json",
+    "local/api-all-3.json",
+    "local/api-green-1.json",
+    "local/api-red-1.json",
+    "local/api-review-red-2.json",
+    "local/box-idle-1.json",
+    "local/box-tests-1.json",
+    "local/browser-offer-red-1.json",
+    "local/browser-red-1.json",
+    "local/compilers-contracts-1.json",
+    "local/compilers-contracts-2.json",
+    "local/db-red-1.json",
+    "local/pricing-red-1.json",
+    "local/pricing-red-2.json",
+    "local/pricing-underflow-red-1.json",
+    "local/proof-native-review-red-1.json",
+    "local/workspace-compilers-builds-1.json",
+    "local/year-zero-http-red-1.json",
+    "local/year-zero-schema-red-1.json"
+  ],
+  "generatedDocuments": [
+    {
+      "path": "README.md",
+      "sha256": "e44d9f5c4cdf6541d588b9ceccea99baf247da0f4d75d20841a1761b0e2ac295"
+    },
+    {
+      "path": "external-artifacts.json",
+      "sha256": "14a321eab0c31a77e5589e935075794668956e40025e69d7c6f6504887caf0fd"
+    }
+  ],
+  "newFiles": [
+    "docs/qa/jira-comments/attachments/SCRUM-638/external-artifacts.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/independent-checks.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/api-all-1.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/api-all-1-final.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/api-all-2.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/api-all-2-final.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/api-all-3.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/api-all-3-final.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/api-doc-inputs.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/api-green-1.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/api-pricing-green-1.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/api-red-1.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/api-review-red-2.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/api-supersede-intent.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/api-supersede-intent-v2.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/api-supersede-v2.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/box-idle-1.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/box-serial-1.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/box-tests-1.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/browser-green-1.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/browser-green-2.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/browser-offer-red-1.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/browser-red-1.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/cleanup.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/cleanup-intent.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/compilers-contracts-1.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/compilers-contracts-2.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/compilers-contracts-lint-final-1.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/console-browser-all-1.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/contracts-lint-1.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/db-green-1.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/db-red-1.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/final-guard-bridge.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/final-scope-green-1.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/focused-final-1.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/pos-tests-1.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/post-rebase-api-focused-1.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/post-rebase-compilers-contracts-lint-1.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/pricing-red-1.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/pricing-red-2.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/pricing-underflow-green-1.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/pricing-underflow-red-1.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/proof-native-review-green-1.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/proof-native-review-red-1.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/proof-offline-1.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/runtime-census.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/setup.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/setup-intent.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/source-1792917604000.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/source-1792917940921.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/source-1792918109339.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/source-1792918281573.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/source-1792918418396.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/source-1792918533222.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/source-1792918806866.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/source-1792918866706.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/source-1792920823972.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/source-1792920908146.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/source-checkpoint-local.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/source-checkpoint-pushed.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/workspace-compilers-builds-1.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/workspace-compilers-builds-2.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/workspace-package-tests-1.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/year-zero-http-red-1.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/year-zero-review.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/local/year-zero-schema-red-1.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/metadata/admin638-db-generate.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/metadata/admin638-db-generate-diagnostic.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/metadata/admin638-db-generate-v3.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/metadata/admin638-green-checkpoint.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/metadata/admin638-proof-local-preflight.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/metadata/admin638-proof-local-preflight-v2.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/metadata/admin638-red-checkpoint.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/metadata/admin638-workspace-checkpoint.json",
+    "docs/qa/jira-comments/attachments/SCRUM-638/README.md",
+    "docs/qa/jira-comments/attachments/SCRUM-638/source-manifest.json"
+  ],
+  "limits": [
+    "Reported test outcomes come from the preserved command receipts and actual external logs, not fresh execution during publication.",
+    "The broad battery predates the final year-zero guard and HTTP pin.",
+    "No protected consumer integration, final combined release, feature CI, rollout or staging acceptance is claimed.",
+    "Local loader preflight does not establish released-source binding.",
+    "Raw artifact inventory exposes hashes and locations only; raw artifacts were not copied."
+  ]
+}

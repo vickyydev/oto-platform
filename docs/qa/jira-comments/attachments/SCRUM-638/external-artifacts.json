@@ -1,0 +1,751 @@
+{
+    "ticket":  "SCRUM-638",
+    "scope":  "External artifacts retained outside the repository; inventory only, raw contents not copied.",
+    "artifactCount":  106,
+    "integratedRawArtifactCount":  103,
+    "heldProofSourceCount":  3,
+    "artifacts":  [
+                      {
+                          "path":  "C:/w/admin638-integrated/api-all-1.log",
+                          "bytes":  23235,
+                          "sha256":  "f349e048a8cbd400e5b1587f953daaaac8846efcda4ffc4ce5e66ded3d2764b0",
+                          "kind":  "log",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/api-all-1.progress.jsonl",
+                          "bytes":  1836,
+                          "sha256":  "ca70d835ea3eaf82d8662be9d8d2e99c0e21f348702134ee16a18622c4f4845d",
+                          "kind":  "jsonl",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/api-all-1-final.log",
+                          "bytes":  140400,
+                          "sha256":  "4355e212d200d219a4f77b2a75c16b6eb5b4a3443f2fbfe1c28ec84192d28a2e",
+                          "kind":  "log",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/api-all-1-final.progress.jsonl",
+                          "bytes":  19072,
+                          "sha256":  "a25e5b79fab5a5069369142d485bb9fd5b991ce0af2ee24cb137f5583c6ddc0b",
+                          "kind":  "jsonl",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/api-all-2.log",
+                          "bytes":  24316,
+                          "sha256":  "f5987d6cbb8758e87f4e6cdbfce1fee0d919e8ae1826ece67cdf0832ab6c54c4",
+                          "kind":  "log",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/api-all-2.progress.jsonl",
+                          "bytes":  2294,
+                          "sha256":  "59b5d66dcb2caa67d81dcc879db3b7a21510b531a84abab6492c10c78f8bc9f6",
+                          "kind":  "jsonl",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/api-all-2-final.log",
+                          "bytes":  143942,
+                          "sha256":  "42638f5f52f0427a41224eaafe9534959517e73ab11e2807d4a556dcdfee7a81",
+                          "kind":  "log",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/api-all-2-final.progress.jsonl",
+                          "bytes":  18952,
+                          "sha256":  "76dac9e22c65df38c13e2f8bc0c580c58120be797ef1002a7c7e33411d122f1b",
+                          "kind":  "jsonl",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/api-all-3.log",
+                          "bytes":  12339,
+                          "sha256":  "4e98881f00d77c950e288fca6ef9e2c173d17cb4af9a6f7dc8082f3262140b1f",
+                          "kind":  "log",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/api-all-3.progress.jsonl",
+                          "bytes":  1154,
+                          "sha256":  "e424c777e8d8a479f5962c9519dcdca6b3bb3fdb9d2ce3c679ffa970418a9ac5",
+                          "kind":  "jsonl",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/api-all-3-final.log",
+                          "bytes":  161014,
+                          "sha256":  "dd61263981dccca905d66e1e15ac067fe723cf336785462738b9f5c6eabd8fb2",
+                          "kind":  "log",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/api-all-3-final.progress.jsonl",
+                          "bytes":  18669,
+                          "sha256":  "cea6dced4016c51d5b95d03475feca4489bc6a620d36749175874d3d15f6cb6e",
+                          "kind":  "jsonl",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/api-doc-inputs.tar",
+                          "bytes":  312832,
+                          "sha256":  "770a7a90272c8b9313a86eb470c6214a875341155988e24506f03263a0fe4070",
+                          "kind":  "tar",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/api-doc-paths.txt",
+                          "bytes":  144,
+                          "sha256":  "69f3a2ecade3311b5e65686016e0f8378d6c76774abb1b61ede9d7a2480230da",
+                          "kind":  "txt",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/api-green-1.log",
+                          "bytes":  16328,
+                          "sha256":  "280bb03b74fba6f76e5dcda574982d4adbb388fcfa5b4bb2ac754dbb9ab88366",
+                          "kind":  "log",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/api-green-1.progress.jsonl",
+                          "bytes":  751,
+                          "sha256":  "45a10d5f0641bfb592cf815e9558abca628bef9a13d25da9ab733beea2d30c6f",
+                          "kind":  "jsonl",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/api-pricing-green-1.log",
+                          "bytes":  6957,
+                          "sha256":  "93f302aace8ea9d26aaa79bc2365806a1b3a6bfc9c952b677f4734eff3d37cca",
+                          "kind":  "log",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/api-pricing-green-1.progress.jsonl",
+                          "bytes":  1268,
+                          "sha256":  "6a3493342d02ee1a11ce80d41f8091d158c47be8fa0c69d1c04ab378207837be",
+                          "kind":  "jsonl",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/api-red-1.log",
+                          "bytes":  32435,
+                          "sha256":  "84636afe6c304a6b0b4d9cb88d50cad04257e8fdebc50ae61a39bf6806e64234",
+                          "kind":  "log",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/api-red-1.progress.jsonl",
+                          "bytes":  154,
+                          "sha256":  "e64a2808012df72fc2a3196094273ac16220b7d58ae48464a3dbef32495e0f58",
+                          "kind":  "jsonl",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/api-review-red-2.log",
+                          "bytes":  14428,
+                          "sha256":  "ce519394d31943acb81c7829385ad07c8a74f612ff582b113409a41438c0f324",
+                          "kind":  "log",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/api-review-red-2.progress.jsonl",
+                          "bytes":  778,
+                          "sha256":  "0e1889f43c0fe39f5a8ed5ce34095b01701d345f73064617187fd604378e8f5f",
+                          "kind":  "jsonl",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/box-idle-1.log",
+                          "bytes":  181106,
+                          "sha256":  "5ba8820428ae279811a84bf802d0e893946bce7609cbf590a76e5435d057723c",
+                          "kind":  "log",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/box-idle-1.progress.jsonl",
+                          "bytes":  0,
+                          "sha256":  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                          "kind":  "jsonl",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/box-serial-1.log",
+                          "bytes":  178527,
+                          "sha256":  "3495517c717fd4349143f58f7fe00524914609efc4dab373a5ef5c3fcdff59e9",
+                          "kind":  "log",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/box-serial-1.progress.jsonl",
+                          "bytes":  0,
+                          "sha256":  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                          "kind":  "jsonl",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/box-tests-1.log",
+                          "bytes":  181151,
+                          "sha256":  "f736bbabde084bcb75e48ae5eb9efdc42cf6cf2528ae513c9d0adb7538922df7",
+                          "kind":  "log",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/box-tests-1.progress.jsonl",
+                          "bytes":  0,
+                          "sha256":  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                          "kind":  "jsonl",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/browser-green-1.log",
+                          "bytes":  8479,
+                          "sha256":  "7b443e7a269e5890e0040ed44bd6dc6f5d391bb55aa45befca8a9b5de3e712c3",
+                          "kind":  "log",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/browser-green-1.progress.jsonl",
+                          "bytes":  0,
+                          "sha256":  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                          "kind":  "jsonl",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/browser-green-2.log",
+                          "bytes":  8664,
+                          "sha256":  "3ba6b2982c49ce7a21872731f06d84faeff5ca33f5bd5cc91f56e57323d321aa",
+                          "kind":  "log",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/browser-green-2.progress.jsonl",
+                          "bytes":  0,
+                          "sha256":  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                          "kind":  "jsonl",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/browser-offer-red-1.log",
+                          "bytes":  11005,
+                          "sha256":  "de19db7e15a88201d5f1af3040a0a0045e82ab1c0a38ccf5167924b2c8c77a90",
+                          "kind":  "log",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/browser-offer-red-1.progress.jsonl",
+                          "bytes":  0,
+                          "sha256":  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                          "kind":  "jsonl",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/browser-red-1.log",
+                          "bytes":  40440,
+                          "sha256":  "e1864b63843b06b5f9a2ba62cdd80c2757c4cc2964d0ab1488416fae1ff7eaa3",
+                          "kind":  "log",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/browser-red-1.progress.jsonl",
+                          "bytes":  0,
+                          "sha256":  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                          "kind":  "jsonl",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/compilers-contracts-1.log",
+                          "bytes":  8159,
+                          "sha256":  "e4d7c0e37b77f2f114e6b3cb0a4161b509713bcb32992c3174cf951e7e1cc83b",
+                          "kind":  "log",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/compilers-contracts-1.progress.jsonl",
+                          "bytes":  0,
+                          "sha256":  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                          "kind":  "jsonl",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/compilers-contracts-2.log",
+                          "bytes":  3509,
+                          "sha256":  "d3dd7ba1a787097f686c5b9c504b5597989bd4a599ce437f3bbc301ac91b1ac5",
+                          "kind":  "log",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/compilers-contracts-2.progress.jsonl",
+                          "bytes":  152,
+                          "sha256":  "4da51d5b6f0a1556821ef7275c7e629aa329e85acaab8d6319dd6db573679c2e",
+                          "kind":  "jsonl",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/compilers-contracts-lint-final-1.log",
+                          "bytes":  1224,
+                          "sha256":  "c44edeca9be7055f0c272141aef71210645589ca6de6273012bfa49c9f651cad",
+                          "kind":  "log",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/compilers-contracts-lint-final-1.progress.jsonl",
+                          "bytes":  164,
+                          "sha256":  "7295083a9a4ebce187ea8ec324b909d91eb3708b20ac2fe7bb68f8aee0c2cb9d",
+                          "kind":  "jsonl",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/console-browser-all-1.log",
+                          "bytes":  38337,
+                          "sha256":  "bef5f34c58ee24a945737465bfb54a4143b3e6486c4dcca314fb993840c6bdd0",
+                          "kind":  "log",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/console-browser-all-1.progress.jsonl",
+                          "bytes":  0,
+                          "sha256":  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                          "kind":  "jsonl",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/contracts-lint-1.log",
+                          "bytes":  898,
+                          "sha256":  "adadb695538bad2e89e325af7c6163205e38d35a8816526f9e7741e88e01d60d",
+                          "kind":  "log",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/contracts-lint-1.progress.jsonl",
+                          "bytes":  148,
+                          "sha256":  "5656c440248af5d61cc91f332aef32c59ebbb79dab714b5f353e21070383a317",
+                          "kind":  "jsonl",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/db-green-1.log",
+                          "bytes":  917,
+                          "sha256":  "c3e84e05c42b37bb5f4d03af23859781e15627b26ff78076690d4188419e3cf5",
+                          "kind":  "log",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/db-green-1.progress.jsonl",
+                          "bytes":  149,
+                          "sha256":  "d2711cc01ad573fa0364d40868a8fbb30554e0cd6931e2840dfe67adae89b917",
+                          "kind":  "jsonl",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/db-red-1.log",
+                          "bytes":  14313,
+                          "sha256":  "70481920cbdfad02c450823a370b8a4871be56f4531139c71f0a5de92427057c",
+                          "kind":  "log",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/db-red-1.progress.jsonl",
+                          "bytes":  146,
+                          "sha256":  "25fbc8483938120ab0c026e61e7255eefd77e42ab07c70d2cad3376e52e6acc2",
+                          "kind":  "jsonl",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/final-scope-green-1.log",
+                          "bytes":  7419,
+                          "sha256":  "e9e013d2630de666ab3c5bcc7afd1004b5dcec579d6bdca8c178f622a61a7a0d",
+                          "kind":  "log",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/final-scope-green-1.progress.jsonl",
+                          "bytes":  1268,
+                          "sha256":  "a1b5cf4097f1dc57f8a6e04c5bcc97c78cea203d7639aae07e84f411fb1d6de1",
+                          "kind":  "jsonl",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/focused-final-1.log",
+                          "bytes":  6957,
+                          "sha256":  "0791b4be53b70226c4c30f3a28bb7770765ab3a7f925303ee11d7744f4b7b3c5",
+                          "kind":  "log",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/focused-final-1.progress.jsonl",
+                          "bytes":  1236,
+                          "sha256":  "3806584d47764a2ce66fe49ad50ab82176a084ad17e6eda1d0c9becf686f33ba",
+                          "kind":  "jsonl",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/pos-tests-1.log",
+                          "bytes":  6807,
+                          "sha256":  "c3c54a9a637162de75afb6069f2a581652e67106d88503c5edfd6fd7002bf41b",
+                          "kind":  "log",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/pos-tests-1.progress.jsonl",
+                          "bytes":  15099,
+                          "sha256":  "57035fd1f92513052b2a137c5ef01957767737ce25051494ad3c5718fa83745c",
+                          "kind":  "jsonl",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/post-rebase-api-focused-1.log",
+                          "bytes":  7420,
+                          "sha256":  "2260dbf9eb596fde4e7b38082deca14d452afc75bea9fd2cd0dfae7791f6d283",
+                          "kind":  "log",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/post-rebase-api-focused-1.progress.jsonl",
+                          "bytes":  1316,
+                          "sha256":  "ab6454e491850fa4c62aef92ee51dad980e0effa8bce455635d03f50b8e8f099",
+                          "kind":  "jsonl",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/post-rebase-compilers-contracts-lint-1.log",
+                          "bytes":  1224,
+                          "sha256":  "483404d432f42148250d076bf55a572d05c757511ea3d243b109c5e595a6de02",
+                          "kind":  "log",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/post-rebase-compilers-contracts-lint-1.progress.jsonl",
+                          "bytes":  170,
+                          "sha256":  "4227d1aa9804396a68f0adc80f8c025fc74b8a63bd41b953d152f7b9febf0998",
+                          "kind":  "jsonl",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/pricing-red-1.log",
+                          "bytes":  10947,
+                          "sha256":  "e21d9bf918639c1d162a36dcfb0d4cd40003cca15871e76303677dc50775e0ee",
+                          "kind":  "log",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/pricing-red-1.progress.jsonl",
+                          "bytes":  152,
+                          "sha256":  "d6dfbcb9a5742b9703fed4ac649f3886f751a5140f9f9f4db4437137b2796b83",
+                          "kind":  "jsonl",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/pricing-red-2.log",
+                          "bytes":  17067,
+                          "sha256":  "e564d6430650f1b278d8eaac4d8682d10efe2d9073d158667065d8f7e85af3ac",
+                          "kind":  "log",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/pricing-red-2.progress.jsonl",
+                          "bytes":  152,
+                          "sha256":  "92032eaad27ac256db833128ec05307471c5da8683aaf930d79580198cf5ce67",
+                          "kind":  "jsonl",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/pricing-underflow-green-1.log",
+                          "bytes":  379,
+                          "sha256":  "4261ba90f35001333edb57dcca96dfdcc8ea1c2662b5144bf1373c3c4c3bb4a0",
+                          "kind":  "log",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/pricing-underflow-green-1.progress.jsonl",
+                          "bytes":  165,
+                          "sha256":  "04edfc7439ac9ef5f6fd94be0d267d3d74eb8e1be3c3c74af9478871267d71b1",
+                          "kind":  "jsonl",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/pricing-underflow-red-1.log",
+                          "bytes":  8598,
+                          "sha256":  "36fea16899643f301c2dc072713c5c2d9ab1ed08681e99017d76a791365021e9",
+                          "kind":  "log",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/pricing-underflow-red-1.progress.jsonl",
+                          "bytes":  162,
+                          "sha256":  "06982a7e8565821b568833f8a27ad6aed51aa9eb65c7d61a3134fed423f90c0d",
+                          "kind":  "jsonl",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/proof-native-review-green-1.log",
+                          "bytes":  6240,
+                          "sha256":  "2fc50e1fb66579a6a8a6bf1db36382df1edd42c1fb67b2295cd795a36e58fc49",
+                          "kind":  "log",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/proof-native-review-red-1.log",
+                          "bytes":  7913,
+                          "sha256":  "dbee3c1d98aa966adf424006aa8ec43b64b67d385ee61268f34847f5e76d77fa",
+                          "kind":  "log",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/proof-offline-1.log",
+                          "bytes":  5463,
+                          "sha256":  "22c79dc9ae1b46ceb7e83d20fb2a12ed331916fe7494fb0541c107e4bc10d4fa",
+                          "kind":  "log",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/source-1792917500242.tar",
+                          "bytes":  156726272,
+                          "sha256":  "7a42b3861c04269ae1fb7dde7468897329b45125f802d82c080d3299538ce0d4",
+                          "kind":  "tar",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/source-1792917500242.txt",
+                          "bytes":  169142,
+                          "sha256":  "4570b6f95e02e84525999b9865ac0c44fc45a2720afe1d701d9d8ddf59fdc18e",
+                          "kind":  "txt",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/source-1792917604000.tar",
+                          "bytes":  156774912,
+                          "sha256":  "6e6cb319d3c8bac57ed49abd9cb8873ba657ec7d432fc4462e6f2897c14a6332",
+                          "kind":  "tar",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/source-1792917604000.txt",
+                          "bytes":  169234,
+                          "sha256":  "ab091beafe6b6e71515be37171bfa53280efc8b9e34d1fbd9f916b6c85ecd0a8",
+                          "kind":  "txt",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/source-1792917940921.tar",
+                          "bytes":  1497088,
+                          "sha256":  "d205952a8c7074d3210c7c1de08b518f720885de1c6f56fc29ad69de0e1fb44e",
+                          "kind":  "tar",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/source-1792917940921.txt",
+                          "bytes":  700,
+                          "sha256":  "4c69b94a6d5ee32a546821730bea9a70b8f27a16e5b3cdab798d563c51656870",
+                          "kind":  "txt",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/source-1792918109339.tar",
+                          "bytes":  4609536,
+                          "sha256":  "b9bb3949789eb5d2659d94293c8a61976db3c8a1d52986c36437cc98f785d1b9",
+                          "kind":  "tar",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/source-1792918109339.txt",
+                          "bytes":  280,
+                          "sha256":  "0e0deaca54d467634fb324571a70a5ccda851df335261b0b799bb078578242a9",
+                          "kind":  "txt",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/source-1792918281573.tar",
+                          "bytes":  54784,
+                          "sha256":  "220d15e5ae04a32e86a03f995ebb346c4d348358f1aed577688303eaa6ad9978",
+                          "kind":  "tar",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/source-1792918281573.txt",
+                          "bytes":  127,
+                          "sha256":  "f663c89c5a6d18f96a31857f8636320ecd969cffd26b14f9a73c8da17b1b4a66",
+                          "kind":  "txt",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/source-1792918418396.tar",
+                          "bytes":  64512,
+                          "sha256":  "5e4227514a69882d517044a44dc5c7fb7f0cb5c892778a51ecccb718b943a8bb",
+                          "kind":  "tar",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/source-1792918418396.txt",
+                          "bytes":  181,
+                          "sha256":  "f2969be15b9ce756c8b06d9c07f4f272f04249eb43be55c272f28316e775c653",
+                          "kind":  "txt",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/source-1792918533222.tar",
+                          "bytes":  2560,
+                          "sha256":  "a175c0f757b841ebed12e16fd01c2e0b7f136c58b467dd6a44d3bfa9d2bec686",
+                          "kind":  "tar",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/source-1792918533222.txt",
+                          "bytes":  43,
+                          "sha256":  "ac2b1168d087739192946d508bf56c139537c9f12c14bf8423cf3e52b7c30f31",
+                          "kind":  "txt",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/source-1792918806866.tar",
+                          "bytes":  14336,
+                          "sha256":  "9db9d297399c9a5c2428942b5b39c34a656bf4281be4087231e5a1c8a07179d9",
+                          "kind":  "tar",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/source-1792918806866.txt",
+                          "bytes":  42,
+                          "sha256":  "a9dec982f5ec69a4ab86757f13b8e8eb3b19119690b84cfa3e1a1cd0dd56f723",
+                          "kind":  "txt",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/source-1792918866706.tar",
+                          "bytes":  4519424,
+                          "sha256":  "07048c6524a246dcf4288ca41d7fc49629ba4bda98cc74af5c2813da02b44a54",
+                          "kind":  "tar",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/source-1792918866706.txt",
+                          "bytes":  187,
+                          "sha256":  "1672f623b2a172ab0aa16f6018ab9e9c57a4f2711b8372ba2dc7f47b28af27c2",
+                          "kind":  "txt",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/source-1792920823972.tar",
+                          "bytes":  26112,
+                          "sha256":  "3c7c4d1746e5081907942358e3bad8de3318311d5ebf44b25ce03aa7da3b07bc",
+                          "kind":  "tar",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/source-1792920823972.txt",
+                          "bytes":  48,
+                          "sha256":  "1bb791dae79523676bc60ec9b567ad312c327923f8e9ade05e378d4c4b0ce24a",
+                          "kind":  "txt",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/source-1792920908146.tar",
+                          "bytes":  11264,
+                          "sha256":  "561ecd832678f0cff5500fe522f36ccb246dbd7a189093416755ee3d8291114e",
+                          "kind":  "tar",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/source-1792920908146.txt",
+                          "bytes":  44,
+                          "sha256":  "f7a1691097d5d23d28cd0e5514fd991bd1f4e9fb1f59a04c8dee99ce59e6f834",
+                          "kind":  "txt",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/workspace-compilers-builds-1.log",
+                          "bytes":  5304,
+                          "sha256":  "730203d6105f47dd17ffa6268241a9614d80dd2f66e60b8f0e07f8ae5f4368af",
+                          "kind":  "log",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/workspace-compilers-builds-1.progress.jsonl",
+                          "bytes":  0,
+                          "sha256":  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                          "kind":  "jsonl",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/workspace-compilers-builds-2.log",
+                          "bytes":  12161,
+                          "sha256":  "9e19adb6f378a4dcb07fadeebae6045a07f483ffc43aa5c9cc437578324ec65c",
+                          "kind":  "log",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/workspace-compilers-builds-2.progress.jsonl",
+                          "bytes":  0,
+                          "sha256":  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                          "kind":  "jsonl",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/workspace-package-tests-1.log",
+                          "bytes":  41695,
+                          "sha256":  "f60df3640d7ffa5923c025d9dd7fefc1f6e4faabb12524001ba450d45f5a097e",
+                          "kind":  "log",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/workspace-package-tests-1.progress.jsonl",
+                          "bytes":  30579,
+                          "sha256":  "b19957452455c4eeb9ace7c813e67888adc363dfcf71c64a63d7f3785a624a54",
+                          "kind":  "jsonl",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/year-zero-http-red-1.log",
+                          "bytes":  11164,
+                          "sha256":  "e9c3c9724a48ce37c253f04640cf848f40771eb38111d1759932a0051db5e47d",
+                          "kind":  "log",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/year-zero-http-red-1.progress.jsonl",
+                          "bytes":  165,
+                          "sha256":  "2366f57bafa8bfed3684973da26779e31077ed6a039284d47d20e19dc5632dbb",
+                          "kind":  "jsonl",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/year-zero-schema-red-1.log",
+                          "bytes":  989,
+                          "sha256":  "5e7a491a0e3b0e26ddb32c80b55a19e6a80fb6248cdef840d0429b5bb3e7f6b3",
+                          "kind":  "log",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-integrated/year-zero-schema-red-1.progress.jsonl",
+                          "bytes":  0,
+                          "sha256":  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                          "kind":  "jsonl",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-staging-proof.mjs",
+                          "bytes":  38998,
+                          "sha256":  "a0da559d81c17e5c659f6accaecbd30fd471dd4cd48581acae38efdc434381d5",
+                          "kind":  "held-proof-source",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-staging-proof.test.mjs",
+                          "bytes":  30306,
+                          "sha256":  "babc42e920771a38dcae1b39be994923c252cf01c9ea48409bed009711f986f5",
+                          "kind":  "held-proof-source",
+                          "copiedToRepository":  false
+                      },
+                      {
+                          "path":  "C:/w/admin638-staging-proof.md",
+                          "bytes":  8699,
+                          "sha256":  "18be77cd614f5269afb65a23ee255c20c8eec7f5c276cc5c2cbf056b2c2f18a3",
+                          "kind":  "held-proof-source",
+                          "copiedToRepository":  false
+                      }
+                  ]
+}

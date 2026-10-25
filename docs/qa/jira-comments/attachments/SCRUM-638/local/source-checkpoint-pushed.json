@@ -1,0 +1,20 @@
+{
+  "ticket": "SCRUM-638",
+  "at": "2026-10-25T09:52:18.649Z",
+  "branch": "lane/admin-assistant-settings",
+  "sourceCommit": "cd8b38b7bdccd0737bac307aa5eecd699ad55f44",
+  "remoteCommit": "cd8b38b7bdccd0737bac307aa5eecd699ad55f44",
+  "status": "In Progress",
+  "commentId": "12573",
+  "mainGreenSource": "be94f6c847b2a276167992ce6bcf3c6ec8988f71",
+  "ci": [
+    {
+      "conclusion": "success",
+      "databaseId": 40170166041,
+      "headSha": "be94f6c847b2a276167992ce6bcf3c6ec8988f71",
+      "status": "completed"
+    }
+  ],
+  "mainFeatureLanded": false,
+  "localReleaseGreen": false
+}

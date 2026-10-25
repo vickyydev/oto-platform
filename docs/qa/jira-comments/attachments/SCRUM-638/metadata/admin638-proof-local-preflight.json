@@ -1,0 +1,78 @@
+{
+  "ticket": "SCRUM-638",
+  "at": "2026-10-25T09:14:30.086Z",
+  "localOnly": true,
+  "actualStaging": false,
+  "authAttempts": 0,
+  "bindings": {
+    "nodeVersion": "v22.17.1",
+    "files": [
+      {
+        "path": "node_modules/.pnpm/lock.yaml",
+        "sha256": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      {
+        "path": "node_modules/.modules.yaml",
+        "sha256": "57199853b14df075f3a215109b1a406e93716c27ef7a2562f66ef227a71bdfb9"
+      },
+      {
+        "path": "apps/api/node_modules/tsx/package.json",
+        "sha256": "3ace2493a0acd26fc72a8433a38113ee04d5a1976910a3f40815f9e779d5c426"
+      },
+      {
+        "path": "apps/api/node_modules/tsx/dist/cli.mjs",
+        "sha256": "8420e19483e82bf21d984fbb9aad752df9e83dfeec3237fef5e62f5546d45ec9"
+      },
+      {
+        "path": "apps/api/node_modules/tsx/dist/loader.mjs",
+        "sha256": "7e3dba3b9b862a5fa1c741d54fc921ee8b17fc7a4d0087fa64e42a32142cf03d"
+      },
+      {
+        "path": "apps/api/node_modules/tsx/dist/preflight.cjs",
+        "sha256": "20adebaefdd1f81383dabfc73db95630dbc11cb80144c092b1f2be4f64e99e81"
+      },
+      {
+        "path": "apps/api/node_modules/tsx/dist/esm/api/index.mjs",
+        "sha256": "8fb32f8842dff630c0b54aba648a1a49de7bd8769ef4bea6f841fa954041504d"
+      },
+      {
+        "path": "apps/api/node_modules/zod/package.json",
+        "sha256": "70eedbe34fd52385a4ae2f3e5759b19682189f0118ea73a6e7c32c677f61668e"
+      },
+      {
+        "path": "apps/api/node_modules/zod/index.cjs",
+        "sha256": "69025493407e0f37f24e01e363452d75ae43a89aac18eb24806706b5b534b459"
+      },
+      {
+        "path": "apps/api/node_modules/zod/index.js",
+        "sha256": "6419c4ac0e637ff08463083e31886d10354f74cbcc4e584400b2b837e39ac881"
+      }
+    ]
+  },
+  "runtimeBindingsSha256": "ddc88de22c2de094e1de1fe76fee0930cf43bb96a4b7774a02daad5ef9d7928a",
+  "support": [
+    {
+      "path": "scripts/agent/env.mjs",
+      "sha256": "7ed9e5879adeeeadbda307b375595b9bb801071f3939a6afa24de1ee2693e237",
+      "privateRootMatches": true
+    },
+    {
+      "path": "scripts/agent/evidence.mjs",
+      "sha256": "8e928a28fcc85ba0df51ac841b4ac619605b05cd8f1a275090f74251bfcec695",
+      "privateRootMatches": true
+    }
+  ],
+  "actualSchemaLoader": true,
+  "settingsKeys": [
+    "operatorId",
+    "schemaVersion",
+    "overrides",
+    "rates",
+    "effective",
+    "source",
+    "revision",
+    "updatedAt",
+    "updatedBy"
+  ],
+  "releasedSourceBinding": false
+}

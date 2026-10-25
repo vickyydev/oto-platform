@@ -1,0 +1,15 @@
+{
+  "ticket": "SCRUM-638",
+  "name": "compilers-contracts-2",
+  "command": "pnpm --filter @oto/api typecheck && pnpm --filter @oto/console typecheck && pnpm api-types:check && pnpm --filter @oto/api-types test",
+  "startedAt": "2026-10-25T08:53:40.352Z",
+  "completedAt": "2026-10-25T08:54:47.219Z",
+  "exitCode": 1,
+  "signal": null,
+  "sourceManifestSha256": "894ccf7bc31400790f82545570f52cfcf6fad7deac264961f996bff20c6a09b9",
+  "logSha256": "d3dd7ba1a787097f686c5b9c504b5597989bd4a599ce437f3bbc301ac91b1ac5",
+  "hostSourceUnchanged": true,
+  "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+  "hostAndContainerApiDocsUnchanged": true,
+  "staging": false
+}

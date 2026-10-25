@@ -1,0 +1,15 @@
+{
+  "ticket": "SCRUM-638",
+  "name": "pricing-underflow-red-1",
+  "command": "cd /workspace/apps/api && pnpm test test/s638-pricing-review.test.ts",
+  "startedAt": "2026-10-25T09:00:08.490Z",
+  "completedAt": "2026-10-25T09:00:12.651Z",
+  "exitCode": 1,
+  "signal": null,
+  "sourceManifestSha256": "8af79b141a08202e84fda60a893c4b754dced5ad2390cc4995e99735a0d585ff",
+  "logSha256": "36fea16899643f301c2dc072713c5c2d9ab1ed08681e99017d76a791365021e9",
+  "hostSourceUnchanged": true,
+  "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+  "hostAndContainerApiDocsUnchanged": true,
+  "staging": false
+}

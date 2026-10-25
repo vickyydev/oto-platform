@@ -1,0 +1,15 @@
+{
+  "ticket": "SCRUM-638",
+  "name": "api-green-1",
+  "command": "cd /workspace/apps/api && pnpm test test/assistant-settings-review.test.ts test/routes-guarded.test.ts test/route-write-conformance.test.ts test/id-conformance.test.ts test/route-scope-target.test.ts",
+  "startedAt": "2026-10-25T08:45:56.285Z",
+  "completedAt": "2026-10-25T08:46:16.613Z",
+  "exitCode": 1,
+  "signal": null,
+  "sourceManifestSha256": "ca73dc44a4cb75ca3889b78e3e1cfa743945e504b2a0088539cccef93144e3f3",
+  "logSha256": "280bb03b74fba6f76e5dcda574982d4adbb388fcfa5b4bb2ac754dbb9ab88366",
+  "hostSourceUnchanged": true,
+  "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+  "hostAndContainerApiDocsUnchanged": true,
+  "staging": false
+}
