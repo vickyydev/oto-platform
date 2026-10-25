@@ -1,0 +1,298 @@
+{
+  "audit": "Current planner rulings, Jira status and exact-main-feature CI safety",
+  "recordedAt": "2026-10-25T12:37:48.115Z",
+  "readOnly": true,
+  "priorAudit": "C:/w/admin640-planner-audit-v1.json",
+  "priorRecordedAt": "2026-10-25T12:08:18.758Z",
+  "networkReadsOnly": [
+    "Jira issue status/comments through original-root jget",
+    "GitHub commit/run metadata"
+  ],
+  "sourceChanged": false,
+  "jiraChanged": false,
+  "gitMutations": false,
+  "gitFetch": false,
+  "stagingAuth": false,
+  "businessWrites": false,
+  "originMain": "56efea7abe52d8205df38605c32e993c946995a2",
+  "remoteMain": "56efea7abe52d8205df38605c32e993c946995a2",
+  "plan": {
+    "path": "docs/progress/plans/super-admin-console/PLAN.md",
+    "gitRef": "56efea7abe52d8205df38605c32e993c946995a2",
+    "sha256": "2186388b5b55470e9fad6cf103c568f40738d4c8349baa03915f819a1a2484af",
+    "questionAndRulingParagraphsIdenticalToV1": true,
+    "paragraphs": [
+      {
+        "question": "Q18",
+        "explicitRuling": false,
+        "sha256": "572943f1ef6e1890f9a004ae33dee7a3d5aca4426bcbe244b58ebdf8f29814c3"
+      },
+      {
+        "question": "Q18",
+        "explicitRuling": true,
+        "sha256": "409b85092aae616ba8844053f106589e832a318a9b9a5d30aa2665f8c3c656b8"
+      },
+      {
+        "question": "Q19",
+        "explicitRuling": false,
+        "sha256": "bbf1b9ca4e0a6ffff28cc5a7becf66b4f4552e841f71eaee5eeda1f5c132c84c"
+      },
+      {
+        "question": "Q21",
+        "explicitRuling": false,
+        "sha256": "9c08354189387316b16d716f6d26b3c56cecb4bc7117af073e01d2b4da4c39fc"
+      },
+      {
+        "question": "Q20",
+        "explicitRuling": false,
+        "sha256": "476edf36548bbeaca3ea6190b038f8ff1165c622e2fcc90b3b59eb896d618a31"
+      }
+    ]
+  },
+  "statusDocument": {
+    "path": "docs/progress/STATUS.md",
+    "gitRef": "56efea7abe52d8205df38605c32e993c946995a2",
+    "sha256": "11ebc51cd52bd69a4901a25bf9f53c66da6d309acd81f73469280adac9850f52"
+  },
+  "tickets": [
+    {
+      "key": "SCRUM-637",
+      "status": "In Progress",
+      "updated": "2026-10-25T17:41:55.707+0700",
+      "questions": [
+        "Q19"
+      ],
+      "commentsRead": 3,
+      "totalComments": 3,
+      "comments": [
+        {
+          "id": "12569",
+          "created": "2026-10-25T13:36:03.466+0700",
+          "updated": "2026-10-25T15:05:36.559+0700",
+          "bodySha256": "d04b9c2c3e84db403e05be32ec15028892ad72614bdd50354bfb279e6220eea7",
+          "newSinceV1": false,
+          "updatedSinceV1": false
+        },
+        {
+          "id": "12571",
+          "created": "2026-10-25T14:18:51.865+0700",
+          "updated": "2026-10-25T17:41:55.690+0700",
+          "bodySha256": "904a155cacf845994cb7af6a6a51d0446239fe8b5f3e6fd14b747298c43ba844",
+          "newSinceV1": false,
+          "updatedSinceV1": false
+        },
+        {
+          "id": "12572",
+          "created": "2026-10-25T14:44:07.007+0700",
+          "updated": "2026-10-25T14:44:07.007+0700",
+          "bodySha256": "8cf62e4eef88b44bf7847f1e69536250670be0f712242fc9f9febd2d49e16993",
+          "newSinceV1": false,
+          "updatedSinceV1": false
+        }
+      ],
+      "newSpecificPlannerRuling": false,
+      "newCommentIds": [],
+      "updatedCommentIdsSinceV1": [],
+      "classification": "No comment added or updated since v1.",
+      "unresolved": "Q19 production digest registration remains held."
+    },
+    {
+      "key": "SCRUM-638",
+      "status": "In Progress",
+      "updated": "2026-10-25T17:41:57.299+0700",
+      "questions": [
+        "Q18",
+        "Q21"
+      ],
+      "commentsRead": 1,
+      "totalComments": 1,
+      "comments": [
+        {
+          "id": "12573",
+          "created": "2026-10-25T15:30:09.039+0700",
+          "updated": "2026-10-25T17:41:57.263+0700",
+          "bodySha256": "45f06ddfacde13c58247faa01c34e6743c5499557b81c517216797a63287485b",
+          "newSinceV1": false,
+          "updatedSinceV1": false
+        }
+      ],
+      "newSpecificPlannerRuling": false,
+      "newCommentIds": [],
+      "updatedCommentIdsSinceV1": [],
+      "classification": "No comment added or updated since v1.",
+      "unresolved": "Q21 protected consumers and Q18 initial provider-list rate numbers remain outstanding."
+    },
+    {
+      "key": "SCRUM-640",
+      "status": "In Progress",
+      "updated": "2026-10-25T19:11:38.564+0700",
+      "questions": [
+        "Q20"
+      ],
+      "commentsRead": 2,
+      "totalComments": 2,
+      "comments": [
+        {
+          "id": "12570",
+          "created": "2026-10-25T13:55:15.654+0700",
+          "updated": "2026-10-25T13:55:15.654+0700",
+          "bodySha256": "1f91b41b710a2b2a49d71984c940d3a708bc164830fbcff82dfd15dc2b60f255",
+          "newSinceV1": false,
+          "updatedSinceV1": false
+        },
+        {
+          "id": "12575",
+          "created": "2026-10-25T18:55:44.687+0700",
+          "updated": "2026-10-25T19:11:38.547+0700",
+          "bodySha256": "eb9f63817fd144352c583094f75d9fe56799802e9cbf29a3ff0760a0a1947a0b",
+          "newSinceV1": false,
+          "updatedSinceV1": true
+        }
+      ],
+      "newSpecificPlannerRuling": false,
+      "newCommentIds": [],
+      "updatedCommentIdsSinceV1": [
+        "12575"
+      ],
+      "classification": "Comment12575 updated with independent groundwork/checkpoint56ef progress; it expressly says Q20 still waits. This is not approval.",
+      "unresolved": "Q20 four central hooks and protected assistant context/attribution integration remain held."
+    }
+  ],
+  "q18": {
+    "id": "12568",
+    "updated": "2026-10-25T13:18:43.859+0700",
+    "unchangedUpdatedSinceV1": true,
+    "bodySha256": "0111c8f887a18327a8cb8b9987bc38d8fc8ae5ea35fcf36f0bd26643622d92fe",
+    "explicitPlannerRulingAlreadyExists": true,
+    "scope": "636 native usage plus null cost;638 effective-dated per-model USD input/output/cache-read rates, unpriced remainder and cache-write exclusion.",
+    "initialRateNumbersNewlySupplied": false
+  },
+  "newlyUnblockedIntegration": [],
+  "newApprovalText": null,
+  "ci": {
+    "runId": 40186839556,
+    "headSha": "78ff5325e3ac1c9cae2ebd3bd92539bba18346ac",
+    "status": "completed",
+    "conclusion": "success",
+    "jobs": [
+      {
+        "name": "oto-app",
+        "id": 121149325839,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "ci",
+        "id": 121149326012,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "api-tests (1)",
+        "id": 121149326016,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "api-tests (3)",
+        "id": 121149326026,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "pos-tests",
+        "id": 121149326029,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "api-tests (2)",
+        "id": 121149326033,
+        "status": "completed",
+        "conclusion": "success"
+      }
+    ],
+    "allSixGreen": true,
+    "latestMainRuns": [
+      {
+        "conclusion": "success",
+        "databaseId": 40186839556,
+        "headSha": "78ff5325e3ac1c9cae2ebd3bd92539bba18346ac",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "databaseId": 40170166041,
+        "headSha": "be94f6c847b2a276167992ce6bcf3c6ec8988f71",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "databaseId": 40154287659,
+        "headSha": "b91e957c779cb74a0c1495f24257bd69218286ae",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "databaseId": 40146207019,
+        "headSha": "704bb3e3aea9f4348762521b886f2f7aef868021",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "databaseId": 40134954679,
+        "headSha": "6b429d4bd8f98b1508a5a785ed78655ec3cc95d5",
+        "status": "completed"
+      }
+    ],
+    "exactMainRuns": [],
+    "postFeatureHistory": [
+      {
+        "sha": "56efea7abe52d8205df38605c32e993c946995a2",
+        "paths": 4,
+        "nonempty": true,
+        "onlyDocsAndEvidence": true
+      },
+      {
+        "sha": "39895c7abc5096646ee97c0243e18bd5c59bfaec",
+        "paths": 5,
+        "nonempty": true,
+        "onlyDocsAndEvidence": true
+      },
+      {
+        "sha": "3f141a895c362f1d7c9364aec110451e10dbdfe7",
+        "paths": 41,
+        "nonempty": true,
+        "onlyDocsAndEvidence": true
+      },
+      {
+        "sha": "88ea6f03c70e1e29ab92125fd51f068f241da445",
+        "paths": 3,
+        "nonempty": true,
+        "onlyDocsAndEvidence": true
+      },
+      {
+        "sha": "8225e632ccd5b688c22356ce225cc996a2da65a0",
+        "paths": 3,
+        "nonempty": true,
+        "onlyDocsAndEvidence": true
+      },
+      {
+        "sha": "3b4d66e11de10725e8f8ea28266d80f59becaaaf",
+        "paths": 3,
+        "nonempty": true,
+        "onlyDocsAndEvidence": true
+      }
+    ],
+    "allPostFeatureCommitsDocsOnly": true,
+    "latestKnownFeatureMainRunGreen": true,
+    "newerRedMainRunObserved": false
+  },
+  "conclusion": "No new specific Q19/Q20/Q21 approval or initial rate numbers were observed. All three tickets remain In Progress. Main56ef is docs/evidence only after the exact639 feature with six green CI jobs; no newer red main run was observed.",
+  "limits": [
+    "This is a status/ruling audit, not authorization or a640 release claim.",
+    "No protected or central file changes are inferred from pickup/progress comments.",
+    "Exact CI job status was re-read; no CI, package gate, deployment or staging proof was run.",
+    "Read-only main history and all question/ruling paragraphs were compared with v1; no fetch or Git mutation occurred."
+  ]
+}
