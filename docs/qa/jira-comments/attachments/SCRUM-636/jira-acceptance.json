@@ -1,0 +1,23 @@
+{
+  "ticket": "SCRUM-636",
+  "recordedAt": "2026-10-25T07:13:28.978Z",
+  "before": "Testing",
+  "after": "Deployed",
+  "commentId": "12565",
+  "attachments": [
+    {
+      "id": "12031",
+      "name": "SCRUM-636-01-aggregate-api-test-run.png"
+    }
+  ],
+  "screenshotSha256": "dc71b1df6025f0048a6cdf69bcbcd6361d85d4c4bdfd4168ad8212e365206cd4",
+  "evidenceCommit": "2543e2e0a7232d00403b57859da4c8dc2423853e",
+  "sourceSha": "be94f6c847b2a276167992ce6bcf3c6ec8988f71",
+  "ciRunId": "40170166041",
+  "apiDeployment": {
+    "name": "oto-api-staging",
+    "serviceId": "srv-danh2ljtqb8s73bt9en0",
+    "id": "dep-dbeqjuijnfac73e2ik30",
+    "finishedAt": "2026-10-25T07:07:46.891936Z"
+  }
+}

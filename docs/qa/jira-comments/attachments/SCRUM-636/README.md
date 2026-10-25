@@ -1,3 +1,5 @@
+**Deployed readback2026-10-25T07:13:28.978Z.** Screenshot attachment12031 is named in canonical outcome12565; [jira-acceptance.json](jira-acceptance.json) records the status/attachment/source lineage. Final Done remains with the owner.
+
 ## Actual staging proof, 25 October 2026
 
 Source be94f6c847b2a276167992ce6bcf3c6ec8988f71 passed all six CI40170166041 jobs and automatically became live on API dep-dbeqjuijnfac73e2ik30 at07:07:46.891936Z. The actual proof completed07:08:50.218Z with43 aggregate reads:17 successes and26 expected refusals. ADMIN reached3 live parks; MANAGER retained only its reachable park(s), including an actual owned-unreachable403, and RECEPTION/anonymous were refused. Invalid dates/ranges/duplicate or unknown filters are refused. All three sessions close200/current-user401 and authority hashes match; no business writes, fixtures, pending or unknown operations.
